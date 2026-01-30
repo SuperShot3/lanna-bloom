@@ -179,3 +179,37 @@ button {
     margin: 0;
   }
 }
+
+/* 404 page */
+.not-found {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.not-found-title {
+  font-family: var(--font-serif);
+  font-size: 3rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+.not-found-text {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+.not-found-link {
+  display: inline-block;
+  padding: 12px 24px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: var(--radius);
+  transition: opacity 0.2s;
+}
+.not-found-link:hover {
+  opacity: 0.9;
+}
