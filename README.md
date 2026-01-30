@@ -1,11 +1,10 @@
 # To DO 
 
-~~Add adress and date delivery at bouquetCard~~ ✓
-~~Add social media icons at header~~ ✓
 Can image of choses flowers chages according size option that choosen by user.
+i dislike hero page need to make some new 
+categories such us romatic and gifts are empty we can filled them with affilate products 
 
 Descriptuion 
-
 
 # Data Base access 
 

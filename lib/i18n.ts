@@ -14,9 +14,10 @@ export const translations = {
       catalog: 'Catalog',
     },
     hero: {
-      headline: 'Fresh flowers delivered with care',
-      subline: 'Choose the perfect bouquet for any occasion',
+      headline: 'Fresh flowers, delivered with love',
+      subline: 'Hand-crafted bouquets for every moment',
       cta: 'Choose a bouquet',
+      trustLine: 'Same-day delivery in Chiang Mai',
     },
     categories: {
       all: 'All bouquets',
@@ -48,14 +49,12 @@ export const translations = {
     buyNow: {
       title: 'BUY NOW',
       step1: 'SELECT DELIVERY AREA:',
-      step2: 'SELECT A PRODUCT OPTION:',
       step3: 'SPECIFY DELIVERY DATE:',
       step4: 'ADD TO CART',
       city: 'Chiang Mai',
       selectDistrict: 'Select District',
       trySearchByPostalCode: 'Try search by postal code.',
       specifyDeliveryDate: 'Specify delivery date',
-      selectAreaFirst: 'To select a product option, you must first select delivery area.',
       selectAreaFirstDate: 'To specify a date, you must first select delivery area.',
     },
     messenger: {
@@ -71,9 +70,10 @@ export const translations = {
       catalog: 'แคตตาล็อก',
     },
     hero: {
-      headline: 'ดอกไม้สดส่งถึงมือด้วยความใส่ใจ',
-      subline: 'เลือกช่อดอกไม้ที่เหมาะกับทุกโอกาส',
+      headline: 'ดอกไม้สด ส่งถึงมือด้วยความรัก',
+      subline: 'ช่อดอกไม้ทำมือสำหรับทุกช่วงเวลา',
       cta: 'เลือกช่อดอกไม้',
+      trustLine: 'จัดส่งวันเดียวถึงในเชียงใหม่',
     },
     categories: {
       all: 'ช่อดอกไม้ทั้งหมด',
@@ -105,14 +105,12 @@ export const translations = {
     buyNow: {
       title: 'สั่งซื้อเลย',
       step1: 'เลือกพื้นที่จัดส่ง:',
-      step2: 'เลือกตัวเลือกสินค้า:',
       step3: 'ระบุวันจัดส่ง:',
       step4: 'เพิ่มลงตะกร้า',
       city: 'เชียงใหม่',
       selectDistrict: 'เลือกอำเภอ',
       trySearchByPostalCode: 'ลองค้นหาด้วยรหัสไปรษณีย์',
       specifyDeliveryDate: 'ระบุวันจัดส่ง',
-      selectAreaFirst: 'กรุณาเลือกพื้นที่จัดส่งก่อน',
       selectAreaFirstDate: 'กรุณาเลือกพื้นที่จัดส่งก่อน',
     },
     messenger: {

@@ -75,18 +75,9 @@ export function DeliveryForm({
         </div>
       </div>
 
-      {/* Step 2: Product option (info only – product/size chosen on this page) */}
+      {/* Step 2: Delivery date */}
       <div className="buy-now-step">
         <span className="buy-now-num" aria-hidden>2</span>
-        <div className="buy-now-step-content">
-          <h3 className="buy-now-step-heading">{t.step2}</h3>
-          <p className="buy-now-hint">{t.selectAreaFirst}</p>
-        </div>
-      </div>
-
-      {/* Step 3: Delivery date */}
-      <div className="buy-now-step">
-        <span className="buy-now-num" aria-hidden>3</span>
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step3}</h3>
           <p className="buy-now-hint">{t.selectAreaFirstDate}</p>
@@ -110,9 +101,9 @@ export function DeliveryForm({
         </div>
       </div>
 
-      {/* Step 4: Placeholder for "Add to cart" – order buttons are below in ProductOrderBlock */}
+      {/* Step 3: Order buttons are below in ProductOrderBlock */}
       <div className="buy-now-step buy-now-step-4">
-        <span className="buy-now-num" aria-hidden>4</span>
+        <span className="buy-now-num" aria-hidden>3</span>
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step4}</h3>
         </div>
