@@ -28,8 +28,19 @@ export function getFacebookOrderUrl(message: string): string {
   return `${base}/messages?text=${encode(message)}`;
 }
 
-export function buildOrderMessage(bouquetName: string, sizeLabel: string, template: string): string {
-  return template
+export function buildOrderMessage(
+  bouquetName: string,
+  sizeLabel: string,
+  template: string,
+  options?: { address?: string; date?: string; templateWithDelivery?: string }
+): string {
+  const address = options?.address ?? '';
+  const date = options?.date ?? '';
+  const useDeliveryTemplate = (address || date) && options?.templateWithDelivery;
+  const tpl = useDeliveryTemplate ? options!.templateWithDelivery! : template;
+  return tpl
     .replace('{name}', bouquetName)
-    .replace('{size}', sizeLabel);
+    .replace('{size}', sizeLabel)
+    .replace('{address}', address || '—')
+    .replace('{date}', date || '—');
 }

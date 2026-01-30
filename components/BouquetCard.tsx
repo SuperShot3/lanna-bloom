@@ -39,6 +39,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           <p className="card-price">
             {t.from} ฿{minPrice.toLocaleString()}
           </p>
+          <p className="card-delivery">{t.deliveryNote}</p>
           <span className="card-cta">{t.viewDetails}</span>
         </div>
       </Link>
@@ -88,7 +89,13 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         .card-price {
           font-size: 0.95rem;
           color: var(--text-muted);
+          margin: 0 0 6px;
+        }
+        .card-delivery {
+          font-size: 0.8rem;
+          color: var(--text-muted);
           margin: 0 0 10px;
+          line-height: 1.35;
         }
         .card-cta {
           font-size: 0.9rem;

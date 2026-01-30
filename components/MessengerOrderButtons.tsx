@@ -4,44 +4,63 @@ import {
   getWhatsAppOrderUrl,
   getLineOrderUrl,
   getTelegramOrderUrl,
-  getFacebookOrderUrl,
   buildOrderMessage,
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
 
 const CHANNELS = [
-  { id: 'line', getUrl: getLineOrderUrl, labelKey: 'orderLine' as const },
-  { id: 'whatsapp', getUrl: getWhatsAppOrderUrl, labelKey: 'orderWhatsApp' as const },
-  { id: 'telegram', getUrl: getTelegramOrderUrl, labelKey: 'orderTelegram' as const },
-  { id: 'facebook', getUrl: getFacebookOrderUrl, labelKey: 'orderFacebook' as const },
+  { id: 'line', getUrl: getLineOrderUrl, labelKey: 'orderLine' as const, Icon: LineIcon, color: '#00B900' },
+  { id: 'whatsapp', getUrl: getWhatsAppOrderUrl, labelKey: 'orderWhatsApp' as const, Icon: WhatsAppIcon, color: '#25D366' },
+  { id: 'telegram', getUrl: getTelegramOrderUrl, labelKey: 'orderTelegram' as const, Icon: TelegramIcon, color: '#26A5E4' },
 ] as const;
 
 export function MessengerOrderButtons({
   bouquetName,
   sizeLabel,
   lang,
+  deliveryAddress = '',
+  deliveryDate = '',
 }: {
   bouquetName: string;
   sizeLabel: string;
   lang: Locale;
+  deliveryAddress?: string;
+  deliveryDate?: string;
 }) {
   const t = translations[lang].product;
-  const message = buildOrderMessage(bouquetName, sizeLabel, t.messageTemplate);
+  const useDeliveryTemplate = !!(deliveryAddress || deliveryDate);
+  const message = buildOrderMessage(
+    bouquetName,
+    sizeLabel,
+    t.messageTemplate,
+    useDeliveryTemplate
+      ? {
+          address: deliveryAddress,
+          date: deliveryDate,
+          templateWithDelivery: t.messageTemplateWithDelivery,
+        }
+      : undefined
+  );
 
   return (
     <div className="order-buttons">
       <p className="order-via">{t.orderVia}</p>
       <div className="order-grid">
-        {CHANNELS.map(({ id, getUrl, labelKey }) => (
+        {CHANNELS.map(({ id, getUrl, labelKey, Icon, color }) => (
           <a
             key={id}
             href={getUrl(message)}
             target="_blank"
             rel="noopener noreferrer"
             className="order-btn"
+            title={t[labelKey]}
           >
-            {t[labelKey]}
+            <span className="order-btn-icon" style={{ color }}>
+              <Icon size={22} />
+            </span>
+            <span className="order-btn-label">{t[labelKey]}</span>
           </a>
         ))}
       </div>
@@ -57,16 +76,19 @@ export function MessengerOrderButtons({
         }
         .order-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 10px;
         }
         .order-btn {
-          display: block;
-          padding: 14px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 14px;
           background: var(--surface);
           border: 2px solid var(--border);
           border-radius: var(--radius-sm);
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           font-weight: 600;
           color: var(--text);
           text-align: center;
@@ -76,9 +98,21 @@ export function MessengerOrderButtons({
           border-color: var(--accent);
           background: var(--accent-soft);
         }
-        @media (min-width: 480px) {
+        .order-btn-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .order-btn-label {
+          white-space: nowrap;
+        }
+        @media (max-width: 480px) {
           .order-grid {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: 1fr;
+          }
+          .order-btn-label {
+            font-size: 0.9rem;
           }
         }
       `}</style>

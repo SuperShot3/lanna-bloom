@@ -1,7 +1,7 @@
 # To DO 
 
-Add adress and date delivery at bouquetCard
-Add social media icons at header 
+~~Add adress and date delivery at bouquetCard~~ ✓
+~~Add social media icons at header~~ ✓
 Can image of choses flowers chages according size option that choosen by user.
 
 Descriptuion 

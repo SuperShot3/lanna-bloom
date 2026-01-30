@@ -1,33 +1,31 @@
 'use client';
 
+import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
+
 const MESSENGERS = [
   {
     id: 'line',
     name: 'LINE',
     href: 'https://line.me/R/ti/p/@yourshop',
-    icon: 'LINE',
     ariaLabel: 'Contact us on LINE',
+    Icon: LineIcon,
+    color: '#00B900',
   },
   {
     id: 'whatsapp',
     name: 'WhatsApp',
     href: 'https://wa.me/66812345678',
-    icon: 'WhatsApp',
     ariaLabel: 'Contact us on WhatsApp',
+    Icon: WhatsAppIcon,
+    color: '#25D366',
   },
   {
     id: 'telegram',
     name: 'Telegram',
     href: 'https://t.me/yourshop',
-    icon: 'Telegram',
     ariaLabel: 'Contact us on Telegram',
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    href: 'https://facebook.com/yourshop',
-    icon: 'Facebook',
-    ariaLabel: 'Our Facebook page',
+    Icon: TelegramIcon,
+    color: '#26A5E4',
   },
 ] as const;
 
@@ -43,8 +41,9 @@ export function MessengerLinks() {
           className="messenger-link"
           aria-label={m.ariaLabel}
           title={m.name}
+          style={{ color: m.color }}
         >
-          <span className="messenger-icon">{m.icon.charAt(0)}</span>
+          <m.Icon size={24} className="messenger-icon" />
         </a>
       ))}
       <style jsx>{`
@@ -61,9 +60,6 @@ export function MessengerLinks() {
           height: 40px;
           border-radius: var(--radius-sm);
           background: var(--pastel-cream);
-          color: var(--text);
-          font-size: 0.85rem;
-          font-weight: 600;
           transition: background 0.2s, transform 0.15s;
         }
         .messenger-link:hover {
@@ -71,7 +67,17 @@ export function MessengerLinks() {
           transform: scale(1.05);
         }
         .messenger-icon {
-          line-height: 1;
+          flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+          .messenger-link {
+            width: 36px;
+            height: 36px;
+          }
+          .messenger-icon {
+            width: 20px;
+            height: 20px;
+          }
         }
       `}</style>
     </div>
