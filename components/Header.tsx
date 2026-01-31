@@ -73,11 +73,11 @@ export function Header({ lang }: { lang: Locale }) {
             <Image
               src="/logo_full_master.png"
               alt="Lanna Bloom"
-              width={93}
-              height={28}
+              width={60}
+              height={50}
               className="logo-img"
               priority
-              style={{ height: isScrolled ? 16 : isMobile ? 26 : 28, width: 'auto' }}
+              sizes="(max-width: 600px) 60px, 60px"
             />
           </Link>
           <nav className="nav nav--desktop" aria-label="Main">
@@ -203,21 +203,24 @@ export function Header({ lang }: { lang: Locale }) {
           align-items: center;
           flex-shrink: 0;
           min-height: 0;
-          max-height: 28px;
+          max-height: 50px;
         }
         .header--scrolled .logo {
-          max-height: 16px;
+          max-height: 30px;
         }
         .logo-img {
-          height: 28px !important;
-          width: auto !important;
-          max-height: 28px;
+          display: block;
+          height: 50px !important;
+          width: 60px !important;
+          max-height: 50px;
           object-fit: contain;
+          object-position: left center;
           transition: height 0.25s ease;
         }
         .header--scrolled .logo-img {
-          height: 16px !important;
-          max-height: 16px;
+          height: 30px !important;
+          width: 36px !important;
+          max-height: 30px;
         }
         .nav--desktop {
           display: flex;
@@ -287,18 +290,20 @@ export function Header({ lang }: { lang: Locale }) {
             padding: 3px 12px;
           }
           .logo {
-            max-height: 26px;
+            max-height: 50px;
           }
           .header--scrolled .logo {
-            max-height: 14px;
+            max-height: 30px;
           }
           .logo-img {
-            height: 26px !important;
-            max-height: 26px;
+            height: 50px !important;
+            width: 60px !important;
+            max-height: 50px;
           }
           .header--scrolled .logo-img {
-            height: 14px !important;
-            max-height: 14px;
+            height: 30px !important;
+            width: 36px !important;
+            max-height: 30px;
           }
           .burger {
             width: 32px;
@@ -328,7 +333,7 @@ export function Header({ lang }: { lang: Locale }) {
         .mobile-menu {
           position: fixed;
           inset: 0;
-          z-index: 99;
+          z-index: 110;
           pointer-events: none;
           visibility: hidden;
           transition: visibility 0.25s ease;
