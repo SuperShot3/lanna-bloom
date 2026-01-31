@@ -73,10 +73,11 @@ export function Header({ lang }: { lang: Locale }) {
             <Image
               src="/logo_full_master.png"
               alt="Lanna Bloom"
-              width={160}
-              height={48}
+              width={93}
+              height={28}
               className="logo-img"
               priority
+              style={{ height: isScrolled ? 16 : isMobile ? 26 : 28, width: 'auto' }}
             />
           </Link>
           <nav className="nav nav--desktop" aria-label="Main">
@@ -189,26 +190,34 @@ export function Header({ lang }: { lang: Locale }) {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          padding: 14px 20px;
-          min-height: 60px;
+          padding: 10px 20px;
+          min-height: 42px;
           transition: min-height 0.25s ease, padding 0.25s ease;
         }
         .header--scrolled .header-inner {
-          min-height: 48px;
-          padding: 10px 20px;
+          min-height: 24px;
+          padding: 5px 20px;
         }
         .logo {
           display: flex;
           align-items: center;
+          flex-shrink: 0;
+          min-height: 0;
+          max-height: 28px;
+        }
+        .header--scrolled .logo {
+          max-height: 16px;
         }
         .logo-img {
-          height: 40px;
-          width: auto;
+          height: 28px !important;
+          width: auto !important;
+          max-height: 28px;
           object-fit: contain;
           transition: height 0.25s ease;
         }
         .header--scrolled .logo-img {
-          height: 32px;
+          height: 16px !important;
+          max-height: 16px;
         }
         .nav--desktop {
           display: flex;
@@ -270,36 +279,44 @@ export function Header({ lang }: { lang: Locale }) {
             display: none;
           }
           .header-inner {
-            padding: 12px 16px;
-            min-height: 56px;
+            padding: 8px 16px;
+            min-height: 40px;
           }
           .header--scrolled .header-inner {
-            min-height: 36px;
-            padding: 6px 12px;
+            min-height: 18px;
+            padding: 3px 12px;
+          }
+          .logo {
+            max-height: 26px;
+          }
+          .header--scrolled .logo {
+            max-height: 14px;
           }
           .logo-img {
-            height: 36px;
+            height: 26px !important;
+            max-height: 26px;
           }
           .header--scrolled .logo-img {
-            height: 22px;
+            height: 14px !important;
+            max-height: 14px;
           }
           .burger {
-            width: 36px;
-            height: 36px;
-            min-width: 36px;
-            min-height: 36px;
-          }
-          .header--scrolled .burger {
             width: 32px;
             height: 32px;
             min-width: 32px;
             min-height: 32px;
           }
+          .header--scrolled .burger {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            min-height: 28px;
+          }
           .burger-line {
-            width: 18px;
+            width: 16px;
           }
           .header--scrolled .burger-line {
-            width: 16px;
+            width: 14px;
           }
         }
         @media (min-width: 601px) {
@@ -338,7 +355,7 @@ export function Header({ lang }: { lang: Locale }) {
           width: min(280px, 85vw);
           background: var(--surface);
           box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
-          padding: 72px 24px 24px;
+          padding: 52px 24px 24px;
           display: flex;
           flex-direction: column;
           gap: 24px;
