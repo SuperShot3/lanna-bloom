@@ -29,6 +29,26 @@ export const bouquet = defineType({
       },
     },
     {
+      name: 'partner',
+      title: 'Partner',
+      type: 'reference',
+      to: [{ type: 'partner' }],
+      description: 'Leave empty for Lanna Bloom own bouquets. Set for partner-uploaded bouquets.',
+    },
+    {
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Pending review', value: 'pending_review' },
+          { title: 'Approved', value: 'approved' },
+        ],
+      },
+      initialValue: 'approved',
+      description: 'Only approved bouquets appear on the public catalog. Partner uploads start as pending_review.',
+    },
+    {
       name: 'images',
       title: 'Images',
       type: 'array',
@@ -47,15 +67,18 @@ export const bouquet = defineType({
             { name: 'label', title: 'Label', type: 'string' },
             { name: 'price', title: 'Price (THB)', type: 'number' },
             { name: 'description', title: 'Description', type: 'string' },
+            { name: 'preparationTime', title: 'Preparation time (minutes)', type: 'number' },
+            { name: 'availability', title: 'Availability', type: 'boolean', initialValue: true },
           ],
         }),
       ],
     },
   ],
   preview: {
-    select: { title: 'nameEn' },
-    prepare({ title }) {
-      return { title: title || 'Bouquet' };
+    select: { title: 'nameEn', status: 'status', partner: 'partner' },
+    prepare({ title, status, partner }) {
+      const sub = [partner ? 'Partner' : 'Lanna Bloom', status].filter(Boolean).join(' · ');
+      return { title: title || 'Bouquet', subtitle: sub };
     },
   },
 });

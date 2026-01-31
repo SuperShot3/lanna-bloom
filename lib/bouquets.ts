@@ -5,7 +5,11 @@ export interface BouquetSize {
   label: string;
   price: number;
   description: string;
+  preparationTime?: number;
+  availability?: boolean;
 }
+
+export type BouquetStatus = 'pending_review' | 'approved';
 
 export interface Bouquet {
   id: string;
@@ -19,6 +23,23 @@ export interface Bouquet {
   category: string;
   images: string[];
   sizes: BouquetSize[];
+  /** Partner reference ID; undefined for Lanna Bloom own bouquets */
+  partnerId?: string;
+  /** Only approved bouquets appear on public catalog; missing = approved (backward compat) */
+  status?: BouquetStatus;
+}
+
+export type PartnerStatus = 'pending_review' | 'approved' | 'disabled';
+
+export interface Partner {
+  id: string;
+  shopName: string;
+  contactName: string;
+  phoneNumber: string;
+  lineOrWhatsapp?: string;
+  shopAddress?: string;
+  city: string;
+  status: PartnerStatus;
 }
 
 // Placeholder images (Unsplash) – replace with your CMS URLs later

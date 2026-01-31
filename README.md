@@ -1,16 +1,26 @@
 # To DO 
 
 Can image of choses flowers chages according size option that choosen by user.
-i dislike hero page need to make some new 
+
 categories such us romatic and gifts are empty we can filled them with affilate products 
+
+Header is still to big 
+
+on iphone is not well centred as category want to make it different way. 
+
+Button choose button is not good 
+
+create contact social media (how customer will contact us via facebook or phone coz WhatsApp need new number i dont have)
+
+create design for small stiker that can be placed in bar or something to promte website. 
+
+talk to seller tommorow
 
 Descriptuion 
 
 # Data Base access 
 
 go to localhost:3000/studio - use gmail adress 
-
-
 
 
 # Lanna Bloom
@@ -49,6 +59,7 @@ The app includes Sanity Studio at **[/studio](http://localhost:3000/studio)** fo
 1. **Env**: `.env.local` should have:
    - `NEXT_PUBLIC_SANITY_PROJECT_ID=moaf1lxq`
    - `NEXT_PUBLIC_SANITY_DATASET=production`
+   - `SANITY_API_WRITE_TOKEN` — required for partner registration and partner bouquet uploads (create a token with Editor/Admin in [sanity.io/manage](https://www.sanity.io/manage) → API → Tokens)
 
 2. **Install and run**:
    ```bash
@@ -59,7 +70,7 @@ The app includes Sanity Studio at **[/studio](http://localhost:3000/studio)** fo
 
 3. **CORS**: In [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **CORS origins**, add `http://localhost:3000` with **Allow credentials** so the Studio can talk to the Content Lake.
 
-4. **Schema**: The **Bouquet** document type has: slug, name (EN/TH), description (EN/TH), composition (EN/TH), category, images (gallery), and sizes (S/M/L/XL with price and description). Add bouquets in the Studio; the site fetches from Sanity.
+4. **Schema**: The **Bouquet** document type has: slug, name (EN/TH), description (EN/TH), composition (EN/TH), category, partner (optional reference), status (pending_review / approved — only approved show on the public catalog), images (gallery), and sizes (S/M/L/XL with price, description, preparation time, availability). The **Partner** document type is used for the partner registration flow; approve partners in Studio to give them dashboard access.
 
 ## Updating the catalog (new flowers)
 
@@ -70,6 +81,14 @@ When you add or edit flowers in Sanity Studio:
 - **Immediate update**: To force a full refresh without waiting, run `npm run build` and redeploy.
 
 Product URLs use the **slug** you set in Sanity (e.g. `/en/catalog/red-roses`). New slugs work as soon as the catalog list updates; no code changes required.
+
+## Partner Registration & Upload
+
+- **Public entry**: Header link “Register as a Partner” → `/[lang]/partner/register`.
+- **Registration**: Form (shop name, contact, phone, LINE/WhatsApp, address, city) saves a **Partner** document in Sanity with status `pending_review`. After submit, the success page shows a dashboard link (active once approved).
+- **Approval**: In Sanity Studio, open **Partner** documents and set status to **Approved** (or **Disabled**). Only approved partners can use the dashboard.
+- **Partner dashboard**: `/[lang]/partner/dashboard/[partnerId]` — list of the partner’s bouquets and “Add bouquet”. Each new or edited bouquet has status `pending_review`; only **approved** bouquets appear on the public catalog (approve in Studio on the Bouquet document).
+- **Bouquet form**: Name (EN/TH), description, composition, category, 1–3 images, sizes (S/M/L/XL with price, description, preparation time, availability). Images are uploaded to Sanity; on edit, leaving image fields empty keeps existing images.
 
 ## Project Structure
 

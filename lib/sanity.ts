@@ -1,9 +1,15 @@
 import { createClient } from 'next-sanity';
 import imageUrlBuilder from '@sanity/image-url';
-import type { Bouquet, BouquetSize } from './bouquets';
+import type { Bouquet, BouquetSize, Partner, PartnerStatus } from './bouquets';
 
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!;
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!;
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
+
+if (!projectId || !dataset) {
+  throw new Error(
+    'Missing Sanity env: set NEXT_PUBLIC_SANITY_PROJECT_ID and NEXT_PUBLIC_SANITY_DATASET in .env.local (see .env.example)'
+  );
+}
 
 export const client = createClient({
   projectId,
@@ -29,8 +35,17 @@ type SanityBouquet = {
   compositionEn?: string;
   compositionTh?: string;
   category?: string;
+  partner?: { _ref?: string };
+  status?: string;
   images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-  sizes?: Array<{ key?: string; label?: string; price?: number; description?: string }>;
+  sizes?: Array<{
+    key?: string;
+    label?: string;
+    price?: number;
+    description?: string;
+    preparationTime?: number;
+    availability?: boolean;
+  }>;
 };
 
 function mapToBouquet(doc: SanityBouquet): Bouquet {
@@ -40,6 +55,8 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     label: s.label ?? 'M',
     price: s.price ?? 0,
     description: s.description ?? '',
+    preparationTime: s.preparationTime,
+    availability: s.availability ?? true,
   }));
   const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
   const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
@@ -56,10 +73,13 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     category: doc.category ?? 'mixed',
     images: imageUrls.length ? imageUrls : [placeholder],
     sizes: sizes.length ? sizes : [{ key: 'm', label: 'M', price: 0, description: '' }],
+    partnerId: doc.partner?._ref,
+    status: doc.status === 'pending_review' || doc.status === 'approved' ? doc.status : undefined,
   };
 }
 
-const bouquetsQuery = `*[_type == "bouquet"] | order(nameEn asc) {
+/** Public catalog: only approved bouquets; missing status = approved (backward compat) */
+const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] | order(nameEn asc) {
   _id,
   slug,
   nameEn,
@@ -73,7 +93,8 @@ const bouquetsQuery = `*[_type == "bouquet"] | order(nameEn asc) {
   sizes
 }`;
 
-const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug][0] {
+/** Public product page: only if approved (or no status) */
+const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!defined(status) || status == "approved")][0] {
   _id,
   slug,
   nameEn,
@@ -88,18 +109,113 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug][0] {
 }`;
 
 export async function getBouquetsFromSanity(): Promise<Bouquet[]> {
-  const docs = await client.fetch<SanityBouquet[]>(bouquetsQuery);
-  return docs.map(mapToBouquet);
+  try {
+    const docs = await client.fetch<SanityBouquet[]>(bouquetsQuery);
+    return (docs ?? []).map(mapToBouquet);
+  } catch (err) {
+    console.error('[Sanity] getBouquetsFromSanity failed:', err);
+    return [];
+  }
 }
 
 export async function getBouquetBySlugFromSanity(slug: string): Promise<Bouquet | null> {
-  const doc = await client.fetch<SanityBouquet | null>(bouquetBySlugQuery, { slug });
-  if (!doc) return null;
-  return mapToBouquet(doc);
+  try {
+    const doc = await client.fetch<SanityBouquet | null>(bouquetBySlugQuery, { slug });
+    if (!doc) return null;
+    return mapToBouquet(doc);
+  } catch (err) {
+    console.error('[Sanity] getBouquetBySlugFromSanity failed:', err);
+    return null;
+  }
 }
 
 export async function getBouquetsByCategoryFromSanity(category: string): Promise<Bouquet[]> {
   const all = await getBouquetsFromSanity();
   if (!category || category === 'all') return all;
   return all.filter((b) => b.category === category);
+}
+
+// —— Partner (read) ——
+type SanityPartner = {
+  _id: string;
+  shopName?: string;
+  contactName?: string;
+  phoneNumber?: string;
+  lineOrWhatsapp?: string;
+  shopAddress?: string;
+  city?: string;
+  status?: string;
+};
+
+function mapToPartner(doc: SanityPartner): Partner {
+  return {
+    id: doc._id,
+    shopName: doc.shopName ?? '',
+    contactName: doc.contactName ?? '',
+    phoneNumber: doc.phoneNumber ?? '',
+    lineOrWhatsapp: doc.lineOrWhatsapp,
+    shopAddress: doc.shopAddress,
+    city: doc.city ?? 'Chiang Mai',
+    status: (doc.status as PartnerStatus) ?? 'pending_review',
+  };
+}
+
+export async function getPartnerById(partnerId: string): Promise<Partner | null> {
+  try {
+    const doc = await client.fetch<SanityPartner | null>(
+      `*[_type == "partner" && _id == $id][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status }`,
+      { id: partnerId }
+    );
+    if (!doc) return null;
+    return mapToPartner(doc);
+  } catch (err) {
+    console.error('[Sanity] getPartnerById failed:', err);
+    return null;
+  }
+}
+
+/** All bouquets for a partner (any status) — for partner dashboard */
+export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet[]> {
+  try {
+    const docs = await client.fetch<SanityBouquet[]>(
+      `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, partner, status, images, sizes
+      }`,
+      { partnerId }
+    );
+    return (docs ?? []).map(mapToBouquet);
+  } catch (err) {
+    console.error('[Sanity] getBouquetsByPartnerId failed:', err);
+    return [];
+  }
+}
+
+/** Single bouquet by ID (for partner edit) — no approval filter */
+export async function getBouquetById(bouquetId: string): Promise<Bouquet | null> {
+  try {
+    const doc = await client.fetch<SanityBouquet | null>(
+      `*[_type == "bouquet" && _id == $id][0] {
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, partner, status, images, sizes
+      }`,
+      { id: bouquetId }
+    );
+    if (!doc) return null;
+    return mapToBouquet(doc);
+  } catch (err) {
+    console.error('[Sanity] getBouquetById failed:', err);
+    return null;
+  }
+}
+
+/** Get existing image asset refs for a bouquet (for edit: keep existing images when no new uploads). */
+export async function getBouquetImageRefs(bouquetId: string): Promise<string[]> {
+  try {
+    const refs = await client.fetch<string[]>(
+      `*[_type == "bouquet" && _id == $id][0].images[].asset._ref`,
+      { id: bouquetId }
+    );
+    return Array.isArray(refs) ? refs.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
 }

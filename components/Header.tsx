@@ -16,6 +16,7 @@ export function Header({ lang }: { lang: Locale }) {
   const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
+  const partnerRegisterHref = `/${lang}/partner/register`;
   const t = translations[lang].nav;
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -91,6 +92,12 @@ export function Header({ lang }: { lang: Locale }) {
             >
               {t.catalog}
             </Link>
+            <Link
+              href={partnerRegisterHref}
+              className={basePath.startsWith('/partner') ? 'nav-link active' : 'nav-link nav-link--partner'}
+            >
+              {t.partnerRegister}
+            </Link>
           </nav>
           {showActions && (
             <div className="header-actions">
@@ -144,6 +151,13 @@ export function Header({ lang }: { lang: Locale }) {
               onClick={() => setMenuOpen(false)}
             >
               {t.catalog}
+            </Link>
+            <Link
+              href={partnerRegisterHref}
+              className={`mobile-menu-link ${basePath.startsWith('/partner') ? 'active' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {t.partnerRegister}
             </Link>
           </nav>
           <div className="mobile-menu-actions">
@@ -257,9 +271,35 @@ export function Header({ lang }: { lang: Locale }) {
           }
           .header-inner {
             padding: 12px 16px;
+            min-height: 56px;
           }
           .header--scrolled .header-inner {
-            padding: 8px 16px;
+            min-height: 36px;
+            padding: 6px 12px;
+          }
+          .logo-img {
+            height: 36px;
+          }
+          .header--scrolled .logo-img {
+            height: 22px;
+          }
+          .burger {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+          }
+          .header--scrolled .burger {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            min-height: 32px;
+          }
+          .burger-line {
+            width: 18px;
+          }
+          .header--scrolled .burger-line {
+            width: 16px;
           }
         }
         @media (min-width: 601px) {
