@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Locale, translations } from '@/lib/i18n';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessengerLinks } from './MessengerLinks';
+import { DeliveryModal } from './DeliveryModal';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 600;
@@ -22,7 +23,9 @@ export function Header({ lang }: { lang: Locale }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const deliveryTriggerRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -94,6 +97,19 @@ export function Header({ lang }: { lang: Locale }) {
               {t.catalog}
             </Link>
             <Link
+              href="#delivery-info"
+              ref={deliveryTriggerRef}
+              className="nav-link"
+              onClick={(e) => {
+                e.preventDefault();
+                setDeliveryModalOpen(true);
+              }}
+              aria-haspopup="dialog"
+              aria-expanded={deliveryModalOpen}
+            >
+              {t.delivery}
+            </Link>
+            <Link
               href={partnerRegisterHref}
               className={basePath.startsWith('/partner') ? 'nav-link active' : 'nav-link nav-link--partner'}
             >
@@ -154,6 +170,18 @@ export function Header({ lang }: { lang: Locale }) {
               {t.catalog}
             </Link>
             <Link
+              href="#delivery-info"
+              className="mobile-menu-link"
+              onClick={(e) => {
+                e.preventDefault();
+                setDeliveryModalOpen(true);
+                setMenuOpen(false);
+              }}
+              aria-haspopup="dialog"
+            >
+              {t.delivery}
+            </Link>
+            <Link
               href={partnerRegisterHref}
               className={`mobile-menu-link ${basePath.startsWith('/partner') ? 'active' : ''}`}
               onClick={() => setMenuOpen(false)}
@@ -167,6 +195,13 @@ export function Header({ lang }: { lang: Locale }) {
           </div>
         </div>
       </div>
+
+      <DeliveryModal
+        lang={lang}
+        isOpen={deliveryModalOpen}
+        onClose={() => setDeliveryModalOpen(false)}
+        triggerRef={deliveryTriggerRef}
+      />
 
       <style jsx>{`
         .header {
@@ -191,7 +226,7 @@ export function Header({ lang }: { lang: Locale }) {
           justify-content: space-between;
           gap: 16px;
           padding: 10px 20px;
-          min-height: 42px;
+          min-height: 44px;
           transition: min-height 0.25s ease, padding 0.25s ease;
         }
         .header--scrolled .header-inner {
@@ -227,10 +262,24 @@ export function Header({ lang }: { lang: Locale }) {
           gap: 20px;
         }
         .nav-link {
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+          padding: 8px 4px;
           font-size: 0.95rem;
           font-weight: 500;
           color: var(--text-muted);
           transition: color 0.2s;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-family: inherit;
+          text-decoration: none;
+        }
+        .nav-link:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
+          border-radius: var(--radius-sm);
         }
         .nav-link:hover,
         .nav-link.active {
@@ -376,11 +425,24 @@ export function Header({ lang }: { lang: Locale }) {
           gap: 8px;
         }
         .mobile-menu-link {
+          display: block;
+          width: 100%;
+          text-align: left;
           font-size: 1.1rem;
           font-weight: 500;
           color: var(--text);
           padding: 12px 0;
+          min-height: 44px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-family: inherit;
+          text-decoration: none;
           border-bottom: 1px solid var(--border);
+        }
+        .mobile-menu-link:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
         .mobile-menu-link.active {
           color: var(--accent);

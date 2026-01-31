@@ -78,6 +78,9 @@ export interface CreateBouquetInput {
   compositionEn?: string;
   compositionTh?: string;
   category: string;
+  colors?: string[];
+  flowerTypes?: string[];
+  occasion?: string;
   imageAssetIds: string[]; // 1–3 asset _ids from uploadImageToSanity
   sizes: BouquetSizeInput[];
 }
@@ -111,6 +114,9 @@ export async function createBouquet(input: CreateBouquetInput): Promise<string> 
     compositionEn: (input.compositionEn || '').trim(),
     compositionTh: (input.compositionTh || '').trim(),
     category: input.category || 'mixed',
+    ...(input.colors?.length ? { colors: input.colors } : {}),
+    ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : {}),
+    ...(input.occasion ? { occasion: input.occasion } : {}),
     partner: { _type: 'reference', _ref: input.partnerId },
     status: 'pending_review',
     images,
@@ -135,6 +141,9 @@ export interface UpdateBouquetInput {
   compositionEn?: string;
   compositionTh?: string;
   category: string;
+  colors?: string[];
+  flowerTypes?: string[];
+  occasion?: string;
   imageAssetIds: string[];
   sizes: BouquetSizeInput[];
 }
@@ -157,6 +166,9 @@ export async function updateBouquet(bouquetId: string, input: UpdateBouquetInput
       compositionEn: (input.compositionEn || '').trim(),
       compositionTh: (input.compositionTh || '').trim(),
       category: input.category || 'mixed',
+      ...(input.colors?.length ? { colors: input.colors } : {}),
+      ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : {}),
+      ...(input.occasion ? { occasion: input.occasion } : {}),
       status: 'pending_review',
       images,
       sizes: input.sizes.map((s) => ({

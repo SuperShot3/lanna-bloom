@@ -35,6 +35,9 @@ type SanityBouquet = {
   compositionEn?: string;
   compositionTh?: string;
   category?: string;
+  colors?: string[];
+  flowerTypes?: string[];
+  occasion?: string;
   partner?: { _ref?: string };
   status?: string;
   images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
@@ -71,6 +74,9 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     compositionEn: doc.compositionEn ?? '',
     compositionTh: doc.compositionTh ?? '',
     category: doc.category ?? 'mixed',
+    colors: Array.isArray(doc.colors) ? doc.colors : [],
+    flowerTypes: Array.isArray(doc.flowerTypes) ? doc.flowerTypes : [],
+    occasion: doc.occasion || undefined,
     images: imageUrls.length ? imageUrls : [placeholder],
     sizes: sizes.length ? sizes : [{ key: 'm', label: 'M', price: 0, description: '' }],
     partnerId: doc.partner?._ref,
@@ -89,6 +95,9 @@ const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "a
   compositionEn,
   compositionTh,
   category,
+  colors,
+  flowerTypes,
+  occasion,
   images,
   sizes
 }`;
@@ -104,6 +113,9 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   compositionEn,
   compositionTh,
   category,
+  colors,
+  flowerTypes,
+  occasion,
   images,
   sizes
 }`;
@@ -133,6 +145,116 @@ export async function getBouquetsByCategoryFromSanity(category: string): Promise
   const all = await getBouquetsFromSanity();
   if (!category || category === 'all') return all;
   return all.filter((b) => b.category === category);
+}
+
+const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] | order(_createdAt desc) [0...$limit] {
+  _id,
+  slug,
+  nameEn,
+  nameTh,
+  descriptionEn,
+  descriptionTh,
+  compositionEn,
+  compositionTh,
+  category,
+  colors,
+  flowerTypes,
+  occasion,
+  images,
+  sizes
+}`;
+
+/** Approved bouquets, newest first; for home "Popular" section */
+export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouquet[]> {
+  try {
+    const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery, { limit });
+    return (docs ?? []).map(mapToBouquet);
+  } catch (err) {
+    console.error('[Sanity] getPopularBouquetsFromSanity failed:', err);
+    return [];
+  }
+}
+
+export interface CatalogFilterParams {
+  category?: string;
+  colors?: string[];
+  types?: string[];
+  occasion?: string;
+  min?: number;
+  max?: number;
+  sort?: 'newest' | 'price_asc' | 'price_desc';
+}
+
+type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };
+
+const filteredBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")
+  && (!defined($category) || $category == "" || category == $category)
+  && (!defined($colors) || count($colors) == 0 || count((colors[])[@ in $colors]) > 0)
+  && (!defined($types) || count($types) == 0 || count((flowerTypes[])[@ in $types]) > 0)
+  && (!defined($occasion) || $occasion == "" || occasion == $occasion)
+] {
+  _id,
+  _createdAt,
+  slug,
+  nameEn,
+  nameTh,
+  descriptionEn,
+  descriptionTh,
+  compositionEn,
+  compositionTh,
+  category,
+  colors,
+  flowerTypes,
+  occasion,
+  images,
+  sizes
+}`;
+
+function minPriceFromSizes(sizes: BouquetSize[]): number {
+  if (!sizes?.length) return 0;
+  return Math.min(...sizes.map((s) => s.price ?? Infinity));
+}
+
+/** Catalog with filters and sort; price range applied in JS */
+export async function getBouquetsFilteredFromSanity(params: CatalogFilterParams): Promise<Bouquet[]> {
+  try {
+    const category = params.category && params.category !== 'all' ? params.category : undefined;
+    const colors = params.colors?.length ? params.colors : undefined;
+    const types = params.types?.length ? params.types : undefined;
+    const occasion = params.occasion ? params.occasion : undefined;
+
+    const docs = await client.fetch<SanityBouquetWithCreated[]>(filteredBouquetsQuery, {
+      category: category ?? '',
+      colors: colors ?? [],
+      types: types ?? [],
+      occasion: occasion ?? '',
+    });
+
+    let list = (docs ?? []).map(mapToBouquet);
+
+    if (params.min != null && params.min > 0) {
+      list = list.filter((b) => minPriceFromSizes(b.sizes) >= params.min!);
+    }
+    if (params.max != null && params.max > 0) {
+      list = list.filter((b) => minPriceFromSizes(b.sizes) <= params.max!);
+    }
+
+    const sort = params.sort || 'newest';
+    if (sort === 'newest') {
+      const withCreated = (docs ?? []).map((d, i) => ({ doc: d, bouquet: list[i] }));
+      withCreated.sort((a, b) => (b.doc._createdAt || '').localeCompare(a.doc._createdAt || ''));
+      list = withCreated.map((x) => x.bouquet);
+    } else if (sort === 'price_asc') {
+      list = [...list].sort((a, b) => minPriceFromSizes(a.sizes) - minPriceFromSizes(b.sizes));
+    } else if (sort === 'price_desc') {
+      list = [...list].sort((a, b) => minPriceFromSizes(b.sizes) - minPriceFromSizes(a.sizes));
+    }
+
+    return list;
+  } catch (err) {
+    console.error('[Sanity] getBouquetsFilteredFromSanity failed:', err);
+    return [];
+  }
 }
 
 // —— Partner (read) ——
@@ -179,7 +301,7 @@ export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet
   try {
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, partner, status, images, sizes
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
       { partnerId }
     );
@@ -195,7 +317,7 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
   try {
     const doc = await client.fetch<SanityBouquet | null>(
       `*[_type == "bouquet" && _id == $id][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, partner, status, images, sizes
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
       { id: bouquetId }
     );

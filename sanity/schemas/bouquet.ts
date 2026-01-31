@@ -29,6 +29,55 @@ export const bouquet = defineType({
       },
     },
     {
+      name: 'colors',
+      title: 'Colors',
+      type: 'array',
+      of: [{ type: 'string' }],
+      options: {
+        list: [
+          { title: 'Red', value: 'red' },
+          { title: 'Pink', value: 'pink' },
+          { title: 'White', value: 'white' },
+          { title: 'Yellow', value: 'yellow' },
+          { title: 'Purple', value: 'purple' },
+          { title: 'Orange', value: 'orange' },
+          { title: 'Mixed', value: 'mixed' },
+        ],
+      },
+    },
+    {
+      name: 'flowerTypes',
+      title: 'Flower types',
+      type: 'array',
+      of: [{ type: 'string' }],
+      options: {
+        list: [
+          { title: 'Rose', value: 'rose' },
+          { title: 'Tulip', value: 'tulip' },
+          { title: 'Lily', value: 'lily' },
+          { title: 'Orchid', value: 'orchid' },
+          { title: 'Sunflower', value: 'sunflower' },
+          { title: 'Mixed', value: 'mixed' },
+        ],
+      },
+    },
+    {
+      name: 'occasion',
+      title: 'Occasion',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Birthday', value: 'birthday' },
+          { title: 'Anniversary', value: 'anniversary' },
+          { title: 'Romantic', value: 'romantic' },
+          { title: 'Sympathy', value: 'sympathy' },
+          { title: 'Congratulations', value: 'congrats' },
+          { title: 'Get well', value: 'get_well' },
+        ],
+      },
+      description: 'Leave empty for any occasion.',
+    },
+    {
       name: 'partner',
       title: 'Partner',
       type: 'reference',

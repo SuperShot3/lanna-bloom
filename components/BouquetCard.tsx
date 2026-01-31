@@ -60,6 +60,11 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           display: block;
           color: inherit;
         }
+        .card-link:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
+          border-radius: var(--radius);
+        }
         .card-image-wrap {
           position: relative;
           aspect-ratio: 1;
@@ -98,10 +103,22 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           line-height: 1.35;
         }
         .card-cta {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40px;
+          padding: 8px 18px;
           font-size: 0.9rem;
           font-weight: 600;
           color: var(--accent);
-          display: inline-block;
+          background: transparent;
+          border: 2px solid var(--accent);
+          border-radius: 9999px;
+          transition: background 0.2s, color 0.2s, transform 0.2s;
+        }
+        .card-link:hover .card-cta {
+          background: var(--accent-soft);
+          color: var(--text);
         }
       `}</style>
     </article>

@@ -17,6 +17,18 @@ const CATEGORY_OPTIONS = [
   { value: 'sympathy', labelKey: 'sympathy' as const },
 ] as const;
 
+const COLOR_OPTIONS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
+const FLOWER_TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'mixed'] as const;
+const OCCASION_OPTIONS = [
+  { value: '', labelEn: 'Any' },
+  { value: 'birthday', labelEn: 'Birthday' },
+  { value: 'anniversary', labelEn: 'Anniversary' },
+  { value: 'romantic', labelEn: 'Romantic' },
+  { value: 'sympathy', labelEn: 'Sympathy' },
+  { value: 'congrats', labelEn: 'Congratulations' },
+  { value: 'get_well', labelEn: 'Get well' },
+] as const;
+
 const SIZE_KEYS: SizeKey[] = ['s', 'm', 'l', 'xl'];
 
 const defaultSizes: Array<BouquetSize & { preparationTime?: number; availability?: boolean }> = [
@@ -38,6 +50,9 @@ export interface BouquetFormProps {
     compositionEn: string;
     compositionTh: string;
     category: string;
+    colors?: string[];
+    flowerTypes?: string[];
+    occasion?: string;
     sizes: Array<BouquetSize & { preparationTime?: number; availability?: boolean }>;
   };
   action: (formData: FormData) => Promise<{ error?: string } | void>;
@@ -99,6 +114,10 @@ export function BouquetForm({
       }))
     );
     formData.set('sizes', json);
+    const colors = formData.getAll('colors') as string[];
+    const flowerTypes = formData.getAll('flowerTypes') as string[];
+    if (colors.length) formData.set('colors', colors.join(','));
+    if (flowerTypes.length) formData.set('flowerTypes', flowerTypes.join(','));
     const result = await action(formData);
     if (result?.error) setError(result.error);
   }
@@ -142,6 +161,48 @@ export function BouquetForm({
           {CATEGORY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {categories[opt.labelKey]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+        <legend>{t.colors}</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          {COLOR_OPTIONS.map((value) => (
+            <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input
+                type="checkbox"
+                name="colors"
+                value={value}
+                defaultChecked={initial?.colors?.includes(value)}
+              />
+              <span style={{ textTransform: 'capitalize' }}>{value}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+        <legend>{t.flowerTypes}</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          {FLOWER_TYPE_OPTIONS.map((value) => (
+            <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input
+                type="checkbox"
+                name="flowerTypes"
+                value={value}
+                defaultChecked={initial?.flowerTypes?.includes(value)}
+              />
+              <span style={{ textTransform: 'capitalize' }}>{value}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label>
+        {t.occasion}
+        <select name="occasion" defaultValue={initial?.occasion ?? ''}>
+          {OCCASION_OPTIONS.map((opt) => (
+            <option key={opt.value || '_any'} value={opt.value}>
+              {opt.labelEn}
             </option>
           ))}
         </select>

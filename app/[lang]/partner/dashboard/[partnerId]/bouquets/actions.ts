@@ -82,6 +82,12 @@ export async function createBouquetAction(formData: FormData) {
   const sizes = parseSizes(formData);
   if (sizes.length === 0) return { error: 'At least one size is required' };
 
+  const colorsRaw = formData.get('colors') as string | null;
+  const colors = colorsRaw ? colorsRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+  const flowerTypesRaw = formData.get('flowerTypes') as string | null;
+  const flowerTypes = flowerTypesRaw ? flowerTypesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+  const occasion = (formData.get('occasion') as string)?.trim() || undefined;
+
   try {
     const bouquetId = await createBouquet({
       partnerId,
@@ -92,6 +98,9 @@ export async function createBouquetAction(formData: FormData) {
       compositionEn: (formData.get('compositionEn') as string)?.trim(),
       compositionTh: (formData.get('compositionTh') as string)?.trim(),
       category: (formData.get('category') as string) || 'mixed',
+      colors,
+      flowerTypes,
+      occasion,
       imageAssetIds,
       sizes,
     });
@@ -132,6 +141,12 @@ export async function updateBouquetAction(formData: FormData) {
   const sizes = parseSizes(formData);
   if (sizes.length === 0) return { error: 'At least one size is required' };
 
+  const colorsRaw = formData.get('colors') as string | null;
+  const colors = colorsRaw ? colorsRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+  const flowerTypesRaw = formData.get('flowerTypes') as string | null;
+  const flowerTypes = flowerTypesRaw ? flowerTypesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+  const occasion = (formData.get('occasion') as string)?.trim() || undefined;
+
   try {
     await updateBouquet(bouquetId, {
       nameEn,
@@ -141,6 +156,9 @@ export async function updateBouquetAction(formData: FormData) {
       compositionEn: (formData.get('compositionEn') as string)?.trim(),
       compositionTh: (formData.get('compositionTh') as string)?.trim(),
       category: (formData.get('category') as string) || 'mixed',
+      colors,
+      flowerTypes,
+      occasion,
       imageAssetIds,
       sizes,
     });

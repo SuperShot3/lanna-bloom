@@ -15,7 +15,6 @@ export function Hero({ lang }: { lang: Locale }) {
         <h1 className="hero-headline">{t.headline}</h1>
         <p className="hero-subline">{t.subline}</p>
         <Link href={catalogHref} className="hero-cta">
-          <span className="hero-cta-icon" aria-hidden>🌸</span>
           {t.cta}
         </Link>
         <p className="hero-trust">{t.trustLine}</p>
@@ -23,7 +22,7 @@ export function Hero({ lang }: { lang: Locale }) {
       <style jsx>{`
         .hero {
           position: relative;
-          padding: 32px 0 28px;
+          padding: 28px 0 24px;
           text-align: center;
           overflow: hidden;
         }
@@ -52,9 +51,9 @@ export function Hero({ lang }: { lang: Locale }) {
           font-family: var(--font-serif);
           font-size: clamp(1.625rem, 4.5vw, 2.25rem);
           font-weight: 600;
-          line-height: 1.3;
+          line-height: 1.28;
           color: var(--text);
-          margin: 0 0 8px;
+          margin: 0 0 6px;
           max-width: 12em;
           margin-left: auto;
           margin-right: auto;
@@ -64,7 +63,7 @@ export function Hero({ lang }: { lang: Locale }) {
           font-weight: 400;
           color: var(--text-muted);
           line-height: 1.45;
-          margin: 0 0 20px;
+          margin: 0 0 18px;
         }
         .hero-cta {
           display: inline-flex;
@@ -73,40 +72,40 @@ export function Hero({ lang }: { lang: Locale }) {
           gap: 8px;
           width: 100%;
           max-width: 320px;
-          height: 50px;
-          padding: 0 24px;
+          min-height: 50px;
+          height: auto;
+          padding: 14px 32px;
+          box-sizing: border-box;
           background: var(--accent);
           color: #fff;
-          font-weight: 600;
-          font-size: 1rem;
+          font-weight: 700;
+          font-size: 1.05rem;
+          line-height: 1.2;
           border-radius: 9999px;
-          box-shadow: 0 4px 14px rgba(196, 167, 125, 0.35);
+          border: 2px solid #a88b5c;
+          box-shadow: 0 4px 0 #a88b5c, 0 6px 20px rgba(45, 42, 38, 0.2);
           transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+          text-decoration: none;
+          appearance: none;
         }
         .hero-cta:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(196, 167, 125, 0.4);
+          box-shadow: 0 6px 0 #a88b5c, 0 8px 24px rgba(45, 42, 38, 0.25);
+        }
+        .hero-cta:focus-visible {
+          outline: 3px solid var(--text);
+          outline-offset: 3px;
         }
         .hero-cta:active {
-          opacity: 0.96;
-        }
-        .hero-cta-icon {
-          font-size: 1.2rem;
-          line-height: 1;
+          transform: translateY(1px);
+          box-shadow: 0 2px 0 #a88b5c, 0 4px 12px rgba(45, 42, 38, 0.2);
+          opacity: 0.98;
         }
         .hero-trust {
           font-size: 0.8rem;
           color: var(--text-muted);
-          margin: 12px 0 0;
+          margin: 10px 0 0;
           font-weight: 400;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-        }
-        .hero-trust::before {
-          content: '⭐';
-          font-size: 0.85rem;
         }
         @media (min-width: 430px) {
           .hero {

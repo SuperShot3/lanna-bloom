@@ -21,6 +21,10 @@ export interface Bouquet {
   compositionEn: string;
   compositionTh: string;
   category: string;
+  /** Filter attributes */
+  colors?: string[];
+  flowerTypes?: string[];
+  occasion?: string;
   images: string[];
   sizes: BouquetSize[];
   /** Partner reference ID; undefined for Lanna Bloom own bouquets */
