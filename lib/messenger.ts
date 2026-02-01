@@ -2,10 +2,10 @@
  * Build messenger deep links with pre-filled order message.
  * Replace phone numbers and handles with your real ones.
  */
-const WHATSAPP_PHONE = '6952572645'; // E.164, no +
-const LINE_AT = 'yourshop';
-const TELEGRAM_USER = '66952572645';
-const FACEBOOK_PAGE = 'yourshop';
+const WHATSAPP_PHONE = '66952572645'; // E.164, no +
+const LINE_AT = 'yourshop'; // Replace with your LINE ID when you have one
+const TELEGRAM_USER = 'konstantinMrk'; // Telegram username (no @)
+const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
 
 function encode(text: string): string {
   return encodeURIComponent(text);
