@@ -1,10 +1,54 @@
 /**
  * Chiang Mai province districts (amphoe). City is fixed: Chiang Mai only.
  */
+
+/** Shop address — reference only; not used for real distance in v1. */
+export const SHOP_ADDRESS =
+  '90 Wichayanon Rd, Tambon Chang Moi, Mueang Chiang Mai District, Chiang Mai 50300';
+
+export const PREP_MINUTES = 30;
+
+export type DeliveryTier = 'near' | 'mid' | 'far';
+export type DeliveryType = 'standard' | 'priority';
+
+/** Temporary estimate grouping (v1 — may be adjusted). Near = close to shop; far = remote. */
+const NEAR_IDS = new Set<string>(['mueang-chiang-mai']);
+const FAR_IDS = new Set<string>([
+  'fang',
+  'omkoi',
+  'wiang-haeng',
+  'doi-tao',
+  'galyani-vadhana',
+  'mae-ai',
+  'chiang-dao',
+  'mae-chaem',
+  'samoeng',
+  'chai-prakan',
+]);
+
 export interface District {
   id: string;
   nameEn: string;
   nameTh: string;
+}
+
+export function getDeliveryTier(district: District): DeliveryTier {
+  if (NEAR_IDS.has(district.id)) return 'near';
+  if (FAR_IDS.has(district.id)) return 'far';
+  return 'mid';
+}
+
+export function getTotalTimeRangeMinutes(
+  tier: DeliveryTier,
+  deliveryType: DeliveryType
+): { minTotal: number; maxTotal: number } {
+  if (tier === 'near') {
+    return deliveryType === 'standard' ? { minTotal: 45, maxTotal: 55 } : { minTotal: 55, maxTotal: 70 };
+  }
+  if (tier === 'mid') {
+    return deliveryType === 'standard' ? { minTotal: 60, maxTotal: 80 } : { minTotal: 65, maxTotal: 85 };
+  }
+  return deliveryType === 'standard' ? { minTotal: 100, maxTotal: 125 } : { minTotal: 90, maxTotal: 110 };
 }
 
 export const CITY_EN = 'Chiang Mai';

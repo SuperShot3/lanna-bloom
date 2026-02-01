@@ -32,15 +32,24 @@ export function buildOrderMessage(
   bouquetName: string,
   sizeLabel: string,
   template: string,
-  options?: { address?: string; date?: string; templateWithDelivery?: string }
+  options?: {
+    address?: string;
+    date?: string;
+    templateWithDelivery?: string;
+    addOnsSummary?: string;
+  }
 ): string {
   const address = options?.address ?? '';
   const date = options?.date ?? '';
   const useDeliveryTemplate = (address || date) && options?.templateWithDelivery;
   const tpl = useDeliveryTemplate ? options!.templateWithDelivery! : template;
-  return tpl
+  let message = tpl
     .replace('{name}', bouquetName)
     .replace('{size}', sizeLabel)
     .replace('{address}', address || '—')
     .replace('{date}', date || '—');
+  if (options?.addOnsSummary?.trim()) {
+    message += '\n\n' + options.addOnsSummary.trim();
+  }
+  return message;
 }

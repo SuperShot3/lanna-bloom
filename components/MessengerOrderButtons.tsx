@@ -22,12 +22,14 @@ export function MessengerOrderButtons({
   lang,
   deliveryAddress = '',
   deliveryDate = '',
+  addOnsSummary = '',
 }: {
   bouquetName: string;
   sizeLabel: string;
   lang: Locale;
   deliveryAddress?: string;
   deliveryDate?: string;
+  addOnsSummary?: string;
 }) {
   const t = translations[lang].product;
   const useDeliveryTemplate = !!(deliveryAddress || deliveryDate);
@@ -35,11 +37,12 @@ export function MessengerOrderButtons({
     bouquetName,
     sizeLabel,
     t.messageTemplate,
-    useDeliveryTemplate
+    useDeliveryTemplate || addOnsSummary
       ? {
           address: deliveryAddress,
           date: deliveryDate,
-          templateWithDelivery: t.messageTemplateWithDelivery,
+          templateWithDelivery: useDeliveryTemplate ? t.messageTemplateWithDelivery : undefined,
+          addOnsSummary,
         }
       : undefined
   );

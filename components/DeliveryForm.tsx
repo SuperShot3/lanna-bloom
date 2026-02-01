@@ -1,13 +1,20 @@
 'use client';
 
-import { CHIANG_MAI_DISTRICTS, CITY_EN, CITY_TH } from '@/lib/delivery-areas';
-import type { District } from '@/lib/delivery-areas';
+import {
+  CHIANG_MAI_DISTRICTS,
+  CITY_EN,
+  CITY_TH,
+  getDeliveryTier,
+  getTotalTimeRangeMinutes,
+} from '@/lib/delivery-areas';
+import type { DeliveryType, District } from '@/lib/delivery-areas';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
 export interface DeliveryFormValues {
   district: District | null;
   date: string;
+  deliveryType: DeliveryType;
 }
 
 export function DeliveryForm({
@@ -23,6 +30,9 @@ export function DeliveryForm({
   const city = lang === 'th' ? CITY_TH : CITY_EN;
   const districtLabel = (d: District) => (lang === 'th' ? d.nameTh : d.nameEn);
   const hasArea = !!value.district;
+  const timeRange =
+    value.district &&
+    getTotalTimeRangeMinutes(getDeliveryTier(value.district), value.deliveryType);
 
   return (
     <div className="buy-now-form">
@@ -75,7 +85,7 @@ export function DeliveryForm({
         </div>
       </div>
 
-      {/* Step 2: Delivery date */}
+      {/* Step 2: Delivery date + delivery type */}
       <div className="buy-now-step">
         <span className="buy-now-num" aria-hidden>2</span>
         <div className="buy-now-step-content">
@@ -97,9 +107,53 @@ export function DeliveryForm({
                 aria-label={t.specifyDeliveryDate}
               />
             </div>
+            <div className="buy-now-field">
+              <span className="buy-now-label">{t.chooseDeliveryType}</span>
+              <div className="buy-now-radio-pills" role="radiogroup" aria-label={t.chooseDeliveryType}>
+                <label className="buy-now-radio-pill">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="standard"
+                    checked={value.deliveryType === 'standard'}
+                    onChange={() => onChange({ ...value, deliveryType: 'standard' })}
+                    className="buy-now-radio-input"
+                  />
+                  <span>{t.deliveryTypeStandard}</span>
+                </label>
+                <label className="buy-now-radio-pill">
+                  <input
+                    type="radio"
+                    name="deliveryType"
+                    value="priority"
+                    checked={value.deliveryType === 'priority'}
+                    onChange={() => onChange({ ...value, deliveryType: 'priority' })}
+                    className="buy-now-radio-input"
+                  />
+                  <span>{t.deliveryTypePriority}</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Delivery information (only when district selected) */}
+      {value.district && timeRange && (
+        <div className="buy-now-delivery-info">
+          <h4 className="buy-now-delivery-info-title">{t.deliveryInfoTitle}</h4>
+          <p className="buy-now-delivery-info-line">
+            {t.preparationTimeLabel} {t.preparationTimeValue}
+          </p>
+          <p className="buy-now-delivery-info-line">{t.deliveryDependsOnLocation}</p>
+          <p className="buy-now-delivery-info-line">
+            {t.estimatedTotalTime} ~{timeRange.minTotal}–{timeRange.maxTotal} {t.minutes}
+          </p>
+          <p className="buy-now-delivery-info-line buy-now-delivery-info-note">
+            {t.exactTimeInMessenger}
+          </p>
+        </div>
+      )}
 
       {/* Step 3: Order buttons are below in ProductOrderBlock */}
       <div className="buy-now-step buy-now-step-4">
@@ -203,6 +257,62 @@ export function DeliveryForm({
         }
         .buy-now-step-4 .buy-now-step-content {
           margin-bottom: 0;
+        }
+        .buy-now-radio-pills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .buy-now-radio-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-size: 0.85rem;
+          color: var(--text);
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .buy-now-radio-pill:hover {
+          border-color: var(--accent);
+        }
+        .buy-now-radio-input {
+          margin: 0;
+          accent-color: var(--accent);
+        }
+        .buy-now-radio-pill:has(.buy-now-radio-input:checked) {
+          border-color: var(--accent);
+          background: var(--accent-soft, #e8dfd0);
+        }
+        .buy-now-delivery-info {
+          margin-top: 12px;
+          margin-bottom: 20px;
+          margin-left: 40px;
+          padding: 12px 14px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .buy-now-delivery-info-title {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0 0 8px;
+        }
+        .buy-now-delivery-info-line {
+          font-size: 11px;
+          line-height: 1.4;
+          color: var(--text-muted);
+          margin: 0 0 4px;
+        }
+        .buy-now-delivery-info-line:last-child {
+          margin-bottom: 0;
+        }
+        .buy-now-delivery-info-note {
+          font-size: 11px;
+          margin-top: 6px;
         }
       `}</style>
     </div>
