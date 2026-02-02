@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { getOrderById, getOrderDetailsUrl } from '@/lib/orders';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { translations, defaultLocale } from '@/lib/i18n';
+import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 
 export default async function OrderDetailsPage({
   params,
@@ -10,11 +11,19 @@ export default async function OrderDetailsPage({
 }) {
   const { orderId } = await params;
   const order = await getOrderById(orderId);
-  if (!order) {
-    notFound();
-  }
-  const detailsUrl = getOrderDetailsUrl(order.orderId);
   const t = translations[defaultLocale].orderPage;
+
+  if (!order) {
+    return (
+      <div className="order-page">
+        <div className="container">
+          <OrderNotFoundBlock orderId={orderId} t={t} locale={defaultLocale} />
+        </div>
+      </div>
+    );
+  }
+
+  const detailsUrl = getOrderDetailsUrl(order.orderId);
   return (
     <div className="order-page">
       <div className="container">

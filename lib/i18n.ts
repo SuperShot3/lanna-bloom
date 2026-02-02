@@ -160,6 +160,10 @@ export const translations = {
     orderPage: {
       orderDetails: 'Order details',
       notFound: 'Order not found',
+      notFoundSubtext: 'This order link is invalid or the order is no longer available.',
+      notFoundContact: 'If you just placed this order, contact the shop with the order ID above so they can look it up.',
+      orderIdLabel: 'Order ID:',
+      goToHome: 'Go to home',
       copyOrderId: 'Copy Order ID',
       copyLink: 'Copy details link',
       copied: 'Copied!',
@@ -366,6 +370,10 @@ export const translations = {
     orderPage: {
       orderDetails: 'รายละเอียดออเดอร์',
       notFound: 'ไม่พบออเดอร์',
+      notFoundSubtext: 'ลิงก์ออเดอร์นี้ไม่ถูกต้องหรือออเดอร์ไม่พร้อมให้ดูแล้ว',
+      notFoundContact: 'ถ้าคุณเพิ่งสั่งออเดอร์นี้ กรุณาติดต่อร้านและแจ้งรหัสออเดอร์ด้านบน',
+      orderIdLabel: 'รหัสออเดอร์:',
+      goToHome: 'กลับหน้าแรก',
       copyOrderId: 'คัดลอกรหัสออเดอร์',
       copyLink: 'คัดลอกลิงก์รายละเอียด',
       copied: 'คัดลอกแล้ว!',
