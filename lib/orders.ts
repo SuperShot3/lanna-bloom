@@ -155,6 +155,27 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return orders.find((o) => o.orderId === normalized) ?? null;
 }
 
+/** Remove order by orderId (e.g. after delivery). Returns true if removed, false if not found. */
+export async function deleteOrder(orderId: string): Promise<boolean> {
+  const orders = await readOrders();
+  const normalized = orderId.trim();
+  const filtered = orders.filter((o) => o.orderId !== normalized);
+  if (filtered.length === orders.length) return false;
+  await writeOrders(filtered);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[orders] Deleted', normalized);
+  }
+  return true;
+}
+
+/** List all orders (newest first). */
+export async function listOrders(): Promise<Order[]> {
+  const orders = await readOrders();
+  return [...orders].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
 /** Base URL for public links (order details page). */
 export function getBaseUrl(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
