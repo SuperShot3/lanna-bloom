@@ -23,6 +23,13 @@ To fix this, orders must be stored in a **shared, persistent store** (Vercel KV 
 
 After redeploy, new orders are stored in KV. Order links (e.g. `https://www.lannabloom.shop/order/LB-2025-xxx`) will work for **new orders**. Old orders created when using `/tmp` are not in KV and will still 404.
 
+### Checklist if order links still 404 after adding KV
+
+1. **Env vars in Vercel** — `KV_REST_API_URL` and `KV_REST_API_TOKEN` must be in **Vercel Dashboard → Your project → Settings → Environment Variables**. If they are only in `.env.local`, the deployed app does not see them.
+2. **Redeploy** — After adding or changing env vars, trigger a new deployment (e.g. Deployments → … → Redeploy, or push a commit). The running app only gets the new vars after a deploy.
+3. **New order** — Test with an order placed **after** the redeploy. Old order IDs were never written to KV and will always 404.
+4. **Logs** — In Vercel, open a deployment → Functions → select the function that ran when you placed the order. You should see a log line like `[orders] Created LB-2026-xxx KV`. If it says `file/tmp` instead of `KV`, the app is not using KV (vars missing or wrong).
+
 ## Why the cart is empty when the user comes back
 
 After a **successful** order, the cart is **cleared on purpose** so the user starts with an empty cart for the next order. So:
