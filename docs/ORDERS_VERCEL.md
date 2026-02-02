@@ -27,7 +27,12 @@ After redeploy, new orders are stored in Blob. Order links (e.g. `https://www.la
 2. **Share link domain** — Set `NEXT_PUBLIC_APP_URL` to your **live site URL** (e.g. `https://www.lannabloom.shop` or `https://your-app.vercel.app`). The link sent in the message is built from this. If you don't set it, Vercel uses `VERCEL_URL` (e.g. `https://your-project.vercel.app`), which is fine if that's the URL you use; if you use a custom domain, set `NEXT_PUBLIC_APP_URL` so the link uses that domain.
 3. **Redeploy** — After adding or changing env vars, trigger a new deployment.
 4. **New order** — Test with an order placed **after** the redeploy. Old orders created when Blob was not configured were never written to Blob.
-5. **Logs** — In Vercel → Deployment → Functions → select the serverless function that ran when you **placed** the order. You should see `[orders] Created LB-xxxx Blob`. If it says `file/tmp`, Blob is not in use. If you see `[orders] Blob read failed` when **opening** the order link, check that `BLOB_READ_WRITE_TOKEN` is set for that environment and redeploy.
+5. **Logs** — In Vercel → Deployment → Functions → select the serverless function that ran when you **placed** the order. You should see `[orders] Created LB-xxxx Blob`. If it says `file/tmp`, Blob is not in use. If you see `[orders] Blob not found` when **opening** the order link, see (6).
+
+6. **"The requested blob does not exist" / Blob not found** — This usually means **write and read use different Blob stores**. On Vercel, the same token must be used for **all environments** that need to share orders:
+   - In **Vercel Dashboard → Your project → Storage → your Blob store**, check which environments have the token (Production, Preview, Development).
+   - If the order was placed on **Preview** (e.g. branch deploy) but the link is opened on **Production** (or vice versa), and only one environment has the token, the other store is empty and the blob is "not found".
+   - **Fix:** When you created/connected the Blob store, add **`BLOB_READ_WRITE_TOKEN` to Production and Preview** (same token value). Then redeploy both. After that, orders written when placing (any env) and reads when opening the link (any env) use the same store.
 
 ## Why the cart is empty when the user comes back
 

@@ -95,26 +95,26 @@ async function writeOrdersToFile(orders: Order[]): Promise<void> {
   await fs.writeFile(ordersFile, JSON.stringify(orders, null, 2), 'utf-8');
 }
 
-async function readOrders(): Promise<Order[]> {
-  if (!useBlobStorage()) {
-    return readOrdersFromFile();
-  }
+function findOrdersBlob(blobs: { pathname: string; url: string }[]): { pathname: string; url: string } | undefined {
+  const normalizedPath = ORDERS_BLOB_PATH.replace(/^\/+/, '');
+  return blobs.find(
+    (b) =>
+      b.pathname === ORDERS_BLOB_PATH ||
+      b.pathname === normalizedPath ||
+      b.pathname?.endsWith('orders.json')
+  );
+}
+
+async function readOrdersFromBlob(attempt = 0): Promise<Order[]> {
+  const { list } = await import('@vercel/blob');
+  const maxRetries = process.env.VERCEL ? 2 : 0;
+
   try {
-    const { list } = await import('@vercel/blob');
-    const { blobs } = await list({ prefix: 'lannabloom/' });
-    const normalizedPath = ORDERS_BLOB_PATH.replace(/^\/+/, '');
-    const blob = blobs.find(
-      (b) =>
-        b.pathname === ORDERS_BLOB_PATH ||
-        b.pathname === normalizedPath ||
-        b.pathname?.endsWith('orders.json')
-    );
-    if (!blob?.url) {
-      if (process.env.VERCEL && blobs.length > 0) {
-        console.error('[orders] Blob list pathname mismatch. Expected:', ORDERS_BLOB_PATH, 'Got:', blobs.map((b) => b.pathname));
-      }
-      return [];
-    }
+    // List without prefix first so the API returns 200 with empty array instead of 404 when store is empty
+    const { blobs } = await list({ limit: 500 });
+    const blob = findOrdersBlob(blobs);
+    if (!blob?.url) return [];
+
     const res = await fetch(blob.url, { cache: 'no-store' });
     if (!res.ok) {
       if (process.env.VERCEL) console.error('[orders] Blob fetch not ok:', res.status, blob.url);
@@ -124,12 +124,34 @@ async function readOrders(): Promise<Order[]> {
     const data = JSON.parse(raw);
     return Array.isArray(data) ? data : [];
   } catch (e) {
-    if (process.env.VERCEL) {
-      console.error('[orders] Blob read failed (do NOT use file on Vercel - /tmp is per-instance):', e);
-    }
-    if (process.env.VERCEL) {
+    const isNotFound = e && typeof e === 'object' && 'message' in e && String((e as Error).message).includes('does not exist');
+    if (isNotFound || (e as Error).constructor?.name === 'BlobNotFoundError') {
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 800));
+        return readOrdersFromBlob(attempt + 1);
+      }
+      if (process.env.VERCEL) {
+        console.error(
+          '[orders] Blob not found. Ensure BLOB_READ_WRITE_TOKEN is the SAME for Production and Preview so the store is shared (Vercel → Storage → your store → envs).'
+        );
+      }
       return [];
     }
+    throw e;
+  }
+}
+
+async function readOrders(): Promise<Order[]> {
+  if (!useBlobStorage()) {
+    return readOrdersFromFile();
+  }
+  try {
+    return await readOrdersFromBlob();
+  } catch (e) {
+    if (process.env.VERCEL) {
+      console.error('[orders] Blob read failed:', e);
+    }
+    if (process.env.VERCEL) return [];
     return readOrdersFromFile();
   }
 }
