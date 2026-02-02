@@ -213,6 +213,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       }
       const { orderId, publicOrderUrl, shareText } = data;
       clearCart();
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
+        } catch {
+          // ignore
+        }
+      }
       const params = new URLSearchParams({
         orderId,
         publicOrderUrl: publicOrderUrl ?? '',

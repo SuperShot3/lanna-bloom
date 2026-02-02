@@ -15,6 +15,7 @@ export const translations = {
       delivery: 'Delivery',
       partnerRegister: 'Register as a Partner',
       cart: 'Cart',
+      viewYourOrder: 'Your order',
     },
     delivery: {
       title: 'Delivery in Chiang Mai',
@@ -220,6 +221,7 @@ export const translations = {
       delivery: 'การจัดส่ง',
       partnerRegister: 'ลงทะเบียนพาร์ทเนอร์',
       cart: 'ตะกร้า',
+      viewYourOrder: 'ออเดอร์ของคุณ',
     },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',

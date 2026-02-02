@@ -103,7 +103,10 @@ async function readOrders(): Promise<Order[]> {
       const { kv } = await import('@vercel/kv');
       const data = await kv.get<Order[]>(ORDERS_KV_KEY);
       return Array.isArray(data) ? data : [];
-    } catch {
+    } catch (e) {
+      if (process.env.VERCEL) {
+        console.error('[orders] KV read failed, using file fallback:', e);
+      }
       return readOrdersFromFile();
     }
   }
@@ -116,8 +119,14 @@ async function writeOrders(orders: Order[]): Promise<void> {
       const { kv } = await import('@vercel/kv');
       await kv.set(ORDERS_KV_KEY, orders);
       return;
-    } catch {
-      // fallback to file / tmp
+    } catch (e) {
+      if (process.env.VERCEL) {
+        console.error('[orders] KV write failed:', e);
+        throw e;
+      }
+      // local dev: fallback to file
+      await writeOrdersToFile(orders);
+      return;
     }
   }
   await writeOrdersToFile(orders);
