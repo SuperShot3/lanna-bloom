@@ -48,6 +48,7 @@ export function ProductOrderBlock({ bouquet, lang }: { bouquet: Bouquet; lang: L
       slug: bouquet.slug,
       nameEn: bouquet.nameEn,
       nameTh: bouquet.nameTh,
+      imageUrl: bouquet.images?.[0],
       size: selectedSize,
       addOns: { ...addOns },
     });

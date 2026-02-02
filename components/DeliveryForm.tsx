@@ -157,6 +157,9 @@ export function DeliveryForm({
           <p className="buy-now-delivery-info-line buy-now-delivery-info-note">
             {t.exactTimeInMessenger}
           </p>
+          <p className="buy-now-delivery-info-line buy-now-delivery-info-note">
+            {t.finalPriceDisclaimer}
+          </p>
         </div>
       )}
 

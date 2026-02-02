@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import { DeliveryForm, type DeliveryFormValues } from '@/components/DeliveryForm';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
@@ -119,6 +120,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             );
             return (
               <div key={`${item.bouquetId}-${index}`} className="cart-item">
+                {item.imageUrl && (
+                  <div className="cart-item-image-wrap">
+                    <Image
+                      src={item.imageUrl}
+                      alt=""
+                      width={80}
+                      height={80}
+                      className="cart-item-image"
+                      sizes="80px"
+                    />
+                  </div>
+                )}
                 <div className="cart-item-main">
                   <h3 className="cart-item-name">{name}</h3>
                   <p className="cart-item-size">
@@ -181,6 +194,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border: 1px solid var(--border);
           border-radius: var(--radius);
           box-shadow: var(--shadow);
+        }
+        .cart-item-image-wrap {
+          flex-shrink: 0;
+          width: 80px;
+          height: 80px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          background: var(--pastel-cream, #fdf8f3);
+        }
+        .cart-item-image {
+          width: 80px;
+          height: 80px;
+          object-fit: cover;
         }
         .cart-item-main {
           flex: 1;
