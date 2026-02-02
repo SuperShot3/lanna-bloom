@@ -37,6 +37,7 @@ export default async function OrderDetailsPage({
           copyOrderIdLabel={t.copyOrderId}
           copyLinkLabel={t.copyLink}
           copiedLabel={t.copied}
+          locale={defaultLocale}
         />
       </div>
     </div>

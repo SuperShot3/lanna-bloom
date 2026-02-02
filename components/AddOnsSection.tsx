@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
@@ -35,7 +34,6 @@ export function AddOnsSection({
   value: AddOnsValues;
   onChange: (v: AddOnsValues) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const t = translations[lang].buyNow;
   const cardMessageMax = typeof t.cardMessageMax === 'number' ? t.cardMessageMax : CARD_MESSAGE_MAX;
 
@@ -53,25 +51,14 @@ export function AddOnsSection({
 
   return (
     <div className="addons-section">
-      <button
-        type="button"
-        className="addons-toggle"
-        onClick={() => setExpanded((e) => !e)}
-        aria-expanded={expanded}
-        aria-controls="addons-content"
-        id="addons-toggle"
-      >
-        <span className="addons-toggle-title">{t.addOnsTitle}</span>
-        <span className="addons-chevron" aria-hidden>
-          {expanded ? '▲' : '▼'}
-        </span>
-      </button>
+      <div className="addons-heading" id="addons-heading">
+        {t.addOnsTitle}
+      </div>
       <div
         id="addons-content"
         role="region"
-        aria-labelledby="addons-toggle"
+        aria-labelledby="addons-heading"
         className="addons-content"
-        data-expanded={expanded}
       >
         <div className="addons-inner">
           {/* Card type (single-select checkbox group) */}
@@ -182,47 +169,18 @@ export function AddOnsSection({
           overflow: hidden;
           box-shadow: var(--shadow);
         }
-        .addons-toggle {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          width: 100%;
+        .addons-heading {
           padding: 14px 18px;
-          background: var(--surface);
-          border: none;
-          border-bottom: 1px solid var(--border);
           font-size: 0.95rem;
           font-weight: 600;
           color: var(--text);
-          cursor: pointer;
-          text-align: left;
-          transition: background 0.15s;
-        }
-        .addons-toggle:hover {
-          background: var(--pastel-cream, #fdf8f3);
-        }
-        .addons-toggle:focus {
-          outline: none;
-          box-shadow: inset 0 0 0 2px var(--accent);
-        }
-        .addons-toggle[aria-expanded='true'] {
-          border-bottom-color: transparent;
-        }
-        .addons-chevron {
-          font-size: 0.75rem;
-          color: var(--text-muted);
+          border-bottom: 1px solid var(--border);
         }
         .addons-content {
-          max-height: 0;
-          overflow: hidden;
-          transition: max-height 0.2s ease-out;
-        }
-        .addons-content[data-expanded='true'] {
-          max-height: 600px;
+          overflow: visible;
         }
         .addons-inner {
           padding: 16px 18px;
-          border-top: none;
         }
         .addons-field {
           margin-bottom: 16px;

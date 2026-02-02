@@ -167,6 +167,10 @@ export const translations = {
       copyOrderId: 'Copy Order ID',
       copyLink: 'Copy details link',
       copied: 'Copied!',
+      totalsHeading: 'Totals',
+      itemsTotal: 'Items total',
+      deliveryCalculated: 'Calculated by driver',
+      grandTotalWithDelivery: '{amount} + delivery fee',
     },
     messenger: {
       line: 'LINE',
@@ -377,6 +381,10 @@ export const translations = {
       copyOrderId: 'คัดลอกรหัสออเดอร์',
       copyLink: 'คัดลอกลิงก์รายละเอียด',
       copied: 'คัดลอกแล้ว!',
+      totalsHeading: 'ยอดรวม',
+      itemsTotal: 'ยอดสินค้า',
+      deliveryCalculated: 'คำนวณโดยคนขับ',
+      grandTotalWithDelivery: '{amount} + ค่าจัดส่ง',
     },
     messenger: {
       line: 'LINE',

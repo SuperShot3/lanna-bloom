@@ -163,23 +163,46 @@ export function ProductOrderBlock({ bouquet, lang }: { bouquet: Bouquet; lang: L
           flex-wrap: wrap;
           gap: 12px;
         }
-        .order-added-link {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: var(--accent);
-          text-decoration: underline;
+        .order-added-links :global(a.order-added-link) {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 14px 20px;
+          border-radius: var(--radius-sm);
+          font-size: 1rem;
+          font-weight: 700;
+          color: #fff;
+          background: var(--accent);
+          border: none;
+          text-decoration: none;
+          cursor: pointer;
+          transition: background 0.2s, transform 0.15s;
         }
-        .order-added-link:hover {
-          color: #967a4d;
+        .order-added-links :global(a.order-added-link:hover) {
+          background: #b39868;
+          color: #fff;
+          transform: translateY(-1px);
         }
-        .order-added-link-primary {
-          padding: 8px 16px;
+        .order-added-links :global(a.order-added-link:focus-visible) {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
+        }
+        .order-added-links :global(a.order-added-link:not(.order-added-link-primary)) {
+          background: var(--pastel-cream, #e8e2da);
+          color: var(--text);
+          border: 2px solid var(--border);
+        }
+        .order-added-links :global(a.order-added-link:not(.order-added-link-primary):hover) {
+          background: #ddd6cc;
+          border-color: var(--text-muted);
+          color: var(--text);
+        }
+        .order-added-links :global(a.order-added-link-primary) {
           background: var(--accent);
           color: #fff;
-          text-decoration: none;
-          border-radius: var(--radius-sm);
+          border: none;
         }
-        .order-added-link-primary:hover {
+        .order-added-links :global(a.order-added-link-primary:hover) {
           background: #b39868;
           color: #fff;
         }

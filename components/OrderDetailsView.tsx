@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { Order } from '@/lib/orders';
+import { translations } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
 
 export function OrderDetailsView({
   order,
@@ -9,13 +11,16 @@ export function OrderDetailsView({
   copyOrderIdLabel,
   copyLinkLabel,
   copiedLabel,
+  locale = 'en',
 }: {
   order: Order;
   detailsUrl: string;
   copyOrderIdLabel: string;
   copyLinkLabel: string;
   copiedLabel: string;
+  locale?: Locale;
 }) {
+  const t = translations[locale].orderPage;
   const [copied, setCopied] = useState<'id' | 'link' | null>(null);
 
   const copy = async (text: string, kind: 'id' | 'link') => {
@@ -85,10 +90,21 @@ export function OrderDetailsView({
         {order.delivery.notes && <p>Notes: {order.delivery.notes}</p>}
       </div>
       <div className="order-details-section">
-        <h2 className="order-details-heading">Totals</h2>
-        <p>Items: ฿{order.pricing.itemsTotal.toLocaleString()}</p>
-        <p>Delivery: ฿{order.pricing.deliveryFee.toLocaleString()}</p>
-        <p><strong>Grand total: ฿{order.pricing.grandTotal.toLocaleString()}</strong></p>
+        <h2 className="order-details-heading">{t.totalsHeading}</h2>
+        <p className="order-details-totals-line">
+          {t.itemsTotal}: ฿{order.pricing.itemsTotal.toLocaleString()}
+        </p>
+        <p className="order-details-totals-line order-details-delivery-note">
+          {t.deliveryCalculated}
+        </p>
+        <p className="order-details-totals-grand">
+          <strong>
+            {t.grandTotalWithDelivery.replace(
+              '{amount}',
+              `฿${order.pricing.itemsTotal.toLocaleString()}`
+            )}
+          </strong>
+        </p>
       </div>
       <p className="order-details-created">Created: {new Date(order.createdAt).toLocaleString()}</p>
       <style jsx>{`
@@ -152,6 +168,20 @@ export function OrderDetailsView({
         .order-details-wrapping {
           font-size: 0.85rem;
           color: var(--text-muted);
+        }
+        .order-details-totals-line {
+          margin: 0 0 6px;
+          font-size: 0.95rem;
+          color: var(--text);
+        }
+        .order-details-delivery-note {
+          color: var(--text-muted);
+          font-style: italic;
+        }
+        .order-details-totals-grand {
+          margin: 12px 0 0;
+          font-size: 1rem;
+          color: var(--text);
         }
         .order-details-created {
           font-size: 0.85rem;
