@@ -168,7 +168,7 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
   if (process.env.NODE_ENV === 'development') {
     console.log('[orders] Created', orderId, payload.delivery?.district ?? '');
   } else if (process.env.VERCEL) {
-    console.log('[orders] Created', orderId, useKvStorage() ? 'KV' : 'file/tmp');
+    console.log('[orders] Created', orderId, useRedisStorage() ? 'Redis' : 'file/tmp');
   }
   return order;
 }
