@@ -159,11 +159,17 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
   return order;
 }
 
-/** Get order by orderId; null if not found. */
+/** Get order by orderId; null if not found. On Vercel KV, retries once after a short delay to handle replication lag. */
 export async function getOrderById(orderId: string): Promise<Order | null> {
-  const orders = await readOrders();
   const normalized = orderId.trim();
-  return orders.find((o) => o.orderId === normalized) ?? null;
+  let orders = await readOrders();
+  let order = orders.find((o) => o.orderId === normalized) ?? null;
+  if (!order && useKvStorage() && process.env.VERCEL) {
+    await new Promise((r) => setTimeout(r, 1500));
+    orders = await readOrders();
+    order = orders.find((o) => o.orderId === normalized) ?? null;
+  }
+  return order;
 }
 
 /** Remove order by orderId (e.g. after delivery). Returns true if removed, false if not found. */

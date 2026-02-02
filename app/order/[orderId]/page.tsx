@@ -4,6 +4,9 @@ import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 
+/** Always fetch from KV on each request; never cache the order page. */
+export const dynamic = 'force-dynamic';
+
 export default async function OrderDetailsPage({
   params,
 }: {
