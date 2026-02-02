@@ -102,16 +102,33 @@ async function readOrders(): Promise<Order[]> {
   try {
     const { list } = await import('@vercel/blob');
     const { blobs } = await list({ prefix: 'lannabloom/' });
-    const blob = blobs.find((b) => b.pathname === ORDERS_BLOB_PATH);
-    if (!blob?.url) return [];
-    const res = await fetch(blob.url);
-    if (!res.ok) return [];
+    const normalizedPath = ORDERS_BLOB_PATH.replace(/^\/+/, '');
+    const blob = blobs.find(
+      (b) =>
+        b.pathname === ORDERS_BLOB_PATH ||
+        b.pathname === normalizedPath ||
+        b.pathname?.endsWith('orders.json')
+    );
+    if (!blob?.url) {
+      if (process.env.VERCEL && blobs.length > 0) {
+        console.error('[orders] Blob list pathname mismatch. Expected:', ORDERS_BLOB_PATH, 'Got:', blobs.map((b) => b.pathname));
+      }
+      return [];
+    }
+    const res = await fetch(blob.url, { cache: 'no-store' });
+    if (!res.ok) {
+      if (process.env.VERCEL) console.error('[orders] Blob fetch not ok:', res.status, blob.url);
+      return [];
+    }
     const raw = await res.text();
     const data = JSON.parse(raw);
     return Array.isArray(data) ? data : [];
   } catch (e) {
     if (process.env.VERCEL) {
-      console.error('[orders] Blob read failed, using file fallback:', e);
+      console.error('[orders] Blob read failed (do NOT use file on Vercel - /tmp is per-instance):', e);
+    }
+    if (process.env.VERCEL) {
+      return [];
     }
     return readOrdersFromFile();
   }
