@@ -59,19 +59,20 @@ const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp',
 const PHONE_MIN_DIGITS = 8;
 const PHONE_MAX_DIGITS = 15;
 
-const COUNTRY_CODES: { code: string; labelEn: string; labelTh: string }[] = [
-  { code: '66', labelEn: 'Thailand (+66)', labelTh: 'ไทย (+66)' },
-  { code: '95', labelEn: 'Myanmar (+95)', labelTh: 'พม่า (+95)' },
-  { code: '856', labelEn: 'Laos (+856)', labelTh: 'ลาว (+856)' },
-  { code: '855', labelEn: 'Cambodia (+855)', labelTh: 'กัมพูชา (+855)' },
-  { code: '84', labelEn: 'Vietnam (+84)', labelTh: 'เวียดนาม (+84)' },
-  { code: '60', labelEn: 'Malaysia (+60)', labelTh: 'มาเลเซีย (+60)' },
-  { code: '65', labelEn: 'Singapore (+65)', labelTh: 'สิงคโปร์ (+65)' },
-  { code: '62', labelEn: 'Indonesia (+62)', labelTh: 'อินโดนีเซีย (+62)' },
-  { code: '63', labelEn: 'Philippines (+63)', labelTh: 'ฟิลิปปินส์ (+63)' },
-  { code: '1', labelEn: 'United States (+1)', labelTh: 'สหรัฐ (+1)' },
-  { code: '44', labelEn: 'United Kingdom (+44)', labelTh: 'สหราชอาณาจักร (+44)' },
-  { code: '81', labelEn: 'Japan (+81)', labelTh: 'ญี่ปุ่น (+81)' },
+/** Flag + code only (same for all locales). */
+const COUNTRY_CODES: { code: string; label: string }[] = [
+  { code: '66', label: '🇹🇭 (+66)' },
+  { code: '95', label: '🇲🇲 (+95)' },
+  { code: '856', label: '🇱🇦 (+856)' },
+  { code: '855', label: '🇰🇭 (+855)' },
+  { code: '84', label: '🇻🇳 (+84)' },
+  { code: '60', label: '🇲🇾 (+60)' },
+  { code: '65', label: '🇸🇬 (+65)' },
+  { code: '62', label: '🇮🇩 (+62)' },
+  { code: '63', label: '🇵🇭 (+63)' },
+  { code: '1', label: '🇺🇸 (+1)' },
+  { code: '44', label: '🇬🇧 (+44)' },
+  { code: '81', label: '🇯🇵 (+81)' },
 ];
 
 function buildOrderPayload(
@@ -359,7 +360,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       >
                         {COUNTRY_CODES.map((c) => (
                           <option key={c.code} value={c.code}>
-                            {lang === 'th' ? c.labelTh : c.labelEn}
+                            {c.label}
                           </option>
                         ))}
                       </select>

@@ -1,13 +1,18 @@
 /**
  * Build messenger deep links with pre-filled order message.
- * Replace phone numbers and handles with your real ones.
+ * Contact number: +66803313431 — used for WhatsApp and Telegram.
  */
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
-const WHATSAPP_PHONE = '66952572645'; // E.164, no +
-const LINE_AT = 'yourshop'; // Replace with your LINE ID when you have one
-const TELEGRAM_USER = 'konstantinMrk'; // Telegram username (no @)
+/** E.164 format, no + (used for WhatsApp; Telegram uses same number via +66803313431). */
+const CONTACT_PHONE = '66803313431';
+
+const WHATSAPP_PHONE = CONTACT_PHONE;
+/** LINE uses LINE ID only (no phone in URL). Replace with your LINE ID linked to +66803313431. */
+const LINE_AT = 'yourshop';
+/** Telegram: link by phone number so all contact goes to +66803313431. */
+const TELEGRAM_PHONE = '66803313431';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
 
 function encode(text: string): string {
@@ -23,7 +28,7 @@ export function getLineOrderUrl(message: string): string {
 }
 
 export function getTelegramOrderUrl(message: string): string {
-  return `https://t.me/${TELEGRAM_USER}?text=${encode(message)}`;
+  return `https://t.me/+${TELEGRAM_PHONE}?text=${encode(message)}`;
 }
 
 export function getFacebookOrderUrl(message: string): string {
@@ -36,7 +41,7 @@ export function getWhatsAppContactUrl(): string {
   return `https://wa.me/${WHATSAPP_PHONE}`;
 }
 export function getTelegramContactUrl(): string {
-  return `https://t.me/${TELEGRAM_USER}`;
+  return `https://t.me/+${TELEGRAM_PHONE}`;
 }
 export function getLineContactUrl(): string {
   return `https://line.me/R/ti/p/@${LINE_AT}`;

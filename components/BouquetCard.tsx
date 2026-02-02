@@ -106,15 +106,16 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 40px;
-          padding: 8px 18px;
-          font-size: 0.9rem;
+          min-height: 36px;
+          padding: 6px 14px;
+          font-size: 0.82rem;
           font-weight: 600;
           color: var(--accent);
           background: transparent;
           border: 2px solid var(--accent);
           border-radius: 9999px;
           transition: background 0.2s, color 0.2s, transform 0.2s;
+          white-space: nowrap;
         }
         .card-link:hover .card-cta {
           background: var(--accent-soft);
