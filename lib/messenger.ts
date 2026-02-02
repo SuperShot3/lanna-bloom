@@ -2,6 +2,9 @@
  * Build messenger deep links with pre-filled order message.
  * Replace phone numbers and handles with your real ones.
  */
+import { translations } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
+
 const WHATSAPP_PHONE = '66952572645'; // E.164, no +
 const LINE_AT = 'yourshop'; // Replace with your LINE ID when you have one
 const TELEGRAM_USER = 'konstantinMrk'; // Telegram username (no @)
@@ -28,6 +31,20 @@ export function getFacebookOrderUrl(message: string): string {
   return `${base}/messages?text=${encode(message)}`;
 }
 
+/** Base contact URLs (no pre-filled message) for header/footer links. */
+export function getWhatsAppContactUrl(): string {
+  return `https://wa.me/${WHATSAPP_PHONE}`;
+}
+export function getTelegramContactUrl(): string {
+  return `https://t.me/${TELEGRAM_USER}`;
+}
+export function getLineContactUrl(): string {
+  return `https://line.me/R/ti/p/@${LINE_AT}`;
+}
+export function getFacebookContactUrl(): string {
+  return `https://www.facebook.com/${FACEBOOK_PAGE}`;
+}
+
 export function buildOrderMessage(
   bouquetName: string,
   sizeLabel: string,
@@ -52,4 +69,63 @@ export function buildOrderMessage(
     message += '\n\n' + options.addOnsSummary.trim();
   }
   return message;
+}
+
+/** Item shape for cart order message (avoids importing full CartContext in lib). */
+export interface CartOrderItem {
+  nameEn: string;
+  nameTh: string;
+  size: { label: string; price: number };
+  addOns: {
+    cardType: 'free' | 'beautiful' | null;
+    cardMessage: string;
+    wrappingPreference: 'none' | 'classic' | 'premium' | null;
+  };
+}
+
+function buildAddOnsSummaryForItem(
+  addOns: CartOrderItem['addOns'],
+  t: Record<string, string | number>
+): string {
+  const lines: string[] = [];
+  if (addOns.cardType === 'beautiful') {
+    lines.push(String(t.addOnsSummaryCardBeautiful));
+  } else if (addOns.cardType === 'free') {
+    lines.push(String(t.addOnsSummaryCard).replace('{label}', String(t.cardFree)));
+  }
+  if (addOns.wrappingPreference === 'classic') {
+    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingClassic)));
+  } else if (addOns.wrappingPreference === 'premium') {
+    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingPremium)));
+  } else if (addOns.wrappingPreference === 'none') {
+    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingNone)));
+  }
+  if (addOns.cardMessage.trim()) {
+    lines.push(String(t.addOnsSummaryMessage).replace('{text}', addOns.cardMessage.trim()));
+  }
+  return lines.join('. ');
+}
+
+export function buildCartOrderMessage(
+  items: CartOrderItem[],
+  deliveryAddress: string,
+  deliveryDate: string,
+  lang: Locale
+): string {
+  const { cart: tCart, buyNow: tBuyNow } = translations[lang];
+  const lines: string[] = [String(tCart.orderSummary)];
+  items.forEach((item, i) => {
+    const name = lang === 'th' ? item.nameTh : item.nameEn;
+    const itemLine = String(tCart.itemLine)
+      .replace('{name}', name)
+      .replace('{size}', item.size.label)
+      .replace('{price}', String(item.size.price));
+    lines.push(`${i + 1}. ${itemLine}`);
+    const addOnsStr = buildAddOnsSummaryForItem(item.addOns, tBuyNow as Record<string, string | number>);
+    if (addOnsStr) lines.push(`   ${addOnsStr}`);
+  });
+  lines.push('');
+  lines.push(`${tCart.deliveryLabel}: ${deliveryAddress || '—'}`);
+  lines.push(`${tCart.dateLabel}: ${deliveryDate || '—'}`);
+  return lines.join('\n');
 }

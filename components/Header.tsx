@@ -5,9 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Locale, translations } from '@/lib/i18n';
+import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessengerLinks } from './MessengerLinks';
 import { DeliveryModal } from './DeliveryModal';
+import { CartIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 600;
@@ -18,7 +20,9 @@ export function Header({ lang }: { lang: Locale }) {
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
   const partnerRegisterHref = `/${lang}/partner/register`;
+  const cartHref = `/${lang}/cart`;
   const t = translations[lang].nav;
+  const { count: cartCount } = useCart();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -119,6 +123,21 @@ export function Header({ lang }: { lang: Locale }) {
           {showActions && (
             <div className="header-actions">
               <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
+              <Link
+                href={cartHref}
+                className="header-cart-link"
+                aria-label={t.cart}
+                title={t.cart}
+              >
+                <span className="header-cart-icon-wrap">
+                  <CartIcon size={24} className="header-cart-icon" />
+                  {cartCount > 0 && (
+                    <span className="header-cart-badge" aria-hidden>
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </span>
+              </Link>
               <MessengerLinks />
             </div>
           )}
@@ -191,6 +210,20 @@ export function Header({ lang }: { lang: Locale }) {
           </nav>
           <div className="mobile-menu-actions">
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
+            <Link
+              href={cartHref}
+              className="mobile-menu-cart"
+              onClick={() => setMenuOpen(false)}
+              aria-label={t.cart}
+            >
+              <CartIcon size={22} />
+              <span>{t.cart}</span>
+              {cartCount > 0 && (
+                <span className="mobile-menu-cart-badge" aria-hidden>
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
             <MessengerLinks />
           </div>
         </div>
@@ -289,6 +322,49 @@ export function Header({ lang }: { lang: Locale }) {
           display: flex;
           align-items: center;
           gap: 16px;
+        }
+        .header-cart-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-sm);
+          background: var(--pastel-cream);
+          color: var(--text);
+          transition: background 0.2s, transform 0.15s;
+        }
+        .header-cart-link:hover {
+          background: var(--accent-soft);
+          transform: scale(1.05);
+        }
+        .header-cart-icon-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+        }
+        .header-cart-icon {
+          flex-shrink: 0;
+        }
+        .header-cart-badge {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--accent);
+          color: #fff;
+          font-size: 0.7rem;
+          font-weight: 700;
+          border-radius: 999px;
         }
         .burger {
           display: flex;
@@ -452,6 +528,29 @@ export function Header({ lang }: { lang: Locale }) {
           flex-direction: column;
           gap: 16px;
           margin-top: auto;
+        }
+        .mobile-menu-cart {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 0;
+          font-size: 1rem;
+          font-weight: 500;
+          color: var(--text);
+          text-decoration: none;
+          border-bottom: 1px solid var(--border);
+        }
+        .mobile-menu-cart:hover {
+          color: var(--accent);
+        }
+        .mobile-menu-cart-badge {
+          margin-left: auto;
+          padding: 2px 8px;
+          background: var(--accent);
+          color: #fff;
+          font-size: 0.8rem;
+          font-weight: 700;
+          border-radius: 999px;
         }
         @media (min-width: 601px) {
           .mobile-menu {

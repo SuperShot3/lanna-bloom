@@ -1,12 +1,17 @@
 'use client';
 
+import {
+  getWhatsAppContactUrl,
+  getTelegramContactUrl,
+  getLineContactUrl,
+} from '@/lib/messenger';
 import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
 
 const MESSENGERS = [
   {
     id: 'line',
     name: 'LINE',
-    href: 'https://line.me/R/ti/p/@yourshop',
+    getHref: getLineContactUrl,
     ariaLabel: 'Contact us on LINE',
     Icon: LineIcon,
     color: '#00B900',
@@ -14,7 +19,7 @@ const MESSENGERS = [
   {
     id: 'whatsapp',
     name: 'WhatsApp',
-    href: 'https://wa.me/66812345678',
+    getHref: getWhatsAppContactUrl,
     ariaLabel: 'Contact us on WhatsApp',
     Icon: WhatsAppIcon,
     color: '#25D366',
@@ -22,7 +27,7 @@ const MESSENGERS = [
   {
     id: 'telegram',
     name: 'Telegram',
-    href: 'https://t.me/yourshop',
+    getHref: getTelegramContactUrl,
     ariaLabel: 'Contact us on Telegram',
     Icon: TelegramIcon,
     color: '#26A5E4',
@@ -35,7 +40,7 @@ export function MessengerLinks() {
       {MESSENGERS.map((m) => (
         <a
           key={m.id}
-          href={m.href}
+          href={m.getHref()}
           target="_blank"
           rel="noopener noreferrer"
           className="messenger-link"

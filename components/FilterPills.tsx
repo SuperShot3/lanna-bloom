@@ -47,7 +47,7 @@ export function FilterPills({ lang, currentCategory = 'all' }: FilterPillsProps)
       </div>
       <style jsx>{`
         .filter-pills-section {
-          padding: 0 0 24px;
+          padding: 0 0 16px;
         }
         .filter-pills-container {
           padding-left: 20px;
@@ -55,10 +55,10 @@ export function FilterPills({ lang, currentCategory = 'all' }: FilterPillsProps)
         }
         .filter-pills-scroll {
           display: flex;
-          gap: 10px;
+          gap: 8px;
           overflow-x: auto;
           overflow-y: hidden;
-          padding: 4px 0 12px;
+          padding: 4px 0 8px;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
         }
@@ -70,14 +70,14 @@ export function FilterPills({ lang, currentCategory = 'all' }: FilterPillsProps)
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 48px;
-          padding: 14px 24px;
+          min-height: 36px;
+          padding: 8px 14px;
           box-sizing: border-box;
           background: var(--surface);
           border-radius: 9999px;
           border: 2px solid #b8a99a;
           box-shadow: 0 2px 0 #b8a99a, 0 4px 12px rgba(45, 42, 38, 0.1);
-          font-size: 0.95rem;
+          font-size: 0.85rem;
           font-weight: 700;
           line-height: 1.2;
           color: var(--text);
@@ -117,6 +117,12 @@ export function FilterPills({ lang, currentCategory = 'all' }: FilterPillsProps)
             justify-content: center;
             overflow-x: visible;
             gap: 12px;
+            padding: 4px 0 12px;
+          }
+          .filter-pill {
+            min-height: 48px;
+            padding: 14px 24px;
+            font-size: 0.95rem;
           }
         }
       `}</style>

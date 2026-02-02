@@ -23,29 +23,35 @@ export function MessengerOrderButtons({
   deliveryAddress = '',
   deliveryDate = '',
   addOnsSummary = '',
+  prebuiltMessage,
 }: {
-  bouquetName: string;
-  sizeLabel: string;
+  bouquetName?: string;
+  sizeLabel?: string;
   lang: Locale;
   deliveryAddress?: string;
   deliveryDate?: string;
   addOnsSummary?: string;
+  /** When provided, use this message instead of building from bouquet/delivery/addOns (e.g. for cart page). */
+  prebuiltMessage?: string;
 }) {
   const t = translations[lang].product;
-  const useDeliveryTemplate = !!(deliveryAddress || deliveryDate);
-  const message = buildOrderMessage(
-    bouquetName,
-    sizeLabel,
-    t.messageTemplate,
-    useDeliveryTemplate || addOnsSummary
-      ? {
-          address: deliveryAddress,
-          date: deliveryDate,
-          templateWithDelivery: useDeliveryTemplate ? t.messageTemplateWithDelivery : undefined,
-          addOnsSummary,
-        }
-      : undefined
-  );
+  const message =
+    prebuiltMessage != null && prebuiltMessage !== ''
+      ? prebuiltMessage
+      : buildOrderMessage(
+          bouquetName ?? '',
+          sizeLabel ?? '',
+          t.messageTemplate,
+          deliveryAddress || deliveryDate || addOnsSummary
+            ? {
+                address: deliveryAddress,
+                date: deliveryDate,
+                templateWithDelivery:
+                  (deliveryAddress || deliveryDate) ? t.messageTemplateWithDelivery : undefined,
+                addOnsSummary,
+              }
+            : undefined
+        );
 
   return (
     <div className="order-buttons">

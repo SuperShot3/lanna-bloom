@@ -21,10 +21,15 @@ export function DeliveryForm({
   lang,
   value,
   onChange,
+  step3Heading,
+  step3Content,
 }: {
   lang: Locale;
   value: DeliveryFormValues;
   onChange: (v: DeliveryFormValues) => void;
+  /** When provided (e.g. on cart page), Step 3 shows this heading and content instead of "ADD TO CART". */
+  step3Heading?: string;
+  step3Content?: React.ReactNode;
 }) {
   const t = translations[lang].buyNow;
   const city = lang === 'th' ? CITY_TH : CITY_EN;
@@ -155,11 +160,12 @@ export function DeliveryForm({
         </div>
       )}
 
-      {/* Step 3: Order buttons are below in ProductOrderBlock */}
+      {/* Step 3: Custom content (e.g. Send order via) or default "ADD TO CART" */}
       <div className="buy-now-step buy-now-step-4">
         <span className="buy-now-num" aria-hidden>3</span>
         <div className="buy-now-step-content">
-          <h3 className="buy-now-step-heading">{t.step4}</h3>
+          <h3 className="buy-now-step-heading">{step3Heading ?? t.step4}</h3>
+          {step3Content}
         </div>
       </div>
 
