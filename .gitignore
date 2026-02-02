@@ -18,6 +18,9 @@ out
 # Sanity
 .sanity
 
+# orders (JSON store; do not commit order data)
+data/orders.json
+
 # misc
 .DS_Store
 *.pem

@@ -507,3 +507,14 @@ a.filter-pill--active:hover {
 .partner-add-size:hover {
   background: var(--accent-soft);
 }
+
+/* Order details page (public /order/[orderId]) */
+.order-page {
+  padding: 24px 0 48px;
+}
+.order-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 24px;
+}
