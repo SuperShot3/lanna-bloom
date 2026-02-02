@@ -57,27 +57,30 @@ export function OrderNotFoundBlock({
       <style jsx>{`
         .order-not-found-id-block {
           margin: 16px 0;
-          padding: 12px 16px;
+          padding: 14px 16px;
           background: var(--pastel-cream, #f5f0e8);
           border-radius: var(--radius-sm, 8px);
           display: flex;
           flex-wrap: wrap;
           align-items: center;
-          gap: 10px;
+          gap: 10px 16px;
         }
         .order-not-found-id-label {
           font-weight: 600;
           color: var(--text-muted);
+          flex-shrink: 0;
         }
         .order-not-found-id {
           font-family: ui-monospace, monospace;
-          font-size: 1rem;
+          font-size: 0.95rem;
           font-weight: 600;
           color: var(--text);
+          word-break: break-all;
+          min-width: 0;
         }
         .order-not-found-copy {
           margin-left: auto;
-          padding: 6px 12px;
+          padding: 10px 16px;
           font-size: 0.9rem;
           font-weight: 600;
           color: var(--accent);
@@ -86,6 +89,7 @@ export function OrderNotFoundBlock({
           border-radius: var(--radius-sm);
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
+          flex-shrink: 0;
         }
         .order-not-found-copy:hover {
           background: var(--accent-soft);
@@ -93,6 +97,17 @@ export function OrderNotFoundBlock({
         }
         .order-not-found-contact {
           margin-bottom: 20px;
+        }
+        @media (max-width: 480px) {
+          .order-not-found-id-block {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
+          .order-not-found-copy {
+            margin-left: 0;
+            width: 100%;
+          }
         }
       `}</style>
     </div>

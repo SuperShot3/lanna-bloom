@@ -283,28 +283,36 @@ a.filter-pill--active:hover {
   }
 }
 
-/* 404 page */
+/* 404 / order not found page */
 .not-found {
   min-height: 60vh;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 0;
+  max-width: 480px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 .not-found-title {
   font-family: var(--font-serif);
-  font-size: 3rem;
+  font-size: clamp(1.75rem, 5vw, 3rem);
   font-weight: 600;
   color: var(--text);
   margin: 0 0 8px;
+  line-height: 1.2;
 }
 .not-found-text {
   font-size: 1rem;
+  line-height: 1.5;
   color: var(--text-muted);
-  margin: 0 0 24px;
+  margin: 0 0 16px;
 }
 .not-found-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 12px 24px;
   background: var(--accent);
   color: #fff;
@@ -312,6 +320,8 @@ a.filter-pill--active:hover {
   font-size: 0.95rem;
   border-radius: var(--radius);
   transition: opacity 0.2s;
+  width: fit-content;
+  box-sizing: border-box;
 }
 .not-found-link:hover {
   opacity: 0.9;

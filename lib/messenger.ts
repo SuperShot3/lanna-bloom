@@ -9,8 +9,10 @@ import type { Locale } from '@/lib/i18n';
 const CONTACT_PHONE = '66803313431';
 
 const WHATSAPP_PHONE = CONTACT_PHONE;
-/** LINE uses LINE ID only (no phone in URL). Replace with your LINE ID linked to +66803313431. */
-const LINE_AT = 'yourshop';
+/** LINE Official Account (OA). For oaMessage we need the OA ID including @ (e.g. @lannabloom). Percent-encoded in URL. */
+const LINE_OA_ID = '@lannabloom';
+/** LINE OA "Add friend" / open chat link (e.g. from lin.ee). Used for contact link when no prefill. */
+const LINE_OA_LINK = 'https://lin.ee/zxg4N3F';
 /** Telegram: link by phone number so all contact goes to +66803313431. */
 const TELEGRAM_PHONE = '66803313431';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
@@ -23,8 +25,10 @@ export function getWhatsAppOrderUrl(message: string): string {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encode(message)}`;
 }
 
+/** Open LINE OA chat with pre-filled message. User must press Send. Both OA ID and text are percent-encoded. */
 export function getLineOrderUrl(message: string): string {
-  return `https://line.me/R/msg/p/${LINE_AT}?${encode(message)}`;
+  const encodedOaId = encodeURIComponent(LINE_OA_ID);
+  return `https://line.me/R/oaMessage/${encodedOaId}/?${encode(message)}`;
 }
 
 export function getTelegramOrderUrl(message: string): string {
@@ -44,7 +48,7 @@ export function getTelegramContactUrl(): string {
   return `https://t.me/+${TELEGRAM_PHONE}`;
 }
 export function getLineContactUrl(): string {
-  return `https://line.me/R/ti/p/@${LINE_AT}`;
+  return LINE_OA_LINK;
 }
 export function getFacebookContactUrl(): string {
   return `https://www.facebook.com/${FACEBOOK_PAGE}`;

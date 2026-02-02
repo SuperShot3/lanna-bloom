@@ -19,7 +19,6 @@ export function Header({ lang }: { lang: Locale }) {
   const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
-  const partnerRegisterHref = `/${lang}/partner/register`;
   const cartHref = `/${lang}/cart`;
   const t = translations[lang].nav;
   const { count: cartCount } = useCart();
@@ -28,19 +27,8 @@ export function Header({ lang }: { lang: Locale }) {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const deliveryTriggerRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const id = window.localStorage.getItem('lanna-bloom-last-order-id');
-      if (id?.trim()) setLastOrderId(id.trim());
-    } catch {
-      // ignore
-    }
-  }, []);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -124,26 +112,9 @@ export function Header({ lang }: { lang: Locale }) {
             >
               {t.delivery}
             </Link>
-            <Link
-              href={partnerRegisterHref}
-              className={basePath.startsWith('/partner') ? 'nav-link active' : 'nav-link nav-link--partner'}
-            >
-              {t.partnerRegister}
-            </Link>
           </nav>
           {showActions && (
             <div className="header-actions">
-              {lastOrderId &&
-                pathname !== `/order/${lastOrderId}` &&
-                !pathname?.includes('/checkout/success') && (
-                  <Link
-                    href={`/order/${lastOrderId}`}
-                    className="header-order-link"
-                    title={t.viewYourOrder}
-                  >
-                    {t.viewYourOrder}
-                  </Link>
-                )}
               <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
               <Link
                 href={cartHref}
@@ -222,26 +193,8 @@ export function Header({ lang }: { lang: Locale }) {
             >
               {t.delivery}
             </Link>
-            <Link
-              href={partnerRegisterHref}
-              className={`mobile-menu-link ${basePath.startsWith('/partner') ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {t.partnerRegister}
-            </Link>
           </nav>
           <div className="mobile-menu-actions">
-            {lastOrderId &&
-              pathname !== `/order/${lastOrderId}` &&
-              !pathname?.includes('/checkout/success') && (
-                <Link
-                  href={`/order/${lastOrderId}`}
-                  className="mobile-menu-link mobile-menu-order"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {t.viewYourOrder}
-                </Link>
-              )}
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
             <Link
               href={cartHref}
@@ -355,19 +308,6 @@ export function Header({ lang }: { lang: Locale }) {
           display: flex;
           align-items: center;
           gap: 16px;
-        }
-        .header-order-link {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: var(--accent);
-          text-decoration: none;
-          padding: 6px 10px;
-          border-radius: var(--radius-sm);
-          transition: background 0.2s, color 0.2s;
-        }
-        .header-order-link:hover {
-          background: var(--accent-soft);
-          color: var(--text);
         }
         .header-cart-link {
           display: flex;

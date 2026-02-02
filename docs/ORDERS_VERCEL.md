@@ -4,8 +4,8 @@
 
 On Vercel, orders are stored in **`/tmp`** when Blob is not configured. `/tmp` is **not shared** between serverless instances and is cleared on cold starts. So:
 
-1. User places order → order is saved to one instance’s `/tmp`.
-2. User or shop opens the order link later → another instance (or a cold start) handles the request → that instance’s `/tmp` has no orders → **404**.
+1. User places order → order is saved to one instance's `/tmp`.
+2. User or shop opens the order link later → another instance (or a cold start) handles the request → that instance's `/tmp` has no orders → **404**.
 
 To fix this, orders must be stored in a **shared, persistent store** (Vercel Blob).
 
@@ -15,7 +15,7 @@ To fix this, orders must be stored in a **shared, persistent store** (Vercel Blo
 2. Go to the **Storage** tab (not Marketplace).
 3. Click **Create Database** (or **Connect Store** / **Add Storage**).
 4. Select **Blob** → **Continue**.
-5. Name the store (e.g. `lanna-bloom-orders`) and create it. Choose which environments (Production, Preview, Development) get the token.
+5. Name the store (e.g. `lannabloom-orders`) and create it. Choose which environments (Production, Preview, Development) get the token.
 6. Vercel adds **`BLOB_READ_WRITE_TOKEN`** to the project automatically.
 7. **Redeploy** the project (e.g. push a commit or Deployments → Redeploy).
 
@@ -35,4 +35,26 @@ After a **successful** order, the cart is **cleared on purpose** so the user sta
 - User places order → success page → cart is cleared.
 - User leaves and comes back later → cart is empty.
 
-That is expected. The cart is stored in the browser (localStorage) and is only cleared after a successful “Place Order”.
+That is expected. The cart is stored in the browser (localStorage) and is only cleared after a successful "Place Order".
+
+---
+
+## Admin: view and remove orders
+
+To see current orders and remove them (e.g. after delivery):
+
+1. **URL (link spelling)**  
+   - Local: `http://localhost:3000/admin/orders`  
+   - Production: `https://<your-domain>/admin/orders`  
+   Example: `https://www.lannabloom.shop/admin/orders`
+
+2. **Secret**  
+   Set `ORDERS_ADMIN_SECRET` in your environment (e.g. in Vercel: Project → Settings → Environment Variables). Use a long random string; this is not the same as the Blob token.
+
+3. **Usage**  
+   - Open the admin URL in the browser.  
+   - Enter the same value as `ORDERS_ADMIN_SECRET` in the input and click **Continue**.  
+   - The page will list all orders (newest first). You can open each order's details link and, after delivery, use **Remove** to delete it from the list.
+
+4. **Without a secret**  
+   If `ORDERS_ADMIN_SECRET` is not set, in production the list/remove API returns 401 until you set the secret and use it on the page.

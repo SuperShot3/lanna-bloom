@@ -116,13 +116,15 @@ function buildOrderPayload(
   const deliveryFee = 0;
   const grandTotal = itemsTotal + deliveryFee;
 
+  // API requires non-empty customerName, phone, and at least one contactPreference.
+  // We only call this after client-side validation, so send the strings we have.
   return {
-    customerName: contact.customerName.trim() || undefined,
-    phone: contact.phone.trim() || undefined,
+    customerName: contact.customerName.trim(),
+    phone: contact.phone.trim(),
     items: orderItems,
     delivery: {
       address: deliveryAddress,
-      district: delivery.district?.id,
+      district: delivery.district?.id ?? undefined,
       preferredTimeSlot,
     },
     pricing: {
@@ -130,8 +132,7 @@ function buildOrderPayload(
       deliveryFee,
       grandTotal,
     },
-    contactPreference:
-      contact.contactPreference.length > 0 ? contact.contactPreference : undefined,
+    contactPreference: contact.contactPreference.length > 0 ? contact.contactPreference : ['phone'],
   };
 }
 
