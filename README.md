@@ -1,174 +1,120 @@
-# To DO 
-
-Can image of choses flowers chages according size option that choosen by user.
-
-categories such us romatic and gifts are empty we can filled them with affilate products 
-
-Header is still to big 
-
-on iphone is not well centred as category want to make it different way. 
-
-Button choose button is not good 
-
-create contact social media (how customer will contact us via facebook or phone coz WhatsApp need new number i dont have)
-
-create design for small stiker that can be placed in bar or something to promte website. 
-
-talk to seller tommorow
-
-Descriptuion 
-
-# Data Base access 
-
-go to localhost:3000/studio - use gmail adress 
-
-
 # Lanna Bloom
 
-A mobile-first e-commerce site for selling flowers online, inspired by Flowwow. Orders are placed via messengers (LINE, WhatsApp, Telegram, Facebook)—no checkout flow.
+A mobile-first flower shop for selling bouquets online. Customers browse the catalog, add items to the cart, and place orders with delivery details; the site generates a shareable order link and a pre-filled message for LINE, WhatsApp, or Telegram.
 
 ## Features
 
-- **Two languages**: English (EN) and Thai (TH), with instant switching via `/en` and `/th` URLs
-- **Mobile-first**: Responsive layout, touch-friendly category grid and product cards
-- **Pages**: Home (hero + category grid), Catalog (bouquet grid), Product (gallery, size selector, messenger order buttons)
-- **Messenger ordering**: Pre-filled message opens in LINE, WhatsApp, Telegram, or Facebook
-- **SEO-friendly**: Next.js App Router, semantic HTML, static generation
-- **CMS-ready**: Bouquet data in `lib/bouquets.ts`; replace with API/CMS later
+- **Two languages** — English and Thai via `/en` and `/th` URLs; language switcher in the header
+- **Catalog** — Bouquets from Sanity CMS; categories, product pages with gallery and size selector
+- **Cart & orders** — Add to cart, delivery area and date, contact info; place order → success page with order link and messenger buttons
+- **Order link** — Each order gets a public URL (e.g. `https://yoursite.com/order/LB-2026-xxxx`); stored in Vercel Blob so the link works when opened later
+- **Messenger** — Pre-filled “order via LINE / WhatsApp / Telegram” from product page and cart; contact links in the header
+- **Sanity Studio** — CMS at `/studio` for bouquets and partners; partner registration and dashboard (add/edit bouquets when approved)
+- **Admin** — `/admin/orders`: list and remove orders (e.g. after delivery) using a secret
 
-## Tech Stack
+## Tech stack
 
 - **Next.js 14** (App Router)
-- **React 18**
-- **TypeScript**
+- **React 18**, **TypeScript**
+- **Sanity** (catalog and partner data)
+- **Vercel Blob** (order storage on Vercel)
 - **CSS** (variables, no framework)
 
-## Getting Started
+## Getting started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You’ll be redirected to `/en`. Use the header to switch to `/th` or open `/th` directly.
+Open [http://localhost:3000](http://localhost:3000); you’ll be redirected to `/en`. Use the header to switch to `/th`.
+
+### Environment variables
+
+Copy `.env.example` to `.env.local` and set:
+
+| Variable | Purpose |
+|---------|---------|
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity project (required for catalog and Studio) |
+| `NEXT_PUBLIC_SANITY_DATASET` | Usually `production` |
+| `SANITY_API_WRITE_TOKEN` | Sanity API token (partner registration and bouquet uploads) |
+| `NEXT_PUBLIC_APP_URL` | Live site URL for order links (e.g. `https://www.lannabloom.shop`) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token (required on Vercel so order links work) |
+| `ORDERS_ADMIN_SECRET` | Optional; required to use `/admin/orders` in production |
+
+See `.env.example` for comments. For order-link troubleshooting (e.g. “Order not found”), see **docs/ORDERS_VERCEL.md**.
 
 ## Sanity Studio (CMS)
 
-The app includes Sanity Studio at **[/studio](http://localhost:3000/studio)** for managing bouquets (images, descriptions, prices).
+The app ships with Sanity Studio at **[/studio](http://localhost:3000/studio)** for managing bouquets and partners.
 
-1. **Env**: `.env.local` should have:
-   - `NEXT_PUBLIC_SANITY_PROJECT_ID=moaf1lxq`
-   - `NEXT_PUBLIC_SANITY_DATASET=production`
-   - `SANITY_API_WRITE_TOKEN` — required for partner registration and partner bouquet uploads (create a token with Editor/Admin in [sanity.io/manage](https://www.sanity.io/manage) → API → Tokens)
+1. Set `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, and `SANITY_API_WRITE_TOKEN` in `.env.local`.
+2. In [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **CORS origins**, add `http://localhost:3000` with **Allow credentials** (and your production URL when deployed).
+3. Run `npm run dev` and open [http://localhost:3000/studio](http://localhost:3000/studio).
 
-2. **Install and run**:
-   ```bash
-   npm install
-   npm run dev
-   ```
-   Then open [http://localhost:3000/studio](http://localhost:3000/studio).
+**Bouquet** documents: slug, name (EN/TH), description, composition, category, images, sizes (price, label, description). Only **approved** bouquets appear on the catalog. **Partner** documents are used for the partner registration flow; approve partners in Studio to give them dashboard access.
 
-3. **CORS**: In [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **CORS origins**, add `http://localhost:3000` with **Allow credentials** so the Studio can talk to the Content Lake.
+## Orders and cart
 
-4. **Schema**: The **Bouquet** document type has: slug, name (EN/TH), description (EN/TH), composition (EN/TH), category, partner (optional reference), status (pending_review / approved — only approved show on the public catalog), images (gallery), and sizes (S/M/L/XL with price, description, preparation time, availability). The **Partner** document type is used for the partner registration flow; approve partners in Studio to give them dashboard access.
+- **Cart** — `/[lang]/cart`: delivery area (Chiang Mai districts), date, contact name and phone, contact method; “Place Order” creates an order and redirects to the success page.
+- **Order link** — Generated after place order (e.g. `https://yoursite.com/order/LB-2026-xxxx`). Set `NEXT_PUBLIC_APP_URL` to your live URL so this link uses the correct domain. Stored in **Vercel Blob**; set `BLOB_READ_WRITE_TOKEN` for Production and Preview so the same store is used and the link works when opened.
+- **Admin** — Open `/admin/orders`, enter the value of `ORDERS_ADMIN_SECRET`, then list or remove orders. See **docs/ORDERS_VERCEL.md** for full setup and “Order not found” fixes.
 
-## Updating the catalog (new flowers)
+## Catalog updates
 
-When you add or edit flowers in Sanity Studio:
+- **Development** — After changing bouquets in Studio, refresh the catalog page; changes appear immediately.
+- **Production** — Catalog and product pages revalidate every 60 seconds; new or updated bouquets show within about a minute. No rebuild needed for content-only changes.
 
-- **Development** (`npm run dev`): Refresh the catalog page (`/en/catalog` or `/th/catalog`) — new bouquets appear right away.
-- **Production**: The site revalidates catalog and product pages **every 60 seconds**. New flowers show up within about a minute. No rebuild needed.
-- **Immediate update**: To force a full refresh without waiting, run `npm run build` and redeploy.
+## Partner registration and dashboard
 
-Product URLs use the **slug** you set in Sanity (e.g. `/en/catalog/red-roses`). New slugs work as soon as the catalog list updates; no code changes required.
+- **Register** — `/[lang]/partner/register` (link can be hidden from the main nav). Form creates a Partner in Sanity with status `pending_review`.
+- **Dashboard** — `/[lang]/partner/dashboard/[partnerId]` (from success email/link). Approved partners can add and edit bouquets; new bouquets are `pending_review` until approved in Studio.
 
-## Partner Registration & Upload
-
-- **Public entry**: Header link “Register as a Partner” → `/[lang]/partner/register`.
-- **Registration**: Form (shop name, contact, phone, LINE/WhatsApp, address, city) saves a **Partner** document in Sanity with status `pending_review`. After submit, the success page shows a dashboard link (active once approved).
-- **Approval**: In Sanity Studio, open **Partner** documents and set status to **Approved** (or **Disabled**). Only approved partners can use the dashboard.
-- **Partner dashboard**: `/[lang]/partner/dashboard/[partnerId]` — list of the partner’s bouquets and “Add bouquet”. Each new or edited bouquet has status `pending_review`; only **approved** bouquets appear on the public catalog (approve in Studio on the Bouquet document).
-- **Bouquet form**: Name (EN/TH), description, composition, category, 1–3 images, sizes (S/M/L/XL with price, description, preparation time, availability). Images are uploaded to Sanity; on edit, leaving image fields empty keeps existing images.
-
-## Project Structure
+## Project structure
 
 ```
 app/
-  layout.tsx          # Root layout, fonts, meta
-  page.tsx            # Redirects to /en
-  globals.css         # Design tokens (pastels, typography)
-  [lang]/
-    layout.tsx        # Lang layout + Header
-    page.tsx          # Home: Hero + CategoryGrid
-    catalog/
-      page.tsx        # Catalog grid (optional ?category=)
-      [slug]/
-        page.tsx      # Product: gallery, size, messenger CTAs
-components/
-  Header.tsx          # Logo, nav, LanguageSwitcher, MessengerLinks
-  LanguageSwitcher.tsx
-  MessengerLinks.tsx  # Header messenger icons
-  Hero.tsx
-  CategoryGrid.tsx
-  BouquetCard.tsx
-  ProductGallery.tsx
-  SizeSelector.tsx
-  MessengerOrderButtons.tsx  # Product page: order via LINE/WhatsApp/etc.
-  ProductOrderBlock.tsx      # Wraps SizeSelector + MessengerOrderButtons
+  [lang]/           # Locale routes (/en, /th)
+    page.tsx        # Home: Hero + CategoryGrid
+    catalog/        # Catalog grid and product pages
+    cart/           # Cart and place order
+    checkout/success/
+    partner/        # Register and dashboard
+  order/[orderId]/  # Public order details page (no locale)
+  admin/orders/     # Admin: list/remove orders
+  api/orders/       # Create order, list (admin), delete (admin)
+  studio/           # Sanity Studio
+components/         # Header, Hero, BouquetCard, ProductOrderBlock, etc.
 lib/
-  i18n.ts             # Locales, translations (EN/TH)
-  bouquets.ts          # Bouquet data (replace with CMS)
-  messenger.ts         # Deep links + pre-filled message builder
+  i18n.ts           # Translations (EN/TH)
+  sanity.ts         # Sanity read client
+  orders.ts         # Order types and Blob/file storage
+  messenger.ts      # LINE, WhatsApp, Telegram URLs and message builder
 ```
 
 ## Configuration
 
-- **Messenger links**: Edit `lib/messenger.ts` (phone, LINE @, Telegram user, Facebook page) and header links in `components/MessengerLinks.tsx`.
-- **Bouquet data**: Edit `lib/bouquets.ts` or later plug in a headless CMS.
-- **Translations**: Add or change strings in `lib/i18n.ts`.
+- **Messenger (LINE, WhatsApp, Telegram)** — Edit `lib/messenger.ts`: phone number, LINE OA ID and lin.ee link, and (optionally) Facebook page. Header contact icons and “order via” buttons use these.
+- **Translations** — All UI strings are in `lib/i18n.ts` (EN and TH).
 
 ## Design
 
-- Soft pastels, rounded cards, minimal shadows
+- Soft pastels, cream background, accent gold/beige
 - Typography: DM Sans (UI), Cormorant Garamond (headings)
-- Colors: cream background, accent gold/beige, muted text
+- Mobile-first; sticky header with burger menu when scrolled
 
-## Build
+## Build and deploy
 
 ```bash
 npm run build
 npm start
 ```
 
-## Deploy to Vercel
+### Deploy to Vercel
 
-1. **Push your code to GitHub** (if you haven’t already):
-   ```bash
-   git add .
-   git commit -m "Prepare for Vercel"
-   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-   git push -u origin main
-   ```
+1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
+2. Add environment variables (see table above). For orders to work: set `BLOB_READ_WRITE_TOKEN` (Storage → Blob, attach to project; use same token for Production and Preview) and `NEXT_PUBLIC_APP_URL` (your live URL).
+3. In Sanity → API → CORS origins, add your Vercel URL (and custom domain if used) with **Allow credentials** so Studio works.
+4. Optional: add a custom domain in Vercel and set `NEXT_PUBLIC_APP_URL` to that domain.
 
-2. **Import the project in Vercel**
-   - Go to [vercel.com](https://vercel.com) and sign in (GitHub).
-   - Click **Add New** → **Project** and import your repository.
-   - Vercel will detect Next.js; leave **Build Command** as `npm run build` and **Output Directory** as default.
-
-3. **Add environment variables**
-   - In the project import screen (or later: **Project** → **Settings** → **Environment Variables**), add:
-     - `NEXT_PUBLIC_SANITY_PROJECT_ID` = your Sanity project ID (e.g. `moaf1lxq`)
-     - `NEXT_PUBLIC_SANITY_DATASET` = `production`
-   - Apply to **Production**, **Preview**, and **Development** if you use Vercel previews.
-
-4. **Deploy**
-   - Click **Deploy**. After the build finishes, you’ll get a URL like `https://your-project.vercel.app`.
-
-5. **Sanity CORS (required for Studio on production)**
-   - In [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **CORS origins**:
-   - Add your Vercel URL, e.g. `https://your-project.vercel.app`, with **Allow credentials** enabled.
-   - This lets the embedded Studio at `https://your-project.vercel.app/studio` work correctly.
-
-6. **Optional: custom domain**
-   - In Vercel: **Project** → **Settings** → **Domains** → add your domain.
-   - Add that domain to Sanity CORS origins as well (e.g. `https://lannabloom.com`).
+For detailed order storage setup and “Order not found” troubleshooting, see **docs/ORDERS_VERCEL.md**.

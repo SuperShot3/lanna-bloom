@@ -107,13 +107,23 @@ function findOrdersBlob(blobs: { pathname: string; url: string }[]): { pathname:
 
 async function readOrdersFromBlob(attempt = 0): Promise<Order[]> {
   const { list } = await import('@vercel/blob');
-  const maxRetries = process.env.VERCEL ? 2 : 0;
+  const maxRetries = process.env.VERCEL ? 3 : 0;
+  const retryDelayMs = 1200;
 
   try {
-    // List without prefix first so the API returns 200 with empty array instead of 404 when store is empty
-    const { blobs } = await list({ limit: 500 });
+    const { blobs } = await list({ prefix: 'lannabloom/', limit: 100 });
     const blob = findOrdersBlob(blobs);
-    if (!blob?.url) return [];
+
+    if (!blob?.url) {
+      if (process.env.VERCEL && blobs.length > 0) {
+        console.error('[orders] Blob pathname mismatch. Expected like', ORDERS_BLOB_PATH, 'Got:', blobs.map((b) => b.pathname));
+      }
+      if (process.env.VERCEL && blobs.length === 0 && attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, retryDelayMs));
+        return readOrdersFromBlob(attempt + 1);
+      }
+      return [];
+    }
 
     const res = await fetch(blob.url, { cache: 'no-store' });
     if (!res.ok) {
@@ -127,12 +137,12 @@ async function readOrdersFromBlob(attempt = 0): Promise<Order[]> {
     const isNotFound = e && typeof e === 'object' && 'message' in e && String((e as Error).message).includes('does not exist');
     if (isNotFound || (e as Error).constructor?.name === 'BlobNotFoundError') {
       if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, retryDelayMs));
         return readOrdersFromBlob(attempt + 1);
       }
       if (process.env.VERCEL) {
         console.error(
-          '[orders] Blob not found. Ensure BLOB_READ_WRITE_TOKEN is the SAME for Production and Preview so the store is shared (Vercel → Storage → your store → envs).'
+          '[orders] Blob not found. Ensure BLOB_READ_WRITE_TOKEN is the SAME for Production and Preview (Vercel → Storage → your store → envs).'
         );
       }
       return [];
@@ -232,12 +242,14 @@ export async function listOrders(): Promise<Order[]> {
   );
 }
 
-/** Base URL for public links (order details page). */
+/** Base URL for public links (order details page). Never returns localhost when running on Vercel. */
 export function getBaseUrl(): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl) return appUrl.replace(/\/$/, '');
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const isLocalhost = (url: string) => /^https?:\/\/localhost(\d*)(\s|$|\/)/i.test(url) || /^https?:\/\/127\.0\.0\.1/i.test(url);
+  if (appUrl && !isLocalhost(appUrl)) return appUrl.replace(/\/$/, '');
+  if (process.env.VERCEL && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
   return 'http://localhost:3000';
 }
 
