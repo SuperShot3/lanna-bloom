@@ -58,12 +58,21 @@ export interface Order extends OrderPayload {
 
 const ORDERS_KV_KEY = 'lannabloom:orders';
 
-/** Use Vercel KV when configured; else on Vercel use /tmp; locally use ./data/orders.json */
-function useKvStorage(): boolean {
-  return !!(
-    process.env.KV_REST_API_URL &&
-    process.env.KV_REST_API_TOKEN
-  );
+/** Redis config from env: Upstash (UPSTASH_*) or Vercel KV (KV_REST_API_*). */
+function getRedisConfig(): { url: string; token: string } | null {
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN;
+  if (url && token) return { url, token };
+  return null;
+}
+
+/** Use Redis (Upstash) when configured; else on Vercel use /tmp; locally use ./data/orders.json */
+function useRedisStorage(): boolean {
+  return getRedisConfig() !== null;
 }
 
 function getOrdersFilePath(): string {
@@ -98,14 +107,18 @@ async function writeOrdersToFile(orders: Order[]): Promise<void> {
 }
 
 async function readOrders(): Promise<Order[]> {
-  if (useKvStorage()) {
+  const config = getRedisConfig();
+  if (config) {
     try {
-      const { kv } = await import('@vercel/kv');
-      const data = await kv.get<Order[]>(ORDERS_KV_KEY);
+      const { Redis } = await import('@upstash/redis');
+      const redis = new Redis(config);
+      const raw = await redis.get(ORDERS_KV_KEY);
+      if (raw == null) return [];
+      const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
       return Array.isArray(data) ? data : [];
     } catch (e) {
       if (process.env.VERCEL) {
-        console.error('[orders] KV read failed, using file fallback:', e);
+        console.error('[orders] Redis read failed, using file fallback:', e);
       }
       return readOrdersFromFile();
     }
@@ -114,17 +127,18 @@ async function readOrders(): Promise<Order[]> {
 }
 
 async function writeOrders(orders: Order[]): Promise<void> {
-  if (useKvStorage()) {
+  const config = getRedisConfig();
+  if (config) {
     try {
-      const { kv } = await import('@vercel/kv');
-      await kv.set(ORDERS_KV_KEY, orders);
+      const { Redis } = await import('@upstash/redis');
+      const redis = new Redis(config);
+      await redis.set(ORDERS_KV_KEY, JSON.stringify(orders));
       return;
     } catch (e) {
       if (process.env.VERCEL) {
-        console.error('[orders] KV write failed:', e);
+        console.error('[orders] Redis write failed:', e);
         throw e;
       }
-      // local dev: fallback to file
       await writeOrdersToFile(orders);
       return;
     }
@@ -164,7 +178,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   const normalized = orderId.trim();
   let orders = await readOrders();
   let order = orders.find((o) => o.orderId === normalized) ?? null;
-  if (!order && useKvStorage() && process.env.VERCEL) {
+  if (!order && useRedisStorage() && process.env.VERCEL) {
     await new Promise((r) => setTimeout(r, 1500));
     orders = await readOrders();
     order = orders.find((o) => o.orderId === normalized) ?? null;

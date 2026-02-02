@@ -28,7 +28,7 @@ After redeploy, new orders are stored in KV. Order links (e.g. `https://www.lann
 1. **Env vars in Vercel** — `KV_REST_API_URL` and `KV_REST_API_TOKEN` must be in **Vercel Dashboard → Your project → Settings → Environment Variables**. If they are only in `.env.local`, the deployed app does not see them.
 2. **Redeploy** — After adding or changing env vars, trigger a new deployment (e.g. Deployments → … → Redeploy, or push a commit). The running app only gets the new vars after a deploy.
 3. **New order** — Test with an order placed **after** the redeploy. Old order IDs were never written to KV and will always 404.
-4. **Logs** — In Vercel, open a deployment → Functions → select the function that ran when you placed the order. You should see a log line like `[orders] Created LB-2026-xxx KV`. If it says `file/tmp` instead of `KV`, the app is not using KV (vars missing or wrong).
+4. **Logs** — In Vercel, open a deployment → Functions → select the function that ran when you placed the order. You should see a log line like `[orders] Created LB-2026-xxx Redis`. If it says `file/tmp` instead of `Redis`, the app is not using Redis (env vars missing or wrong).
 
 ## Why the cart is empty when the user comes back
 
