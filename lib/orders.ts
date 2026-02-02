@@ -1,6 +1,6 @@
 /**
  * Order types and storage helpers for Smart Chat Link flow.
- * Uses data/orders.json (dev-friendly); for serverless consider DB or KV later.
+ * Uses Vercel Blob when BLOB_READ_WRITE_TOKEN is set; else data/orders.json (local) or /tmp (Vercel without Blob).
  */
 
 import { promises as fs } from 'fs';
@@ -56,23 +56,12 @@ export interface Order extends OrderPayload {
   createdAt: string;
 }
 
-const ORDERS_KV_KEY = 'lannabloom:orders';
+/** Blob path for the single JSON file holding all orders. */
+const ORDERS_BLOB_PATH = 'lannabloom/orders.json';
 
-/** Redis config from env: Upstash (UPSTASH_*) or Vercel KV (KV_REST_API_*). */
-function getRedisConfig(): { url: string; token: string } | null {
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL ||
-    process.env.KV_REST_API_URL;
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN ||
-    process.env.KV_REST_API_TOKEN;
-  if (url && token) return { url, token };
-  return null;
-}
-
-/** Use Redis (Upstash) when configured; else on Vercel use /tmp; locally use ./data/orders.json */
-function useRedisStorage(): boolean {
-  return getRedisConfig() !== null;
+/** Use Vercel Blob when BLOB_READ_WRITE_TOKEN is set; else file or /tmp. */
+function useBlobStorage(): boolean {
+  return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
 function getOrdersFilePath(): string {
@@ -107,43 +96,46 @@ async function writeOrdersToFile(orders: Order[]): Promise<void> {
 }
 
 async function readOrders(): Promise<Order[]> {
-  const config = getRedisConfig();
-  if (config) {
-    try {
-      const { Redis } = await import('@upstash/redis');
-      const redis = new Redis(config);
-      const raw = await redis.get(ORDERS_KV_KEY);
-      if (raw == null) return [];
-      const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      return Array.isArray(data) ? data : [];
-    } catch (e) {
-      if (process.env.VERCEL) {
-        console.error('[orders] Redis read failed, using file fallback:', e);
-      }
-      return readOrdersFromFile();
-    }
+  if (!useBlobStorage()) {
+    return readOrdersFromFile();
   }
-  return readOrdersFromFile();
+  try {
+    const { list } = await import('@vercel/blob');
+    const { blobs } = await list({ prefix: 'lannabloom/' });
+    const blob = blobs.find((b) => b.pathname === ORDERS_BLOB_PATH);
+    if (!blob?.url) return [];
+    const res = await fetch(blob.url);
+    if (!res.ok) return [];
+    const raw = await res.text();
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    if (process.env.VERCEL) {
+      console.error('[orders] Blob read failed, using file fallback:', e);
+    }
+    return readOrdersFromFile();
+  }
 }
 
 async function writeOrders(orders: Order[]): Promise<void> {
-  const config = getRedisConfig();
-  if (config) {
-    try {
-      const { Redis } = await import('@upstash/redis');
-      const redis = new Redis(config);
-      await redis.set(ORDERS_KV_KEY, JSON.stringify(orders));
-      return;
-    } catch (e) {
-      if (process.env.VERCEL) {
-        console.error('[orders] Redis write failed:', e);
-        throw e;
-      }
-      await writeOrdersToFile(orders);
-      return;
-    }
+  if (!useBlobStorage()) {
+    await writeOrdersToFile(orders);
+    return;
   }
-  await writeOrdersToFile(orders);
+  try {
+    const { put } = await import('@vercel/blob');
+    await put(ORDERS_BLOB_PATH, JSON.stringify(orders), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+    });
+  } catch (e) {
+    if (process.env.VERCEL) {
+      console.error('[orders] Blob write failed:', e);
+      throw e;
+    }
+    await writeOrdersToFile(orders);
+  }
 }
 
 /** Generate orderId: LB-YYYY-###### (timestamp + random suffix for collision safety). */
@@ -168,22 +160,16 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
   if (process.env.NODE_ENV === 'development') {
     console.log('[orders] Created', orderId, payload.delivery?.district ?? '');
   } else if (process.env.VERCEL) {
-    console.log('[orders] Created', orderId, useRedisStorage() ? 'Redis' : 'file/tmp');
+    console.log('[orders] Created', orderId, useBlobStorage() ? 'Blob' : 'file/tmp');
   }
   return order;
 }
 
-/** Get order by orderId; null if not found. On Vercel KV, retries once after a short delay to handle replication lag. */
+/** Get order by orderId; null if not found. */
 export async function getOrderById(orderId: string): Promise<Order | null> {
   const normalized = orderId.trim();
-  let orders = await readOrders();
-  let order = orders.find((o) => o.orderId === normalized) ?? null;
-  if (!order && useRedisStorage() && process.env.VERCEL) {
-    await new Promise((r) => setTimeout(r, 1500));
-    orders = await readOrders();
-    order = orders.find((o) => o.orderId === normalized) ?? null;
-  }
-  return order;
+  const orders = await readOrders();
+  return orders.find((o) => o.orderId === normalized) ?? null;
 }
 
 /** Remove order by orderId (e.g. after delivery). Returns true if removed, false if not found. */
