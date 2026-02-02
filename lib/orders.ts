@@ -56,17 +56,34 @@ export interface Order extends OrderPayload {
   createdAt: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const ORDERS_KV_KEY = 'lannabloom:orders';
 
-async function ensureDataDir(): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+/** Use Vercel KV when configured; else on Vercel use /tmp; locally use ./data/orders.json */
+function useKvStorage(): boolean {
+  return !!(
+    process.env.KV_REST_API_URL &&
+    process.env.KV_REST_API_TOKEN
+  );
 }
 
-async function readOrders(): Promise<Order[]> {
+function getOrdersFilePath(): string {
+  if (process.env.VERCEL) {
+    return path.join(process.env.TMPDIR || '/tmp', 'lannabloom-orders.json');
+  }
+  return path.join(process.cwd(), 'data', 'orders.json');
+}
+
+async function ensureDataDir(): Promise<void> {
+  if (process.env.VERCEL) return;
+  const dataDir = path.join(process.cwd(), 'data');
+  await fs.mkdir(dataDir, { recursive: true });
+}
+
+async function readOrdersFromFile(): Promise<Order[]> {
+  const ordersFile = getOrdersFilePath();
   await ensureDataDir();
   try {
-    const raw = await fs.readFile(ORDERS_FILE, 'utf-8');
+    const raw = await fs.readFile(ordersFile, 'utf-8');
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -74,9 +91,36 @@ async function readOrders(): Promise<Order[]> {
   }
 }
 
-async function writeOrders(orders: Order[]): Promise<void> {
+async function writeOrdersToFile(orders: Order[]): Promise<void> {
+  const ordersFile = getOrdersFilePath();
   await ensureDataDir();
-  await fs.writeFile(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
+  await fs.writeFile(ordersFile, JSON.stringify(orders, null, 2), 'utf-8');
+}
+
+async function readOrders(): Promise<Order[]> {
+  if (useKvStorage()) {
+    try {
+      const { kv } = await import('@vercel/kv');
+      const data = await kv.get<Order[]>(ORDERS_KV_KEY);
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return readOrdersFromFile();
+    }
+  }
+  return readOrdersFromFile();
+}
+
+async function writeOrders(orders: Order[]): Promise<void> {
+  if (useKvStorage()) {
+    try {
+      const { kv } = await import('@vercel/kv');
+      await kv.set(ORDERS_KV_KEY, orders);
+      return;
+    } catch {
+      // fallback to file / tmp
+    }
+  }
+  await writeOrdersToFile(orders);
 }
 
 /** Generate orderId: LB-YYYY-###### (timestamp + random suffix for collision safety). */
