@@ -226,10 +226,16 @@ export function Header({ lang }: { lang: Locale }) {
         .header {
           position: sticky;
           top: 0;
+          left: var(--visual-viewport-offset-left, 0);
+          width: var(--visual-viewport-width, 100%);
+          right: 0;
           z-index: 100;
           background: var(--surface);
           border-bottom: 1px solid var(--border);
           box-shadow: var(--shadow);
+          padding-top: env(safe-area-inset-top);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
           transition: background 0.25s ease, min-height 0.25s ease, box-shadow 0.25s ease;
         }
         .header--scrolled {
@@ -443,11 +449,15 @@ export function Header({ lang }: { lang: Locale }) {
 
         .mobile-menu {
           position: fixed;
-          inset: 0;
+          top: var(--visual-viewport-offset-top, 0);
+          left: var(--visual-viewport-offset-left, 0);
+          width: var(--visual-viewport-width, 100%);
+          height: var(--visual-viewport-height, 100%);
           z-index: 110;
           pointer-events: none;
           visibility: hidden;
           transition: visibility 0.25s ease;
+          transform: translateZ(0);
         }
         .mobile-menu--open {
           pointer-events: auto;

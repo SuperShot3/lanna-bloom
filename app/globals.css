@@ -15,6 +15,8 @@
   --shadow-hover: 0 8px 24px rgba(45, 42, 38, 0.08);
   --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
   --font-serif: 'Cormorant Garamond', 'Georgia', serif;
+  /* Dynamic viewport height for fixed/full-height elements (iOS Safari pinch-zoom) */
+  --vh: 1vh;
 }
 
 *,
