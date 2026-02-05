@@ -32,16 +32,7 @@ export function CheckoutSuccessClient({
       .catch(() => setOrder(null));
   }, [orderId]);
 
-  const [copied, setCopied] = useState<'message' | 'link' | null>(null);
-  const copyMessage = async () => {
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setCopied('message');
-      setTimeout(() => setCopied(null), 2000);
-    } catch {
-      // ignore
-    }
-  };
+  const [copied, setCopied] = useState<'link' | null>(null);
   const copyLink = async () => {
     if (!publicOrderUrl) return;
     try {
@@ -101,19 +92,7 @@ export function CheckoutSuccessClient({
             </button>
           </div>
         )}
-        <div className="checkout-success-message-box">
-          <p className="checkout-success-message-label">Message to send:</p>
-          <p className="checkout-success-message-text">{shareText}</p>
-          <button
-            type="button"
-            className="checkout-success-copy-btn"
-            onClick={copyMessage}
-            aria-label={t.copyMessage}
-          >
-            {copied === 'message' ? (lang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!') : t.copyMessage}
-          </button>
-        </div>
-        <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} />
+        <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} lineUseContactUrl />
         <p className="checkout-success-details">
           <Link href={`/order/${orderId}`} className="checkout-success-link" target="_blank" rel="noopener noreferrer">
             View full order details
@@ -184,25 +163,6 @@ export function CheckoutSuccessClient({
           word-break: break-all;
           color: var(--text-muted);
           margin: 0 0 12px;
-        }
-        .checkout-success-message-box {
-          margin-bottom: 24px;
-          padding: 14px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-        }
-        .checkout-success-message-label {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: var(--text-muted);
-          margin: 0 0 8px;
-        }
-        .checkout-success-message-text {
-          font-size: 0.9rem;
-          color: var(--text);
-          margin: 0 0 12px;
-          word-break: break-all;
         }
         .checkout-success-copy-btn {
           padding: 10px 16px;

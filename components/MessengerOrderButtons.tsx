@@ -5,6 +5,7 @@ import {
   getWhatsAppOrderUrl,
   getLineOrderUrl,
   getLineShareUrl,
+  getLineContactUrl,
   getTelegramOrderUrl,
   buildOrderMessage,
 } from '@/lib/messenger';
@@ -26,6 +27,7 @@ export function MessengerOrderButtons({
   deliveryDate = '',
   addOnsSummary = '',
   prebuiltMessage,
+  lineUseContactUrl,
 }: {
   bouquetName?: string;
   sizeLabel?: string;
@@ -35,6 +37,8 @@ export function MessengerOrderButtons({
   addOnsSummary?: string;
   /** When provided, use this message instead of building from bouquet/delivery/addOns (e.g. for cart page). */
   prebuiltMessage?: string;
+  /** When true, LINE button uses add-friend/contact link (no prefilled message). Use on checkout success so user can add and chat. */
+  lineUseContactUrl?: boolean;
 }) {
   const t = translations[lang].product;
   const message =
@@ -62,7 +66,8 @@ export function MessengerOrderButtons({
     setUseLineShareFallback(isDesktop);
   }, []);
 
-  const getLineHref = (msg: string) => (useLineShareFallback ? getLineShareUrl(msg) : getLineOrderUrl(msg));
+  const getLineHref = (msg: string) =>
+    lineUseContactUrl ? getLineContactUrl() : (useLineShareFallback ? getLineShareUrl(msg) : getLineOrderUrl(msg));
 
   return (
     <div className="order-buttons">
