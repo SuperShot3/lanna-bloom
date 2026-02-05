@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import type { Order } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -71,13 +72,29 @@ export function OrderDetailsView({
         <ul className="order-details-items">
           {order.items.map((item, i) => (
             <li key={i} className="order-details-item">
-              <strong>{item.bouquetTitle}</strong> — {item.size} — ฿{item.price.toLocaleString()}
-              {item.addOns.cardMessage && (
-                <span className="order-details-card-msg"> Card: {item.addOns.cardMessage}</span>
-              )}
-              {item.addOns.wrappingOption && (
-                <span className="order-details-wrapping"> Wrapping: {item.addOns.wrappingOption}</span>
-              )}
+              <div className="order-details-item-row">
+                {item.imageUrl && (
+                  <div className="order-details-item-thumb">
+                    <Image
+                      src={item.imageUrl}
+                      alt=""
+                      width={64}
+                      height={64}
+                      className="order-details-item-img"
+                      unoptimized={item.imageUrl.startsWith('data:')}
+                    />
+                  </div>
+                )}
+                <div className="order-details-item-text">
+                  <strong>{item.bouquetTitle}</strong> — {item.size} — ฿{item.price.toLocaleString()}
+                  {item.addOns.cardMessage && (
+                    <span className="order-details-card-msg"> Card: {item.addOns.cardMessage}</span>
+                  )}
+                  {item.addOns.wrappingOption && (
+                    <span className="order-details-wrapping"> Wrapping: {item.addOns.wrappingOption}</span>
+                  )}
+                </div>
+              </div>
             </li>
           ))}
         </ul>
@@ -163,6 +180,28 @@ export function OrderDetailsView({
         }
         .order-details-item:last-child {
           border-bottom: none;
+        }
+        .order-details-item-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .order-details-item-thumb {
+          flex-shrink: 0;
+          width: 64px;
+          height: 64px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          background: var(--pastel-cream, #f9f5f0);
+        }
+        .order-details-item-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .order-details-item-text {
+          flex: 1;
+          min-width: 0;
         }
         .order-details-card-msg,
         .order-details-wrapping {

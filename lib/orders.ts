@@ -24,6 +24,8 @@ export interface OrderItem {
   size: string;
   price: number;
   addOns: OrderItemAddOns;
+  /** Chosen reference image URL (cart/order flow). */
+  imageUrl?: string;
 }
 
 export interface OrderDelivery {

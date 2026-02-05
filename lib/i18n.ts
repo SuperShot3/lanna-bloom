@@ -66,6 +66,7 @@ export const translations = {
     },
     product: {
       composition: 'Composition',
+      seasonalDisclaimer: 'Flower varieties and greenery may vary slightly based on seasonal availability, while keeping the same overall style and value.',
       size: 'Size',
       orderVia: 'Order via',
       orderLine: 'Order via LINE',
@@ -280,6 +281,7 @@ export const translations = {
     },
     product: {
       composition: 'องค์ประกอบ',
+      seasonalDisclaimer: 'ชนิดดอกไม้และใบไม้ประกอบอาจแตกต่างกันเล็กน้อยตามฤดูกาล โดยคงสไตล์และมูลค่ารวมเท่าเดิม',
       size: 'ขนาด',
       orderVia: 'สั่งผ่าน',
       orderLine: 'สั่งผ่าน LINE',

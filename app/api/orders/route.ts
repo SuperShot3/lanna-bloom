@@ -81,6 +81,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
           cardMessage: typeof addOns.cardMessage === 'string' ? addOns.cardMessage : '',
           wrappingOption: (addOns.wrappingOption as OrderPayload['items'][0]['addOns']['wrappingOption']) ?? null,
         },
+        imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
       };
     }),
     delivery: {

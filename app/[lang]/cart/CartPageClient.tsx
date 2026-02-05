@@ -103,6 +103,7 @@ function buildOrderPayload(
         cardMessage: item.addOns.cardMessage?.trim() ?? '',
         wrappingOption: mapWrappingToOption(item.addOns.wrappingPreference),
       },
+      imageUrl: item.imageUrl ?? undefined,
     };
   });
 

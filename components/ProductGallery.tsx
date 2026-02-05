@@ -5,8 +5,21 @@ import Image from 'next/image';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
 
-export function ProductGallery({ images, name }: { images: string[]; name: string }) {
-  const [active, setActive] = useState(0);
+export function ProductGallery({
+  images,
+  name,
+  activeIndex,
+  onActiveChange,
+}: {
+  images: string[];
+  name: string;
+  activeIndex?: number;
+  onActiveChange?: (index: number) => void;
+}) {
+  const [internalActive, setInternalActive] = useState(0);
+  const isControlled = activeIndex !== undefined && onActiveChange !== undefined;
+  const active = isControlled ? activeIndex : internalActive;
+  const setActive = isControlled ? onActiveChange : setInternalActive;
   const list = images?.length ? images : [FALLBACK_IMAGE];
   const current = list[active] ?? list[0] ?? FALLBACK_IMAGE;
 

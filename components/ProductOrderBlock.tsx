@@ -34,7 +34,15 @@ function buildAddOnsSummary(addOns: AddOnsValues, lang: Locale): string {
   return lines.join('. ');
 }
 
-export function ProductOrderBlock({ bouquet, lang }: { bouquet: Bouquet; lang: Locale }) {
+export function ProductOrderBlock({
+  bouquet,
+  lang,
+  selectedImageUrl,
+}: {
+  bouquet: Bouquet;
+  lang: Locale;
+  selectedImageUrl?: string | null;
+}) {
   const [selectedSize, setSelectedSize] = useState<BouquetSize>(bouquet.sizes[0]);
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [justAdded, setJustAdded] = useState(false);
@@ -48,7 +56,7 @@ export function ProductOrderBlock({ bouquet, lang }: { bouquet: Bouquet; lang: L
       slug: bouquet.slug,
       nameEn: bouquet.nameEn,
       nameTh: bouquet.nameTh,
-      imageUrl: bouquet.images?.[0],
+      imageUrl: selectedImageUrl ?? bouquet.images?.[0],
       size: selectedSize,
       addOns: { ...addOns },
     });

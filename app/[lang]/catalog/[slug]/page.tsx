@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ProductGallery } from '@/components/ProductGallery';
-import { ProductOrderBlock } from '@/components/ProductOrderBlock';
+import { ProductPageClient } from './ProductPageClient';
 import { getBouquetBySlugFromSanity, getBouquetsFromSanity } from '@/lib/sanity';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -46,18 +45,14 @@ export default async function ProductPage({
           <span aria-current="page">{name}</span>
         </nav>
         <div className="product-grid">
-          <div className="product-gallery-wrap">
-            <ProductGallery images={bouquet.images} name={name} />
-          </div>
-          <div className="product-info">
-            <h1 className="product-title">{name}</h1>
-            <p className="product-desc">{description}</p>
-            <div className="product-composition">
-              <h2 className="composition-heading">{t.composition}</h2>
-              <p className="composition-text">{composition}</p>
-            </div>
-            <ProductOrderBlock bouquet={bouquet} lang={lang as Locale} />
-          </div>
+          <ProductPageClient
+            bouquet={bouquet}
+            lang={lang as Locale}
+            name={name}
+            description={description}
+            compositionHeading={t.composition}
+            compositionText={composition}
+          />
         </div>
       </div>
     </div>
