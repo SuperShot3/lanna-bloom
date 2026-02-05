@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { Order } from '@/lib/orders';
+import type { ContactPreferenceOption } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
@@ -22,7 +23,15 @@ export function OrderDetailsView({
   locale?: Locale;
 }) {
   const t = translations[locale].orderPage;
+  const tCart = translations[locale].cart;
   const [copied, setCopied] = useState<'id' | 'link' | null>(null);
+
+  const contactPreferenceLabels: Record<ContactPreferenceOption, string> = {
+    phone: tCart.contactPhone,
+    line: tCart.contactLine,
+    whatsapp: tCart.contactWhatsApp,
+    telegram: tCart.contactTelegram,
+  };
 
   const copy = async (text: string, kind: 'id' | 'link') => {
     try {
@@ -65,6 +74,12 @@ export function OrderDetailsView({
           <h2 className="order-details-heading">Customer</h2>
           <p>{order.customerName}</p>
           {order.phone && <p>{order.phone}</p>}
+        </div>
+      )}
+      {order.contactPreference && order.contactPreference.length > 0 && (
+        <div className="order-details-section">
+          <h2 className="order-details-heading">{t.contactPreferenceHeading}</h2>
+          <p>{order.contactPreference.map((opt) => contactPreferenceLabels[opt]).join(', ')}</p>
         </div>
       )}
       <div className="order-details-section">

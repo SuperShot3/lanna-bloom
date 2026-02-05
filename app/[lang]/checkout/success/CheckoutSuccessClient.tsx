@@ -32,12 +32,22 @@ export function CheckoutSuccessClient({
       .catch(() => setOrder(null));
   }, [orderId]);
 
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'message' | 'link' | null>(null);
   const copyMessage = async () => {
     try {
       await navigator.clipboard.writeText(shareText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopied('message');
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      // ignore
+    }
+  };
+  const copyLink = async () => {
+    if (!publicOrderUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicOrderUrl);
+      setCopied('link');
+      setTimeout(() => setCopied(null), 2000);
     } catch {
       // ignore
     }
@@ -76,6 +86,21 @@ export function CheckoutSuccessClient({
             {totalLine && <p className="checkout-success-summary-total">{totalLine}</p>}
           </div>
         )}
+        {publicOrderUrl && (
+          <div className="checkout-success-save-link-notice">
+            <h2 className="checkout-success-save-link-heading">{t.saveLinkLabel}</h2>
+            <p className="checkout-success-save-link-text">{t.saveLinkNotice}</p>
+            <p className="checkout-success-save-link-url">{publicOrderUrl}</p>
+            <button
+              type="button"
+              className="checkout-success-copy-btn"
+              onClick={copyLink}
+              aria-label={t.copyLink}
+            >
+              {copied === 'link' ? (lang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!') : t.copyLink}
+            </button>
+          </div>
+        )}
         <div className="checkout-success-message-box">
           <p className="checkout-success-message-label">Message to send:</p>
           <p className="checkout-success-message-text">{shareText}</p>
@@ -85,7 +110,7 @@ export function CheckoutSuccessClient({
             onClick={copyMessage}
             aria-label={t.copyMessage}
           >
-            {copied ? 'Copied!' : t.copyMessage}
+            {copied === 'message' ? (lang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!') : t.copyMessage}
           </button>
         </div>
         <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} />
@@ -133,6 +158,32 @@ export function CheckoutSuccessClient({
           font-weight: 700;
           color: var(--accent);
           margin: 0;
+        }
+        .checkout-success-save-link-notice {
+          margin-bottom: 24px;
+          padding: 18px 20px;
+          background: var(--pastel-cream);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-family: var(--font-sans);
+        }
+        .checkout-success-save-link-heading {
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 10px;
+        }
+        .checkout-success-save-link-text {
+          font-size: 1rem;
+          line-height: 1.5;
+          color: var(--text);
+          margin: 0 0 12px;
+        }
+        .checkout-success-save-link-url {
+          font-size: 0.95rem;
+          word-break: break-all;
+          color: var(--text-muted);
+          margin: 0 0 12px;
         }
         .checkout-success-message-box {
           margin-bottom: 24px;

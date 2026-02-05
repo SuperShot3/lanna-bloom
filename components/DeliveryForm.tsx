@@ -13,6 +13,7 @@ import type { Locale } from '@/lib/i18n';
 
 export interface DeliveryFormValues {
   district: District | null;
+  addressLine: string;
   date: string;
   deliveryType: DeliveryType;
 }
@@ -85,6 +86,29 @@ export function DeliveryForm({
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="buy-now-field">
+              <label className="buy-now-label" htmlFor="buy-now-address">
+                {t.addressLabel}
+              </label>
+              <textarea
+                id="buy-now-address"
+                value={value.addressLine}
+                onChange={(e) => onChange({ ...value, addressLine: e.target.value })}
+                placeholder={t.addressPlaceholder}
+                minLength={10}
+                maxLength={300}
+                rows={2}
+                disabled={!hasArea}
+                className="buy-now-input buy-now-textarea"
+                aria-label={t.addressLabel}
+                aria-describedby="buy-now-address-hint"
+              />
+              <span id="buy-now-address-hint" className="buy-now-address-hint">
+                {value.addressLine.length}/300 {value.addressLine.length > 0 && value.addressLine.length < 10 && (
+                  <span className="buy-now-address-error"> — {t.addressTooShort}</span>
+                )}
+              </span>
             </div>
           </div>
         </div>
@@ -322,6 +346,17 @@ export function DeliveryForm({
         .buy-now-delivery-info-note {
           font-size: 11px;
           margin-top: 6px;
+        }
+        .buy-now-textarea {
+          resize: vertical;
+          min-height: 60px;
+        }
+        .buy-now-address-hint {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+        }
+        .buy-now-address-error {
+          color: var(--accent);
         }
       `}</style>
     </div>

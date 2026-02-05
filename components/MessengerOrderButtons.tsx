@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   getWhatsAppOrderUrl,
   getLineOrderUrl,
+  getLineShareUrl,
   getTelegramOrderUrl,
   buildOrderMessage,
 } from '@/lib/messenger';
@@ -53,6 +55,15 @@ export function MessengerOrderButtons({
             : undefined
         );
 
+  // Use LINE share URL on desktop (oaMessage often unreliable); OA chat on mobile. Set after mount to avoid hydration mismatch.
+  const [useLineShareFallback, setUseLineShareFallback] = useState(false);
+  useEffect(() => {
+    const isDesktop = typeof navigator !== 'undefined' && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setUseLineShareFallback(isDesktop);
+  }, []);
+
+  const getLineHref = (msg: string) => (useLineShareFallback ? getLineShareUrl(msg) : getLineOrderUrl(msg));
+
   return (
     <div className="order-buttons">
       <p className="order-via">{t.orderVia}</p>
@@ -60,7 +71,7 @@ export function MessengerOrderButtons({
         {CHANNELS.map(({ id, getUrl, labelKey, Icon, color }) => (
           <a
             key={id}
-            href={getUrl(message)}
+            href={id === 'line' ? getLineHref(message) : getUrl(message)}
             target="_blank"
             rel="noopener noreferrer"
             className="order-btn"

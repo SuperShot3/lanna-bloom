@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl, listOrders } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
+import { sendOrderNotificationEmail } from '@/lib/orderEmail';
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const secret = process.env.ORDERS_ADMIN_SECRET;
@@ -23,11 +24,14 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     return { ok: false, message: 'delivery is required' };
   }
   const d = delivery as Record<string, unknown>;
-  const address = typeof d.address === 'string' ? d.address : '';
+  const address = typeof d.address === 'string' ? d.address.trim() : '';
   const district = typeof d.district === 'string' ? d.district : undefined;
   const preferredTimeSlot = typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
   if (!address && !district) {
     return { ok: false, message: 'delivery.address or delivery.district is required' };
+  }
+  if (address.length > 0 && (address.length < 10 || address.length > 500)) {
+    return { ok: false, message: 'delivery.address must be between 10 and 500 characters' };
   }
   const pricing = b.pricing;
   if (!pricing || typeof pricing !== 'object') {
@@ -124,6 +128,11 @@ export async function POST(request: NextRequest) {
     const order = await createOrder(result.payload);
     const publicOrderUrl = getOrderDetailsUrl(order.orderId);
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
+
+    sendOrderNotificationEmail(order, publicOrderUrl).catch((e) => {
+      console.error('[api/orders] Notification email failed:', e);
+    });
+
     return NextResponse.json({
       orderId: order.orderId,
       publicOrderUrl,

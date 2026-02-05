@@ -1,6 +1,11 @@
 /**
  * Build messenger deep links with pre-filled order message.
  * Contact number: +66803313431 — used for WhatsApp and Telegram.
+ *
+ * LINE:
+ * - Prefill into a specific OA chat may not work on all platforms (desktop browser / not added OA).
+ *   Keep the share fallback (getLineShareUrl) for reliability.
+ * - Ensure LINE_OA_ID env value is exactly "@xxxx" from LINE OA manager settings (not the lin.ee link).
  */
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -9,8 +14,8 @@ import type { Locale } from '@/lib/i18n';
 const CONTACT_PHONE = '66803313431';
 
 const WHATSAPP_PHONE = CONTACT_PHONE;
-/** LINE Official Account (OA). For oaMessage we need the OA ID including @ (e.g. @lannabloom). Percent-encoded in URL. */
-const LINE_OA_ID = '@lannabloom';
+/** LINE Official Account ID including @ (e.g. @lannabloom). Must match LINE OA manager; use env NEXT_PUBLIC_LINE_OA_ID. */
+const LINE_OA_ID = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ID) || '@lannabloom';
 /** LINE OA "Add friend" / open chat link (e.g. from lin.ee). Used for contact link when no prefill. */
 const LINE_OA_LINK = 'https://lin.ee/zxg4N3F';
 /** Telegram: link by phone number so all contact goes to +66803313431. */
@@ -25,10 +30,27 @@ export function getWhatsAppOrderUrl(message: string): string {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encode(message)}`;
 }
 
-/** Open LINE OA chat with pre-filled message. User must press Send. Both OA ID and text are percent-encoded. */
+/**
+ * Primary: open LINE OA chat with pre-filled message (line.me/R/oaMessage/...).
+ * OA ID and message are percent-encoded with encodeURIComponent.
+ * May not work on desktop or if user has not added the OA; use getLineShareUrl as fallback.
+ */
+export function getLineOaChatUrl(message: string): string {
+  const oaId = encodeURIComponent(LINE_OA_ID);
+  const text = encodeURIComponent(message);
+  return `https://line.me/R/oaMessage/${oaId}/?${text}`;
+}
+
+/**
+ * Fallback: open LINE share screen (line.me/R/share?text=...). More reliable across devices.
+ */
+export function getLineShareUrl(message: string): string {
+  return `https://line.me/R/share?text=${encodeURIComponent(message)}`;
+}
+
+/** LINE order URL: prefers OA chat; use getLineShareUrl when oaMessage is unreliable (e.g. desktop). */
 export function getLineOrderUrl(message: string): string {
-  const encodedOaId = encodeURIComponent(LINE_OA_ID);
-  return `https://line.me/R/oaMessage/${encodedOaId}/?${encode(message)}`;
+  return getLineOaChatUrl(message);
 }
 
 export function getTelegramOrderUrl(message: string): string {

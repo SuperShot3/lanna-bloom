@@ -81,12 +81,14 @@ function buildOrderPayload(
   lang: Locale,
   contact: { customerName: string; phone: string; contactPreference: ContactPreferenceOption[] }
 ): OrderPayload {
-  const deliveryAddress =
+  const districtPart =
     delivery.district && lang === 'th'
       ? `เชียงใหม่ ${delivery.district.nameTh}`
       : delivery.district
         ? `Chiang Mai, ${delivery.district.nameEn}`
         : '';
+  const addressLineTrim = delivery.addressLine?.trim() ?? '';
+  const deliveryAddress = addressLineTrim ? `${districtPart}, ${addressLineTrim}` : districtPart;
   const preferredTimeSlot = delivery.date
     ? `${delivery.date} (${delivery.deliveryType})`
     : delivery.deliveryType;
@@ -141,6 +143,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, removeItem, clearCart } = useCart();
   const [delivery, setDelivery] = useState<DeliveryFormValues>({
     district: null,
+    addressLine: '',
     date: '',
     deliveryType: 'standard',
   });
@@ -167,6 +170,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handlePlaceOrder = async () => {
     if (!delivery.district || !delivery.date) {
       setOrderError(lang === 'th' ? 'กรุณาเลือกพื้นที่จัดส่งและวันจัดส่ง' : 'Please select delivery area and date.');
+      return;
+    }
+    const addressTrim = delivery.addressLine?.trim() ?? '';
+    if (addressTrim.length < 10) {
+      setOrderError(tBuyNow.addressTooShort);
+      return;
+    }
+    if (addressTrim.length > 300) {
+      setOrderError(tBuyNow.addressTooLong);
       return;
     }
     if (!customerName.trim()) {
