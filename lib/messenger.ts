@@ -69,10 +69,11 @@ export function getWhatsAppContactUrl(): string {
 export function getTelegramContactUrl(): string {
   return `https://t.me/+${TELEGRAM_PHONE}`;
 }
-/** LINE "Add friend" link. Uses line.me/R/ti/p/{@id} so the user can add the OA as a friend (same as success page). Override with NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK if needed. */
+/** LINE "Add friend" link. Uses line.me/R/ti/p/{id} (id without @) per LINE docs so the user can add the OA as a friend. Override with NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK if needed. */
 export function getLineContactUrl(): string {
   if (LINE_OA_ADD_FRIEND_LINK) return LINE_OA_ADD_FRIEND_LINK;
-  return `https://line.me/R/ti/p/${LINE_OA_ID}`;
+  const addFriendId = LINE_OA_ID.startsWith('@') ? LINE_OA_ID.slice(1) : LINE_OA_ID;
+  return `https://line.me/R/ti/p/${encodeURIComponent(addFriendId)}`;
 }
 export function getFacebookContactUrl(): string {
   return `https://www.facebook.com/${FACEBOOK_PAGE}`;
