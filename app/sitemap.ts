@@ -7,10 +7,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getBaseUrl();
 
   const staticPaths: MetadataRoute.Sitemap = [
-    { url: base, changeFrequency: 'daily', priority: 1 },
+    { url: base, changeFrequency: 'daily' as const, priority: 1 },
     ...locales.flatMap((lang) => [
-      { url: `${base}/${lang}`, changeFrequency: 'daily', priority: 1 },
-      { url: `${base}/${lang}/catalog`, changeFrequency: 'daily', priority: 0.9 },
+      { url: `${base}/${lang}`, changeFrequency: 'daily' as const, priority: 1 },
+      { url: `${base}/${lang}/catalog`, changeFrequency: 'daily' as const, priority: 0.9 },
     ]),
   ];
 
