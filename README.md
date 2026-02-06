@@ -1,3 +1,13 @@
+# to DO 
+
+1. Replace LOGO 
+
+2. 404 screen 
+
+3. Adress and phone numbers in eng and thai version ( ask shop for permition)
+
+4. Order review page ( we can add options such us deliverd or and delet all and)
+
 # Lanna Bloom
 
 A mobile-first flower shop for selling bouquets online. Customers browse the catalog, add items to the cart, and place orders with delivery details; the site generates a shareable order link and a pre-filled message for LINE, WhatsApp, or Telegram.
