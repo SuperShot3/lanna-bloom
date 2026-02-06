@@ -19,7 +19,7 @@ const LINE_OA_ID = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LI
 /** Optional override for "Add friend" link (e.g. lin.ee). If set, getLineContactUrl() returns this instead of line.me/R/ti/p/... */
 const LINE_OA_ADD_FRIEND_LINK = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK) || null;
 /** Telegram: link by phone number so all contact goes to +66803313431. */
-const TELEGRAM_PHONE = '66803313431';
+const TELEGRAM_PHONE = '@Lannabloom';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
 
 function encode(text: string): string {
