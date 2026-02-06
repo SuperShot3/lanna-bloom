@@ -8,6 +8,14 @@
 
 4. Order review page ( we can add options such us deliverd or and delet all and)
 
+5. Delay in update database 
+
+6. Move home and catalog to the right 
+
+7. find better button image for Choose bouquets
+
+8. add some animation to it make it more noticible [Copy this link and save it or send it via LINE, WhatsApp, or Telegram so you can access your order details anytime.]
+
 # Lanna Bloom
 
 A mobile-first flower shop for selling bouquets online. Customers browse the catalog, add items to the cart, and place orders with delivery details; the site generates a shareable order link and a pre-filled message for LINE, WhatsApp, or Telegram.

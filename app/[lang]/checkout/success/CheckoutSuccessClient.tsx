@@ -7,6 +7,12 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 export function CheckoutSuccessClient({
   lang,
   orderId,
@@ -23,13 +29,35 @@ export function CheckoutSuccessClient({
   const [order, setOrder] = useState<Order | null>(null);
   const publicOrderUrl = initialPublicOrderUrl ?? '';
   const shareText = initialShareText ?? (publicOrderUrl ? `New order: ${orderId}. Details: ${publicOrderUrl}` : '');
-
   useEffect(() => {
     if (!orderId) return;
+    let fired = false;
+    const fireAdsConversion = (orderData: Order | null) => {
+      if (fired) return;
+      const params: Record<string, unknown> = { transaction_id: orderId };
+      if (orderData?.pricing?.grandTotal != null) {
+        params.value = orderData.pricing.grandTotal;
+        params.currency = 'THB';
+      }
+      const send = () => {
+        if (typeof window !== 'undefined' && window.gtag) {
+          fired = true;
+          window.gtag('event', 'ads_conversion_Success_Page_1', params);
+        }
+      };
+      send();
+      if (!fired) setTimeout(send, 800);
+    };
     fetch(`/api/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setOrder(data))
-      .catch(() => setOrder(null));
+      .then((data) => {
+        setOrder(data);
+        fireAdsConversion(data);
+      })
+      .catch(() => {
+        setOrder(null);
+        fireAdsConversion(null);
+      });
   }, [orderId]);
 
   const [copied, setCopied] = useState<'link' | null>(null);
