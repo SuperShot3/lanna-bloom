@@ -1,10 +1,13 @@
 'use client';
 
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Bouquet } from '@/lib/bouquets';
 import { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+
+const SWIPE_THRESHOLD_PX = 50;
 
 export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale }) {
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
@@ -13,13 +16,101 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
     : 0;
   const href = `/${lang}/catalog/${bouquet.slug}`;
   const t = translations[lang].catalog;
-  const imgSrc = bouquet.images?.[0] || '';
+  const images = bouquet.images?.length ? bouquet.images : [];
+  const [imageIndex, setImageIndex] = useState(0);
+  const imgSrc = images[imageIndex] ?? images[0] ?? '';
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
+  const canSwipe = images.length > 1;
+
+  const touchStartX = useRef<number | null>(null);
+  const didSwipeRef = useRef(false);
+  const mouseStartX = useRef<number | null>(null);
+  const mouseUpListenerRef = useRef<((e: MouseEvent) => void) | null>(null);
+
+  const goPrev = useCallback(() => {
+    setImageIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
+  }, [images.length]);
+
+  const goNext = useCallback(() => {
+    setImageIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
+  }, [images.length]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartX.current == null || !canSwipe) {
+        touchStartX.current = null;
+        return;
+      }
+      const endX = e.changedTouches[0].clientX;
+      const delta = endX - touchStartX.current;
+      touchStartX.current = null;
+      if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+        didSwipeRef.current = true;
+        if (delta < 0) goNext();
+        else goPrev();
+        setTimeout(() => {
+          didSwipeRef.current = false;
+        }, 300);
+      }
+    },
+    [canSwipe, goNext, goPrev]
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!canSwipe) return;
+      mouseStartX.current = e.clientX;
+      const onMouseUp = (upEv: MouseEvent) => {
+        window.removeEventListener('mouseup', onMouseUp);
+        mouseUpListenerRef.current = null;
+        if (mouseStartX.current == null) return;
+        const delta = upEv.clientX - mouseStartX.current;
+        mouseStartX.current = null;
+        if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+          didSwipeRef.current = true;
+          if (delta < 0) goNext();
+          else goPrev();
+          setTimeout(() => {
+            didSwipeRef.current = false;
+          }, 300);
+        }
+      };
+      mouseUpListenerRef.current = onMouseUp;
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [canSwipe, goNext, goPrev]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (mouseUpListenerRef.current) {
+        window.removeEventListener('mouseup', mouseUpListenerRef.current);
+        mouseUpListenerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleLinkClick = useCallback((e: React.MouseEvent) => {
+    if (didSwipeRef.current) {
+      e.preventDefault();
+    }
+  }, []);
 
   return (
     <article className="card">
-      <Link href={href} className="card-link">
-        <div className="card-image-wrap">
+      <Link href={href} className="card-link" onClick={handleLinkClick}>
+        <div
+          className="card-image-wrap"
+          style={canSwipe ? { touchAction: 'pan-y' } : undefined}
+          onTouchStart={canSwipe ? handleTouchStart : undefined}
+          onTouchEnd={canSwipe ? handleTouchEnd : undefined}
+          onMouseDown={canSwipe ? handleMouseDown : undefined}
+          aria-label={canSwipe ? 'Swipe to see more images' : undefined}
+        >
           {imgSrc ? (
             <Image
               src={imgSrc}
@@ -29,9 +120,21 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
               className="card-image"
               sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
               unoptimized={isDataUrl}
+              draggable={false}
+              style={{ pointerEvents: 'none' }}
             />
           ) : (
             <div className="card-image card-image-placeholder" aria-hidden />
+          )}
+          {canSwipe && (
+            <div className="card-dots" aria-hidden>
+              {images.map((_, i) => (
+                <span
+                  key={i}
+                  className={`card-dot ${i === imageIndex ? 'active' : ''}`}
+                />
+              ))}
+            </div>
           )}
         </div>
         <div className="card-body">
@@ -70,6 +173,25 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           aspect-ratio: 1;
           overflow: hidden;
           background: var(--pastel-cream);
+        }
+        .card-dots {
+          position: absolute;
+          bottom: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 6px;
+          pointer-events: none;
+        }
+        .card-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.6);
+          transition: background 0.2s;
+        }
+        .card-dot.active {
+          background: var(--accent);
         }
         .card-image,
         .card-image-placeholder {
