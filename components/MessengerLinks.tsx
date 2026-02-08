@@ -5,6 +5,7 @@ import {
   getTelegramContactUrl,
   getLineContactUrl,
 } from '@/lib/messenger';
+import { trackMessengerClick } from '@/lib/analytics';
 import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
 
 const MESSENGERS = [
@@ -37,20 +38,30 @@ const MESSENGERS = [
 export function MessengerLinks() {
   return (
     <div className="messenger-links">
-      {MESSENGERS.map((m) => (
-        <a
-          key={m.id}
-          href={m.getHref()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="messenger-link"
-          aria-label={m.ariaLabel}
-          title={m.name}
-          style={{ color: m.color }}
-        >
-          <m.Icon size={24} className="messenger-icon" />
-        </a>
-      ))}
+      {MESSENGERS.map((m) => {
+        const href = m.getHref();
+        return (
+          <a
+            key={m.id}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="messenger-link"
+            aria-label={m.ariaLabel}
+            title={m.name}
+            style={{ color: m.color }}
+            onClick={() =>
+              trackMessengerClick({
+                channel: m.id,
+                page_location: 'header',
+                link_url: href,
+              })
+            }
+          >
+            <m.Icon size={24} className="messenger-icon" />
+          </a>
+        );
+      })}
       <style jsx>{`
         .messenger-links {
           display: flex;

@@ -20,6 +20,7 @@ export function Header({ lang }: { lang: Locale }) {
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
   const cartHref = `/${lang}/cart`;
+  const contactHref = `/${lang}/contact`;
   const t = translations[lang].nav;
   const { count: cartCount } = useCart();
 
@@ -79,11 +80,11 @@ export function Header({ lang }: { lang: Locale }) {
             <Image
               src="/logo_full_master.png"
               alt="Lanna Bloom"
-              width={60}
-              height={50}
+              width={96}
+              height={80}
               className="logo-img"
               priority
-              sizes="(max-width: 600px) 60px, 60px"
+              sizes="(max-width: 600px) 80px, 96px"
             />
           </Link>
           <nav className="nav nav--desktop" aria-label="Main">
@@ -111,6 +112,12 @@ export function Header({ lang }: { lang: Locale }) {
               aria-expanded={deliveryModalOpen}
             >
               {t.delivery}
+            </Link>
+            <Link
+              href={contactHref}
+              className={basePath === '/contact' ? 'nav-link active' : 'nav-link'}
+            >
+              {t.contactUs}
             </Link>
           </nav>
           {showActions && (
@@ -193,6 +200,13 @@ export function Header({ lang }: { lang: Locale }) {
             >
               {t.delivery}
             </Link>
+            <Link
+              href={contactHref}
+              className={`mobile-menu-link ${basePath === '/contact' ? 'active' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {t.contactUs}
+            </Link>
           </nav>
           <div className="mobile-menu-actions">
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
@@ -237,6 +251,7 @@ export function Header({ lang }: { lang: Locale }) {
           padding-left: env(safe-area-inset-left);
           padding-right: env(safe-area-inset-right);
           transition: background 0.25s ease, min-height 0.25s ease, box-shadow 0.25s ease;
+          overflow: visible;
         }
         .header--scrolled {
           background: rgba(255, 255, 255, 0.72);
@@ -250,37 +265,39 @@ export function Header({ lang }: { lang: Locale }) {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          padding: 10px 20px;
-          min-height: 44px;
-          transition: min-height 0.25s ease, padding 0.25s ease;
+          padding: 0 20px;
+          height: 56px;
+          min-height: 56px;
+          overflow: visible;
+          transition: height 0.25s ease, padding 0.25s ease;
         }
         .header--scrolled .header-inner {
-          min-height: 24px;
-          padding: 5px 20px;
+          height: 44px;
+          min-height: 44px;
+          padding: 0 20px;
         }
         .logo {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           flex-shrink: 0;
-          min-height: 0;
-          max-height: 50px;
+          height: 56px;
+          overflow: visible;
         }
         .header--scrolled .logo {
-          max-height: 30px;
+          height: 44px;
+          align-items: center;
         }
         .logo-img {
           display: block;
-          height: 50px !important;
-          width: 60px !important;
-          max-height: 50px;
+          height: 80px !important;
+          width: 96px !important;
           object-fit: contain;
-          object-position: left center;
-          transition: height 0.25s ease;
+          object-position: left top;
+          transition: height 0.25s ease, width 0.25s ease;
         }
         .header--scrolled .logo-img {
-          height: 30px !important;
-          width: 36px !important;
-          max-height: 30px;
+          height: 44px !important;
+          width: 53px !important;
         }
         .nav--desktop {
           display: flex;
@@ -399,28 +416,28 @@ export function Header({ lang }: { lang: Locale }) {
             display: none;
           }
           .header-inner {
-            padding: 8px 16px;
-            min-height: 40px;
+            padding: 0 16px;
+            height: 48px;
+            min-height: 48px;
           }
           .header--scrolled .header-inner {
-            min-height: 18px;
-            padding: 3px 12px;
+            height: 44px;
+            min-height: 44px;
+            padding: 0 12px;
           }
           .logo {
-            max-height: 50px;
+            height: 48px;
           }
           .header--scrolled .logo {
-            max-height: 30px;
+            height: 44px;
           }
           .logo-img {
-            height: 50px !important;
-            width: 60px !important;
-            max-height: 50px;
+            height: 80px !important;
+            width: 96px !important;
           }
           .header--scrolled .logo-img {
-            height: 30px !important;
-            width: 36px !important;
-            max-height: 30px;
+            height: 44px !important;
+            width: 53px !important;
           }
           .burger {
             width: 32px;

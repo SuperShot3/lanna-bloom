@@ -12,7 +12,11 @@ export function Hero({ lang }: { lang: Locale }) {
     <section className="hero">
       <div className="hero-bg" aria-hidden />
       <div className="container hero-inner">
-        <h1 className="hero-headline">{t.headline}</h1>
+        <h1 className="hero-big-headline">
+          <span className="hero-big-line1">{t.bigHeadlineLine1}</span>
+          <span className="hero-big-line2">{t.bigHeadlineLine2}</span>
+        </h1>
+        <p className="hero-headline">{t.headline}</p>
         <p className="hero-subline">{t.subline}</p>
         <Link href={catalogHref} className="hero-cta">
           {t.cta}
@@ -47,16 +51,32 @@ export function Hero({ lang }: { lang: Locale }) {
           max-width: 480px;
           margin: 0 auto;
         }
+        .hero-big-headline {
+          font-family: var(--font-serif);
+          font-weight: 700;
+          line-height: 1.25;
+          color: var(--text);
+          margin: 0 0 12px;
+          letter-spacing: 0.02em;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .hero-big-line1 {
+          font-size: clamp(1.5rem, 5vw, 2.5rem);
+        }
+        .hero-big-line2 {
+          font-size: clamp(1.15rem, 3.5vw, 1.6rem);
+          font-weight: 600;
+          color: var(--text-muted);
+        }
         .hero-headline {
           font-family: var(--font-serif);
-          font-size: clamp(1.625rem, 4.5vw, 2.25rem);
+          font-size: clamp(1.25rem, 3.5vw, 1.5rem);
           font-weight: 600;
-          line-height: 1.28;
+          line-height: 1.3;
           color: var(--text);
           margin: 0 0 6px;
-          max-width: 12em;
-          margin-left: auto;
-          margin-right: auto;
         }
         .hero-subline {
           font-size: 0.95rem;

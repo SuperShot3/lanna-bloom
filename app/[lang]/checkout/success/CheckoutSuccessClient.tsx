@@ -120,7 +120,7 @@ export function CheckoutSuccessClient({
             </button>
           </div>
         )}
-        <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} lineUseContactUrl />
+        <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} lineUseContactUrl pageLocation="checkout_success" />
         <p className="checkout-success-details">
           <Link href={`/order/${orderId}`} className="checkout-success-link" target="_blank" rel="noopener noreferrer">
             View full order details

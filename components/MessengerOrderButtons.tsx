@@ -11,6 +11,8 @@ import {
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import type { MessengerPageLocation } from '@/lib/analytics';
+import { trackMessengerClick } from '@/lib/analytics';
 import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
 
 const CHANNELS = [
@@ -28,6 +30,7 @@ export function MessengerOrderButtons({
   addOnsSummary = '',
   prebuiltMessage,
   lineUseContactUrl,
+  pageLocation = 'product',
 }: {
   bouquetName?: string;
   sizeLabel?: string;
@@ -39,6 +42,8 @@ export function MessengerOrderButtons({
   prebuiltMessage?: string;
   /** When true, LINE button uses add-friend/contact link (no prefilled message). Use on checkout success so user can add and chat. */
   lineUseContactUrl?: boolean;
+  /** Where these buttons are shown (for analytics: header, checkout_success, product, cart). */
+  pageLocation?: MessengerPageLocation;
 }) {
   const t = translations[lang].product;
   const message =
@@ -73,21 +78,31 @@ export function MessengerOrderButtons({
     <div className="order-buttons">
       <p className="order-via">{t.orderVia}</p>
       <div className="order-grid">
-        {CHANNELS.map(({ id, getUrl, labelKey, Icon, color }) => (
-          <a
-            key={id}
-            href={id === 'line' ? getLineHref(message) : getUrl(message)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="order-btn"
-            title={t[labelKey]}
-          >
-            <span className="order-btn-icon" style={{ color }}>
-              <Icon size={22} />
-            </span>
-            <span className="order-btn-label">{t[labelKey]}</span>
-          </a>
-        ))}
+        {CHANNELS.map(({ id, getUrl, labelKey, Icon, color }) => {
+          const href = id === 'line' ? getLineHref(message) : getUrl(message);
+          return (
+            <a
+              key={id}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="order-btn"
+              title={t[labelKey]}
+              onClick={() =>
+                trackMessengerClick({
+                  channel: id,
+                  page_location: pageLocation,
+                  link_url: href,
+                })
+              }
+            >
+              <span className="order-btn-icon" style={{ color }}>
+                <Icon size={22} />
+              </span>
+              <span className="order-btn-label">{t[labelKey]}</span>
+            </a>
+          );
+        })}
       </div>
       <style jsx>{`
         .order-buttons {
