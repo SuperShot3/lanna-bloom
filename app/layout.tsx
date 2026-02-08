@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
-import { GoogleTagManager } from '@/components/GoogleTagManager';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -37,7 +36,6 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <GoogleTagManager />
         <GoogleAnalytics />
         {children}
       </body>
