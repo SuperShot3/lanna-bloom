@@ -8,6 +8,7 @@ import { Locale, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessengerLinks } from './MessengerLinks';
+import { SocialLinks } from './SocialLinks';
 import { DeliveryModal } from './DeliveryModal';
 import { CartIcon } from './icons';
 
@@ -138,6 +139,7 @@ export function Header({ lang }: { lang: Locale }) {
                   )}
                 </span>
               </Link>
+              <SocialLinks />
               <MessengerLinks />
             </div>
           )}
@@ -224,6 +226,7 @@ export function Header({ lang }: { lang: Locale }) {
                 </span>
               )}
             </Link>
+            <SocialLinks />
             <MessengerLinks />
           </div>
         </div>

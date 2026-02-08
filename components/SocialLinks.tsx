@@ -1,39 +1,22 @@
 'use client';
 
-// Add your social profiles; messenger apps (LINE, WhatsApp, etc.) are in MessengerLinks
-const SOCIAL = [
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    href: 'https://instagram.com/yourshop',
-    ariaLabel: 'Follow us on Instagram',
-    icon: 'IG',
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    href: 'https://facebook.com/yourshop',
-    ariaLabel: 'Our Facebook page',
-    icon: 'FB',
-  },
-] as const;
+import { FacebookIcon } from './icons';
+
+const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61587782069439';
 
 export function SocialLinks() {
   return (
     <div className="social-links">
-      {SOCIAL.map((s) => (
-        <a
-          key={s.id}
-          href={s.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="social-link"
-          aria-label={s.ariaLabel}
-          title={s.name}
-        >
-          <span className="social-icon">{s.icon}</span>
-        </a>
-      ))}
+      <a
+        href={FACEBOOK_PAGE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="social-link"
+        aria-label="Visit our Facebook page"
+        title="Facebook"
+      >
+        <FacebookIcon size={24} className="social-icon" />
+      </a>
       <style jsx>{`
         .social-links {
           display: flex;
@@ -44,13 +27,11 @@ export function SocialLinks() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
+          width: 40px;
+          height: 40px;
           border-radius: var(--radius-sm);
           background: var(--pastel-cream);
-          color: var(--text);
-          font-size: 0.75rem;
-          font-weight: 600;
+          color: #1877f2;
           transition: background 0.2s, transform 0.15s;
         }
         .social-link:hover {
@@ -58,13 +39,16 @@ export function SocialLinks() {
           transform: scale(1.05);
         }
         .social-icon {
-          line-height: 1;
+          flex-shrink: 0;
         }
         @media (max-width: 600px) {
           .social-link {
-            width: 32px;
-            height: 32px;
-            font-size: 0.7rem;
+            width: 36px;
+            height: 36px;
+          }
+          .social-icon {
+            width: 20px;
+            height: 20px;
           }
         }
       `}</style>

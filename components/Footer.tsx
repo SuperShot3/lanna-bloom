@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
+import { SocialLinks } from './SocialLinks';
 
 export function Footer({ lang }: { lang: Locale }) {
   const t = translations[lang].nav;
@@ -35,6 +36,7 @@ export function Footer({ lang }: { lang: Locale }) {
           </Link>
         </div>
         <div className="footer-messenger">
+          <SocialLinks />
           <MessengerLinks />
         </div>
         <p className="footer-copy">© Lanna Bloom</p>
@@ -83,7 +85,10 @@ export function Footer({ lang }: { lang: Locale }) {
         }
         .footer-messenger {
           display: flex;
+          flex-wrap: wrap;
           justify-content: center;
+          align-items: center;
+          gap: 12px;
         }
         .footer-copy {
           font-size: 0.85rem;
