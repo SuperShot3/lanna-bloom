@@ -65,7 +65,7 @@ export default async function FlowersChiangMaiGuidePage({
           <p className="guide-intro">{t.intro}</p>
           <MessengerOrderButtons
             lang={locale}
-            prebuiltMessage={t.prefillMessage}
+            contactOnly
             pageLocation="guide"
           />
         </section>

@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import {
   getWhatsAppOrderUrl,
+  getWhatsAppContactUrl,
   getLineOrderUrl,
   getLineShareUrl,
   getLineContactUrl,
   getTelegramOrderUrl,
+  getTelegramContactUrl,
   buildOrderMessage,
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
@@ -15,10 +17,10 @@ import type { MessengerPageLocation } from '@/lib/analytics';
 import { trackMessengerClick } from '@/lib/analytics';
 import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
 
-const CHANNELS = [
-  { id: 'line', getUrl: getLineOrderUrl, labelKey: 'orderLine' as const, Icon: LineIcon, color: '#00B900' },
-  { id: 'whatsapp', getUrl: getWhatsAppOrderUrl, labelKey: 'orderWhatsApp' as const, Icon: WhatsAppIcon, color: '#25D366' },
-  { id: 'telegram', getUrl: getTelegramOrderUrl, labelKey: 'orderTelegram' as const, Icon: TelegramIcon, color: '#26A5E4' },
+const CHANNELS_ORDER = [
+  { id: 'line' as const, getUrl: getLineOrderUrl, contactUrl: getLineContactUrl, labelKey: 'orderLine' as const, Icon: LineIcon, color: '#00B900' },
+  { id: 'whatsapp' as const, getUrl: getWhatsAppOrderUrl, contactUrl: getWhatsAppContactUrl, labelKey: 'orderWhatsApp' as const, Icon: WhatsAppIcon, color: '#25D366' },
+  { id: 'telegram' as const, getUrl: getTelegramOrderUrl, contactUrl: getTelegramContactUrl, labelKey: 'orderTelegram' as const, Icon: TelegramIcon, color: '#26A5E4' },
 ] as const;
 
 export function MessengerOrderButtons({
@@ -30,6 +32,7 @@ export function MessengerOrderButtons({
   addOnsSummary = '',
   prebuiltMessage,
   lineUseContactUrl,
+  contactOnly,
   pageLocation = 'product',
 }: {
   bouquetName?: string;
@@ -42,7 +45,9 @@ export function MessengerOrderButtons({
   prebuiltMessage?: string;
   /** When true, LINE button uses add-friend/contact link (no prefilled message). Use on checkout success so user can add and chat. */
   lineUseContactUrl?: boolean;
-  /** Where these buttons are shown (for analytics: header, checkout_success, product, cart). */
+  /** When true, all buttons use contact links only (no prefilled message). Use on guide/SEO pages. */
+  contactOnly?: boolean;
+  /** Where these buttons are shown (for analytics: header, checkout_success, product, cart, guide). */
   pageLocation?: MessengerPageLocation;
 }) {
   const t = translations[lang].product;
@@ -72,14 +77,16 @@ export function MessengerOrderButtons({
   }, []);
 
   const getLineHref = (msg: string) =>
-    lineUseContactUrl ? getLineContactUrl() : (useLineShareFallback ? getLineShareUrl(msg) : getLineOrderUrl(msg));
+    lineUseContactUrl || contactOnly ? getLineContactUrl() : (useLineShareFallback ? getLineShareUrl(msg) : getLineOrderUrl(msg));
 
   return (
     <div className="order-buttons">
       <p className="order-via">{t.orderVia}</p>
       <div className="order-grid">
-        {CHANNELS.map(({ id, getUrl, labelKey, Icon, color }) => {
-          const href = id === 'line' ? getLineHref(message) : getUrl(message);
+        {CHANNELS_ORDER.map(({ id, getUrl, contactUrl, labelKey, Icon, color }) => {
+          const href = contactOnly
+            ? (id === 'line' ? getLineContactUrl() : contactUrl())
+            : (id === 'line' ? getLineHref(message) : getUrl(message));
           return (
             <a
               key={id}

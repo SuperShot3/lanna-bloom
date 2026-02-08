@@ -3,9 +3,11 @@
  * Contact number: +66803313431 — used for WhatsApp and Telegram.
  *
  * LINE:
- * - Prefill into a specific OA chat may not work on all platforms (desktop browser / not added OA).
- *   Keep the share fallback (getLineShareUrl) for reliability.
- * - Ensure LINE_OA_ID env value is exactly "@xxxx" from LINE OA manager settings (not the lin.ee link).
+ * - Personal account (no Official Account): set NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK to your
+ *   shareable LINE link (e.g. from LINE app: Profile → Share, or a lin.ee/xxxx link). Both
+ *   "Contact LINE" and "Order via LINE" will use this link (no message prefill for personal).
+ * - Official Account: set NEXT_PUBLIC_LINE_OA_ID to @your_oa_id; optionally set ADD_FRIEND_LINK
+ *   to override the add-friend URL. Order button can open OA chat with prefilled message.
  */
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -14,10 +16,10 @@ import type { Locale } from '@/lib/i18n';
 const CONTACT_PHONE = '66803313431';
 
 const WHATSAPP_PHONE = CONTACT_PHONE;
-/** LINE Official Account ID including @ (e.g. @lannabloom). Must match LINE OA manager; use env NEXT_PUBLIC_LINE_OA_ID. */
+/** LINE Official Account ID including @ (only used when ADD_FRIEND_LINK is not set). */
 const LINE_OA_ID = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ID) || '@lannabloom';
-/** Optional override for "Add friend" link (e.g. lin.ee). If set, getLineContactUrl() returns this instead of line.me/R/ti/p/... */
-const LINE_OA_ADD_FRIEND_LINK = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK) || null;
+/** LINE link for contact and (for personal accounts) order. Default: personal LINE add-friend link; override with NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK. */
+const LINE_ADD_FRIEND_LINK = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK) || 'https://line.me/ti/p/4sZ7z5fYAB';
 /** Telegram: link by phone number so all contact goes to +66803313431. */
 const TELEGRAM_PHONE = '@Lannabloom';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
@@ -31,9 +33,7 @@ export function getWhatsAppOrderUrl(message: string): string {
 }
 
 /**
- * Primary: open LINE OA chat with pre-filled message (line.me/R/oaMessage/...).
- * OA ID and message are percent-encoded with encodeURIComponent.
- * May not work on desktop or if user has not added the OA; use getLineShareUrl as fallback.
+ * Open LINE OA chat with pre-filled message (Official Accounts only). Not used for personal LINE.
  */
 export function getLineOaChatUrl(message: string): string {
   const oaId = encodeURIComponent(LINE_OA_ID);
@@ -42,14 +42,15 @@ export function getLineOaChatUrl(message: string): string {
 }
 
 /**
- * Fallback: open LINE share screen (line.me/R/share?text=...). More reliable across devices.
+ * Open LINE share screen (line.me/R/share?text=...). Used as fallback for OA on desktop.
  */
 export function getLineShareUrl(message: string): string {
   return `https://line.me/R/share?text=${encodeURIComponent(message)}`;
 }
 
-/** LINE order URL: prefers OA chat; use getLineShareUrl when oaMessage is unreliable (e.g. desktop). */
+/** LINE order URL: when ADD_FRIEND_LINK is set (personal or custom), use that link (no prefill). Otherwise OA chat with message. */
 export function getLineOrderUrl(message: string): string {
+  if (LINE_ADD_FRIEND_LINK) return getLineContactUrl();
   return getLineOaChatUrl(message);
 }
 
@@ -69,11 +70,11 @@ export function getWhatsAppContactUrl(): string {
 export function getTelegramContactUrl(): string {
   return `https://t.me/+${TELEGRAM_PHONE}`;
 }
-/** LINE "Add friend" link. Uses line.me/R/ti/p/{id} (id without @) per LINE docs so the user can add the OA as a friend. Override with NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK if needed. */
+/** LINE contact link. When NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK is set (personal or OA override), use it. Otherwise build OA add-friend URL from LINE_OA_ID (Official Accounts only). */
 export function getLineContactUrl(): string {
-  if (LINE_OA_ADD_FRIEND_LINK) return LINE_OA_ADD_FRIEND_LINK;
-  const addFriendId = LINE_OA_ID.startsWith('@') ? LINE_OA_ID.slice(1) : LINE_OA_ID;
-  return `https://line.me/R/ti/p/${encodeURIComponent(addFriendId)}`;
+  if (LINE_ADD_FRIEND_LINK) return LINE_ADD_FRIEND_LINK;
+  const encodedId = encodeURIComponent(LINE_OA_ID);
+  return `https://line.me/R/ti/p/${encodedId}`;
 }
 export function getFacebookContactUrl(): string {
   return `https://www.facebook.com/${FACEBOOK_PAGE}`;
