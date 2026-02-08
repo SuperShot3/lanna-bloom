@@ -27,6 +27,12 @@ export function Footer({ lang }: { lang: Locale }) {
           <Link href={`/${lang}/guides/flowers-chiang-mai`} className="footer-link">
             {t.flowerDeliveryChiangMai}
           </Link>
+          <Link href={`/${lang}/guides/rose-bouquets-chiang-mai`} className="footer-link">
+            {t.roseBouquetsChiangMai}
+          </Link>
+          <Link href={`/${lang}/guides/same-day-flower-delivery-chiang-mai`} className="footer-link">
+            {t.sameDayFlowerDeliveryChiangMai}
+          </Link>
         </div>
         <div className="footer-messenger">
           <MessengerLinks />

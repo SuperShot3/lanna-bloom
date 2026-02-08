@@ -49,6 +49,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6 as const,
         lastModified: now,
       },
+      {
+        url: `${base}/${lang}/guides/rose-bouquets-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/guides/same-day-flower-delivery-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
     ]),
   ] satisfies MetadataRoute.Sitemap;
 

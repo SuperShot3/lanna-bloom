@@ -8,7 +8,7 @@ export function GuideFaq({
   faq,
   title,
 }: {
-  faq: FaqItem[];
+  faq: readonly FaqItem[];
   title: string;
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
