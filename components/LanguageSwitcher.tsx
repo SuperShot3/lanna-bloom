@@ -23,6 +23,7 @@ export function LanguageSwitcher({
     <div className="lang-switcher" role="navigation" aria-label="Language">
       <Link
         href={enHref}
+        scroll={false}
         className={currentLang === 'en' ? 'lang-flag active' : 'lang-flag'}
         aria-current={currentLang === 'en' ? 'true' : undefined}
         aria-label="English"
@@ -32,6 +33,7 @@ export function LanguageSwitcher({
       </Link>
       <Link
         href={thHref}
+        scroll={false}
         className={currentLang === 'th' ? 'lang-flag active' : 'lang-flag'}
         aria-current={currentLang === 'th' ? 'true' : undefined}
         aria-label="Thai"

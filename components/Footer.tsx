@@ -22,6 +22,12 @@ export function Footer({ lang }: { lang: Locale }) {
             {t.findUs}
           </Link>
         </nav>
+        <div className="footer-info">
+          <span className="footer-info-label">{t.information}</span>
+          <Link href={`/${lang}/guides/flowers-chiang-mai`} className="footer-link">
+            {t.flowerDeliveryChiangMai}
+          </Link>
+        </div>
         <div className="footer-messenger">
           <MessengerLinks />
         </div>
@@ -46,6 +52,18 @@ export function Footer({ lang }: { lang: Locale }) {
           flex-wrap: wrap;
           justify-content: center;
           gap: 16px 24px;
+        }
+        .footer-info {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          align-items: center;
+          gap: 8px 16px;
+        }
+        .footer-info-label {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--text-muted);
         }
         .footer-link {
           font-size: 0.95rem;

@@ -19,6 +19,8 @@ export const translations = {
       contactUs: 'Contact Us',
       refundReplacement: 'Refund & Replacement',
       findUs: 'Location',
+      information: 'Information',
+      flowerDeliveryChiangMai: 'Flower delivery Chiang Mai',
     },
     delivery: {
       title: 'Delivery in Chiang Mai',
@@ -285,6 +287,26 @@ export const translations = {
       intro: 'Visit us or use the map to get directions. If you\'d like to pick up your order, please message us first to confirm availability.',
       address: '90 Wichayanon Rd, Tambon Chang Moi, Mueang Chiang Mai District, Chiang Mai 50300',
     },
+    guides: {
+      flowersChiangMai: {
+        h1: 'Flower delivery in Chiang Mai',
+        intro: 'Order fresh bouquets online and have them delivered across Chiang Mai. We offer same-day delivery during working hours. Message us via LINE or WhatsApp with your choice and delivery details.',
+        prefillMessage: "Hi! I'd like to order flowers in Chiang Mai. My budget is ___ THB. Delivery date/time: ___.",
+        highlights: [
+          'Same-day delivery during working hours (08:00–20:00)',
+          'Delivery to home, condo, or hotel',
+          'Message card included with your bouquet',
+          'Thai & English support',
+        ],
+        deliveryArea: 'Delivery across Chiang Mai — Old City, Nimman, Santitham, Hang Dong, Mae Hia, San Sai, Mae Rim, and nearby areas.',
+        faq: [
+          { q: 'How do I order?', a: 'Browse our bouquets, then message us on LINE or WhatsApp with your choice, size, delivery address, and preferred date. We\'ll confirm availability and the final price.' },
+          { q: 'Do you offer same-day delivery?', a: 'Yes. Same-day delivery is available during working hours (08:00–20:00), depending on order time and your location in Chiang Mai.' },
+          { q: 'Can I include a message card?', a: 'Yes. You can add a free or premium message card when ordering. Tell us your message in the chat and we\'ll write it on the card.' },
+        ],
+        browseAll: 'Browse all bouquets',
+      },
+    },
   },
   th: {
     nav: {
@@ -297,6 +319,8 @@ export const translations = {
       contactUs: 'ติดต่อเรา',
       refundReplacement: 'นโยบายคืนเงิน / เปลี่ยนสินค้า',
       findUs: 'แผนที่ร้าน',
+      information: 'ข้อมูล',
+      flowerDeliveryChiangMai: 'ส่งดอกไม้ในเชียงใหม่',
     },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',
@@ -562,6 +586,26 @@ export const translations = {
       title: 'แผนที่ร้าน',
       intro: 'ดูเส้นทางได้จากแผนที่ด้านล่าง หากต้องการรับสินค้าหน้าร้าน กรุณาทักมาก่อนเพื่อยืนยันความพร้อมของสินค้า',
       address: '90 ถนนวิชยานนท์ ตำบลช้างม่อย อำเภอเมืองเชียงใหม่ เชียงใหม่ 50300',
+    },
+    guides: {
+      flowersChiangMai: {
+        h1: 'บริการส่งดอกไม้ในเชียงใหม่',
+        intro: 'สั่งช่อดอกไม้สดออนไลน์ พร้อมบริการจัดส่งทั่วเชียงใหม่ เราจัดส่งวันเดียวได้ในช่วงเวลาทำการ ส่งข้อความมาที่ LINE หรือ WhatsApp พร้อมบอกช่อที่ชอบ ที่อยู่และวันที่จัดส่งได้เลย',
+        prefillMessage: 'สวัสดีค่ะ/ครับ ต้องการสั่งดอกไม้ในเชียงใหม่ งบประมาณ ___ บาท วันที่/เวลาให้จัดส่ง: ___',
+        highlights: [
+          'จัดส่งวันเดียวได้ในช่วงเวลาทำการ (08:00–20:00)',
+          'จัดส่งถึงบ้าน คอนโด หรือโรงแรม',
+          'การ์ดข้อความรวมกับช่อดอกไม้',
+          'บริการภาษาไทยและอังกฤษ',
+        ],
+        deliveryArea: 'จัดส่งในเชียงใหม่ — คูเมือง นิมมาน สันติธรรม หางดง แม่เหียะ สันทราย แม่ริม และพื้นที่ใกล้เคียง',
+        faq: [
+          { q: 'สั่งซื้ออย่างไร?', a: 'เลือกช่อที่ชอบ แล้วส่งข้อความมาที่ LINE หรือ WhatsApp พร้อมบอกขนาด ที่อยู่จัดส่ง และวันที่ต้องการ เราจะยืนยันความพร้อมและราคาสุดท้ายให้' },
+          { q: 'จัดส่งวันเดียวได้ไหม?', a: 'ได้ค่ะ จัดส่งวันเดียวได้ในช่วงเวลาทำการ (08:00–20:00) ขึ้นอยู่กับเวลาที่สั่งและสถานที่ในเชียงใหม่' },
+          { q: 'ใส่การ์ดข้อความได้ไหม?', a: 'ได้ค่ะ สามารถเพิ่มการ์ดฟรีหรือการ์ดสวยเมื่อสั่งซื้อ บอกข้อความที่ต้องการในแชท เราจะเขียนลงการ์ดให้' },
+        ],
+        browseAll: 'ดูช่อดอกไม้ทั้งหมด',
+      },
     },
   },
 } as const;

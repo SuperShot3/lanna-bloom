@@ -15,7 +15,8 @@ export type MessengerPageLocation =
   | 'header'
   | 'checkout_success'
   | 'product'
-  | 'cart';
+  | 'cart'
+  | 'guide';
 
 function sendMessengerClickEvent(params: {
   channel: MessengerChannel;
