@@ -297,6 +297,16 @@ export function Header({ lang }: { lang: Locale }) {
           tap-highlight-color: transparent;
           -webkit-user-select: none;
           user-select: none;
+          outline: none;
+          box-shadow: none;
+          background: transparent;
+        }
+        .logo:focus,
+        .logo:active,
+        .logo:focus-visible {
+          outline: none;
+          box-shadow: none;
+          background: transparent;
         }
         .header--scrolled .logo {
           height: 44px;
@@ -310,6 +320,9 @@ export function Header({ lang }: { lang: Locale }) {
           object-position: left top;
           transition: height 0.25s ease, width 0.25s ease;
           -webkit-tap-highlight-color: transparent;
+          outline: none;
+          box-shadow: none;
+          pointer-events: none;
         }
         .header--scrolled .logo-img {
           height: 44px !important;
