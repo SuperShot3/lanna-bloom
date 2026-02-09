@@ -17,6 +17,10 @@
 
 A mobile-first flower shop for selling bouquets online. Customers browse the catalog, add items to the cart, and place orders with delivery details; the site generates a shareable order link and a pre-filled message for LINE, WhatsApp, or Telegram.
 
+# Social
+- **Facebook:** https://www.facebook.com/profile.php?id=61587782069439
+- **Instagram:** https://www.instagram.com/lannabloomchiangmai/
+
 ## Features
 
 - **Two languages** — English and Thai via `/en` and `/th` URLs; language switcher in the header
