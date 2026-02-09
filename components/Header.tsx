@@ -293,6 +293,10 @@ export function Header({ lang }: { lang: Locale }) {
           flex-shrink: 0;
           height: 56px;
           overflow: visible;
+          -webkit-tap-highlight-color: transparent;
+          tap-highlight-color: transparent;
+          -webkit-user-select: none;
+          user-select: none;
         }
         .header--scrolled .logo {
           height: 44px;

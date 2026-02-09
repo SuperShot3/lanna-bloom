@@ -19,33 +19,27 @@ export function LanguageSwitcher({
   const enHref = `/en${path}`;
   const thHref = `/th${path}`;
 
+  // Show only the alternative language flag
+  const alternativeLang = currentLang === 'en' ? 'th' : 'en';
+  const alternativeHref = alternativeLang === 'en' ? enHref : thHref;
+  const alternativeFlag = FLAGS[alternativeLang];
+  const alternativeLabel = alternativeLang === 'en' ? 'English' : 'Thai';
+
   return (
     <div className="lang-switcher" role="navigation" aria-label="Language">
       <Link
-        href={enHref}
+        href={alternativeHref}
         scroll={false}
-        className={currentLang === 'en' ? 'lang-flag active' : 'lang-flag'}
-        aria-current={currentLang === 'en' ? 'true' : undefined}
-        aria-label="English"
-        title="English"
+        className="lang-flag"
+        aria-label={alternativeLabel}
+        title={alternativeLabel}
       >
-        <span className="lang-flag-emoji" aria-hidden>{FLAGS.en}</span>
-      </Link>
-      <Link
-        href={thHref}
-        scroll={false}
-        className={currentLang === 'th' ? 'lang-flag active' : 'lang-flag'}
-        aria-current={currentLang === 'th' ? 'true' : undefined}
-        aria-label="Thai"
-        title="Thai"
-      >
-        <span className="lang-flag-emoji" aria-hidden>{FLAGS.th}</span>
+        <span className="lang-flag-emoji" aria-hidden>{alternativeFlag}</span>
       </Link>
       <style jsx>{`
         .lang-switcher {
           display: flex;
           align-items: center;
-          gap: 8px;
         }
         .lang-flag {
           display: flex;
@@ -61,10 +55,6 @@ export function LanguageSwitcher({
         .lang-flag:hover {
           background: var(--accent-soft);
           transform: scale(1.05);
-        }
-        .lang-flag.active {
-          border-color: var(--accent);
-          background: var(--accent-soft);
         }
         .lang-flag-emoji {
           font-size: 1.25rem;
