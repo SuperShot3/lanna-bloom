@@ -23,11 +23,14 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-focus-ring-color: transparent;
 }
 
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
   overflow-x: hidden; /* Prevent horizontal scroll */
   width: 100%;
   max-width: 100%;
@@ -74,6 +77,8 @@ main {
 a {
   color: inherit;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-focus-ring-color: transparent;
 }
 
 img {
@@ -85,6 +90,8 @@ img {
 button {
   font-family: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-focus-ring-color: transparent;
 }
 
 /* Utility */
