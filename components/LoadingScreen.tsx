@@ -28,77 +28,60 @@ export function LoadingScreen() {
         
         return dmSansLoaded && cormorantLoaded;
       } catch {
-        // Fallback: assume loaded after a delay
         return false;
       }
     };
 
-    // Wait for fonts to load
+    // Optimized font loading check
+    const hideLoader = () => {
+      setIsFadingOut(true);
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('loading');
+        document.body.classList.remove('loading');
+        document.body.style.overflow = '';
+      }
+      // Reduced fade-out time from 400ms to 200ms
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 200);
+    };
+
+    // Wait for fonts to load with optimized timing
     const waitForFonts = async () => {
       if (typeof document === 'undefined') {
-        setIsFadingOut(true);
-        setTimeout(() => {
-          setIsLoading(false);
-          if (typeof document !== 'undefined') {
-            document.documentElement.classList.remove('loading');
-            document.body.classList.remove('loading');
-          }
-        }, 400);
+        // Fast path: no document, hide immediately
+        hideLoader();
+        return;
+      }
+
+      // Fast path: check if fonts are already loaded
+      if (checkFontsLoaded()) {
+        // Fonts already loaded, hide immediately
+        hideLoader();
         return;
       }
 
       try {
-        // Wait for fonts to be ready
-        await document.fonts.ready;
+        // Wait for fonts with a shorter timeout (500ms instead of waiting indefinitely)
+        const fontPromise = document.fonts.ready;
+        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 500));
         
-        // Double check fonts are actually loaded
-        let attempts = 0;
-        const checkInterval = setInterval(() => {
-          attempts++;
-          if (checkFontsLoaded() || attempts >= 20) {
-            clearInterval(checkInterval);
-            // Small delay to ensure everything is rendered
-            setTimeout(() => {
-              setIsFadingOut(true);
-              // Remove loading class and restore body scroll
-              if (typeof document !== 'undefined') {
-                document.documentElement.classList.remove('loading');
-                document.body.classList.remove('loading');
-                document.body.style.overflow = '';
-              }
-              setTimeout(() => {
-                setIsLoading(false);
-              }, 400);
-            }, 300);
-          }
-        }, 100);
+        await Promise.race([fontPromise, timeoutPromise]);
+        
+        // Check once more, then hide (font-display: swap will handle rendering)
+        hideLoader();
       } catch {
-        // Fallback: hide after 1.5 seconds
+        // Fallback: hide quickly after 500ms
         setTimeout(() => {
-          setIsFadingOut(true);
-          if (typeof document !== 'undefined') {
-            document.documentElement.classList.remove('loading');
-            document.body.classList.remove('loading');
-            document.body.style.overflow = '';
-          }
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 400);
-        }, 1500);
+          hideLoader();
+        }, 500);
       }
     };
 
-    // Also set a maximum timeout to ensure loader disappears
+    // Maximum timeout reduced from 3000ms to 1000ms
     const maxTimeout = setTimeout(() => {
-      setIsFadingOut(true);
-      if (typeof document !== 'undefined') {
-        document.body.classList.remove('loading');
-        document.body.style.overflow = '';
-      }
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 400);
-    }, 3000);
+      hideLoader();
+    }, 1000);
 
     waitForFonts();
 
@@ -146,7 +129,7 @@ export function LoadingScreen() {
           align-items: center;
           justify-content: center;
           opacity: 1;
-          transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+          transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
           visibility: visible;
         }
         .loading-screen--fading {
@@ -161,7 +144,7 @@ export function LoadingScreen() {
         }
         .loading-screen-logo {
           opacity: 0;
-          animation: fadeInUp 0.6s ease-out 0.2s forwards;
+          animation: fadeInUp 0.4s ease-out 0.1s forwards;
         }
         .loading-screen-spinner {
           display: flex;

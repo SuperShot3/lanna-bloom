@@ -145,19 +145,37 @@ export function Header({ lang }: { lang: Locale }) {
               <MessengerLinks />
             </div>
           )}
-          {showBurger && (
-            <button
-              type="button"
-              className="burger"
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-              aria-controls="mobile-menu"
-            >
-              <span className={`burger-line ${menuOpen ? 'burger-line--open' : ''}`} />
-              <span className={`burger-line ${menuOpen ? 'burger-line--open' : ''}`} />
-              <span className={`burger-line ${menuOpen ? 'burger-line--open' : ''}`} />
-            </button>
+          {isMobile && (
+            <div className="mobile-header-actions">
+              <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
+              <Link
+                href={cartHref}
+                className="mobile-header-cart-link"
+                aria-label={t.cart}
+                title={t.cart}
+              >
+                <span className="mobile-header-cart-icon-wrap">
+                  <CartIcon size={22} className="mobile-header-cart-icon" />
+                  {cartCount > 0 && (
+                    <span className="mobile-header-cart-badge" aria-hidden>
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </span>
+              </Link>
+              <button
+                type="button"
+                className="burger"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={menuOpen}
+                aria-controls="mobile-menu"
+              >
+                <span className={`burger-line ${menuOpen ? 'burger-line--open' : ''}`} />
+                <span className={`burger-line ${menuOpen ? 'burger-line--open' : ''}`} />
+                <span className={`burger-line ${menuOpen ? 'burger-line--open' : ''}`} />
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -214,21 +232,7 @@ export function Header({ lang }: { lang: Locale }) {
             </Link>
           </nav>
           <div className="mobile-menu-actions">
-            <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
-            <Link
-              href={cartHref}
-              className="mobile-menu-cart"
-              onClick={() => setMenuOpen(false)}
-              aria-label={t.cart}
-            >
-              <CartIcon size={22} />
-              <span>{t.cart}</span>
-              {cartCount > 0 && (
-                <span className="mobile-menu-cart-badge" aria-hidden>
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
-            </Link>
+            {/* LanguageSwitcher and Cart removed - they're now in mobile header */}
             <SocialLinks />
             <MessengerLinks />
           </div>
@@ -418,6 +422,60 @@ export function Header({ lang }: { lang: Locale }) {
         .burger-line--open:nth-child(3) {
           transform: translateY(-7px) rotate(-45deg);
         }
+        .mobile-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .mobile-header-cart-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          width: 36px;
+          height: 36px;
+          border-radius: var(--radius-sm);
+          background: var(--pastel-cream);
+          color: var(--text);
+          transition: background 0.2s, transform 0.15s;
+          text-decoration: none;
+        }
+        .mobile-header-cart-link:active {
+          background: var(--accent-soft);
+          transform: scale(0.95);
+        }
+        .mobile-header-cart-icon-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px;
+          height: 22px;
+        }
+        .mobile-header-cart-icon {
+          flex-shrink: 0;
+        }
+        .mobile-header-cart-badge {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--accent);
+          color: #fff;
+          font-size: 0.65rem;
+          font-weight: 700;
+          border-radius: 999px;
+        }
+        @media (min-width: 601px) {
+          .mobile-header-actions {
+            display: none;
+          }
+        }
         @media (max-width: 600px) {
           .nav--desktop {
             display: none;
@@ -464,6 +522,25 @@ export function Header({ lang }: { lang: Locale }) {
           .header--scrolled .burger-line {
             width: 14px;
           }
+          .mobile-header-actions {
+            gap: 6px;
+          }
+          .mobile-header-cart-link {
+            width: 32px;
+            height: 32px;
+          }
+          .mobile-header-cart-icon-wrap {
+            width: 20px;
+            height: 20px;
+          }
+          .header--scrolled .mobile-header-cart-link {
+            width: 30px;
+            height: 30px;
+          }
+          .header--scrolled .mobile-header-cart-icon-wrap {
+            width: 18px;
+            height: 18px;
+          }
         }
         @media (max-width: 400px) {
           .header-inner {
@@ -497,6 +574,17 @@ export function Header({ lang }: { lang: Locale }) {
           .header-cart-link {
             width: 36px;
             height: 36px;
+          }
+          .mobile-header-actions {
+            gap: 4px;
+          }
+          .mobile-header-cart-link {
+            width: 28px;
+            height: 28px;
+          }
+          .mobile-header-cart-icon-wrap {
+            width: 18px;
+            height: 18px;
           }
           .logo-img {
             height: 70px !important;
