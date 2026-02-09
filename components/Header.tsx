@@ -309,6 +309,7 @@ export function Header({ lang }: { lang: Locale }) {
           object-fit: contain;
           object-position: left top;
           transition: height 0.25s ease, width 0.25s ease;
+          -webkit-tap-highlight-color: transparent;
         }
         .header--scrolled .logo-img {
           height: 44px !important;
@@ -483,6 +484,9 @@ export function Header({ lang }: { lang: Locale }) {
         @media (max-width: 600px) {
           .nav--desktop {
             display: none;
+          }
+          .header-actions {
+            display: none !important;
           }
           .header-inner {
             padding: 0 16px;
