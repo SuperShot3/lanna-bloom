@@ -162,6 +162,18 @@ export function MessengerOrderButtons({
             font-size: 0.9rem;
           }
         }
+        @media (max-width: 350px) {
+          .order-btn {
+            padding: 10px 12px;
+          }
+          .order-btn-label {
+            font-size: 0.85rem;
+          }
+          .order-via {
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+          }
+        }
       `}</style>
     </div>
   );

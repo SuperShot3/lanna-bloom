@@ -67,7 +67,7 @@ export function Header({ lang }: { lang: Locale }) {
     };
   }, [menuOpen]);
 
-  const showBurger = isMobile && isScrolled;
+  const showBurger = isMobile; // Show hamburger on mobile regardless of scroll state
   const showActions = !showBurger;
 
   return (
@@ -88,39 +88,41 @@ export function Header({ lang }: { lang: Locale }) {
               sizes="(max-width: 600px) 80px, 96px"
             />
           </Link>
-          <nav className="nav nav--desktop" aria-label="Main">
-            <Link
-              href={homeHref}
-              className={basePath === '' ? 'nav-link active' : 'nav-link'}
-            >
-              {t.home}
-            </Link>
-            <Link
-              href={catalogHref}
-              className={basePath === '/catalog' ? 'nav-link active' : 'nav-link'}
-            >
-              {t.catalog}
-            </Link>
-            <Link
-              href="#delivery-info"
-              ref={deliveryTriggerRef}
-              className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                setDeliveryModalOpen(true);
-              }}
-              aria-haspopup="dialog"
-              aria-expanded={deliveryModalOpen}
-            >
-              {t.delivery}
-            </Link>
-            <Link
-              href={contactHref}
-              className={basePath === '/contact' ? 'nav-link active' : 'nav-link'}
-            >
-              {t.contactUs}
-            </Link>
-          </nav>
+          {!isMobile && (
+            <nav className="nav nav--desktop" aria-label="Main">
+              <Link
+                href={homeHref}
+                className={basePath === '' ? 'nav-link active' : 'nav-link'}
+              >
+                {t.home}
+              </Link>
+              <Link
+                href={catalogHref}
+                className={basePath === '/catalog' ? 'nav-link active' : 'nav-link'}
+              >
+                {t.catalog}
+              </Link>
+              <Link
+                href="#delivery-info"
+                ref={deliveryTriggerRef}
+                className="nav-link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setDeliveryModalOpen(true);
+                }}
+                aria-haspopup="dialog"
+                aria-expanded={deliveryModalOpen}
+              >
+                {t.delivery}
+              </Link>
+              <Link
+                href={contactHref}
+                className={basePath === '/contact' ? 'nav-link active' : 'nav-link'}
+              >
+                {t.contactUs}
+              </Link>
+            </nav>
+          )}
           {showActions && (
             <div className="header-actions">
               <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
@@ -160,12 +162,13 @@ export function Header({ lang }: { lang: Locale }) {
         </div>
       </header>
 
-      <div
-        id="mobile-menu"
-        ref={menuRef}
-        className={`mobile-menu ${menuOpen ? 'mobile-menu--open' : ''}`}
-        aria-hidden={!menuOpen}
-      >
+      {isMobile && (
+        <div
+          id="mobile-menu"
+          ref={menuRef}
+          className={`mobile-menu ${menuOpen ? 'mobile-menu--open' : ''}`}
+          aria-hidden={!menuOpen}
+        >
         <div
           className="mobile-menu-backdrop"
           onClick={() => setMenuOpen(false)}
@@ -231,6 +234,7 @@ export function Header({ lang }: { lang: Locale }) {
           </div>
         </div>
       </div>
+      )}
 
       <DeliveryModal
         lang={lang}
@@ -459,6 +463,48 @@ export function Header({ lang }: { lang: Locale }) {
           }
           .header--scrolled .burger-line {
             width: 14px;
+          }
+        }
+        @media (max-width: 400px) {
+          .header-inner {
+            padding: 0 12px;
+          }
+          .header--scrolled .header-inner {
+            padding: 0 10px;
+          }
+          .header-actions {
+            gap: 8px;
+          }
+        }
+        @media (max-width: 360px) {
+          .header-inner {
+            padding: 0 10px;
+          }
+          .header--scrolled .header-inner {
+            padding: 0 8px;
+          }
+        }
+        @media (max-width: 350px) {
+          .header-inner {
+            padding: 0 8px;
+          }
+          .header--scrolled .header-inner {
+            padding: 0 6px;
+          }
+          .header-actions {
+            gap: 6px;
+          }
+          .header-cart-link {
+            width: 36px;
+            height: 36px;
+          }
+          .logo-img {
+            height: 70px !important;
+            width: 84px !important;
+          }
+          .header--scrolled .logo-img {
+            height: 40px !important;
+            width: 48px !important;
           }
         }
         @media (min-width: 601px) {

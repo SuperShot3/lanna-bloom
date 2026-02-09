@@ -217,6 +217,61 @@ export function DeliveryForm({
           text-transform: uppercase;
           letter-spacing: 0.02em;
         }
+        @media (max-width: 480px) {
+          .buy-now-form {
+            padding: 16px;
+            margin-top: 20px;
+          }
+          .buy-now-title {
+            font-size: 1rem;
+            margin-bottom: 16px;
+          }
+          .buy-now-step {
+            margin-bottom: 16px;
+          }
+        }
+        @media (max-width: 360px) {
+          .buy-now-form {
+            padding: 12px;
+          }
+          .buy-now-title {
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+          }
+          .buy-now-step-heading {
+            font-size: 0.85rem;
+          }
+        }
+        @media (max-width: 350px) {
+          .buy-now-form {
+            padding: 10px;
+          }
+          .buy-now-title {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+          }
+          .buy-now-step {
+            margin-bottom: 14px;
+            gap: 8px;
+          }
+          .buy-now-step-heading {
+            font-size: 0.8rem;
+          }
+          .buy-now-num {
+            width: 24px;
+            height: 24px;
+            font-size: 0.8rem;
+          }
+          .buy-now-input,
+          .buy-now-select {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+          }
+          .buy-now-radio-pill {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+          }
+        }
         .buy-now-step {
           display: flex;
           gap: 12px;

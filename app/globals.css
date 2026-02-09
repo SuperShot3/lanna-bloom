@@ -48,6 +48,22 @@ body {
   box-sizing: border-box;
 }
 
+/* Hide content while loading screen is active */
+html.loading body,
+body.loading main,
+body.loading header,
+body.loading footer {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Ensure loading screen is visible during loading */
+html.loading .loading-screen,
+body.loading .loading-screen {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 main {
   width: 100%;
   max-width: 100%;
@@ -90,6 +106,13 @@ button {
   margin: 0 auto;
   padding: 0 20px;
   box-sizing: border-box;
+}
+
+/* Very narrow screens */
+@media (max-width: 360px) {
+  .container {
+    padding: 0 12px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -465,11 +488,15 @@ a.filter-pill--active:hover {
 .product-grid {
   display: grid;
   gap: 32px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .product-gallery-wrap {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 .product-info {
   width: 100%;
@@ -521,6 +548,163 @@ a.filter-pill--active:hover {
     padding-left: 20px;
     padding-right: 20px;
   }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 40px); /* Account for container padding */
+    width: 100%;
+  }
+}
+
+/* Very narrow screens - base styles for 480px and below */
+@media (max-width: 480px) {
+  .product-page {
+    padding: 16px 0 32px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 40px);
+    width: 100%;
+  }
+  .product-title {
+    font-size: clamp(1.25rem, 5vw, 1.5rem);
+  }
+  .product-desc {
+    font-size: 0.9rem;
+  }
+}
+
+/* Medium-small phones (465px) */
+@media (max-width: 465px) {
+  .product-page .container {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 36px);
+    width: 100%;
+  }
+}
+
+/* Medium-small phones (450px) */
+@media (max-width: 450px) {
+  .product-page .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 32px);
+    width: 100%;
+  }
+}
+
+/* Medium-small phones (420px) */
+@media (max-width: 420px) {
+  .product-page .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 30px);
+    width: 100%;
+  }
+}
+
+/* Small phones (400px) */
+@media (max-width: 400px) {
+  .product-page .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 32px);
+    width: 100%;
+  }
+}
+
+/* Small-medium phones (380px) */
+@media (max-width: 380px) {
+  .product-page .container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 28px);
+    width: 100%;
+  }
+}
+
+/* Small-medium phones (370px) */
+@media (max-width: 370px) {
+  .product-page .container {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 26px);
+    width: 100%;
+  }
+}
+
+/* Extra narrow screens (360px) */
+@media (max-width: 360px) {
+  .product-page .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 24px);
+    width: 100%;
+  }
+  .product-title {
+    font-size: 1.25rem;
+  }
+  .product-desc {
+    font-size: 0.85rem;
+  }
+}
+
+/* Very small phones (350px) */
+@media (max-width: 350px) {
+  .container {
+    padding: 0 10px;
+  }
+  .product-page .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 20px);
+    width: 100%;
+  }
+  .product-title {
+    font-size: 1.2rem;
+  }
+  .product-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .product-composition {
+    padding: 12px;
+  }
+  .composition-heading {
+    font-size: 0.85rem;
+  }
+  .composition-text {
+    font-size: 0.9rem;
+  }
+  .product-seasonal-disclaimer {
+    font-size: 0.8rem;
+  }
+}
+
+/* Very small phones (346px and below) */
+@media (max-width: 346px) {
+  .product-page .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .product-gallery-wrap {
+    max-width: calc(100vw - 20px);
+    width: 100%;
+  }
 }
 
 @media (min-width: 768px) {
@@ -531,6 +715,7 @@ a.filter-pill--active:hover {
   }
   .product-gallery-wrap {
     margin: 0;
+    max-width: 480px; /* Keep original on desktop */
   }
 }
 

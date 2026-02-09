@@ -235,6 +235,8 @@ export function ProductGallery({
       <style jsx>{`
         .gallery {
           width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .gallery-main {
           position: relative;
@@ -247,11 +249,15 @@ export function ProductGallery({
           touch-action: pan-y;
           user-select: none;
           -webkit-user-select: none;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
         .gallery-image {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          display: block;
         }
         .gallery-swipe-hint {
           position: absolute;

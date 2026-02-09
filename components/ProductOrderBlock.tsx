@@ -133,6 +133,55 @@ export function ProductOrderBlock({
           text-transform: uppercase;
           letter-spacing: 0.02em;
         }
+        @media (max-width: 480px) {
+          .order-block-title {
+            font-size: 1rem;
+            margin-bottom: 12px;
+          }
+          .order-add-to-cart-btn {
+            font-size: 0.95rem;
+            padding: 12px 16px;
+          }
+          .order-added-links {
+            flex-direction: column;
+          }
+          .order-added-links :global(a.order-added-link) {
+            width: 100%;
+          }
+        }
+        @media (max-width: 360px) {
+          .order-block-title {
+            font-size: 0.95rem;
+          }
+          .order-add-to-cart-btn {
+            font-size: 0.9rem;
+            padding: 10px 14px;
+          }
+        }
+        @media (max-width: 350px) {
+          .order-block-title {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+          }
+          .order-add-to-cart-btn {
+            font-size: 0.85rem;
+            padding: 10px 12px;
+          }
+          .order-added-confirm {
+            padding: 12px;
+          }
+          .order-added-text {
+            font-size: 0.9rem;
+          }
+          .order-added-links :global(a.order-added-link) {
+            font-size: 0.9rem;
+            padding: 12px 16px;
+          }
+          .order-addons-summary {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+          }
+        }
         .order-addons-summary {
           margin-top: 12px;
           padding: 10px 14px;
