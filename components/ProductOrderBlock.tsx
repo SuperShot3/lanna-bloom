@@ -12,6 +12,7 @@ import {
 import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { trackAddToCart } from '@/lib/analytics';
 
 function buildAddOnsSummary(addOns: AddOnsValues, lang: Locale): string {
   const t = translations[lang].buyNow;
@@ -51,6 +52,8 @@ export function ProductOrderBlock({
   const tBuyNow = translations[lang].buyNow;
 
   const handleAddToCart = () => {
+    const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
+    const price = selectedSize.price;
     addItem({
       bouquetId: bouquet.id,
       slug: bouquet.slug,
@@ -59,6 +62,20 @@ export function ProductOrderBlock({
       imageUrl: selectedImageUrl ?? bouquet.images?.[0],
       size: selectedSize,
       addOns: { ...addOns },
+    });
+    trackAddToCart({
+      currency: 'THB',
+      value: price,
+      items: [
+        {
+          item_id: bouquet.id,
+          item_name: itemName,
+          price,
+          quantity: 1,
+          index: 0,
+          item_category: bouquet.category,
+        },
+      ],
     });
     setJustAdded(true);
   };

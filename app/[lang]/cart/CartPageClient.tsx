@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
@@ -15,6 +15,7 @@ import type {
 } from '@/lib/orders';
 import { CARD_BEAUTIFUL_PRICE_THB } from '@/components/AddOnsSection';
 import type { CartItem } from '@/contexts/CartContext';
+import { trackBeginCheckout } from '@/lib/analytics';
 
 function buildAddOnsSummaryForDisplay(
   addOns: CartItem['addOns'],
@@ -141,6 +142,30 @@ function buildOrderPayload(
 
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, removeItem, clearCart } = useCart();
+  const beginCheckoutFiredRef = useRef(false);
+
+  useEffect(() => {
+    if (items.length === 0 || beginCheckoutFiredRef.current) return;
+    beginCheckoutFiredRef.current = true;
+    let value = 0;
+    const analyticsItems = items.map((item, index) => {
+      const itemPrice =
+        item.size.price +
+        (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+      value += itemPrice;
+      const itemName = lang === 'th' ? item.nameTh : item.nameEn;
+      return {
+        item_id: item.bouquetId,
+        item_name: itemName,
+        price: itemPrice,
+        quantity: 1,
+        index,
+        item_category: undefined,
+      };
+    });
+    trackBeginCheckout({ currency: 'THB', value, items: analyticsItems });
+  }, [items, lang]);
+
   const [delivery, setDelivery] = useState<DeliveryFormValues>({
     district: null,
     addressLine: '',

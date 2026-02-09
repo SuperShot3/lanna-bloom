@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import type { Bouquet } from '@/lib/bouquets';
 import { translations, type Locale } from '@/lib/i18n';
+import { trackViewItem } from '@/lib/analytics';
 
 export function ProductPageClient({
   bouquet,
@@ -25,6 +26,25 @@ export function ProductPageClient({
   const images = bouquet.images ?? [];
   const selectedImageUrl =
     images[selectedImageIndex] ?? images[0] ?? undefined;
+
+  useEffect(() => {
+    const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
+    const price = bouquet.sizes?.[0]?.price ?? 0;
+    trackViewItem({
+      currency: 'THB',
+      value: price,
+      items: [
+        {
+          item_id: bouquet.id,
+          item_name: itemName,
+          price,
+          quantity: 1,
+          index: 0,
+          item_category: bouquet.category,
+        },
+      ],
+    });
+  }, [bouquet.id, bouquet.nameEn, bouquet.nameTh, bouquet.sizes, bouquet.category, lang]);
 
   return (
     <>
