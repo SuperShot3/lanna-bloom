@@ -373,6 +373,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             lang={lang}
             value={delivery}
             onChange={setDelivery}
+            title={t.placeOrder}
             step3Heading={t.contactInfoStepHeading}
             step3Content={
               <div className="cart-place-order">

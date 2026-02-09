@@ -24,6 +24,7 @@ export function DeliveryForm({
   onChange,
   step3Heading,
   step3Content,
+  title,
 }: {
   lang: Locale;
   value: DeliveryFormValues;
@@ -31,6 +32,8 @@ export function DeliveryForm({
   /** When provided (e.g. on cart page), Step 3 shows this heading and content instead of "ADD TO CART". */
   step3Heading?: string;
   step3Content?: React.ReactNode;
+  /** When provided (e.g. on cart page), use this as the main form heading instead of buyNow.title. */
+  title?: string;
 }) {
   const t = translations[lang].buyNow;
   const city = lang === 'th' ? CITY_TH : CITY_EN;
@@ -42,7 +45,7 @@ export function DeliveryForm({
 
   return (
     <div className="buy-now-form">
-      <h2 className="buy-now-title">{t.title}</h2>
+      <h2 className="buy-now-title">{title ?? t.title}</h2>
 
       {/* Step 1: Select delivery area */}
       <div className="buy-now-step">
