@@ -29,16 +29,30 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden; /* Prevent horizontal scroll */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  padding: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
   overflow-x: hidden; /* Prevent horizontal scroll */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+main {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 a {
@@ -75,6 +89,7 @@ button {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
@@ -427,6 +442,10 @@ a.filter-pill--active:hover {
 /* Product page */
 .product-page {
   padding: 24px 0 48px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* Prevent any overflow */
+  box-sizing: border-box;
 }
 .product-page .breadcrumb {
   font-size: 0.85rem;
@@ -493,6 +512,17 @@ a.filter-pill--active:hover {
   margin: 0 0 20px;
   font-style: italic;
 }
+@media (max-width: 767px) {
+  .product-page {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .product-page .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
 @media (min-width: 768px) {
   .product-grid {
     grid-template-columns: 1fr 1fr;
