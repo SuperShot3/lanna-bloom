@@ -147,7 +147,7 @@ export async function getBouquetsByCategoryFromSanity(category: string): Promise
   return all.filter((b) => b.category === category);
 }
 
-const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] | order(_createdAt desc) [0...$limit] {
+const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] {
   _id,
   slug,
   nameEn,
@@ -164,11 +164,43 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   sizes
 }`;
 
-/** Approved bouquets, newest first; for home "Popular" section */
+/** Approved bouquets with variety pricing (expensive, cheap, middle) interleaved; for home "Popular" section */
 export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouquet[]> {
   try {
-    const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery, { limit });
-    return (docs ?? []).map(mapToBouquet);
+    const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
+    const bouquets = (docs ?? []).map(mapToBouquet);
+    
+    if (bouquets.length === 0) return [];
+    
+    // Calculate min price for each bouquet
+    const bouquetsWithPrice = bouquets.map((b) => ({
+      bouquet: b,
+      minPrice: minPriceFromSizes(b.sizes),
+    }));
+    
+    // Sort by price (ascending)
+    bouquetsWithPrice.sort((a, b) => a.minPrice - b.minPrice);
+    
+    // Divide into three groups: expensive (top third), middle (middle third), cheap (bottom third)
+    const total = bouquetsWithPrice.length;
+    const thirdSize = Math.ceil(total / 3);
+    
+    const expensive = bouquetsWithPrice.slice(-thirdSize).reverse(); // Most expensive first
+    const middle = bouquetsWithPrice.slice(thirdSize, total - thirdSize);
+    const cheap = bouquetsWithPrice.slice(0, thirdSize);
+    
+    // Interleave: expensive, cheap, middle, expensive, cheap, middle...
+    const interleaved: Bouquet[] = [];
+    const maxLength = Math.max(expensive.length, middle.length, cheap.length);
+    
+    for (let i = 0; i < maxLength; i++) {
+      if (i < expensive.length) interleaved.push(expensive[i].bouquet);
+      if (i < cheap.length) interleaved.push(cheap[i].bouquet);
+      if (i < middle.length) interleaved.push(middle[i].bouquet);
+    }
+    
+    // Return limited results
+    return interleaved.slice(0, limit);
   } catch (err) {
     console.error('[Sanity] getPopularBouquetsFromSanity failed:', err);
     return [];
