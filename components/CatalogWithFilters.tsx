@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { BouquetCard } from '@/components/BouquetCard';
@@ -10,6 +10,8 @@ import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogFilterParams } from '@/lib/sanity';
+import { trackViewItemList } from '@/lib/analytics';
+import type { AnalyticsItem } from '@/lib/analytics';
 
 export interface CatalogWithFiltersProps {
   lang: Locale;
@@ -31,12 +33,36 @@ function buildSearchString(params: CatalogFilterParams): string {
   return s ? `?${s}` : '';
 }
 
+const LIST_NAME_CATALOG = 'catalog';
+
+function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsItem[] {
+  return bouquets.map((b, i) => {
+    const name = lang === 'th' ? b.nameTh : b.nameEn;
+    const minPrice = b.sizes?.length ? Math.min(...b.sizes.map((s) => s.price)) : 0;
+    return {
+      item_id: b.id,
+      item_name: name,
+      item_category: b.category,
+      item_variant: b.sizes?.[0]?.label,
+      price: minPrice,
+      quantity: 1,
+      index: i,
+    };
+  });
+}
+
 export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const t = translations[lang].catalog;
   const activeCount = countActiveFilters(filterParams);
+
+  useEffect(() => {
+    if (bouquets.length > 0) {
+      trackViewItemList(LIST_NAME_CATALOG, bouquetsToAnalyticsItems(bouquets, lang));
+    }
+  }, [lang, bouquets]);
 
   const handleApply = useCallback(
     (params: CatalogFilterParams) => {

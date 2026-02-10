@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { Bouquet } from '@/lib/bouquets';
 import { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { trackSelectItem } from '@/lib/analytics';
+import type { AnalyticsItem } from '@/lib/analytics';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -94,11 +96,25 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
     };
   }, []);
 
-  const handleLinkClick = useCallback((e: React.MouseEvent) => {
-    if (didSwipeRef.current) {
-      e.preventDefault();
-    }
-  }, []);
+  const handleLinkClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (didSwipeRef.current) {
+        e.preventDefault();
+        return;
+      }
+      const item: AnalyticsItem = {
+        item_id: bouquet.id,
+        item_name: name,
+        item_category: bouquet.category,
+        item_variant: bouquet.sizes?.[0]?.label,
+        price: minPrice,
+        quantity: 1,
+        index: 0,
+      };
+      trackSelectItem('catalog', item);
+    },
+    [bouquet.id, bouquet.category, bouquet.sizes, name, minPrice]
+  );
 
   return (
     <article className="card">

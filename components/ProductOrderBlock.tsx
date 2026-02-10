@@ -74,6 +74,7 @@ export function ProductOrderBlock({
           quantity: 1,
           index: 0,
           item_category: bouquet.category,
+          item_variant: selectedSize.label,
         },
       ],
     });

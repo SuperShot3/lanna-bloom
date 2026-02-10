@@ -30,6 +30,7 @@ export function ProductPageClient({
   useEffect(() => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const price = bouquet.sizes?.[0]?.price ?? 0;
+    const sizeLabel = bouquet.sizes?.[0]?.label;
     trackViewItem({
       currency: 'THB',
       value: price,
@@ -41,6 +42,7 @@ export function ProductPageClient({
           quantity: 1,
           index: 0,
           item_category: bouquet.category,
+          item_variant: sizeLabel,
         },
       ],
     });

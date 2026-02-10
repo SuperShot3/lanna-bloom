@@ -6,12 +6,8 @@ import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
-
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-  }
-}
+import { trackPurchase } from '@/lib/analytics';
+import type { AnalyticsItem } from '@/lib/analytics';
 
 export function CheckoutSuccessClient({
   lang,
@@ -50,9 +46,26 @@ export function CheckoutSuccessClient({
     };
     fetch(`/api/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+      .then((data: Order | null) => {
         setOrder(data);
         fireAdsConversion(data);
+        if (data?.pricing?.grandTotal != null && data?.items?.length) {
+          const purchaseItems: AnalyticsItem[] = data.items.map((it, i) => ({
+            item_id: it.bouquetId,
+            item_name: it.bouquetTitle,
+            item_variant: it.size,
+            price: it.price,
+            quantity: 1,
+            index: i,
+          }));
+          trackPurchase({
+            orderId,
+            value: data.pricing.grandTotal,
+            currency: 'THB',
+            items: purchaseItems,
+            transactionId: orderId,
+          });
+        }
       })
       .catch(() => {
         setOrder(null);

@@ -15,7 +15,13 @@ import type {
 } from '@/lib/orders';
 import { CARD_BEAUTIFUL_PRICE_THB } from '@/components/AddOnsSection';
 import type { CartItem } from '@/contexts/CartContext';
-import { trackBeginCheckout } from '@/lib/analytics';
+import {
+  trackBeginCheckout,
+  trackViewCart,
+  trackRemoveFromCart,
+  trackAddShippingInfo,
+} from '@/lib/analytics';
+import type { AnalyticsItem } from '@/lib/analytics';
 
 function buildAddOnsSummaryForDisplay(
   addOns: CartItem['addOns'],
@@ -140,30 +146,50 @@ function buildOrderPayload(
   };
 }
 
+function cartItemsToAnalytics(items: CartItem[], lang: Locale): AnalyticsItem[] {
+  return items.map((item, index) => {
+    const itemPrice =
+      item.size.price +
+      (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+    return {
+      item_id: item.bouquetId,
+      item_name: lang === 'th' ? item.nameTh : item.nameEn,
+      price: itemPrice,
+      quantity: 1,
+      index,
+      item_category: undefined,
+      item_variant: item.size.label,
+    };
+  });
+}
+
+function cartValue(items: CartItem[]): number {
+  let v = 0;
+  for (const item of items) {
+    v += item.size.price;
+    if (item.addOns.cardType === 'beautiful') v += CARD_BEAUTIFUL_PRICE_THB;
+  }
+  return v;
+}
+
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, removeItem, clearCart } = useCart();
   const beginCheckoutFiredRef = useRef(false);
+  const viewCartFiredRef = useRef(false);
+  const addShippingInfoFiredRef = useRef(false);
 
   useEffect(() => {
-    if (items.length === 0 || beginCheckoutFiredRef.current) return;
-    beginCheckoutFiredRef.current = true;
-    let value = 0;
-    const analyticsItems = items.map((item, index) => {
-      const itemPrice =
-        item.size.price +
-        (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
-      value += itemPrice;
-      const itemName = lang === 'th' ? item.nameTh : item.nameEn;
-      return {
-        item_id: item.bouquetId,
-        item_name: itemName,
-        price: itemPrice,
-        quantity: 1,
-        index,
-        item_category: undefined,
-      };
-    });
-    trackBeginCheckout({ currency: 'THB', value, items: analyticsItems });
+    if (items.length === 0) return;
+    const analyticsItems = cartItemsToAnalytics(items, lang);
+    const value = cartValue(items);
+    if (!viewCartFiredRef.current) {
+      viewCartFiredRef.current = true;
+      trackViewCart(analyticsItems, value);
+    }
+    if (!beginCheckoutFiredRef.current) {
+      beginCheckoutFiredRef.current = true;
+      trackBeginCheckout({ currency: 'THB', value, items: analyticsItems });
+    }
   }, [items, lang]);
 
   const [delivery, setDelivery] = useState<DeliveryFormValues>({
@@ -172,6 +198,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     date: '',
     deliveryType: 'standard',
   });
+
+  useEffect(() => {
+    if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.district) {
+      addShippingInfoFiredRef.current = true;
+      const analyticsItems = cartItemsToAnalytics(items, lang);
+      trackAddShippingInfo({
+        shippingTier: delivery.deliveryType,
+        currency: 'THB',
+        value: cartValue(items),
+        items: analyticsItems,
+      });
+    }
+  }, [delivery.district, delivery.deliveryType, items, lang]);
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
@@ -356,7 +395,27 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <button
                   type="button"
                   className="cart-item-remove"
-                  onClick={() => removeItem(index)}
+                  onClick={() => {
+                    const removed = items[index];
+                    const itemPrice =
+                      removed.size.price +
+                      (removed.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+                    trackRemoveFromCart({
+                      currency: 'THB',
+                      value: itemPrice,
+                      items: [
+                        {
+                          item_id: removed.bouquetId,
+                          item_name: lang === 'th' ? removed.nameTh : removed.nameEn,
+                          price: itemPrice,
+                          quantity: 1,
+                          index: 0,
+                          item_variant: removed.size.label,
+                        },
+                      ],
+                    });
+                    removeItem(index);
+                  }}
                   aria-label={t.remove}
                 >
                   {t.remove}

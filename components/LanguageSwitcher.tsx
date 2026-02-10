@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Locale } from '@/lib/i18n';
+import { trackLanguageChange } from '@/lib/analytics';
 
 const FLAGS: Record<Locale, string> = {
   en: '🇺🇸',
@@ -33,6 +34,7 @@ export function LanguageSwitcher({
         className="lang-flag"
         aria-label={alternativeLabel}
         title={alternativeLabel}
+        onClick={() => trackLanguageChange(alternativeLang)}
       >
         <span className="lang-flag-emoji" aria-hidden>{alternativeFlag}</span>
       </Link>
