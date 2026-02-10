@@ -76,6 +76,37 @@ export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWith
     router.push(pathname);
   }, [router, pathname]);
 
+  const handleQuickFilter = useCallback(
+    (partial: Partial<CatalogFilterParams>) => {
+      const merged = { ...filterParams };
+
+      // Handle max toggle
+      if ('max' in partial) {
+        if (partial.max === undefined) {
+          // Toggle off - remove max param
+          delete merged.max;
+        } else {
+          // Set new value (or toggle off if same value)
+          if (merged.max === partial.max) {
+            delete merged.max;
+          } else {
+            merged.max = partial.max;
+          }
+        }
+      }
+
+      // Handle sort toggle
+      if ('sort' in partial && partial.sort !== undefined) {
+        // Set new value (CatalogFilterBar already determines toggle state)
+        merged.sort = partial.sort;
+      }
+
+      const qs = buildSearchString(merged);
+      router.push(`${pathname}${qs}`);
+    },
+    [filterParams, router, pathname]
+  );
+
   return (
     <div className="catalog-with-filters">
       <CatalogFilterBar
@@ -83,6 +114,9 @@ export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWith
         activeCount={activeCount}
         isDrawerOpen={drawerOpen}
         onOpenDrawer={() => setDrawerOpen(true)}
+        filterParams={filterParams}
+        onQuickFilter={handleQuickFilter}
+        onClearAll={handleClear}
       />
       <FilterDrawer
         lang={lang}

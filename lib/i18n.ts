@@ -95,6 +95,8 @@ export const translations = {
       typeOrchid: 'Orchid',
       typeSunflower: 'Sunflower',
       typeMixed: 'Mixed',
+      quickFilterUnder1000: 'Under ฿1000',
+      quickFilterUnder1500: 'Under ฿1500',
     },
     product: {
       composition: 'Composition',
@@ -458,6 +460,8 @@ export const translations = {
       typeOrchid: 'กล้วยไม้',
       typeSunflower: 'ทานตะวัน',
       typeMixed: 'ผสม',
+      quickFilterUnder1000: 'ต่ำกว่า ฿1000',
+      quickFilterUnder1500: 'ต่ำกว่า ฿1500',
     },
     product: {
       composition: 'องค์ประกอบ',
