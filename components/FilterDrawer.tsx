@@ -38,6 +38,38 @@ export function FilterDrawer({
 }: FilterDrawerProps) {
   const t = translations[lang].catalog;
   const categories = translations[lang].categories;
+  
+  // Color translations mapping
+  const colorTranslations: Record<string, string> = {
+    red: t.colorRed,
+    pink: t.colorPink,
+    white: t.colorWhite,
+    yellow: t.colorYellow,
+    purple: t.colorPurple,
+    orange: t.colorOrange,
+    mixed: t.colorMixed,
+  };
+  
+  // Type translations mapping
+  const typeTranslations: Record<string, string> = {
+    rose: t.typeRose,
+    tulip: t.typeTulip,
+    lily: t.typeLily,
+    orchid: t.typeOrchid,
+    sunflower: t.typeSunflower,
+    mixed: t.typeMixed,
+  };
+  
+  // Occasion translations mapping
+  const occasionTranslations: Record<string, string> = {
+    '': t.occasionAny,
+    birthday: t.occasionBirthday,
+    anniversary: t.occasionAnniversary,
+    romantic: t.occasionRomantic,
+    sympathy: t.occasionSympathy,
+    congrats: t.occasionCongrats,
+    get_well: t.occasionGetWell,
+  };
 
   const [category, setCategory] = useState(values.category || 'all');
   const [colors, setColors] = useState<string[]>(values.colors || []);
@@ -100,7 +132,7 @@ export function FilterDrawer({
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
         role="button"
         tabIndex={0}
-        aria-label="Close"
+        aria-label={t.close}
       />
       <div
         id={id}
@@ -117,7 +149,7 @@ export function FilterDrawer({
             type="button"
             className="filter-drawer-close"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t.close}
           >
             <span aria-hidden>×</span>
           </button>
@@ -147,7 +179,7 @@ export function FilterDrawer({
                     checked={colors.includes(c)}
                     onChange={() => toggleColor(c)}
                   />
-                  <span style={{ textTransform: 'capitalize' }}>{c}</span>
+                  <span>{colorTranslations[c]}</span>
                 </label>
               ))}
             </div>
@@ -162,7 +194,7 @@ export function FilterDrawer({
                     checked={types.includes(ty)}
                     onChange={() => toggleType(ty)}
                   />
-                  <span style={{ textTransform: 'capitalize' }}>{ty}</span>
+                  <span>{typeTranslations[ty]}</span>
                 </label>
               ))}
             </div>
@@ -174,13 +206,11 @@ export function FilterDrawer({
               onChange={(e) => setOccasion(e.target.value)}
               className="filter-select"
             >
-              <option value="">Any</option>
-              <option value="birthday">Birthday</option>
-              <option value="anniversary">Anniversary</option>
-              <option value="romantic">Romantic</option>
-              <option value="sympathy">Sympathy</option>
-              <option value="congrats">Congratulations</option>
-              <option value="get_well">Get well</option>
+              {OCCASION_OPTIONS.map((occ) => (
+                <option key={occ} value={occ}>
+                  {occasionTranslations[occ]}
+                </option>
+              ))}
             </select>
           </div>
           <div className="filter-field">
@@ -189,7 +219,7 @@ export function FilterDrawer({
               <input
                 type="number"
                 min={0}
-                placeholder="Min"
+                placeholder={t.minPrice}
                 value={min}
                 onChange={(e) => setMin(e.target.value)}
                 className="filter-input"
@@ -198,7 +228,7 @@ export function FilterDrawer({
               <input
                 type="number"
                 min={0}
-                placeholder="Max"
+                placeholder={t.maxPrice}
                 value={max}
                 onChange={(e) => setMax(e.target.value)}
                 className="filter-input"
