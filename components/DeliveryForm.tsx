@@ -108,6 +108,11 @@ export function DeliveryForm({
               <label className="buy-now-label" htmlFor="buy-now-address">
                 {t.addressLabel}
               </label>
+              {showLocationPicker && (
+                <p id="buy-now-address-tip-id" className="buy-now-address-tip" aria-live="polite">
+                  {t.addressFieldHintWithMap}
+                </p>
+              )}
               <textarea
                 id="buy-now-address"
                 value={value.addressLine}
@@ -119,7 +124,7 @@ export function DeliveryForm({
                 disabled={!hasArea}
                 className="buy-now-input buy-now-textarea"
                 aria-label={t.addressLabel}
-                aria-describedby="buy-now-address-hint"
+                aria-describedby={showLocationPicker ? 'buy-now-address-tip-id buy-now-address-hint' : 'buy-now-address-hint'}
               />
               <span id="buy-now-address-hint" className="buy-now-address-hint">
                 {value.addressLine.length}/300 {value.addressLine.length > 0 && value.addressLine.length < 10 && (
@@ -132,7 +137,17 @@ export function DeliveryForm({
       </div>
 
       {showLocationPicker && (
-        <DeliveryLocationPicker
+        <>
+          <div className="buy-now-delivery-instructions" role="region" aria-labelledby="delivery-instructions-heading">
+            <h4 id="delivery-instructions-heading" className="buy-now-delivery-instructions-title">
+              {t.deliveryAddressInstructionsTitle}
+            </h4>
+            <ol className="buy-now-delivery-instructions-list">
+              <li>{t.deliveryAddressInstructionsStep1}</li>
+              <li>{t.deliveryAddressInstructionsStep2}</li>
+            </ol>
+          </div>
+          <DeliveryLocationPicker
           value={
             value.deliveryLat != null && value.deliveryLng != null && value.deliveryGoogleMapsUrl != null
               ? { lat: value.deliveryLat, lng: value.deliveryLng, googleMapsUrl: value.deliveryGoogleMapsUrl }
@@ -150,6 +165,7 @@ export function DeliveryForm({
           selectedLocationLabel={t.selectedLocation}
           openInGoogleMapsLabel={t.openInGoogleMaps}
         />
+        </>
       )}
 
       {/* Step 2: Delivery date + delivery type */}
@@ -444,12 +460,46 @@ export function DeliveryForm({
           resize: vertical;
           min-height: 60px;
         }
+        .buy-now-address-tip {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          margin: 0 0 6px;
+          line-height: 1.4;
+        }
         .buy-now-address-hint {
           font-size: 0.8rem;
           color: var(--text-muted);
         }
         .buy-now-address-error {
           color: var(--accent);
+        }
+        .buy-now-delivery-instructions {
+          margin-top: 16px;
+          margin-bottom: 12px;
+          padding: 14px 16px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-left: 4px solid var(--accent);
+          border-radius: var(--radius-sm);
+        }
+        .buy-now-delivery-instructions-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 10px;
+        }
+        .buy-now-delivery-instructions-list {
+          margin: 0;
+          padding-left: 20px;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          color: var(--text);
+        }
+        .buy-now-delivery-instructions-list li {
+          margin-bottom: 6px;
+        }
+        .buy-now-delivery-instructions-list li:last-child {
+          margin-bottom: 0;
         }
       `}</style>
     </div>

@@ -156,6 +156,10 @@ export const translations = {
       selectedLocation: 'Selected:',
       openInGoogleMaps: 'Open in Google Maps',
       pinRequired: 'Please drop a pin on the map so we can deliver accurately.',
+      deliveryAddressInstructionsTitle: 'How to give your delivery location',
+      deliveryAddressInstructionsStep1: 'Click on the map below to drop a pin at your delivery spot.',
+      deliveryAddressInstructionsStep2: 'You can also find your place in Google Maps, copy the link, and paste it in the Address field above.',
+      addressFieldHintWithMap: 'Enter street address, or paste a Google Maps link.',
     },
     cart: {
       addToCart: 'Add to cart',
@@ -525,6 +529,10 @@ export const translations = {
       selectedLocation: 'จุดที่เลือก:',
       openInGoogleMaps: 'เปิดใน Google Maps',
       pinRequired: 'กรุณาหยุดหมุดบนแผนที่เพื่อให้เราจัดส่งได้อย่างถูกต้อง',
+      deliveryAddressInstructionsTitle: 'วิธีระบุจุดจัดส่ง',
+      deliveryAddressInstructionsStep1: 'คลิกบนแผนที่ด้านล่างเพื่อวางหมุดที่จุดจัดส่ง',
+      deliveryAddressInstructionsStep2: 'หรือค้นหาที่อยู่ใน Google Maps แล้วคัดลอกลิงก์มาวางในช่องที่อยู่ด้านบนก็ได้',
+      addressFieldHintWithMap: 'กรอกที่อยู่หรือวางลิงก์จาก Google Maps',
     },
     cart: {
       addToCart: 'เพิ่มลงตะกร้า',
