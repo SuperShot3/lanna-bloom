@@ -6,7 +6,6 @@ import Image from 'next/image';
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
 
 const SWIPE_THRESHOLD_PX = 50;
-const CLICK_DRAG_THRESHOLD_PX = 10;
 
 export function ProductGallery({
   images,
@@ -183,16 +182,8 @@ export function ProductGallery({
             if (list.length > 1 && e.key === 'ArrowRight') goNext();
           }}
         >
-          <button
-            type="button"
-            className="gallery-lightbox-close"
-            onClick={closeLightbox}
-            aria-label="Close"
-          >
-            ×
-          </button>
-          {list.length > 1 && (
-            <>
+          <div className="gallery-lightbox-inner">
+            {list.length > 1 && (
               <button
                 type="button"
                 className="gallery-lightbox-prev"
@@ -202,8 +193,32 @@ export function ProductGallery({
                 }}
                 aria-label="Previous image"
               >
-                ‹
+                <span aria-hidden>‹</span>
               </button>
+            )}
+            <div className="gallery-lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="gallery-lightbox-close"
+                onClick={closeLightbox}
+                aria-label="Close"
+              >
+                <span aria-hidden>×</span>
+              </button>
+              <div className="gallery-lightbox-img-inner" key={active}>
+                <Image
+                  src={current}
+                  alt={name}
+                  fill
+                  className="gallery-lightbox-img"
+                  unoptimized={current.startsWith('data:')}
+                  sizes="100vw"
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                />
+              </div>
+            </div>
+            {list.length > 1 && (
               <button
                 type="button"
                 className="gallery-lightbox-next"
@@ -213,21 +228,9 @@ export function ProductGallery({
                 }}
                 aria-label="Next image"
               >
-                ›
+                <span aria-hidden>›</span>
               </button>
-            </>
-          )}
-          <div className="gallery-lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
-            <Image
-              src={current}
-              alt={name}
-              fill
-              className="gallery-lightbox-img"
-              unoptimized={current.startsWith('data:')}
-              sizes="100vw"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            />
+            )}
           </div>
         </div>
       )}
@@ -303,69 +306,130 @@ export function ProductGallery({
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 48px 56px;
+          padding: 24px 20px;
         }
-        .gallery-lightbox-close {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          width: 44px;
-          height: 44px;
-          border: none;
-          background: rgba(255, 255, 255, 0.15);
-          color: #fff;
-          font-size: 28px;
-          line-height: 1;
-          border-radius: 50%;
-          cursor: pointer;
-          z-index: 2;
+        .gallery-lightbox-inner {
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background 0.2s;
-        }
-        .gallery-lightbox-close:hover {
-          background: rgba(255, 255, 255, 0.25);
-        }
-        .gallery-lightbox-prev,
-        .gallery-lightbox-next {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 48px;
-          height: 48px;
-          border: none;
-          background: rgba(255, 255, 255, 0.15);
-          color: #fff;
-          font-size: 32px;
-          line-height: 1;
-          border-radius: 50%;
-          cursor: pointer;
-          z-index: 2;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.2s;
-        }
-        .gallery-lightbox-prev {
-          left: 16px;
-        }
-        .gallery-lightbox-next {
-          right: 16px;
-        }
-        .gallery-lightbox-prev:hover,
-        .gallery-lightbox-next:hover {
-          background: rgba(255, 255, 255, 0.25);
+          gap: 12px;
+          width: 100%;
+          max-width: min(95vw, 640px);
         }
         .gallery-lightbox-img-wrap {
           position: relative;
-          width: 100%;
+          flex: 1;
           max-width: min(90vw, 560px);
           max-height: min(85vh, 560px);
           aspect-ratio: 1;
         }
+        .gallery-lightbox-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
+          min-height: 44px;
+          border: none;
+          background: var(--surface);
+          color: var(--text);
+          font-size: 24px;
+          font-weight: 600;
+          line-height: 1;
+          border-radius: 50%;
+          cursor: pointer;
+          z-index: 3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s ease, transform 0.2s ease;
+          box-shadow: var(--shadow);
+          border: 2px solid var(--border);
+        }
+        .gallery-lightbox-close:hover {
+          background: var(--accent-soft);
+          border-color: var(--accent);
+          transform: scale(1.05);
+        }
+        .gallery-lightbox-close:active {
+          transform: scale(0.98);
+        }
+        .gallery-lightbox-prev,
+        .gallery-lightbox-next {
+          flex-shrink: 0;
+          width: 48px;
+          height: 48px;
+          min-width: 48px;
+          min-height: 48px;
+          border: none;
+          background: var(--surface);
+          color: var(--accent);
+          font-size: 28px;
+          line-height: 1;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s ease, transform 0.2s ease;
+          box-shadow: var(--shadow);
+          border: 2px solid var(--border);
+        }
+        .gallery-lightbox-prev:hover,
+        .gallery-lightbox-next:hover {
+          background: var(--accent-soft);
+          border-color: var(--accent);
+          transform: scale(1.08);
+        }
+        .gallery-lightbox-prev:active,
+        .gallery-lightbox-next:active {
+          transform: scale(0.96);
+        }
+        .gallery-lightbox-img-inner {
+          position: absolute;
+          inset: 0;
+          border-radius: var(--radius);
+          overflow: hidden;
+        }
+        .gallery-lightbox-img-inner {
+          animation: gallery-lightbox-fade 0.35s ease-out;
+        }
+        @keyframes gallery-lightbox-fade {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
         .gallery-lightbox-img {
           object-fit: contain;
+        }
+        @media (max-width: 600px) {
+          .gallery-lightbox {
+            padding: 16px 12px;
+          }
+          .gallery-lightbox-inner {
+            gap: 8px;
+          }
+          .gallery-lightbox-close {
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            min-height: 40px;
+            font-size: 20px;
+          }
+          .gallery-lightbox-prev,
+          .gallery-lightbox-next {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            font-size: 24px;
+          }
         }
       `}</style>
     </div>
