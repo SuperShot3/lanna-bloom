@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import {
   CHIANG_MAI_DISTRICTS,
   CITY_EN,
@@ -10,12 +11,22 @@ import {
 import type { DeliveryType, District } from '@/lib/delivery-areas';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import type { DeliveryLocationValue } from '@/components/DeliveryLocationPicker';
+
+const DeliveryLocationPicker = dynamic(
+  () => import('@/components/DeliveryLocationPicker').then((m) => m.DeliveryLocationPicker),
+  { ssr: false }
+);
 
 export interface DeliveryFormValues {
   district: District | null;
   addressLine: string;
   date: string;
   deliveryType: DeliveryType;
+  /** Delivery pin (map picker). Required on cart/checkout. */
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  deliveryGoogleMapsUrl: string | null;
 }
 
 export function DeliveryForm({
@@ -25,6 +36,7 @@ export function DeliveryForm({
   step3Heading,
   step3Content,
   title,
+  showLocationPicker,
 }: {
   lang: Locale;
   value: DeliveryFormValues;
@@ -34,6 +46,8 @@ export function DeliveryForm({
   step3Content?: React.ReactNode;
   /** When provided (e.g. on cart page), use this as the main form heading instead of buyNow.title. */
   title?: string;
+  /** When true, show the "drop a pin" map picker after the address field (e.g. on cart/checkout). */
+  showLocationPicker?: boolean;
 }) {
   const t = translations[lang].buyNow;
   const city = lang === 'th' ? CITY_TH : CITY_EN;
@@ -116,6 +130,27 @@ export function DeliveryForm({
           </div>
         </div>
       </div>
+
+      {showLocationPicker && (
+        <DeliveryLocationPicker
+          value={
+            value.deliveryLat != null && value.deliveryLng != null && value.deliveryGoogleMapsUrl != null
+              ? { lat: value.deliveryLat, lng: value.deliveryLng, googleMapsUrl: value.deliveryGoogleMapsUrl }
+              : null
+          }
+          onChange={(v: DeliveryLocationValue | null) =>
+            onChange({
+              ...value,
+              deliveryLat: v?.lat ?? null,
+              deliveryLng: v?.lng ?? null,
+              deliveryGoogleMapsUrl: v?.googleMapsUrl ?? null,
+            })
+          }
+          dropPinPrompt={t.dropPinPrompt}
+          selectedLocationLabel={t.selectedLocation}
+          openInGoogleMapsLabel={t.openInGoogleMaps}
+        />
+      )}
 
       {/* Step 2: Delivery date + delivery type */}
       <div className="buy-now-step">

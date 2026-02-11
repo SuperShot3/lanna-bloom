@@ -120,6 +120,18 @@ export function OrderDetailsView({
         {order.delivery.district && <p>District: {order.delivery.district}</p>}
         <p>Preferred time: {order.delivery.preferredTimeSlot}</p>
         {order.delivery.notes && <p>Notes: {order.delivery.notes}</p>}
+        {order.delivery.deliveryGoogleMapsUrl && (
+          <p className="order-details-gmaps-wrap">
+            <a
+              href={order.delivery.deliveryGoogleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="order-details-gmaps-btn"
+            >
+              Open in Google Maps
+            </a>
+          </p>
+        )}
       </div>
       <div className="order-details-section">
         <h2 className="order-details-heading">{t.totalsHeading}</h2>
@@ -181,6 +193,26 @@ export function OrderDetailsView({
         .order-details-copy-btn:hover {
           border-color: var(--accent);
           background: var(--accent-soft);
+        }
+        .order-details-gmaps-wrap {
+          margin: 12px 0 0;
+        }
+        .order-details-gmaps-btn {
+          display: inline-block;
+          padding: 10px 18px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #fff;
+          background: var(--accent);
+          border: 1px solid var(--accent);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .order-details-gmaps-btn:hover {
+          background: #b39868;
+          color: #fff;
+          transform: translateY(-1px);
         }
         .order-details-items {
           list-style: none;

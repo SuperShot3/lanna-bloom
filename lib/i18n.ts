@@ -152,6 +152,10 @@ export const translations = {
       addOnsSummaryWrapping: 'Wrapping: {label}',
       addOnsSummaryMessage: 'Message: {text}',
       addOnsSummaryLabel: 'Add-ons: ',
+      dropPinPrompt: 'Click the map to set delivery location.',
+      selectedLocation: 'Selected:',
+      openInGoogleMaps: 'Open in Google Maps',
+      pinRequired: 'Please drop a pin on the map so we can deliver accurately.',
     },
     cart: {
       addToCart: 'Add to cart',
@@ -517,6 +521,10 @@ export const translations = {
       addOnsSummaryWrapping: 'การห่อ: {label}',
       addOnsSummaryMessage: 'ข้อความ: {text}',
       addOnsSummaryLabel: 'ตัวเลือกเพิ่ม: ',
+      dropPinPrompt: 'คลิกบนแผนที่เพื่อตั้งจุดจัดส่ง',
+      selectedLocation: 'จุดที่เลือก:',
+      openInGoogleMaps: 'เปิดใน Google Maps',
+      pinRequired: 'กรุณาหยุดหมุดบนแผนที่เพื่อให้เราจัดส่งได้อย่างถูกต้อง',
     },
     cart: {
       addToCart: 'เพิ่มลงตะกร้า',

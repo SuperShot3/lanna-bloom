@@ -56,6 +56,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   <h2 style="font-size: 1rem;">Delivery</h2>
   <p>${escapeHtml(order.delivery.address)}<br/>
   Time: ${escapeHtml(order.delivery.preferredTimeSlot)}</p>
+  ${order.delivery.deliveryGoogleMapsUrl ? `<p><a href="${escapeHtml(order.delivery.deliveryGoogleMapsUrl)}">Open in Google Maps</a></p>` : ''}
   <h2 style="font-size: 1rem;">Items</h2>
   <p>${itemsList}</p>
   <p><strong>Items total: ฿${order.pricing.itemsTotal.toLocaleString()} + delivery</strong></p>

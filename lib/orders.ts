@@ -33,6 +33,10 @@ export interface OrderDelivery {
   district?: string;
   preferredTimeSlot: string;
   notes?: string;
+  /** Delivery pin (map picker). */
+  deliveryLat?: number;
+  deliveryLng?: number;
+  deliveryGoogleMapsUrl?: string;
 }
 
 export interface OrderPricing {

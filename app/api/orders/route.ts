@@ -93,6 +93,9 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       district,
       preferredTimeSlot,
       notes: typeof d.notes === 'string' ? d.notes : undefined,
+      deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
+      deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
+      deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : undefined,
     },
     pricing: {
       itemsTotal: typeof p.itemsTotal === 'number' ? p.itemsTotal : grandTotal,

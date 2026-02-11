@@ -136,6 +136,9 @@ function buildOrderPayload(
       address: deliveryAddress,
       district: delivery.district?.id ?? undefined,
       preferredTimeSlot,
+      deliveryLat: delivery.deliveryLat ?? undefined,
+      deliveryLng: delivery.deliveryLng ?? undefined,
+      deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
     },
     pricing: {
       itemsTotal,
@@ -197,6 +200,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     addressLine: '',
     date: '',
     deliveryType: 'standard',
+    deliveryLat: null,
+    deliveryLng: null,
+    deliveryGoogleMapsUrl: null,
   });
 
   useEffect(() => {
@@ -234,6 +240,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handlePlaceOrder = async () => {
     if (!delivery.district || !delivery.date) {
       setOrderError(lang === 'th' ? 'กรุณาเลือกพื้นที่จัดส่งและวันจัดส่ง' : 'Please select delivery area and date.');
+      return;
+    }
+    if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
+      setOrderError(tBuyNow.pinRequired);
       return;
     }
     const addressTrim = delivery.addressLine?.trim() ?? '';
@@ -433,6 +443,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             value={delivery}
             onChange={setDelivery}
             title={t.placeOrder}
+            showLocationPicker
             step3Heading={t.contactInfoStepHeading}
             step3Content={
               <div className="cart-place-order">
