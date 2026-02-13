@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -99,11 +100,7 @@ export function CheckoutSuccessClient({
     );
   }
 
-  const summaryLine =
-    order?.items?.length &&
-    order.items
-      .map((i) => `${i.bouquetTitle} (${i.size})`)
-      .join(', ');
+  const hasItems = order?.items?.length;
   const totalLine = order?.pricing?.grandTotal != null ? `฿${order.pricing.grandTotal.toLocaleString()}` : '';
 
   return (
@@ -111,11 +108,35 @@ export function CheckoutSuccessClient({
       <div className="container">
         <h1 className="checkout-success-title">{t.orderCreated}: {orderId}</h1>
         <p className="checkout-success-contact">{t.contactUsInMessenger}</p>
-        {(summaryLine || totalLine) && (
+        {(hasItems || totalLine) && (
           <div className="checkout-success-summary">
             <h2 className="checkout-success-summary-title">{t.orderSummaryTitle}</h2>
-            {summaryLine && <p className="checkout-success-summary-line">{summaryLine}</p>}
-            {totalLine && <p className="checkout-success-summary-total">{totalLine}</p>}
+            {hasItems && (
+              <ul className="checkout-success-summary-items">
+                {order!.items.map((item, i) => (
+                  <li key={i} className="checkout-success-summary-item">
+                    {item.imageUrl && (
+                      <div className="checkout-success-summary-thumb">
+                        <Image
+                          src={item.imageUrl}
+                          alt=""
+                          width={56}
+                          height={56}
+                          className="checkout-success-summary-img"
+                          unoptimized={item.imageUrl.startsWith('data:')}
+                        />
+                      </div>
+                    )}
+                    <div className="checkout-success-summary-item-text">
+                      <span className="checkout-success-summary-item-name">{item.bouquetTitle}</span>
+                      <span className="checkout-success-summary-item-meta"> — {item.size}</span>
+                      <span className="checkout-success-summary-item-price"> ฿{item.price.toLocaleString()}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {totalLine && (order!.items.length > 1) && <p className="checkout-success-summary-total">{totalLine}</p>}
           </div>
         )}
         {publicOrderUrl && (
@@ -123,22 +144,22 @@ export function CheckoutSuccessClient({
             <h2 className="checkout-success-save-link-heading">{t.saveLinkLabel}</h2>
             <p className="checkout-success-save-link-text">{t.saveLinkNotice}</p>
             <p className="checkout-success-save-link-url">{publicOrderUrl}</p>
-            <button
-              type="button"
-              className="checkout-success-copy-btn"
-              onClick={copyLink}
-              aria-label={t.copyLink}
-            >
-              {copied === 'link' ? (lang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!') : t.copyLink}
-            </button>
+            <div className="checkout-success-actions">
+              <button
+                type="button"
+                className="checkout-success-copy-btn"
+                onClick={copyLink}
+                aria-label={t.copyLink}
+              >
+                {copied === 'link' ? (lang === 'th' ? 'คัดลอกแล้ว!' : 'Copied!') : t.copyLink}
+              </button>
+              <Link href={`/order/${orderId}`} className="checkout-success-view-details-btn" target="_blank" rel="noopener noreferrer">
+                {t.viewFullOrderDetails}
+              </Link>
+            </div>
           </div>
         )}
         <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} lineUseContactUrl pageLocation="checkout_success" />
-        <p className="checkout-success-details">
-          <Link href={`/order/${orderId}`} className="checkout-success-link" target="_blank" rel="noopener noreferrer">
-            View full order details
-          </Link>
-        </p>
       </div>
       <style jsx>{`
         .checkout-success-page {
@@ -168,10 +189,50 @@ export function CheckoutSuccessClient({
           color: var(--text-muted);
           margin: 0 0 8px;
         }
-        .checkout-success-summary-line {
+        .checkout-success-summary-items {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 12px;
+        }
+        .checkout-success-summary-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 0;
+          border-bottom: 1px solid var(--border);
           font-size: 0.95rem;
           color: var(--text);
-          margin: 0 0 4px;
+        }
+        .checkout-success-summary-item:last-child {
+          border-bottom: none;
+        }
+        .checkout-success-summary-thumb {
+          flex-shrink: 0;
+          width: 56px;
+          height: 56px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          background: var(--pastel-cream, #f9f5f0);
+        }
+        .checkout-success-summary-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .checkout-success-summary-item-text {
+          flex: 1;
+          min-width: 0;
+        }
+        .checkout-success-summary-item-name {
+          font-weight: 600;
+          color: var(--text);
+        }
+        .checkout-success-summary-item-meta {
+          color: var(--text-muted);
+        }
+        .checkout-success-summary-item-price {
+          font-weight: 700;
+          color: var(--accent);
         }
         .checkout-success-summary-total {
           font-size: 1rem;
@@ -220,8 +281,31 @@ export function CheckoutSuccessClient({
           border-color: var(--accent);
           background: var(--accent-soft);
         }
-        .checkout-success-details {
-          margin-top: 24px;
+        .checkout-success-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 12px;
+        }
+        .checkout-success-view-details-btn {
+          display: inline-flex;
+          align-items: center;
+          padding: 10px 18px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #fff;
+          background: var(--accent);
+          border: 1px solid var(--accent);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .checkout-success-view-details-btn:hover {
+          background: #b39868;
+          color: #fff;
+          transform: translateY(-1px);
         }
         .checkout-success-link {
           font-weight: 600;

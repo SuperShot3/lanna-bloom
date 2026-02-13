@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getOrderById, getOrderDetailsUrl } from '@/lib/orders';
+import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
@@ -27,6 +27,7 @@ export default async function OrderDetailsPage({
   }
 
   const detailsUrl = getOrderDetailsUrl(order.orderId);
+  const baseUrl = getBaseUrl();
   return (
     <div className="order-page">
       <div className="container">
@@ -34,6 +35,7 @@ export default async function OrderDetailsPage({
         <OrderDetailsView
           order={order}
           detailsUrl={detailsUrl}
+          baseUrl={baseUrl}
           copyOrderIdLabel={t.copyOrderId}
           copyLinkLabel={t.copyLink}
           copiedLabel={t.copied}

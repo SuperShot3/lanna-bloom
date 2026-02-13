@@ -2,14 +2,32 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { ShareIcon } from '@/components/icons';
 import type { Order } from '@/lib/orders';
 import type { ContactPreferenceOption } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
+/** Parse preferredTimeSlot: "2025-02-15 09:00-10:00" -> { date, time } or legacy format. */
+function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
+  const parts = slot.trim().split(/\s+/);
+  if (parts.length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) && parts[1].includes('-')) {
+    return { date: parts[0], time: parts[1] };
+  }
+  return { date: slot, time: '' };
+}
+
+function formatDisplayDate(dateStr: string): string {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 export function OrderDetailsView({
   order,
   detailsUrl,
+  baseUrl,
   copyOrderIdLabel,
   copyLinkLabel,
   copiedLabel,
@@ -17,6 +35,7 @@ export function OrderDetailsView({
 }: {
   order: Order;
   detailsUrl: string;
+  baseUrl: string;
   copyOrderIdLabel: string;
   copyLinkLabel: string;
   copiedLabel: string;
@@ -32,6 +51,10 @@ export function OrderDetailsView({
     whatsapp: tCart.contactWhatsApp,
     telegram: tCart.contactTelegram,
   };
+
+  const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(
+    order.delivery.preferredTimeSlot || ''
+  );
 
   const copy = async (text: string, kind: 'id' | 'link') => {
     try {
@@ -69,21 +92,64 @@ export function OrderDetailsView({
           {copied === 'link' ? copiedLabel : copyLinkLabel}
         </button>
       </div>
-      {order.customerName && (
-        <div className="order-details-section">
-          <h2 className="order-details-heading">Customer</h2>
-          <p>{order.customerName}</p>
-          {order.phone && <p>{order.phone}</p>}
-        </div>
-      )}
-      {order.contactPreference && order.contactPreference.length > 0 && (
-        <div className="order-details-section">
-          <h2 className="order-details-heading">{t.contactPreferenceHeading}</h2>
-          <p>{order.contactPreference.map((opt) => contactPreferenceLabels[opt]).join(', ')}</p>
-        </div>
-      )}
+
+      {/* Delivery date & time */}
       <div className="order-details-section">
-        <h2 className="order-details-heading">Items</h2>
+        <h2 className="order-details-heading">{t.deliveryDate}</h2>
+        <p className="order-details-value">{formatDisplayDate(deliveryDate) || '—'}</p>
+      </div>
+      {preferredTime && (
+        <div className="order-details-section">
+          <h2 className="order-details-heading">{t.preferredTime}</h2>
+          <p className="order-details-value">{preferredTime}</p>
+        </div>
+      )}
+
+      {/* Delivery address */}
+      <div className="order-details-section">
+        <h2 className="order-details-heading">{t.address}</h2>
+        <p className="order-details-value">{order.delivery.address || '—'}</p>
+        {order.delivery.deliveryGoogleMapsUrl && (
+          <>
+            <p className="order-details-gmaps-wrap">
+              <a
+                href={order.delivery.deliveryGoogleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="order-details-gmaps-btn"
+              >
+                {t.openInGoogleMaps}
+              </a>
+            </p>
+            <p className="order-details-link-line">
+              <span className="order-details-link-label">{t.googleMapLink}: </span>
+              <a
+                href={order.delivery.deliveryGoogleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="order-details-link-url"
+              >
+                {order.delivery.deliveryGoogleMapsUrl}
+              </a>
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Recipient */}
+      {(order.delivery.recipientName || order.delivery.recipientPhone) && (
+        <div className="order-details-section">
+          <h2 className="order-details-heading">{t.recipientName}</h2>
+          <p className="order-details-value">{order.delivery.recipientName || '—'}</p>
+          {order.delivery.recipientPhone && (
+            <p className="order-details-value">{t.recipientPhone}: {order.delivery.recipientPhone}</p>
+          )}
+        </div>
+      )}
+
+      {/* Items */}
+      <div className="order-details-section">
+        <h2 className="order-details-heading">{t.item}</h2>
         <ul className="order-details-items">
           {order.items.map((item, i) => (
             <li key={i} className="order-details-item">
@@ -102,54 +168,76 @@ export function OrderDetailsView({
                 )}
                 <div className="order-details-item-text">
                   <strong>{item.bouquetTitle}</strong> — {item.size} — ฿{item.price.toLocaleString()}
-                  {item.addOns.cardMessage && (
-                    <span className="order-details-card-msg"> Card: {item.addOns.cardMessage}</span>
-                  )}
                   {item.addOns.wrappingOption && (
-                    <span className="order-details-wrapping"> Wrapping: {item.addOns.wrappingOption}</span>
+                    <span className="order-details-meta"> {t.wrapping}: {item.addOns.wrappingOption}</span>
+                  )}
+                  {item.addOns.cardMessage && (
+                    <span className="order-details-meta"> {t.cardMessage}: {item.addOns.cardMessage}</span>
                   )}
                 </div>
               </div>
+              {item.bouquetSlug && (
+                <>
+                  <Link
+                    href={`${baseUrl}/${locale}/catalog/${item.bouquetSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="order-details-share-btn"
+                  >
+                    <ShareIcon size={18} className="order-details-share-icon" />
+                    <span>{t.shareFlower}</span>
+                  </Link>
+                  <p className="order-details-link-line">
+                    <span className="order-details-link-label">{t.linkToFlower}: </span>
+                    <a
+                      href={`${baseUrl}/${locale}/catalog/${item.bouquetSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="order-details-link-url"
+                    >
+                      {`${baseUrl}/${locale}/catalog/${item.bouquetSlug}`}
+                    </a>
+                  </p>
+                </>
+              )}
             </li>
           ))}
         </ul>
       </div>
-      <div className="order-details-section">
-        <h2 className="order-details-heading">Delivery</h2>
-        <p>{order.delivery.address}</p>
-        {order.delivery.district && <p>District: {order.delivery.district}</p>}
-        <p>Preferred time: {order.delivery.preferredTimeSlot}</p>
-        {order.delivery.notes && <p>Notes: {order.delivery.notes}</p>}
-        {order.delivery.deliveryGoogleMapsUrl && (
-          <p className="order-details-gmaps-wrap">
-            <a
-              href={order.delivery.deliveryGoogleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="order-details-gmaps-btn"
-            >
-              Open in Google Maps
-            </a>
-          </p>
-        )}
-      </div>
+
+      {/* Price summary */}
       <div className="order-details-section">
         <h2 className="order-details-heading">{t.totalsHeading}</h2>
         <p className="order-details-totals-line">
-          {t.itemsTotal}: ฿{order.pricing.itemsTotal.toLocaleString()}
+          {t.bouquetPrice}: ฿{order.pricing.itemsTotal.toLocaleString()}
         </p>
         <p className="order-details-totals-line order-details-delivery-note">
-          {t.deliveryCalculated}
+          {t.deliveryFee}: {t.deliveryCalculated}
         </p>
         <p className="order-details-totals-grand">
           <strong>
-            {t.grandTotalWithDelivery.replace(
+            {t.total}: {t.grandTotalWithDelivery.replace(
               '{amount}',
               `฿${order.pricing.itemsTotal.toLocaleString()}`
             )}
           </strong>
         </p>
       </div>
+
+      {/* Sender */}
+      {(order.customerName || order.phone) && (
+        <div className="order-details-section">
+          <h2 className="order-details-heading">{t.sender}</h2>
+          <p className="order-details-value">{order.customerName || '—'}</p>
+          {order.phone && <p className="order-details-value">{order.phone}</p>}
+          {order.contactPreference && order.contactPreference.length > 0 && (
+            <p className="order-details-value">
+              {t.contactPreferenceHeading}: {order.contactPreference.map((opt) => contactPreferenceLabels[opt]).join(' / ')}
+            </p>
+          )}
+        </div>
+      )}
+
       <p className="order-details-created">Created: {new Date(order.createdAt).toLocaleString()}</p>
       <style jsx>{`
         .order-details-view {
@@ -166,6 +254,11 @@ export function OrderDetailsView({
           margin: 0 0 8px;
           text-transform: uppercase;
           letter-spacing: 0.02em;
+        }
+        .order-details-value {
+          font-size: 0.95rem;
+          color: var(--text);
+          margin: 0 0 4px;
         }
         .order-details-order-id {
           font-size: 1.1rem;
@@ -214,13 +307,30 @@ export function OrderDetailsView({
           color: #fff;
           transform: translateY(-1px);
         }
+        .order-details-link-line {
+          font-size: 0.9rem;
+          color: var(--text);
+          margin: 8px 0 0;
+          word-break: break-all;
+        }
+        .order-details-link-label {
+          font-weight: 600;
+          color: var(--text-muted);
+        }
+        .order-details-link-url {
+          color: var(--accent);
+          text-decoration: underline;
+        }
+        .order-details-link-url:hover {
+          color: #967a4d;
+        }
         .order-details-items {
           list-style: none;
           padding: 0;
           margin: 0;
         }
         .order-details-item {
-          padding: 8px 0;
+          padding: 12px 0;
           border-bottom: 1px solid var(--border);
           font-size: 0.95rem;
           color: var(--text);
@@ -250,10 +360,30 @@ export function OrderDetailsView({
           flex: 1;
           min-width: 0;
         }
-        .order-details-card-msg,
-        .order-details-wrapping {
+        .order-details-meta {
           font-size: 0.85rem;
           color: var(--text-muted);
+        }
+        .order-details-share-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 8px;
+          padding: 8px 14px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--accent);
+          background: var(--surface);
+          border: 1px solid var(--accent);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .order-details-share-btn:hover {
+          background: var(--accent-soft);
+        }
+        .order-details-share-icon {
+          flex-shrink: 0;
         }
         .order-details-totals-line {
           margin: 0 0 6px;

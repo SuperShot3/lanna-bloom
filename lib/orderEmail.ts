@@ -33,10 +33,12 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   if (!env) return;
 
   const itemsList = order.items
-    .map(
-      (i) =>
-        `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`
-    )
+    .map((i) => {
+      let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
+      if (i.addOns.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
+      if (i.addOns.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
+      return line;
+    })
     .join('<br/>');
   const contactPref = order.contactPreference?.length
     ? order.contactPreference.join(', ')
@@ -49,17 +51,31 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
 <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
   <h1 style="font-size: 1.25rem;">New order: ${escapeHtml(order.orderId)}</h1>
   <p><a href="${escapeHtml(detailsUrl)}">View order details</a></p>
-  <h2 style="font-size: 1rem;">Customer</h2>
+
+  <h2 style="font-size: 1rem;">Delivery</h2>
+  <p>Date & time: ${escapeHtml(order.delivery.preferredTimeSlot || '—')}<br/>
+  Address: ${escapeHtml(order.delivery.address)}</p>
+  ${order.delivery.deliveryGoogleMapsUrl ? `<p><a href="${escapeHtml(order.delivery.deliveryGoogleMapsUrl)}">Open in Google Maps</a></p>` : ''}
+
+  ${(order.delivery.recipientName || order.delivery.recipientPhone) ? `
+  <h2 style="font-size: 1rem;">Recipient</h2>
+  <p>${order.delivery.recipientName ? escapeHtml(order.delivery.recipientName) : '—'}<br/>
+  Phone: ${order.delivery.recipientPhone ? escapeHtml(order.delivery.recipientPhone) : '—'}</p>
+  ` : ''}
+
+  <h2 style="font-size: 1rem;">Items</h2>
+  <p>${itemsList}</p>
+
+  <h2 style="font-size: 1rem;">Price summary</h2>
+  <p>Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
+  Delivery fee: Calculated by driver<br/>
+  <strong>Total: ฿${order.pricing.itemsTotal.toLocaleString()} + delivery fee</strong></p>
+
+  <h2 style="font-size: 1rem;">Sender</h2>
   <p>${order.customerName ? escapeHtml(order.customerName) : '—'}<br/>
   Phone: ${order.phone ? escapeHtml(order.phone) : '—'}<br/>
   Preferred contact: ${escapeHtml(contactPref)}</p>
-  <h2 style="font-size: 1rem;">Delivery</h2>
-  <p>${escapeHtml(order.delivery.address)}<br/>
-  Time: ${escapeHtml(order.delivery.preferredTimeSlot)}</p>
-  ${order.delivery.deliveryGoogleMapsUrl ? `<p><a href="${escapeHtml(order.delivery.deliveryGoogleMapsUrl)}">Open in Google Maps</a></p>` : ''}
-  <h2 style="font-size: 1rem;">Items</h2>
-  <p>${itemsList}</p>
-  <p><strong>Items total: ฿${order.pricing.itemsTotal.toLocaleString()} + delivery</strong></p>
+
   <p style="font-size: 0.9rem; color: #666;">Created: ${new Date(order.createdAt).toISOString()}</p>
 </body>
 </html>

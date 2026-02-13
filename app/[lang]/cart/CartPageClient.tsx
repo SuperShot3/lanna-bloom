@@ -63,6 +63,50 @@ function mapCardType(addOns: CartItem['addOns']): OrderCardType {
 
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp', 'telegram'];
 
+const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+
+type StoredCartForm = {
+  delivery: DeliveryFormValues;
+  customerName: string;
+  countryCode: string;
+  phoneNational: string;
+  recipientName: string;
+  recipientCountryCode: string;
+  recipientPhoneNational: string;
+  contactPreference: ContactPreferenceOption[];
+};
+
+function loadCartFormFromStorage(): StoredCartForm | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(CART_FORM_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredCartForm;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCartFormToStorage(data: StoredCartForm) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CART_FORM_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
+function clearCartFormStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(CART_FORM_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 const PHONE_MIN_DIGITS = 8;
 const PHONE_MAX_DIGITS = 15;
 
@@ -86,19 +130,18 @@ function buildOrderPayload(
   cartItems: CartItem[],
   delivery: DeliveryFormValues,
   lang: Locale,
-  contact: { customerName: string; phone: string; contactPreference: ContactPreferenceOption[] }
+  contact: {
+    customerName: string;
+    phone: string;
+    contactPreference: ContactPreferenceOption[];
+    recipientName: string;
+    recipientPhone: string;
+  }
 ): OrderPayload {
-  const districtPart =
-    delivery.district && lang === 'th'
-      ? `เชียงใหม่ ${delivery.district.nameTh}`
-      : delivery.district
-        ? `Chiang Mai, ${delivery.district.nameEn}`
-        : '';
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
-  const deliveryAddress = addressLineTrim ? `${districtPart}, ${addressLineTrim}` : districtPart;
-  const preferredTimeSlot = delivery.date
-    ? `${delivery.date} (${delivery.deliveryType})`
-    : delivery.deliveryType;
+  const preferredTimeSlot = delivery.date && delivery.timeSlot
+    ? `${delivery.date} ${delivery.timeSlot}`
+    : delivery.date || delivery.timeSlot || '';
 
   const orderItems = cartItems.map((item) => {
     const bouquetTitle = lang === 'th' ? item.nameTh : item.nameEn;
@@ -113,6 +156,7 @@ function buildOrderPayload(
         wrappingOption: mapWrappingToOption(item.addOns.wrappingPreference),
       },
       imageUrl: item.imageUrl ?? undefined,
+      bouquetSlug: item.slug ?? undefined,
     };
   });
 
@@ -126,16 +170,15 @@ function buildOrderPayload(
   const deliveryFee = 0;
   const grandTotal = itemsTotal + deliveryFee;
 
-  // API requires non-empty customerName, phone, and at least one contactPreference.
-  // We only call this after client-side validation, so send the strings we have.
   return {
     customerName: contact.customerName.trim(),
     phone: contact.phone.trim(),
     items: orderItems,
     delivery: {
-      address: deliveryAddress,
-      district: delivery.district?.id ?? undefined,
+      address: addressLineTrim,
       preferredTimeSlot,
+      recipientName: contact.recipientName.trim() || undefined,
+      recipientPhone: contact.recipientPhone.trim() || undefined,
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
@@ -195,34 +238,72 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
   }, [items, lang]);
 
-  const [delivery, setDelivery] = useState<DeliveryFormValues>({
-    district: null,
+  const defaultDelivery: DeliveryFormValues = {
     addressLine: '',
     date: '',
-    deliveryType: 'standard',
+    timeSlot: '',
     deliveryLat: null,
     deliveryLng: null,
     deliveryGoogleMapsUrl: null,
+  };
+
+  const [delivery, setDelivery] = useState<DeliveryFormValues>(() => {
+    const stored = loadCartFormFromStorage();
+    const d = stored?.delivery;
+    if (!d || typeof d !== 'object') return defaultDelivery;
+    return {
+      addressLine: typeof d.addressLine === 'string' ? d.addressLine : defaultDelivery.addressLine,
+      date: typeof d.date === 'string' ? d.date : defaultDelivery.date,
+      timeSlot: typeof d.timeSlot === 'string' ? d.timeSlot : defaultDelivery.timeSlot,
+      deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : null,
+      deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : null,
+      deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : null,
+    };
+  });
+
+  const [placing, setPlacing] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
+  const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
+  const [phoneNational, setPhoneNational] = useState(() => loadCartFormFromStorage()?.phoneNational ?? '');
+  const [recipientName, setRecipientName] = useState(() => loadCartFormFromStorage()?.recipientName ?? '');
+  const [recipientCountryCode, setRecipientCountryCode] = useState(() => loadCartFormFromStorage()?.recipientCountryCode ?? '66');
+  const [recipientPhoneNational, setRecipientPhoneNational] = useState(() => loadCartFormFromStorage()?.recipientPhoneNational ?? '');
+  const [contactPreference, setContactPreference] = useState<ContactPreferenceOption[]>(() => {
+    const stored = loadCartFormFromStorage()?.contactPreference;
+    if (!Array.isArray(stored)) return [];
+    return stored.filter((o): o is ContactPreferenceOption =>
+      CONTACT_OPTIONS.includes(o)
+    );
   });
 
   useEffect(() => {
-    if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.district) {
+    if (items.length === 0) return;
+    saveCartFormToStorage({
+      delivery,
+      customerName,
+      countryCode,
+      phoneNational,
+      recipientName,
+      recipientCountryCode,
+      recipientPhoneNational,
+      contactPreference,
+    });
+  }, [items.length, delivery, customerName, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference]);
+
+  useEffect(() => {
+    if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
       addShippingInfoFiredRef.current = true;
       const analyticsItems = cartItemsToAnalytics(items, lang);
       trackAddShippingInfo({
-        shippingTier: delivery.deliveryType,
+        shippingTier: 'standard',
         currency: 'THB',
         value: cartValue(items),
         items: analyticsItems,
       });
     }
-  }, [delivery.district, delivery.deliveryType, items, lang]);
-  const [placing, setPlacing] = useState(false);
-  const [orderError, setOrderError] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState('');
-  const [countryCode, setCountryCode] = useState('66');
-  const [phoneNational, setPhoneNational] = useState('');
-  const [contactPreference, setContactPreference] = useState<ContactPreferenceOption[]>([]);
+  }, [delivery.addressLine, items, lang]);
+
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
@@ -237,9 +318,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setPhoneNational(digitsOnly);
   };
 
+  const handleRecipientPhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, PHONE_MAX_DIGITS);
+    setRecipientPhoneNational(digitsOnly);
+  };
+
   const handlePlaceOrder = async () => {
-    if (!delivery.district || !delivery.date) {
-      setOrderError(lang === 'th' ? 'กรุณาเลือกพื้นที่จัดส่งและวันจัดส่ง' : 'Please select delivery area and date.');
+    if (!delivery.date) {
+      setOrderError(lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
+      return;
+    }
+    if (!delivery.timeSlot) {
+      setOrderError(tBuyNow.timeSlotRequired);
       return;
     }
     if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
@@ -279,14 +369,29 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.contactMethodRequired);
       return;
     }
+    if (!recipientName.trim()) {
+      setOrderError(t.recipientNameRequired);
+      return;
+    }
+    if (!recipientPhoneNational) {
+      setOrderError(t.recipientPhoneRequired);
+      return;
+    }
+    if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
+      setOrderError(t.contactPhoneMinLength);
+      return;
+    }
     setOrderError(null);
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
+    const recipientPhone = recipientCountryCode + recipientPhoneNational;
     try {
       const payload = buildOrderPayload(items, delivery, lang, {
         customerName: customerName.trim(),
         phone: fullPhone,
         contactPreference,
+        recipientName: recipientName.trim(),
+        recipientPhone,
       });
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -301,6 +406,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       }
       const { orderId, publicOrderUrl, shareText } = data;
       clearCart();
+      clearCartFormStorage();
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
@@ -448,6 +554,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             step3Content={
               <div className="cart-place-order">
                 <div className="cart-contact-info">
+                  <p className="cart-section-label">{t.senderSection}</p>
                   <div className="cart-contact-field">
                     <label className="cart-contact-label" htmlFor="cart-customer-name">
                       {t.yourName} <span className="cart-required" aria-hidden>*</span>
@@ -496,6 +603,58 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       />
                     </div>
                     <p id="cart-phone-hint" className="cart-phone-hint">
+                      {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
+                    </p>
+                  </div>
+                  <p className="cart-section-label">{t.recipientSection}</p>
+                  <div className="cart-contact-field">
+                    <label className="cart-contact-label" htmlFor="cart-recipient-name">
+                      {t.recipientName} <span className="cart-required" aria-hidden>*</span>
+                    </label>
+                    <input
+                      id="cart-recipient-name"
+                      type="text"
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      placeholder={t.recipientNamePlaceholder}
+                      className="cart-contact-input"
+                      aria-required
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div className="cart-contact-field">
+                    <label className="cart-contact-label" htmlFor="cart-recipient-phone">
+                      {t.recipientPhone} <span className="cart-required" aria-hidden>*</span>
+                    </label>
+                    <div className="cart-phone-row">
+                      <select
+                        id="cart-recipient-country-code"
+                        value={recipientCountryCode}
+                        onChange={(e) => setRecipientCountryCode(e.target.value)}
+                        className="cart-phone-country-select"
+                        aria-label={t.countryCode}
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        id="cart-recipient-phone"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={recipientPhoneNational}
+                        onChange={handleRecipientPhoneInput}
+                        placeholder={t.recipientPhonePlaceholder}
+                        className="cart-contact-input cart-phone-input"
+                        autoComplete="tel-national"
+                        maxLength={PHONE_MAX_DIGITS}
+                        aria-describedby="cart-recipient-phone-hint"
+                      />
+                    </div>
+                    <p id="cart-recipient-phone-hint" className="cart-phone-hint">
                       {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
                     </p>
                   </div>
@@ -659,6 +818,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-contact-field {
           margin-bottom: 12px;
+        }
+        .cart-section-label {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 16px 0 8px;
+        }
+        .cart-section-label:first-child {
+          margin-top: 0;
         }
         .cart-contact-label {
           display: block;

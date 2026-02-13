@@ -26,12 +26,17 @@ export interface OrderItem {
   addOns: OrderItemAddOns;
   /** Chosen reference image URL (cart/order flow). */
   imageUrl?: string;
+  /** Bouquet slug for product page URL (Share flower button). */
+  bouquetSlug?: string;
 }
 
 export interface OrderDelivery {
   address: string;
+  /** @deprecated Kept for backward compatibility with existing orders. */
   district?: string;
   preferredTimeSlot: string;
+  recipientName?: string;
+  recipientPhone?: string;
   notes?: string;
   /** Delivery pin (map picker). */
   deliveryLat?: number;
@@ -213,7 +218,7 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
   orders.push(order);
   await writeOrders(orders);
   if (process.env.NODE_ENV === 'development') {
-    console.log('[orders] Created', orderId, payload.delivery?.district ?? '');
+    console.log('[orders] Created', orderId);
   } else if (process.env.VERCEL) {
     console.log('[orders] Created', orderId, useBlobStorage() ? 'Blob' : 'file/tmp');
   }

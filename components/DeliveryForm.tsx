@@ -1,14 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import {
-  CHIANG_MAI_DISTRICTS,
-  CITY_EN,
-  CITY_TH,
-  getDeliveryTier,
-  getTotalTimeRangeMinutes,
-} from '@/lib/delivery-areas';
-import type { DeliveryType, District } from '@/lib/delivery-areas';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { DeliveryLocationValue } from '@/components/DeliveryLocationPicker';
@@ -18,11 +10,17 @@ const DeliveryLocationPicker = dynamic(
   { ssr: false }
 );
 
+/** 1-hour time slots from 08:00 to 20:00. */
+export const DELIVERY_TIME_SLOTS = [
+  '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
+  '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00',
+  '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00',
+] as const;
+
 export interface DeliveryFormValues {
-  district: District | null;
   addressLine: string;
   date: string;
-  deliveryType: DeliveryType;
+  timeSlot: string;
   /** Delivery pin (map picker). Required on cart/checkout. */
   deliveryLat: number | null;
   deliveryLng: number | null;
@@ -50,60 +48,18 @@ export function DeliveryForm({
   showLocationPicker?: boolean;
 }) {
   const t = translations[lang].buyNow;
-  const city = lang === 'th' ? CITY_TH : CITY_EN;
-  const districtLabel = (d: District) => (lang === 'th' ? d.nameTh : d.nameEn);
-  const hasArea = !!value.district;
-  const timeRange =
-    value.district &&
-    getTotalTimeRangeMinutes(getDeliveryTier(value.district), value.deliveryType);
 
   return (
     <div className="buy-now-form">
       <h2 className="buy-now-title">{title ?? t.title}</h2>
 
-      {/* Step 1: Select delivery area */}
+      {/* Step 1: Address + map pin */}
       <div className="buy-now-step">
         <span className="buy-now-num" aria-hidden>1</span>
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step1}</h3>
           <p className="buy-now-hint">{t.trySearchByPostalCode}</p>
           <div className="buy-now-fields">
-            <div className="buy-now-field">
-              <label className="buy-now-label" htmlFor="buy-now-city">
-                {t.city}
-              </label>
-              <input
-                id="buy-now-city"
-                type="text"
-                value={city}
-                readOnly
-                className="buy-now-input buy-now-input-readonly"
-                aria-label={t.city}
-              />
-            </div>
-            <div className="buy-now-field">
-              <label className="buy-now-label" htmlFor="buy-now-district">
-                {t.selectDistrict}
-              </label>
-              <select
-                id="buy-now-district"
-                value={value.district?.id ?? ''}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  const district = CHIANG_MAI_DISTRICTS.find((d) => d.id === id) ?? null;
-                  onChange({ ...value, district });
-                }}
-                className="buy-now-select"
-                aria-label={t.selectDistrict}
-              >
-                <option value="">{t.selectDistrict}</option>
-                {CHIANG_MAI_DISTRICTS.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {districtLabel(d)}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="buy-now-field">
               <label className="buy-now-label" htmlFor="buy-now-address">
                 {t.addressLabel}
@@ -121,7 +77,6 @@ export function DeliveryForm({
                 minLength={10}
                 maxLength={300}
                 rows={2}
-                disabled={!hasArea}
                 className="buy-now-input buy-now-textarea"
                 aria-label={t.addressLabel}
                 aria-describedby={showLocationPicker ? 'buy-now-address-tip-id buy-now-address-hint' : 'buy-now-address-hint'}
@@ -148,32 +103,32 @@ export function DeliveryForm({
             </ol>
           </div>
           <DeliveryLocationPicker
-          value={
-            value.deliveryLat != null && value.deliveryLng != null && value.deliveryGoogleMapsUrl != null
-              ? { lat: value.deliveryLat, lng: value.deliveryLng, googleMapsUrl: value.deliveryGoogleMapsUrl }
-              : null
-          }
-          onChange={(v: DeliveryLocationValue | null) =>
-            onChange({
-              ...value,
-              deliveryLat: v?.lat ?? null,
-              deliveryLng: v?.lng ?? null,
-              deliveryGoogleMapsUrl: v?.googleMapsUrl ?? null,
-            })
-          }
-          dropPinPrompt={t.dropPinPrompt}
-          selectedLocationLabel={t.selectedLocation}
-          openInGoogleMapsLabel={t.openInGoogleMaps}
-        />
+            value={
+              value.deliveryLat != null && value.deliveryLng != null && value.deliveryGoogleMapsUrl != null
+                ? { lat: value.deliveryLat, lng: value.deliveryLng, googleMapsUrl: value.deliveryGoogleMapsUrl }
+                : null
+            }
+            onChange={(v: DeliveryLocationValue | null) =>
+              onChange({
+                ...value,
+                deliveryLat: v?.lat ?? null,
+                deliveryLng: v?.lng ?? null,
+                deliveryGoogleMapsUrl: v?.googleMapsUrl ?? null,
+              })
+            }
+            dropPinPrompt={t.dropPinPrompt}
+            selectedLocationLabel={t.selectedLocation}
+            openInGoogleMapsLabel={t.openInGoogleMaps}
+          />
         </>
       )}
 
-      {/* Step 2: Delivery date + delivery type */}
+      {/* Step 2: Delivery date + preferred time slot */}
       <div className="buy-now-step">
         <span className="buy-now-num" aria-hidden>2</span>
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step3}</h3>
-          <p className="buy-now-hint">{t.selectAreaFirstDate}</p>
+          <p className="buy-now-hint">{t.selectDeliveryDateAndTime}</p>
           <div className="buy-now-fields">
             <div className="buy-now-field">
               <label className="buy-now-label" htmlFor="buy-now-date">
@@ -185,61 +140,32 @@ export function DeliveryForm({
                 value={value.date}
                 onChange={(e) => onChange({ ...value, date: e.target.value })}
                 min={new Date().toISOString().slice(0, 10)}
-                disabled={!hasArea}
                 className="buy-now-input"
                 aria-label={t.specifyDeliveryDate}
               />
             </div>
             <div className="buy-now-field">
-              <span className="buy-now-label">{t.chooseDeliveryType}</span>
-              <div className="buy-now-radio-pills" role="radiogroup" aria-label={t.chooseDeliveryType}>
-                <label className="buy-now-radio-pill">
-                  <input
-                    type="radio"
-                    name="deliveryType"
-                    value="standard"
-                    checked={value.deliveryType === 'standard'}
-                    onChange={() => onChange({ ...value, deliveryType: 'standard' })}
-                    className="buy-now-radio-input"
-                  />
-                  <span>{t.deliveryTypeStandard}</span>
-                </label>
-                <label className="buy-now-radio-pill">
-                  <input
-                    type="radio"
-                    name="deliveryType"
-                    value="priority"
-                    checked={value.deliveryType === 'priority'}
-                    onChange={() => onChange({ ...value, deliveryType: 'priority' })}
-                    className="buy-now-radio-input"
-                  />
-                  <span>{t.deliveryTypePriority}</span>
-                </label>
-              </div>
+              <label className="buy-now-label" htmlFor="buy-now-time-slot">
+                {t.preferredTime}
+              </label>
+              <select
+                id="buy-now-time-slot"
+                value={value.timeSlot}
+                onChange={(e) => onChange({ ...value, timeSlot: e.target.value })}
+                className="buy-now-select"
+                aria-label={t.preferredTime}
+              >
+                <option value="">{t.selectTimeSlot}</option>
+                {DELIVERY_TIME_SLOTS.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Delivery information (only when district selected) */}
-      {value.district && timeRange && (
-        <div className="buy-now-delivery-info">
-          <h4 className="buy-now-delivery-info-title">{t.deliveryInfoTitle}</h4>
-          <p className="buy-now-delivery-info-line">
-            {t.preparationTimeLabel} {t.preparationTimeValue}
-          </p>
-          <p className="buy-now-delivery-info-line">{t.deliveryDependsOnLocation}</p>
-          <p className="buy-now-delivery-info-line">
-            {t.estimatedTotalTime} ~{timeRange.minTotal}–{timeRange.maxTotal} {t.minutes}
-          </p>
-          <p className="buy-now-delivery-info-line buy-now-delivery-info-note">
-            {t.exactTimeInMessenger}
-          </p>
-          <p className="buy-now-delivery-info-line buy-now-delivery-info-note">
-            {t.finalPriceDisclaimer}
-          </p>
-        </div>
-      )}
 
       {/* Step 3: Custom content (e.g. Send order via) or default "ADD TO CART" */}
       <div className="buy-now-step buy-now-step-4">

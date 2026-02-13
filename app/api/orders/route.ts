@@ -25,13 +25,11 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   }
   const d = delivery as Record<string, unknown>;
   const address = typeof d.address === 'string' ? d.address.trim() : '';
-  const district = typeof d.district === 'string' ? d.district : undefined;
   const preferredTimeSlot = typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
-  if (!address && !district) {
-    return { ok: false, message: 'delivery.address or delivery.district is required' };
-  }
-  if (address.length > 0 && (address.length < 10 || address.length > 500)) {
-    return { ok: false, message: 'delivery.address must be between 10 and 500 characters' };
+  const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
+  const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  if (!address || address.length < 10 || address.length > 500) {
+    return { ok: false, message: 'delivery.address is required (10–500 characters)' };
   }
   const pricing = b.pricing;
   if (!pricing || typeof pricing !== 'object') {
@@ -86,12 +84,14 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
           wrappingOption: (addOns.wrappingOption as OrderPayload['items'][0]['addOns']['wrappingOption']) ?? null,
         },
         imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
+        bouquetSlug: typeof i.bouquetSlug === 'string' ? i.bouquetSlug : undefined,
       };
     }),
     delivery: {
       address,
-      district,
       preferredTimeSlot,
+      recipientName: recipientName || undefined,
+      recipientPhone: recipientPhone || undefined,
       notes: typeof d.notes === 'string' ? d.notes : undefined,
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
