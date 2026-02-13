@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { LoadingScreen } from '@/components/LoadingScreen';
-import { PreorderModalWrapper } from '@/components/PreorderModalWrapper';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -56,7 +55,6 @@ export default function RootLayout({
       <body>
         <LoadingScreen />
         <GoogleAnalytics />
-        <PreorderModalWrapper />
         {children}
       </body>
     </html>
