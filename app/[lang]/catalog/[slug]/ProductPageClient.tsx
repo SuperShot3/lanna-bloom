@@ -54,6 +54,7 @@ export function ProductPageClient({
         <ProductGallery
           images={bouquet.images}
           name={name}
+          productId={bouquet.id}
           activeIndex={selectedImageIndex}
           onActiveChange={setSelectedImageIndex}
         />

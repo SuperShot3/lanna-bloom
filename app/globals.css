@@ -30,6 +30,7 @@
 }
 
 html {
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -69,11 +70,119 @@ body.loading .loading-screen {
   opacity: 1 !important;
 }
 
+.main-content-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
 main {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
+}
+
+/* Route transition - View Transitions API (next-view-transitions) */
+/* Animate only main content; keep header/footer static */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(main-content) {
+  animation: page-out 0.2s ease-out forwards;
+}
+::view-transition-new(main-content) {
+  animation: page-in 0.26s ease-out forwards;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Skeleton pulse - used by loading.tsx and BouquetCardSkeleton */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Catalog loading skeleton */
+.catalog-title-skeleton {
+  width: 180px;
+  height: 32px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Product loading skeleton */
+.product-loading-breadcrumb {
+  height: 20px;
+  width: 200px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.product-gallery-skeleton {
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  width: 100%;
+}
+.product-title-skeleton {
+  height: 28px;
+  width: 85%;
+  margin-bottom: 12px;
+  border-radius: 4px;
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.product-desc-skeleton {
+  height: 48px;
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.product-composition-skeleton {
+  height: 80px;
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+.product-cta-skeleton {
+  height: 48px;
+  width: 140px;
+  border-radius: var(--radius);
+  background: var(--pastel-cream);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
 a {

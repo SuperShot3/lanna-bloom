@@ -47,6 +47,9 @@ export const translations = {
     },
     home: {
       popularTitle: 'Popular bouquets',
+      viewAllBouquets: 'View all bouquets',
+      browseBouquets: 'Browse bouquets',
+      backToTop: 'Back to top',
     },
     categories: {
       all: 'All bouquets',
@@ -455,6 +458,9 @@ export const translations = {
     },
     home: {
       popularTitle: 'ช่อดอกไม้ยอดนิยม',
+      viewAllBouquets: 'ดูช่อดอกไม้ทั้งหมด',
+      browseBouquets: 'เลือกช่อดอกไม้',
+      backToTop: 'กลับขึ้นด้านบน',
     },
     categories: {
       all: 'ช่อดอกไม้ทั้งหมด',

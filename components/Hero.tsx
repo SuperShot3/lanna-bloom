@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { trackCtaClick } from '@/lib/analytics';
 
 export function Hero({ lang }: { lang: Locale }) {
   const t = translations[lang].hero;
@@ -18,7 +19,11 @@ export function Hero({ lang }: { lang: Locale }) {
         </h1>
         <p className="hero-headline">{t.headline}</p>
         <p className="hero-subline">{t.subline}</p>
-        <Link href={catalogHref} className="hero-cta">
+        <Link
+          href={catalogHref}
+          className="hero-cta"
+          onClick={() => trackCtaClick('cta_home_top')}
+        >
           {t.cta}
         </Link>
         <p className="hero-trust">{t.trustLine}</p>

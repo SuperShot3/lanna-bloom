@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import { PrefetchLink } from '@/components/PrefetchLink';
 import { Bouquet } from '@/lib/bouquets';
 import { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -116,29 +116,40 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
     [bouquet.id, bouquet.category, bouquet.sizes, name, minPrice]
   );
 
+  const viewTransitionName = `product-${bouquet.id}`;
+
   return (
     <article className="card">
-      <Link href={href} className="card-link" onClick={handleLinkClick}>
+      <PrefetchLink href={href} className="card-link" onClick={handleLinkClick}>
         <div
           className="card-image-wrap"
-          style={canSwipe ? { touchAction: 'pan-y' } : undefined}
+          style={
+            canSwipe
+              ? { touchAction: 'pan-y' as const }
+              : undefined
+          }
           onTouchStart={canSwipe ? handleTouchStart : undefined}
           onTouchEnd={canSwipe ? handleTouchEnd : undefined}
           onMouseDown={canSwipe ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
           {imgSrc ? (
-            <Image
-              src={imgSrc}
-              alt={name}
-              width={400}
-              height={400}
-              className="card-image"
-              sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
-              unoptimized={isDataUrl}
-              draggable={false}
-              style={{ pointerEvents: 'none' }}
-            />
+            <div
+              className="card-image-shared"
+              style={{ viewTransitionName } as React.CSSProperties}
+            >
+              <Image
+                src={imgSrc}
+                alt={name}
+                width={400}
+                height={400}
+                className="card-image"
+                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                unoptimized={isDataUrl}
+                draggable={false}
+                style={{ pointerEvents: 'none' }}
+              />
+            </div>
           ) : (
             <div className="card-image card-image-placeholder" aria-hidden />
           )}
@@ -161,7 +172,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           <p className="card-delivery">{t.deliveryNote}</p>
           <span className="card-cta">{t.viewDetails}</span>
         </div>
-      </Link>
+      </PrefetchLink>
       <style jsx>{`
         .card {
           background: var(--surface);
@@ -189,6 +200,11 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           aspect-ratio: 1;
           overflow: hidden;
           background: var(--pastel-cream);
+        }
+        .card-image-shared {
+          width: 100%;
+          height: 100%;
+          position: relative;
         }
         .card-dots {
           position: absolute;

@@ -22,7 +22,9 @@ export default function LangLayout({
     <CartProvider>
       <ViewportSync />
       <Header lang={lang as Locale} />
-      <main>{children}</main>
+      <div className="main-content-wrap" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
+        <main>{children}</main>
+      </div>
       <Footer lang={lang as Locale} />
     </CartProvider>
   );

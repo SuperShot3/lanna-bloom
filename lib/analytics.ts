@@ -285,6 +285,15 @@ export function trackContactClick(params: {
 }
 
 /**
+ * CTA click events (home page and similar). Fires once per click; no dedupe.
+ * Use for: cta_home_top, cta_home_bottom_view_all, cta_home_sticky_browse, cta_home_back_to_top
+ */
+export function trackCtaClick(eventName: string, params?: Record<string, unknown>): void {
+  if (typeof window === 'undefined') return;
+  sendGtagEvent(eventName, { page_path: window.location.pathname, ...params });
+}
+
+/**
  * language_change: when user switches language.
  */
 export function trackLanguageChange(lang: string): void {

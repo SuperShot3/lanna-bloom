@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { ViewTransitions } from 'next-view-transitions';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import './globals.css';
@@ -55,7 +56,9 @@ export default function RootLayout({
       <body>
         <LoadingScreen />
         <GoogleAnalytics />
-        {children}
+        <ViewTransitions>
+          {children}
+        </ViewTransitions>
       </body>
     </html>
   );
