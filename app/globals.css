@@ -1174,3 +1174,17 @@ a.filter-pill--active:hover {
   opacity: 0.7;
   cursor: not-allowed;
 }
+/* Checkout success: mutually exclusive "Order via" variants by viewport (avoids duplicate on Android) */
+/* Large screens: show full-width text buttons, hide footer icon buttons */
+@media (min-width: 481px) {
+  body.checkout-success-page-active .footer .messenger-links {
+    display: none !important;
+  }
+}
+/* Small screens: hide full-width text buttons, show footer icon buttons */
+@media (max-width: 480px) {
+  body.checkout-success-page-active .order-buttons {
+    display: none !important;
+  }
+}
+

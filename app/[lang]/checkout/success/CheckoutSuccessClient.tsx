@@ -27,6 +27,11 @@ export function CheckoutSuccessClient({
   const publicOrderUrl = initialPublicOrderUrl ?? '';
   const shareText = initialShareText ?? (publicOrderUrl ? `New order: ${orderId}. Details: ${publicOrderUrl}` : '');
   useEffect(() => {
+    document.body.classList.add('checkout-success-page-active');
+    return () => document.body.classList.remove('checkout-success-page-active');
+  }, []);
+
+  useEffect(() => {
     if (!orderId) return;
     let fired = false;
     const fireAdsConversion = (orderData: Order | null) => {
