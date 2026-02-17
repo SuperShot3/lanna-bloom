@@ -40,9 +40,17 @@ export function ReviewsSection({
     >
       <div className="container">
         <header className={styles.reviewsHeader}>
-          <h2 id="reviews-section-title" className={styles.reviewsTitle}>
-            {displayTitle}
-          </h2>
+          <div className={styles.reviewsHeaderTop}>
+            <h2 id="reviews-section-title" className={styles.reviewsTitle}>
+              {displayTitle}
+            </h2>
+            <Link
+              href={`/${lang}/reviews`}
+              className={styles.reviewsCtaPrimary}
+            >
+              {t.seeAllReviews}
+            </Link>
+          </div>
           {displaySubtitle && (
             <p className={styles.reviewsSubtitle}>{displaySubtitle}</p>
           )}
@@ -59,23 +67,6 @@ export function ReviewsSection({
               <ReviewCard review={review} />
             </div>
           ))}
-        </div>
-
-        <div className={styles.reviewsCtaRow}>
-          <Link
-            href={`/${lang}/reviews`}
-            className={`hero-cta ${styles.reviewsCtaPrimary}`}
-          >
-            {t.seeAllReviews}
-          </Link>
-          {/* TODO: Replace # with WhatsApp/LINE link when available */}
-          <a
-            href="#"
-            className={styles.reviewsCtaSecondary}
-            aria-label={t.leaveReview}
-          >
-            {t.leaveReview}
-          </a>
         </div>
       </div>
     </section>

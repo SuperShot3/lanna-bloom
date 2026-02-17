@@ -8,11 +8,20 @@
   margin-bottom: 24px;
 }
 
+.reviewsHeaderTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
 .reviewsTitle {
   font-family: var(--font-serif);
   font-size: clamp(1.35rem, 3.5vw, 1.75rem);
   font-weight: 600;
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--text);
 }
 
@@ -47,43 +56,31 @@
   }
 }
 
-.reviewsCtaRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  align-items: center;
-}
-
+/* See all reviews - compact button, 50% smaller than hero-cta */
 .reviewsCtaPrimary {
-  /* Use hero-cta class from globals.css for primary button style */
-  text-decoration: none;
-}
-
-.reviewsCtaSecondary {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 12px 24px;
-  font-size: 0.95rem;
+  min-height: 25px;
+  padding: 7px 16px;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text);
-  background: var(--surface);
-  border: 2px solid var(--border);
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid #a88b5c;
   border-radius: 9999px;
   text-decoration: none;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
-.reviewsCtaSecondary:hover {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--text);
+.reviewsCtaPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(45, 42, 38, 0.15);
 }
 
-.reviewsCtaSecondary:focus-visible {
-  outline: 3px solid var(--accent);
+.reviewsCtaPrimary:focus-visible {
+  outline: 3px solid var(--text);
   outline-offset: 2px;
 }
 
