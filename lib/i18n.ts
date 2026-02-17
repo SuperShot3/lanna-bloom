@@ -227,6 +227,7 @@ export const translations = {
       contactPhoneMaxLength: 'Phone number must be at most 15 digits.',
       contactMethodRequired: 'Please select at least one way to contact you.',
     },
+    acceptedPayments: 'Accepted payments',
     payment: {
       cart: "Payment: Bank transfer or Thai PromptPay QR. After placing your order, we'll send payment details via LINE / WhatsApp / Telegram.",
       success: 'We accept bank transfer and Thai PromptPay QR. Payment details will be sent in chat.',
@@ -657,6 +658,7 @@ export const translations = {
       contactPhoneMaxLength: 'เบอร์โทรศัพท์ต้องไม่เกิน 15 หลัก',
       contactMethodRequired: 'กรุณาเลือกอย่างน้อยหนึ่งช่องทางในการติดต่อ',
     },
+    acceptedPayments: 'รับชำระเงินผ่าน',
     payment: {
       cart: 'ชำระเงิน: โอนธนาคารหรือพร้อมเพย์ QR หลังจากสั่งซื้อแล้ว เราจะส่งรายละเอียดการชำระเงินทาง LINE / WhatsApp / Telegram',
       success: 'รับชำระผ่านโอนธนาคารและพร้อมเพย์ QR เราจะส่งรายละเอียดการชำระเงินในแชทค่ะ',

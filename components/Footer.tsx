@@ -5,6 +5,7 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
 import { PaymentNote } from './PaymentNote';
+import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
 
 export function Footer({ lang }: { lang: Locale }) {
@@ -41,6 +42,7 @@ export function Footer({ lang }: { lang: Locale }) {
           <MessengerLinks />
         </div>
         <PaymentNote lang={lang} variant="footer" />
+        <PaymentBadges lang={lang} />
         <p className="footer-copy">© Lanna Bloom</p>
       </div>
       <style jsx>{`
