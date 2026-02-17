@@ -3,6 +3,7 @@ import { HomeBottomCta } from '@/components/HomeBottomCta';
 import { StickyHomeCta } from '@/components/StickyHomeCta';
 import { PopularSection } from '@/components/PopularSection';
 import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { Suspense } from 'react';
 
@@ -19,6 +20,7 @@ export default function HomePage({
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang as Locale} />
       </Suspense>
+      <ReviewsSection lang={lang as Locale} limit={6} />
       <HomeBottomCta lang={lang as Locale} />
       <StickyHomeCta lang={lang as Locale} />
     </>

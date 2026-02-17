@@ -342,6 +342,11 @@ a.filter-pill--active:hover {
   }
 }
 
+/* Reviews page */
+.reviews-page {
+  padding: 24px 0 48px;
+}
+
 /* Guide page (SEO: flowers-chiang-mai) */
 .guide-page {
   padding: 24px 0 40px;

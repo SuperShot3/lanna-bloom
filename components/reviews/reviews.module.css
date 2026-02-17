@@ -1,0 +1,197 @@
+/* Reviews section - uses project CSS variables */
+
+.reviewsSection {
+  padding: 0 0 48px;
+}
+
+.reviewsHeader {
+  margin-bottom: 24px;
+}
+
+.reviewsTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.reviewsSubtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.reviewsStats {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+}
+
+.reviewsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (min-width: 600px) {
+  .reviewsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .reviewsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.reviewsCtaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.reviewsCtaPrimary {
+  /* Use hero-cta class from globals.css for primary button style */
+  text-decoration: none;
+}
+
+.reviewsCtaSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.reviewsCtaSecondary:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.reviewsCtaSecondary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Review card */
+.reviewCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.reviewCard:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.reviewCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.reviewAvatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.reviewMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.reviewName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.reviewStars {
+  margin-bottom: 4px;
+}
+
+.reviewText {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0 0 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reviewFooter {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.reviewDate {
+  margin: 0;
+}
+
+.reviewLocation {
+  margin: 2px 0 0;
+}
+
+/* Stars - pure CSS */
+.starsContainer {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.star {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+
+.starFilled::before,
+.starEmpty::before {
+  content: '★';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.starFilled::before {
+  color: var(--accent);
+}
+
+.starEmpty::before {
+  color: var(--border);
+}

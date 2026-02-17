@@ -51,6 +51,15 @@ export const translations = {
       browseBouquets: 'Browse bouquets',
       backToTop: 'Back to top',
     },
+    reviews: {
+      title: 'Customer Reviews',
+      subtitle: 'What our customers say about us',
+      reviewsCount: 'reviews',
+      seeAllReviews: 'See all reviews',
+      leaveReview: 'Leave a review',
+      pageTitle: 'All Reviews',
+      noReviews: 'No reviews yet. Be the first to leave one!',
+    },
     categories: {
       all: 'All bouquets',
       roses: 'Roses',
@@ -471,6 +480,15 @@ export const translations = {
       viewAllBouquets: 'ดูช่อดอกไม้ทั้งหมด',
       browseBouquets: 'เลือกช่อดอกไม้',
       backToTop: 'กลับขึ้นด้านบน',
+    },
+    reviews: {
+      title: 'รีวิวจากลูกค้า',
+      subtitle: 'ลูกค้าพูดถึงเราอย่างไร',
+      reviewsCount: 'รีวิว',
+      seeAllReviews: 'ดูรีวิวทั้งหมด',
+      leaveReview: 'เขียนรีวิว',
+      pageTitle: 'รีวิวทั้งหมด',
+      noReviews: 'ยังไม่มีรีวิว เป็นคนแรกที่เขียนรีวิว!',
     },
     categories: {
       all: 'ช่อดอกไม้ทั้งหมด',
