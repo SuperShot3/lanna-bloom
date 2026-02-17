@@ -30,6 +30,11 @@ export interface OrderItem {
   bouquetSlug?: string;
 }
 
+/** District key for delivery fee calculation. */
+export type DeliveryDistrictKey =
+  | 'MUEANG' | 'SARAPHI' | 'SAN_SAI' | 'HANG_DONG' | 'SAN_KAMPHAENG'
+  | 'MAE_RIM' | 'DOI_SAKET' | 'MAE_ON' | 'SAMOENG' | 'MAE_TAENG' | 'UNKNOWN';
+
 export interface OrderDelivery {
   address: string;
   /** @deprecated Kept for backward compatibility with existing orders. */
@@ -42,6 +47,10 @@ export interface OrderDelivery {
   deliveryLat?: number;
   deliveryLng?: number;
   deliveryGoogleMapsUrl?: string;
+  /** District for fee calculation. Required for new orders. */
+  deliveryDistrict?: DeliveryDistrictKey;
+  /** Central Chiang Mai (Old City / Nimman / etc). Only when deliveryDistrict is MUEANG. */
+  isMueangCentral?: boolean;
 }
 
 export interface OrderPricing {

@@ -84,6 +84,12 @@ function validateStripePayload(
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
   const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
 
+  const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'] as const;
+  const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as typeof validDistricts[number])
+    ? (d.deliveryDistrict as typeof validDistricts[number])
+    : 'UNKNOWN';
+  const isMueangCentral = d.deliveryDistrict === 'MUEANG' && d.isMueangCentral === true;
+
   return {
     ok: true,
     data: {
@@ -101,6 +107,8 @@ function validateStripePayload(
         deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
         deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
         deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : undefined,
+        deliveryDistrict,
+        isMueangCentral,
       },
     },
   };
@@ -121,6 +129,8 @@ interface StripeCheckoutPayload {
     deliveryLat?: number;
     deliveryLng?: number;
     deliveryGoogleMapsUrl?: string;
+    deliveryDistrict: string;
+    isMueangCentral: boolean;
   };
 }
 
@@ -141,6 +151,8 @@ export async function POST(request: NextRequest) {
       address: data.delivery.address,
       deliveryLat: data.delivery.deliveryLat,
       deliveryLng: data.delivery.deliveryLng,
+      deliveryDistrict: data.delivery.deliveryDistrict,
+      isMueangCentral: data.delivery.isMueangCentral,
     };
 
     const computed = await computeOrderTotals(data.items, deliveryInput, data.lang);
@@ -163,6 +175,8 @@ export async function POST(request: NextRequest) {
         deliveryLat: data.delivery.deliveryLat,
         deliveryLng: data.delivery.deliveryLng,
         deliveryGoogleMapsUrl: data.delivery.deliveryGoogleMapsUrl,
+        deliveryDistrict: data.delivery.deliveryDistrict,
+        isMueangCentral: data.delivery.isMueangCentral,
       },
       pricing: {
         itemsTotal: totals.itemsTotal,
@@ -181,7 +195,7 @@ export async function POST(request: NextRequest) {
           product_data: {
             name: `${item.bouquetTitle} — ${item.size}`,
             description:
-              item.addOns.cardType === 'premium' || item.addOns.cardType === 'beautiful'
+              item.addOns.cardType === 'premium'
                 ? 'With premium message card'
                 : undefined,
           },

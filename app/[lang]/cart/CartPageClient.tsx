@@ -23,6 +23,7 @@ import {
 } from '@/lib/analytics';
 import { PaymentNote } from '@/components/PaymentNote';
 import type { AnalyticsItem } from '@/lib/analytics';
+import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
 
 function buildAddOnsSummaryForDisplay(
   addOns: CartItem['addOns'],
@@ -102,6 +103,9 @@ function buildStripePayload(
     imageUrl: item.imageUrl ?? undefined,
   }));
 
+  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
+  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
+
   return {
     lang,
     customerName: contact.customerName.trim(),
@@ -116,6 +120,8 @@ function buildStripePayload(
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
+      deliveryDistrict: district,
+      isMueangCentral,
     },
   };
 }
@@ -226,7 +232,9 @@ function buildOrderPayload(
       itemsTotal += CARD_BEAUTIFUL_PRICE_THB;
     }
   }
-  const deliveryFee = 0;
+  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
+  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
+  const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
   const grandTotal = itemsTotal + deliveryFee;
 
   return {
@@ -241,6 +249,8 @@ function buildOrderPayload(
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
+      deliveryDistrict: district,
+      isMueangCentral,
     },
     pricing: {
       itemsTotal,
@@ -304,12 +314,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     deliveryLat: null,
     deliveryLng: null,
     deliveryGoogleMapsUrl: null,
+    deliveryDistrict: '',
+    isMueangCentral: false,
   };
 
   const [delivery, setDelivery] = useState<DeliveryFormValues>(() => {
     const stored = loadCartFormFromStorage();
     const d = stored?.delivery;
     if (!d || typeof d !== 'object') return defaultDelivery;
+    const validDistrict = d.deliveryDistrict && ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'].includes(d.deliveryDistrict)
+      ? d.deliveryDistrict
+      : '';
     return {
       addressLine: typeof d.addressLine === 'string' ? d.addressLine : defaultDelivery.addressLine,
       date: typeof d.date === 'string' ? d.date : defaultDelivery.date,
@@ -317,6 +332,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : null,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : null,
       deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : null,
+      deliveryDistrict: validDistrict,
+      isMueangCentral: d.deliveryDistrict === 'MUEANG' && !!d.isMueangCentral,
     };
   });
 
@@ -384,6 +401,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const handlePlaceOrder = async () => {
+    if (!delivery.deliveryDistrict) {
+      setOrderError(tBuyNow.districtRequired);
+      return;
+    }
+    const addressTrim = delivery.addressLine?.trim() ?? '';
+    if (addressTrim.length < 10) {
+      setOrderError(tBuyNow.addressTooShort);
+      return;
+    }
+    if (addressTrim.length > 300) {
+      setOrderError(tBuyNow.addressTooLong);
+      return;
+    }
     if (!delivery.date) {
       setOrderError(lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
       return;
@@ -394,15 +424,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
       setOrderError(tBuyNow.pinRequired);
-      return;
-    }
-    const addressTrim = delivery.addressLine?.trim() ?? '';
-    if (addressTrim.length < 10) {
-      setOrderError(tBuyNow.addressTooShort);
-      return;
-    }
-    if (addressTrim.length > 300) {
-      setOrderError(tBuyNow.addressTooLong);
       return;
     }
     if (!customerName.trim()) {
@@ -487,6 +508,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const handlePayByCard = async () => {
+    if (!delivery.deliveryDistrict) {
+      setOrderError(tBuyNow.districtRequired);
+      return;
+    }
+    const addressTrim = delivery.addressLine?.trim() ?? '';
+    if (addressTrim.length < 10) {
+      setOrderError(tBuyNow.addressTooShort);
+      return;
+    }
+    if (addressTrim.length > 300) {
+      setOrderError(tBuyNow.addressTooLong);
+      return;
+    }
     if (!delivery.date) {
       setOrderError(lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
       return;
@@ -497,15 +531,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
       setOrderError(tBuyNow.pinRequired);
-      return;
-    }
-    const addressTrim = delivery.addressLine?.trim() ?? '';
-    if (addressTrim.length < 10) {
-      setOrderError(tBuyNow.addressTooShort);
-      return;
-    }
-    if (addressTrim.length > 300) {
-      setOrderError(tBuyNow.addressTooLong);
       return;
     }
     if (!customerName.trim()) {
@@ -684,6 +709,26 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             );
           })}
         </div>
+        {(() => {
+          const itemsTotalVal = cartValue(items);
+          const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
+          const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
+          const deliveryFeeVal = calcDeliveryFeeTHB({ district, isMueangCentral });
+          const grandTotalVal = itemsTotalVal + deliveryFeeVal;
+          return (
+            <div className="cart-order-summary">
+              <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
+              <div className="cart-order-summary-row">
+                <span>{t.deliveryFeeLabel}</span>
+                <span className="cart-order-summary-fee">฿{deliveryFeeVal.toLocaleString()}</span>
+              </div>
+              <div className="cart-order-summary-row cart-order-summary-total">
+                <span>{t.totalLabel}</span>
+                <span>฿{grandTotalVal.toLocaleString()}</span>
+              </div>
+            </div>
+          );
+        })()}
         <section className="cart-delivery" aria-labelledby="cart-delivery-heading">
           <h2 id="cart-delivery-heading" className="cart-section-title">
             {t.deliveryAndContact}
@@ -942,6 +987,41 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-item-remove:hover {
           border-color: var(--accent);
           color: var(--text);
+        }
+        .cart-order-summary {
+          margin-bottom: 24px;
+          padding: 16px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .cart-order-summary-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 12px;
+        }
+        .cart-order-summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.95rem;
+          color: var(--text);
+          margin-bottom: 6px;
+        }
+        .cart-order-summary-row:last-child {
+          margin-bottom: 0;
+        }
+        .cart-order-summary-fee {
+          font-weight: 600;
+          color: var(--accent);
+        }
+        .cart-order-summary-total {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid var(--border);
+          font-weight: 700;
+          font-size: 1.05rem;
         }
         .cart-delivery {
           margin-bottom: 32px;

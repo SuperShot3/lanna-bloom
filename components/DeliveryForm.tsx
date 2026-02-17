@@ -1,9 +1,11 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { DeliveryLocationValue } from '@/components/DeliveryLocationPicker';
+import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
 
 const DeliveryLocationPicker = dynamic(
   () => import('@/components/DeliveryLocationPicker').then((m) => m.DeliveryLocationPicker),
@@ -25,6 +27,10 @@ export interface DeliveryFormValues {
   deliveryLat: number | null;
   deliveryLng: number | null;
   deliveryGoogleMapsUrl: string | null;
+  /** District key. Required for fee calculation. */
+  deliveryDistrict: DistrictKey | '';
+  /** Central Chiang Mai (Old City / Nimman / etc). Only applies when district is MUEANG. */
+  isMueangCentral: boolean;
 }
 
 export function DeliveryForm({
@@ -48,12 +54,34 @@ export function DeliveryForm({
   showLocationPicker?: boolean;
 }) {
   const t = translations[lang].buyNow;
+  const districtManuallyChangedRef = useRef(false);
+
+  useEffect(() => {
+    if (districtManuallyChangedRef.current) return;
+    const detected = detectDistrictFromAddress(value.addressLine);
+    if (detected && value.deliveryDistrict !== detected) {
+      onChange({ ...value, deliveryDistrict: detected });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on address change; value/onChange from closure
+  }, [value.addressLine]);
+
+  const handleDistrictChange = (key: DistrictKey | '') => {
+    districtManuallyChangedRef.current = true;
+    const isMueangCentral = key !== 'MUEANG' ? false : value.isMueangCentral;
+    onChange({ ...value, deliveryDistrict: key, isMueangCentral });
+  };
+
+  const handleCentralToggle = (checked: boolean) => {
+    onChange({ ...value, isMueangCentral: checked });
+  };
+
+  const showCentralToggle = value.deliveryDistrict === 'MUEANG';
 
   return (
     <div className="buy-now-form">
       <h2 className="buy-now-title">{title ?? t.title}</h2>
 
-      {/* Step 1: Address + map pin */}
+      {/* Step 1: District + Address + map pin */}
       <div className="buy-now-step">
         <span className="buy-now-num" aria-hidden>1</span>
         <div className="buy-now-step-content">
@@ -61,8 +89,28 @@ export function DeliveryForm({
           <p className="buy-now-hint">{t.trySearchByPostalCode}</p>
           <div className="buy-now-fields">
             <div className="buy-now-field">
+              <label className="buy-now-label" htmlFor="buy-now-district">
+                {t.districtLabel} <span className="buy-now-required" aria-hidden>*</span>
+              </label>
+              <select
+                id="buy-now-district"
+                value={value.deliveryDistrict}
+                onChange={(e) => handleDistrictChange((e.target.value || '') as DistrictKey | '')}
+                className="buy-now-select buy-now-select-full"
+                aria-required
+                aria-label={t.districtLabel}
+              >
+                <option value="">{t.selectDistrict}</option>
+                {DISTRICTS.map((d) => (
+                  <option key={d.key} value={d.key}>
+                    {lang === 'th' ? d.labelTh : d.labelEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="buy-now-field">
               <label className="buy-now-label" htmlFor="buy-now-address">
-                {t.addressLabel}
+                {t.addressLabel} <span className="buy-now-required" aria-hidden>*</span>
               </label>
               {showLocationPicker && (
                 <p id="buy-now-address-tip-id" className="buy-now-address-tip" aria-live="polite">
@@ -87,6 +135,23 @@ export function DeliveryForm({
                 )}
               </span>
             </div>
+            {showCentralToggle && (
+              <div className="buy-now-field buy-now-central-toggle-wrap">
+                <label className="buy-now-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={value.isMueangCentral}
+                    onChange={(e) => handleCentralToggle(e.target.checked)}
+                    className="buy-now-checkbox"
+                    aria-describedby="buy-now-central-helper"
+                  />
+                  <span className="buy-now-checkbox-text">{t.centralMueangLabel}</span>
+                </label>
+                <p id="buy-now-central-helper" className="buy-now-central-helper">
+                  {t.centralMueangHelper}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -426,6 +491,42 @@ export function DeliveryForm({
         }
         .buy-now-delivery-instructions-list li:last-child {
           margin-bottom: 0;
+        }
+        .buy-now-required {
+          color: #b91c1c;
+        }
+        .buy-now-select-full {
+          width: 100%;
+        }
+        .buy-now-central-toggle-wrap {
+          margin-top: 8px;
+          padding: 12px 14px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .buy-now-checkbox-label {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          font-size: 0.9rem;
+          line-height: 1.4;
+          color: var(--text);
+          cursor: pointer;
+        }
+        .buy-now-checkbox {
+          flex-shrink: 0;
+          margin-top: 2px;
+          accent-color: var(--accent);
+        }
+        .buy-now-checkbox-text {
+          flex: 1;
+          min-width: 0;
+        }
+        .buy-now-central-helper {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          margin: 8px 0 0 28px;
         }
       `}</style>
     </div>

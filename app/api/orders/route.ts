@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl, listOrders } from '@/lib/orders';
-import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
+import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { sendOrderNotificationEmail } from '@/lib/orderEmail';
+import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 
 function isAdminAuthorized(request: NextRequest): boolean {
   const secret = process.env.ORDERS_ADMIN_SECRET;
@@ -31,6 +32,11 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   if (!address || address.length < 10 || address.length > 500) {
     return { ok: false, message: 'delivery.address is required (10–500 characters)' };
   }
+  const validDistricts: DeliveryDistrictKey[] = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'];
+  const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as DeliveryDistrictKey)
+    ? (d.deliveryDistrict as DeliveryDistrictKey)
+    : 'UNKNOWN';
+  const isMueangCentral = d.deliveryDistrict === 'MUEANG' && d.isMueangCentral === true;
   const pricing = b.pricing;
   if (!pricing || typeof pricing !== 'object') {
     return { ok: false, message: 'pricing is required' };
@@ -96,12 +102,23 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
       deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : undefined,
+      deliveryDistrict,
+      isMueangCentral,
     },
-    pricing: {
-      itemsTotal: typeof p.itemsTotal === 'number' ? p.itemsTotal : grandTotal,
-      deliveryFee: typeof p.deliveryFee === 'number' ? p.deliveryFee : 0,
-      grandTotal,
-    },
+    pricing: (() => {
+      const itemsFromPayload = items.map((it: unknown) => {
+        const i = it as Record<string, unknown>;
+        return { price: typeof i.price === 'number' ? i.price : 0 };
+      });
+      const itemsTotal = itemsFromPayload.reduce((sum, it) => sum + it.price, 0);
+      const deliveryFee = calcDeliveryFeeTHB({ district: deliveryDistrict, isMueangCentral });
+      const computedGrandTotal = itemsTotal + deliveryFee;
+      return {
+        itemsTotal,
+        deliveryFee,
+        grandTotal: computedGrandTotal,
+      };
+    })(),
     contactPreference,
   };
   return { ok: true, payload };
