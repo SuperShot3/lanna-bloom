@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getOrderById } from '@/lib/orders';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 export async function GET(request: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
     return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
@@ -14,6 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'session_id is required' }, { status: 400 });
   }
 
+  const stripe = new Stripe(secretKey);
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId.trim());
     const orderId = session.metadata?.orderId;

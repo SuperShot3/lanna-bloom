@@ -9,8 +9,6 @@ import {
 import { getOrderDetailsUrl } from '@/lib/orders';
 import { sendOrderNotificationEmail } from '@/lib/orderEmail';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 const PAYMENT_SUCCESS_EVENTS = [
   'checkout.session.completed',
   'checkout.session.async_payment_succeeded',
@@ -18,10 +16,13 @@ const PAYMENT_SUCCESS_EVENTS = [
 const PAYMENT_FAILED_EVENT = 'checkout.session.async_payment_failed';
 
 export async function POST(request: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secretKey || !webhookSecret) {
     return NextResponse.json({ error: 'Stripe webhook not configured' }, { status: 500 });
   }
 
+  const stripe = new Stripe(secretKey);
   let event: Stripe.Event;
   const body = await request.text();
   const headersList = await headers();
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+      webhookSecret
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

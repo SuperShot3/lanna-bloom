@@ -73,7 +73,8 @@ export async function computeOrderTotals(
     }
 
     let itemPrice = size.price ?? 0;
-    if (item.addOns?.cardType === 'premium' || item.addOns?.cardType === 'beautiful') {
+    // Client sends 'beautiful'; Stripe API maps it to 'premium' before this runs
+    if (item.addOns?.cardType === 'premium') {
       itemPrice += CARD_BEAUTIFUL_PRICE_THB;
     }
 

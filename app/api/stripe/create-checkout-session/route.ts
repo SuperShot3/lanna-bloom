@@ -6,8 +6,6 @@ import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import type { DistrictKey } from '@/lib/deliveryFees';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 function validateStripePayload(
   body: unknown
 ): { ok: true; data: StripeCheckoutPayload } | { ok: false; message: string } {
@@ -136,10 +134,12 @@ interface StripeCheckoutPayload {
 }
 
 export async function POST(request: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
     return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
+  const stripe = new Stripe(secretKey);
   try {
     const body = await request.json();
     const validation = validateStripePayload(body);
