@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
         deliveryLat: data.delivery.deliveryLat,
         deliveryLng: data.delivery.deliveryLng,
         deliveryGoogleMapsUrl: data.delivery.deliveryGoogleMapsUrl,
-        deliveryDistrict: data.delivery.deliveryDistrict,
+        deliveryDistrict: data.delivery.deliveryDistrict as DistrictKey,
         isMueangCentral: data.delivery.isMueangCentral,
       },
       pricing: {
