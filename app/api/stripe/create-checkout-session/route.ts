@@ -4,6 +4,7 @@ import { computeOrderTotals, type CartItemIdentifier } from '@/lib/stripePricing
 import { createPendingOrder, getBaseUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
+import type { DistrictKey } from '@/lib/deliveryFees';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
       address: data.delivery.address,
       deliveryLat: data.delivery.deliveryLat,
       deliveryLng: data.delivery.deliveryLng,
-      deliveryDistrict: data.delivery.deliveryDistrict,
+      deliveryDistrict: data.delivery.deliveryDistrict as DistrictKey,
       isMueangCentral: data.delivery.isMueangCentral,
     };
 
