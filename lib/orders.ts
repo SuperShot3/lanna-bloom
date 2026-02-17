@@ -62,9 +62,20 @@ export interface OrderPayload {
   contactPreference?: ContactPreferenceOption[];
 }
 
+/** Order payment status. Legacy orders (bank transfer) have no status or 'paid'. */
+export type OrderPaymentStatus = 'pending_payment' | 'paid' | 'payment_failed';
+
 export interface Order extends OrderPayload {
   orderId: string;
   createdAt: string;
+  /** Payment status. Omitted for legacy bank-transfer orders (treated as paid). */
+  status?: OrderPaymentStatus;
+  /** Stripe payment identifiers. Set when webhook marks order paid. */
+  stripeSessionId?: string;
+  paymentIntentId?: string;
+  amountTotal?: number;
+  currency?: string;
+  paidAt?: string;
 }
 
 /** Blob path for the single JSON file holding all orders. */
@@ -223,6 +234,60 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
     console.log('[orders] Created', orderId, useBlobStorage() ? 'Blob' : 'file/tmp');
   }
   return order;
+}
+
+/** Create pending order for Stripe flow. Status is pending_payment. */
+export async function createPendingOrder(payload: OrderPayload): Promise<Order> {
+  const orders = await readOrders();
+  const orderId = generateOrderId();
+  const order: Order = {
+    ...payload,
+    orderId,
+    createdAt: new Date().toISOString(),
+    status: 'pending_payment',
+  };
+  orders.push(order);
+  await writeOrders(orders);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[orders] Created pending', orderId);
+  }
+  return order;
+}
+
+/** Update order payment status. Used by Stripe webhook. */
+export async function updateOrderPaymentStatus(
+  orderId: string,
+  update: {
+    status: 'paid' | 'payment_failed';
+    stripeSessionId?: string;
+    paymentIntentId?: string;
+    amountTotal?: number;
+    currency?: string;
+    paidAt?: string;
+  }
+): Promise<Order | null> {
+  const orders = await readOrders();
+  const normalized = orderId.trim();
+  const idx = orders.findIndex((o) => o.orderId === normalized);
+  if (idx < 0) return null;
+  const order = orders[idx];
+  orders[idx] = {
+    ...order,
+    status: update.status,
+    stripeSessionId: update.stripeSessionId ?? order.stripeSessionId,
+    paymentIntentId: update.paymentIntentId ?? order.paymentIntentId,
+    amountTotal: update.amountTotal ?? order.amountTotal,
+    currency: update.currency ?? order.currency,
+    paidAt: update.paidAt ?? order.paidAt,
+  };
+  await writeOrders(orders);
+  return orders[idx];
+}
+
+/** Get order by Stripe session ID. Used for webhook idempotency. */
+export async function getOrderByStripeSessionId(stripeSessionId: string): Promise<Order | null> {
+  const orders = await readOrders();
+  return orders.find((o) => o.stripeSessionId === stripeSessionId) ?? null;
 }
 
 /** Get order by orderId; null if not found. */

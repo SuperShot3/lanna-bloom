@@ -62,6 +62,64 @@ function mapCardType(addOns: CartItem['addOns']): OrderCardType {
   return null;
 }
 
+function mapWrappingToStripeOption(
+  pref: CartItem['addOns']['wrappingPreference']
+): 'standard' | 'premium' | 'no paper' | null {
+  if (pref === 'classic') return 'standard';
+  if (pref === 'premium') return 'premium';
+  if (pref === 'none') return 'no paper';
+  return null;
+}
+
+/** Build identifiers-only payload for Stripe (no prices from client). */
+function buildStripePayload(
+  cartItems: CartItem[],
+  delivery: DeliveryFormValues,
+  lang: Locale,
+  contact: {
+    customerName: string;
+    phone: string;
+    contactPreference: ContactPreferenceOption[];
+    recipientName: string;
+    recipientPhone: string;
+  }
+): Record<string, unknown> {
+  const addressLineTrim = delivery.addressLine?.trim() ?? '';
+  const preferredTimeSlot =
+    delivery.date && delivery.timeSlot
+      ? `${delivery.date} ${delivery.timeSlot}`
+      : delivery.date || delivery.timeSlot || '';
+
+  const items = cartItems.map((item) => ({
+    bouquetId: item.bouquetId,
+    bouquetSlug: item.slug ?? undefined,
+    size: item.size.key ?? 'm',
+    addOns: {
+      cardType: item.addOns.cardType,
+      cardMessage: item.addOns.cardMessage?.trim() ?? '',
+      wrappingOption: mapWrappingToStripeOption(item.addOns.wrappingPreference),
+    },
+    imageUrl: item.imageUrl ?? undefined,
+  }));
+
+  return {
+    lang,
+    customerName: contact.customerName.trim(),
+    phone: contact.phone.trim(),
+    contactPreference: contact.contactPreference,
+    items,
+    delivery: {
+      address: addressLineTrim,
+      preferredTimeSlot,
+      recipientName: contact.recipientName.trim() || undefined,
+      recipientPhone: contact.recipientPhone.trim() || undefined,
+      deliveryLat: delivery.deliveryLat ?? undefined,
+      deliveryLng: delivery.deliveryLng ?? undefined,
+      deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
+    },
+  };
+}
+
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp', 'telegram'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -263,6 +321,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   });
 
   const [placing, setPlacing] = useState(false);
+  const [placingStripe, setPlacingStripe] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
@@ -425,6 +484,90 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.couldNotCreateOrder);
       setPlacing(false);
     }
+  };
+
+  const handlePayByCard = async () => {
+    if (!delivery.date) {
+      setOrderError(lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
+      return;
+    }
+    if (!delivery.timeSlot) {
+      setOrderError(tBuyNow.timeSlotRequired);
+      return;
+    }
+    if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
+      setOrderError(tBuyNow.pinRequired);
+      return;
+    }
+    const addressTrim = delivery.addressLine?.trim() ?? '';
+    if (addressTrim.length < 10) {
+      setOrderError(tBuyNow.addressTooShort);
+      return;
+    }
+    if (addressTrim.length > 300) {
+      setOrderError(tBuyNow.addressTooLong);
+      return;
+    }
+    if (!customerName.trim()) {
+      setOrderError(t.contactNameRequired);
+      return;
+    }
+    if (!phoneNational) {
+      setOrderError(t.contactPhoneRequired);
+      return;
+    }
+    if (phoneNational.length < PHONE_MIN_DIGITS || phoneNational.length > PHONE_MAX_DIGITS) {
+      setOrderError(t.contactPhoneMinLength);
+      return;
+    }
+    if (contactPreference.length === 0) {
+      setOrderError(t.contactMethodRequired);
+      return;
+    }
+    if (!recipientName.trim()) {
+      setOrderError(t.recipientNameRequired);
+      return;
+    }
+    if (!recipientPhoneNational) {
+      setOrderError(t.recipientPhoneRequired);
+      return;
+    }
+    if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
+      setOrderError(t.contactPhoneMinLength);
+      return;
+    }
+    setOrderError(null);
+    setPlacingStripe(true);
+    const fullPhone = countryCode + phoneNational;
+    const recipientPhone = recipientCountryCode + recipientPhoneNational;
+    try {
+      const payload = buildStripePayload(items, delivery, lang, {
+        customerName: customerName.trim(),
+        phone: fullPhone,
+        contactPreference,
+        recipientName: recipientName.trim(),
+        recipientPhone,
+      });
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setOrderError(data.error ?? t.couldNotCreateOrder);
+        setPlacingStripe(false);
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setOrderError(t.couldNotCreateOrder);
+    } catch {
+      setOrderError(t.couldNotCreateOrder);
+    }
+    setPlacingStripe(false);
   };
 
   if (items.length === 0) {
@@ -682,15 +825,37 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   </fieldset>
                 </div>
                 <PaymentNote lang={lang} variant="cart" />
-                <button
-                  type="button"
-                  className="cart-place-order-btn"
-                  onClick={handlePlaceOrder}
-                  disabled={placing}
-                  aria-busy={placing}
-                >
-                  {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
-                </button>
+                <div className="cart-place-order-buttons">
+                  <button
+                    type="button"
+                    className="cart-place-order-btn cart-pay-by-stripe-btn"
+                    onClick={handlePayByCard}
+                    disabled={placing || placingStripe}
+                    aria-busy={placingStripe}
+                  >
+                    {placingStripe ? (
+                      lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting to payment...'
+                    ) : (
+                      <>
+                        <span className="cart-stripe-logo" aria-hidden>
+                          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                            <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
+                          </svg>
+                        </span>
+                        {translations[lang].cart.payWithStripe ?? 'Pay with Stripe'}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="cart-place-order-btn cart-place-order-bank-btn"
+                    onClick={handlePlaceOrder}
+                    disabled={placing || placingStripe}
+                    aria-busy={placing}
+                  >
+                    {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
+                  </button>
+                </div>
                 {orderError && (
                   <p className="cart-place-order-error" role="alert">
                     {orderError}
@@ -790,6 +955,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-place-order {
           margin-top: 8px;
         }
+        .cart-place-order-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
         .cart-place-order-btn {
           width: 100%;
           padding: 14px 20px;
@@ -809,6 +979,37 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-place-order-btn:disabled {
           opacity: 0.8;
           cursor: not-allowed;
+        }
+        .cart-pay-by-stripe-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          background: #635BFF;
+          border: 2px solid #635BFF;
+          box-shadow: 0 2px 8px rgba(99, 91, 255, 0.35);
+        }
+        .cart-pay-by-stripe-btn:hover:not(:disabled) {
+          background: #4f46e5;
+          border-color: #4f46e5;
+          box-shadow: 0 4px 12px rgba(99, 91, 255, 0.45);
+        }
+        .cart-stripe-logo {
+          display: inline-flex;
+          flex-shrink: 0;
+        }
+        .cart-stripe-logo svg {
+          display: block;
+        }
+        .cart-place-order-bank-btn {
+          background: var(--surface);
+          color: var(--text);
+          border: 2px solid var(--border);
+        }
+        .cart-place-order-bank-btn:hover:not(:disabled) {
+          background: var(--pastel-cream);
+          border-color: var(--accent);
+          color: var(--text);
         }
         .cart-place-order-error {
           margin: 12px 0 0;

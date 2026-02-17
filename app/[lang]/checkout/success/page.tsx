@@ -8,11 +8,12 @@ export default async function CheckoutSuccessPage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ orderId?: string; publicOrderUrl?: string; shareText?: string }>;
+  searchParams: Promise<{ orderId?: string; publicOrderUrl?: string; shareText?: string; session_id?: string }>;
 }) {
   const { lang } = await params;
   if (!isValidLocale(lang)) notFound();
   const q = await searchParams;
+  const sessionId = typeof q.session_id === 'string' ? q.session_id.trim() : '';
   const orderId = typeof q.orderId === 'string' ? q.orderId.trim() : '';
   let publicOrderUrl = typeof q.publicOrderUrl === 'string' ? q.publicOrderUrl : undefined;
   let shareText = typeof q.shareText === 'string' ? q.shareText : undefined;
@@ -29,6 +30,7 @@ export default async function CheckoutSuccessPage({
       orderId={orderId}
       publicOrderUrl={publicOrderUrl}
       shareText={shareText}
+      sessionId={sessionId || undefined}
     />
   );
 }

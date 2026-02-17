@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
@@ -11,29 +11,72 @@ import type { Order } from '@/lib/orders';
 import { trackPurchase } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 
+const POLL_INTERVAL_MS = 2500;
+const POLL_MAX_MS = 60000;
+
 export function CheckoutSuccessClient({
   lang,
-  orderId,
+  orderId: initialOrderId,
   publicOrderUrl: initialPublicOrderUrl,
   shareText: initialShareText,
+  sessionId,
 }: {
   lang: Locale;
   orderId: string;
   publicOrderUrl?: string;
   shareText?: string;
+  sessionId?: string;
 }) {
   const t = translations[lang].checkoutSuccess;
   const tNav = translations[lang].nav;
   const [order, setOrder] = useState<Order | null>(null);
-  const publicOrderUrl = initialPublicOrderUrl ?? '';
+  const [orderId, setOrderId] = useState(initialOrderId);
+  const [stripeStatus, setStripeStatus] = useState<'processing' | 'paid' | 'payment_failed' | null>(
+    sessionId ? 'processing' : null
+  );
+  const pollStartRef = useRef<number | null>(null);
+  const publicOrderUrl = orderId
+    ? (initialPublicOrderUrl ?? (typeof window !== 'undefined' ? `${window.location.origin}/order/${orderId}` : ''))
+    : '';
   const shareText = initialShareText ?? (publicOrderUrl ? `New order: ${orderId}. Details: ${publicOrderUrl}` : '');
+
   useEffect(() => {
     document.body.classList.add('checkout-success-page-active');
     return () => document.body.classList.remove('checkout-success-page-active');
   }, []);
 
   useEffect(() => {
+    if (!sessionId || stripeStatus !== 'processing') return;
+    const poll = async () => {
+      if (pollStartRef.current && Date.now() - pollStartRef.current > POLL_MAX_MS) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`);
+        const data = await res.json().catch(() => ({}));
+        if (data.status === 'paid' && data.order) {
+          setOrder(data.order);
+          setOrderId(data.order.orderId);
+          setStripeStatus('paid');
+          return;
+        }
+        if (data.status === 'payment_failed') {
+          setStripeStatus('payment_failed');
+          return;
+        }
+      } catch {
+        // continue polling
+      }
+      setTimeout(poll, POLL_INTERVAL_MS);
+    };
+    if (!pollStartRef.current) pollStartRef.current = Date.now();
+    const tId = setTimeout(poll, 0);
+    return () => clearTimeout(tId);
+  }, [sessionId, stripeStatus]);
+
+  useEffect(() => {
     if (!orderId) return;
+    if (sessionId && stripeStatus !== 'paid') return;
     let fired = false;
     const fireAdsConversion = (orderData: Order | null) => {
       if (fired) return;
@@ -78,7 +121,7 @@ export function CheckoutSuccessClient({
         setOrder(null);
         fireAdsConversion(null);
       });
-  }, [orderId]);
+  }, [orderId, sessionId, stripeStatus]);
 
   const [copied, setCopied] = useState<'link' | null>(null);
   const copyLink = async () => {
@@ -92,7 +135,36 @@ export function CheckoutSuccessClient({
     }
   };
 
-  if (!orderId) {
+  if (stripeStatus === 'payment_failed') {
+    return (
+      <div className="checkout-success-page">
+        <div className="container">
+          <h1 className="checkout-success-title">{t.orderCreated}</h1>
+          <p className="checkout-success-text">
+            {lang === 'th' ? 'การชำระเงินล้มเหลว กรุณาลองอีกครั้งหรือสั่งผ่านธนาคาร' : 'Payment failed. Please try again or place order via bank transfer.'}
+          </p>
+          <Link href={`/${lang}/cart`} className="checkout-success-link">
+            {tNav.cart}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionId && stripeStatus === 'processing') {
+    return (
+      <div className="checkout-success-page">
+        <div className="container">
+          <h1 className="checkout-success-title">{t.orderCreated}</h1>
+          <p className="checkout-success-text">
+            {lang === 'th' ? 'การชำระเงินสำเร็จ กำลังดำเนินการออเดอร์ของคุณ...' : 'Payment confirmed, finalizing your order…'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orderId && !sessionId) {
     return (
       <div className="checkout-success-page">
         <div className="container">
