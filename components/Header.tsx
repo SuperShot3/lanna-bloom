@@ -29,6 +29,8 @@ export function Header({ lang }: { lang: Locale }) {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const deliveryTriggerRef = useRef<HTMLAnchorElement>(null);
 
@@ -65,6 +67,13 @@ export function Header({ lang }: { lang: Locale }) {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
     };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setTouchStartX(null);
+      setSwipeOffset(0);
+    }
   }, [menuOpen]);
 
   const showBurger = isMobile; // Show hamburger on mobile regardless of scroll state
@@ -195,7 +204,36 @@ export function Header({ lang }: { lang: Locale }) {
           tabIndex={0}
           aria-label="Close menu"
         />
-        <div className="mobile-menu-panel">
+        <div
+          className="mobile-menu-panel"
+          onTouchStart={(e) => {
+            setTouchStartX(e.touches[0].clientX);
+            setSwipeOffset(0);
+          }}
+          onTouchMove={(e) => {
+            if (touchStartX === null) return;
+            const delta = e.touches[0].clientX - touchStartX;
+            if (delta > 0) setSwipeOffset(delta);
+          }}
+          onTouchEnd={() => {
+            if (swipeOffset >= 60) setMenuOpen(false);
+            setTouchStartX(null);
+            setSwipeOffset(0);
+          }}
+          style={
+            menuOpen && swipeOffset > 0
+              ? { transform: `translateX(${swipeOffset}px)`, transition: 'none' }
+              : undefined
+          }
+        >
+          <button
+            type="button"
+            className="mobile-menu-close"
+            onClick={() => setMenuOpen(false)}
+            aria-label={translations[lang].catalog.close}
+          >
+            <span aria-hidden>×</span>
+          </button>
           <nav className="mobile-menu-nav" aria-label="Main">
             <Link
               href={homeHref}
@@ -662,6 +700,35 @@ export function Header({ lang }: { lang: Locale }) {
           gap: 24px;
           transform: translateX(100%);
           transition: transform 0.25s ease;
+          touch-action: none;
+        }
+        .mobile-menu-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          font-size: 1.75rem;
+          font-weight: 400;
+          line-height: 1;
+          color: var(--text-muted);
+          background: transparent;
+          border: none;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: color 0.2s, background 0.2s;
+        }
+        .mobile-menu-close:hover {
+          color: var(--text);
+          background: var(--pastel-cream, #f9f5f0);
+        }
+        .mobile-menu-close:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
         .mobile-menu--open .mobile-menu-panel {
           transform: translateX(0);
