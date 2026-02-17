@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
+import { PaymentNote } from '@/components/PaymentNote';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
@@ -164,6 +165,7 @@ export function CheckoutSuccessClient({
             </div>
           </div>
         )}
+        <PaymentNote lang={lang} variant="success" />
         <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} lineUseContactUrl pageLocation="checkout_success" />
       </div>
       <style jsx>{`

@@ -21,6 +21,7 @@ import {
   trackRemoveFromCart,
   trackAddShippingInfo,
 } from '@/lib/analytics';
+import { PaymentNote } from '@/components/PaymentNote';
 import type { AnalyticsItem } from '@/lib/analytics';
 
 function buildAddOnsSummaryForDisplay(
@@ -680,6 +681,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     ))}
                   </fieldset>
                 </div>
+                <PaymentNote lang={lang} variant="cart" />
                 <button
                   type="button"
                   className="cart-place-order-btn"

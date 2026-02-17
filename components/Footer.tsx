@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
+import { PaymentNote } from './PaymentNote';
 import { SocialLinks } from './SocialLinks';
 
 export function Footer({ lang }: { lang: Locale }) {
@@ -39,6 +40,7 @@ export function Footer({ lang }: { lang: Locale }) {
           <SocialLinks />
           <MessengerLinks />
         </div>
+        <PaymentNote lang={lang} variant="footer" />
         <p className="footer-copy">© Lanna Bloom</p>
       </div>
       <style jsx>{`
