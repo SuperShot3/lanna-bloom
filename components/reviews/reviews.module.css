@@ -44,6 +44,13 @@
   margin-bottom: 28px;
 }
 
+/* Mobile: show only 3 reviews */
+@media (max-width: 599px) {
+  .reviewsGrid > *:nth-child(n+4) {
+    display: none;
+  }
+}
+
 @media (min-width: 600px) {
   .reviewsGrid {
     grid-template-columns: repeat(2, 1fr);
