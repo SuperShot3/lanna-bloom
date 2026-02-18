@@ -24,6 +24,27 @@ function formatDisplayDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+type PaymentDisplayStatus = 'confirmed' | 'awaiting_manual' | 'awaiting_stripe' | 'unknown';
+
+function getPaymentDisplayStatus(
+  supabaseStatus: string | undefined,
+  supabaseMethod: string | undefined,
+  order: Order
+): PaymentDisplayStatus {
+  const status = (supabaseStatus ?? '').toUpperCase();
+  const method = (supabaseMethod ?? '').toUpperCase();
+  const legacyStatus = order.status;
+
+  if (status === 'PAID') return 'confirmed';
+  if (method === 'STRIPE' && status !== 'PAID') return 'awaiting_stripe';
+  if (method === 'PROMPTPAY' || method === 'BANK_TRANSFER') return 'awaiting_manual';
+
+  if (legacyStatus === 'paid') return 'confirmed';
+  if (legacyStatus === 'payment_failed') return 'awaiting_stripe';
+  if (order.stripeSessionId || order.paymentIntentId) return 'awaiting_stripe';
+  return 'awaiting_manual';
+}
+
 export function OrderDetailsView({
   order,
   detailsUrl,
@@ -32,6 +53,9 @@ export function OrderDetailsView({
   copyLinkLabel,
   copiedLabel,
   locale = 'en',
+  supabasePaymentStatus,
+  supabasePaymentMethod,
+  supabasePaidAt,
 }: {
   order: Order;
   detailsUrl: string;
@@ -40,10 +64,19 @@ export function OrderDetailsView({
   copyLinkLabel: string;
   copiedLabel: string;
   locale?: Locale;
+  supabasePaymentStatus?: string;
+  supabasePaymentMethod?: string;
+  supabasePaidAt?: string;
 }) {
   const t = translations[locale].orderPage;
   const tCart = translations[locale].cart;
   const [copied, setCopied] = useState<'id' | 'link' | null>(null);
+
+  const paymentDisplay = getPaymentDisplayStatus(
+    supabasePaymentStatus,
+    supabasePaymentMethod,
+    order
+  );
 
   const contactPreferenceLabels: Record<ContactPreferenceOption, string> = {
     phone: tCart.contactPhone,
@@ -66,8 +99,36 @@ export function OrderDetailsView({
     }
   };
 
+  const paymentBadgeLabel =
+    paymentDisplay === 'confirmed'
+      ? t.paymentConfirmed
+      : paymentDisplay === 'awaiting_manual'
+        ? (supabasePaymentMethod ?? '').toUpperCase() === 'PROMPTPAY'
+          ? t.awaitingPaymentPromptPay
+          : t.awaitingPaymentBankTransfer
+        : paymentDisplay === 'awaiting_stripe'
+          ? t.paymentNotCompleted
+          : t.awaitingPayment;
+
   return (
     <div className="order-details-view">
+      {/* Payment status badge */}
+      <div className="order-details-section order-details-payment-badge">
+        <span
+          className={
+            paymentDisplay === 'confirmed'
+              ? 'order-details-badge order-details-badge-confirmed'
+              : 'order-details-badge order-details-badge-pending'
+          }
+        >
+          {paymentBadgeLabel}
+        </span>
+        {paymentDisplay === 'confirmed' && supabasePaidAt && (
+          <span className="order-details-paid-at">
+            {new Date(supabasePaidAt).toLocaleString()}
+          </span>
+        )}
+      </div>
       <div className="order-details-section">
         <h2 className="order-details-heading">Order ID</h2>
         <p className="order-details-order-id">{order.orderId}</p>
@@ -97,11 +158,21 @@ export function OrderDetailsView({
       <div className="order-details-section">
         <h2 className="order-details-heading">{t.deliveryDate}</h2>
         <p className="order-details-value">{formatDisplayDate(deliveryDate) || '—'}</p>
+        {preferredTime && (
+          <>
+            <h2 className="order-details-heading">{t.preferredTime}</h2>
+            <p className="order-details-value">{preferredTime}</p>
+          </>
+        )}
+        {(deliveryDate || preferredTime) && (
+          <p className="order-details-delivery-note">{t.deliveryWindowNote}</p>
+        )}
       </div>
-      {preferredTime && (
-        <div className="order-details-section">
-          <h2 className="order-details-heading">{t.preferredTime}</h2>
-          <p className="order-details-value">{preferredTime}</p>
+
+      {/* No need to contact us — only when paid */}
+      {paymentDisplay === 'confirmed' && (
+        <div className="order-details-section order-details-reassurance">
+          <p className="order-details-reassurance-text">{t.noNeedToContactUs}</p>
         </div>
       )}
 
@@ -408,6 +479,46 @@ export function OrderDetailsView({
           font-size: 0.85rem;
           color: var(--text-muted);
           margin-top: 24px;
+        }
+        .order-details-payment-badge {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .order-details-badge {
+          display: inline-block;
+          padding: 8px 14px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          border-radius: var(--radius-sm);
+        }
+        .order-details-badge-confirmed {
+          background: #e8f5e9;
+          color: #2e7d32;
+        }
+        .order-details-badge-pending {
+          background: #fff3e0;
+          color: #e65100;
+        }
+        .order-details-paid-at {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+        }
+        .order-details-delivery-note {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          margin-top: 6px;
+        }
+        .order-details-reassurance {
+          background: var(--pastel-cream, #f9f5f0);
+          padding: 12px 16px;
+          border-radius: var(--radius-sm);
+        }
+        .order-details-reassurance-text {
+          font-size: 0.95rem;
+          color: var(--text);
+          margin: 0;
         }
       `}</style>
     </div>

@@ -85,9 +85,13 @@ export async function dualWriteOrder(order: Order): Promise<void> {
 
     const publicToken = existingOrder?.public_token ?? nanoid(21);
 
+    const paymentMethod =
+      order.stripeSessionId || order.paymentIntentId ? 'STRIPE' : 'BANK_TRANSFER';
+
     const ordersRow = {
       order_id: order.orderId,
       public_token: publicToken,
+      payment_method: paymentMethod,
       customer_name: order.customerName ?? null,
       customer_email: order.customerEmail ?? null,
       phone: order.phone ?? null,

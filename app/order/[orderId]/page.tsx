@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
+import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
@@ -28,6 +29,9 @@ export default async function OrderDetailsPage({
 
   const detailsUrl = getOrderDetailsUrl(order.orderId);
   const baseUrl = getBaseUrl();
+
+  const supabasePayment = await getSupabasePaymentStatusByOrderId(order.orderId);
+
   return (
     <div className="order-page">
       <div className="container">
@@ -40,6 +44,9 @@ export default async function OrderDetailsPage({
           copyLinkLabel={t.copyLink}
           copiedLabel={t.copied}
           locale={defaultLocale}
+          supabasePaymentStatus={supabasePayment?.payment_status ?? undefined}
+          supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
+          supabasePaidAt={supabasePayment?.paid_at ?? undefined}
         />
       </div>
     </div>

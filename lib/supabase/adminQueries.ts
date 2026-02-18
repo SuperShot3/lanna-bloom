@@ -1,9 +1,12 @@
 import 'server-only';
 import { getSupabaseAdmin } from './server';
 
+export type PaymentMethod = 'STRIPE' | 'PROMPTPAY' | 'BANK_TRANSFER';
+
 export interface SupabaseOrderRow {
   order_id: string;
   public_token: string | null;
+  payment_method: string | null;
   customer_name: string | null;
   customer_email: string | null;
   phone: string | null;
@@ -230,6 +233,39 @@ export async function getOrdersForExport(
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[admin-v2] getOrdersForExport exception:', msg);
     return [];
+  }
+}
+
+/**
+ * Fetch payment status from Supabase for customer order page.
+ * Best-effort; returns null if Supabase unavailable or order not found.
+ * Used to overlay Supabase payment_status on legacy order display.
+ */
+export async function getSupabasePaymentStatusByOrderId(orderId: string): Promise<{
+  payment_status: string | null;
+  order_status: string | null;
+  paid_at: string | null;
+  payment_method: string | null;
+} | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('payment_status, order_status, paid_at, payment_method')
+      .eq('order_id', orderId)
+      .single();
+
+    if (error || !data) return null;
+    return data as {
+      payment_status: string | null;
+      order_status: string | null;
+      paid_at: string | null;
+      payment_method: string | null;
+    };
+  } catch {
+    return null;
   }
 }
 

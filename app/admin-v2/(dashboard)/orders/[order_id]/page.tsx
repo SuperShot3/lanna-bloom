@@ -6,6 +6,7 @@ import { OrderSummaryCard } from '@/app/admin-v2/components/OrderSummaryCard';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin-v2/components/ItemsList';
 import { CostsAndProfitCard } from '@/app/admin-v2/components/CostsAndProfitCard';
 import { StatusUpdateCard } from '@/app/admin-v2/components/StatusUpdateCard';
+import { PaymentCard } from '@/app/admin-v2/components/PaymentCard';
 import { RemoveOrderButton } from '@/app/admin-v2/components/RemoveOrderButton';
 import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
@@ -82,6 +83,7 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
         canEdit={canChangeStatus(role)}
         canRefund={canRefund(role)}
       />
+      <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
       <OrderSummaryCard order={order} />
       <CostsAndProfitCard order={order} canEdit={canEditCosts(role)} />
       <ItemsList items={itemsWithCatalog} />

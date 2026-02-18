@@ -249,11 +249,12 @@ function buildOrderPayload(
 
   const orderItems = cartItems.map((item) => {
     const bouquetTitle = lang === 'th' ? item.nameTh : item.nameEn;
+    const itemPrice = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
     return {
       bouquetId: item.bouquetId,
       bouquetTitle,
       size: item.size.label,
-      price: item.size.price,
+      price: itemPrice,
       addOns: {
         cardType: mapCardType(item.addOns),
         cardMessage: item.addOns.cardMessage?.trim() ?? '',
@@ -781,9 +782,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </div>
         {(() => {
           const itemsTotalVal = cartValue(items);
+          const hasChosenLocation = !!delivery.deliveryDistrict;
           const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
           const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
-          const deliveryFeeVal = calcDeliveryFeeTHB({ district, isMueangCentral });
+          const deliveryFeeVal = hasChosenLocation ? calcDeliveryFeeTHB({ district, isMueangCentral }) : 0;
           const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
           const referralVal = getStoredReferral();
           const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, !!referralVal);

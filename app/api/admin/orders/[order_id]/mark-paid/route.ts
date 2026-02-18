@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
 
-const VALID_PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED'];
+const MANUAL_PAYMENT_METHODS = ['PROMPTPAY', 'BANK_TRANSFER'];
 
 export async function PATCH(
   request: NextRequest,
@@ -18,24 +18,6 @@ export async function PATCH(
     return NextResponse.json({ error: 'order_id required' }, { status: 400 });
   }
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const paymentStatus = typeof body === 'object' && body !== null && 'payment_status' in body
-    ? String((body as { payment_status?: unknown }).payment_status ?? '').trim().toUpperCase()
-    : null;
-
-  if (!paymentStatus || !VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
-    return NextResponse.json(
-      { error: 'Invalid payment_status. Must be one of: PENDING, PAID, FAILED' },
-      { status: 400 }
-    );
-  }
-
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
@@ -43,7 +25,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await supabase
     .from('orders')
-    .select('order_id, payment_method, payment_status')
+    .select('order_id, payment_method, payment_status, order_status')
     .eq('order_id', order_id.trim())
     .single();
 
@@ -52,23 +34,35 @@ export async function PATCH(
   }
 
   const paymentMethod = (existing.payment_method ?? 'BANK_TRANSFER').toUpperCase();
-  if (paymentMethod === 'STRIPE' && paymentStatus === 'PAID') {
+  if (paymentMethod === 'STRIPE') {
     return NextResponse.json(
-      { error: 'Stripe orders are updated automatically via webhook. Use mark-paid only for manual payments.' },
+      { error: 'Stripe orders are updated automatically via webhook. Cannot mark as paid manually.' },
       { status: 400 }
     );
   }
 
-  const previousStatus = existing.payment_status ?? 'PENDING';
+  if (!MANUAL_PAYMENT_METHODS.includes(paymentMethod)) {
+    return NextResponse.json(
+      { error: 'Only PROMPTPAY and BANK_TRANSFER orders can be marked as paid manually.' },
+      { status: 400 }
+    );
+  }
+
+  const previousPaymentStatus = existing.payment_status ?? 'PENDING';
+  const previousOrderStatus = existing.order_status ?? 'NEW';
+
+  if (previousPaymentStatus === 'PAID') {
+    return NextResponse.json({ ok: true, order: existing, message: 'Already paid (idempotent)' });
+  }
+
+  const newOrderStatus = previousOrderStatus === 'NEW' ? 'PAID' : previousOrderStatus;
 
   const updatePayload: Record<string, unknown> = {
-    payment_status: paymentStatus,
+    payment_status: 'PAID',
+    order_status: newOrderStatus,
+    paid_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
-    updatePayload.paid_at = new Date().toISOString();
-    updatePayload.order_status = 'PAID';
-  }
 
   const { data: updated, error } = await supabase
     .from('orders')
@@ -78,23 +72,23 @@ export async function PATCH(
     .single();
 
   if (error) {
-    console.error('[admin] payment-status update error:', error);
+    console.error('[admin] mark-paid update error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
+  if (newOrderStatus !== previousOrderStatus) {
     await supabase.from('order_status_history').insert({
       order_id: order_id.trim(),
-      from_status: existing.payment_status ?? 'PENDING',
-      to_status: 'PAID',
+      from_status: previousOrderStatus,
+      to_status: newOrderStatus,
       created_at: new Date().toISOString(),
     });
   }
 
   const adminEmail = session.user.email ?? 'unknown';
-  await logAudit(adminEmail, 'STATUS_UPDATE', order_id.trim(), {
-    payment_from: previousStatus,
-    payment_to: paymentStatus,
+  await logAudit(adminEmail, 'MANUAL_MARK_PAID', order_id.trim(), {
+    payment_status: { from: previousPaymentStatus, to: 'PAID' },
+    order_status: { from: previousOrderStatus, to: newOrderStatus },
   });
 
   return NextResponse.json({ ok: true, order: updated });

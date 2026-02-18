@@ -31,7 +31,7 @@ Set `SUPABASE_DUAL_WRITE_ENABLED=false` in Vercel and redeploy. No code changes 
 
 Ensure these tables exist with the expected columns:
 
-**orders:** `order_id` (PK), `public_token`, `customer_name`, `customer_email`, `phone`, `address`, `district`, `delivery_window`, `delivery_date`, `order_status`, `payment_status`, `stripe_session_id`, `stripe_payment_intent_id`, `paid_at`, `items_total`, `delivery_fee`, `grand_total`, `created_at`, `recipient_name`, `recipient_phone`, `contact_preference`, `referral_code`, `referral_discount`
+**orders:** `order_id` (PK), `public_token`, `payment_method` (STRIPE | PROMPTPAY | BANK_TRANSFER), `customer_name`, `customer_email`, `phone`, `address`, `district`, `delivery_window`, `delivery_date`, `order_status`, `payment_status`, `stripe_session_id`, `stripe_payment_intent_id`, `paid_at`, `items_total`, `delivery_fee`, `grand_total`, `created_at`, `recipient_name`, `recipient_phone`, `contact_preference`, `referral_code`, `referral_discount`
 
 **order_items:** `order_id` (FK), `bouquet_id`, `bouquet_title`, `size`, `price`, `image_url_snapshot`
 

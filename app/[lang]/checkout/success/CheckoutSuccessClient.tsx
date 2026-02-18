@@ -214,7 +214,26 @@ export function CheckoutSuccessClient({
                 ))}
               </ul>
             )}
-            {totalLine && (order!.items.length > 1) && <p className="checkout-success-summary-total">{totalLine}</p>}
+            {order?.pricing && (
+              <div className="checkout-success-summary-rows">
+                {order.pricing.deliveryFee != null && (
+                  <div className="checkout-success-summary-row">
+                    <span>{t.deliveryFeeLabel}</span>
+                    <span className="checkout-success-summary-amount">฿{order.pricing.deliveryFee.toLocaleString()}</span>
+                  </div>
+                )}
+                {order.referralDiscount != null && order.referralDiscount > 0 && (
+                  <div className="checkout-success-summary-row">
+                    <span>{t.discountLabel}</span>
+                    <span className="checkout-success-summary-amount checkout-success-summary-discount">-฿{order.referralDiscount.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="checkout-success-summary-row checkout-success-summary-total-row">
+                  <span>{t.totalLabel}</span>
+                  <span className="checkout-success-summary-amount">฿{order.pricing.grandTotal.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {publicOrderUrl && (
@@ -313,11 +332,37 @@ export function CheckoutSuccessClient({
           font-weight: 700;
           color: var(--accent);
         }
-        .checkout-success-summary-total {
-          font-size: 1rem;
-          font-weight: 700;
+        .checkout-success-summary-rows {
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid var(--border);
+        }
+        .checkout-success-summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.95rem;
+          color: var(--text);
+          margin-bottom: 6px;
+        }
+        .checkout-success-summary-row:last-child {
+          margin-bottom: 0;
+        }
+        .checkout-success-summary-amount {
+          font-weight: 600;
+          color: var(--text);
+        }
+        .checkout-success-summary-amount.checkout-success-summary-discount {
           color: var(--accent);
-          margin: 0;
+        }
+        .checkout-success-summary-total-row {
+          font-weight: 700;
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid var(--border);
+        }
+        .checkout-success-summary-total-row .checkout-success-summary-amount {
+          color: var(--accent);
         }
         .checkout-success-save-link-notice {
           margin-bottom: 24px;
