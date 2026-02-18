@@ -49,18 +49,19 @@ That is expected. The cart is stored in the browser (localStorage) and is only c
 
 To see current orders and remove them (e.g. after delivery):
 
-1. **URL (link spelling)**  
-   - Local: `http://localhost:3000/admin/orders`  
-   - Production: `https://<your-domain>/admin/orders`  
-   Example: `https://www.lannabloom.shop/admin/orders`
+1. **URL**  
+   - Local: `http://localhost:3000/admin-v2`  
+   - Production: `https://<your-domain>/admin-v2`  
+   Example: `https://www.lannabloom.shop/admin-v2`  
+   (Legacy `/admin/orders` redirects to `/admin-v2/orders`.)
 
-2. **Secret**  
-   Set `ORDERS_ADMIN_SECRET` in your environment (e.g. in Vercel: Project → Settings → Environment Variables). Use a long random string; this is not the same as the Blob token.
+2. **Setup**  
+   - Set `AUTH_SECRET` in your environment (required for NextAuth).  
+   - Set Supabase env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DUAL_WRITE_ENABLED=true`).  
+   - Seed admin users: `ADMIN_SEED_EMAIL=... ADMIN_SEED_PASSWORD=... npm run seed-admin`  
+   - Run migration: `supabase/migrations/20250218100000_admin_users_audit_logs.sql`
 
 3. **Usage**  
    - Open the admin URL in the browser.  
-   - Enter the same value as `ORDERS_ADMIN_SECRET` in the input and click **Continue**.  
-   - The page will list all orders (newest first). You can open each order's details link and, after delivery, use **Remove** to delete it from the list.
-
-4. **Without a secret**  
-   If `ORDERS_ADMIN_SECRET` is not set, in production the list/remove API returns 401 until you set the secret and use it on the page.
+   - Sign in with email and password.  
+   - View orders, update status, edit costs, and use **Delivered — Remove** on the order detail page after delivery.

@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
+import { getBouquetById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin-v2/components/OrderSummaryCard';
-import { ItemsList } from '@/app/admin-v2/components/ItemsList';
+import { ItemsList, type ItemWithCatalog } from '@/app/admin-v2/components/ItemsList';
 import { CostsAndProfitCard } from '@/app/admin-v2/components/CostsAndProfitCard';
 import { StatusUpdateCard } from '@/app/admin-v2/components/StatusUpdateCard';
+import { RemoveOrderButton } from '@/app/admin-v2/components/RemoveOrderButton';
 import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 
@@ -40,6 +42,19 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
     notFound();
   }
 
+  const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
+    items.map(async (item) => {
+      let catalogHref: string | undefined;
+      if (item.bouquet_id) {
+        const bouquet = await getBouquetById(item.bouquet_id);
+        catalogHref = bouquet ? `/en/catalog/${bouquet.slug}` : undefined;
+      } else {
+        catalogHref = undefined;
+      }
+      return { ...item, catalogHref };
+    })
+  );
+
   return (
     <div className="admin-v2-detail">
       <header className="admin-v2-header">
@@ -51,6 +66,11 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
           <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-v2-link">
             View public page
           </Link>
+          <RemoveOrderButton
+            orderId={order.order_id}
+            returnTo={backHref}
+            canEdit={canChangeStatus(role)}
+          />
           <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
             Log out
           </a>
@@ -64,7 +84,7 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
       />
       <OrderSummaryCard order={order} />
       <CostsAndProfitCard order={order} canEdit={canEditCosts(role)} />
-      <ItemsList items={items} />
+      <ItemsList items={itemsWithCatalog} />
       {(order.address || order.delivery_google_maps_url) && (
         <section className="admin-v2-section">
           <h2 className="admin-v2-section-title">Delivery</h2>

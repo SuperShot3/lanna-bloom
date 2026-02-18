@@ -27,7 +27,6 @@
 
 - [ ] Orders table displays: created_at, order_id, status, payment, total, delivery_date, window, district, recipient
 - [ ] Click order_id → navigates to detail page
-- [ ] "Legacy admin" link goes to `/admin/orders`
 - [ ] "Log out" clears session and redirects to login
 
 ### 4. Search
@@ -61,6 +60,7 @@
 - [ ] Notes (if internal_notes exists)
 - [ ] Status history timeline (if data exists)
 - [ ] "View public page" opens `/order/[order_id]` in new tab
+- [ ] "Delivered — Remove" button (OWNER/MANAGER) removes order after confirmation
 - [ ] "Back to orders" returns to list
 
 ### 8. Error states
@@ -80,11 +80,11 @@
 - [ ] "Export CSV" button on orders list downloads CSV with current filters
 - [ ] CSV contains order columns (order_id, customer_name, etc.)
 
-### 11. Legacy unchanged
+### 11. Checkout and order page
 
-- [ ] `/admin/orders` still works (legacy admin)
 - [ ] Checkout flow unchanged
 - [ ] Customer order details page unchanged
+- [ ] `/admin/orders` redirects to `/admin-v2/orders`
 
 ---
 
@@ -121,6 +121,6 @@
 - [ ] OWNER/MANAGER: can edit costs on order detail
 - [ ] SUPPORT: costs card is read-only (no inputs, no Save button)
 
-### 17. Legacy unchanged
+### 17. Checkout unchanged
 
-- [ ] Legacy checkout and legacy admin still work
+- [ ] Checkout flow still works

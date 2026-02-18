@@ -1,8 +1,13 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 
+export interface ItemWithCatalog extends SupabaseOrderItemRow {
+  catalogHref?: string;
+}
+
 interface ItemsListProps {
-  items: SupabaseOrderItemRow[];
+  items: ItemWithCatalog[];
 }
 
 function formatAmount(n: number | null | undefined): string {
@@ -28,13 +33,21 @@ export function ItemsList({ items }: ItemsListProps) {
           <li key={i} className="admin-v2-item">
             {item.image_url_snapshot ? (
               <div className="admin-v2-item-image">
-                <Image
-                  src={item.image_url_snapshot}
-                  alt={item.bouquet_title ?? 'Item'}
-                  width={64}
-                  height={64}
-                  style={{ objectFit: 'cover', borderRadius: 8 }}
-                />
+                <a
+                  href={item.image_url_snapshot}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-v2-item-image-link"
+                  title="Click to view full size"
+                >
+                  <Image
+                    src={item.image_url_snapshot}
+                    alt={item.bouquet_title ?? 'Item'}
+                    width={64}
+                    height={64}
+                    style={{ objectFit: 'cover', borderRadius: 8 }}
+                  />
+                </a>
               </div>
             ) : (
               <div className="admin-v2-item-placeholder" />
@@ -44,6 +57,16 @@ export function ItemsList({ items }: ItemsListProps) {
               <span>Size: {item.size ?? '—'}</span>
               <span>Qty: 1</span>
               <span>{formatAmount(item.price)}</span>
+              {item.catalogHref && (
+                <Link
+                  href={item.catalogHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-v2-item-catalog-link"
+                >
+                  View on shop
+                </Link>
+              )}
             </div>
           </li>
         ))}

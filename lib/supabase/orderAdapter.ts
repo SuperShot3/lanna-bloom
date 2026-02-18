@@ -265,3 +265,27 @@ export async function syncSupabasePaymentFailed(orderId: string): Promise<void> 
     console.error('[supabase] payment failed sync error', orderId, msg);
   }
 }
+
+/**
+ * Delete order from Supabase (order_items, order_status_history, orders).
+ * Best-effort; never throws to caller. Gated by SUPABASE_DUAL_WRITE_ENABLED.
+ */
+export async function deleteSupabaseOrder(orderId: string): Promise<void> {
+  if (process.env.SUPABASE_DUAL_WRITE_ENABLED !== 'true') return;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) return;
+
+    await supabase.from('order_items').delete().eq('order_id', orderId);
+    await supabase.from('order_status_history').delete().eq('order_id', orderId);
+    await supabase.from('orders').delete().eq('order_id', orderId);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[supabase] order deleted', orderId);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[supabase] order delete error', orderId, msg);
+  }
+}

@@ -1,9 +1,6 @@
-import { AdminOrdersClient } from './AdminOrdersClient';
+import { redirect } from 'next/navigation';
 
-export default function AdminOrdersPage() {
-  return (
-    <div className="container" style={{ maxWidth: 720, margin: '2rem auto', padding: '0 1rem' }}>
-      <AdminOrdersClient />
-    </div>
-  );
+/** Redirect legacy /admin/orders to admin-v2 orders list. */
+export default function AdminOrdersRedirectPage() {
+  redirect('/admin-v2/orders');
 }

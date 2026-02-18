@@ -68,9 +68,6 @@ export function OrdersListClient({
           >
             Export CSV
           </a>
-          <Link href="/admin/orders" className="admin-v2-link">
-            Legacy admin
-          </Link>
           <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
             Log out
           </a>

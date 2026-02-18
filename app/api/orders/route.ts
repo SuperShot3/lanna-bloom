@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder, getOrderDetailsUrl, listOrders } from '@/lib/orders';
+import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { sendOrderNotificationEmail } from '@/lib/orderEmail';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
-
-function isAdminAuthorized(request: NextRequest): boolean {
-  const secret = process.env.ORDERS_ADMIN_SECRET;
-  if (!secret) return process.env.NODE_ENV === 'development';
-  const header = request.headers.get('x-admin-secret') ?? request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  return header === secret;
-}
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') {
@@ -139,20 +132,6 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       : {}),
   };
   return { ok: true, payload };
-}
-
-/** List all orders (admin only). Requires x-admin-secret or ORDERS_ADMIN_SECRET in production. */
-export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  try {
-    const orders = await listOrders();
-    return NextResponse.json(orders);
-  } catch (e) {
-    console.error('[api/orders] GET error:', e);
-    return NextResponse.json({ error: 'Failed to list orders' }, { status: 500 });
-  }
 }
 
 export async function POST(request: NextRequest) {

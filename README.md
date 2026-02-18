@@ -14,7 +14,7 @@ A mobile-first flower shop for selling bouquets online. Customers browse the cat
 - **Order link** — Each order gets a public URL (e.g. `https://yoursite.com/order/LB-2026-xxxx`); stored in Vercel Blob so the link works when opened later
 - **Messenger** — Pre-filled “order via LINE / WhatsApp / Telegram” from product page and cart; contact links in the header
 - **Sanity Studio** — CMS at `/studio` for bouquets and partners; partner registration and dashboard (add/edit bouquets when approved)
-- **Admin** — `/admin/orders`: list and remove orders (e.g. after delivery) using a secret
+- **Admin** — `/admin-v2`: dashboard with orders, status updates, costs, and remove (RBAC with NextAuth)
 
 ## Tech stack
 
@@ -44,7 +44,7 @@ Copy `.env.example` to `.env.local` and set:
 | `SANITY_API_WRITE_TOKEN` | Sanity API token (partner registration and bouquet uploads) |
 | `NEXT_PUBLIC_APP_URL` | Live site URL for order links (e.g. `https://www.lannabloom.shop`) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token (required on Vercel so order links work) |
-| `ORDERS_ADMIN_SECRET` | Optional; required to use `/admin/orders` in production |
+| `AUTH_SECRET` | Required for admin-v2 login (NextAuth) |
 
 See `.env.example` for comments. For order-link troubleshooting (e.g. “Order not found”), see **docs/ORDERS_VERCEL.md**.
 
@@ -62,7 +62,7 @@ The app ships with Sanity Studio at **[/studio](http://localhost:3000/studio)** 
 
 - **Cart** — `/[lang]/cart`: delivery area (Chiang Mai districts), date, contact name and phone, contact method; “Place Order” creates an order and redirects to the success page.
 - **Order link** — Generated after place order (e.g. `https://yoursite.com/order/LB-2026-xxxx`). Set `NEXT_PUBLIC_APP_URL` to your live URL so this link uses the correct domain. Stored in **Vercel Blob**; set `BLOB_READ_WRITE_TOKEN` for Production and Preview so the same store is used and the link works when opened.
-- **Admin** — Open `/admin/orders`, enter the value of `ORDERS_ADMIN_SECRET`, then list or remove orders. See **docs/ORDERS_VERCEL.md** for full setup and “Order not found” fixes.
+- **Admin** — Open `/admin-v2`, sign in with email/password (seed admin users via `scripts/seed-admin.ts`). See **docs/ORDERS_VERCEL.md** for setup and “Order not found” fixes.
 
 ## Catalog updates
 
@@ -85,8 +85,9 @@ app/
     checkout/success/
     partner/        # Register and dashboard
   order/[orderId]/  # Public order details page (no locale)
-  admin/orders/     # Admin: list/remove orders
-  api/orders/       # Create order, list (admin), delete (admin)
+  admin/orders/     # Redirects to /admin-v2/orders
+  admin-v2/         # Admin dashboard (orders, overview, RBAC)
+  api/orders/       # Create order, get order (checkout/success)
   studio/           # Sanity Studio
 components/         # Header, Hero, BouquetCard, ProductOrderBlock, etc.
 lib/

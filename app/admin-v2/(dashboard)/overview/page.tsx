@@ -31,9 +31,6 @@ export default async function AdminV2OverviewPage() {
           <Link href="/admin-v2/orders" className="admin-v2-btn">
             Orders
           </Link>
-          <Link href="/admin/orders" className="admin-v2-link">
-            Legacy admin
-          </Link>
           <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
             Log out
           </a>
