@@ -304,8 +304,10 @@ export const translations = {
       cardMessage: 'Card message',
       bouquetPrice: 'Bouquet',
       deliveryFee: 'Delivery fee',
+      discount: 'Discount',
       total: 'Total',
       shareFlower: 'Share flower',
+      cardType: 'Card',
     },
     messenger: {
       line: 'LINE',
@@ -764,8 +766,10 @@ export const translations = {
       cardMessage: 'ข้อความการ์ด',
       bouquetPrice: 'ช่อดอกไม้',
       deliveryFee: 'ค่าจัดส่ง',
+      discount: 'ส่วนลด',
       total: 'ยอดรวม',
       shareFlower: 'แชร์รูปดอกไม้',
+      cardType: 'การ์ด',
     },
     messenger: {
       line: 'LINE',

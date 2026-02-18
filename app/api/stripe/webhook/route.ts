@@ -7,7 +7,7 @@ import {
   updateOrderPaymentStatus,
 } from '@/lib/orders';
 import { getOrderDetailsUrl } from '@/lib/orders';
-import { sendOrderNotificationEmail } from '@/lib/orderEmail';
+import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 
 const PAYMENT_SUCCESS_EVENTS = [
   'checkout.session.completed',
@@ -123,6 +123,9 @@ export async function POST(request: NextRequest) {
       const publicOrderUrl = getOrderDetailsUrl(orderId);
       sendOrderNotificationEmail(updatedOrder, publicOrderUrl).catch((e) => {
         console.error('[stripe/webhook] Notification email failed:', e);
+      });
+      sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
+        console.error('[stripe/webhook] Customer confirmation email failed:', e);
       });
     }
   } catch (e) {

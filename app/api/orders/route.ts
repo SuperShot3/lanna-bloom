@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
-import { sendOrderNotificationEmail } from '@/lib/orderEmail';
+import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
@@ -147,6 +147,9 @@ export async function POST(request: NextRequest) {
 
     sendOrderNotificationEmail(order, publicOrderUrl).catch((e) => {
       console.error('[api/orders] Notification email failed:', e);
+    });
+    sendCustomerConfirmationEmail(order, publicOrderUrl).catch((e) => {
+      console.error('[api/orders] Customer confirmation email failed:', e);
     });
 
     return NextResponse.json({

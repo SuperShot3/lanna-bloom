@@ -168,10 +168,13 @@ export function OrderDetailsView({
                 )}
                 <div className="order-details-item-text">
                   <strong>{item.bouquetTitle}</strong> — {item.size} — ฿{item.price.toLocaleString()}
-                  {item.addOns.wrappingOption && (
+                  {item.addOns?.cardType && (
+                    <span className="order-details-meta"> {t.cardType}: {item.addOns.cardType === 'premium' ? 'Premium' : 'Free'}</span>
+                  )}
+                  {item.addOns?.wrappingOption && (
                     <span className="order-details-meta"> {t.wrapping}: {item.addOns.wrappingOption}</span>
                   )}
-                  {item.addOns.cardMessage && (
+                  {item.addOns?.cardMessage && (
                     <span className="order-details-meta"> {t.cardMessage}: {item.addOns.cardMessage}</span>
                   )}
                 </div>
@@ -211,15 +214,17 @@ export function OrderDetailsView({
         <p className="order-details-totals-line">
           {t.bouquetPrice}: ฿{order.pricing.itemsTotal.toLocaleString()}
         </p>
-        <p className="order-details-totals-line order-details-delivery-note">
-          {t.deliveryFee}: {t.deliveryCalculated}
+        <p className="order-details-totals-line">
+          {t.deliveryFee}: ฿{order.pricing.deliveryFee.toLocaleString()}
         </p>
+        {order.referralDiscount != null && order.referralDiscount > 0 && (
+          <p className="order-details-totals-line order-details-discount">
+            {t.discount ?? 'Discount'}: -฿{order.referralDiscount.toLocaleString()}
+          </p>
+        )}
         <p className="order-details-totals-grand">
           <strong>
-            {t.total}: {t.grandTotalWithDelivery.replace(
-              '{amount}',
-              `฿${order.pricing.itemsTotal.toLocaleString()}`
-            )}
+            {t.total}: ฿{order.pricing.grandTotal.toLocaleString()}
           </strong>
         </p>
       </div>
@@ -391,9 +396,8 @@ export function OrderDetailsView({
           font-size: 0.95rem;
           color: var(--text);
         }
-        .order-details-delivery-note {
-          color: var(--text-muted);
-          font-style: italic;
+        .order-details-discount {
+          color: var(--accent);
         }
         .order-details-totals-grand {
           margin: 12px 0 0;

@@ -35,8 +35,8 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   const itemsList = order.items
     .map((i) => {
       let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
-      if (i.addOns.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
-      if (i.addOns.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
+      if (i.addOns?.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
+      if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
       return line;
     })
     .join('<br/>');
@@ -68,8 +68,9 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
 
   <h2 style="font-size: 1rem;">Price summary</h2>
   <p>Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
-  Delivery fee: Calculated by driver<br/>
-  <strong>Total: ฿${order.pricing.itemsTotal.toLocaleString()} + delivery fee</strong></p>
+  Delivery fee: ฿${order.pricing.deliveryFee.toLocaleString()}<br/>
+  ${order.referralDiscount != null && order.referralDiscount > 0 ? `Discount: -฿${order.referralDiscount.toLocaleString()}<br/>` : ''}
+  <strong>Total: ฿${order.pricing.grandTotal.toLocaleString()}</strong></p>
 
   <h2 style="font-size: 1rem;">Sender</h2>
   <p>${order.customerName ? escapeHtml(order.customerName) : '—'}<br/>
@@ -90,5 +91,69 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   });
   if (error) {
     console.error('[orderEmail] Resend error:', error);
+  }
+}
+
+/** Send order confirmation to the customer when they provide an email. No-op if no customerEmail or env vars not set. */
+export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: string): Promise<void> {
+  const customerEmail = order.customerEmail?.trim();
+  if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) return;
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.ORDERS_FROM_EMAIL?.trim();
+  if (!apiKey || !from) return;
+
+  const itemsList = order.items
+    .map((i) => {
+      let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
+      if (i.addOns?.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
+      if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
+      return line;
+    })
+    .join('<br/>');
+
+  const discountLine =
+    order.referralDiscount != null && order.referralDiscount > 0
+      ? `<br/>Discount: -฿${order.referralDiscount.toLocaleString()}`
+      : '';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Order confirmation ${escapeHtml(order.orderId)}</title></head>
+<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+  <h1 style="font-size: 1.25rem;">Thank you for your order!</h1>
+  <p>Hi ${order.customerName ? escapeHtml(order.customerName) : 'there'},</p>
+  <p>Your order <strong>${escapeHtml(order.orderId)}</strong> has been received.</p>
+  <p><a href="${escapeHtml(detailsUrl)}" style="color: #967a4d; font-weight: 600;">View your order details</a></p>
+
+  <h2 style="font-size: 1rem;">Delivery</h2>
+  <p>Date & time: ${escapeHtml(order.delivery.preferredTimeSlot || '—')}<br/>
+  Address: ${escapeHtml(order.delivery.address)}</p>
+  ${order.delivery.deliveryGoogleMapsUrl ? `<p><a href="${escapeHtml(order.delivery.deliveryGoogleMapsUrl)}">Open in Google Maps</a></p>` : ''}
+
+  <h2 style="font-size: 1rem;">Items</h2>
+  <p>${itemsList}</p>
+
+  <h2 style="font-size: 1rem;">Price summary</h2>
+  <p>Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
+  Delivery fee: ฿${order.pricing.deliveryFee.toLocaleString()}${discountLine}<br/>
+  <strong>Total: ฿${order.pricing.grandTotal.toLocaleString()}</strong></p>
+
+  <p style="font-size: 0.9rem; color: #666;">If you have any questions, please contact us via LINE, WhatsApp, or the contact details on our website.</p>
+  <p style="font-size: 0.9rem; color: #666;">— Lanna Bloom</p>
+</body>
+</html>
+`.trim();
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from,
+    to: [customerEmail],
+    subject: `Order confirmation ${order.orderId} — Lanna Bloom`,
+    html,
+  });
+  if (error) {
+    console.error('[orderEmail] Customer confirmation Resend error:', error);
   }
 }
