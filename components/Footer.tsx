@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
-import { PaymentNote } from './PaymentNote';
 import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
 
@@ -25,23 +24,10 @@ export function Footer({ lang }: { lang: Locale }) {
             {t.findUs}
           </Link>
         </nav>
-        <div className="footer-info">
-          <span className="footer-info-label">{t.information}</span>
-          <Link href={`/${lang}/guides/flowers-chiang-mai`} className="footer-link">
-            {t.flowerDeliveryChiangMai}
-          </Link>
-          <Link href={`/${lang}/guides/rose-bouquets-chiang-mai`} className="footer-link">
-            {t.roseBouquetsChiangMai}
-          </Link>
-          <Link href={`/${lang}/guides/same-day-flower-delivery-chiang-mai`} className="footer-link">
-            {t.sameDayFlowerDeliveryChiangMai}
-          </Link>
-        </div>
         <div className="footer-messenger">
           <SocialLinks />
           <MessengerLinks />
         </div>
-        <PaymentNote lang={lang} variant="footer" />
         <PaymentBadges lang={lang} />
         <p className="footer-copy">© Lanna Bloom</p>
       </div>
@@ -64,18 +50,6 @@ export function Footer({ lang }: { lang: Locale }) {
           flex-wrap: wrap;
           justify-content: center;
           gap: 16px 24px;
-        }
-        .footer-info {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          align-items: center;
-          gap: 8px 16px;
-        }
-        .footer-info-label {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: var(--text-muted);
         }
         .footer-link {
           font-size: 0.95rem;

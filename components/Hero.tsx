@@ -15,7 +15,6 @@ export function Hero({ lang }: { lang: Locale }) {
       <div className="container hero-inner">
         <h1 className="hero-big-headline">
           <span className="hero-big-line1">{t.bigHeadlineLine1}</span>
-          <span className="hero-big-line2">{t.bigHeadlineLine2}</span>
         </h1>
         <p className="hero-headline">{t.headline}</p>
         <p className="hero-subline">{t.subline}</p>
@@ -69,11 +68,6 @@ export function Hero({ lang }: { lang: Locale }) {
         }
         .hero-big-line1 {
           font-size: clamp(1.5rem, 5vw, 2.5rem);
-        }
-        .hero-big-line2 {
-          font-size: clamp(1.15rem, 3.5vw, 1.6rem);
-          font-weight: 600;
-          color: var(--text-muted);
         }
         .hero-headline {
           font-family: var(--font-serif);

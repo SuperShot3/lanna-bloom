@@ -9,7 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessengerLinks } from './MessengerLinks';
 import { SocialLinks } from './SocialLinks';
-import { DeliveryModal } from './DeliveryModal';
+import { InformationModal } from './InformationModal';
 import { CartIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
@@ -28,11 +28,11 @@ export function Header({ lang }: { lang: Locale }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [informationModalOpen, setInformationModalOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
-  const deliveryTriggerRef = useRef<HTMLAnchorElement>(null);
+  const informationTriggerRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -112,17 +112,17 @@ export function Header({ lang }: { lang: Locale }) {
                 {t.catalog}
               </Link>
               <Link
-                href="#delivery-info"
-                ref={deliveryTriggerRef}
+                href="#information"
+                ref={informationTriggerRef}
                 className="nav-link"
                 onClick={(e) => {
                   e.preventDefault();
-                  setDeliveryModalOpen(true);
+                  setInformationModalOpen(true);
                 }}
                 aria-haspopup="dialog"
-                aria-expanded={deliveryModalOpen}
+                aria-expanded={informationModalOpen}
               >
-                {t.delivery}
+                {t.information}
               </Link>
               <Link
                 href={contactHref}
@@ -250,16 +250,16 @@ export function Header({ lang }: { lang: Locale }) {
               {t.catalog}
             </Link>
             <Link
-              href="#delivery-info"
+              href="#information"
               className="mobile-menu-link"
               onClick={(e) => {
                 e.preventDefault();
-                setDeliveryModalOpen(true);
+                setInformationModalOpen(true);
                 setMenuOpen(false);
               }}
               aria-haspopup="dialog"
             >
-              {t.delivery}
+              {t.information}
             </Link>
             <Link
               href={contactHref}
@@ -278,11 +278,11 @@ export function Header({ lang }: { lang: Locale }) {
       </div>
       )}
 
-      <DeliveryModal
+      <InformationModal
         lang={lang}
-        isOpen={deliveryModalOpen}
-        onClose={() => setDeliveryModalOpen(false)}
-        triggerRef={deliveryTriggerRef}
+        isOpen={informationModalOpen}
+        onClose={() => setInformationModalOpen(false)}
+        triggerRef={informationTriggerRef}
       />
 
       <style jsx>{`
