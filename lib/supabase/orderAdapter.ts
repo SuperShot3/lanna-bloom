@@ -89,6 +89,7 @@ export async function dualWriteOrder(order: Order): Promise<void> {
       order_id: order.orderId,
       public_token: publicToken,
       customer_name: order.customerName ?? null,
+      customer_email: order.customerEmail ?? null,
       phone: order.phone ?? null,
       address: order.delivery.address ?? null,
       district: order.delivery.deliveryDistrict ?? 'UNKNOWN',

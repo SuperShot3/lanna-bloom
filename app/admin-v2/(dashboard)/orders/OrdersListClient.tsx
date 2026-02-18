@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FiltersBar } from '@/app/admin-v2/components/FiltersBar';
 import { OrderTable } from '@/app/admin-v2/components/OrderTable';
-import { clearAdminSecret } from '@/app/admin-v2/actions';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 
 interface OrdersListClientProps {
@@ -57,14 +56,22 @@ export function OrdersListClient({
           <p className="admin-v2-hint">Admin Dashboard v2 — Supabase</p>
         </div>
         <div className="admin-v2-header-actions">
+          <Link href="/admin-v2/overview" className="admin-v2-link">
+            Overview
+          </Link>
+          <a
+            href={`/api/admin/orders/export?${searchParams.toString()}`}
+            className="admin-v2-btn admin-v2-btn-outline"
+            download
+          >
+            Export CSV
+          </a>
           <Link href="/admin/orders" className="admin-v2-link">
             Legacy admin
           </Link>
-          <form action={clearAdminSecret}>
-            <button type="submit" className="admin-v2-btn admin-v2-btn-outline">
-              Log out
-            </button>
-          </form>
+          <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
+            Log out
+          </a>
         </div>
       </header>
 

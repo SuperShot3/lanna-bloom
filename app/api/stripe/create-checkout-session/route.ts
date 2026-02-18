@@ -41,6 +41,11 @@ function validateStripePayload(
     return { ok: false, message: 'phone must be 9–16 digits' };
   }
 
+  const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.trim() : undefined;
+  if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+    return { ok: false, message: 'customerEmail must be a valid email address' };
+  }
+
   const contactPreferenceRaw = b.contactPreference;
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
@@ -97,6 +102,7 @@ function validateStripePayload(
       lang,
       customerName,
       phone,
+      customerEmail,
       contactPreference,
       items: cartItems,
       referralCode: referralCode && referralDiscount > 0 ? referralCode : undefined,
@@ -121,6 +127,7 @@ interface StripeCheckoutPayload {
   lang: Locale;
   customerName: string;
   phone: string;
+  customerEmail?: string;
   contactPreference: ContactPreferenceOption[];
   items: CartItemIdentifier[];
   referralCode?: string;
@@ -173,6 +180,7 @@ export async function POST(request: NextRequest) {
     const orderPayload: OrderPayload = {
       customerName: data.customerName,
       phone: data.phone,
+      customerEmail: data.customerEmail,
       contactPreference: data.contactPreference,
       items: totals.items,
       delivery: {

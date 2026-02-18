@@ -1491,8 +1491,18 @@ a.filter-pill--active:hover {
 }
 .admin-v2-form {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 320px;
+}
+.admin-v2-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-v2-form-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 .admin-v2-input {
   padding: 10px 14px;
@@ -1653,6 +1663,66 @@ a.filter-pill--active:hover {
   background: var(--accent-soft);
   color: var(--text);
 }
+.admin-v2-overview {
+  padding: 24px 0;
+}
+.admin-v2-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.admin-v2-stat-card {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-v2-stat-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.admin-v2-stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.admin-v2-attention-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-v2-attention-group h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.admin-v2-attention-group ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.admin-v2-attention-group li {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-v2-attention-reason {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.admin-v2-attention-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--pastel-pink);
+  color: #8b3a3a;
+}
 .admin-v2-empty {
   color: var(--text-muted);
   margin: 0;
@@ -1789,6 +1859,77 @@ a.filter-pill--active:hover {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+/* Costs & Profit card */
+.admin-v2-costs-card {
+  margin-bottom: 28px;
+}
+.admin-v2-costs-warning {
+  font-size: 0.9rem;
+  color: #b8860b;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  background: #fffbe6;
+  border-radius: 8px;
+}
+.admin-v2-costs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.admin-v2-costs-input-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.admin-v2-costs-input-group input {
+  width: 100%;
+}
+.admin-v2-costs-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+.admin-v2-costs-display strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.admin-v2-costs-display p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.admin-v2-profit {
+  font-weight: 700;
+}
+.admin-v2-costs-updated {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+}
+.admin-v2-costs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.admin-v2-costs-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.admin-v2-costs-success {
+  font-size: 0.9rem;
+  color: #1a5f4a;
+}
+.admin-v2-costs-error {
+  font-size: 0.9rem;
+  color: #c0392b;
+}
+
 @media (max-width: 640px) {
   .admin-v2-table th,
   .admin-v2-table td {

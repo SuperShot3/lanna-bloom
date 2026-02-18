@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById, listOrders } from '@/lib/orders';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-
-function isAdminAuthorized(request: NextRequest): boolean {
-  const secret = process.env.ORDERS_ADMIN_SECRET;
-  if (!secret) return process.env.NODE_ENV === 'development';
-  const header =
-    request.headers.get('x-admin-secret') ??
-    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  return header === secret;
-}
+import { requireAuth } from '@/lib/adminRbac';
 
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const authResult = await requireAuth();
+  if (!authResult.ok) return authResult.response;
 
   const orderId = request.nextUrl.searchParams.get('orderId')?.trim();
   const limit = Math.min(

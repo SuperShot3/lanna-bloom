@@ -62,6 +62,11 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     return { ok: false, message: 'phone must be 9–16 digits (country code + number)' };
   }
 
+  const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.trim() : undefined;
+  if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+    return { ok: false, message: 'customerEmail must be a valid email address' };
+  }
+
   const contactPreferenceRaw = b.contactPreference;
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
@@ -76,6 +81,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const payload: OrderPayload = {
     customerName,
     phone: typeof b.phone === 'string' ? b.phone.trim() || undefined : undefined,
+    customerEmail: customerEmail || undefined,
     items: items.map((it: unknown) => {
       const i = it as Record<string, unknown>;
       const addOns = (i.addOns as Record<string, unknown>) ?? {};

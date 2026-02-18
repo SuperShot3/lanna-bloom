@@ -5,6 +5,7 @@ export interface SupabaseOrderRow {
   order_id: string;
   public_token: string | null;
   customer_name: string | null;
+  customer_email: string | null;
   phone: string | null;
   address: string | null;
   district: string | null;
@@ -18,7 +19,12 @@ export interface SupabaseOrderRow {
   items_total: number | null;
   delivery_fee: number | null;
   grand_total: number | null;
+  total_amount: number | null;
+  cogs_amount: number | null;
+  delivery_cost: number | null;
+  payment_fee: number | null;
   created_at: string | null;
+  updated_at: string | null;
   recipient_name: string | null;
   recipient_phone: string | null;
   contact_preference: string | null;
@@ -176,6 +182,54 @@ export async function getOrderByOrderId(orderId: string): Promise<OrderDetailRes
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[admin-v2] getOrderByOrderId exception:', msg);
     return { order: null, items: [], statusHistory: [], error: msg };
+  }
+}
+
+export async function getOrdersForExport(
+  filters: OrdersFilters,
+  limit = 5000
+): Promise<SupabaseOrderRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  try {
+    let query = supabase.from('orders').select('*');
+
+    if (filters.orderId?.trim()) {
+      query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
+    }
+    if (filters.recipientPhone?.trim()) {
+      query = query.ilike('recipient_phone', `%${filters.recipientPhone.trim()}%`);
+    }
+    if (filters.orderStatus && filters.orderStatus !== 'all') {
+      query = query.eq('order_status', filters.orderStatus);
+    }
+    if (filters.paymentStatus === 'paid') {
+      query = query.eq('payment_status', 'PAID');
+    } else if (filters.paymentStatus === 'unpaid') {
+      query = query.neq('payment_status', 'PAID');
+    }
+    if (filters.district && filters.district !== 'all') {
+      query = query.eq('district', filters.district);
+    }
+    if (filters.deliveryDateFrom) {
+      query = query.gte('delivery_date', filters.deliveryDateFrom);
+    }
+    if (filters.deliveryDateTo) {
+      query = query.lte('delivery_date', filters.deliveryDateTo);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
+
+    if (error) {
+      console.error('[admin-v2] getOrdersForExport error:', error);
+      return [];
+    }
+    return (data ?? []) as SupabaseOrderRow[];
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[admin-v2] getOrdersForExport exception:', msg);
+    return [];
   }
 }
 

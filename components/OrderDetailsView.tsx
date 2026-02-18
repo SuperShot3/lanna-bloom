@@ -225,10 +225,11 @@ export function OrderDetailsView({
       </div>
 
       {/* Sender */}
-      {(order.customerName || order.phone) && (
+      {(order.customerName || order.phone || order.customerEmail) && (
         <div className="order-details-section">
           <h2 className="order-details-heading">{t.sender}</h2>
           <p className="order-details-value">{order.customerName || '—'}</p>
+          {order.customerEmail && <p className="order-details-value">{order.customerEmail}</p>}
           {order.phone && <p className="order-details-value">{order.phone}</p>}
           {order.contactPreference && order.contactPreference.length > 0 && (
             <p className="order-details-value">

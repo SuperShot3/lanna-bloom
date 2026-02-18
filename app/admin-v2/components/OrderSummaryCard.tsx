@@ -53,6 +53,9 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
         <div>
           <strong>Customer</strong>
           <p>{order.customer_name ?? '—'}</p>
+          {order.customer_email && (
+            <p className="admin-v2-muted">{order.customer_email}</p>
+          )}
           <p className="admin-v2-muted">{order.phone ?? ''}</p>
         </div>
         <div>

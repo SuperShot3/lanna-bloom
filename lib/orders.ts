@@ -64,6 +64,8 @@ export type ContactPreferenceOption = 'phone' | 'line' | 'telegram' | 'whatsapp'
 export interface OrderPayload {
   customerName?: string;
   phone?: string;
+  /** Customer email for order confirmation notifications. */
+  customerEmail?: string;
   items: OrderItem[];
   delivery: OrderDelivery;
   pricing: OrderPricing;

@@ -59,17 +59,24 @@ export async function POST(request: NextRequest) {
   }
 
   if (event.type === PAYMENT_FAILED_EVENT) {
-    const order = await getOrderById(orderId);
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    try {
+      const order = await getOrderById(orderId);
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      if (order.status === 'paid') {
+        return NextResponse.json({ received: true });
+      }
+      await updateOrderPaymentStatus(orderId, { status: 'payment_failed' });
+      void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentFailed }) =>
+        syncSupabasePaymentFailed(orderId).catch((e) => {
+          console.error('[stripe/webhook] Supabase payment_failed sync error:', e);
+        })
+      );
+    } catch (e) {
+      console.error('[stripe/webhook] payment_failed handler error:', e);
+      return NextResponse.json({ error: 'Internal error' }, { status: 500 });
     }
-    if (order.status === 'paid') {
-      return NextResponse.json({ received: true });
-    }
-    await updateOrderPaymentStatus(orderId, { status: 'payment_failed' });
-    void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentFailed }) =>
-      syncSupabasePaymentFailed(orderId).catch(() => {})
-    );
     return NextResponse.json({ received: true });
   }
 
@@ -95,25 +102,32 @@ export async function POST(request: NextRequest) {
   const currency = session.currency ?? undefined;
   const paidAt = new Date().toISOString();
 
-  await updateOrderPaymentStatus(orderId, {
-    status: 'paid',
-    stripeSessionId: session.id,
-    paymentIntentId,
-    amountTotal: amountTotal ? amountTotal / 100 : undefined,
-    currency: currency?.toUpperCase(),
-    paidAt,
-  });
-
-  void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentSuccess }) =>
-    syncSupabasePaymentSuccess(orderId, paymentIntentId, paidAt).catch(() => {})
-  );
-
-  const updatedOrder = await getOrderById(orderId);
-  if (updatedOrder) {
-    const publicOrderUrl = getOrderDetailsUrl(orderId);
-    sendOrderNotificationEmail(updatedOrder, publicOrderUrl).catch((e) => {
-      console.error('[stripe/webhook] Notification email failed:', e);
+  try {
+    await updateOrderPaymentStatus(orderId, {
+      status: 'paid',
+      stripeSessionId: session.id,
+      paymentIntentId,
+      amountTotal: amountTotal ? amountTotal / 100 : undefined,
+      currency: currency?.toUpperCase(),
+      paidAt,
     });
+
+    void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentSuccess }) =>
+      syncSupabasePaymentSuccess(orderId, paymentIntentId, paidAt).catch((e) => {
+        console.error('[stripe/webhook] Supabase payment sync error:', e);
+      })
+    );
+
+    const updatedOrder = await getOrderById(orderId);
+    if (updatedOrder) {
+      const publicOrderUrl = getOrderDetailsUrl(orderId);
+      sendOrderNotificationEmail(updatedOrder, publicOrderUrl).catch((e) => {
+        console.error('[stripe/webhook] Notification email failed:', e);
+      });
+    }
+  } catch (e) {
+    console.error('[stripe/webhook] payment success handler error:', e);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

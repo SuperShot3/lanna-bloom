@@ -1,4 +1,4 @@
-import { getAdminSecret } from '../actions';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 
 export default async function AdminV2DashboardLayout({
@@ -6,9 +6,9 @@ export default async function AdminV2DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const secret = await getAdminSecret();
-  if (!secret) {
-    redirect('/admin-v2');
+  const session = await auth();
+  if (!session?.user) {
+    redirect('/admin-v2/login');
   }
   return <>{children}</>;
 }

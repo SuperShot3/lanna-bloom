@@ -103,6 +103,7 @@ function buildStripePayload(
   contact: {
     customerName: string;
     phone: string;
+    customerEmail?: string;
     contactPreference: ContactPreferenceOption[];
     recipientName?: string;
     recipientPhone?: string;
@@ -140,6 +141,7 @@ function buildStripePayload(
     lang,
     customerName: contact.customerName.trim(),
     phone: contact.phone.trim(),
+    customerEmail: contact.customerEmail?.trim() || undefined,
     contactPreference: contact.contactPreference,
     items,
     delivery: {
@@ -167,6 +169,7 @@ const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 type StoredCartForm = {
   delivery: DeliveryFormValues;
   customerName: string;
+  customerEmail: string;
   countryCode: string;
   phoneNational: string;
   recipientName: string;
@@ -233,6 +236,7 @@ function buildOrderPayload(
   contact: {
     customerName: string;
     phone: string;
+    customerEmail?: string;
     contactPreference: ContactPreferenceOption[];
     recipientName?: string;
     recipientPhone?: string;
@@ -278,6 +282,7 @@ function buildOrderPayload(
   return {
     customerName: contact.customerName.trim(),
     phone: contact.phone.trim(),
+    customerEmail: contact.customerEmail?.trim() || undefined,
     items: orderItems,
     delivery: {
       address: addressLineTrim,
@@ -384,6 +389,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [orderError, setOrderError] = useState<string | null>(null);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
+  const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
   const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
   const [phoneNational, setPhoneNational] = useState(() => loadCartFormFromStorage()?.phoneNational ?? '');
   const [recipientName, setRecipientName] = useState(() => loadCartFormFromStorage()?.recipientName ?? '');
@@ -403,6 +409,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     saveCartFormToStorage({
       delivery,
       customerName,
+      customerEmail,
       countryCode,
       phoneNational,
       recipientName,
@@ -411,7 +418,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       contactPreference,
       isOrderingForSomeoneElse,
     });
-  }, [items.length, delivery, customerName, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, isOrderingForSomeoneElse]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, isOrderingForSomeoneElse]);
 
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
@@ -495,6 +502,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.contactMethodRequired);
       return;
     }
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      setOrderError(t.emailInvalid ?? 'Please enter a valid email address.');
+      return;
+    }
     if (isOrderingForSomeoneElse) {
       if (!recipientName.trim()) {
         setOrderError(t.recipientNameRequired);
@@ -517,6 +528,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       const payload = buildOrderPayload(items, delivery, lang, {
         customerName: customerName.trim(),
         phone: fullPhone,
+        customerEmail: customerEmail.trim() || undefined,
         contactPreference,
         ...(isOrderingForSomeoneElse && {
           recipientName: recipientName.trim(),
@@ -598,6 +610,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.contactMethodRequired);
       return;
     }
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      setOrderError(t.emailInvalid ?? 'Please enter a valid email address.');
+      return;
+    }
     if (isOrderingForSomeoneElse) {
       if (!recipientName.trim()) {
         setOrderError(t.recipientNameRequired);
@@ -620,6 +636,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       const payload = buildStripePayload(items, delivery, lang, {
         customerName: customerName.trim(),
         phone: fullPhone,
+        customerEmail: customerEmail.trim() || undefined,
         contactPreference,
         ...(isOrderingForSomeoneElse && {
           recipientName: recipientName.trim(),
@@ -898,6 +915,23 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     </div>
                     <p id="cart-phone-hint" className="cart-phone-hint">
                       {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
+                    </p>
+                  </div>
+                  <div className="cart-contact-field">
+                    <label className="cart-contact-label" htmlFor="cart-email">
+                      {t.emailLabel ?? 'Email'}
+                    </label>
+                    <input
+                      id="cart-email"
+                      type="email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder={t.emailPlaceholder ?? 'e.g. you@example.com'}
+                      className="cart-contact-input"
+                      autoComplete="email"
+                    />
+                    <p className="cart-phone-hint">
+                      {t.emailHint ?? 'For order confirmation notifications (optional)'}
                     </p>
                   </div>
                   <label className="cart-contact-checkbox-label cart-ordering-for-else">

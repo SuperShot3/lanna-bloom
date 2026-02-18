@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed-admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {
     "@sanity/client": "^6.22.0",
@@ -14,10 +15,12 @@
     "@stripe/stripe-js": "^8.7.0",
     "@supabase/supabase-js": "^2.96.0",
     "@vercel/blob": "^0.23.0",
+    "bcryptjs": "^3.0.3",
     "embla-carousel-react": "^8.6.0",
     "leaflet": "^1.9.4",
     "nanoid": "^5.1.6",
     "next": "^14.2.21",
+    "next-auth": "^5.0.0-beta.30",
     "next-sanity": "^9.4.0",
     "next-view-transitions": "^0.3.5",
     "react": "^18.3.1",
@@ -28,10 +31,12 @@
     "stripe": "^20.3.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "engines": {

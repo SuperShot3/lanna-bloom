@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { auth } from '@/auth';
 import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
 import { OrderSummaryCard } from '@/app/admin-v2/components/OrderSummaryCard';
 import { ItemsList } from '@/app/admin-v2/components/ItemsList';
-import { clearAdminSecret } from '@/app/admin-v2/actions';
+import { CostsAndProfitCard } from '@/app/admin-v2/components/CostsAndProfitCard';
+import { canEditCosts } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -11,7 +13,9 @@ interface PageProps {
 
 export default async function AdminV2OrderDetailPage({ params }: PageProps) {
   const { order_id } = await params;
+  const session = await auth();
   const { order, items, statusHistory, error } = await getOrderByOrderId(order_id);
+  const role = session?.user ? (session.user as { role?: string }).role : undefined;
 
   if (error) {
     return (
@@ -42,15 +46,14 @@ export default async function AdminV2OrderDetailPage({ params }: PageProps) {
           <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-v2-link">
             View public page
           </Link>
-          <form action={clearAdminSecret}>
-            <button type="submit" className="admin-v2-btn admin-v2-btn-outline">
-              Log out
-            </button>
-          </form>
+          <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
+            Log out
+          </a>
         </div>
       </header>
 
       <OrderSummaryCard order={order} />
+      <CostsAndProfitCard order={order} canEdit={canEditCosts(role)} />
       <ItemsList items={items} />
       {(order.address || order.delivery_google_maps_url) && (
         <section className="admin-v2-section">
