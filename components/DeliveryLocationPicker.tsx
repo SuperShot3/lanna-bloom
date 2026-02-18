@@ -112,23 +112,26 @@ export function DeliveryLocationPicker({
       <div className="delivery-location-map-wrap">
         <MapInner value={value} onChange={onChange} />
       </div>
-      <p className="delivery-location-readout" aria-live="polite">
-        {value == null ? (
-          dropPinPrompt
-        ) : (
-          <>
-            {selectedLocationLabel} {value.lat.toFixed(5)}, {value.lng.toFixed(5)}{' '}
-            <a
-              href={value.googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="delivery-location-gmaps-link"
-            >
-              {openInGoogleMapsLabel}
-            </a>
-          </>
-        )}
-      </p>
+      {value == null ? (
+        <p className="delivery-location-readout" aria-live="polite">
+          {dropPinPrompt}
+        </p>
+      ) : (
+        <div className="delivery-location-card" aria-live="polite">
+          <p className="delivery-location-card-label">{selectedLocationLabel}</p>
+          <p className="delivery-location-card-coords">
+            {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
+          </p>
+          <a
+            href={value.googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="delivery-location-gmaps-btn"
+          >
+            {openInGoogleMapsLabel}
+          </a>
+        </div>
+      )}
       <style jsx>{`
         .delivery-location-picker {
           margin-top: 12px;
@@ -153,13 +156,38 @@ export function DeliveryLocationPicker({
           color: var(--text-muted);
           margin: 10px 0 0;
         }
-        .delivery-location-gmaps-link {
-          color: var(--accent);
-          font-weight: 600;
-          text-decoration: underline;
+        .delivery-location-card {
+          margin-top: 12px;
+          padding: 14px 16px;
+          background: var(--pastel-cream, #f9f5f0);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
         }
-        .delivery-location-gmaps-link:hover {
-          color: #967a4d;
+        .delivery-location-card-label {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0 0 4px;
+        }
+        .delivery-location-card-coords {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          margin: 0 0 12px;
+        }
+        .delivery-location-gmaps-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #fff;
+          background: var(--accent);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .delivery-location-gmaps-btn:hover {
+          background: #a88b5c;
+          transform: translateY(-1px);
         }
       `}</style>
     </div>

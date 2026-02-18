@@ -104,8 +104,8 @@ function buildStripePayload(
     customerName: string;
     phone: string;
     contactPreference: ContactPreferenceOption[];
-    recipientName: string;
-    recipientPhone: string;
+    recipientName?: string;
+    recipientPhone?: string;
   }
 ): Record<string, unknown> {
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
@@ -145,8 +145,8 @@ function buildStripePayload(
     delivery: {
       address: addressLineTrim,
       preferredTimeSlot,
-      recipientName: contact.recipientName.trim() || undefined,
-      recipientPhone: contact.recipientPhone.trim() || undefined,
+      recipientName: contact.recipientName?.trim() || undefined,
+      recipientPhone: contact.recipientPhone?.trim() || undefined,
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
@@ -173,6 +173,7 @@ type StoredCartForm = {
   recipientCountryCode: string;
   recipientPhoneNational: string;
   contactPreference: ContactPreferenceOption[];
+  isOrderingForSomeoneElse?: boolean;
 };
 
 function loadCartFormFromStorage(): StoredCartForm | null {
@@ -233,8 +234,8 @@ function buildOrderPayload(
     customerName: string;
     phone: string;
     contactPreference: ContactPreferenceOption[];
-    recipientName: string;
-    recipientPhone: string;
+    recipientName?: string;
+    recipientPhone?: string;
   }
 ): OrderPayload {
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
@@ -281,8 +282,8 @@ function buildOrderPayload(
     delivery: {
       address: addressLineTrim,
       preferredTimeSlot,
-      recipientName: contact.recipientName.trim() || undefined,
-      recipientPhone: contact.recipientPhone.trim() || undefined,
+      recipientName: contact.recipientName?.trim() || undefined,
+      recipientPhone: contact.recipientPhone?.trim() || undefined,
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
@@ -388,6 +389,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [recipientName, setRecipientName] = useState(() => loadCartFormFromStorage()?.recipientName ?? '');
   const [recipientCountryCode, setRecipientCountryCode] = useState(() => loadCartFormFromStorage()?.recipientCountryCode ?? '66');
   const [recipientPhoneNational, setRecipientPhoneNational] = useState(() => loadCartFormFromStorage()?.recipientPhoneNational ?? '');
+  const [isOrderingForSomeoneElse, setIsOrderingForSomeoneElse] = useState(() => loadCartFormFromStorage()?.isOrderingForSomeoneElse ?? false);
   const [contactPreference, setContactPreference] = useState<ContactPreferenceOption[]>(() => {
     const stored = loadCartFormFromStorage()?.contactPreference;
     if (!Array.isArray(stored)) return [];
@@ -407,8 +409,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       recipientCountryCode,
       recipientPhoneNational,
       contactPreference,
+      isOrderingForSomeoneElse,
     });
-  }, [items.length, delivery, customerName, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference]);
+  }, [items.length, delivery, customerName, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, isOrderingForSomeoneElse]);
 
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
@@ -492,29 +495,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.contactMethodRequired);
       return;
     }
-    if (!recipientName.trim()) {
-      setOrderError(t.recipientNameRequired);
-      return;
-    }
-    if (!recipientPhoneNational) {
-      setOrderError(t.recipientPhoneRequired);
-      return;
-    }
-    if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
-      setOrderError(t.contactPhoneMinLength);
-      return;
+    if (isOrderingForSomeoneElse) {
+      if (!recipientName.trim()) {
+        setOrderError(t.recipientNameRequired);
+        return;
+      }
+      if (!recipientPhoneNational) {
+        setOrderError(t.recipientPhoneRequired);
+        return;
+      }
+      if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
+        setOrderError(t.contactPhoneMinLength);
+        return;
+      }
     }
     setOrderError(null);
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
-    const recipientPhone = recipientCountryCode + recipientPhoneNational;
+    const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
     try {
       const payload = buildOrderPayload(items, delivery, lang, {
         customerName: customerName.trim(),
         phone: fullPhone,
         contactPreference,
-        recipientName: recipientName.trim(),
-        recipientPhone,
+        ...(isOrderingForSomeoneElse && {
+          recipientName: recipientName.trim(),
+          recipientPhone: recipientPhone!,
+        }),
       });
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -591,29 +598,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.contactMethodRequired);
       return;
     }
-    if (!recipientName.trim()) {
-      setOrderError(t.recipientNameRequired);
-      return;
-    }
-    if (!recipientPhoneNational) {
-      setOrderError(t.recipientPhoneRequired);
-      return;
-    }
-    if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
-      setOrderError(t.contactPhoneMinLength);
-      return;
+    if (isOrderingForSomeoneElse) {
+      if (!recipientName.trim()) {
+        setOrderError(t.recipientNameRequired);
+        return;
+      }
+      if (!recipientPhoneNational) {
+        setOrderError(t.recipientPhoneRequired);
+        return;
+      }
+      if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
+        setOrderError(t.contactPhoneMinLength);
+        return;
+      }
     }
     setOrderError(null);
     setPlacingStripe(true);
     const fullPhone = countryCode + phoneNational;
-    const recipientPhone = recipientCountryCode + recipientPhoneNational;
+    const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
     try {
       const payload = buildStripePayload(items, delivery, lang, {
         customerName: customerName.trim(),
         phone: fullPhone,
         contactPreference,
-        recipientName: recipientName.trim(),
-        recipientPhone,
+        ...(isOrderingForSomeoneElse && {
+          recipientName: recipientName.trim(),
+          recipientPhone: recipientPhone!,
+        }),
       });
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -889,58 +900,71 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
                     </p>
                   </div>
-                  <p className="cart-section-label">{t.recipientSection}</p>
-                  <div className="cart-contact-field">
-                    <label className="cart-contact-label" htmlFor="cart-recipient-name">
-                      {t.recipientName} <span className="cart-required" aria-hidden>*</span>
-                    </label>
+                  <label className="cart-contact-checkbox-label cart-ordering-for-else">
                     <input
-                      id="cart-recipient-name"
-                      type="text"
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                      placeholder={t.recipientNamePlaceholder}
-                      className="cart-contact-input"
-                      aria-required
-                      autoComplete="name"
+                      type="checkbox"
+                      checked={isOrderingForSomeoneElse}
+                      onChange={(e) => setIsOrderingForSomeoneElse(e.target.checked)}
+                      className="cart-contact-checkbox"
                     />
-                  </div>
-                  <div className="cart-contact-field">
-                    <label className="cart-contact-label" htmlFor="cart-recipient-phone">
-                      {t.recipientPhone} <span className="cart-required" aria-hidden>*</span>
-                    </label>
-                    <div className="cart-phone-row">
-                      <select
-                        id="cart-recipient-country-code"
-                        value={recipientCountryCode}
-                        onChange={(e) => setRecipientCountryCode(e.target.value)}
-                        className="cart-phone-country-select"
-                        aria-label={t.countryCode}
-                      >
-                        {COUNTRY_CODES.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        id="cart-recipient-phone"
-                        type="tel"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={recipientPhoneNational}
-                        onChange={handleRecipientPhoneInput}
-                        placeholder={t.recipientPhonePlaceholder}
-                        className="cart-contact-input cart-phone-input"
-                        autoComplete="tel-national"
-                        maxLength={PHONE_MAX_DIGITS}
-                        aria-describedby="cart-recipient-phone-hint"
-                      />
-                    </div>
-                    <p id="cart-recipient-phone-hint" className="cart-phone-hint">
-                      {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
-                    </p>
-                  </div>
+                    <span>{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
+                  </label>
+                  {isOrderingForSomeoneElse && (
+                    <>
+                      <p className="cart-section-label">{t.recipientSection}</p>
+                      <div className="cart-contact-field">
+                        <label className="cart-contact-label" htmlFor="cart-recipient-name">
+                          {t.recipientName} <span className="cart-required" aria-hidden>*</span>
+                        </label>
+                        <input
+                          id="cart-recipient-name"
+                          type="text"
+                          value={recipientName}
+                          onChange={(e) => setRecipientName(e.target.value)}
+                          placeholder={t.recipientNamePlaceholder}
+                          className="cart-contact-input"
+                          aria-required
+                          autoComplete="name"
+                        />
+                      </div>
+                      <div className="cart-contact-field">
+                        <label className="cart-contact-label" htmlFor="cart-recipient-phone">
+                          {t.recipientPhone} <span className="cart-required" aria-hidden>*</span>
+                        </label>
+                        <div className="cart-phone-row">
+                          <select
+                            id="cart-recipient-country-code"
+                            value={recipientCountryCode}
+                            onChange={(e) => setRecipientCountryCode(e.target.value)}
+                            className="cart-phone-country-select"
+                            aria-label={t.countryCode}
+                          >
+                            {COUNTRY_CODES.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            id="cart-recipient-phone"
+                            type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={recipientPhoneNational}
+                            onChange={handleRecipientPhoneInput}
+                            placeholder={t.recipientPhonePlaceholder}
+                            className="cart-contact-input cart-phone-input"
+                            autoComplete="tel-national"
+                            maxLength={PHONE_MAX_DIGITS}
+                            aria-describedby="cart-recipient-phone-hint"
+                          />
+                        </div>
+                        <p id="cart-recipient-phone-hint" className="cart-phone-hint">
+                          {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
+                        </p>
+                      </div>
+                    </>
+                  )}
                   <fieldset className="cart-contact-checkboxes" aria-label={t.preferredContact}>
                     <legend className="cart-contact-legend">
                       {t.preferredContact} <span className="cart-required" aria-hidden>*</span>

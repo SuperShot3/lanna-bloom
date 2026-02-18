@@ -12,11 +12,12 @@ const DeliveryLocationPicker = dynamic(
   { ssr: false }
 );
 
-/** 1-hour time slots from 08:00 to 20:00. */
+/** 4 delivery windows from 08:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
-  '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
-  '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00',
-  '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00',
+  '08:00–12:00',  // Morning
+  '12:00–15:00',  // Midday
+  '15:00–18:00',  // Afternoon
+  '18:00–20:00',  // Evening
 ] as const;
 
 export interface DeliveryFormValues {
@@ -86,11 +87,14 @@ export function DeliveryForm({
         <span className="buy-now-num" aria-hidden>1</span>
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step1}</h3>
-          <p className="buy-now-hint">{t.trySearchByPostalCode}</p>
+          {showLocationPicker && (t as { step1DeliveryIntro?: string }).step1DeliveryIntro && (
+            <p className="buy-now-hint buy-now-step-intro">{(t as { step1DeliveryIntro: string }).step1DeliveryIntro}</p>
+          )}
+          {!showLocationPicker && <p className="buy-now-hint">{t.trySearchByPostalCode}</p>}
           <div className="buy-now-fields">
             <div className="buy-now-field">
               <label className="buy-now-label" htmlFor="buy-now-district">
-                {t.districtLabel} <span className="buy-now-required" aria-hidden>*</span>
+                {((t as { districtLabelForFee?: string }).districtLabelForFee ?? t.districtLabel)} <span className="buy-now-required" aria-hidden>*</span>
               </label>
               <select
                 id="buy-now-district"
@@ -157,17 +161,7 @@ export function DeliveryForm({
       </div>
 
       {showLocationPicker && (
-        <>
-          <div className="buy-now-delivery-instructions" role="region" aria-labelledby="delivery-instructions-heading">
-            <h4 id="delivery-instructions-heading" className="buy-now-delivery-instructions-title">
-              {t.deliveryAddressInstructionsTitle}
-            </h4>
-            <ol className="buy-now-delivery-instructions-list">
-              <li>{t.deliveryAddressInstructionsStep1}</li>
-              <li>{t.deliveryAddressInstructionsStep2}</li>
-            </ol>
-          </div>
-          <DeliveryLocationPicker
+        <DeliveryLocationPicker
             value={
               value.deliveryLat != null && value.deliveryLng != null && value.deliveryGoogleMapsUrl != null
                 ? { lat: value.deliveryLat, lng: value.deliveryLng, googleMapsUrl: value.deliveryGoogleMapsUrl }
@@ -185,7 +179,6 @@ export function DeliveryForm({
             selectedLocationLabel={t.selectedLocation}
             openInGoogleMapsLabel={t.openInGoogleMaps}
           />
-        </>
       )}
 
       {/* Step 2: Delivery date + preferred time slot */}

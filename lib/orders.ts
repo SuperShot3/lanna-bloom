@@ -241,6 +241,9 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
   };
   orders.push(order);
   await writeOrders(orders);
+  void import('@/lib/supabase/orderAdapter').then(({ dualWriteOrder }) =>
+    dualWriteOrder(order).catch(() => {})
+  );
   if (process.env.NODE_ENV === 'development') {
     console.log('[orders] Created', orderId);
   } else if (process.env.VERCEL) {
@@ -261,6 +264,9 @@ export async function createPendingOrder(payload: OrderPayload): Promise<Order> 
   };
   orders.push(order);
   await writeOrders(orders);
+  void import('@/lib/supabase/orderAdapter').then(({ dualWriteOrder }) =>
+    dualWriteOrder(order).catch(() => {})
+  );
   if (process.env.NODE_ENV === 'development') {
     console.log('[orders] Created pending', orderId);
   }

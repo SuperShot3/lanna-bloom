@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
     await updateOrderPaymentStatus(orderId, { status: 'payment_failed' });
+    void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentFailed }) =>
+      syncSupabasePaymentFailed(orderId).catch(() => {})
+    );
     return NextResponse.json({ received: true });
   }
 
@@ -100,6 +103,10 @@ export async function POST(request: NextRequest) {
     currency: currency?.toUpperCase(),
     paidAt,
   });
+
+  void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentSuccess }) =>
+    syncSupabasePaymentSuccess(orderId, paymentIntentId, paidAt).catch(() => {})
+  );
 
   const updatedOrder = await getOrderById(orderId);
   if (updatedOrder) {
