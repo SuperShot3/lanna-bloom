@@ -9,6 +9,12 @@ export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
 
+/**
+ * Layout order: Header → main (page content) → Footer.
+ * Uses flex column so main grows and footer stays at bottom.
+ * Root cause of "footer before catalog" was lack of explicit flex structure;
+ * main-content-wrap + main + footer now in a single column wrapper.
+ */
 export default function LangLayout({
   children,
   params,
@@ -21,11 +27,13 @@ export default function LangLayout({
   return (
     <CartProvider>
       <ViewportSync />
-      <Header lang={lang as Locale} />
-      <div className="main-content-wrap" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
-        <main>{children}</main>
+      <div className="lang-layout">
+        <Header lang={lang as Locale} />
+        <div className="main-content-wrap" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
+          <main>{children}</main>
+        </div>
+        <Footer lang={lang as Locale} />
       </div>
-      <Footer lang={lang as Locale} />
     </CartProvider>
   );
 }

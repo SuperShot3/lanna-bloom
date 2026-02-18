@@ -112,14 +112,25 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       });
       const itemsTotal = itemsFromPayload.reduce((sum, it) => sum + it.price, 0);
       const deliveryFee = calcDeliveryFeeTHB({ district: deliveryDistrict, isMueangCentral });
-      const computedGrandTotal = itemsTotal + deliveryFee;
+      const subtotal = itemsTotal + deliveryFee;
+      const refCode = typeof b.referralCode === 'string' ? (b.referralCode as string).trim() : '';
+      const refDiscountRaw = typeof b.referralDiscount === 'number' ? b.referralDiscount : 0;
+      const refDiscount = refCode && refDiscountRaw > 0
+        ? Math.min(100, Math.floor(refDiscountRaw), subtotal)
+        : 0;
       return {
         itemsTotal,
         deliveryFee,
-        grandTotal: computedGrandTotal,
+        grandTotal: subtotal - refDiscount,
       };
     })(),
     contactPreference,
+    ...(typeof b.referralCode === 'string' && (b.referralCode as string).trim() && typeof b.referralDiscount === 'number' && (b.referralDiscount as number) > 0
+      ? {
+          referralCode: (b.referralCode as string).trim(),
+          referralDiscount: Math.min(100, Math.floor(b.referralDiscount as number)),
+        }
+      : {}),
   };
   return { ok: true, payload };
 }

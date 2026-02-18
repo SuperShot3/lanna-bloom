@@ -21,9 +21,15 @@ import {
   trackRemoveFromCart,
   trackAddShippingInfo,
 } from '@/lib/analytics';
-import { PaymentNote } from '@/components/PaymentNote';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
+import {
+  getStoredReferral,
+  clearReferral,
+  computeReferralDiscount,
+  REFERRAL_DISCOUNT_THB,
+} from '@/lib/referral';
+import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 
 function buildAddOnsSummaryForDisplay(
   addOns: CartItem['addOns'],
@@ -46,6 +52,23 @@ function buildAddOnsSummaryForDisplay(
     lines.push(String(t.addOnsSummaryMessage).replace('{text}', addOns.cardMessage.trim()));
   }
   return lines.join('. ');
+}
+
+/** Returns add-on lines for order summary (card, wrapping only). */
+function buildAddOnsSummaryLines(
+  addOns: CartItem['addOns'],
+  t: Record<string, string | number>
+): string[] {
+  const lines: string[] = [];
+  if (addOns.cardType === 'beautiful') {
+    lines.push(String(t.addOnsSummaryCardBeautiful));
+  }
+  if (addOns.wrappingPreference === 'classic') {
+    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingClassic)));
+  } else if (addOns.wrappingPreference === 'premium') {
+    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingPremium)));
+  }
+  return lines;
 }
 
 function mapWrappingToOption(
@@ -105,6 +128,13 @@ function buildStripePayload(
 
   const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
   const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
+  const itemsTotal = cartItems.reduce((sum, item) => {
+    return sum + item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+  }, 0);
+  const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
+  const subtotal = itemsTotal + deliveryFee;
+  const referral = getStoredReferral();
+  const referralDiscount = computeReferralDiscount(subtotal, !!referral);
 
   return {
     lang,
@@ -123,6 +153,10 @@ function buildStripePayload(
       deliveryDistrict: district,
       isMueangCentral,
     },
+    ...(referral && referralDiscount > 0 && {
+      referralCode: referral.code,
+      referralDiscount,
+    }),
   };
 }
 
@@ -235,7 +269,10 @@ function buildOrderPayload(
   const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
   const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
-  const grandTotal = itemsTotal + deliveryFee;
+  const subtotal = itemsTotal + deliveryFee;
+  const referral = getStoredReferral();
+  const referralDiscount = computeReferralDiscount(subtotal, !!referral);
+  const grandTotal = subtotal - referralDiscount;
 
   return {
     customerName: contact.customerName.trim(),
@@ -258,6 +295,10 @@ function buildOrderPayload(
       grandTotal,
     },
     contactPreference: contact.contactPreference.length > 0 ? contact.contactPreference : ['phone'],
+    ...(referral && referralDiscount > 0 && {
+      referralCode: referral.code,
+      referralDiscount,
+    }),
   };
 }
 
@@ -340,6 +381,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [placing, setPlacing] = useState(false);
   const [placingStripe, setPlacingStripe] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
   const [phoneNational, setPhoneNational] = useState(() => loadCartFormFromStorage()?.phoneNational ?? '');
@@ -714,17 +756,69 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
           const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
           const deliveryFeeVal = calcDeliveryFeeTHB({ district, isMueangCentral });
-          const grandTotalVal = itemsTotalVal + deliveryFeeVal;
+          const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
+          const referralVal = getStoredReferral();
+          const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, !!referralVal);
+          const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
+          const tBuyNowRaw = tBuyNow as Record<string, string | number>;
+          const itemLineFmt = (t.itemLineWithQty ?? t.itemLine ?? '{name} — {size} x{qty} — ฿{lineTotal}') as string;
           return (
-            <div className="cart-order-summary">
-              <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
-              <div className="cart-order-summary-row">
-                <span>{t.deliveryFeeLabel}</span>
-                <span className="cart-order-summary-fee">฿{deliveryFeeVal.toLocaleString()}</span>
+            <div className="cart-summary-section">
+              <div className="cart-order-summary">
+                <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
+                {items.map((item, i) => {
+                  const name = lang === 'th' ? item.nameTh : item.nameEn;
+                  const qty = 1;
+                  const lineTotal = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+                  const priceStr = lineTotal.toLocaleString();
+                  const itemLine = itemLineFmt
+                    .replace('{name}', name)
+                    .replace('{size}', item.size.label)
+                    .replace('{qty}', String(qty))
+                    .replace('{lineTotal}', priceStr)
+                    .replace('{price}', priceStr);
+                  const addOnLines = buildAddOnsSummaryLines(item.addOns, tBuyNowRaw);
+                  return (
+                    <div key={`summary-${item.bouquetId}-${i}`}>
+                      <div className="cart-order-summary-row cart-order-summary-item">
+                        <span className="cart-order-summary-item-name">{itemLine}</span>
+                        <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                      </div>
+                      {addOnLines.map((line, j) => (
+                        <div key={j} className="cart-order-summary-row cart-order-summary-addon">
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+                <div className="cart-order-summary-row">
+                  <span>{t.deliveryFeeLabel}</span>
+                  <span className="cart-order-summary-amount">฿{deliveryFeeVal.toLocaleString()}</span>
+                </div>
+                {referralVal && referralDiscountVal > 0 && (
+                  <div className="cart-order-summary-row cart-order-summary-referral">
+                    <span>
+                      {(t.referralDiscountLabel ?? 'Referral discount ({code})').replace('{code}', referralVal.code)}
+                    </span>
+                    <span className="cart-order-summary-amount cart-order-summary-discount">-฿{referralDiscountVal.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="cart-order-summary-row cart-order-summary-total">
+                  <span>{t.totalLabel}</span>
+                  <span className="cart-order-summary-amount">฿{grandTotalVal.toLocaleString()}</span>
+                </div>
+                <p className="cart-order-summary-note">{t.deliveryTimeApproxNote ?? 'Delivery time is approximate (±30 min).'}</p>
               </div>
-              <div className="cart-order-summary-row cart-order-summary-total">
-                <span>{t.totalLabel}</span>
-                <span>฿{grandTotalVal.toLocaleString()}</span>
+              <div className="referral-code-column">
+                <ReferralCodeBox
+                  lang={lang}
+                  subtotal={subtotalWithDelivery}
+                  appliedCode={referralVal?.code ?? null}
+                  onApply={() => setReferralCleared((c) => c + 1)}
+                  onRemove={() => setReferralCleared((c) => c + 1)}
+                  hasOtherDiscount={false}
+                />
               </div>
             </div>
           );
@@ -869,7 +963,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     ))}
                   </fieldset>
                 </div>
-                <PaymentNote lang={lang} variant="cart" />
                 <div className="cart-place-order-buttons">
                   <button
                     type="button"
@@ -988,8 +1081,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-color: var(--accent);
           color: var(--text);
         }
-        .cart-order-summary {
+        .cart-summary-section {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
           margin-bottom: 24px;
+        }
+        .cart-summary-section .cart-order-summary {
+          flex: 2;
+          min-width: 0;
+        }
+        .referral-code-column {
+          flex: 1;
+          min-width: 0;
+          max-width: 320px;
+        }
+        @media (max-width: 640px) {
+          .cart-summary-section {
+            flex-direction: column;
+          }
+          .referral-code-column {
+            max-width: 100%;
+          }
+        }
+        .cart-order-summary {
           padding: 16px;
           background: var(--pastel-cream, #fdf8f3);
           border: 1px solid var(--border);
@@ -1008,20 +1123,61 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           font-size: 0.95rem;
           color: var(--text);
           margin-bottom: 6px;
+          gap: 12px;
+        }
+        .cart-order-summary-amount {
+          min-width: 5em;
+          text-align: right;
+          flex-shrink: 0;
+          font-weight: 600;
+          font-size: 0.95rem;
+          color: var(--text);
+        }
+        .cart-order-summary-amount.cart-order-summary-discount {
+          color: var(--accent);
+        }
+        .cart-order-summary-total .cart-order-summary-amount {
+          font-weight: 700;
         }
         .cart-order-summary-row:last-child {
           margin-bottom: 0;
         }
-        .cart-order-summary-fee {
-          font-weight: 600;
+        .cart-order-summary-item .cart-order-summary-item-name {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 100%;
+        }
+        @media (max-width: 480px) {
+          .cart-order-summary-item .cart-order-summary-item-name {
+            white-space: normal;
+          }
+        }
+        .cart-order-summary-addon {
+          font-size: 0.95rem;
+          color: var(--text-muted);
+          padding-left: 8px;
+        }
+        .cart-order-summary-referral {
+          flex-wrap: wrap;
+          gap: 4px 8px;
+        }
+        .cart-order-summary-discount {
           color: var(--accent);
+          font-weight: 600;
         }
         .cart-order-summary-total {
           margin-top: 10px;
           padding-top: 10px;
           border-top: 1px solid var(--border);
           font-weight: 700;
-          font-size: 1.05rem;
+          font-size: 0.95rem;
+        }
+        .cart-order-summary-note {
+          margin: 8px 0 0;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          opacity: 0.85;
         }
         .cart-delivery {
           margin-bottom: 32px;

@@ -17,6 +17,13 @@ export function PaymentBadges({ lang }: { lang: Locale }) {
           loading="lazy"
           decoding="async"
         />
+        <img
+          src="/payments/Thai_QR_Logo.svg"
+          alt="Thai PromptPay QR"
+          className="payment-badges-icon payment-badges-thaiqr"
+          loading="lazy"
+          decoding="async"
+        />
       </div>
       <style jsx>{`
         .payment-badges {
@@ -49,6 +56,10 @@ export function PaymentBadges({ lang }: { lang: Locale }) {
         .payment-badges-single {
           height: 28px;
           max-width: 100%;
+        }
+        .payment-badges-thaiqr {
+          height: 24px;
+          width: auto;
         }
         @media (max-width: 480px) {
           .payment-badges-row {

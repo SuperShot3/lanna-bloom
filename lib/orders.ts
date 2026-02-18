@@ -69,6 +69,10 @@ export interface OrderPayload {
   pricing: OrderPricing;
   /** Preferred ways to contact the customer (can select multiple). */
   contactPreference?: ContactPreferenceOption[];
+  /** Referral code from ?ref= (MVP, client-stored). */
+  referralCode?: string;
+  /** Referral discount amount in THB (e.g. 100). */
+  referralDiscount?: number;
 }
 
 /** Order payment status. Legacy orders (bank transfer) have no status or 'paid'. */

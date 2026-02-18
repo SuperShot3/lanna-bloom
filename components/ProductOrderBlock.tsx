@@ -13,6 +13,7 @@ import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
+import { TrustBadges } from '@/components/TrustBadges';
 
 function buildAddOnsSummary(addOns: AddOnsValues, lang: Locale): string {
   const t = translations[lang].buyNow;
@@ -117,13 +118,16 @@ export function ProductOrderBlock({
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          className="order-add-to-cart-btn"
-          onClick={handleAddToCart}
-        >
-          {t.addToCart}
-        </button>
+        <>
+          <TrustBadges lang={lang} />
+          <button
+            type="button"
+            className="order-add-to-cart-btn"
+            onClick={handleAddToCart}
+          >
+            {t.addToCart}
+          </button>
+        </>
       )}
       <style jsx>{`
         .order-block-title {
@@ -200,7 +204,7 @@ export function ProductOrderBlock({
           color: var(--text);
         }
         .order-add-to-cart-btn {
-          margin-top: 20px;
+          margin-top: 16px;
           width: 100%;
           padding: 14px 20px;
           background: var(--accent);

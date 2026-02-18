@@ -88,6 +88,8 @@ function validateStripePayload(
     ? (d.deliveryDistrict as typeof validDistricts[number])
     : 'UNKNOWN';
   const isMueangCentral = d.deliveryDistrict === 'MUEANG' && d.isMueangCentral === true;
+  const referralCode = typeof b.referralCode === 'string' ? b.referralCode.trim() : undefined;
+  const referralDiscount = typeof b.referralDiscount === 'number' && b.referralDiscount > 0 ? b.referralDiscount : 0;
 
   return {
     ok: true,
@@ -97,6 +99,8 @@ function validateStripePayload(
       phone,
       contactPreference,
       items: cartItems,
+      referralCode: referralCode && referralDiscount > 0 ? referralCode : undefined,
+      referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
       delivery: {
         address,
         preferredTimeSlot,
@@ -119,6 +123,8 @@ interface StripeCheckoutPayload {
   phone: string;
   contactPreference: ContactPreferenceOption[];
   items: CartItemIdentifier[];
+  referralCode?: string;
+  referralDiscount?: number;
   delivery: {
     address: string;
     preferredTimeSlot: string;
@@ -161,6 +167,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: computed.message }, { status: 400 });
     }
     const { totals } = computed;
+    const referralDiscount = data.referralDiscount ?? 0;
+    const effectiveGrandTotal = Math.max(0, totals.grandTotal - referralDiscount);
 
     const orderPayload: OrderPayload = {
       customerName: data.customerName,
@@ -182,8 +190,12 @@ export async function POST(request: NextRequest) {
       pricing: {
         itemsTotal: totals.itemsTotal,
         deliveryFee: totals.deliveryFee,
-        grandTotal: totals.grandTotal,
+        grandTotal: effectiveGrandTotal,
       },
+      ...(data.referralCode && referralDiscount > 0 && {
+        referralCode: data.referralCode,
+        referralDiscount,
+      }),
     };
 
     const order = await createPendingOrder(orderPayload);
@@ -214,6 +226,19 @@ export async function POST(request: NextRequest) {
             name: 'Delivery fee',
           },
           unit_amount: Math.round(totals.deliveryFee * 100),
+        },
+        quantity: 1,
+      });
+    }
+
+    if (referralDiscount > 0 && data.referralCode) {
+      lineItems.push({
+        price_data: {
+          currency: 'thb',
+          product_data: {
+            name: `Referral discount (${data.referralCode})`,
+          },
+          unit_amount: -Math.round(referralDiscount * 100),
         },
         quantity: 1,
       });
