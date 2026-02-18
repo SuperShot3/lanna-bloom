@@ -32,25 +32,6 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
           <p>{formatDate(order.created_at)}</p>
         </div>
         <div>
-          <strong>Status</strong>
-          <p>
-            <span className={`admin-v2-badge admin-v2-badge-${(order.order_status ?? '').toLowerCase()}`}>
-              {order.order_status ?? '—'}
-            </span>
-          </p>
-        </div>
-        <div>
-          <strong>Payment</strong>
-          <p>
-            <span className={`admin-v2-badge admin-v2-badge-payment-${(order.payment_status ?? '').toLowerCase()}`}>
-              {order.payment_status ?? '—'}
-            </span>
-            {order.paid_at && (
-              <span className="admin-v2-muted"> ({formatDate(order.paid_at)})</span>
-            )}
-          </p>
-        </div>
-        <div>
           <strong>Customer</strong>
           <p>{order.customer_name ?? '—'}</p>
           {order.customer_email && (
@@ -66,6 +47,12 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
           <strong>Delivery fee</strong>
           <p>{formatAmount(order.delivery_fee)}</p>
         </div>
+        {(order.referral_discount != null && order.referral_discount > 0) && (
+          <div>
+            <strong>Discount</strong>
+            <p className="admin-v2-discount">-{formatAmount(order.referral_discount)}</p>
+          </div>
+        )}
         <div>
           <strong>Grand total</strong>
           <p className="admin-v2-total">{formatAmount(order.grand_total)}</p>

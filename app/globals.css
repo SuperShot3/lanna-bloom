@@ -1709,6 +1709,29 @@ a.filter-pill--active:hover {
   align-items: center;
   gap: 8px;
 }
+.admin-v2-status-card {
+  margin-bottom: 24px;
+}
+.admin-v2-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.admin-v2-status-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.admin-v2-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-v2-discount {
+  color: var(--pastel-mint);
+  font-weight: 500;
+}
 .admin-v2-attention-reason {
   font-size: 0.85rem;
   color: var(--text-muted);

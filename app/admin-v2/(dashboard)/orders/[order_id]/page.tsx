@@ -4,24 +4,29 @@ import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
 import { OrderSummaryCard } from '@/app/admin-v2/components/OrderSummaryCard';
 import { ItemsList } from '@/app/admin-v2/components/ItemsList';
 import { CostsAndProfitCard } from '@/app/admin-v2/components/CostsAndProfitCard';
-import { canEditCosts } from '@/lib/adminRbac';
+import { StatusUpdateCard } from '@/app/admin-v2/components/StatusUpdateCard';
+import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{ order_id: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
 }
 
-export default async function AdminV2OrderDetailPage({ params }: PageProps) {
+export default async function AdminV2OrderDetailPage({ params, searchParams }: PageProps) {
   const { order_id } = await params;
+  const { returnTo } = await searchParams;
   const session = await auth();
   const { order, items, statusHistory, error } = await getOrderByOrderId(order_id);
   const role = session?.user ? (session.user as { role?: string }).role : undefined;
+  const backHref = returnTo && returnTo.startsWith('/admin-v2') ? returnTo : '/admin-v2/orders';
 
   if (error) {
+    const errBackHref = returnTo && returnTo.startsWith('/admin-v2') ? returnTo : '/admin-v2/orders';
     return (
       <div className="admin-v2-detail">
         <header className="admin-v2-header">
-          <Link href="/admin-v2/orders" className="admin-v2-link">← Back to orders</Link>
+          <Link href={errBackHref} className="admin-v2-link">← Back to orders</Link>
         </header>
         <div className="admin-v2-error">
           <p><strong>Error loading order</strong></p>
@@ -39,7 +44,7 @@ export default async function AdminV2OrderDetailPage({ params }: PageProps) {
     <div className="admin-v2-detail">
       <header className="admin-v2-header">
         <div>
-          <Link href="/admin-v2/orders" className="admin-v2-link">← Back to orders</Link>
+          <Link href={backHref} className="admin-v2-link">← Back to orders</Link>
           <h1 className="admin-v2-title">{order.order_id}</h1>
         </div>
         <div className="admin-v2-header-actions">
@@ -52,6 +57,11 @@ export default async function AdminV2OrderDetailPage({ params }: PageProps) {
         </div>
       </header>
 
+      <StatusUpdateCard
+        order={order}
+        canEdit={canChangeStatus(role)}
+        canRefund={canRefund(role)}
+      />
       <OrderSummaryCard order={order} />
       <CostsAndProfitCard order={order} canEdit={canEditCosts(role)} />
       <ItemsList items={items} />

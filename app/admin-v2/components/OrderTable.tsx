@@ -5,6 +5,7 @@ import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 
 interface OrderTableProps {
   orders: SupabaseOrderRow[];
+  returnTo?: string;
 }
 
 function formatDate(iso: string | null): string {
@@ -25,7 +26,12 @@ function formatAmount(n: number | null | undefined): string {
   return `฿${Number(n).toLocaleString()}`;
 }
 
-export function OrderTable({ orders }: OrderTableProps) {
+export function OrderTable({ orders, returnTo }: OrderTableProps) {
+  const detailHref = (orderId: string) => {
+    const base = `/admin-v2/orders/${encodeURIComponent(orderId)}`;
+    if (returnTo) return `${base}?returnTo=${encodeURIComponent(returnTo)}`;
+    return base;
+  };
   return (
     <div className="admin-v2-table-wrap">
       <table className="admin-v2-table">
@@ -36,6 +42,7 @@ export function OrderTable({ orders }: OrderTableProps) {
             <th>Status</th>
             <th>Payment</th>
             <th>Total</th>
+            <th>Discount</th>
             <th>Delivery date</th>
             <th>Window</th>
             <th>District</th>
@@ -47,7 +54,7 @@ export function OrderTable({ orders }: OrderTableProps) {
             <tr key={o.order_id}>
               <td>{formatDate(o.created_at)}</td>
               <td>
-                <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}`} className="admin-v2-link">
+                <Link href={detailHref(o.order_id)} className="admin-v2-link">
                   {o.order_id}
                 </Link>
               </td>
@@ -62,6 +69,11 @@ export function OrderTable({ orders }: OrderTableProps) {
                 </span>
               </td>
               <td>{formatAmount(o.grand_total)}</td>
+              <td>
+                {(o.referral_discount != null && o.referral_discount > 0)
+                  ? `-${formatAmount(o.referral_discount)}`
+                  : '—'}
+              </td>
               <td>{o.delivery_date ?? '—'}</td>
               <td>{o.delivery_window ?? '—'}</td>
               <td>{o.district ?? '—'}</td>

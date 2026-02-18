@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FiltersBar } from '@/app/admin-v2/components/FiltersBar';
 import { OrderTable } from '@/app/admin-v2/components/OrderTable';
@@ -35,6 +35,8 @@ export function OrdersListClient({
 }: OrdersListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const returnTo = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 
   const handleFilterChange = (updates: Record<string, string | undefined>) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -89,7 +91,7 @@ export function OrdersListClient({
         </div>
       ) : (
         <>
-          <OrderTable orders={initialOrders} />
+          <OrderTable orders={initialOrders} returnTo={returnTo} />
           {initialOrders.length === 0 ? (
             <p className="admin-v2-empty">No orders found.</p>
           ) : (

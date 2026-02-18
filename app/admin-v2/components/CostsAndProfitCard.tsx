@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 
@@ -23,6 +24,7 @@ function parseInput(s: string): number | null {
 }
 
 export function CostsAndProfitCard({ order, canEdit = true }: CostsAndProfitCardProps) {
+  const router = useRouter();
   const totalAmount = order.total_amount ?? order.grand_total ?? null;
   const [cogs, setCogs] = useState(toInputValue(order.cogs_amount));
   const [deliveryCost, setDeliveryCost] = useState(toInputValue(order.delivery_cost));
@@ -69,7 +71,7 @@ export function CostsAndProfitCard({ order, canEdit = true }: CostsAndProfitCard
 
       setMessage({ type: 'success', text: 'Costs saved' });
       setTimeout(() => setMessage(null), 3000);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       setMessage({
         type: 'error',

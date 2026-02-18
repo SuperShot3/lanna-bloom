@@ -84,7 +84,7 @@ export default async function AdminV2OverviewPage() {
                 <ul>
                   {attention.paidNotAccepted.map((o) => (
                     <li key={o.order_id}>
-                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}`} className="admin-v2-link">
+                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}?returnTo=${encodeURIComponent('/admin-v2/overview')}`} className="admin-v2-link">
                         {o.order_id}
                       </Link>
                       <span className="admin-v2-attention-reason">{o.reason}</span>
@@ -99,7 +99,7 @@ export default async function AdminV2OverviewPage() {
                 <ul>
                   {attention.preparingStale.map((o) => (
                     <li key={o.order_id}>
-                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}`} className="admin-v2-link">
+                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}?returnTo=${encodeURIComponent('/admin-v2/overview')}`} className="admin-v2-link">
                         {o.order_id}
                       </Link>
                     </li>
@@ -113,7 +113,7 @@ export default async function AdminV2OverviewPage() {
                 <ul>
                   {attention.outForDeliveryStale.map((o) => (
                     <li key={o.order_id}>
-                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}`} className="admin-v2-link">
+                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}?returnTo=${encodeURIComponent('/admin-v2/overview')}`} className="admin-v2-link">
                         {o.order_id}
                       </Link>
                     </li>
@@ -127,7 +127,7 @@ export default async function AdminV2OverviewPage() {
                 <ul>
                   {attention.missingCriticalFields.map((o) => (
                     <li key={o.order_id}>
-                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}`} className="admin-v2-link">
+                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}?returnTo=${encodeURIComponent('/admin-v2/overview')}`} className="admin-v2-link">
                         {o.order_id}
                       </Link>
                       <span className="admin-v2-attention-reason">{o.reason}</span>
@@ -142,7 +142,7 @@ export default async function AdminV2OverviewPage() {
                 <ul>
                   {attention.paidMissingCosts.map((o) => (
                     <li key={o.order_id}>
-                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}`} className="admin-v2-link">
+                      <Link href={`/admin-v2/orders/${encodeURIComponent(o.order_id)}?returnTo=${encodeURIComponent('/admin-v2/overview')}`} className="admin-v2-link">
                         {o.order_id}
                       </Link>
                     </li>
