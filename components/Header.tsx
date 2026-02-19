@@ -9,7 +9,6 @@ import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessengerLinks } from './MessengerLinks';
 import { SocialLinks } from './SocialLinks';
-import { InformationModal } from './InformationModal';
 import { CartIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
@@ -22,17 +21,16 @@ export function Header({ lang }: { lang: Locale }) {
   const catalogHref = `/${lang}/catalog`;
   const cartHref = `/${lang}/cart`;
   const contactHref = `/${lang}/contact`;
+  const infoHref = `/${lang}/info`;
   const t = translations[lang].nav;
   const { count: cartCount } = useCart();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [informationModalOpen, setInformationModalOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
-  const informationTriggerRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const checkScroll = () => {
@@ -112,15 +110,8 @@ export function Header({ lang }: { lang: Locale }) {
                 {t.catalog}
               </Link>
               <Link
-                href="#information"
-                ref={informationTriggerRef}
-                className="nav-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setInformationModalOpen(true);
-                }}
-                aria-haspopup="dialog"
-                aria-expanded={informationModalOpen}
+                href={infoHref}
+                className={basePath === '/info' ? 'nav-link active' : 'nav-link'}
               >
                 {t.information}
               </Link>
@@ -250,14 +241,9 @@ export function Header({ lang }: { lang: Locale }) {
               {t.catalog}
             </Link>
             <Link
-              href="#information"
-              className="mobile-menu-link"
-              onClick={(e) => {
-                e.preventDefault();
-                setInformationModalOpen(true);
-                setMenuOpen(false);
-              }}
-              aria-haspopup="dialog"
+              href={infoHref}
+              className={`mobile-menu-link ${basePath === '/info' ? 'active' : ''}`}
+              onClick={() => setMenuOpen(false)}
             >
               {t.information}
             </Link>
@@ -277,13 +263,6 @@ export function Header({ lang }: { lang: Locale }) {
         </div>
       </div>
       )}
-
-      <InformationModal
-        lang={lang}
-        isOpen={informationModalOpen}
-        onClose={() => setInformationModalOpen(false)}
-        triggerRef={informationTriggerRef}
-      />
 
       <style jsx>{`
         .header {

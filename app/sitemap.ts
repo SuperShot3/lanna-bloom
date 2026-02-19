@@ -44,6 +44,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: now,
       },
       {
+        url: `${base}/${lang}/info`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/info/flowers-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/info/rose-bouquets-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/info/same-day-flower-delivery-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      {
         url: `${base}/${lang}/guides/flowers-chiang-mai`,
         changeFrequency: 'monthly' as const,
         priority: 0.6 as const,
@@ -57,6 +81,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
       {
         url: `${base}/${lang}/guides/same-day-flower-delivery-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/guides/flower-delivery-to-hospitals-chiang-mai`,
         changeFrequency: 'monthly' as const,
         priority: 0.6 as const,
         lastModified: now,

@@ -1,0 +1,122 @@
+/* Info hub page */
+.infoPage {
+  padding: 48px 0 64px;
+  background: var(--bg);
+}
+
+.infoFeatured {
+  display: grid;
+  gap: 32px;
+  margin-bottom: 56px;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .infoFeatured {
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+  }
+}
+
+.infoFeaturedContent {
+  max-width: 480px;
+}
+
+.infoFeaturedTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px;
+  line-height: 1.2;
+}
+
+.infoFeaturedExcerpt {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+
+.infoFeaturedActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.infoCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 24px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.infoCta:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.infoFeaturedCard {
+  display: block;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-hover);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.infoFeaturedCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(45, 42, 38, 0.12);
+}
+
+.infoFeaturedCover {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}
+
+.infoFeaturedCoverCenter {
+  font-size: 5rem;
+  line-height: 1;
+}
+
+.infoMore {
+  margin-top: 0;
+}
+
+.infoMoreTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 24px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 600px) {
+  .infoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .infoGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

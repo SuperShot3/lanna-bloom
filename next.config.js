@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['next-mdx-remote'],
   experimental: {
     serverComponentsExternalPackages: ['@sanity/client', 'next-sanity', '@sanity/image-url'],
   },
