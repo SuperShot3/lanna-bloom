@@ -20,6 +20,7 @@ import {
   trackViewCart,
   trackRemoveFromCart,
   trackAddShippingInfo,
+  trackAddPaymentInfo,
 } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
@@ -716,6 +717,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setPlacingStripe(true);
     const fullPhone = countryCode + phoneNational;
     const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
+    const analyticsItems = cartItemsToAnalytics(items, lang);
+    trackAddPaymentInfo({
+      paymentType: 'card',
+      currency: 'THB',
+      value: grandTotalVal,
+      items: analyticsItems,
+    });
     try {
       const payload = buildStripePayload(items, delivery, lang, {
         customerName: customerName.trim(),

@@ -238,7 +238,29 @@ export function trackAddShippingInfo(params: {
 }
 
 /**
+ * Fire add_payment_info when user adds payment info (GA4 ecommerce).
+ * Call when user selects payment method and proceeds (e.g. clicks "Pay with Stripe").
+ */
+export function trackAddPaymentInfo(params: {
+  paymentType: string;
+  currency?: string;
+  value?: number;
+  items: AnalyticsItem[];
+}): void {
+  if (typeof window === 'undefined') return;
+  const { paymentType, currency = CURRENCY, value, items } = params;
+  const eventParams: Record<string, unknown> = {
+    payment_type: paymentType,
+    currency,
+    items: ensureItems(items),
+  };
+  if (value != null) eventParams.value = value;
+  sendGtagEvent('add_payment_info', eventParams);
+}
+
+/**
  * Fire purchase once per order (GA4 ecommerce). Deduped by orderId via localStorage.
+ * ONLY for confirmed Stripe payment success (real payment).
  */
 export function trackPurchase(params: {
   orderId: string;
@@ -258,6 +280,36 @@ export function trackPurchase(params: {
   }
   sendGtagEvent('purchase', {
     transaction_id: params.transactionId ?? orderId,
+    value,
+    currency,
+    items: ensureItems(items),
+  });
+}
+
+const GENERATE_LEAD_DEDUPE_PREFIX = 'lanna-bloom_sent_generate_lead_';
+
+/**
+ * Fire generate_lead when order is created via Place Order (bank transfer / PromptPay).
+ * NOT for Stripe – use purchase for confirmed Stripe payment.
+ * Deduped by orderId via localStorage.
+ */
+export function trackGenerateLead(params: {
+  orderId: string;
+  value: number;
+  currency?: string;
+  items: AnalyticsItem[];
+}): void {
+  if (typeof window === 'undefined') return;
+  const { orderId, value, currency = CURRENCY, items } = params;
+  const storageKey = `${GENERATE_LEAD_DEDUPE_PREFIX}${orderId}`;
+  try {
+    if (window.localStorage.getItem(storageKey) === '1') return;
+    window.localStorage.setItem(storageKey, '1');
+  } catch {
+    // ignore
+  }
+  sendGtagEvent('generate_lead', {
+    order_id: orderId,
     value,
     currency,
     items: ensureItems(items),

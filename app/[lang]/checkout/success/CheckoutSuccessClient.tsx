@@ -8,7 +8,7 @@ import { PaymentNote } from '@/components/PaymentNote';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
-import { trackPurchase } from '@/lib/analytics';
+import { trackPurchase, trackGenerateLead } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 
 const POLL_INTERVAL_MS = 2500;
@@ -100,7 +100,7 @@ export function CheckoutSuccessClient({
         setOrder(data);
         fireAdsConversion(data);
         if (data?.pricing?.grandTotal != null && data?.items?.length) {
-          const purchaseItems: AnalyticsItem[] = data.items.map((it, i) => ({
+          const analyticsItems: AnalyticsItem[] = data.items.map((it, i) => ({
             item_id: it.bouquetId,
             item_name: it.bouquetTitle,
             item_variant: it.size,
@@ -108,13 +108,24 @@ export function CheckoutSuccessClient({
             quantity: 1,
             index: i,
           }));
-          trackPurchase({
-            orderId,
-            value: data.pricing.grandTotal,
-            currency: 'THB',
-            items: purchaseItems,
-            transactionId: orderId,
-          });
+          const value = data.pricing.grandTotal;
+          const items = analyticsItems;
+          if (sessionId && stripeStatus === 'paid') {
+            trackPurchase({
+              orderId,
+              value,
+              currency: 'THB',
+              items,
+              transactionId: orderId,
+            });
+          } else if (!sessionId) {
+            trackGenerateLead({
+              orderId,
+              value,
+              currency: 'THB',
+              items,
+            });
+          }
         }
       })
       .catch(() => {

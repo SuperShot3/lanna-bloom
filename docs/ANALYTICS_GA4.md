@@ -8,31 +8,37 @@
 | **Measurement ID** | `process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID` or fallback `G-KBRBDXFBM1` (single ID; no separate dev/prod in code) |
 | **Environment** | One ID used for all; use different `NEXT_PUBLIC_GA_MEASUREMENT_ID` per env (e.g. dev property) if needed |
 | **Consent / cookie banner** | Not present in codebase; no Consent Mode implementation |
-| **Events before changes** | `messenger_click`, `click_line` / `click_whatsapp` / `click_telegram`, `view_item`, `add_to_cart`, `begin_checkout`, `ads_conversion_Success_Page_1` (success page only) |
+| **Ecommerce funnel** | `view_item`, `view_item_list`, `select_item`, `add_to_cart`, `view_cart`, `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`, `generate_lead` |
 
 **Google Tag Manager (optional)**  
 Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pushed to `dataLayer`; the app does **not** load gtag, so there is no duplicate tracking. In GTM, add a GA4 Configuration tag (your Measurement ID) and GA4 Event tags (or a single tag with triggers) that fire on the same event names and pass the pushed parameters through to GA4. Container ID defaults to `GTM-T4JGL85T`; override with `NEXT_PUBLIC_GTM_ID`.
 
 ---
 
-## 2. Files edited / created
+## 2. Key events strategy (GA4 Admin)
 
-| File | Change |
-|------|--------|
-| **lib/analytics.ts** | Rewritten: GA4 item schema (`item_variant`), all ecommerce helpers, `trackViewItemList`, `trackSelectItem`, `trackRemoveFromCart`, `trackViewCart`, `trackAddShippingInfo`, `trackPurchase` (localStorage dedupe), `trackContactClick`, `trackLanguageChange`; in-memory dedupe for list/cart/view_item; dev-only `console.debug` |
-| **components/GoogleAnalytics.tsx** | Client component: `gtag('config', ..., { currency: 'THB' })`, added `GA4PageView` to send `page_view` on App Router route change |
-| **components/CatalogWithFilters.tsx** | `useEffect` to fire `trackViewItemList('catalog', items)` on load with visible bouquets |
-| **components/BouquetCard.tsx** | On card link click (non-swipe): `trackSelectItem('catalog', item)` |
-| **app/[lang]/catalog/[slug]/ProductPageClient.tsx** | `trackViewItem` items include `item_variant` (size label) |
-| **components/ProductOrderBlock.tsx** | `trackAddToCart` items include `item_variant: selectedSize.label` |
-| **app/[lang]/cart/CartPageClient.tsx** | `trackViewCart` + `trackBeginCheckout` once per cart view; `trackRemoveFromCart` on remove button; `trackAddShippingInfo` when district (and delivery tier) set |
-| **app/[lang]/checkout/success/CheckoutSuccessClient.tsx** | After order fetch: `trackPurchase(orderId, value, items)` (deduped by `localStorage`: `lanna-bloom_sent_purchase_{orderId}`); kept `ads_conversion_Success_Page_1` |
-| **components/LanguageSwitcher.tsx** | `onClick` on language link: `trackLanguageChange(alternativeLang)` |
-| **docs/ANALYTICS_GA4.md** | This file (audit, checklist, event table) |
+**Primary key events** – Mark these in GA4 Admin → Data display → Events → toggle "Mark as key event":
+
+| Event | When it fires | Purpose |
+|-------|----------------|---------|
+| **purchase** | Stripe success page, only when payment is confirmed (`status === 'paid'`) | Real revenue (card payment) |
+| **generate_lead** | Success page after Place Order (bank transfer / PromptPay); order created via `/api/orders` | Lead / order created (awaiting bank transfer) |
+
+**Do NOT mark as key events:** `contact_click`, `messenger_click`, `click_line`, `click_whatsapp`, `click_telegram` – these are tracked for optimization but are not primary conversions.
 
 ---
 
-## 3. How to verify in GA4 DebugView + Tag Assistant
+## 3. Files edited / created
+
+| File | Change |
+|------|--------|
+| **lib/analytics.ts** | `trackAddPaymentInfo`, `trackGenerateLead`; `trackPurchase` only for Stripe; `trackGenerateLead` for bank transfer; localStorage dedupe for both |
+| **app/[lang]/cart/CartPageClient.tsx** | `trackAddPaymentInfo` when user clicks "Pay with Stripe" |
+| **app/[lang]/checkout/success/CheckoutSuccessClient.tsx** | Split: `trackPurchase` only when `sessionId && stripeStatus === 'paid'`; `trackGenerateLead` when `!sessionId` (Place Order flow) |
+
+---
+
+## 4. How to verify in GA4 DebugView + Tag Assistant
 
 1. **DebugView**
    - In GA4: **Admin → DebugView** (or **Configure → DebugView**).
@@ -51,7 +57,9 @@ Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pu
    - [ ] **remove_from_cart** – Fires when clicking remove on cart line; params: `items[]`, `value`, `currency`.
    - [ ] **begin_checkout** – Fires once when cart page with items is viewed; params: `items[]`, `value`, `currency`.
    - [ ] **add_shipping_info** – Fires once when user has selected delivery district (and tier); params: `shipping_tier`, `items[]`, `value`, `currency`.
-   - [ ] **purchase** – Fires once on success page per order; params: `transaction_id`, `value`, `currency`, `items[]`. Refresh success page: no second `purchase` (localStorage dedupe).
+   - [ ] **add_payment_info** – Fires when user clicks "Pay with Stripe"; params: `payment_type: 'card'`, `items[]`, `value`, `currency`.
+   - [ ] **purchase** – Fires **only** on Stripe success when payment confirmed; params: `transaction_id`, `value`, `currency`, `items[]`. No duplicate on refresh.
+   - [ ] **generate_lead** – Fires **only** on success page after Place Order (bank transfer); params: `order_id`, `value`, `currency`, `items[]`. No duplicate on refresh.
    - [ ] **contact_click** – Fires when clicking LINE/WhatsApp/Telegram (header, success, etc.); params: `channel`, `page_path` (and optional `bouquet_id` if ever added).
    - [ ] **language_change** – Fires when clicking the language switcher; params: `language`, `page_path`.
    - [ ] **messenger_click** / **click_line** / **click_whatsapp** / **click_telegram** – Still fire as before for existing reports.
@@ -62,7 +70,7 @@ Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pu
 
 ---
 
-## 4. Event → Where it fires → Key params
+## 5. Event → Where it fires → Key params
 
 | Event name | Where it fires | Key params |
 |------------|----------------|------------|
@@ -75,7 +83,9 @@ Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pu
 | **remove_from_cart** | “Remove” on a cart line | `items[]` (removed item), `value`, `currency` |
 | **begin_checkout** | Cart page with items (once per cart view) | `items[]`, `value`, `currency` |
 | **add_shipping_info** | User has selected delivery district (once) | `shipping_tier`, `items[]`, `value`, `currency` |
-| **purchase** | Checkout success page after order created (once per orderId) | `transaction_id`, `value`, `currency`, `items[]` |
+| **add_payment_info** | User clicks "Pay with Stripe" (card payment) | `payment_type`, `items[]`, `value`, `currency` |
+| **purchase** | Success page, **Stripe only** (payment confirmed) | `transaction_id`, `value`, `currency`, `items[]` |
+| **generate_lead** | Success page, **Place Order only** (bank transfer) | `order_id`, `value`, `currency`, `items[]` |
 | **contact_click** | LINE / WhatsApp / Telegram button click | `channel`, `page_path`, optional `bouquet_id` |
 | **language_change** | Language switcher click | `language`, `page_path` |
 | **messenger_click** | Same as contact buttons (legacy) | `channel`, `page_location`, `link_url` |
@@ -84,9 +94,10 @@ Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pu
 
 ---
 
-## 5. Dedupe and reliability
+## 6. Dedupe and reliability
 
 - **In-memory (session):** `view_item` (by `item_id`), `view_item_list` (by list name), `view_cart` (once), so re-renders or filter changes don’t double-fire.
 - **Cart page:** Refs (`beginCheckoutFiredRef`, `viewCartFiredRef`, `addShippingInfoFiredRef`) ensure one fire per cart view / shipping step.
-- **Purchase:** `localStorage` key `lanna-bloom_sent_purchase_{orderId}`; refresh on success page does not re-send `purchase`.
+- **Purchase:** `localStorage` key `lanna-bloom_sent_purchase_{orderId}`; fires **only** for Stripe confirmed payment. Refresh does not re-send.
+- **Generate lead:** `localStorage` key `lanna-bloom_sent_generate_lead_{orderId}`; fires **only** for Place Order (bank transfer). Refresh does not re-send.
 - **Dev:** `NODE_ENV === 'development'` enables `console.debug('[GA4]', eventName, eventParams)` in `lib/analytics.ts`.

@@ -97,6 +97,17 @@ lib/
   messenger.ts      # LINE, WhatsApp, Telegram URLs and message builder
 ```
 
+## Analytics (GA4)
+
+GA4 ecommerce events are sent from `lib/analytics.ts`. **Key events** (mark in GA4 Admin → Events):
+
+| Event | Where it fires |
+|-------|----------------|
+| **purchase** | Stripe success page, only when payment is confirmed |
+| **generate_lead** | Success page after Place Order (bank transfer / PromptPay) |
+
+Do **not** mark `contact_click`, `messenger_click`, `click_line`, `click_whatsapp`, `click_telegram` as key events. See **docs/ANALYTICS_GA4.md** for full event list, test checklist, and DebugView verification.
+
 ## Configuration
 
 - **Messenger (LINE, WhatsApp, Telegram)** — Edit `lib/messenger.ts`: phone number, LINE OA ID and lin.ee link, and (optionally) Facebook page. Header contact icons and “order via” buttons use these.
