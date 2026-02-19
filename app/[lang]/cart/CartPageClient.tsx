@@ -488,14 +488,32 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
 
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
+  const [showPaymentLockedHint, setShowPaymentLockedHint] = useState(false);
+
+  const isDeliveryValidNow = isDeliveryValid(delivery, tBuyNow as Record<string, string | number>);
+  const isContactValidNow = isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>);
+  const isPaymentUnlocked = isDeliveryValidNow && isContactValidNow;
+
+  useEffect(() => {
+    if (isPaymentUnlocked) setShowPaymentLockedHint(false);
+  }, [isPaymentUnlocked]);
 
   const toggleMobileSection = (section: AccordionSection) => {
+    if (section === 'payment' && !isPaymentUnlocked) {
+      setShowPaymentLockedHint(true);
+      setMobileOpenSection((prev) => prev);
+      const firstIncomplete = !isDeliveryValidNow ? deliverySectionRef : contactSectionRef;
+      setTimeout(() => firstIncomplete.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      return;
+    }
+    setShowPaymentLockedHint(false);
     setMobileOpenSection((prev) => (prev === section ? null : section));
   };
 
   const handleMobileDeliverySave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)) return;
+    setShowPaymentLockedHint(false);
     setMobileCompleted((prev) => new Set(prev).add('delivery'));
     setMobileOpenSection('contact');
     setTimeout(() => contactSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
@@ -504,6 +522,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handleMobileContactSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)) return;
+    setShowPaymentLockedHint(false);
     setMobileCompleted((prev) => new Set(prev).add('contact'));
     setMobileOpenSection('payment');
     setTimeout(() => paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
@@ -949,8 +968,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             >
               <div className="cart-accordion-header">
                 <span className="cart-accordion-title">{lang === 'th' ? 'สินค้าในตะกร้า' : 'In Your Bag'}</span>
-                {mobileCompleted.has('bag') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('bag'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
-                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                <div className="cart-accordion-header-actions">
+                  {mobileCompleted.has('bag') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('bag'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                </div>
               </div>
               {mobileOpenSection === 'bag' && (
                 <div className="cart-accordion-body cart-accordion-body-bag" onClick={(e) => e.stopPropagation()}>
@@ -1035,8 +1056,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             >
               <div className="cart-accordion-header">
                 <span className="cart-accordion-title">{lang === 'th' ? 'การจัดส่ง' : 'Delivery Options'}</span>
-                {mobileCompleted.has('delivery') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('delivery'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
-                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                <div className="cart-accordion-header-actions">
+                  {mobileCompleted.has('delivery') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('delivery'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                </div>
               </div>
               {mobileOpenSection === 'delivery' && (
                 <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
@@ -1065,8 +1088,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             >
               <div className="cart-accordion-header">
                 <span className="cart-accordion-title">{lang === 'th' ? 'ข้อมูลติดต่อ' : 'Contact'}</span>
-                {mobileCompleted.has('contact') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('contact'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
-                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                <div className="cart-accordion-header-actions">
+                  {mobileCompleted.has('contact') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('contact'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                </div>
               </div>
               {mobileOpenSection === 'contact' && (
                 <div className="cart-accordion-body cart-accordion-body-contact" onClick={(e) => e.stopPropagation()}>
@@ -1089,8 +1114,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             >
               <div className="cart-accordion-header">
                 <span className="cart-accordion-title">{lang === 'th' ? 'ชำระเงิน' : 'Payment'}</span>
-                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                <div className="cart-accordion-header-actions">
+                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
+                </div>
               </div>
+              {showPaymentLockedHint && !isPaymentUnlocked && (
+                <p className="cart-accordion-payment-locked-hint">
+                  {lang === 'th' ? 'กรุณากรอกข้อมูลการจัดส่งและข้อมูลติดต่อให้ครบก่อน เพื่อเปิดการชำระเงิน' : 'Complete Delivery and Contact details to open payment.'}
+                </p>
+              )}
               {mobileOpenSection === 'payment' && (
                 <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
                   <div className="cart-place-order-buttons cart-mobile-payment-buttons">
@@ -1690,33 +1722,32 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             text-align: center;
           }
           .cart-mobile-title {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.3rem;
+            font-weight: 600;
             color: var(--text);
             margin: 0 0 4px;
           }
           .cart-mobile-subtitle {
             font-size: 0.95rem;
-            color: var(--text-muted);
+            font-weight: 700;
+            color: var(--text);
             margin: 0;
           }
           .cart-mobile-accordion {
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: 8px;
           }
           .cart-accordion-section {
             background: #fff;
-            border-bottom: 1px solid var(--border);
-          }
-          .cart-accordion-section:last-child {
-            border-bottom: none;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
           }
           .cart-accordion-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 16px 0;
+            padding: 16px 20px;
             cursor: pointer;
             user-select: none;
           }
@@ -1724,23 +1755,42 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             font-size: 1.1rem;
             font-weight: 700;
             color: var(--text);
+            flex: 1;
+            min-width: 0;
+          }
+          .cart-accordion-header-actions {
+            flex-shrink: 0;
+            width: 20%;
+            min-width: 80px;
+            max-width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-left: 16px;
           }
           .cart-accordion-edit {
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--accent);
-            margin-right: 8px;
           }
           .cart-accordion-chevron {
             font-size: 0.7rem;
             color: var(--text-muted);
             transition: transform 0.2s;
           }
+          .cart-accordion-payment-locked-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: -8px 20px 12px;
+            padding: 0 0 12px;
+            line-height: 1.4;
+          }
           .cart-accordion-open .cart-accordion-chevron {
             transform: rotate(180deg);
           }
           .cart-accordion-body {
-            padding-bottom: 20px;
+            padding: 0 20px 20px;
           }
           .cart-accordion-body .buy-now-input,
           .cart-accordion-body .buy-now-select,
