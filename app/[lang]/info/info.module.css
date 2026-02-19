@@ -4,6 +4,23 @@
   background: var(--bg);
 }
 
+@media (max-width: 600px) {
+  .infoPage {
+    padding: 24px 0 48px;
+  }
+  .infoPage .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .infoPage .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 .infoFeatured {
   display: grid;
   gap: 32px;

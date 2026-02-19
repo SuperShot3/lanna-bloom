@@ -6,6 +6,13 @@
  * If .th.mdx is missing, falls back to .en.mdx for Thai locale.
  */
 
+/** CTA link shown at bottom of article. href is path without lang (e.g. /catalog, /catalog?category=roses) */
+export type ArticleCtaLink = {
+  label: string;
+  labelTh: string;
+  href: string;
+};
+
 export type ArticleMeta = {
   slug: string;
   title: string;
@@ -16,6 +23,8 @@ export type ArticleMeta = {
   excerptTh?: string;
   publishedAt: string; // ISO date
   featured?: boolean;
+  /** CTA links at bottom of article. If empty, default "Browse bouquets" link is shown. */
+  ctaLinks?: ArticleCtaLink[];
   cover:
     | {
         type: 'gradient';
@@ -41,6 +50,10 @@ export const articles: ArticleMeta[] = [
       gradientCss: 'linear-gradient(135deg, #f5e6e8 0%, #e8dfd0 50%, #e8f0ed 100%)',
       center: { kind: 'emoji', value: '🌸' },
     },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Order via LINE / WhatsApp', labelTh: 'สั่งผ่าน LINE / WhatsApp', href: '/contact' },
+    ],
   },
   {
     slug: 'rose-bouquets-chiang-mai', // URL-friendly, lowercase, hyphens (e.g. birthday-flowers)
@@ -55,6 +68,12 @@ export const articles: ArticleMeta[] = [
       gradientCss: 'linear-gradient(135deg, #fde2e4 0%, #f8edeb 50%, #e8dfd0 100%)',
       center: { kind: 'emoji', value: '🚕' },
     },
+    ctaLinks: [
+      { label: 'Browse rose bouquets', labelTh: 'ดูช่อกุหลาบ', href: '/catalog?category=roses' },
+      { label: 'Red roses', labelTh: 'กุหลาบแดง', href: '/catalog?category=roses&colors=red' },
+      { label: 'White roses', labelTh: 'กุหลาบขาว', href: '/catalog?category=roses&colors=white' },
+      { label: 'Order now', labelTh: 'สั่งซื้อเลย', href: '/catalog' },
+    ],
   },
   {
     slug: 'same-day-flower-delivery-chiang-mai',
@@ -70,6 +89,10 @@ export const articles: ArticleMeta[] = [
       gradientCss: 'linear-gradient(135deg, #e8f0ed 0%, #c8d9b8 50%, #a8c494 100%)',
       center: { kind: 'emoji', value: '🚚' },
     },
+    ctaLinks: [
+      { label: 'Order same-day delivery', labelTh: 'สั่งจัดส่งวันเดียว', href: '/catalog' },
+      { label: 'Message us to order', labelTh: 'ทักสั่งซื้อ', href: '/contact' },
+    ],
   },
   {
     slug: 'flower-delivery-to-hospitals-chiang-mai', // URL-friendly, lowercase, hyphens (e.g. birthday-flowers)
@@ -84,6 +107,10 @@ export const articles: ArticleMeta[] = [
       gradientCss: 'linear-gradient(135deg, #fff1f2 0%, #f5f3ff 50%, #ecfeff 100%)',
       center: { kind: 'emoji', value: '🏥' },
     },
+    ctaLinks: [
+      { label: 'Order flowers for delivery', labelTh: 'สั่งดอกไม้จัดส่ง', href: '/catalog' },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
   },
 ];
 
@@ -101,6 +128,17 @@ export function getArticleTitle(article: ArticleMeta, lang: string): string {
 export function getArticleExcerpt(article: ArticleMeta, lang: string): string {
   if (lang === 'th' && article.excerptTh) return article.excerptTh;
   return article.excerpt;
+}
+
+const DEFAULT_CTA: ArticleCtaLink[] = [
+  { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+  { label: 'Order via LINE / WhatsApp', labelTh: 'สั่งผ่าน LINE / WhatsApp', href: '/contact' },
+];
+
+/** Get CTA links for article. Uses article's ctaLinks or default. */
+export function getArticleCtaLinks(article: ArticleMeta, lang: string): ArticleCtaLink[] {
+  const links = article.ctaLinks?.length ? article.ctaLinks : DEFAULT_CTA;
+  return links;
 }
 
 export function getFeaturedArticle(): ArticleMeta {

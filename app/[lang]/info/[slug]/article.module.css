@@ -9,6 +9,24 @@
   margin: 0 auto;
 }
 
+@media (max-width: 600px) {
+  .infoArticlePage {
+    padding: 24px 0 48px;
+  }
+  .infoArticle {
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 400px) {
+  .infoArticle {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 .infoArticleHeader {
   margin-bottom: 40px;
 }
@@ -79,4 +97,55 @@
 .infoArticleBody :global(.info-article-li) {
   margin-bottom: 0.5em;
   color: var(--text-muted);
+}
+
+/* Article CTA section */
+.infoArticleCta {
+  margin-top: 2.5em;
+  padding-top: 2em;
+  border-top: 1px solid var(--border);
+}
+
+.infoArticleCtaTitle {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 1rem;
+}
+
+.infoArticleCtaLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.infoArticleCtaLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.infoArticleCtaLink:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.infoArticleCtaLinkSecondary {
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+.infoArticleCtaLinkSecondary:hover {
+  background: var(--accent-soft);
 }

@@ -6,8 +6,9 @@ import path from 'path';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
-import { getArticleBySlug, getArticleTitle, getArticleExcerpt } from '../_data/articles';
+import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLinks } from '../_data/articles';
 import { ShareButton } from '@/components/ShareButton';
+import { ArticleCta } from './ArticleCta';
 import styles from './article.module.css';
 
 export const revalidate = 3600;
@@ -96,6 +97,7 @@ export default async function InfoArticlePage({
 
   const articleTitle = getArticleTitle(article, lang);
   const articleExcerpt = getArticleExcerpt(article, lang);
+  const ctaLinks = getArticleCtaLinks(article, lang);
   const guidesBackLabel = lang === 'th' ? '← คู่มือ' : '← Guides';
 
   const base = getBaseUrl();
@@ -172,6 +174,7 @@ export default async function InfoArticlePage({
         </header>
         <div className={styles.infoArticleBody}>
           <MDXRemote source={mdxSource} components={mdxComponents} />
+          <ArticleCta links={ctaLinks} lang={lang} />
         </div>
       </article>
     </div>
