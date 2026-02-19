@@ -6,6 +6,7 @@ import Image from 'next/image';
 import './ProductGallery.css';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
+const SWIPE_THRESHOLD_PX = 30;
 
 export function ProductGallery({
   images,
@@ -24,6 +25,8 @@ export function ProductGallery({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const lightboxRef = useRef<HTMLDivElement>(null);
   const [internalActive, setInternalActive] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const didSwipeRef = useRef(false);
   const isControlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = isControlled ? activeIndex : internalActive;
   const setActive = isControlled ? onActiveChange! : setInternalActive;
@@ -75,7 +78,28 @@ export function ProductGallery({
     }
   }, [emblaApi, isControlled, activeIndex]);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartX.current == null) return;
+      const endX = e.changedTouches[0].clientX;
+      const delta = Math.abs(endX - touchStartX.current);
+      touchStartX.current = null;
+      if (delta >= SWIPE_THRESHOLD_PX) {
+        didSwipeRef.current = true;
+        setTimeout(() => {
+          didSwipeRef.current = false;
+        }, 400);
+      }
+    },
+    []
+  );
+
   const handleMainClick = useCallback(() => {
+    if (didSwipeRef.current) return;
     setLightboxOpen(true);
   }, []);
 
@@ -111,6 +135,8 @@ export function ProductGallery({
       <div
         className="gallery-main"
         onClick={handleMainClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}

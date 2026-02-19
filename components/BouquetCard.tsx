@@ -54,9 +54,10 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         didSwipeRef.current = true;
         if (delta < 0) goNext();
         else goPrev();
+        // iOS Safari can fire click 300–400ms after touchend; use 450ms to avoid accidental navigation
         setTimeout(() => {
           didSwipeRef.current = false;
-        }, 300);
+        }, 450);
       }
     },
     [canSwipe, goNext, goPrev]
@@ -78,7 +79,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           else goPrev();
           setTimeout(() => {
             didSwipeRef.current = false;
-          }, 300);
+          }, 450);
         }
       };
       mouseUpListenerRef.current = onMouseUp;
@@ -189,6 +190,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         .card-link {
           display: block;
           color: inherit;
+          touch-action: manipulation; /* Removes 300ms tap delay on iOS, reduces click-after-swipe glitch */
         }
         .card-link:focus-visible {
           outline: 2px solid var(--accent);
