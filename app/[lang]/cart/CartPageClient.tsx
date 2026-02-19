@@ -213,6 +213,40 @@ function clearCartFormStorage() {
 const PHONE_MIN_DIGITS = 8;
 const PHONE_MAX_DIGITS = 15;
 
+/** Validation helpers for accordion Save & Continue (same rules as handlePlaceOrder). */
+function isDeliveryValid(
+  delivery: DeliveryFormValues,
+  _tBuyNow: Record<string, string | number>
+): boolean {
+  if (!delivery.deliveryDistrict) return false;
+  const addressTrim = delivery.addressLine?.trim() ?? '';
+  if (addressTrim.length < 10 || addressTrim.length > 300) return false;
+  if (!delivery.date || !delivery.timeSlot) return false;
+  return true;
+}
+
+function isContactValid(
+  customerName: string,
+  phoneNational: string,
+  contactPreference: ContactPreferenceOption[],
+  customerEmail: string,
+  isOrderingForSomeoneElse: boolean,
+  recipientName: string,
+  recipientPhoneNational: string,
+  _t: Record<string, string | number>
+): boolean {
+  if (!customerName.trim()) return false;
+  if (!phoneNational || phoneNational.length < PHONE_MIN_DIGITS || phoneNational.length > PHONE_MAX_DIGITS) return false;
+  if (!/^\d+$/.test(phoneNational)) return false;
+  if (contactPreference.length === 0) return false;
+  if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return false;
+  if (isOrderingForSomeoneElse) {
+    if (!recipientName.trim() || !recipientPhoneNational) return false;
+    if (recipientPhoneNational.length < PHONE_MIN_DIGITS) return false;
+  }
+  return true;
+}
+
 /** Flag + code only (same for all locales). */
 const COUNTRY_CODES: { code: string; label: string }[] = [
   { code: '66', label: '🇹🇭 (+66)' },
@@ -405,6 +439,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     );
   });
 
+  type AccordionSection = 'bag' | 'delivery' | 'contact' | 'payment';
+  const [mobileOpenSection, setMobileOpenSection] = useState<AccordionSection | null>('delivery');
+  const deliverySectionRef = useRef<HTMLDivElement>(null);
+  const contactSectionRef = useRef<HTMLDivElement>(null);
+  const paymentSectionRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (items.length === 0) return;
     saveCartFormToStorage({
@@ -436,6 +476,38 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
+
+  const itemsTotalVal = cartValue(items);
+  const hasChosenLocation = !!delivery.deliveryDistrict;
+  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
+  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
+  const deliveryFeeVal = hasChosenLocation ? calcDeliveryFeeTHB({ district, isMueangCentral }) : 0;
+  const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
+  const referralVal = getStoredReferral();
+  const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, !!referralVal);
+  const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
+
+  const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
+
+  const toggleMobileSection = (section: AccordionSection) => {
+    setMobileOpenSection((prev) => (prev === section ? null : section));
+  };
+
+  const handleMobileDeliverySave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)) return;
+    setMobileCompleted((prev) => new Set(prev).add('delivery'));
+    setMobileOpenSection('contact');
+    setTimeout(() => contactSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
+
+  const handleMobileContactSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)) return;
+    setMobileCompleted((prev) => new Set(prev).add('contact'));
+    setMobileOpenSection('payment');
+    setTimeout(() => paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
 
   const toggleContactPreference = (option: ContactPreferenceOption) => {
     setContactPreference((prev) =>
@@ -473,10 +545,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     if (!delivery.timeSlot) {
       setOrderError(tBuyNow.timeSlotRequired);
-      return;
-    }
-    if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
-      setOrderError(tBuyNow.pinRequired);
       return;
     }
     if (!customerName.trim()) {
@@ -589,10 +657,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     if (!delivery.timeSlot) {
       setOrderError(tBuyNow.timeSlotRequired);
-      return;
-    }
-    if (delivery.deliveryLat == null || delivery.deliveryLng == null) {
-      setOrderError(tBuyNow.pinRequired);
       return;
     }
     if (!customerName.trim()) {
@@ -714,9 +778,357 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     );
   }
 
+  const contactFormContent = (idPrefix: string) => (
+    <div className={`cart-contact-info ${idPrefix ? 'cart-mobile-contact-fields' : ''}`}>
+      <p className="cart-section-label">{t.senderSection}</p>
+      <div className="cart-contact-field">
+        <label className="cart-contact-label" htmlFor={`${idPrefix}cart-customer-name`}>
+          {t.yourName} <span className="cart-required" aria-hidden>*</span>
+        </label>
+        <input
+          id={`${idPrefix}cart-customer-name`}
+          type="text"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+          placeholder={t.yourNamePlaceholder}
+          className="cart-contact-input"
+          aria-required
+          autoComplete="name"
+        />
+      </div>
+      <div className="cart-contact-field">
+        <label className="cart-contact-label" htmlFor={`${idPrefix}cart-phone`}>
+          {t.phoneNumber} <span className="cart-required" aria-hidden>*</span>
+        </label>
+        <div className="cart-phone-row">
+          <select
+            id={`${idPrefix}cart-country-code`}
+            value={countryCode}
+            onChange={(e) => setCountryCode(e.target.value)}
+            className="cart-phone-country-select"
+            aria-label={t.countryCode}
+          >
+            {COUNTRY_CODES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
+            ))}
+          </select>
+          <input
+            id={`${idPrefix}cart-phone`}
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={phoneNational}
+            onChange={handlePhoneInput}
+            placeholder={t.phoneNumberPlaceholder}
+            className="cart-contact-input cart-phone-input"
+            autoComplete="tel-national"
+            maxLength={PHONE_MAX_DIGITS}
+            aria-describedby={`${idPrefix}cart-phone-hint`}
+          />
+        </div>
+        <p id={`${idPrefix}cart-phone-hint`} className="cart-phone-hint">
+          {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
+        </p>
+      </div>
+      <div className="cart-contact-field">
+        <label className="cart-contact-label" htmlFor={`${idPrefix}cart-email`}>
+          {t.emailLabel ?? 'Email'}
+        </label>
+        <input
+          id={`${idPrefix}cart-email`}
+          type="email"
+          value={customerEmail}
+          onChange={(e) => setCustomerEmail(e.target.value)}
+          placeholder={t.emailPlaceholder ?? 'e.g. you@example.com'}
+          className="cart-contact-input"
+          autoComplete="email"
+        />
+        <p className="cart-phone-hint">{t.emailHint ?? 'For order confirmation notifications (optional)'}</p>
+      </div>
+      <label className="cart-contact-checkbox-label cart-ordering-for-else">
+        <input
+          type="checkbox"
+          checked={isOrderingForSomeoneElse}
+          onChange={(e) => setIsOrderingForSomeoneElse(e.target.checked)}
+          className="cart-contact-checkbox"
+        />
+        <span>{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
+      </label>
+      {isOrderingForSomeoneElse && (
+        <>
+          <p className="cart-section-label">{t.recipientSection}</p>
+          <div className="cart-contact-field">
+            <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-name`}>
+              {t.recipientName} <span className="cart-required" aria-hidden>*</span>
+            </label>
+            <input
+              id={`${idPrefix}cart-recipient-name`}
+              type="text"
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
+              placeholder={t.recipientNamePlaceholder}
+              className="cart-contact-input"
+              aria-required
+              autoComplete="name"
+            />
+          </div>
+          <div className="cart-contact-field">
+            <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-phone`}>
+              {t.recipientPhone} <span className="cart-required" aria-hidden>*</span>
+            </label>
+            <div className="cart-phone-row">
+              <select
+                id={`${idPrefix}cart-recipient-country-code`}
+                value={recipientCountryCode}
+                onChange={(e) => setRecipientCountryCode(e.target.value)}
+                className="cart-phone-country-select"
+                aria-label={t.countryCode}
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+              <input
+                id={`${idPrefix}cart-recipient-phone`}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={recipientPhoneNational}
+                onChange={handleRecipientPhoneInput}
+                placeholder={t.recipientPhonePlaceholder}
+                className="cart-contact-input cart-phone-input"
+                autoComplete="tel-national"
+                maxLength={PHONE_MAX_DIGITS}
+                aria-describedby={`${idPrefix}cart-recipient-phone-hint`}
+              />
+            </div>
+            <p id={`${idPrefix}cart-recipient-phone-hint`} className="cart-phone-hint">
+              {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
+            </p>
+          </div>
+        </>
+      )}
+      <fieldset className="cart-contact-checkboxes" aria-label={t.preferredContact}>
+        <legend className="cart-contact-legend">
+          {t.preferredContact} <span className="cart-required" aria-hidden>*</span>
+        </legend>
+        {CONTACT_OPTIONS.map((option) => (
+          <label key={option} className="cart-contact-checkbox-label">
+            <input
+              type="checkbox"
+              checked={contactPreference.includes(option)}
+              onChange={() => toggleContactPreference(option)}
+              className="cart-contact-checkbox"
+            />
+            <span>
+              {option === 'phone' && t.contactPhone}
+              {option === 'line' && t.contactLine}
+              {option === 'whatsapp' && t.contactWhatsApp}
+              {option === 'telegram' && t.contactTelegram}
+            </span>
+          </label>
+        ))}
+      </fieldset>
+    </div>
+  );
+
   return (
     <div className="cart-page">
       <div className="container">
+        <div className="cart-mobile-view">
+          <header className="cart-mobile-header">
+            <h1 className="cart-mobile-title">{lang === 'th' ? 'ชำระเงิน' : 'Checkout'}</h1>
+            <p className="cart-mobile-subtitle">
+              {items.length} {lang === 'th' ? 'รายการ' : 'item(s)'} — ฿{grandTotalVal.toLocaleString()}
+            </p>
+          </header>
+          <div className="cart-mobile-accordion">
+            <div
+              className={`cart-accordion-section ${mobileOpenSection === 'bag' ? 'cart-accordion-open' : ''}`}
+              onClick={() => toggleMobileSection('bag')}
+            >
+              <div className="cart-accordion-header">
+                <span className="cart-accordion-title">{lang === 'th' ? 'สินค้าในตะกร้า' : 'In Your Bag'}</span>
+                {mobileCompleted.has('bag') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('bag'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+              </div>
+              {mobileOpenSection === 'bag' && (
+                <div className="cart-accordion-body cart-accordion-body-bag" onClick={(e) => e.stopPropagation()}>
+                  <div className="cart-list cart-mobile-list">
+                    {items.map((item, index) => {
+                      const name = lang === 'th' ? item.nameTh : item.nameEn;
+                      const addOnsSummary = buildAddOnsSummaryForDisplay(item.addOns, tBuyNow as Record<string, string | number>);
+                      return (
+                        <div key={`${item.bouquetId}-${index}`} className="cart-item">
+                          {item.imageUrl && (
+                            <div className="cart-item-image-wrap">
+                              <Image src={item.imageUrl} alt="" width={80} height={80} className="cart-item-image" sizes="80px" />
+                            </div>
+                          )}
+                          <div className="cart-item-main">
+                            <h3 className="cart-item-name">{name}</h3>
+                            <p className="cart-item-size">{item.size.label} — ฿{item.size.price.toLocaleString()}</p>
+                            {addOnsSummary && <p className="cart-item-addons">{addOnsSummary}</p>}
+                          </div>
+                          <button
+                            type="button"
+                            className="cart-item-remove"
+                            onClick={() => {
+                              const removed = items[index];
+                              trackRemoveFromCart({
+                                currency: 'THB',
+                                value: removed.size.price + (removed.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0),
+                                items: [{ item_id: removed.bouquetId, item_name: lang === 'th' ? removed.nameTh : removed.nameEn, price: removed.size.price + (removed.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0), quantity: 1, index: 0, item_variant: removed.size.label }],
+                              });
+                              removeItem(index);
+                            }}
+                            aria-label={t.remove}
+                          >
+                            {t.remove}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="cart-order-summary cart-mobile-summary">
+                    <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
+                    {items.map((item, i) => {
+                      const name = lang === 'th' ? item.nameTh : item.nameEn;
+                      const lineTotal = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+                      return (
+                        <div key={`mob-sum-${item.bouquetId}-${i}`} className="cart-order-summary-row cart-order-summary-item">
+                          <span>{name} — {item.size.label}</span>
+                          <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="cart-order-summary-row">
+                      <span>{t.deliveryFeeLabel}</span>
+                      <span className="cart-order-summary-amount">฿{deliveryFeeVal.toLocaleString()}</span>
+                    </div>
+                    {referralVal && referralDiscountVal > 0 && (
+                      <div className="cart-order-summary-row cart-order-summary-referral">
+                        <span>{(t.referralDiscountLabel ?? 'Referral discount ({code})').replace('{code}', referralVal.code)}</span>
+                        <span className="cart-order-summary-amount cart-order-summary-discount">-฿{referralDiscountVal.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="cart-order-summary-row cart-order-summary-total">
+                      <span>{t.totalLabel}</span>
+                      <span className="cart-order-summary-amount">฿{grandTotalVal.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <ReferralCodeBox
+                    lang={lang}
+                    subtotal={subtotalWithDelivery}
+                    appliedCode={referralVal?.code ?? null}
+                    onApply={() => setReferralCleared((c) => c + 1)}
+                    onRemove={() => setReferralCleared((c) => c + 1)}
+                    hasOtherDiscount={false}
+                  />
+                </div>
+              )}
+            </div>
+            <div
+              ref={deliverySectionRef}
+              className={`cart-accordion-section ${mobileOpenSection === 'delivery' ? 'cart-accordion-open' : ''}`}
+              onClick={() => toggleMobileSection('delivery')}
+            >
+              <div className="cart-accordion-header">
+                <span className="cart-accordion-title">{lang === 'th' ? 'การจัดส่ง' : 'Delivery Options'}</span>
+                {mobileCompleted.has('delivery') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('delivery'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+              </div>
+              {mobileOpenSection === 'delivery' && (
+                <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
+                  <DeliveryForm
+                    lang={lang}
+                    value={delivery}
+                    onChange={setDelivery}
+                    showLocationPicker
+                    accordionMode
+                  />
+                  <button
+                    type="button"
+                    className="cart-accordion-save-btn"
+                    disabled={!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)}
+                    onClick={handleMobileDeliverySave}
+                  >
+                    {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div
+              ref={contactSectionRef}
+              className={`cart-accordion-section ${mobileOpenSection === 'contact' ? 'cart-accordion-open' : ''}`}
+              onClick={() => toggleMobileSection('contact')}
+            >
+              <div className="cart-accordion-header">
+                <span className="cart-accordion-title">{lang === 'th' ? 'ข้อมูลติดต่อ' : 'Contact'}</span>
+                {mobileCompleted.has('contact') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('contact'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+              </div>
+              {mobileOpenSection === 'contact' && (
+                <div className="cart-accordion-body cart-accordion-body-contact" onClick={(e) => e.stopPropagation()}>
+                  {contactFormContent('mobile-')}
+                  <button
+                    type="button"
+                    className="cart-accordion-save-btn"
+                    disabled={!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)}
+                    onClick={handleMobileContactSave}
+                  >
+                    {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div
+              ref={paymentSectionRef}
+              className={`cart-accordion-section ${mobileOpenSection === 'payment' ? 'cart-accordion-open' : ''}`}
+              onClick={() => toggleMobileSection('payment')}
+            >
+              <div className="cart-accordion-header">
+                <span className="cart-accordion-title">{lang === 'th' ? 'ชำระเงิน' : 'Payment'}</span>
+                <span className="cart-accordion-chevron" aria-hidden>▼</span>
+              </div>
+              {mobileOpenSection === 'payment' && (
+                <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
+                  <div className="cart-place-order-buttons cart-mobile-payment-buttons">
+                    <button
+                      type="button"
+                      className="cart-place-order-btn cart-pay-by-stripe-btn"
+                      onClick={handlePayByCard}
+                      disabled={placing || placingStripe}
+                      aria-busy={placingStripe}
+                    >
+                      {placingStripe ? (lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting to payment...') : (
+                        <>
+                          <span className="cart-stripe-logo" aria-hidden>
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                              <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
+                            </svg>
+                          </span>
+                          {translations[lang].cart.payWithStripe ?? 'Pay with Stripe'}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="cart-place-order-btn cart-place-order-bank-btn"
+                      onClick={handlePlaceOrder}
+                      disabled={placing || placingStripe}
+                      aria-busy={placing}
+                    >
+                      {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
+                    </button>
+                  </div>
+                  {orderError && <p className="cart-place-order-error" role="alert">{orderError}</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="cart-desktop-view">
         <h1 className="cart-page-title">{t.yourCart}</h1>
         <div className="cart-list">
           {items.map((item, index) => {
@@ -781,15 +1193,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           })}
         </div>
         {(() => {
-          const itemsTotalVal = cartValue(items);
-          const hasChosenLocation = !!delivery.deliveryDistrict;
-          const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
-          const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
-          const deliveryFeeVal = hasChosenLocation ? calcDeliveryFeeTHB({ district, isMueangCentral }) : 0;
-          const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
-          const referralVal = getStoredReferral();
-          const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, !!referralVal);
-          const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
           const tBuyNowRaw = tBuyNow as Record<string, string | number>;
           const itemLineFmt = (t.itemLineWithQty ?? t.itemLine ?? '{name} — {size} x{qty} — ฿{lineTotal}') as string;
           return (
@@ -866,163 +1269,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             step3Heading={t.contactInfoStepHeading}
             step3Content={
               <div className="cart-place-order">
-                <div className="cart-contact-info">
-                  <p className="cart-section-label">{t.senderSection}</p>
-                  <div className="cart-contact-field">
-                    <label className="cart-contact-label" htmlFor="cart-customer-name">
-                      {t.yourName} <span className="cart-required" aria-hidden>*</span>
-                    </label>
-                    <input
-                      id="cart-customer-name"
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder={t.yourNamePlaceholder}
-                      className="cart-contact-input"
-                      aria-required
-                      autoComplete="name"
-                    />
-                  </div>
-                  <div className="cart-contact-field">
-                    <label className="cart-contact-label" htmlFor="cart-phone">
-                      {t.phoneNumber} <span className="cart-required" aria-hidden>*</span>
-                    </label>
-                    <div className="cart-phone-row">
-                      <select
-                        id="cart-country-code"
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="cart-phone-country-select"
-                        aria-label={t.countryCode}
-                      >
-                        {COUNTRY_CODES.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        id="cart-phone"
-                        type="tel"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={phoneNational}
-                        onChange={handlePhoneInput}
-                        placeholder={t.phoneNumberPlaceholder}
-                        className="cart-contact-input cart-phone-input"
-                        autoComplete="tel-national"
-                        maxLength={PHONE_MAX_DIGITS}
-                        aria-describedby="cart-phone-hint"
-                      />
-                    </div>
-                    <p id="cart-phone-hint" className="cart-phone-hint">
-                      {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
-                    </p>
-                  </div>
-                  <div className="cart-contact-field">
-                    <label className="cart-contact-label" htmlFor="cart-email">
-                      {t.emailLabel ?? 'Email'}
-                    </label>
-                    <input
-                      id="cart-email"
-                      type="email"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      placeholder={t.emailPlaceholder ?? 'e.g. you@example.com'}
-                      className="cart-contact-input"
-                      autoComplete="email"
-                    />
-                    <p className="cart-phone-hint">
-                      {t.emailHint ?? 'For order confirmation notifications (optional)'}
-                    </p>
-                  </div>
-                  <label className="cart-contact-checkbox-label cart-ordering-for-else">
-                    <input
-                      type="checkbox"
-                      checked={isOrderingForSomeoneElse}
-                      onChange={(e) => setIsOrderingForSomeoneElse(e.target.checked)}
-                      className="cart-contact-checkbox"
-                    />
-                    <span>{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
-                  </label>
-                  {isOrderingForSomeoneElse && (
-                    <>
-                      <p className="cart-section-label">{t.recipientSection}</p>
-                      <div className="cart-contact-field">
-                        <label className="cart-contact-label" htmlFor="cart-recipient-name">
-                          {t.recipientName} <span className="cart-required" aria-hidden>*</span>
-                        </label>
-                        <input
-                          id="cart-recipient-name"
-                          type="text"
-                          value={recipientName}
-                          onChange={(e) => setRecipientName(e.target.value)}
-                          placeholder={t.recipientNamePlaceholder}
-                          className="cart-contact-input"
-                          aria-required
-                          autoComplete="name"
-                        />
-                      </div>
-                      <div className="cart-contact-field">
-                        <label className="cart-contact-label" htmlFor="cart-recipient-phone">
-                          {t.recipientPhone} <span className="cart-required" aria-hidden>*</span>
-                        </label>
-                        <div className="cart-phone-row">
-                          <select
-                            id="cart-recipient-country-code"
-                            value={recipientCountryCode}
-                            onChange={(e) => setRecipientCountryCode(e.target.value)}
-                            className="cart-phone-country-select"
-                            aria-label={t.countryCode}
-                          >
-                            {COUNTRY_CODES.map((c) => (
-                              <option key={c.code} value={c.code}>
-                                {c.label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            id="cart-recipient-phone"
-                            type="tel"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={recipientPhoneNational}
-                            onChange={handleRecipientPhoneInput}
-                            placeholder={t.recipientPhonePlaceholder}
-                            className="cart-contact-input cart-phone-input"
-                            autoComplete="tel-national"
-                            maxLength={PHONE_MAX_DIGITS}
-                            aria-describedby="cart-recipient-phone-hint"
-                          />
-                        </div>
-                        <p id="cart-recipient-phone-hint" className="cart-phone-hint">
-                          {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                  <fieldset className="cart-contact-checkboxes" aria-label={t.preferredContact}>
-                    <legend className="cart-contact-legend">
-                      {t.preferredContact} <span className="cart-required" aria-hidden>*</span>
-                    </legend>
-                    {CONTACT_OPTIONS.map((option) => (
-                      <label key={option} className="cart-contact-checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={contactPreference.includes(option)}
-                          onChange={() => toggleContactPreference(option)}
-                          className="cart-contact-checkbox"
-                        />
-                        <span>
-                          {option === 'phone' && t.contactPhone}
-                          {option === 'line' && t.contactLine}
-                          {option === 'whatsapp' && t.contactWhatsApp}
-                          {option === 'telegram' && t.contactTelegram}
-                        </span>
-                      </label>
-                    ))}
-                  </fieldset>
-                </div>
+                {contactFormContent('')}
                 <div className="cart-place-order-buttons">
                   <button
                     type="button"
@@ -1063,6 +1310,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             }
           />
         </section>
+        </div>
       </div>
       <style jsx>{`
         .cart-page {
@@ -1422,6 +1670,259 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-contact-checkbox {
           margin: 0;
           accent-color: var(--accent);
+        }
+        @media (min-width: 769px) {
+          .cart-mobile-view {
+            display: none !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .cart-desktop-view {
+            display: none !important;
+          }
+          .cart-mobile-view {
+            display: block;
+          }
+          .cart-mobile-header {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+          }
+          .cart-mobile-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 4px;
+          }
+          .cart-mobile-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 0;
+          }
+          .cart-mobile-accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+          }
+          .cart-accordion-section {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+          }
+          .cart-accordion-section:last-child {
+            border-bottom: none;
+          }
+          .cart-accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            cursor: pointer;
+            user-select: none;
+          }
+          .cart-accordion-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+          }
+          .cart-accordion-edit {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-right: 8px;
+          }
+          .cart-accordion-chevron {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+          }
+          .cart-accordion-open .cart-accordion-chevron {
+            transform: rotate(180deg);
+          }
+          .cart-accordion-body {
+            padding-bottom: 20px;
+          }
+          .cart-accordion-body .buy-now-input,
+          .cart-accordion-body .buy-now-select,
+          .cart-accordion-body .buy-now-textarea {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            min-height: 48px;
+          }
+          .cart-accordion-body-contact {
+            background: var(--surface);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            margin: 0 0 16px;
+          }
+          .cart-accordion-body-contact .cart-contact-info {
+            margin-bottom: 0;
+          }
+          .cart-accordion-body-contact .cart-contact-field {
+            margin-bottom: 16px;
+          }
+          .cart-accordion-body-contact .cart-contact-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+          }
+          .cart-accordion-body-contact .cart-contact-input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--text);
+            font-family: inherit;
+            min-height: 48px;
+          }
+          .cart-accordion-body-contact .cart-contact-input:focus {
+            outline: none;
+            border-color: var(--accent);
+          }
+          .cart-accordion-body-contact .cart-phone-row {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            min-height: 48px;
+          }
+          .cart-accordion-body-contact .cart-phone-row:focus-within {
+            border-color: var(--accent);
+          }
+          .cart-accordion-body-contact .cart-phone-country-select {
+            padding: 12px 14px;
+            font-size: 1rem;
+            border: none;
+            border-right: 1px solid var(--border);
+            border-radius: 8px 0 0 8px;
+            background: var(--pastel-cream);
+            color: var(--text);
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+          }
+          .cart-accordion-body-contact .cart-phone-input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            border-radius: 0 8px 8px 0;
+          }
+          .cart-accordion-body-contact .cart-section-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 8px;
+          }
+          .cart-accordion-body-contact .cart-phone-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 6px 0 0;
+          }
+          .cart-accordion-body-contact .cart-contact-checkboxes {
+            margin: 16px 0 0;
+          }
+          .cart-accordion-body-contact .cart-contact-legend {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+          }
+          .cart-accordion-body-contact .cart-contact-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--text);
+            cursor: pointer;
+          }
+          .cart-accordion-save-btn {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: background 0.2s;
+          }
+          .cart-accordion-save-btn:disabled {
+            background: #d1d5db;
+            color: #9ca3af;
+            cursor: not-allowed;
+          }
+          .cart-accordion-save-btn:not(:disabled):hover {
+            background: #a88b5c;
+          }
+          .cart-mobile-list {
+            margin-bottom: 0;
+          }
+          .cart-accordion-body-bag .cart-order-summary {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+          }
+          .cart-accordion-body-bag .cart-mobile-summary {
+            margin-bottom: 16px;
+          }
+          .cart-mobile-payment-buttons {
+            margin-top: 0;
+          }
+          .cart-mobile-summary {
+            margin-bottom: 16px;
+          }
+        }
+      `}</style>
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .cart-mobile-contact-fields input.cart-contact-input,
+          .cart-mobile-contact-fields .cart-phone-row input {
+            width: 100% !important;
+            padding: 12px 14px !important;
+            font-size: 1rem !important;
+            border: 1px solid #ebe6e0 !important;
+            border-radius: 8px !important;
+            background: #ffffff !important;
+            color: #2d2a26 !important;
+            min-height: 48px !important;
+            box-sizing: border-box !important;
+          }
+          .cart-mobile-contact-fields .cart-phone-row {
+            display: flex !important;
+            align-items: stretch !important;
+            border: 1px solid #ebe6e0 !important;
+            border-radius: 8px !important;
+            background: #ffffff !important;
+            min-height: 48px !important;
+          }
+          .cart-mobile-contact-fields .cart-phone-country-select {
+            padding: 12px 14px !important;
+            font-size: 1rem !important;
+            border: none !important;
+            border-right: 1px solid #ebe6e0 !important;
+            border-radius: 8px 0 0 8px !important;
+            background: #f9f5f0 !important;
+            color: #2d2a26 !important;
+            min-height: 48px !important;
+          }
+          .cart-mobile-contact-fields .cart-phone-input {
+            flex: 1 !important;
+            min-width: 0 !important;
+            border: none !important;
+            border-radius: 0 8px 8px 0 !important;
+          }
         }
       `}</style>
     </div>

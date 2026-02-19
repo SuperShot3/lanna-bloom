@@ -1,16 +1,9 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-import type { DeliveryLocationValue } from '@/components/DeliveryLocationPicker';
 import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
-
-const DeliveryLocationPicker = dynamic(
-  () => import('@/components/DeliveryLocationPicker').then((m) => m.DeliveryLocationPicker),
-  { ssr: false }
-);
 
 /** 4 delivery windows from 08:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
@@ -24,7 +17,7 @@ export interface DeliveryFormValues {
   addressLine: string;
   date: string;
   timeSlot: string;
-  /** Delivery pin (map picker). Required on cart/checkout. */
+  /** Legacy: no longer collected. Kept for type compatibility. */
   deliveryLat: number | null;
   deliveryLng: number | null;
   deliveryGoogleMapsUrl: string | null;
@@ -42,6 +35,7 @@ export function DeliveryForm({
   step3Content,
   title,
   showLocationPicker,
+  accordionMode,
 }: {
   lang: Locale;
   value: DeliveryFormValues;
@@ -51,8 +45,10 @@ export function DeliveryForm({
   step3Content?: React.ReactNode;
   /** When provided (e.g. on cart page), use this as the main form heading instead of buyNow.title. */
   title?: string;
-  /** When true, show the "drop a pin" map picker after the address field (e.g. on cart/checkout). */
+  /** When true, show optional Google Maps link input and Open Google Maps button (no embedded map). */
   showLocationPicker?: boolean;
+  /** When true, render only steps 1 and 2 (no title, no step 3). For mobile accordion. */
+  accordionMode?: boolean;
 }) {
   const t = translations[lang].buyNow;
   const districtManuallyChangedRef = useRef(false);
@@ -79,16 +75,18 @@ export function DeliveryForm({
   const showCentralToggle = value.deliveryDistrict === 'MUEANG';
 
   return (
-    <div className="buy-now-form">
-      <h2 className="buy-now-title">{title ?? t.title}</h2>
+    <div className={`buy-now-form ${accordionMode ? 'buy-now-form-accordion' : ''}`}>
+      {!accordionMode && <h2 className="buy-now-title">{title ?? t.title}</h2>}
 
       {/* Step 1: District + Address + map pin */}
       <div className="buy-now-step">
-        <span className="buy-now-num" aria-hidden>1</span>
+        {!accordionMode && <span className="buy-now-num" aria-hidden>1</span>}
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step1}</h3>
-          {showLocationPicker && (t as { step1DeliveryIntro?: string }).step1DeliveryIntro && (
-            <p className="buy-now-hint buy-now-step-intro">{(t as { step1DeliveryIntro: string }).step1DeliveryIntro}</p>
+          {showLocationPicker && (
+            <p className="buy-now-hint buy-now-step-intro">
+              {(t as { step1IntroNoMap?: string }).step1IntroNoMap ?? 'District and address required. Optionally paste a Google Maps link.'}
+            </p>
           )}
           {!showLocationPicker && <p className="buy-now-hint">{t.trySearchByPostalCode}</p>}
           <div className="buy-now-fields">
@@ -156,34 +154,44 @@ export function DeliveryForm({
                 </p>
               </div>
             )}
+            {showLocationPicker && (
+              <>
+                <div className="buy-now-field">
+                  <label className="buy-now-label" htmlFor="buy-now-google-maps-link">
+                    {(t as { googleMapsLinkLabel?: string }).googleMapsLinkLabel ?? 'Google Maps link (optional)'}
+                  </label>
+                  <input
+                    id="buy-now-google-maps-link"
+                    type="url"
+                    value={value.deliveryGoogleMapsUrl ?? ''}
+                    onChange={(e) => onChange({ ...value, deliveryGoogleMapsUrl: e.target.value.trim() || null })}
+                    placeholder={(t as { googleMapsLinkPlaceholder?: string }).googleMapsLinkPlaceholder ?? 'Paste link from Google Maps'}
+                    className="buy-now-input"
+                    aria-describedby="buy-now-google-maps-hint"
+                  />
+                  <p id="buy-now-google-maps-hint" className="buy-now-hint">
+                    {(t as { googleMapsLinkHint?: string }).googleMapsLinkHint ?? 'Open Google Maps → drop a pin / choose location → Share → Copy link → paste here.'}
+                  </p>
+                </div>
+                <div className="buy-now-field">
+                  <a
+                    href="https://www.google.com/maps"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="buy-now-open-gmaps-btn"
+                  >
+                    {(t as { openGoogleMapsButton?: string }).openGoogleMapsButton ?? 'Open Google Maps'}
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {showLocationPicker && (
-        <DeliveryLocationPicker
-            value={
-              value.deliveryLat != null && value.deliveryLng != null && value.deliveryGoogleMapsUrl != null
-                ? { lat: value.deliveryLat, lng: value.deliveryLng, googleMapsUrl: value.deliveryGoogleMapsUrl }
-                : null
-            }
-            onChange={(v: DeliveryLocationValue | null) =>
-              onChange({
-                ...value,
-                deliveryLat: v?.lat ?? null,
-                deliveryLng: v?.lng ?? null,
-                deliveryGoogleMapsUrl: v?.googleMapsUrl ?? null,
-              })
-            }
-            dropPinPrompt={t.dropPinPrompt}
-            selectedLocationLabel={t.selectedLocation}
-            openInGoogleMapsLabel={t.openInGoogleMaps}
-          />
-      )}
-
       {/* Step 2: Delivery date + preferred time slot */}
       <div className="buy-now-step">
-        <span className="buy-now-num" aria-hidden>2</span>
+        {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
         <div className="buy-now-step-content">
           <h3 className="buy-now-step-heading">{t.step3}</h3>
           <p className="buy-now-hint">{t.selectDeliveryDateAndTime}</p>
@@ -226,13 +234,15 @@ export function DeliveryForm({
       </div>
 
       {/* Step 3: Custom content (e.g. Send order via) or default "ADD TO CART" */}
-      <div className="buy-now-step buy-now-step-4">
-        <span className="buy-now-num" aria-hidden>3</span>
-        <div className="buy-now-step-content">
-          <h3 className="buy-now-step-heading">{step3Heading ?? t.step4}</h3>
-          {step3Content}
+      {!accordionMode && (
+        <div className="buy-now-step buy-now-step-4">
+          <span className="buy-now-num" aria-hidden>3</span>
+          <div className="buy-now-step-content">
+            <h3 className="buy-now-step-heading">{step3Heading ?? t.step4}</h3>
+            {step3Content}
+          </div>
         </div>
-      </div>
+      )}
 
       <style jsx>{`
         .buy-now-form {
@@ -242,6 +252,13 @@ export function DeliveryForm({
           padding: 20px;
           margin-top: 24px;
           box-shadow: var(--shadow);
+        }
+        .buy-now-form-accordion {
+          margin-top: 0;
+          border: none;
+          box-shadow: none;
+          padding: 0;
+          background: transparent;
         }
         .buy-now-title {
           font-size: 1.1rem;
@@ -520,6 +537,23 @@ export function DeliveryForm({
           font-size: 0.8rem;
           color: var(--text-muted);
           margin: 8px 0 0 28px;
+        }
+        .buy-now-open-gmaps-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 10px 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #fff;
+          background: var(--accent);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .buy-now-open-gmaps-btn:hover {
+          background: #a88b5c;
+          transform: translateY(-1px);
         }
       `}</style>
     </div>
