@@ -99,6 +99,19 @@
   color: var(--text-muted);
 }
 
+/* Inline links in article body — more distinguishable from text */
+.infoArticleBody :global(a) {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.infoArticleBody :global(a:hover) {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
 /* Article CTA section */
 .infoArticleCta {
   margin-top: 2.5em;

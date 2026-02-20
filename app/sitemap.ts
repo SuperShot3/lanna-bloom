@@ -3,6 +3,7 @@ import type { MetadataRoute } from 'next';
 import { getBaseUrl } from '@/lib/orders';
 import { getBouquetsFromSanity } from '@/lib/sanity';
 import { locales } from '@/lib/i18n';
+import { articles } from '@/app/[lang]/info/_data/articles';
 
 type BouquetForSitemap = { slug: string; updatedAt?: string };
 
@@ -49,24 +50,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7 as const,
         lastModified: now,
       },
-      {
-        url: `${base}/${lang}/info/flowers-chiang-mai`,
+      ...articles.map((a) => ({
+        url: `${base}/${lang}/info/${a.slug}`,
         changeFrequency: 'monthly' as const,
         priority: 0.6 as const,
         lastModified: now,
-      },
-      {
-        url: `${base}/${lang}/info/rose-bouquets-chiang-mai`,
-        changeFrequency: 'monthly' as const,
-        priority: 0.6 as const,
-        lastModified: now,
-      },
-      {
-        url: `${base}/${lang}/info/same-day-flower-delivery-chiang-mai`,
-        changeFrequency: 'monthly' as const,
-        priority: 0.6 as const,
-        lastModified: now,
-      },
+      })),
       {
         url: `${base}/${lang}/guides/flowers-chiang-mai`,
         changeFrequency: 'monthly' as const,
