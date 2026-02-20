@@ -1944,6 +1944,150 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
       `}</style>
       <style jsx global>{`
+        /* Desktop: contact form inside cart-delivery (rendered via DeliveryForm step3Content) - styled-jsx scope doesn't reach here */
+        @media (min-width: 769px) {
+          .cart-delivery .cart-place-order {
+            margin-top: 16px;
+            padding: 20px;
+            background: var(--pastel-cream, #fdf8f3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+          }
+          .cart-delivery .cart-contact-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 24px;
+            margin-bottom: 24px;
+          }
+          .cart-delivery .cart-contact-info .cart-section-label {
+            grid-column: 1 / -1;
+            margin: 0 0 4px;
+          }
+          .cart-delivery .cart-contact-info .cart-section-label:first-child {
+            margin-top: 0;
+          }
+          .cart-delivery .cart-contact-info .cart-contact-field {
+            margin-bottom: 0;
+          }
+          .cart-delivery .cart-contact-info .cart-contact-field:has(.cart-phone-row) {
+            grid-column: 1 / -1;
+          }
+          .cart-delivery .cart-contact-info .cart-ordering-for-else {
+            grid-column: 1 / -1;
+            margin-top: 4px;
+          }
+          .cart-delivery .cart-contact-info .cart-contact-checkboxes {
+            grid-column: 1 / -1;
+            margin-top: 8px;
+          }
+          .cart-delivery .cart-place-order-buttons {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+          }
+          .cart-delivery .cart-place-order-btn {
+            flex: 1;
+            min-width: 180px;
+          }
+          .cart-delivery .cart-contact-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+          }
+          .cart-delivery .cart-contact-input {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            color: var(--text);
+            font-family: inherit;
+            box-sizing: border-box;
+          }
+          .cart-delivery .cart-contact-input:focus {
+            outline: none;
+            border-color: var(--accent);
+          }
+          .cart-delivery .cart-phone-row {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+          }
+          .cart-delivery .cart-phone-row:focus-within {
+            border-color: var(--accent);
+          }
+          .cart-delivery .cart-phone-country-select {
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            border: none;
+            border-right: 1px solid var(--border);
+            border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+            background: var(--pastel-cream);
+            color: var(--text);
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+            width: auto;
+            min-width: 7rem;
+            max-width: 12rem;
+          }
+          .cart-delivery .cart-phone-input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+          }
+          .cart-delivery .cart-phone-input:focus {
+            outline: none;
+            box-shadow: none;
+          }
+          .cart-delivery .cart-phone-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 6px 0 0;
+          }
+          .cart-delivery .cart-section-label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 16px 0 8px;
+          }
+          .cart-delivery .cart-contact-checkboxes {
+            margin: 16px 0 0;
+            padding: 0;
+            border: none;
+          }
+          .cart-delivery .cart-contact-legend {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+          }
+          .cart-delivery .cart-contact-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text);
+            cursor: pointer;
+          }
+          .cart-delivery .cart-contact-checkbox {
+            margin: 0;
+            accent-color: var(--accent);
+          }
+          .cart-delivery .cart-required {
+            color: #b91c1c;
+          }
+        }
         @media (max-width: 768px) {
           .cart-mobile-contact-fields input.cart-contact-input,
           .cart-mobile-contact-fields .cart-phone-row input {

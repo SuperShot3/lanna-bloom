@@ -34,6 +34,7 @@ export type MessengerChannel = 'line' | 'whatsapp' | 'telegram';
 export type MessengerPageLocation =
   | 'header'
   | 'checkout_success'
+  | 'order_page'
   | 'product'
   | 'cart'
   | 'guide';

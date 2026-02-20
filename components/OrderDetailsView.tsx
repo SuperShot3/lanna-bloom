@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShareIcon } from '@/components/icons';
+import { ShareIcon, LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
+import {
+  getWhatsAppOrderUrl,
+  getLineOrderUrl,
+  getTelegramOrderUrl,
+} from '@/lib/messenger';
+import { trackMessengerClick } from '@/lib/analytics';
 import type { Order } from '@/lib/orders';
 import type { ContactPreferenceOption } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
@@ -22,6 +28,19 @@ function formatDisplayDate(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+/** Display label for wrapping option. Standard = Free, Premium = Premium. */
+function getWrappingLabel(
+  opt: string | null | undefined,
+  t: { wrappingStandard: string; wrappingFree: string; wrappingPremium: string; wrappingNoPaper: string }
+): string {
+  if (!opt) return '';
+  const lower = opt.toLowerCase();
+  if (lower === 'standard' || lower === 'classic') return t.wrappingFree;
+  if (lower === 'premium') return t.wrappingPremium;
+  if (lower === 'no paper' || lower === 'none') return t.wrappingNoPaper;
+  return opt;
 }
 
 type PaymentDisplayStatus = 'confirmed' | 'awaiting_manual' | 'awaiting_stripe' | 'unknown';
@@ -70,7 +89,7 @@ export function OrderDetailsView({
 }) {
   const t = translations[locale].orderPage;
   const tCart = translations[locale].cart;
-  const [copied, setCopied] = useState<'id' | 'link' | null>(null);
+  const [copied, setCopied] = useState<'id' | 'link' | 'all' | null>(null);
 
   const paymentDisplay = getPaymentDisplayStatus(
     supabasePaymentStatus,
@@ -89,7 +108,7 @@ export function OrderDetailsView({
     order.delivery.preferredTimeSlot || ''
   );
 
-  const copy = async (text: string, kind: 'id' | 'link') => {
+  const copy = async (text: string, kind: 'id' | 'link' | 'all') => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(kind);
@@ -98,6 +117,72 @@ export function OrderDetailsView({
       // ignore
     }
   };
+
+  /** Build full page text for copy-all (mobile-friendly). */
+  const buildCopyAllText = useCallback((): string => {
+    const lines: string[] = [];
+    lines.push(t.orderDetails);
+    lines.push('');
+    lines.push(`Order ID: ${order.orderId}`);
+    lines.push(`Details link: ${detailsUrl}`);
+    lines.push('');
+    lines.push(`${t.deliveryDate}: ${formatDisplayDate(deliveryDate) || '—'}`);
+    if (preferredTime) lines.push(`${t.preferredTime}: ${preferredTime}`);
+    lines.push('');
+    lines.push(`${t.address}:`);
+    lines.push(order.delivery.address || '—');
+    if (order.delivery.deliveryGoogleMapsUrl) {
+      lines.push(order.delivery.deliveryGoogleMapsUrl);
+    }
+    if (order.delivery.recipientName || order.delivery.recipientPhone) {
+      lines.push('');
+      lines.push(`${t.recipientName}: ${order.delivery.recipientName || '—'}`);
+      if (order.delivery.recipientPhone) {
+        lines.push(`${t.recipientPhone}: ${order.delivery.recipientPhone}`);
+      }
+    }
+    lines.push('');
+    lines.push(t.item + ':');
+    order.items.forEach((item) => {
+      lines.push(`• ${item.bouquetTitle} — ${item.size} — ฿${item.price.toLocaleString()}`);
+      if (item.addOns?.cardType) {
+        const cardLabel = item.addOns.cardType === 'premium' ? 'Premium' : 'Free';
+        lines.push(`  ${t.cardType}: ${cardLabel}`);
+      }
+      if (item.addOns?.wrappingOption) {
+        const wrapLabel = getWrappingLabel(item.addOns.wrappingOption, t);
+        lines.push(`  ${t.wrapping}: ${wrapLabel}`);
+      }
+      if (item.addOns?.cardMessage?.trim()) {
+        lines.push(`  ${t.cardMessage}: ${item.addOns.cardMessage.trim()}`);
+      }
+    });
+    lines.push('');
+    lines.push(t.totalsHeading + ':');
+    lines.push(`${t.bouquetPrice}: ฿${order.pricing.itemsTotal.toLocaleString()}`);
+    lines.push(`${t.deliveryFee}: ฿${order.pricing.deliveryFee.toLocaleString()}`);
+    if (order.referralDiscount != null && order.referralDiscount > 0) {
+      lines.push(`${t.discount ?? 'Discount'}: -฿${order.referralDiscount.toLocaleString()}`);
+    }
+    lines.push(`${t.total}: ฿${order.pricing.grandTotal.toLocaleString()}`);
+    if (order.customerName || order.phone || order.customerEmail) {
+      lines.push('');
+      lines.push(t.sender + ':');
+      if (order.customerName) lines.push(order.customerName);
+      if (order.customerEmail) lines.push(order.customerEmail);
+      if (order.phone) lines.push(order.phone);
+    }
+    lines.push('');
+    lines.push(`Created: ${new Date(order.createdAt).toLocaleString()}`);
+    return lines.join('\n');
+  }, [order, detailsUrl, deliveryDate, preferredTime, t]);
+
+  const orderMessage = `Order ${order.orderId}\n${detailsUrl}`;
+  const contactChannels = [
+    { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, color: '#00B900', label: 'LINE' },
+    { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, color: '#25D366', label: 'WhatsApp' },
+    { id: 'telegram' as const, getUrl: () => getTelegramOrderUrl(orderMessage), Icon: TelegramIcon, color: '#26A5E4', label: 'Telegram' },
+  ];
 
   const paymentBadgeLabel =
     paymentDisplay === 'confirmed'
@@ -129,6 +214,38 @@ export function OrderDetailsView({
           </span>
         )}
       </div>
+
+      {/* Contact Lanna Bloom - LINE, WhatsApp, Telegram */}
+      <div className="order-details-section order-details-contact-block">
+        <h2 className="order-details-contact-heading">{t.contactLannaBloom}</h2>
+        <div className="order-details-contact-icons">
+          {contactChannels.map((ch) => {
+            const href = ch.getUrl();
+            return (
+              <a
+                key={ch.id}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="order-details-contact-link"
+                aria-label={`Contact on ${ch.label}`}
+                title={ch.label}
+                style={{ color: ch.color }}
+                onClick={() =>
+                  trackMessengerClick({
+                    channel: ch.id,
+                    page_location: 'order_page',
+                    link_url: href,
+                  })
+                }
+              >
+                <ch.Icon size={24} className="order-details-contact-icon" />
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="order-details-section">
         <h2 className="order-details-heading">Order ID</h2>
         <p className="order-details-order-id">{order.orderId}</p>
@@ -238,16 +355,33 @@ export function OrderDetailsView({
                   </div>
                 )}
                 <div className="order-details-item-text">
-                  <strong>{item.bouquetTitle}</strong> — {item.size} — ฿{item.price.toLocaleString()}
-                  {item.addOns?.cardType && (
-                    <span className="order-details-meta"> {t.cardType}: {item.addOns.cardType === 'premium' ? 'Premium' : 'Free'}</span>
-                  )}
-                  {item.addOns?.wrappingOption && (
-                    <span className="order-details-meta"> {t.wrapping}: {item.addOns.wrappingOption}</span>
-                  )}
-                  {item.addOns?.cardMessage && (
-                    <span className="order-details-meta"> {t.cardMessage}: {item.addOns.cardMessage}</span>
-                  )}
+                  <p className="order-details-item-main">
+                    <strong>{item.bouquetTitle}</strong> — {item.size} — ฿{item.price.toLocaleString()}
+                  </p>
+                  <div className="order-details-item-addons">
+                    {item.addOns?.cardType != null && (
+                      <p className="order-details-addon-row">
+                        <span className="order-details-addon-label">{t.cardType}:</span>
+                        <span className="order-details-addon-value order-details-addon-highlight">
+                          {item.addOns.cardType === 'premium' ? 'Premium' : 'Free'}
+                        </span>
+                      </p>
+                    )}
+                    {item.addOns?.wrappingOption && (
+                      <p className="order-details-addon-row">
+                        <span className="order-details-addon-label">{t.wrapping}:</span>
+                        <span className="order-details-addon-value order-details-addon-highlight">
+                          {getWrappingLabel(item.addOns.wrappingOption, t)}
+                        </span>
+                      </p>
+                    )}
+                    {item.addOns?.cardMessage?.trim() && (
+                      <p className="order-details-addon-row">
+                        <span className="order-details-addon-label">{t.cardMessage}:</span>
+                        <span className="order-details-addon-value">"{item.addOns.cardMessage.trim()}"</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
               {item.bouquetSlug && (
@@ -316,6 +450,14 @@ export function OrderDetailsView({
       )}
 
       <p className="order-details-created">Created: {new Date(order.createdAt).toLocaleString()}</p>
+      <button
+        type="button"
+        className="order-details-copy-all-btn"
+        onClick={() => copy(buildCopyAllText(), 'all')}
+        aria-label={t.copyAll}
+      >
+        {copied === 'all' ? copiedLabel : t.copyAll}
+      </button>
       <style jsx>{`
         .order-details-view {
           max-width: 560px;
@@ -519,6 +661,99 @@ export function OrderDetailsView({
           font-size: 0.95rem;
           color: var(--text);
           margin: 0;
+        }
+        .order-details-contact-block {
+          padding: 16px;
+          background: var(--pastel-cream, #f9f5f0);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .order-details-contact-heading {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          margin: 0 0 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+        .order-details-contact-icons {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .order-details-contact-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .order-details-contact-link:hover {
+          background: var(--accent-soft);
+          transform: scale(1.05);
+        }
+        .order-details-contact-icon {
+          flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+          .order-details-contact-link {
+            width: 36px;
+            height: 36px;
+          }
+          .order-details-contact-icon {
+            width: 20px;
+            height: 20px;
+          }
+        }
+        .order-details-item-main {
+          margin: 0 0 8px;
+          font-size: 1rem;
+        }
+        .order-details-item-addons {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .order-details-addon-row {
+          margin: 0;
+          font-size: 0.95rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          align-items: baseline;
+        }
+        .order-details-addon-label {
+          font-weight: 600;
+          color: var(--text-muted);
+          min-width: 90px;
+        }
+        .order-details-addon-value {
+          color: var(--text);
+        }
+        .order-details-addon-highlight {
+          font-weight: 700;
+          color: var(--accent);
+        }
+        .order-details-copy-all-btn {
+          display: block;
+          margin-top: 12px;
+          padding: 8px 14px;
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: border-color 0.2s, color 0.2s;
+        }
+        .order-details-copy-all-btn:hover {
+          color: var(--text);
+          border-color: var(--accent);
         }
       `}</style>
     </div>

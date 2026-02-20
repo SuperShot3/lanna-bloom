@@ -37,12 +37,12 @@ export type ArticleMeta = {
 export const articles: ArticleMeta[] = [
   {
     slug: 'flowers-chiang-mai',
-    title: 'Flower delivery in Chiang Mai',
+    title: 'How to Order Flower Delivery in Chiang Mai',
     excerpt:
-      'Order fresh bouquets online and have them delivered across Chiang Mai. We offer same-day delivery during working hours. Message us via LINE or WhatsApp with your choice and delivery details.',
-    titleTh: 'บริการส่งดอกไม้ในเชียงใหม่',
+      'Place an order on our website, then message us your order link or number to confirm details. Payment happens after confirmation. Delivery in Chiang Mai 08:00–20:00; orders after 18:00 may move to the next day.',
+    titleTh: 'วิธีสั่งดอกไม้จัดส่งในเชียงใหม่',
     excerptTh:
-      'สั่งช่อดอกไม้สดออนไลน์ พร้อมบริการจัดส่งทั่วเชียงใหม่ เราจัดส่งวันเดียวได้ในช่วงเวลาทำการ ส่งข้อความมาที่ LINE หรือ WhatsApp พร้อมบอกช่อที่ชอบ ที่อยู่และวันที่จัดส่งได้เลย',
+      'สั่งซื้อบนเว็บไซต์ แล้วส่งลิงก์หรือหมายเลขออเดอร์มาที่แชทเพื่อยืนยันรายละเอียด ชำระเงินหลังยืนยัน จัดส่งในเชียงใหม่ 08:00–20:00 สั่งหลัง 18:00 อาจจัดส่งวันถัดไป',
     publishedAt: '2026-02-17T00:00:00.000Z',
     featured: false,
     cover: {
@@ -52,7 +52,8 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-      { label: 'Order via LINE / WhatsApp', labelTh: 'สั่งผ่าน LINE / WhatsApp', href: '/contact' },
+      { label: 'Contact on LINE / WhatsApp / Telegram', labelTh: 'ติดต่อ LINE / WhatsApp / Telegram', href: '/contact' },
+      { label: 'Refund & Replacement Policy', labelTh: 'นโยบายคืนเงินและเปลี่ยนสินค้า', href: '/refund-replacement' },
     ],
   },
   {
