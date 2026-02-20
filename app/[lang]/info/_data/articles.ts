@@ -36,7 +36,7 @@ export type ArticleMeta = {
 
 export const articles: ArticleMeta[] = [
   {
-    slug: 'flowers-chiang-mai',
+    slug: 'how-to-order-flower-delivery-chiang-mai',
     title: 'How to Order Flower Delivery in Chiang Mai',
     excerpt:
       'Place an order on our website, then message us your order link or number to confirm details. Payment happens after confirmation. Delivery in Chiang Mai 08:00–20:00; orders after 18:00 may move to the next day.',

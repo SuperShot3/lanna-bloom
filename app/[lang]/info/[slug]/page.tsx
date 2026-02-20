@@ -16,7 +16,7 @@ export const revalidate = 3600;
 const CONTENT_DIR = path.join(process.cwd(), 'content', 'info');
 
 /**
- * Load MDX content for an article. Tries [slug].[lang].mdx first (e.g. flowers-chiang-mai.th.mdx),
+ * Load MDX content for an article. Tries [slug].[lang].mdx first (e.g. how-to-order-flower-delivery-chiang-mai.th.mdx),
  * then falls back to [slug].mdx for articles not yet migrated to locale-specific files.
  */
 async function getMdxContent(slug: string, lang: string): Promise<string | null> {
@@ -68,7 +68,7 @@ export async function generateMetadata({
 }
 
 export function generateStaticParams() {
-  const slugs = ['flowers-chiang-mai',
+  const slugs = ['how-to-order-flower-delivery-chiang-mai',
     'rose-bouquets-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
     'flower-delivery-to-hospitals-chiang-mai',

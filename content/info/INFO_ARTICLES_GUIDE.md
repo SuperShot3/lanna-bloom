@@ -1,6 +1,6 @@
 # Guides / Info Articles — Add a New Article (EN + TH)
 
-This guide shows the **only** steps you need to add a new Info Article to the repo with **both languages from day one** (English + Thai). Use `flowers-chiang-mai` as the reference example.
+This guide shows the **only** steps you need to add a new Info Article to the repo with **both languages from day one** (English + Thai). Use `how-to-order-flower-delivery-chiang-mai` as the reference example.
 
 ---
 
@@ -80,7 +80,7 @@ File: app/[lang]/info/[slug]/page.tsx
 Add your slug to the slugs array inside generateStaticParams:
 
 const slugs = [
-  'flowers-chiang-mai',
+  'how-to-order-flower-delivery-chiang-mai',
   'rose-bouquets-chiang-mai',
   'same-day-flower-delivery-chiang-mai',
   'your-article-slug', // ← Add this
@@ -108,7 +108,7 @@ Add the new article under each locale block if you want it indexed.
  1. Featured article (top section) Та которая самая большая ( изменить Феатуре на тру)
 The article with featured: true is shown in the large section at the top.
 File: app/[lang]/info/_data/articles.ts
-{  slug: 'flowers-chiang-mai',  // ...  
+{  slug: 'how-to-order-flower-delivery-chiang-mai',  // ...  
  featured: true,   // ← This one appears in the big section at top},
  {  slug: 'rose-bouquets-chiang-mai',  // ...  
    featured: false,  // ← Shown in the grid below},
