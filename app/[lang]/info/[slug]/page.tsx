@@ -68,11 +68,12 @@ export async function generateMetadata({
 }
 
 export function generateStaticParams() {
-  const slugs = ['how-to-order-flower-delivery-chiang-mai',
+  const slugs = [
+    'how-to-order-flower-delivery-chiang-mai',
     'rose-bouquets-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
     'flower-delivery-to-hospitals-chiang-mai',
-     // ← Add New article here slug 
+    'delivery-policy-chiang-mai',
   ];
   const params: { lang: string; slug: string }[] = [];
   for (const lang of ['en', 'th']) {

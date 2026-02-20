@@ -94,6 +94,26 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: 'delivery-policy-chiang-mai',
+    title: 'Delivery Policy (Chiang Mai)',
+    excerpt:
+      'Lanna Bloom delivery policy for Chiang Mai: service hours 08:00–20:00, delivery areas, required chat confirmation, address requirements, and more. Contact us via LINE, WhatsApp, or Telegram to confirm your order.',
+    titleTh: 'นโยบายการจัดส่ง (Lanna Bloom)',
+    excerptTh:
+      'นโยบายการจัดส่งของ Lanna Bloom ในเชียงใหม่: เวลาบริการ 08:00–20:00 พื้นที่จัดส่ง การยืนยันผ่านแชท ข้อมูลที่อยู่ และอื่นๆ ติดต่อเราผ่าน LINE, WhatsApp หรือ Telegram เพื่อยืนยันออเดอร์',
+    publishedAt: '2026-02-20T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 50%, #ef9a9a 100%)',
+      center: { kind: 'emoji', value: '📧' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Refund / Replacement / Cancellation Policy', labelTh: 'นโยบายคืนเงิน / เปลี่ยนสินค้า / ยกเลิก', href: '/refund-replacement' },
+    ],
+  },
+  {
     slug: 'flower-delivery-to-hospitals-chiang-mai', // URL-friendly, lowercase, hyphens (e.g. birthday-flowers)
     title: 'How to Deliver Flowers to Hospitals in Chiang Mai', // English title
     excerpt: 'Sending flowers to someone in a hospital? Here’s the easiest way to arrange delivery in Chiang Mai, plus links to major hospitals to confirm addresses and contact numbers.', // English excerpt (1–2 sentences)
