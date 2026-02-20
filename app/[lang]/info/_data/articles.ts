@@ -52,8 +52,6 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-      { label: 'Contact on LINE / WhatsApp / Telegram', labelTh: 'ติดต่อ LINE / WhatsApp / Telegram', href: '/contact' },
-      { label: 'Refund & Replacement Policy', labelTh: 'นโยบายคืนเงินและเปลี่ยนสินค้า', href: '/refund-replacement' },
     ],
   },
   {

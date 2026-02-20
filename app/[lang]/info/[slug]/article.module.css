@@ -133,6 +133,7 @@
   gap: 12px;
 }
 
+/* CTA button — distinct from inline article links, no underline */
 .infoArticleCtaLink {
   display: inline-flex;
   align-items: center;
@@ -140,17 +141,18 @@
   min-height: 44px;
   padding: 10px 20px;
   background: var(--accent);
-  color: #fff;
+  color: rgba(255, 255, 255, 1) !important;
   font-weight: 600;
   font-size: 0.95rem;
   border-radius: 9999px;
-  text-decoration: none;
+  text-decoration: none !important;
   transition: opacity 0.2s, transform 0.15s;
 }
 
 .infoArticleCtaLink:hover {
   opacity: 0.95;
   transform: translateY(-1px);
+  color: rgba(255, 255, 255, 1) !important;
 }
 
 .infoArticleCtaLinkSecondary {
