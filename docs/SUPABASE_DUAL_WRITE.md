@@ -1,4 +1,6 @@
-# Supabase Dual-Write
+# Supabase Dual-Write (DEPRECATED)
+
+> **Supabase is now the primary order store.** See [ORDERS_SUPABASE.md](ORDERS_SUPABASE.md). `SUPABASE_DUAL_WRITE_ENABLED` is still used for legacy dual-write when `ORDERS_PRIMARY_STORE=blob`.
 
 Dual-write keeps legacy Blob/JSON storage as the primary source of truth while populating Supabase in parallel for Admin Dashboard v2 and improved customer tracking.
 

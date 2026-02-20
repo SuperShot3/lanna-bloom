@@ -115,6 +115,8 @@ export async function dualWriteOrder(order: Order): Promise<void> {
         : null,
       referral_code: order.referralCode ?? null,
       referral_discount: order.referralDiscount ?? 0,
+      fulfillment_status: (order as { fulfillmentStatus?: string }).fulfillmentStatus ?? 'new',
+      fulfillment_status_updated_at: (order as { fulfillmentStatusUpdatedAt?: string }).fulfillmentStatusUpdatedAt ?? new Date().toISOString(),
     };
 
     const { error: upsertError } = await supabase

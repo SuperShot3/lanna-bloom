@@ -31,6 +31,10 @@ export default async function OrderDetailsPage({
   const baseUrl = getBaseUrl();
 
   const supabasePayment = await getSupabasePaymentStatusByOrderId(order.orderId);
+  const fulfillmentStatus =
+    supabasePayment?.fulfillment_status ?? order.fulfillmentStatus ?? 'new';
+  const fulfillmentStatusUpdatedAt =
+    supabasePayment?.fulfillment_status_updated_at ?? order.fulfillmentStatusUpdatedAt;
 
   return (
     <div className="order-page">
@@ -38,6 +42,7 @@ export default async function OrderDetailsPage({
         <h1 className="order-page-title">{t.orderDetails}</h1>
         <OrderDetailsView
           order={order}
+          orderId={order.orderId}
           detailsUrl={detailsUrl}
           baseUrl={baseUrl}
           copyOrderIdLabel={t.copyOrderId}
@@ -47,6 +52,8 @@ export default async function OrderDetailsPage({
           supabasePaymentStatus={supabasePayment?.payment_status ?? undefined}
           supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
           supabasePaidAt={supabasePayment?.paid_at ?? undefined}
+          fulfillmentStatus={fulfillmentStatus}
+          fulfillmentStatusUpdatedAt={fulfillmentStatusUpdatedAt ?? undefined}
         />
       </div>
     </div>

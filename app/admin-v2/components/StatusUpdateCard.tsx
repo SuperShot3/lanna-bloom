@@ -18,6 +18,17 @@ const ORDER_STATUSES = [
 
 const PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED'];
 
+/** Customer-facing fulfillment status (shown on order page) */
+const FULFILLMENT_STATUSES = [
+  'new',
+  'confirmed',
+  'preparing',
+  'dispatched',
+  'delivered',
+  'cancelled',
+  'issue',
+] as const;
+
 interface StatusUpdateCardProps {
   order: SupabaseOrderRow;
   canEdit: boolean;
@@ -28,8 +39,12 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
   const router = useRouter();
   const [orderStatus, setOrderStatus] = useState(order.order_status ?? 'NEW');
   const [paymentStatus, setPaymentStatus] = useState(order.payment_status ?? 'PENDING');
+  const [fulfillmentStatus, setFulfillmentStatus] = useState(
+    order.fulfillment_status ?? 'new'
+  );
   const [savingOrder, setSavingOrder] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
+  const [savingFulfillment, setSavingFulfillment] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleOrderStatusChange = async (newStatus: string) => {
@@ -58,6 +73,38 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
       setOrderStatus(order.order_status ?? 'NEW');
     } finally {
       setSavingOrder(false);
+    }
+  };
+
+  const handleFulfillmentStatusChange = async (newStatus: string) => {
+    if (!canEdit || savingFulfillment) return;
+    if (newStatus === (order.fulfillment_status ?? 'new')) return;
+    setFulfillmentStatus(newStatus);
+    setSavingFulfillment(true);
+    setMessage(null);
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${encodeURIComponent(order.order_id)}/fulfillment-status`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fulfillment_status: newStatus }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error ?? 'Failed to update fulfillment status' });
+        setFulfillmentStatus(order.fulfillment_status ?? 'new');
+        return;
+      }
+      setMessage({ type: 'success', text: 'Fulfillment status updated' });
+      setTimeout(() => setMessage(null), 3000);
+      router.refresh();
+    } catch (e) {
+      setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
+      setFulfillmentStatus(order.fulfillment_status ?? 'new');
+    } finally {
+      setSavingFulfillment(false);
     }
   };
 
@@ -120,6 +167,33 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
             <p>
               <span className={`admin-v2-badge admin-v2-badge-${(orderStatus ?? '').toLowerCase()}`}>
                 {orderStatus ?? '—'}
+              </span>
+            </p>
+          )}
+        </div>
+        <div className="admin-v2-status-group">
+          <label htmlFor="fulfillment-status">Fulfillment status (customer-facing)</label>
+          {canEdit ? (
+            <div className="admin-v2-status-row">
+              <select
+                id="fulfillment-status"
+                value={fulfillmentStatus}
+                onChange={(e) => handleFulfillmentStatusChange(e.target.value)}
+                disabled={savingFulfillment}
+                className="admin-v2-select"
+              >
+                {FULFILLMENT_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
+              {savingFulfillment && <span className="admin-v2-muted">Saving…</span>}
+            </div>
+          ) : (
+            <p>
+              <span className={`admin-v2-badge admin-v2-badge-fulfillment-${fulfillmentStatus}`}>
+                {fulfillmentStatus.charAt(0).toUpperCase() + fulfillmentStatus.slice(1)}
               </span>
             </p>
           )}

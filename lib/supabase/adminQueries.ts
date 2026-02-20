@@ -37,6 +37,8 @@ export interface SupabaseOrderRow {
   driver_name: string | null;
   driver_phone: string | null;
   delivery_google_maps_url: string | null;
+  fulfillment_status: string | null;
+  fulfillment_status_updated_at: string | null;
 }
 
 export interface SupabaseOrderItemRow {
@@ -246,6 +248,8 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   order_status: string | null;
   paid_at: string | null;
   payment_method: string | null;
+  fulfillment_status: string | null;
+  fulfillment_status_updated_at: string | null;
 } | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
@@ -253,7 +257,7 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('payment_status, order_status, paid_at, payment_method')
+      .select('payment_status, order_status, paid_at, payment_method, fulfillment_status, fulfillment_status_updated_at')
       .eq('order_id', orderId)
       .single();
 
@@ -263,6 +267,8 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
       order_status: string | null;
       paid_at: string | null;
       payment_method: string | null;
+      fulfillment_status: string | null;
+      fulfillment_status_updated_at: string | null;
     };
   } catch {
     return null;

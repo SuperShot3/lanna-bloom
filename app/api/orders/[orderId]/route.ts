@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById } from '@/lib/orders';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -13,5 +15,7 @@ export async function GET(
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
-  return NextResponse.json(order);
+  return NextResponse.json(order, {
+    headers: { 'Cache-Control': 'no-store' },
+  });
 }

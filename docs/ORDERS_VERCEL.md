@@ -1,4 +1,6 @@
-# Orders on Vercel
+# Orders on Vercel (DEPRECATED)
+
+> **Supabase is now the primary order store.** See [ORDERS_SUPABASE.md](ORDERS_SUPABASE.md) and [ROLLOUT_STEPS.md](ROLLOUT_STEPS.md). Blob remains as optional fallback during migration.
 
 ## Why the order link shows 404
 

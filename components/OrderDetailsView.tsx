@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShareIcon, LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
@@ -10,7 +10,7 @@ import {
   getTelegramOrderUrl,
 } from '@/lib/messenger';
 import { trackMessengerClick } from '@/lib/analytics';
-import type { Order } from '@/lib/orders';
+import type { Order, FulfillmentStatus } from '@/lib/orders';
 import type { ContactPreferenceOption } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -64,8 +64,22 @@ function getPaymentDisplayStatus(
   return 'awaiting_manual';
 }
 
+function getFulfillmentLabel(status: string, t: Record<string, string>): string {
+  const map: Record<string, string> = {
+    new: t.orderStatusNew ?? 'New',
+    confirmed: t.orderStatusConfirmed ?? 'Confirmed',
+    preparing: t.orderStatusPreparing ?? 'Preparing',
+    dispatched: t.orderStatusDispatched ?? 'Dispatched',
+    delivered: t.orderStatusDelivered ?? 'Delivered',
+    cancelled: t.orderStatusCancelled ?? 'Cancelled',
+    issue: t.orderStatusIssue ?? 'Issue',
+  };
+  return map[status] ?? status;
+}
+
 export function OrderDetailsView({
   order,
+  orderId,
   detailsUrl,
   baseUrl,
   copyOrderIdLabel,
@@ -75,8 +89,11 @@ export function OrderDetailsView({
   supabasePaymentStatus,
   supabasePaymentMethod,
   supabasePaidAt,
+  fulfillmentStatus = 'new',
+  fulfillmentStatusUpdatedAt,
 }: {
   order: Order;
+  orderId?: string;
   detailsUrl: string;
   baseUrl: string;
   copyOrderIdLabel: string;
@@ -86,10 +103,46 @@ export function OrderDetailsView({
   supabasePaymentStatus?: string;
   supabasePaymentMethod?: string;
   supabasePaidAt?: string;
+  fulfillmentStatus?: FulfillmentStatus | string;
+  fulfillmentStatusUpdatedAt?: string;
 }) {
+  const resolvedOrderId = orderId ?? order.orderId;
   const t = translations[locale].orderPage;
   const tCart = translations[locale].cart;
   const [copied, setCopied] = useState<'id' | 'link' | 'all' | null>(null);
+  const [liveFulfillment, setLiveFulfillment] = useState({
+    status: fulfillmentStatus,
+    updatedAt: fulfillmentStatusUpdatedAt,
+  });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const finalStatus = liveFulfillment.status ?? fulfillmentStatus;
+  const finalUpdatedAt = liveFulfillment.updatedAt ?? fulfillmentStatusUpdatedAt;
+  const isFinalState = finalStatus === 'delivered' || finalStatus === 'cancelled';
+
+  const refreshStatus = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(resolvedOrderId)}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setLiveFulfillment({
+          status: data.fulfillmentStatus ?? data.fulfillment_status ?? 'new',
+          updatedAt: data.fulfillmentStatusUpdatedAt ?? data.fulfillment_status_updated_at,
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setRefreshing(false);
+    }
+  }, [resolvedOrderId]);
+
+  useEffect(() => {
+    if (isFinalState) return;
+    const interval = setInterval(refreshStatus, 15000);
+    return () => clearInterval(interval);
+  }, [isFinalState, refreshStatus]);
 
   const paymentDisplay = getPaymentDisplayStatus(
     supabasePaymentStatus,
@@ -199,6 +252,7 @@ export function OrderDetailsView({
     <div className="order-details-view">
       {/* Payment status badge */}
       <div className="order-details-section order-details-payment-badge">
+        <h2 className="order-details-heading">{t.paymentHeading ?? 'Payment'}</h2>
         <span
           className={
             paymentDisplay === 'confirmed'
@@ -213,6 +267,32 @@ export function OrderDetailsView({
             {new Date(supabasePaidAt).toLocaleString()}
           </span>
         )}
+      </div>
+
+      {/* Order status (fulfillment) */}
+      <div className="order-details-section order-details-fulfillment-badge">
+        <h2 className="order-details-heading">{t.orderStatusHeading ?? 'Order status'}</h2>
+        <div className="order-details-fulfillment-row">
+          <span className={`order-details-badge order-details-badge-fulfillment-${String(finalStatus)}`}>
+            {getFulfillmentLabel(String(finalStatus), t)}
+          </span>
+          {finalUpdatedAt && (
+            <span className="order-details-fulfillment-updated">
+              {t.orderStatusUpdatedAt ?? 'Updated'}: {new Date(finalUpdatedAt).toLocaleString()}
+            </span>
+          )}
+          {!isFinalState && (
+            <button
+              type="button"
+              className="order-details-refresh-btn"
+              onClick={refreshStatus}
+              disabled={refreshing}
+              aria-label={t.refreshStatus ?? 'Refresh status'}
+            >
+              {refreshing ? '…' : (t.refreshStatus ?? 'Refresh status')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Contact Lanna Bloom - LINE, WhatsApp, Telegram */}
@@ -646,6 +726,44 @@ export function OrderDetailsView({
         .order-details-paid-at {
           font-size: 0.85rem;
           color: var(--text-muted);
+        }
+        .order-details-fulfillment-badge {
+          margin-bottom: 24px;
+        }
+        .order-details-fulfillment-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .order-details-fulfillment-updated {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+        }
+        .order-details-badge-fulfillment-new { background: #e3f2fd; color: #1565c0; }
+        .order-details-badge-fulfillment-confirmed { background: #e8f5e9; color: #2e7d32; }
+        .order-details-badge-fulfillment-preparing { background: #fff3e0; color: #e65100; }
+        .order-details-badge-fulfillment-dispatched { background: #f3e5f5; color: #7b1fa2; }
+        .order-details-badge-fulfillment-delivered { background: #e8f5e9; color: #1b5e20; }
+        .order-details-badge-fulfillment-cancelled { background: #ffebee; color: #c62828; }
+        .order-details-badge-fulfillment-issue { background: #fff8e1; color: #f57f17; }
+        .order-details-refresh-btn {
+          padding: 6px 12px;
+          font-size: 0.85rem;
+          color: var(--accent);
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .order-details-refresh-btn:hover:not(:disabled) {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+        }
+        .order-details-refresh-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
         .order-details-delivery-note {
           font-size: 0.85rem;
