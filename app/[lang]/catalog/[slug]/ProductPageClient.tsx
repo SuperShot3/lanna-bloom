@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import type { Bouquet } from '@/lib/bouquets';
@@ -23,7 +23,10 @@ export function ProductPageClient({
   compositionText: string;
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const images = bouquet.images ?? [];
+  const images = useMemo(
+    () => bouquet.images ?? [],
+    [bouquet.id, bouquet.images?.join?.() ?? '']
+  );
   const selectedImageUrl =
     images[selectedImageIndex] ?? images[0] ?? undefined;
 
@@ -52,7 +55,7 @@ export function ProductPageClient({
     <>
       <div className="product-gallery-wrap">
         <ProductGallery
-          images={bouquet.images}
+          images={images}
           name={name}
           productId={bouquet.id}
           activeIndex={selectedImageIndex}

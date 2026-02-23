@@ -121,7 +121,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
 
   return (
     <article className="card">
-      <PrefetchLink href={href} className="card-link" onClick={handleLinkClick}>
+      <PrefetchLink href={href} className="card-link" data-ga-select-item="catalog" onClick={handleLinkClick}>
         <div
           className="card-image-wrap"
           style={
@@ -170,12 +170,11 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           <p className="card-price">
             {t.from} ฿{minPrice.toLocaleString()}
           </p>
-          <p className="card-delivery">{t.deliveryNote}</p>
-          <span className="card-cta">{t.viewDetails}</span>
         </div>
       </PrefetchLink>
       <style jsx>{`
         .card {
+          max-height: 390px;
           background: var(--surface);
           border-radius: var(--radius);
           overflow: hidden;
@@ -243,39 +242,31 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         .card-title {
           font-family: var(--font-serif);
           font-size: 1.15rem;
-          font-weight: 600;
+          font-weight: 700;
           margin: 0 0 6px;
           color: var(--text);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .card-price {
           font-size: 0.95rem;
-          color: var(--text-muted);
-          margin: 0 0 6px;
-        }
-        .card-delivery {
-          font-size: 0.8rem;
+          font-weight: 700;
           color: var(--text-muted);
           margin: 0 0 10px;
-          line-height: 1.35;
         }
-        .card-cta {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 36px;
-          padding: 6px 14px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          color: var(--accent);
-          background: transparent;
-          border: 2px solid var(--accent);
-          border-radius: 9999px;
-          transition: background 0.2s, color 0.2s, transform 0.2s;
-          white-space: nowrap;
-        }
-        .card-link:hover .card-cta {
-          background: var(--accent-soft);
-          color: var(--text);
+        @media (max-width: 600px) {
+          .card-body {
+            padding: 12px;
+          }
+          .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+          }
+          .card-price {
+            font-size: 0.9rem;
+            font-weight: 700;
+          }
         }
       `}</style>
     </article>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Image from 'next/image';
 import './ProductGallery.css';
@@ -31,16 +31,64 @@ export function ProductGallery({
   const active = isControlled ? activeIndex : internalActive;
   const setActive = isControlled ? onActiveChange! : setInternalActive;
 
-  const list = images?.length ? images : [FALLBACK_IMAGE];
+  const imagesKey = images?.join?.(',') ?? '';
+  const list = useMemo(
+    () => (images?.length ? images : [FALLBACK_IMAGE]),
+    [imagesKey]
+  );
   const current = list[active] ?? list[0] ?? FALLBACK_IMAGE;
   const viewTransitionName = productId ? `product-${productId}` : undefined;
 
+  const [sliderReady, setSliderReady] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: 'center',
     skipSnaps: false,
     dragFree: false,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    const firstSrc = list[0];
+    const run = async () => {
+      if (!firstSrc) {
+        setSliderReady(true);
+        return;
+      }
+      if (firstSrc.startsWith('data:')) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!cancelled) setSliderReady(true);
+          });
+        });
+        return;
+      }
+      try {
+        const img = document.createElement('img');
+        img.src = firstSrc;
+        if (typeof img.decode === 'function') {
+          await img.decode();
+        } else {
+          await new Promise<void>((res) => {
+            img.onload = () => res();
+            img.onerror = () => res();
+          });
+        }
+        if (cancelled) return;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!cancelled) setSliderReady(true);
+          });
+        });
+      } catch {
+        if (!cancelled) setSliderReady(true);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [list[0]]);
 
   const goPrev = useCallback(() => {
     emblaApi?.scrollPrev();
@@ -59,14 +107,14 @@ export function ProductGallery({
 
   useEffect(() => {
     if (!emblaApi) return;
-    const onSelect = () => {
+    const onSettle = () => {
       const idx = emblaApi.selectedScrollSnap();
       setActive(idx);
     };
-    emblaApi.on('select', onSelect);
-    onSelect();
+    emblaApi.on('settle', onSettle);
+    onSettle();
     return () => {
-      emblaApi.off('select', onSelect);
+      emblaApi.off('settle', onSettle);
     };
   }, [emblaApi, setActive]);
 
@@ -142,7 +190,7 @@ export function ProductGallery({
         tabIndex={0}
         aria-label="View image full size"
       >
-        <div className="gallery-viewport" ref={emblaRef}>
+        <div className="gallery-viewport" ref={sliderReady ? emblaRef : undefined}>
           <div className="gallery-container">
             {list.map((src, i) => (
               <div key={i} className="gallery-slide">

@@ -13,6 +13,8 @@
 **Google Tag Manager (optional)**  
 Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pushed to `dataLayer`; the app does **not** load gtag, so there is no duplicate tracking. In GTM, add a GA4 Configuration tag (your Measurement ID) and GA4 Event tags (or a single tag with triggers) that fire on the same event names and pass the pushed parameters through to GA4. Container ID defaults to `GTM-T4JGL85T`; override with `NEXT_PUBLIC_GTM_ID`.
 
+**select_item and catalog cards:** The `select_item` event is pushed from code when the user clicks anywhere on a bouquet card (the whole card is a link; the "View details" button was removed). Use a **Custom Event** trigger with event name `select_item` in GTM—do not rely on element-based click triggers. If you use element-based triggers, target `.card-link` or `[data-ga-select-item="catalog"]` instead of the removed `.card-cta`.
+
 ---
 
 ## 2. Key events strategy (GA4 Admin)
@@ -50,7 +52,7 @@ Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pu
 2. **Checklist**
    - [ ] **page_view** – Fires on initial load and when changing route (e.g. `/en`, `/en/catalog`, `/en/catalog/slug`, `/en/cart`, `/en/checkout/success`).
    - [ ] **view_item_list** – Fires once when opening catalog with at least one product; params: `item_list_id` / `item_list_name`, `items[]`, `currency`.
-   - [ ] **select_item** – Fires when clicking a bouquet card (not on swipe); params: `item_list_id`, `items[]`.
+   - [ ] **select_item** – Fires when clicking anywhere on a bouquet card (whole card is the link; not on swipe); params: `item_list_id`, `items[]`.
    - [ ] **view_item** – Fires once per product page; params: `items[]` (with `item_variant`), `currency`, `value`.
    - [ ] **add_to_cart** – Fires when clicking “Add to cart” on product page; params: `items[]` (with `item_variant`), `value`, `currency`.
    - [ ] **view_cart** – Fires once when opening cart with items; params: `items[]`, `value`, `currency`.
@@ -76,7 +78,7 @@ Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pu
 |------------|----------------|------------|
 | **page_view** | Every route change (App Router client nav) | `page_path`, `page_location` |
 | **view_item_list** | Catalog page load (once per session for list “catalog”) | `item_list_id`, `item_list_name`, `items[]`, `currency` |
-| **select_item** | Click on a bouquet card in catalog | `item_list_id`, `items[]` (one item), `currency` |
+| **select_item** | Click anywhere on a bouquet card in catalog (whole card is clickable; no "View details" button) | `item_list_id`, `items[]` (one item), `currency` |
 | **view_item** | Product detail page load (once per product per session) | `items[]` (with `item_variant`), `value`, `currency` |
 | **add_to_cart** | “Add to cart” on product page | `items[]` (with `item_variant`), `value`, `currency` |
 | **view_cart** | Cart page with items (once per session) | `items[]`, `value`, `currency` |
