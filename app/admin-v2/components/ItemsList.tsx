@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import type { SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
+import type { SupabaseOrderItemRow, OrderItemAddOnsDisplay } from '@/lib/supabase/adminQueries';
 
 export interface ItemWithCatalog extends SupabaseOrderItemRow {
   catalogHref?: string;
+  addOns?: OrderItemAddOnsDisplay;
 }
 
 interface ItemsListProps {
@@ -13,6 +14,15 @@ interface ItemsListProps {
 function formatAmount(n: number | null | undefined): string {
   if (n == null) return '—';
   return `฿${Number(n).toLocaleString()}`;
+}
+
+function getWrappingLabel(opt: string | null | undefined): string {
+  if (!opt) return '—';
+  const lower = String(opt).toLowerCase();
+  if (lower === 'standard' || lower === 'classic') return 'Free';
+  if (lower === 'premium') return 'Premium';
+  if (lower === 'no paper' || lower === 'none') return 'No paper';
+  return opt;
 }
 
 export function ItemsList({ items }: ItemsListProps) {
@@ -57,6 +67,25 @@ export function ItemsList({ items }: ItemsListProps) {
               <span>Size: {item.size ?? '—'}</span>
               <span>Qty: 1</span>
               <span>{formatAmount(item.price)}</span>
+              {(item.addOns?.cardType != null || item.addOns?.wrappingOption || item.addOns?.cardMessage?.trim()) && (
+                <div className="admin-v2-item-addons">
+                  {item.addOns?.cardType != null && (
+                    <span className="admin-v2-addon-row">
+                      Card: {item.addOns.cardType === 'premium' ? 'Premium' : 'Free'}
+                    </span>
+                  )}
+                  {item.addOns?.wrappingOption && (
+                    <span className="admin-v2-addon-row">
+                      Wrapping: {getWrappingLabel(item.addOns.wrappingOption)}
+                    </span>
+                  )}
+                  {item.addOns?.cardMessage?.trim() && (
+                    <span className="admin-v2-addon-row admin-v2-addon-message">
+                      Message: &quot;{item.addOns.cardMessage.trim()}&quot;
+                    </span>
+                  )}
+                </div>
+              )}
               {item.catalogHref && (
                 <Link
                   href={item.catalogHref}

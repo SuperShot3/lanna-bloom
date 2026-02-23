@@ -1793,6 +1793,21 @@ a.filter-pill--active:hover {
 .admin-v2-item-catalog-link:hover {
   opacity: 0.9;
 }
+.admin-v2-item-addons {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.admin-v2-addon-row {
+  display: inline;
+}
+.admin-v2-addon-message {
+  font-style: italic;
+}
 .admin-v2-timeline {
   list-style: none;
   margin: 0;

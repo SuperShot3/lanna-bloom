@@ -39,6 +39,8 @@ export interface SupabaseOrderRow {
   delivery_google_maps_url: string | null;
   fulfillment_status: string | null;
   fulfillment_status_updated_at: string | null;
+  /** Full order payload; items include addOns (card, wrapping, message). */
+  order_json?: Record<string, unknown> | null;
 }
 
 export interface SupabaseOrderItemRow {
@@ -48,6 +50,13 @@ export interface SupabaseOrderItemRow {
   size: string | null;
   price: number | null;
   image_url_snapshot: string | null;
+}
+
+/** Add-on data for display (from order_json when available). */
+export interface OrderItemAddOnsDisplay {
+  cardType?: 'free' | 'premium' | null;
+  wrappingOption?: string | null;
+  cardMessage?: string | null;
 }
 
 export interface SupabaseStatusHistoryRow {

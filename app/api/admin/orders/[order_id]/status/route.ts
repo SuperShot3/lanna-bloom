@@ -68,12 +68,31 @@ export async function PATCH(
 
   const previousStatus = existing.order_status ?? 'NEW';
 
+  // Sync fulfillment_status (customer-facing) when Order status changes to final states.
+  // The customer order page displays fulfillment_status, not order_status.
+  const orderStatusToFulfillment: Record<string, string> = {
+    DELIVERED: 'delivered',
+    CANCELED: 'cancelled',
+    REFUNDED: 'cancelled',
+    PREPARING: 'preparing',
+    READY_FOR_DISPATCH: 'dispatched',
+    OUT_FOR_DELIVERY: 'dispatched',
+    ACCEPTED: 'confirmed',
+    PAID: 'confirmed',
+    NEW: 'new',
+  };
+  const fulfillmentStatus = orderStatusToFulfillment[orderStatus] ?? 'new';
+
+  const updatePayload: Record<string, unknown> = {
+    order_status: orderStatus,
+    updated_at: new Date().toISOString(),
+    fulfillment_status: fulfillmentStatus,
+    fulfillment_status_updated_at: new Date().toISOString(),
+  };
+
   const { data: updated, error } = await supabase
     .from('orders')
-    .update({
-      order_status: orderStatus,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('order_id', order_id.trim())
     .select()
     .single();

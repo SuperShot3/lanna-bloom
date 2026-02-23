@@ -43,8 +43,11 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
     notFound();
   }
 
+  // Merge addOns from order_json (Card, Wrapping, Message) into items.
+  // order_items table has no add-on columns; order_json stores full order with addOns.
+  const jsonItems = (order.order_json as { items?: Array<{ addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string } }> } | undefined)?.items ?? [];
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
-    items.map(async (item) => {
+    items.map(async (item, index) => {
       let catalogHref: string | undefined;
       if (item.bouquet_id) {
         const bouquet = await getBouquetById(item.bouquet_id);
@@ -52,7 +55,15 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
       } else {
         catalogHref = undefined;
       }
-      return { ...item, catalogHref };
+      const jsonItem = jsonItems[index];
+      const addOns = jsonItem?.addOns
+        ? {
+            cardType: (jsonItem.addOns.cardType as 'free' | 'premium' | null) ?? undefined,
+            wrappingOption: jsonItem.addOns.wrappingOption ?? undefined,
+            cardMessage: jsonItem.addOns.cardMessage ?? undefined,
+          }
+        : undefined;
+      return { ...item, catalogHref, addOns };
     })
   );
 
