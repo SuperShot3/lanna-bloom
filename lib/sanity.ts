@@ -164,7 +164,16 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   sizes
 }`;
 
-/** Approved bouquets with variety pricing (expensive, cheap, middle) interleaved; for home "Popular" section */
+/** Fisher-Yates shuffle; mutates array in place */
+function shuffleArray<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** Approved bouquets with variety pricing (expensive, cheap, middle) interleaved, then shuffled; for home "Popular" section. Order varies on each page generation. */
 export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouquet[]> {
   try {
     const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
@@ -199,8 +208,8 @@ export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouqu
       if (i < middle.length) interleaved.push(middle[i].bouquet);
     }
     
-    // Return limited results
-    return interleaved.slice(0, limit);
+    // Shuffle so different items appear first on each site update
+    return shuffleArray(interleaved).slice(0, limit);
   } catch (err) {
     console.error('[Sanity] getPopularBouquetsFromSanity failed:', err);
     return [];

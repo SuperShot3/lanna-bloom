@@ -7,6 +7,9 @@ import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { Suspense } from 'react';
 
+/** Regenerate every 60s so popular flowers shuffle on each update */
+export const revalidate = 60;
+
 export default function HomePage({
   params,
 }: {
