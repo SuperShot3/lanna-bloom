@@ -381,12 +381,6 @@ export function OrderDetailsView({
       </div>
 
       {/* No need to contact us — only when paid */}
-      {paymentDisplay === 'confirmed' && (
-        <div className="order-details-section order-details-reassurance">
-          <p className="order-details-reassurance-text">{t.noNeedToContactUs}</p>
-        </div>
-      )}
-
       {/* Delivery address */}
       <div className="order-details-section">
         <h2 className="order-details-heading">{t.address}</h2>
