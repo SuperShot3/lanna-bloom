@@ -5,8 +5,9 @@ import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 
-/** Always fetch from KV on each request; never cache the order page. */
+/** Always fetch fresh data; never cache. Status comes from Supabase (admin updates). */
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function OrderDetailsPage({
   params,
@@ -14,14 +15,15 @@ export default async function OrderDetailsPage({
   params: Promise<{ orderId: string }>;
 }) {
   const { orderId } = await params;
-  const order = await getOrderById(orderId);
+  const normalized = orderId?.trim() ?? '';
+  const order = await getOrderById(normalized);
   const t = translations[defaultLocale].orderPage;
 
   if (!order) {
     return (
       <div className="order-page">
         <div className="container">
-          <OrderNotFoundBlock orderId={orderId} t={t} locale={defaultLocale} />
+          <OrderNotFoundBlock orderId={normalized || orderId} t={t} locale={defaultLocale} />
         </div>
       </div>
     );
@@ -30,6 +32,7 @@ export default async function OrderDetailsPage({
   const detailsUrl = getOrderDetailsUrl(order.orderId);
   const baseUrl = getBaseUrl();
 
+  // Always fetch latest status from Supabase (single source of truth).
   const supabasePayment = await getSupabasePaymentStatusByOrderId(order.orderId);
   const fulfillmentStatus =
     supabasePayment?.fulfillment_status ?? order.fulfillmentStatus ?? 'new';

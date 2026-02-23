@@ -9,14 +9,13 @@ Supabase is the primary order store for Lanna Bloom. Blob is optional fallback d
 | `SUPABASE_URL` | Yes (for Supabase primary) | — | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (for Supabase primary) | — | Service role key. **Never expose to client.** |
 | `ORDERS_PRIMARY_STORE` | No | `supabase` when Supabase configured | `supabase` or `blob` |
-| `ORDERS_READ_FALLBACK` | No | `blob` | `blob` (fallback to Blob when order not in Supabase) or `none` |
-| `ORDERS_DUAL_WRITE_BLOB` | No | `false` | `true` to also write new orders to Blob during rollout |
-| `BLOB_READ_WRITE_TOKEN` | When fallback/dual-write | — | Vercel Blob token |
+| `ORDERS_READ_FALLBACK` | No | `none` | `none` (Supabase only) or `blob` (legacy fallback) |
+| `BLOB_READ_WRITE_TOKEN` | When `ORDERS_READ_FALLBACK=blob` | — | Vercel Blob token |
 
 ## Architecture
 
-- **Primary:** Supabase. All create/read/update goes through the order router.
-- **Fallback:** When `ORDERS_READ_FALLBACK=blob`, orders not found in Supabase are read from Blob. If found in Blob, they are auto-backfilled to Supabase.
+- **Single source of truth:** Supabase. All create/read/update goes through the order router.
+- **No Blob by default:** `ORDERS_READ_FALLBACK` defaults to `none`. Set `ORDERS_READ_FALLBACK=blob` only for legacy migration fallback.
 - **Rollback:** Set `ORDERS_PRIMARY_STORE=blob` to restore Blob-only behavior.
 
 ## Fulfillment Status
@@ -31,8 +30,8 @@ Stripe webhook events are recorded in `stripe_events` to prevent double-processi
 
 1. Run Supabase migration: `supabase/migrations/20250220000000_orders_supabase_primary.sql`
 2. Run migration script: `npx tsx scripts/migrate_blob_orders_to_supabase.ts`
-3. Set env vars and deploy with `ORDERS_PRIMARY_STORE=supabase`, `ORDERS_READ_FALLBACK=blob`
-4. After 3–7 days stable: set `ORDERS_READ_FALLBACK=none`, remove Blob
+3. Set env vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ORDERS_PRIMARY_STORE=supabase`
+4. Deploy. Supabase is the single source of truth; no Blob fallback by default.
 
 ## Files
 

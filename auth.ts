@@ -52,7 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   pages: {
-    signIn: '/admin-v2/login',
+    signIn: '/admin/login',
   },
   callbacks: {
     jwt({ token, user }) {

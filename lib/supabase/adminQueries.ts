@@ -263,11 +263,14 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
 
+  const normalized = String(orderId ?? '').trim();
+  if (!normalized) return null;
+
   try {
     const { data, error } = await supabase
       .from('orders')
       .select('payment_status, order_status, paid_at, payment_method, fulfillment_status, fulfillment_status_updated_at')
-      .eq('order_id', orderId)
+      .eq('order_id', normalized)
       .single();
 
     if (error || !data) return null;

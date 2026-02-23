@@ -2,8 +2,8 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { FiltersBar } from '@/app/admin-v2/components/FiltersBar';
-import { OrderTable } from '@/app/admin-v2/components/OrderTable';
+import { FiltersBar } from '@/app/admin/components/FiltersBar';
+import { OrderTable } from '@/app/admin/components/OrderTable';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 
 interface OrdersListClientProps {
@@ -45,7 +45,7 @@ export function OrdersListClient({
       if (v && v !== 'all') next.set(k, v);
       else next.delete(k);
     });
-    router.push(`/admin-v2/orders?${next.toString()}`);
+    router.push(`/admin/orders?${next.toString()}`);
   };
 
   const totalPages = Math.ceil(initialTotal / pageSize) || 1;
@@ -55,12 +55,9 @@ export function OrdersListClient({
       <header className="admin-v2-header">
         <div>
           <h1 className="admin-v2-title">Orders</h1>
-          <p className="admin-v2-hint">Admin Dashboard v2 — Supabase</p>
+          <p className="admin-v2-hint">Admin — Orders</p>
         </div>
         <div className="admin-v2-header-actions">
-          <Link href="/admin-v2/overview" className="admin-v2-link">
-            Overview
-          </Link>
           <a
             href={`/api/admin/orders/export?${searchParams.toString()}`}
             className="admin-v2-btn admin-v2-btn-outline"
@@ -68,7 +65,7 @@ export function OrdersListClient({
           >
             Export CSV
           </a>
-          <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
+          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
             Log out
           </a>
         </div>
@@ -103,7 +100,7 @@ export function OrdersListClient({
                   onClick={() => {
                     const next = new URLSearchParams(searchParams.toString());
                     next.set('page', String(initialPage - 1));
-                    router.push(`/admin-v2/orders?${next.toString()}`);
+                    router.push(`/admin/orders?${next.toString()}`);
                   }}
                   className="admin-v2-btn admin-v2-btn-sm"
                 >
@@ -118,7 +115,7 @@ export function OrdersListClient({
                   onClick={() => {
                     const next = new URLSearchParams(searchParams.toString());
                     next.set('page', String(initialPage + 1));
-                    router.push(`/admin-v2/orders?${next.toString()}`);
+                    router.push(`/admin/orders?${next.toString()}`);
                   }}
                   className="admin-v2-btn admin-v2-btn-sm"
                 >

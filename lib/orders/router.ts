@@ -1,10 +1,9 @@
 import 'server-only';
 /**
- * Order store router. Picks backend based on env flags.
+ * Order store router. Supabase is single source of truth when configured.
  *
  * ORDERS_PRIMARY_STORE = "supabase" | "blob" (default: "supabase" when Supabase configured)
- * ORDERS_READ_FALLBACK = "blob" | "none" (default: "blob" during rollout)
- * ORDERS_DUAL_WRITE_BLOB = "true" | "false" (default: "false")
+ * ORDERS_READ_FALLBACK = "blob" | "none" (default: "none" — no Blob fallback)
  */
 
 import type { Order, OrderPayload } from './types';
@@ -22,12 +21,8 @@ function getPrimaryStore(): 'supabase' | 'blob' {
 
 function getReadFallback(): 'blob' | 'none' {
   const env = process.env.ORDERS_READ_FALLBACK?.toLowerCase().trim();
-  if (env === 'none') return 'none';
-  return 'blob';
-}
-
-function shouldDualWriteBlob(): boolean {
-  return process.env.ORDERS_DUAL_WRITE_BLOB === 'true';
+  if (env === 'blob') return 'blob';
+  return 'none'; // default: Supabase only, no Blob fallback
 }
 
 export function generateOrderId(): string {
@@ -76,17 +71,9 @@ export async function getOrderByStripeSessionId(stripeSessionId: string): Promis
 
 export async function createOrder(payload: OrderPayload): Promise<Order> {
   const primary = getPrimaryStore();
-  const dualWriteBlob = shouldDualWriteBlob();
 
   if (primary === 'supabase') {
-    const order = await supabaseStore.supabaseCreateOrder(payload);
-    if (dualWriteBlob) {
-      void blobStore.blobCreateOrder(payload).catch(() => {});
-    }
-    void import('@/lib/supabase/orderAdapter').then(({ dualWriteOrder }) =>
-      dualWriteOrder(order).catch(() => {})
-    );
-    return order;
+    return supabaseStore.supabaseCreateOrder(payload);
   }
 
   const order = await blobStore.blobCreateOrder(payload);
@@ -98,17 +85,9 @@ export async function createOrder(payload: OrderPayload): Promise<Order> {
 
 export async function createPendingOrder(payload: OrderPayload): Promise<Order> {
   const primary = getPrimaryStore();
-  const dualWriteBlob = shouldDualWriteBlob();
 
   if (primary === 'supabase') {
-    const order = await supabaseStore.supabaseCreateOrder(payload, 'pending_payment');
-    if (dualWriteBlob) {
-      void blobStore.blobCreateOrder(payload, 'pending_payment').catch(() => {});
-    }
-    void import('@/lib/supabase/orderAdapter').then(({ dualWriteOrder }) =>
-      dualWriteOrder(order).catch(() => {})
-    );
-    return order;
+    return supabaseStore.supabaseCreateOrder(payload, 'pending_payment');
   }
 
   const order = await blobStore.blobCreateOrder(payload, 'pending_payment');
@@ -142,12 +121,7 @@ export async function deleteOrder(orderId: string): Promise<boolean> {
   const primary = getPrimaryStore();
 
   if (primary === 'supabase') {
-    const supabase = getSupabaseAdmin();
-    if (supabase) {
-      const { deleteSupabaseOrder } = await import('@/lib/supabase/orderAdapter');
-      await deleteSupabaseOrder(orderId);
-      return true;
-    }
+    return supabaseStore.supabaseDeleteOrder(orderId);
   }
 
   return blobStore.blobDeleteOrder(orderId);

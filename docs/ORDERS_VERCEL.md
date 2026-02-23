@@ -52,10 +52,10 @@ That is expected. The cart is stored in the browser (localStorage) and is only c
 To see current orders and remove them (e.g. after delivery):
 
 1. **URL**  
-   - Local: `http://localhost:3000/admin-v2`  
-   - Production: `https://<your-domain>/admin-v2`  
-   Example: `https://www.lannabloom.shop/admin-v2`  
-   (Legacy `/admin/orders` redirects to `/admin-v2/orders`.)
+   - Local: `http://localhost:3000/admin`  
+   - Production: `https://<your-domain>/admin`  
+   Example: `https://www.lannabloom.shop/admin`  
+   (Legacy `/admin/orders` redirects to `/admin/orders`.)
 
 2. **Setup**  
    - Set `AUTH_SECRET` in your environment (required for NextAuth).  

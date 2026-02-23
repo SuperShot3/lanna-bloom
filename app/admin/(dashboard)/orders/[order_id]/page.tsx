@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
 import { getBouquetById } from '@/lib/sanity';
-import { OrderSummaryCard } from '@/app/admin-v2/components/OrderSummaryCard';
-import { ItemsList, type ItemWithCatalog } from '@/app/admin-v2/components/ItemsList';
-import { CostsAndProfitCard } from '@/app/admin-v2/components/CostsAndProfitCard';
-import { StatusUpdateCard } from '@/app/admin-v2/components/StatusUpdateCard';
-import { PaymentCard } from '@/app/admin-v2/components/PaymentCard';
-import { RemoveOrderButton } from '@/app/admin-v2/components/RemoveOrderButton';
+import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
+import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
+import { CostsAndProfitCard } from '@/app/admin/components/CostsAndProfitCard';
+import { StatusUpdateCard } from '@/app/admin/components/StatusUpdateCard';
+import { PaymentCard } from '@/app/admin/components/PaymentCard';
+import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 
@@ -22,10 +22,10 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
   const session = await auth();
   const { order, items, statusHistory, error } = await getOrderByOrderId(order_id);
   const role = session?.user ? (session.user as { role?: string }).role : undefined;
-  const backHref = returnTo && returnTo.startsWith('/admin-v2') ? returnTo : '/admin-v2/orders';
+  const backHref = returnTo && returnTo.startsWith('/admin') ? returnTo : '/admin/orders';
 
   if (error) {
-    const errBackHref = returnTo && returnTo.startsWith('/admin-v2') ? returnTo : '/admin-v2/orders';
+    const errBackHref = returnTo && returnTo.startsWith('/admin') ? returnTo : '/admin/orders';
     return (
       <div className="admin-v2-detail">
         <header className="admin-v2-header">
@@ -83,7 +83,7 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
             returnTo={backHref}
             canEdit={canChangeStatus(role)}
           />
-          <a href="/api/auth/signout?callbackUrl=/admin-v2/login" className="admin-v2-btn admin-v2-btn-outline">
+          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
             Log out
           </a>
         </div>

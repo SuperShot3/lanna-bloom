@@ -412,6 +412,22 @@ export async function supabaseGetOrderByStripeSessionId(stripeSessionId: string)
   return supabaseGetOrderById(row.order_id);
 }
 
+export async function supabaseDeleteOrder(orderId: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const normalized = orderId.trim();
+  await supabase.from('order_items').delete().eq('order_id', normalized);
+  await supabase.from('order_status_history').delete().eq('order_id', normalized);
+  const { error } = await supabase.from('orders').delete().eq('order_id', normalized);
+
+  if (error) {
+    console.error('[orders/supabase] deleteOrder error:', error.message);
+    return false;
+  }
+  return true;
+}
+
 export async function supabaseListOrders(): Promise<Order[]> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return [];

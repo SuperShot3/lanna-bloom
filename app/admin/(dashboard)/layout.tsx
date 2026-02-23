@@ -8,7 +8,7 @@ export default async function AdminV2DashboardLayout({
 }) {
   const session = await auth();
   if (!session?.user) {
-    redirect('/admin-v2/login');
+    redirect('/admin/login');
   }
   return <>{children}</>;
 }

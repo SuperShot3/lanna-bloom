@@ -27,7 +27,7 @@ export function AdminLoginForm() {
         return;
       }
       if (result?.ok) {
-        window.location.href = '/admin-v2/overview';
+        window.location.href = '/admin/orders';
         return;
       }
       setError('Sign in failed. Please try again.');

@@ -114,11 +114,20 @@ export function OrderDetailsView({
     status: fulfillmentStatus,
     updatedAt: fulfillmentStatusUpdatedAt,
   });
+  const [livePayment, setLivePayment] = useState({
+    status: supabasePaymentStatus,
+    method: supabasePaymentMethod,
+    paidAt: supabasePaidAt,
+  });
   const [refreshing, setRefreshing] = useState(false);
 
   const finalStatus = liveFulfillment.status ?? fulfillmentStatus;
   const finalUpdatedAt = liveFulfillment.updatedAt ?? fulfillmentStatusUpdatedAt;
   const isFinalState = finalStatus === 'delivered' || finalStatus === 'cancelled';
+
+  const effectivePaymentStatus = livePayment.status ?? supabasePaymentStatus;
+  const effectivePaymentMethod = livePayment.method ?? supabasePaymentMethod;
+  const effectivePaidAt = livePayment.paidAt ?? supabasePaidAt;
 
   const refreshStatus = useCallback(async () => {
     setRefreshing(true);
@@ -129,6 +138,11 @@ export function OrderDetailsView({
         setLiveFulfillment({
           status: data.fulfillmentStatus ?? data.fulfillment_status ?? 'new',
           updatedAt: data.fulfillmentStatusUpdatedAt ?? data.fulfillment_status_updated_at,
+        });
+        setLivePayment({
+          status: data.payment_status ?? data.status,
+          method: data.payment_method,
+          paidAt: data.paid_at,
         });
       }
     } catch {
@@ -145,8 +159,8 @@ export function OrderDetailsView({
   }, [isFinalState, refreshStatus]);
 
   const paymentDisplay = getPaymentDisplayStatus(
-    supabasePaymentStatus,
-    supabasePaymentMethod,
+    effectivePaymentStatus,
+    effectivePaymentMethod,
     order
   );
 
@@ -241,7 +255,7 @@ export function OrderDetailsView({
     paymentDisplay === 'confirmed'
       ? t.paymentConfirmed
       : paymentDisplay === 'awaiting_manual'
-        ? (supabasePaymentMethod ?? '').toUpperCase() === 'PROMPTPAY'
+        ? (effectivePaymentMethod ?? '').toUpperCase() === 'PROMPTPAY'
           ? t.awaitingPaymentPromptPay
           : t.awaitingPaymentBankTransfer
         : paymentDisplay === 'awaiting_stripe'
@@ -262,9 +276,9 @@ export function OrderDetailsView({
         >
           {paymentBadgeLabel}
         </span>
-        {paymentDisplay === 'confirmed' && supabasePaidAt && (
+        {paymentDisplay === 'confirmed' && effectivePaidAt && (
           <span className="order-details-paid-at">
-            {new Date(supabasePaidAt).toLocaleString()}
+            {new Date(effectivePaidAt).toLocaleString()}
           </span>
         )}
       </div>

@@ -29,7 +29,7 @@ export function RemoveOrderButton({ orderId, returnTo, canEdit }: RemoveOrderBut
         alert(data.error ?? 'Failed to remove order');
         return;
       }
-      router.push(returnTo && returnTo.startsWith('/admin-v2') ? returnTo : '/admin-v2/orders');
+      router.push(returnTo && returnTo.startsWith('/admin') ? returnTo : '/admin/orders');
       router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Network error');

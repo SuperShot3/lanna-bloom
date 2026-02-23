@@ -28,7 +28,7 @@ function formatAmount(n: number | null | undefined): string {
 
 export function OrderTable({ orders, returnTo }: OrderTableProps) {
   const detailHref = (orderId: string) => {
-    const base = `/admin-v2/orders/${encodeURIComponent(orderId)}`;
+    const base = `/admin/orders/${encodeURIComponent(orderId)}`;
     if (returnTo) return `${base}?returnTo=${encodeURIComponent(returnTo)}`;
     return base;
   };

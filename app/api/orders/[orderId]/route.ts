@@ -9,17 +9,18 @@ export async function GET(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   const { orderId } = await params;
-  if (!orderId) {
+  const normalized = orderId?.trim();
+  if (!normalized) {
     return NextResponse.json({ error: 'orderId required' }, { status: 400 });
   }
-  const order = await getOrderById(orderId);
+  const order = await getOrderById(normalized);
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  // Overlay Supabase fulfillment status so customer page reflects admin dashboard updates.
-  // Admin updates fulfillment_status in Supabase; getOrderById may return blob/legacy data.
-  const supabasePayment = await getSupabasePaymentStatusByOrderId(orderId);
+  // Always fetch latest status from Supabase (single source of truth).
+  // Admin updates fulfillment_status and payment_status in Supabase.
+  const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
   const response = {
     ...order,
     fulfillmentStatus:
@@ -27,6 +28,9 @@ export async function GET(
     fulfillmentStatusUpdatedAt:
       supabasePayment?.fulfillment_status_updated_at ??
       order.fulfillmentStatusUpdatedAt,
+    payment_status: supabasePayment?.payment_status ?? order.status,
+    payment_method: supabasePayment?.payment_method,
+    paid_at: supabasePayment?.paid_at ?? order.paidAt,
   };
 
   return NextResponse.json(response, {
