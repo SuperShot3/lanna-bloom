@@ -20,6 +20,8 @@ export interface CatalogWithFiltersProps {
   filterParams: CatalogFilterParams;
   /** Page title (e.g. "Our bouquets") */
   title?: string;
+  /** Optional description shown below title when occasion is selected */
+  description?: string;
 }
 
 function buildSearchString(params: CatalogFilterParams): string {
@@ -53,7 +55,7 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
   });
 }
 
-export function CatalogWithFilters({ lang, bouquets, filterParams, title }: CatalogWithFiltersProps) {
+export function CatalogWithFilters({ lang, bouquets, filterParams, title, description }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -132,13 +134,18 @@ export function CatalogWithFilters({ lang, bouquets, filterParams, title }: Cata
         onApply={handleApply}
         onClear={handleClear}
       />
-      {title && (
-        <div className="catalog-page-title">
-          <h1 className="catalog-title">{title}</h1>
-          {bouquets.length > 0 && (
-            <span className="catalog-result-count">
-              {t.resultCountAvailable.replace('{count}', String(bouquets.length))}
-            </span>
+      {(title || description) && (
+        <div className="catalog-page-header">
+          <div className="catalog-page-title">
+            <h1 className="catalog-title">{title || t.title}</h1>
+            {bouquets.length > 0 && (
+              <span className="catalog-result-count">
+                {t.resultCountAvailable.replace('{count}', String(bouquets.length))}
+              </span>
+            )}
+          </div>
+          {description && (
+            <p className="catalog-page-description">{description}</p>
           )}
         </div>
       )}
@@ -191,12 +198,21 @@ export function CatalogWithFilters({ lang, bouquets, filterParams, title }: Cata
           outline: 2px solid var(--accent);
           outline-offset: 2px;
         }
+        .catalog-page-header {
+          padding: 6px 0 14px;
+        }
         .catalog-page-title {
           display: flex;
           align-items: baseline;
           justify-content: space-between;
-          padding: 20px 0 14px;
           gap: 12px;
+        }
+        .catalog-page-description {
+          margin: 12px 0 0;
+          font-size: 1rem;
+          line-height: 1.6;
+          color: var(--text-muted);
+          max-width: 56ch;
         }
         .catalog-title {
           font-family: var(--font-serif);

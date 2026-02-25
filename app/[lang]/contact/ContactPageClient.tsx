@@ -79,6 +79,30 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
           <p className="contact-text">{t.deliveryArea}</p>
         </section>
 
+        <section className="contact-section contact-section-dbd">
+          <h2 className="contact-heading">{t.dbdVerified}</h2>
+          <div className="contact-dbd-wrap">
+            <img
+              src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
+              alt="DBD Verified badge (Thailand Department of Business Development)"
+              className="contact-dbd-img"
+              loading="lazy"
+              decoding="async"
+              width={76}
+              height={76}
+            />
+          </div>
+          <p className="contact-text">{t.dbdExplanation}</p>
+          <a
+            href="https://dbdregistered.dbd.go.th/api/public/shopinfo?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="contact-dbd-link"
+          >
+            {t.dbdVerifyLink}
+          </a>
+        </section>
+
         <section id="location" className="contact-section contact-section-location">
           <h2 className="contact-heading">{tLocation.title}</h2>
           <p className="contact-text">{tLocation.intro}</p>
@@ -171,6 +195,40 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
           text-decoration: underline;
         }
         .contact-phone-link:hover {
+          color: #967a4d;
+        }
+        .contact-section-dbd {
+          padding-top: 8px;
+        }
+        .contact-dbd-wrap {
+          display: inline-flex;
+          background: #fff;
+          border-radius: 8px;
+          padding: 4px;
+          box-shadow: var(--shadow);
+          margin-bottom: 12px;
+        }
+        .contact-dbd-img {
+          width: 76px;
+          height: 76px;
+          object-fit: contain;
+          display: block;
+        }
+        @media (max-width: 639px) {
+          .contact-dbd-img {
+            width: 56px;
+            height: 56px;
+          }
+        }
+        .contact-dbd-link {
+          display: inline-block;
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: var(--accent);
+          text-decoration: underline;
+          margin-top: 4px;
+        }
+        .contact-dbd-link:hover {
           color: #967a4d;
         }
         .contact-map-wrap {

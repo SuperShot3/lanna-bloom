@@ -135,7 +135,7 @@ export function CatalogFilterBar({
           z-index: 100;
           background: var(--bg);
           border-bottom: 1px solid var(--border);
-          padding: 18px 0;
+          padding: 6px 0;
         }
         .catalog-filter-scroll {
           display: flex;

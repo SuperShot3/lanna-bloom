@@ -43,6 +43,19 @@ export default async function CatalogPage({
   const bouquets = await getBouquetsFilteredFromSanity(filterParams);
   const t = translations[lang as Locale].catalog;
 
+  const occasionSlugToKey: Record<string, { title: keyof typeof t; desc: keyof typeof t }> = {
+    birthday: { title: 'occasionTitleBirthday', desc: 'occasionDescBirthday' },
+    anniversary: { title: 'occasionTitleAnniversary', desc: 'occasionDescAnniversary' },
+    romantic: { title: 'occasionTitleRomantic', desc: 'occasionDescRomantic' },
+    sympathy: { title: 'occasionTitleSympathy', desc: 'occasionDescSympathy' },
+    congrats: { title: 'occasionTitleCongrats', desc: 'occasionDescCongrats' },
+    get_well: { title: 'occasionTitleGetWell', desc: 'occasionDescGetWell' },
+  };
+
+  const occasionKeys = filterParams.occasion ? occasionSlugToKey[filterParams.occasion] : null;
+  const title = occasionKeys ? (t[occasionKeys.title] as string) : t.title;
+  const description = occasionKeys ? (t[occasionKeys.desc] as string) : undefined;
+
   return (
     <div className="catalog-page">
       <div className="container">
@@ -50,7 +63,8 @@ export default async function CatalogPage({
           lang={lang as Locale}
           bouquets={bouquets}
           filterParams={filterParams}
-          title={t.title}
+          title={title}
+          description={description}
         />
       </div>
     </div>
