@@ -7,7 +7,6 @@ export function BouquetCardSkeleton() {
       <div className="card-skeleton-body">
         <div className="card-skeleton-title" />
         <div className="card-skeleton-price" />
-        <div className="card-skeleton-cta" />
       </div>
       <style jsx>{`
         .card-skeleton {
@@ -20,29 +19,22 @@ export function BouquetCardSkeleton() {
           aspect-ratio: 1;
           background: var(--pastel-cream);
           animation: skeleton-pulse 1.5s ease-in-out infinite;
+          border-radius: var(--radius);
         }
         .card-skeleton-body {
-          padding: 16px;
+          padding: 11px 12px 13px;
         }
         .card-skeleton-title {
-          height: 20px;
-          width: 80%;
-          margin-bottom: 8px;
+          height: 18px;
+          width: 85%;
+          margin-bottom: 6px;
           border-radius: 4px;
           background: var(--pastel-cream);
           animation: skeleton-pulse 1.5s ease-in-out infinite;
         }
         .card-skeleton-price {
-          height: 16px;
-          width: 50%;
-          margin-bottom: 10px;
-          border-radius: 4px;
-          background: var(--pastel-cream);
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-        }
-        .card-skeleton-cta {
-          height: 16px;
-          width: 90px;
+          height: 14px;
+          width: 45%;
           border-radius: 4px;
           background: var(--pastel-cream);
           animation: skeleton-pulse 1.5s ease-in-out infinite;

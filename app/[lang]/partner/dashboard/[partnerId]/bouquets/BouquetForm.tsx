@@ -20,7 +20,6 @@ const CATEGORY_OPTIONS = [
 const COLOR_OPTIONS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
 const FLOWER_TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'mixed'] as const;
 const OCCASION_OPTIONS = [
-  { value: '', labelEn: 'Any' },
   { value: 'birthday', labelEn: 'Birthday' },
   { value: 'anniversary', labelEn: 'Anniversary' },
   { value: 'romantic', labelEn: 'Romantic' },
@@ -52,7 +51,7 @@ export interface BouquetFormProps {
     category: string;
     colors?: string[];
     flowerTypes?: string[];
-    occasion?: string;
+    occasion?: string[];
     sizes: Array<BouquetSize & { preparationTime?: number; availability?: boolean }>;
   };
   action: (formData: FormData) => Promise<{ error?: string } | void>;
@@ -197,16 +196,22 @@ export function BouquetForm({
           ))}
         </div>
       </fieldset>
-      <label>
-        {t.occasion}
-        <select name="occasion" defaultValue={initial?.occasion ?? ''}>
+      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+        <legend>{t.occasion}</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
           {OCCASION_OPTIONS.map((opt) => (
-            <option key={opt.value || '_any'} value={opt.value}>
-              {opt.labelEn}
-            </option>
+            <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input
+                type="checkbox"
+                name="occasion"
+                value={opt.value}
+                defaultChecked={initial?.occasion?.includes(opt.value)}
+              />
+              <span>{opt.labelEn}</span>
+            </label>
           ))}
-        </select>
-      </label>
+        </div>
+      </fieldset>
       <label>
         {t.images} <span aria-hidden="true">*</span>
         <input type="file" name="image1" accept="image/*" />

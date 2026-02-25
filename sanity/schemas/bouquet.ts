@@ -63,8 +63,9 @@ export const bouquet = defineType({
     },
     {
       name: 'occasion',
-      title: 'Occasion',
-      type: 'string',
+      title: 'Occasions',
+      type: 'array',
+      of: [{ type: 'string' }],
       options: {
         list: [
           { title: 'Birthday', value: 'birthday' },
@@ -75,7 +76,7 @@ export const bouquet = defineType({
           { title: 'Get well', value: 'get_well' },
         ],
       },
-      description: 'Leave empty for any occasion.',
+      description: 'One bouquet can belong to multiple occasions. Leave empty for any occasion.',
     },
     {
       name: 'partner',

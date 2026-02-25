@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { Bouquet } from '@/lib/bouquets';
-import { Locale } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { trackSelectItem } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
@@ -12,12 +12,12 @@ import type { AnalyticsItem } from '@/lib/analytics';
 const SWIPE_THRESHOLD_PX = 50;
 
 export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale }) {
+  const t = translations[lang].catalog;
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minPrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
     : 0;
   const href = `/${lang}/catalog/${bouquet.slug}`;
-  const t = translations[lang].catalog;
   const images = bouquet.images?.length ? bouquet.images : [];
   const [imageIndex, setImageIndex] = useState(0);
   const imgSrc = images[imageIndex] ?? images[0] ?? '';
@@ -121,7 +121,13 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
 
   return (
     <article className="card">
-      <PrefetchLink href={href} className="card-link" data-ga-select-item="catalog" onClick={handleLinkClick}>
+      <PrefetchLink
+        href={href}
+        className="card-link"
+        data-ga-select-item="catalog"
+        onClick={handleLinkClick}
+        aria-label={`${name} — from ฿${minPrice.toLocaleString()}`}
+      >
         <div
           className="card-image-wrap"
           style={
@@ -145,7 +151,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
                 width={400}
                 height={400}
                 className="card-image"
-                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                sizes="(max-width: 600px) 50vw, (max-width: 900px) 50vw, 33vw"
                 unoptimized={isDataUrl}
                 draggable={false}
                 style={{ pointerEvents: 'none' }}
@@ -166,21 +172,24 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           )}
         </div>
         <div className="card-body">
-          <h2 className="card-title">{name}</h2>
-          <p className="card-price">
+          <div className="card-name" title={name}>
+            {name}
+          </div>
+          <div className="card-price">
             {t.from} ฿{minPrice.toLocaleString()}
-          </p>
+          </div>
         </div>
       </PrefetchLink>
       <style jsx>{`
         .card {
-          max-height: 390px;
           background: var(--surface);
           border-radius: var(--radius);
           overflow: hidden;
           border: 1px solid var(--border);
           box-shadow: var(--shadow);
           transition: transform 0.2s, box-shadow 0.2s;
+          width: 100%;
+          max-width: 100%;
         }
         .card:hover {
           transform: translateY(-4px);
@@ -189,6 +198,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         .card-link {
           display: block;
           color: inherit;
+          text-decoration: none;
           touch-action: manipulation; /* Removes 300ms tap delay on iOS, reduces click-after-swipe glitch */
         }
         .card-link:focus-visible {
@@ -201,11 +211,14 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           aspect-ratio: 1;
           overflow: hidden;
           background: var(--pastel-cream);
+          max-width: 100%;
+          border-radius: var(--radius);
         }
         .card-image-shared {
           width: 100%;
           height: 100%;
           position: relative;
+          overflow: hidden;
         }
         .card-dots {
           position: absolute;
@@ -230,6 +243,8 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         .card-image-placeholder {
           width: 100%;
           height: 100%;
+          max-width: 100%;
+          max-height: 100%;
           object-fit: cover;
         }
         .card-image-placeholder {
@@ -237,36 +252,23 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           min-height: 100%;
         }
         .card-body {
-          padding: 16px;
+          padding: 11px 12px 13px;
         }
-        .card-title {
+        .card-name {
           font-family: var(--font-serif);
-          font-size: 1.15rem;
-          font-weight: 700;
-          margin: 0 0 6px;
+          font-size: 15px;
+          font-weight: 600;
           color: var(--text);
+          line-height: 1.2;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          margin-bottom: 6px;
         }
         .card-price {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--text-muted);
-          margin: 0 0 10px;
-        }
-        @media (max-width: 600px) {
-          .card-body {
-            padding: 12px;
-          }
-          .card-title {
-            font-size: 1rem;
-            font-weight: 700;
-          }
-          .card-price {
-            font-size: 0.9rem;
-            font-weight: 700;
-          }
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--accent);
         }
       `}</style>
     </article>

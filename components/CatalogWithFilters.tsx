@@ -18,6 +18,8 @@ export interface CatalogWithFiltersProps {
   bouquets: Bouquet[];
   /** Current filter params from URL (parsed by server) */
   filterParams: CatalogFilterParams;
+  /** Page title (e.g. "Our bouquets") */
+  title?: string;
 }
 
 function buildSearchString(params: CatalogFilterParams): string {
@@ -51,7 +53,7 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
   });
 }
 
-export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWithFiltersProps) {
+export function CatalogWithFilters({ lang, bouquets, filterParams, title }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -97,8 +99,12 @@ export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWith
 
       // Handle sort toggle
       if ('sort' in partial && partial.sort !== undefined) {
-        // Set new value (CatalogFilterBar already determines toggle state)
         merged.sort = partial.sort;
+      }
+
+      // Handle occasion quick filter
+      if ('occasion' in partial) {
+        merged.occasion = partial.occasion || undefined;
       }
 
       const qs = buildSearchString(merged);
@@ -126,12 +132,26 @@ export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWith
         onApply={handleApply}
         onClear={handleClear}
       />
+      {title && (
+        <div className="catalog-page-title">
+          <h1 className="catalog-title">{title}</h1>
+          {bouquets.length > 0 && (
+            <span className="catalog-result-count">
+              {t.resultCountAvailable.replace('{count}', String(bouquets.length))}
+            </span>
+          )}
+        </div>
+      )}
       {bouquets.length === 0 ? (
         <div className="catalog-empty">
-          <p className="catalog-empty-text">{t.noResults}</p>
-          <Link href={`/${lang}/catalog`} className="catalog-empty-link">
-            {t.viewAll}
-          </Link>
+          <p className="catalog-empty-text">
+            {activeCount > 0 ? t.noResults : t.catalogEmpty}
+          </p>
+          {activeCount > 0 && (
+            <Link href={`/${lang}/catalog`} className="catalog-empty-link">
+              {t.viewAll}
+            </Link>
+          )}
         </div>
       ) : (
         <div className="catalog-grid">
@@ -171,20 +191,25 @@ export function CatalogWithFilters({ lang, bouquets, filterParams }: CatalogWith
           outline: 2px solid var(--accent);
           outline-offset: 2px;
         }
-        .catalog-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 20px;
+        .catalog-page-title {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          padding: 20px 0 14px;
+          gap: 12px;
         }
-        @media (min-width: 600px) {
-          .catalog-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+        .catalog-title {
+          font-family: var(--font-serif);
+          font-size: clamp(1.5rem, 4vw, 2rem);
+          font-weight: 300;
+          font-style: italic;
+          margin: 0;
+          color: var(--text);
         }
-        @media (min-width: 900px) {
-          .catalog-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
+        .catalog-result-count {
+          font-size: 12px;
+          color: var(--text-muted);
+          flex-shrink: 0;
         }
       `}</style>
     </div>

@@ -37,7 +37,7 @@ type SanityBouquet = {
   category?: string;
   colors?: string[];
   flowerTypes?: string[];
-  occasion?: string;
+  occasion?: string | string[];
   partner?: { _ref?: string };
   status?: string;
   images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
@@ -76,7 +76,11 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     category: doc.category ?? 'mixed',
     colors: Array.isArray(doc.colors) ? doc.colors : [],
     flowerTypes: Array.isArray(doc.flowerTypes) ? doc.flowerTypes : [],
-    occasion: doc.occasion || undefined,
+    occasion: (() => {
+      const o = doc.occasion;
+      if (!o) return undefined;
+      return Array.isArray(o) ? o.filter(Boolean) : o ? [o] : undefined;
+    })(),
     images: imageUrls.length ? imageUrls : [placeholder],
     sizes: sizes.length ? sizes : [{ key: 'm', label: 'M', price: 0, description: '' }],
     partnerId: doc.partner?._ref,
@@ -228,12 +232,13 @@ export interface CatalogFilterParams {
 
 type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };
 
-const filteredBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")
-  && (!defined($category) || $category == "" || category == $category)
-  && (!defined($colors) || count($colors) == 0 || count((colors[])[@ in $colors]) > 0)
-  && (!defined($types) || count($types) == 0 || count((flowerTypes[])[@ in $types]) > 0)
-  && (!defined($occasion) || $occasion == "" || occasion == $occasion)
-] {
+function minPriceFromSizes(sizes: BouquetSize[]): number {
+  if (!sizes?.length) return 0;
+  return Math.min(...sizes.map((s) => s.price ?? Infinity));
+}
+
+/** Single parameter-free query; all filtering done in JS for reliability */
+const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] {
   _id,
   _createdAt,
   slug,
@@ -251,47 +256,50 @@ const filteredBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || stat
   sizes
 }`;
 
-function minPriceFromSizes(sizes: BouquetSize[]): number {
-  if (!sizes?.length) return 0;
-  return Math.min(...sizes.map((s) => s.price ?? Infinity));
+function matchesFilters(bouquet: Bouquet, params: CatalogFilterParams): boolean {
+  if (params.category && params.category !== 'all' && bouquet.category !== params.category) {
+    return false;
+  }
+  if (params.colors?.length) {
+    const bColors = bouquet.colors ?? [];
+    const hasMatch = params.colors.some((c) => bColors.includes(c));
+    if (!hasMatch) return false;
+  }
+  if (params.types?.length) {
+    const bTypes = bouquet.flowerTypes ?? [];
+    const hasMatch = params.types.some((t) => bTypes.includes(t));
+    if (!hasMatch) return false;
+  }
+  if (params.occasion) {
+    const bOccasions = bouquet.occasion ?? [];
+    if (!bOccasions.includes(params.occasion)) return false;
+  }
+  if (params.min != null && params.min > 0) {
+    if (minPriceFromSizes(bouquet.sizes) < params.min) return false;
+  }
+  if (params.max != null && params.max > 0) {
+    if (minPriceFromSizes(bouquet.sizes) > params.max) return false;
+  }
+  return true;
 }
 
-/** Catalog with filters and sort; price range applied in JS */
+/** Catalog with filters and sort; fetches all then filters in JS for reliable behavior */
 export async function getBouquetsFilteredFromSanity(params: CatalogFilterParams): Promise<Bouquet[]> {
   try {
-    const category = params.category && params.category !== 'all' ? params.category : undefined;
-    const colors = params.colors?.length ? params.colors : undefined;
-    const types = params.types?.length ? params.types : undefined;
-    const occasion = params.occasion ? params.occasion : undefined;
-
-    const docs = await client.fetch<SanityBouquetWithCreated[]>(filteredBouquetsQuery, {
-      category: category ?? '',
-      colors: colors ?? [],
-      types: types ?? [],
-      occasion: occasion ?? '',
-    });
-
-    let list = (docs ?? []).map(mapToBouquet);
-
-    if (params.min != null && params.min > 0) {
-      list = list.filter((b) => minPriceFromSizes(b.sizes) >= params.min!);
-    }
-    if (params.max != null && params.max > 0) {
-      list = list.filter((b) => minPriceFromSizes(b.sizes) <= params.max!);
-    }
+    const docs = await client.fetch<SanityBouquetWithCreated[]>(catalogAllQuery);
+    const mapped = (docs ?? []).map((d) => ({ doc: d, bouquet: mapToBouquet(d) }));
+    let filtered = mapped.filter(({ bouquet }) => matchesFilters(bouquet, params));
 
     const sort = params.sort || 'newest';
     if (sort === 'newest') {
-      const withCreated = (docs ?? []).map((d, i) => ({ doc: d, bouquet: list[i] }));
-      withCreated.sort((a, b) => (b.doc._createdAt || '').localeCompare(a.doc._createdAt || ''));
-      list = withCreated.map((x) => x.bouquet);
+      filtered.sort((a, b) => (b.doc._createdAt || '').localeCompare(a.doc._createdAt || ''));
     } else if (sort === 'price_asc') {
-      list = [...list].sort((a, b) => minPriceFromSizes(a.sizes) - minPriceFromSizes(b.sizes));
+      filtered.sort((a, b) => minPriceFromSizes(a.bouquet.sizes) - minPriceFromSizes(b.bouquet.sizes));
     } else if (sort === 'price_desc') {
-      list = [...list].sort((a, b) => minPriceFromSizes(b.sizes) - minPriceFromSizes(a.sizes));
+      filtered.sort((a, b) => minPriceFromSizes(b.bouquet.sizes) - minPriceFromSizes(a.bouquet.sizes));
     }
 
-    return list;
+    return filtered.map((x) => x.bouquet);
   } catch (err) {
     console.error('[Sanity] getBouquetsFilteredFromSanity failed:', err);
     return [];

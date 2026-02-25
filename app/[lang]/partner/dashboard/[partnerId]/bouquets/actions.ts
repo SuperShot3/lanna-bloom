@@ -86,7 +86,8 @@ export async function createBouquetAction(formData: FormData) {
   const colors = colorsRaw ? colorsRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
   const flowerTypesRaw = formData.get('flowerTypes') as string | null;
   const flowerTypes = flowerTypesRaw ? flowerTypesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-  const occasion = (formData.get('occasion') as string)?.trim() || undefined;
+  const occasionRaw = formData.getAll('occasion') as string[];
+  const occasion = occasionRaw?.map((s) => s.trim()).filter(Boolean) || undefined;
 
   try {
     const bouquetId = await createBouquet({
@@ -145,7 +146,8 @@ export async function updateBouquetAction(formData: FormData) {
   const colors = colorsRaw ? colorsRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
   const flowerTypesRaw = formData.get('flowerTypes') as string | null;
   const flowerTypes = flowerTypesRaw ? flowerTypesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-  const occasion = (formData.get('occasion') as string)?.trim() || undefined;
+  const occasionRaw = formData.getAll('occasion') as string[];
+  const occasion = occasionRaw?.map((s) => s.trim()).filter(Boolean) || undefined;
 
   try {
     await updateBouquet(bouquetId, {

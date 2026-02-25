@@ -88,6 +88,7 @@ export const translations = {
       sortPriceAsc: 'Price: low to high',
       sortPriceDesc: 'Price: high to low',
       noResults: 'No bouquets match your filters.',
+      catalogEmpty: 'No bouquets yet.',
       viewAll: 'View all',
       close: 'Close',
       minPrice: 'Min',
@@ -114,6 +115,8 @@ export const translations = {
       typeMixed: 'Mixed',
       quickFilterUnder1000: 'Under ฿1000',
       quickFilterUnder1500: 'Under ฿1500',
+      resultCountAvailable: '{count} available',
+      sortFeatured: 'Featured',
     },
     product: {
       composition: 'Composition',
@@ -629,6 +632,7 @@ export const translations = {
       sortPriceAsc: 'ราคา: ต่ำไปสูง',
       sortPriceDesc: 'ราคา: สูงไปต่ำ',
       noResults: 'ไม่มีช่อดอกไม้ที่ตรงกับตัวกรอง',
+      catalogEmpty: 'ยังไม่มีช่อดอกไม้',
       viewAll: 'ดูทั้งหมด',
       close: 'ปิด',
       minPrice: 'ต่ำสุด',
@@ -655,6 +659,8 @@ export const translations = {
       typeMixed: 'ผสม',
       quickFilterUnder1000: 'ต่ำกว่า ฿1000',
       quickFilterUnder1500: 'ต่ำกว่า ฿1500',
+      resultCountAvailable: '{count} รายการ',
+      sortFeatured: 'แนะนำ',
     },
     product: {
       composition: 'องค์ประกอบ',

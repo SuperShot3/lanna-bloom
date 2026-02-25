@@ -46,11 +46,11 @@ export default async function CatalogPage({
   return (
     <div className="catalog-page">
       <div className="container">
-        <h1 className="catalog-title">{t.title}</h1>
         <CatalogWithFilters
           lang={lang as Locale}
           bouquets={bouquets}
           filterParams={filterParams}
+          title={t.title}
         />
       </div>
     </div>

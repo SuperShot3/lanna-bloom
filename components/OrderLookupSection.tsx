@@ -79,7 +79,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
   };
 
   return (
-    <section id="track-order" className="cart-track-section">
+    <section id="track-order" className={`cart-track-section ${emptyCart ? 'cart-track-section-empty' : ''}`}>
       {emptyCart && (
         <div className="cart-track-empty-note">
           <p className="cart-track-empty-title">{t.cartEmpty}</p>
@@ -126,17 +126,19 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
             </div>
           )}
 
-          <button type="submit" className="cart-btn-primary" disabled={loading}>
-            {loading ? (lang === 'th' ? 'กำลังค้นหา...' : 'Searching...') : t.findOrder}
-          </button>
+          <div className="cart-track-buttons">
+            <button
+              type="button"
+              className="cart-btn-browse"
+              onClick={() => router.push(`/${lang}/catalog`)}
+            >
+              {t.browseBouquetsInstead}
+            </button>
 
-          <button
-            type="button"
-            className="cart-btn-outline"
-            onClick={() => router.push(`/${lang}/catalog`)}
-          >
-            {t.browseBouquetsInstead}
-          </button>
+            <button type="submit" className="cart-btn-primary" disabled={loading}>
+              {loading ? (lang === 'th' ? 'กำลังค้นหา...' : 'Searching...') : t.findOrder}
+            </button>
+          </div>
         </div>
       </form>
 
@@ -167,6 +169,11 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           display: flex;
           flex-direction: column;
           gap: 16px;
+        }
+        .cart-track-section-empty {
+          max-width: 560px;
+          margin-left: auto;
+          margin-right: auto;
         }
         .cart-track-empty-note {
           text-align: center;
@@ -209,6 +216,22 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           display: flex;
           flex-direction: column;
           gap: 10px;
+          width: 100%;
+          max-width: 400px;
+        }
+        .cart-track-buttons {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+          width: 100%;
+        }
+        @media (max-width: 420px) {
+          .cart-track-buttons {
+            flex-direction: column;
+            align-items: stretch;
+          }
         }
         .cart-track-phone-field {
           width: 100%;
@@ -254,13 +277,15 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           font-weight: 500;
         }
         .cart-btn-primary {
-          display: block;
-          width: 100%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          padding: 14px 28px;
           background: var(--accent);
           color: #fff;
           border: none;
           border-radius: 50px;
-          padding: 15px 24px;
           font-family: inherit;
           font-size: 14px;
           font-weight: 500;
@@ -279,27 +304,25 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           opacity: 0.7;
           cursor: not-allowed;
         }
-        .cart-btn-outline {
-          display: block;
-          width: 100%;
+        .cart-btn-browse {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           background: transparent;
-          color: var(--accent);
-          border: 1.5px solid var(--accent);
-          border-radius: 50px;
-          padding: 13px 24px;
+          color: var(--text-muted);
+          border: none;
+          padding: 10px 12px;
           font-family: inherit;
-          font-size: 14px;
-          font-weight: 500;
-          letter-spacing: 0.04em;
+          font-size: 13px;
+          font-weight: 400;
           cursor: pointer;
-          transition: background 0.2s;
+          transition: color 0.2s;
           text-align: center;
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
-        .cart-btn-outline:hover {
-          background: var(--pastel-cream);
-        }
-        .cart-btn-outline:active {
-          background: #f0e9dc;
+        .cart-btn-browse:hover {
+          color: var(--accent);
         }
         .cart-track-order-list {
           list-style: none;

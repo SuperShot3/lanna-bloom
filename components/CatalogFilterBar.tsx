@@ -4,6 +4,22 @@ import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { CatalogFilterParams } from '@/lib/sanity';
 
+const OCCASION_CHIPS: { value: string; labelKey: 'occasionAny' | 'occasionRomantic' | 'occasionBirthday' | 'occasionAnniversary' | 'occasionSympathy' | 'occasionCongrats' | 'occasionGetWell' }[] = [
+  { value: '', labelKey: 'occasionAny' },
+  { value: 'romantic', labelKey: 'occasionRomantic' },
+  { value: 'birthday', labelKey: 'occasionBirthday' },
+  { value: 'anniversary', labelKey: 'occasionAnniversary' },
+  { value: 'sympathy', labelKey: 'occasionSympathy' },
+  { value: 'congrats', labelKey: 'occasionCongrats' },
+  { value: 'get_well', labelKey: 'occasionGetWell' },
+];
+
+const SORT_OPTIONS: { value: CatalogFilterParams['sort']; labelKey: 'sortFeatured' | 'sortNewest' | 'sortPriceAsc' | 'sortPriceDesc' }[] = [
+  { value: 'newest', labelKey: 'sortFeatured' },
+  { value: 'price_asc', labelKey: 'sortPriceAsc' },
+  { value: 'price_desc', labelKey: 'sortPriceDesc' },
+];
+
 export interface CatalogFilterBarProps {
   lang: Locale;
   /** Number of active filters (for summary) */
@@ -28,185 +44,237 @@ export function CatalogFilterBar({
   drawerId = 'filter-drawer',
   filterParams,
   onQuickFilter,
-  onClearAll,
 }: CatalogFilterBarProps) {
   const t = translations[lang].catalog;
 
-  // Determine active states for quick filter chips
-  const isMax1000Active = filterParams?.max === 1000;
-  const isMax1500Active = filterParams?.max === 1500;
-  const isPriceAscActive = filterParams?.sort === 'price_asc';
-  const isPriceDescActive = filterParams?.sort === 'price_desc';
+  const currentOccasion = filterParams?.occasion ?? '';
+  const currentSort = filterParams?.sort ?? 'newest';
 
-  const handleQuickFilterClick = (partial: Partial<CatalogFilterParams>) => {
+  const handleOccasionClick = (value: string) => {
     if (onQuickFilter) {
-      onQuickFilter(partial);
+      onQuickFilter({ occasion: value || undefined });
+    }
+  };
+
+  const handleSortChange = (value: CatalogFilterParams['sort']) => {
+    if (onQuickFilter) {
+      onQuickFilter({ sort: value });
     }
   };
 
   return (
     <div className="catalog-filter-bar">
-      <div className="catalog-filter-bar-row">
+      <div className="catalog-filter-scroll">
+        {/* Filter icon button — opens drawer */}
         <button
           type="button"
-          className="catalog-filter-btn"
+          className={`catalog-filter-icon-btn ${activeCount > 0 ? 'has-filters' : ''}`}
           onClick={onOpenDrawer}
           aria-expanded={isDrawerOpen}
           aria-controls={drawerId}
           aria-haspopup="dialog"
         >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" aria-hidden>
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="7" y1="12" x2="17" y2="12" />
+            <line x1="10" y1="18" x2="14" y2="18" />
+          </svg>
           {t.filters}
           {activeCount > 0 && (
-            <span className="catalog-filter-count" aria-hidden>
-              ({activeCount})
+            <span className="catalog-filter-count-badge" aria-hidden>
+              {activeCount}
             </span>
           )}
         </button>
+
+        {/* Occasion chips — horizontal scroll */}
+        {onQuickFilter &&
+          OCCASION_CHIPS.map(({ value, labelKey }) => (
+            <button
+              key={value || 'all'}
+              type="button"
+              className={`catalog-chip ${currentOccasion === value ? 'active' : ''}`}
+              onClick={() => handleOccasionClick(value)}
+              aria-pressed={currentOccasion === value}
+            >
+              {t[labelKey]}
+            </button>
+          ))}
+
+        {/* Sort chip */}
         {onQuickFilter && (
-          <div className="catalog-quick-filters">
-            <button
-              type="button"
-              className={`catalog-quick-filter-chip ${isMax1000Active ? 'active' : ''}`}
-              onClick={() => handleQuickFilterClick({ max: isMax1000Active ? undefined : 1000 })}
-              aria-pressed={isMax1000Active}
+          <div className={`catalog-sort-chip ${currentSort !== 'newest' ? 'active' : ''}`}>
+            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+              <path d="M3 6h18M7 12h10M11 18h2" />
+            </svg>
+            <span className="catalog-sort-label">
+              {currentSort === 'newest' ? t.sortFeatured : currentSort === 'price_asc' ? t.sortPriceAsc : t.sortPriceDesc}
+            </span>
+            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden>
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+            <select
+              className="catalog-sort-select"
+              value={currentSort}
+              onChange={(e) => handleSortChange(e.target.value as CatalogFilterParams['sort'])}
+              aria-label={t.filterSort}
             >
-              {t.quickFilterUnder1000}
-            </button>
-            <button
-              type="button"
-              className={`catalog-quick-filter-chip ${isMax1500Active ? 'active' : ''}`}
-              onClick={() => handleQuickFilterClick({ max: isMax1500Active ? undefined : 1500 })}
-              aria-pressed={isMax1500Active}
-            >
-              {t.quickFilterUnder1500}
-            </button>
-            <button
-              type="button"
-              className={`catalog-quick-filter-chip ${isPriceAscActive ? 'active' : ''}`}
-              onClick={() => handleQuickFilterClick({ sort: isPriceAscActive ? 'newest' : 'price_asc' })}
-              aria-pressed={isPriceAscActive}
-            >
-              {t.sortPriceAsc}
-            </button>
-            <button
-              type="button"
-              className={`catalog-quick-filter-chip ${isPriceDescActive ? 'active' : ''}`}
-              onClick={() => handleQuickFilterClick({ sort: isPriceDescActive ? 'newest' : 'price_desc' })}
-              aria-pressed={isPriceDescActive}
-            >
-              {t.sortPriceDesc}
-            </button>
-            {onClearAll && activeCount > 0 && (
-              <button
-                type="button"
-                className="catalog-quick-filter-chip catalog-quick-filter-clear"
-                onClick={onClearAll}
-                aria-label={t.clearFilters}
-                title={t.clearFilters}
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            )}
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {t[opt.labelKey]}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>
       <style jsx>{`
         .catalog-filter-bar {
-          margin-bottom: 20px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: var(--bg);
+          border-bottom: 1px solid var(--border);
+          padding: 18px 0;
         }
-        .catalog-filter-bar-row {
+        .catalog-filter-scroll {
           display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 12px;
-        }
-        .catalog-filter-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 44px;
-          padding: 0 20px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          font-size: 0.95rem;
-          font-weight: 500;
-          color: var(--text);
-          cursor: pointer;
-          font-family: inherit;
-          box-shadow: var(--shadow);
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .catalog-filter-btn:hover,
-        .catalog-filter-btn:focus-visible {
-          border-color: var(--accent-soft);
-          box-shadow: 0 4px 12px rgba(45, 42, 38, 0.08);
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
-        }
-        .catalog-filter-count {
-          margin-left: 6px;
-          color: var(--text-muted);
-        }
-        .catalog-quick-filters {
-          display: flex;
-          flex-wrap: wrap;
           gap: 8px;
+          padding: 0 20px 0 0;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
           align-items: center;
-        }
-        .catalog-quick-filter-chip {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
           min-height: 44px;
-          padding: 0 16px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--text);
-          cursor: pointer;
-          font-family: inherit;
-          transition: background 0.2s, border-color 0.2s, color 0.2s;
         }
-        .catalog-quick-filter-chip:hover,
-        .catalog-quick-filter-chip:focus-visible {
-          border-color: var(--accent-soft);
-          outline: 2px solid var(--accent);
+        .catalog-filter-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        /* Filter icon button */
+        .catalog-filter-icon-btn {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          background: var(--text);
+          color: var(--surface);
+          border: none;
+          border-radius: 100px;
+          padding: 7px 13px 7px 10px;
+          font-family: inherit;
+          font-size: 12.5px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
+        }
+        .catalog-filter-icon-btn:hover {
+          background: var(--text-muted);
+          box-shadow: 0 3px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(45, 42, 38, 0.2);
+          transform: translateY(-2px);
+        }
+        .catalog-filter-icon-btn:focus-visible {
+          outline: 3px solid var(--accent);
           outline-offset: 2px;
         }
-        .catalog-quick-filter-chip.active {
+        .catalog-filter-count-badge {
+          background: var(--accent);
+          color: var(--surface);
+          border-radius: 100px;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 1px 6px;
+          margin-left: 2px;
+        }
+
+        /* Chips */
+        .catalog-chip {
+          flex-shrink: 0;
+          border: 1.5px solid var(--border);
+          background: var(--surface);
+          border-radius: 100px;
+          padding: 6px 14px;
+          font-size: 12.5px;
+          font-family: inherit;
+          font-weight: 400;
+          color: var(--text);
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
+          white-space: nowrap;
+          user-select: none;
+        }
+        .catalog-chip:active {
+          transform: scale(0.95);
+        }
+        .catalog-chip:hover {
+          border-color: var(--accent);
           background: var(--accent-soft);
+          box-shadow: 0 3px 0 #a88b5c, 0 6px 16px rgba(45, 42, 38, 0.12);
+          transform: translateY(-2px);
+        }
+        .catalog-chip:focus-visible {
+          outline: 3px solid var(--accent);
+          outline-offset: 2px;
+        }
+        .catalog-chip.active {
+          background: var(--accent);
+          border-color: var(--accent);
+          color: var(--surface);
+          font-weight: 500;
+        }
+        .catalog-chip.active:hover {
+          background: #b39868;
+          border-color: #967a4d;
+          box-shadow: 0 3px 0 #967a4d, 0 6px 16px rgba(45, 42, 38, 0.18);
+          transform: translateY(-2px);
+        }
+
+        /* Sort chip */
+        .catalog-sort-chip {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          border: 1.5px solid var(--border);
+          background: var(--surface);
+          border-radius: 100px;
+          padding: 6px 12px;
+          font-size: 12.5px;
+          font-family: inherit;
+          color: var(--text);
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
+          white-space: nowrap;
+          position: relative;
+        }
+        .catalog-sort-chip:hover {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+          box-shadow: 0 3px 0 #a88b5c, 0 6px 16px rgba(45, 42, 38, 0.12);
+          transform: translateY(-2px);
+        }
+        .catalog-sort-chip:focus-within {
+          outline: 3px solid var(--accent);
+          outline-offset: 2px;
+        }
+        .catalog-sort-chip.active {
           border-color: var(--accent);
           color: var(--accent);
-          font-weight: 600;
         }
-        .catalog-quick-filter-chip.active:hover {
+        .catalog-sort-chip.active:hover {
           background: var(--accent-soft);
+          box-shadow: 0 3px 0 #a88b5c, 0 6px 16px rgba(45, 42, 38, 0.12);
         }
-        .catalog-quick-filter-clear {
-          padding: 0 12px;
-          font-size: 1.25rem;
-          line-height: 1;
-          font-weight: 400;
+        .catalog-sort-label {
+          pointer-events: none;
         }
-        .catalog-quick-filter-clear:hover {
-          background: var(--pastel-cream);
-          border-color: var(--text-muted);
-        }
-        @media (max-width: 600px) {
-          .catalog-filter-bar-row {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .catalog-quick-filters {
-            width: 100%;
-          }
-          .catalog-quick-filter-chip {
-            flex: 1;
-            min-width: 0;
-          }
+        .catalog-sort-select {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          width: 100%;
+          cursor: pointer;
+          font-size: inherit;
         }
       `}</style>
     </div>
