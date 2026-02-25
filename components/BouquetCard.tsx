@@ -268,7 +268,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         .card-price {
           font-size: 14px;
           font-weight: 600;
-          color: var(--accent);
+          color: var(--text);
         }
       `}</style>
     </article>
