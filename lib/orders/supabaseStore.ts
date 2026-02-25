@@ -446,3 +446,52 @@ export async function supabaseListOrders(): Promise<Order[]> {
   }
   return orders;
 }
+
+export interface OrderLookupSummary {
+  orderId: string;
+  fulfillmentStatus: string;
+  deliveryDate: string | null;
+  createdAt: string;
+}
+
+export async function supabaseLookupOrdersByPhone(
+  phoneDigits: string,
+  name?: string
+): Promise<OrderLookupSummary[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const digits = phoneDigits.replace(/\D/g, '');
+  if (digits.length < 8) return [];
+
+  // Thai numbers: 0812345678 -> use 812345678 to match 66812345678
+  const searchDigits = digits.length === 10 && digits.startsWith('0') ? digits.slice(1) : digits;
+  const pattern = `%${searchDigits}%`;
+
+  let query = supabase
+    .from('orders')
+    .select('order_id, fulfillment_status, delivery_date, created_at')
+    .or(`phone.ilike.${pattern},recipient_phone.ilike.${pattern}`);
+
+  if (name?.trim()) {
+    query = query.ilike('customer_name', `%${name.trim()}%`);
+  }
+
+  const { data: rows, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error) {
+    if (process.env.SUPABASE_LOG_LEVEL === 'debug') {
+      console.log('[orders/supabase] lookupByPhone error:', error.message);
+    }
+    return [];
+  }
+
+  return (rows ?? []).map((r: { order_id: string; fulfillment_status: string | null; delivery_date: string | null; created_at: string | null }) => ({
+    orderId: r.order_id,
+    fulfillmentStatus: r.fulfillment_status ?? 'new',
+    deliveryDate: r.delivery_date ?? null,
+    createdAt: r.created_at ?? new Date().toISOString(),
+  }));
+}

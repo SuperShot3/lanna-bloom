@@ -28,10 +28,9 @@ export function InternalTrafficBootstrap() {
     // 1) Check URL for internal_user=true and set cookie
     const params = new URLSearchParams(window.location.search);
     if (params.get('internal_user') === 'true') {
-      const secure = process.env.NODE_ENV === 'production' ? 'Secure; ' : '';
-      const expires = new Date();
-      expires.setDate(expires.getDate() + 365);
-      document.cookie = `${COOKIE_NAME}=${COOKIE_VALUE}; Expires=${expires.toUTCString()}; Path=/; SameSite=Lax; ${secure}`.trim();
+      const domainPart = window.location.hostname?.includes('lannabloom.shop') ? ' Domain=.lannabloom.shop;' : '';
+      document.cookie = `${COOKIE_NAME}=${COOKIE_VALUE}; Max-Age=31536000; Path=/;${domainPart} SameSite=Lax; Secure`;
+      console.log('Internal Cookie Set Successfully');
 
       // Remove param from URL to avoid sharing links
       params.delete('internal_user');

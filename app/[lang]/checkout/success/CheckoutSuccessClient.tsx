@@ -248,6 +248,9 @@ export function CheckoutSuccessClient({
             </div>
           </div>
         )}
+        <p className="checkout-success-find-hint">
+          <Link href={`/${lang}/cart#track-order`}>{t.findOrderHint}</Link>
+        </p>
         <PaymentNote lang={lang} variant="success" />
         <MessengerOrderButtons lang={lang} prebuiltMessage={shareText} lineUseContactUrl pageLocation="checkout_success" />
       </div>
@@ -265,6 +268,18 @@ export function CheckoutSuccessClient({
           font-size: 1rem;
           color: var(--text-muted);
           margin: 0 0 24px;
+        }
+        .checkout-success-find-hint {
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          margin: 0 0 24px;
+        }
+        .checkout-success-find-hint a {
+          color: var(--accent);
+          text-decoration: underline;
+        }
+        .checkout-success-find-hint a:hover {
+          color: #967a4d;
         }
         .checkout-success-summary {
           margin-bottom: 24px;

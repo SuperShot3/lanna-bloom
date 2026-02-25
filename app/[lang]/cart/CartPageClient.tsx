@@ -31,6 +31,7 @@ import {
   REFERRAL_DISCOUNT_THB,
 } from '@/lib/referral';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
+import { OrderLookupSection } from '@/components/OrderLookupSection';
 
 function buildAddOnsSummaryForDisplay(
   addOns: CartItem['addOns'],
@@ -759,46 +760,47 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   if (items.length === 0) {
     return (
-      <div className="cart-page">
+      <div className="cart-page cart-page-empty">
         <div className="container">
-          <h1 className="cart-page-title">{t.yourCart}</h1>
-          <div className="cart-empty">
-            <p className="cart-empty-text">{t.cartEmpty}</p>
-            <Link href={`/${lang}/catalog`} className="cart-empty-link">
-              {t.cartEmptyLink}
-            </Link>
+          <div className="cart-page-header">
+            <h1 className="cart-page-title">{t.yourCart}</h1>
+            <span className="cart-page-count">{(t.cartItemsCount ?? '{count} items').replace('{count}', '0')}</span>
           </div>
+
+          <OrderLookupSection lang={lang} emptyCart />
+
+          <p className="cart-footer-note">{(t.cartFooterNote ?? 'Need help? Contact us via LINE or WhatsApp.')}</p>
         </div>
         <style jsx>{`
-          .cart-page {
-            padding: 24px 0 48px;
+          .cart-page-empty {
+            padding: 28px 20px 40px;
+          }
+          .cart-page-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 28px;
           }
           .cart-page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-family: var(--font-serif);
+            font-size: 2.25rem;
+            font-weight: 300;
+            line-height: 1;
             color: var(--text);
-            margin: 0 0 20px;
+            margin: 0;
           }
-          .cart-empty {
-            padding: 32px 24px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-align: center;
-          }
-          .cart-empty-text {
-            margin: 0 0 16px;
-            font-size: 1rem;
+          .cart-page-count {
+            font-size: 13px;
             color: var(--text-muted);
+            font-weight: 400;
           }
-          .cart-empty-link {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--accent);
-            text-decoration: underline;
-          }
-          .cart-empty-link:hover {
-            color: #967a4d;
+          .cart-footer-note {
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            padding: 0 10px;
+            margin: 28px 0 0;
           }
         `}</style>
       </div>
@@ -1351,6 +1353,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           />
         </section>
         </div>
+        <OrderLookupSection lang={lang} />
       </div>
       <style jsx>{`
         .cart-page {

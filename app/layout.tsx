@@ -5,7 +5,6 @@ import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap'
 import { LoadingScreen } from '@/components/LoadingScreen';
 import './globals.css';
 
-const secureIfProd = process.env.NODE_ENV === 'production' ? 'Secure; ' : '';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -18,6 +17,7 @@ export const metadata: Metadata = {
   description: 'Order beautiful bouquets via LINE, WhatsApp, or Telegram. Fresh flowers delivered with care.',
   icons: {
     icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' },
       { url: '/icon.png', type: 'image/png' },
     ],
@@ -43,6 +43,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
           rel="stylesheet"
         />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@flaticon/flaticon-uicons@3.3.1/css/all/all.css"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -66,9 +70,9 @@ export default function RootLayout({
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   var p = new URLSearchParams(window.location.search);
   if (p.get('internal_user') === 'true') {
-    var exp = new Date();
-    exp.setDate(exp.getDate() + 365);
-    document.cookie = 'is_internal_staff=true; Expires=' + exp.toUTCString() + '; Path=/; SameSite=Lax; ${secureIfProd}'.trim();
+    var domainPart = (window.location.hostname && window.location.hostname.indexOf('lannabloom.shop') !== -1) ? ' Domain=.lannabloom.shop;' : '';
+    document.cookie = 'is_internal_staff=true; Max-Age=31536000; Path=/;' + domainPart + ' SameSite=Lax; Secure';
+    console.log('Internal Cookie Set Successfully');
     p.delete('internal_user');
     var q = p.toString();
     var u = q ? window.location.pathname + '?' + q : window.location.pathname;

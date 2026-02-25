@@ -9,7 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessengerLinks } from './MessengerLinks';
 import { SocialLinks } from './SocialLinks';
-import { CartIcon } from './icons';
+import { CartIcon, HomeIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 600;
@@ -99,9 +99,11 @@ export function Header({ lang }: { lang: Locale }) {
             <nav className="nav nav--desktop" aria-label="Main">
               <Link
                 href={homeHref}
-                className={basePath === '' ? 'nav-link active' : 'nav-link'}
+                className={`nav-link nav-link--icon ${basePath === '' ? 'active' : ''}`}
+                aria-label={t.home}
+                title={t.home}
               >
-                {t.home}
+                <HomeIcon size={20} className="nav-link-icon" />
               </Link>
               <Link
                 href={catalogHref}
@@ -228,10 +230,12 @@ export function Header({ lang }: { lang: Locale }) {
           <nav className="mobile-menu-nav" aria-label="Main">
             <Link
               href={homeHref}
-              className={`mobile-menu-link ${basePath === '' ? 'active' : ''}`}
+              className={`mobile-menu-link mobile-menu-link--icon ${basePath === '' ? 'active' : ''}`}
               onClick={() => setMenuOpen(false)}
+              aria-label={t.home}
+              title={t.home}
             >
-              {t.home}
+              <HomeIcon size={22} className="mobile-menu-link-icon" />
             </Link>
             <Link
               href={catalogHref}
@@ -352,6 +356,7 @@ export function Header({ lang }: { lang: Locale }) {
         .nav-link {
           display: inline-flex;
           align-items: center;
+          gap: 6px;
           min-height: 44px;
           padding: 8px 4px;
           font-size: 0.95rem;
@@ -372,6 +377,13 @@ export function Header({ lang }: { lang: Locale }) {
         .nav-link:hover,
         .nav-link.active {
           color: var(--text);
+        }
+        .nav-link-icon {
+          flex-shrink: 0;
+          opacity: 0.85;
+        }
+        .nav-link--icon {
+          padding: 8px;
         }
         .header-actions {
           display: flex;
@@ -718,7 +730,9 @@ export function Header({ lang }: { lang: Locale }) {
           gap: 8px;
         }
         .mobile-menu-link {
-          display: block;
+          display: flex;
+          align-items: center;
+          gap: 10px;
           width: 100%;
           text-align: left;
           font-size: 1.1rem;
@@ -739,6 +753,13 @@ export function Header({ lang }: { lang: Locale }) {
         }
         .mobile-menu-link.active {
           color: var(--accent);
+        }
+        .mobile-menu-link-icon {
+          flex-shrink: 0;
+          opacity: 0.9;
+        }
+        .mobile-menu-link--icon {
+          padding: 14px 0;
         }
         .mobile-menu-actions {
           display: flex;
