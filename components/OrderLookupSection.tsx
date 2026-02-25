@@ -135,7 +135,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
             className="cart-btn-outline"
             onClick={() => router.push(`/${lang}/catalog`)}
           >
-            {t.browseBouquetsInstead ?? t.chooseBouquet}
+            {t.browseBouquetsInstead}
           </button>
         </div>
       </form>

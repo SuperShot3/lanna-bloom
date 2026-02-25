@@ -416,6 +416,7 @@ export function Header({ lang }: { lang: Locale }) {
         }
         .header-cart-icon {
           flex-shrink: 0;
+          height: 30px;
         }
         .header-cart-badge {
           position: absolute;

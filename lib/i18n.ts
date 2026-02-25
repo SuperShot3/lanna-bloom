@@ -19,7 +19,7 @@ export const translations = {
       contactUs: 'Contact Us',
       refundReplacement: 'Refund & Replacement',
       findUs: 'Location',
-      information: 'Guides / Info',
+      information: 'Guides',
       flowerDeliveryChiangMai: 'Flower delivery Chiang Mai',
       roseBouquetsChiangMai: 'Rose bouquets Chiang Mai',
       sameDayFlowerDeliveryChiangMai: 'Same-day delivery Chiang Mai',
