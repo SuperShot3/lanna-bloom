@@ -30,7 +30,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             title="Google Tag Manager"
           />
         </noscript>
-        <GTMPageView />
       </>
     );
   }
@@ -67,31 +66,6 @@ function GA4PageView() {
     if (prevPathRef.current === pathname) return;
     prevPathRef.current = pathname;
     window.gtag('event', 'page_view', { page_path: pathname, page_location: window.location.origin + pathname });
-  }, [pathname]);
-
-  return null;
-}
-
-/**
- * When using GTM: push page_view only on client-side route changes (not initial load)
- * so we don't duplicate the first page_view that GTM's GA4 Configuration tag may send.
- */
-function GTMPageView() {
-  const pathname = usePathname();
-  const prevPathRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !pathname) return;
-    if (prevPathRef.current === pathname) return;
-    const isFirst = prevPathRef.current === null;
-    prevPathRef.current = pathname;
-    if (isFirst) return;
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-      event: 'page_view',
-      page_path: pathname,
-      page_location: window.location.origin + pathname,
-    });
   }, [pathname]);
 
   return null;

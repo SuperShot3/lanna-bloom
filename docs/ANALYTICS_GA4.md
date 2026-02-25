@@ -13,6 +13,8 @@
 **Google Tag Manager (optional)**  
 Set `NEXT_PUBLIC_USE_GTM=true` to load GTM instead of direct gtag. Events are pushed to `dataLayer`; the app does **not** load gtag, so there is no duplicate tracking. In GTM, add a GA4 Configuration tag (your Measurement ID) and GA4 Event tags (or a single tag with triggers) that fire on the same event names and pass the pushed parameters through to GA4. Container ID defaults to `GTM-T4JGL85T`; override with `NEXT_PUBLIC_GTM_ID`.
 
+**page_view and SPA (avoid double-counting):** The app does **not** push `page_view` to dataLayer when using GTM. GTM must be the single source of truth. In GTM, add a **History Change** trigger to your GA4 Configuration tag (or create a separate GA4 Event tag for `page_view` with History Change trigger) so SPA route changes are tracked. Do **not** add a Custom Event trigger for `page_view` from dataLayer—that would duplicate GTM's native History Change tracking.
+
 **select_item and catalog cards:** The `select_item` event is pushed from code when the user clicks anywhere on a bouquet card (the whole card is a link; the "View details" button was removed). Use a **Custom Event** trigger with event name `select_item` in GTM—do not rely on element-based click triggers. If you use element-based triggers, target `.card-link` or `[data-ga-select-item="catalog"]` instead of the removed `.card-cta`.
 
 ---
@@ -176,6 +178,11 @@ Internal staff traffic is excluded from GA4 without IP filtering. Staff visit wi
 3. **GoogleAnalytics (GTM)** – Loads with `afterInteractive`. When GTM initializes, `dataLayer` already contains `traffic_type: "internal"` for internal users.
 
 ### GTM configuration steps
+
+**page_view (SPA):** To track page views on initial load and SPA route changes without double-counting:
+1. GA4 Configuration tag: Add trigger **All Pages** (for initial load).
+2. Add trigger **History Change** to the same GA4 Configuration tag (for SPA route changes when user navigates via Next.js client-side routing).
+3. Do **not** create a Custom Event trigger for `event === 'page_view'` from dataLayer—the app no longer pushes page_view; GTM's History Change handles it.
 
 1. **Data Layer Variable**  
    - Variables → New → Data Layer Variable  
