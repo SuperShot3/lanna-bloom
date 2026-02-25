@@ -77,28 +77,10 @@ export function CheckoutSuccessClient({
   useEffect(() => {
     if (!orderId) return;
     if (sessionId && stripeStatus !== 'paid') return;
-    let fired = false;
-    const fireAdsConversion = (orderData: Order | null) => {
-      if (fired) return;
-      const params: Record<string, unknown> = { transaction_id: orderId };
-      if (orderData?.pricing?.grandTotal != null) {
-        params.value = orderData.pricing.grandTotal;
-        params.currency = 'THB';
-      }
-      const send = () => {
-        if (typeof window !== 'undefined' && window.gtag) {
-          fired = true;
-          window.gtag('event', 'ads_conversion_Success_Page_1', params);
-        }
-      };
-      send();
-      if (!fired) setTimeout(send, 800);
-    };
     fetch(`/api/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: Order | null) => {
         setOrder(data);
-        fireAdsConversion(data);
         if (data?.pricing?.grandTotal != null && data?.items?.length) {
           const analyticsItems: AnalyticsItem[] = data.items.map((it, i) => ({
             item_id: it.bouquetId,
@@ -130,7 +112,6 @@ export function CheckoutSuccessClient({
       })
       .catch(() => {
         setOrder(null);
-        fireAdsConversion(null);
       });
   }, [orderId, sessionId, stripeStatus]);
 

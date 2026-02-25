@@ -4,18 +4,9 @@
  * All events fire only on client; dedupe and purchase persistence applied.
  */
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-    dataLayer?: Record<string, unknown>[];
-  }
-}
-
-const USE_GTM = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_USE_GTM === 'true';
+import { trackEvent as gtagTrackEvent, trackPurchase as gtagTrackPurchase } from './analytics/gtag';
 
 const CURRENCY = 'THB';
-const PURCHASE_DEDUPE_PREFIX = 'lanna-bloom_sent_purchase_';
-const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
 
 /** GA4 ecommerce item schema: item_id, item_name, item_category, item_variant, price, quantity, currency */
 export interface AnalyticsItem {
@@ -54,32 +45,8 @@ function markSent(key: string): void {
   sentEvents.add(key);
 }
 
-function sendGtagEvent(eventName: string, eventParams: Record<string, unknown>): void {
-  if (typeof window === 'undefined') return;
-
-  if (USE_GTM) {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: eventName, ...eventParams });
-    if (isDev) console.debug('[GA4 via GTM]', eventName, eventParams);
-    return;
-  }
-
-  const doSend = () => {
-    if (window.gtag) {
-      window.gtag('event', eventName, eventParams);
-      if (isDev) console.debug('[GA4]', eventName, eventParams);
-      return true;
-    }
-    return false;
-  };
-  if (doSend()) return;
-  let attempts = 0;
-  const retry = () => {
-    if (attempts++ >= 15) return;
-    if (doSend()) return;
-    setTimeout(retry, 100);
-  };
-  setTimeout(retry, 100);
+function sendEvent(eventName: string, eventParams: Record<string, unknown>): void {
+  gtagTrackEvent(eventName, eventParams);
 }
 
 function ensureItems(items: AnalyticsItem[]): AnalyticsItem[] {
@@ -113,7 +80,7 @@ export function trackViewItem(params: {
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('view_item', eventParams);
+  sendEvent('view_item', eventParams);
 }
 
 /**
@@ -125,7 +92,7 @@ export function trackViewItemList(listName: string, items: AnalyticsItem[]): voi
   const key = eventKey('view_item_list', listName);
   if (wasSent(key)) return;
   markSent(key);
-  sendGtagEvent('view_item_list', {
+  sendEvent('view_item_list', {
     item_list_id: listName,
     item_list_name: listName,
     items: ensureItems(items),
@@ -139,7 +106,7 @@ export function trackViewItemList(listName: string, items: AnalyticsItem[]): voi
 export function trackSelectItem(listName: string, item: AnalyticsItem): void {
   if (typeof window === 'undefined') return;
   const items = ensureItems([{ ...item, index: 0 }]);
-  sendGtagEvent('select_item', {
+  sendEvent('select_item', {
     item_list_id: listName,
     item_list_name: listName,
     items,
@@ -162,7 +129,7 @@ export function trackAddToCart(params: {
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('add_to_cart', eventParams);
+  sendEvent('add_to_cart', eventParams);
 }
 
 /**
@@ -180,7 +147,7 @@ export function trackRemoveFromCart(params: {
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('remove_from_cart', eventParams);
+  sendEvent('remove_from_cart', eventParams);
 }
 
 /**
@@ -196,12 +163,12 @@ export function trackViewCart(items: AnalyticsItem[], value?: number): void {
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('view_cart', eventParams);
+  sendEvent('view_cart', eventParams);
 }
 
 /**
  * Fire begin_checkout when user lands on cart/checkout with items (GA4 ecommerce).
- * Call site should use a ref to fire only once per cart view.
+ * Deduped per session (survives React Strict Mode double-mount).
  */
 export function trackBeginCheckout(params: {
   currency?: string;
@@ -209,17 +176,21 @@ export function trackBeginCheckout(params: {
   items: AnalyticsItem[];
 }): void {
   if (typeof window === 'undefined') return;
+  const key = 'begin_checkout';
+  if (wasSent(key)) return;
+  markSent(key);
   const { currency = CURRENCY, value, items } = params;
   const eventParams: Record<string, unknown> = {
     currency,
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('begin_checkout', eventParams);
+  sendEvent('begin_checkout', eventParams);
 }
 
 /**
  * Fire add_shipping_info when user provides shipping/delivery info (GA4 ecommerce).
+ * Deduped per session (survives React Strict Mode double-mount).
  */
 export function trackAddShippingInfo(params: {
   shippingTier: string;
@@ -228,6 +199,9 @@ export function trackAddShippingInfo(params: {
   items: AnalyticsItem[];
 }): void {
   if (typeof window === 'undefined') return;
+  const key = 'add_shipping_info';
+  if (wasSent(key)) return;
+  markSent(key);
   const { shippingTier, currency = CURRENCY, value, items } = params;
   const eventParams: Record<string, unknown> = {
     currency,
@@ -235,7 +209,7 @@ export function trackAddShippingInfo(params: {
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('add_shipping_info', eventParams);
+  sendEvent('add_shipping_info', eventParams);
 }
 
 /**
@@ -256,12 +230,13 @@ export function trackAddPaymentInfo(params: {
     items: ensureItems(items),
   };
   if (value != null) eventParams.value = value;
-  sendGtagEvent('add_payment_info', eventParams);
+  sendEvent('add_payment_info', eventParams);
 }
 
 /**
  * Fire purchase once per order (GA4 ecommerce). Deduped by orderId via localStorage.
  * ONLY for confirmed Stripe payment success (real payment).
+ * Uses purchase_sent:<orderId> in localStorage; survives refresh/back/forward.
  */
 export function trackPurchase(params: {
   orderId: string;
@@ -270,24 +245,19 @@ export function trackPurchase(params: {
   items: AnalyticsItem[];
   transactionId?: string;
 }): void {
-  if (typeof window === 'undefined') return;
-  const { orderId, value, currency = CURRENCY, items } = params;
-  const storageKey = `${PURCHASE_DEDUPE_PREFIX}${orderId}`;
-  try {
-    if (window.localStorage.getItem(storageKey) === '1') return;
-    window.localStorage.setItem(storageKey, '1');
-  } catch {
-    // ignore
-  }
-  sendGtagEvent('purchase', {
-    transaction_id: params.transactionId ?? orderId,
-    value,
-    currency,
-    items: ensureItems(items),
+  gtagTrackPurchase({
+    orderId: params.orderId,
+    value: params.value,
+    currency: params.currency ?? CURRENCY,
+    items: params.items,
+    transactionId: params.transactionId,
   });
 }
 
 const GENERATE_LEAD_DEDUPE_PREFIX = 'lanna-bloom_sent_generate_lead_';
+
+/** REMOVED: ads_conversion_Success_Page_1 – causes duplicate conversions in Google Ads.
+ * Use GA4 purchase event only. Import purchase as conversion in Google Ads. */
 
 /**
  * Fire generate_lead when order is created via Place Order (bank transfer / PromptPay).
@@ -309,7 +279,7 @@ export function trackGenerateLead(params: {
   } catch {
     // ignore
   }
-  sendGtagEvent('generate_lead', {
+  sendEvent('generate_lead', {
     order_id: orderId,
     value,
     currency,
@@ -334,7 +304,7 @@ export function trackContactClick(params: {
     page_path: params.page_path ?? (typeof window !== 'undefined' ? window.location.pathname : ''),
   };
   if (params.bouquet_id != null) eventParams.bouquet_id = params.bouquet_id;
-  sendGtagEvent('contact_click', eventParams);
+  sendEvent('contact_click', eventParams);
 }
 
 /**
@@ -343,7 +313,7 @@ export function trackContactClick(params: {
  */
 export function trackCtaClick(eventName: string, params?: Record<string, unknown>): void {
   if (typeof window === 'undefined') return;
-  sendGtagEvent(eventName, { page_path: window.location.pathname, ...params });
+  sendEvent(eventName, { page_path: window.location.pathname, ...params });
 }
 
 /**
@@ -351,7 +321,7 @@ export function trackCtaClick(eventName: string, params?: Record<string, unknown
  */
 export function trackLanguageChange(lang: string): void {
   if (typeof window === 'undefined') return;
-  sendGtagEvent('language_change', { language: lang, page_path: window.location.pathname });
+  sendEvent('language_change', { language: lang, page_path: window.location.pathname });
 }
 
 // --- Legacy / alias for existing callers ---
@@ -368,13 +338,13 @@ export function trackMessengerClick(params: {
   if (typeof window === 'undefined') return;
   const { channel, page_location, link_url } = params;
   const page_path = typeof window !== 'undefined' ? window.location.pathname : '';
-  sendGtagEvent('messenger_click', {
+  sendEvent('messenger_click', {
     channel,
     page_location,
     page_path,
     ...(link_url != null && { link_url }),
   });
-  sendGtagEvent(
+  sendEvent(
     channel === 'line' ? 'click_line' : channel === 'whatsapp' ? 'click_whatsapp' : 'click_telegram',
     { channel, page_location, page_path, ...(link_url != null && { link_url }) }
   );

@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { ViewTransitions } from 'next-view-transitions';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
+import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import './globals.css';
+
+const secureIfProd = process.env.NODE_ENV === 'production' ? 'Secure; ' : '';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -56,9 +59,34 @@ export default function RootLayout({
             `,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(){
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('internal_user') === 'true') {
+    var exp = new Date();
+    exp.setDate(exp.getDate() + 365);
+    document.cookie = 'is_internal_staff=true; Expires=' + exp.toUTCString() + '; Path=/; SameSite=Lax; ${secureIfProd}'.trim();
+    p.delete('internal_user');
+    var q = p.toString();
+    var u = q ? window.location.pathname + '?' + q : window.location.pathname;
+    window.history.replaceState({}, '', u);
+  }
+  var m = document.cookie.match(/\\bis_internal_staff=([^;]*)/);
+  if (m && m[1] === 'true') {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ traffic_type: 'internal' });
+  }
+})();
+            `,
+          }}
+        />
       </head>
       <body>
         <LoadingScreen />
+        <InternalTrafficBootstrap />
         <GoogleAnalytics />
         <ViewTransitions>
           {children}
