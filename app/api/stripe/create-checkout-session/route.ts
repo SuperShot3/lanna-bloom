@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { computeOrderTotals, type CartItemIdentifier } from '@/lib/stripePricing';
 import { createPendingOrder, getBaseUrl } from '@/lib/orders';
+import { getDiscountForCode } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import type { DistrictKey } from '@/lib/deliveryFees';
@@ -174,7 +175,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: computed.message }, { status: 400 });
     }
     const { totals } = computed;
-    const referralDiscount = data.referralDiscount ?? 0;
+    const subtotal = totals.itemsTotal + totals.deliveryFee;
+    const referralDiscount = data.referralCode
+      ? getDiscountForCode(data.referralCode, subtotal)
+      : 0;
     const effectiveGrandTotal = Math.max(0, totals.grandTotal - referralDiscount);
 
     const orderPayload: OrderPayload = {

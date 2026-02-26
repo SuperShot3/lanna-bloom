@@ -3,6 +3,7 @@ import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
+import { getDiscountForCode } from '@/lib/referral';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') {
@@ -71,6 +72,16 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     return { ok: false, message: 'At least one contactPreference is required (phone, line, whatsapp, or telegram)' };
   }
 
+  const itemsFromPayload = items.map((it: unknown) => {
+    const i = it as Record<string, unknown>;
+    return { price: typeof i.price === 'number' ? i.price : 0 };
+  });
+  const itemsTotal = itemsFromPayload.reduce((sum, it) => sum + it.price, 0);
+  const deliveryFee = calcDeliveryFeeTHB({ district: deliveryDistrict, isMueangCentral });
+  const subtotal = itemsTotal + deliveryFee;
+  const refCode = typeof b.referralCode === 'string' ? (b.referralCode as string).trim() : '';
+  const refDiscount = refCode ? getDiscountForCode(refCode, subtotal) : 0;
+
   const payload: OrderPayload = {
     customerName,
     phone: typeof b.phone === 'string' ? b.phone.trim() || undefined : undefined,
@@ -104,32 +115,13 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       deliveryDistrict,
       isMueangCentral,
     },
-    pricing: (() => {
-      const itemsFromPayload = items.map((it: unknown) => {
-        const i = it as Record<string, unknown>;
-        return { price: typeof i.price === 'number' ? i.price : 0 };
-      });
-      const itemsTotal = itemsFromPayload.reduce((sum, it) => sum + it.price, 0);
-      const deliveryFee = calcDeliveryFeeTHB({ district: deliveryDistrict, isMueangCentral });
-      const subtotal = itemsTotal + deliveryFee;
-      const refCode = typeof b.referralCode === 'string' ? (b.referralCode as string).trim() : '';
-      const refDiscountRaw = typeof b.referralDiscount === 'number' ? b.referralDiscount : 0;
-      const refDiscount = refCode && refDiscountRaw > 0
-        ? Math.min(100, Math.floor(refDiscountRaw), subtotal)
-        : 0;
-      return {
-        itemsTotal,
-        deliveryFee,
-        grandTotal: subtotal - refDiscount,
-      };
-    })(),
+    pricing: {
+      itemsTotal,
+      deliveryFee,
+      grandTotal: subtotal - refDiscount,
+    },
     contactPreference,
-    ...(typeof b.referralCode === 'string' && (b.referralCode as string).trim() && typeof b.referralDiscount === 'number' && (b.referralDiscount as number) > 0
-      ? {
-          referralCode: (b.referralCode as string).trim(),
-          referralDiscount: Math.min(100, Math.floor(b.referralDiscount as number)),
-        }
-      : {}),
+    ...(refCode && refDiscount > 0 ? { referralCode: refCode, referralDiscount: refDiscount } : {}),
   };
   return { ok: true, payload };
 }

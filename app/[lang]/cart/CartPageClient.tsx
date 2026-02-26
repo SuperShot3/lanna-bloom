@@ -28,7 +28,6 @@ import {
   getStoredReferral,
   clearReferral,
   computeReferralDiscount,
-  REFERRAL_DISCOUNT_THB,
 } from '@/lib/referral';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
@@ -137,7 +136,7 @@ function buildStripePayload(
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
   const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, !!referral);
+  const referralDiscount = computeReferralDiscount(subtotal, referral);
 
   return {
     lang,
@@ -313,7 +312,7 @@ function buildOrderPayload(
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
   const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, !!referral);
+  const referralDiscount = computeReferralDiscount(subtotal, referral);
   const grandTotal = subtotal - referralDiscount;
 
   return {
@@ -486,7 +485,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const deliveryFeeVal = hasChosenLocation ? calcDeliveryFeeTHB({ district, isMueangCentral }) : 0;
   const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
   const referralVal = getStoredReferral();
-  const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, !!referralVal);
+  const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, referralVal);
   const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
 
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());

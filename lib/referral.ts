@@ -6,6 +6,11 @@
 export const REFERRAL_DISCOUNT_THB = 100;
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
+/** Discount code definitions: percent or fixed THB. CLOUD9 = 10% off. */
+const DISCOUNT_CODES: Record<string, { type: 'percent'; value: number } | { type: 'fixed'; value: number }> = {
+  CLOUD9: { type: 'percent', value: 10 },
+};
+
 /** Allowed chars: A–Z, 0–9, hyphen (-). Length 3–12. Returns normalized code or null if invalid. */
 export function validateReferralCode(code: string | null | undefined): { valid: true; code: string } | { valid: false; error?: string } {
   if (!code || typeof code !== 'string') return { valid: false, error: 'Please enter a code' };
@@ -64,13 +69,30 @@ export function storeReferral(code: string): void {
 }
 
 /**
+ * Compute discount for a given code and subtotal. Server-safe (no localStorage).
+ * Returns discount amount (positive number) or 0. Capped at subtotal.
+ */
+export function getDiscountForCode(code: string, subtotal: number): number {
+  if (!code || subtotal <= 0) return 0;
+  const normalized = code.trim().toUpperCase();
+  const def = DISCOUNT_CODES[normalized];
+  if (def) {
+    if (def.type === 'percent') {
+      return Math.min(Math.floor((subtotal * def.value) / 100), subtotal);
+    }
+    return Math.min(def.value, subtotal);
+  }
+  return Math.min(REFERRAL_DISCOUNT_THB, subtotal);
+}
+
+/**
  * Compute referral discount. Does not stack with other discounts.
  * Returns discount amount (positive number) or 0. Capped at subtotal.
  */
 export function computeReferralDiscount(
   cartTotal: number,
-  hasReferral: boolean
+  referral: StoredReferral | null
 ): number {
-  if (!hasReferral || cartTotal <= 0) return 0;
-  return Math.min(REFERRAL_DISCOUNT_THB, cartTotal);
+  if (!referral || cartTotal <= 0) return 0;
+  return getDiscountForCode(referral.code, cartTotal);
 }
