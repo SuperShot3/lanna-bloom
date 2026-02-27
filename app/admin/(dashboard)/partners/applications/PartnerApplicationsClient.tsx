@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   approvePartnerApplicationAction,
   rejectPartnerApplicationAction,
+  deletePartnerApplicationAction,
 } from './actions';
 import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
 
@@ -44,6 +45,7 @@ export function PartnerApplicationsClient({
   const [selected, setSelected] = useState<PartnerApplicationRow | null>(null);
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
 
@@ -76,6 +78,19 @@ export function PartnerApplicationsClient({
     }
     setSelected(null);
     setRejectNote('');
+    router.refresh();
+  }
+
+  async function handleDelete(app: PartnerApplicationRow) {
+    if (!confirm('Delete this rejected application? This cannot be undone.')) return;
+    setDeleting(true);
+    const result = await deletePartnerApplicationAction(app.id);
+    setDeleting(false);
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+    setSelected(null);
     router.refresh();
   }
 
@@ -123,6 +138,9 @@ export function PartnerApplicationsClient({
                 <th>Shop</th>
                 <th>Contact</th>
                 <th>Email</th>
+                <th>Phone</th>
+                <th>LINE</th>
+                <th>District</th>
                 <th>Status</th>
                 <th>Date</th>
                 <th></th>
@@ -134,6 +152,9 @@ export function PartnerApplicationsClient({
                   <td>{app.shop_name ?? '—'}</td>
                   <td>{app.contact_name ?? '—'}</td>
                   <td>{app.email ?? '—'}</td>
+                  <td>{app.phone ?? '—'}</td>
+                  <td>{app.line_id ?? '—'}</td>
+                  <td>{app.district ?? '—'}</td>
                   <td>
                     <span className={`admin-partner-badge admin-partner-badge--${app.status ?? 'pending'}`}>
                       {app.status ?? 'pending'}
@@ -197,6 +218,12 @@ export function PartnerApplicationsClient({
                     <dd>{selected.delivery_zones}</dd>
                   </>
                 )}
+                {selected.delivery_fee_note && (
+                  <>
+                    <dt>Delivery fee / policy</dt>
+                    <dd>{selected.delivery_fee_note}</dd>
+                  </>
+                )}
                 {selected.experience_note && (
                   <>
                     <dt>Experience</dt>
@@ -246,6 +273,19 @@ export function PartnerApplicationsClient({
                       {rejecting ? 'Rejecting…' : 'Reject'}
                     </button>
                   </div>
+                </div>
+              )}
+              {selected.status === 'rejected' && (
+                <div className="admin-partner-actions">
+                  <button
+                    type="button"
+                    className="admin-v2-btn admin-v2-btn-outline"
+                    disabled={deleting}
+                    onClick={() => handleDelete(selected)}
+                    style={{ color: '#c0392b', borderColor: '#c0392b' }}
+                  >
+                    {deleting ? 'Deleting…' : 'Delete'}
+                  </button>
                 </div>
               )}
             </div>

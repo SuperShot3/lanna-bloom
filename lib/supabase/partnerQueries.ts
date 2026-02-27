@@ -154,3 +154,20 @@ export async function updatePartnerApplication(
   }
   return true;
 }
+
+/** Delete application (admin). Only for rejected applications. */
+export async function deletePartnerApplication(id: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from('partner_applications')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('[Partner] deletePartnerApplication failed:', error);
+    return false;
+  }
+  return true;
+}

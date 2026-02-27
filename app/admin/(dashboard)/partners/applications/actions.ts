@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { getPartnerApplicationById, updatePartnerApplication } from '@/lib/supabase/partnerQueries';
+import { getPartnerApplicationById, updatePartnerApplication, deletePartnerApplication } from '@/lib/supabase/partnerQueries';
 import { createPartner } from '@/lib/sanityWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
 import { randomBytes } from 'crypto';
@@ -91,6 +91,27 @@ export async function rejectPartnerApplicationAction(
     admin_note: adminNote ?? null,
   });
   if (!ok) return { error: 'Failed to update application' };
+
+  revalidatePath('/admin/partners/applications');
+  return {};
+}
+
+export async function deletePartnerApplicationAction(
+  applicationId: string
+): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const app = await getPartnerApplicationById(applicationId);
+  if (!app) return { error: 'Application not found' };
+  if (app.status !== 'rejected') {
+    return { error: 'Only rejected applications can be deleted' };
+  }
+
+  const ok = await deletePartnerApplication(applicationId);
+  if (!ok) return { error: 'Failed to delete application' };
 
   revalidatePath('/admin/partners/applications');
   return {};

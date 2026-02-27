@@ -62,6 +62,7 @@ const initialForm: FormState = {
 export function ApplyWizard({ lang }: { lang: Locale }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [f, setF] = useState<FormState>(initialForm);
 
   useEffect(() => {
@@ -93,31 +94,37 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
   };
 
   async function handleSubmit() {
+    if (submitting) return;
     setError(null);
-    const formData = new FormData();
-    formData.set('lang', lang);
-    formData.set('shopName', f.shopName);
-    formData.set('contactName', f.contactName);
-    formData.set('email', f.email);
-    formData.set('lineId', f.lineId);
-    formData.set('phone', f.phone);
-    formData.set('instagram', f.instagram);
-    formData.set('facebook', f.facebook);
-    formData.set('address', f.address);
-    formData.set('district', f.district);
-    formData.set('selfDeliver', String(f.selfDeliver));
-    formData.set('deliveryZones', f.deliveryZones);
-    formData.set('deliveryFee', f.deliveryFee);
-    formData.set('categories', JSON.stringify(f.categories));
-    formData.set('prepTime', f.prepTime);
-    formData.set('cutoff', f.cutoff);
-    formData.set('maxOrders', f.maxOrders);
-    formData.set('portfolioLinks', f.portfolioLinks);
-    formData.set('experienceNote', f.experienceNote);
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.set('lang', lang);
+      formData.set('shopName', f.shopName);
+      formData.set('contactName', f.contactName);
+      formData.set('email', f.email);
+      formData.set('lineId', f.lineId);
+      formData.set('phone', f.phone);
+      formData.set('instagram', f.instagram);
+      formData.set('facebook', f.facebook);
+      formData.set('address', f.address);
+      formData.set('district', f.district);
+      formData.set('selfDeliver', String(f.selfDeliver));
+      formData.set('deliveryZones', f.deliveryZones);
+      formData.set('deliveryFee', f.deliveryFee);
+      formData.set('categories', JSON.stringify(f.categories));
+      formData.set('prepTime', f.prepTime);
+      formData.set('cutoff', f.cutoff);
+      formData.set('maxOrders', f.maxOrders);
+      formData.set('portfolioLinks', f.portfolioLinks);
+      formData.set('experienceNote', f.experienceNote);
 
-    const result = await applyPartnerAction(formData);
-    if (result?.error) {
-      setError(result.error);
+      const result = await applyPartnerAction(formData);
+      if (result?.error) {
+        setError(result.error);
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -234,8 +241,8 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
           {step < 3 ? (
             <Btn onClick={() => setStep(step + 1)}>{t.next} →</Btn>
           ) : (
-            <Btn variant="rose" onClick={() => handleSubmit()}>
-              {t.submit} 🌸
+            <Btn variant="rose" onClick={() => handleSubmit()} disabled={submitting}>
+              {submitting ? (lang === 'th' ? 'กำลังส่ง…' : 'Submitting…') : `${t.submit} 🌸`}
             </Btn>
           )}
         </div>

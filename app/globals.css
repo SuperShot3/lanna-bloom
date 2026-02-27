@@ -2617,6 +2617,8 @@ a.filter-pill--active:hover {
 }
 .admin-partner-list {
   margin-bottom: 24px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .admin-partner-empty {
   color: var(--text-muted);
@@ -2624,6 +2626,7 @@ a.filter-pill--active:hover {
 }
 .admin-partner-table {
   width: 100%;
+  min-width: 700px;
   border-collapse: collapse;
 }
 .admin-partner-table th,
