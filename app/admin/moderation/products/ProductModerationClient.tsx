@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   approveBouquetAction,
   rejectBouquetAction,
-  approveProductAction,
   rejectProductAction,
   needsChangesProductAction,
 } from './actions';
@@ -53,14 +52,6 @@ export function ProductModerationClient({
   async function handleRejectBouquet(id: string) {
     setLoading(id);
     const result = await rejectBouquetAction(id);
-    setLoading(null);
-    if (result.error) alert(result.error);
-    else window.location.reload();
-  }
-
-  async function handleApproveProduct(id: string) {
-    setLoading(id);
-    const result = await approveProductAction(id);
     setLoading(null);
     if (result.error) alert(result.error);
     else window.location.reload();
@@ -182,7 +173,8 @@ export function ProductModerationClient({
         </div>
         <div className="admin-moderation-grid">
           {displayedProducts.map((p) => (
-              <div key={p.id} className="admin-moderation-card">
+            <div key={p.id} className="admin-moderation-card admin-moderation-card-product">
+              <Link href={`/admin/moderation/products/${p.id}`} className="admin-moderation-card-link">
                 <div className="admin-moderation-card-image">
                   {p.imageUrl ? (
                     <img src={p.imageUrl} alt="" width={120} height={120} style={{ objectFit: 'cover', borderRadius: 8 }} />
@@ -206,64 +198,62 @@ export function ProductModerationClient({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="admin-moderation-catalog-link"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       View in catalog →
                     </Link>
                   )}
                 </div>
-                <div className="admin-moderation-card-actions">
-                  {(p.moderationStatus === 'submitted' || p.moderationStatus === 'needs_changes' || p.moderationStatus === 'rejected') && (
-                    <button
-                      type="button"
-                      className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
-                      disabled={!!loading}
-                      onClick={() => handleApproveProduct(p.id)}
-                    >
-                      {loading === p.id ? '…' : 'Approve'}
-                    </button>
-                  )}
-                  {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'rejected') && (
-                    <button
-                      type="button"
-                      className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
-                      disabled={!!loading}
-                      onClick={() => setNeedsChangesId(needsChangesId === p.id ? null : p.id)}
-                    >
-                      Needs changes
-                    </button>
-                  )}
-                  {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'needs_changes') && (
-                    <button
-                      type="button"
-                      className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
-                      disabled={!!loading}
-                      onClick={() => handleRejectProduct(p.id)}
-                    >
-                      Reject
-                    </button>
-                  )}
-                </div>
-                {needsChangesId === p.id && (
-                  <div className="admin-moderation-needs-changes">
-                    <input
-                      type="text"
-                      placeholder="Note for partner (required)"
-                      value={needsChangesNote}
-                      onChange={(e) => setNeedsChangesNote(e.target.value)}
-                      className="admin-v2-input"
-                    />
-                    <button
-                      type="button"
-                      className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
-                      disabled={!!loading || !needsChangesNote.trim()}
-                      onClick={() => handleNeedsChanges(p.id)}
-                    >
-                      Send
-                    </button>
-                  </div>
+              </Link>
+              <div className="admin-moderation-card-actions">
+                <Link
+                  href={`/admin/moderation/products/${p.id}`}
+                  className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                >
+                  Review
+                </Link>
+                {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'rejected') && (
+                  <button
+                    type="button"
+                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                    disabled={!!loading}
+                    onClick={() => setNeedsChangesId(needsChangesId === p.id ? null : p.id)}
+                  >
+                    Needs changes
+                  </button>
+                )}
+                {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'needs_changes') && (
+                  <button
+                    type="button"
+                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                    disabled={!!loading}
+                    onClick={() => handleRejectProduct(p.id)}
+                  >
+                    Reject
+                  </button>
                 )}
               </div>
-            ))}
+              {needsChangesId === p.id && (
+                <div className="admin-moderation-needs-changes">
+                  <input
+                    type="text"
+                    placeholder="Note for partner (required)"
+                    value={needsChangesNote}
+                    onChange={(e) => setNeedsChangesNote(e.target.value)}
+                    className="admin-v2-input"
+                  />
+                  <button
+                    type="button"
+                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                    disabled={!!loading || !needsChangesNote.trim()}
+                    onClick={() => handleNeedsChanges(p.id)}
+                  >
+                    Send
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </section>
 

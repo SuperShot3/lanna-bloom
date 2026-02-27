@@ -37,6 +37,13 @@ export const product = defineType({
     },
     { name: 'price', title: 'Price (THB)', type: 'number', validation: (r) => r.required().min(0) },
     {
+      name: 'commissionPercent',
+      title: 'Commission (%)',
+      type: 'number',
+      description: 'Admin sets before approving. Platform commission per sale (0–100).',
+      validation: (r) => r.min(0).max(100),
+    },
+    {
       name: 'partner',
       title: 'Partner',
       type: 'reference',

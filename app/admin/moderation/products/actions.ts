@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import {
   updateBouquetStatus,
   updateProductModerationStatus,
+  updateProductCommission,
 } from '@/lib/sanityWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
 
@@ -38,14 +39,23 @@ export async function rejectBouquetAction(bouquetId: string): Promise<{ error?: 
   }
 }
 
-export async function approveProductAction(productId: string): Promise<{ error?: string }> {
+export async function approveProductAction(
+  productId: string,
+  commissionPercent: number
+): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
+  const pct = Number(commissionPercent);
+  if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+    return { error: 'Commission must be 0–100%' };
+  }
   try {
+    await updateProductCommission(productId, pct);
     await updateProductModerationStatus(productId, 'live');
     revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/moderation/products/${productId}`);
     return {};
   } catch (err) {
     console.error('[Moderation] approveProduct failed:', err);
@@ -64,6 +74,7 @@ export async function rejectProductAction(
   try {
     await updateProductModerationStatus(productId, 'rejected', adminNote);
     revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/moderation/products/${productId}`);
     return {};
   } catch (err) {
     console.error('[Moderation] rejectProduct failed:', err);
@@ -83,6 +94,7 @@ export async function needsChangesProductAction(
   try {
     await updateProductModerationStatus(productId, 'needs_changes', adminNote);
     revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/moderation/products/${productId}`);
     return {};
   } catch (err) {
     console.error('[Moderation] needsChangesProduct failed:', err);

@@ -760,6 +760,81 @@ export async function getProductById(productId: string): Promise<{
   }
 }
 
+/** Full product for admin moderation — all images, descriptions, attributes, commission. */
+export interface AdminProductDetail {
+  id: string;
+  slug?: string;
+  nameEn: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category: string;
+  price: number;
+  moderationStatus: string;
+  commissionPercent?: number;
+  images: string[];
+  preparationTime?: number;
+  occasion?: string;
+  customAttributes: Array<{ key: string; value: string }>;
+  partnerId?: string;
+}
+
+export async function getProductByIdForAdmin(productId: string): Promise<AdminProductDetail | null> {
+  try {
+    const doc = await client.fetch<
+      | {
+          _id: string;
+          slug?: { current?: string };
+          nameEn?: string;
+          nameTh?: string;
+          descriptionEn?: string;
+          descriptionTh?: string;
+          category?: string;
+          price?: number;
+          moderationStatus?: string;
+          commissionPercent?: number;
+          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+          structuredAttributes?: { preparationTime?: number; occasion?: string };
+          customAttributes?: Array<{ key?: string; value?: string }>;
+          partner?: { _ref?: string };
+        }
+      | null
+    >(
+      `*[_type == "product" && _id == $id][0] {
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, moderationStatus, commissionPercent,
+        images, structuredAttributes, customAttributes, partner
+      }`,
+      { id: productId }
+    );
+    if (!doc) return null;
+    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+    return {
+      id: doc._id,
+      slug: doc.slug?.current,
+      nameEn: doc.nameEn ?? '',
+      nameTh: doc.nameTh,
+      descriptionEn: doc.descriptionEn,
+      descriptionTh: doc.descriptionTh,
+      category: doc.category ?? '',
+      price: doc.price ?? 0,
+      moderationStatus: doc.moderationStatus ?? 'submitted',
+      commissionPercent: doc.commissionPercent,
+      images: imageUrls.length ? imageUrls : [placeholder],
+      preparationTime: doc.structuredAttributes?.preparationTime,
+      occasion: doc.structuredAttributes?.occasion,
+      customAttributes: (doc.customAttributes ?? []).map((a) => ({
+        key: a.key ?? '',
+        value: a.value ?? '',
+      })).filter((a) => a.key || a.value),
+      partnerId: doc.partner?._ref,
+    };
+  } catch (err) {
+    console.error('[Sanity] getProductByIdForAdmin failed:', err);
+    return null;
+  }
+}
+
 /** Get existing image asset refs for a product (for edit: keep existing images when no new uploads). */
 export async function getProductImageRefs(productId: string): Promise<string[]> {
   try {

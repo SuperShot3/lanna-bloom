@@ -215,6 +215,16 @@ export async function updateProductModerationStatus(
   await patch.commit();
 }
 
+/** Set commission (admin) before approving. Required for deploy to website. */
+export async function updateProductCommission(
+  productId: string,
+  commissionPercent: number
+): Promise<void> {
+  const client = getWriteClient();
+  const pct = Math.max(0, Math.min(100, Number(commissionPercent)));
+  await client.patch(productId).set({ commissionPercent: pct }).commit();
+}
+
 /** Update a bouquet (partner only); sets status to pending_review. */
 export async function updateBouquet(bouquetId: string, input: UpdateBouquetInput): Promise<void> {
   const client = getWriteClient();
