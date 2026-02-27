@@ -1,20 +1,17 @@
 import { notFound } from 'next/navigation';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
 import { ViewportSync } from '@/components/ViewportSync';
 import { CartProvider } from '@/contexts/CartContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { locales, isValidLocale, type Locale } from '@/lib/i18n';
+import { MainSiteChrome } from '@/components/MainSiteChrome';
 
 export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
 
 /**
- * Layout order: Header → main (page content) → Footer.
- * Uses flex column so main grows and footer stays at bottom.
- * Root cause of "footer before catalog" was lack of explicit flex structure;
- * main-content-wrap + main + footer now in a single column wrapper.
+ * Lang layout: Header → main (page content) → Footer.
+ * Partner pages hide main Header/Footer via MainSiteChrome (path-based).
  */
 export default function LangLayout({
   children,
@@ -28,14 +25,10 @@ export default function LangLayout({
   return (
     <CartProvider>
       <ToastProvider>
-      <ViewportSync />
-      <div className="lang-layout">
-        <Header lang={lang as Locale} />
-        <div className="main-content-wrap" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
-          <main>{children}</main>
+        <ViewportSync />
+        <div className="lang-layout">
+          <MainSiteChrome lang={lang as Locale}>{children}</MainSiteChrome>
         </div>
-        <Footer lang={lang as Locale} />
-      </div>
       </ToastProvider>
     </CartProvider>
   );

@@ -35,6 +35,13 @@ export const partner = defineType({
       initialValue: 'pending_review',
       validation: (r) => r.required(),
     },
+    {
+      name: 'supabaseUserId',
+      title: 'Supabase User ID',
+      type: 'string',
+      description: 'Links to auth.users.id after admin approval. Used to resolve partner from session.',
+      hidden: ({ document }) => !document?.supabaseUserId,
+    },
   ],
   preview: {
     select: { title: 'shopName', subtitle: 'contactName' },

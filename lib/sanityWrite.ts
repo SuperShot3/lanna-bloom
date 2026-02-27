@@ -32,6 +32,8 @@ export interface CreatePartnerInput {
   lineOrWhatsapp?: string;
   shopAddress?: string;
   city?: string;
+  /** Set when creating partner from admin approval; links to Supabase auth user */
+  supabaseUserId?: string;
 }
 
 /** Create a partner document; status is set to pending_review. Returns _id. */
@@ -45,7 +47,8 @@ export async function createPartner(input: CreatePartnerInput): Promise<string> 
     ...(input.lineOrWhatsapp && { lineOrWhatsapp: input.lineOrWhatsapp.trim() }),
     ...(input.shopAddress && { shopAddress: input.shopAddress.trim() }),
     city: (input.city || 'Chiang Mai').trim(),
-    status: 'pending_review',
+    status: input.supabaseUserId ? 'approved' : 'pending_review',
+    ...(input.supabaseUserId && { supabaseUserId: input.supabaseUserId.trim() }),
   });
   return doc._id;
 }
@@ -148,6 +151,29 @@ export interface UpdateBouquetInput {
   sizes: BouquetSizeInput[];
 }
 
+/** Update bouquet status (admin moderation): approved | pending_review | rejected */
+export async function updateBouquetStatus(
+  bouquetId: string,
+  status: 'approved' | 'pending_review' | 'rejected'
+): Promise<void> {
+  const client = getWriteClient();
+  await client.patch(bouquetId).set({ status }).commit();
+}
+
+/** Update product moderationStatus (admin): live | needs_changes | rejected */
+export async function updateProductModerationStatus(
+  productId: string,
+  moderationStatus: 'live' | 'needs_changes' | 'rejected',
+  adminNote?: string
+): Promise<void> {
+  const client = getWriteClient();
+  const patch = client.patch(productId).set({
+    moderationStatus,
+    ...(adminNote != null && { adminNote }),
+  });
+  await patch.commit();
+}
+
 /** Update a bouquet (partner only); sets status to pending_review. */
 export async function updateBouquet(bouquetId: string, input: UpdateBouquetInput): Promise<void> {
   const client = getWriteClient();
@@ -182,6 +208,84 @@ export async function updateBouquet(bouquetId: string, input: UpdateBouquetInput
       })),
     })
     .commit();
+}
+
+export interface CreateProductInput {
+  partnerId: string;
+  nameEn: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category: 'balloons' | 'gifts' | 'money_flowers' | 'handmade_floral';
+  price: number;
+  imageAssetIds: string[];
+  preparationTime?: number;
+  occasion?: string;
+  customAttributes?: Array<{ key: string; value: string }>;
+}
+
+/** Create a partner product (non-flower); moderationStatus = submitted. Returns _id. */
+export async function createProduct(input: CreateProductInput): Promise<string> {
+  const client = getWriteClient();
+  const baseSlug = (input.nameEn || 'product')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'product';
+  const slug = await ensureUniqueProductSlug(client, baseSlug);
+
+  const images = input.imageAssetIds.slice(0, 5).map((_id) => ({
+    _type: 'image' as const,
+    asset: { _type: 'reference' as const, _ref: _id },
+  }));
+
+  const doc = await client.create({
+    _type: 'product',
+    slug: { _type: 'slug', current: slug },
+    nameEn: input.nameEn.trim(),
+    nameTh: (input.nameTh || '').trim(),
+    descriptionEn: (input.descriptionEn || '').trim(),
+    descriptionTh: (input.descriptionTh || '').trim(),
+    category: input.category,
+    price: Number(input.price),
+    partner: { _type: 'reference', _ref: input.partnerId },
+    moderationStatus: 'submitted',
+    images,
+    ...((input.preparationTime != null || input.occasion) && {
+      structuredAttributes: {
+        ...(input.preparationTime != null && { preparationTime: input.preparationTime }),
+        ...(input.occasion && { occasion: input.occasion }),
+      },
+    }),
+    ...(input.customAttributes?.length && {
+      customAttributes: input.customAttributes.map((a) => ({
+        _type: 'object',
+        key: a.key,
+        value: a.value,
+      })),
+    }),
+  });
+  return doc._id;
+}
+
+async function ensureUniqueProductSlug(
+  client: ReturnType<typeof createClient>,
+  base: string
+): Promise<string> {
+  const existing = await client.fetch<number>(
+    `count(*[_type == "product" && slug.current == $slug])`,
+    { slug: base }
+  );
+  if (existing === 0) return base;
+  let n = 1;
+  while (true) {
+    const candidate = `${base}-${n}`;
+    const count = await client.fetch<number>(
+      `count(*[_type == "product" && slug.current == $slug])`,
+      { slug: candidate }
+    );
+    if (count === 0) return candidate;
+    n++;
+  }
 }
 
 /** Ensure slug is unique by appending -1, -2, ... if needed. */

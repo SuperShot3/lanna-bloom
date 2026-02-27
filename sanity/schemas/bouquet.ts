@@ -93,6 +93,7 @@ export const bouquet = defineType({
         list: [
           { title: 'Pending review', value: 'pending_review' },
           { title: 'Approved', value: 'approved' },
+          { title: 'Rejected', value: 'rejected' },
         ],
       },
       initialValue: 'approved',

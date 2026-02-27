@@ -8,11 +8,12 @@
 | `/en`, `/th` | Home (EN / TH) |
 | `/en/catalog`, `/th/catalog` | Catalog grid; optional `?category=roses` etc. |
 | `/en/catalog/[slug]`, `/th/catalog/[slug]` | Product page (e.g. `/en/catalog/classic-roses`) |
-| `/en/partner/register`, `/th/partner/register` | Partner registration form |
-| `/en/partner/register/success`, `/th/partner/register/success` | Post-registration thank-you; link to dashboard |
-| `/en/partner/dashboard/[partnerId]`, `/th/partner/dashboard/[partnerId]` | Partner dashboard (list bouquets; status: pending / approved / disabled) |
-| `/en/partner/dashboard/[partnerId]/bouquets/new`, …/edit/`[bouquetId]` | Add or edit a bouquet (approved partners only) |
-| `/studio` (or `/studio/...`) | Sanity Studio — CMS for bouquets and partners |
+| `/en/partner/apply`, `/th/partner/apply` | Partner application form (Thai-first UI) |
+| `/en/partner`, `/th/partner` (or `/partner/dashboard`) | Partner dashboard (auth required; Supabase session) |
+| `/en/partner/products/new`, `/th/partner/products/new` | Add product wizard (flowers → bouquet; others → product doc) |
+| `/admin/partners/applications` | Admin: approve/reject partner applications |
+| `/admin/moderation/products` | Admin: approve/reject submitted products |
+| `/studio` (or `/studio/...`) | Sanity Studio — CMS for bouquets, partners, products |
 
 **Language:** Content switches by URL (`/en` vs `/th`). Next.js client navigation keeps the app instant when using `<Link>`.
 
@@ -36,11 +37,11 @@
 - **Info block:** Name, description, “Composition” section.
 - **Order block:** (1) **Delivery form** — select delivery area (Chiang Mai districts) and delivery date. (2) **Size selector** — S / M / L / XL with price and description. (3) **Messenger order buttons** — Order via LINE, WhatsApp, Telegram, Facebook. Pre-filled message includes bouquet name, size, and (when provided) delivery address and date.
 
-### Partner Flow
-- **Register:** Form (shop name, contact name, phone, LINE/WhatsApp, address, city). Submit → Sanity `partner` with `status: pending_review`; redirect to success page with dashboard link.
-- **Success:** Thank-you message and link to `/[lang]/partner/dashboard/[partnerId]` (active after approval).
-- **Dashboard:** If pending → “Pending approval”. If disabled → “Account disabled”. If approved → list of bouquets, “Add bouquet”, and edit links.
-- **Add/Edit bouquet:** Form: name (EN/TH), description, composition, category, images (1–3), sizes (key, label, price, description, prep time, availability). New bouquets saved with `status: pending_review`; only approved bouquets appear on the public catalog.
+### Partner Flow (Clarified Architecture — Supabase apps + auth; Sanity partners + products; no sync)
+- **A) Apply** — `/[lang]/partner/apply`: Form (shop name, contact, email, LINE, phone, address, district, delivery, categories, samples). Submit → Supabase `partner_applications` (status: pending).
+- **B) Admin Approval** — `/admin/partners/applications`: Approve → create Supabase auth user, create Sanity partner (with supabaseUserId), update application row.
+- **C) Dashboard** — `/[lang]/partner`: Auth required. Resolve partner by supabaseUserId. If pending → “Pending approval”. If disabled → “Account disabled”. If approved → list of bouquets, “Add bouquet”, and edit links.
+- **D) Add Product** — `/[lang]/partner/products/new`: Flowers → Sanity bouquet (existing). Non-flowers → Sanity product (moderationStatus: submitted). **E) Moderation** — `/admin/moderation/products`: Approve/Reject. **F) Catalog** — Reads only approved/live items.
 
 ### Header behavior
 - **Sticky** with subtle shadow; “scrolled” state: reduced height, frosted background, smaller logo (30×36px).
@@ -64,14 +65,16 @@
 | **MessengerOrderButtons** | LINE, WhatsApp, Telegram, Facebook CTAs; build pre-filled message from bouquet name, selected size, and optional delivery address/date; open in new tab. |
 | **ProductOrderBlock** | Client wrapper: DeliveryForm state, SizeSelector, MessengerOrderButtons. |
 | **SocialLinks** | Social links component (available for footer or other use). |
-| **PartnerRegisterForm** | Partner registration form; server action → Sanity. |
-| **BouquetForm** | Add/Edit bouquet form (name, description, composition, category, images, sizes); server actions create/update via Sanity. |
+| **PartnerApplyForm** | Partner application form; server action → Supabase partner_applications. |
+| **BouquetForm** | Add/Edit bouquet form (flowers); server actions create/update via Sanity. Reused for flowers category. |
+| **ProductForm** | Add product form (non-flowers); creates Sanity product doc with moderationStatus. |
 
 **Data / lib:**
 - **lib/i18n.ts** — Locales (EN, TH), all UI strings including partner and buyNow/delivery.
 - **lib/bouquets.ts** — Bouquet/BouquetSize types; used by front-end and Sanity mapping.
-- **lib/sanity.ts** — Sanity read client; `getBouquetsFromSanity`, `getBouquetBySlugFromSanity`, `getBouquetsByCategoryFromSanity`, `getPartnerById`, `getBouquetById`, `getBouquetsByPartnerId`. Image URL builder.
-- **lib/sanityWrite.ts** — Sanity write client (server-only); `createPartner`, `uploadImageToSanity`, `createBouquet`, `updateBouquet`. Requires `SANITY_API_WRITE_TOKEN`.
+- **lib/sanity.ts** — Sanity read client; `getBouquetsFromSanity`, `getBouquetBySlugFromSanity`, `getPartnerById`, `getBouquetsByPartnerId`, `getPartnerBySupabaseUserId`, `getProductsForModeration`, etc. Image URL builder.
+- **lib/sanityWrite.ts** — Sanity write client (server-only); `createPartner` (accepts supabaseUserId), `uploadImageToSanity`, `createBouquet`, `updateBouquet`, `createProduct`, `updateProductModerationStatus`. Requires `SANITY_API_WRITE_TOKEN`.
+- **lib/supabase/** — Supabase client; `partner_applications` CRUD; partner auth (session).
 - **lib/delivery-areas.ts** — Chiang Mai districts (EN/TH); `CITY_EN`, `CITY_TH`, `CHIANG_MAI_DISTRICTS`, postal-code search helper.
 - **lib/messenger.ts** — Build LINE/WhatsApp/Telegram/Facebook URLs with pre-filled message; central place for phone/ID/handles.
 
@@ -83,7 +86,7 @@
 - **Catalog:** Data from Sanity; filtered by `?category=…`. ISR with `revalidate = 60` so new/updated bouquets appear without full rebuild.
 - **Product:** User selects delivery area and date (optional), then size. “Order via …” uses current size and, when set, delivery address and date in the pre-filled message.
 - **Messenger flow:** Click “Order via LINE” (etc.) → new tab with pre-filled text (e.g. “Hello! I want to order bouquet [Name], size [Size]. Delivery: [address]. Date: [date]”). No in-app checkout; completion in messenger.
-- **Partner:** Register → pending_review. Admin approves in Sanity → partner can use dashboard to add/edit bouquets. Partner bouquets start as pending_review; only approved bouquets show in public catalog.
+- **Partner:** Apply → Supabase. Admin approves → create Supabase user + Sanity partner. Partner logs in, adds products directly to Sanity. Admin moderates products; only live/approved items show in catalog.
 - **Mobile-first:** Touch targets, single-column product layout on small screens, grid breakpoints, burger menu when header is scrolled.
 
 ---
@@ -102,7 +105,7 @@
 ## 6. CMS & Backend (Sanity)
 
 - **Studio:** Mounted at `/studio` (Next.js route `app/studio/[[...index]]/page.tsx`). Configure `sanity.config.ts` with project/dataset.
-- **Schemas:** `bouquet` (slug, nameEn/Th, description, composition, category, partner ref, status, images, sizes), `partner` (shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status). Bouquet status: `pending_review` | `approved`; partner status: `pending_review` | `approved` | `disabled`.
+- **Schemas:** `bouquet` (flowers; existing schema; status: `pending_review` | `approved`), `partner` (shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status, **supabaseUserId**), `product` (non-flowers; slug, nameEn/Th, categoryKey, structuredAttributes, customAttributes, images, partner ref, **moderationStatus**: submitted | live | needs_changes | rejected). Catalog reads only `moderationStatus: "live"` (products) or `status: "approved"` (bouquets).
 - **Env:** `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`; `SANITY_API_WRITE_TOKEN` for partner registration and bouquet create/update.
 
 ---

@@ -9,7 +9,7 @@ export interface BouquetSize {
   availability?: boolean;
 }
 
-export type BouquetStatus = 'pending_review' | 'approved';
+export type BouquetStatus = 'pending_review' | 'approved' | 'rejected';
 
 export interface Bouquet {
   id: string;
@@ -44,6 +44,8 @@ export interface Partner {
   shopAddress?: string;
   city: string;
   status: PartnerStatus;
+  /** Set when partner is created from admin approval; links to Supabase auth user */
+  supabaseUserId?: string;
 }
 
 // Placeholder images (Unsplash) – replace with your CMS URLs later

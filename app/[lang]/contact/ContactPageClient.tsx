@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   getLineContactUrl,
   getWhatsAppContactUrl,
@@ -77,6 +78,17 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
 
         <section className="contact-section">
           <p className="contact-text">{t.deliveryArea}</p>
+        </section>
+
+        <section className="contact-section contact-section-partner">
+          <h2 className="contact-heading">{t.partnerHeading}</h2>
+          <p className="contact-text">{t.partnerIntro}</p>
+          <Link
+            href={`/${lang}/partner/apply`}
+            className="contact-partner-link"
+          >
+            {t.partnerApply} →
+          </Link>
         </section>
 
         <section className="contact-section contact-section-dbd">
@@ -196,6 +208,23 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
         }
         .contact-phone-link:hover {
           color: #967a4d;
+        }
+        .contact-section-partner {
+          padding: 20px;
+          background: var(--pastel-cream);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+        }
+        .contact-partner-link {
+          display: inline-block;
+          margin-top: 8px;
+          font-size: 1rem;
+          font-weight: 600;
+          color: #967a4d;
+          text-decoration: underline;
+        }
+        .contact-partner-link:hover {
+          color: #7d6340;
         }
         .contact-section-dbd {
           padding-top: 8px;

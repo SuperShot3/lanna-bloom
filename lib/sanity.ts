@@ -316,6 +316,7 @@ type SanityPartner = {
   shopAddress?: string;
   city?: string;
   status?: string;
+  supabaseUserId?: string;
 };
 
 function mapToPartner(doc: SanityPartner): Partner {
@@ -328,19 +329,35 @@ function mapToPartner(doc: SanityPartner): Partner {
     shopAddress: doc.shopAddress,
     city: doc.city ?? 'Chiang Mai',
     status: (doc.status as PartnerStatus) ?? 'pending_review',
+    supabaseUserId: doc.supabaseUserId,
   };
 }
 
 export async function getPartnerById(partnerId: string): Promise<Partner | null> {
   try {
     const doc = await client.fetch<SanityPartner | null>(
-      `*[_type == "partner" && _id == $id][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status }`,
+      `*[_type == "partner" && _id == $id][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status, supabaseUserId }`,
       { id: partnerId }
     );
     if (!doc) return null;
     return mapToPartner(doc);
   } catch (err) {
     console.error('[Sanity] getPartnerById failed:', err);
+    return null;
+  }
+}
+
+/** Resolve partner by Supabase auth user ID (for partner dashboard after login) */
+export async function getPartnerBySupabaseUserId(supabaseUserId: string): Promise<Partner | null> {
+  try {
+    const doc = await client.fetch<SanityPartner | null>(
+      `*[_type == "partner" && supabaseUserId == $uid][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status, supabaseUserId }`,
+      { uid: supabaseUserId }
+    );
+    if (!doc) return null;
+    return mapToPartner(doc);
+  } catch (err) {
+    console.error('[Sanity] getPartnerBySupabaseUserId failed:', err);
     return null;
   }
 }
@@ -375,6 +392,67 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
   } catch (err) {
     console.error('[Sanity] getBouquetById failed:', err);
     return null;
+  }
+}
+
+/** Bouquets pending review (for admin moderation) */
+export async function getPendingBouquets(): Promise<Bouquet[]> {
+  try {
+    const docs = await client.fetch<SanityBouquet[]>(
+      `*[_type == "bouquet" && status == "pending_review"] | order(_createdAt desc) {
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, colors, flowerTypes, occasion, partner, status, images, sizes
+      }`
+    );
+    return (docs ?? []).map(mapToBouquet);
+  } catch (err) {
+    console.error('[Sanity] getPendingBouquets failed:', err);
+    return [];
+  }
+}
+
+export interface ModerationProduct {
+  id: string;
+  nameEn: string;
+  nameTh?: string;
+  category: string;
+  price: number;
+  partnerId?: string;
+  moderationStatus: string;
+  imageUrl?: string;
+}
+
+/** Products pending moderation (moderationStatus=submitted) */
+export async function getPendingProducts(): Promise<ModerationProduct[]> {
+  try {
+    const docs = await client.fetch<
+      Array<{
+        _id: string;
+        nameEn?: string;
+        nameTh?: string;
+        category?: string;
+        price?: number;
+        partner?: { _ref?: string };
+        moderationStatus?: string;
+        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+      }>
+    >(
+      `*[_type == "product" && moderationStatus == "submitted"] | order(_createdAt desc) {
+        _id, nameEn, nameTh, category, price, partner, moderationStatus, images
+      }`
+    );
+    return (docs ?? []).map((d) => ({
+      id: d._id,
+      nameEn: d.nameEn ?? '',
+      nameTh: d.nameTh,
+      category: d.category ?? '',
+      price: d.price ?? 0,
+      partnerId: d.partner?._ref,
+      moderationStatus: d.moderationStatus ?? 'submitted',
+      imageUrl: d.images?.[0] ? urlFor(d.images[0]) : undefined,
+    }));
+  } catch (err) {
+    console.error('[Sanity] getPendingProducts failed:', err);
+    return [];
   }
 }
 

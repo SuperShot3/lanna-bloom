@@ -58,6 +58,9 @@ export function OrdersListClient({
           <p className="admin-v2-hint">Admin — Orders</p>
         </div>
         <div className="admin-v2-header-actions">
+          <Link href="/admin/partners/applications" className="admin-v2-btn admin-v2-btn-outline">
+            Partners
+          </Link>
           <a
             href={`/api/admin/orders/export?${searchParams.toString()}`}
             className="admin-v2-btn admin-v2-btn-outline"
