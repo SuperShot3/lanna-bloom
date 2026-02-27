@@ -120,6 +120,18 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
         merged.sort = partial.sort;
       }
 
+      // Handle top category (flowers, balloons, gifts, etc.)
+      if ('topCategory' in partial) {
+        merged.topCategory = partial.topCategory;
+        // When switching to non-flowers, clear flower-specific filters for cleaner URL
+        if (partial.topCategory && partial.topCategory !== 'flowers') {
+          merged.category = undefined;
+          merged.colors = undefined;
+          merged.types = undefined;
+          merged.occasion = undefined;
+        }
+      }
+
       // Handle occasion quick filter
       if ('occasion' in partial) {
         merged.occasion = partial.occasion || undefined;

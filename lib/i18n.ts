@@ -144,6 +144,8 @@ export const translations = {
       composition: 'Composition',
       seasonalDisclaimer: 'Flower varieties and greenery may vary slightly based on seasonal availability, while keeping the same overall style and value.',
       size: 'Size',
+      preparationTime: 'Preparation time',
+      occasion: 'Occasion',
       orderVia: 'Order via',
       orderLine: 'Order via LINE',
       orderWhatsApp: 'Order via WhatsApp',
@@ -432,6 +434,8 @@ export const translations = {
       availability: 'Available',
       saveDraft: 'Save (pending review)',
       backToDashboard: 'Back to dashboard',
+      deleteProduct: 'Delete my product',
+      deleteProductConfirm: 'Are you sure you want to delete this product? This cannot be undone.',
     },
     partnerPortal: {
       apply: {
@@ -500,6 +504,7 @@ export const translations = {
         title: 'Partner login',
         email: 'Email',
         password: 'Password',
+        rememberMe: 'Remember me',
         signIn: 'Sign in',
         signingIn: 'Signing in…',
         errorInvalid: 'Invalid email or password.',
@@ -813,6 +818,8 @@ export const translations = {
       composition: 'องค์ประกอบ',
       seasonalDisclaimer: 'ชนิดดอกไม้และใบไม้ประกอบอาจแตกต่างกันเล็กน้อยตามฤดูกาล โดยคงสไตล์และมูลค่ารวมเท่าเดิม',
       size: 'ขนาด',
+      preparationTime: 'เวลาเตรียมงาน',
+      occasion: 'โอกาส',
       orderVia: 'สั่งผ่าน',
       orderLine: 'สั่งผ่าน LINE',
       orderWhatsApp: 'สั่งผ่าน WhatsApp',
@@ -1101,6 +1108,8 @@ export const translations = {
       availability: 'มีใน stock',
       saveDraft: 'บันทึก (รอตรวจสอบ)',
       backToDashboard: 'กลับแดชบอร์ด',
+      deleteProduct: 'ลบสินค้าของฉัน',
+      deleteProductConfirm: 'คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
     },
     partnerPortal: {
       apply: {
@@ -1169,6 +1178,7 @@ export const translations = {
         title: 'เข้าสู่ระบบ Partner',
         email: 'อีเมล',
         password: 'รหัสผ่าน',
+        rememberMe: 'จดจำฉัน',
         signIn: 'เข้าสู่ระบบ',
         signingIn: 'กำลังเข้าสู่ระบบ…',
         errorInvalid: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',

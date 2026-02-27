@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
+import { ProductOrderBlockForProduct } from '@/components/ProductOrderBlockForProduct';
 import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
-import { getLineOrderUrl } from '@/lib/messenger';
 import { trackViewItem } from '@/lib/analytics';
 
 export function ProductDetailClient({
@@ -21,10 +21,7 @@ export function ProductDetailClient({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = product.images ?? [];
   const selectedImageUrl = images[selectedImageIndex] ?? images[0];
-
-  const orderMessage = `Hello! I'd like to order: ${name} — ฿${product.price.toLocaleString()}`;
-  const lineUrl = getLineOrderUrl(orderMessage);
-  const t = translations[lang].product;
+  const descDisplay = description?.trim() || (lang === 'th' ? 'ยังไม่มีรายละเอียดสินค้า' : 'No description provided.');
 
   useEffect(() => {
     trackViewItem({
@@ -56,18 +53,30 @@ export function ProductDetailClient({
       </div>
       <div className="product-info">
         <h1 className="product-title">{name}</h1>
-        <p className="product-desc">{description}</p>
+        <p className="product-desc">{descDisplay}</p>
+        {(product.preparationTime != null || product.occasion) && (
+          <div className="product-attributes">
+            {product.preparationTime != null && (
+              <p className="product-attr">
+                <span className="product-attr-label">{translations[lang].product.preparationTime}:</span>{' '}
+                ~{product.preparationTime} {translations[lang].buyNow.minutes}
+              </p>
+            )}
+            {product.occasion && (
+              <p className="product-attr">
+                <span className="product-attr-label">{translations[lang].product.occasion}:</span> {product.occasion}
+              </p>
+            )}
+          </div>
+        )}
         <div className="product-price-block">
           <span className="product-price">฿{product.price.toLocaleString()}</span>
         </div>
-        <a
-          href={lineUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="product-order-line-btn"
-        >
-          {t.orderLine}
-        </a>
+        <ProductOrderBlockForProduct
+          product={product}
+          lang={lang}
+          selectedImageUrl={selectedImageUrl}
+        />
       </div>
     </>
   );

@@ -700,6 +700,25 @@ a.filter-pill--active:hover {
   line-height: 1.6;
   margin: 0 0 20px;
 }
+.product-attributes {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: var(--pastel-cream);
+  border-radius: var(--radius-sm);
+}
+.product-attr {
+  font-size: 0.95rem;
+  color: var(--text);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+.product-attr:last-child {
+  margin-bottom: 0;
+}
+.product-attr-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
 .product-composition {
   padding: 16px;
   background: var(--pastel-cream);
@@ -1903,6 +1922,19 @@ a.filter-pill--active:hover {
   background: #ffebee;
   border-radius: 8px;
 }
+.partner-login-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-charcoal);
+}
+.partner-login-remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
 
 /* Partner dashboard */
 .partner-dashboard-page .container {
@@ -2823,10 +2855,76 @@ a.filter-pill--active:hover {
 .admin-moderation-section {
   margin-bottom: 32px;
 }
+.admin-moderation-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
 .admin-moderation-section-title {
   font-size: 1.1rem;
   font-weight: 600;
-  margin: 0 0 16px;
+  margin: 0;
+}
+.admin-moderation-tabs {
+  display: flex;
+  gap: 4px;
+}
+.admin-moderation-tab {
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.admin-moderation-tab:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.admin-moderation-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.admin-moderation-status-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.admin-moderation-status-badge.status-submitted {
+  background: #fef3c7;
+  color: #92400e;
+}
+.admin-moderation-status-badge.status-live {
+  background: #d1fae5;
+  color: #065f46;
+}
+.admin-moderation-status-badge.status-needs_changes {
+  background: #fed7aa;
+  color: #9a3412;
+}
+.admin-moderation-status-badge.status-rejected {
+  background: #fecaca;
+  color: #991b1b;
+}
+.admin-moderation-catalog-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+.admin-moderation-catalog-link:hover {
+  text-decoration: underline;
 }
 .admin-moderation-grid {
   display: grid;

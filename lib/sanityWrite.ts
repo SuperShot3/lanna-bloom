@@ -160,6 +160,47 @@ export async function updateBouquetStatus(
   await client.patch(bouquetId).set({ status }).commit();
 }
 
+export interface UpdateProductInput {
+  nameEn: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category: 'balloons' | 'gifts' | 'money_flowers' | 'handmade_floral';
+  price: number;
+  imageAssetIds: string[];
+  preparationTime?: number;
+  occasion?: string;
+}
+
+/** Update a product (partner only); sets moderationStatus to submitted for re-approval. */
+export async function updateProduct(productId: string, input: UpdateProductInput): Promise<void> {
+  const client = getWriteClient();
+  const images = input.imageAssetIds.slice(0, 5).map((_id) => ({
+    _type: 'image' as const,
+    asset: { _type: 'reference' as const, _ref: _id },
+  }));
+
+  await client
+    .patch(productId)
+    .set({
+      nameEn: input.nameEn.trim(),
+      nameTh: (input.nameTh || '').trim(),
+      descriptionEn: (input.descriptionEn || '').trim(),
+      descriptionTh: (input.descriptionTh || '').trim(),
+      category: input.category,
+      price: Number(input.price),
+      moderationStatus: 'submitted',
+      images,
+      ...((input.preparationTime != null || input.occasion) && {
+        structuredAttributes: {
+          ...(input.preparationTime != null && { preparationTime: input.preparationTime }),
+          ...(input.occasion && { occasion: input.occasion }),
+        },
+      }),
+    })
+    .commit();
+}
+
 /** Update product moderationStatus (admin): live | needs_changes | rejected */
 export async function updateProductModerationStatus(
   productId: string,
@@ -265,6 +306,12 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
     }),
   });
   return doc._id;
+}
+
+/** Delete a product document. Caller must verify ownership. */
+export async function deleteProduct(productId: string): Promise<void> {
+  const client = getWriteClient();
+  await client.delete(productId);
 }
 
 async function ensureUniqueProductSlug(

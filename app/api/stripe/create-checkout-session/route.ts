@@ -64,6 +64,7 @@ function validateStripePayload(
     const cardType = addOns.cardType as string | undefined;
     const wrappingOption = addOns.wrappingOption as string | undefined;
     return {
+      itemType: (i.itemType === 'product' ? 'product' : 'bouquet') as 'bouquet' | 'product',
       bouquetId: typeof i.bouquetId === 'string' ? i.bouquetId : '',
       bouquetSlug: typeof i.bouquetSlug === 'string' ? i.bouquetSlug : undefined,
       size: typeof i.size === 'string' ? i.size : 'm',
@@ -223,11 +224,12 @@ export async function POST(request: NextRequest) {
       (item) => {
         const originalCents = Math.round(item.price * 100);
         const discountedCents = Math.max(0, Math.round(originalCents * (1 - discountRatio)));
+        const productName = item.size === '—' ? item.bouquetTitle : `${item.bouquetTitle} — ${item.size}`;
         return {
           price_data: {
             currency: 'thb',
             product_data: {
-              name: `${item.bouquetTitle} — ${item.size}`,
+              name: productName,
               description:
                 item.addOns.cardType === 'premium'
                   ? 'With premium message card'

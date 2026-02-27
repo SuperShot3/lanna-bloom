@@ -14,13 +14,14 @@ export function PartnerLoginForm({ lang }: PartnerLoginFormProps) {
   const t = translations[lang].partnerPortal.login;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const supabase = createPartnerBrowserClient();
+    const supabase = createPartnerBrowserClient({ rememberMe });
     if (!supabase) {
       setError(
         'Partner login is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment (and deploy settings).'
@@ -67,6 +68,14 @@ export function PartnerLoginForm({ lang }: PartnerLoginFormProps) {
         onChange={setPassword}
         required
       />
+      <label className="partner-login-remember">
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+        />
+        <span>{t.rememberMe}</span>
+      </label>
       <Btn type="submit" disabled={loading}>
         {loading ? t.signingIn : t.signIn}
       </Btn>

@@ -2,110 +2,68 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bouquet, BouquetSize } from '@/lib/bouquets';
-import { SizeSelector } from './SizeSelector';
-import {
-  AddOnsSection,
-  getDefaultAddOns,
-  type AddOnsValues,
-} from './AddOnsSection';
+import { getDefaultAddOns } from './AddOnsSection';
 import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
+import type { CatalogProduct } from '@/lib/sanity';
 
-function buildAddOnsSummary(addOns: AddOnsValues, lang: Locale): string {
-  const t = translations[lang].buyNow;
-  const lines: string[] = [];
-  if (addOns.cardType === 'beautiful') {
-    lines.push(t.addOnsSummaryCardBeautiful);
-  } else if (addOns.cardType === 'free') {
-    lines.push(t.addOnsSummaryCard.replace('{label}', t.cardFree));
-  }
-  if (addOns.wrappingPreference === 'classic') {
-    lines.push(t.addOnsSummaryWrapping.replace('{label}', t.wrappingClassic));
-  } else if (addOns.wrappingPreference === 'premium') {
-    lines.push(t.addOnsSummaryWrapping.replace('{label}', t.wrappingPremium));
-  } else if (addOns.wrappingPreference === 'none') {
-    lines.push(t.addOnsSummaryWrapping.replace('{label}', t.wrappingNone));
-  }
-  if (addOns.cardMessage.trim()) {
-    lines.push(t.addOnsSummaryMessage.replace('{text}', addOns.cardMessage.trim()));
-  }
-  return lines.join('. ');
-}
-
-export function ProductOrderBlock({
-  bouquet,
+export function ProductOrderBlockForProduct({
+  product,
   lang,
   selectedImageUrl,
 }: {
-  bouquet: Bouquet;
+  product: CatalogProduct;
   lang: Locale;
   selectedImageUrl?: string | null;
 }) {
-  const [selectedSize, setSelectedSize] = useState<BouquetSize>(bouquet.sizes[0]);
-  const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
+  const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
 
   const handleAddToCart = () => {
-    const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
-    const price = selectedSize.price;
+    const syntheticSize = {
+      key: 'm' as const,
+      label: '—',
+      price: product.price,
+      description: '',
+      preparationTime: undefined as number | undefined,
+      availability: true,
+    };
     addItem({
-      itemType: 'bouquet',
-      bouquetId: bouquet.id,
-      slug: bouquet.slug,
-      nameEn: bouquet.nameEn,
-      nameTh: bouquet.nameTh,
-      imageUrl: selectedImageUrl ?? bouquet.images?.[0],
-      size: selectedSize,
-      addOns: { ...addOns },
+      itemType: 'product',
+      bouquetId: product.id,
+      slug: product.slug,
+      nameEn: product.nameEn,
+      nameTh: product.nameTh ?? product.nameEn,
+      imageUrl: selectedImageUrl ?? product.images?.[0],
+      size: syntheticSize,
+      addOns: getDefaultAddOns(),
     });
     trackAddToCart({
       currency: 'THB',
-      value: price,
+      value: product.price,
       items: [
         {
-          item_id: bouquet.id,
-          item_name: itemName,
-          price,
+          item_id: product.id,
+          item_name: name,
+          price: product.price,
           quantity: 1,
           index: 0,
-          item_category: bouquet.category,
-          item_variant: selectedSize.label,
+          item_category: product.category,
         },
       ],
     });
     setJustAdded(true);
   };
 
-  const hasAddOns = !!(
-    addOns.cardType ||
-    addOns.wrappingPreference ||
-    addOns.cardMessage.trim()
-  );
-  const addOnsSummary = buildAddOnsSummary(addOns, lang);
-
   return (
     <div className="order-block">
       <h2 className="order-block-title">{tBuyNow.title}</h2>
-      <SizeSelector
-        sizes={bouquet.sizes}
-        selected={selectedSize}
-        onSelect={setSelectedSize}
-        lang={lang}
-      />
-      <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} />
-      {hasAddOns && addOnsSummary && (
-        <div className="order-addons-summary" role="status">
-          <span className="order-addons-summary-label">{tBuyNow.addOnsSummaryLabel}</span>
-          <span className="order-addons-summary-text">{addOnsSummary}</span>
-        </div>
-      )}
       {justAdded ? (
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>
@@ -138,71 +96,6 @@ export function ProductOrderBlock({
           margin: 0 0 16px;
           text-transform: uppercase;
           letter-spacing: 0.02em;
-        }
-        @media (max-width: 480px) {
-          .order-block-title {
-            font-size: 1rem;
-            margin-bottom: 12px;
-          }
-          .order-add-to-cart-btn {
-            font-size: 0.95rem;
-            padding: 12px 16px;
-          }
-          .order-added-links {
-            flex-direction: column;
-          }
-          .order-added-links :global(a.order-added-link) {
-            width: 100%;
-          }
-        }
-        @media (max-width: 360px) {
-          .order-block-title {
-            font-size: 0.95rem;
-          }
-          .order-add-to-cart-btn {
-            font-size: 0.9rem;
-            padding: 10px 14px;
-          }
-        }
-        @media (max-width: 350px) {
-          .order-block-title {
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-          }
-          .order-add-to-cart-btn {
-            font-size: 0.85rem;
-            padding: 10px 12px;
-          }
-          .order-added-confirm {
-            padding: 12px;
-          }
-          .order-added-text {
-            font-size: 0.9rem;
-          }
-          .order-added-links :global(a.order-added-link) {
-            font-size: 0.9rem;
-            padding: 12px 16px;
-          }
-          .order-addons-summary {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-          }
-        }
-        .order-addons-summary {
-          margin-top: 12px;
-          padding: 10px 14px;
-          background: var(--pastel-cream, #fdf8f3);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-          font-size: 0.85rem;
-          color: var(--text);
-        }
-        .order-addons-summary-label {
-          font-weight: 600;
-          color: var(--text-muted);
-        }
-        .order-addons-summary-text {
-          color: var(--text);
         }
         .order-add-to-cart-btn {
           margin-top: 16px;

@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { getPendingBouquets, getPendingProducts } from '@/lib/sanity';
+import { getPendingBouquets, getPendingProducts, getAllProducts } from '@/lib/sanity';
 import { canChangeStatus } from '@/lib/adminRbac';
 import { ProductModerationClient } from './ProductModerationClient';
 
@@ -11,15 +11,17 @@ export default async function AdminModerationProductsPage() {
   const role = (session.user as { role?: string }).role;
   if (!canChangeStatus(role)) redirect('/admin');
 
-  const [bouquets, products] = await Promise.all([
+  const [bouquets, pendingProducts, allProducts] = await Promise.all([
     getPendingBouquets(),
     getPendingProducts(),
+    getAllProducts(),
   ]);
 
   return (
     <ProductModerationClient
       initialBouquets={bouquets}
-      initialProducts={products}
+      initialProducts={pendingProducts}
+      allProducts={allProducts}
     />
   );
 }

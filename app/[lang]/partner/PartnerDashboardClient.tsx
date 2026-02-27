@@ -114,12 +114,12 @@ export function PartnerDashboardClient({
             <div className="partner-dashboard-action-label">{t.addProduct}</div>
           </Card>
         </Link>
-        <div className="partner-dashboard-action-card partner-dashboard-action-card--scroll">
-          <Card style={{ padding: 16, height: '100%' }}>
+        <Link href={`/${lang}/partner/products`} className="partner-dashboard-action-card partner-dashboard-action-card--scroll">
+          <Card style={{ padding: 16, cursor: 'pointer', height: '100%' }}>
             <div className="partner-dashboard-action-icon">📦</div>
             <div className="partner-dashboard-action-label">{t.myProducts}</div>
           </Card>
-        </div>
+        </Link>
         <div className="partner-dashboard-action-card partner-dashboard-action-card--disabled">
           <Card style={{ padding: 16, opacity: 0.5, cursor: 'not-allowed', height: '100%' }}>
             <div className="partner-dashboard-action-icon">🛒</div>

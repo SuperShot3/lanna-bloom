@@ -7,7 +7,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 type PartnerNavProps = {
   lang: Locale;
-  current?: 'apply' | 'dashboard' | 'products' | 'login';
+  current?: 'apply' | 'dashboard' | 'products' | 'productsAdd' | 'login';
   pendingCount?: number;
 };
 
@@ -17,7 +17,8 @@ export function PartnerNav({ lang, current, pendingCount = 0 }: PartnerNavProps)
 
   const applyHref = `/${lang}/partner/apply`;
   const dashboardHref = `/${lang}/partner`;
-  const productsHref = `/${lang}/partner/products/new`;
+  const productsHref = `/${lang}/partner/products`;
+  const productsAddHref = `/${lang}/partner/products/new`;
   const loginHref = `/${lang}/partner/login`;
 
   return (
@@ -50,12 +51,18 @@ export function PartnerNav({ lang, current, pendingCount = 0 }: PartnerNavProps)
             href={productsHref}
             className={`partner-nav-link ${current === 'products' ? 'active' : ''}`}
           >
-            {lang === 'th' ? 'เพิ่มสินค้า' : 'Add Product'}
+            {lang === 'th' ? 'สินค้าของฉัน' : 'My products'}
             {pendingCount > 0 && (
               <span className="partner-nav-pending-badge" title={lang === 'th' ? `${pendingCount} รอตรวจสอบ` : `${pendingCount} pending`}>
                 {pendingCount}
               </span>
             )}
+          </Link>
+          <Link
+            href={productsAddHref}
+            className={`partner-nav-link ${current === 'productsAdd' ? 'active' : ''}`}
+          >
+            {lang === 'th' ? 'เพิ่มสินค้า' : 'Add Product'}
           </Link>
           <Link
             href={loginHref}

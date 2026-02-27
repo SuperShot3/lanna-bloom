@@ -12,18 +12,35 @@ import {
 import type { Bouquet } from '@/lib/bouquets';
 import type { ModerationProduct } from '@/lib/sanity';
 
+type AdminProduct = ModerationProduct & { slug?: string };
+
 type ProductModerationClientProps = {
   initialBouquets: Bouquet[];
   initialProducts: ModerationProduct[];
+  allProducts: AdminProduct[];
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  submitted: 'Pending',
+  live: 'Live',
+  needs_changes: 'Needs changes',
+  rejected: 'Rejected',
 };
 
 export function ProductModerationClient({
   initialBouquets,
   initialProducts,
+  allProducts,
 }: ProductModerationClientProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [needsChangesId, setNeedsChangesId] = useState<string | null>(null);
   const [needsChangesNote, setNeedsChangesNote] = useState('');
+  const [productFilter, setProductFilter] = useState<'pending' | 'all'>('pending');
+
+  const displayedProducts: AdminProduct[] =
+    productFilter === 'pending'
+      ? initialProducts.map((p) => ({ ...p, slug: allProducts.find((a) => a.id === p.id)?.slug }))
+      : allProducts;
 
   async function handleApproveBouquet(id: string) {
     setLoading(id);
@@ -81,7 +98,9 @@ export function ProductModerationClient({
         <div>
           <h1 className="admin-v2-title">Product Moderation</h1>
           <p className="admin-v2-hint">
-            {total} item{total !== 1 ? 's' : ''} pending review
+            {productFilter === 'pending'
+              ? `${total} item${total !== 1 ? 's' : ''} pending review`
+              : `${allProducts.length} total partner products`}
           </p>
         </div>
         <div className="admin-v2-header-actions">
@@ -141,11 +160,28 @@ export function ProductModerationClient({
         </section>
       )}
 
-      {initialProducts.length > 0 && (
-        <section className="admin-moderation-section">
+      <section className="admin-moderation-section">
+        <div className="admin-moderation-section-header">
           <h2 className="admin-moderation-section-title">Products (non-flowers)</h2>
-          <div className="admin-moderation-grid">
-            {initialProducts.map((p) => (
+          <div className="admin-moderation-tabs">
+            <button
+              type="button"
+              className={`admin-moderation-tab ${productFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setProductFilter('pending')}
+            >
+              Pending ({initialProducts.length})
+            </button>
+            <button
+              type="button"
+              className={`admin-moderation-tab ${productFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setProductFilter('all')}
+            >
+              All ({allProducts.length})
+            </button>
+          </div>
+        </div>
+        <div className="admin-moderation-grid">
+          {displayedProducts.map((p) => (
               <div key={p.id} className="admin-moderation-card">
                 <div className="admin-moderation-card-image">
                   {p.imageUrl ? (
@@ -158,33 +194,54 @@ export function ProductModerationClient({
                   <strong>{p.nameEn}</strong>
                   <p className="admin-moderation-card-meta">
                     {p.category} · ฿{p.price}
+                    {productFilter === 'all' && (
+                      <span className={`admin-moderation-status-badge status-${p.moderationStatus}`}>
+                        {STATUS_LABELS[p.moderationStatus] ?? p.moderationStatus}
+                      </span>
+                    )}
                   </p>
+                  {productFilter === 'all' && p.slug && (
+                    <Link
+                      href={`/en/catalog/${p.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="admin-moderation-catalog-link"
+                    >
+                      View in catalog →
+                    </Link>
+                  )}
                 </div>
                 <div className="admin-moderation-card-actions">
-                  <button
-                    type="button"
-                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
-                    disabled={!!loading}
-                    onClick={() => handleApproveProduct(p.id)}
-                  >
-                    {loading === p.id ? '…' : 'Approve'}
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
-                    disabled={!!loading}
-                    onClick={() => setNeedsChangesId(needsChangesId === p.id ? null : p.id)}
-                  >
-                    Needs changes
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
-                    disabled={!!loading}
-                    onClick={() => handleRejectProduct(p.id)}
-                  >
-                    Reject
-                  </button>
+                  {(p.moderationStatus === 'submitted' || p.moderationStatus === 'needs_changes' || p.moderationStatus === 'rejected') && (
+                    <button
+                      type="button"
+                      className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                      disabled={!!loading}
+                      onClick={() => handleApproveProduct(p.id)}
+                    >
+                      {loading === p.id ? '…' : 'Approve'}
+                    </button>
+                  )}
+                  {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'rejected') && (
+                    <button
+                      type="button"
+                      className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                      disabled={!!loading}
+                      onClick={() => setNeedsChangesId(needsChangesId === p.id ? null : p.id)}
+                    >
+                      Needs changes
+                    </button>
+                  )}
+                  {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'needs_changes') && (
+                    <button
+                      type="button"
+                      className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                      disabled={!!loading}
+                      onClick={() => handleRejectProduct(p.id)}
+                    >
+                      Reject
+                    </button>
+                  )}
                 </div>
                 {needsChangesId === p.id && (
                   <div className="admin-moderation-needs-changes">
@@ -207,12 +264,14 @@ export function ProductModerationClient({
                 )}
               </div>
             ))}
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {total === 0 && (
+      {total === 0 && productFilter === 'pending' && (
         <p className="admin-v2-empty">No items pending moderation.</p>
+      )}
+      {productFilter === 'all' && allProducts.length === 0 && (
+        <p className="admin-v2-empty">No partner products yet.</p>
       )}
     </div>
   );

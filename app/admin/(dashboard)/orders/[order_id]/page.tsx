@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
-import { getBouquetById } from '@/lib/sanity';
+import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
 import { CostsAndProfitCard } from '@/app/admin/components/CostsAndProfitCard';
@@ -45,13 +45,19 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
 
   // Merge addOns from order_json (Card, Wrapping, Message) into items.
   // order_items table has no add-on columns; order_json stores full order with addOns.
-  const jsonItems = (order.order_json as { items?: Array<{ addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string } }> } | undefined)?.items ?? [];
+  const jsonItems = (order.order_json as { items?: Array<{ addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string }; bouquetSlug?: string }> } | undefined)?.items ?? [];
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
     items.map(async (item, index) => {
       let catalogHref: string | undefined;
       if (item.bouquet_id) {
         const bouquet = await getBouquetById(item.bouquet_id);
-        catalogHref = bouquet ? `/en/catalog/${bouquet.slug}` : undefined;
+        if (bouquet) {
+          catalogHref = `/en/catalog/${bouquet.slug}`;
+        } else {
+          const product = await getProductById(item.bouquet_id);
+          const slug = product ? (jsonItems[index]?.bouquetSlug ?? undefined) : undefined;
+          catalogHref = slug ? `/en/catalog/${slug}` : undefined;
+        }
       } else {
         catalogHref = undefined;
       }

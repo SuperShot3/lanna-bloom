@@ -244,6 +244,10 @@ export interface CatalogProduct {
   category: string;
   price: number;
   images: string[];
+  /** Prep time in minutes (from structuredAttributes) */
+  preparationTime?: number;
+  /** Occasion (from structuredAttributes) */
+  occasion?: string;
 }
 
 type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };
@@ -536,6 +540,45 @@ export async function getPendingProducts(): Promise<ModerationProduct[]> {
   }
 }
 
+/** All partner products (for admin) — any moderationStatus. */
+export async function getAllProducts(): Promise<
+  Array<ModerationProduct & { slug?: string }>
+> {
+  try {
+    const docs = await client.fetch<
+      Array<{
+        _id: string;
+        slug?: { current?: string };
+        nameEn?: string;
+        nameTh?: string;
+        category?: string;
+        price?: number;
+        partner?: { _ref?: string };
+        moderationStatus?: string;
+        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+      }>
+    >(
+      `*[_type == "product"] | order(_createdAt desc) {
+        _id, slug, nameEn, nameTh, category, price, partner, moderationStatus, images
+      }`
+    );
+    return (docs ?? []).map((d) => ({
+      id: d._id,
+      nameEn: d.nameEn ?? '',
+      nameTh: d.nameTh,
+      category: d.category ?? '',
+      price: d.price ?? 0,
+      partnerId: d.partner?._ref,
+      moderationStatus: d.moderationStatus ?? 'submitted',
+      imageUrl: d.images?.[0] ? urlFor(d.images[0]) : undefined,
+      slug: d.slug?.current,
+    }));
+  } catch (err) {
+    console.error('[Sanity] getAllProducts failed:', err);
+    return [];
+  }
+}
+
 /** Live products for catalog — categoryKey must match product.category in Sanity */
 export async function getProductsFilteredFromSanity(params: {
   categoryKey: string;
@@ -607,11 +650,13 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
           category?: string;
           price?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+          structuredAttributes?: { preparationTime?: number; occasion?: string };
         }
       | null
     >(
       `*[_type == "product" && slug.current == $slug && moderationStatus == "live"][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, images
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, images,
+        "structuredAttributes": structuredAttributes
       }`,
       { slug }
     );
@@ -619,6 +664,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
     const slugVal = doc.slug?.current ?? doc._id;
     const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
     const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+    const attrs = doc.structuredAttributes;
     return {
       id: doc._id,
       slug: slugVal,
@@ -629,6 +675,8 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       category: doc.category ?? '',
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [placeholder],
+      preparationTime: attrs?.preparationTime,
+      occasion: attrs?.occasion,
     };
   } catch (err) {
     console.error('[Sanity] getProductBySlugFromSanity failed:', err);
@@ -642,6 +690,82 @@ export async function getBouquetImageRefs(bouquetId: string): Promise<string[]> 
     const refs = await client.fetch<string[]>(
       `*[_type == "bouquet" && _id == $id][0].images[].asset._ref`,
       { id: bouquetId }
+    );
+    return Array.isArray(refs) ? refs.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Single product by ID (for partner edit) — no moderation filter */
+export async function getProductById(productId: string): Promise<{
+  id: string;
+  nameEn: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category: string;
+  price: number;
+  moderationStatus: string;
+  imageUrl?: string;
+  imageRefs: string[];
+  preparationTime?: number;
+  occasion?: string;
+  partnerId?: string;
+} | null> {
+  try {
+    const doc = await client.fetch<
+      | {
+          _id: string;
+          nameEn?: string;
+          nameTh?: string;
+          descriptionEn?: string;
+          descriptionTh?: string;
+          category?: string;
+          price?: number;
+          moderationStatus?: string;
+          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+          structuredAttributes?: { preparationTime?: number; occasion?: string };
+          partner?: { _ref?: string };
+        }
+      | null
+    >(
+      `*[_type == "product" && _id == $id][0] {
+        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, moderationStatus, images, structuredAttributes, partner
+      }`,
+      { id: productId }
+    );
+    if (!doc) return null;
+    const imageRefs = (doc.images ?? [])
+      .map((img) => img.asset?._ref)
+      .filter((r): r is string => !!r);
+    return {
+      id: doc._id,
+      nameEn: doc.nameEn ?? '',
+      nameTh: doc.nameTh,
+      descriptionEn: doc.descriptionEn,
+      descriptionTh: doc.descriptionTh,
+      category: doc.category ?? '',
+      price: doc.price ?? 0,
+      moderationStatus: doc.moderationStatus ?? 'submitted',
+      imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
+      imageRefs,
+      preparationTime: doc.structuredAttributes?.preparationTime,
+      occasion: doc.structuredAttributes?.occasion,
+      partnerId: doc.partner?._ref,
+    };
+  } catch (err) {
+    console.error('[Sanity] getProductById failed:', err);
+    return null;
+  }
+}
+
+/** Get existing image asset refs for a product (for edit: keep existing images when no new uploads). */
+export async function getProductImageRefs(productId: string): Promise<string[]> {
+  try {
+    const refs = await client.fetch<string[]>(
+      `*[_type == "product" && _id == $id][0].images[].asset._ref`,
+      { id: productId }
     );
     return Array.isArray(refs) ? refs.filter(Boolean) : [];
   } catch {

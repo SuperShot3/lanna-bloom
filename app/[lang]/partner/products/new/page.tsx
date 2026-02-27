@@ -29,13 +29,13 @@ export default async function AddProductPage({
   if (success === 'bouquet' || success === 'product') {
     return (
       <div className="partner-page partner-add-product-page">
-        <PartnerNav lang={lang as Locale} current="products" pendingCount={pendingCount} />
+        <PartnerNav lang={lang as Locale} current="productsAdd" pendingCount={pendingCount} />
         <div className="container">
           <div className="partner-apply-done">
             <div className="partner-apply-done-emoji">✅</div>
             <h2 className="partner-apply-done-title">{t.successTitle}</h2>
             <p className="partner-apply-done-sub">{t.successSub}</p>
-            <a href={`/${lang}/partner`} className="partner-btn partner-btn--primary" style={{ marginTop: 20, display: 'inline-block', textDecoration: 'none' }}>
+            <a href={`/${lang}/partner/products`} className="partner-btn partner-btn--primary" style={{ marginTop: 20, display: 'inline-block', textDecoration: 'none' }}>
               {translations[lang as Locale].partnerPortal.dashboard.myProducts}
             </a>
           </div>
@@ -46,7 +46,7 @@ export default async function AddProductPage({
 
   return (
     <div className="partner-page partner-add-product-page">
-      <PartnerNav lang={lang as Locale} current="products" />
+      <PartnerNav lang={lang as Locale} current="productsAdd" />
       <div className="container">
         <AddProductWizard lang={lang as Locale} partnerId={partner.id} />
       </div>

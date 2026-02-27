@@ -116,6 +116,7 @@ function buildStripePayload(
       : delivery.date || delivery.timeSlot || '';
 
   const items = cartItems.map((item) => ({
+    itemType: item.itemType ?? 'bouquet',
     bouquetId: item.bouquetId,
     bouquetSlug: item.slug ?? undefined,
     size: item.size.key ?? 'm',
@@ -994,7 +995,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                           )}
                           <div className="cart-item-main">
                             <h3 className="cart-item-name">{name}</h3>
-                            <p className="cart-item-size">{item.size.label} — ฿{item.size.price.toLocaleString()}</p>
+                            <p className="cart-item-size">
+                              {item.itemType === 'product'
+                                ? `฿${item.size.price.toLocaleString()}`
+                                : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
+                            </p>
                             {addOnsSummary && <p className="cart-item-addons">{addOnsSummary}</p>}
                           </div>
                           <button
@@ -1024,7 +1029,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       const lineTotal = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
                       return (
                         <div key={`mob-sum-${item.bouquetId}-${i}`} className="cart-order-summary-row cart-order-summary-item">
-                          <span>{name} — {item.size.label}</span>
+                          <span>{item.itemType === 'product' ? name : `${name} — ${item.size.label}`}</span>
                           <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
                         </div>
                       );
@@ -1194,7 +1199,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <div className="cart-item-main">
                   <h3 className="cart-item-name">{name}</h3>
                   <p className="cart-item-size">
-                    {item.size.label} — ฿{item.size.price.toLocaleString()}
+                    {item.itemType === 'product'
+                      ? `฿${item.size.price.toLocaleString()}`
+                      : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
                   </p>
                   {addOnsSummary && (
                     <p className="cart-item-addons">{addOnsSummary}</p>
@@ -1300,9 +1307,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   const qty = 1;
                   const lineTotal = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
                   const priceStr = lineTotal.toLocaleString();
+                  const sizePart = item.itemType === 'product' ? '—' : item.size.label;
                   const itemLine = itemLineFmt
                     .replace('{name}', name)
-                    .replace('{size}', item.size.label)
+                    .replace('{size}', sizePart)
                     .replace('{qty}', String(qty))
                     .replace('{lineTotal}', priceStr)
                     .replace('{price}', priceStr);
