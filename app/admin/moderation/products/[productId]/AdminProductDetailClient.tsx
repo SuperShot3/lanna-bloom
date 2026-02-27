@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ProductGallery } from '@/components/ProductGallery';
 import {
   approveProductAction,
   rejectProductAction,
   needsChangesProductAction,
+  deleteProductAction,
 } from '../actions';
 import type { AdminProductDetail } from '@/lib/sanity';
 
@@ -85,8 +87,182 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
     }
   }
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const router = useRouter();
+
+  async function handleDelete() {
+    setError(null);
+    setLoading('delete');
+    const result = await deleteProductAction(product.id);
+    setLoading(null);
+    setShowDeleteConfirm(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      router.push('/admin/moderation/products');
+      router.refresh();
+    }
+  }
+
   const descEn = product.descriptionEn?.trim() || '—';
   const descTh = product.descriptionTh?.trim() || '—';
+
+  const actionCard = (
+    <div className="admin-product-detail-action-card">
+      <h3 className="admin-product-detail-action-card-title">Actions</h3>
+      {(product.moderationStatus === 'submitted' ||
+        product.moderationStatus === 'needs_changes' ||
+        product.moderationStatus === 'rejected') && (
+        <div className="admin-product-detail-commission">
+          <label htmlFor="commission">Commission (%) *</label>
+          <input
+            id="commission"
+            type="number"
+            min={0}
+            max={100}
+            step={0.5}
+            value={commissionPercent}
+            onChange={(e) => setCommissionPercent(e.target.value)}
+            placeholder="0–100"
+            className="admin-v2-input"
+          />
+          <span className="admin-product-detail-commission-hint">
+            Required before approving. Platform commission per sale.
+          </span>
+        </div>
+      )}
+      <div className="admin-product-detail-action-buttons">
+        {(product.moderationStatus === 'submitted' ||
+          product.moderationStatus === 'needs_changes' ||
+          product.moderationStatus === 'rejected') && (
+          <button
+            type="button"
+            className="admin-v2-btn admin-v2-btn-primary admin-moderation-btn-loading admin-product-detail-btn-full"
+            disabled={!canApprove || !!loading}
+            onClick={handleApprove}
+          >
+            {loading === 'approve' ? (
+              <>
+                <span className="admin-moderation-spinner" aria-hidden />
+                Saving…
+              </>
+            ) : (
+              'Approve & deploy'
+            )}
+          </button>
+        )}
+
+        {(product.moderationStatus === 'submitted' ||
+          product.moderationStatus === 'live' ||
+          product.moderationStatus === 'rejected') && (
+          <button
+            type="button"
+            className="admin-v2-btn admin-v2-btn-outline admin-product-detail-btn-full"
+            disabled={!!loading}
+            onClick={() => setShowNeedsChanges(!showNeedsChanges)}
+          >
+            Needs changes
+          </button>
+        )}
+
+        {(product.moderationStatus === 'submitted' ||
+          product.moderationStatus === 'live' ||
+          product.moderationStatus === 'needs_changes') && (
+          <button
+            type="button"
+            className="admin-v2-btn admin-v2-btn-outline admin-moderation-btn-loading admin-product-detail-btn-full"
+            disabled={!!loading}
+            onClick={handleReject}
+          >
+            {loading === 'reject' ? (
+              <>
+                <span className="admin-moderation-spinner" aria-hidden />
+                Saving…
+              </>
+            ) : (
+              'Reject'
+            )}
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="admin-v2-btn admin-v2-btn-danger admin-product-detail-btn-full"
+          disabled={!!loading}
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          Delete product
+        </button>
+      </div>
+
+      {showNeedsChanges && (
+        <div className="admin-product-detail-needs-changes">
+          <input
+            type="text"
+            placeholder="Note for partner (required)"
+            value={needsChangesNote}
+            onChange={(e) => setNeedsChangesNote(e.target.value)}
+            className="admin-v2-input"
+          />
+          <button
+            type="button"
+            className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
+            disabled={!!loading || !needsChangesNote.trim()}
+            onClick={handleNeedsChanges}
+          >
+            {loading === 'needsChanges' ? (
+              <>
+                <span className="admin-moderation-spinner" aria-hidden />
+                Sending…
+              </>
+            ) : (
+              'Send'
+            )}
+          </button>
+        </div>
+      )}
+
+      {product.moderationStatus === 'live' && product.commissionPercent != null && (
+        <p className="admin-product-detail-commission-set">
+          Commission: {product.commissionPercent}%
+        </p>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="admin-product-detail-delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+          <div className="admin-product-detail-delete-modal-backdrop" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="admin-product-detail-delete-modal-content">
+            <h3 id="delete-modal-title">Delete product</h3>
+            <p>Are you sure you want to delete this product? This cannot be undone.</p>
+            <div className="admin-product-detail-delete-modal-actions">
+              <button
+                type="button"
+                className="admin-v2-btn admin-v2-btn-outline"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-v2-btn admin-v2-btn-danger admin-moderation-btn-loading"
+                disabled={!!loading}
+                onClick={handleDelete}
+              >
+                {loading === 'delete' ? (
+                  <>
+                    <span className="admin-moderation-spinner" aria-hidden />
+                    Deleting…
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="admin-product-detail-content">
@@ -105,174 +281,73 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
           />
         </div>
 
-        <div className="admin-product-detail-info">
-          <div className="admin-product-detail-meta">
-            <span className={`admin-product-detail-status status-${product.moderationStatus}`}>
-              {STATUS_LABELS[product.moderationStatus] ?? product.moderationStatus}
-            </span>
-            <span className="admin-product-detail-category">
-              {CATEGORY_LABELS[product.category] ?? product.category}
-            </span>
+        <div className="admin-product-detail-right">
+          <div className="admin-product-detail-action-card-wrapper">
+            {actionCard}
           </div>
 
-          <h2 className="admin-product-detail-title">{product.nameEn}</h2>
-          {product.nameTh && (
-            <p className="admin-product-detail-subtitle">{product.nameTh}</p>
-          )}
-
-          <div className="admin-product-detail-price">฿{product.price.toLocaleString()}</div>
-
-          <div className="admin-product-detail-section">
-            <h3>Description (EN)</h3>
-            <p className="admin-product-detail-desc">{descEn}</p>
-          </div>
-          <div className="admin-product-detail-section">
-            <h3>Description (TH)</h3>
-            <p className="admin-product-detail-desc">{descTh}</p>
-          </div>
-
-          {(product.preparationTime != null || product.occasion) && (
-            <div className="admin-product-detail-section">
-              <h3>Attributes</h3>
-              <ul className="admin-product-detail-attrs">
-                {product.preparationTime != null && (
-                  <li>Prep time: ~{product.preparationTime} min</li>
-                )}
-                {product.occasion && <li>Occasion: {product.occasion}</li>}
-              </ul>
+          <div className="admin-product-detail-info">
+            <div className="admin-product-detail-meta">
+              <span className={`admin-product-detail-status status-${product.moderationStatus}`}>
+                {STATUS_LABELS[product.moderationStatus] ?? product.moderationStatus}
+              </span>
+              <span className="admin-product-detail-category">
+                {CATEGORY_LABELS[product.category] ?? product.category}
+              </span>
             </div>
-          )}
 
-          {product.customAttributes.length > 0 && (
+            <h2 className="admin-product-detail-title">{product.nameEn}</h2>
+            {product.nameTh && (
+              <p className="admin-product-detail-subtitle">{product.nameTh}</p>
+            )}
+
+            <div className="admin-product-detail-price">฿{product.price.toLocaleString()}</div>
+
             <div className="admin-product-detail-section">
-              <h3>Custom attributes</h3>
-              <ul className="admin-product-detail-attrs">
-                {product.customAttributes.map((a, i) => (
-                  <li key={i}>
-                    <strong>{a.key}:</strong> {a.value}
-                  </li>
-                ))}
-              </ul>
+              <h3>Description (EN)</h3>
+              <p className="admin-product-detail-desc">{descEn}</p>
             </div>
-          )}
+            <div className="admin-product-detail-section">
+              <h3>Description (TH)</h3>
+              <p className="admin-product-detail-desc">{descTh}</p>
+            </div>
 
-          {product.slug && product.moderationStatus === 'live' && (
-            <Link
-              href={`/en/catalog/${product.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="admin-product-detail-catalog-link"
-            >
-              View in catalog →
-            </Link>
-          )}
-
-          <div className="admin-product-detail-actions">
-            {(product.moderationStatus === 'submitted' ||
-              product.moderationStatus === 'needs_changes' ||
-              product.moderationStatus === 'rejected') && (
-              <>
-                <div className="admin-product-detail-commission">
-                  <label htmlFor="commission">Commission (%) *</label>
-                  <input
-                    id="commission"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.5}
-                    value={commissionPercent}
-                    onChange={(e) => setCommissionPercent(e.target.value)}
-                    placeholder="0–100"
-                    className="admin-v2-input"
-                  />
-                  <span className="admin-product-detail-commission-hint">
-                    Required before approving. Platform commission per sale.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="admin-v2-btn admin-v2-btn-primary admin-moderation-btn-loading"
-                  disabled={!canApprove || !!loading}
-                  onClick={handleApprove}
-                >
-                  {loading === 'approve' ? (
-                    <>
-                      <span className="admin-moderation-spinner" aria-hidden />
-                      Saving…
-                    </>
-                  ) : (
-                    'Approve & deploy'
+            {(product.preparationTime != null || product.occasion) && (
+              <div className="admin-product-detail-section">
+                <h3>Attributes</h3>
+                <ul className="admin-product-detail-attrs">
+                  {product.preparationTime != null && (
+                    <li>Prep time: ~{product.preparationTime} min</li>
                   )}
-                </button>
-              </>
+                  {product.occasion && <li>Occasion: {product.occasion}</li>}
+                </ul>
+              </div>
             )}
 
-            {(product.moderationStatus === 'submitted' ||
-              product.moderationStatus === 'live' ||
-              product.moderationStatus === 'rejected') && (
-              <button
-                type="button"
-                className="admin-v2-btn admin-v2-btn-outline"
-                disabled={!!loading}
-                onClick={() => setShowNeedsChanges(!showNeedsChanges)}
-              >
-                Needs changes
-              </button>
+            {product.customAttributes.length > 0 && (
+              <div className="admin-product-detail-section">
+                <h3>Custom attributes</h3>
+                <ul className="admin-product-detail-attrs">
+                  {product.customAttributes.map((a, i) => (
+                    <li key={i}>
+                      <strong>{a.key}:</strong> {a.value}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
-            {(product.moderationStatus === 'submitted' ||
-              product.moderationStatus === 'live' ||
-              product.moderationStatus === 'needs_changes') && (
-              <button
-                type="button"
-                className="admin-v2-btn admin-v2-btn-outline admin-moderation-btn-loading"
-                disabled={!!loading}
-                onClick={handleReject}
+            {product.slug && product.moderationStatus === 'live' && (
+              <Link
+                href={`/en/catalog/${product.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="admin-product-detail-catalog-link"
               >
-                {loading === 'reject' ? (
-                  <>
-                    <span className="admin-moderation-spinner" aria-hidden />
-                    Saving…
-                  </>
-                ) : (
-                  'Reject'
-                )}
-              </button>
+                View in catalog →
+              </Link>
             )}
           </div>
-
-          {showNeedsChanges && (
-            <div className="admin-product-detail-needs-changes">
-              <input
-                type="text"
-                placeholder="Note for partner (required)"
-                value={needsChangesNote}
-                onChange={(e) => setNeedsChangesNote(e.target.value)}
-                className="admin-v2-input"
-              />
-              <button
-                type="button"
-                className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
-                disabled={!!loading || !needsChangesNote.trim()}
-                onClick={handleNeedsChanges}
-              >
-                {loading === 'needsChanges' ? (
-                  <>
-                    <span className="admin-moderation-spinner" aria-hidden />
-                    Sending…
-                  </>
-                ) : (
-                  'Send'
-                )}
-              </button>
-            </div>
-          )}
-
-          {product.moderationStatus === 'live' && product.commissionPercent != null && (
-            <p className="admin-product-detail-commission-set">
-              Commission: {product.commissionPercent}%
-            </p>
-          )}
         </div>
       </div>
     </div>

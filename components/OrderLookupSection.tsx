@@ -87,7 +87,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
         </div>
       )}
       <div className="cart-track-header">
-        <span className="cart-track-label">{t.trackOrder}</span>
+        <span className="cart-track-label">{t.searchMyOrder ?? t.trackOrder}</span>
         <span className="cart-track-sub">{t.trackOrderSubline}</span>
       </div>
 

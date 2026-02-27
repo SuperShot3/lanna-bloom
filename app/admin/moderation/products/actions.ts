@@ -6,6 +6,7 @@ import {
   updateBouquetStatus,
   updateProductModerationStatus,
   updateProductCommission,
+  deleteProduct,
 } from '@/lib/sanityWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
 
@@ -99,5 +100,20 @@ export async function needsChangesProductAction(
   } catch (err) {
     console.error('[Moderation] needsChangesProduct failed:', err);
     return { error: err instanceof Error ? err.message : 'Failed' };
+  }
+}
+
+export async function deleteProductAction(productId: string): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+  try {
+    await deleteProduct(productId);
+    revalidatePath('/admin/moderation/products');
+    return {};
+  } catch (err) {
+    console.error('[Moderation] deleteProduct failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to delete product' };
   }
 }

@@ -46,24 +46,25 @@ export function LanguageSwitcher({
         .lang-switcher {
           display: flex;
           align-items: center;
+          margin-top: 2px;
         }
         .lang-flag {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 40px;
-          height: 40px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
-          background: var(--pastel-cream);
-          border: 2px solid transparent;
-          transition: border-color 0.2s, background 0.2s, transform 0.15s;
+          background: transparent;
+          border: 1px solid var(--border);
+          transition: border-color 0.2s, background 0.2s, color 0.2s;
         }
         .lang-flag:hover {
-          background: var(--accent-soft);
-          transform: scale(1.05);
+          background: var(--pastel-cream);
+          border-color: var(--accent-soft);
         }
         .lang-flag-icon {
-          font-size: 1.25rem;
+          font-size: 1.22 rem;
           border-radius: 2px;
         }
       `}</style>
