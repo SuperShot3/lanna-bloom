@@ -7,6 +7,7 @@ import {
   approvePartnerApplicationAction,
   rejectPartnerApplicationAction,
   deletePartnerApplicationAction,
+  reissuePartnerPasswordAction,
 } from './actions';
 import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
 
@@ -46,6 +47,7 @@ export function PartnerApplicationsClient({
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reissuing, setReissuing] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
 
@@ -92,6 +94,22 @@ export function PartnerApplicationsClient({
     }
     setSelected(null);
     router.refresh();
+  }
+
+  async function handleReissuePassword(app: PartnerApplicationRow) {
+    if (!confirm('Generate a new password? The partner will need this to log in. Send it to them via LINE.')) return;
+    setReissuing(true);
+    setTempPassword(null);
+    const result = await reissuePartnerPasswordAction(app.id);
+    setReissuing(false);
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+    if (result.tempPassword) {
+      setTempPassword(result.tempPassword);
+      router.refresh();
+    }
   }
 
   const mapsUrl = selected?.address
@@ -241,9 +259,11 @@ export function PartnerApplicationsClient({
                   </div>
                 </div>
               )}
-              {tempPassword && (
+              {(tempPassword || (selected.status === 'approved' && selected.temp_password)) && (
                 <div className="admin-partner-temp-password">
-                  <strong>Temp password (send to partner):</strong> {tempPassword}
+                  <strong>Partner login password:</strong>{' '}
+                  <code>{tempPassword ?? selected.temp_password ?? ''}</code>
+                  <span className="admin-partner-temp-password-hint">Send to partner via LINE</span>
                 </div>
               )}
               {selected.status === 'pending' && (
@@ -273,6 +293,18 @@ export function PartnerApplicationsClient({
                       {rejecting ? 'Rejecting…' : 'Reject'}
                     </button>
                   </div>
+                </div>
+              )}
+              {selected.status === 'approved' && (
+                <div className="admin-partner-actions">
+                  <button
+                    type="button"
+                    className="admin-v2-btn admin-v2-btn-outline"
+                    disabled={reissuing}
+                    onClick={() => handleReissuePassword(selected)}
+                  >
+                    {reissuing ? 'Re-issuing…' : 'Re-issue password'}
+                  </button>
                 </div>
               )}
               {selected.status === 'rejected' && (

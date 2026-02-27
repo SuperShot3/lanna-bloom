@@ -28,6 +28,7 @@ export interface PartnerApplicationRow {
   admin_note: string | null;
   user_id: string | null;
   sanity_partner_id: string | null;
+  temp_password: string | null;
 }
 
 export interface InsertPartnerApplicationInput {
@@ -138,6 +139,7 @@ export async function updatePartnerApplication(
     user_id?: string | null;
     sanity_partner_id?: string | null;
     admin_note?: string | null;
+    temp_password?: string | null;
   }
 ): Promise<boolean> {
   const supabase = getSupabaseAdmin();

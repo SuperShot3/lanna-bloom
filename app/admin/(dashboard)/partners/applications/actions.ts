@@ -66,8 +66,46 @@ export async function approvePartnerApplicationAction(
     status: 'approved',
     user_id: supabaseUserId,
     sanity_partner_id: sanityPartnerId,
+    temp_password: tempPassword,
   });
   if (!ok) return { error: 'Failed to update application' };
+
+  revalidatePath('/admin/partners/applications');
+  return { tempPassword };
+}
+
+export async function reissuePartnerPasswordAction(
+  applicationId: string
+): Promise<{ error?: string; tempPassword?: string }> {
+  const session = await auth();
+  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const app = await getPartnerApplicationById(applicationId);
+  if (!app) return { error: 'Application not found' };
+  if (app.status !== 'approved') return { error: 'Only approved partners can have password re-issued' };
+  const userId = app.user_id;
+  if (!userId) return { error: 'Application has no linked user' };
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { error: 'Supabase not configured' };
+
+  const tempPassword = generateTempPassword();
+
+  const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+    password: tempPassword,
+  });
+
+  if (updateError) {
+    console.error('[Partner] updateUserById failed:', updateError);
+    return { error: updateError.message };
+  }
+
+  const ok = await updatePartnerApplication(applicationId, {
+    temp_password: tempPassword,
+  });
+  if (!ok) return { error: 'Failed to save password' };
 
   revalidatePath('/admin/partners/applications');
   return { tempPassword };
