@@ -144,8 +144,17 @@ export async function deletePartnerApplicationAction(
 
   const app = await getPartnerApplicationById(applicationId);
   if (!app) return { error: 'Application not found' };
-  if (app.status !== 'rejected') {
-    return { error: 'Only rejected applications can be deleted' };
+
+  // For approved partners, delete the Supabase Auth user so they can no longer log in
+  if (app.status === 'approved' && app.user_id) {
+    const supabase = getSupabaseAdmin();
+    if (supabase) {
+      const { error: deleteUserError } = await supabase.auth.admin.deleteUser(app.user_id);
+      if (deleteUserError) {
+        console.error('[Partner] deleteUser failed:', deleteUserError);
+        return { error: `Failed to remove partner login: ${deleteUserError.message}` };
+      }
+    }
   }
 
   const ok = await deletePartnerApplication(applicationId);

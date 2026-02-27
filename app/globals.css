@@ -2760,7 +2760,8 @@ a.filter-pill--active:hover {
 }
 .admin-partner-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 20px;
 }

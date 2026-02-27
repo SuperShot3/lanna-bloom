@@ -84,7 +84,10 @@ export function PartnerApplicationsClient({
   }
 
   async function handleDelete(app: PartnerApplicationRow) {
-    if (!confirm('Delete this rejected application? This cannot be undone.')) return;
+    const msg = app.status === 'approved'
+      ? 'Delete this partner? Their login will be removed and they will no longer access the partner portal. This cannot be undone.'
+      : 'Delete this application? This cannot be undone.';
+    if (!confirm(msg)) return;
     setDeleting(true);
     const result = await deletePartnerApplicationAction(app.id);
     setDeleting(false);
@@ -295,8 +298,8 @@ export function PartnerApplicationsClient({
                   </div>
                 </div>
               )}
-              {selected.status === 'approved' && (
-                <div className="admin-partner-actions">
+              <div className="admin-partner-actions">
+                {selected.status === 'approved' && (
                   <button
                     type="button"
                     className="admin-v2-btn admin-v2-btn-outline"
@@ -305,21 +308,17 @@ export function PartnerApplicationsClient({
                   >
                     {reissuing ? 'Re-issuing…' : 'Re-issue password'}
                   </button>
-                </div>
-              )}
-              {selected.status === 'rejected' && (
-                <div className="admin-partner-actions">
-                  <button
-                    type="button"
-                    className="admin-v2-btn admin-v2-btn-outline"
-                    disabled={deleting}
-                    onClick={() => handleDelete(selected)}
-                    style={{ color: '#c0392b', borderColor: '#c0392b' }}
-                  >
-                    {deleting ? 'Deleting…' : 'Delete'}
-                  </button>
-                </div>
-              )}
+                )}
+                <button
+                  type="button"
+                  className="admin-v2-btn admin-v2-btn-outline"
+                  disabled={deleting}
+                  onClick={() => handleDelete(selected)}
+                  style={{ color: '#c0392b', borderColor: '#c0392b' }}
+                >
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
