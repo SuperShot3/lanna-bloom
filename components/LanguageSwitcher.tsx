@@ -9,6 +9,11 @@ const FLAGS: Record<Locale, string> = {
   th: '🇹🇭',
 };
 
+const LABELS: Record<Locale, string> = {
+  en: 'English',
+  th: 'Thai',
+};
+
 export function LanguageSwitcher({
   currentLang,
   pathBase,
@@ -20,28 +25,30 @@ export function LanguageSwitcher({
   const enHref = `/en${path}`;
   const thHref = `/th${path}`;
 
-  // Show only the alternative language flag
   const alternativeLang = currentLang === 'en' ? 'th' : 'en';
   const alternativeHref = alternativeLang === 'en' ? enHref : thHref;
-  const alternativeFlag = FLAGS[alternativeLang];
-  const alternativeLabel = alternativeLang === 'en' ? 'English' : 'Thai';
 
   return (
     <div className="lang-switcher" role="navigation" aria-label="Language">
+      {/* PC: show both flags (current dimmed, alternative clickable) */}
+      <span className="lang-flag lang-flag--current" aria-current="true" title={LABELS[currentLang]}>
+        <span className="lang-flag-emoji" aria-hidden>{FLAGS[currentLang]}</span>
+      </span>
       <Link
         href={alternativeHref}
         scroll={false}
-        className="lang-flag"
-        aria-label={alternativeLabel}
-        title={alternativeLabel}
+        className="lang-flag lang-flag--switch"
+        aria-label={`Switch to ${LABELS[alternativeLang]}`}
+        title={LABELS[alternativeLang]}
         onClick={() => trackLanguageChange(alternativeLang)}
       >
-        <span className="lang-flag-emoji" aria-hidden>{alternativeFlag}</span>
+        <span className="lang-flag-emoji" aria-hidden>{FLAGS[alternativeLang]}</span>
       </Link>
       <style jsx>{`
         .lang-switcher {
           display: flex;
           align-items: center;
+          gap: 4px;
         }
         .lang-flag {
           display: flex;
@@ -54,7 +61,11 @@ export function LanguageSwitcher({
           border: 2px solid transparent;
           transition: border-color 0.2s, background 0.2s, transform 0.15s;
         }
-        .lang-flag:hover {
+        .lang-flag--current {
+          cursor: default;
+          opacity: 0.6;
+        }
+        .lang-flag--switch:hover {
           background: var(--accent-soft);
           transform: scale(1.05);
         }
@@ -62,7 +73,14 @@ export function LanguageSwitcher({
           font-size: 1.25rem;
           line-height: 1;
         }
+        /* Mobile: show only the switchable flag (compact) */
         @media (max-width: 600px) {
+          .lang-flag--current {
+            display: none;
+          }
+          .lang-switcher {
+            gap: 0;
+          }
           .lang-flag {
             width: 36px;
             height: 36px;
