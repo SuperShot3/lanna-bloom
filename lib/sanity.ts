@@ -437,6 +437,70 @@ export interface ModerationProduct {
   imageUrl?: string;
 }
 
+export interface PartnerProduct {
+  id: string;
+  nameEn: string;
+  nameTh?: string;
+  category: string;
+  price: number;
+  moderationStatus: 'submitted' | 'live' | 'needs_changes';
+  imageUrl?: string;
+}
+
+/** All products (non-flower) for a partner — for partner dashboard */
+export async function getProductsByPartnerId(partnerId: string): Promise<PartnerProduct[]> {
+  try {
+    const docs = await client.fetch<
+      Array<{
+        _id: string;
+        nameEn?: string;
+        nameTh?: string;
+        category?: string;
+        price?: number;
+        moderationStatus?: string;
+        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+      }>
+    >(
+      `*[_type == "product" && references($partnerId)] | order(_createdAt desc) {
+        _id, nameEn, nameTh, category, price, moderationStatus, images
+      }`,
+      { partnerId }
+    );
+    return (docs ?? []).map((d) => ({
+      id: d._id,
+      nameEn: d.nameEn ?? '',
+      nameTh: d.nameTh,
+      category: d.category ?? '',
+      price: d.price ?? 0,
+      moderationStatus: (d.moderationStatus as 'submitted' | 'live' | 'needs_changes') ?? 'submitted',
+      imageUrl: d.images?.[0] ? urlFor(d.images[0]) : undefined,
+    }));
+  } catch (err) {
+    console.error('[Sanity] getProductsByPartnerId failed:', err);
+    return [];
+  }
+}
+
+/** Pending count (bouquets pending_review + products submitted) for partner nav badge */
+export async function getPendingCountByPartnerId(partnerId: string): Promise<number> {
+  try {
+    const [bouquetCount, productCount] = await Promise.all([
+      client.fetch<number>(
+        `count(*[_type == "bouquet" && references($partnerId) && status == "pending_review"])`,
+        { partnerId }
+      ),
+      client.fetch<number>(
+        `count(*[_type == "product" && references($partnerId) && moderationStatus == "submitted"])`,
+        { partnerId }
+      ),
+    ]);
+    return (bouquetCount ?? 0) + (productCount ?? 0);
+  } catch (err) {
+    console.error('[Sanity] getPendingCountByPartnerId failed:', err);
+    return 0;
+  }
+}
+
 /** Products pending moderation (moderationStatus=submitted) */
 export async function getPendingProducts(): Promise<ModerationProduct[]> {
   try {

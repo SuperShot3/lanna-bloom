@@ -8,9 +8,10 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 type PartnerNavProps = {
   lang: Locale;
   current?: 'apply' | 'dashboard' | 'products' | 'login';
+  pendingCount?: number;
 };
 
-export function PartnerNav({ lang, current }: PartnerNavProps) {
+export function PartnerNav({ lang, current, pendingCount = 0 }: PartnerNavProps) {
   const pathname = usePathname();
   const pathBase = pathname?.replace(/^\/(en|th)/, '') || '/partner';
 
@@ -50,6 +51,11 @@ export function PartnerNav({ lang, current }: PartnerNavProps) {
             className={`partner-nav-link ${current === 'products' ? 'active' : ''}`}
           >
             {lang === 'th' ? 'เพิ่มสินค้า' : 'Add Product'}
+            {pendingCount > 0 && (
+              <span className="partner-nav-pending-badge" title={lang === 'th' ? `${pendingCount} รอตรวจสอบ` : `${pendingCount} pending`}>
+                {pendingCount}
+              </span>
+            )}
           </Link>
           <Link
             href={loginHref}

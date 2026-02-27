@@ -477,6 +477,7 @@ export const translations = {
         quickActions: 'Quick actions',
         addProduct: 'Add product',
         myProducts: 'My products',
+        noProducts: 'No products yet',
         ordersSoon: 'Orders (soon)',
         contactSupport: 'Contact support',
         shopInfo: 'Shop info',
@@ -493,6 +494,7 @@ export const translations = {
         rejected: 'Rejected',
         submitted: 'Submitted',
         needsChanges: 'Needs changes',
+        needs_changes: 'Needs changes',
       },
       login: {
         title: 'Partner login',
@@ -1144,6 +1146,7 @@ export const translations = {
         quickActions: 'Quick actions',
         addProduct: 'เพิ่มสินค้า',
         myProducts: 'สินค้าของฉัน',
+        noProducts: 'ยังไม่มีสินค้า',
         ordersSoon: 'ออเดอร์ (เร็วๆ นี้)',
         contactSupport: 'ติดต่อ Lanna',
         shopInfo: 'ข้อมูลร้าน',
@@ -1160,6 +1163,7 @@ export const translations = {
         rejected: 'ไม่ผ่าน',
         submitted: 'ส่งแล้ว',
         needsChanges: 'ขอแก้ไข',
+        needs_changes: 'ขอแก้ไข',
       },
       login: {
         title: 'เข้าสู่ระบบ Partner',

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { Partner } from '@/lib/bouquets';
 import type { Bouquet } from '@/lib/bouquets';
+import type { PartnerProduct } from '@/lib/sanity';
 import { Card } from '@/components/partner/Card';
 import { Badge } from '@/components/partner/Badge';
 import { Btn } from '@/components/partner/Btn';
@@ -13,6 +14,7 @@ type DashboardT = {
   quickActions: string;
   addProduct: string;
   myProducts: string;
+  noProducts?: string;
   ordersSoon: string;
   contactSupport: string;
   shopInfo: string;
@@ -29,6 +31,7 @@ type PartnerDashboardClientProps = {
   lang: Locale;
   partner: Partner;
   bouquets: Bouquet[];
+  products: PartnerProduct[];
   t: DashboardT;
   tBadge: BadgeT;
 };
@@ -46,10 +49,17 @@ function bouquetStatusToBadge(s?: string): 'pending' | 'approved' | 'active' | '
   return 'submitted';
 }
 
+function productStatusToBadge(s?: string): 'pending' | 'approved' | 'active' | 'rejected' | 'submitted' | 'needs_changes' {
+  if (s === 'live') return 'active';
+  if (s === 'needs_changes') return 'needs_changes';
+  return 'submitted';
+}
+
 export function PartnerDashboardClient({
   lang,
   partner,
   bouquets,
+  products,
   t,
   tBadge,
 }: PartnerDashboardClientProps) {
@@ -166,9 +176,9 @@ export function PartnerDashboardClient({
 
       <div className="partner-dashboard-section-title">{t.myProducts}</div>
       <Card>
-        {bouquets.length === 0 ? (
+        {bouquets.length === 0 && products.length === 0 ? (
           <div className="partner-dashboard-products-empty">
-            <p>ยังไม่มีสินค้า</p>
+            <p>{t.noProducts ?? 'No products yet'}</p>
             <Link href={`/${lang}/partner/products/new`}>
               <Btn variant="secondary" style={{ width: '100%', justifyContent: 'center' }}>
                 + {t.addProduct}
@@ -181,7 +191,7 @@ export function PartnerDashboardClient({
               const minPrice = b.sizes?.length ? Math.min(...b.sizes.map((s) => s.price)) : 0;
               const name = lang === 'th' ? b.nameTh : b.nameEn;
               return (
-                <div key={b.id} className="partner-dashboard-product-row">
+                <div key={`bouquet-${b.id}`} className="partner-dashboard-product-row">
                   <div className="partner-dashboard-product-thumb">
                     {b.images?.[0] ? (
                       <img src={b.images[0]} alt="" width={44} height={44} style={{ objectFit: 'cover', borderRadius: 10 }} />
@@ -196,6 +206,27 @@ export function PartnerDashboardClient({
                     </div>
                   </div>
                   <Badge status={bouquetStatusToBadge(b.status)} labelTh={tBadge[bouquetStatusToBadge(b.status)] ?? tBadge.submitted} />
+                </div>
+              );
+            })}
+            {products.map((p) => {
+              const name = lang === 'th' ? p.nameTh : p.nameEn;
+              return (
+                <div key={`product-${p.id}`} className="partner-dashboard-product-row">
+                  <div className="partner-dashboard-product-thumb">
+                    {p.imageUrl ? (
+                      <img src={p.imageUrl} alt="" width={44} height={44} style={{ objectFit: 'cover', borderRadius: 10 }} />
+                    ) : (
+                      <span>🎁</span>
+                    )}
+                  </div>
+                  <div className="partner-dashboard-product-info">
+                    <div className="partner-dashboard-product-name">{name}</div>
+                    <div className="partner-dashboard-product-price">
+                      {p.price > 0 ? `฿${p.price}` : '—'}
+                    </div>
+                  </div>
+                  <Badge status={productStatusToBadge(p.moderationStatus)} labelTh={tBadge[productStatusToBadge(p.moderationStatus)] ?? tBadge.submitted} />
                 </div>
               );
             })}

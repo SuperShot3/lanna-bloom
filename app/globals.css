@@ -1725,6 +1725,9 @@ a.filter-pill--active:hover {
   margin-right: 4px;
 }
 .partner-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 10px;
   border-radius: 8px;
   font-size: 12px;
@@ -1738,6 +1741,19 @@ a.filter-pill--active:hover {
 .partner-nav-link.active {
   background: var(--color-sage-light);
   color: var(--color-sage-dark);
+}
+.partner-nav-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--color-rose);
+  color: white;
+  border-radius: 9px;
 }
 
 .partner-apply-page .container {
