@@ -3,6 +3,7 @@ import { ViewTransitions } from 'next-view-transitions';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 
