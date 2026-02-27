@@ -30,7 +30,6 @@ import {
   computeReferralDiscount,
 } from '@/lib/referral';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
-import { OrderLookupSection } from '@/components/OrderLookupSection';
 
 function buildAddOnsSummaryForDisplay(
   addOns: CartItem['addOns'],
@@ -766,8 +765,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             <span className="cart-page-count">{(t.cartItemsCount ?? '{count} items').replace('{count}', '0')}</span>
           </div>
 
-          <OrderLookupSection lang={lang} emptyCart />
-
           <p className="cart-footer-note">{(t.cartFooterNote ?? 'Need help? Contact us via LINE or WhatsApp.')}</p>
         </div>
         <style jsx>{`
@@ -1358,7 +1355,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </div>
         </div>
         </div>
-        <OrderLookupSection lang={lang} />
       </div>
       <style jsx>{`
         .cart-page {

@@ -213,47 +213,63 @@ export async function POST(request: NextRequest) {
     const order = await createPendingOrder(orderPayload);
     const baseUrl = getBaseUrl();
 
+    // Stripe requires unit_amount to be non-negative. Apply referral discount
+    // proportionally across line items instead of adding a negative line.
+    const subtotalCents = Math.round((totals.itemsTotal + totals.deliveryFee) * 100);
+    const discountCents = Math.round(referralDiscount * 100);
+    const discountRatio = subtotalCents > 0 ? discountCents / subtotalCents : 0;
+
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = totals.items.map(
-      (item) => ({
-        price_data: {
-          currency: 'thb',
-          product_data: {
-            name: `${item.bouquetTitle} — ${item.size}`,
-            description:
-              item.addOns.cardType === 'premium'
-                ? 'With premium message card'
-                : undefined,
+      (item) => {
+        const originalCents = Math.round(item.price * 100);
+        const discountedCents = Math.max(0, Math.round(originalCents * (1 - discountRatio)));
+        return {
+          price_data: {
+            currency: 'thb',
+            product_data: {
+              name: `${item.bouquetTitle} — ${item.size}`,
+              description:
+                item.addOns.cardType === 'premium'
+                  ? 'With premium message card'
+                  : undefined,
+            },
+            unit_amount: discountedCents,
           },
-          unit_amount: Math.round(item.price * 100),
-        },
-        quantity: 1,
-      })
+          quantity: 1,
+        };
+      }
     );
 
     if (totals.deliveryFee > 0) {
+      const feeCents = Math.round(totals.deliveryFee * 100);
+      const discountedFeeCents = Math.max(0, Math.round(feeCents * (1 - discountRatio)));
       lineItems.push({
         price_data: {
           currency: 'thb',
           product_data: {
-            name: 'Delivery fee',
+            name:
+              referralDiscount > 0 && data.referralCode
+                ? `Delivery fee (referral: ${data.referralCode})`
+                : 'Delivery fee',
           },
-          unit_amount: Math.round(totals.deliveryFee * 100),
+          unit_amount: discountedFeeCents,
         },
         quantity: 1,
       });
     }
 
-    if (referralDiscount > 0 && data.referralCode) {
-      lineItems.push({
-        price_data: {
-          currency: 'thb',
-          product_data: {
-            name: `Referral discount (${data.referralCode})`,
-          },
-          unit_amount: -Math.round(referralDiscount * 100),
-        },
-        quantity: 1,
-      });
+    // Absorb any rounding difference into the first line item so Stripe total matches
+    const currentTotalCents = lineItems.reduce(
+      (sum, li) => sum + (li.price_data as { unit_amount?: number }).unit_amount! * (li.quantity ?? 1),
+      0
+    );
+    const targetCents = Math.round(effectiveGrandTotal * 100);
+    const diff = targetCents - currentTotalCents;
+    if (diff !== 0 && lineItems.length > 0) {
+      const first = lineItems[0];
+      const pd = first.price_data as { unit_amount?: number };
+      const newAmount = Math.max(0, (pd.unit_amount ?? 0) + diff);
+      pd.unit_amount = newAmount;
     }
 
     const session = await stripe.checkout.sessions.create(
