@@ -221,6 +221,26 @@ export function PartnerApplicationsClient({
                     </a>
                   ) : '—'}
                 </dd>
+                {selected.instagram && (
+                  <>
+                    <dt>Instagram</dt>
+                    <dd>
+                      <a href={selected.instagram.startsWith('http') ? selected.instagram : `https://instagram.com/${selected.instagram.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer">
+                        {selected.instagram}
+                      </a>
+                    </dd>
+                  </>
+                )}
+                {selected.facebook && (
+                  <>
+                    <dt>Facebook</dt>
+                    <dd>
+                      <a href={selected.facebook.startsWith('http') ? selected.facebook : `https://${selected.facebook.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer">
+                        {selected.facebook}
+                      </a>
+                    </dd>
+                  </>
+                )}
                 <dt>Address</dt>
                 <dd>
                   {selected.address ? (

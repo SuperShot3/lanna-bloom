@@ -3,6 +3,7 @@
 type InpProps = {
   label: string;
   sub?: string;
+  hint?: string;
   placeholder?: string;
   value: string;
   onChange: (v: string) => void;
@@ -13,6 +14,7 @@ type InpProps = {
 export function Inp({
   label,
   sub,
+  hint,
   placeholder,
   value,
   onChange,
@@ -33,6 +35,7 @@ export function Inp({
         onChange={(e) => onChange(e.target.value)}
         required={required}
       />
+      {hint && <p className="partner-inp-hint">{hint}</p>}
     </div>
   );
 }

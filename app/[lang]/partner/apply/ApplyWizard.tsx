@@ -216,7 +216,7 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
             </div>
             <Chips options={chipOptions} selected={f.categories} onToggle={(v) => u('categories', f.categories.includes(v) ? f.categories.filter((x) => x !== v) : [...f.categories, v])} />
             <Sel label={t.prepTime} sub={lang === 'th' ? 'Typical preparation time' : 'Typical prep time'} options={prepOptions} value={f.prepTime} onChange={(v) => u('prepTime', v)} required />
-            <Inp label={t.cutoff} placeholder="e.g. 14:00" value={f.cutoff} onChange={(v) => u('cutoff', v)} />
+            <Inp label={t.cutoff} hint={t.cutoffHint} placeholder="e.g. 14:00" value={f.cutoff} onChange={(v) => u('cutoff', v)} />
             <Inp label={t.maxOrders} type="number" placeholder="e.g. 20" value={f.maxOrders} onChange={(v) => u('maxOrders', v)} />
           </>
         )}

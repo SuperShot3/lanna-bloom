@@ -22,7 +22,9 @@ export function PartnerLoginForm({ lang }: PartnerLoginFormProps) {
     setError(null);
     const supabase = createPartnerBrowserClient();
     if (!supabase) {
-      setError(t.errorGeneric);
+      setError(
+        'Partner login is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment (and deploy settings).'
+      );
       return;
     }
     setLoading(true);
@@ -32,11 +34,14 @@ export function PartnerLoginForm({ lang }: PartnerLoginFormProps) {
     });
     setLoading(false);
     if (signInError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Partner login] Supabase error:', signInError);
+      }
       const msg =
         signInError.message?.toLowerCase().includes('invalid') ||
         signInError.message?.toLowerCase().includes('credentials')
           ? t.errorInvalid
-          : t.errorGeneric;
+          : signInError.message || t.errorGeneric;
       setError(msg);
       return;
     }
