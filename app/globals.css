@@ -2997,6 +2997,130 @@ a.filter-pill--active:hover {
   color: var(--accent);
 }
 
+/* Loading spinner for admin moderation */
+@keyframes admin-moderation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.admin-moderation-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: admin-moderation-spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.admin-moderation-btn-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.admin-v2-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Admin moderation: improved card & button layout */
+.admin-moderation-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  align-items: start;
+}
+.admin-moderation-card-image {
+  grid-row: 1 / -1;
+}
+.admin-moderation-card-info {
+  min-width: 0;
+}
+.admin-moderation-card-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.admin-moderation-card-product {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-moderation-card-product .admin-moderation-card-link {
+  display: flex;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  gap: 12px;
+  padding: 0;
+  min-height: 0;
+}
+.admin-moderation-card-product .admin-moderation-card-link:hover strong {
+  color: var(--accent);
+}
+.admin-moderation-card-product .admin-moderation-card-image {
+  flex-shrink: 0;
+}
+.admin-moderation-card-product .admin-moderation-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.admin-moderation-card-product .admin-moderation-card-actions {
+  flex-shrink: 0;
+  padding-top: 12px;
+  margin-top: 0;
+  border-top: 1px solid var(--border);
+}
+.admin-moderation-needs-changes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.admin-moderation-needs-changes input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Admin header: responsive layout */
+@media (max-width: 640px) {
+  .admin-v2-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-v2-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .admin-v2-header-actions .admin-v2-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+  .admin-moderation-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .admin-moderation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (min-width: 641px) {
+  .admin-moderation-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
 /* Admin product detail page */
 .admin-product-detail .admin-v2-header {
   margin-bottom: 24px;

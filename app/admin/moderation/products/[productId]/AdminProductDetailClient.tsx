@@ -191,11 +191,18 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
                 </div>
                 <button
                   type="button"
-                  className="admin-v2-btn admin-v2-btn-primary"
+                  className="admin-v2-btn admin-v2-btn-primary admin-moderation-btn-loading"
                   disabled={!canApprove || !!loading}
                   onClick={handleApprove}
                 >
-                  {loading === 'approve' ? '…' : 'Approve & deploy'}
+                  {loading === 'approve' ? (
+                    <>
+                      <span className="admin-moderation-spinner" aria-hidden />
+                      Saving…
+                    </>
+                  ) : (
+                    'Approve & deploy'
+                  )}
                 </button>
               </>
             )}
@@ -218,11 +225,18 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
               product.moderationStatus === 'needs_changes') && (
               <button
                 type="button"
-                className="admin-v2-btn admin-v2-btn-outline"
+                className="admin-v2-btn admin-v2-btn-outline admin-moderation-btn-loading"
                 disabled={!!loading}
                 onClick={handleReject}
               >
-                Reject
+                {loading === 'reject' ? (
+                  <>
+                    <span className="admin-moderation-spinner" aria-hidden />
+                    Saving…
+                  </>
+                ) : (
+                  'Reject'
+                )}
               </button>
             )}
           </div>
@@ -238,11 +252,18 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
               />
               <button
                 type="button"
-                className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
                 disabled={!!loading || !needsChangesNote.trim()}
                 onClick={handleNeedsChanges}
               >
-                {loading === 'needsChanges' ? '…' : 'Send'}
+                {loading === 'needsChanges' ? (
+                  <>
+                    <span className="admin-moderation-spinner" aria-hidden />
+                    Sending…
+                  </>
+                ) : (
+                  'Send'
+                )}
               </button>
             </div>
           )}

@@ -42,7 +42,7 @@ export function ProductModerationClient({
       : allProducts;
 
   async function handleApproveBouquet(id: string) {
-    setLoading(id);
+    setLoading(`approve-bouquet-${id}`);
     const result = await approveBouquetAction(id);
     setLoading(null);
     if (result.error) alert(result.error);
@@ -50,7 +50,7 @@ export function ProductModerationClient({
   }
 
   async function handleRejectBouquet(id: string) {
-    setLoading(id);
+    setLoading(`reject-bouquet-${id}`);
     const result = await rejectBouquetAction(id);
     setLoading(null);
     if (result.error) alert(result.error);
@@ -58,7 +58,7 @@ export function ProductModerationClient({
   }
 
   async function handleRejectProduct(id: string) {
-    setLoading(id);
+    setLoading(`reject-product-${id}`);
     const result = await rejectProductAction(id);
     setLoading(null);
     if (result.error) alert(result.error);
@@ -70,7 +70,7 @@ export function ProductModerationClient({
       alert('Please enter a note for the partner');
       return;
     }
-    setLoading(id);
+    setLoading(`needs-changes-${id}`);
     const result = await needsChangesProductAction(id, needsChangesNote);
     setLoading(null);
     if (result.error) alert(result.error);
@@ -130,19 +130,33 @@ export function ProductModerationClient({
                 <div className="admin-moderation-card-actions">
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleApproveBouquet(b.id)}
                   >
-                    {loading === b.id ? '…' : 'Approve'}
+                    {loading === `approve-bouquet-${b.id}` ? (
+                      <>
+                        <span className="admin-moderation-spinner" aria-hidden />
+                        Saving…
+                      </>
+                    ) : (
+                      'Approve'
+                    )}
                   </button>
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleRejectBouquet(b.id)}
                   >
-                    Reject
+                    {loading === `reject-bouquet-${b.id}` ? (
+                      <>
+                        <span className="admin-moderation-spinner" aria-hidden />
+                        Saving…
+                      </>
+                    ) : (
+                      'Reject'
+                    )}
                   </button>
                 </div>
               </div>
@@ -215,7 +229,7 @@ export function ProductModerationClient({
                 {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'rejected') && (
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => setNeedsChangesId(needsChangesId === p.id ? null : p.id)}
                   >
@@ -225,11 +239,18 @@ export function ProductModerationClient({
                 {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'needs_changes') && (
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleRejectProduct(p.id)}
                   >
-                    Reject
+                    {loading === `reject-product-${p.id}` ? (
+                      <>
+                        <span className="admin-moderation-spinner" aria-hidden />
+                        Saving…
+                      </>
+                    ) : (
+                      'Reject'
+                    )}
                   </button>
                 )}
               </div>
@@ -244,11 +265,18 @@ export function ProductModerationClient({
                   />
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading || !needsChangesNote.trim()}
                     onClick={() => handleNeedsChanges(p.id)}
                   >
-                    Send
+                    {loading === `needs-changes-${p.id}` ? (
+                      <>
+                        <span className="admin-moderation-spinner" aria-hidden />
+                        Sending…
+                      </>
+                    ) : (
+                      'Send'
+                    )}
                   </button>
                 </div>
               )}
