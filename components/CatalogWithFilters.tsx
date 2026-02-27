@@ -4,18 +4,22 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { BouquetCard } from '@/components/BouquetCard';
+import { ProductCard } from '@/components/ProductCard';
 import { CatalogFilterBar, countActiveFilters } from '@/components/CatalogFilterBar';
 import { FilterDrawer } from '@/components/FilterDrawer';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { Bouquet } from '@/lib/bouquets';
-import type { CatalogFilterParams } from '@/lib/sanity';
+import type { CatalogFilterParams, CatalogProduct } from '@/lib/sanity';
 import { trackViewItemList } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 
 export interface CatalogWithFiltersProps {
   lang: Locale;
-  bouquets: Bouquet[];
+  /** Bouquets (when topCategory=flowers) */
+  bouquets?: Bouquet[];
+  /** Products (when topCategory is balloons, gifts, etc.) */
+  products?: CatalogProduct[];
   /** Current filter params from URL (parsed by server) */
   filterParams: CatalogFilterParams;
   /** Page title (e.g. "Our bouquets") */
@@ -26,6 +30,7 @@ export interface CatalogWithFiltersProps {
 
 function buildSearchString(params: CatalogFilterParams): string {
   const sp = new URLSearchParams();
+  if (params.topCategory && params.topCategory !== 'flowers') sp.set('topCategory', params.topCategory);
   if (params.category && params.category !== 'all') sp.set('category', params.category);
   if (params.colors?.length) sp.set('colors', params.colors.join(','));
   if (params.types?.length) sp.set('types', params.types.join(','));
@@ -55,18 +60,29 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
   });
 }
 
-export function CatalogWithFilters({ lang, bouquets, filterParams, title, description }: CatalogWithFiltersProps) {
+export function CatalogWithFilters({ lang, bouquets = [], products = [], filterParams, title, description }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const t = translations[lang].catalog;
   const activeCount = countActiveFilters(filterParams);
+  const items = bouquets.length > 0 ? bouquets : products;
+  const isProductsMode = !!(filterParams.topCategory && filterParams.topCategory !== 'flowers');
 
   useEffect(() => {
     if (bouquets.length > 0) {
       trackViewItemList(LIST_NAME_CATALOG, bouquetsToAnalyticsItems(bouquets, lang));
+    } else if (products.length > 0) {
+      trackViewItemList(LIST_NAME_CATALOG, products.map((p, i) => ({
+        item_id: p.id,
+        item_name: (lang === 'th' && p.nameTh ? p.nameTh : p.nameEn) || '',
+        item_category: p.category,
+        price: p.price,
+        quantity: 1,
+        index: i,
+      })));
     }
-  }, [lang, bouquets]);
+  }, [lang, bouquets, products]);
 
   const handleApply = useCallback(
     (params: CatalogFilterParams) => {
@@ -138,9 +154,9 @@ export function CatalogWithFilters({ lang, bouquets, filterParams, title, descri
         <div className="catalog-page-header">
           <div className="catalog-page-title">
             <h1 className="catalog-title">{title || t.title}</h1>
-            {bouquets.length > 0 && (
+            {items.length > 0 && (
               <span className="catalog-result-count">
-                {t.resultCountAvailable.replace('{count}', String(bouquets.length))}
+                {t.resultCountAvailable.replace('{count}', String(items.length))}
               </span>
             )}
           </div>
@@ -149,10 +165,12 @@ export function CatalogWithFilters({ lang, bouquets, filterParams, title, descri
           )}
         </div>
       )}
-      {bouquets.length === 0 ? (
+      {items.length === 0 ? (
         <div className="catalog-empty">
           <p className="catalog-empty-text">
-            {activeCount > 0 ? t.noResults : t.catalogEmpty}
+            {activeCount > 0
+              ? (isProductsMode ? t.noProductsMatch : t.noResults)
+              : (isProductsMode ? t.catalogProductsEmpty : t.catalogEmpty)}
           </p>
           {activeCount > 0 && (
             <Link href={`/${lang}/catalog`} className="catalog-empty-link">
@@ -162,9 +180,13 @@ export function CatalogWithFilters({ lang, bouquets, filterParams, title, descri
         </div>
       ) : (
         <div className="catalog-grid">
-          {bouquets.map((bouquet) => (
-            <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
-          ))}
+          {bouquets.length > 0
+            ? bouquets.map((bouquet) => (
+                <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
+              ))
+            : products.map((product) => (
+                <ProductCard key={product.id} product={product} lang={lang} />
+              ))}
         </div>
       )}
       <style jsx>{`

@@ -145,20 +145,24 @@ export async function deletePartnerApplicationAction(
   const app = await getPartnerApplicationById(applicationId);
   if (!app) return { error: 'Application not found' };
 
+  const userId = app.status === 'approved' ? app.user_id : null;
+
+  // Delete application first (it has FK to auth.users; must remove reference before deleting user)
+  const ok = await deletePartnerApplication(applicationId);
+  if (!ok) return { error: 'Failed to delete application' };
+
   // For approved partners, delete the Supabase Auth user so they can no longer log in
-  if (app.status === 'approved' && app.user_id) {
+  if (userId) {
     const supabase = getSupabaseAdmin();
     if (supabase) {
-      const { error: deleteUserError } = await supabase.auth.admin.deleteUser(app.user_id);
+      const { error: deleteUserError } = await supabase.auth.admin.deleteUser(userId);
       if (deleteUserError) {
-        console.error('[Partner] deleteUser failed:', deleteUserError);
-        return { error: `Failed to remove partner login: ${deleteUserError.message}` };
+        console.error('[Partner] deleteUser failed (application already deleted):', deleteUserError);
+        // Don't fail - application is already deleted; user may have other references
+        return { error: `Partner removed, but could not revoke login: ${deleteUserError.message}` };
       }
     }
   }
-
-  const ok = await deletePartnerApplication(applicationId);
-  if (!ok) return { error: 'Failed to delete application' };
 
   revalidatePath('/admin/partners/applications');
   return {};

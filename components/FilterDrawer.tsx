@@ -4,8 +4,12 @@ import { useState, useEffect } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { CatalogFilterParams } from '@/lib/sanity';
+import {
+  CATALOG_TOP_CATEGORIES,
+  FLOWER_SUBCATEGORIES,
+  CATEGORY_I18N_KEYS,
+} from '@/lib/catalogCategories';
 
-const CATEGORY_OPTIONS = ['all', 'roses', 'mixed', 'mono', 'inBox', 'romantic', 'birthday', 'sympathy'] as const;
 const COLOR_OPTIONS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
 const TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'mixed'] as const;
 const OCCASION_OPTIONS = ['', 'birthday', 'anniversary', 'romantic', 'sympathy', 'congrats', 'get_well'] as const;
@@ -71,7 +75,8 @@ export function FilterDrawer({
     get_well: t.occasionGetWell,
   };
 
-  const [category, setCategory] = useState(values.category || 'all');
+  const [topCategory, setTopCategory] = useState(values.topCategory || 'flowers');
+  const [subCategory, setSubCategory] = useState(values.category || 'all');
   const [colors, setColors] = useState<string[]>(values.colors || []);
   const [types, setTypes] = useState<string[]>(values.types || []);
   const [occasion, setOccasion] = useState(values.occasion || '');
@@ -81,7 +86,8 @@ export function FilterDrawer({
 
   useEffect(() => {
     if (!isOpen) return;
-    setCategory(values.category || 'all');
+    setTopCategory(values.topCategory || 'flowers');
+    setSubCategory(values.category || 'all');
     setColors(values.colors || []);
     setTypes(values.types || []);
     setOccasion(values.occasion || '');
@@ -99,7 +105,8 @@ export function FilterDrawer({
 
   const handleApply = () => {
     onApply({
-      category: category === 'all' ? undefined : category,
+      topCategory: topCategory !== 'flowers' ? topCategory : undefined,
+      category: topCategory === 'flowers' ? (subCategory === 'all' ? undefined : subCategory) : undefined,
       colors: colors.length ? colors : undefined,
       types: types.length ? types : undefined,
       occasion: occasion || undefined,
@@ -111,7 +118,8 @@ export function FilterDrawer({
   };
 
   const handleClear = () => {
-    setCategory('all');
+    setTopCategory('flowers');
+    setSubCategory('all');
     setColors([]);
     setTypes([]);
     setOccasion('');
@@ -156,19 +164,37 @@ export function FilterDrawer({
         </div>
         <div className="filter-drawer-body">
           <div className="filter-field">
-            <label>{t.filterCategory}</label>
+            <label>{t.filterTopCategory}</label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={topCategory}
+              onChange={(e) => setTopCategory(e.target.value)}
               className="filter-select"
             >
-              {CATEGORY_OPTIONS.map((key) => (
+              {CATALOG_TOP_CATEGORIES.map((key) => (
                 <option key={key} value={key}>
-                  {key === 'all' ? categories.all : categories[key]}
+                  {t[CATEGORY_I18N_KEYS[key] as keyof typeof t]}
                 </option>
               ))}
             </select>
           </div>
+          {topCategory === 'flowers' && (
+            <div className="filter-field">
+              <label>{t.filterSubCategory}</label>
+              <select
+                value={subCategory}
+                onChange={(e) => setSubCategory(e.target.value)}
+                className="filter-select"
+              >
+                {FLOWER_SUBCATEGORIES.map((key) => (
+                  <option key={key} value={key}>
+                    {key === 'all' ? categories.all : (categories as Record<string, string>)[key]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {topCategory === 'flowers' && (
+          <>
           <div className="filter-field">
             <label>{t.filterColors}</label>
             <div className="filter-checkbox-group">
@@ -213,6 +239,8 @@ export function FilterDrawer({
               ))}
             </select>
           </div>
+          </>
+          )}
           <div className="filter-field">
             <label>{t.filterPriceRange}</label>
             <div className="filter-price-row">

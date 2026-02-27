@@ -284,6 +284,7 @@ export function CatalogFilterBar({
 /** Count how many filter params are set (for summary) */
 export function countActiveFilters(params: CatalogFilterParams): number {
   let n = 0;
+  if (params.topCategory && params.topCategory !== 'flowers') n++;
   if (params.category && params.category !== 'all') n++;
   if (params.colors?.length) n++;
   if (params.types?.length) n++;

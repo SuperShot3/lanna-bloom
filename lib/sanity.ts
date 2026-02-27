@@ -221,6 +221,9 @@ export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouqu
 }
 
 export interface CatalogFilterParams {
+  /** Top-level category: flowers (bouquets) or product category (balloons, gifts, etc.) */
+  topCategory?: string;
+  /** Bouquet subcategory — only when topCategory === 'flowers' */
   category?: string;
   colors?: string[];
   types?: string[];
@@ -228,6 +231,19 @@ export interface CatalogFilterParams {
   min?: number;
   max?: number;
   sort?: 'newest' | 'price_asc' | 'price_desc';
+}
+
+/** Catalog product (non-flower) for display — matches BouquetCard-like shape */
+export interface CatalogProduct {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category: string;
+  price: number;
+  images: string[];
 }
 
 type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };
@@ -453,6 +469,106 @@ export async function getPendingProducts(): Promise<ModerationProduct[]> {
   } catch (err) {
     console.error('[Sanity] getPendingProducts failed:', err);
     return [];
+  }
+}
+
+/** Live products for catalog — categoryKey must match product.category in Sanity */
+export async function getProductsFilteredFromSanity(params: {
+  categoryKey: string;
+  sort?: 'newest' | 'price_asc' | 'price_desc';
+}): Promise<CatalogProduct[]> {
+  const { categoryKey, sort = 'newest' } = params;
+  try {
+    const docs = await client.fetch<
+      Array<{
+        _id: string;
+        _createdAt?: string;
+        slug?: { current?: string };
+        nameEn?: string;
+        nameTh?: string;
+        descriptionEn?: string;
+        descriptionTh?: string;
+        category?: string;
+        price?: number;
+        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+      }>
+    >(
+      `*[_type == "product" && moderationStatus == "live" && category == $categoryKey] | order(_createdAt desc) {
+        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, images
+      }`,
+      { categoryKey }
+    );
+    const mapped = (docs ?? []).map((d) => {
+      const slug = d.slug?.current ?? d._id;
+      const imageUrls = (d.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+      const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+      return {
+        id: d._id,
+        slug,
+        nameEn: d.nameEn ?? '',
+        nameTh: d.nameTh,
+        descriptionEn: d.descriptionEn,
+        descriptionTh: d.descriptionTh,
+        category: d.category ?? '',
+        price: d.price ?? 0,
+        images: imageUrls.length ? imageUrls : [placeholder],
+        _createdAt: d._createdAt,
+      };
+    });
+    if (sort === 'price_asc') {
+      mapped.sort((a, b) => a.price - b.price);
+    } else if (sort === 'price_desc') {
+      mapped.sort((a, b) => b.price - a.price);
+    } else {
+      mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
+    }
+    return mapped.map(({ _createdAt, ...p }) => p);
+  } catch (err) {
+    console.error('[Sanity] getProductsFilteredFromSanity failed:', err);
+    return [];
+  }
+}
+
+/** Get product by slug (for product detail page) */
+export async function getProductBySlugFromSanity(slug: string): Promise<CatalogProduct | null> {
+  try {
+    const doc = await client.fetch<
+      | {
+          _id: string;
+          slug?: { current?: string };
+          nameEn?: string;
+          nameTh?: string;
+          descriptionEn?: string;
+          descriptionTh?: string;
+          category?: string;
+          price?: number;
+          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+        }
+      | null
+    >(
+      `*[_type == "product" && slug.current == $slug && moderationStatus == "live"][0] {
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, images
+      }`,
+      { slug }
+    );
+    if (!doc) return null;
+    const slugVal = doc.slug?.current ?? doc._id;
+    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+    return {
+      id: doc._id,
+      slug: slugVal,
+      nameEn: doc.nameEn ?? '',
+      nameTh: doc.nameTh,
+      descriptionEn: doc.descriptionEn,
+      descriptionTh: doc.descriptionTh,
+      category: doc.category ?? '',
+      price: doc.price ?? 0,
+      images: imageUrls.length ? imageUrls : [placeholder],
+    };
+  } catch (err) {
+    console.error('[Sanity] getProductBySlugFromSanity failed:', err);
+    return null;
   }
 }
 

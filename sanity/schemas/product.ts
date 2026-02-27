@@ -2,6 +2,7 @@ import { defineType } from 'sanity';
 
 /**
  * Non-flower partner products: balloons, gifts, money_flowers, handmade_floral.
+ * Category values must match lib/catalogCategories.ts PRODUCT_CATEGORIES.
  * moderationStatus: submitted (partner submit) → live (admin approve) | needs_changes
  */
 export const product = defineType({

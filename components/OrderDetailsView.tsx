@@ -295,17 +295,6 @@ export function OrderDetailsView({
               {t.orderStatusUpdatedAt ?? 'Updated'}: {new Date(finalUpdatedAt).toLocaleString()}
             </span>
           )}
-          {!isFinalState && (
-            <button
-              type="button"
-              className="order-details-refresh-btn"
-              onClick={refreshStatus}
-              disabled={refreshing}
-              aria-label={t.refreshStatus ?? 'Refresh status'}
-            >
-              {refreshing ? '…' : (t.refreshStatus ?? 'Refresh status')}
-            </button>
-          )}
         </div>
       </div>
 
