@@ -57,6 +57,8 @@ export async function approveProductAction(
     await updateProductModerationStatus(productId, 'live');
     revalidatePath('/admin/moderation/products');
     revalidatePath(`/admin/moderation/products/${productId}`);
+    revalidatePath('/en/catalog', 'layout');
+    revalidatePath('/th/catalog', 'layout');
     return {};
   } catch (err) {
     console.error('[Moderation] approveProduct failed:', err);

@@ -7,6 +7,7 @@ import { getBouquetById, getProductById } from '@/lib/sanity';
 import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFee';
 import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
+import { computeFinalPrice } from '@/lib/partnerPricing';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -36,6 +37,9 @@ export interface ComputedOrderItem {
   };
   imageUrl?: string;
   bouquetSlug?: string;
+  itemType?: 'bouquet' | 'product';
+  cost?: number;
+  commissionAmount?: number;
 }
 
 export interface ComputedOrderTotals {
@@ -73,7 +77,10 @@ export async function computeOrderTotals(
         return { ok: false, message: `Product is not available: ${product.nameEn}` };
       }
 
-      let itemPrice = product.price ?? 0;
+      const partnerCost = product.price ?? 0;
+      const finalPrice = computeFinalPrice(partnerCost, product.commissionPercent);
+      const commissionAmount = finalPrice - partnerCost;
+      let itemPrice = finalPrice;
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
@@ -91,6 +98,9 @@ export async function computeOrderTotals(
         },
         imageUrl: item.imageUrl ?? product.imageUrl,
         bouquetSlug: item.bouquetSlug,
+        itemType: 'product',
+        cost: partnerCost,
+        commissionAmount,
       });
       itemsTotal += itemPrice;
     } else {
@@ -123,6 +133,7 @@ export async function computeOrderTotals(
         },
         imageUrl: item.imageUrl,
         bouquetSlug: item.bouquetSlug ?? bouquet.slug,
+        itemType: 'bouquet',
       });
       itemsTotal += itemPrice;
     }

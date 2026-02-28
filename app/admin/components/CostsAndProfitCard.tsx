@@ -3,11 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
-import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
+import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 
 interface CostsAndProfitCardProps {
   order: SupabaseOrderRow;
+  items?: SupabaseOrderItemRow[];
   canEdit?: boolean;
+}
+
+function sumPartnerItemsCost(items: SupabaseOrderItemRow[]): number {
+  return items
+    .filter((i) => i.item_type === 'product')
+    .reduce((s, i) => s + (i.cost ?? 0), 0);
 }
 
 function toInputValue(n: number | null | undefined): string {
@@ -23,16 +30,19 @@ function parseInput(s: string): number | null {
   return Math.round(n * 100) / 100;
 }
 
-export function CostsAndProfitCard({ order, canEdit = true }: CostsAndProfitCardProps) {
+export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsAndProfitCardProps) {
   const router = useRouter();
   const totalAmount = order.total_amount ?? order.grand_total ?? null;
-  const [cogs, setCogs] = useState(toInputValue(order.cogs_amount));
+  const partnerItemsCogs = sumPartnerItemsCost(items);
+  const effectiveInitialCogs =
+    order.cogs_amount ?? (partnerItemsCogs > 0 ? partnerItemsCogs : null);
+  const [cogs, setCogs] = useState(toInputValue(effectiveInitialCogs));
   const [deliveryCost, setDeliveryCost] = useState(toInputValue(order.delivery_cost));
   const [paymentFee, setPaymentFee] = useState(toInputValue(order.payment_fee));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const initialCogs = toInputValue(order.cogs_amount);
+  const initialCogs = toInputValue(effectiveInitialCogs);
   const initialDelivery = toInputValue(order.delivery_cost);
   const initialPayment = toInputValue(order.payment_fee);
 

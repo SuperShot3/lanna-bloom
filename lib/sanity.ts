@@ -18,6 +18,14 @@ export const client = createClient({
   useCdn: true,
 });
 
+/** Bypasses CDN for fresh data (e.g. commission after admin approval). Use for product catalog. */
+const clientNoCdn = createClient({
+  projectId,
+  dataset,
+  apiVersion: '2024-01-01',
+  useCdn: false,
+});
+
 const builder = imageUrlBuilder(client);
 
 function urlFor(source: { _type?: string; asset?: { _ref?: string } } | undefined): string {
@@ -242,7 +250,10 @@ export interface CatalogProduct {
   descriptionEn?: string;
   descriptionTh?: string;
   category: string;
+  /** Partner cost (what we pay partner). For display use computeFinalPrice(price, commissionPercent). */
   price: number;
+  /** Admin sets before approving. Null/0 = own item, no markup. */
+  commissionPercent?: number;
   images: string[];
   /** Prep time in minutes (from structuredAttributes) */
   preparationTime?: number;
@@ -586,7 +597,7 @@ export async function getProductsFilteredFromSanity(params: {
 }): Promise<CatalogProduct[]> {
   const { categoryKey, sort = 'newest' } = params;
   try {
-    const docs = await client.fetch<
+    const docs = await clientNoCdn.fetch<
       Array<{
         _id: string;
         _createdAt?: string;
@@ -597,11 +608,12 @@ export async function getProductsFilteredFromSanity(params: {
         descriptionTh?: string;
         category?: string;
         price?: number;
+        commissionPercent?: number;
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
       }>
     >(
       `*[_type == "product" && moderationStatus == "live" && category == $categoryKey] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, images
+        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, commissionPercent, images
       }`,
       { categoryKey }
     );
@@ -618,6 +630,7 @@ export async function getProductsFilteredFromSanity(params: {
         descriptionTh: d.descriptionTh,
         category: d.category ?? '',
         price: d.price ?? 0,
+        commissionPercent: d.commissionPercent,
         images: imageUrls.length ? imageUrls : [placeholder],
         _createdAt: d._createdAt,
       };
@@ -639,7 +652,7 @@ export async function getProductsFilteredFromSanity(params: {
 /** Get product by slug (for product detail page) */
 export async function getProductBySlugFromSanity(slug: string): Promise<CatalogProduct | null> {
   try {
-    const doc = await client.fetch<
+    const doc = await clientNoCdn.fetch<
       | {
           _id: string;
           slug?: { current?: string };
@@ -649,13 +662,14 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
           descriptionTh?: string;
           category?: string;
           price?: number;
+          commissionPercent?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
           structuredAttributes?: { preparationTime?: number; occasion?: string };
         }
       | null
     >(
       `*[_type == "product" && slug.current == $slug && moderationStatus == "live"][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, images,
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, commissionPercent, images,
         "structuredAttributes": structuredAttributes
       }`,
       { slug }
@@ -674,6 +688,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       descriptionTh: doc.descriptionTh,
       category: doc.category ?? '',
       price: doc.price ?? 0,
+      commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
       preparationTime: attrs?.preparationTime,
       occasion: attrs?.occasion,
@@ -697,7 +712,7 @@ export async function getBouquetImageRefs(bouquetId: string): Promise<string[]> 
   }
 }
 
-/** Single product by ID (for partner edit) — no moderation filter */
+/** Single product by ID (for partner edit, stripe pricing) — no moderation filter */
 export async function getProductById(productId: string): Promise<{
   id: string;
   nameEn: string;
@@ -706,6 +721,7 @@ export async function getProductById(productId: string): Promise<{
   descriptionTh?: string;
   category: string;
   price: number;
+  commissionPercent?: number;
   moderationStatus: string;
   imageUrl?: string;
   imageRefs: string[];
@@ -714,7 +730,7 @@ export async function getProductById(productId: string): Promise<{
   partnerId?: string;
 } | null> {
   try {
-    const doc = await client.fetch<
+    const doc = await clientNoCdn.fetch<
       | {
           _id: string;
           nameEn?: string;
@@ -723,6 +739,7 @@ export async function getProductById(productId: string): Promise<{
           descriptionTh?: string;
           category?: string;
           price?: number;
+          commissionPercent?: number;
           moderationStatus?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
           structuredAttributes?: { preparationTime?: number; occasion?: string };
@@ -731,7 +748,7 @@ export async function getProductById(productId: string): Promise<{
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
-        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, moderationStatus, images, structuredAttributes, partner
+        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, commissionPercent, moderationStatus, images, structuredAttributes, partner
       }`,
       { id: productId }
     );
@@ -747,6 +764,7 @@ export async function getProductById(productId: string): Promise<{
       descriptionTh: doc.descriptionTh,
       category: doc.category ?? '',
       price: doc.price ?? 0,
+      commissionPercent: doc.commissionPercent,
       moderationStatus: doc.moderationStatus ?? 'submitted',
       imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
       imageRefs,

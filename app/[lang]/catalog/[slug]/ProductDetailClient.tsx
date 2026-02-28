@@ -6,6 +6,7 @@ import { ProductOrderBlockForProduct } from '@/components/ProductOrderBlockForPr
 import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
+import { computeFinalPrice } from '@/lib/partnerPricing';
 
 export function ProductDetailClient({
   product,
@@ -22,23 +23,24 @@ export function ProductDetailClient({
   const images = product.images ?? [];
   const selectedImageUrl = images[selectedImageIndex] ?? images[0];
   const descDisplay = description?.trim() || (lang === 'th' ? 'ยังไม่มีรายละเอียดสินค้า' : 'No description provided.');
+  const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
 
   useEffect(() => {
     trackViewItem({
       currency: 'THB',
-      value: product.price,
+      value: finalPrice,
       items: [
         {
           item_id: product.id,
           item_name: name,
-          price: product.price,
+          price: finalPrice,
           quantity: 1,
           index: 0,
           item_category: product.category,
         },
       ],
     });
-  }, [product.id, product.price, product.category, name, lang]);
+  }, [product.id, product.price, product.commissionPercent, product.category, name, lang, finalPrice]);
 
   return (
     <>
@@ -70,7 +72,7 @@ export function ProductDetailClient({
           </div>
         )}
         <div className="product-price-block">
-          <span className="product-price">฿{product.price.toLocaleString()}</span>
+          <span className="product-price">฿{finalPrice.toLocaleString()}</span>
         </div>
         <ProductOrderBlockForProduct
           product={product}

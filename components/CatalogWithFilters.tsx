@@ -13,6 +13,7 @@ import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogFilterParams, CatalogProduct } from '@/lib/sanity';
 import { trackViewItemList } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
+import { computeFinalPrice } from '@/lib/partnerPricing';
 
 export interface CatalogWithFiltersProps {
   lang: Locale;
@@ -77,7 +78,7 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
         item_id: p.id,
         item_name: (lang === 'th' && p.nameTh ? p.nameTh : p.nameEn) || '',
         item_category: p.category,
-        price: p.price,
+        price: computeFinalPrice(p.price, p.commissionPercent),
         quantity: 1,
         index: i,
       })));

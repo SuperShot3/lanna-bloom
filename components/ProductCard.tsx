@@ -7,6 +7,7 @@ import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { trackSelectItem } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
+import { computeFinalPrice } from '@/lib/partnerPricing';
 
 export function ProductCard({ product, lang }: { product: CatalogProduct; lang: Locale }) {
   const t = translations[lang].catalog;
@@ -14,13 +15,14 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
   const href = `/${lang}/catalog/${product.slug}`;
   const imgSrc = product.images?.[0] ?? '';
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
+  const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
 
   const handleLinkClick = () => {
     const item: AnalyticsItem = {
       item_id: product.id,
       item_name: name,
       item_category: product.category,
-      price: product.price,
+      price: finalPrice,
       quantity: 1,
       index: 0,
     };
@@ -34,7 +36,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         className="card-link"
         data-ga-select-item="catalog"
         onClick={handleLinkClick}
-        aria-label={`${name} — ฿${product.price.toLocaleString()}`}
+        aria-label={`${name} — ฿${finalPrice.toLocaleString()}`}
       >
         <div className="card-image-wrap">
           {imgSrc ? (
@@ -60,7 +62,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
             {name}
           </div>
           <div className="card-price">
-            {t.from} ฿{product.price.toLocaleString()}
+            {t.from} ฿{finalPrice.toLocaleString()}
           </div>
         </div>
       </Link>

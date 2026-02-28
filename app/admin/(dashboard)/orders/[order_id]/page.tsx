@@ -102,7 +102,7 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
       />
       <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
       <OrderSummaryCard order={order} />
-      <CostsAndProfitCard order={order} canEdit={canEditCosts(role)} />
+      <CostsAndProfitCard order={order} items={items} canEdit={canEditCosts(role)} />
       <ItemsList items={itemsWithCatalog} />
       {(order.address || order.delivery_google_maps_url) && (
         <section className="admin-v2-section">

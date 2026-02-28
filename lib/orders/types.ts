@@ -22,6 +22,12 @@ export interface OrderItem {
   addOns: OrderItemAddOns;
   imageUrl?: string;
   bouquetSlug?: string;
+  /** 'bouquet' | 'product' — for profit/cost tracking */
+  itemType?: 'bouquet' | 'product';
+  /** Partner cost (for products); used for COGS auto-fill */
+  cost?: number;
+  /** Platform commission amount (for products) */
+  commissionAmount?: number;
 }
 
 /** District key for delivery fee calculation. */

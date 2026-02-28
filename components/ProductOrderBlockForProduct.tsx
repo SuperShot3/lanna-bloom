@@ -9,6 +9,7 @@ import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
 import type { CatalogProduct } from '@/lib/sanity';
+import { computeFinalPrice } from '@/lib/partnerPricing';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -24,12 +25,13 @@ export function ProductOrderBlockForProduct({
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
+  const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
 
   const handleAddToCart = () => {
     const syntheticSize = {
       key: 'm' as const,
       label: '—',
-      price: product.price,
+      price: finalPrice,
       description: '',
       preparationTime: undefined as number | undefined,
       availability: true,
@@ -46,12 +48,12 @@ export function ProductOrderBlockForProduct({
     });
     trackAddToCart({
       currency: 'THB',
-      value: product.price,
+      value: finalPrice,
       items: [
         {
           item_id: product.id,
           item_name: name,
-          price: product.price,
+          price: finalPrice,
           quantity: 1,
           index: 0,
           item_category: product.category,

@@ -142,6 +142,9 @@ export async function dualWriteOrder(order: Order): Promise<void> {
         size: item.size,
         price: item.price,
         image_url_snapshot: item.imageUrl ?? null,
+        item_type: item.itemType ?? 'bouquet',
+        cost: item.cost ?? null,
+        commission_amount: item.commissionAmount ?? null,
       }));
 
       const { error: itemsError } = await supabase
