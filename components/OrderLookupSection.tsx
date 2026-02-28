@@ -33,7 +33,7 @@ function formatDeliveryDate(dateStr: string | null): string {
 }
 
 export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCart?: boolean }) {
-  const t = translations[lang].cart;
+  const t = translations[lang].cart as Record<string, string>;
   const tOrder = translations[lang].orderPage;
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
