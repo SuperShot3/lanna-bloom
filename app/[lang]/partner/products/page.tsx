@@ -53,7 +53,7 @@ export default async function PartnerProductsListPage({
 
   return (
     <div className="partner-page partner-dashboard-page">
-      <PartnerNav lang={lang as Locale} current="products" pendingCount={pendingCount} />
+      <PartnerNav lang={lang as Locale} current="products" pendingCount={pendingCount} isLoggedIn />
       <div className="container">
         <div className="partner-dashboard-welcome-top" style={{ marginBottom: 16 }}>
           <h1 className="partner-title">{t.myProducts}</h1>

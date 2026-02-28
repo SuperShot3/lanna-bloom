@@ -29,7 +29,7 @@ export default async function PartnerBouquetEditPage({
 
   return (
     <div className="partner-page partner-dashboard-page">
-      <PartnerNav lang={lang as Locale} current="products" pendingCount={pendingCount} />
+      <PartnerNav lang={lang as Locale} current="products" pendingCount={pendingCount} isLoggedIn />
       <div className="container">
         <h1 className="partner-title">{t.editBouquet}</h1>
         <p className="partner-subline" style={{ marginBottom: 16 }}>

@@ -29,7 +29,7 @@ export default async function AddProductPage({
   if (success === 'bouquet' || success === 'product') {
     return (
       <div className="partner-page partner-add-product-page">
-        <PartnerNav lang={lang as Locale} current="productsAdd" pendingCount={pendingCount} />
+        <PartnerNav lang={lang as Locale} current="productsAdd" pendingCount={pendingCount} isLoggedIn />
         <div className="container">
           <div className="partner-apply-done">
             <div className="partner-apply-done-emoji">✅</div>
@@ -46,7 +46,7 @@ export default async function AddProductPage({
 
   return (
     <div className="partner-page partner-add-product-page">
-      <PartnerNav lang={lang as Locale} current="productsAdd" />
+      <PartnerNav lang={lang as Locale} current="productsAdd" isLoggedIn />
       <div className="container">
         <AddProductWizard lang={lang as Locale} partnerId={partner.id} />
       </div>

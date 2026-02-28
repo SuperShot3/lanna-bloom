@@ -510,6 +510,7 @@ export const translations = {
         signingIn: 'Signing in…',
         errorInvalid: 'Invalid email or password.',
         errorGeneric: 'Something went wrong. Please try again.',
+        logOut: 'Log out',
       },
       addProduct: {
         title: 'Add product',
@@ -1185,6 +1186,7 @@ export const translations = {
         signingIn: 'กำลังเข้าสู่ระบบ…',
         errorInvalid: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
         errorGeneric: 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง',
+        logOut: 'ออกจากระบบ',
       },
       addProduct: {
         title: 'เพิ่มสินค้า',

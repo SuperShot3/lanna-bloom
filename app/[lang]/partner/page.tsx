@@ -33,7 +33,7 @@ export default async function PartnerDashboardPage({
 
   return (
     <div className="partner-page partner-dashboard-page">
-      <PartnerNav lang={lang as Locale} current="dashboard" pendingCount={pendingCount} />
+      <PartnerNav lang={lang as Locale} current="dashboard" pendingCount={pendingCount} isLoggedIn />
       <div className="container">
         <PartnerDashboardClient
           lang={lang as Locale}
