@@ -51,7 +51,6 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
     }
     setError(null);
     setIsNoResults(false);
-    setOrders(null);
     setLoading(true);
     try {
       const res = await fetch('/api/orders/lookup', {
@@ -143,21 +142,30 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
       </form>
 
       {orders !== null && orders.length > 0 && (
-        <ul className="cart-track-order-list">
-          {orders.map((order) => (
-            <li key={order.orderId}>
-              <Link href={`/order/${encodeURIComponent(order.orderId)}`} className="cart-track-order-link">
-                <span className="cart-track-order-id">{order.orderId}</span>
-                <span className="cart-track-order-status">
-                  {getFulfillmentLabel(order.fulfillmentStatus, tOrder)}
-                </span>
-                <span className="cart-track-order-date">
-                  {formatDeliveryDate(order.deliveryDate)}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="cart-track-order-list-wrap">
+          {loading && (
+            <div className="cart-track-order-list-overlay" aria-hidden>
+              <span className="cart-track-order-list-overlay-text">
+                {lang === 'th' ? 'กำลังค้นหา...' : 'Searching...'}
+              </span>
+            </div>
+          )}
+          <ul className="cart-track-order-list">
+            {orders.map((order) => (
+              <li key={order.orderId}>
+                <Link href={`/order/${encodeURIComponent(order.orderId)}`} className="cart-track-order-link">
+                  <span className="cart-track-order-id">{order.orderId}</span>
+                  <span className="cart-track-order-status">
+                    {getFulfillmentLabel(order.fulfillmentStatus, tOrder)}
+                  </span>
+                  <span className="cart-track-order-date">
+                    {formatDeliveryDate(order.deliveryDate)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <style jsx>{`
@@ -324,9 +332,27 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
         .cart-btn-browse:hover {
           color: var(--accent);
         }
+        .cart-track-order-list-wrap {
+          position: relative;
+          margin-top: 8px;
+        }
+        .cart-track-order-list-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: color-mix(in srgb, var(--surface) 85%, transparent);
+          border-radius: var(--radius);
+          z-index: 1;
+        }
+        .cart-track-order-list-overlay-text {
+          font-size: 14px;
+          color: var(--text-muted);
+        }
         .cart-track-order-list {
           list-style: none;
-          margin: 8px 0 0;
+          margin: 0;
           padding: 0;
           display: flex;
           flex-direction: column;

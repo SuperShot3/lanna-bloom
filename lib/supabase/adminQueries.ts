@@ -103,9 +103,11 @@ export async function getOrders(
   }
 
   try {
+    const listColumns =
+      'order_id, public_token, payment_method, customer_name, customer_email, phone, address, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at';
     let query = supabase
       .from('orders')
-      .select('*', { count: 'exact' });
+      .select(listColumns, { count: 'exact' });
 
     if (filters.orderId?.trim()) {
       query = query.ilike('order_id', `%${filters.orderId.trim()}%`);

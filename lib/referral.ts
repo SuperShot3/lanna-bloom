@@ -6,9 +6,10 @@
 export const REFERRAL_DISCOUNT_THB = 100;
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
-/** Discount code definitions: percent or fixed THB. CLOUD9 = 10% off. */
+/** Discount code definitions: percent or fixed THB. CLOUD9 = 10% off. PROMO100 = 100% off (track as promotion expense). */
 const DISCOUNT_CODES: Record<string, { type: 'percent'; value: number } | { type: 'fixed'; value: number }> = {
   CLOUD9: { type: 'percent', value: 10 },
+  PROMO100: { type: 'percent', value: 100 },
 };
 
 /** Allowed chars: A–Z, 0–9, hyphen (-). Length 3–12. Returns normalized code or null if invalid. */

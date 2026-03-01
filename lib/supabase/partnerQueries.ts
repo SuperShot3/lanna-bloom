@@ -108,7 +108,7 @@ export async function listPartnerApplications(status?: string): Promise<PartnerA
     query = query.eq('status', status);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(100);
   if (error) {
     console.error('[Partner] listPartnerApplications failed:', error);
     return [];
