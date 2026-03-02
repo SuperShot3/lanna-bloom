@@ -103,7 +103,7 @@ export function Header({ lang }: { lang: Locale }) {
           </Link>
           {!isMobile && (
             <nav className="nav nav--desktop" aria-label="Main">
-              <NavItem href={homeHref} label={t.home} icon={<HomeIcon size={18} />} active={basePath === ''} variant="pill" />
+              <NavItem href={homeHref} label={t.home} icon={<HomeIcon size={18} />} active={basePath === ''} variant="pill" className="nav-item--home" />
               <NavItem href={catalogHref} label={t.catalog} active={basePath === '/catalog'} variant="pill" />
               <NavItem href={infoHref} label={t.information} active={basePath === '/info'} variant="pill" />
               <NavItem href={contactHref} label={t.contactUs} active={basePath === '/contact'} variant="pill" />
@@ -212,7 +212,7 @@ export function Header({ lang }: { lang: Locale }) {
             <span aria-hidden>×</span>
           </button>
           <nav className="mobile-menu-nav" aria-label="Main">
-            <NavItem href={homeHref} label={t.home} icon={<HomeIcon size={22} />} active={basePath === ''} variant="mobile" onClick={() => setMenuOpen(false)} />
+            <NavItem href={homeHref} label={t.home} icon={<HomeIcon size={22} />} active={basePath === ''} variant="mobile" onClick={() => setMenuOpen(false)} className="nav-item--home" />
             <NavItem href={catalogHref} label={t.catalog} active={basePath === '/catalog'} variant="mobile" onClick={() => setMenuOpen(false)} />
             <NavItem href={infoHref} label={t.information} active={basePath === '/info'} variant="mobile" onClick={() => setMenuOpen(false)} />
             <NavItem href={contactHref} label={t.contactUs} active={basePath === '/contact'} variant="mobile" onClick={() => setMenuOpen(false)} />
@@ -346,6 +346,9 @@ export function Header({ lang }: { lang: Locale }) {
         }
         :global(.nav-item__icon) svg {
           display: block;
+        }
+        :global(.nav-item--home .nav-item__icon) {
+          transform: translateY(-1.5px);
         }
         :global(.nav-item__label) {
           white-space: nowrap;
