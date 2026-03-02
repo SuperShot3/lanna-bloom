@@ -23,7 +23,7 @@ export default function HomePage({
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang as Locale} />
       </Suspense>
-      <ReviewsSection lang={lang as Locale} limit={6} />
+      <ReviewsSection lang={lang as Locale} />
       <HomeBottomCta lang={lang as Locale} />
       <StickyHomeCta lang={lang as Locale} />
     </>

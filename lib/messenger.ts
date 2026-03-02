@@ -122,23 +122,10 @@ function buildAddOnsSummaryForItem(
   addOns: CartOrderItem['addOns'],
   t: Record<string, string | number>
 ): string {
-  const lines: string[] = [];
-  if (addOns.cardType === 'beautiful') {
-    lines.push(String(t.addOnsSummaryCardBeautiful));
-  } else if (addOns.cardType === 'free') {
-    lines.push(String(t.addOnsSummaryCard).replace('{label}', String(t.cardFree)));
+  if (addOns.cardMessage?.trim()) {
+    return String(t.addOnsSummaryMessage).replace('{text}', addOns.cardMessage.trim());
   }
-  if (addOns.wrappingPreference === 'classic') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingClassic)));
-  } else if (addOns.wrappingPreference === 'premium') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingPremium)));
-  } else if (addOns.wrappingPreference === 'none') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingNone)));
-  }
-  if (addOns.cardMessage.trim()) {
-    lines.push(String(t.addOnsSummaryMessage).replace('{text}', addOns.cardMessage.trim()));
-  }
-  return lines.join('. ');
+  return '';
 }
 
 export function buildCartOrderMessage(

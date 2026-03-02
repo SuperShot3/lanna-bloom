@@ -104,6 +104,9 @@ export function ProductModerationClient({
           <Link href="/admin/partners/applications" className="admin-v2-btn admin-v2-btn-outline">
             Partners
           </Link>
+          <Link href="/admin/reviews" className="admin-v2-btn admin-v2-btn-outline">
+            Reviews
+          </Link>
           <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
             Log out
           </a>

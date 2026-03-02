@@ -64,19 +64,21 @@ export function ProductPageClient({
       </div>
       <div className="product-info">
         <h1 className="product-title">{name}</h1>
-        <p className="product-desc">{description}</p>
-        <div className="product-composition">
-          <h2 className="composition-heading">{compositionHeading}</h2>
-          <p className="composition-text">{compositionText}</p>
-        </div>
-        <p className="product-seasonal-disclaimer">
-          {translations[lang].product.seasonalDisclaimer}
-        </p>
         <ProductOrderBlock
           bouquet={bouquet}
           lang={lang}
           selectedImageUrl={selectedImageUrl}
         />
+        <div className="product-details-below">
+          <p className="product-desc">{description}</p>
+          <div className="product-composition">
+            <h2 className="composition-heading">{compositionHeading}</h2>
+            <p className="composition-text">{compositionText}</p>
+          </div>
+          <p className="product-seasonal-disclaimer">
+            {translations[lang].product.seasonalDisclaimer}
+          </p>
+        </div>
       </div>
     </>
   );

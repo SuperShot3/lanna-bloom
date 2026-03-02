@@ -78,3 +78,42 @@ export function getReviewStats(): { average: number; count: number } {
   const average = Math.round((sum / count) * 10) / 10; // 1 decimal
   return { average, count };
 }
+
+/**
+ * Returns all reviews (static + DB). Use in server components.
+ */
+export async function getAllReviewsAsync(): Promise<Review[]> {
+  const { getCustomerReviewsFromDb } = await import('@/lib/reviewsDb');
+  const staticReviews = getReviews();
+  const dbReviews = await getCustomerReviewsFromDb();
+  const merged = [...staticReviews, ...dbReviews];
+  return merged.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+}
+
+/**
+ * Returns featured reviews (static featured first, then newest DB), limited to `limit`.
+ */
+export async function getFeaturedReviewsAsync(limit = 6): Promise<Review[]> {
+  const all = await getAllReviewsAsync();
+  const featured = all.filter((r) => r.featured);
+  if (featured.length >= limit) return featured.slice(0, limit);
+  const rest = all.filter((r) => !r.featured).slice(0, limit - featured.length);
+  return [...featured, ...rest];
+}
+
+/**
+ * Returns aggregate stats including DB reviews.
+ */
+export async function getReviewStatsAsync(): Promise<{
+  average: number;
+  count: number;
+}> {
+  const reviews = await getAllReviewsAsync();
+  const count = reviews.length;
+  if (count === 0) return { average: 0, count: 0 };
+  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+  const average = Math.round((sum / count) * 10) / 10;
+  return { average, count };
+}

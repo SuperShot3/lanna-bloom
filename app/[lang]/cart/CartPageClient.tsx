@@ -9,11 +9,8 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type {
   OrderPayload,
-  OrderWrappingOption,
-  OrderCardType,
   ContactPreferenceOption,
 } from '@/lib/orders';
-import { CARD_BEAUTIFUL_PRICE_THB } from '@/components/AddOnsSection';
 import type { CartItem } from '@/contexts/CartContext';
 import {
   trackBeginCheckout,
@@ -30,70 +27,15 @@ import {
   computeReferralDiscount,
 } from '@/lib/referral';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
-import { OrderLookupSection } from '@/components/OrderLookupSection';
 
-function buildAddOnsSummaryForDisplay(
-  addOns: CartItem['addOns'],
-  t: Record<string, string | number>
-): string {
-  const lines: string[] = [];
-  if (addOns.cardType === 'beautiful') {
-    lines.push(String(t.addOnsSummaryCardBeautiful));
-  } else if (addOns.cardType === 'free') {
-    lines.push(String(t.addOnsSummaryCard).replace('{label}', String(t.cardFree)));
-  }
-  if (addOns.wrappingPreference === 'classic') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingClassic)));
-  } else if (addOns.wrappingPreference === 'premium') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingPremium)));
-  } else if (addOns.wrappingPreference === 'none') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingNone)));
-  }
-  if (addOns.cardMessage.trim()) {
-    lines.push(String(t.addOnsSummaryMessage).replace('{text}', addOns.cardMessage.trim()));
-  }
-  return lines.join('. ');
+/** Add-ons are not displayed on cart/checkout per UX. */
+function buildAddOnsSummaryForDisplay(): string {
+  return '';
 }
 
-/** Returns add-on lines for order summary (card, wrapping only). */
-function buildAddOnsSummaryLines(
-  addOns: CartItem['addOns'],
-  t: Record<string, string | number>
-): string[] {
-  const lines: string[] = [];
-  if (addOns.cardType === 'beautiful') {
-    lines.push(String(t.addOnsSummaryCardBeautiful));
-  }
-  if (addOns.wrappingPreference === 'classic') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingClassic)));
-  } else if (addOns.wrappingPreference === 'premium') {
-    lines.push(String(t.addOnsSummaryWrapping).replace('{label}', String(t.wrappingPremium)));
-  }
-  return lines;
-}
-
-function mapWrappingToOption(
-  pref: CartItem['addOns']['wrappingPreference']
-): OrderWrappingOption {
-  if (pref === 'classic') return 'standard';
-  if (pref === 'premium') return 'premium';
-  if (pref === 'none') return 'no paper';
-  return null;
-}
-
-function mapCardType(addOns: CartItem['addOns']): OrderCardType {
-  if (addOns.cardType === 'free') return 'free';
-  if (addOns.cardType === 'beautiful') return 'premium';
-  return null;
-}
-
-function mapWrappingToStripeOption(
-  pref: CartItem['addOns']['wrappingPreference']
-): 'standard' | 'premium' | 'no paper' | null {
-  if (pref === 'classic') return 'standard';
-  if (pref === 'premium') return 'premium';
-  if (pref === 'none') return 'no paper';
-  return null;
+/** Add-on lines for order summary — not displayed on checkout. */
+function buildAddOnsSummaryLines(): string[] {
+  return [];
 }
 
 /** Build identifiers-only payload for Stripe (no prices from client). */
@@ -116,24 +58,37 @@ function buildStripePayload(
       ? `${delivery.date} ${delivery.timeSlot}`
       : delivery.date || delivery.timeSlot || '';
 
-  const items = cartItems.map((item) => ({
-    itemType: item.itemType ?? 'bouquet',
-    bouquetId: item.bouquetId,
-    bouquetSlug: item.slug ?? undefined,
-    size: item.size.key ?? 'm',
-    addOns: {
-      cardType: item.addOns.cardType,
-      cardMessage: item.addOns.cardMessage?.trim() ?? '',
-      wrappingOption: mapWrappingToStripeOption(item.addOns.wrappingPreference),
-    },
-    imageUrl: item.imageUrl ?? undefined,
-  }));
+  const items: Array<{
+    itemType: 'bouquet' | 'product';
+    bouquetId: string;
+    bouquetSlug?: string;
+    size: string;
+    addOns: { cardType: null; cardMessage: string; wrappingOption: null };
+    imageUrl?: string;
+  }> = [];
+  for (const item of cartItems) {
+    const qty = item.quantity ?? 1;
+    const base = {
+      itemType: (item.itemType ?? 'bouquet') as 'bouquet' | 'product',
+      bouquetId: item.bouquetId,
+      bouquetSlug: item.slug ?? undefined,
+      size: item.size.key ?? 'm',
+      addOns: {
+        cardType: null,
+        cardMessage: item.addOns.cardMessage?.trim() ?? '',
+        wrappingOption: null,
+      },
+      imageUrl: item.imageUrl ?? undefined,
+    };
+    for (let i = 0; i < qty; i++) items.push(base);
+  }
 
   const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
   const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
-  const itemsTotal = cartItems.reduce((sum, item) => {
-    return sum + item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
-  }, 0);
+  const itemsTotal = cartItems.reduce(
+    (sum, item) => sum + item.size.price * (item.quantity ?? 1),
+    0
+  );
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
   const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
@@ -283,31 +238,32 @@ function buildOrderPayload(
     ? `${delivery.date} ${delivery.timeSlot}`
     : delivery.date || delivery.timeSlot || '';
 
-  const orderItems = cartItems.map((item) => {
-    const bouquetTitle = lang === 'th' ? item.nameTh : item.nameEn;
-    const itemPrice = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
-    return {
-      bouquetId: item.bouquetId,
-      bouquetTitle,
-      size: item.size.label,
-      price: itemPrice,
-      addOns: {
-        cardType: mapCardType(item.addOns),
-        cardMessage: item.addOns.cardMessage?.trim() ?? '',
-        wrappingOption: mapWrappingToOption(item.addOns.wrappingPreference),
-      },
-      imageUrl: item.imageUrl ?? undefined,
-      bouquetSlug: item.slug ?? undefined,
-    };
-  });
-
-  let itemsTotal = 0;
+  const orderItems: OrderPayload['items'] = [];
   for (const item of cartItems) {
-    itemsTotal += item.size.price;
-    if (item.addOns.cardType === 'beautiful') {
-      itemsTotal += CARD_BEAUTIFUL_PRICE_THB;
+    const qty = item.quantity ?? 1;
+    const bouquetTitle = lang === 'th' ? item.nameTh : item.nameEn;
+    const itemPrice = item.size.price;
+    for (let i = 0; i < qty; i++) {
+      orderItems.push({
+        bouquetId: item.bouquetId,
+        bouquetTitle,
+        size: item.size.label,
+        price: itemPrice,
+        addOns: {
+          cardType: null,
+          cardMessage: item.addOns.cardMessage?.trim() ?? '',
+          wrappingOption: null,
+        },
+        imageUrl: item.imageUrl ?? undefined,
+        bouquetSlug: item.slug ?? undefined,
+      });
     }
   }
+
+  const itemsTotal = cartItems.reduce(
+    (sum, item) => sum + item.size.price * (item.quantity ?? 1),
+    0
+  );
   const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
   const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
@@ -346,33 +302,26 @@ function buildOrderPayload(
 }
 
 function cartItemsToAnalytics(items: CartItem[], lang: Locale): AnalyticsItem[] {
-  return items.map((item, index) => {
-    const itemPrice =
-      item.size.price +
-      (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
-    return {
+  return items.flatMap((item, index) => {
+    const qty = item.quantity ?? 1;
+    return Array.from({ length: qty }, (_, i) => ({
       item_id: item.bouquetId,
       item_name: lang === 'th' ? item.nameTh : item.nameEn,
-      price: itemPrice,
+      price: item.size.price,
       quantity: 1,
-      index,
+      index: index + i,
       item_category: undefined,
       item_variant: item.size.label,
-    };
+    }));
   });
 }
 
 function cartValue(items: CartItem[]): number {
-  let v = 0;
-  for (const item of items) {
-    v += item.size.price;
-    if (item.addOns.cardType === 'beautiful') v += CARD_BEAUTIFUL_PRICE_THB;
-  }
-  return v;
+  return items.reduce((v, item) => v + item.size.price * (item.quantity ?? 1), 0);
 }
 
 export function CartPageClient({ lang }: { lang: Locale }) {
-  const { items, removeItem, clearCart } = useCart();
+  const { items, count: totalItemCount, removeItem, clearCart } = useCart();
   const beginCheckoutFiredRef = useRef(false);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
@@ -767,7 +716,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             <span className="cart-page-count">{(t.cartItemsCount ?? '{count} items').replace('{count}', '0')}</span>
           </div>
 
-          <OrderLookupSection lang={lang} emptyCart />
+          <p className="cart-empty-track-link">
+            <Link href={`/${lang}/track-order`}>
+              {(t as { searchMyOrder?: string; trackOrder?: string }).searchMyOrder ??
+                (t as { searchMyOrder?: string; trackOrder?: string }).trackOrder ??
+                'Track order'}
+            </Link>
+          </p>
 
           <p className="cart-footer-note">{(t.cartFooterNote ?? 'Need help? Contact us via LINE or WhatsApp.')}</p>
         </div>
@@ -793,6 +748,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             font-size: 13px;
             color: var(--text-muted);
             font-weight: 400;
+          }
+          .cart-empty-track-link {
+            text-align: center;
+            margin: 0 0 24px;
+          }
+          .cart-empty-track-link a {
+            color: var(--accent);
+            font-weight: 500;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+          }
+          .cart-empty-track-link a:hover {
+            opacity: 0.9;
           }
           .cart-footer-note {
             text-align: center;
@@ -968,7 +936,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           <header className="cart-mobile-header">
             <h1 className="cart-mobile-title">{lang === 'th' ? 'ชำระเงิน' : 'Checkout'}</h1>
             <p className="cart-mobile-subtitle">
-              {items.length} {lang === 'th' ? 'รายการ' : 'item(s)'} — ฿{grandTotalVal.toLocaleString()}
+              {totalItemCount} {lang === 'th' ? 'รายการ' : 'item(s)'} — ฿{grandTotalVal.toLocaleString()}
             </p>
           </header>
           <div className="cart-mobile-accordion">
@@ -988,7 +956,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <div className="cart-list cart-mobile-list">
                     {items.map((item, index) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
-                      const addOnsSummary = buildAddOnsSummaryForDisplay(item.addOns, tBuyNow as Record<string, string | number>);
+                      const addOnsSummary = buildAddOnsSummaryForDisplay();
                       return (
                         <div key={`${item.bouquetId}-${index}`} className="cart-item">
                           {item.imageUrl && (
@@ -1001,7 +969,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                             <p className="cart-item-size">
                               {item.itemType === 'product'
                                 ? `฿${item.size.price.toLocaleString()}`
-                                : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
+                                : (item.quantity ?? 1) > 1
+                                  ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
+                                  : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
                             </p>
                             {addOnsSummary && <p className="cart-item-addons">{addOnsSummary}</p>}
                           </div>
@@ -1010,10 +980,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                             className="cart-item-remove"
                             onClick={() => {
                               const removed = items[index];
+                              const lineVal = removed.size.price * (removed.quantity ?? 1);
                               trackRemoveFromCart({
                                 currency: 'THB',
-                                value: removed.size.price + (removed.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0),
-                                items: [{ item_id: removed.bouquetId, item_name: lang === 'th' ? removed.nameTh : removed.nameEn, price: removed.size.price + (removed.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0), quantity: 1, index: 0, item_variant: removed.size.label }],
+                                value: lineVal,
+                                items: [{ item_id: removed.bouquetId, item_name: lang === 'th' ? removed.nameTh : removed.nameEn, price: removed.size.price, quantity: removed.quantity ?? 1, index: 0, item_variant: removed.size.label }],
                               });
                               removeItem(index);
                             }}
@@ -1029,10 +1000,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
                     {items.map((item, i) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
-                      const lineTotal = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+                      const qty = item.quantity ?? 1;
+                      const lineTotal = item.size.price * qty;
+                      const itemLabel = item.itemType === 'product' ? name : qty > 1 ? `${name} — ${item.size.label} × ${qty}` : `${name} — ${item.size.label}`;
                       return (
                         <div key={`mob-sum-${item.bouquetId}-${i}`} className="cart-order-summary-row cart-order-summary-item">
-                          <span>{item.itemType === 'product' ? name : `${name} — ${item.size.label}`}</span>
+                          <span>{itemLabel}</span>
                           <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
                         </div>
                       );
@@ -1175,77 +1148,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </div>
         </div>
         <div className="cart-desktop-view">
-        <h1 className="cart-page-title">{t.yourCart}</h1>
         <div className="cart-desktop-layout">
         <div className="cart-desktop-column-left">
-        <div className="cart-list">
-          {items.map((item, index) => {
-            const name = lang === 'th' ? item.nameTh : item.nameEn;
-            const addOnsSummary = buildAddOnsSummaryForDisplay(
-              item.addOns,
-              tBuyNow as Record<string, string | number>
-            );
-            return (
-              <div key={`${item.bouquetId}-${index}`} className="cart-item">
-                {item.imageUrl && (
-                  <div className="cart-item-image-wrap">
-                    <Image
-                      src={item.imageUrl}
-                      alt=""
-                      width={80}
-                      height={80}
-                      className="cart-item-image"
-                      sizes="80px"
-                    />
-                  </div>
-                )}
-                <div className="cart-item-main">
-                  <h3 className="cart-item-name">{name}</h3>
-                  <p className="cart-item-size">
-                    {item.itemType === 'product'
-                      ? `฿${item.size.price.toLocaleString()}`
-                      : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
-                  </p>
-                  {addOnsSummary && (
-                    <p className="cart-item-addons">{addOnsSummary}</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="cart-item-remove"
-                  onClick={() => {
-                    const removed = items[index];
-                    const itemPrice =
-                      removed.size.price +
-                      (removed.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
-                    trackRemoveFromCart({
-                      currency: 'THB',
-                      value: itemPrice,
-                      items: [
-                        {
-                          item_id: removed.bouquetId,
-                          item_name: lang === 'th' ? removed.nameTh : removed.nameEn,
-                          price: itemPrice,
-                          quantity: 1,
-                          index: 0,
-                          item_variant: removed.size.label,
-                        },
-                      ],
-                    });
-                    removeItem(index);
-                  }}
-                  aria-label={t.remove}
-                >
-                  {t.remove}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        <section className="cart-delivery cart-desktop-delivery" aria-labelledby="cart-delivery-heading">
-          <h2 id="cart-delivery-heading" className="cart-section-title">
-            {t.deliveryAndContact}
-          </h2>
+        <section className="cart-delivery cart-desktop-delivery">
           <DeliveryForm
             lang={lang}
             value={delivery}
@@ -1298,8 +1203,70 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </section>
         </div>
         <div className="cart-desktop-column-right">
+        <aside className="cart-sticky-sidebar">
+        <div className="cart-items-and-summary">
+        <div className="cart-list">
+          {items.map((item, index) => {
+            const name = lang === 'th' ? item.nameTh : item.nameEn;
+            const addOnsSummary = buildAddOnsSummaryForDisplay();
+            return (
+              <div key={`${item.bouquetId}-${index}`} className="cart-item">
+                {item.imageUrl && (
+                  <div className="cart-item-image-wrap">
+                    <Image
+                      src={item.imageUrl}
+                      alt=""
+                      width={80}
+                      height={80}
+                      className="cart-item-image"
+                      sizes="80px"
+                    />
+                  </div>
+                )}
+                <div className="cart-item-main">
+                  <h3 className="cart-item-name">{name}</h3>
+                  <p className="cart-item-size">
+                    {item.itemType === 'product'
+                      ? `฿${item.size.price.toLocaleString()}`
+                      : (item.quantity ?? 1) > 1
+                        ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
+                        : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
+                  </p>
+                  {addOnsSummary && (
+                    <p className="cart-item-addons">{addOnsSummary}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="cart-item-remove"
+                  onClick={() => {
+                    const removed = items[index];
+                    const lineVal = removed.size.price * (removed.quantity ?? 1);
+                    trackRemoveFromCart({
+                      currency: 'THB',
+                      value: lineVal,
+                      items: [
+                        {
+                          item_id: removed.bouquetId,
+                          item_name: lang === 'th' ? removed.nameTh : removed.nameEn,
+                          price: removed.size.price,
+                          quantity: removed.quantity ?? 1,
+                          index: 0,
+                          item_variant: removed.size.label,
+                        },
+                      ],
+                    });
+                    removeItem(index);
+                  }}
+                  aria-label={t.remove}
+                >
+                  {t.remove}
+                </button>
+              </div>
+            );
+          })}
+        </div>
         {(() => {
-          const tBuyNowRaw = tBuyNow as Record<string, string | number>;
           const itemLineFmt = (t.itemLineWithQty ?? t.itemLine ?? '{name} — {size} x{qty} — ฿{lineTotal}') as string;
           return (
             <div className="cart-summary-section">
@@ -1307,8 +1274,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
                 {items.map((item, i) => {
                   const name = lang === 'th' ? item.nameTh : item.nameEn;
-                  const qty = 1;
-                  const lineTotal = item.size.price + (item.addOns.cardType === 'beautiful' ? CARD_BEAUTIFUL_PRICE_THB : 0);
+                  const qty = item.quantity ?? 1;
+                  const lineTotal = item.size.price * qty;
                   const priceStr = lineTotal.toLocaleString();
                   const sizePart = item.itemType === 'product' ? '—' : item.size.label;
                   const itemLine = itemLineFmt
@@ -1317,7 +1284,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     .replace('{qty}', String(qty))
                     .replace('{lineTotal}', priceStr)
                     .replace('{price}', priceStr);
-                  const addOnLines = buildAddOnsSummaryLines(item.addOns, tBuyNowRaw);
+                  const addOnLines = buildAddOnsSummaryLines();
                   return (
                     <div key={`summary-${item.bouquetId}-${i}`}>
                       <div className="cart-order-summary-row cart-order-summary-item">
@@ -1364,19 +1331,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           );
         })()}
         </div>
+        </aside>
         </div>
         </div>
-        <div className="cart-order-lookup-wrapper">
-          <OrderLookupSection lang={lang} />
         </div>
       </div>
       <style jsx>{`
         .cart-page {
-          padding: 24px 0 48px;
+          padding: 12px 0 48px;
         }
-        .cart-order-lookup-wrapper {
-          margin-top: 32px;
-          max-width: 560px;
+        .cart-page-header {
+          display: flex;
+          align-items: baseline;
+          gap: 10px;
+          margin-bottom: 28px;
         }
         .cart-page-title {
           font-size: 1.5rem;
@@ -1384,26 +1352,130 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           color: var(--text);
           margin: 0 0 20px;
         }
+        .cart-page-header .cart-page-title {
+          margin: 0;
+        }
+        .cart-page-count {
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--text-muted);
+        }
         .cart-desktop-layout {
           display: grid;
-          grid-template-columns: 1fr 360px;
+          grid-template-columns: 1fr 388px;
           gap: 32px;
           align-items: start;
+          overflow: visible;
         }
-        @media (max-width: 1024px) {
-          .cart-desktop-layout {
-            grid-template-columns: 1fr;
-          }
+        .cart-desktop-view {
+          overflow: visible;
         }
         .cart-desktop-column-right {
-          position: sticky;
-          top: 24px;
+          align-self: start;
+        }
+        .cart-sticky-sidebar {
+          position: fixed;
+          top: 78px;
+          right: max(24px, calc((100vw - 1200px) / 2 + 24px));
+          width: 388px;
+          max-width: calc(100vw - 48px);
+          z-index: 10;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 16px;
+          box-shadow: var(--shadow);
+          box-sizing: border-box;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
+          word-break: break-word;
+          min-width: 0;
+        }
+        .cart-items-and-summary {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
         .cart-desktop-column-right .cart-summary-section {
           flex-direction: column;
         }
         .cart-desktop-column-right .referral-code-column {
           max-width: 100%;
+        }
+        .cart-sticky-sidebar .cart-list {
+          gap: 12px;
+          margin-bottom: 0;
+        }
+        .cart-sticky-sidebar .cart-item {
+          padding: 10px 12px;
+          background: transparent;
+          border: none;
+          box-shadow: none;
+          border-radius: 0;
+          border-bottom: 1px solid var(--border);
+          gap: 12px;
+        }
+        .cart-sticky-sidebar .cart-item:last-child {
+          border-bottom: none;
+        }
+        .cart-sticky-sidebar .cart-order-summary {
+          padding: 0;
+          background: transparent;
+          border: none;
+          border-radius: 0;
+        }
+        .cart-sticky-sidebar .cart-summary-section {
+          gap: 12px;
+          margin-bottom: 0;
+        }
+        .cart-sticky-sidebar .cart-order-summary-title {
+          margin: 0 0 8px;
+          font-size: 0.9rem;
+        }
+        .cart-sticky-sidebar .cart-order-summary-row {
+          margin-bottom: 4px;
+          font-size: 0.875rem;
+        }
+        .cart-sticky-sidebar .cart-order-summary-total {
+          margin-top: 8px;
+          padding-top: 8px;
+        }
+        .cart-sticky-sidebar .cart-order-summary-note {
+          margin: 6px 0 0;
+          font-size: 0.7rem;
+        }
+        .cart-sticky-sidebar .referral-code-column {
+          margin-top: 4px;
+        }
+        .cart-sticky-sidebar .cart-item-image-wrap {
+          width: 56px;
+          height: 56px;
+        }
+        .cart-sticky-sidebar .cart-item-image {
+          width: 56px !important;
+          height: 56px !important;
+        }
+        .cart-sticky-sidebar .cart-item-name {
+          font-size: 0.9rem;
+          overflow-wrap: break-word;
+          word-break: break-word;
+        }
+        .cart-sticky-sidebar .cart-item-size {
+          font-size: 0.8rem;
+          overflow-wrap: break-word;
+          word-break: break-word;
+        }
+        .cart-sticky-sidebar .cart-item-main {
+          min-width: 0;
+        }
+        .cart-sticky-sidebar .cart-order-summary-item .cart-order-summary-item-name {
+          overflow-wrap: break-word;
+          word-break: break-word;
+          white-space: normal;
+          min-width: 0;
+        }
+        .cart-sticky-sidebar .cart-order-summary-row {
+          min-width: 0;
         }
         .cart-list {
           display: flex;
@@ -1572,6 +1644,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-delivery {
           margin-bottom: 32px;
+        }
+        .cart-delivery :global(.buy-now-form) {
+          margin-top: 0;
         }
         .cart-section-title {
           font-size: 1.1rem;
@@ -1754,12 +1829,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           margin: 0;
           accent-color: var(--accent);
         }
-        @media (min-width: 769px) {
+        @media (min-width: 1201px) {
           .cart-mobile-view {
             display: none !important;
           }
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1200px) {
           .cart-desktop-view {
             display: none !important;
           }
@@ -1988,7 +2063,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       `}</style>
       <style jsx global>{`
         /* Desktop: contact form inside cart-delivery (rendered via DeliveryForm step3Content) - styled-jsx scope doesn't reach here */
-        @media (min-width: 769px) {
+        @media (min-width: 1201px) {
           .cart-delivery .cart-place-order {
             margin-top: 16px;
             padding: 20px;
@@ -2132,7 +2207,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             color: #b91c1c;
           }
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1200px) {
           .cart-mobile-contact-fields input.cart-contact-input,
           .cart-mobile-contact-fields .cart-phone-row input {
             width: 100% !important;

@@ -130,6 +130,9 @@ export function PartnerApplicationsClient({
           <Link href="/admin" className="admin-v2-btn admin-v2-btn-outline">
             Back
           </Link>
+          <Link href="/admin/reviews" className="admin-v2-btn admin-v2-btn-outline">
+            Reviews
+          </Link>
           <Link href="/admin/moderation/products" className="admin-v2-btn admin-v2-btn-outline">
             Products
           </Link>

@@ -20,6 +20,7 @@ export function Header({ lang }: { lang: Locale }) {
   const cartHref = `/${lang}/cart`;
   const contactHref = `/${lang}/contact`;
   const infoHref = `/${lang}/info`;
+  const trackOrderHref = `/${lang}/track-order`;
   const t = translations[lang].nav;
   const { count: cartCount } = useCart();
 
@@ -114,6 +115,12 @@ export function Header({ lang }: { lang: Locale }) {
                 className={basePath === '/info' ? 'nav-link active' : 'nav-link'}
               >
                 {t.information}
+              </Link>
+              <Link
+                href={trackOrderHref}
+                className={basePath === '/track-order' ? 'nav-link active' : 'nav-link'}
+              >
+                {t.trackOrder}
               </Link>
               <Link
                 href={contactHref}
@@ -246,6 +253,13 @@ export function Header({ lang }: { lang: Locale }) {
               onClick={() => setMenuOpen(false)}
             >
               {t.information}
+            </Link>
+            <Link
+              href={trackOrderHref}
+              className={`mobile-menu-link ${basePath === '/track-order' ? 'active' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {t.trackOrder}
             </Link>
             <Link
               href={contactHref}

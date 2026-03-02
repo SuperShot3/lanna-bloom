@@ -1,14 +1,10 @@
 'use client';
 
-import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
-export function PaymentBadges({ lang }: { lang: Locale }) {
-  const label = translations[lang].acceptedPayments ?? 'Accepted payments';
-
+export function PaymentBadges({ lang, compact }: { lang: Locale; compact?: boolean }) {
   return (
-    <div className="payment-badges" aria-label="Accepted payment methods">
-      <span className="payment-badges-label">{label}</span>
+    <div className={`payment-badges ${compact ? 'payment-badges-compact' : ''}`} aria-label="Accepted payment methods">
       <div className="payment-badges-row">
         <img
           src="/payments/stripe-cc-payments1.png"
@@ -30,14 +26,8 @@ export function PaymentBadges({ lang }: { lang: Locale }) {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
           width: 100%;
           max-width: 100%;
-        }
-        .payment-badges-label {
-          font-size: 12px;
-          color: var(--text-muted);
-          opacity: 0.85;
         }
         .payment-badges-row {
           display: flex;
@@ -60,6 +50,15 @@ export function PaymentBadges({ lang }: { lang: Locale }) {
         .payment-badges-thaiqr {
           height: 24px;
           width: auto;
+        }
+        .payment-badges-compact .payment-badges-row {
+          min-height: 0;
+        }
+        .payment-badges-compact .payment-badges-icon,
+        .payment-badges-compact .payment-badges-single,
+        .payment-badges-compact .payment-badges-thaiqr {
+          width: 40px;
+          height: 40px;
         }
         @media (max-width: 480px) {
           .payment-badges-row {

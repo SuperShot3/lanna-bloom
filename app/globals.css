@@ -70,7 +70,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-x: clip; /* Prevent horizontal scroll; clip allows position:sticky to work */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -84,7 +84,7 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-x: clip; /* Prevent horizontal scroll; clip allows position:sticky to work */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -119,14 +119,14 @@ body.loading .loading-screen {
 .main-content-wrap {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip allows position:sticky to work in descendants */
   box-sizing: border-box;
 }
 
 main {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip allows position:sticky to work in descendants */
   box-sizing: border-box;
 }
 
@@ -391,6 +391,19 @@ a.filter-pill--active:hover {
 /* Reviews page */
 .reviews-page {
   padding: var(--space-6) 0 var(--space-12);
+}
+
+/* Track order page */
+.track-order-page {
+  padding: 32px 0 64px;
+  min-height: 50vh;
+}
+.track-order-title {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: var(--text);
+  margin: 0 0 24px;
 }
 
 /* Contact page — partner link (global override for styled-jsx) */
@@ -705,6 +718,11 @@ a.filter-pill--active:hover {
   font-weight: 600;
   margin: 0 0 var(--space-3);
   color: var(--text);
+}
+.product-details-below {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
 }
 .product-desc {
   font-size: 1rem;

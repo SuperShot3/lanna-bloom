@@ -25,12 +25,15 @@ export interface CartItem {
   imageUrl?: string;
   size: BouquetSize;
   addOns: AddOnsValues;
+  /** Number of units (default 1 for backward compat). */
+  quantity?: number;
 }
 
 interface CartContextValue {
   items: CartItem[];
+  /** Total number of units across all items. */
   count: number;
-  addItem: (item: CartItem) => void;
+  addItem: (item: CartItem, quantity?: number) => void;
   removeItem: (index: number) => void;
   clearCart: () => void;
 }
@@ -72,8 +75,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveToStorage(items);
   }, [items, hydrated]);
 
-  const addItem = useCallback((item: CartItem) => {
-    setItems((prev) => [...prev, item]);
+  const addItem = useCallback((item: CartItem, quantity: number = 1) => {
+    const qty = Math.max(1, Math.floor(quantity));
+    const itemWithQty = { ...item, quantity: item.quantity ?? 1 };
+    setItems((prev) => {
+      const matchIndex = prev.findIndex(
+        (p) =>
+          p.bouquetId === item.bouquetId &&
+          p.size.key === item.size.key &&
+          (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim()
+      );
+      if (matchIndex >= 0) {
+        const next = [...prev];
+        const existing = next[matchIndex];
+        next[matchIndex] = {
+          ...existing,
+          quantity: (existing.quantity ?? 1) + qty,
+        };
+        return next;
+      }
+      return [...prev, { ...itemWithQty, quantity: qty }];
+    });
   }, []);
 
   const removeItem = useCallback((index: number) => {
@@ -87,7 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CartContextValue>(
     () => ({
       items,
-      count: items.length,
+      count: items.reduce((sum, i) => sum + (i.quantity ?? 1), 0),
       addItem,
       removeItem,
       clearCart,

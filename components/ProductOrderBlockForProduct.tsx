@@ -20,6 +20,7 @@ export function ProductOrderBlockForProduct({
   lang: Locale;
   selectedImageUrl?: string | null;
 }) {
+  const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
   const t = translations[lang].cart;
@@ -28,6 +29,7 @@ export function ProductOrderBlockForProduct({
   const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
 
   const handleAddToCart = () => {
+    const qty = Math.max(1, Math.floor(quantity));
     const syntheticSize = {
       key: 'm' as const,
       label: '—',
@@ -36,25 +38,28 @@ export function ProductOrderBlockForProduct({
       preparationTime: undefined as number | undefined,
       availability: true,
     };
-    addItem({
-      itemType: 'product',
-      bouquetId: product.id,
-      slug: product.slug,
-      nameEn: product.nameEn,
-      nameTh: product.nameTh ?? product.nameEn,
-      imageUrl: selectedImageUrl ?? product.images?.[0],
-      size: syntheticSize,
-      addOns: getDefaultAddOns(),
-    });
+    addItem(
+      {
+        itemType: 'product',
+        bouquetId: product.id,
+        slug: product.slug,
+        nameEn: product.nameEn,
+        nameTh: product.nameTh ?? product.nameEn,
+        imageUrl: selectedImageUrl ?? product.images?.[0],
+        size: syntheticSize,
+        addOns: getDefaultAddOns(),
+      },
+      qty
+    );
     trackAddToCart({
       currency: 'THB',
-      value: finalPrice,
+      value: finalPrice * qty,
       items: [
         {
           item_id: product.id,
           item_name: name,
           price: finalPrice,
-          quantity: 1,
+          quantity: qty,
           index: 0,
           item_category: product.category,
         },
@@ -80,6 +85,29 @@ export function ProductOrderBlockForProduct({
         </div>
       ) : (
         <>
+          <div className="order-qty-row">
+            <span className="order-qty-label">{tBuyNow.quantity ?? 'Quantity'}</span>
+            <div className="order-qty-control">
+              <button
+                type="button"
+                className="order-qty-btn"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                aria-label="Decrease quantity"
+              >
+                −
+              </button>
+              <span className="order-qty-value">{quantity}</span>
+              <button
+                type="button"
+                className="order-qty-btn"
+                onClick={() => setQuantity((q) => q + 1)}
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+            <span className="order-qty-price">฿{(finalPrice * quantity).toLocaleString()}</span>
+          </div>
           <TrustBadges lang={lang} />
           <button
             type="button"
@@ -98,6 +126,50 @@ export function ProductOrderBlockForProduct({
           margin: 0 0 16px;
           text-transform: uppercase;
           letter-spacing: 0.02em;
+        }
+        .order-qty-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 16px;
+          flex-wrap: wrap;
+        }
+        .order-qty-label {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--text-muted);
+        }
+        .order-qty-control {
+          display: flex;
+          align-items: center;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+        }
+        .order-qty-btn {
+          width: 40px;
+          height: 40px;
+          padding: 0;
+          border: none;
+          background: var(--surface);
+          color: var(--text);
+          font-size: 1.2rem;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .order-qty-btn:hover {
+          background: var(--pastel-cream);
+        }
+        .order-qty-value {
+          width: 44px;
+          text-align: center;
+          font-weight: 600;
+          font-size: 0.95rem;
+        }
+        .order-qty-price {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--accent);
         }
         .order-add-to-cart-btn {
           margin-top: 16px;

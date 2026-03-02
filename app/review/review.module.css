@@ -1,0 +1,156 @@
+.reviewPage {
+  min-height: 100vh;
+  padding: 48px 0 64px;
+  background: var(--bg);
+}
+
+.reviewHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.reviewHomeLink {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 0.2s;
+}
+
+.reviewHomeLink:hover {
+  color: var(--text);
+}
+
+.reviewTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.reviewSubtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.reviewForm {
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+
+.reviewFormField {
+  margin-bottom: 20px;
+}
+
+.reviewFormLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.reviewFormInput {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 1rem;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.reviewFormInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.reviewFormInput::placeholder {
+  color: var(--text-muted);
+}
+
+.reviewFormInput:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.reviewFormTextarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.reviewFormError {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  margin: 0 0 16px;
+}
+
+.reviewFormSubmit {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid #a88b5c;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.reviewFormSubmit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(45, 42, 38, 0.15);
+}
+
+.reviewFormSubmit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.reviewSuccess {
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 40px 28px;
+  box-shadow: var(--shadow);
+}
+
+.reviewSuccessMessage {
+  font-size: 1.1rem;
+  color: var(--text);
+  margin: 0 0 24px;
+}
+
+.reviewSuccessLink {
+  display: inline-block;
+  padding: 12px 24px;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.reviewSuccessLink:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}

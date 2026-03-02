@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
@@ -52,10 +53,10 @@ export function TrustBadges({
     refundPolicy: 'Refund & replacement policy',
   };
 
-  const items: { icon: React.ReactNode; text: string; href?: string }[] = [];
+  const items: { icon: React.ReactNode; text: string; href?: string; external?: boolean }[] = [];
   if (sameDayDelivery) items.push({ icon: ICON_TICK, text: t.sameDayDelivery });
   if (securePayments) items.push({ icon: ICON_SHIELD, text: t.securePayments });
-  if (realReviews) items.push({ icon: ICON_STAR, text: t.realReviews, href: `/${lang}/reviews` });
+  if (realReviews) items.push({ icon: ICON_STAR, text: t.realReviews, href: GOOGLE_PLACE_URL, external: true });
   if (refundPolicy) items.push({ icon: ICON_REFUND, text: t.refundPolicy, href: `/${lang}/refund-replacement` });
 
   if (items.length === 0) return null;
@@ -68,9 +69,15 @@ export function TrustBadges({
             {item.icon}
           </span>
           {item.href ? (
-            <Link href={item.href} className="trust-badges-link">
-              {item.text}
-            </Link>
+            item.external ? (
+              <a href={item.href} target="_blank" rel="noopener noreferrer" className="trust-badges-link">
+                {item.text}
+              </a>
+            ) : (
+              <Link href={item.href} className="trust-badges-link">
+                {item.text}
+              </Link>
+            )
           ) : (
             <span className="trust-badges-text">{item.text}</span>
           )}
