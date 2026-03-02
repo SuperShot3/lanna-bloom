@@ -23,9 +23,6 @@ export async function getCustomerReviewsFromDb(): Promise<Review[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[reviewsDb] fetch error:', error.message, '- Run migrations: npx supabase db push');
-    }
     return [];
   }
 

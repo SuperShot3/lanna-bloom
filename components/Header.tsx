@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * Header refactor: All nav items use NavItem component with same DOM structure.
+ * Root cause of icon+text wrapping: inconsistent markup (Home had icon+text, others text-only;
+ * header-action-link used different classes). Fix: unified NavItem with flex, align-items:center,
+ * white-space:nowrap on label. No internal scroll; responsive via hamburger at 600px.
+ */
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,7 +13,8 @@ import { usePathname } from 'next/navigation';
 import { Locale, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { CartIcon, HomeIcon } from './icons';
+import { NavItem } from './NavItem';
+import { CartIcon, HomeIcon, SearchIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 600;
@@ -96,38 +103,10 @@ export function Header({ lang }: { lang: Locale }) {
           </Link>
           {!isMobile && (
             <nav className="nav nav--desktop" aria-label="Main">
-              <Link
-                href={homeHref}
-                className={`nav-link nav-link--icon ${basePath === '' ? 'active' : ''}`}
-                aria-label={t.home}
-                title={t.home}
-              >
-                <HomeIcon size={20} className="nav-link-icon" />
-              </Link>
-              <Link
-                href={catalogHref}
-                className={basePath === '/catalog' ? 'nav-link active' : 'nav-link'}
-              >
-                {t.catalog}
-              </Link>
-              <Link
-                href={infoHref}
-                className={basePath === '/info' ? 'nav-link active' : 'nav-link'}
-              >
-                {t.information}
-              </Link>
-              <Link
-                href={trackOrderHref}
-                className={basePath === '/track-order' ? 'nav-link active' : 'nav-link'}
-              >
-                {t.trackOrder}
-              </Link>
-              <Link
-                href={contactHref}
-                className={basePath === '/contact' ? 'nav-link active' : 'nav-link'}
-              >
-                {t.contactUs}
-              </Link>
+              <NavItem href={homeHref} label={t.home} icon={<HomeIcon size={18} />} active={basePath === ''} variant="pill" />
+              <NavItem href={catalogHref} label={t.catalog} active={basePath === '/catalog'} variant="pill" />
+              <NavItem href={infoHref} label={t.information} active={basePath === '/info'} variant="pill" />
+              <NavItem href={contactHref} label={t.contactUs} active={basePath === '/contact'} variant="pill" />
             </nav>
           )}
           {showActions && (
@@ -148,6 +127,7 @@ export function Header({ lang }: { lang: Locale }) {
                   )}
                 </span>
               </Link>
+              <NavItem href={trackOrderHref} label={t.trackOrder} icon={<SearchIcon size={18} />} active={basePath === '/track-order'} variant="action" />
             </div>
           )}
           {isMobile && (
@@ -168,6 +148,7 @@ export function Header({ lang }: { lang: Locale }) {
                   )}
                 </span>
               </Link>
+              <NavItem href={trackOrderHref} label={t.trackOrder} icon={<SearchIcon size={18} />} active={basePath === '/track-order'} variant="action" className="nav-item--mobile-compact" />
               <button
                 type="button"
                 className="burger"
@@ -231,50 +212,21 @@ export function Header({ lang }: { lang: Locale }) {
             <span aria-hidden>×</span>
           </button>
           <nav className="mobile-menu-nav" aria-label="Main">
-            <Link
-              href={homeHref}
-              className={`mobile-menu-link mobile-menu-link--icon ${basePath === '' ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-              aria-label={t.home}
-              title={t.home}
-            >
-              <HomeIcon size={22} className="mobile-menu-link-icon" />
-            </Link>
-            <Link
-              href={catalogHref}
-              className={`mobile-menu-link ${basePath === '/catalog' ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {t.catalog}
-            </Link>
-            <Link
-              href={infoHref}
-              className={`mobile-menu-link ${basePath === '/info' ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {t.information}
-            </Link>
-            <Link
-              href={trackOrderHref}
-              className={`mobile-menu-link ${basePath === '/track-order' ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {t.trackOrder}
-            </Link>
-            <Link
-              href={contactHref}
-              className={`mobile-menu-link ${basePath === '/contact' ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {t.contactUs}
-            </Link>
+            <NavItem href={homeHref} label={t.home} icon={<HomeIcon size={22} />} active={basePath === ''} variant="mobile" onClick={() => setMenuOpen(false)} />
+            <NavItem href={catalogHref} label={t.catalog} active={basePath === '/catalog'} variant="mobile" onClick={() => setMenuOpen(false)} />
+            <NavItem href={infoHref} label={t.information} active={basePath === '/info'} variant="mobile" onClick={() => setMenuOpen(false)} />
+            <NavItem href={contactHref} label={t.contactUs} active={basePath === '/contact'} variant="mobile" onClick={() => setMenuOpen(false)} />
           </nav>
         </div>
       </div>
       )}
 
       <style jsx>{`
+        /* Tweak header icons & pills here: */
         .header {
+          --header-icon-offset-y: 0px; /* e.g. 2px or 4px to nudge icons down */
+          --header-pill-bg: #ebe6e0; /* darker bg for Home/Track order - try #e8e2db or var(--pastel-cream) for lighter */
+          --header-pill-bg-hover: #e0d9d0;
           position: sticky;
           top: 0;
           left: var(--visual-viewport-offset-left, 0);
@@ -300,6 +252,7 @@ export function Header({ lang }: { lang: Locale }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          flex-wrap: nowrap;
           gap: 24px;
           padding: 0 24px;
           height: 64px;
@@ -355,49 +308,119 @@ export function Header({ lang }: { lang: Locale }) {
         .nav--desktop {
           display: flex;
           align-items: center;
+          flex-wrap: nowrap;
           gap: 8px;
           flex: 1;
           justify-content: center;
           margin: 0 24px;
+          min-width: 0;
         }
-        .nav-link {
-          display: inline-flex;
+        /* NavItem: unified structure for all nav links. Root cause of wrap: inconsistent DOM + missing nowrap. */
+        :global(.nav-item) {
+          display: flex;
           align-items: center;
           gap: 6px;
+          flex-shrink: 0;
+          white-space: nowrap;
           min-height: 44px;
           padding: 10px 14px;
           font-size: 0.9375rem;
-          font-weight: 500;
+          font-weight: 600;
+          line-height: 1.2;
           color: var(--text-muted);
-          transition: color 0.2s, background 0.2s;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          font-family: inherit;
           text-decoration: none;
           border-radius: var(--radius-sm);
+          border: 1px solid transparent;
+          transition: color 0.2s, background 0.2s, border-color 0.2s;
         }
-        .nav-link:focus-visible {
+        :global(.nav-item):focus-visible {
           outline: 2px solid var(--accent);
           outline-offset: 2px;
         }
-        .nav-link:hover {
-          color: var(--text);
-        }
-        .nav-link.active {
-          color: var(--text);
-          font-weight: 600;
-        }
-        .nav-link-icon {
+        :global(.nav-item__icon) {
           flex-shrink: 0;
-          opacity: 0.85;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0.9;
         }
-        .nav-link--icon {
-          padding: 10px;
+        :global(.nav-item__icon) svg {
+          display: block;
+        }
+        :global(.nav-item__label) {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        :global(.nav-item--pill) {
+          background: transparent;
+          border-color: transparent;
+        }
+        :global(.nav-item--pill:hover) {
+          color: var(--text);
+        }
+        :global(.nav-item--pill.nav-item--active) {
+          background: var(--header-pill-bg);
+          border-color: var(--border);
+          color: var(--accent);
+          font-weight: 700;
+        }
+        :global(.nav-item--pill.nav-item--active:hover) {
+          background: var(--header-pill-bg-hover);
+          border-color: var(--accent-soft);
+        }
+        :global(.nav-item--action) {
+          padding: 8px 12px;
+          font-size: 0.875rem;
+          background: var(--header-pill-bg);
+          border-color: var(--border);
+        }
+        :global(.nav-item--action:hover) {
+          background: var(--header-pill-bg-hover);
+          border-color: var(--accent-soft);
+          color: var(--accent);
+        }
+        :global(.nav-item--action.nav-item--active) {
+          background: var(--header-pill-bg-hover);
+          border-color: var(--accent-soft);
+          color: var(--accent);
+          font-weight: 700;
+        }
+        :global(.nav-item--mobile-compact) {
+          padding: 8px;
+          min-width: 36px;
+          min-height: 36px;
+          justify-content: center;
+        }
+        :global(.nav-item--mobile-compact .nav-item__label) {
+          display: none;
+        }
+        :global(.nav-item--mobile) {
+          width: 100%;
+          padding: 12px 0;
+          min-height: 44px;
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid var(--border);
+          border-radius: 0;
+          font-size: 1.1rem;
+          font-weight: 500;
+          color: var(--text);
+          text-align: left;
+          justify-content: flex-start;
+        }
+        :global(.nav-item--mobile:hover),
+        :global(.nav-item--mobile.nav-item--active) {
+          color: var(--accent);
+        }
+        :global(.nav-item--mobile):focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
         .header-actions {
           display: flex;
           align-items: center;
+          flex-wrap: nowrap;
           gap: 12px;
           flex-shrink: 0;
         }
@@ -405,6 +428,7 @@ export function Header({ lang }: { lang: Locale }) {
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
           position: relative;
           width: 44px;
           height: 44px;
@@ -429,7 +453,9 @@ export function Header({ lang }: { lang: Locale }) {
         }
         .header-cart-icon {
           flex-shrink: 0;
+          display: block;
           height: 30px;
+          transform: translateY(var(--header-icon-offset-y, 0));
         }
         .header-cart-badge {
           position: absolute;
@@ -446,6 +472,9 @@ export function Header({ lang }: { lang: Locale }) {
           font-size: 0.7rem;
           font-weight: 700;
           border-radius: 999px;
+        }
+        .mobile-header-cart-icon {
+          transform: translateY(var(--header-icon-offset-y, 0));
         }
         .burger {
           display: flex;
@@ -486,6 +515,8 @@ export function Header({ lang }: { lang: Locale }) {
         .mobile-header-actions {
           display: flex;
           align-items: center;
+          flex-wrap: nowrap;
+          flex-shrink: 0;
           gap: 8px;
         }
         .mobile-header-cart-link {
@@ -535,6 +566,12 @@ export function Header({ lang }: { lang: Locale }) {
         @media (min-width: 601px) {
           .mobile-header-actions {
             display: none;
+          }
+        }
+        @media (min-width: 1201px) {
+          .header-inner {
+            max-width: none;
+            width: 100%;
           }
         }
         @media (max-width: 600px) {
@@ -666,6 +703,9 @@ export function Header({ lang }: { lang: Locale }) {
         }
 
         .mobile-menu {
+          --header-icon-offset-y: 0px;
+          --header-pill-bg: #ebe6e0;
+          --header-pill-bg-hover: #e0d9d0;
           position: fixed;
           top: var(--visual-viewport-offset-top, 0);
           left: var(--visual-viewport-offset-left, 0);
@@ -742,38 +782,6 @@ export function Header({ lang }: { lang: Locale }) {
           display: flex;
           flex-direction: column;
           gap: 8px;
-        }
-        .mobile-menu-link {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: 100%;
-          text-align: left;
-          font-size: 1.1rem;
-          font-weight: 500;
-          color: var(--text);
-          padding: 12px 0;
-          min-height: 44px;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          font-family: inherit;
-          text-decoration: none;
-          border-bottom: 1px solid var(--border);
-        }
-        .mobile-menu-link:focus-visible {
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
-        }
-        .mobile-menu-link.active {
-          color: var(--accent);
-        }
-        .mobile-menu-link-icon {
-          flex-shrink: 0;
-          opacity: 0.9;
-        }
-        .mobile-menu-link--icon {
-          padding: 14px 0;
         }
         @media (min-width: 601px) {
           .mobile-menu {

@@ -6,3 +6,4 @@ export { HomeIcon } from './HomeIcon';
 export { FacebookIcon } from './FacebookIcon';
 export { InstagramIcon } from './InstagramIcon';
 export { ShareIcon } from './ShareIcon';
+export { SearchIcon } from './SearchIcon';

@@ -219,6 +219,10 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           height: 100%;
           position: relative;
           overflow: hidden;
+          transition: transform 0.35s ease;
+        }
+        .card:hover .card-image-shared {
+          transform: scale(1.18);
         }
         .card-dots {
           position: absolute;

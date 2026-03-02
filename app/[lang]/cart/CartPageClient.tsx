@@ -720,7 +720,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             <Link href={`/${lang}/track-order`}>
               {(t as { searchMyOrder?: string; trackOrder?: string }).searchMyOrder ??
                 (t as { searchMyOrder?: string; trackOrder?: string }).trackOrder ??
-                'Track order'}
+                'Search'}
             </Link>
           </p>
 

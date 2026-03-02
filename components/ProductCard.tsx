@@ -96,6 +96,11 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           width: 100%;
           height: 100%;
           position: relative;
+          overflow: hidden;
+          transition: transform 0.35s ease;
+        }
+        .card:hover .card-image-shared {
+          transform: scale(1.18);
         }
         .card-image {
           object-fit: cover;

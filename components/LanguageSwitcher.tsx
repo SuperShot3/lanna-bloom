@@ -46,7 +46,7 @@ export function LanguageSwitcher({
         .lang-switcher {
           display: flex;
           align-items: center;
-          margin-top: 2px;
+          flex-shrink: 0;
         }
         .lang-flag {
           display: flex;
