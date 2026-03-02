@@ -119,7 +119,11 @@ export function ProductOrderBlockForProduct({
         </>
       )}
       <style jsx>{`
+        .order-block {
+          position: relative;
+        }
         .order-block-title {
+          position: absolute;
           font-size: 1.1rem;
           font-weight: 700;
           color: var(--text);

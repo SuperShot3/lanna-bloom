@@ -673,7 +673,7 @@ a.filter-pill--active:hover {
 }
 .product-grid {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-4);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;

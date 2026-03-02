@@ -27,6 +27,17 @@ import {
   computeReferralDiscount,
 } from '@/lib/referral';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
+import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
+import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
+
+/** Format YYYY-MM-DD to DD-MMM for display (e.g. 2026-03-10 → 10-Mar). */
+function formatStickyDate(dateStr: string): string {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = d.toLocaleDateString('en', { month: 'short' });
+  return `${day}-${month}`;
+}
 
 /** Add-ons are not displayed on cart/checkout per UX. */
 function buildAddOnsSummaryForDisplay(): string {
@@ -390,11 +401,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     );
   });
 
-  type AccordionSection = 'bag' | 'delivery' | 'contact' | 'payment';
+  type AccordionSection = 'bag' | 'delivery' | 'contact';
   const [mobileOpenSection, setMobileOpenSection] = useState<AccordionSection | null>('delivery');
   const deliverySectionRef = useRef<HTMLDivElement>(null);
   const contactSectionRef = useRef<HTMLDivElement>(null);
-  const paymentSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -445,20 +455,88 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const isContactValidNow = isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>);
   const isPaymentUnlocked = isDeliveryValidNow && isContactValidNow;
 
+  /** Returns the first incomplete field's label and hint for the sticky bar lock message. */
+  const getFirstIncompleteHint = (): string => {
+    const tB = tBuyNow as Record<string, string | number>;
+    const tC = t as Record<string, string | number>;
+    const isMissing = (tC as { fieldIsMissing?: string }).fieldIsMissing ?? 'is missing';
+    const fmt = (label: string, hint: string) => `${label} ${isMissing}: ${hint}`;
+    if (!delivery.deliveryDistrict) {
+      return fmt(String(tB.districtLabel ?? 'District'), String(tB.districtRequired));
+    }
+    const addressTrim = delivery.addressLine?.trim() ?? '';
+    if (addressTrim.length < 10) {
+      return fmt(String(tB.addressLabel ?? 'Address'), String(tB.addressTooShort));
+    }
+    if (addressTrim.length > 300) {
+      return fmt(String(tB.addressLabel ?? 'Address'), String(tB.addressTooLong));
+    }
+    if (!delivery.date) {
+      return fmt(String(tB.specifyDeliveryDate ?? tC.dateLabel ?? 'Date'), lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
+    }
+    if (!delivery.timeSlot) {
+      return fmt(String(tB.selectTimeSlot ?? 'Time slot'), String(tB.timeSlotRequired));
+    }
+    if (!customerName.trim()) {
+      return fmt(String(tC.yourName ?? 'Name'), String(tC.contactNameRequired));
+    }
+    if (!phoneNational) {
+      return fmt(String(tC.phoneNumber ?? 'Phone'), String(tC.contactPhoneRequired));
+    }
+    if (phoneNational.length < PHONE_MIN_DIGITS) {
+      return fmt(String(tC.phoneNumber ?? 'Phone'), String(tC.contactPhoneMinLength));
+    }
+    if (phoneNational.length > PHONE_MAX_DIGITS) {
+      return fmt(String(tC.phoneNumber ?? 'Phone'), String((tC as { contactPhoneMaxLength?: string }).contactPhoneMaxLength ?? 'Phone must be at most 15 digits.'));
+    }
+    if (!/^\d+$/.test(phoneNational)) {
+      return fmt(String(tC.phoneNumber ?? 'Phone'), String(tC.contactPhoneDigitsOnly));
+    }
+    if (contactPreference.length === 0) {
+      return fmt(String(tC.preferredContact ?? 'Contact method'), String(tC.contactMethodRequired));
+    }
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      return fmt(String(tC.emailLabel ?? 'Email'), String(tC.emailInvalid ?? 'Please enter a valid email.'));
+    }
+    if (isOrderingForSomeoneElse) {
+      if (!recipientName.trim()) {
+        return fmt(String(tC.recipientName ?? 'Recipient name'), String(tC.recipientNameRequired));
+      }
+      if (!recipientPhoneNational) {
+        return fmt(String(tC.recipientPhone ?? 'Recipient phone'), String(tC.recipientPhoneRequired));
+      }
+      if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
+        return fmt(String(tC.recipientPhone ?? 'Recipient phone'), String(tC.contactPhoneMinLength));
+      }
+    }
+    return '';
+  };
+
   useEffect(() => {
     if (isPaymentUnlocked) setShowPaymentLockedHint(false);
   }, [isPaymentUnlocked]);
 
+  useEffect(() => {
+    if (!orderError) return;
+    const t = setTimeout(() => setOrderError(null), 5000);
+    return () => clearTimeout(t);
+  }, [orderError]);
+
   const toggleMobileSection = (section: AccordionSection) => {
-    if (section === 'payment' && !isPaymentUnlocked) {
-      setShowPaymentLockedHint(true);
-      setMobileOpenSection((prev) => prev);
-      const firstIncomplete = !isDeliveryValidNow ? deliverySectionRef : contactSectionRef;
-      setTimeout(() => firstIncomplete.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-      return;
-    }
     setShowPaymentLockedHint(false);
     setMobileOpenSection((prev) => (prev === section ? null : section));
+  };
+
+  const handleStickyCtaClick = () => {
+    if (isPaymentUnlocked) {
+      handlePayByCard();
+    } else {
+      setShowPaymentLockedHint(true);
+      const targetSection: AccordionSection = !isDeliveryValidNow ? 'delivery' : 'contact';
+      setMobileOpenSection(targetSection);
+      const ref = !isDeliveryValidNow ? deliverySectionRef : contactSectionRef;
+      setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
   };
 
   const handleMobileDeliverySave = (e: React.MouseEvent) => {
@@ -475,8 +553,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)) return;
     setShowPaymentLockedHint(false);
     setMobileCompleted((prev) => new Set(prev).add('contact'));
-    setMobileOpenSection('payment');
-    setTimeout(() => paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    setMobileOpenSection(null);
   };
 
   const toggleContactPreference = (option: ContactPreferenceOption) => {
@@ -496,68 +573,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const handlePlaceOrder = async () => {
-    if (!delivery.deliveryDistrict) {
-      setOrderError(tBuyNow.districtRequired);
+    const hint = getFirstIncompleteHint();
+    if (hint) {
+      setOrderError(hint);
       return;
-    }
-    const addressTrim = delivery.addressLine?.trim() ?? '';
-    if (addressTrim.length < 10) {
-      setOrderError(tBuyNow.addressTooShort);
-      return;
-    }
-    if (addressTrim.length > 300) {
-      setOrderError(tBuyNow.addressTooLong);
-      return;
-    }
-    if (!delivery.date) {
-      setOrderError(lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
-      return;
-    }
-    if (!delivery.timeSlot) {
-      setOrderError(tBuyNow.timeSlotRequired);
-      return;
-    }
-    if (!customerName.trim()) {
-      setOrderError(t.contactNameRequired);
-      return;
-    }
-    if (!phoneNational) {
-      setOrderError(t.contactPhoneRequired);
-      return;
-    }
-    if (phoneNational.length < PHONE_MIN_DIGITS) {
-      setOrderError(t.contactPhoneMinLength);
-      return;
-    }
-    if (phoneNational.length > PHONE_MAX_DIGITS) {
-      setOrderError(t.contactPhoneMaxLength);
-      return;
-    }
-    if (!/^\d+$/.test(phoneNational)) {
-      setOrderError(t.contactPhoneDigitsOnly);
-      return;
-    }
-    if (contactPreference.length === 0) {
-      setOrderError(t.contactMethodRequired);
-      return;
-    }
-    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-      setOrderError(t.emailInvalid ?? 'Please enter a valid email address.');
-      return;
-    }
-    if (isOrderingForSomeoneElse) {
-      if (!recipientName.trim()) {
-        setOrderError(t.recipientNameRequired);
-        return;
-      }
-      if (!recipientPhoneNational) {
-        setOrderError(t.recipientPhoneRequired);
-        return;
-      }
-      if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
-        setOrderError(t.contactPhoneMinLength);
-        return;
-      }
     }
     setOrderError(null);
     setPlacing(true);
@@ -608,60 +627,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const handlePayByCard = async () => {
-    if (!delivery.deliveryDistrict) {
-      setOrderError(tBuyNow.districtRequired);
+    const hint = getFirstIncompleteHint();
+    if (hint) {
+      setOrderError(hint);
       return;
-    }
-    const addressTrim = delivery.addressLine?.trim() ?? '';
-    if (addressTrim.length < 10) {
-      setOrderError(tBuyNow.addressTooShort);
-      return;
-    }
-    if (addressTrim.length > 300) {
-      setOrderError(tBuyNow.addressTooLong);
-      return;
-    }
-    if (!delivery.date) {
-      setOrderError(lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
-      return;
-    }
-    if (!delivery.timeSlot) {
-      setOrderError(tBuyNow.timeSlotRequired);
-      return;
-    }
-    if (!customerName.trim()) {
-      setOrderError(t.contactNameRequired);
-      return;
-    }
-    if (!phoneNational) {
-      setOrderError(t.contactPhoneRequired);
-      return;
-    }
-    if (phoneNational.length < PHONE_MIN_DIGITS || phoneNational.length > PHONE_MAX_DIGITS) {
-      setOrderError(t.contactPhoneMinLength);
-      return;
-    }
-    if (contactPreference.length === 0) {
-      setOrderError(t.contactMethodRequired);
-      return;
-    }
-    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-      setOrderError(t.emailInvalid ?? 'Please enter a valid email address.');
-      return;
-    }
-    if (isOrderingForSomeoneElse) {
-      if (!recipientName.trim()) {
-        setOrderError(t.recipientNameRequired);
-        return;
-      }
-      if (!recipientPhoneNational) {
-        setOrderError(t.recipientPhoneRequired);
-        return;
-      }
-      if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
-        setOrderError(t.contactPhoneMinLength);
-        return;
-      }
     }
     setOrderError(null);
     setPlacingStripe(true);
@@ -1094,58 +1063,50 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 </div>
               )}
             </div>
-            <div
-              ref={paymentSectionRef}
-              className={`cart-accordion-section ${mobileOpenSection === 'payment' ? 'cart-accordion-open' : ''}`}
-              onClick={() => toggleMobileSection('payment')}
-            >
-              <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{lang === 'th' ? 'ชำระเงิน' : 'Payment'}</span>
-                <div className="cart-accordion-header-actions">
-                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
-                </div>
-              </div>
-              {showPaymentLockedHint && !isPaymentUnlocked && (
-                <p className="cart-accordion-payment-locked-hint">
-                  {lang === 'th' ? 'กรุณากรอกข้อมูลการจัดส่งและข้อมูลติดต่อให้ครบก่อน เพื่อเปิดการชำระเงิน' : 'Complete Delivery and Contact details to open payment.'}
-                </p>
-              )}
-              {mobileOpenSection === 'payment' && (
-                <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
-                  <div className="cart-place-order-buttons cart-mobile-payment-buttons">
-                    <button
-                      type="button"
-                      className="cart-place-order-btn cart-pay-by-stripe-btn"
-                      onClick={handlePayByCard}
-                      disabled={placing || placingStripe}
-                      aria-busy={placingStripe}
-                    >
-                      {placingStripe ? (lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting to payment...') : (
-                        <>
-                          <span className="cart-stripe-logo" aria-hidden>
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                              <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
-                            </svg>
-                          </span>
-                          {translations[lang].cart.payWithStripe ?? 'Pay with Stripe'}
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="cart-place-order-btn cart-place-order-bank-btn"
-                      onClick={handlePlaceOrder}
-                      disabled={placing || placingStripe}
-                      aria-busy={placing}
-                    >
-                      {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
-                    </button>
-                  </div>
-                  {orderError && <p className="cart-place-order-error" role="alert">{orderError}</p>}
-                </div>
-              )}
-            </div>
           </div>
+          {(() => {
+            const paymentAvailability = getPaymentAvailability({
+              hasDeliveryDistrict: !!delivery.deliveryDistrict,
+              isFormValid: isPaymentUnlocked,
+              isLoading: placing || placingStripe,
+              firstIncompleteHint: getFirstIncompleteHint(),
+              messages: {
+                selectDeliveryArea: lang === 'th' ? 'กรุณาเลือกพื้นที่จัดส่งเพื่อดูตัวเลือกชำระเงิน' : 'Select a delivery area to see payment options',
+                processing: lang === 'th' ? 'กำลังดำเนินการ...' : 'Processing...',
+              },
+            });
+            const statusMessage = !paymentAvailability.stripe.enabled ? paymentAvailability.stripe.reason : undefined;
+            return (
+          <StickyCheckoutBar
+            lang={lang}
+            summary={{
+              date: delivery.date,
+              timeSlot: delivery.timeSlot,
+              deliveryFee: deliveryFeeVal,
+              total: grandTotalVal,
+            }}
+            availability={paymentAvailability}
+            statusMessage={statusMessage}
+            orderError={orderError}
+            placing={placing}
+            placingStripe={placingStripe}
+            onPayStripe={handleStickyCtaClick}
+            onPlaceOrder={handlePlaceOrder}
+            formatDate={formatStickyDate}
+            labels={{
+              dateLabel: t.dateLabel ?? 'Date',
+              deliveryFeeLabel: t.deliveryFeeLabel,
+              totalLabel: t.totalLabel,
+              payWithStripe: translations[lang].cart.payWithStripe ?? 'Pay with Stripe',
+              completeDetailsToPay: (t as { completeDetailsToPay?: string }).completeDetailsToPay ?? 'Complete details to pay',
+              placeOrder: t.placeOrder,
+              redirecting: lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting...',
+              creating: lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating...',
+              unavailableRightNow: lang === 'th' ? 'ไม่พร้อมใช้งานในขณะนี้' : 'Unavailable right now',
+            }}
+          />
+            );
+          })()}
         </div>
         <div className="cart-desktop-view">
         <div className="cart-desktop-layout">
@@ -1161,6 +1122,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             step3Content={
               <div className="cart-place-order">
                 {contactFormContent('')}
+                <div className="cart-place-order-actions">
                 <div className="cart-place-order-buttons">
                   <button
                     type="button"
@@ -1184,7 +1146,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   </button>
                   <button
                     type="button"
-                    className="cart-place-order-btn cart-place-order-bank-btn"
+                    className={`cart-place-order-btn cart-place-order-bank-btn ${isPaymentUnlocked ? 'cart-place-order-ready' : ''}`}
                     onClick={handlePlaceOrder}
                     disabled={placing || placingStripe}
                     aria-busy={placing}
@@ -1197,6 +1159,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     {orderError}
                   </p>
                 )}
+                </div>
               </div>
             }
           />
@@ -1657,6 +1620,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-place-order {
           margin-top: 8px;
         }
+        .cart-place-order-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 8px;
+        }
         .cart-place-order-buttons {
           display: flex;
           flex-direction: column;
@@ -1664,8 +1633,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-place-order-btn {
           width: 100%;
-          padding: 14px 20px;
-          font-size: 1rem;
+          padding: 10px 16px;
+          font-size: 0.9rem;
           font-weight: 700;
           color: #fff;
           background: var(--accent);
@@ -1713,9 +1682,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-color: var(--accent);
           color: var(--text);
         }
+        .cart-place-order-bank-btn.cart-place-order-ready {
+          background: #86efac;
+          border-color: #22c55e;
+          color: #166534;
+        }
+        .cart-place-order-bank-btn.cart-place-order-ready:hover:not(:disabled) {
+          background: #4ade80;
+          border-color: #16a34a;
+          color: #14532d;
+        }
         .cart-place-order-error {
-          margin: 12px 0 0;
-          font-size: 0.9rem;
+          margin: 0;
+          font-size: 0.85rem;
           color: #b91c1c;
         }
         .cart-contact-info {
@@ -1905,13 +1884,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             color: var(--text-muted);
             transition: transform 0.2s;
           }
-          .cart-accordion-payment-locked-hint {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin: -8px 20px 12px;
-            padding: 0 0 12px;
-            line-height: 1.4;
-          }
           .cart-accordion-open .cart-accordion-chevron {
             transform: rotate(180deg);
           }
@@ -2053,11 +2025,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-accordion-body-bag .cart-mobile-summary {
             margin-bottom: 16px;
           }
-          .cart-mobile-payment-buttons {
-            margin-top: 0;
-          }
           .cart-mobile-summary {
             margin-bottom: 16px;
+          }
+          .cart-mobile-view {
+            padding-bottom: calc(140px + env(safe-area-inset-bottom));
           }
         }
       `}</style>
@@ -2098,16 +2070,26 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             grid-column: 1 / -1;
             margin-top: 8px;
           }
+          .cart-delivery .cart-place-order-actions {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 12px;
+          }
           .cart-delivery .cart-place-order-buttons {
             flex-direction: row;
             flex-wrap: wrap;
             gap: 12px;
-            margin-top: 8px;
+            margin-top: 0;
           }
           .cart-delivery .cart-place-order-btn {
             width: auto;
-            min-width: 200px;
-            max-width: 280px;
+            min-width: 160px;
+            max-width: 220px;
+          }
+          .cart-delivery .cart-place-order-error {
+            flex: 1 1 100%;
+            order: 2;
           }
           .cart-delivery .cart-contact-label {
             display: block;

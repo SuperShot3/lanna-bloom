@@ -54,7 +54,6 @@ export function ProductDetailClient({
         />
       </div>
       <div className="product-info">
-        <h1 className="product-title">{name}</h1>
         <p className="product-desc">{descDisplay}</p>
         {(product.preparationTime != null || product.occasion) && (
           <div className="product-attributes">

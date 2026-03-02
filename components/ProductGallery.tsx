@@ -223,42 +223,50 @@ export function ProductGallery({
             Swipe to change · Tap to zoom
           </span>
         )}
+        {list.length > 1 && (
+          <>
+            <div className="gallery-nav" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="gallery-prev"
+                onClick={goPrev}
+                aria-label="Previous image"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="gallery-next"
+                onClick={goNext}
+                aria-label="Next image"
+              >
+                ›
+              </button>
+            </div>
+            <div
+              className="gallery-dots"
+              role="tablist"
+              aria-label="Image gallery"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {list.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === active}
+                  aria-label={`View image ${i + 1}`}
+                  className={`gallery-dot ${i === active ? 'active' : ''}`}
+                  onClick={() => scrollTo(i)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {list.length > 1 && (
-        <>
-          <div className="gallery-nav">
-            <button
-              type="button"
-              className="gallery-prev"
-              onClick={goPrev}
-              aria-label="Previous image"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="gallery-next"
-              onClick={goNext}
-              aria-label="Next image"
-            >
-              ›
-            </button>
-          </div>
-          <div className="gallery-dots" role="tablist" aria-label="Image gallery">
-            {list.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                role="tab"
-                aria-selected={i === active}
-                aria-label={`View image ${i + 1}`}
-                className={`gallery-dot ${i === active ? 'active' : ''}`}
-                onClick={() => scrollTo(i)}
-              />
-            ))}
-          </div>
-          <div className="gallery-thumbs">
+        <div className="gallery-thumbs">
             {list.map((src, i) => (
               <button
                 key={i}
@@ -281,8 +289,7 @@ export function ProductGallery({
                 />
               </button>
             ))}
-          </div>
-        </>
+        </div>
       )}
 
       {lightboxOpen && (

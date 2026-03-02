@@ -24,10 +24,7 @@ export default async function TrackOrderPage({
   return (
     <main className="track-order-page">
       <div className="container">
-        <h1 className="track-order-title">
-          {translations[lang as Locale].cart.searchMyOrder ?? translations[lang as Locale].cart.trackOrder}
-        </h1>
-        <OrderLookupSection lang={lang as Locale} emptyCart />
+        <OrderLookupSection lang={lang as Locale} />
       </div>
     </main>
   );

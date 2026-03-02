@@ -69,7 +69,6 @@ export function ProductOrderBlock({
 
   return (
     <div className="order-block">
-      <h2 className="order-block-title">{tBuyNow.title}</h2>
       <SizeSelector
         sizes={bouquet.sizes}
         selected={selectedSize}
@@ -127,19 +126,7 @@ export function ProductOrderBlock({
         </>
       )}
       <style jsx>{`
-        .order-block-title {
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: var(--text);
-          margin: 0 0 16px;
-          text-transform: uppercase;
-          letter-spacing: 0.02em;
-        }
         @media (max-width: 480px) {
-          .order-block-title {
-            font-size: 1rem;
-            margin-bottom: 12px;
-          }
           .order-add-to-cart-btn {
             font-size: 0.95rem;
             padding: 12px 16px;
@@ -152,19 +139,12 @@ export function ProductOrderBlock({
           }
         }
         @media (max-width: 360px) {
-          .order-block-title {
-            font-size: 0.95rem;
-          }
           .order-add-to-cart-btn {
             font-size: 0.9rem;
             padding: 10px 14px;
           }
         }
         @media (max-width: 350px) {
-          .order-block-title {
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-          }
           .order-add-to-cart-btn {
             font-size: 0.85rem;
             padding: 10px 12px;

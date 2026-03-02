@@ -94,6 +94,7 @@ export function AddOnsSection({
         }
         .addons-textarea::placeholder {
           color: var(--text-muted);
+          opacity: 0.4;
         }
         .addons-char-count {
           display: block;

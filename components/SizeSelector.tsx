@@ -33,7 +33,7 @@ export function SizeSelector({
       </div>
       <style jsx>{`
         .size-selector {
-          margin: 20px 0;
+          margin: 12px 0;
         }
         .size-label {
           font-size: 0.9rem;

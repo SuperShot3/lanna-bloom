@@ -63,7 +63,6 @@ export function ProductPageClient({
         />
       </div>
       <div className="product-info">
-        <h1 className="product-title">{name}</h1>
         <ProductOrderBlock
           bouquet={bouquet}
           lang={lang}
