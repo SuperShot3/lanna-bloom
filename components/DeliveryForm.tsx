@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
@@ -74,6 +74,20 @@ export function DeliveryForm({
   };
 
   const showCentralToggle = value.deliveryDistrict === 'MUEANG';
+
+  const formatDateDisplay = useCallback((dateStr: string): string => {
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en', { month: 'short' });
+    return `${day} ${month}`;
+  }, [lang]);
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const minDate = todayStr;
+
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className={`buy-now-form ${accordionMode ? 'buy-now-form-accordion' : ''}`}>
@@ -184,16 +198,47 @@ export function DeliveryForm({
         {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
         <div className="buy-now-step-content">
           <div className="buy-now-fields">
-            <div className="buy-now-field">
-              <input
-                id="buy-now-date"
-                type="date"
-                value={value.date}
-                onChange={(e) => onChange({ ...value, date: e.target.value })}
-                min={new Date().toISOString().slice(0, 10)}
-                className="buy-now-input"
+            <div className="buy-now-field buy-now-date-field">
+              <div
+                className="buy-now-date-display-wrap"
+                onClick={() => dateInputRef.current?.showPicker?.()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dateInputRef.current?.showPicker?.(); } }}
                 aria-label={t.specifyDeliveryDate}
-              />
+              >
+                <input
+                  ref={dateInputRef}
+                  id="buy-now-date"
+                  type="date"
+                  value={value.date}
+                  onChange={(e) => onChange({ ...value, date: e.target.value })}
+                  min={minDate}
+                  className="buy-now-input buy-now-date-input"
+                  aria-label={t.specifyDeliveryDate}
+                />
+                <span className="buy-now-date-display">
+                  {value.date ? formatDateDisplay(value.date) : (lang === 'th' ? 'เลือกวันที่' : 'Select date')}
+                </span>
+              </div>
+              <div className="buy-now-date-quick-btns">
+                <button
+                  type="button"
+                  className="buy-now-date-quick-btn"
+                  onClick={() => onChange({ ...value, date: todayStr })}
+                  aria-label={t.todayLabel}
+                >
+                  {t.todayLabel}
+                </button>
+                <button
+                  type="button"
+                  className="buy-now-date-quick-btn"
+                  onClick={() => onChange({ ...value, date: tomorrowStr })}
+                  aria-label={t.tomorrowLabel}
+                >
+                  {t.tomorrowLabel}
+                </button>
+              </div>
             </div>
             <div className="buy-now-field">
               <select
@@ -548,6 +593,59 @@ export function DeliveryForm({
         .buy-now-open-gmaps-btn:hover {
           background: #a88b5c;
           transform: translateY(-1px);
+        }
+        .buy-now-date-field {
+          text-align: left;
+        }
+        .buy-now-date-display-wrap {
+          position: relative;
+          display: block;
+          cursor: pointer;
+          text-align: left;
+        }
+        .buy-now-date-input {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+        }
+        .buy-now-date-display {
+          display: block;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-size: 0.95rem;
+          font-family: inherit;
+          background: var(--surface);
+          color: var(--text);
+          min-height: 42px;
+          line-height: 1.4;
+        }
+        .buy-now-date-display-wrap:focus-within .buy-now-date-display,
+        .buy-now-date-display-wrap:hover .buy-now-date-display {
+          border-color: var(--accent);
+        }
+        .buy-now-date-quick-btns {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .buy-now-date-quick-btn {
+          padding: 4px 10px;
+          font-size: 0.75rem;
+          font-family: inherit;
+          color: var(--text-muted);
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .buy-now-date-quick-btn:hover {
+          border-color: var(--accent);
+          color: var(--text);
         }
       `}</style>
     </div>
