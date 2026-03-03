@@ -30,7 +30,7 @@ export type CheckoutState = {
  * Returns availability for each payment method based on checkout state.
  * Priority of messages (most actionable first):
  * 1. No delivery area → "Select a delivery area to see payment options"
- * 2. Form incomplete → firstIncompleteHint (e.g. "Delivery address is missing: At least 10 characters")
+ * 2. Form incomplete → firstIncompleteHint (e.g. "Address is missing")
  * 3. Loading → both disabled
  * 4. All valid → both enabled
  */

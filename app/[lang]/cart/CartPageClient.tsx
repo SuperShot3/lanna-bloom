@@ -30,13 +30,13 @@ import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 
-/** Format YYYY-MM-DD to DD-MMM for display (e.g. 2026-03-10 → 10-Mar). */
+/** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
 function formatStickyDate(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const d = new Date(dateStr + 'T12:00:00');
   const day = String(d.getDate()).padStart(2, '0');
   const month = d.toLocaleDateString('en', { month: 'short' });
-  return `${day}-${month}`;
+  return `${day} ${month}`;
 }
 
 /** Add-ons are not displayed on cart/checkout per UX. */
@@ -449,72 +449,67 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
 
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
-  const [showPaymentLockedHint, setShowPaymentLockedHint] = useState(false);
 
   const isDeliveryValidNow = isDeliveryValid(delivery, tBuyNow as Record<string, string | number>);
   const isContactValidNow = isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>);
   const isPaymentUnlocked = isDeliveryValidNow && isContactValidNow;
 
-  /** Returns the first incomplete field's label and hint for the sticky bar lock message. */
+  /** Returns the first incomplete field's name for the sticky bar lock message. */
   const getFirstIncompleteHint = (): string => {
     const tB = tBuyNow as Record<string, string | number>;
     const tC = t as Record<string, string | number>;
     const isMissing = (tC as { fieldIsMissing?: string }).fieldIsMissing ?? 'is missing';
-    const fmt = (label: string, hint: string) => `${label} ${isMissing}: ${hint}`;
+    const fmt = (label: string) => `${label} ${isMissing}`;
     if (!delivery.deliveryDistrict) {
-      return fmt(String(tB.districtLabel ?? 'District'), String(tB.districtRequired));
+      return fmt(String(tB.districtLabel ?? 'District'));
     }
     const addressTrim = delivery.addressLine?.trim() ?? '';
     if (addressTrim.length < 10) {
-      return fmt(String(tB.addressLabel ?? 'Address'), String(tB.addressTooShort));
+      return fmt(String(tB.addressLabel ?? 'Address'));
     }
     if (addressTrim.length > 300) {
-      return fmt(String(tB.addressLabel ?? 'Address'), String(tB.addressTooLong));
+      return fmt(String(tB.addressLabel ?? 'Address'));
     }
     if (!delivery.date) {
-      return fmt(String(tB.specifyDeliveryDate ?? tC.dateLabel ?? 'Date'), lang === 'th' ? 'กรุณาเลือกวันจัดส่ง' : 'Please select delivery date.');
+      return fmt(String(tB.specifyDeliveryDate ?? tC.dateLabel ?? 'Date'));
     }
     if (!delivery.timeSlot) {
-      return fmt(String(tB.selectTimeSlot ?? 'Time slot'), String(tB.timeSlotRequired));
+      return fmt(String(tB.selectTimeSlot ?? 'Time slot'));
     }
     if (!customerName.trim()) {
-      return fmt(String(tC.yourName ?? 'Name'), String(tC.contactNameRequired));
+      return fmt(String(tC.senderName ?? 'Name'));
     }
     if (!phoneNational) {
-      return fmt(String(tC.phoneNumber ?? 'Phone'), String(tC.contactPhoneRequired));
+      return fmt(String(tC.phoneNumber ?? 'Phone'));
     }
     if (phoneNational.length < PHONE_MIN_DIGITS) {
-      return fmt(String(tC.phoneNumber ?? 'Phone'), String(tC.contactPhoneMinLength));
+      return fmt(String(tC.phoneNumber ?? 'Phone'));
     }
     if (phoneNational.length > PHONE_MAX_DIGITS) {
-      return fmt(String(tC.phoneNumber ?? 'Phone'), String((tC as { contactPhoneMaxLength?: string }).contactPhoneMaxLength ?? 'Phone must be at most 15 digits.'));
+      return fmt(String(tC.phoneNumber ?? 'Phone'));
     }
     if (!/^\d+$/.test(phoneNational)) {
-      return fmt(String(tC.phoneNumber ?? 'Phone'), String(tC.contactPhoneDigitsOnly));
+      return fmt(String(tC.phoneNumber ?? 'Phone'));
     }
     if (contactPreference.length === 0) {
-      return fmt(String(tC.preferredContact ?? 'Contact method'), String(tC.contactMethodRequired));
+      return fmt(String(tC.preferredContact ?? 'Contact method'));
     }
     if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-      return fmt(String(tC.emailLabel ?? 'Email'), String(tC.emailInvalid ?? 'Please enter a valid email.'));
+      return fmt(String(tC.emailLabel ?? 'Email'));
     }
     if (isOrderingForSomeoneElse) {
       if (!recipientName.trim()) {
-        return fmt(String(tC.recipientName ?? 'Recipient name'), String(tC.recipientNameRequired));
+        return fmt(String(tC.recipientName ?? 'Recipient name'));
       }
       if (!recipientPhoneNational) {
-        return fmt(String(tC.recipientPhone ?? 'Recipient phone'), String(tC.recipientPhoneRequired));
+        return fmt(String(tC.recipientPhone ?? 'Recipient phone'));
       }
       if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
-        return fmt(String(tC.recipientPhone ?? 'Recipient phone'), String(tC.contactPhoneMinLength));
+        return fmt(String(tC.recipientPhone ?? 'Recipient phone'));
       }
     }
     return '';
   };
-
-  useEffect(() => {
-    if (isPaymentUnlocked) setShowPaymentLockedHint(false);
-  }, [isPaymentUnlocked]);
 
   useEffect(() => {
     if (!orderError) return;
@@ -523,7 +518,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, [orderError]);
 
   const toggleMobileSection = (section: AccordionSection) => {
-    setShowPaymentLockedHint(false);
     setMobileOpenSection((prev) => (prev === section ? null : section));
   };
 
@@ -531,7 +525,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (isPaymentUnlocked) {
       handlePayByCard();
     } else {
-      setShowPaymentLockedHint(true);
       const targetSection: AccordionSection = !isDeliveryValidNow ? 'delivery' : 'contact';
       setMobileOpenSection(targetSection);
       const ref = !isDeliveryValidNow ? deliverySectionRef : contactSectionRef;
@@ -542,7 +535,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handleMobileDeliverySave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)) return;
-    setShowPaymentLockedHint(false);
     setMobileCompleted((prev) => new Set(prev).add('delivery'));
     setMobileOpenSection('contact');
     setTimeout(() => contactSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
@@ -551,7 +543,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handleMobileContactSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)) return;
-    setShowPaymentLockedHint(false);
     setMobileCompleted((prev) => new Set(prev).add('contact'));
     setMobileOpenSection(null);
   };
@@ -746,10 +737,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const contactFormContent = (idPrefix: string) => (
     <div className={`cart-contact-info ${idPrefix ? 'cart-mobile-contact-fields' : ''}`}>
-      <p className="cart-section-label">{t.senderSection}</p>
       <div className="cart-contact-field">
         <label className="cart-contact-label" htmlFor={`${idPrefix}cart-customer-name`}>
-          {t.yourName} <span className="cart-required" aria-hidden>*</span>
+          {t.senderName} <span className="cart-required" aria-hidden>*</span>
         </label>
         <input
           id={`${idPrefix}cart-customer-name`}
@@ -792,7 +782,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             aria-describedby={`${idPrefix}cart-phone-hint`}
           />
         </div>
-        <p id={`${idPrefix}cart-phone-hint`} className="cart-phone-hint">
+        <p
+          id={`${idPrefix}cart-phone-hint`}
+          className="cart-phone-hint"
+          style={{ fontSize: '0.625rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.125rem', marginBottom: 0 }}
+        >
           {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
         </p>
       </div>
@@ -809,7 +803,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           className="cart-contact-input"
           autoComplete="email"
         />
-        <p className="cart-phone-hint">{t.emailHint ?? 'For order confirmation notifications (optional)'}</p>
       </div>
       <label className="cart-contact-checkbox-label cart-ordering-for-else">
         <input
@@ -822,7 +815,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       </label>
       {isOrderingForSomeoneElse && (
         <>
-          <p className="cart-section-label">{t.recipientSection}</p>
           <div className="cart-contact-field">
             <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-name`}>
               {t.recipientName} <span className="cart-required" aria-hidden>*</span>
@@ -868,7 +860,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 aria-describedby={`${idPrefix}cart-recipient-phone-hint`}
               />
             </div>
-            <p id={`${idPrefix}cart-recipient-phone-hint`} className="cart-phone-hint">
+            <p
+              id={`${idPrefix}cart-recipient-phone-hint`}
+              className="cart-phone-hint"
+              style={{ fontSize: '0.625rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.125rem', marginBottom: 0 }}
+            >
               {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
             </p>
           </div>
@@ -1075,7 +1071,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 processing: lang === 'th' ? 'กำลังดำเนินการ...' : 'Processing...',
               },
             });
-            const statusMessage = !paymentAvailability.stripe.enabled ? paymentAvailability.stripe.reason : undefined;
+            const incompleteHint = !paymentAvailability.stripe.enabled
+              ? paymentAvailability.stripe.reason
+              : undefined;
+            const handleDateChange = () => {
+              setMobileOpenSection('delivery');
+              setTimeout(() => deliverySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+            };
             return (
           <StickyCheckoutBar
             lang={lang}
@@ -1086,12 +1088,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               total: grandTotalVal,
             }}
             availability={paymentAvailability}
-            statusMessage={statusMessage}
+            incompleteHint={incompleteHint}
             orderError={orderError}
             placing={placing}
             placingStripe={placingStripe}
             onPayStripe={handleStickyCtaClick}
             onPlaceOrder={handlePlaceOrder}
+            onDateChange={handleDateChange}
             formatDate={formatStickyDate}
             labels={{
               dateLabel: t.dateLabel ?? 'Date',
@@ -1100,9 +1103,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               payWithStripe: translations[lang].cart.payWithStripe ?? 'Pay with Stripe',
               completeDetailsToPay: (t as { completeDetailsToPay?: string }).completeDetailsToPay ?? 'Complete details to pay',
               placeOrder: t.placeOrder,
+              orderLabel: (t as { orderLabel?: string }).orderLabel ?? (lang === 'th' ? 'สั่งซื้อ' : 'Order'),
               redirecting: lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting...',
               creating: lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating...',
               unavailableRightNow: lang === 'th' ? 'ไม่พร้อมใช้งานในขณะนี้' : 'Unavailable right now',
+              change: lang === 'th' ? 'เปลี่ยน' : 'Change',
+              delivery: lang === 'th' ? 'จัดส่ง' : 'Delivery',
+              showCheckout: lang === 'th' ? 'แสดงชำระเงิน' : 'Show checkout',
             }}
           />
             );
@@ -1618,7 +1625,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           margin: 0 0 16px;
         }
         .cart-place-order {
-          margin-top: 8px;
+          margin-top: 0;
         }
         .cart-place-order-actions {
           display: flex;
@@ -1699,6 +1706,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-contact-info {
           margin-bottom: 20px;
+          padding-top: 0;
+        }
+        .cart-contact-info > .cart-contact-field:first-child {
+          margin-top: 0;
         }
         .cart-contact-field {
           margin-bottom: 12px;
@@ -1780,9 +1791,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           box-shadow: none;
         }
         .cart-phone-hint {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          margin: 6px 0 0;
+          font-size: 0.625rem;
+          color: #94a3b8;
+          font-weight: normal;
+          margin: 0.125rem 0 0;
         }
         .cart-contact-checkboxes {
           margin: 16px 0 0;
@@ -1902,7 +1914,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
           .cart-accordion-body-contact {
             background: var(--surface);
-            padding: 16px;
+            padding: 0 16px 16px;
             border-radius: var(--radius-sm);
             margin: 0 0 16px;
           }
@@ -1971,9 +1983,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             margin: 0 0 8px;
           }
           .cart-accordion-body-contact .cart-phone-hint {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin: 6px 0 0;
+            font-size: 0.625rem;
+            color: #94a3b8;
+            font-weight: normal;
+            margin: 0.125rem 0 0;
           }
           .cart-accordion-body-contact .cart-contact-checkboxes {
             margin: 16px 0 0;
@@ -2029,7 +2042,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             margin-bottom: 16px;
           }
           .cart-mobile-view {
-            padding-bottom: calc(140px + env(safe-area-inset-bottom));
+            padding-bottom: calc(165px + env(safe-area-inset-bottom));
           }
         }
       `}</style>
@@ -2037,8 +2050,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         /* Desktop: contact form inside cart-delivery (rendered via DeliveryForm step3Content) - styled-jsx scope doesn't reach here */
         @media (min-width: 1201px) {
           .cart-delivery .cart-place-order {
-            margin-top: 16px;
-            padding: 20px;
+            margin-top: 0;
+            padding: 8px 20px 20px;
             background: var(--pastel-cream, #fdf8f3);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
@@ -2151,9 +2164,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             box-shadow: none;
           }
           .cart-delivery .cart-phone-hint {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin: 6px 0 0;
+            font-size: 0.625rem;
+            color: #94a3b8;
+            font-weight: normal;
+            margin: 0.125rem 0 0;
           }
           .cart-delivery .cart-section-label {
             font-size: 0.9rem;

@@ -4,6 +4,7 @@ import { useRef, useEffect } from 'react';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
+import { PinIcon } from '@/components/icons/PinIcon';
 
 /** 4 delivery windows from 08:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
@@ -82,13 +83,6 @@ export function DeliveryForm({
       <div className="buy-now-step">
         {!accordionMode && <span className="buy-now-num" aria-hidden>1</span>}
         <div className="buy-now-step-content">
-          <h3 className="buy-now-step-heading">{t.step1}</h3>
-          {showLocationPicker && (
-            <p className="buy-now-hint buy-now-step-intro">
-              {(t as { step1IntroNoMap?: string }).step1IntroNoMap ?? 'District and address required. Optionally paste a Google Maps link.'}
-            </p>
-          )}
-          {!showLocationPicker && <p className="buy-now-hint">{t.trySearchByPostalCode}</p>}
           <div className="buy-now-fields">
             <div className="buy-now-field">
               <label className="buy-now-label" htmlFor="buy-now-district">
@@ -114,11 +108,6 @@ export function DeliveryForm({
               <label className="buy-now-label" htmlFor="buy-now-address">
                 {t.addressLabel} <span className="buy-now-required" aria-hidden>*</span>
               </label>
-              {showLocationPicker && (
-                <p id="buy-now-address-tip-id" className="buy-now-address-tip" aria-live="polite">
-                  {t.addressFieldHintWithMap}
-                </p>
-              )}
               <textarea
                 id="buy-now-address"
                 value={value.addressLine}
@@ -129,7 +118,7 @@ export function DeliveryForm({
                 rows={2}
                 className="buy-now-input buy-now-textarea"
                 aria-label={t.addressLabel}
-                aria-describedby={showLocationPicker ? 'buy-now-address-tip-id buy-now-address-hint' : 'buy-now-address-hint'}
+                aria-describedby="buy-now-address-hint"
               />
               <span id="buy-now-address-hint" className="buy-now-address-hint">
                 {value.addressLine.length}/300 {value.addressLine.length > 0 && value.addressLine.length < 10 && (
@@ -180,6 +169,7 @@ export function DeliveryForm({
                     rel="noopener noreferrer"
                     className="buy-now-open-gmaps-btn"
                   >
+                    <PinIcon className="buy-now-open-gmaps-btn-icon" size={18} />
                     {(t as { openGoogleMapsButton?: string }).openGoogleMapsButton ?? 'Open Google Maps'}
                   </a>
                 </div>
@@ -193,13 +183,8 @@ export function DeliveryForm({
       <div className="buy-now-step">
         {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
         <div className="buy-now-step-content">
-          <h3 className="buy-now-step-heading">{t.step3}</h3>
-          <p className="buy-now-hint">{t.selectDeliveryDateAndTime}</p>
           <div className="buy-now-fields">
             <div className="buy-now-field">
-              <label className="buy-now-label" htmlFor="buy-now-date">
-                {t.specifyDeliveryDate}
-              </label>
               <input
                 id="buy-now-date"
                 type="date"
@@ -211,9 +196,6 @@ export function DeliveryForm({
               />
             </div>
             <div className="buy-now-field">
-              <label className="buy-now-label" htmlFor="buy-now-time-slot">
-                {t.preferredTime}
-              </label>
               <select
                 id="buy-now-time-slot"
                 value={value.timeSlot}
@@ -542,6 +524,7 @@ export function DeliveryForm({
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          gap: 8px;
           padding: 10px 20px;
           font-size: 0.9rem;
           font-weight: 600;
@@ -550,6 +533,17 @@ export function DeliveryForm({
           border-radius: var(--radius-sm);
           text-decoration: none;
           transition: background 0.2s, transform 0.15s;
+        }
+        .buy-now-open-gmaps-btn-icon {
+          flex-shrink: 0;
+          width: 18px;
+          height: 18px;
+        }
+        @media (max-width: 480px) {
+          .buy-now-open-gmaps-btn-icon {
+            width: 16px;
+            height: 16px;
+          }
         }
         .buy-now-open-gmaps-btn:hover {
           background: #a88b5c;
