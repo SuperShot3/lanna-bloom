@@ -65,6 +65,18 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
         </section>
 
         <section className="contact-section">
+          <h2 className="contact-heading">{t.emailLabel}</h2>
+          <p className="contact-text">
+            <a
+              href="mailto:support@lannabloom.shop"
+              className="contact-phone-link"
+            >
+              support@lannabloom.shop
+            </a>
+          </p>
+        </section>
+
+        <section className="contact-section">
           <h2 className="contact-heading">{t.shopLocation}</h2>
           <p className="contact-address">{t.address}</p>
         </section>

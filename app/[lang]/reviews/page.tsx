@@ -53,9 +53,14 @@ export default async function ReviewsPage({
           <>
             {/* Summary card */}
             <div className={styles.reviewSummaryCard}>
-              <span className={styles.reviewSummaryGoogleLogo} aria-hidden>
-                G
-              </span>
+              <img
+                src="/icons/google-icon-logo-svgrepo-com.svg"
+                alt=""
+                className={styles.reviewSummaryGoogleLogo}
+                width={24}
+                height={24}
+                aria-hidden
+              />
               <div className={styles.reviewSummaryStars}>
                 <Stars rating={Math.round(stats.average)} />
               </div>
