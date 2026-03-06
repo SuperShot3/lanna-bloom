@@ -192,6 +192,10 @@
   align-items: center;
   justify-content: center;
   padding: 24px 20px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
 }
 
 .gallery-lightbox-inner {
