@@ -128,13 +128,16 @@
   border-radius: 0;
   font-size: 1.1rem;
   font-weight: 500;
-  color: var(--text);
+  color: #1A3C34;
   text-align: left;
   justify-content: flex-start;
 }
+.dark .nav-item--mobile {
+  color: #fafaf9;
+}
 .nav-item--mobile:hover,
 .nav-item--mobile.nav-item--active {
-  color: var(--accent);
+  color: #C5A059;
 }
 .nav-item--pill {
   background: transparent;

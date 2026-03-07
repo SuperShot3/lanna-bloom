@@ -15,32 +15,32 @@ export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: stri
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
 
   return (
-    <section className="relative pt-32 pb-20 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-16 items-center">
+    <section className="relative pt-6 pb-12 sm:pt-10 sm:pb-14 md:pt-16 md:pb-16 lg:pt-32 lg:pb-20 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center">
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-3 sm:mb-4 md:mb-6">
             <span className="material-symbols-outlined text-lg">verified</span>
             {t.badge}
           </div>
-          <h1 className="font-[family-name:var(--font-family-display)] text-5xl md:text-6xl lg:text-7xl leading-[1.1] text-[#1A3C34] dark:text-stone-50 mb-8">
+          <h1 className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.1] text-[#1A3C34] dark:text-stone-50 mb-4 sm:mb-6 md:mb-8">
             {t.headlineNew} <br />
             <span className="italic text-[#C5A059]">{t.headlineAccent}</span>
           </h1>
-          <p className="text-lg text-stone-600 dark:text-stone-400 mb-10 max-w-lg leading-relaxed">
+          <p className="text-base sm:text-lg text-stone-600 dark:text-stone-400 mb-6 sm:mb-8 md:mb-10 max-w-lg leading-relaxed">
             {t.sublineNew}
           </p>
-          <div className="flex flex-wrap gap-4 mb-12">
+          <div className="flex flex-wrap gap-3 sm:gap-4 mb-8 sm:mb-10 md:mb-12">
             <Link
               href={catalogHref}
               onClick={() => trackCtaClick('cta_home_top')}
-              className="px-8 py-4 bg-[#C5A059] text-[#1A3C34] font-semibold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
+              className="px-6 py-3 sm:px-8 sm:py-4 bg-[#C5A059] text-[#1A3C34] font-semibold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 text-sm sm:text-base"
             >
               {t.ctaBrowse}
               <span className="material-symbols-outlined">arrow_forward</span>
             </Link>
             <Link
               href={infoHref}
-              className="px-8 py-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 font-semibold rounded-full hover:bg-stone-50 dark:hover:bg-stone-700 transition-all"
+              className="px-6 py-3 sm:px-8 sm:py-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 font-semibold rounded-full hover:bg-stone-50 dark:hover:bg-stone-700 transition-all text-sm sm:text-base"
             >
               {t.ctaHowItWorks}
             </Link>
@@ -89,19 +89,19 @@ export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: stri
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
           </div>
-          <div className="absolute -bottom-10 -left-10 bg-white dark:bg-stone-800 p-6 rounded-2xl shadow-2xl border border-stone-100 dark:border-stone-700 max-w-xs animate-[bounce_3s_ease-in-out_infinite]">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                <span className="material-symbols-outlined text-2xl">schedule</span>
+          <div className="absolute bottom-4 left-4 lg:-bottom-10 lg:-left-10 bg-white dark:bg-stone-800 p-4 lg:p-6 rounded-2xl shadow-2xl border border-stone-100 dark:border-stone-700 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite]">
+            <div className="flex items-center gap-2 lg:gap-3 mb-2 lg:mb-3">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+                <span className="material-symbols-outlined text-xl lg:text-2xl">schedule</span>
               </div>
-              <div>
-                <p className="font-bold text-sm">{t.expressDelivery}</p>
-                <p className="text-xs text-stone-500">{t.expressArea}</p>
+              <div className="min-w-0">
+                <p className="font-bold text-xs lg:text-sm">{t.expressDelivery}</p>
+                <p className="text-[10px] lg:text-xs text-stone-500 truncate">{t.expressArea}</p>
               </div>
             </div>
-            <div className="flex items-center justify-between text-xs font-medium">
+            <div className="flex items-center justify-between text-[10px] lg:text-xs font-medium gap-2">
               <span className="text-[#C5A059]">{t.availableNow}</span>
-              <span>{t.avgDelivery}</span>
+              <span className="truncate">{t.avgDelivery}</span>
             </div>
           </div>
         </div>

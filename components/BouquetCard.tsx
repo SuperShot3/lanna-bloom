@@ -327,6 +327,7 @@ export function BouquetCard({
           max-width: 100%;
           max-height: 100%;
           object-fit: cover;
+          object-position: top center;
         }
         .card-image-placeholder {
           background: var(--pastel-cream);

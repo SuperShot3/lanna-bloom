@@ -20,7 +20,7 @@ export function Footer({ lang }: { lang: Locale }) {
   };
 
   return (
-    <footer className="bg-stone-50 dark:bg-stone-900 pt-20 pb-10 border-t border-stone-200 dark:border-stone-800">
+    <footer className="bg-stone-50 dark:bg-[#0F1715] pt-20 pb-10 border-t border-stone-200 dark:border-stone-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div>

@@ -187,7 +187,7 @@ export function Header({ lang }: { lang: Locale }) {
           aria-hidden={!menuOpen}
         >
           <div
-            className="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-250"
+            className="absolute inset-0 bg-[#1A3C34]/25 dark:bg-[#0F1715]/50 opacity-0 transition-opacity duration-250"
             style={{ opacity: menuOpen ? 1 : 0 }}
             onClick={() => setMenuOpen(false)}
             onKeyDown={(e) => e.key === 'Enter' && setMenuOpen(false)}
@@ -196,7 +196,7 @@ export function Header({ lang }: { lang: Locale }) {
             aria-label="Close menu"
           />
           <div
-            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[var(--surface)] shadow-[-4px_0_24px_rgba(0,0,0,0.08)] p-14 px-6 flex flex-col gap-6 transform transition-transform duration-250"
+            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[#FDFCF8] dark:bg-[#0F1715] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] dark:shadow-[-4px_0_24px_rgba(0,0,0,0.3)] p-14 px-6 flex flex-col gap-6 transform transition-transform duration-250"
             style={{
               transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             }}
@@ -217,7 +217,7 @@ export function Header({ lang }: { lang: Locale }) {
           >
             <button
               type="button"
-              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-2xl text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--pastel-cream)] rounded-lg transition-colors"
+              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-2xl text-stone-500 dark:text-stone-400 hover:text-[#1A3C34] dark:hover:text-stone-100 hover:bg-[#F9F5F0] dark:hover:bg-stone-800 rounded-lg transition-colors"
               onClick={() => setMenuOpen(false)}
               aria-label={translations[lang].catalog.close}
             >

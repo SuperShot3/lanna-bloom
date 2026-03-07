@@ -240,11 +240,11 @@ export function StickyCheckoutBar({
           width: 100%;
           max-width: 420px;
           z-index: 50;
-          background: rgba(255, 255, 255, 0.72);
+          background: rgba(253, 252, 248, 0.92);
           backdrop-filter: blur(16px) saturate(180%);
           -webkit-backdrop-filter: blur(16px) saturate(180%);
           border-radius: 18px 18px 0 0;
-          box-shadow: 0 -3px 20px rgba(0, 0, 0, 0.09);
+          box-shadow: 0 -3px 20px rgba(26, 60, 52, 0.08);
           padding: 8px 14px calc(20px + env(safe-area-inset-bottom, 0px));
           display: flex;
           flex-direction: column;
@@ -284,24 +284,24 @@ export function StickyCheckoutBar({
           display: flex;
           align-items: center;
           gap: 6px;
-          background: #f7f7f7;
+          background: #F9F5F0;
           border-radius: 10px;
           padding: 7px 10px;
         }
         .sticky-checkout-bar__date-icon {
           flex-shrink: 0;
-          color: #5b9e6e;
+          color: #1A3C34;
         }
         .sticky-checkout-bar__date-sub {
           font-size: 10px;
           font-weight: 500;
-          color: #aaa;
+          color: #6b6560;
         }
         .sticky-checkout-bar__date-value {
           flex: 1;
           font-size: 13px;
           font-weight: 600;
-          color: #1a1a1a;
+          color: #2d2a26;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -309,8 +309,8 @@ export function StickyCheckoutBar({
         .sticky-checkout-bar__date-change {
           font-size: 11px;
           font-weight: 600;
-          color: #5b9e6e;
-          background: #eef7f1;
+          color: #1A3C34;
+          background: #e8f0ed;
           padding: 3px 9px;
           border: none;
           border-radius: 20px;
@@ -320,7 +320,7 @@ export function StickyCheckoutBar({
           font-family: inherit;
         }
         .sticky-checkout-bar__date-change:hover {
-          background: #d8f0e2;
+          background: #d4e6df;
         }
         .sticky-checkout-bar__bottom-row {
           display: flex;
@@ -334,18 +334,18 @@ export function StickyCheckoutBar({
         .sticky-checkout-bar__price-meta {
           font-size: 10px;
           font-weight: 500;
-          color: #aaa;
+          color: #6b6560;
           line-height: 1;
           margin-bottom: 2px;
         }
         .sticky-checkout-bar__price-meta span {
-          color: #888;
+          color: #6b6560;
           font-weight: 600;
         }
         .sticky-checkout-bar__total-amount {
           font-size: 22px;
           font-weight: 700;
-          color: #1a1a1a;
+          color: #2d2a26;
           letter-spacing: -0.5px;
           line-height: 1.15;
         }
@@ -436,11 +436,11 @@ export function StickyCheckoutBar({
           transform: scale(0.96);
         }
         .sticky-checkout-bar__btn-order--ready {
-          background: #5b9e6e;
-          box-shadow: 0 3px 12px rgba(91, 158, 110, 0.3);
+          background: #1A3C34;
+          box-shadow: 0 3px 12px rgba(26, 60, 52, 0.3);
         }
         .sticky-checkout-bar__btn-order--ready:hover:not(:disabled) {
-          background: #4a8d5c;
+          background: #153029;
         }
         .sticky-checkout-bar__btn-order--locked:not(.sticky-checkout-bar__btn-order--loading) {
           opacity: 0.75;
@@ -500,28 +500,28 @@ export function StickyCheckoutBar({
           gap: 8px;
           width: 100%;
           padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-          background: rgba(255, 255, 255, 0.72);
+          background: rgba(253, 252, 248, 0.92);
           backdrop-filter: blur(16px) saturate(180%);
           -webkit-backdrop-filter: blur(16px) saturate(180%);
           border: none;
           border-radius: 18px 18px 0 0;
-          box-shadow: 0 -3px 20px rgba(0, 0, 0, 0.09);
+          box-shadow: 0 -3px 20px rgba(26, 60, 52, 0.08);
           cursor: pointer;
           font-family: inherit;
           font-size: 15px;
           font-weight: 700;
-          color: #1a1a1a;
+          color: #2d2a26;
           transition: background 0.15s;
         }
         .sticky-checkout-bar__peek:hover {
-          background: rgba(255, 255, 255, 0.85);
+          background: rgba(253, 252, 248, 0.95);
         }
         .sticky-checkout-bar__peek:active {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(253, 252, 248, 0.98);
         }
         .sticky-checkout-bar__peek-chevron {
           flex-shrink: 0;
-          color: #5b9e6e;
+          color: #C5A059;
         }
         .sticky-checkout-bar--collapsed .sticky-checkout-bar__peek {
           display: flex;

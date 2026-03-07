@@ -27,6 +27,7 @@ export function ProductGallery({
   const [internalActive, setInternalActive] = useState(0);
   const touchStartX = useRef<number | null>(null);
   const didSwipeRef = useRef(false);
+  const lightboxTouchStartX = useRef<number | null>(null);
   const isControlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = isControlled ? activeIndex : internalActive;
   const setActive = isControlled ? onActiveChange! : setInternalActive;
@@ -172,6 +173,29 @@ export function ProductGallery({
 
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
+  const handleLightboxTouchStart = useCallback((e: React.TouchEvent) => {
+    lightboxTouchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleLightboxTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (lightboxTouchStartX.current == null || list.length <= 1) {
+        lightboxTouchStartX.current = null;
+        return;
+      }
+      const endX = e.changedTouches[0].clientX;
+      const delta = endX - lightboxTouchStartX.current;
+      lightboxTouchStartX.current = null;
+      if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (delta < 0) goNext();
+        else goPrev();
+      }
+    },
+    [list.length, goPrev, goNext]
+  );
+
   useEffect(() => {
     if (lightboxOpen && lightboxRef.current) {
       lightboxRef.current.focus();
@@ -191,7 +215,7 @@ export function ProductGallery({
   }, [lightboxOpen]);
 
   return (
-    <div className="gallery">
+    <div className={`gallery ${lightboxOpen ? 'gallery-lightbox-open' : ''}`}>
       <div
         className="gallery-main"
         onClick={handleMainClick}
@@ -329,7 +353,12 @@ export function ProductGallery({
                 ‹
               </button>
             )}
-            <div className="gallery-lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="gallery-lightbox-img-wrap"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={handleLightboxTouchStart}
+              onTouchEnd={handleLightboxTouchEnd}
+            >
               <button
                 type="button"
                 className="gallery-lightbox-close"

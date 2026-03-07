@@ -104,6 +104,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         }
         .card-image {
           object-fit: cover;
+          object-position: top center;
           width: 100%;
           height: 100%;
         }

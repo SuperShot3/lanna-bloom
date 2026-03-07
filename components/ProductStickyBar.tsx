@@ -10,10 +10,10 @@ export function ProductStickyBar({
   addToCartLabel?: string;
 }) {
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-stone-900/95 backdrop-blur-lg border-t border-stone-200 dark:border-stone-800 p-4 z-50 flex gap-3">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#FDFCF8]/95 dark:bg-[#0F1715]/95 backdrop-blur-lg border-t border-stone-200 dark:border-stone-800 p-4 z-50 flex gap-3">
       <button
         type="button"
-        className="p-4 border-2 border-stone-200 dark:border-stone-800 rounded-xl text-stone-500 hover:text-rose-500 transition-colors"
+        className="p-4 border-2 border-stone-200 dark:border-stone-700 rounded-xl text-[#1A3C34] dark:text-stone-300 hover:text-[#C5A059] transition-colors"
         aria-label="Add to favorites"
       >
         <span className="material-symbols-outlined">favorite_border</span>
