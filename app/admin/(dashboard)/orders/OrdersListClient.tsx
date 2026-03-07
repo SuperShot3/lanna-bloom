@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { FiltersBar } from '@/app/admin/components/FiltersBar';
 import { OrderTable } from '@/app/admin/components/OrderTable';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
@@ -52,30 +51,18 @@ export function OrdersListClient({
 
   return (
     <div className="admin-v2-orders">
-      <header className="admin-v2-header">
+      <header className="admin-v2-header admin-page-header">
         <div>
-          <h1 className="admin-v2-title">Orders</h1>
-          <p className="admin-v2-hint">Admin — Orders</p>
+          <h1 className="admin-v2-title">Order Management</h1>
+          <p className="admin-v2-hint">View and manage orders from Supabase</p>
         </div>
         <div className="admin-v2-header-actions">
-          <Link href="/admin/moderation/products" className="admin-v2-btn admin-v2-btn-outline">
-            Products
-          </Link>
-          <Link href="/admin/partners/applications" className="admin-v2-btn admin-v2-btn-outline">
-            Partners
-          </Link>
-          <Link href="/admin/reviews" className="admin-v2-btn admin-v2-btn-outline">
-            Reviews
-          </Link>
           <a
             href={`/api/admin/orders/export?${searchParams.toString()}`}
-            className="admin-v2-btn admin-v2-btn-outline"
+            className="admin-v2-btn admin-v2-btn-primary"
             download
           >
             Export CSV
-          </a>
-          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
-            Log out
           </a>
         </div>
       </header>

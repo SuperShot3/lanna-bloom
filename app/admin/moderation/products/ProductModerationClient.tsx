@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   approveBouquetAction,
   rejectBouquetAction,
@@ -85,31 +85,14 @@ export function ProductModerationClient({
 
   return (
     <div className="admin-v2-orders">
-      <header className="admin-v2-header">
+      <header className="admin-v2-header admin-page-header">
         <div>
           <h1 className="admin-v2-title">Product Moderation</h1>
           <p className="admin-v2-hint">
             {productFilter === 'pending'
-              ? `${total} item${total !== 1 ? 's' : ''} pending review`
+              ? `${total} item${total !== 1 ? 's' : ''} pending review (Sanity)`
               : `${allProducts.length} total partner products`}
           </p>
-        </div>
-        <div className="admin-v2-header-actions">
-          <Link href="/admin" className="admin-v2-btn admin-v2-btn-outline">
-            Back
-          </Link>
-          <Link href="/admin/orders" className="admin-v2-btn admin-v2-btn-outline">
-            Orders
-          </Link>
-          <Link href="/admin/partners/applications" className="admin-v2-btn admin-v2-btn-outline">
-            Partners
-          </Link>
-          <Link href="/admin/reviews" className="admin-v2-btn admin-v2-btn-outline">
-            Reviews
-          </Link>
-          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
-            Log out
-          </a>
         </div>
       </header>
 

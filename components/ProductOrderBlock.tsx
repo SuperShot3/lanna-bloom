@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
@@ -14,6 +14,10 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
+import { ProductStickyBar } from '@/components/ProductStickyBar';
+import { FloristCard } from '@/components/FloristCard';
+import { getAddOnsTotal } from '@/lib/addonsConfig';
+import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
 
 export function ProductOrderBlock({
   bouquet,
@@ -32,9 +36,12 @@ export function ProductOrderBlock({
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
+  const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
+  const totalPrice = (selectedSize.price + addOnsTotal) * Math.max(1, Math.floor(quantity));
+
   const handleAddToCart = () => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
-    const price = selectedSize.price;
+    const price = selectedSize.price + addOnsTotal;
     const qty = Math.max(1, Math.floor(quantity));
     addItem(
       {
@@ -51,7 +58,7 @@ export function ProductOrderBlock({
     );
     trackAddToCart({
       currency: 'THB',
-      value: price * qty,
+      value: totalPrice,
       items: [
         {
           item_id: bouquet.id,
@@ -67,6 +74,49 @@ export function ProductOrderBlock({
     setJustAdded(true);
   };
 
+  const PREFERRED_DELIVERY_KEY = 'lanna-bloom-preferred-delivery-date';
+  const PREFERRED_TIME_KEY = 'lanna-bloom-preferred-delivery-time';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const minDate = todayStr;
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const formatDateDisplay = useCallback((dateStr: string): string => {
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en', { month: 'long' });
+    return `${day} ${month}`;
+  }, [lang]);
+
+  const [deliveryDate, setDeliveryDate] = useState<string>(() => {
+    if (typeof window === 'undefined') return todayStr;
+    const stored = sessionStorage.getItem(PREFERRED_DELIVERY_KEY);
+    if (stored && /^\d{4}-\d{2}-\d{2}$/.test(stored) && stored >= minDate) return stored;
+    return todayStr;
+  });
+
+  const saveDeliveryDate = useCallback((v: string) => {
+    setDeliveryDate(v);
+    if (typeof window !== 'undefined' && v) {
+      sessionStorage.setItem(PREFERRED_DELIVERY_KEY, v);
+    }
+  }, []);
+
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState<string>(() => {
+    if (typeof window === 'undefined') return DELIVERY_TIME_SLOTS[0];
+    const stored = sessionStorage.getItem(PREFERRED_TIME_KEY);
+    if (stored && DELIVERY_TIME_SLOTS.includes(stored as typeof DELIVERY_TIME_SLOTS[number])) return stored;
+    return DELIVERY_TIME_SLOTS[0];
+  });
+
+  const saveDeliveryTimeSlot = useCallback((v: string) => {
+    setDeliveryTimeSlot(v);
+    if (typeof window !== 'undefined' && v) {
+      sessionStorage.setItem(PREFERRED_TIME_KEY, v);
+    }
+  }, []);
+
   return (
     <div className="order-block">
       <SizeSelector
@@ -75,6 +125,76 @@ export function ProductOrderBlock({
         onSelect={setSelectedSize}
         lang={lang}
       />
+      <div className="mb-6">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">
+          {tBuyNow.deliveryDateLabel ?? 'Delivery Date'}
+        </label>
+        <div
+          className="order-date-display-wrap"
+          onClick={() => dateInputRef.current?.showPicker?.()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              dateInputRef.current?.showPicker?.();
+            }
+          }}
+          aria-label={tBuyNow.specifyDeliveryDate ?? 'Specify delivery date'}
+        >
+          <input
+            ref={dateInputRef}
+            type="date"
+            className="order-date-input"
+            min={minDate}
+            value={deliveryDate}
+            onChange={(e) => saveDeliveryDate(e.target.value)}
+            aria-label={tBuyNow.specifyDeliveryDate ?? 'Specify delivery date'}
+          />
+          <span className="order-date-display">
+            {deliveryDate ? formatDateDisplay(deliveryDate) : (lang === 'th' ? 'เลือกวันที่' : 'Select date')}
+          </span>
+        </div>
+        <div className="order-date-quick-btns">
+          <button
+            type="button"
+            className="order-date-quick-btn"
+            onClick={() => saveDeliveryDate(todayStr)}
+            aria-label={tBuyNow.todayLabel}
+          >
+            {tBuyNow.todayLabel}
+          </button>
+          <button
+            type="button"
+            className="order-date-quick-btn"
+            onClick={() => saveDeliveryDate(tomorrowStr)}
+            aria-label={tBuyNow.tomorrowLabel}
+          >
+            {tBuyNow.tomorrowLabel}
+          </button>
+        </div>
+        <p className="text-[11px] text-stone-400 italic mt-1 flex items-center gap-1">
+          <span className="material-symbols-outlined text-xs">info</span>
+          {tBuyNow.sameDayHint ?? 'Same-day delivery available for orders before 2 PM.'}
+        </p>
+        <div className="mt-4">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">
+            {tBuyNow.preferredTime ?? 'Preferred time'}
+          </label>
+          <select
+            value={deliveryTimeSlot}
+            onChange={(e) => saveDeliveryTimeSlot(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 text-sm"
+            aria-label={tBuyNow.selectTimeSlot ?? 'Select time slot'}
+          >
+            {DELIVERY_TIME_SLOTS.map((slot) => (
+              <option key={slot} value={slot}>
+                {slot}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} />
       {justAdded ? (
         <div className="order-added-confirm" role="status">
@@ -115,15 +235,32 @@ export function ProductOrderBlock({
               ฿{(selectedSize.price * quantity).toLocaleString()}
             </span>
           </div>
+          {(bouquet.partnerName || bouquet.partnerId) && (
+            <div className="mb-6">
+              <FloristCard
+                lang={lang}
+                partnerName={bouquet.partnerName}
+                studioName="Chiang Mai"
+                quote="We source our flowers daily from local markets to ensure maximum freshness and fragrance in every arrangement."
+              />
+            </div>
+          )}
           <TrustBadges lang={lang} />
           <button
             type="button"
             className="order-add-to-cart-btn"
             onClick={handleAddToCart}
           >
-            {t.addToCart}
+            {t.addToCart} — ฿{totalPrice.toLocaleString()}
           </button>
         </>
+      )}
+      {!justAdded && (
+        <ProductStickyBar
+          totalPrice={totalPrice}
+          onAddToCart={handleAddToCart}
+          addToCartLabel={t.addToCart}
+        />
       )}
       <style jsx>{`
         @media (max-width: 480px) {
@@ -224,6 +361,57 @@ export function ProductOrderBlock({
         .order-add-to-cart-btn:focus-visible {
           outline: 2px solid var(--accent);
           outline-offset: 2px;
+        }
+        .order-date-display-wrap {
+          position: relative;
+          display: block;
+          cursor: pointer;
+          text-align: left;
+        }
+        .order-date-input {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+        }
+        .order-date-display {
+          display: block;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-size: 0.95rem;
+          font-family: inherit;
+          background: var(--surface);
+          color: var(--text);
+          min-height: 42px;
+          line-height: 1.4;
+          text-align: center;
+        }
+        .order-date-display-wrap:focus-within .order-date-display,
+        .order-date-display-wrap:hover .order-date-display {
+          border-color: var(--accent);
+        }
+        .order-date-quick-btns {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .order-date-quick-btn {
+          padding: 6px 12px;
+          font-size: 0.85rem;
+          font-family: inherit;
+          color: var(--text-muted);
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .order-date-quick-btn:hover {
+          border-color: var(--accent);
+          color: var(--text);
         }
         .order-added-confirm {
           margin-top: 20px;

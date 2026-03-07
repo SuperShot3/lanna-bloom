@@ -157,6 +157,36 @@ export async function updatePartnerApplication(
   return true;
 }
 
+/** Get approved partners for homepage carousel. */
+export async function getPartnersForHomepage(): Promise<
+  Array<{
+    id: string;
+    shop_name: string | null;
+    district: string | null;
+    sample_photo_urls: string[] | null;
+  }>
+> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('partner_applications')
+    .select('id, shop_name, district, sample_photo_urls')
+    .eq('status', 'approved')
+    .limit(10);
+
+  if (error) {
+    console.error('[Partner] getPartnersForHomepage failed:', error);
+    return [];
+  }
+  return (data ?? []) as Array<{
+    id: string;
+    shop_name: string | null;
+    district: string | null;
+    sample_photo_urls: string[] | null;
+  }>;
+}
+
 /** Delete application (admin). Only for rejected applications. */
 export async function deletePartnerApplication(id: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
 import { CatalogFilterBar, countActiveFilters } from '@/components/CatalogFilterBar';
+import { CatalogDeliveryBar } from '@/components/CatalogDeliveryBar';
+import { CatalogSidebarFilters } from '@/components/CatalogSidebarFilters';
 import { FilterDrawer } from '@/components/FilterDrawer';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -14,6 +16,7 @@ import type { CatalogFilterParams, CatalogProduct } from '@/lib/sanity';
 import { trackViewItemList } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 
 export interface CatalogWithFiltersProps {
   lang: Locale;
@@ -146,6 +149,9 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
 
   return (
     <div className="catalog-with-filters">
+      <div className="mb-6">
+        <CatalogDeliveryBar lang={lang} />
+      </div>
       <CatalogFilterBar
         lang={lang}
         activeCount={activeCount}
@@ -163,45 +169,82 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
         onApply={handleApply}
         onClear={handleClear}
       />
-      {(title || description) && (
-        <div className="catalog-page-header">
-          <div className="catalog-page-title">
-            <h1 className="catalog-title">{title || t.title}</h1>
-            {items.length > 0 && (
-              <span className="catalog-result-count">
-                {t.resultCountAvailable.replace('{count}', String(items.length))}
-              </span>
-            )}
-          </div>
-          {description && (
-            <p className="catalog-page-description">{description}</p>
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+        <CatalogSidebarFilters
+          lang={lang}
+          values={filterParams}
+          onApply={handleApply}
+          onClear={handleClear}
+        />
+        <div className="flex-1 min-w-0">
+          {(title || description) && (
+            <div className="catalog-page-header">
+              <div className="catalog-page-title">
+                <h1 className="catalog-title">{title || t.title}</h1>
+                {items.length > 0 && (
+                  <span className="catalog-result-count">
+                    {t.resultCountAvailable.replace('{count}', String(items.length))}
+                  </span>
+                )}
+              </div>
+              {description && (
+                <p className="catalog-page-description">{description}</p>
+              )}
+            </div>
+          )}
+          {items.length === 0 ? (
+            <div className="catalog-empty">
+              <p className="catalog-empty-text">
+                {activeCount > 0
+                  ? (isProductsMode ? t.noProductsMatch : t.noResults)
+                  : (isProductsMode ? t.catalogProductsEmpty : t.catalogEmpty)}
+              </p>
+              {activeCount > 0 && (
+                <Link href={`/${lang}/catalog`} className="catalog-empty-link">
+                  {t.viewAll}
+                </Link>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {bouquets.length > 0
+                  ? bouquets.map((bouquet) => (
+                      <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
+                    ))
+                  : products.map((product) => (
+                      <ProductCard key={product.id} product={product} lang={lang} />
+                    ))}
+              </div>
+              {filterParams.topCategory !== 'flowers' ? null : (
+                <div className="mt-16 py-12 px-6 rounded-2xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 text-center">
+                  <p className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] dark:text-stone-50 mb-4">
+                    {t.catalogReviewsCta ?? 'Love our bouquets?'}
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-4">
+                    <a
+                      href={GOOGLE_REVIEW_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-[#C5A059] text-[#1A3C34] rounded-full font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      {translations[lang].reviews.leaveReview}
+                    </a>
+                    <a
+                      href={GOOGLE_PLACE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-[#C5A059] hover:underline underline-offset-4"
+                    >
+                      {translations[lang].reviews.allReviewsOnGoogle}
+                    </a>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
-      )}
-      {items.length === 0 ? (
-        <div className="catalog-empty">
-          <p className="catalog-empty-text">
-            {activeCount > 0
-              ? (isProductsMode ? t.noProductsMatch : t.noResults)
-              : (isProductsMode ? t.catalogProductsEmpty : t.catalogEmpty)}
-          </p>
-          {activeCount > 0 && (
-            <Link href={`/${lang}/catalog`} className="catalog-empty-link">
-              {t.viewAll}
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="catalog-grid">
-          {bouquets.length > 0
-            ? bouquets.map((bouquet) => (
-                <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
-              ))
-            : products.map((product) => (
-                <ProductCard key={product.id} product={product} lang={lang} />
-              ))}
-        </div>
-      )}
+      </div>
       <style jsx>{`
         .catalog-with-filters {
           width: 100%;

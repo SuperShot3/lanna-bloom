@@ -63,6 +63,11 @@ function validateStripePayload(
     const addOns = (i.addOns as Record<string, unknown>) ?? {};
     const cardType = addOns.cardType as string | undefined;
     const wrappingOption = addOns.wrappingOption as string | undefined;
+    const productAddOnsRaw = addOns.productAddOns;
+    const productAddOns =
+      productAddOnsRaw && typeof productAddOnsRaw === 'object'
+        ? (productAddOnsRaw as Record<string, boolean>)
+        : undefined;
     return {
       itemType: (i.itemType === 'product' ? 'product' : 'bouquet') as 'bouquet' | 'product',
       bouquetId: typeof i.bouquetId === 'string' ? i.bouquetId : '',
@@ -80,6 +85,7 @@ function validateStripePayload(
               : wrappingOption === 'no paper' || wrappingOption === 'none'
                 ? 'no paper'
                 : null,
+        productAddOns,
       },
       imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
     };

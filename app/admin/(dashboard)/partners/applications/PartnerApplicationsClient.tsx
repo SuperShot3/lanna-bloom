@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   approvePartnerApplicationAction,
   rejectPartnerApplicationAction,
@@ -121,24 +120,10 @@ export function PartnerApplicationsClient({
 
   return (
     <div className="admin-v2-orders">
-      <header className="admin-v2-header">
+      <header className="admin-v2-header admin-page-header">
         <div>
           <h1 className="admin-v2-title">Partner Applications</h1>
-          <p className="admin-v2-hint">Admin — Partner onboarding</p>
-        </div>
-        <div className="admin-v2-header-actions">
-          <Link href="/admin" className="admin-v2-btn admin-v2-btn-outline">
-            Back
-          </Link>
-          <Link href="/admin/reviews" className="admin-v2-btn admin-v2-btn-outline">
-            Reviews
-          </Link>
-          <Link href="/admin/moderation/products" className="admin-v2-btn admin-v2-btn-outline">
-            Products
-          </Link>
-          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
-            Log out
-          </a>
+          <p className="admin-v2-hint">Review and manage vendor shop registrations from Supabase</p>
         </div>
       </header>
 

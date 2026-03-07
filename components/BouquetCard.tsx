@@ -11,7 +11,17 @@ import type { AnalyticsItem } from '@/lib/analytics';
 
 const SWIPE_THRESHOLD_PX = 50;
 
-export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale }) {
+type BouquetCardVariant = 'default' | 'popular';
+
+export function BouquetCard({
+  bouquet,
+  lang,
+  variant = 'default',
+}: {
+  bouquet: Bouquet;
+  lang: Locale;
+  variant?: BouquetCardVariant;
+}) {
   const t = translations[lang].catalog;
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minPrice = bouquet.sizes?.length
@@ -118,9 +128,10 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
   );
 
   const viewTransitionName = `product-${bouquet.id}`;
+  const isPopular = variant === 'popular';
 
   return (
-    <article className="card">
+    <article className={isPopular ? 'card card-popular' : 'card'}>
       <PrefetchLink
         href={href}
         className="card-link"
@@ -129,7 +140,7 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
         aria-label={`${name} — from ฿${minPrice.toLocaleString()}`}
       >
         <div
-          className="card-image-wrap"
+          className={`card-image-wrap ${isPopular ? 'card-image-wrap-popular' : ''}`}
           style={
             canSwipe
               ? { touchAction: 'pan-y' as const }
@@ -140,6 +151,16 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           onMouseDown={canSwipe ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
+          {isPopular && (
+            <button
+              type="button"
+              className="card-favorite"
+              aria-label="Add to favorites"
+              onClick={(e) => e.preventDefault()}
+            >
+              <span className="material-symbols-outlined">favorite</span>
+            </button>
+          )}
           {imgSrc ? (
             <div
               className="card-image-shared"
@@ -172,6 +193,25 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           )}
         </div>
         <div className="card-body">
+          {(bouquet.partnerName || bouquet.partnerId) && (
+            <div className="card-partner-badge">
+              {bouquet.partnerName
+                ? `${t.handCraftedBy ?? 'Hand-crafted by'} ${bouquet.partnerName}`
+                : (t.handCraftedByPartner ?? 'Hand-crafted by local partner')}
+            </div>
+          )}
+          {isPopular && (
+            <div className="card-stars">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <span
+                  key={i}
+                  className="material-symbols-outlined material-symbols-filled"
+                >
+                  star
+                </span>
+              ))}
+            </div>
+          )}
           <div className="card-name" title={name}>
             {name}
           </div>
@@ -213,6 +253,43 @@ export function BouquetCard({ bouquet, lang }: { bouquet: Bouquet; lang: Locale 
           background: var(--pastel-cream);
           max-width: 100%;
           border-radius: var(--radius);
+        }
+        .card-image-wrap-popular {
+          aspect-ratio: 3/4;
+        }
+        .card-favorite {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.9);
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #666;
+          z-index: 2;
+        }
+        .card-favorite:hover {
+          color: #c5a059;
+        }
+        .card-stars {
+          display: flex;
+          gap: 2px;
+          color: #c5a059;
+          font-size: 14px;
+          margin-bottom: 6px;
+        }
+        .card-stars .material-symbols-outlined {
+          font-size: 14px;
+        }
+        .card-partner-badge {
+          font-size: 11px;
+          color: #1a3c34;
+          margin-bottom: 4px;
         }
         .card-image-shared {
           width: 100%;

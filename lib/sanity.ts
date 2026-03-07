@@ -33,6 +33,12 @@ function urlFor(source: { _type?: string; asset?: { _ref?: string } } | undefine
   return builder.image(source).width(600).url();
 }
 
+/** Hero image URL (600×750) for homepage. Returns empty string if not set in Sanity. */
+export function urlForHeroImage(source: { _type?: string; asset?: { _ref?: string } } | undefined): string {
+  if (!source?.asset?._ref) return '';
+  return builder.image(source).width(600).height(750).fit('crop').url();
+}
+
 type SanityBouquet = {
   _id: string;
   slug?: { current?: string };
@@ -47,6 +53,8 @@ type SanityBouquet = {
   flowerTypes?: string[];
   occasion?: string | string[];
   partner?: { _ref?: string };
+  /** Expanded from partner->shopName in catalog query */
+  partnerName?: string;
   status?: string;
   images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
   sizes?: Array<{
@@ -92,6 +100,7 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     images: imageUrls.length ? imageUrls : [placeholder],
     sizes: sizes.length ? sizes : [{ key: 'm', label: 'M', price: 0, description: '' }],
     partnerId: doc.partner?._ref,
+    partnerName: doc.partnerName ?? undefined,
     status: doc.status === 'pending_review' || doc.status === 'approved' ? doc.status : undefined,
   };
 }
@@ -183,6 +192,22 @@ function shuffleArray<T>(arr: T[]): T[] {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+const HERO_IMAGE_FALLBACK = '/HeroImage/heroimage.webp';
+
+/** Hero image URL for homepage. Editable in Sanity Studio → Site Settings. */
+export async function getHeroImageFromSanity(): Promise<string> {
+  try {
+    const doc = await client.fetch<{ heroImage?: { _type?: string; asset?: { _ref?: string } } } | null>(
+      `*[_type == "siteSettings"][0] { heroImage }`
+    );
+    const url = doc?.heroImage ? urlForHeroImage(doc.heroImage) : '';
+    return url || HERO_IMAGE_FALLBACK;
+  } catch (err) {
+    console.error('[Sanity] getHeroImageFromSanity failed:', err);
+    return HERO_IMAGE_FALLBACK;
+  }
 }
 
 /** Approved bouquets with variety pricing (expensive, cheap, middle) interleaved, then shuffled; for home "Popular" section. Order varies on each page generation. */
@@ -283,6 +308,8 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   colors,
   flowerTypes,
   occasion,
+  partner,
+  "partnerName": partner->shopName,
   images,
   sizes
 }`;

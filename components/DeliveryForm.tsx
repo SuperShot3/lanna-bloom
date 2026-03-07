@@ -37,6 +37,7 @@ export function DeliveryForm({
   title,
   showLocationPicker,
   accordionMode,
+  hideDateAndTime,
 }: {
   lang: Locale;
   value: DeliveryFormValues;
@@ -50,6 +51,8 @@ export function DeliveryForm({
   showLocationPicker?: boolean;
   /** When true, render only steps 1 and 2 (no title, no step 3). For mobile accordion. */
   accordionMode?: boolean;
+  /** When true, hide date and time slot fields (use values from product page sessionStorage). */
+  hideDateAndTime?: boolean;
 }) {
   const t = translations[lang].buyNow;
   const districtManuallyChangedRef = useRef(false);
@@ -193,77 +196,79 @@ export function DeliveryForm({
         </div>
       </div>
 
-      {/* Step 2: Delivery date + preferred time slot */}
-      <div className="buy-now-step">
-        {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
-        <div className="buy-now-step-content">
-          <div className="buy-now-fields">
-            <div className="buy-now-field buy-now-date-field">
-              <div
-                className="buy-now-date-display-wrap"
-                onClick={() => dateInputRef.current?.showPicker?.()}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dateInputRef.current?.showPicker?.(); } }}
-                aria-label={t.specifyDeliveryDate}
-              >
-                <input
-                  ref={dateInputRef}
-                  id="buy-now-date"
-                  type="date"
-                  value={value.date}
-                  onChange={(e) => onChange({ ...value, date: e.target.value })}
-                  min={minDate}
-                  className="buy-now-input buy-now-date-input"
+      {/* Step 2: Delivery date + preferred time slot (hidden when hideDateAndTime) */}
+      {!hideDateAndTime && (
+        <div className="buy-now-step">
+          {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
+          <div className="buy-now-step-content">
+            <div className="buy-now-fields">
+              <div className="buy-now-field buy-now-date-field">
+                <div
+                  className="buy-now-date-display-wrap"
+                  onClick={() => dateInputRef.current?.showPicker?.()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dateInputRef.current?.showPicker?.(); } }}
                   aria-label={t.specifyDeliveryDate}
-                />
-                <span className="buy-now-date-display">
-                  {value.date ? formatDateDisplay(value.date) : (lang === 'th' ? 'เลือกวันที่' : 'Select date')}
-                </span>
-              </div>
-              <div className="buy-now-date-quick-btns">
-                <button
-                  type="button"
-                  className="buy-now-date-quick-btn"
-                  onClick={() => onChange({ ...value, date: todayStr })}
-                  aria-label={t.todayLabel}
                 >
-                  {t.todayLabel}
-                </button>
-                <button
-                  type="button"
-                  className="buy-now-date-quick-btn"
-                  onClick={() => onChange({ ...value, date: tomorrowStr })}
-                  aria-label={t.tomorrowLabel}
-                >
-                  {t.tomorrowLabel}
-                </button>
+                  <input
+                    ref={dateInputRef}
+                    id="buy-now-date"
+                    type="date"
+                    value={value.date}
+                    onChange={(e) => onChange({ ...value, date: e.target.value })}
+                    min={minDate}
+                    className="buy-now-input buy-now-date-input"
+                    aria-label={t.specifyDeliveryDate}
+                  />
+                  <span className="buy-now-date-display">
+                    {value.date ? formatDateDisplay(value.date) : (lang === 'th' ? 'เลือกวันที่' : 'Select date')}
+                  </span>
+                </div>
+                <div className="buy-now-date-quick-btns">
+                  <button
+                    type="button"
+                    className="buy-now-date-quick-btn"
+                    onClick={() => onChange({ ...value, date: todayStr })}
+                    aria-label={t.todayLabel}
+                  >
+                    {t.todayLabel}
+                  </button>
+                  <button
+                    type="button"
+                    className="buy-now-date-quick-btn"
+                    onClick={() => onChange({ ...value, date: tomorrowStr })}
+                    aria-label={t.tomorrowLabel}
+                  >
+                    {t.tomorrowLabel}
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="buy-now-field">
-              <select
-                id="buy-now-time-slot"
-                value={value.timeSlot}
-                onChange={(e) => onChange({ ...value, timeSlot: e.target.value })}
-                className="buy-now-select"
-                aria-label={t.preferredTime}
-              >
-                <option value="">{t.selectTimeSlot}</option>
-                {DELIVERY_TIME_SLOTS.map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
-              </select>
+              <div className="buy-now-field">
+                <select
+                  id="buy-now-time-slot"
+                  value={value.timeSlot}
+                  onChange={(e) => onChange({ ...value, timeSlot: e.target.value })}
+                  className="buy-now-select"
+                  aria-label={t.preferredTime}
+                >
+                  <option value="">{t.selectTimeSlot}</option>
+                  {DELIVERY_TIME_SLOTS.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {slot}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Step 3: Custom content (e.g. Send order via) or default "ADD TO CART" */}
       {!accordionMode && (
         <div className="buy-now-step buy-now-step-4">
-          <span className="buy-now-num" aria-hidden>3</span>
+          <span className="buy-now-num" aria-hidden>{hideDateAndTime ? '2' : '3'}</span>
           <div className="buy-now-step-content">
             <h3 className="buy-now-step-heading">{step3Heading ?? t.step4}</h3>
             {step3Content}

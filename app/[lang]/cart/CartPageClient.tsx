@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
-import { DeliveryForm, type DeliveryFormValues } from '@/components/DeliveryForm';
+import { DeliveryForm, DELIVERY_TIME_SLOTS, type DeliveryFormValues } from '@/components/DeliveryForm';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type {
@@ -28,7 +28,9 @@ import {
 } from '@/lib/referral';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
+import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
+import { getAddOnsTotal } from '@/lib/addonsConfig';
 
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
 function formatStickyDate(dateStr: string): string {
@@ -74,7 +76,12 @@ function buildStripePayload(
     bouquetId: string;
     bouquetSlug?: string;
     size: string;
-    addOns: { cardType: null; cardMessage: string; wrappingOption: null };
+    addOns: {
+      cardType: null;
+      cardMessage: string;
+      wrappingOption: null;
+      productAddOns?: Record<string, boolean>;
+    };
     imageUrl?: string;
   }> = [];
   for (const item of cartItems) {
@@ -88,6 +95,7 @@ function buildStripePayload(
         cardType: null,
         cardMessage: item.addOns.cardMessage?.trim() ?? '',
         wrappingOption: null,
+        productAddOns: item.addOns.productAddOns ?? undefined,
       },
       imageUrl: item.imageUrl ?? undefined,
     };
@@ -97,7 +105,10 @@ function buildStripePayload(
   const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
   const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
   const itemsTotal = cartItems.reduce(
-    (sum, item) => sum + item.size.price * (item.quantity ?? 1),
+    (sum, item) =>
+      sum +
+      (item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})) *
+        (item.quantity ?? 1),
     0
   );
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
@@ -133,6 +144,22 @@ function buildStripePayload(
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp', 'telegram'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+const PREFERRED_DELIVERY_KEY = 'lanna-bloom-preferred-delivery-date';
+const PREFERRED_TIME_KEY = 'lanna-bloom-preferred-delivery-time';
+
+function getProductPageDeliveryPreference(): { date: string; timeSlot: string } {
+  if (typeof window === 'undefined') return { date: '', timeSlot: '' };
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const storedDate = sessionStorage.getItem(PREFERRED_DELIVERY_KEY);
+  const storedTime = sessionStorage.getItem(PREFERRED_TIME_KEY);
+  const date = storedDate && /^\d{4}-\d{2}-\d{2}$/.test(storedDate) && storedDate >= todayStr
+    ? storedDate
+    : todayStr;
+  const timeSlot = storedTime && DELIVERY_TIME_SLOTS.includes(storedTime as typeof DELIVERY_TIME_SLOTS[number])
+    ? storedTime
+    : DELIVERY_TIME_SLOTS[0];
+  return { date, timeSlot };
+}
 
 type StoredCartForm = {
   delivery: DeliveryFormValues;
@@ -253,7 +280,8 @@ function buildOrderPayload(
   for (const item of cartItems) {
     const qty = item.quantity ?? 1;
     const bouquetTitle = lang === 'th' ? item.nameTh : item.nameEn;
-    const itemPrice = item.size.price;
+    const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
+    const itemPrice = item.size.price + addOnsTotal;
     for (let i = 0; i < qty; i++) {
       orderItems.push({
         bouquetId: item.bouquetId,
@@ -272,7 +300,10 @@ function buildOrderPayload(
   }
 
   const itemsTotal = cartItems.reduce(
-    (sum, item) => sum + item.size.price * (item.quantity ?? 1),
+    (sum, item) =>
+      sum +
+      (item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})) *
+        (item.quantity ?? 1),
     0
   );
   const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
@@ -328,7 +359,13 @@ function cartItemsToAnalytics(items: CartItem[], lang: Locale): AnalyticsItem[] 
 }
 
 function cartValue(items: CartItem[]): number {
-  return items.reduce((v, item) => v + item.size.price * (item.quantity ?? 1), 0);
+  return items.reduce(
+    (v, item) =>
+      v +
+      (item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})) *
+        (item.quantity ?? 1),
+    0
+  );
 }
 
 export function CartPageClient({ lang }: { lang: Locale }) {
@@ -380,6 +417,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       isMueangCentral: d.deliveryDistrict === 'MUEANG' && !!d.isMueangCentral,
     };
   });
+
+  useEffect(() => {
+    const pref = getProductPageDeliveryPreference();
+    setDelivery((prev) => ({
+      ...prev,
+      date: pref.date || prev.date,
+      timeSlot: pref.timeSlot || prev.timeSlot,
+    }));
+  }, []);
 
   const [placing, setPlacing] = useState(false);
   const [placingStripe, setPlacingStripe] = useState(false);
@@ -811,7 +857,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onChange={(e) => setIsOrderingForSomeoneElse(e.target.checked)}
           className="cart-contact-checkbox"
         />
-        <span>{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
+        <span className="cart-ordering-for-else-text">{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
       </label>
       {isOrderingForSomeoneElse && (
         <>
@@ -870,26 +916,36 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </div>
         </>
       )}
-      <fieldset className="cart-contact-checkboxes" aria-label={t.preferredContact}>
+      <fieldset className="cart-contact-preferences" aria-label={t.preferredContact}>
         <legend className="cart-contact-legend">
           {t.preferredContact} <span className="cart-required" aria-hidden>*</span>
         </legend>
-        {CONTACT_OPTIONS.map((option) => (
-          <label key={option} className="cart-contact-checkbox-label">
-            <input
-              type="checkbox"
-              checked={contactPreference.includes(option)}
-              onChange={() => toggleContactPreference(option)}
-              className="cart-contact-checkbox"
-            />
-            <span>
-              {option === 'phone' && t.contactPhone}
-              {option === 'line' && t.contactLine}
-              {option === 'whatsapp' && t.contactWhatsApp}
-              {option === 'telegram' && t.contactTelegram}
-            </span>
-          </label>
-        ))}
+        <div className="cart-contact-chips">
+          {CONTACT_OPTIONS.map((option) => {
+            const isSelected = contactPreference.includes(option);
+            const label =
+              option === 'phone' ? t.contactPhone
+              : option === 'line' ? t.contactLine
+              : option === 'whatsapp' ? t.contactWhatsApp
+              : t.contactTelegram;
+            return (
+              <label
+                key={option}
+                className={`cart-contact-chip ${isSelected ? 'cart-contact-chip-selected' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleContactPreference(option)}
+                  className="cart-contact-chip-input"
+                  aria-label={label}
+                />
+                <span className="cart-contact-chip-box" aria-hidden />
+                <span className="cart-contact-chip-label">{label}</span>
+              </label>
+            );
+          })}
+        </div>
       </fieldset>
     </div>
   );
@@ -897,6 +953,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   return (
     <div className="cart-page">
       <div className="container">
+        <div className="cart-checkout-header">
+          <Link href={`/${lang}/catalog`} className="cart-back-link">
+            ← {t.backToShop}
+          </Link>
+        </div>
         <div className="cart-mobile-view">
           <header className="cart-mobile-header">
             <h1 className="cart-mobile-title">{lang === 'th' ? 'ชำระเงิน' : 'Checkout'}</h1>
@@ -933,7 +994,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                             <h3 className="cart-item-name">{name}</h3>
                             <p className="cart-item-size">
                               {item.itemType === 'product'
-                                ? `฿${item.size.price.toLocaleString()}`
+                                ? `฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
                                 : (item.quantity ?? 1) > 1
                                   ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
                                   : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
@@ -966,7 +1027,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     {items.map((item, i) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
                       const qty = item.quantity ?? 1;
-                      const lineTotal = item.size.price * qty;
+                      const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
+                      const unitPrice = item.size.price + addOnsTotal;
+                      const lineTotal = unitPrice * qty;
                       const itemLabel = item.itemType === 'product' ? name : qty > 1 ? `${name} — ${item.size.label} × ${qty}` : `${name} — ${item.size.label}`;
                       return (
                         <div key={`mob-sum-${item.bouquetId}-${i}`} className="cart-order-summary-row cart-order-summary-item">
@@ -1021,6 +1084,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     onChange={setDelivery}
                     showLocationPicker
                     accordionMode
+                    hideDateAndTime
                   />
                   <button
                     type="button"
@@ -1126,6 +1190,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             title={t.placeOrder}
             showLocationPicker
             step3Heading={t.contactInfoStepHeading}
+            hideDateAndTime
             step3Content={
               <div className="cart-place-order">
                 {contactFormContent('')}
@@ -1197,7 +1262,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <h3 className="cart-item-name">{name}</h3>
                   <p className="cart-item-size">
                     {item.itemType === 'product'
-                      ? `฿${item.size.price.toLocaleString()}`
+                      ? `฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
                       : (item.quantity ?? 1) > 1
                         ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
                         : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
@@ -1245,7 +1310,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 {items.map((item, i) => {
                   const name = lang === 'th' ? item.nameTh : item.nameEn;
                   const qty = item.quantity ?? 1;
-                  const lineTotal = item.size.price * qty;
+                  const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
+                  const unitPrice = item.size.price + addOnsTotal;
+                  const lineTotal = unitPrice * qty;
                   const priceStr = lineTotal.toLocaleString();
                   const sizePart = item.itemType === 'product' ? '—' : item.size.label;
                   const itemLine = itemLineFmt
@@ -1297,6 +1364,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   hasOtherDiscount={false}
                 />
               </div>
+              <TrustBadges lang={lang} />
             </div>
           );
         })()}
@@ -1309,6 +1377,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       <style jsx>{`
         .cart-page {
           padding: 12px 0 48px;
+        }
+        .cart-checkout-header {
+          margin-bottom: 20px;
+        }
+        .cart-back-link {
+          display: inline-block;
+          font-size: 0.875rem;
+          color: var(--accent);
+          text-decoration: none;
+          margin-bottom: 12px;
+        }
+        .cart-back-link:hover {
+          text-decoration: underline;
         }
         .cart-page-header {
           display: flex;
@@ -1796,7 +1877,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           font-weight: normal;
           margin: 0.125rem 0 0;
         }
-        .cart-contact-checkboxes {
+        .cart-contact-preferences {
           margin: 16px 0 0;
           padding: 0;
           border: none;
@@ -1805,20 +1886,71 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           font-size: 0.85rem;
           font-weight: 600;
           color: var(--text-muted);
-          margin-bottom: 8px;
+          margin-bottom: 10px;
+          display: block;
         }
-        .cart-contact-checkbox-label {
+        .cart-contact-chips {
           display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .cart-contact-chip {
+          display: inline-flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 8px;
+          gap: 10px;
+          padding: 10px 16px;
+          background: var(--pastel-cream);
+          border: 2px solid var(--border);
+          border-radius: var(--radius-sm);
           font-size: 0.9rem;
+          font-weight: 600;
           color: var(--text);
           cursor: pointer;
+          transition: border-color 0.2s, background 0.2s;
         }
-        .cart-contact-checkbox {
-          margin: 0;
-          accent-color: var(--accent);
+        .cart-contact-chip:hover {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+        }
+        .cart-contact-chip-selected {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+        }
+        .cart-contact-chip-input {
+          position: absolute;
+          opacity: 0;
+          width: 0;
+          height: 0;
+          pointer-events: none;
+        }
+        .cart-contact-chip-box {
+          flex-shrink: 0;
+          position: relative;
+          width: 18px;
+          height: 18px;
+          border: 2px solid var(--border);
+          border-radius: 4px;
+          background: var(--surface);
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .cart-contact-chip-selected .cart-contact-chip-box {
+          border-color: var(--accent);
+          background: var(--accent);
+        }
+        .cart-contact-chip-selected .cart-contact-chip-box::after {
+          content: '✓';
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: #fff;
+          line-height: 1;
+        }
+        .cart-contact-chip-label {
+          user-select: none;
         }
         @media (min-width: 1201px) {
           .cart-mobile-view {
@@ -1988,23 +2120,81 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             font-weight: normal;
             margin: 0.125rem 0 0;
           }
-          .cart-accordion-body-contact .cart-contact-checkboxes {
+          .cart-accordion-body-contact .cart-contact-preferences {
             margin: 16px 0 0;
+            padding: 0;
+            border: none;
           }
           .cart-accordion-body-contact .cart-contact-legend {
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 6px;
-          }
-          .cart-accordion-body-contact .cart-contact-checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
             margin-bottom: 10px;
+            display: block;
+          }
+          .cart-accordion-body-contact .cart-contact-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+          .cart-accordion-body-contact .cart-contact-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            min-height: 44px;
+            background: var(--pastel-cream);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
             font-size: 0.95rem;
+            font-weight: 600;
             color: var(--text);
             cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+          }
+          .cart-accordion-body-contact .cart-contact-chip:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+          }
+          .cart-accordion-body-contact .cart-contact-chip-selected {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+          }
+          .cart-accordion-body-contact .cart-contact-chip-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+          }
+          .cart-accordion-body-contact .cart-contact-chip-box {
+            flex-shrink: 0;
+            position: relative;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            transition: border-color 0.2s, background 0.2s;
+          }
+          .cart-accordion-body-contact .cart-contact-chip-selected .cart-contact-chip-box {
+            border-color: var(--accent);
+            background: var(--accent);
+          }
+          .cart-accordion-body-contact .cart-contact-chip-selected .cart-contact-chip-box::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+          }
+          .cart-accordion-body-contact .cart-contact-chip-label {
+            user-select: none;
           }
           .cart-accordion-save-btn {
             width: 100%;
@@ -2079,7 +2269,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             grid-column: 1 / -1;
             margin-top: 4px;
           }
-          .cart-delivery .cart-contact-info .cart-contact-checkboxes {
+          .cart-delivery .cart-contact-info .cart-ordering-for-else .cart-ordering-for-else-text {
+            margin-left: 5px;
+          }
+          .cart-delivery .cart-contact-info .cart-contact-preferences {
             grid-column: 1 / -1;
             margin-top: 8px;
           }
@@ -2175,7 +2368,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             color: var(--text);
             margin: 16px 0 8px;
           }
-          .cart-delivery .cart-contact-checkboxes {
+          .cart-delivery .cart-contact-preferences {
             margin: 16px 0 0;
             padding: 0;
             border: none;
@@ -2184,20 +2377,67 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
           }
-          .cart-delivery .cart-contact-checkbox-label {
+          .cart-delivery .cart-contact-chips {
             display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+          .cart-delivery .cart-contact-chip {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 10px;
+            padding: 10px 16px;
+            background: var(--pastel-cream);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
             font-size: 0.9rem;
+            font-weight: 600;
             color: var(--text);
             cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
           }
-          .cart-delivery .cart-contact-checkbox {
-            margin: 0;
-            accent-color: var(--accent);
+          .cart-delivery .cart-contact-chip:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+          }
+          .cart-delivery .cart-contact-chip-selected {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+          }
+          .cart-delivery .cart-contact-chip-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+          }
+          .cart-delivery .cart-contact-chip-box {
+            flex-shrink: 0;
+            position: relative;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            transition: border-color 0.2s, background 0.2s;
+          }
+          .cart-delivery .cart-contact-chip-selected .cart-contact-chip-box {
+            border-color: var(--accent);
+            background: var(--accent);
+          }
+          .cart-delivery .cart-contact-chip-selected .cart-contact-chip-box::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
           }
           .cart-delivery .cart-required {
             color: #b91c1c;
@@ -2239,6 +2479,83 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             min-width: 0 !important;
             border: none !important;
             border-radius: 0 8px 8px 0 !important;
+          }
+          /* Contact preference chips - mobile (global so they apply reliably) */
+          .cart-mobile-contact-fields .cart-contact-preferences {
+            margin: 16px 0 0 !important;
+            padding: 0 !important;
+            border: none !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-legend {
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            color: var(--text-muted) !important;
+            margin-bottom: 10px !important;
+            display: block !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chips {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding: 12px 16px !important;
+            min-height: 44px !important;
+            background: var(--pastel-cream) !important;
+            border: 2px solid var(--border) !important;
+            border-radius: var(--radius-sm) !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            color: var(--text) !important;
+            cursor: pointer !important;
+            transition: border-color 0.2s, background 0.2s !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip:hover {
+            border-color: var(--accent) !important;
+            background: var(--accent-soft) !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip-selected {
+            border-color: var(--accent) !important;
+            background: var(--accent-soft) !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip-input {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+            pointer-events: none !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip-box {
+            flex-shrink: 0 !important;
+            position: relative !important;
+            width: 18px !important;
+            height: 18px !important;
+            border: 2px solid var(--border) !important;
+            border-radius: 4px !important;
+            background: var(--surface) !important;
+            transition: border-color 0.2s, background 0.2s !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip-selected .cart-contact-chip-box {
+            border-color: var(--accent) !important;
+            background: var(--accent) !important;
+          }
+          .cart-mobile-contact-fields .cart-contact-chip-selected .cart-contact-chip-box::after {
+            content: '✓' !important;
+            position: absolute !important;
+            inset: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #fff !important;
+            line-height: 1 !important;
+          }
+          .cart-mobile-contact-fields .cart-ordering-for-else .cart-ordering-for-else-text {
+            margin-left: 5px !important;
           }
         }
       `}</style>

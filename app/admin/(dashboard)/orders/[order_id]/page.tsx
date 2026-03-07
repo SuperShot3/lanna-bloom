@@ -75,13 +75,16 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
 
   return (
     <div className="admin-v2-detail">
-      <header className="admin-v2-header">
+      <header className="admin-v2-header admin-page-header">
         <div>
-          <Link href={backHref} className="admin-v2-link">← Back to orders</Link>
+          <Link href={backHref} className="admin-v2-link" style={{ display: 'inline-block', marginBottom: 8 }}>
+            ← Back to orders
+          </Link>
           <h1 className="admin-v2-title">{order.order_id}</h1>
+          <p className="admin-v2-hint">Order details from Supabase</p>
         </div>
         <div className="admin-v2-header-actions">
-          <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-v2-link">
+          <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-v2-btn admin-v2-btn-outline">
             View public page
           </Link>
           <RemoveOrderButton
@@ -89,9 +92,6 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
             returnTo={backHref}
             canEdit={canChangeStatus(role)}
           />
-          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
-            Log out
-          </a>
         </div>
       </header>
 

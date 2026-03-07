@@ -82,7 +82,7 @@ export default async function CatalogPage({
 
   return (
     <div className="catalog-page">
-      <div className="container">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6">
         <CatalogWithFilters
           lang={lang as Locale}
           bouquets={bouquets.length > 0 ? bouquets : undefined}

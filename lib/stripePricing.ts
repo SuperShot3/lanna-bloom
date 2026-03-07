@@ -8,6 +8,7 @@ import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFee';
 import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -21,6 +22,7 @@ export interface CartItemIdentifier {
     cardType: OrderCardType;
     cardMessage: string;
     wrappingOption: OrderWrappingOption;
+    productAddOns?: ProductAddOnsSelected;
   };
   imageUrl?: string;
 }
@@ -84,6 +86,7 @@ export async function computeOrderTotals(
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
 
       const productTitle = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
       items.push({
@@ -119,6 +122,7 @@ export async function computeOrderTotals(
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
 
       const bouquetTitle = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
       items.push({

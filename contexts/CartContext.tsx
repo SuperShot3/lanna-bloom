@@ -83,7 +83,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         (p) =>
           p.bouquetId === item.bouquetId &&
           p.size.key === item.size.key &&
-          (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim()
+          (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim() &&
+          JSON.stringify(p.addOns.productAddOns ?? {}) ===
+            JSON.stringify(item.addOns.productAddOns ?? {})
       );
       if (matchIndex >= 0) {
         const next = [...prev];

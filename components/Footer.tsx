@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
@@ -8,136 +10,135 @@ import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
 
 export function Footer({ lang }: { lang: Locale }) {
-  const t = translations[lang].nav;
+  const t = translations[lang].footer;
+  const [email, setEmail] = useState('');
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Wire to Resend or newsletter API
+    setEmail('');
+  };
 
   return (
-    <footer className="footer">
-      <div className="container footer-inner">
-        <div className="footer-main">
-          <div className="footer-block footer-social">
-            <SocialLinks />
-            <MessengerLinks />
-          </div>
-          <nav className="footer-block footer-nav" aria-label="Footer">
-            <Link href={`/${lang}/refund-replacement`} className="footer-link">
-              {t.refundReplacement}
-            </Link>
-            <Link href={`/${lang}/contact`} className="footer-link">
-              {t.contactUs}
-            </Link>
-            <Link href={`/${lang}/contact#location`} className="footer-link">
-              {t.findUs}
-            </Link>
-          </nav>
-          <div className="footer-block footer-images">
-            <div className="footer-payments-wrap">
-              <PaymentBadges lang={lang} compact />
-            </div>
-            <span className="footer-dbd-container">
-              <img
-                src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
-                alt="DBD Verified (Thailand Department of Business Development)"
-                className="footer-dbd-img"
-                loading="lazy"
-                decoding="async"
+    <footer className="bg-stone-50 dark:bg-stone-900 pt-20 pb-10 border-t border-stone-200 dark:border-stone-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div>
+            <Link href={`/${lang}`} className="flex items-center gap-2.5 mb-6">
+              <Image
+                src="/logo_icon_64.png"
+                alt=""
                 width={40}
                 height={40}
+                className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"
               />
-            </span>
+              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34] dark:text-stone-100">
+                Lanna Bloom
+              </span>
+            </Link>
+            <p className="text-stone-500 text-sm leading-relaxed mb-6">{t.tagline}</p>
+            <div className="flex gap-4 items-center flex-wrap">
+              <SocialLinks />
+              <MessengerLinks />
+            </div>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6">{t.shop}</h4>
+            <ul className="space-y-3 text-sm text-stone-500">
+              <li>
+                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                  {t.popularBouquets}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                  {t.occasions}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                  {t.subscription}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                  {t.giftCards}
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6">{t.company}</h4>
+            <ul className="space-y-3 text-sm text-stone-500">
+              <li>
+                <Link href={`/${lang}/info`} className="hover:text-[#C5A059] transition-colors">
+                  {t.aboutUs}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/partner/apply`} className="hover:text-[#C5A059] transition-colors">
+                  {t.partnerFlorists}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/contact`} className="hover:text-[#C5A059] transition-colors">
+                  {t.contact}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/contact#location`} className="hover:text-[#C5A059] transition-colors">
+                  {t.location}
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6">{t.newsletter}</h4>
+            <p className="text-sm text-stone-500 mb-4">{t.newsletterText}</p>
+            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.emailPlaceholder}
+                className="flex-1 px-4 py-2 text-sm rounded-lg border border-stone-200 dark:border-stone-700 dark:bg-stone-800 focus:ring-[#C5A059] focus:border-[#C5A059]"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-[#1A3C34] text-white text-sm rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                {t.join}
+              </button>
+            </form>
           </div>
         </div>
-        <p className="footer-copy">© Lanna Bloom</p>
+        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-stone-200 dark:border-stone-800 text-xs text-stone-400">
+          <p>{t.copyright}</p>
+          <div className="flex gap-6 mt-4 md:mt-0">
+            <Link href={`/${lang}/refund-replacement`} className="hover:text-stone-600 transition-colors">
+              {t.refundPolicy}
+            </Link>
+            <Link href={`/${lang}/contact`} className="hover:text-stone-600 transition-colors">
+              {t.termsOfService}
+            </Link>
+            <Link href={`/${lang}/refund-replacement`} className="hover:text-stone-600 transition-colors">
+              {t.privacyPolicy}
+            </Link>
+          </div>
+        </div>
+        <div className="flex justify-center mt-6">
+          <PaymentBadges lang={lang} compact />
+        </div>
+        <div className="flex justify-center mt-4">
+          <img
+            src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
+            alt="DBD Verified (Thailand Department of Business Development)"
+            className="h-10 w-10 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
       </div>
-      <style jsx>{`
-        .footer {
-          margin-top: auto;
-          padding: 16px 0;
-          border-top: 1px solid var(--border);
-          background: var(--surface);
-        }
-        .footer-inner {
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-          gap: 12px;
-        }
-        .footer-main {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px 24px;
-        }
-        .footer-social {
-          flex: 1;
-          justify-content: flex-start;
-        }
-        .footer-block {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .footer-nav {
-          flex: 0 0 auto;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 12px 20px;
-        }
-        .footer-images {
-          flex: 1;
-          justify-content: flex-end;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .footer-dbd-container {
-          display: inline-flex;
-          background: #fff;
-          border-radius: 6px;
-          padding: 4px;
-          box-shadow: var(--shadow);
-        }
-        .footer-dbd-img {
-          width: 40px;
-          height: 40px;
-          object-fit: contain;
-          display: block;
-        }
-        .footer-link {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--text);
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-        .footer-link:hover {
-          color: var(--accent);
-        }
-        .footer-copy {
-          font-size: 0.8rem;
-          color: var(--text-muted);
-          margin: 0;
-          text-align: center;
-          padding-top: 4px;
-          border-top: 1px solid var(--border);
-        }
-        @media (max-width: 767px) {
-          .footer-main {
-            flex-direction: column;
-            justify-content: center;
-          }
-          .footer-social,
-          .footer-images {
-            flex: none;
-            justify-content: center;
-          }
-        }
-        @media (min-width: 768px) {
-          .footer {
-            padding: 14px 0;
-          }
-        }
-      `}</style>
     </footer>
   );
 }

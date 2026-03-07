@@ -29,6 +29,8 @@ export interface Bouquet {
   sizes: BouquetSize[];
   /** Partner reference ID; undefined for Lanna Bloom own bouquets */
   partnerId?: string;
+  /** Partner shop name (when expanded from Sanity); for "Hand-crafted by X" badge */
+  partnerName?: string;
   /** Only approved bouquets appear on public catalog; missing = approved (backward compat) */
   status?: BouquetStatus;
 }

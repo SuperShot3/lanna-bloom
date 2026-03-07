@@ -20,7 +20,7 @@ export default function MainLayout({
   return (
     <>
       <Header lang={lang as Locale} />
-      <div className="main-content-wrap" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
+      <div className="main-content-wrap pt-20" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
         <main>{children}</main>
       </div>
       <Footer lang={lang as Locale} />

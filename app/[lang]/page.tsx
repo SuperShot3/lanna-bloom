@@ -1,28 +1,34 @@
 import { Hero } from '@/components/Hero';
-import { HomeBottomCta } from '@/components/HomeBottomCta';
 import { PopularSection } from '@/components/PopularSection';
 import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
+import { ExperienceSection } from '@/components/ExperienceSection';
+import { PartnersCarousel } from '@/components/PartnersCarousel';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
+import { getHeroImageFromSanity } from '@/lib/sanity';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { Suspense } from 'react';
 
 /** Regenerate every 60s so popular flowers shuffle on each update */
 export const revalidate = 60;
 
-export default function HomePage({
+export default async function HomePage({
   params,
 }: {
   params: { lang: string };
 }) {
   const lang = isValidLocale(params.lang) ? params.lang : 'en';
+  const heroImageUrl = await getHeroImageFromSanity();
   return (
     <>
-      <Hero lang={lang as Locale} />
+      <Hero lang={lang as Locale} heroImageUrl={heroImageUrl} />
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang as Locale} />
       </Suspense>
+      <ExperienceSection lang={lang as Locale} />
+      <Suspense fallback={null}>
+        <PartnersCarousel lang={lang as Locale} />
+      </Suspense>
       <ReviewsSection lang={lang as Locale} />
-      <HomeBottomCta lang={lang as Locale} />
     </>
   );
 }

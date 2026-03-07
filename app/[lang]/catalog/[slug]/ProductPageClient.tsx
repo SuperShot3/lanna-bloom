@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
+import { CareGuideSection } from '@/components/CareGuideSection';
 import type { Bouquet } from '@/lib/bouquets';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
@@ -53,7 +54,7 @@ export function ProductPageClient({
 
   return (
     <>
-      <div className="product-gallery-wrap">
+      <div className="product-gallery-wrap pb-24 md:pb-0">
         <ProductGallery
           images={images}
           name={name}
@@ -77,6 +78,7 @@ export function ProductPageClient({
           <p className="product-seasonal-disclaimer">
             {translations[lang].product.seasonalDisclaimer}
           </p>
+          <CareGuideSection lang={lang} />
         </div>
       </div>
     </>

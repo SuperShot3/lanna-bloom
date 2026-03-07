@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getAllReviewsAsync } from '@/lib/reviews';
 import { GOOGLE_REVIEW_URL } from '@/lib/reviewsConfig';
 import { AddReviewForm } from './AddReviewForm';
@@ -9,11 +8,8 @@ export default async function AdminReviewsPage() {
 
   return (
     <div className="admin-v2-detail">
-      <header className="admin-v2-header">
+      <header className="admin-v2-header admin-page-header">
         <div>
-          <Link href="/admin/orders" className="admin-v2-link">
-            ← Back to orders
-          </Link>
           <h1 className="admin-v2-title">Reviews</h1>
           <p className="admin-v2-hint">
             Add reviews pasted from Google Maps. &quot;Leave a review&quot; links to your Google
@@ -21,12 +17,6 @@ export default async function AdminReviewsPage() {
           </p>
         </div>
         <div className="admin-v2-header-actions">
-          <Link href="/admin" className="admin-v2-btn admin-v2-btn-outline">
-            Dashboard
-          </Link>
-          <Link href="/admin/orders" className="admin-v2-btn admin-v2-btn-outline">
-            Orders
-          </Link>
           <a
             href={GOOGLE_REVIEW_URL}
             target="_blank"
@@ -34,9 +24,6 @@ export default async function AdminReviewsPage() {
             className="admin-v2-btn admin-v2-btn-primary"
           >
             Open Google review page
-          </a>
-          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
-            Sign out
           </a>
         </div>
       </header>

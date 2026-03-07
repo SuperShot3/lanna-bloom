@@ -1,7 +1,5 @@
 import { getFeaturedReviewsAsync, getReviewStatsAsync } from '@/lib/reviews';
-import { Stars } from './Stars';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
-import styles from './reviews.module.css';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 
@@ -22,81 +20,88 @@ export async function ReviewsSection({
   ]);
   const t = translations[lang].reviews;
 
-  if (stats.count === 0) {
-    return null;
-  }
-
   const displayTitle = title ?? t.title;
-  const displaySubtitle = subtitle ?? t.subtitle;
-
-  const avatarReviews = reviews.slice(0, 3);
-  const moreCount = Math.max(0, stats.count - 3);
+  const featuredQuote =
+    reviews[0]?.text ||
+    "I ordered a bouquet for my mother's birthday and it was delivered within 45 minutes. The flowers were fresher than anything I've seen in the markets. Truly premium service.";
+  const quoteTitle = stats.count > 0 ? `"Best flower service in Chiang Mai"` : displayTitle;
 
   return (
     <section
-      className={styles.reviewsSection}
+      className="py-24 bg-white dark:bg-stone-950"
       aria-labelledby="reviews-section-title"
     >
-      <div className="container">
-        <header className={styles.reviewsHeader}>
-          <h2 id="reviews-section-title" className={styles.reviewsTitle}>
-            {displayTitle}
-          </h2>
-          {displaySubtitle && (
-            <p className={styles.reviewsSubtitle}>{displaySubtitle}</p>
-          )}
-        </header>
-
-        {/* Google review summary only - no individual cards */}
-        <div className={styles.reviewSummaryCard}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+        <div className="flex flex-col items-center gap-2 mb-8">
           <img
             src="/icons/google-icon-logo-svgrepo-com.svg"
             alt=""
-            className={styles.reviewSummaryGoogleLogo}
-            width={24}
-            height={24}
+            className="w-auto"
+            width={75}
+            height={75}
+            style={{ width: 75, height: 75 }}
             aria-hidden
           />
-          <div className={styles.reviewSummaryStars}>
-            <Stars rating={Math.round(stats.average)} />
-          </div>
-          <p className={styles.reviewSummaryRating} aria-live="polite">
-            {stats.average.toFixed(1)} {t.ratingFrom} {stats.count} {t.reviewsCount}
-          </p>
-          <div className={styles.reviewSummaryAvatars}>
-            {avatarReviews.map((r) => (
-              <div
-                key={r.id}
-                className={styles.reviewSummaryAvatar}
-                title={r.name}
+          <div className="flex text-yellow-400 justify-center">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <span
+                key={i}
+                className="material-symbols-outlined material-symbols-filled text-xl"
               >
-                {r.initials}
-              </div>
+                star
+              </span>
             ))}
-            {moreCount > 0 && (
-              <div className={`${styles.reviewSummaryAvatar} ${styles.reviewSummaryAvatarMore}`}>
-                +{moreCount}
-              </div>
-            )}
           </div>
-          <div className={styles.reviewSummaryActions}>
-            <a
-              href={GOOGLE_REVIEW_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.reviewsCtaLeaveReviewButton}
-            >
-              {t.leaveReview}
-            </a>
-            <a
-              href={GOOGLE_PLACE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.reviewsCtaAllOnGoogle}
-            >
-              {t.allReviewsOnGoogle}
-            </a>
+        </div>
+        <h2
+          id="reviews-section-title"
+          className="font-[family-name:var(--font-family-display)] text-4xl text-[#1A3C34] dark:text-stone-50 mb-6"
+        >
+          {stats.count > 0 ? quoteTitle : displayTitle}
+        </h2>
+        <p className="text-xl italic text-stone-500 mb-12">{featuredQuote}</p>
+        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-12 border-t border-stone-100 dark:border-stone-800">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[#C5A059] text-3xl">verified</span>
+            <div className="text-left">
+              <p className="font-bold text-sm">Verified Florists</p>
+              <p className="text-xs text-stone-400">Strict Quality Control</p>
+            </div>
           </div>
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[#C5A059] text-3xl">bolt</span>
+            <div className="text-left">
+              <p className="font-bold text-sm">Fast Delivery</p>
+              <p className="text-xs text-stone-400">Chiang Mai Inner City</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[#C5A059] text-3xl">
+              support_agent
+            </span>
+            <div className="text-left">
+              <p className="font-bold text-sm">Local Support</p>
+              <p className="text-xs text-stone-400">English & Thai</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+          <a
+            href={GOOGLE_REVIEW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-8 py-3 bg-[#C5A059] text-[#1A3C34] rounded-full font-semibold hover:opacity-90 transition-opacity"
+          >
+            {t.leaveReview}
+          </a>
+          <a
+            href={GOOGLE_PLACE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-[#C5A059] hover:underline underline-offset-4"
+          >
+            {t.allReviewsOnGoogle}
+          </a>
         </div>
       </div>
     </section>
