@@ -1988,7 +1988,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             gap: 8px;
           }
           .cart-accordion-section {
-            background: #fff;
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;

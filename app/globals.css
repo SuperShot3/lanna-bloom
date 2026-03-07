@@ -33,12 +33,17 @@
   width: auto !important;
   line-height: inherit !important;
 }
+/* Tell mobile browsers we support light and dark; improves color rendering on iOS/Android */
+html {
+  color-scheme: light dark;
+}
+
 :root {
   --bg: #fdfbf9;
   --surface: #ffffff;
   --text: #2d2a26;
   --text-muted: #6b6560;
-  --accent: #c4a77d;
+  --accent: #C5A059;
   --accent-soft: #e8dfd0;
   --pastel-pink: #f5e6e8;
   --pastel-mint: #e8f0ed;
@@ -75,6 +80,33 @@
   /* New Lanna Bloom design (for gradual migration) */
   --primary: #1A3C34;
   --accent-new: #C5A059;
+}
+
+/* Dark mode: override CSS variables for components using var(--surface), var(--bg), etc. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1715;
+    --surface: #1c2522;
+    --text: #fafaf9;
+    --text-muted: #a8a29e;
+    --accent-soft: #3d3528;
+    --pastel-cream: #1c2522;
+    --pastel-mint: #1a2e28;
+    --pastel-pink: #2e2426;
+    --border: #33403b;
+  }
+}
+/* Class-based dark mode (if theme toggle is added later) */
+.dark {
+  --bg: #0F1715;
+  --surface: #1c2522;
+  --text: #fafaf9;
+  --text-muted: #a8a29e;
+  --accent-soft: #3d3528;
+  --pastel-cream: #1c2522;
+  --pastel-mint: #1a2e28;
+  --pastel-pink: #2e2426;
+  --border: #33403b;
 }
 
 /* Material Symbols filled variant */
@@ -128,16 +160,13 @@
   border-radius: 0;
   font-size: 1.1rem;
   font-weight: 500;
-  color: #1A3C34;
+  color: var(--text);
   text-align: left;
   justify-content: flex-start;
 }
-.dark .nav-item--mobile {
-  color: #fafaf9;
-}
 .nav-item--mobile:hover,
 .nav-item--mobile.nav-item--active {
-  color: #C5A059;
+  color: var(--accent);
 }
 .nav-item--pill {
   background: transparent;
