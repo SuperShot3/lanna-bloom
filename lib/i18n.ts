@@ -29,6 +29,8 @@ export const translations = {
       flowerDeliveryChiangMai: 'Flower delivery Chiang Mai',
       roseBouquetsChiangMai: 'Rose bouquets Chiang Mai',
       sameDayFlowerDeliveryChiangMai: 'Same-day delivery Chiang Mai',
+      themeSwitchToLight: 'Switch to light mode',
+      themeSwitchToDark: 'Switch to dark mode',
     },
     delivery: {
       title: 'Delivery in Chiang Mai',
@@ -801,6 +803,8 @@ export const translations = {
       flowerDeliveryChiangMai: 'ส่งดอกไม้ในเชียงใหม่',
       roseBouquetsChiangMai: 'ช่อกุหลาบในเชียงใหม่',
       sameDayFlowerDeliveryChiangMai: 'จัดส่งวันเดียวเชียงใหม่',
+      themeSwitchToLight: 'สลับเป็นโหมดสว่าง',
+      themeSwitchToDark: 'สลับเป็นโหมดมืด',
     },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',

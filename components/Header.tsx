@@ -8,6 +8,7 @@ import { Locale, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
+import { ThemeToggle } from './ThemeToggle';
 import { CartIcon, HomeIcon, SearchIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
@@ -147,6 +148,7 @@ export function Header({ lang }: { lang: Locale }) {
                 <span>{t.search}</span>
               </Link>
             )}
+            <ThemeToggle lang={lang} />
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
             <Link
               href={cartHref}

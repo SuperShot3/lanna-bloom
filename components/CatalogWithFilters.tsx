@@ -207,7 +207,7 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 {bouquets.length > 0
                   ? bouquets.map((bouquet) => (
                       <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />

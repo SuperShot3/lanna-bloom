@@ -11,7 +11,7 @@ import type { AnalyticsItem } from '@/lib/analytics';
 
 const SWIPE_THRESHOLD_PX = 50;
 
-type BouquetCardVariant = 'default' | 'popular';
+type BouquetCardVariant = 'default' | 'popular' | 'popular-compact';
 
 export function BouquetCard({
   bouquet,
@@ -128,7 +128,8 @@ export function BouquetCard({
   );
 
   const viewTransitionName = `product-${bouquet.id}`;
-  const isPopular = variant === 'popular';
+  const isPopular = variant === 'popular' || variant === 'popular-compact';
+  const isCompact = variant === 'popular-compact';
 
   return (
     <article className={isPopular ? 'card card-popular' : 'card'}>
@@ -140,7 +141,7 @@ export function BouquetCard({
         aria-label={`${name} — from ฿${minPrice.toLocaleString()}`}
       >
         <div
-          className={`card-image-wrap ${isPopular ? 'card-image-wrap-popular' : ''}`}
+          className={`card-image-wrap ${isPopular ? 'card-image-wrap-popular' : ''} ${isCompact ? 'card-image-wrap-compact' : ''}`}
           style={
             canSwipe
               ? { touchAction: 'pan-y' as const }
@@ -256,6 +257,9 @@ export function BouquetCard({
         }
         .card-image-wrap-popular {
           aspect-ratio: 3/4;
+        }
+        .card-image-wrap-compact {
+          aspect-ratio: 1;
         }
         .card-favorite {
           position: absolute;

@@ -96,8 +96,10 @@ html {
     --border: #33403b;
   }
 }
-/* Class-based dark mode (if theme toggle is added later) */
-.dark {
+/* Class-based dark mode (theme toggle) */
+.dark,
+html.dark {
+  color-scheme: dark;
   --bg: #0F1715;
   --surface: #1c2522;
   --text: #fafaf9;
@@ -107,6 +109,20 @@ html {
   --pastel-mint: #1a2e28;
   --pastel-pink: #2e2426;
   --border: #33403b;
+}
+
+/* Force light theme (overrides prefers-color-scheme: dark) */
+html.light {
+  color-scheme: light;
+  --bg: #fdfbf9;
+  --surface: #ffffff;
+  --text: #2d2a26;
+  --text-muted: #6b6560;
+  --accent-soft: #e8dfd0;
+  --pastel-cream: #f9f5f0;
+  --pastel-mint: #e8f0ed;
+  --pastel-pink: #f5e6e8;
+  --border: #ebe6e0;
 }
 
 /* Material Symbols filled variant */
@@ -500,6 +516,58 @@ a.filter-pill--active:hover {
   font-weight: 600;
   margin: 0 0 var(--space-5);
   color: var(--text);
+}
+/* Horizontal scroll (Shopify-style) */
+.popular-scroll-wrap {
+  margin: 0 -1rem;
+  padding: 0 1rem;
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .popular-scroll-wrap {
+    margin: 0 -1.5rem;
+    padding: 0 1.5rem;
+  }
+}
+.popular-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding-bottom: 0.5rem;
+}
+.popular-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.popular-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.popular-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.popular-card-slot {
+  flex-shrink: 0;
+  width: 160px;
+  scroll-snap-align: start;
+}
+@media (min-width: 480px) {
+  .popular-card-slot {
+    width: 180px;
+  }
+}
+@media (min-width: 640px) {
+  .popular-card-slot {
+    width: 200px;
+  }
+}
+@media (min-width: 1024px) {
+  .popular-card-slot {
+    width: 220px;
+  }
 }
 .popular-grid {
   display: grid;

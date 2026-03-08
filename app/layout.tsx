@@ -3,6 +3,7 @@ import { ViewTransitions } from 'next-view-transitions';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
@@ -64,14 +65,15 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                if (typeof document !== 'undefined') {
-                  document.documentElement.classList.add('loading');
-                  document.addEventListener('DOMContentLoaded', function() {
-                    if (document.body) {
-                      document.body.classList.add('loading');
-                    }
-                  });
-                }
+                if (typeof document === 'undefined') return;
+                var theme = null;
+                try { theme = localStorage.getItem('lanna-bloom-theme'); } catch (e) {}
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+                else if (theme === 'light') document.documentElement.classList.add('light');
+                document.documentElement.classList.add('loading');
+                document.addEventListener('DOMContentLoaded', function() {
+                  if (document.body) document.body.classList.add('loading');
+                });
               })();
             `,
           }}
@@ -102,12 +104,14 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <LoadingScreen />
-        <InternalTrafficBootstrap />
-        <GoogleAnalytics />
-        <ViewTransitions>
-          {children}
-        </ViewTransitions>
+        <ThemeProvider>
+          <LoadingScreen />
+          <InternalTrafficBootstrap />
+          <GoogleAnalytics />
+          <ViewTransitions>
+            {children}
+          </ViewTransitions>
+        </ThemeProvider>
       </body>
     </html>
   );
