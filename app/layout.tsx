@@ -12,10 +12,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FDFCF8' },
-    { media: '(prefers-color-scheme: dark)', color: '#0F1715' },
-  ],
+  themeColor: '#FDFCF8',
 };
 
 export const metadata: Metadata = {
@@ -66,10 +63,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 if (typeof document === 'undefined') return;
-                var theme = null;
-                try { theme = localStorage.getItem('lanna-bloom-theme'); } catch (e) {}
-                if (theme === 'dark') document.documentElement.classList.add('dark');
-                else if (theme === 'light') document.documentElement.classList.add('light');
+                document.documentElement.classList.add('light');
                 document.documentElement.classList.add('loading');
                 document.addEventListener('DOMContentLoaded', function() {
                   if (document.body) document.body.classList.add('loading');

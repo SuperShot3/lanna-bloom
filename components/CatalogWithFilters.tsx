@@ -217,8 +217,8 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
                     ))}
               </div>
               {filterParams.topCategory !== 'flowers' ? null : (
-                <div className="mt-16 py-12 px-6 rounded-2xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 text-center">
-                  <p className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] dark:text-stone-50 mb-4">
+                <div className="mt-16 py-12 px-6 rounded-2xl bg-stone-100 border border-stone-200 text-center">
+                  <p className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] mb-4">
                     {t.catalogReviewsCta ?? 'Love our bouquets?'}
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-4">

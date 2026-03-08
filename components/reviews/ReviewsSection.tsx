@@ -28,7 +28,7 @@ export async function ReviewsSection({
 
   return (
     <section
-      className="py-24 bg-white dark:bg-stone-950"
+      className="py-16 sm:py-20 bg-white"
       aria-labelledby="reviews-section-title"
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
@@ -55,12 +55,12 @@ export async function ReviewsSection({
         </div>
         <h2
           id="reviews-section-title"
-          className="font-[family-name:var(--font-family-display)] text-4xl text-[#1A3C34] dark:text-stone-50 mb-6"
+          className="font-[family-name:var(--font-family-display)] text-4xl text-[#1A3C34] mb-6"
         >
           {stats.count > 0 ? quoteTitle : displayTitle}
         </h2>
         <p className="text-xl italic text-stone-500 mb-12">{featuredQuote}</p>
-        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-12 border-t border-stone-100 dark:border-stone-800">
+        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-12 border-t border-stone-100">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-[#C5A059] text-3xl">verified</span>
             <div className="text-left">

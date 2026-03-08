@@ -126,7 +126,7 @@ export function ProductOrderBlock({
         lang={lang}
       />
       <div className="mb-6">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">
           {tBuyNow.deliveryDateLabel ?? 'Delivery Date'}
         </label>
         <div
@@ -178,13 +178,13 @@ export function ProductOrderBlock({
           {tBuyNow.sameDayHint ?? 'Same-day delivery available for orders before 2 PM.'}
         </p>
         <div className="mt-4">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">
             {tBuyNow.preferredTime ?? 'Preferred time'}
           </label>
           <select
             value={deliveryTimeSlot}
             onChange={(e) => saveDeliveryTimeSlot(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-800 text-sm"
             aria-label={tBuyNow.selectTimeSlot ?? 'Select time slot'}
           >
             {DELIVERY_TIME_SLOTS.map((slot) => (

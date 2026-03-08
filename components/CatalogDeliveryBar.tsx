@@ -35,12 +35,12 @@ export function CatalogDeliveryBar({
   const isToday = date === minDate;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 py-4 px-4 sm:px-6 bg-stone-100 dark:bg-stone-800/50 rounded-xl border border-stone-200 dark:border-stone-700">
+    <div className="flex flex-wrap items-center justify-between gap-4 py-4 px-4 sm:px-6 bg-stone-100 rounded-xl border border-stone-200">
       <div className="flex items-center gap-3">
-        <span className="material-symbols-outlined text-[#1A3C34] dark:text-stone-300">
+        <span className="material-symbols-outlined text-[#1A3C34]">
           location_on
         </span>
-        <span className="font-medium text-stone-800 dark:text-stone-200">
+        <span className="font-medium text-stone-800">
           {t.deliveryBarTitle ?? 'Delivering to Chiang Mai, Thailand'}
         </span>
       </div>
@@ -52,11 +52,11 @@ export function CatalogDeliveryBar({
             value={date}
             min={minDate}
             onChange={handleChange}
-            className="px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-200 text-sm"
+            className="px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-800 text-sm"
           />
         </label>
         {isToday && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             {t.availableToday ?? 'Available Today'}
           </span>

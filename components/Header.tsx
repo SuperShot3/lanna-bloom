@@ -8,7 +8,6 @@ import { Locale, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
-import { ThemeToggle } from './ThemeToggle';
 import { CartIcon, HomeIcon, SearchIcon } from './icons';
 
 const SCROLL_THRESHOLD = 10;
@@ -75,8 +74,8 @@ export function Header({ lang }: { lang: Locale }) {
   }, [menuOpen]);
 
   const glassNavClass = isScrolled
-    ? 'bg-[rgba(253,252,248,0.9)] dark:bg-[rgba(15,23,21,0.9)] backdrop-blur-xl border-stone-200 dark:border-stone-800'
-    : 'bg-[rgba(253,252,248,0.8)] dark:bg-[rgba(15,23,21,0.8)] backdrop-blur-xl border-stone-200 dark:border-stone-800';
+    ? 'bg-[rgba(253,252,248,0.9)] backdrop-blur-xl border-stone-200'
+    : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
 
   return (
     <>
@@ -98,7 +97,7 @@ export function Header({ lang }: { lang: Locale }) {
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"
               />
-              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34] dark:text-stone-100 leading-none">
+              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34] leading-none">
                 Lanna Bloom
               </span>
             </Link>
@@ -112,53 +111,52 @@ export function Header({ lang }: { lang: Locale }) {
                   label={t.catalog}
                   active={basePath === '/catalog'}
                   variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] dark:text-stone-300 hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
                   href={occasionsHref}
                   label={t.occasions}
                   active={false}
                   variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] dark:text-stone-300 hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
                   href={partnersHref}
                   label={t.ourPartners}
                   active={false}
                   variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] dark:text-stone-300 hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
                   href={reviewsHref}
                   label={t.reviews}
                   active={basePath === '/reviews'}
                   variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] dark:text-stone-300 hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
               </nav>
             )}
           </div>
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-4 md:gap-6 ml-[5px]">
             {!isMobile && (
               <Link
                 href={catalogHref}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-stone-200 dark:border-stone-700 rounded-full hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-stone-200 rounded-full hover:bg-stone-50 transition-all"
               >
                 <span className="material-symbols-outlined text-xl">search</span>
                 <span>{t.search}</span>
               </Link>
             )}
-            <ThemeToggle lang={lang} />
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
             <Link
               href={cartHref}
-              className="relative p-2 text-[#1A3C34] dark:text-stone-300"
+              className="relative p-2 text-[#1A3C34]"
               aria-label={t.cart}
               title={t.cart}
             >
-              <span className="material-symbols-outlined text-2xl">shopping_bag</span>
+              <span className="material-symbols-outlined text-2xl mt-[5px]">shopping_bag</span>
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-[#C5A059] text-white text-[10px] flex items-center justify-center rounded-full">
+                <span className="absolute top-1 right-1 w-4 h-4 bg-[#C5A059] text-white text-[10px] flex items-center justify-center rounded-full mt-[5px]">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
@@ -166,7 +164,7 @@ export function Header({ lang }: { lang: Locale }) {
             {isMobile && (
               <button
                 type="button"
-                className="p-2 text-[#1A3C34] dark:text-stone-300"
+                className="p-2 text-[#1A3C34]"
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}
@@ -189,7 +187,7 @@ export function Header({ lang }: { lang: Locale }) {
           aria-hidden={!menuOpen}
         >
           <div
-            className="absolute inset-0 bg-[#1A3C34]/25 dark:bg-[#0F1715]/50 opacity-0 transition-opacity duration-250"
+            className="absolute inset-0 bg-[#1A3C34]/25 opacity-0 transition-opacity duration-250"
             style={{ opacity: menuOpen ? 1 : 0 }}
             onClick={() => setMenuOpen(false)}
             onKeyDown={(e) => e.key === 'Enter' && setMenuOpen(false)}
@@ -198,7 +196,7 @@ export function Header({ lang }: { lang: Locale }) {
             aria-label="Close menu"
           />
           <div
-            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[#FDFCF8] dark:bg-[#0F1715] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] dark:shadow-[-4px_0_24px_rgba(0,0,0,0.3)] p-14 px-6 flex flex-col gap-6 transform transition-transform duration-250"
+            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[#FDFCF8] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] p-14 px-6 flex flex-col gap-6 transform transition-transform duration-250"
             style={{
               transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             }}
@@ -219,7 +217,7 @@ export function Header({ lang }: { lang: Locale }) {
           >
             <button
               type="button"
-              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-2xl text-stone-500 dark:text-stone-400 hover:text-[#1A3C34] dark:hover:text-stone-100 hover:bg-[#F9F5F0] dark:hover:bg-stone-800 rounded-lg transition-colors"
+              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-2xl text-stone-500 hover:text-[#1A3C34] hover:bg-[#F9F5F0] rounded-lg transition-colors"
               onClick={() => setMenuOpen(false)}
               aria-label={translations[lang].catalog.close}
             >

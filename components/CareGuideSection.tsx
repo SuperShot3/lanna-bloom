@@ -32,8 +32,8 @@ export function CareGuideSection({ lang }: { lang: Locale }) {
   ];
 
   return (
-    <div className="mt-20 pt-12 border-t border-stone-200 dark:border-stone-800">
-      <h3 className="font-[family-name:var(--font-family-display)] text-2xl text-[#1A3C34] dark:text-stone-50 mb-6">
+    <div className="mt-20 pt-12 border-t border-stone-200">
+      <h3 className="font-[family-name:var(--font-family-display)] text-2xl text-[#1A3C34] mb-6">
         {t.title}
       </h3>
       <div className="grid md:grid-cols-3 gap-8">
@@ -42,10 +42,10 @@ export function CareGuideSection({ lang }: { lang: Locale }) {
             <span className="material-symbols-outlined text-[#C5A059] text-2xl">
               {tip.icon}
             </span>
-            <h5 className="font-semibold text-sm text-stone-800 dark:text-stone-200">
+            <h5 className="font-semibold text-sm text-stone-800">
               {tip.title}
             </h5>
-            <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
+            <p className="text-xs text-stone-500 leading-relaxed">
               {tip.desc}
             </p>
           </div>

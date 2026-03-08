@@ -29,8 +29,8 @@ export async function PartnersCarousel({ lang }: { lang: Locale }) {
         }));
 
   return (
-    <section id="partners" className="py-24 bg-[#1A3C34] text-stone-50 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-12">
+    <section id="partners" className="py-16 sm:py-20 bg-[#1A3C34] text-stone-50 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-8 sm:mb-10">
         <h2 className="font-[family-name:var(--font-family-display)] text-4xl mb-4">
           {t.title}
         </h2>

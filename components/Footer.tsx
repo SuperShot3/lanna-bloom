@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { translations } from '@/lib/i18n';
@@ -9,18 +9,70 @@ import { MessengerLinks } from './MessengerLinks';
 import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type NewsletterMessage = 'success' | 'already' | 'error' | 'invalid' | null;
+
 export function Footer({ lang }: { lang: Locale }) {
   const t = translations[lang].footer;
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<NewsletterMessage>(null);
+  const [honeypot, setHoneypot] = useState('');
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const validateEmail = useCallback((value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    return EMAIL_REGEX.test(trimmed);
+  }, []);
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Wire to Resend or newsletter API
-    setEmail('');
+    if (loading) return;
+
+    const trimmedEmail = email.trim();
+    if (!validateEmail(trimmedEmail)) {
+      setMessage('invalid');
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          source: 'footer',
+          company: honeypot || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMessage('error');
+        return;
+      }
+
+      if (data.message === 'already_subscribed') {
+        setMessage('already');
+        return;
+      }
+
+      setMessage('success');
+      setEmail('');
+    } catch {
+      setMessage('error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <footer className="bg-stone-50 dark:bg-[#0F1715] pt-20 pb-10 border-t border-stone-200 dark:border-stone-800">
+    <footer className="bg-stone-50 pt-20 pb-10 border-t border-stone-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div>
@@ -32,7 +84,7 @@ export function Footer({ lang }: { lang: Locale }) {
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"
               />
-              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34] dark:text-stone-100">
+              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34]">
                 Lanna Bloom
               </span>
             </Link>
@@ -95,24 +147,62 @@ export function Footer({ lang }: { lang: Locale }) {
           <div>
             <h4 className="font-bold mb-6">{t.newsletter}</h4>
             <p className="text-sm text-stone-500 mb-4">{t.newsletterText}</p>
-            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-2">
+              {/* Honeypot: hidden from users, bots may fill it */}
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.emailPlaceholder}
-                className="flex-1 px-4 py-2 text-sm rounded-lg border border-stone-200 dark:border-stone-700 dark:bg-stone-800 focus:ring-[#C5A059] focus:border-[#C5A059]"
+                type="text"
+                name="company"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="absolute -left-[9999px] w-px h-px opacity-0 pointer-events-none"
               />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-[#1A3C34] text-white text-sm rounded-lg font-medium hover:opacity-90 transition-opacity"
-              >
-                {t.join}
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (message) setMessage(null);
+                  }}
+                  placeholder={t.emailPlaceholder}
+                  disabled={loading}
+                  required
+                  aria-invalid={message === 'error' || message === 'invalid'}
+                  aria-describedby={message ? 'newsletter-message' : undefined}
+                  className="flex-1 px-4 py-2 text-sm rounded-lg border border-stone-200 bg-white focus:ring-[#C5A059] focus:border-[#C5A059] disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-[#1A3C34] text-white text-sm rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                >
+                  {loading ? t.newsletterSubscribing : t.join}
+                </button>
+              </div>
+              {message && (
+                <p
+                  id="newsletter-message"
+                  role="status"
+                  aria-live="polite"
+                  className={`text-sm ${
+                    message === 'success' || message === 'already'
+                      ? 'text-[#1A3C34]'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {message === 'success' && t.newsletterSuccess}
+                  {message === 'already' && t.newsletterAlreadySubscribed}
+                  {message === 'error' && t.newsletterError}
+                  {message === 'invalid' && t.newsletterInvalidEmail}
+                </p>
+              )}
             </form>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-stone-200 dark:border-stone-800 text-xs text-stone-400">
+        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-stone-200 text-xs text-stone-400">
           <p>{t.copyright}</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <Link href={`/${lang}/refund-replacement`} className="hover:text-stone-600 transition-colors">

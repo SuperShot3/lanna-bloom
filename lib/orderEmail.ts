@@ -157,3 +157,49 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
     console.error('[orderEmail] Customer confirmation Resend error:', error);
   }
 }
+
+/** Newsletter notification env. Uses NEWSLETTER_NOTIFY_EMAIL or falls back to ORDERS_NOTIFY_EMAIL. */
+function getNewsletterEnv(): { apiKey: string; to: string; from: string } | null {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const to =
+    process.env.NEWSLETTER_NOTIFY_EMAIL?.trim() ||
+    process.env.ORDERS_NOTIFY_EMAIL?.trim();
+  const from = process.env.ORDERS_FROM_EMAIL?.trim();
+  if (!apiKey || !to || !from) return null;
+  return { apiKey, to, from };
+}
+
+/** Send newsletter signup notification to business email. No-op if env vars not set. */
+export async function sendNewsletterNotificationEmail(
+  email: string,
+  source: string,
+  createdAt: Date
+): Promise<void> {
+  const env = getNewsletterEnv();
+  if (!env) return;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>New newsletter subscriber</title></head>
+<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+  <h1 style="font-size: 1.25rem;">New newsletter subscriber</h1>
+  <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+  <p><strong>Source:</strong> ${escapeHtml(source)}</p>
+  <p><strong>Subscribed at:</strong> ${escapeHtml(createdAt.toISOString())}</p>
+  <p style="font-size: 0.9rem; color: #666;">Lanna Bloom — newsletter signup</p>
+</body>
+</html>
+`.trim();
+
+  const resend = new Resend(env.apiKey);
+  const { error } = await resend.emails.send({
+    from: env.from,
+    to: [env.to],
+    subject: 'New newsletter subscriber',
+    html,
+  });
+  if (error) {
+    console.error('[orderEmail] Newsletter notification Resend error:', error);
+  }
+}

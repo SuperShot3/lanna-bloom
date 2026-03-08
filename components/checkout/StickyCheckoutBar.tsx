@@ -252,23 +252,6 @@ export function StickyCheckoutBar({
           animation: sticky-bar-slideUp 0.35s cubic-bezier(0.22, 0.68, 0, 1.2) both;
           box-sizing: border-box;
         }
-        @media (prefers-color-scheme: dark) {
-          .sticky-checkout-bar {
-            background: rgba(15, 23, 21, 0.92);
-          }
-          .sticky-checkout-bar__peek {
-            background: rgba(15, 23, 21, 0.92);
-          }
-          .sticky-checkout-bar__peek:hover {
-            background: rgba(15, 23, 21, 0.95);
-          }
-          .sticky-checkout-bar__peek:active {
-            background: rgba(15, 23, 21, 0.98);
-          }
-          .sticky-checkout-bar__date-change:hover {
-            background: #2a4038;
-          }
-        }
         @keyframes sticky-bar-slideUp {
           from {
             transform: translateX(-50%) translateY(100%);

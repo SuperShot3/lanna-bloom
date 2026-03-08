@@ -21,9 +21,9 @@ export function FloristCard({
   const meetFlorist = (t as { meetFlorist?: string }).meetFlorist ?? 'Meet the Florist';
 
   return (
-    <div className="p-6 rounded-2xl bg-stone-50 dark:bg-stone-900/50 border border-stone-100 dark:border-stone-800">
+    <div className="p-6 rounded-2xl bg-stone-50 border border-stone-100">
       <div className="flex items-center gap-4 mb-3">
-        <div className="w-14 h-14 rounded-full bg-white dark:bg-stone-800 p-1 ring-1 ring-stone-200 dark:ring-stone-700 overflow-hidden flex-shrink-0">
+        <div className="w-14 h-14 rounded-full bg-white p-1 ring-1 ring-stone-200 overflow-hidden flex-shrink-0">
           {partnerImage ? (
             <Image
               src={partnerImage}
@@ -33,7 +33,7 @@ export function FloristCard({
               className="w-full h-full object-cover rounded-full"
             />
           ) : (
-            <div className="w-full h-full rounded-full bg-stone-200 dark:bg-stone-700 flex items-center justify-center">
+            <div className="w-full h-full rounded-full bg-stone-200 flex items-center justify-center">
               <span className="material-symbols-outlined text-stone-400 text-2xl">
                 store
               </span>
@@ -41,15 +41,15 @@ export function FloristCard({
           )}
         </div>
         <div>
-          <h4 className="font-semibold text-sm text-stone-800 dark:text-stone-200">
+          <h4 className="font-semibold text-sm text-stone-800">
             {meetFlorist}
           </h4>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
+          <p className="text-xs text-stone-500">
             {partnerName}, {studioName}
           </p>
         </div>
       </div>
-      <p className="text-xs text-stone-600 dark:text-stone-400 italic">{quote}</p>
+      <p className="text-xs text-stone-600 italic">{quote}</p>
     </div>
   );
 }

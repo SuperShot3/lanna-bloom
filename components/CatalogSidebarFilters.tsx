@@ -68,7 +68,7 @@ export function CatalogSidebarFilters({
   if (values.topCategory && values.topCategory !== 'flowers') {
     return (
       <aside className="hidden lg:block w-64 shrink-0">
-        <div className="sticky top-24 p-6 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+        <div className="sticky top-24 p-6 rounded-xl bg-stone-100 border border-stone-200">
           <Link
             href={getLineContactUrl()}
             target="_blank"
@@ -85,9 +85,9 @@ export function CatalogSidebarFilters({
 
   return (
     <aside className="hidden lg:block w-64 shrink-0">
-      <div className="sticky top-24 space-y-6 p-6 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+      <div className="sticky top-24 space-y-6 p-6 rounded-xl bg-stone-100 border border-stone-200">
         <div>
-          <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
+          <h3 className="text-sm font-semibold text-stone-700 mb-3">
             {t.filterOccasion}
           </h3>
           <div className="flex flex-col gap-2">
@@ -109,7 +109,7 @@ export function CatalogSidebarFilters({
           </div>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
+          <h3 className="text-sm font-semibold text-stone-700 mb-3">
             {t.filterTypes}
           </h3>
           <div className="flex flex-col gap-2">
@@ -130,7 +130,7 @@ export function CatalogSidebarFilters({
           </div>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">
+          <h3 className="text-sm font-semibold text-stone-700 mb-3">
             {t.filterPriceRange}
           </h3>
           <div className="flex items-center gap-2">
@@ -140,7 +140,7 @@ export function CatalogSidebarFilters({
               placeholder={t.minPrice}
               value={minStr}
               onChange={handleMinChange}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-stone-300 bg-white"
             />
             <span className="text-stone-400">–</span>
             <input
@@ -149,14 +149,14 @@ export function CatalogSidebarFilters({
               placeholder={t.maxPrice}
               value={maxStr}
               onChange={handleMaxChange}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-stone-300 bg-white"
             />
           </div>
         </div>
         <button
           type="button"
           onClick={onClear}
-          className="w-full py-2 text-sm font-medium text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"
+          className="w-full py-2 text-sm font-medium text-stone-500 hover:text-stone-700"
         >
           {t.clearFilters}
         </button>
