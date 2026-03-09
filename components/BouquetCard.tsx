@@ -32,7 +32,8 @@ export function BouquetCard({
   const [imageIndex, setImageIndex] = useState(0);
   const imgSrc = images[imageIndex] ?? images[0] ?? '';
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
-  const canSwipe = images.length > 1;
+  const isPopular = variant === 'popular' || variant === 'popular-compact';
+  const canSwipe = images.length > 1 && !isPopular;
 
   const touchStartX = useRef<number | null>(null);
   const didSwipeRef = useRef(false);
@@ -128,7 +129,6 @@ export function BouquetCard({
   );
 
   const viewTransitionName = `product-${bouquet.id}`;
-  const isPopular = variant === 'popular' || variant === 'popular-compact';
   const isCompact = variant === 'popular-compact';
 
   return (

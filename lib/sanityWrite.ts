@@ -221,7 +221,7 @@ export async function updateProductCommission(
   commissionPercent: number
 ): Promise<void> {
   const client = getWriteClient();
-  const pct = Math.max(0, Math.min(100, Number(commissionPercent)));
+  const pct = Math.max(0, Math.min(500, Number(commissionPercent)));
   await client.patch(productId).set({ commissionPercent: pct }).commit();
 }
 

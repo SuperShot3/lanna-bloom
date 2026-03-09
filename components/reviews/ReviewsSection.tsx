@@ -28,10 +28,10 @@ export async function ReviewsSection({
 
   return (
     <section
-      className="py-16 sm:py-20 bg-white"
+      className="py-16 sm:py-20 lg:py-24 bg-white"
       aria-labelledby="reviews-section-title"
     >
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+      <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="flex flex-col items-center gap-2 mb-8">
           <img
             src="/icons/google-icon-logo-svgrepo-com.svg"

@@ -9,6 +9,6 @@ export function computeFinalPrice(
   if (commissionPercent == null || commissionPercent <= 0) {
     return cost;
   }
-  const pct = Math.max(0, Math.min(100, commissionPercent));
+  const pct = Math.max(0, Math.min(500, commissionPercent));
   return Math.round(cost * (1 + pct / 100) * 100) / 100;
 }

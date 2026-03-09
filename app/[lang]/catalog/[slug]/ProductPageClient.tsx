@@ -5,6 +5,7 @@ import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import { CareGuideSection } from '@/components/CareGuideSection';
 import type { Bouquet } from '@/lib/bouquets';
+import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 
@@ -15,6 +16,7 @@ export function ProductPageClient({
   description,
   compositionHeading,
   compositionText,
+  gifts = [],
 }: {
   bouquet: Bouquet;
   lang: Locale;
@@ -22,6 +24,7 @@ export function ProductPageClient({
   description: string;
   compositionHeading: string;
   compositionText: string;
+  gifts?: CatalogProduct[];
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = useMemo(
@@ -64,10 +67,12 @@ export function ProductPageClient({
         />
       </div>
       <div className="product-info">
+        <h1 className="product-title">{name}</h1>
         <ProductOrderBlock
           bouquet={bouquet}
           lang={lang}
           selectedImageUrl={selectedImageUrl}
+          gifts={gifts}
         />
         <div className="product-details-below">
           <p className="product-desc">{description}</p>

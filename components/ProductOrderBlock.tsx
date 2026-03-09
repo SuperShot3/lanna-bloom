@@ -18,15 +18,18 @@ import { ProductStickyBar } from '@/components/ProductStickyBar';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
+import type { CatalogProduct } from '@/lib/sanity';
 
 export function ProductOrderBlock({
   bouquet,
   lang,
   selectedImageUrl,
+  gifts = [],
 }: {
   bouquet: Bouquet;
   lang: Locale;
   selectedImageUrl?: string | null;
+  gifts?: CatalogProduct[];
 }) {
   const [selectedSize, setSelectedSize] = useState<BouquetSize>(bouquet.sizes[0]);
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
@@ -195,7 +198,7 @@ export function ProductOrderBlock({
           </select>
         </div>
       </div>
-      <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} />
+      <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} gifts={gifts} />
       {justAdded ? (
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>

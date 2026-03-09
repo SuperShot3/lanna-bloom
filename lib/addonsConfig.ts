@@ -1,5 +1,5 @@
 /**
- * Product add-ons (Chocolates, Vase, Teddy Bear) with prices.
+ * Product add-ons (Gift Chocolates, Gift Vase, Teddy Bear) with prices.
  * Used by AddOnsSection, CartContext, and Stripe/order payload.
  */
 
@@ -11,8 +11,8 @@ export interface ProductAddOn {
 }
 
 export const ADDONS: ProductAddOn[] = [
-  { id: 'chocolates', nameEn: 'Chocolates', nameTh: 'ช็อคโกแลต', price: 350 },
-  { id: 'vase', nameEn: 'Classic Vase', nameTh: 'แจกันคลาสสิก', price: 450 },
+  { id: 'chocolates', nameEn: 'Gift Chocolates', nameTh: 'ช็อคโกแลตของขวัญ', price: 350 },
+  { id: 'vase', nameEn: 'Gift Vase', nameTh: 'แจกันของขวัญ', price: 450 },
   { id: 'teddy', nameEn: 'Teddy Bear', nameTh: 'ตุ๊กตาหมี', price: 290 },
 ];
 

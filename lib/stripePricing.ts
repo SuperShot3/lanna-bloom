@@ -4,7 +4,7 @@
  */
 
 import { getBouquetById, getProductById } from '@/lib/sanity';
-import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFee';
+import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFees';
 import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
@@ -79,7 +79,7 @@ export async function computeOrderTotals(
         return { ok: false, message: `Product is not available: ${product.nameEn}` };
       }
 
-      const partnerCost = product.price ?? 0;
+      const partnerCost = product.cost ?? product.price ?? 0;
       const finalPrice = computeFinalPrice(partnerCost, product.commissionPercent);
       const commissionAmount = finalPrice - partnerCost;
       let itemPrice = finalPrice;

@@ -2,7 +2,12 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
-import { getBouquetBySlugFromSanity, getBouquetsFromSanity, getProductBySlugFromSanity } from '@/lib/sanity';
+import {
+  getBouquetBySlugFromSanity,
+  getBouquetsFromSanity,
+  getProductBySlugFromSanity,
+  getProductsFilteredFromSanity,
+} from '@/lib/sanity';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 
@@ -26,7 +31,10 @@ export default async function ProductPage({
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
 
-  const bouquet = await getBouquetBySlugFromSanity(params.slug);
+  const [bouquet, gifts] = await Promise.all([
+    getBouquetBySlugFromSanity(params.slug),
+    getProductsFilteredFromSanity({ categoryKey: 'gifts' }),
+  ]);
   if (bouquet) {
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const description = lang === 'th' ? bouquet.descriptionTh : bouquet.descriptionEn;
@@ -53,6 +61,7 @@ export default async function ProductPage({
               description={description}
               compositionHeading={t.composition}
               compositionText={composition}
+              gifts={gifts}
             />
           </div>
         </div>
@@ -83,6 +92,7 @@ export default async function ProductPage({
               lang={lang as Locale}
               name={name}
               description={description}
+              gifts={gifts}
             />
           </div>
         </div>

@@ -83,7 +83,7 @@ export function Header({ lang }: { lang: Locale }) {
         className={`fixed w-full z-50 border-b transition-colors duration-300 ${glassNavClass}`}
         data-scrolled={isScrolled}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-6 md:gap-8">
             <Link
               href={homeHref}

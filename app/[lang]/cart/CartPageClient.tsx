@@ -798,43 +798,76 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           autoComplete="name"
         />
       </div>
-      <div className="cart-contact-field">
-        <label className="cart-contact-label" htmlFor={`${idPrefix}cart-phone`}>
-          {t.phoneNumber} <span className="cart-required" aria-hidden>*</span>
-        </label>
-        <div className="cart-phone-row">
-          <select
-            id={`${idPrefix}cart-country-code`}
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            className="cart-phone-country-select"
-            aria-label={t.countryCode}
+      <div className="cart-phone-and-contact-wrap">
+        <div className="cart-contact-field">
+          <label className="cart-contact-label" htmlFor={`${idPrefix}cart-phone`}>
+            {t.phoneNumber} <span className="cart-required" aria-hidden>*</span>
+          </label>
+          <div className="cart-phone-row">
+            <select
+              id={`${idPrefix}cart-country-code`}
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              className="cart-phone-country-select"
+              aria-label={t.countryCode}
+            >
+              {COUNTRY_CODES.map((c) => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
+            </select>
+            <input
+              id={`${idPrefix}cart-phone`}
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={phoneNational}
+              onChange={handlePhoneInput}
+              placeholder={t.phoneNumberPlaceholder}
+              className="cart-contact-input cart-phone-input"
+              autoComplete="tel-national"
+              maxLength={PHONE_MAX_DIGITS}
+              aria-describedby={`${idPrefix}cart-phone-hint`}
+            />
+          </div>
+          <p
+            id={`${idPrefix}cart-phone-hint`}
+            className="cart-phone-hint"
+            style={{ fontSize: '0.625rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.125rem', marginBottom: 0 }}
           >
-            {COUNTRY_CODES.map((c) => (
-              <option key={c.code} value={c.code}>{c.label}</option>
-            ))}
-          </select>
-          <input
-            id={`${idPrefix}cart-phone`}
-            type="tel"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={phoneNational}
-            onChange={handlePhoneInput}
-            placeholder={t.phoneNumberPlaceholder}
-            className="cart-contact-input cart-phone-input"
-            autoComplete="tel-national"
-            maxLength={PHONE_MAX_DIGITS}
-            aria-describedby={`${idPrefix}cart-phone-hint`}
-          />
+            {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
+          </p>
         </div>
-        <p
-          id={`${idPrefix}cart-phone-hint`}
-          className="cart-phone-hint"
-          style={{ fontSize: '0.625rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.125rem', marginBottom: 0 }}
-        >
-          {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
-        </p>
+        <fieldset className="cart-contact-preferences" aria-label={t.preferredContact}>
+          <legend className="cart-contact-legend">
+            {t.preferredContact} <span className="cart-required" aria-hidden>*</span>
+          </legend>
+          <div className="cart-contact-chips">
+            {CONTACT_OPTIONS.map((option) => {
+              const isSelected = contactPreference.includes(option);
+              const label =
+                option === 'phone' ? t.contactPhone
+                : option === 'line' ? t.contactLine
+                : option === 'whatsapp' ? t.contactWhatsApp
+                : t.contactTelegram;
+              return (
+                <label
+                  key={option}
+                  className={`cart-contact-chip ${isSelected ? 'cart-contact-chip-selected' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleContactPreference(option)}
+                    className="cart-contact-chip-input"
+                    aria-label={label}
+                  />
+                  <span className="cart-contact-chip-box" aria-hidden />
+                  <span className="cart-contact-chip-label">{label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
       </div>
       <div className="cart-contact-field">
         <label className="cart-contact-label" htmlFor={`${idPrefix}cart-email`}>
@@ -916,37 +949,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </div>
         </>
       )}
-      <fieldset className="cart-contact-preferences" aria-label={t.preferredContact}>
-        <legend className="cart-contact-legend">
-          {t.preferredContact} <span className="cart-required" aria-hidden>*</span>
-        </legend>
-        <div className="cart-contact-chips">
-          {CONTACT_OPTIONS.map((option) => {
-            const isSelected = contactPreference.includes(option);
-            const label =
-              option === 'phone' ? t.contactPhone
-              : option === 'line' ? t.contactLine
-              : option === 'whatsapp' ? t.contactWhatsApp
-              : t.contactTelegram;
-            return (
-              <label
-                key={option}
-                className={`cart-contact-chip ${isSelected ? 'cart-contact-chip-selected' : ''}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleContactPreference(option)}
-                  className="cart-contact-chip-input"
-                  aria-label={label}
-                />
-                <span className="cart-contact-chip-box" aria-hidden />
-                <span className="cart-contact-chip-label">{label}</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
     </div>
   );
 
@@ -1425,11 +1427,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           align-self: start;
         }
         .cart-sticky-sidebar {
-          position: fixed;
+          position: sticky;
           top: 78px;
-          right: max(24px, calc((100vw - 1200px) / 2 + 24px));
           width: 388px;
-          max-width: calc(100vw - 48px);
+          max-width: 100%;
+          align-self: start;
           z-index: 10;
           background: var(--pastel-cream, #fdf8f3);
           border: 1px solid var(--border);
@@ -1698,6 +1700,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-delivery :global(.buy-now-form) {
           margin-top: 0;
+          background: #fff;
         }
         .cart-section-title {
           font-size: 1.1rem;
@@ -1786,14 +1789,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           color: #b91c1c;
         }
         .cart-contact-info {
-          margin-bottom: 20px;
+          margin-bottom: 16px;
           padding-top: 0;
         }
         .cart-contact-info > .cart-contact-field:first-child {
           margin-top: 0;
         }
         .cart-contact-field {
-          margin-bottom: 12px;
+          margin-bottom: 10px;
+        }
+        .cart-phone-and-contact-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
         .cart-section-label {
           font-size: 0.9rem;
@@ -1878,31 +1886,31 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           margin: 0.125rem 0 0;
         }
         .cart-contact-preferences {
-          margin: 16px 0 0;
+          margin: 0;
           padding: 0;
           border: none;
         }
         .cart-contact-legend {
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           font-weight: 600;
           color: var(--text-muted);
-          margin-bottom: 10px;
+          margin-bottom: 6px;
           display: block;
         }
         .cart-contact-chips {
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
+          gap: 6px;
         }
         .cart-contact-chip {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
-          padding: 10px 16px;
+          gap: 6px;
+          padding: 6px 10px;
           background: var(--pastel-cream);
-          border: 2px solid var(--border);
+          border: 1px solid var(--border);
           border-radius: var(--radius-sm);
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 600;
           color: var(--text);
           cursor: pointer;
@@ -1926,10 +1934,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-contact-chip-box {
           flex-shrink: 0;
           position: relative;
-          width: 18px;
-          height: 18px;
-          border: 2px solid var(--border);
-          border-radius: 4px;
+          width: 14px;
+          height: 14px;
+          border: 1px solid var(--border);
+          border-radius: 3px;
           background: var(--surface);
           transition: border-color 0.2s, background 0.2s;
         }
@@ -2241,20 +2249,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         @media (min-width: 1201px) {
           .cart-delivery .cart-place-order {
             margin-top: 0;
-            padding: 8px 20px 20px;
-            background: var(--pastel-cream, #fdf8f3);
+            padding: 12px 16px 16px;
+            background: #fff;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
           }
           .cart-delivery .cart-contact-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px 24px;
-            margin-bottom: 24px;
+            gap: 10px 20px;
+            margin-bottom: 16px;
           }
           .cart-delivery .cart-contact-info .cart-section-label {
             grid-column: 1 / -1;
-            margin: 0 0 4px;
+            margin: 0 0 2px;
           }
           .cart-delivery .cart-contact-info .cart-section-label:first-child {
             margin-top: 0;
@@ -2262,19 +2270,26 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-delivery .cart-contact-info .cart-contact-field {
             margin-bottom: 0;
           }
-          .cart-delivery .cart-contact-info .cart-contact-field:has(.cart-phone-row) {
-            grid-column: 1 / -1;
+          .cart-delivery .cart-contact-info .cart-phone-and-contact-wrap {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            max-width: 100%;
+          }
+          .cart-delivery .cart-contact-info .cart-phone-and-contact-wrap .cart-contact-field {
+            margin-bottom: 0;
+          }
+          .cart-delivery .cart-contact-info .cart-phone-and-contact-wrap .cart-contact-preferences {
+            margin: 0;
           }
           .cart-delivery .cart-contact-info .cart-ordering-for-else {
             grid-column: 1 / -1;
-            margin-top: 4px;
+            margin-top: 2px;
           }
           .cart-delivery .cart-contact-info .cart-ordering-for-else .cart-ordering-for-else-text {
             margin-left: 5px;
-          }
-          .cart-delivery .cart-contact-info .cart-contact-preferences {
-            grid-column: 1 / -1;
-            margin-top: 8px;
           }
           .cart-delivery .cart-place-order-actions {
             flex-direction: row;
@@ -2299,15 +2314,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
           .cart-delivery .cart-contact-label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
           }
           .cart-delivery .cart-contact-input {
             width: 100%;
-            padding: 10px 12px;
-            font-size: 0.95rem;
+            padding: 8px 10px;
+            font-size: 0.9rem;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             background: var(--surface);
@@ -2331,8 +2346,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             border-color: var(--accent);
           }
           .cart-delivery .cart-phone-country-select {
-            padding: 10px 12px;
-            font-size: 0.95rem;
+            padding: 8px 10px;
+            font-size: 0.85rem;
             border: none;
             border-right: 1px solid var(--border);
             border-radius: var(--radius-sm) 0 0 var(--radius-sm);
@@ -2343,8 +2358,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             cursor: pointer;
             flex-shrink: 0;
             width: auto;
-            min-width: 7rem;
-            max-width: 12rem;
+            min-width: 6rem;
+            max-width: 10rem;
           }
           .cart-delivery .cart-phone-input {
             flex: 1;
@@ -2369,30 +2384,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             margin: 16px 0 8px;
           }
           .cart-delivery .cart-contact-preferences {
-            margin: 16px 0 0;
+            margin: 0;
             padding: 0;
             border: none;
           }
           .cart-delivery .cart-contact-legend {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 10px;
+            margin-bottom: 4px;
           }
           .cart-delivery .cart-contact-chips {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 6px;
           }
           .cart-delivery .cart-contact-chip {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
+            gap: 5px;
+            padding: 5px 8px;
             background: var(--pastel-cream);
-            border: 2px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: var(--text);
             cursor: pointer;
@@ -2416,10 +2431,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-delivery .cart-contact-chip-box {
             flex-shrink: 0;
             position: relative;
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--border);
-            border-radius: 4px;
+            width: 12px;
+            height: 12px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
             background: var(--surface);
             transition: border-color 0.2s, background 0.2s;
           }
@@ -2434,7 +2449,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 700;
             color: #fff;
             line-height: 1;
@@ -2482,30 +2497,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
           /* Contact preference chips - mobile (global so they apply reliably) */
           .cart-mobile-contact-fields .cart-contact-preferences {
-            margin: 16px 0 0 !important;
+            margin: 12px 0 0 !important;
             padding: 0 !important;
             border: none !important;
           }
           .cart-mobile-contact-fields .cart-contact-legend {
-            font-size: 0.9rem !important;
+            font-size: 0.75rem !important;
             font-weight: 600 !important;
             color: var(--text-muted) !important;
+            margin-bottom: 4px !important;
             margin-bottom: 10px !important;
             display: block !important;
           }
           .cart-mobile-contact-fields .cart-contact-chips {
             display: flex !important;
-            flex-wrap: wrap !important;
-            gap: 10px !important;
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
           }
           .cart-mobile-contact-fields .cart-contact-chip {
             display: inline-flex !important;
             align-items: center !important;
-            gap: 10px !important;
-            padding: 12px 16px !important;
-            min-height: 44px !important;
+            gap: 4px !important;
+            padding: 4px 6px !important;
+            font-size: 0.7rem !important;
             background: var(--pastel-cream) !important;
-            border: 2px solid var(--border) !important;
+            border: 1px solid var(--border) !important;
             border-radius: var(--radius-sm) !important;
             font-size: 0.95rem !important;
             font-weight: 600 !important;
@@ -2531,8 +2549,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-mobile-contact-fields .cart-contact-chip-box {
             flex-shrink: 0 !important;
             position: relative !important;
-            width: 18px !important;
-            height: 18px !important;
+            width: 12px !important;
+            height: 12px !important;
             border: 2px solid var(--border) !important;
             border-radius: 4px !important;
             background: var(--surface) !important;
@@ -2549,7 +2567,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            font-size: 11px !important;
+            font-size: 9px !important;
             font-weight: 700 !important;
             color: #fff !important;
             line-height: 1 !important;

@@ -2,7 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { getDefaultAddOns } from './AddOnsSection';
+import {
+  AddOnsSection,
+  getDefaultAddOns,
+  type AddOnsValues,
+} from './AddOnsSection';
+import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -15,25 +20,31 @@ export function ProductOrderBlockForProduct({
   product,
   lang,
   selectedImageUrl,
+  gifts = [],
 }: {
   product: CatalogProduct;
   lang: Locale;
   selectedImageUrl?: string | null;
+  gifts?: CatalogProduct[];
 }) {
   const [quantity, setQuantity] = useState(1);
+  const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
-  const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
+  const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+  const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
+  const totalPrice = (finalPrice + addOnsTotal) * Math.max(1, Math.floor(quantity));
 
   const handleAddToCart = () => {
     const qty = Math.max(1, Math.floor(quantity));
+    const itemPrice = finalPrice + addOnsTotal;
     const syntheticSize = {
       key: 'm' as const,
       label: '—',
-      price: finalPrice,
+      price: itemPrice,
       description: '',
       preparationTime: undefined as number | undefined,
       availability: true,
@@ -47,13 +58,13 @@ export function ProductOrderBlockForProduct({
         nameTh: product.nameTh ?? product.nameEn,
         imageUrl: selectedImageUrl ?? product.images?.[0],
         size: syntheticSize,
-        addOns: getDefaultAddOns(),
+        addOns: { ...addOns },
       },
       qty
     );
     trackAddToCart({
       currency: 'THB',
-      value: finalPrice * qty,
+      value: totalPrice,
       items: [
         {
           item_id: product.id,
@@ -85,6 +96,12 @@ export function ProductOrderBlockForProduct({
         </div>
       ) : (
         <>
+          <AddOnsSection
+            lang={lang}
+            value={addOns}
+            onChange={setAddOns}
+            gifts={gifts.filter((g) => g.id !== product.id)}
+          />
           <div className="order-qty-row">
             <span className="order-qty-label">{tBuyNow.quantity ?? 'Quantity'}</span>
             <div className="order-qty-control">
@@ -106,7 +123,7 @@ export function ProductOrderBlockForProduct({
                 +
               </button>
             </div>
-            <span className="order-qty-price">฿{(finalPrice * quantity).toLocaleString()}</span>
+            <span className="order-qty-price">฿{totalPrice.toLocaleString()}</span>
           </div>
           <TrustBadges lang={lang} />
           <button
@@ -114,7 +131,7 @@ export function ProductOrderBlockForProduct({
             className="order-add-to-cart-btn"
             onClick={handleAddToCart}
           >
-            {t.addToCart}
+            {t.addToCart} — ฿{totalPrice.toLocaleString()}
           </button>
         </>
       )}
@@ -123,7 +140,6 @@ export function ProductOrderBlockForProduct({
           position: relative;
         }
         .order-block-title {
-          position: absolute;
           font-size: 1.1rem;
           font-weight: 700;
           color: var(--text);

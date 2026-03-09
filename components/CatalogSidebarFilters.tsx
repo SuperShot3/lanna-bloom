@@ -67,7 +67,7 @@ export function CatalogSidebarFilters({
 
   if (values.topCategory && values.topCategory !== 'flowers') {
     return (
-      <aside className="hidden lg:block w-64 shrink-0">
+      <aside className="hidden lg:block w-64 xl:w-72 shrink-0">
         <div className="sticky top-24 p-6 rounded-xl bg-stone-100 border border-stone-200">
           <Link
             href={getLineContactUrl()}
@@ -84,7 +84,7 @@ export function CatalogSidebarFilters({
   }
 
   return (
-    <aside className="hidden lg:block w-64 shrink-0">
+    <aside className="hidden lg:block w-64 xl:w-72 shrink-0">
       <div className="sticky top-24 space-y-6 p-6 rounded-xl bg-stone-100 border border-stone-200">
         <div>
           <h3 className="text-sm font-semibold text-stone-700 mb-3">

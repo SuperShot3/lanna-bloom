@@ -15,7 +15,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
   const href = `/${lang}/catalog/${product.slug}`;
   const imgSrc = product.images?.[0] ?? '';
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
-  const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
+  const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
 
   const handleLinkClick = () => {
     const item: AnalyticsItem = {

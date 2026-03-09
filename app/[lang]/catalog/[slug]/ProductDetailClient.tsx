@@ -13,17 +13,19 @@ export function ProductDetailClient({
   lang,
   name,
   description,
+  gifts = [],
 }: {
   product: CatalogProduct;
   lang: Locale;
   name: string;
   description: string;
+  gifts?: CatalogProduct[];
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = product.images ?? [];
   const selectedImageUrl = images[selectedImageIndex] ?? images[0];
   const descDisplay = description?.trim() || (lang === 'th' ? 'ยังไม่มีรายละเอียดสินค้า' : 'No description provided.');
-  const finalPrice = computeFinalPrice(product.price, product.commissionPercent);
+  const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
 
   useEffect(() => {
     trackViewItem({
@@ -54,6 +56,7 @@ export function ProductDetailClient({
         />
       </div>
       <div className="product-info">
+        <h1 className="product-title">{name}</h1>
         <p className="product-desc">{descDisplay}</p>
         {(product.preparationTime != null || product.occasion) && (
           <div className="product-attributes">
@@ -77,6 +80,7 @@ export function ProductDetailClient({
           product={product}
           lang={lang}
           selectedImageUrl={selectedImageUrl}
+          gifts={product.category === 'gifts' ? [] : gifts}
         />
       </div>
     </>

@@ -49,8 +49,8 @@ export async function approveProductAction(
     return { error: 'Forbidden' };
   }
   const pct = Number(commissionPercent);
-  if (Number.isNaN(pct) || pct < 0 || pct > 100) {
-    return { error: 'Commission must be 0–100%' };
+  if (Number.isNaN(pct) || pct < 0 || pct > 500) {
+    return { error: 'Commission must be 0–500%' };
   }
   try {
     await updateProductCommission(productId, pct);
@@ -101,6 +101,31 @@ export async function needsChangesProductAction(
     return {};
   } catch (err) {
     console.error('[Moderation] needsChangesProduct failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed' };
+  }
+}
+
+export async function updateCommissionAction(
+  productId: string,
+  commissionPercent: number
+): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+  const pct = Number(commissionPercent);
+  if (Number.isNaN(pct) || pct < 0 || pct > 500) {
+    return { error: 'Commission must be 0–500%' };
+  }
+  try {
+    await updateProductCommission(productId, pct);
+    revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/moderation/products/${productId}`);
+    revalidatePath('/en/catalog', 'layout');
+    revalidatePath('/th/catalog', 'layout');
+    return {};
+  } catch (err) {
+    console.error('[Moderation] updateCommission failed:', err);
     return { error: err instanceof Error ? err.message : 'Failed' };
   }
 }

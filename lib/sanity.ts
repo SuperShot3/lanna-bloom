@@ -275,8 +275,10 @@ export interface CatalogProduct {
   descriptionEn?: string;
   descriptionTh?: string;
   category: string;
-  /** Partner cost (what we pay partner). For display use computeFinalPrice(price, commissionPercent). */
+  /** Partner cost (what we pay partner). For display use computeFinalPrice(cost ?? price, commissionPercent). */
   price: number;
+  /** Partner cost from Sanity; use cost ?? price for effective partner cost. */
+  cost?: number;
   /** Admin sets before approving. Null/0 = own item, no markup. */
   commissionPercent?: number;
   images: string[];
@@ -635,12 +637,13 @@ export async function getProductsFilteredFromSanity(params: {
         descriptionTh?: string;
         category?: string;
         price?: number;
+        cost?: number;
         commissionPercent?: number;
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
       }>
     >(
       `*[_type == "product" && moderationStatus == "live" && category == $categoryKey] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, commissionPercent, images
+        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, images
       }`,
       { categoryKey }
     );
@@ -648,6 +651,7 @@ export async function getProductsFilteredFromSanity(params: {
       const slug = d.slug?.current ?? d._id;
       const imageUrls = (d.images ?? []).map((img) => urlFor(img)).filter(Boolean);
       const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+      const partnerCost = d.cost ?? d.price ?? 0;
       return {
         id: d._id,
         slug,
@@ -657,19 +661,21 @@ export async function getProductsFilteredFromSanity(params: {
         descriptionTh: d.descriptionTh,
         category: d.category ?? '',
         price: d.price ?? 0,
+        cost: d.cost,
         commissionPercent: d.commissionPercent,
         images: imageUrls.length ? imageUrls : [placeholder],
         _createdAt: d._createdAt,
+        _partnerCost: partnerCost,
       };
     });
     if (sort === 'price_asc') {
-      mapped.sort((a, b) => a.price - b.price);
+      mapped.sort((a, b) => (a._partnerCost ?? a.price) - (b._partnerCost ?? b.price));
     } else if (sort === 'price_desc') {
-      mapped.sort((a, b) => b.price - a.price);
+      mapped.sort((a, b) => (b._partnerCost ?? b.price) - (a._partnerCost ?? a.price));
     } else {
       mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
     }
-    return mapped.map(({ _createdAt, ...p }) => p);
+    return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
   } catch (err) {
     console.error('[Sanity] getProductsFilteredFromSanity failed:', err);
     return [];
@@ -689,6 +695,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
           descriptionTh?: string;
           category?: string;
           price?: number;
+          cost?: number;
           commissionPercent?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
           structuredAttributes?: { preparationTime?: number; occasion?: string };
@@ -696,7 +703,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       | null
     >(
       `*[_type == "product" && slug.current == $slug && moderationStatus == "live"][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, commissionPercent, images,
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, images,
         "structuredAttributes": structuredAttributes
       }`,
       { slug }
@@ -715,6 +722,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       descriptionTh: doc.descriptionTh,
       category: doc.category ?? '',
       price: doc.price ?? 0,
+      cost: doc.cost,
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
       preparationTime: attrs?.preparationTime,
@@ -748,6 +756,7 @@ export async function getProductById(productId: string): Promise<{
   descriptionTh?: string;
   category: string;
   price: number;
+  cost?: number;
   commissionPercent?: number;
   moderationStatus: string;
   imageUrl?: string;
@@ -766,6 +775,7 @@ export async function getProductById(productId: string): Promise<{
           descriptionTh?: string;
           category?: string;
           price?: number;
+          cost?: number;
           commissionPercent?: number;
           moderationStatus?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
@@ -775,7 +785,7 @@ export async function getProductById(productId: string): Promise<{
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
-        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, commissionPercent, moderationStatus, images, structuredAttributes, partner
+        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, moderationStatus, images, structuredAttributes, partner
       }`,
       { id: productId }
     );
@@ -791,6 +801,7 @@ export async function getProductById(productId: string): Promise<{
       descriptionTh: doc.descriptionTh,
       category: doc.category ?? '',
       price: doc.price ?? 0,
+      cost: doc.cost,
       commissionPercent: doc.commissionPercent,
       moderationStatus: doc.moderationStatus ?? 'submitted',
       imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
@@ -815,6 +826,7 @@ export interface AdminProductDetail {
   descriptionTh?: string;
   category: string;
   price: number;
+  cost?: number;
   moderationStatus: string;
   commissionPercent?: number;
   images: string[];
@@ -836,6 +848,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
           descriptionTh?: string;
           category?: string;
           price?: number;
+          cost?: number;
           moderationStatus?: string;
           commissionPercent?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
@@ -846,7 +859,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, moderationStatus, commissionPercent,
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, moderationStatus, commissionPercent,
         images, structuredAttributes, customAttributes, partner
       }`,
       { id: productId }
@@ -863,6 +876,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
       descriptionTh: doc.descriptionTh,
       category: doc.category ?? '',
       price: doc.price ?? 0,
+      cost: doc.cost,
       moderationStatus: doc.moderationStatus ?? 'submitted',
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],

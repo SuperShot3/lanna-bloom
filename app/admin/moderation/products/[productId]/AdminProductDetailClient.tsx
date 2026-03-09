@@ -9,6 +9,7 @@ import {
   rejectProductAction,
   needsChangesProductAction,
   deleteProductAction,
+  updateCommissionAction,
 } from '../actions';
 import type { AdminProductDetail } from '@/lib/sanity';
 
@@ -42,7 +43,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
     commissionPercent.trim() !== '' &&
     !Number.isNaN(Number(commissionPercent)) &&
     Number(commissionPercent) >= 0 &&
-    Number(commissionPercent) <= 100;
+    Number(commissionPercent) <= 500;
 
   async function handleApprove() {
     if (!canApprove) return;
@@ -88,7 +89,29 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
   }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditCommission, setShowEditCommission] = useState(false);
+  const [editCommissionValue, setEditCommissionValue] = useState<string>(
+    product.commissionPercent != null ? String(product.commissionPercent) : ''
+  );
   const router = useRouter();
+
+  async function handleUpdateCommission() {
+    const pct = Number(editCommissionValue);
+    if (Number.isNaN(pct) || pct < 0 || pct > 500) {
+      setError('Commission must be 0–500%');
+      return;
+    }
+    setError(null);
+    setLoading('updateCommission');
+    const result = await updateCommissionAction(product.id, pct);
+    setLoading(null);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setShowEditCommission(false);
+      window.location.reload();
+    }
+  }
 
   async function handleDelete() {
     setError(null);
@@ -119,11 +142,11 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
             id="commission"
             type="number"
             min={0}
-            max={100}
+            max={500}
             step={0.5}
             value={commissionPercent}
             onChange={(e) => setCommissionPercent(e.target.value)}
-            placeholder="0–100"
+            placeholder="0–500"
             className="admin-v2-input"
           />
           <span className="admin-product-detail-commission-hint">
@@ -222,10 +245,64 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
         </div>
       )}
 
-      {product.moderationStatus === 'live' && product.commissionPercent != null && (
-        <p className="admin-product-detail-commission-set">
-          Commission: {product.commissionPercent}%
-        </p>
+      {product.moderationStatus === 'live' && (
+        <div className="admin-product-detail-commission-edit">
+          {showEditCommission ? (
+            <div className="admin-product-detail-commission">
+              <label htmlFor="edit-commission">Commission (%)</label>
+              <input
+                id="edit-commission"
+                type="number"
+                min={0}
+                max={500}
+                step={0.5}
+                value={editCommissionValue}
+                onChange={(e) => setEditCommissionValue(e.target.value)}
+                placeholder="0–500"
+                className="admin-v2-input"
+              />
+              <div className="admin-product-detail-commission-edit-btns">
+                <button
+                  type="button"
+                  className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
+                  disabled={!!loading || editCommissionValue.trim() === ''}
+                  onClick={handleUpdateCommission}
+                >
+                  {loading === 'updateCommission' ? (
+                    <>
+                      <span className="admin-moderation-spinner" aria-hidden />
+                      Saving…
+                    </>
+                  ) : (
+                    'Save'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                  disabled={!!loading}
+                  onClick={() => {
+                    setShowEditCommission(false);
+                    setEditCommissionValue(product.commissionPercent != null ? String(product.commissionPercent) : '');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="admin-product-detail-commission-set">
+              Commission: {product.commissionPercent != null ? `${product.commissionPercent}%` : '—'}
+              <button
+                type="button"
+                className="admin-product-detail-commission-edit-btn"
+                onClick={() => setShowEditCommission(true)}
+              >
+                Edit
+              </button>
+            </p>
+          )}
+        </div>
       )}
 
       {showDeleteConfirm && (

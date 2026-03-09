@@ -14,13 +14,13 @@ export async function PopularSection({ lang }: { lang: Locale }) {
 
   return (
     <section
-      className="py-16 sm:py-20 bg-stone-50"
+      className="py-16 sm:py-20 lg:py-24 bg-stone-50"
       aria-labelledby="popular-title"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2
           id="popular-title"
-          className="font-[family-name:var(--font-family-display)] text-4xl text-[#1A3C34] mb-8 sm:mb-10"
+          className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-8 sm:mb-10"
         >
           {t.popularTitle}
         </h2>
