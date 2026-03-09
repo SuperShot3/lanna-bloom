@@ -11,7 +11,7 @@ const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
 export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: string }) {
   const t = translations[lang].hero;
   const catalogHref = `/${lang}/catalog`;
-  const infoHref = `/${lang}/info`;
+  const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
 
   return (
@@ -39,7 +39,7 @@ export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: stri
               <span className="material-symbols-outlined">arrow_forward</span>
             </Link>
             <Link
-              href={infoHref}
+              href={howToHref}
               className="px-6 py-3 sm:px-8 sm:py-4 bg-white border border-stone-200 font-semibold rounded-full hover:bg-stone-50 transition-all text-sm sm:text-base"
             >
               {t.ctaHowItWorks}

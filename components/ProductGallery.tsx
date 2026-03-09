@@ -6,7 +6,6 @@ import Image from 'next/image';
 import './ProductGallery.css';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
-const SWIPE_THRESHOLD_PX = 30;
 
 export function ProductGallery({
   images,
@@ -22,12 +21,7 @@ export function ProductGallery({
   activeIndex?: number;
   onActiveChange?: (index: number) => void;
 }) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const lightboxRef = useRef<HTMLDivElement>(null);
   const [internalActive, setInternalActive] = useState(0);
-  const touchStartX = useRef<number | null>(null);
-  const didSwipeRef = useRef(false);
-  const lightboxTouchStartX = useRef<number | null>(null);
   const isControlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = isControlled ? activeIndex : internalActive;
   const setActive = isControlled ? onActiveChange! : setInternalActive;
@@ -37,7 +31,6 @@ export function ProductGallery({
     () => (images?.length ? images : [FALLBACK_IMAGE]),
     [imagesKey]
   );
-  const current = list[active] ?? list[0] ?? FALLBACK_IMAGE;
   const viewTransitionName = productId ? `product-${productId}` : undefined;
 
   const [sliderReady, setSliderReady] = useState(false);
@@ -127,105 +120,9 @@ export function ProductGallery({
     }
   }, [emblaApi, isControlled, activeIndex]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  }, []);
-
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      if (touchStartX.current == null) return;
-      const endX = e.changedTouches[0].clientX;
-      const delta = Math.abs(endX - touchStartX.current);
-      touchStartX.current = null;
-      if (delta >= SWIPE_THRESHOLD_PX) {
-        didSwipeRef.current = true;
-        setTimeout(() => {
-          didSwipeRef.current = false;
-        }, 400);
-      }
-    },
-    []
-  );
-
-  const handleMainClick = useCallback(() => {
-    if (didSwipeRef.current) return;
-    setLightboxOpen(true);
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') setLightboxOpen(false);
-      if (list.length > 1 && e.key === 'ArrowLeft') {
-        e.preventDefault();
-        goPrev();
-      }
-      if (list.length > 1 && e.key === 'ArrowRight') {
-        e.preventDefault();
-        goNext();
-      }
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        setLightboxOpen(true);
-      }
-    },
-    [goPrev, goNext, list.length]
-  );
-
-  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
-
-  const handleLightboxTouchStart = useCallback((e: React.TouchEvent) => {
-    lightboxTouchStartX.current = e.touches[0].clientX;
-  }, []);
-
-  const handleLightboxTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      if (lightboxTouchStartX.current == null || list.length <= 1) {
-        lightboxTouchStartX.current = null;
-        return;
-      }
-      const endX = e.changedTouches[0].clientX;
-      const delta = endX - lightboxTouchStartX.current;
-      lightboxTouchStartX.current = null;
-      if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (delta < 0) goNext();
-        else goPrev();
-      }
-    },
-    [list.length, goPrev, goNext]
-  );
-
-  useEffect(() => {
-    if (lightboxOpen && lightboxRef.current) {
-      lightboxRef.current.focus();
-    }
-  }, [lightboxOpen]);
-
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    const prevTouchAction = document.body.style.touchAction;
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.touchAction = prevTouchAction;
-    };
-  }, [lightboxOpen]);
-
   return (
-    <div className={`gallery ${lightboxOpen ? 'gallery-lightbox-open' : ''}`}>
-      <div
-        className="gallery-main"
-        onClick={handleMainClick}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onKeyDown={handleKeyDown}
-        role="button"
-        tabIndex={0}
-        aria-label="View image full size"
-      >
+    <div className="gallery">
+      <div className="gallery-main">
         <div className="gallery-viewport" ref={sliderReady ? emblaRef : undefined}>
           <div className="gallery-container">
             {list.map((src, i) => (
@@ -256,7 +153,7 @@ export function ProductGallery({
         </div>
         {list.length > 1 && (
           <span className="gallery-swipe-hint" aria-hidden>
-            Swipe to change · Tap to zoom
+            Swipe to change
           </span>
         )}
         {list.length > 1 && (
@@ -325,73 +222,6 @@ export function ProductGallery({
                 />
               </button>
             ))}
-        </div>
-      )}
-
-      {lightboxOpen && (
-        <div
-          ref={lightboxRef}
-          className="gallery-lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Image zoom"
-          tabIndex={-1}
-          onClick={(e) => e.target === e.currentTarget && closeLightbox()}
-          onKeyDown={handleKeyDown}
-        >
-          <div className="gallery-lightbox-inner">
-            {list.length > 1 && (
-              <button
-                type="button"
-                className="gallery-lightbox-prev"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goPrev();
-                }}
-                aria-label="Previous image"
-              >
-                ‹
-              </button>
-            )}
-            <div
-              className="gallery-lightbox-img-wrap"
-              onClick={(e) => e.stopPropagation()}
-              onTouchStart={handleLightboxTouchStart}
-              onTouchEnd={handleLightboxTouchEnd}
-            >
-              <button
-                type="button"
-                className="gallery-lightbox-close"
-                onClick={closeLightbox}
-                aria-label="Close"
-              >
-                ×
-              </button>
-              <div className="gallery-lightbox-img-inner">
-                <Image
-                  src={current}
-                  alt={name}
-                  fill
-                  className="gallery-lightbox-img"
-                  unoptimized={current.startsWith('data:')}
-                  sizes="100vw"
-                />
-              </div>
-            </div>
-            {list.length > 1 && (
-              <button
-                type="button"
-                className="gallery-lightbox-next"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goNext();
-                }}
-                aria-label="Next image"
-              >
-                ›
-              </button>
-            )}
-          </div>
         </div>
       )}
     </div>
