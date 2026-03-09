@@ -1,15 +1,16 @@
 'use client';
 
-import { useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { CatalogProduct } from '@/lib/sanity';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { useCart } from '@/contexts/CartContext';
+import { getDefaultAddOns } from '@/components/AddOnsSection';
+import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 
 export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: Locale }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
+  const [emblaRef] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
     dragFree: false,
@@ -17,38 +18,102 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
     skipSnaps: false,
     duration: 35,
   });
-  const goPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
-  const goNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
-
+  const { addItem, removeItem, items } = useCart();
   if (!gifts.length) return null;
+
+  const defaultAddOns = getDefaultAddOns();
+
+  const findCartIndex = (product: CatalogProduct) =>
+    items.findIndex(
+      (i) =>
+        i.bouquetId === product.id &&
+        i.itemType === 'product' &&
+        i.size.key === 'm' &&
+        (i.addOns.cardMessage ?? '').trim() === (defaultAddOns.cardMessage ?? '').trim() &&
+        JSON.stringify(i.addOns.productAddOns ?? {}) === JSON.stringify(defaultAddOns.productAddOns ?? {})
+    );
+
+  const isInCart = (product: CatalogProduct) => findCartIndex(product) >= 0;
+
+  const handleToggleGift = (product: CatalogProduct) => {
+    const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
+    const imgSrc = product.images?.[0] ?? '';
+    const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+    const index = findCartIndex(product);
+
+    if (index >= 0) {
+      removeItem(index);
+      trackRemoveFromCart({
+        currency: 'THB',
+        value: finalPrice,
+        items: [
+          {
+            item_id: product.id,
+            item_name: name,
+            price: finalPrice,
+            quantity: 1,
+            index: 0,
+            item_category: product.category,
+          },
+        ],
+      });
+    } else {
+      const syntheticSize = {
+        key: 'm' as const,
+        label: '—',
+        price: finalPrice,
+        description: '',
+        preparationTime: undefined as number | undefined,
+        availability: true,
+      };
+      addItem(
+        {
+          itemType: 'product',
+          bouquetId: product.id,
+          slug: product.slug,
+          nameEn: product.nameEn,
+          nameTh: product.nameTh ?? product.nameEn,
+          imageUrl: imgSrc,
+          size: syntheticSize,
+          addOns: defaultAddOns,
+        },
+        1
+      );
+      trackAddToCart({
+        currency: 'THB',
+        value: finalPrice,
+        items: [
+          {
+            item_id: product.id,
+            item_name: name,
+            price: finalPrice,
+            quantity: 1,
+            index: 0,
+            item_category: product.category,
+          },
+        ],
+      });
+    }
+  };
 
   return (
     <div className="gifts-carousel-wrap">
-      {gifts.length > 1 && (
-        <button
-          type="button"
-          className="gifts-carousel-arrow gifts-carousel-prev"
-          onClick={goPrev}
-          aria-label="Previous gifts"
-        >
-          ‹
-        </button>
-      )}
       <div className="gifts-carousel-viewport" ref={emblaRef}>
         <div className="gifts-carousel-container">
           {gifts.map((product) => {
             const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
-            const href = `/${lang}/catalog/${product.slug}`;
             const imgSrc = product.images?.[0] ?? '';
             const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
             const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+            const inCart = isInCart(product);
 
             return (
               <div key={product.id} className="gifts-carousel-slide">
-                <Link
-                  href={href}
+                <button
+                  type="button"
                   className="gifts-product-card"
-                  aria-label={`${name} — ฿${finalPrice.toLocaleString()}`}
+                  onClick={() => handleToggleGift(product)}
+                  aria-label={inCart ? `${name} — Added` : `${name} — ฿${finalPrice.toLocaleString()} — Add to cart`}
                 >
                   <div className="gifts-product-image-wrap">
                     {imgSrc ? (
@@ -65,25 +130,20 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
                     ) : (
                       <div className="gifts-product-image-placeholder" aria-hidden />
                     )}
+                    {inCart && (
+                      <span className="gifts-product-checkmark" aria-hidden>
+                        ✓
+                      </span>
+                    )}
                   </div>
                   <p className="gifts-product-name">{name}</p>
                   <p className="gifts-product-price">฿{finalPrice.toLocaleString()}</p>
-                </Link>
+                </button>
               </div>
             );
           })}
         </div>
       </div>
-      {gifts.length > 1 && (
-        <button
-          type="button"
-          className="gifts-carousel-arrow gifts-carousel-next"
-          onClick={goNext}
-          aria-label="Next gifts"
-        >
-          ›
-        </button>
-      )}
       {gifts.length > 1 && (
         <p className="gifts-carousel-swipe-hint" aria-hidden>
           {lang === 'th' ? 'เลื่อนเพื่อดูเพิ่มเติม' : 'Swipe to browse'}
@@ -105,13 +165,13 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
         }
         .gifts-carousel-container {
           display: flex;
-          gap: 12px;
-          margin-left: -12px;
+          gap: 7px;
+          margin-left: -7px;
         }
         .gifts-carousel-slide {
           flex: 0 0 45%;
           min-width: 0;
-          padding-left: 12px;
+          padding-left: 7px;
         }
         @media (min-width: 480px) {
           .gifts-carousel-slide {
@@ -123,45 +183,6 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
             flex: 0 0 25%;
           }
         }
-        .gifts-carousel-arrow {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 36px;
-          height: 36px;
-          min-width: 36px;
-          min-height: 36px;
-          border-radius: 50%;
-          border: 1px solid var(--border);
-          background: var(--surface);
-          color: var(--text);
-          font-size: 1.2rem;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2;
-          transition: background 0.2s, border-color 0.2s;
-          touch-action: manipulation;
-        }
-        .gifts-carousel-arrow:hover {
-          background: var(--pastel-cream);
-          border-color: #1a3c34;
-        }
-        .gifts-carousel-prev {
-          left: -8px;
-        }
-        .gifts-carousel-next {
-          right: -8px;
-        }
-        @media (max-width: 480px) {
-          .gifts-carousel-arrow {
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            min-height: 40px;
-          }
-        }
         .gifts-carousel-swipe-hint {
           font-size: 11px;
           color: var(--text-muted);
@@ -170,13 +191,15 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
         }
         .gifts-product-card {
           display: block;
+          width: 100%;
           padding: 12px;
           border: 2px solid var(--border);
           border-radius: 12px;
           background: var(--surface);
           text-align: center;
-          text-decoration: none;
           color: inherit;
+          cursor: pointer;
+          font: inherit;
           transition: border-color 0.2s, background 0.2s;
         }
         .gifts-product-card:hover {
@@ -192,6 +215,22 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           overflow: hidden;
           background: var(--pastel-cream);
         }
+        .gifts-product-checkmark {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #1a3c34;
+          color: #fff;
+          border-radius: 50%;
+          font-size: 11px;
+          font-weight: 700;
+          line-height: 1;
+        }
         .gifts-product-image-placeholder {
           width: 100%;
           height: 100%;
@@ -202,9 +241,8 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           font-weight: 600;
           margin: 0 0 4px;
           color: var(--text);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .gifts-product-price {
           font-size: 10px;
