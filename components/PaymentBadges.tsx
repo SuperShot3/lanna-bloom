@@ -31,7 +31,7 @@ export function PaymentBadges({ lang, compact }: { lang: Locale; compact?: boole
         }
         .payment-badges-row {
           display: flex;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           justify-content: center;
           align-items: center;
           gap: 10px;

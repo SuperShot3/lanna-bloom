@@ -202,9 +202,19 @@ export function Footer({ lang }: { lang: Locale }) {
             </form>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-stone-200 text-xs text-stone-400">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-stone-200 text-xs text-stone-400">
           <p>{t.copyright}</p>
-          <div className="flex gap-6 mt-4 md:mt-0">
+          <div className="flex flex-nowrap justify-center items-center gap-4">
+            <PaymentBadges lang={lang} compact />
+            <img
+              src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
+              alt="DBD Verified (Thailand Department of Business Development)"
+              className="h-10 w-10 object-contain"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <div className="flex flex-wrap justify-center gap-6">
             <Link href={`/${lang}/refund-replacement`} className="hover:text-stone-600 transition-colors">
               {t.refundPolicy}
             </Link>
@@ -215,18 +225,6 @@ export function Footer({ lang }: { lang: Locale }) {
               {t.privacyPolicy}
             </Link>
           </div>
-        </div>
-        <div className="flex justify-center mt-6">
-          <PaymentBadges lang={lang} compact />
-        </div>
-        <div className="flex justify-center mt-4">
-          <img
-            src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
-            alt="DBD Verified (Thailand Department of Business Development)"
-            className="h-10 w-10 object-contain"
-            loading="lazy"
-            decoding="async"
-          />
         </div>
       </div>
     </footer>

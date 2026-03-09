@@ -137,7 +137,7 @@ export function Header({ lang }: { lang: Locale }) {
               </nav>
             )}
           </div>
-          <div className="flex items-center gap-4 md:gap-6 ml-[5px]">
+          <div className="flex items-center gap-4 ml-[5px]">
             {!isMobile && (
               <Link
                 href={catalogHref}
