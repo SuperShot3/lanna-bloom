@@ -101,7 +101,8 @@ export interface PurchaseItem {
 }
 
 /**
- * Fire purchase event exactly once per order. Deduped by orderId via localStorage.
+ * Fire purchase event exactly once per order. Deduped by orderId.
+ * Guard runs BEFORE any dataLayer push: check sessionStorage → set → push.
  * Call only when order payment is confirmed.
  */
 export function trackPurchase(params: {
@@ -115,22 +116,23 @@ export function trackPurchase(params: {
 
   const { orderId, value, currency = 'THB', items } = params;
   const transactionId = params.transactionId ?? orderId;
+  const key = getPurchaseStorageKey(orderId);
 
-  console.info('[analytics] trackPurchase called', {
-    orderId,
-    transactionId,
-    value,
-    itemCount: items.length,
-  });
-
-  if (wasPurchaseSent(orderId)) {
-    console.info('[analytics] purchase duplicate prevented by guard (no dataLayer push)', {
-      orderId,
-      transactionId,
-    });
+  // Strong guard BEFORE any push: atomic check-and-set so only first call pushes
+  try {
+    if (window.sessionStorage.getItem(key) === '1') {
+      if (isDev) {
+        console.info('[analytics] purchase duplicate prevented by sessionStorage guard (no dataLayer push)', {
+          orderId,
+          transactionId,
+        });
+      }
+      return;
+    }
+    window.sessionStorage.setItem(key, '1');
+  } catch {
     return;
   }
-
   markPurchaseSent(orderId);
 
   const ensuredItems = items.map((it, i) => ({
@@ -140,15 +142,18 @@ export function trackPurchase(params: {
     currency: it.currency ?? currency,
   }));
 
-  trackEvent('purchase', {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'purchase',
     transaction_id: transactionId,
     value,
     currency,
     items: ensuredItems,
   });
-
-  console.info('[analytics] purchase pushed to dataLayer only — GTM will send to GA4', {
-    orderId,
-    transactionId,
-  });
+  if (isDev) {
+    console.info('[analytics] purchase pushed to dataLayer once — GTM will send to GA4', {
+      orderId,
+      transactionId,
+    });
+  }
 }

@@ -11,7 +11,6 @@ import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 import { trackPurchase, trackGenerateLead } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
-import { getPurchaseGuardDebug, wasPurchaseSent } from '@/lib/analytics/gtag';
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 60000;
@@ -26,6 +25,31 @@ type OrderWithPaymentStatus = Order & {
 function isPaidOrder(order: OrderWithPaymentStatus | null): boolean {
   if (!order) return false;
   return order.status === 'paid' || order.payment_status === 'PAID' || Boolean(order.paid_at || order.paidAt);
+}
+
+/**
+ * True only when order is confirmed paid AND payment was via Stripe/Link (online).
+ * Used to gate purchase so manual/bank orders never fire purchase.
+ */
+function isStripePaidOrder(
+  order: OrderWithPaymentStatus | null,
+  sessionId: string | undefined,
+  stripeStatus: 'processing' | 'paid' | 'payment_failed' | null
+): boolean {
+  if (!order || !isPaidOrder(order)) return false;
+  const hasStripeContext = Boolean(sessionId && stripeStatus === 'paid');
+  const hasStripePayment = Boolean(order.stripeSessionId || order.paymentIntentId);
+  return hasStripeContext || hasStripePayment;
+}
+
+/** Manual order = no Stripe session in URL and order not paid via Stripe. */
+function isManualOrderPath(
+  sessionId: string | undefined,
+  order: OrderWithPaymentStatus | null
+): boolean {
+  if (sessionId) return false;
+  if (!order) return true;
+  return !order.stripeSessionId && !order.paymentIntentId;
 }
 
 export function CheckoutSuccessClient({
@@ -139,13 +163,41 @@ export function CheckoutSuccessClient({
       });
   }, [orderId, sessionId, stripeStatus]);
 
-  // Purchase: push to dataLayer once per paid order. GTM is the only sender to GA4.
+  // ——— Purchase: only for Stripe/Link paid flow. Manual orders must never fire purchase. ———
+  const stripePaidOrderId =
+    order?.orderId && isStripePaidOrder(order, sessionId ?? undefined, stripeStatus)
+      ? order.orderId.trim()
+      : null;
   useEffect(() => {
+    if (!stripePaidOrderId) {
+      if (order?.orderId && isPaidOrder(order) && isManualOrderPath(sessionId ?? undefined, order) && typeof window !== 'undefined') {
+        console.info('[checkout/success] purchase not fired — manual order path (generate_lead only)', {
+          orderId: order.orderId.trim(),
+          sessionId: sessionId ?? null,
+          payment_method: (order as OrderWithPaymentStatus).payment_method ?? null,
+        });
+      }
+      return;
+    }
     if (!order?.orderId || order.pricing?.grandTotal == null || !order.items?.length) return;
-    if (!isPaidOrder(order)) return;
+    if (order.orderId.trim() !== stripePaidOrderId) return;
 
-    const stableOrderId = order.orderId.trim();
-    const purchaseGuard = getPurchaseGuardDebug(stableOrderId);
+    const stableOrderId = stripePaidOrderId;
+    if (purchaseTrackedRef.current === stableOrderId) return;
+
+    if (typeof window !== 'undefined') {
+      const storageKey = `purchase_sent:${stableOrderId}`;
+      if (window.sessionStorage.getItem(storageKey) === '1') {
+        purchaseTrackedRef.current = stableOrderId;
+        console.info('[checkout/success] purchase blocked — already sent for this orderId', {
+          orderId: stableOrderId,
+          guard: 'sessionStorage',
+        });
+        return;
+      }
+    }
+
+    purchaseTrackedRef.current = stableOrderId;
     const analyticsItems: AnalyticsItem[] = order.items.map((it, i) => ({
       item_id: it.bouquetId,
       item_name: it.bouquetTitle,
@@ -154,46 +206,47 @@ export function CheckoutSuccessClient({
       quantity: 1,
       index: i,
     }));
-    const value = order.pricing.grandTotal;
-
-    if (typeof window !== 'undefined') {
-      console.info('[checkout/success] purchase tracking candidate', {
-        orderId: stableOrderId,
-        alreadyTrackedThisMount: purchaseTrackedRef.current === stableOrderId,
-        alreadyTrackedInStorage: wasPurchaseSent(stableOrderId),
-        storageKey: purchaseGuard.storageKey,
-      });
-    }
-
-    if (purchaseTrackedRef.current === stableOrderId || wasPurchaseSent(stableOrderId)) {
-      purchaseTrackedRef.current = stableOrderId;
-      if (typeof window !== 'undefined') {
-        console.info('[checkout/success] purchase tracking skipped by guard (no dataLayer push)', {
-          orderId: stableOrderId,
-          storageKey: purchaseGuard.storageKey,
-        });
-      }
-      return;
-    }
-
-    purchaseTrackedRef.current = stableOrderId;
+    console.info('[checkout/success] paid Stripe branch — firing purchase', {
+      orderId: stableOrderId,
+      sessionId: sessionId ?? null,
+      stripeStatus,
+      payment_method: (order as OrderWithPaymentStatus).payment_method ?? null,
+    });
     trackPurchase({
       orderId: stableOrderId,
-      value,
+      value: order.pricing.grandTotal,
       currency: 'THB',
       items: analyticsItems,
       transactionId: stableOrderId,
     });
-  }, [order, sessionId, stripeStatus]);
+  }, [stripePaidOrderId, order, sessionId, stripeStatus]);
 
+  // ——— generate_lead: only for manual order path (bank/PromptPay). Must never coexist with purchase for same order. ———
   useEffect(() => {
     if (!order?.orderId || order.pricing?.grandTotal == null || !order.items?.length) return;
-    if (sessionId || isPaidOrder(order)) return;
+    if (!isManualOrderPath(sessionId ?? undefined, order)) return;
+    if (isPaidOrder(order)) return;
 
     const stableOrderId = order.orderId.trim();
     if (leadTrackedRef.current === stableOrderId) return;
 
+    if (typeof window !== 'undefined') {
+      if (window.sessionStorage.getItem(`purchase_sent:${stableOrderId}`) === '1') {
+        console.info('[checkout/success] generate_lead blocked — purchase already sent for this orderId', {
+          orderId: stableOrderId,
+          guard: 'purchase_sent',
+        });
+        return;
+      }
+    }
+
     leadTrackedRef.current = stableOrderId;
+    console.info('[checkout/success] manual order branch — firing generate_lead only', {
+      orderId: stableOrderId,
+      sessionId: sessionId ?? null,
+      payment_status: (order as OrderWithPaymentStatus).payment_status ?? null,
+      payment_method: (order as OrderWithPaymentStatus).payment_method ?? null,
+    });
     trackGenerateLead({
       orderId: stableOrderId,
       value: order.pricing.grandTotal,
