@@ -1,10 +1,13 @@
 /**
- * Analytics helpers for Google Analytics 4 (gtag or GTM dataLayer).
- * When NEXT_PUBLIC_USE_GTM=true, events are pushed to dataLayer (no gtag); otherwise gtag is used.
+ * Analytics helpers for GTM-owned Google Analytics 4 tracking.
+ * The app only pushes structured events to dataLayer; GTM owns transport and pageviews.
  * All events fire only on client; dedupe and purchase persistence applied.
  */
 
-import { trackEvent as gtagTrackEvent, trackPurchase as gtagTrackPurchase } from './analytics/gtag';
+import {
+  trackEvent as pushAnalyticsEvent,
+  trackPurchase as pushAnalyticsPurchase,
+} from './analytics/gtag';
 
 const CURRENCY = 'THB';
 
@@ -46,7 +49,7 @@ function markSent(key: string): void {
 }
 
 function sendEvent(eventName: string, eventParams: Record<string, unknown>): void {
-  gtagTrackEvent(eventName, eventParams);
+  pushAnalyticsEvent(eventName, eventParams);
 }
 
 function ensureItems(items: AnalyticsItem[]): AnalyticsItem[] {
@@ -167,7 +170,7 @@ export function trackViewCart(items: AnalyticsItem[], value?: number): void {
 }
 
 /**
- * Fire begin_checkout when user lands on cart/checkout with items (GA4 ecommerce).
+ * Fire begin_checkout when user explicitly starts the order/payment flow (GA4 ecommerce).
  * Deduped per session (survives React Strict Mode double-mount).
  */
 export function trackBeginCheckout(params: {
@@ -235,7 +238,7 @@ export function trackAddPaymentInfo(params: {
 
 /**
  * Fire purchase once per order (GA4 ecommerce). Deduped by orderId via localStorage.
- * ONLY for confirmed Stripe payment success (real payment).
+ * ONLY for confirmed payment success.
  * Uses purchase_sent:<orderId> in localStorage; survives refresh/back/forward.
  */
 export function trackPurchase(params: {
@@ -245,7 +248,7 @@ export function trackPurchase(params: {
   items: AnalyticsItem[];
   transactionId?: string;
 }): void {
-  gtagTrackPurchase({
+  pushAnalyticsPurchase({
     orderId: params.orderId,
     value: params.value,
     currency: params.currency ?? CURRENCY,
@@ -261,7 +264,7 @@ const GENERATE_LEAD_DEDUPE_PREFIX = 'lanna-bloom_sent_generate_lead_';
 
 /**
  * Fire generate_lead when order is created via Place Order (bank transfer / PromptPay).
- * NOT for Stripe – use purchase for confirmed Stripe payment.
+ * Use purchase later if payment becomes confirmed.
  * Deduped by orderId via localStorage.
  */
 export function trackGenerateLead(params: {
@@ -290,7 +293,7 @@ export function trackGenerateLead(params: {
 // --- Non-ecommerce UI events ---
 
 /**
- * contact_click: LINE / WhatsApp / Telegram buttons (for Google Ads optimization).
+ * contact_click: LINE / WhatsApp / Telegram buttons.
  * Params: channel, page_path, bouquet_id (optional).
  */
 export function trackContactClick(params: {
@@ -327,8 +330,8 @@ export function trackLanguageChange(lang: string): void {
 // --- Legacy / alias for existing callers ---
 
 /**
- * Messenger click (header, success page, product, cart, guide).
- * Also sends contact_click for consistency and channel-specific events (click_line, etc.).
+ * Legacy messenger click event for existing reports.
+ * Also sends contact_click as the canonical cross-channel contact event.
  */
 export function trackMessengerClick(params: {
   channel: MessengerChannel;
@@ -344,9 +347,5 @@ export function trackMessengerClick(params: {
     page_path,
     ...(link_url != null && { link_url }),
   });
-  sendEvent(
-    channel === 'line' ? 'click_line' : channel === 'whatsapp' ? 'click_whatsapp' : 'click_telegram',
-    { channel, page_location, page_path, ...(link_url != null && { link_url }) }
-  );
   trackContactClick({ channel, page_path });
 }

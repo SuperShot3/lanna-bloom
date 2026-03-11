@@ -288,6 +288,7 @@ export async function supabaseUpdateOrderPaymentStatus(
   const updatePayload: Record<string, unknown> = {
     payment_status: paymentStatus,
     order_status: orderStatus,
+    payment_method: 'STRIPE',
     updated_at: new Date().toISOString(),
     paid_at: update.paidAt ?? undefined,
     stripe_session_id: update.stripeSessionId,

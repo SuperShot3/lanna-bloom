@@ -1,16 +1,14 @@
 /**
- * Core GA4 gtag helpers – init once, trackEvent, trackPurchase with dedupe.
- * Used by lib/analytics.ts. GA4 script is loaded in components/GoogleAnalytics.tsx.
+ * Core analytics helpers for GTM dataLayer pushes plus purchase dedupe.
+ * Used by lib/analytics.ts. GTM is loaded in components/GoogleAnalytics.tsx.
  */
 
 declare global {
   interface Window {
-    gtag?: (...args: unknown[]) => void;
     dataLayer?: Record<string, unknown>[];
   }
 }
 
-const USE_GTM = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_USE_GTM === 'true';
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
 
 /** Purchase dedupe: localStorage key format per spec */
@@ -41,34 +39,14 @@ function markPurchaseSent(orderId: string): void {
 }
 
 /**
- * Send event to GA4 (gtag or dataLayer when GTM).
+ * Push an event into the GTM dataLayer.
  */
 export function trackEvent(eventName: string, eventParams: Record<string, unknown>): void {
   if (typeof window === 'undefined') return;
 
-  if (USE_GTM) {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: eventName, ...eventParams });
-    if (isDev) console.debug('[GA4 via GTM]', eventName, eventParams);
-    return;
-  }
-
-  const doSend = () => {
-    if (window.gtag) {
-      window.gtag('event', eventName, eventParams);
-      if (isDev) console.debug('[GA4]', eventName, eventParams);
-      return true;
-    }
-    return false;
-  };
-  if (doSend()) return;
-  let attempts = 0;
-  const retry = () => {
-    if (attempts++ >= 15) return;
-    if (doSend()) return;
-    setTimeout(retry, 100);
-  };
-  setTimeout(retry, 100);
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event: eventName, ...eventParams });
+  if (isDev) console.debug('[Analytics dataLayer]', eventName, eventParams);
 }
 
 export interface PurchaseItem {
@@ -84,7 +62,7 @@ export interface PurchaseItem {
 
 /**
  * Fire purchase event exactly once per order. Deduped by orderId via localStorage.
- * Call only when order is confirmed paid (Stripe) or created (backend).
+ * Call only when order payment is confirmed.
  */
 export function trackPurchase(params: {
   orderId: string;

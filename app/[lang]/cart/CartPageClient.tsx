@@ -382,10 +382,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       viewCartFiredRef.current = true;
       trackViewCart(analyticsItems, value);
     }
-    if (!beginCheckoutFiredRef.current) {
-      beginCheckoutFiredRef.current = true;
-      trackBeginCheckout({ currency: 'THB', value, items: analyticsItems });
-    }
   }, [items, lang]);
 
   const defaultDelivery: DeliveryFormValues = {
@@ -609,6 +605,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setRecipientPhoneNational(digitsOnly);
   };
 
+  const trackCheckoutStart = () => {
+    if (beginCheckoutFiredRef.current) return;
+    beginCheckoutFiredRef.current = true;
+    const analyticsItems = cartItemsToAnalytics(items, lang);
+    trackBeginCheckout({
+      currency: 'THB',
+      value: grandTotalVal,
+      items: analyticsItems,
+    });
+  };
+
   const handlePlaceOrder = async () => {
     const hint = getFirstIncompleteHint();
     if (hint) {
@@ -616,6 +623,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return;
     }
     setOrderError(null);
+    trackCheckoutStart();
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
     const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
@@ -670,6 +678,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return;
     }
     setOrderError(null);
+    trackCheckoutStart();
     setPlacingStripe(true);
     const fullPhone = countryCode + phoneNational;
     const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;

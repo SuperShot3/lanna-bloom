@@ -6,6 +6,8 @@ import { getDiscountForCode } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import type { DistrictKey } from '@/lib/deliveryFees';
+import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
+import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 
 function validateStripePayload(
   body: unknown
@@ -155,12 +157,12 @@ interface StripeCheckoutPayload {
 }
 
 export async function POST(request: NextRequest) {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
+  const stripeConfig = getStripeServerConfig();
+  if (!stripeConfig) {
     return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
-  const stripe = new Stripe(secretKey);
+  const stripe = createStripeServerClient(stripeConfig.secretKey);
   try {
     const body = await request.json();
     const validation = validateStripePayload(body);
@@ -219,6 +221,18 @@ export async function POST(request: NextRequest) {
 
     const order = await createPendingOrder(orderPayload);
     const baseUrl = getBaseUrl();
+    const stripeMetadata = buildStripeOrderMetadata({
+      orderId: order.orderId,
+      source: 'lanna_bloom_checkout',
+      customerEmail: data.customerEmail,
+      lang: data.lang,
+    });
+
+    console.log('[stripe/create-checkout-session] pending order created', {
+      orderId: order.orderId,
+      mode: stripeConfig.mode,
+      hasCustomerEmail: Boolean(data.customerEmail),
+    });
 
     // Stripe requires unit_amount to be non-negative. Apply referral discount
     // proportionally across line items instead of adding a negative line.
@@ -284,11 +298,13 @@ export async function POST(request: NextRequest) {
       {
         mode: 'payment',
         line_items: lineItems,
-        success_url: `${baseUrl}/${data.lang}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        client_reference_id: order.orderId,
+        customer_email: data.customerEmail,
+        success_url: `${baseUrl}/${data.lang}/checkout/success?session_id={CHECKOUT_SESSION_ID}&orderId=${encodeURIComponent(order.orderId)}`,
         cancel_url: `${baseUrl}/${data.lang}/cart`,
-        metadata: {
-          orderId: order.orderId,
-          lang: data.lang,
+        metadata: stripeMetadata,
+        payment_intent_data: {
+          metadata: stripeMetadata,
         },
       },
       { idempotencyKey: order.orderId }
@@ -298,8 +314,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
     }
 
+    console.log('[stripe/create-checkout-session] session created', {
+      orderId: order.orderId,
+      sessionId: session.id,
+      mode: stripeConfig.mode,
+      metadata: stripeMetadata,
+    });
+
     return NextResponse.json({
       orderId: order.orderId,
+      sessionId: session.id,
       url: session.url,
     });
   } catch (e) {

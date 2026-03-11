@@ -55,7 +55,7 @@ New orders will no longer be written to Supabase. Legacy orders remain in Vercel
 1. **Logs**: Check Vercel logs or `stripe listen` output for `[stripe/webhook]` messages.
 2. **Idempotency**: Webhook returns `{ received: true }` for already-processed orders (e.g. already paid). Stripe will not retry.
 3. **Retries**: Stripe retries on 4xx/5xx. We return 500 on internal errors so Stripe retries.
-4. **Signature**: Ensure `STRIPE_WEBHOOK_SECRET` matches the endpoint (e.g. `whsec_...` for live, different for `stripe listen`).
+4. **Signature**: Ensure `STRIPE_WEBHOOK_SECRET` matches the endpoint for the same Stripe mode as `STRIPE_SECRET_KEY` (test with test, live with live, `stripe listen` only for local).
 5. **Local testing**: `stripe listen --forward-to localhost:3000/api/stripe/webhook` and use the printed webhook secret.
 
 ---

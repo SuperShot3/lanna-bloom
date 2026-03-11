@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { PaymentNote } from '@/components/PaymentNote';
+import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
@@ -13,6 +14,18 @@ import type { AnalyticsItem } from '@/lib/analytics';
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 60000;
+const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+
+type OrderWithPaymentStatus = Order & {
+  payment_status?: string | null;
+  paid_at?: string | null;
+  payment_method?: string | null;
+};
+
+function isPaidOrder(order: OrderWithPaymentStatus | null): boolean {
+  if (!order) return false;
+  return order.status === 'paid' || order.payment_status === 'PAID' || Boolean(order.paid_at || order.paidAt);
+}
 
 export function CheckoutSuccessClient({
   lang,
@@ -29,12 +42,14 @@ export function CheckoutSuccessClient({
 }) {
   const t = translations[lang].checkoutSuccess;
   const tNav = translations[lang].nav;
+  const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [orderId, setOrderId] = useState(initialOrderId);
   const [stripeStatus, setStripeStatus] = useState<'processing' | 'paid' | 'payment_failed' | null>(
     sessionId ? 'processing' : null
   );
   const pollStartRef = useRef<number | null>(null);
+  const cartClearedRef = useRef(false);
   const publicOrderUrl = orderId
     ? (initialPublicOrderUrl ?? (typeof window !== 'undefined' ? `${window.location.origin}/order/${orderId}` : ''))
     : '';
@@ -54,6 +69,9 @@ export function CheckoutSuccessClient({
       try {
         const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`);
         const data = await res.json().catch(() => ({}));
+        if (typeof data.orderId === 'string' && data.orderId.trim()) {
+          setOrderId(data.orderId.trim());
+        }
         if (data.status === 'paid' && data.order) {
           setOrder(data.order);
           setOrderId(data.order.orderId);
@@ -79,7 +97,7 @@ export function CheckoutSuccessClient({
     if (sessionId && stripeStatus !== 'paid') return;
     fetch(`/api/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: Order | null) => {
+      .then((data: OrderWithPaymentStatus | null) => {
         setOrder(data);
         if (data?.pricing?.grandTotal != null && data?.items?.length) {
           const analyticsItems: AnalyticsItem[] = data.items.map((it, i) => ({
@@ -92,7 +110,7 @@ export function CheckoutSuccessClient({
           }));
           const value = data.pricing.grandTotal;
           const items = analyticsItems;
-          if (sessionId && stripeStatus === 'paid') {
+          if (isPaidOrder(data)) {
             trackPurchase({
               orderId,
               value,
@@ -114,6 +132,29 @@ export function CheckoutSuccessClient({
         setOrder(null);
       });
   }, [orderId, sessionId, stripeStatus]);
+
+  useEffect(() => {
+    if (cartClearedRef.current) return;
+    if (!isPaidOrder(order)) return;
+
+    clearCart();
+    cartClearedRef.current = true;
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(CART_FORM_STORAGE_KEY);
+        if (order?.orderId) {
+          window.localStorage.setItem('lanna-bloom-last-order-id', order.orderId);
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    console.log('[stripe/success] cart cleared after confirmed payment', {
+      orderId: order?.orderId ?? orderId,
+    });
+  }, [clearCart, order, orderId]);
 
   const [copied, setCopied] = useState<'link' | null>(null);
   const copyLink = async () => {

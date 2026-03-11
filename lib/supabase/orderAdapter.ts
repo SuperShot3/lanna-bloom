@@ -184,7 +184,8 @@ export async function dualWriteOrder(order: Order): Promise<void> {
 export async function syncSupabasePaymentSuccess(
   orderId: string,
   paymentIntentId: string | undefined,
-  paidAt: string
+  paidAt: string,
+  stripeSessionId?: string
 ): Promise<void> {
   if (process.env.SUPABASE_DUAL_WRITE_ENABLED !== 'true') return;
 
@@ -213,7 +214,9 @@ export async function syncSupabasePaymentSuccess(
       .update({
         payment_status: 'PAID',
         order_status: 'PAID',
+        payment_method: 'STRIPE',
         paid_at: paidAt,
+        stripe_session_id: stripeSessionId ?? undefined,
         stripe_payment_intent_id: paymentIntentId ?? undefined,
       })
       .eq('order_id', orderId);
