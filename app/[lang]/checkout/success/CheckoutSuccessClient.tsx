@@ -28,8 +28,9 @@ function isPaidOrder(order: OrderWithPaymentStatus | null): boolean {
 }
 
 /**
- * True only when order is confirmed paid AND payment was via Stripe/Link (online).
- * Used to gate purchase so manual/bank orders never fire purchase.
+ * True only when Stripe payment is confirmed from the success page URL context.
+ * Purchase is allowed ONLY when this is true. Order having stripeSessionId/paymentIntentId
+ * alone must never allow purchase (manual orders must never fire purchase).
  */
 function isStripePaidOrder(
   order: OrderWithPaymentStatus | null,
@@ -37,9 +38,7 @@ function isStripePaidOrder(
   stripeStatus: 'processing' | 'paid' | 'payment_failed' | null
 ): boolean {
   if (!order || !isPaidOrder(order)) return false;
-  const hasStripeContext = Boolean(sessionId && stripeStatus === 'paid');
-  const hasStripePayment = Boolean(order.stripeSessionId || order.paymentIntentId);
-  return hasStripeContext || hasStripePayment;
+  return Boolean(sessionId && stripeStatus === 'paid');
 }
 
 /** Manual order = no Stripe session in URL and order not paid via Stripe. */
@@ -170,6 +169,16 @@ export function CheckoutSuccessClient({
       ? (order.orderId as string).trim()
       : null;
   useEffect(() => {
+    // Hard condition: purchase allowed only when Stripe payment is confirmed (session_id + paid). Manual path must never run purchase logic.
+    if (!sessionId) {
+      if (order?.orderId && typeof window !== 'undefined') {
+        console.info('[checkout/success] branch: manual — purchase skipped (generate_lead only)', {
+          orderId: (order.orderId as string).trim(),
+          sessionId: null,
+        });
+      }
+      return;
+    }
     if (!stripePaidOrderId) {
       if (order?.orderId && isPaidOrder(order) && isManualOrderPath(sessionId ?? undefined, order) && typeof window !== 'undefined') {
         console.info('[checkout/success] purchase not fired — manual order path (generate_lead only)', {
@@ -205,7 +214,7 @@ export function CheckoutSuccessClient({
       quantity: 1,
       index: i,
     }));
-    console.info('[checkout/success] paid Stripe branch — firing purchase', {
+    console.info('[checkout/success] branch: Stripe paid — firing purchase (once)', {
       orderId: stableOrderId,
       sessionId: sessionId ?? null,
       stripeStatus,
@@ -240,7 +249,7 @@ export function CheckoutSuccessClient({
     }
 
     leadTrackedRef.current = stableOrderId;
-    console.info('[checkout/success] manual order branch — firing generate_lead only', {
+    console.info('[checkout/success] branch: manual — firing generate_lead only', {
       orderId: stableOrderId,
       sessionId: sessionId ?? null,
       payment_status: (order as OrderWithPaymentStatus).payment_status ?? null,
