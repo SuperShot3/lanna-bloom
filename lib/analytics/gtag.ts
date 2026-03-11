@@ -11,19 +11,29 @@ declare global {
 
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
 
-/** Purchase dedupe: localStorage key format per spec */
+/** Purchase dedupe: storage key format per spec */
 const PURCHASE_SENT_PREFIX = 'purchase_sent:';
+
+function getPurchaseStorageKey(orderId: string): string {
+  return `${PURCHASE_SENT_PREFIX}${orderId}`;
+}
+
+function hasPurchaseSentFlag(storage: Storage | undefined, key: string): boolean {
+  if (!storage) return false;
+  try {
+    return storage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Check if purchase was already sent for this orderId (prevents duplicate on refresh/back).
  */
 export function wasPurchaseSent(orderId: string): boolean {
   if (typeof window === 'undefined') return true;
-  try {
-    return window.localStorage.getItem(`${PURCHASE_SENT_PREFIX}${orderId}`) === '1';
-  } catch {
-    return false;
-  }
+  const key = getPurchaseStorageKey(orderId);
+  return hasPurchaseSentFlag(window.localStorage, key) || hasPurchaseSentFlag(window.sessionStorage, key);
 }
 
 /**
@@ -31,8 +41,14 @@ export function wasPurchaseSent(orderId: string): boolean {
  */
 function markPurchaseSent(orderId: string): void {
   if (typeof window === 'undefined') return;
+  const key = getPurchaseStorageKey(orderId);
   try {
-    window.localStorage.setItem(`${PURCHASE_SENT_PREFIX}${orderId}`, '1');
+    window.localStorage.setItem(key, '1');
+  } catch {
+    // ignore
+  }
+  try {
+    window.sessionStorage.setItem(key, '1');
   } catch {
     // ignore
   }
@@ -76,7 +92,21 @@ export function trackPurchase(params: {
   const { orderId, value, currency = 'THB', items } = params;
   const transactionId = params.transactionId ?? orderId;
 
-  if (wasPurchaseSent(orderId)) return;
+  console.info('[analytics] trackPurchase called', {
+    orderId,
+    transactionId,
+    value,
+    itemCount: items.length,
+  });
+
+  if (wasPurchaseSent(orderId)) {
+    console.info('[analytics] purchase send prevented by guard', {
+      orderId,
+      transactionId,
+    });
+    return;
+  }
+
   markPurchaseSent(orderId);
 
   const ensuredItems = items.map((it, i) => ({
@@ -91,5 +121,10 @@ export function trackPurchase(params: {
     value,
     currency,
     items: ensuredItems,
+  });
+
+  console.info('[analytics] purchase pushed to dataLayer', {
+    orderId,
+    transactionId,
   });
 }

@@ -11,6 +11,7 @@ import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 import { trackPurchase, trackGenerateLead } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
+import { wasPurchaseSent } from '@/lib/analytics/gtag';
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 60000;
@@ -50,6 +51,8 @@ export function CheckoutSuccessClient({
   );
   const pollStartRef = useRef<number | null>(null);
   const cartClearedRef = useRef(false);
+  const purchaseTrackedRef = useRef<string | null>(null);
+  const leadTrackedRef = useRef<string | null>(null);
   const publicOrderUrl = orderId
     ? (initialPublicOrderUrl ?? (typeof window !== 'undefined' ? `${window.location.origin}/order/${orderId}` : ''))
     : '';
@@ -95,43 +98,91 @@ export function CheckoutSuccessClient({
   useEffect(() => {
     if (!orderId) return;
     if (sessionId && stripeStatus !== 'paid') return;
+
     fetch(`/api/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: OrderWithPaymentStatus | null) => {
         setOrder(data);
-        if (data?.pricing?.grandTotal != null && data?.items?.length) {
-          const analyticsItems: AnalyticsItem[] = data.items.map((it, i) => ({
-            item_id: it.bouquetId,
-            item_name: it.bouquetTitle,
-            item_variant: it.size,
-            price: it.price,
-            quantity: 1,
-            index: i,
-          }));
-          const value = data.pricing.grandTotal;
-          const items = analyticsItems;
-          if (isPaidOrder(data)) {
-            trackPurchase({
-              orderId,
-              value,
-              currency: 'THB',
-              items,
-              transactionId: orderId,
-            });
-          } else if (!sessionId) {
-            trackGenerateLead({
-              orderId,
-              value,
-              currency: 'THB',
-              items,
-            });
-          }
-        }
+        console.info('[checkout/success] order loaded', {
+          requestedOrderId: orderId,
+          responseOrderId: data?.orderId ?? null,
+          paymentStatus: data?.payment_status ?? null,
+          status: data?.status ?? null,
+          paid: isPaidOrder(data),
+        });
       })
       .catch(() => {
         setOrder(null);
       });
   }, [orderId, sessionId, stripeStatus]);
+
+  useEffect(() => {
+    if (!order?.orderId || order.pricing?.grandTotal == null || !order.items?.length) return;
+    if (!isPaidOrder(order)) return;
+
+    const stableOrderId = order.orderId.trim();
+    const analyticsItems: AnalyticsItem[] = order.items.map((it, i) => ({
+      item_id: it.bouquetId,
+      item_name: it.bouquetTitle,
+      item_variant: it.size,
+      price: it.price,
+      quantity: 1,
+      index: i,
+    }));
+    const value = order.pricing.grandTotal;
+
+    console.info('[checkout/success] purchase tracking candidate', {
+      orderId: stableOrderId,
+      sessionId: sessionId ?? null,
+      stripeStatus,
+      alreadyTrackedThisMount: purchaseTrackedRef.current === stableOrderId,
+      alreadyTrackedInStorage: wasPurchaseSent(stableOrderId),
+    });
+
+    if (purchaseTrackedRef.current === stableOrderId || wasPurchaseSent(stableOrderId)) {
+      purchaseTrackedRef.current = stableOrderId;
+      console.info('[checkout/success] purchase tracking prevented by guard', {
+        orderId: stableOrderId,
+      });
+      return;
+    }
+
+    purchaseTrackedRef.current = stableOrderId;
+    console.info('[checkout/success] sending purchase tracking', {
+      orderId: stableOrderId,
+      transactionId: stableOrderId,
+    });
+    trackPurchase({
+      orderId: stableOrderId,
+      value,
+      currency: 'THB',
+      items: analyticsItems,
+      transactionId: stableOrderId,
+    });
+  }, [order, sessionId, stripeStatus]);
+
+  useEffect(() => {
+    if (!order?.orderId || order.pricing?.grandTotal == null || !order.items?.length) return;
+    if (sessionId || isPaidOrder(order)) return;
+
+    const stableOrderId = order.orderId.trim();
+    if (leadTrackedRef.current === stableOrderId) return;
+
+    leadTrackedRef.current = stableOrderId;
+    trackGenerateLead({
+      orderId: stableOrderId,
+      value: order.pricing.grandTotal,
+      currency: 'THB',
+      items: order.items.map((it, i) => ({
+        item_id: it.bouquetId,
+        item_name: it.bouquetTitle,
+        item_variant: it.size,
+        price: it.price,
+        quantity: 1,
+        index: i,
+      })),
+    });
+  }, [order, sessionId]);
 
   useEffect(() => {
     if (cartClearedRef.current) return;
