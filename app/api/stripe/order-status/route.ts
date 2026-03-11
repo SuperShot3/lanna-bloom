@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       sessionId: session.id,
       orderId,
       paymentStatus: session.payment_status,
+      paymentIntentStatus: paymentIntent?.status ?? null,
       mode: stripeConfig.mode,
     });
 
@@ -44,8 +45,27 @@ export async function GET(request: NextRequest) {
     }
 
     const status = order.status ?? 'processing';
+    console.log('[stripe/order-status] backend order state', {
+      sessionId: session.id,
+      orderId,
+      backendStatus: order.status ?? null,
+      stripePaymentStatus: session.payment_status,
+      paymentIntentStatus: paymentIntent?.status ?? null,
+      paidAt: order.paidAt ?? null,
+    });
+
     if (status === 'paid' || status === 'payment_failed') {
       return NextResponse.json({ status, order, orderId });
+    }
+
+    if (session.payment_status === 'paid' || paymentIntent?.status === 'succeeded') {
+      console.warn('[stripe/order-status] Stripe says paid but backend is not marked paid yet', {
+        sessionId: session.id,
+        orderId,
+        backendStatus: order.status ?? null,
+        stripePaymentStatus: session.payment_status,
+        paymentIntentStatus: paymentIntent?.status ?? null,
+      });
     }
 
     return NextResponse.json({

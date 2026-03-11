@@ -194,6 +194,16 @@ export async function POST(request: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = eventObject as Stripe.Checkout.Session;
+    console.log('[stripe/webhook] checkout.session.completed payload', {
+      eventId: event.id,
+      orderId,
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+      paymentIntent:
+        typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent?.id ?? null,
+    });
     if (session.payment_status !== 'paid') {
       console.log('[stripe/webhook] checkout.session.completed not paid yet', {
         eventId: event.id,
@@ -233,6 +243,13 @@ export async function POST(request: NextRequest) {
   });
 
   if (order.status === 'paid') {
+    console.log('[stripe/webhook] payment success ignored because order already paid', {
+      eventId: event.id,
+      eventType: event.type,
+      orderId,
+      stripeSessionId,
+      paymentIntentId,
+    });
     return NextResponse.json({ received: true });
   }
 

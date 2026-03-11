@@ -11,7 +11,7 @@ import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 import { trackPurchase, trackGenerateLead } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
-import { wasPurchaseSent } from '@/lib/analytics/gtag';
+import { getPurchaseGuardDebug, wasPurchaseSent } from '@/lib/analytics/gtag';
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 60000;
@@ -67,11 +67,27 @@ export function CheckoutSuccessClient({
     if (!sessionId || stripeStatus !== 'processing') return;
     const poll = async () => {
       if (pollStartRef.current && Date.now() - pollStartRef.current > POLL_MAX_MS) {
+        console.warn('[checkout/success] stripe order-status polling timed out', {
+          sessionId,
+          orderId,
+          stripeStatus,
+        });
         return;
       }
       try {
         const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`);
         const data = await res.json().catch(() => ({}));
+        console.info('[checkout/success] stripe order-status polled', {
+          sessionId,
+          requestedOrderId: orderId || null,
+          responseOrderId: typeof data.orderId === 'string' ? data.orderId : null,
+          routeStatus: data.status ?? null,
+          stripePaymentStatus: data.stripePaymentStatus ?? null,
+          paymentIntentStatus: data.paymentIntentStatus ?? null,
+          orderStatus: data.order?.status ?? null,
+          orderPaymentStatus: data.order?.payment_status ?? null,
+          orderPaidAt: data.order?.paid_at ?? data.order?.paidAt ?? null,
+        });
         if (typeof data.orderId === 'string' && data.orderId.trim()) {
           setOrderId(data.orderId.trim());
         }
@@ -97,7 +113,14 @@ export function CheckoutSuccessClient({
 
   useEffect(() => {
     if (!orderId) return;
-    if (sessionId && stripeStatus !== 'paid') return;
+    if (sessionId && stripeStatus !== 'paid') {
+      console.info('[checkout/success] order fetch waiting for paid stripe status', {
+        sessionId,
+        orderId,
+        stripeStatus,
+      });
+      return;
+    }
 
     fetch(`/api/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -121,6 +144,7 @@ export function CheckoutSuccessClient({
     if (!isPaidOrder(order)) return;
 
     const stableOrderId = order.orderId.trim();
+    const purchaseGuard = getPurchaseGuardDebug(stableOrderId);
     const analyticsItems: AnalyticsItem[] = order.items.map((it, i) => ({
       item_id: it.bouquetId,
       item_name: it.bouquetTitle,
@@ -133,16 +157,26 @@ export function CheckoutSuccessClient({
 
     console.info('[checkout/success] purchase tracking candidate', {
       orderId: stableOrderId,
+      paid: isPaidOrder(order),
+      orderStatus: order.status ?? null,
+      orderPaymentStatus: (order as OrderWithPaymentStatus).payment_status ?? null,
+      orderPaidAt: (order as OrderWithPaymentStatus).paid_at ?? order.paidAt ?? null,
       sessionId: sessionId ?? null,
       stripeStatus,
       alreadyTrackedThisMount: purchaseTrackedRef.current === stableOrderId,
       alreadyTrackedInStorage: wasPurchaseSent(stableOrderId),
+      storageKey: purchaseGuard.storageKey,
+      localStorageSent: purchaseGuard.localStorageSent,
+      sessionStorageSent: purchaseGuard.sessionStorageSent,
     });
 
     if (purchaseTrackedRef.current === stableOrderId || wasPurchaseSent(stableOrderId)) {
       purchaseTrackedRef.current = stableOrderId;
       console.info('[checkout/success] purchase tracking prevented by guard', {
         orderId: stableOrderId,
+        storageKey: purchaseGuard.storageKey,
+        localStorageSent: purchaseGuard.localStorageSent,
+        sessionStorageSent: purchaseGuard.sessionStorageSent,
       });
       return;
     }

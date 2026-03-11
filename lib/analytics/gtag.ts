@@ -27,13 +27,34 @@ function hasPurchaseSentFlag(storage: Storage | undefined, key: string): boolean
   }
 }
 
+export function getPurchaseGuardDebug(orderId: string): {
+  storageKey: string;
+  localStorageSent: boolean;
+  sessionStorageSent: boolean;
+} {
+  const key = getPurchaseStorageKey(orderId);
+  if (typeof window === 'undefined') {
+    return {
+      storageKey: key,
+      localStorageSent: false,
+      sessionStorageSent: false,
+    };
+  }
+
+  return {
+    storageKey: key,
+    localStorageSent: hasPurchaseSentFlag(window.localStorage, key),
+    sessionStorageSent: hasPurchaseSentFlag(window.sessionStorage, key),
+  };
+}
+
 /**
  * Check if purchase was already sent for this orderId (prevents duplicate on refresh/back).
  */
 export function wasPurchaseSent(orderId: string): boolean {
   if (typeof window === 'undefined') return true;
-  const key = getPurchaseStorageKey(orderId);
-  return hasPurchaseSentFlag(window.localStorage, key) || hasPurchaseSentFlag(window.sessionStorage, key);
+  const debug = getPurchaseGuardDebug(orderId);
+  return debug.localStorageSent || debug.sessionStorageSent;
 }
 
 /**
