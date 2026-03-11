@@ -6,7 +6,7 @@
 
 import {
   trackEvent as pushAnalyticsEvent,
-  trackPurchase as pushAnalyticsPurchase,
+  trackPurchase as pushPurchaseToDataLayer,
 } from './analytics/gtag';
 
 const CURRENCY = 'THB';
@@ -237,9 +237,8 @@ export function trackAddPaymentInfo(params: {
 }
 
 /**
- * Fire purchase once per order (GA4 ecommerce). Deduped by orderId via localStorage.
- * ONLY for confirmed payment success.
- * Uses purchase_sent:<orderId> in localStorage; survives refresh/back/forward.
+ * Push purchase to dataLayer only. GTM is the only sender to GA4.
+ * Dedupe is applied in gtag (localStorage/sessionStorage per orderId).
  */
 export function trackPurchase(params: {
   orderId: string;
@@ -248,7 +247,7 @@ export function trackPurchase(params: {
   items: AnalyticsItem[];
   transactionId?: string;
 }): void {
-  pushAnalyticsPurchase({
+  pushPurchaseToDataLayer({
     orderId: params.orderId,
     value: params.value,
     currency: params.currency ?? CURRENCY,

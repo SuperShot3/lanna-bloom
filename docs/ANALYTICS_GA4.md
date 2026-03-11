@@ -197,6 +197,13 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 12. Create a manual-payment order and confirm `generate_lead`
 13. Re-open the success page after the order is marked paid and confirm one `purchase`
 
+## Audit: Purchase and GTM-Only
+
+- **Purchase transport**: The app never calls `gtag('event', 'purchase', ...)` or any GA4 API. It only pushes `{ event: 'purchase', ... }` to `window.dataLayer`. GTM is the only system that sends purchase to GA4.
+- **Single code path**: Purchase is pushed from `app/[lang]/checkout/success/CheckoutSuccessClient.tsx` when the order is confirmed paid (Stripe success or manual payment later). It calls `trackPurchase` from `lib/analytics.ts`, which delegates to `lib/analytics/gtag.ts` `trackPurchase` → `trackEvent('purchase', ...)` → `dataLayer.push(...)`.
+- **Duplicate guard**: (1) Success page uses `purchaseTrackedRef` and `wasPurchaseSent(orderId)` so we don’t call `trackPurchase` twice in one session or on revisit. (2) `gtag.ts` `trackPurchase` uses `purchase_sent:<orderId>` in localStorage and sessionStorage; it pushes at most once per orderId.
+- **generate_lead**: `trackGenerateLead` only pushes `generate_lead` to dataLayer. It does not call or trigger any purchase logic.
+
 ## Files Controlling Analytics Logic
 
 - `components/GoogleAnalytics.tsx`

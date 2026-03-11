@@ -1,6 +1,9 @@
 /**
  * Core analytics helpers for GTM dataLayer pushes plus purchase dedupe.
  * Used by lib/analytics.ts. GTM is loaded in components/GoogleAnalytics.tsx.
+ *
+ * Purchase: we only push { event: 'purchase', ... } to window.dataLayer.
+ * GTM is the only system that sends purchase to GA4 (no direct gtag/GA4 calls).
  */
 
 declare global {
@@ -121,7 +124,7 @@ export function trackPurchase(params: {
   });
 
   if (wasPurchaseSent(orderId)) {
-    console.info('[analytics] purchase send prevented by guard', {
+    console.info('[analytics] purchase duplicate prevented by guard (no dataLayer push)', {
       orderId,
       transactionId,
     });
@@ -144,7 +147,7 @@ export function trackPurchase(params: {
     items: ensuredItems,
   });
 
-  console.info('[analytics] purchase pushed to dataLayer', {
+  console.info('[analytics] purchase pushed to dataLayer only — GTM will send to GA4', {
     orderId,
     transactionId,
   });

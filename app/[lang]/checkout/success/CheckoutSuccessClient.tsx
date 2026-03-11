@@ -139,6 +139,7 @@ export function CheckoutSuccessClient({
       });
   }, [orderId, sessionId, stripeStatus]);
 
+  // Purchase: push to dataLayer once per paid order. GTM is the only sender to GA4.
   useEffect(() => {
     if (!order?.orderId || order.pricing?.grandTotal == null || !order.items?.length) return;
     if (!isPaidOrder(order)) return;
@@ -155,37 +156,27 @@ export function CheckoutSuccessClient({
     }));
     const value = order.pricing.grandTotal;
 
-    console.info('[checkout/success] purchase tracking candidate', {
-      orderId: stableOrderId,
-      paid: isPaidOrder(order),
-      orderStatus: order.status ?? null,
-      orderPaymentStatus: (order as OrderWithPaymentStatus).payment_status ?? null,
-      orderPaidAt: (order as OrderWithPaymentStatus).paid_at ?? order.paidAt ?? null,
-      sessionId: sessionId ?? null,
-      stripeStatus,
-      alreadyTrackedThisMount: purchaseTrackedRef.current === stableOrderId,
-      alreadyTrackedInStorage: wasPurchaseSent(stableOrderId),
-      storageKey: purchaseGuard.storageKey,
-      localStorageSent: purchaseGuard.localStorageSent,
-      sessionStorageSent: purchaseGuard.sessionStorageSent,
-    });
+    if (typeof window !== 'undefined') {
+      console.info('[checkout/success] purchase tracking candidate', {
+        orderId: stableOrderId,
+        alreadyTrackedThisMount: purchaseTrackedRef.current === stableOrderId,
+        alreadyTrackedInStorage: wasPurchaseSent(stableOrderId),
+        storageKey: purchaseGuard.storageKey,
+      });
+    }
 
     if (purchaseTrackedRef.current === stableOrderId || wasPurchaseSent(stableOrderId)) {
       purchaseTrackedRef.current = stableOrderId;
-      console.info('[checkout/success] purchase tracking prevented by guard', {
-        orderId: stableOrderId,
-        storageKey: purchaseGuard.storageKey,
-        localStorageSent: purchaseGuard.localStorageSent,
-        sessionStorageSent: purchaseGuard.sessionStorageSent,
-      });
+      if (typeof window !== 'undefined') {
+        console.info('[checkout/success] purchase tracking skipped by guard (no dataLayer push)', {
+          orderId: stableOrderId,
+          storageKey: purchaseGuard.storageKey,
+        });
+      }
       return;
     }
 
     purchaseTrackedRef.current = stableOrderId;
-    console.info('[checkout/success] sending purchase tracking', {
-      orderId: stableOrderId,
-      transactionId: stableOrderId,
-    });
     trackPurchase({
       orderId: stableOrderId,
       value,
