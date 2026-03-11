@@ -164,15 +164,16 @@ export function CheckoutSuccessClient({
   }, [orderId, sessionId, stripeStatus]);
 
   // ——— Purchase: only for Stripe/Link paid flow. Manual orders must never fire purchase. ———
+  // Normalize once so "LB-123" and "LB-123 " never produce two keys (matches gtag.ts).
   const stripePaidOrderId =
     order?.orderId && isStripePaidOrder(order, sessionId ?? undefined, stripeStatus)
-      ? order.orderId.trim()
+      ? (order.orderId as string).trim()
       : null;
   useEffect(() => {
     if (!stripePaidOrderId) {
       if (order?.orderId && isPaidOrder(order) && isManualOrderPath(sessionId ?? undefined, order) && typeof window !== 'undefined') {
         console.info('[checkout/success] purchase not fired — manual order path (generate_lead only)', {
-          orderId: order.orderId.trim(),
+          orderId: (order.orderId as string).trim(),
           sessionId: sessionId ?? null,
           payment_method: (order as OrderWithPaymentStatus).payment_method ?? null,
         });
@@ -180,21 +181,19 @@ export function CheckoutSuccessClient({
       return;
     }
     if (!order?.orderId || order.pricing?.grandTotal == null || !order.items?.length) return;
-    if (order.orderId.trim() !== stripePaidOrderId) return;
+    const stableOrderId = (order.orderId as string).trim();
+    if (stableOrderId !== stripePaidOrderId) return;
 
-    const stableOrderId = stripePaidOrderId;
     if (purchaseTrackedRef.current === stableOrderId) return;
 
-    if (typeof window !== 'undefined') {
-      const storageKey = `purchase_sent:${stableOrderId}`;
-      if (window.sessionStorage.getItem(storageKey) === '1') {
-        purchaseTrackedRef.current = stableOrderId;
-        console.info('[checkout/success] purchase blocked — already sent for this orderId', {
-          orderId: stableOrderId,
-          guard: 'sessionStorage',
-        });
-        return;
-      }
+    const storageKey = `purchase_sent:${stableOrderId}`;
+    if (typeof window !== 'undefined' && window.sessionStorage.getItem(storageKey) === '1') {
+      purchaseTrackedRef.current = stableOrderId;
+      console.info('[checkout/success] purchase blocked — already sent for this orderId', {
+        orderId: stableOrderId,
+        guard: 'sessionStorage',
+      });
+      return;
     }
 
     purchaseTrackedRef.current = stableOrderId;

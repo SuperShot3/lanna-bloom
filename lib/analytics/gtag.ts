@@ -14,11 +14,15 @@ declare global {
 
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
 
-/** Purchase dedupe: storage key format per spec */
+/** Purchase dedupe: storage key format per spec. Always normalizes orderId so "LB-123" and "LB-123 " share one key. */
 const PURCHASE_SENT_PREFIX = 'purchase_sent:';
 
+function normalizeOrderId(orderId: string): string {
+  return typeof orderId === 'string' ? orderId.trim() : '';
+}
+
 function getPurchaseStorageKey(orderId: string): string {
-  return `${PURCHASE_SENT_PREFIX}${orderId}`;
+  return `${PURCHASE_SENT_PREFIX}${normalizeOrderId(orderId)}`;
 }
 
 function hasPurchaseSentFlag(storage: Storage | undefined, key: string): boolean {
@@ -114,17 +118,17 @@ export function trackPurchase(params: {
 }): void {
   if (typeof window === 'undefined') return;
 
-  const { orderId, value, currency = 'THB', items } = params;
-  const transactionId = params.transactionId ?? orderId;
-  const key = getPurchaseStorageKey(orderId);
+  const normalizedOrderId = normalizeOrderId(params.orderId);
+  if (!normalizedOrderId) return;
 
-  // Strong guard BEFORE any push: atomic check-and-set so only first call pushes
+  const key = getPurchaseStorageKey(normalizedOrderId);
+
+  // Guard FIRST: check-and-set so only one push per order (handles race and orderId whitespace)
   try {
     if (window.sessionStorage.getItem(key) === '1') {
       if (isDev) {
         console.info('[analytics] purchase duplicate prevented by sessionStorage guard (no dataLayer push)', {
-          orderId,
-          transactionId,
+          orderId: normalizedOrderId,
         });
       }
       return;
@@ -133,7 +137,11 @@ export function trackPurchase(params: {
   } catch {
     return;
   }
-  markPurchaseSent(orderId);
+
+  markPurchaseSent(normalizedOrderId);
+
+  const { value, currency = 'THB', items } = params;
+  const transactionId = params.transactionId ? normalizeOrderId(params.transactionId) : normalizedOrderId;
 
   const ensuredItems = items.map((it, i) => ({
     ...it,
@@ -152,7 +160,7 @@ export function trackPurchase(params: {
   });
   if (isDev) {
     console.info('[analytics] purchase pushed to dataLayer once — GTM will send to GA4', {
-      orderId,
+      orderId: normalizedOrderId,
       transactionId,
     });
   }
