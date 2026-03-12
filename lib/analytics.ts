@@ -5,7 +5,7 @@
  */
 
 import {
-  trackEvent as pushAnalyticsEvent,
+  pushToDataLayer,
   trackPurchase as pushPurchaseToDataLayer,
 } from './analytics/gtag';
 
@@ -49,7 +49,7 @@ function markSent(key: string): void {
 }
 
 function sendEvent(eventName: string, eventParams: Record<string, unknown>): void {
-  pushAnalyticsEvent(eventName, eventParams);
+  pushToDataLayer(eventName, eventParams);
 }
 
 function ensureItems(items: AnalyticsItem[]): AnalyticsItem[] {

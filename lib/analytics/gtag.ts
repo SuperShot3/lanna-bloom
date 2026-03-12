@@ -1,9 +1,11 @@
 /**
- * Core analytics helpers for GTM dataLayer pushes plus purchase dedupe.
- * Used by lib/analytics.ts. GTM is loaded in components/GoogleAnalytics.tsx.
+ * Analytics helpers — GTM dataLayer pushes only.
  *
- * Purchase: we only push { event: 'purchase', ... } to window.dataLayer.
- * GTM is the only system that sends purchase to GA4 (no direct gtag/GA4 calls).
+ * Architecture: App → window.dataLayer.push(...) → GTM → GA4.
+ * The app NEVER calls gtag('event', ...) or loads gtag.js directly.
+ * GTM is the single system responsible for sending events to GA4.
+ *
+ * Purchase dedupe: localStorage + sessionStorage per orderId.
  */
 
 declare global {
@@ -13,6 +15,17 @@ declare global {
 }
 
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+
+/**
+ * Safe helper for pushing events to the GTM dataLayer.
+ * Every analytics event in the app MUST go through this function.
+ */
+export function pushToDataLayer(eventName: string, params: Record<string, unknown> = {}): void {
+  if (typeof window === 'undefined') return;
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event: eventName, ...params });
+  if (isDev) console.debug('[pushToDataLayer]', eventName, params);
+}
 
 /** Purchase dedupe: storage key format per spec. Always normalizes orderId so "LB-123" and "LB-123 " share one key. */
 const PURCHASE_SENT_PREFIX = 'purchase_sent:';
@@ -83,14 +96,11 @@ function markPurchaseSent(orderId: string): void {
 }
 
 /**
- * Push an event into the GTM dataLayer.
+ * Push a named event into the GTM dataLayer.
+ * Delegates to pushToDataLayer — kept as a named export for callers.
  */
 export function trackEvent(eventName: string, eventParams: Record<string, unknown>): void {
-  if (typeof window === 'undefined') return;
-
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({ event: eventName, ...eventParams });
-  if (isDev) console.debug('[Analytics dataLayer]', eventName, eventParams);
+  pushToDataLayer(eventName, eventParams);
 }
 
 export interface PurchaseItem {
@@ -106,7 +116,8 @@ export interface PurchaseItem {
 
 /**
  * Fire purchase event exactly once per order. Deduped by orderId.
- * Guard runs BEFORE any dataLayer push: check sessionStorage → set → push.
+ * Guard runs BEFORE any dataLayer push: check both sessionStorage and localStorage
+ * so cross-tab / new-session revisits do not push duplicate purchase.
  * Call only when order payment is confirmed.
  */
 export function trackPurchase(params: {
@@ -121,23 +132,16 @@ export function trackPurchase(params: {
   const normalizedOrderId = normalizeOrderId(params.orderId);
   if (!normalizedOrderId) return;
 
-  const key = getPurchaseStorageKey(normalizedOrderId);
-
-  // Guard FIRST: check-and-set so only one push per order (handles race and orderId whitespace)
-  try {
-    if (window.sessionStorage.getItem(key) === '1') {
-      if (isDev) {
-        console.info('[analytics] purchase duplicate prevented by sessionStorage guard (no dataLayer push)', {
-          orderId: normalizedOrderId,
-        });
-      }
-      return;
+  // Guard FIRST: check both storages so only one push per order (cross-tab / revisit safe)
+  if (wasPurchaseSent(normalizedOrderId)) {
+    if (isDev) {
+      console.info('[analytics] purchase duplicate prevented by storage guard (no dataLayer push)', {
+        orderId: normalizedOrderId,
+        ...getPurchaseGuardDebug(normalizedOrderId),
+      });
     }
-    window.sessionStorage.setItem(key, '1');
-  } catch {
     return;
   }
-
   markPurchaseSent(normalizedOrderId);
 
   const { value, currency = 'THB', items } = params;
@@ -150,9 +154,7 @@ export function trackPurchase(params: {
     currency: it.currency ?? currency,
   }));
 
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({
-    event: 'purchase',
+  pushToDataLayer('purchase', {
     transaction_id: transactionId,
     value,
     currency,

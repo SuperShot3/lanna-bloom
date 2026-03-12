@@ -10,6 +10,7 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 import { trackPurchase, trackGenerateLead } from '@/lib/analytics';
+import { wasPurchaseSent } from '@/lib/analytics/gtag';
 import type { AnalyticsItem } from '@/lib/analytics';
 
 const POLL_INTERVAL_MS = 2500;
@@ -195,12 +196,11 @@ export function CheckoutSuccessClient({
 
     if (purchaseTrackedRef.current === stableOrderId) return;
 
-    const storageKey = `purchase_sent:${stableOrderId}`;
-    if (typeof window !== 'undefined' && window.sessionStorage.getItem(storageKey) === '1') {
+    if (typeof window !== 'undefined' && wasPurchaseSent(stableOrderId)) {
       purchaseTrackedRef.current = stableOrderId;
       console.info('[checkout/success] purchase blocked — already sent for this orderId', {
         orderId: stableOrderId,
-        guard: 'sessionStorage',
+        guard: 'wasPurchaseSent (localStorage or sessionStorage)',
       });
       return;
     }
@@ -238,14 +238,12 @@ export function CheckoutSuccessClient({
     const stableOrderId = order.orderId.trim();
     if (leadTrackedRef.current === stableOrderId) return;
 
-    if (typeof window !== 'undefined') {
-      if (window.sessionStorage.getItem(`purchase_sent:${stableOrderId}`) === '1') {
-        console.info('[checkout/success] generate_lead blocked — purchase already sent for this orderId', {
-          orderId: stableOrderId,
-          guard: 'purchase_sent',
-        });
-        return;
-      }
+    if (typeof window !== 'undefined' && wasPurchaseSent(stableOrderId)) {
+      console.info('[checkout/success] generate_lead blocked — purchase already sent for this orderId', {
+        orderId: stableOrderId,
+        guard: 'wasPurchaseSent',
+      });
+      return;
     }
 
     leadTrackedRef.current = stableOrderId;
