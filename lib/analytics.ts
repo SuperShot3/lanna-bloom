@@ -270,10 +270,10 @@ export function trackGenerateLead(params: {
   orderId: string;
   value: number;
   currency?: string;
-  items: AnalyticsItem[];
+  items?: AnalyticsItem[];
 }): void {
   if (typeof window === 'undefined') return;
-  const { orderId, value, currency = CURRENCY, items } = params;
+  const { orderId, value, currency = CURRENCY } = params;
   const storageKey = `${GENERATE_LEAD_DEDUPE_PREFIX}${orderId}`;
   try {
     if (window.localStorage.getItem(storageKey) === '1') return;
@@ -285,7 +285,6 @@ export function trackGenerateLead(params: {
     order_id: orderId,
     value,
     currency,
-    items: ensureItems(items),
   });
 }
 
