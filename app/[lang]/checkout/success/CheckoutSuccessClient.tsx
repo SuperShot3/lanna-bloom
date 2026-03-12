@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { PaymentNote } from '@/components/PaymentNote';
+import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
 import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -270,7 +271,11 @@ export function CheckoutSuccessClient({
 
   useEffect(() => {
     if (cartClearedRef.current) return;
-    if (!isPaidOrder(order)) return;
+    // For Stripe orders: clear cart only when payment is confirmed.
+    // For manual orders (no sessionId): clear cart immediately since order is placed.
+    const isManualPath = !sessionId;
+    if (!isPaidOrder(order) && !isManualPath) return;
+    if (isManualPath && !orderId) return;
 
     clearCart();
     cartClearedRef.current = true;
@@ -278,18 +283,20 @@ export function CheckoutSuccessClient({
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.removeItem(CART_FORM_STORAGE_KEY);
-        if (order?.orderId) {
-          window.localStorage.setItem('lanna-bloom-last-order-id', order.orderId);
+        const resolvedId = order?.orderId ?? orderId;
+        if (resolvedId) {
+          window.localStorage.setItem('lanna-bloom-last-order-id', resolvedId);
         }
       } catch {
         // ignore
       }
     }
 
-    console.log('[stripe/success] cart cleared after confirmed payment', {
+    console.log('[checkout/success] cart cleared', {
       orderId: order?.orderId ?? orderId,
+      path: isManualPath ? 'manual' : 'stripe',
     });
-  }, [clearCart, order, orderId]);
+  }, [clearCart, order, orderId, sessionId]);
 
   const [copied, setCopied] = useState<'link' | null>(null);
   const copyLink = async () => {
@@ -344,6 +351,18 @@ export function CheckoutSuccessClient({
         </div>
       </div>
     );
+  }
+
+  /*
+   * MANUAL ORDER PATH (no Stripe session): Show the floral pending-confirmation
+   * page instead of the default checkout success UI. This is the intermediate
+   * state for orders placed via bank transfer / PromptPay that are not yet paid.
+   *
+   * DO NOT fire GA4 purchase event here — only generate_lead (handled by effect above).
+   * The real purchase event fires only after admin confirms payment.
+   */
+  if (!sessionId && orderId) {
+    return <OrderPendingConfirmation orderId={orderId} locale={lang} />;
   }
 
   const hasItems = order?.items?.length;

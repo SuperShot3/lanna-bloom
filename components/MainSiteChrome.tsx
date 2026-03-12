@@ -14,8 +14,9 @@ export function MainSiteChrome({
 }) {
   const pathname = usePathname();
   const isPartnerRoute = pathname?.includes('/partner');
+  const isCheckoutSuccess = pathname?.includes('/checkout/success');
 
-  if (isPartnerRoute) {
+  if (isPartnerRoute || isCheckoutSuccess) {
     return <>{children}</>;
   }
 

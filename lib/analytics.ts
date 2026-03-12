@@ -29,6 +29,7 @@ export type MessengerPageLocation =
   | 'header'
   | 'checkout_success'
   | 'order_page'
+  | 'order_pending_confirmation'
   | 'product'
   | 'cart'
   | 'guide';
