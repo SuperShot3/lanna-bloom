@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
-import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
+// Emails deferred to admin payment confirmation — see /api/admin/orders/[order_id]/mark-paid
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 
@@ -137,12 +137,9 @@ export async function POST(request: NextRequest) {
     const publicOrderUrl = getOrderDetailsUrl(order.orderId);
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
 
-    sendOrderNotificationEmail(order, publicOrderUrl).catch((e) => {
-      console.error('[api/orders] Notification email failed:', e);
-    });
-    sendCustomerConfirmationEmail(order, publicOrderUrl).catch((e) => {
-      console.error('[api/orders] Customer confirmation email failed:', e);
-    });
+    // Emails are NOT sent at order placement for manual orders.
+    // Notifications are deferred until admin confirms payment via the dashboard.
+    // This prevents premature notifications for orders that are still pending contact/payment.
 
     return NextResponse.json({
       orderId: order.orderId,

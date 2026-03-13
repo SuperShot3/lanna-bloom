@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { getOrderById, getOrderDetailsUrl } from '@/lib/orders';
+import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 
 const MANUAL_PAYMENT_METHODS = ['PROMPTPAY', 'BANK_TRANSFER'];
 
@@ -89,6 +91,22 @@ export async function PATCH(
   await logAudit(adminEmail, 'MANUAL_MARK_PAID', order_id.trim(), {
     payment_status: { from: previousPaymentStatus, to: 'PAID' },
     order_status: { from: previousOrderStatus, to: newOrderStatus },
+  });
+
+  // Send notification emails NOW that payment is confirmed.
+  // Emails are deferred from order placement to this point for manual orders.
+  const trimmedId = order_id.trim();
+  getOrderById(trimmedId).then((fullOrder) => {
+    if (!fullOrder) return;
+    const detailsUrl = getOrderDetailsUrl(trimmedId);
+    sendOrderNotificationEmail(fullOrder, detailsUrl).catch((e) =>
+      console.error('[admin/mark-paid] Notification email failed:', e)
+    );
+    sendCustomerConfirmationEmail(fullOrder, detailsUrl).catch((e) =>
+      console.error('[admin/mark-paid] Customer confirmation email failed:', e)
+    );
+  }).catch((e) => {
+    console.error('[admin/mark-paid] Failed to fetch order for email:', e);
   });
 
   return NextResponse.json({ ok: true, order: updated });
