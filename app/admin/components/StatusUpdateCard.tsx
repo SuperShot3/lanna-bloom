@@ -3,31 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
-
-const ORDER_STATUSES = [
-  'NEW',
-  'PAID',
-  'ACCEPTED',
-  'PREPARING',
-  'READY_FOR_DISPATCH',
-  'OUT_FOR_DELIVERY',
-  'DELIVERED',
-  'CANCELED',
-  'REFUNDED',
-];
-
-const PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED'];
-
-/** Customer-facing fulfillment status (shown on order page) */
-const FULFILLMENT_STATUSES = [
-  'new',
-  'confirmed',
-  'preparing',
-  'dispatched',
-  'delivered',
-  'cancelled',
-  'issue',
-] as const;
+import {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+  formatOrderStatus,
+  formatPaymentStatus,
+  normalizeOrderStatus,
+  normalizePaymentStatus,
+} from '@/lib/orders/statusConstants';
 
 interface StatusUpdateCardProps {
   order: SupabaseOrderRow;
@@ -35,83 +20,49 @@ interface StatusUpdateCardProps {
   canRefund?: boolean;
 }
 
-export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUpdateCardProps) {
+export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
   const router = useRouter();
-  const [orderStatus, setOrderStatus] = useState(order.order_status ?? 'NEW');
-  const [paymentStatus, setPaymentStatus] = useState(order.payment_status ?? 'PENDING');
-  const [fulfillmentStatus, setFulfillmentStatus] = useState(
-    order.fulfillment_status ?? 'new'
-  );
+  const [orderStatus, setOrderStatus] = useState(normalizeOrderStatus(order.order_status));
+  const [paymentStatus, setPaymentStatus] = useState(normalizePaymentStatus(order.payment_status));
   const [savingOrder, setSavingOrder] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
-  const [savingFulfillment, setSavingFulfillment] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleOrderStatusChange = async (newStatus: string) => {
     if (!canEdit || savingOrder) return;
-    if (newStatus === (order.order_status ?? 'NEW')) return;
-    setOrderStatus(newStatus);
+    const normalized = normalizeOrderStatus(newStatus);
+    if (normalized === (order.order_status ?? 'NEW').toUpperCase()) return;
+    setOrderStatus(normalized);
     setSavingOrder(true);
     setMessage(null);
     try {
       const res = await fetch(`/api/admin/orders/${encodeURIComponent(order.order_id)}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_status: newStatus }),
+        body: JSON.stringify({ order_status: normalized }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessage({ type: 'error', text: data.error ?? 'Failed to update status' });
-        setOrderStatus(order.order_status ?? 'NEW');
+        setOrderStatus(normalizeOrderStatus(order.order_status));
         return;
       }
-      setMessage({ type: 'success', text: 'Status updated' });
+      setMessage({ type: 'success', text: 'Order status updated' });
       setTimeout(() => setMessage(null), 3000);
       router.refresh();
     } catch (e) {
       setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
-      setOrderStatus(order.order_status ?? 'NEW');
+      setOrderStatus(normalizeOrderStatus(order.order_status));
     } finally {
       setSavingOrder(false);
     }
   };
 
-  const handleFulfillmentStatusChange = async (newStatus: string) => {
-    if (!canEdit || savingFulfillment) return;
-    if (newStatus === (order.fulfillment_status ?? 'new')) return;
-    setFulfillmentStatus(newStatus);
-    setSavingFulfillment(true);
-    setMessage(null);
-    try {
-      const res = await fetch(
-        `/api/admin/orders/${encodeURIComponent(order.order_id)}/fulfillment-status`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fulfillment_status: newStatus }),
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error ?? 'Failed to update fulfillment status' });
-        setFulfillmentStatus(order.fulfillment_status ?? 'new');
-        return;
-      }
-      setMessage({ type: 'success', text: 'Fulfillment status updated' });
-      setTimeout(() => setMessage(null), 3000);
-      router.refresh();
-    } catch (e) {
-      setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
-      setFulfillmentStatus(order.fulfillment_status ?? 'new');
-    } finally {
-      setSavingFulfillment(false);
-    }
-  };
-
   const handlePaymentStatusChange = async (newStatus: string) => {
     if (!canEdit || savingPayment) return;
-    if (newStatus === (order.payment_status ?? 'PENDING')) return;
-    setPaymentStatus(newStatus);
+    const normalized = normalizePaymentStatus(newStatus);
+    if (normalized === (order.payment_status ?? 'NOT_PAID').toUpperCase()) return;
+    setPaymentStatus(normalized);
     setSavingPayment(true);
     setMessage(null);
     try {
@@ -120,13 +71,13 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payment_status: newStatus }),
+          body: JSON.stringify({ payment_status: normalized }),
         }
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessage({ type: 'error', text: data.error ?? 'Failed to update payment status' });
-        setPaymentStatus(order.payment_status ?? 'PENDING');
+        setPaymentStatus(normalizePaymentStatus(order.payment_status));
         return;
       }
       setMessage({ type: 'success', text: 'Payment status updated' });
@@ -134,7 +85,7 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
       router.refresh();
     } catch (e) {
       setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
-      setPaymentStatus(order.payment_status ?? 'PENDING');
+      setPaymentStatus(normalizePaymentStatus(order.payment_status));
     } finally {
       setSavingPayment(false);
     }
@@ -155,9 +106,9 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
                 disabled={savingOrder}
                 className="admin-v2-select"
               >
-                {ORDER_STATUSES.filter((s) => s !== 'REFUNDED' || canRefund).map((s) => (
+                {ORDER_STATUS.map((s) => (
                   <option key={s} value={s}>
-                    {s.replace(/_/g, ' ')}
+                    {ORDER_STATUS_LABELS[s]}
                   </option>
                 ))}
               </select>
@@ -165,35 +116,8 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
             </div>
           ) : (
             <p>
-              <span className={`admin-v2-badge admin-v2-badge-${(orderStatus ?? '').toLowerCase()}`}>
-                {orderStatus ?? '—'}
-              </span>
-            </p>
-          )}
-        </div>
-        <div className="admin-v2-status-group">
-          <label htmlFor="fulfillment-status">Fulfillment status (customer-facing)</label>
-          {canEdit ? (
-            <div className="admin-v2-status-row">
-              <select
-                id="fulfillment-status"
-                value={fulfillmentStatus}
-                onChange={(e) => handleFulfillmentStatusChange(e.target.value)}
-                disabled={savingFulfillment}
-                className="admin-v2-select"
-              >
-                {FULFILLMENT_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-              {savingFulfillment && <span className="admin-v2-muted">Saving…</span>}
-            </div>
-          ) : (
-            <p>
-              <span className={`admin-v2-badge admin-v2-badge-fulfillment-${fulfillmentStatus}`}>
-                {fulfillmentStatus.charAt(0).toUpperCase() + fulfillmentStatus.slice(1)}
+              <span className={`admin-v2-badge admin-v2-badge-${orderStatus.toLowerCase()}`}>
+                {formatOrderStatus(orderStatus)}
               </span>
             </p>
           )}
@@ -209,9 +133,9 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
                 disabled={savingPayment}
                 className="admin-v2-select"
               >
-                {PAYMENT_STATUSES.map((s) => (
+                {PAYMENT_STATUS.map((s) => (
                   <option key={s} value={s}>
-                    {s}
+                    {PAYMENT_STATUS_LABELS[s]}
                   </option>
                 ))}
               </select>
@@ -220,9 +144,9 @@ export function StatusUpdateCard({ order, canEdit, canRefund = false }: StatusUp
           ) : (
             <p>
               <span
-                className={`admin-v2-badge admin-v2-badge-payment-${(paymentStatus ?? '').toLowerCase()}`}
+                className={`admin-v2-badge admin-v2-badge-payment-${paymentStatus.toLowerCase()}`}
               >
-                {paymentStatus ?? '—'}
+                {formatPaymentStatus(paymentStatus)}
               </span>
             </p>
           )}

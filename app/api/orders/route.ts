@@ -82,6 +82,9 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const refCode = typeof b.referralCode === 'string' ? (b.referralCode as string).trim() : '';
   const refDiscount = refCode ? getDiscountForCode(refCode, subtotal) : 0;
 
+  const gaClientIdRaw = typeof b.ga_client_id === 'string' ? (b.ga_client_id as string).trim() : '';
+  const ga_client_id = gaClientIdRaw.length > 0 && gaClientIdRaw.length <= 200 ? gaClientIdRaw : undefined;
+
   const payload: OrderPayload = {
     customerName,
     phone: typeof b.phone === 'string' ? b.phone.trim() || undefined : undefined,
@@ -122,6 +125,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     },
     contactPreference,
     ...(refCode && refDiscount > 0 ? { referralCode: refCode, referralDiscount: refDiscount } : {}),
+    ...(ga_client_id && { ga_client_id }),
   };
   return { ok: true, payload };
 }

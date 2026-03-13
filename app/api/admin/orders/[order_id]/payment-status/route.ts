@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { PAYMENT_STATUS } from '@/lib/orders/statusConstants';
 
-const VALID_PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED'];
+const VALID_PAYMENT_STATUSES = [...PAYMENT_STATUS];
 
 export async function PATCH(
   request: NextRequest,
@@ -29,9 +30,9 @@ export async function PATCH(
     ? String((body as { payment_status?: unknown }).payment_status ?? '').trim().toUpperCase()
     : null;
 
-  if (!paymentStatus || !VALID_PAYMENT_STATUSES.includes(paymentStatus)) {
+  if (!paymentStatus || !VALID_PAYMENT_STATUSES.includes(paymentStatus as (typeof PAYMENT_STATUS)[number])) {
     return NextResponse.json(
-      { error: 'Invalid payment_status. Must be one of: PENDING, PAID, FAILED' },
+      { error: 'Invalid payment_status. Must be one of: NOT_PAID, PAID, CANCELLED, ERROR' },
       { status: 400 }
     );
   }
@@ -43,7 +44,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await supabase
     .from('orders')
-    .select('order_id, payment_method, payment_status')
+    .select('order_id, payment_method, payment_status, order_status')
     .eq('order_id', order_id.trim())
     .single();
 
@@ -59,15 +60,19 @@ export async function PATCH(
     );
   }
 
-  const previousStatus = existing.payment_status ?? 'PENDING';
+  const previousStatus = existing.payment_status ?? 'NOT_PAID';
 
   const updatePayload: Record<string, unknown> = {
     payment_status: paymentStatus,
     updated_at: new Date().toISOString(),
   };
+  // When marking PAID, move order along pipeline (NEW -> PROCESSING) if still at NEW
   if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
     updatePayload.paid_at = new Date().toISOString();
-    updatePayload.order_status = 'PAID';
+    const currentOrderStatus = (existing.order_status ?? 'NEW').toUpperCase();
+    if (currentOrderStatus === 'NEW') {
+      updatePayload.order_status = 'PROCESSING';
+    }
   }
 
   const { data: updated, error } = await supabase
@@ -85,7 +90,7 @@ export async function PATCH(
   if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
     await supabase.from('order_status_history').insert({
       order_id: order_id.trim(),
-      from_status: existing.payment_status ?? 'PENDING',
+      from_status: existing.payment_status ?? 'NOT_PAID',
       to_status: 'PAID',
       created_at: new Date().toISOString(),
     });
@@ -96,6 +101,19 @@ export async function PATCH(
     payment_from: previousStatus,
     payment_to: paymentStatus,
   });
+
+  // GA4 purchase: send only when transitioning to PAID (backend Measurement Protocol, idempotent)
+  if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
+    const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
+    const ga4Result = await sendPurchaseForOrder(order_id.trim());
+    if (ga4Result.sent) {
+      console.log('[admin/payment-status] GA4 purchase sent for order', order_id.trim());
+    } else if (ga4Result.reason === 'already_sent') {
+      console.log('[admin/payment-status] GA4 purchase skipped (already sent) for order', order_id.trim());
+    } else if (ga4Result.reason === 'send_failed') {
+      console.warn('[admin/payment-status] GA4 purchase send failed for order', order_id.trim(), ga4Result.error);
+    }
+  }
 
   return NextResponse.json({ ok: true, order: updated });
 }

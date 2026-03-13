@@ -2,7 +2,6 @@ import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
-import { OrderPaidPurchaseTracker } from '@/components/OrderPaidPurchaseTracker';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 
@@ -58,12 +57,8 @@ export default async function OrderDetailsPage({
 
   /*
    * INTERMEDIATE STATE: If payment is NOT confirmed, show the pending-confirmation
-   * page instead of the full order details. This prevents premature GA4 purchase
-   * tracking and clearly communicates to the customer that they need to contact
-   * the shop to complete their order.
-   *
-   * Once admin confirms payment (status → PAID), subsequent visits will show the
-   * normal full order details page.
+   * page. GA4 purchase is never fired from this app; it is sent only from the
+   * backend when admin sets status to paid/confirmed_paid (Measurement Protocol).
    */
   const paid = isPaymentConfirmed(
     supabasePayment?.payment_status,
@@ -77,7 +72,6 @@ export default async function OrderDetailsPage({
 
   return (
     <div className="order-page">
-      <OrderPaidPurchaseTracker order={order} />
       <div className="container">
         <h1 className="order-page-title">{t.orderDetails}</h1>
         <OrderDetailsView

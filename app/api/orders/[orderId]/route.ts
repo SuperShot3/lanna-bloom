@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
+import { orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,15 +19,16 @@ export async function GET(
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  // Always fetch latest status from Supabase (single source of truth).
-  // Admin updates fulfillment_status and payment_status in Supabase.
   const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
+  const orderStatus = supabasePayment?.order_status ?? null;
+  const fulfillmentStatus = orderStatusToFulfillmentDisplay(orderStatus);
   const response = {
     ...order,
-    fulfillmentStatus:
-      supabasePayment?.fulfillment_status ?? order.fulfillmentStatus ?? 'new',
+    order_status: orderStatus,
+    fulfillmentStatus,
     fulfillmentStatusUpdatedAt:
       supabasePayment?.fulfillment_status_updated_at ??
+      supabasePayment?.updated_at ??
       order.fulfillmentStatusUpdatedAt,
     payment_status: supabasePayment?.payment_status ?? order.status,
     payment_method: supabasePayment?.payment_method,

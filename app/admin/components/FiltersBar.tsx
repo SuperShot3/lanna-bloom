@@ -16,18 +16,9 @@ interface FiltersBarProps {
   onFilterChange: (updates: Record<string, string | undefined>) => void;
 }
 
-const ORDER_STATUSES = [
-  'all',
-  'NEW',
-  'PAID',
-  'ACCEPTED',
-  'PREPARING',
-  'READY_FOR_DISPATCH',
-  'OUT_FOR_DELIVERY',
-  'DELIVERED',
-  'CANCELED',
-  'REFUNDED',
-];
+import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/orders/statusConstants';
+
+const ORDER_STATUSES = ['all', ...ORDER_STATUS];
 
 export function FiltersBar({ filters, districts, onFilterChange }: FiltersBarProps) {
   const [orderId, setOrderId] = useState(filters.orderId ?? '');
@@ -87,7 +78,7 @@ export function FiltersBar({ filters, districts, onFilterChange }: FiltersBarPro
             >
               {ORDER_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
+                  {s === 'all' ? 'All' : ORDER_STATUS_LABELS[s as keyof typeof ORDER_STATUS_LABELS]}
                 </option>
               ))}
             </select>

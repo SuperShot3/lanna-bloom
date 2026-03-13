@@ -259,34 +259,35 @@ export function trackPurchase(params: {
 
 const GENERATE_LEAD_DEDUPE_PREFIX = 'lanna-bloom_sent_generate_lead_';
 
-/** REMOVED: ads_conversion_Success_Page_1 – causes duplicate conversions in Google Ads.
- * Use GA4 purchase event only. Import purchase as conversion in Google Ads. */
-
 /**
- * Fire generate_lead when order is created via Place Order (bank transfer / PromptPay).
- * Use purchase later if payment becomes confirmed.
- * Deduped by orderId via localStorage.
+ * Fire generate_lead only for pending order / pending confirmation page.
+ * Pure non-ecommerce event: do NOT include order_id, transaction_id, value, currency, or items.
+ * Only simple params: page_path, lead_type, lead_source.
+ * Deduped by orderId (when provided) via localStorage so we don't fire on every refresh.
  */
 export function trackGenerateLead(params: {
-  orderId: string;
-  value: number;
-  currency?: string;
-  items?: AnalyticsItem[];
+  page_path?: string;
+  lead_type?: string;
+  lead_source?: string;
+  /** Optional: when provided, dedupe by this key so we fire at most once per order view. */
+  orderId?: string;
 }): void {
   if (typeof window === 'undefined') return;
-  const { orderId, value, currency = CURRENCY } = params;
-  const storageKey = `${GENERATE_LEAD_DEDUPE_PREFIX}${orderId}`;
-  try {
-    if (window.localStorage.getItem(storageKey) === '1') return;
-    window.localStorage.setItem(storageKey, '1');
-  } catch {
-    // ignore
+  const { page_path, lead_type, lead_source, orderId } = params;
+  const storageKey = orderId ? `${GENERATE_LEAD_DEDUPE_PREFIX}${orderId}` : null;
+  if (storageKey) {
+    try {
+      if (window.localStorage.getItem(storageKey) === '1') return;
+      window.localStorage.setItem(storageKey, '1');
+    } catch {
+      // ignore
+    }
   }
-  sendEvent('generate_lead', {
-    order_id: orderId,
-    value,
-    currency,
-  });
+  const eventParams: Record<string, unknown> = {};
+  if (page_path != null) eventParams.page_path = page_path;
+  if (lead_type != null) eventParams.lead_type = lead_type;
+  if (lead_source != null) eventParams.lead_source = lead_source;
+  sendEvent('generate_lead', eventParams);
 }
 
 // --- Non-ecommerce UI events ---

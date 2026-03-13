@@ -115,11 +115,9 @@ export async function getNeedsAttention(): Promise<NeedsAttention> {
       'order_id, order_status, payment_status, paid_at, recipient_phone, address, delivery_date, delivery_window, cogs_amount, delivery_cost, payment_fee'
     )
     .in('order_status', [
-      'PAID',
-      'ACCEPTED',
-      'PREPARING',
-      'OUT_FOR_DELIVERY',
-      'READY_FOR_DISPATCH',
+      'PROCESSING',
+      'READY_TO_DISPATCH',
+      'DISPATCHED',
     ]);
 
   if (error) {
@@ -133,23 +131,23 @@ export async function getNeedsAttention(): Promise<NeedsAttention> {
     .filter(
       (o) =>
         o.payment_status === 'PAID' &&
-        o.order_status === 'PAID' &&
+        o.order_status === 'PROCESSING' &&
         o.paid_at &&
         o.paid_at < tenMinutesAgo
     )
     .map((o) => ({
       order_id: o.order_id,
-      reason: 'PAID but not ACCEPTED within 10 minutes',
+      reason: 'Paid but still PROCESSING after 10 minutes',
       order_status: o.order_status ?? undefined,
       payment_status: o.payment_status ?? undefined,
       paid_at: o.paid_at,
     }));
 
   const preparingStale: NeedsAttentionItem[] = orders
-    .filter((o) => o.order_status === 'PREPARING' && o.paid_at && o.paid_at < ninetyMinutesAgo)
+    .filter((o) => o.order_status === 'PROCESSING' && o.paid_at && o.paid_at < ninetyMinutesAgo)
     .map((o) => ({
       order_id: o.order_id,
-      reason: 'PREPARING older than 90 minutes',
+      reason: 'PROCESSING older than 90 minutes',
       order_status: o.order_status ?? undefined,
       payment_status: o.payment_status ?? undefined,
       paid_at: o.paid_at,
@@ -158,13 +156,13 @@ export async function getNeedsAttention(): Promise<NeedsAttention> {
   const outForDeliveryStale: NeedsAttentionItem[] = orders
     .filter(
       (o) =>
-        o.order_status === 'OUT_FOR_DELIVERY' &&
+        o.order_status === 'DISPATCHED' &&
         o.paid_at &&
         o.paid_at < twoHoursAgo
     )
     .map((o) => ({
       order_id: o.order_id,
-      reason: 'OUT_FOR_DELIVERY older than 120 minutes',
+      reason: 'DISPATCHED older than 120 minutes',
       order_status: o.order_status ?? undefined,
       payment_status: o.payment_status ?? undefined,
       paid_at: o.paid_at,

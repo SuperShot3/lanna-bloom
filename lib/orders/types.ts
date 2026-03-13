@@ -67,6 +67,8 @@ export interface OrderPayload {
   contactPreference?: ContactPreferenceOption[];
   referralCode?: string;
   referralDiscount?: number;
+  /** Optional GA4 client_id from frontend for server-side purchase attribution (stored in DB only). */
+  ga_client_id?: string;
 }
 
 export type OrderPaymentStatus = 'pending_payment' | 'paid' | 'payment_failed';

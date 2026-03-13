@@ -71,8 +71,8 @@ async function main() {
       }
 
       const paymentStatus =
-        order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'FAILED' : 'PENDING';
-      const orderStatus = order.status === 'paid' ? 'PAID' : 'NEW';
+        order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
+      const orderStatus = order.status === 'paid' ? 'PROCESSING' : 'NEW';
 
       const row = {
         order_id: orderId,

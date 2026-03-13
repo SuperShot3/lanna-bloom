@@ -69,6 +69,7 @@ function getFulfillmentLabel(status: string, t: Record<string, string>): string 
     new: t.orderStatusNew ?? 'New',
     confirmed: t.orderStatusConfirmed ?? 'Confirmed',
     preparing: t.orderStatusPreparing ?? 'Preparing',
+    ready_to_dispatch: t.orderStatusReadyToDispatch ?? 'Ready to dispatch',
     dispatched: t.orderStatusDispatched ?? 'Dispatched',
     delivered: t.orderStatusDelivered ?? 'Delivered',
     cancelled: t.orderStatusCancelled ?? 'Cancelled',
@@ -740,6 +741,7 @@ export function OrderDetailsView({
         .order-details-badge-fulfillment-new { background: #e3f2fd; color: #1565c0; }
         .order-details-badge-fulfillment-confirmed { background: #e8f5e9; color: #2e7d32; }
         .order-details-badge-fulfillment-preparing { background: #fff3e0; color: #e65100; }
+        .order-details-badge-fulfillment-ready_to_dispatch { background: #e8eaf6; color: #3949ab; }
         .order-details-badge-fulfillment-dispatched { background: #f3e5f5; color: #7b1fa2; }
         .order-details-badge-fulfillment-delivered { background: #e8f5e9; color: #1b5e20; }
         .order-details-badge-fulfillment-cancelled { background: #ffebee; color: #c62828; }

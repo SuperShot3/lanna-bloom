@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { ORDER_STATUS } from '@/lib/orders/statusConstants';
 
-const VALID_ORDER_STATUSES = [
-  'NEW',
-  'PAID',
-  'ACCEPTED',
-  'PREPARING',
-  'READY_FOR_DISPATCH',
-  'OUT_FOR_DELIVERY',
-  'DELIVERED',
-  'CANCELED',
-  'REFUNDED',
-];
+const VALID_ORDER_STATUSES = [...ORDER_STATUS];
 
 export async function PATCH(
   request: NextRequest,
@@ -22,7 +13,6 @@ export async function PATCH(
   const authResult = await requireRole(['OWNER', 'MANAGER']);
   if (!authResult.ok) return authResult.response;
   const { session } = authResult;
-  const role = (session.user as { role?: string }).role;
 
   const { order_id } = await params;
   if (!order_id?.trim()) {
@@ -36,20 +26,18 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const orderStatus = typeof body === 'object' && body !== null && 'order_status' in body
-    ? String((body as { order_status?: unknown }).order_status ?? '').trim()
+  const raw = typeof body === 'object' && body !== null && 'order_status' in body
+    ? String((body as { order_status?: unknown }).order_status ?? '').trim().toUpperCase()
     : null;
 
-  if (!orderStatus || !VALID_ORDER_STATUSES.includes(orderStatus)) {
+  if (!raw || !VALID_ORDER_STATUSES.includes(raw as (typeof ORDER_STATUS)[number])) {
     return NextResponse.json(
       { error: 'Invalid order_status. Must be one of: ' + VALID_ORDER_STATUSES.join(', ') },
       { status: 400 }
     );
   }
 
-  if (orderStatus === 'REFUNDED' && role !== 'OWNER') {
-    return NextResponse.json({ error: 'Only OWNER can set REFUNDED' }, { status: 403 });
-  }
+  const orderStatus = raw as (typeof ORDER_STATUS)[number];
 
   const supabase = getSupabaseAdmin();
   if (!supabase) {
@@ -68,26 +56,9 @@ export async function PATCH(
 
   const previousStatus = existing.order_status ?? 'NEW';
 
-  // Sync fulfillment_status (customer-facing) when Order status changes to final states.
-  // The customer order page displays fulfillment_status, not order_status.
-  const orderStatusToFulfillment: Record<string, string> = {
-    DELIVERED: 'delivered',
-    CANCELED: 'cancelled',
-    REFUNDED: 'cancelled',
-    PREPARING: 'preparing',
-    READY_FOR_DISPATCH: 'dispatched',
-    OUT_FOR_DELIVERY: 'dispatched',
-    ACCEPTED: 'confirmed',
-    PAID: 'confirmed',
-    NEW: 'new',
-  };
-  const fulfillmentStatus = orderStatusToFulfillment[orderStatus] ?? 'new';
-
   const updatePayload: Record<string, unknown> = {
     order_status: orderStatus,
     updated_at: new Date().toISOString(),
-    fulfillment_status: fulfillmentStatus,
-    fulfillment_status_updated_at: new Date().toISOString(),
   };
 
   const { data: updated, error } = await supabase

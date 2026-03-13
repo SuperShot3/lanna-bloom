@@ -6,10 +6,12 @@ import 'server-only';
 import { nanoid } from 'nanoid';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import type { Order, OrderPayload } from './types';
+import { orderStatusToFulfillmentDisplay } from './statusConstants';
 
 function mapSupabasePaymentToLegacy(paymentStatus: string | null | undefined): Order['status'] {
-  if (paymentStatus === 'PAID') return 'paid';
-  if (paymentStatus === 'FAILED') return 'payment_failed';
+  const s = (paymentStatus ?? '').toUpperCase();
+  if (s === 'PAID') return 'paid';
+  if (s === 'FAILED' || s === 'ERROR' || s === 'CANCELLED') return 'payment_failed';
   return 'pending_payment';
 }
 
@@ -76,8 +78,8 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       stripeSessionId: row.stripe_session_id ?? json.stripeSessionId,
       paymentIntentId: row.stripe_payment_intent_id ?? json.paymentIntentId,
       paidAt: row.paid_at ?? json.paidAt,
-      fulfillmentStatus: (row.fulfillment_status as Order['fulfillmentStatus']) ?? json.fulfillmentStatus ?? 'new',
-      fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? json.fulfillmentStatusUpdatedAt,
+      fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? json.fulfillmentStatus ?? 'new',
+      fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? json.fulfillmentStatusUpdatedAt,
     };
   }
 
@@ -127,8 +129,8 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     stripeSessionId: row.stripe_session_id ?? undefined,
     paymentIntentId: row.stripe_payment_intent_id ?? undefined,
     paidAt: row.paid_at ?? undefined,
-    fulfillmentStatus: (row.fulfillment_status as Order['fulfillmentStatus']) ?? 'new',
-    fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? undefined,
+    fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? 'new',
+    fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? undefined,
   };
 }
 
@@ -191,8 +193,8 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
     return 'MORNING_9_12';
   })();
 
-  const orderStatus = status === 'paid' ? 'PAID' : status === 'payment_failed' ? 'NEW' : 'NEW';
-  const paymentStatus = status === 'paid' ? 'PAID' : status === 'payment_failed' ? 'FAILED' : 'PENDING';
+  const orderStatus = status === 'paid' ? 'PROCESSING' : 'NEW';
+  const paymentStatus = status === 'paid' ? 'PAID' : status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
 
   const ordersRow = {
     order_id: order.orderId,
@@ -222,6 +224,9 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
     fulfillment_status: 'new',
     fulfillment_status_updated_at: new Date().toISOString(),
     order_json: order as unknown as Record<string, unknown>,
+    ...((order as { ga_client_id?: string }).ga_client_id && {
+      ga_client_id: (order as { ga_client_id: string }).ga_client_id,
+    }),
   };
 
   const { error: upsertError } = await supabase
@@ -282,8 +287,8 @@ export async function supabaseUpdateOrderPaymentStatus(
   if (!supabase) return null;
 
   const normalized = orderId.trim();
-  const paymentStatus = update.status === 'paid' ? 'PAID' : 'FAILED';
-  const orderStatus = update.status === 'paid' ? 'PAID' : 'NEW';
+  const paymentStatus = update.status === 'paid' ? 'PAID' : 'ERROR';
+  const orderStatus = update.status === 'paid' ? 'PROCESSING' : 'NEW';
 
   const updatePayload: Record<string, unknown> = {
     payment_status: paymentStatus,
@@ -351,8 +356,8 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     if (s.includes('18:00') && s.includes('20:00')) return 'EVENING_18_20';
     return 'MORNING_9_12';
   })();
-  const orderStatus = order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'NEW' : 'NEW';
-  const paymentStatus = order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'FAILED' : 'PENDING';
+  const orderStatus = order.status === 'paid' ? 'PROCESSING' : 'NEW';
+  const paymentStatus = order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
 
   const ordersRow = {
     order_id: order.orderId,
@@ -477,7 +482,7 @@ export async function supabaseLookupOrdersByPhone(
 
   let query = supabase
     .from('orders')
-    .select('order_id, fulfillment_status, delivery_date, created_at')
+    .select('order_id, order_status, delivery_date, created_at')
     .or(`phone.ilike.${pattern},recipient_phone.ilike.${pattern}`);
 
   if (name?.trim()) {
@@ -495,9 +500,9 @@ export async function supabaseLookupOrdersByPhone(
     return [];
   }
 
-  return (rows ?? []).map((r: { order_id: string; fulfillment_status: string | null; delivery_date: string | null; created_at: string | null }) => ({
+  return (rows ?? []).map((r: { order_id: string; order_status: string | null; delivery_date: string | null; created_at: string | null }) => ({
     orderId: r.order_id,
-    fulfillmentStatus: r.fulfillment_status ?? 'new',
+    fulfillmentStatus: orderStatusToFulfillmentDisplay(r.order_status),
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
   }));

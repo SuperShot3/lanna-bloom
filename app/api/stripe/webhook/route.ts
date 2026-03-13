@@ -289,6 +289,17 @@ export async function POST(request: NextRequest) {
         console.error('[stripe/webhook] Customer confirmation email failed:', e);
       });
     }
+
+    // GA4 purchase: send once via backend Measurement Protocol (idempotent)
+    const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
+    const ga4Result = await sendPurchaseForOrder(orderId);
+    if (ga4Result.sent) {
+      console.log('[stripe/webhook] GA4 purchase sent for order', orderId);
+    } else if (ga4Result.reason === 'already_sent') {
+      console.log('[stripe/webhook] GA4 purchase skipped (already sent) for order', orderId);
+    } else if (ga4Result.reason === 'send_failed') {
+      console.warn('[stripe/webhook] GA4 purchase send failed for order', orderId, ga4Result.error);
+    }
   } catch (e) {
     console.error('[stripe/webhook] payment success handler error:', e);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

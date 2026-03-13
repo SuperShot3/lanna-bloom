@@ -11,16 +11,13 @@ export type DeliveryWindow =
 
 export type SupabaseOrderStatus =
   | 'NEW'
-  | 'PAID'
-  | 'ACCEPTED'
-  | 'PREPARING'
-  | 'READY_FOR_DISPATCH'
-  | 'OUT_FOR_DELIVERY'
+  | 'PROCESSING'
+  | 'READY_TO_DISPATCH'
+  | 'DISPATCHED'
   | 'DELIVERED'
-  | 'CANCELED'
-  | 'REFUNDED';
+  | 'CANCELLED';
 
-export type SupabasePaymentStatus = 'PENDING' | 'PAID' | 'FAILED';
+export type SupabasePaymentStatus = 'NOT_PAID' | 'PAID' | 'CANCELLED' | 'ERROR';
 
 function mapPreferredTimeSlotToWindow(slot: string): DeliveryWindow {
   if (slot.includes('12:00–15:00')) return 'MIDDAY_12_15';
@@ -33,17 +30,16 @@ function mapPreferredTimeSlotToWindow(slot: string): DeliveryWindow {
 function mapLegacyStatusToOrderStatus(
   status: Order['status']
 ): SupabaseOrderStatus {
-  if (status === 'paid') return 'PAID';
-  if (status === 'payment_failed') return 'NEW'; // Keep as NEW; payment_status tracks failure
-  return 'NEW'; // pending_payment or undefined (bank transfer) -> NEW
+  if (status === 'paid') return 'PROCESSING';
+  return 'NEW';
 }
 
 function mapLegacyStatusToPaymentStatus(
   status: Order['status']
 ): SupabasePaymentStatus {
   if (status === 'paid') return 'PAID';
-  if (status === 'payment_failed') return 'FAILED';
-  return 'PENDING'; // pending_payment or undefined
+  if (status === 'payment_failed') return 'ERROR';
+  return 'NOT_PAID';
 }
 
 function extractDeliveryDate(preferredTimeSlot: string): string | null {
@@ -213,7 +209,7 @@ export async function syncSupabasePaymentSuccess(
       .from('orders')
       .update({
         payment_status: 'PAID',
-        order_status: 'PAID',
+        order_status: existing.order_status === 'NEW' ? 'PROCESSING' : existing.order_status,
         payment_method: 'STRIPE',
         paid_at: paidAt,
         stripe_session_id: stripeSessionId ?? undefined,
@@ -226,11 +222,10 @@ export async function syncSupabasePaymentSuccess(
       return;
     }
 
-    // Add status history
     await supabase.from('order_status_history').insert({
       order_id: orderId,
       from_status: existing.order_status ?? 'NEW',
-      to_status: 'PAID',
+      to_status: 'PROCESSING',
       created_at: new Date().toISOString(),
     });
 
@@ -266,7 +261,7 @@ export async function syncSupabasePaymentFailed(orderId: string): Promise<void> 
 
     const { error } = await supabase
       .from('orders')
-      .update({ payment_status: 'FAILED' })
+      .update({ payment_status: 'ERROR' })
       .eq('order_id', orderId);
 
     if (error) {

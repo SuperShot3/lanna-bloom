@@ -6,14 +6,15 @@
  *
  * CRITICAL:
  * - This page MUST NOT fire GA4 purchase or behave like Stripe paid success.
- * - Purchase is only fired on the order details page (/order/[orderId]) when
- *   order status is confirmed paid (Stripe webhook or admin mark-paid).
+ * - Purchase is sent only from backend when admin sets status to paid/confirmed_paid.
+ * - generate_lead (non-ecommerce) is fired once when user sees pending confirmation.
  */
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
 import { useCart } from '@/contexts/CartContext';
+import { trackGenerateLead } from '@/lib/analytics';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
@@ -109,6 +110,21 @@ export function ConfirmationPendingClient({
       .catch(() => {
         setOrder(null);
       });
+  }, [orderId, sessionId, stripeStatus]);
+
+  // generate_lead: non-ecommerce, only when showing pending confirmation (manual or before Stripe paid)
+  const generateLeadFiredRef = useRef(false);
+  useEffect(() => {
+    if (generateLeadFiredRef.current || !orderId) return;
+    if (sessionId && stripeStatus === 'paid') return;
+    if (sessionId && stripeStatus === 'payment_failed') return;
+    generateLeadFiredRef.current = true;
+    trackGenerateLead({
+      page_path: typeof window !== 'undefined' ? window.location.pathname : '',
+      lead_type: 'pending_order',
+      lead_source: 'checkout',
+      orderId,
+    });
   }, [orderId, sessionId, stripeStatus]);
 
   // Cart clear: manual path when we have orderId; Stripe path when we're about to redirect (handled by redirect)

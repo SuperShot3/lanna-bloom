@@ -18,6 +18,7 @@ function getFulfillmentLabel(status: string, t: Record<string, string>): string 
     new: t.orderStatusNew ?? 'New',
     confirmed: t.orderStatusConfirmed ?? 'Confirmed',
     preparing: t.orderStatusPreparing ?? 'Preparing',
+    ready_to_dispatch: t.orderStatusReadyToDispatch ?? 'Ready to dispatch',
     dispatched: t.orderStatusDispatched ?? 'Dispatched',
     delivered: t.orderStatusDelivered ?? 'Delivered',
     cancelled: t.orderStatusCancelled ?? 'Cancelled',

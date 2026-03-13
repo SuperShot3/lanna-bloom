@@ -50,14 +50,14 @@ export async function PATCH(
     );
   }
 
-  const previousPaymentStatus = existing.payment_status ?? 'PENDING';
-  const previousOrderStatus = existing.order_status ?? 'NEW';
+  const previousPaymentStatus = (existing.payment_status ?? 'NOT_PAID').toUpperCase();
+  const previousOrderStatus = (existing.order_status ?? 'NEW').toUpperCase();
 
   if (previousPaymentStatus === 'PAID') {
     return NextResponse.json({ ok: true, order: existing, message: 'Already paid (idempotent)' });
   }
 
-  const newOrderStatus = previousOrderStatus === 'NEW' ? 'PAID' : previousOrderStatus;
+  const newOrderStatus = previousOrderStatus === 'NEW' ? 'PROCESSING' : previousOrderStatus;
 
   const updatePayload: Record<string, unknown> = {
     payment_status: 'PAID',
@@ -92,6 +92,17 @@ export async function PATCH(
     payment_status: { from: previousPaymentStatus, to: 'PAID' },
     order_status: { from: previousOrderStatus, to: newOrderStatus },
   });
+
+  // GA4 purchase: send once via backend Measurement Protocol (idempotent)
+  const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
+  const ga4Result = await sendPurchaseForOrder(order_id.trim());
+  if (ga4Result.sent) {
+    console.log('[admin/mark-paid] GA4 purchase sent for order', order_id.trim());
+  } else if (ga4Result.reason === 'already_sent') {
+    console.log('[admin/mark-paid] GA4 purchase skipped (already sent) for order', order_id.trim());
+  } else if (ga4Result.reason === 'send_failed') {
+    console.warn('[admin/mark-paid] GA4 purchase send failed for order', order_id.trim(), ga4Result.error);
+  }
 
   // Send notification emails NOW that payment is confirmed.
   // Emails are deferred from order placement to this point for manual orders.

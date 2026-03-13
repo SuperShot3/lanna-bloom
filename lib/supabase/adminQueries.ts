@@ -39,6 +39,11 @@ export interface SupabaseOrderRow {
   delivery_google_maps_url: string | null;
   fulfillment_status: string | null;
   fulfillment_status_updated_at: string | null;
+  /** GA4: true after backend sent purchase via Measurement Protocol (prevents duplicate). */
+  ga4_purchase_sent?: boolean | null;
+  ga4_purchase_sent_at?: string | null;
+  /** Optional GA client_id from frontend for server-side purchase attribution. */
+  ga_client_id?: string | null;
   /** Full order payload; items include addOns (card, wrapping, message). */
   order_json?: Record<string, unknown> | null;
 }
@@ -267,6 +272,7 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   payment_method: string | null;
   fulfillment_status: string | null;
   fulfillment_status_updated_at: string | null;
+  updated_at: string | null;
 } | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
@@ -277,7 +283,7 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('payment_status, order_status, paid_at, payment_method, fulfillment_status, fulfillment_status_updated_at')
+      .select('payment_status, order_status, paid_at, payment_method, fulfillment_status, fulfillment_status_updated_at, updated_at')
       .eq('order_id', normalized)
       .single();
 
@@ -289,6 +295,7 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
       payment_method: string | null;
       fulfillment_status: string | null;
       fulfillment_status_updated_at: string | null;
+      updated_at: string | null;
     };
   } catch {
     return null;

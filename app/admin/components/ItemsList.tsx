@@ -38,6 +38,9 @@ export function ItemsList({ items }: ItemsListProps) {
   return (
     <section className="admin-v2-section">
       <h2 className="admin-v2-section-title">Items</h2>
+      <p className="admin-v2-hint" style={{ marginBottom: 12 }}>
+        Flower / product name, card text, and add-ons for each line item.
+      </p>
       <ul className="admin-v2-items-list">
         {items.map((item, i) => (
           <li key={i} className="admin-v2-item">
@@ -63,11 +66,24 @@ export function ItemsList({ items }: ItemsListProps) {
               <div className="admin-v2-item-placeholder" />
             )}
             <div className="admin-v2-item-details">
-              <strong>{item.bouquet_title ?? '—'}</strong>
-              <span>Size: {item.size ?? '—'}</span>
-              <span>Qty: 1</span>
-              <span>{formatAmount(item.price)}</span>
-              {(item.addOns?.cardType != null || item.addOns?.wrappingOption || item.addOns?.cardMessage?.trim()) && (
+              <div className="admin-v2-item-header">
+                <strong>{item.bouquet_title ?? '—'}</strong>
+                <span className="admin-v2-item-type-badge">
+                  {(item.item_type ?? 'bouquet') === 'product' ? 'Product' : 'Bouquet'}
+                </span>
+              </div>
+              {item.addOns?.cardMessage?.trim() && (
+                <div className="admin-v2-item-card-text">
+                  <span className="admin-v2-addon-label">Card text:</span>
+                  <span className="admin-v2-addon-message">&quot;{item.addOns.cardMessage.trim()}&quot;</span>
+                </div>
+              )}
+              <div className="admin-v2-item-meta">
+                <span>Size: {item.size ?? '—'}</span>
+                <span>Qty: 1</span>
+                <span>{formatAmount(item.price)}</span>
+              </div>
+              {(item.addOns?.cardType != null || item.addOns?.wrappingOption) && (
                 <div className="admin-v2-item-addons">
                   {item.addOns?.cardType != null && (
                     <span className="admin-v2-addon-row">
@@ -77,11 +93,6 @@ export function ItemsList({ items }: ItemsListProps) {
                   {item.addOns?.wrappingOption && (
                     <span className="admin-v2-addon-row">
                       Wrapping: {getWrappingLabel(item.addOns.wrappingOption)}
-                    </span>
-                  )}
-                  {item.addOns?.cardMessage?.trim() && (
-                    <span className="admin-v2-addon-row admin-v2-addon-message">
-                      Message: &quot;{item.addOns.cardMessage.trim()}&quot;
                     </span>
                   )}
                 </div>

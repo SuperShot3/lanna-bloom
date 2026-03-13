@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
+import { formatPaymentStatus } from '@/lib/orders/statusConstants';
 
 const MANUAL_PAYMENT_METHODS = ['PROMPTPAY', 'BANK_TRANSFER'];
 
@@ -30,7 +31,7 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const paymentMethod = (order.payment_method ?? 'BANK_TRANSFER').toUpperCase();
-  const paymentStatus = order.payment_status ?? 'PENDING';
+  const paymentStatus = (order.payment_status ?? 'NOT_PAID').toUpperCase();
   const isManual = MANUAL_PAYMENT_METHODS.includes(paymentMethod);
   const showMarkPaidButton = canMarkPaid && isManual && paymentStatus !== 'PAID';
 
@@ -76,7 +77,7 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
             <span
               className={`admin-v2-badge admin-v2-badge-payment-${(paymentStatus ?? '').toLowerCase()}`}
             >
-              {paymentStatus ?? '—'}
+              {formatPaymentStatus(paymentStatus)}
             </span>
           </p>
         </div>

@@ -2846,12 +2846,45 @@ a.filter-pill--active:hover {
 }
 .admin-v2-item-details {
   display: flex;
+  flex-direction: column;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: baseline;
+  gap: 6px 16px;
+  align-items: flex-start;
+}
+.admin-v2-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin-v2-item-header strong {
+  margin: 0;
+}
+.admin-v2-item-type-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--border);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.admin-v2-item-card-text {
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+.admin-v2-item-card-text .admin-v2-addon-label {
+  font-weight: 500;
+  margin-right: 6px;
+}
+.admin-v2-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 .admin-v2-item-details strong {
-  flex: 1 1 100%;
+  flex: 0 1 auto;
 }
 .admin-v2-item-catalog-link {
   font-size: 0.85rem;
