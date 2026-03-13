@@ -510,3 +510,37 @@ export async function supabaseLookupOrdersByPhone(
     createdAt: r.created_at ?? new Date().toISOString(),
   }));
 }
+
+/** Look up orders by order ID (partial match, e.g. "LB-2025" or full "LB-2025-XXXX"). */
+export async function supabaseLookupOrdersByOrderId(
+  orderIdQuery: string
+): Promise<OrderLookupSummary[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const trimmed = orderIdQuery.trim();
+  if (!trimmed) return [];
+
+  const pattern = `%${trimmed}%`;
+
+  const { data: rows, error } = await supabase
+    .from('orders')
+    .select('order_id, order_status, delivery_date, created_at')
+    .ilike('order_id', pattern)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error) {
+    if (process.env.SUPABASE_LOG_LEVEL === 'debug') {
+      console.log('[orders/supabase] lookupByOrderId error:', error.message);
+    }
+    return [];
+  }
+
+  return (rows ?? []).map((r: { order_id: string; order_status: string | null; delivery_date: string | null; created_at: string | null }) => ({
+    orderId: r.order_id,
+    fulfillmentStatus: orderStatusToFulfillmentDisplay(r.order_status),
+    deliveryDate: r.delivery_date ?? null,
+    createdAt: r.created_at ?? new Date().toISOString(),
+  }));
+}

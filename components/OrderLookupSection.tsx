@@ -36,28 +36,49 @@ function formatDeliveryDate(dateStr: string | null): string {
 export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCart?: boolean }) {
   const t = translations[lang].cart as Record<string, string>;
   const tOrder = translations[lang].orderPage;
-  const [phone, setPhone] = useState('');
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<OrderLookupSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isNoResults, setIsNoResults] = useState(false);
   const router = useRouter();
 
+  const looksLikeOrderId = (value: string): boolean => {
+    const t = value.trim();
+    if (!t) return false;
+    if (t.toUpperCase().startsWith('LB-')) return true;
+    return /[A-Za-z]/.test(t);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 8) {
-      setError(t.contactPhoneMinLength);
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setError((t as { orderLookupRequired?: string }).orderLookupRequired ?? 'Enter your phone number or order ID');
       return;
+    }
+    const searchByOrderId = looksLikeOrderId(trimmed);
+    const digits = trimmed.replace(/\D/g, '');
+    if (searchByOrderId) {
+      if (trimmed.length < 3) {
+        setError(t.orderIdMinLength ?? 'Order ID should be at least 3 characters');
+        return;
+      }
+    } else {
+      if (digits.length < 8) {
+        setError(t.contactPhoneMinLength);
+        return;
+      }
     }
     setError(null);
     setIsNoResults(false);
     setLoading(true);
     try {
+      const body = searchByOrderId ? { orderId: trimmed } : { phone: digits };
       const res = await fetch('/api/orders/lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: digits }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -88,21 +109,24 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
       )}
       <div className="cart-track-header">
         <span className="cart-track-label">{t.searchMyOrder ?? t.trackOrder}</span>
-        <span className="cart-track-sub">{t.trackOrderSubline}</span>
+        <span className="cart-track-sub">
+          {(t as { orderLookupSubline?: string }).orderLookupSubline ?? t.trackOrderSubline}
+        </span>
       </div>
 
       <form onSubmit={handleSubmit} className="cart-track-form">
         <div className="cart-track-input-group">
           <input
             id="order-lookup-phone"
-            type="tel"
-            inputMode="numeric"
-            value={phone}
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            value={query}
             onChange={(e) => {
-              setPhone(e.target.value.replace(/\D/g, '').slice(0, 15));
+              setQuery(e.target.value);
               setError(null);
             }}
-            placeholder={t.phoneNumberPlaceholder}
+            placeholder={(t as { orderLookupPlaceholder?: string }).orderLookupPlaceholder ?? t.phoneNumberPlaceholder}
             className="cart-track-phone-field"
             disabled={loading}
             required

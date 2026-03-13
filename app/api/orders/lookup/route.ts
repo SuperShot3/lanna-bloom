@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseLookupOrdersByPhone } from '@/lib/orders/supabaseStore';
+import { supabaseLookupOrdersByPhone, supabaseLookupOrdersByOrderId } from '@/lib/orders/supabaseStore';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { checkOrderLookupRateLimit } from '@/lib/rateLimit';
+
+/** True if input looks like an order ID (e.g. contains "LB-" or letters). */
+function looksLikeOrderId(input: string): boolean {
+  const t = input.trim();
+  if (!t) return false;
+  if (t.toUpperCase().startsWith('LB-')) return true;
+  return /[A-Za-z]/.test(t);
+}
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -41,22 +49,44 @@ export async function POST(req: NextRequest) {
 
   const b = body as Record<string, unknown>;
   const phone = typeof b.phone === 'string' ? b.phone.trim() : '';
-  if (!phone) {
-    return NextResponse.json({ error: 'phone is required' }, { status: 400 });
-  }
+  const orderId = typeof b.orderId === 'string' ? b.orderId.trim() : '';
+  const name = typeof b.name === 'string' ? b.name.trim() : undefined;
 
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 8) {
+  const searchByOrderId = orderId
+    ? true
+    : phone
+      ? looksLikeOrderId(phone)
+      : false;
+  const searchQuery = searchByOrderId ? (orderId || phone) : phone;
+  const digits = searchQuery.replace(/\D/g, '');
+
+  if (!searchQuery) {
     return NextResponse.json(
-      { error: 'Phone number must have at least 8 digits' },
+      { error: 'Enter your phone number or order ID (e.g. LB-2025-XXXX)' },
       { status: 400 }
     );
   }
 
-  const name = typeof b.name === 'string' ? b.name.trim() : undefined;
+  if (searchByOrderId) {
+    if (searchQuery.length < 3) {
+      return NextResponse.json(
+        { error: 'Order ID should be at least 3 characters' },
+        { status: 400 }
+      );
+    }
+  } else {
+    if (digits.length < 8) {
+      return NextResponse.json(
+        { error: 'Phone number must have at least 8 digits' },
+        { status: 400 }
+      );
+    }
+  }
 
   try {
-    const orders = await supabaseLookupOrdersByPhone(digits, name);
+    const orders = searchByOrderId
+      ? await supabaseLookupOrdersByOrderId(searchQuery)
+      : await supabaseLookupOrdersByPhone(digits, name);
     return NextResponse.json({ orders });
   } catch (e) {
     console.error('[orders/lookup] error:', e);
