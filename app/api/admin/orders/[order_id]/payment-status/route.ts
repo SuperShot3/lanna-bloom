@@ -102,10 +102,10 @@ export async function PATCH(
     payment_to: paymentStatus,
   });
 
-  // GA4 purchase: send only when transitioning to PAID (backend Measurement Protocol, idempotent)
+  // GA4 purchase: send only when transitioning to PAID (backend Measurement Protocol, atomic claim)
   if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
     const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
-    const ga4Result = await sendPurchaseForOrder(order_id.trim());
+    const ga4Result = await sendPurchaseForOrder(order_id.trim(), 'admin_payment_status');
     if (ga4Result.sent) {
       console.log('[admin/payment-status] GA4 purchase sent for order', order_id.trim());
     } else if (ga4Result.reason === 'already_sent') {

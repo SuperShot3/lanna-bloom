@@ -1,6 +1,7 @@
 import { unstable_noStore } from 'next/cache';
 import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
+import { orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
 import { translations, defaultLocale } from '@/lib/i18n';
@@ -50,12 +51,18 @@ export default async function OrderDetailsPage({
   const detailsUrl = getOrderDetailsUrl(order.orderId);
   const baseUrl = getBaseUrl();
 
-  // Always fetch latest status from Supabase (single source of truth).
+  // Always fetch latest status from Supabase (single source of truth; admin dashboard order_status).
   const supabasePayment = await getSupabasePaymentStatusByOrderId(order.orderId);
+  const fulfillmentFromOrderStatus = supabasePayment?.order_status != null
+    ? orderStatusToFulfillmentDisplay(supabasePayment.order_status)
+    : null;
   const fulfillmentStatus =
-    supabasePayment?.fulfillment_status ?? order.fulfillmentStatus ?? 'new';
+    supabasePayment?.fulfillment_status
+    ?? fulfillmentFromOrderStatus
+    ?? order.fulfillmentStatus
+    ?? 'new';
   const fulfillmentStatusUpdatedAt =
-    supabasePayment?.fulfillment_status_updated_at ?? order.fulfillmentStatusUpdatedAt;
+    supabasePayment?.fulfillment_status_updated_at ?? supabasePayment?.updated_at ?? order.fulfillmentStatusUpdatedAt;
 
   /*
    * INTERMEDIATE STATE: If payment is NOT confirmed, show the pending-confirmation

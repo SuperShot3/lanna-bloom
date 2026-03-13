@@ -35,6 +35,7 @@ export function ProductOrderBlock({
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [showDeliveryValidation, setShowDeliveryValidation] = useState(false);
   const { addItem } = useCart();
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
@@ -43,6 +44,13 @@ export function ProductOrderBlock({
   const totalPrice = (selectedSize.price + addOnsTotal) * Math.max(1, Math.floor(quantity));
 
   const handleAddToCart = () => {
+    const hasDate = !!deliveryDate?.trim();
+    const hasTime = !!deliveryTimeSlot?.trim();
+    if (!hasDate || !hasTime) {
+      setShowDeliveryValidation(true);
+      return;
+    }
+    setShowDeliveryValidation(false);
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const price = selectedSize.price + addOnsTotal;
     const qty = Math.max(1, Math.floor(quantity));
@@ -92,29 +100,21 @@ export function ProductOrderBlock({
     return `${day} ${month}`;
   }, [lang]);
 
-  const [deliveryDate, setDeliveryDate] = useState<string>(() => {
-    if (typeof window === 'undefined') return todayStr;
-    const stored = sessionStorage.getItem(PREFERRED_DELIVERY_KEY);
-    if (stored && /^\d{4}-\d{2}-\d{2}$/.test(stored) && stored >= minDate) return stored;
-    return todayStr;
-  });
+  const [deliveryDate, setDeliveryDate] = useState<string>(() => '');
 
   const saveDeliveryDate = useCallback((v: string) => {
     setDeliveryDate(v);
+    setShowDeliveryValidation((prev) => (prev ? false : prev));
     if (typeof window !== 'undefined' && v) {
       sessionStorage.setItem(PREFERRED_DELIVERY_KEY, v);
     }
   }, []);
 
-  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState<string>(() => {
-    if (typeof window === 'undefined') return DELIVERY_TIME_SLOTS[0];
-    const stored = sessionStorage.getItem(PREFERRED_TIME_KEY);
-    if (stored && DELIVERY_TIME_SLOTS.includes(stored as typeof DELIVERY_TIME_SLOTS[number])) return stored;
-    return DELIVERY_TIME_SLOTS[0];
-  });
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState<string>(() => '');
 
   const saveDeliveryTimeSlot = useCallback((v: string) => {
     setDeliveryTimeSlot(v);
+    setShowDeliveryValidation((prev) => (prev ? false : prev));
     if (typeof window !== 'undefined' && v) {
       sessionStorage.setItem(PREFERRED_TIME_KEY, v);
     }
@@ -133,7 +133,7 @@ export function ProductOrderBlock({
           {tBuyNow.deliveryDateLabel ?? 'Delivery Date'}
         </label>
         <div
-          className="order-date-display-wrap"
+          className={`order-date-display-wrap${showDeliveryValidation && !deliveryDate?.trim() ? ' order-field-invalid' : ''}`}
           onClick={() => dateInputRef.current?.showPicker?.()}
           role="button"
           tabIndex={0}
@@ -187,9 +187,13 @@ export function ProductOrderBlock({
           <select
             value={deliveryTimeSlot}
             onChange={(e) => saveDeliveryTimeSlot(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-800 text-sm"
+            className={`w-full px-4 py-3 rounded-xl border bg-white text-stone-800 text-sm ${showDeliveryValidation && !deliveryTimeSlot?.trim() ? 'order-field-invalid border-red-400' : 'border-stone-200'}`}
             aria-label={tBuyNow.selectTimeSlot ?? 'Select time slot'}
+            aria-invalid={showDeliveryValidation && !deliveryTimeSlot?.trim()}
           >
+            <option value="">
+              {lang === 'th' ? 'เลือกช่วงเวลา' : 'Select time'}
+            </option>
             {DELIVERY_TIME_SLOTS.map((slot) => (
               <option key={slot} value={slot}>
                 {slot}
@@ -197,6 +201,11 @@ export function ProductOrderBlock({
             ))}
           </select>
         </div>
+        {showDeliveryValidation && (!deliveryDate?.trim() || !deliveryTimeSlot?.trim()) && (
+          <p className="order-validation-msg" role="alert">
+            {tBuyNow.deliveryDateAndTimeRequired ?? 'Please select delivery date and time to continue.'}
+          </p>
+        )}
       </div>
       <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} gifts={gifts} />
       {justAdded ? (
@@ -395,6 +404,14 @@ export function ProductOrderBlock({
         .order-date-display-wrap:focus-within .order-date-display,
         .order-date-display-wrap:hover .order-date-display {
           border-color: var(--accent);
+        }
+        .order-date-display-wrap.order-field-invalid .order-date-display {
+          border-color: #e87171;
+        }
+        .order-validation-msg {
+          margin-top: 8px;
+          font-size: 0.875rem;
+          color: #b91c1c;
         }
         .order-date-quick-btns {
           display: flex;

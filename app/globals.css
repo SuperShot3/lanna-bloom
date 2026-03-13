@@ -4023,6 +4023,18 @@ a.filter-pill--active:hover {
   border-color: var(--admin-primary) !important;
   color: var(--admin-primary) !important;
 }
+.admin-theme .admin-btn-danger,
+.admin-shell .admin-btn-danger {
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+  background: transparent !important;
+}
+.admin-theme .admin-btn-danger:hover:not(:disabled),
+.admin-shell .admin-btn-danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-color: #dc2626 !important;
+  color: #b91c1c !important;
+}
 .admin-theme .admin-partner-tab.active,
 .admin-shell .admin-partner-tab.active {
   background: var(--admin-primary) !important;

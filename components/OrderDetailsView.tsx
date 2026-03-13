@@ -136,28 +136,48 @@ export function OrderDetailsView({
       const res = await fetch(`/api/orders/${encodeURIComponent(resolvedOrderId)}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setLiveFulfillment({
-          status: data.fulfillmentStatus ?? data.fulfillment_status ?? 'new',
-          updatedAt: data.fulfillmentStatusUpdatedAt ?? data.fulfillment_status_updated_at,
+        // [DEBUG] Temporary: log what the API returned so we can see what would overwrite state.
+        if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+          console.log('[order-page] refreshStatus API response', {
+            fulfillmentStatus: data.fulfillmentStatus ?? data.fulfillment_status,
+            order_status: data.order_status,
+            payment_status: data.payment_status,
+            status: data.status,
+            paid_at: data.paid_at != null,
+          });
+        }
+        // Only update state with values from API; never overwrite existing valid state with fallback 'new' or undefined.
+        setLiveFulfillment((prev) => {
+          const fromApi = data.fulfillmentStatus ?? data.fulfillment_status;
+          const updatedAt = data.fulfillmentStatusUpdatedAt ?? data.fulfillment_status_updated_at ?? prev.updatedAt;
+          const nextStatus = fromApi != null && fromApi !== '' ? fromApi : (prev.status ?? fulfillmentStatus);
+          const nextUpdatedAt = updatedAt ?? prev.updatedAt;
+          if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && (fromApi === 'new' || fromApi == null)) {
+            console.log('[order-page] refreshStatus keeping existing fulfillment', { fromApi, prev: prev.status, next: nextStatus });
+          }
+          return { status: nextStatus, updatedAt: nextUpdatedAt };
         });
-        setLivePayment({
-          status: data.payment_status ?? data.status,
-          method: data.payment_method,
-          paidAt: data.paid_at,
+        setLivePayment((prev) => {
+          const statusFromApi = data.payment_status ?? data.status;
+          const methodFromApi = data.payment_method ?? prev.method;
+          const paidAtFromApi = data.paid_at ?? prev.paidAt;
+          const nextStatus = statusFromApi != null && statusFromApi !== '' ? statusFromApi : (prev.status ?? supabasePaymentStatus);
+          if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && (statusFromApi == null || statusFromApi === '')) {
+            console.log('[order-page] refreshStatus keeping existing payment status', { fromApi: statusFromApi, prev: prev.status, next: nextStatus });
+          }
+          return { status: nextStatus, method: methodFromApi, paidAt: paidAtFromApi };
         });
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+        console.warn('[order-page] refreshStatus failed', e);
+      }
     } finally {
       setRefreshing(false);
     }
-  }, [resolvedOrderId]);
+  }, [resolvedOrderId, fulfillmentStatus, supabasePaymentStatus]);
 
-  useEffect(() => {
-    if (isFinalState) return;
-    const interval = setInterval(refreshStatus, 15000);
-    return () => clearInterval(interval);
-  }, [isFinalState, refreshStatus]);
+  // No automatic polling: load order data once on page open only. Manual refresh via full page reload or a future refresh button.
 
   const paymentDisplay = getPaymentDisplayStatus(
     effectivePaymentStatus,
@@ -296,6 +316,15 @@ export function OrderDetailsView({
               {t.orderStatusUpdatedAt ?? 'Updated'}: {new Date(finalUpdatedAt).toLocaleString()}
             </span>
           )}
+          <button
+            type="button"
+            className="order-details-refresh-btn"
+            onClick={refreshStatus}
+            disabled={refreshing}
+            aria-label={t.orderStatusUpdatedAt ? 'Refresh status' : 'Refresh status'}
+          >
+            {refreshing ? (locale === 'th' ? 'กำลังโหลด...' : 'Loading...') : (locale === 'th' ? 'โหลดสถานะใหม่' : 'Refresh status')}
+          </button>
         </div>
       </div>
 

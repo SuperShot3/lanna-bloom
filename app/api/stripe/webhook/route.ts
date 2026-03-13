@@ -288,9 +288,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // GA4 purchase: send once via backend Measurement Protocol (idempotent)
+    // GA4 purchase: send once via backend Measurement Protocol (idempotent, atomic claim)
     const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
-    const ga4Result = await sendPurchaseForOrder(orderId);
+    const ga4Result = await sendPurchaseForOrder(orderId, 'stripe_webhook');
     if (ga4Result.sent) {
       console.log('[stripe/webhook] GA4 purchase sent for order', orderId);
     } else if (ga4Result.reason === 'already_sent') {
