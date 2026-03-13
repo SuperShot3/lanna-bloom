@@ -169,7 +169,7 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error('Supabase not configured');
 
-  const orderId = (await import('./blobStore')).generateOrderId();
+  const orderId = (await import('./orderId')).generateOrderId();
   const order: Order = {
     ...payload,
     orderId,

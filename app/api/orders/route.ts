@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
-import { dualWriteOrder } from '@/lib/supabase/orderAdapter';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 
@@ -142,9 +141,6 @@ export async function POST(request: NextRequest) {
     const publicOrderUrl = getOrderDetailsUrl(order.orderId);
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
 
-    // Ensure Supabase has the order row (when primary is blob, dual write is async).
-    await dualWriteOrder(order).catch(() => {});
-
     // Exactly one admin email per order, only at placement (idempotent; admin_notified prevents duplicates).
     await sendAdminNewOrderNotificationOnce(order.orderId).catch((e) => {
       console.error('[api/orders] Admin new-order notification failed:', e);
@@ -156,7 +152,8 @@ export async function POST(request: NextRequest) {
       shareText,
     });
   } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to create order';
     console.error('[api/orders] POST error:', e);
-    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

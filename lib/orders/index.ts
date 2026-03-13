@@ -1,5 +1,5 @@
 /**
- * Order store - public API. Uses router for feature-flagged Supabase/Blob.
+ * Order store - public API. Supabase is the single source of truth.
  */
 
 export * from './types';

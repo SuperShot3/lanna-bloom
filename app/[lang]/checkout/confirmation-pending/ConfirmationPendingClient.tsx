@@ -21,7 +21,12 @@ import type { Order } from '@/lib/orders';
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 60000;
+const MANUAL_STATUS_POLL_MS = 20000; // When admin marks paid, redirect after this interval
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+
+function isPaidStatus(s: string | null | undefined): boolean {
+  return String(s ?? '').toUpperCase() === 'PAID';
+}
 
 type OrderWithPaymentStatus = Order & {
   payment_status?: string | null;
@@ -111,6 +116,34 @@ export function ConfirmationPendingClient({
         setOrder(null);
       });
   }, [orderId, sessionId, stripeStatus]);
+
+  // Notify admin when pending page is seen (manual path). Idempotent: only one email per order.
+  const notifyAdminFiredRef = useRef(false);
+  useEffect(() => {
+    if (!orderId || sessionId || notifyAdminFiredRef.current) return;
+    notifyAdminFiredRef.current = true;
+    fetch(`/api/orders/${encodeURIComponent(orderId)}/notify-admin`, { method: 'POST' }).catch(() => {});
+  }, [orderId, sessionId]);
+
+  // Poll payment status on manual path so that when admin marks paid, user is redirected
+  useEffect(() => {
+    if (!orderId || sessionId || redirectingRef.current) return;
+    const poll = async () => {
+      if (redirectingRef.current) return;
+      try {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (isPaidStatus(data.payment_status)) {
+          redirectingRef.current = true;
+          window.location.href = `/order/${encodeURIComponent(orderId)}`;
+        }
+      } catch {
+        // ignore
+      }
+    };
+    const tId = setInterval(poll, MANUAL_STATUS_POLL_MS);
+    return () => clearInterval(tId);
+  }, [orderId, sessionId]);
 
   // generate_lead: non-ecommerce, only when showing pending confirmation (manual or before Stripe paid)
   const generateLeadFiredRef = useRef(false);

@@ -17,7 +17,7 @@
  * This page exists specifically to prevent premature GA4 purchase tracking.
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
 import {
@@ -161,6 +161,10 @@ function EmailIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+function isPaid(paymentStatus: string | null | undefined): boolean {
+  return String(paymentStatus ?? '').toUpperCase() === 'PAID';
+}
+
 export function OrderPendingConfirmation({
   orderId,
   locale = 'en',
@@ -169,6 +173,30 @@ export function OrderPendingConfirmation({
   locale?: Locale;
 }) {
   const t = translations[locale].pendingConfirmation;
+  const [checking, setChecking] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const handleCheckStatus = useCallback(async () => {
+    if (checking || !orderId) return;
+    setChecking(true);
+    setStatusMessage(null);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (isPaid(data.payment_status)) {
+        setStatusMessage(t.paymentConfirmed);
+        window.location.href = `/order/${encodeURIComponent(orderId)}`;
+        return;
+      }
+      setStatusMessage(t.stillPending);
+    } catch {
+      setStatusMessage(locale === 'th' ? 'ไม่สามารถตรวจสอบได้ กรุณาลองใหม่' : 'Could not check. Please try again.');
+    } finally {
+      setChecking(false);
+    }
+  }, [orderId, checking, locale, t.paymentConfirmed, t.stillPending]);
 
   const lineUrl = getLineContactUrl();
   const whatsappUrl = getWhatsAppContactUrl();
@@ -236,6 +264,23 @@ export function OrderPendingConfirmation({
           >
             <EmailIcon size={22} />
           </a>
+        </div>
+
+        <div className="pending-check-status-wrap">
+          <button
+            type="button"
+            className="pending-check-status-btn"
+            onClick={handleCheckStatus}
+            disabled={checking}
+            aria-busy={checking}
+          >
+            {checking ? (locale === 'th' ? 'กำลังตรวจสอบ…' : 'Checking…') : t.checkStatus}
+          </button>
+          {statusMessage && (
+            <p className="pending-status-msg" role="status">
+              {statusMessage}
+            </p>
+          )}
         </div>
       </div>
 
@@ -376,6 +421,40 @@ export function OrderPendingConfirmation({
           box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
         }
 
+        /* ---------- Check status ---------- */
+        .pending-check-status-wrap {
+          margin-top: 28px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+        .pending-check-status-btn {
+          padding: 12px 24px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #fff;
+          background: #b08d57;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: background 0.2s, opacity 0.2s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .pending-check-status-btn:hover:not(:disabled) {
+          background: #967a4d;
+        }
+        .pending-check-status-btn:disabled {
+          opacity: 0.8;
+          cursor: not-allowed;
+        }
+        .pending-status-msg {
+          font-size: 0.9rem;
+          color: #777;
+          margin: 0;
+          text-align: center;
+          max-width: 320px;
+        }
 
         /* ---------- Mobile ---------- */
         @media (max-width: 480px) {

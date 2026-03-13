@@ -5,6 +5,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Order, OrderPayload } from './types';
+import { generateOrderId } from './orderId';
 
 const ORDERS_BLOB_PATH = 'lannabloom/orders.json';
 
@@ -133,12 +134,7 @@ async function writeOrders(orders: Order[]): Promise<void> {
   }
 }
 
-export function generateOrderId(): string {
-  const year = new Date().getFullYear();
-  const ts = Date.now().toString(36).slice(-4).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `LB-${year}-${ts}${rand}`;
-}
+export { generateOrderId } from './orderId';
 
 export async function blobCreateOrder(payload: OrderPayload, status?: Order['status']): Promise<Order> {
   const orders = await readOrders();

@@ -512,6 +512,9 @@ export const translations = {
       contactTelegram: 'Message Us on Telegram',
       contactEmail: 'Email Us',
       orderId: 'Order ID',
+      checkStatus: 'Check payment status',
+      stillPending: 'Payment not confirmed yet. We will update once we receive it.',
+      paymentConfirmed: 'Payment confirmed! Taking you to your order…',
     },
     messenger: {
       line: 'LINE',
@@ -1317,6 +1320,9 @@ export const translations = {
       contactTelegram: 'ทักเราทาง Telegram',
       contactEmail: 'ส่งอีเมลถึงเรา',
       orderId: 'รหัสออเดอร์',
+      checkStatus: 'ตรวจสอบสถานะการชำระเงิน',
+      stillPending: 'ยังไม่ได้รับการยืนยันการชำระเงิน เราจะอัปเดตเมื่อได้รับแล้ว',
+      paymentConfirmed: 'ชำระเงินแล้ว! กำลังพาคุณไปหน้ารายละเอียดออเดอร์…',
     },
     messenger: {
       line: 'LINE',
