@@ -1,16 +1,15 @@
-import Link from 'next/link';
-import { getPopularBouquetsFromSanity } from '@/lib/sanity';
-import { BouquetCard } from '@/components/BouquetCard';
+import { getBouquetsFromSanityPaginated } from '@/lib/sanity';
+import { PopularSectionClient } from '@/components/PopularSectionClient';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 
-const POPULAR_LIMIT = 8;
+const INITIAL_LIMIT = 8;
 
 export async function PopularSection({ lang }: { lang: Locale }) {
-  const bouquets = await getPopularBouquetsFromSanity(POPULAR_LIMIT);
+  const initialBouquets = await getBouquetsFromSanityPaginated(0, INITIAL_LIMIT);
   const t = translations[lang].home;
 
-  if (bouquets.length === 0) return null;
+  if (initialBouquets.length === 0) return null;
 
   return (
     <section
@@ -24,28 +23,7 @@ export async function PopularSection({ lang }: { lang: Locale }) {
         >
           {t.popularTitle}
         </h2>
-        <div className="popular-scroll-wrap">
-          <div className="popular-scroll">
-            {bouquets.map((bouquet) => (
-              <div key={bouquet.id} className="popular-card-slot">
-                <BouquetCard
-                  bouquet={bouquet}
-                  lang={lang}
-                  variant="popular-compact"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-8 sm:mt-10 text-center">
-          <Link
-            href={`/${lang}/catalog`}
-            className="inline-flex items-center gap-2 px-8 py-3 bg-[#C5A059] text-[#1A3C34] rounded-full font-semibold hover:opacity-90 transition-opacity"
-          >
-            {t.viewAllBouquets}
-            <span className="material-symbols-outlined text-xl">arrow_forward</span>
-          </Link>
-        </div>
+        <PopularSectionClient initialBouquets={initialBouquets} lang={lang} />
       </div>
     </section>
   );

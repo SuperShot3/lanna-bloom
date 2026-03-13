@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { PaymentMethodsAvailability } from '@/lib/checkout/paymentAvailability';
+import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
 
 export type StickyBarSummary = {
   date?: string;
@@ -21,8 +22,10 @@ export type StickyBarProps = {
   placingStripe: boolean;
   onPayStripe: () => void;
   onPlaceOrder: () => void;
-  /** Optional: scroll to delivery section when user clicks Change on date. */
+  /** Optional: scroll to delivery section when user clicks Change (used when no inline edit). */
   onDateChange?: () => void;
+  /** When set, "Change" opens an inline edit sheet; on confirm this is called with (date, timeSlot). */
+  onDeliveryDateTimeChange?: (date: string, timeSlot: string) => void;
   formatDate?: (dateStr: string) => string;
   labels: {
     dateLabel: string;
@@ -38,10 +41,24 @@ export type StickyBarProps = {
     change?: string;
     delivery?: string;
     showCheckout?: string;
+    /** Inline edit sheet */
+    specifyDeliveryDate?: string;
+    todayLabel?: string;
+    tomorrowLabel?: string;
+    selectTimeSlot?: string;
+    preferredTime?: string;
+    save?: string;
   };
 };
 
 const BUTTON_HEIGHT = 48;
+
+function getTodayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function getTomorrowStr(): string {
+  return new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+}
 
 export function StickyCheckoutBar({
   lang,
@@ -54,6 +71,7 @@ export function StickyCheckoutBar({
   onPayStripe,
   onPlaceOrder,
   onDateChange,
+  onDeliveryDateTimeChange,
   formatDate = (d) => d,
   labels,
 }: StickyBarProps) {
@@ -68,7 +86,44 @@ export function StickyCheckoutBar({
   const bankReady = !bankDisabled && !bankLoading;
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [editDate, setEditDate] = useState('');
+  const [editTimeSlot, setEditTimeSlot] = useState('');
   const touchStartY = useRef(0);
+
+  const minDate = getTodayStr();
+  const timeSlots = DELIVERY_TIME_SLOTS;
+
+  const openEditSheet = useCallback(() => {
+    const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
+      ? summary.date
+      : minDate;
+    const timeSlot = summary.timeSlot && timeSlots.includes(summary.timeSlot as typeof timeSlots[number])
+      ? summary.timeSlot
+      : timeSlots[0];
+    setEditDate(date);
+    setEditTimeSlot(timeSlot);
+    setEditSheetOpen(true);
+  }, [summary.date, summary.timeSlot, minDate, timeSlots]);
+
+  useEffect(() => {
+    if (!editSheetOpen) return;
+    const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
+      ? summary.date
+      : minDate;
+    const timeSlot = summary.timeSlot && timeSlots.includes(summary.timeSlot as typeof timeSlots[number])
+      ? summary.timeSlot
+      : timeSlots[0];
+    setEditDate(date);
+    setEditTimeSlot(timeSlot);
+  }, [editSheetOpen, summary.date, summary.timeSlot, minDate, timeSlots]);
+
+  const handleEditConfirm = useCallback(() => {
+    const date = editDate && editDate >= minDate ? editDate : minDate;
+    const slot = timeSlots.includes(editTimeSlot as typeof timeSlots[number]) ? editTimeSlot : timeSlots[0];
+    onDeliveryDateTimeChange?.(date, slot);
+    setEditSheetOpen(false);
+  }, [editDate, editTimeSlot, minDate, timeSlots, onDeliveryDateTimeChange]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
@@ -85,6 +140,14 @@ export function StickyCheckoutBar({
   const handleExpand = useCallback(() => {
     setIsCollapsed(false);
   }, []);
+
+  const handleChangeClick = useCallback(() => {
+    if (onDeliveryDateTimeChange) {
+      openEditSheet();
+    } else {
+      onDateChange?.();
+    }
+  }, [onDeliveryDateTimeChange, onDateChange, openEditSheet]);
 
   const dateDisplay =
     summary.date && summary.timeSlot
@@ -147,11 +210,11 @@ export function StickyCheckoutBar({
           <span className="sticky-checkout-bar__date-value">
             {dateDisplay ?? (lang === 'th' ? 'เลือกวันที่และเวลา' : 'Select date & time')}
           </span>
-          {onDateChange && (
+          {(onDateChange || onDeliveryDateTimeChange) && (
             <button
               type="button"
               className="sticky-checkout-bar__date-change"
-              onClick={onDateChange}
+              onClick={handleChangeClick}
               aria-label={labels.change ?? 'Change'}
             >
               {labels.change ?? 'Change'}
@@ -231,6 +294,84 @@ export function StickyCheckoutBar({
       </div>
       )}
 
+      {/* Mobile: bottom sheet to edit delivery date & time */}
+      {editSheetOpen && onDeliveryDateTimeChange && (
+        <>
+          <div
+            className="sticky-checkout-bar__sheet-backdrop"
+            role="presentation"
+            aria-hidden
+            onClick={() => setEditSheetOpen(false)}
+          />
+          <div
+            className="sticky-checkout-bar__sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={labels.delivery ?? 'Delivery'}
+          >
+            <div className="sticky-checkout-bar__sheet-handle" aria-hidden />
+            <h3 className="sticky-checkout-bar__sheet-title">
+              {labels.delivery ?? 'Delivery'}
+            </h3>
+            <div className="sticky-checkout-bar__sheet-field">
+              <label className="sticky-checkout-bar__sheet-label" htmlFor="sticky-edit-date">
+                {labels.specifyDeliveryDate ?? 'Specify delivery date'}
+              </label>
+              <input
+                id="sticky-edit-date"
+                type="date"
+                value={editDate}
+                min={minDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="sticky-checkout-bar__sheet-date"
+                aria-label={labels.specifyDeliveryDate ?? 'Delivery date'}
+              />
+              <div className="sticky-checkout-bar__sheet-quick">
+                <button
+                  type="button"
+                  className="sticky-checkout-bar__sheet-quick-btn"
+                  onClick={() => setEditDate(getTodayStr())}
+                >
+                  {labels.todayLabel ?? 'Today'}
+                </button>
+                <button
+                  type="button"
+                  className="sticky-checkout-bar__sheet-quick-btn"
+                  onClick={() => setEditDate(getTomorrowStr())}
+                >
+                  {labels.tomorrowLabel ?? 'Tomorrow'}
+                </button>
+              </div>
+            </div>
+            <div className="sticky-checkout-bar__sheet-field">
+              <label className="sticky-checkout-bar__sheet-label" htmlFor="sticky-edit-time">
+                {labels.preferredTime ?? labels.selectTimeSlot ?? 'Time slot'}
+              </label>
+              <select
+                id="sticky-edit-time"
+                value={editTimeSlot}
+                onChange={(e) => setEditTimeSlot(e.target.value)}
+                className="sticky-checkout-bar__sheet-select"
+                aria-label={labels.selectTimeSlot ?? 'Select time slot'}
+              >
+                {timeSlots.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              className="sticky-checkout-bar__sheet-save"
+              onClick={handleEditConfirm}
+            >
+              {labels.save ?? (lang === 'th' ? 'บันทึก' : 'Save')}
+            </button>
+          </div>
+        </>
+      )}
+
       <style jsx>{`
         .sticky-checkout-bar {
           position: fixed;
@@ -249,7 +390,7 @@ export function StickyCheckoutBar({
           display: flex;
           flex-direction: column;
           gap: 8px;
-          animation: sticky-bar-slideUp 0.35s cubic-bezier(0.22, 0.68, 0, 1.2) both;
+          animation: sticky-bar-slideUp 0.42s cubic-bezier(0.33, 1, 0.68, 1) both;
           box-sizing: border-box;
         }
         @keyframes sticky-bar-slideUp {
@@ -525,6 +666,117 @@ export function StickyCheckoutBar({
         }
         .sticky-checkout-bar--collapsed .sticky-checkout-bar__peek {
           display: flex;
+        }
+
+        /* Delivery date/time edit sheet (mobile) */
+        .sticky-checkout-bar__sheet-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          z-index: 49;
+          animation: sticky-sheet-fadeIn 0.24s ease-in-out;
+        }
+        @keyframes sticky-sheet-fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .sticky-checkout-bar__sheet {
+          position: fixed;
+          left: 50%;
+          transform: translateX(-50%);
+          bottom: 0;
+          width: 100%;
+          max-width: 420px;
+          max-height: 70vh;
+          z-index: 51;
+          background: var(--bg);
+          border-radius: 20px 20px 0 0;
+          box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+          padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+          overflow-y: auto;
+          animation: sticky-sheet-slideUp 0.36s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        @keyframes sticky-sheet-slideUp {
+          from { transform: translateX(-50%) translateY(100%); }
+          to { transform: translateX(-50%) translateY(0); }
+        }
+        .sticky-checkout-bar__sheet-handle {
+          width: 36px;
+          height: 4px;
+          border-radius: 2px;
+          background: var(--border);
+          margin: 0 auto 12px;
+        }
+        .sticky-checkout-bar__sheet-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 16px;
+        }
+        .sticky-checkout-bar__sheet-field {
+          margin-bottom: 14px;
+        }
+        .sticky-checkout-bar__sheet-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-muted);
+          margin-bottom: 6px;
+        }
+        .sticky-checkout-bar__sheet-date {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          font-size: 15px;
+          font-family: inherit;
+          color: var(--text);
+          background: var(--surface);
+        }
+        .sticky-checkout-bar__sheet-quick {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .sticky-checkout-bar__sheet-quick-btn {
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text);
+          cursor: pointer;
+          font-family: inherit;
+        }
+        .sticky-checkout-bar__sheet-quick-btn:hover {
+          background: var(--pastel-cream);
+        }
+        .sticky-checkout-bar__sheet-select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          font-size: 15px;
+          font-family: inherit;
+          color: var(--text);
+          background: var(--surface);
+        }
+        .sticky-checkout-bar__sheet-save {
+          width: 100%;
+          margin-top: 8px;
+          padding: 14px;
+          border-radius: 12px;
+          border: none;
+          background: var(--primary);
+          color: #fff;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        .sticky-checkout-bar__sheet-save:hover {
+          background: #153029;
         }
       `}</style>
     </div>

@@ -151,6 +151,35 @@ export async function getBouquetsFromSanity(): Promise<Bouquet[]> {
   }
 }
 
+const bouquetsPaginatedQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] | order(nameEn asc) [$start...$end] {
+  _id,
+  slug,
+  nameEn,
+  nameTh,
+  descriptionEn,
+  descriptionTh,
+  compositionEn,
+  compositionTh,
+  category,
+  colors,
+  flowerTypes,
+  occasion,
+  images,
+  sizes
+}`;
+
+/** Full catalog paginated (same order as getBouquetsFromSanity). For home "Show more" and API. */
+export async function getBouquetsFromSanityPaginated(start: number, limit: number): Promise<Bouquet[]> {
+  try {
+    const end = start + limit;
+    const docs = await client.fetch<SanityBouquet[]>(bouquetsPaginatedQuery, { start, end });
+    return (docs ?? []).map(mapToBouquet);
+  } catch (err) {
+    console.error('[Sanity] getBouquetsFromSanityPaginated failed:', err);
+    return [];
+  }
+}
+
 export async function getBouquetBySlugFromSanity(slug: string): Promise<Bouquet | null> {
   try {
     const doc = await client.fetch<SanityBouquet | null>(bouquetBySlugQuery, { slug });

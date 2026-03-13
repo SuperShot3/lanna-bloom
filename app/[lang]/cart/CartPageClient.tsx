@@ -987,7 +987,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
-              {mobileOpenSection === 'bag' && (
+              <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'bag'}>
                 <div className="cart-accordion-body cart-accordion-body-bag" onClick={(e) => e.stopPropagation()}>
                   <div className="cart-list cart-mobile-list">
                     {items.map((item, index) => {
@@ -1072,7 +1072,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     hasOtherDiscount={false}
                   />
                 </div>
-              )}
+              </div>
             </div>
             <div
               ref={deliverySectionRef}
@@ -1086,7 +1086,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
-              {mobileOpenSection === 'delivery' && (
+              <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'delivery'}>
                 <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
                   <DeliveryForm
                     lang={lang}
@@ -1105,7 +1105,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
                   </button>
                 </div>
-              )}
+              </div>
             </div>
             <div
               ref={contactSectionRef}
@@ -1119,7 +1119,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
-              {mobileOpenSection === 'contact' && (
+              <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'contact'}>
                 <div className="cart-accordion-body cart-accordion-body-contact" onClick={(e) => e.stopPropagation()}>
                   {contactFormContent('mobile-')}
                   <button
@@ -1131,7 +1131,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
           {(() => {
@@ -1148,9 +1148,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             const incompleteHint = !paymentAvailability.stripe.enabled
               ? paymentAvailability.stripe.reason
               : undefined;
-            const handleDateChange = () => {
-              setMobileOpenSection('delivery');
-              setTimeout(() => deliverySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+            const handleDeliveryDateTimeChange = (date: string, timeSlot: string) => {
+              setDelivery((prev) => ({ ...prev, date, timeSlot }));
             };
             return (
           <StickyCheckoutBar
@@ -1168,7 +1167,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             placingStripe={placingStripe}
             onPayStripe={handleStickyCtaClick}
             onPlaceOrder={handlePlaceOrder}
-            onDateChange={handleDateChange}
+            onDeliveryDateTimeChange={handleDeliveryDateTimeChange}
             formatDate={formatStickyDate}
             labels={{
               dateLabel: t.dateLabel ?? 'Date',
@@ -1184,6 +1183,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               change: lang === 'th' ? 'เปลี่ยน' : 'Change',
               delivery: lang === 'th' ? 'จัดส่ง' : 'Delivery',
               showCheckout: lang === 'th' ? 'แสดงชำระเงิน' : 'Show checkout',
+              specifyDeliveryDate: tBuyNow.specifyDeliveryDate,
+              todayLabel: tBuyNow.todayLabel,
+              tomorrowLabel: tBuyNow.tomorrowLabel,
+              selectTimeSlot: tBuyNow.selectTimeSlot,
+              preferredTime: (tBuyNow as { preferredTime?: string }).preferredTime,
+              save: lang === 'th' ? 'บันทึก' : 'Save',
             }}
           />
             );
@@ -1200,7 +1205,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             title={t.placeOrder}
             showLocationPicker
             step3Heading={t.contactInfoStepHeading}
-            hideDateAndTime
             step3Content={
               <div className="cart-place-order">
                 {contactFormContent('')}
@@ -2008,13 +2012,29 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
+            display: grid;
+            grid-template-rows: auto 0fr;
+            transition: grid-template-rows 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          }
+          .cart-accordion-section.cart-accordion-open {
+            grid-template-rows: auto 1fr;
+          }
+          .cart-accordion-body-wrapper {
+            overflow: hidden;
+            min-height: 0;
+            contain: layout style;
+          }
+          .cart-accordion-body-wrapper .cart-accordion-body {
+            padding-top: 2px;
           }
           .cart-accordion-header {
             display: flex;
             align-items: center;
+            min-height: 52px;
             padding: 16px 20px;
             cursor: pointer;
             user-select: none;
+            flex-shrink: 0;
           }
           .cart-accordion-title {
             font-size: 1.1rem;
@@ -2022,6 +2042,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             color: var(--text);
             flex: 1;
             min-width: 0;
+            line-height: 1.35;
           }
           .cart-accordion-header-actions {
             flex-shrink: 0;
@@ -2042,7 +2063,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-accordion-chevron {
             font-size: 0.7rem;
             color: var(--text-muted);
-            transition: transform 0.2s;
+            transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           }
           .cart-accordion-open .cart-accordion-chevron {
             transform: rotate(180deg);
