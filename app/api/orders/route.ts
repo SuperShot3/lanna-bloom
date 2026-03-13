@@ -152,7 +152,12 @@ export async function POST(request: NextRequest) {
       shareText,
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Failed to create order';
+    const message =
+      (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string')
+        ? (e as { message: string }).message
+        : e instanceof Error
+          ? e.message
+          : 'Failed to create order';
     console.error('[api/orders] POST error:', e);
     return NextResponse.json({ error: message }, { status: 500 });
   }

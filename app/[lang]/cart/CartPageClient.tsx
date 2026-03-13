@@ -650,8 +650,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         return;
       }
       const { orderId, publicOrderUrl, shareText } = data;
-      clearCart();
-      clearCartFormStorage();
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
@@ -664,6 +662,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         publicOrderUrl: publicOrderUrl ?? '',
         shareText: shareText ?? `New order: ${orderId}. Details: ${publicOrderUrl}`,
       });
+      // Redirect immediately so user never sees empty cart. Confirmation-pending page clears cart on mount.
       window.location.href = `/${lang}/checkout/confirmation-pending?${params.toString()}`;
     } catch {
       setOrderError(t.couldNotCreateOrder);

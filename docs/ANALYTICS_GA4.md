@@ -2,15 +2,36 @@
 
 ## Architecture
 
-- GTM is the only analytics transport.
+- GTM is the only analytics transport for client-side events.
 - The app only pushes structured events into `window.dataLayer`.
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
+- **Server-side purchase**: When an order is marked paid (admin “Mark as paid” or Stripe webhook), the backend sends a `purchase` event to GA4 via the Measurement Protocol. This does not require the user to revisit the order page. See [Mark as paid → GA4 purchase](#mark-as-paid--ga4-purchase) below.
+
+## Mark as paid → GA4 purchase
+
+When an order becomes paid (admin marks as paid or Stripe checkout completes), the backend sends a single `purchase` event to GA4 via the **Measurement Protocol** (idempotent: at most once per order).
+
+**Triggers:**
+
+- Admin: **Mark as paid** on an order (`PATCH /api/admin/orders/[order_id]/mark-paid`).
+- Stripe: **checkout.session.completed** / **checkout.session.async_payment_succeeded** webhook.
+
+**Required Vercel env vars:**
+
+| Variable | Where to get it |
+|----------|------------------|
+| `GA4_MEASUREMENT_ID` | GA4 Admin → Data Streams → your web stream → Measurement ID (e.g. `G-XXXXXXXXXX`) |
+| `GA4_MEASUREMENT_API_SECRET` | Same stream → “Measurement Protocol API secrets” → Create and copy the secret |
+
+If either is missing, the app still works; the backend logs a warning and does not send the purchase event. The `orders` table columns `ga4_purchase_sent` and `ga4_purchase_sent_at` record that the event was sent (for idempotency).
+
+**Relevant code:** `lib/ga4/sendPurchaseForOrder.ts`, `lib/ga4/measurementProtocol.ts`, mark-paid route, Stripe webhook route.
 
 ## Runtime Configuration
 
-- Required client env var: `NEXT_PUBLIC_GTM_ID`
+- Required client env var (for GTM): `NEXT_PUBLIC_GTM_ID`
 - GTM loader lives in `components/GoogleAnalytics.tsx`
 - Structured event helpers live in `lib/analytics.ts`
 - dataLayer transport and purchase dedupe live in `lib/analytics/gtag.ts`
