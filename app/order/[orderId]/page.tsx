@@ -1,3 +1,4 @@
+import { unstable_noStore } from 'next/cache';
 import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
@@ -30,6 +31,7 @@ export default async function OrderDetailsPage({
 }: {
   params: Promise<{ orderId: string }>;
 }) {
+  unstable_noStore();
   const { orderId } = await params;
   const normalized = orderId?.trim() ?? '';
   const order = await getOrderById(normalized);

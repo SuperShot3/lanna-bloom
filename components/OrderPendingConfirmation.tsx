@@ -187,7 +187,9 @@ export function OrderPendingConfirmation({
       const data = await res.json().catch(() => ({}));
       if (isPaid(data.payment_status)) {
         setStatusMessage(t.paymentConfirmed);
-        window.location.href = `/order/${encodeURIComponent(orderId)}`;
+        // Cache-bust so the order page does a fresh server render and shows paid state
+        const url = `/order/${encodeURIComponent(orderId)}?v=${Date.now()}`;
+        window.location.href = url;
         return;
       }
       setStatusMessage(t.stillPending);
