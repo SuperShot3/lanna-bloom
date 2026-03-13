@@ -1,9 +1,11 @@
-import { notFound } from 'next/navigation';
-import { isValidLocale, type Locale } from '@/lib/i18n';
-import { getOrderDetailsUrl } from '@/lib/orders';
-import { CheckoutSuccessClient } from './CheckoutSuccessClient';
+import { redirect } from 'next/navigation';
+import { isValidLocale } from '@/lib/i18n';
 
-export default async function CheckoutSuccessPage({
+/**
+ * Legacy route: redirect to confirmation-pending so all post-checkout behavior
+ * lives in one place. No success UI or purchase logic here.
+ */
+export default async function CheckoutSuccessRedirect({
   params,
   searchParams,
 }: {
@@ -11,26 +13,14 @@ export default async function CheckoutSuccessPage({
   searchParams: Promise<{ orderId?: string; publicOrderUrl?: string; shareText?: string; session_id?: string }>;
 }) {
   const { lang } = await params;
-  if (!isValidLocale(lang)) notFound();
+  if (!isValidLocale(lang)) {
+    redirect(`/${lang}/cart`);
+  }
   const q = await searchParams;
-  const sessionId = typeof q.session_id === 'string' ? q.session_id.trim() : '';
-  const orderId = typeof q.orderId === 'string' ? q.orderId.trim() : '';
-  let publicOrderUrl = typeof q.publicOrderUrl === 'string' ? q.publicOrderUrl : undefined;
-  let shareText = typeof q.shareText === 'string' ? q.shareText : undefined;
-  if (orderId && !publicOrderUrl) {
-    publicOrderUrl = getOrderDetailsUrl(orderId);
-  }
-  if (orderId && !shareText && publicOrderUrl) {
-    shareText = `New order: ${orderId}. Details: ${publicOrderUrl}`;
-  }
-
-  return (
-    <CheckoutSuccessClient
-      lang={lang as Locale}
-      orderId={orderId}
-      publicOrderUrl={publicOrderUrl}
-      shareText={shareText}
-      sessionId={sessionId || undefined}
-    />
-  );
+  const search = new URLSearchParams();
+  if (typeof q.orderId === 'string' && q.orderId.trim()) search.set('orderId', q.orderId.trim());
+  if (typeof q.publicOrderUrl === 'string') search.set('publicOrderUrl', q.publicOrderUrl);
+  if (typeof q.shareText === 'string') search.set('shareText', q.shareText);
+  if (typeof q.session_id === 'string' && q.session_id.trim()) search.set('session_id', q.session_id.trim());
+  redirect(`/${lang}/checkout/confirmation-pending?${search.toString()}`);
 }

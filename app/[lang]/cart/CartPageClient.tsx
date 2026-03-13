@@ -664,7 +664,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         publicOrderUrl: publicOrderUrl ?? '',
         shareText: shareText ?? `New order: ${orderId}. Details: ${publicOrderUrl}`,
       });
-      window.location.href = `/${lang}/checkout/success?${params.toString()}`;
+      window.location.href = `/${lang}/checkout/confirmation-pending?${params.toString()}`;
     } catch {
       setOrderError(t.couldNotCreateOrder);
       setPlacing(false);

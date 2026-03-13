@@ -200,7 +200,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 ## Audit: Purchase and GTM-Only
 
 - **Purchase transport**: The app never calls `gtag('event', 'purchase', ...)` or any GA4 API. It only pushes `{ event: 'purchase', ... }` to `window.dataLayer`. GTM is the only system that sends purchase to GA4.
-- **Single code path**: Purchase is pushed from `app/[lang]/checkout/success/CheckoutSuccessClient.tsx` when the order is confirmed paid (Stripe success or manual payment later). It calls `trackPurchase` from `lib/analytics.ts`, which delegates to `lib/analytics/gtag.ts` `trackPurchase` → `trackEvent('purchase', ...)` → `dataLayer.push(...)`.
+- **Single code path**: Purchase is pushed from `components/OrderPaidPurchaseTracker.tsx` when the user views the order details page (`/order/[orderId]`) and the order is confirmed paid (Stripe webhook or admin mark-paid). It calls `trackPurchase` from `lib/analytics.ts`, which delegates to `lib/analytics/gtag.ts` → `dataLayer.push(...)`. The confirmation-pending (checkout) page never fires purchase.
 - **Duplicate guard**: (1) Success page uses `purchaseTrackedRef` and `wasPurchaseSent(orderId)` so we don’t call `trackPurchase` twice in one session or on revisit. (2) `gtag.ts` `trackPurchase` uses `purchase_sent:<orderId>` in localStorage and sessionStorage; it pushes at most once per orderId.
 - **generate_lead**: `trackGenerateLead` only pushes `generate_lead` to dataLayer. It does not call or trigger any purchase logic.
 
@@ -218,7 +218,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 - `components/ProductOrderBlockForProduct.tsx`
 - `components/GiftsCarousel.tsx`
 - `app/[lang]/cart/CartPageClient.tsx`
-- `app/[lang]/checkout/success/CheckoutSuccessClient.tsx`
+- `components/OrderPaidPurchaseTracker.tsx` (on `app/order/[orderId]/page.tsx` when paid)
 - `components/MessengerOrderButtons.tsx`
 - `components/MessengerLinks.tsx`
 - `components/OrderDetailsView.tsx`

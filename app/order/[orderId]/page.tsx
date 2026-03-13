@@ -2,6 +2,7 @@ import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { OrderDetailsView } from '@/components/OrderDetailsView';
 import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
+import { OrderPaidPurchaseTracker } from '@/components/OrderPaidPurchaseTracker';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 
@@ -76,6 +77,7 @@ export default async function OrderDetailsPage({
 
   return (
     <div className="order-page">
+      <OrderPaidPurchaseTracker order={order} />
       <div className="container">
         <h1 className="order-page-title">{t.orderDetails}</h1>
         <OrderDetailsView

@@ -82,12 +82,12 @@ app/
     page.tsx        # Home: Hero + CategoryGrid
     catalog/        # Catalog grid and product pages
     cart/           # Cart and place order
-    checkout/success/
+    checkout/confirmation-pending/
     partner/        # Register and dashboard
   order/[orderId]/  # Public order details page (no locale)
   admin/orders/     # Redirects to /admin/orders
   admin-v2/         # Admin dashboard (orders, overview, RBAC)
-  api/orders/       # Create order, get order (checkout/success)
+  api/orders/       # Create order, get order (checkout/confirmation-pending)
   studio/           # Sanity Studio
 components/         # Header, Hero, BouquetCard, ProductOrderBlock, etc.
 lib/

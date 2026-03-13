@@ -24,7 +24,7 @@
 | `GoogleAnalytics` | Component name and docs only; no GA4 SDK or config. |
 | `next/script` | Only in `GoogleAnalytics.tsx` for consent defaults and GTM loader. |
 | Analytics script injection | No dynamic injection of gtag.js or GA4. |
-| Direct purchase send not using GTM | Single purchase path: `CheckoutSuccessClient` → `trackPurchase` (lib/analytics) → `lib/analytics/gtag.ts` → `dataLayer.push({ event: 'purchase', ... })`. No `gtag('event','purchase',...)` or Measurement Protocol. |
+| Direct purchase send not using GTM | Single purchase path: `OrderPaidPurchaseTracker` on `/order/[orderId]` (when paid) → `trackPurchase` (lib/analytics) → `lib/analytics/gtag.ts` → `dataLayer.push({ event: 'purchase', ... })`. No `gtag('event','purchase',...)` or Measurement Protocol. |
 | Config/event send for GA4 or Google tag | No GA4 measurement ID or gtag config in repo. Only `NEXT_PUBLIC_GTM_ID` for GTM. |
 
 ---
@@ -47,7 +47,7 @@ The codebase points to the second case as the main risk.
 
 ## 3. Why the app can push purchase for “manual” orders
 
-**File:** `app/[lang]/checkout/success/CheckoutSuccessClient.tsx`
+**File:** `components/OrderPaidPurchaseTracker.tsx` (rendered on `app/order/[orderId]/page.tsx` when order is confirmed paid)
 
 Purchase is gated by `stripePaidOrderId`, which is set only when:
 
@@ -71,7 +71,7 @@ function isStripePaidOrder(
 ```
 
 - **Manual order:** User places order via “Place Order” (bank/PromptPay). Redirect is to  
-  `/{lang}/checkout/success?orderId=...&publicOrderUrl=...&shareText=...`  
+  `/{lang}/checkout/confirmation-pending?orderId=...` or `/order/[orderId]` when paid  
   So **no `session_id`** in URL → `sessionId` is undefined.
 - If the **order** returned by `/api/orders/[orderId]` has `stripeSessionId` or `paymentIntentId` set (e.g. from an old Stripe attempt, migration, or bug), then:
   - `hasStripeContext` = false (no session_id in URL),
@@ -108,7 +108,7 @@ Remove the `hasStripePayment` leg from `isStripePaidOrder` for the purpose of **
 | `components/InternalTrafficBootstrap.tsx` | Pushes `traffic_type: 'internal'` on route change. No purchase. |
 | `lib/analytics/gtag.ts` | All events (including purchase) via `dataLayer.push`. No gtag.js, no GA4 ID. |
 | `lib/analytics.ts` | Re-exports and wraps gtag helpers; `trackPurchase` → gtag `trackPurchase`. |
-| `app/[lang]/checkout/success/CheckoutSuccessClient.tsx` | Only place that calls `trackPurchase`; gate is `isStripePaidOrder`. |
+| `components/OrderPaidPurchaseTracker.tsx` (on order page when paid) | Only place that calls `trackPurchase`; runs only when order payment is confirmed (Supabase PAID or legacy paid). |
 | `app/order/[orderId]/page.tsx` | No analytics; no purchase. |
 | No API routes | No server-side GA4 or Measurement Protocol. |
 
