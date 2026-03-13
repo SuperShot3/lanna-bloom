@@ -6,7 +6,7 @@ import {
   updateOrderPaymentStatus,
 } from '@/lib/orders';
 import { getOrderDetailsUrl } from '@/lib/orders';
-import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
+import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getOrderIdFromStripeMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
@@ -282,9 +282,7 @@ export async function POST(request: NextRequest) {
     const updatedOrder = await getOrderById(orderId);
     if (updatedOrder) {
       const publicOrderUrl = getOrderDetailsUrl(orderId);
-      sendOrderNotificationEmail(updatedOrder, publicOrderUrl).catch((e) => {
-        console.error('[stripe/webhook] Notification email failed:', e);
-      });
+      // Payment-confirmation only: customer email and GA4. No admin email here (admin is notified once at order placement).
       sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
         console.error('[stripe/webhook] Customer confirmation email failed:', e);
       });

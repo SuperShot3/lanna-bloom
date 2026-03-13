@@ -4,28 +4,28 @@ import styles from './loading.module.css';
 
 export default function AdminOrdersLoading() {
   return (
-    <div className="admin-v2-orders">
-      <header className="admin-v2-header">
+    <div className="admin-orders">
+      <header className="admin-header">
         <div>
           <div className={styles.skeletonTitle} aria-hidden />
           <div className={styles.skeletonHint} aria-hidden />
         </div>
-        <div className="admin-v2-header-actions">
+        <div className="admin-header-actions">
           <div className={styles.skeletonBtn} aria-hidden />
           <div className={styles.skeletonBtn} aria-hidden />
         </div>
       </header>
 
-      <div className="admin-v2-filters">
-        <div className="admin-v2-filters-row">
+      <div className="admin-filters">
+        <div className="admin-filters-row">
           <div className={styles.skeletonInput} aria-hidden />
           <div className={styles.skeletonInput} aria-hidden />
           <div className={styles.skeletonBtn} aria-hidden />
         </div>
       </div>
 
-      <div className="admin-v2-table-wrap">
-        <table className="admin-v2-table">
+      <div className="admin-table-wrap">
+        <table className="admin-table">
           <thead>
             <tr>
               <th>Created</th>
@@ -54,7 +54,7 @@ export default function AdminOrdersLoading() {
         </table>
       </div>
 
-      <div className="admin-v2-pagination">
+      <div className="admin-pagination">
         <div className={styles.skeletonPagination} aria-hidden />
       </div>
     </div>

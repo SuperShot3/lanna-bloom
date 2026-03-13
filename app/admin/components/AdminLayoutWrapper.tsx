@@ -9,7 +9,7 @@ export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) 
 
   if (isLogin) {
     return (
-      <div className="admin-v2-layout admin-theme">
+      <div className="admin-layout admin-theme">
         <div className="admin-login-container">{children}</div>
       </div>
     );

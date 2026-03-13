@@ -43,7 +43,7 @@ export function RemoveOrderButton({ orderId, returnTo, canEdit }: RemoveOrderBut
       type="button"
       onClick={handleRemove}
       disabled={removing}
-      className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-danger"
+      className="admin-btn admin-btn-outline admin-btn-danger"
       title="Remove from system (e.g. after delivery)"
     >
       {removing ? 'Removing…' : 'Delivered — Remove'}

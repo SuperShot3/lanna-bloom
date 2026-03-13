@@ -105,17 +105,17 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
   };
 
   return (
-    <section className="admin-v2-section admin-v2-costs-card">
-      <h2 className="admin-v2-section-title">Costs & Profit</h2>
+    <section className="admin-section admin-costs-card">
+      <h2 className="admin-section-title">Costs & Profit</h2>
 
       {!costsSet && (
-        <p className="admin-v2-costs-warning">Costs not set (profit is estimated)</p>
+        <p className="admin-costs-warning">Costs not set (profit is estimated)</p>
       )}
 
-      <div className="admin-v2-costs-grid">
+      <div className="admin-costs-grid">
         {canEdit ? (
           <>
-            <div className="admin-v2-costs-input-group">
+            <div className="admin-costs-input-group">
               <label htmlFor="cogs">COGS (฿)</label>
               <input
                 id="cogs"
@@ -126,10 +126,10 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
                 onChange={(e) => setCogs(e.target.value)}
                 onBlur={(e) => handleBlur(e, setCogs)}
                 placeholder="0"
-                className="admin-v2-input"
+                className="admin-input"
               />
             </div>
-            <div className="admin-v2-costs-input-group">
+            <div className="admin-costs-input-group">
               <label htmlFor="delivery-cost">Delivery cost (฿)</label>
               <input
                 id="delivery-cost"
@@ -140,10 +140,10 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
                 onChange={(e) => setDeliveryCost(e.target.value)}
                 onBlur={(e) => handleBlur(e, setDeliveryCost)}
                 placeholder="0"
-                className="admin-v2-input"
+                className="admin-input"
               />
             </div>
-            <div className="admin-v2-costs-input-group">
+            <div className="admin-costs-input-group">
               <label htmlFor="payment-fee">Payment fee (฿)</label>
               <input
                 id="payment-fee"
@@ -154,21 +154,21 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
                 onChange={(e) => setPaymentFee(e.target.value)}
                 onBlur={(e) => handleBlur(e, setPaymentFee)}
                 placeholder="0"
-                className="admin-v2-input"
+                className="admin-input"
               />
             </div>
           </>
         ) : (
           <>
-            <div className="admin-v2-costs-input-group">
+            <div className="admin-costs-input-group">
               <label>COGS (฿)</label>
               <p>{cogs || '—'}</p>
             </div>
-            <div className="admin-v2-costs-input-group">
+            <div className="admin-costs-input-group">
               <label>Delivery cost (฿)</label>
               <p>{deliveryCost || '—'}</p>
             </div>
-            <div className="admin-v2-costs-input-group">
+            <div className="admin-costs-input-group">
               <label>Payment fee (฿)</label>
               <p>{paymentFee || '—'}</p>
             </div>
@@ -176,35 +176,35 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
         )}
       </div>
 
-      <div className="admin-v2-costs-display">
+      <div className="admin-costs-display">
         <div>
           <strong>Total</strong>
           <p>{totalAmount != null ? formatThb(totalAmount) : 'Total unknown'}</p>
         </div>
         <div>
           <strong>Profit</strong>
-          <p className="admin-v2-profit">{profit != null ? formatThb(profit) : '—'}</p>
+          <p className="admin-profit">{profit != null ? formatThb(profit) : '—'}</p>
         </div>
       </div>
 
       {order.updated_at && (
-        <p className="admin-v2-costs-updated">
+        <p className="admin-costs-updated">
           Costs last updated: {new Date(order.updated_at).toLocaleString()}
         </p>
       )}
 
       {canEdit && (
-        <div className="admin-v2-costs-actions">
+        <div className="admin-costs-actions">
           <button
             type="button"
             onClick={handleSave}
             disabled={!hasChanges || saving}
-            className="admin-v2-btn"
+            className="admin-btn"
           >
             {saving ? 'Saving…' : 'Save costs'}
           </button>
           {message && (
-            <span className={message.type === 'success' ? 'admin-v2-costs-success' : 'admin-v2-costs-error'}>
+            <span className={message.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
               {message.text}
             </span>
           )}

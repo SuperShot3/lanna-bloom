@@ -50,16 +50,16 @@ export function OrdersListClient({
   const totalPages = Math.ceil(initialTotal / pageSize) || 1;
 
   return (
-    <div className="admin-v2-orders">
-      <header className="admin-v2-header admin-page-header">
+    <div className="admin-orders">
+      <header className="admin-header admin-page-header">
         <div>
-          <h1 className="admin-v2-title">Order Management</h1>
-          <p className="admin-v2-hint">View and manage orders from Supabase</p>
+          <h1 className="admin-title">Order Management</h1>
+          <p className="admin-hint">View and manage orders from Supabase</p>
         </div>
-        <div className="admin-v2-header-actions">
+        <div className="admin-header-actions">
           <a
             href={`/api/admin/orders/export?${searchParams.toString()}`}
-            className="admin-v2-btn admin-v2-btn-primary"
+            className="admin-btn admin-btn-primary"
             download
           >
             Export CSV
@@ -74,22 +74,22 @@ export function OrdersListClient({
       />
 
       {initialError ? (
-        <div className="admin-v2-error">
+        <div className="admin-error">
           <p><strong>Error loading orders</strong></p>
           <p>{initialError}</p>
-          <p className="admin-v2-error-hint">Check Supabase configuration and server logs.</p>
+          <p className="admin-error-hint">Check Supabase configuration and server logs.</p>
         </div>
       ) : (
         <>
           <OrderTable orders={initialOrders} returnTo={returnTo} />
           {initialOrders.length === 0 ? (
-            <p className="admin-v2-empty">No orders found.</p>
+            <p className="admin-empty">No orders found.</p>
           ) : (
-            <div className="admin-v2-pagination">
+            <div className="admin-pagination">
               <span>
                 Showing {(initialPage - 1) * pageSize + 1}–{Math.min(initialPage * pageSize, initialTotal)} of {initialTotal}
               </span>
-              <div className="admin-v2-pagination-btns">
+              <div className="admin-pagination-btns">
                 <button
                   type="button"
                   disabled={initialPage <= 1}
@@ -98,11 +98,11 @@ export function OrdersListClient({
                     next.set('page', String(initialPage - 1));
                     router.push(`/admin/orders?${next.toString()}`);
                   }}
-                  className="admin-v2-btn admin-v2-btn-sm"
+                  className="admin-btn admin-btn-sm"
                 >
                   Previous
                 </button>
-                <span className="admin-v2-pagination-info">
+                <span className="admin-pagination-info">
                   Page {initialPage} of {totalPages}
                 </span>
                 <button
@@ -113,7 +113,7 @@ export function OrdersListClient({
                     next.set('page', String(initialPage + 1));
                     router.push(`/admin/orders?${next.toString()}`);
                   }}
-                  className="admin-v2-btn admin-v2-btn-sm"
+                  className="admin-btn admin-btn-sm"
                 >
                   Next
                 </button>

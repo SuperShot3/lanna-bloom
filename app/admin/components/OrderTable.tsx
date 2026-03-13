@@ -57,17 +57,17 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
               <tr key={o.order_id}>
                 <td>{formatDate(o.created_at)}</td>
                 <td>
-                  <Link href={detailHref(o.order_id)} className="admin-v2-link">
+                  <Link href={detailHref(o.order_id)} className="admin-link">
                     {o.order_id}
                   </Link>
                 </td>
                 <td>
-                  <span className={`admin-v2-badge admin-v2-badge-${(o.order_status ?? '').toLowerCase().replace(/_/g, '-')}`}>
+                  <span className={`admin-badge admin-badge-${(o.order_status ?? '').toLowerCase().replace(/_/g, '-')}`}>
                     {formatOrderStatus(o.order_status)}
                   </span>
                 </td>
                 <td>
-                  <span className={`admin-v2-badge admin-v2-badge-payment-${(o.payment_status ?? '').toLowerCase()}`}>
+                  <span className={`admin-badge admin-badge-payment-${(o.payment_status ?? '').toLowerCase()}`}>
                     {formatPaymentStatus(o.payment_status)}
                   </span>
                 </td>
@@ -93,13 +93,13 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
           <Link key={o.order_id} href={detailHref(o.order_id)} className="admin-order-card">
             <div className="admin-order-card-header">
               <span className="admin-order-card-id">{o.order_id}</span>
-              <span className={`admin-v2-badge admin-v2-badge-${(o.order_status ?? '').toLowerCase().replace(/_/g, '-')}`}>
+              <span className={`admin-badge admin-badge-${(o.order_status ?? '').toLowerCase().replace(/_/g, '-')}`}>
                 {formatOrderStatus(o.order_status)}
               </span>
             </div>
             <div className="admin-order-card-row">
               <span className="admin-order-card-label">Payment</span>
-              <span className={`admin-v2-badge admin-v2-badge-payment-${(o.payment_status ?? '').toLowerCase()}`}>
+              <span className={`admin-badge admin-badge-payment-${(o.payment_status ?? '').toLowerCase()}`}>
                 {formatPaymentStatus(o.payment_status)}
               </span>
             </div>

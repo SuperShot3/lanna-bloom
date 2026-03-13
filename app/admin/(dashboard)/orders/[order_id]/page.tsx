@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
+import { getOrderByOrderId, type SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
@@ -11,12 +11,39 @@ import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 
+/** Build order_items-style rows from order_json when order_items table is empty (e.g. legacy orders). */
+function itemsFromOrderJson(
+  orderId: string,
+  jsonItems: Array<{
+    bouquetId?: string;
+    bouquetTitle?: string;
+    size?: string;
+    price?: number;
+    imageUrl?: string;
+    itemType?: string;
+    cost?: number;
+    commissionAmount?: number;
+  }>
+): SupabaseOrderItemRow[] {
+  return jsonItems.map((it) => ({
+    order_id: orderId,
+    bouquet_id: it.bouquetId ?? null,
+    bouquet_title: it.bouquetTitle ?? null,
+    size: it.size ?? null,
+    price: it.price ?? null,
+    image_url_snapshot: it.imageUrl ?? null,
+    item_type: (it.itemType === 'product' ? 'product' : 'bouquet') as 'bouquet' | 'product',
+    cost: it.cost ?? null,
+    commission_amount: it.commissionAmount ?? null,
+  }));
+}
+
 interface PageProps {
   params: Promise<{ order_id: string }>;
   searchParams: Promise<{ returnTo?: string }>;
 }
 
-export default async function AdminV2OrderDetailPage({ params, searchParams }: PageProps) {
+export default async function AdminOrderDetailPage({ params, searchParams }: PageProps) {
   const { order_id } = await params;
   const { returnTo } = await searchParams;
   const session = await auth();
@@ -27,11 +54,11 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
   if (error) {
     const errBackHref = returnTo && returnTo.startsWith('/admin') ? returnTo : '/admin/orders';
     return (
-      <div className="admin-v2-detail">
-        <header className="admin-v2-header">
-          <Link href={errBackHref} className="admin-v2-link">← Back to orders</Link>
+      <div className="admin-detail">
+        <header className="admin-header">
+          <Link href={errBackHref} className="admin-link">← Back to orders</Link>
         </header>
-        <div className="admin-v2-error">
+        <div className="admin-error">
           <p><strong>Error loading order</strong></p>
           <p>{error}</p>
         </div>
@@ -43,11 +70,27 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
     notFound();
   }
 
-  // Merge addOns from order_json (Card, Wrapping, Message) into items.
-  // order_items table has no add-on columns; order_json stores full order with addOns.
-  const jsonItems = (order.order_json as { items?: Array<{ addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string }; bouquetSlug?: string }> } | undefined)?.items ?? [];
+  // order_items table may be empty for some orders; fall back to order_json.items so we always show line items.
+  const jsonPayload = order.order_json as {
+    items?: Array<{
+      bouquetId?: string;
+      bouquetTitle?: string;
+      size?: string;
+      price?: number;
+      imageUrl?: string;
+      bouquetSlug?: string;
+      itemType?: string;
+      cost?: number;
+      commissionAmount?: number;
+      addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string };
+    }>;
+  } | undefined;
+  const jsonItems = jsonPayload?.items ?? [];
+  const itemsToUse: SupabaseOrderItemRow[] =
+    items.length > 0 ? items : jsonItems.length > 0 ? itemsFromOrderJson(order.order_id, jsonItems) : [];
+
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
-    items.map(async (item, index) => {
+    itemsToUse.map(async (item, index) => {
       let catalogHref: string | undefined;
       if (item.bouquet_id) {
         const bouquet = await getBouquetById(item.bouquet_id);
@@ -74,17 +117,17 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
   );
 
   return (
-    <div className="admin-v2-detail">
-      <header className="admin-v2-header admin-page-header">
+    <div className="admin-detail">
+      <header className="admin-header admin-page-header">
         <div>
-          <Link href={backHref} className="admin-v2-link" style={{ display: 'inline-block', marginBottom: 8 }}>
+          <Link href={backHref} className="admin-link" style={{ display: 'inline-block', marginBottom: 8 }}>
             ← Back to orders
           </Link>
-          <h1 className="admin-v2-title">{order.order_id}</h1>
-          <p className="admin-v2-hint">Order details from Supabase</p>
+          <h1 className="admin-title">{order.order_id}</h1>
+          <p className="admin-hint">Order details from Supabase</p>
         </div>
-        <div className="admin-v2-header-actions">
-          <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-v2-btn admin-v2-btn-outline">
+        <div className="admin-header-actions">
+          <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-outline">
             View public page
           </Link>
           <RemoveOrderButton
@@ -102,17 +145,24 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
       />
       <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
       <OrderSummaryCard order={order} />
-      <CostsAndProfitCard order={order} items={items} canEdit={canEditCosts(role)} />
-      <ItemsList items={itemsWithCatalog} />
+      <CostsAndProfitCard order={order} items={itemsToUse} canEdit={canEditCosts(role)} />
+      <ItemsList
+        items={itemsWithCatalog}
+        summary={{
+          itemsTotal: order.items_total ?? null,
+          deliveryFee: order.delivery_fee ?? null,
+          grandTotal: order.grand_total ?? null,
+        }}
+      />
       {(order.address || order.delivery_google_maps_url) && (
-        <section className="admin-v2-section">
-          <h2 className="admin-v2-section-title">Delivery</h2>
+        <section className="admin-section">
+          <h2 className="admin-section-title">Delivery</h2>
           <p><strong>Date:</strong> {order.delivery_date ?? '—'}</p>
           <p><strong>Window:</strong> {order.delivery_window ?? '—'}</p>
           <p><strong>Address:</strong> {order.address ?? '—'}</p>
           {order.delivery_google_maps_url && (
             <p>
-              <a href={order.delivery_google_maps_url} target="_blank" rel="noopener noreferrer" className="admin-v2-link">
+              <a href={order.delivery_google_maps_url} target="_blank" rel="noopener noreferrer" className="admin-link">
                 Open in Google Maps
               </a>
             </p>
@@ -120,35 +170,35 @@ export default async function AdminV2OrderDetailPage({ params, searchParams }: P
         </section>
       )}
       {(order.recipient_name || order.recipient_phone) && (
-        <section className="admin-v2-section">
-          <h2 className="admin-v2-section-title">Recipient</h2>
+        <section className="admin-section">
+          <h2 className="admin-section-title">Recipient</h2>
           <p><strong>Name:</strong> {order.recipient_name ?? '—'}</p>
           <p><strong>Phone:</strong> {order.recipient_phone ?? '—'}</p>
         </section>
       )}
       {(order.driver_name || order.driver_phone) && (
-        <section className="admin-v2-section">
-          <h2 className="admin-v2-section-title">Driver (internal)</h2>
+        <section className="admin-section">
+          <h2 className="admin-section-title">Driver (internal)</h2>
           <p><strong>Name:</strong> {order.driver_name ?? '—'}</p>
           <p><strong>Phone:</strong> {order.driver_phone ?? '—'}</p>
         </section>
       )}
       {order.internal_notes && (
-        <section className="admin-v2-section">
-          <h2 className="admin-v2-section-title">Notes</h2>
+        <section className="admin-section">
+          <h2 className="admin-section-title">Notes</h2>
           <p>{order.internal_notes}</p>
         </section>
       )}
       {statusHistory.length > 0 && (
-        <section className="admin-v2-section">
-          <h2 className="admin-v2-section-title">Status history</h2>
-          <ul className="admin-v2-timeline">
+        <section className="admin-section">
+          <h2 className="admin-section-title">Status history</h2>
+          <ul className="admin-timeline">
             {statusHistory.map((h, i) => (
               <li key={i}>
-                <span className="admin-v2-timeline-status">
+                <span className="admin-timeline-status">
                   {h.from_status ?? '—'} → {h.to_status ?? '—'}
                 </span>
-                <span className="admin-v2-timeline-date">
+                <span className="admin-timeline-date">
                   {h.created_at ? new Date(h.created_at).toLocaleString() : '—'}
                 </span>
               </li>

@@ -60,22 +60,22 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
   };
 
   return (
-    <section className="admin-v2-section admin-v2-payment-card">
-      <h2 className="admin-v2-section-title">Payment</h2>
-      <div className="admin-v2-status-grid">
-        <div className="admin-v2-status-group">
+    <section className="admin-section admin-payment-card">
+      <h2 className="admin-section-title">Payment</h2>
+      <div className="admin-status-grid">
+        <div className="admin-status-group">
           <label>Payment method</label>
           <p>
-            <span className="admin-v2-badge admin-v2-badge-payment-method">
+            <span className="admin-badge admin-badge-payment-method">
               {paymentMethodLabel(order.payment_method)}
             </span>
           </p>
         </div>
-        <div className="admin-v2-status-group">
+        <div className="admin-status-group">
           <label>Payment status</label>
           <p>
             <span
-              className={`admin-v2-badge admin-v2-badge-payment-${(paymentStatus ?? '').toLowerCase()}`}
+              className={`admin-badge admin-badge-payment-${(paymentStatus ?? '').toLowerCase()}`}
             >
               {formatPaymentStatus(paymentStatus)}
             </span>
@@ -83,29 +83,29 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
         </div>
       </div>
       {order.paid_at && (
-        <p className="admin-v2-muted">
+        <p className="admin-muted">
           Paid at: {new Date(order.paid_at).toLocaleString()}
         </p>
       )}
       {showMarkPaidButton && (
-        <div className="admin-v2-payment-actions">
+        <div className="admin-payment-actions">
           <button
             type="button"
             onClick={handleMarkPaid}
             disabled={saving}
-            className="admin-v2-btn admin-v2-btn-primary"
+            className="admin-btn admin-btn-primary"
           >
             {saving ? 'Saving…' : 'Mark as Paid'}
           </button>
         </div>
       )}
       {paymentMethod === 'STRIPE' && paymentStatus !== 'PAID' && (
-        <p className="admin-v2-muted">
+        <p className="admin-muted">
           Stripe orders are updated automatically when payment completes.
         </p>
       )}
       {message && (
-        <p className={message.type === 'success' ? 'admin-v2-costs-success' : 'admin-v2-costs-error'}>
+        <p className={message.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
           {message.text}
         </p>
       )}

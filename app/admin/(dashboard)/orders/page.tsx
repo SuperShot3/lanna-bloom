@@ -14,7 +14,7 @@ interface PageProps {
   }>;
 }
 
-export default async function AdminV2OrdersPage({ searchParams }: PageProps) {
+export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? '1', 10));
   const pageSize = 20;

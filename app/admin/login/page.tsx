@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
 import { AdminLoginForm } from './AdminLoginForm';
 
-export default function AdminV2LoginPage() {
+export default function AdminLoginPage() {
   return (
-    <div className="admin-v2-login">
-      <h1 className="admin-v2-title">Admin</h1>
-      <p className="admin-v2-hint">Sign in with your email and password.</p>
-      <Suspense fallback={<div className="admin-v2-hint">Loading…</div>}>
+    <div className="admin-login">
+      <h1 className="admin-title">Admin</h1>
+      <p className="admin-hint">Sign in with your email and password.</p>
+      <Suspense fallback={<div className="admin-hint">Loading…</div>}>
         <AdminLoginForm />
       </Suspense>
     </div>

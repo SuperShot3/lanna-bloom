@@ -92,19 +92,19 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
   };
 
   return (
-    <section className="admin-v2-section admin-v2-status-card">
-      <h2 className="admin-v2-section-title">Status</h2>
-      <div className="admin-v2-status-grid">
-        <div className="admin-v2-status-group">
+    <section className="admin-section admin-status-card">
+      <h2 className="admin-section-title">Status</h2>
+      <div className="admin-status-grid">
+        <div className="admin-status-group">
           <label htmlFor="order-status">Order status</label>
           {canEdit ? (
-            <div className="admin-v2-status-row">
+            <div className="admin-status-row">
               <select
                 id="order-status"
                 value={orderStatus}
                 onChange={(e) => handleOrderStatusChange(e.target.value)}
                 disabled={savingOrder}
-                className="admin-v2-select"
+                className="admin-select"
               >
                 {ORDER_STATUS.map((s) => (
                   <option key={s} value={s}>
@@ -112,26 +112,26 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
                   </option>
                 ))}
               </select>
-              {savingOrder && <span className="admin-v2-muted">Saving…</span>}
+              {savingOrder && <span className="admin-muted">Saving…</span>}
             </div>
           ) : (
             <p>
-              <span className={`admin-v2-badge admin-v2-badge-${orderStatus.toLowerCase()}`}>
+              <span className={`admin-badge admin-badge-${orderStatus.toLowerCase()}`}>
                 {formatOrderStatus(orderStatus)}
               </span>
             </p>
           )}
         </div>
-        <div className="admin-v2-status-group">
+        <div className="admin-status-group">
           <label htmlFor="payment-status">Payment status</label>
           {canEdit ? (
-            <div className="admin-v2-status-row">
+            <div className="admin-status-row">
               <select
                 id="payment-status"
                 value={paymentStatus}
                 onChange={(e) => handlePaymentStatusChange(e.target.value)}
                 disabled={savingPayment}
-                className="admin-v2-select"
+                className="admin-select"
               >
                 {PAYMENT_STATUS.map((s) => (
                   <option key={s} value={s}>
@@ -139,12 +139,12 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
                   </option>
                 ))}
               </select>
-              {savingPayment && <span className="admin-v2-muted">Saving…</span>}
+              {savingPayment && <span className="admin-muted">Saving…</span>}
             </div>
           ) : (
             <p>
               <span
-                className={`admin-v2-badge admin-v2-badge-payment-${paymentStatus.toLowerCase()}`}
+                className={`admin-badge admin-badge-payment-${paymentStatus.toLowerCase()}`}
               >
                 {formatPaymentStatus(paymentStatus)}
               </span>
@@ -153,7 +153,7 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
         </div>
       </div>
       {message && (
-        <p className={message.type === 'success' ? 'admin-v2-costs-success' : 'admin-v2-costs-error'}>
+        <p className={message.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
           {message.text}
         </p>
       )}

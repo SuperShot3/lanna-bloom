@@ -44,7 +44,7 @@ Copy `.env.example` to `.env.local` and set:
 | `SANITY_API_WRITE_TOKEN` | Sanity API token (partner registration and bouquet uploads) |
 | `NEXT_PUBLIC_APP_URL` | Live site URL for order links (e.g. `https://www.lannabloom.shop`) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token (required on Vercel so order links work) |
-| `AUTH_SECRET` | Required for admin-v2 login (NextAuth) |
+| `AUTH_SECRET` | Required for admin login (NextAuth) |
 
 See `.env.example` for comments. For order-link troubleshooting (e.g. “Order not found”), see **docs/ORDERS_VERCEL.md**.
 
@@ -86,7 +86,7 @@ app/
     partner/        # Register and dashboard
   order/[orderId]/  # Public order details page (no locale)
   admin/orders/     # Redirects to /admin/orders
-  admin-v2/         # Admin dashboard (orders, overview, RBAC)
+  admin/            # Admin dashboard (orders, overview, RBAC)
   api/orders/       # Create order, get order (checkout/confirmation-pending)
   studio/           # Sanity Studio
 components/         # Header, Hero, BouquetCard, ProductOrderBlock, etc.

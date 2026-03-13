@@ -49,24 +49,24 @@ export function AddReviewForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="admin-v2-form">
-      <div className="admin-v2-form-group">
+    <form onSubmit={handleSubmit} className="admin-form">
+      <div className="admin-form-group">
         <label htmlFor="review-name">Reviewer name</label>
         <input
           id="review-name"
           type="text"
-          className="admin-v2-input"
+          className="admin-input"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. John D."
           required
         />
       </div>
-      <div className="admin-v2-form-group">
+      <div className="admin-form-group">
         <label htmlFor="review-rating">Rating (1–5 stars)</label>
         <select
           id="review-rating"
-          className="admin-v2-input"
+          className="admin-input"
           value={rating}
           onChange={(e) => setRating(Number(e.target.value))}
         >
@@ -77,11 +77,11 @@ export function AddReviewForm() {
           ))}
         </select>
       </div>
-      <div className="admin-v2-form-group">
+      <div className="admin-form-group">
         <label htmlFor="review-comment">Review text</label>
         <textarea
           id="review-comment"
-          className="admin-v2-input"
+          className="admin-input"
           rows={4}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
@@ -89,19 +89,19 @@ export function AddReviewForm() {
           required
         />
       </div>
-      <div className="admin-v2-form-group">
+      <div className="admin-form-group">
         <label htmlFor="review-date">Review date (optional)</label>
         <input
           id="review-date"
           type="date"
-          className="admin-v2-input"
+          className="admin-input"
           value={reviewDate}
           onChange={(e) => setReviewDate(e.target.value)}
         />
       </div>
       {message && (
         <p
-          className={status === 'success' ? 'admin-v2-costs-success' : 'admin-v2-costs-error'}
+          className={status === 'success' ? 'admin-costs-success' : 'admin-costs-error'}
           style={{ marginBottom: 12 }}
         >
           {message}
@@ -109,7 +109,7 @@ export function AddReviewForm() {
       )}
       <button
         type="submit"
-        className="admin-v2-btn admin-v2-btn-primary"
+        className="admin-btn admin-btn-primary"
         disabled={status === 'loading'}
       >
         {status === 'loading' ? 'Adding...' : 'Add review'}

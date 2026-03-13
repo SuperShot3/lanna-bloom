@@ -96,7 +96,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      console.error('[admin-v2] costs update error:', error);
+      console.error('[admin] costs update error:', error);
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -112,7 +112,7 @@ export async function PATCH(
     return NextResponse.json({ ok: true, order: data });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error('[admin-v2] costs update exception:', msg);
+    console.error('[admin] costs update exception:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

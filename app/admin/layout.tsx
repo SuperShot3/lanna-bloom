@@ -1,7 +1,7 @@
 import { AdminSessionProvider } from './AdminSessionProvider';
 import { AdminLayoutWrapper } from './components/AdminLayoutWrapper';
 
-export default function AdminV2Layout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;

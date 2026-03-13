@@ -1,4 +1,4 @@
-# Admin Dashboard v2 — Manual Test Checklist
+# Admin Dashboard — Manual Test Checklist
 
 ## Prerequisites
 
@@ -12,16 +12,16 @@
 
 ### 1. Login
 
-- [ ] Go to `http://localhost:3000/admin-v2`
-- [ ] Redirects to `/admin-v2/login`
+- [ ] Go to `http://localhost:3000/admin`
+- [ ] Redirects to `/admin/login`
 - [ ] Enter wrong email/password → see "Invalid email or password" message
-- [ ] Enter correct credentials → redirect to `/admin-v2/overview`
+- [ ] Enter correct credentials → redirect to `/admin/overview`
 
 ### 2. Overview
 
 - [ ] Overview page shows today stats: total orders, paid orders, revenue, profit, profit coverage
 - [ ] "Needs attention" section lists orders (if any)
-- [ ] "Orders" link goes to `/admin-v2/orders`
+- [ ] "Orders" link goes to `/admin/orders`
 
 ### 3. Orders list
 
@@ -84,7 +84,7 @@
 
 - [ ] Checkout flow unchanged
 - [ ] Customer order details page unchanged
-- [ ] `/admin/orders` redirects to `/admin-v2/orders`
+- [ ] `/admin/orders` loads orders list
 
 ---
 
@@ -92,7 +92,7 @@
 
 ### 12. Costs card
 
-- [ ] Open `/admin-v2/orders/[order_id]`
+- [ ] Open `/admin/orders/[order_id]`
 - [ ] "Costs & Profit" card shows COGS, Delivery cost, Payment fee inputs
 - [ ] Total displays (from total_amount or grand_total)
 - [ ] Profit = Total - COGS - Delivery cost - Payment fee (nulls as 0)

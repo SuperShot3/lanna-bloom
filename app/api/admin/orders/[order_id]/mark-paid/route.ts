@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
 import { getOrderById, getOrderDetailsUrl } from '@/lib/orders';
-import { sendOrderNotificationEmail, sendCustomerConfirmationEmail } from '@/lib/orderEmail';
+import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 
 const MANUAL_PAYMENT_METHODS = ['PROMPTPAY', 'BANK_TRANSFER'];
 
@@ -104,15 +104,11 @@ export async function PATCH(
     console.warn('[admin/mark-paid] GA4 purchase send failed for order', order_id.trim(), ga4Result.error);
   }
 
-  // Send notification emails NOW that payment is confirmed.
-  // Emails are deferred from order placement to this point for manual orders.
+  // Payment-confirmation only: customer email. No admin email here (admin is notified once at order placement).
   const trimmedId = order_id.trim();
   getOrderById(trimmedId).then((fullOrder) => {
     if (!fullOrder) return;
     const detailsUrl = getOrderDetailsUrl(trimmedId);
-    sendOrderNotificationEmail(fullOrder, detailsUrl).catch((e) =>
-      console.error('[admin/mark-paid] Notification email failed:', e)
-    );
     sendCustomerConfirmationEmail(fullOrder, detailsUrl).catch((e) =>
       console.error('[admin/mark-paid] Customer confirmation email failed:', e)
     );

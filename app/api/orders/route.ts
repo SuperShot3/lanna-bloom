@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
-// Emails deferred to admin payment confirmation — see /api/admin/orders/[order_id]/mark-paid
+import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
+import { dualWriteOrder } from '@/lib/supabase/orderAdapter';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 
@@ -141,9 +142,13 @@ export async function POST(request: NextRequest) {
     const publicOrderUrl = getOrderDetailsUrl(order.orderId);
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
 
-    // Emails are NOT sent at order placement for manual orders.
-    // Notifications are deferred until admin confirms payment via the dashboard.
-    // This prevents premature notifications for orders that are still pending contact/payment.
+    // Ensure Supabase has the order row (when primary is blob, dual write is async).
+    await dualWriteOrder(order).catch(() => {});
+
+    // Exactly one admin email per order, only at placement (idempotent; admin_notified prevents duplicates).
+    await sendAdminNewOrderNotificationOnce(order.orderId).catch((e) => {
+      console.error('[api/orders] Admin new-order notification failed:', e);
+    });
 
     return NextResponse.json({
       orderId: order.orderId,

@@ -56,6 +56,9 @@ interface SupabaseOrderRow {
   referral_discount?: number | null;
   fulfillment_status?: string | null;
   fulfillment_status_updated_at?: string | null;
+  /** True after admin was notified once at order creation (one email per order). */
+  admin_notified?: boolean | null;
+  admin_notified_at?: string | null;
 }
 
 interface SupabaseOrderItemRow {

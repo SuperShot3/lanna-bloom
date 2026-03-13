@@ -39,11 +39,11 @@ export function AdminLoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="admin-v2-form">
+    <form onSubmit={handleSubmit} className="admin-form">
       {(error || callbackError === 'CredentialsSignin') && (
-        <p className="admin-v2-error">{error || 'Invalid email or password.'}</p>
+        <p className="admin-error">{error || 'Invalid email or password.'}</p>
       )}
-      <div className="admin-v2-form-group">
+      <div className="admin-form-group">
         <label htmlFor="admin-email">Email</label>
         <input
           id="admin-email"
@@ -52,11 +52,11 @@ export function AdminLoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="admin@example.com"
           autoComplete="email"
-          className="admin-v2-input"
+          className="admin-input"
           required
         />
       </div>
-      <div className="admin-v2-form-group">
+      <div className="admin-form-group">
         <label htmlFor="admin-password">Password</label>
         <input
           id="admin-password"
@@ -65,11 +65,11 @@ export function AdminLoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           autoComplete="current-password"
-          className="admin-v2-input"
+          className="admin-input"
           required
         />
       </div>
-      <button type="submit" className="admin-v2-btn" disabled={loading}>
+      <button type="submit" className="admin-btn" disabled={loading}>
         {loading ? 'Signing in…' : 'Sign in'}
       </button>
     </form>

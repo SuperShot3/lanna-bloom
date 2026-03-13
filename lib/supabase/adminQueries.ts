@@ -46,6 +46,9 @@ export interface SupabaseOrderRow {
   ga_client_id?: string | null;
   /** Full order payload; items include addOns (card, wrapping, message). */
   order_json?: Record<string, unknown> | null;
+  /** True after admin was notified once at order creation (one email per order). */
+  admin_notified?: boolean | null;
+  admin_notified_at?: string | null;
 }
 
 export interface SupabaseOrderItemRow {
@@ -145,7 +148,7 @@ export async function getOrders(
       .range(offset, offset + pagination.pageSize - 1);
 
     if (error) {
-      console.error('[admin-v2] getOrders error:', error);
+      console.error('[admin] getOrders error:', error);
       return { orders: [], total: 0, error: error.message };
     }
 
@@ -155,7 +158,7 @@ export async function getOrders(
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error('[admin-v2] getOrders exception:', msg);
+    console.error('[admin] getOrders exception:', msg);
     return { orders: [], total: 0, error: msg };
   }
 }
@@ -184,7 +187,7 @@ export async function getOrderByOrderId(orderId: string): Promise<OrderDetailRes
       if (orderError.code === 'PGRST116') {
         return { order: null, items: [], statusHistory: [] };
       }
-      console.error('[admin-v2] getOrderByOrderId order error:', orderError);
+      console.error('[admin] getOrderByOrderId order error:', orderError);
       return { order: null, items: [], statusHistory: [], error: orderError.message };
     }
 
@@ -207,7 +210,7 @@ export async function getOrderByOrderId(orderId: string): Promise<OrderDetailRes
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error('[admin-v2] getOrderByOrderId exception:', msg);
+    console.error('[admin] getOrderByOrderId exception:', msg);
     return { order: null, items: [], statusHistory: [], error: msg };
   }
 }
@@ -249,13 +252,13 @@ export async function getOrdersForExport(
     const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
 
     if (error) {
-      console.error('[admin-v2] getOrdersForExport error:', error);
+      console.error('[admin] getOrdersForExport error:', error);
       return [];
     }
     return (data ?? []) as SupabaseOrderRow[];
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error('[admin-v2] getOrdersForExport exception:', msg);
+    console.error('[admin] getOrdersForExport exception:', msg);
     return [];
   }
 }

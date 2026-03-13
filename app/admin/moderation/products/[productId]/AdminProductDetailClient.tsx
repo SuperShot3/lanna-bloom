@@ -147,7 +147,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
             value={commissionPercent}
             onChange={(e) => setCommissionPercent(e.target.value)}
             placeholder="0–500"
-            className="admin-v2-input"
+            className="admin-input"
           />
           <span className="admin-product-detail-commission-hint">
             Required before approving. Platform commission per sale.
@@ -160,7 +160,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
           product.moderationStatus === 'rejected') && (
           <button
             type="button"
-            className="admin-v2-btn admin-v2-btn-primary admin-moderation-btn-loading admin-product-detail-btn-full"
+            className="admin-btn admin-btn-primary admin-moderation-btn-loading admin-product-detail-btn-full"
             disabled={!canApprove || !!loading}
             onClick={handleApprove}
           >
@@ -180,7 +180,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
           product.moderationStatus === 'rejected') && (
           <button
             type="button"
-            className="admin-v2-btn admin-v2-btn-outline admin-product-detail-btn-full"
+            className="admin-btn admin-btn-outline admin-product-detail-btn-full"
             disabled={!!loading}
             onClick={() => setShowNeedsChanges(!showNeedsChanges)}
           >
@@ -193,7 +193,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
           product.moderationStatus === 'needs_changes') && (
           <button
             type="button"
-            className="admin-v2-btn admin-v2-btn-outline admin-moderation-btn-loading admin-product-detail-btn-full"
+            className="admin-btn admin-btn-outline admin-moderation-btn-loading admin-product-detail-btn-full"
             disabled={!!loading}
             onClick={handleReject}
           >
@@ -210,7 +210,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
 
         <button
           type="button"
-          className="admin-v2-btn admin-v2-btn-danger admin-product-detail-btn-full"
+          className="admin-btn admin-btn-danger admin-product-detail-btn-full"
           disabled={!!loading}
           onClick={() => setShowDeleteConfirm(true)}
         >
@@ -225,11 +225,11 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
             placeholder="Note for partner (required)"
             value={needsChangesNote}
             onChange={(e) => setNeedsChangesNote(e.target.value)}
-            className="admin-v2-input"
+            className="admin-input"
           />
           <button
             type="button"
-            className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
+            className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
             disabled={!!loading || !needsChangesNote.trim()}
             onClick={handleNeedsChanges}
           >
@@ -259,12 +259,12 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
                 value={editCommissionValue}
                 onChange={(e) => setEditCommissionValue(e.target.value)}
                 placeholder="0–500"
-                className="admin-v2-input"
+                className="admin-input"
               />
               <div className="admin-product-detail-commission-edit-btns">
                 <button
                   type="button"
-                  className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
+                  className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
                   disabled={!!loading || editCommissionValue.trim() === ''}
                   onClick={handleUpdateCommission}
                 >
@@ -279,7 +279,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
                 </button>
                 <button
                   type="button"
-                  className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                  className="admin-btn admin-btn-outline admin-btn-sm"
                   disabled={!!loading}
                   onClick={() => {
                     setShowEditCommission(false);
@@ -314,14 +314,14 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
             <div className="admin-product-detail-delete-modal-actions">
               <button
                 type="button"
-                className="admin-v2-btn admin-v2-btn-outline"
+                className="admin-btn admin-btn-outline"
                 onClick={() => setShowDeleteConfirm(false)}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="admin-v2-btn admin-v2-btn-danger admin-moderation-btn-loading"
+                className="admin-btn admin-btn-danger admin-moderation-btn-loading"
                 disabled={!!loading}
                 onClick={handleDelete}
               >

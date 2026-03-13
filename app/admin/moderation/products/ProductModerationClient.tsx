@@ -84,11 +84,11 @@ export function ProductModerationClient({
   const total = initialBouquets.length + initialProducts.length;
 
   return (
-    <div className="admin-v2-orders">
-      <header className="admin-v2-header admin-page-header">
+    <div className="admin-orders">
+      <header className="admin-header admin-page-header">
         <div>
-          <h1 className="admin-v2-title">Product Moderation</h1>
-          <p className="admin-v2-hint">
+          <h1 className="admin-title">Product Moderation</h1>
+          <p className="admin-hint">
             {productFilter === 'pending'
               ? `${total} item${total !== 1 ? 's' : ''} pending review (Sanity)`
               : `${allProducts.length} total partner products`}
@@ -116,7 +116,7 @@ export function ProductModerationClient({
                 <div className="admin-moderation-card-actions">
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
+                    className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleApproveBouquet(b.id)}
                   >
@@ -131,7 +131,7 @@ export function ProductModerationClient({
                   </button>
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm admin-moderation-btn-loading"
+                    className="admin-btn admin-btn-outline admin-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleRejectBouquet(b.id)}
                   >
@@ -208,14 +208,14 @@ export function ProductModerationClient({
               <div className="admin-moderation-card-actions">
                 <Link
                   href={`/admin/moderation/products/${p.id}`}
-                  className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm"
+                  className="admin-btn admin-btn-primary admin-btn-sm"
                 >
                   Review
                 </Link>
                 {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'rejected') && (
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm admin-moderation-btn-loading"
+                    className="admin-btn admin-btn-outline admin-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => setNeedsChangesId(needsChangesId === p.id ? null : p.id)}
                   >
@@ -225,7 +225,7 @@ export function ProductModerationClient({
                 {(p.moderationStatus === 'submitted' || p.moderationStatus === 'live' || p.moderationStatus === 'needs_changes') && (
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm admin-moderation-btn-loading"
+                    className="admin-btn admin-btn-outline admin-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleRejectProduct(p.id)}
                   >
@@ -247,11 +247,11 @@ export function ProductModerationClient({
                     placeholder="Note for partner (required)"
                     value={needsChangesNote}
                     onChange={(e) => setNeedsChangesNote(e.target.value)}
-                    className="admin-v2-input"
+                    className="admin-input"
                   />
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-primary admin-v2-btn-sm admin-moderation-btn-loading"
+                    className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading || !needsChangesNote.trim()}
                     onClick={() => handleNeedsChanges(p.id)}
                   >
@@ -272,10 +272,10 @@ export function ProductModerationClient({
       </section>
 
       {total === 0 && productFilter === 'pending' && (
-        <p className="admin-v2-empty">No items pending moderation.</p>
+        <p className="admin-empty">No items pending moderation.</p>
       )}
       {productFilter === 'all' && allProducts.length === 0 && (
-        <p className="admin-v2-empty">No partner products yet.</p>
+        <p className="admin-empty">No partner products yet.</p>
       )}
     </div>
   );

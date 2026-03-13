@@ -27,6 +27,38 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * Send a minimal admin "new order" email (subject + single-line body).
+ * Used once per order at placement only. No-op if env vars not set.
+ */
+export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<void> {
+  const env = getEnv();
+  if (!env) return;
+
+  const subject = `New order placed — ${orderId}`;
+  const body = `A new order was created. Order ID: ${orderId}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${subject}</title></head>
+<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+  <p>${body}</p>
+</body>
+</html>
+`.trim();
+
+  const resend = new Resend(env.apiKey);
+  const { error } = await resend.emails.send({
+    from: env.from,
+    to: [env.to],
+    subject,
+    html,
+  });
+  if (error) {
+    throw new Error(`Resend error: ${JSON.stringify(error)}`);
+  }
+}
+
 /** Send order notification to ORDERS_NOTIFY_EMAIL. No-op if env vars are not set. */
 export async function sendOrderNotificationEmail(order: Order, detailsUrl: string): Promise<void> {
   const env = getEnv();

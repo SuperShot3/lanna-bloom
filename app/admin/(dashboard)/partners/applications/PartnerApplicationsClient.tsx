@@ -119,11 +119,11 @@ export function PartnerApplicationsClient({
     : '';
 
   return (
-    <div className="admin-v2-orders">
-      <header className="admin-v2-header admin-page-header">
+    <div className="admin-orders">
+      <header className="admin-header admin-page-header">
         <div>
-          <h1 className="admin-v2-title">Partner Applications</h1>
-          <p className="admin-v2-hint">Review and manage vendor shop registrations from Supabase</p>
+          <h1 className="admin-title">Partner Applications</h1>
+          <p className="admin-hint">Review and manage vendor shop registrations from Supabase</p>
         </div>
       </header>
 
@@ -176,7 +176,7 @@ export function PartnerApplicationsClient({
                   <td>
                     <button
                       type="button"
-                      className="admin-v2-btn admin-v2-btn-outline admin-v2-btn-sm"
+                      className="admin-btn admin-btn-outline admin-btn-sm"
                       onClick={() => setSelected(app)}
                     >
                       View
@@ -284,7 +284,7 @@ export function PartnerApplicationsClient({
                 <div className="admin-partner-actions">
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-primary"
+                    className="admin-btn admin-btn-primary"
                     disabled={approving}
                     onClick={() => handleApprove(selected)}
                   >
@@ -300,7 +300,7 @@ export function PartnerApplicationsClient({
                     />
                     <button
                       type="button"
-                      className="admin-v2-btn admin-v2-btn-outline"
+                      className="admin-btn admin-btn-outline"
                       disabled={rejecting}
                       onClick={() => handleReject(selected)}
                     >
@@ -313,7 +313,7 @@ export function PartnerApplicationsClient({
                 {selected.status === 'approved' && (
                   <button
                     type="button"
-                    className="admin-v2-btn admin-v2-btn-outline"
+                    className="admin-btn admin-btn-outline"
                     disabled={reissuing}
                     onClick={() => handleReissuePassword(selected)}
                   >
@@ -322,7 +322,7 @@ export function PartnerApplicationsClient({
                 )}
                 <button
                   type="button"
-                  className="admin-v2-btn admin-v2-btn-outline"
+                  className="admin-btn admin-btn-outline"
                   disabled={deleting}
                   onClick={() => handleDelete(selected)}
                   style={{ color: '#c0392b', borderColor: '#c0392b' }}

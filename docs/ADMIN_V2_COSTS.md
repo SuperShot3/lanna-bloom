@@ -1,8 +1,8 @@
-# Admin v2 — Editable Costs & Profit (Phase 2)
+# Admin — Editable Costs & Profit
 
 ## Overview
 
-The order detail page (`/admin-v2/orders/[order_id]`) includes a **Costs & Profit** card with editable cost fields and calculated profit.
+The order detail page (`/admin/orders/[order_id]`) includes a **Costs & Profit** card with editable cost fields and calculated profit.
 
 ## Columns (Supabase `orders` table)
 
@@ -26,7 +26,7 @@ If columns are missing, run in Supabase SQL Editor:
 
 **PATCH** `/api/admin/orders/[order_id]/costs`
 
-- **Auth:** Same as admin-v2 (cookie or `x-admin-secret` header)
+- **Auth:** Same as admin (cookie or `x-admin-secret` header)
 - **Body:** `{ cogs_amount?: number | null, delivery_cost?: number | null, payment_fee?: number | null }`
 - **Validation:** Numeric >= 0, max 2 decimal places
 
@@ -36,4 +36,4 @@ No new env vars. Uses existing `ORDERS_ADMIN_SECRET` and Supabase config.
 
 ## Testing
 
-See [ADMIN_V2_TEST_CHECKLIST.md](ADMIN_V2_TEST_CHECKLIST.md) — Phase 2 section.
+See [ADMIN_V2_TEST_CHECKLIST.md](ADMIN_V2_TEST_CHECKLIST.md) for test checklist.

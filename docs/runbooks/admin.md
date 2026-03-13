@@ -42,7 +42,7 @@ New orders will no longer be written to Supabase. Legacy orders remain in Vercel
 
 ## Troubleshoot missing orders
 
-1. **Check legacy vs Supabase**: Call `GET /api/admin/verify-supabase` while logged into admin-v2 (session cookie). Compare `legacyOnly` and `supabaseOnly` in the response.
+1. **Check legacy vs Supabase**: Call `GET /api/admin/verify-supabase` while logged into admin (session cookie). Compare `legacyOnly` and `supabaseOnly` in the response.
 2. **Single order**: `GET /api/admin/verify-supabase?orderId=LB-2026-xxx` to compare one order.
 3. **Dual-write enabled?** Ensure `SUPABASE_DUAL_WRITE_ENABLED=true`.
 4. **Supabase env vars**: Verify `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set.
@@ -66,7 +66,7 @@ Before a busy day (e.g. Valentine's, Mother's Day):
 
 - [ ] Verify Stripe webhook endpoint is reachable (Stripe Dashboard → Webhooks)
 - [ ] Confirm `SUPABASE_DUAL_WRITE_ENABLED=true` in production
-- [ ] Test admin login at `/admin-v2/login`
+- [ ] Test admin login at `/admin/login`
 - [ ] Run health check: `GET /api/health/orders` (dev or with `HEALTH_CHECK_ENABLED=true`)
 - [ ] Ensure `BLOB_READ_WRITE_TOKEN` is set for order storage
 - [ ] Check Resend/email config if order notifications are used

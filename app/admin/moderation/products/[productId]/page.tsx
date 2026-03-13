@@ -19,22 +19,22 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
   if (!product) notFound();
 
   return (
-    <div className="admin-v2-detail admin-product-detail">
-      <header className="admin-v2-header">
+    <div className="admin-detail admin-product-detail">
+      <header className="admin-header">
         <div>
-          <Link href="/admin/moderation/products" className="admin-v2-link">
+          <Link href="/admin/moderation/products" className="admin-link">
             ← Back to products
           </Link>
-          <h1 className="admin-v2-title">Product review</h1>
+          <h1 className="admin-title">Product review</h1>
         </div>
-        <div className="admin-v2-header-actions">
-          <Link href="/admin" className="admin-v2-btn admin-v2-btn-outline">
+        <div className="admin-header-actions">
+          <Link href="/admin" className="admin-btn admin-btn-outline">
             Dashboard
           </Link>
-          <Link href="/admin/orders" className="admin-v2-btn admin-v2-btn-outline">
+          <Link href="/admin/orders" className="admin-btn admin-btn-outline">
             Orders
           </Link>
-          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-v2-btn admin-v2-btn-outline">
+          <a href="/api/auth/signout?callbackUrl=/admin/login" className="admin-btn admin-btn-outline">
             Log out
           </a>
         </div>

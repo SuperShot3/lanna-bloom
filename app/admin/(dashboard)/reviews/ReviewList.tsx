@@ -16,7 +16,7 @@ function formatDate(dateStr: string): string {
 
 export function ReviewList({ reviews }: { reviews: Review[] }) {
   if (reviews.length === 0) {
-    return <p className="admin-v2-empty">No reviews yet. Add one above.</p>;
+    return <p className="admin-empty">No reviews yet. Add one above.</p>;
   }
 
   return (
@@ -32,7 +32,7 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <strong>{r.name}</strong>
             <span style={{ color: 'var(--accent)' }}>{'★'.repeat(r.rating)}</span>
-            <span className="admin-v2-muted">{formatDate(r.date)}</span>
+            <span className="admin-muted">{formatDate(r.date)}</span>
           </div>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
             {r.text.length > 120 ? `${r.text.slice(0, 120)}...` : r.text}

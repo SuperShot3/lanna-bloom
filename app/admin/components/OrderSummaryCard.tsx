@@ -20,9 +20,9 @@ function formatAmount(n: number | null | undefined): string {
 
 export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
   return (
-    <section className="admin-v2-section admin-v2-summary-card">
-      <h2 className="admin-v2-section-title">Order summary</h2>
-      <div className="admin-v2-summary-grid">
+    <section className="admin-section admin-summary-card">
+      <h2 className="admin-section-title">Order summary</h2>
+      <div className="admin-summary-grid">
         <div>
           <strong>Order ID</strong>
           <p>{order.order_id}</p>
@@ -35,9 +35,9 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
           <strong>Customer</strong>
           <p>{order.customer_name ?? '—'}</p>
           {order.customer_email && (
-            <p className="admin-v2-muted">{order.customer_email}</p>
+            <p className="admin-muted">{order.customer_email}</p>
           )}
-          <p className="admin-v2-muted">{order.phone ?? ''}</p>
+          <p className="admin-muted">{order.phone ?? ''}</p>
         </div>
         <div>
           <strong>Items total</strong>
@@ -50,12 +50,12 @@ export function OrderSummaryCard({ order }: OrderSummaryCardProps) {
         {(order.referral_discount != null && order.referral_discount > 0) && (
           <div>
             <strong>Discount</strong>
-            <p className="admin-v2-discount">-{formatAmount(order.referral_discount)}</p>
+            <p className="admin-discount">-{formatAmount(order.referral_discount)}</p>
           </div>
         )}
         <div>
           <strong>Grand total</strong>
-          <p className="admin-v2-total">{formatAmount(order.grand_total)}</p>
+          <p className="admin-total">{formatAmount(order.grand_total)}</p>
         </div>
       </div>
     </section>
