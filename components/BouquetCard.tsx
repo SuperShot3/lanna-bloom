@@ -345,6 +345,7 @@ export function BouquetCard({
           font-size: 15px;
           font-weight: 600;
           color: var(--text);
+          opacity: 0.60;
           line-height: 1.2;
           white-space: nowrap;
           overflow: hidden;
@@ -353,7 +354,8 @@ export function BouquetCard({
         }
         .card-price {
           font-size: 14px;
-          font-weight: 600;
+          font-weight: 650;
+          opacity: 0.90;
           color: var(--text);
         }
       `}</style>

@@ -23,10 +23,10 @@ export function LoadingScreen() {
       
       try {
         // Check if both fonts are loaded
-        const dmSansLoaded = document.fonts.check('16px DM Sans');
-        const cormorantLoaded = document.fonts.check('16px Cormorant Garamond');
+        const mulishLoaded = document.fonts.check('16px Mulish');
+        const arimaLoaded = document.fonts.check('16px Arima Madurai');
         
-        return dmSansLoaded && cormorantLoaded;
+        return mulishLoaded && arimaLoaded;
       } catch {
         return false;
       }

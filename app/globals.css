@@ -9,8 +9,8 @@
   --color-background-light: #FDFCF8;
   --color-background-dark: #0D1F1A;
   /* Font families */
-  --font-family-display: 'Playfair Display', ui-serif, Georgia, serif;
-  --font-family-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-family-display: 'Arima Madurai', ui-serif, Georgia, serif;
+  --font-family-sans: 'Mulish', ui-sans-serif, system-ui, sans-serif;
   /* Border radius */
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
@@ -69,8 +69,8 @@ html {
   --radius-sm: 12px;
   --shadow: 0 2px 12px rgba(45, 42, 38, 0.06);
   --shadow-hover: 0 8px 24px rgba(45, 42, 38, 0.08);
-  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Cormorant Garamond', 'Georgia', serif;
+  --font-sans: 'Mulish', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Arima Madurai', 'Georgia', serif;
   /* Dynamic viewport height for fixed/full-height elements (iOS Safari pinch-zoom) */
   --vh: 1vh;
   /* Partner Portal (from prototype) */
