@@ -8,7 +8,18 @@ import { Locale, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
-import { CartIcon, HomeIcon, SearchIcon } from './icons';
+import {
+  CartIcon,
+  HomeIcon,
+  SearchIcon,
+  CatalogIcon,
+  GiftIcon,
+  UsersIcon,
+  StarIcon,
+  InfoIcon,
+  PhoneIcon,
+  MapIcon,
+} from './icons';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
@@ -181,8 +192,8 @@ export function Header({ lang }: { lang: Locale }) {
         <div
           id="mobile-menu"
           ref={menuRef}
-          className={`fixed inset-0 z-[110] pointer-events-none invisible transition-[visibility] duration-250 ${
-            menuOpen ? 'pointer-events-auto visible' : ''
+          className={`fixed inset-0 z-[110] transition-[visibility] duration-250 ${
+            menuOpen ? 'visible' : 'invisible pointer-events-none'
           }`}
           aria-hidden={!menuOpen}
         >
@@ -235,6 +246,7 @@ export function Header({ lang }: { lang: Locale }) {
               <NavItem
                 href={catalogHref}
                 label={t.catalog}
+                icon={<CatalogIcon size={22} />}
                 active={basePath === '/catalog'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
@@ -242,18 +254,21 @@ export function Header({ lang }: { lang: Locale }) {
               <NavItem
                 href={occasionsHref}
                 label={t.occasions}
+                icon={<GiftIcon size={22} />}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
               <NavItem
                 href={partnersHref}
                 label={t.ourPartners}
+                icon={<UsersIcon size={22} />}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
               <NavItem
                 href={reviewsHref}
                 label={t.reviews}
+                icon={<StarIcon size={22} />}
                 active={basePath === '/reviews'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
@@ -261,6 +276,7 @@ export function Header({ lang }: { lang: Locale }) {
               <NavItem
                 href={infoHref}
                 label={t.information}
+                icon={<InfoIcon size={22} />}
                 active={basePath === '/info'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
@@ -268,6 +284,7 @@ export function Header({ lang }: { lang: Locale }) {
               <NavItem
                 href={contactHref}
                 label={t.contactUs}
+                icon={<PhoneIcon size={22} />}
                 active={basePath === '/contact'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
