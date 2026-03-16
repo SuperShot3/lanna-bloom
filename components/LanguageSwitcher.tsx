@@ -52,6 +52,7 @@ export function LanguageSwitcher({
           display: flex;
           align-items: center;
           justify-content: center;
+          margin-top: 3px;
           width: 44px;
           height: 44px;
           border-radius: 50%;
@@ -65,6 +66,7 @@ export function LanguageSwitcher({
         }
         .lang-flag-icon {
           font-size: 1.22 rem;
+          margin-top: 3px;
           border-radius: 2px;
         }
       `}</style>

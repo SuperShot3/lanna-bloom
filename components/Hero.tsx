@@ -40,7 +40,7 @@ export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: stri
             </Link>
             <Link
               href={howToHref}
-              className="px-6 py-3 sm:px-8 sm:py-4 bg-white border border-stone-200 font-semibold rounded-full hover:bg-stone-50 transition-all text-sm sm:text-base"
+              className="px-6 py-3 sm:px-8 sm:py-4 bg-white border border-stone-200 font-semibold rounded-full hover:bg-stone-50 transition-all text-sm sm:text-base flex items-center justify-center"
             >
               {t.ctaHowItWorks}
             </Link>
