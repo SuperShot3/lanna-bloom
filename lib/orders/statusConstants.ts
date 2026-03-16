@@ -14,7 +14,7 @@ export const ORDER_STATUS = [
 
 export type OrderStatus = (typeof ORDER_STATUS)[number];
 
-export const PAYMENT_STATUS = ['NOT_PAID', 'PAID', 'CANCELLED', 'ERROR'] as const;
+export const PAYMENT_STATUS = ['NOT_PAID', 'READY_TO_PAY', 'PAID', 'CANCELLED', 'ERROR'] as const;
 
 export type PaymentStatus = (typeof PAYMENT_STATUS)[number];
 
@@ -29,7 +29,8 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
-  NOT_PAID: 'Not paid',
+  NOT_PAID: 'Not ready for payment',
+  READY_TO_PAY: 'Ready for payment',
   PAID: 'Paid',
   CANCELLED: 'Cancelled',
   ERROR: 'Error',
@@ -56,7 +57,9 @@ export function orderStatusToCustomerLabel(status: string | null | undefined): s
  */
 export function orderStatusToFulfillmentDisplay(status: string | null | undefined): string {
   if (!status) return 'new';
-  const s = String(status).toUpperCase();
+  const upper = String(status).trim().toUpperCase();
+  // Normalize legacy values (e.g. READY_FOR_DISPATCH → READY_TO_DISPATCH)
+  const normalized = OLD_ORDER_STATUS_TO_NEW[upper] ?? upper;
   const map: Record<string, string> = {
     NEW: 'new',
     PROCESSING: 'preparing',
@@ -65,7 +68,7 @@ export function orderStatusToFulfillmentDisplay(status: string | null | undefine
     DELIVERED: 'delivered',
     CANCELLED: 'cancelled',
   };
-  return map[s] ?? 'new';
+  return map[normalized] ?? 'new';
 }
 
 /** Format order status for display (admin badges/tables). */
@@ -101,6 +104,7 @@ export const OLD_ORDER_STATUS_TO_NEW: Record<string, OrderStatus> = {
 export const OLD_PAYMENT_STATUS_TO_NEW: Record<string, PaymentStatus> = {
   PENDING: 'NOT_PAID',
   NOT_PAID: 'NOT_PAID',
+  READY_TO_PAY: 'READY_TO_PAY',
   PAID: 'PAID',
   FAILED: 'ERROR',
   ERROR: 'ERROR',

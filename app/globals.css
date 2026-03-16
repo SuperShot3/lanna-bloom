@@ -86,7 +86,10 @@ html {
   --accent-new: #C5A059;
 }
 
-/* Material Symbols filled variant */
+/* Material Symbols icons */
+span.material-symbols-outlined {
+  margin-top: 7px;
+}
 .material-symbols-filled {
   font-variation-settings: 'FILL' 1;
 }

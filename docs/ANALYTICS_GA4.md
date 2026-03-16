@@ -109,7 +109,7 @@ Create GTM custom event triggers for:
 | `begin_checkout` | User starts order/payment flow | No longer fires on cart page view |
 | `add_shipping_info` | Delivery info added | Triggered once shipping info is meaningfully present |
 | `add_payment_info` | User clicks Stripe payment CTA | Includes `payment_type: 'card'` |
-| `purchase` | Order is confirmed paid | Stripe success now; manual-payment success can also fire later when the success page sees confirmed payment |
+| `purchase` | Order is confirmed paid | **Server:** Stripe webhook or admin mark-paid/payment-status → Measurement Protocol (no page visit). **Client:** Success page (`/order/[orderId]`) when order is paid → dataLayer → GTM. Manual-payment success can fire from server when admin marks paid, and from client if user revisits success page. |
 | `generate_lead` | Manual-payment order created but not yet paid | Separate from revenue |
 | `contact_click` | LINE / WhatsApp / Telegram click | Canonical contact event |
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
@@ -218,11 +218,12 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 12. Create a manual-payment order and confirm `generate_lead`
 13. Re-open the success page after the order is marked paid and confirm one `purchase`
 
-## Audit: Purchase and GTM-Only
+## Audit: Purchase transport (client + server)
 
-- **Purchase transport**: The app never calls `gtag('event', 'purchase', ...)` or any GA4 API. It only pushes `{ event: 'purchase', ... }` to `window.dataLayer`. GTM is the only system that sends purchase to GA4.
-- **Single code path**: Purchase is pushed from `components/OrderPaidPurchaseTracker.tsx` when the user views the order details page (`/order/[orderId]`) and the order is confirmed paid (Stripe webhook or admin mark-paid). It calls `trackPurchase` from `lib/analytics.ts`, which delegates to `lib/analytics/gtag.ts` → `dataLayer.push(...)`. The confirmation-pending (checkout) page never fires purchase.
-- **Duplicate guard**: (1) Success page uses `purchaseTrackedRef` and `wasPurchaseSent(orderId)` so we don’t call `trackPurchase` twice in one session or on revisit. (2) `gtag.ts` `trackPurchase` uses `purchase_sent:<orderId>` in localStorage and sessionStorage; it pushes at most once per orderId.
+- **Two paths to GA4 for purchase:**
+  1. **Client (dataLayer → GTM):** The app never calls `gtag('event', 'purchase', ...)`. It only pushes `{ event: 'purchase', ... }` to `window.dataLayer`. Purchase is pushed from `components/OrderPaidPurchaseTracker.tsx` when the user views the order details page (`/order/[orderId]`) and the order is confirmed paid. It calls `trackPurchase` from `lib/analytics.ts` → `lib/analytics/gtag.ts` → `dataLayer.push(...)`. GTM then sends to GA4.
+  2. **Server (Measurement Protocol):** When an order becomes paid (Stripe webhook, admin “Mark as paid”, or admin payment-status → PAID), the backend sends a `purchase` event to GA4 via **GA4 Measurement Protocol** in `lib/ga4/measurementProtocol.ts`. Called from `lib/ga4/sendPurchaseForOrder.ts` by: `app/api/stripe/webhook/route.ts`, `app/api/admin/orders/[order_id]/mark-paid/route.ts`, `app/api/admin/orders/[order_id]/payment-status/route.ts`. This does not require the user to revisit the order page.
+- **Duplicate guard:** (1) **Client:** Success page uses `purchaseTrackedRef` and `wasPurchaseSent(orderId)`; `gtag.ts` uses `purchase_sent:<orderId>` in localStorage and sessionStorage — at most one dataLayer push per orderId per device. (2) **Server:** `sendPurchaseForOrder` uses an atomic DB update on `ga4_purchase_sent` so at most one Measurement Protocol send per order (idempotent).
 - **generate_lead**: `trackGenerateLead` only pushes `generate_lead` to dataLayer. It does not call or trigger any purchase logic.
 
 ## Files Controlling Analytics Logic
@@ -232,6 +233,11 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 - `components/InternalTrafficBootstrap.tsx`
 - `lib/analytics.ts`
 - `lib/analytics/gtag.ts`
+- `lib/ga4/measurementProtocol.ts` (server: GA4 Measurement Protocol)
+- `lib/ga4/sendPurchaseForOrder.ts` (server: idempotent purchase send)
+- `app/api/stripe/webhook/route.ts` (calls sendPurchaseForOrder on checkout.session.completed)
+- `app/api/admin/orders/[order_id]/mark-paid/route.ts` (calls sendPurchaseForOrder)
+- `app/api/admin/orders/[order_id]/payment-status/route.ts` (calls sendPurchaseForOrder when status → PAID)
 - `components/CatalogWithFilters.tsx`
 - `app/[lang]/catalog/[slug]/ProductPageClient.tsx`
 - `app/[lang]/catalog/[slug]/ProductDetailClient.tsx`

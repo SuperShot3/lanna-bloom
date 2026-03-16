@@ -17,7 +17,7 @@
  * This page exists specifically to prevent premature GA4 purchase tracking.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
 import {
@@ -172,33 +172,18 @@ export function OrderPendingConfirmation({
   orderId: string;
   locale?: Locale;
 }) {
+  // NEW BEHAVIOUR: this component is now just a thin redirector to the main order page.
+  // The full pending / paid experience lives on /order/[orderId] with the new design.
   const t = translations[locale].pendingConfirmation;
-  const [checking, setChecking] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
-  const handleCheckStatus = useCallback(async () => {
-    if (checking || !orderId) return;
-    setChecking(true);
-    setStatusMessage(null);
-    try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
-        cache: 'no-store',
-      });
-      const data = await res.json().catch(() => ({}));
-      if (isPaid(data.payment_status)) {
-        setStatusMessage(t.paymentConfirmed);
-        // Cache-bust so the order page does a fresh server render and shows paid state
-        const url = `/order/${encodeURIComponent(orderId)}?v=${Date.now()}`;
-        window.location.href = url;
-        return;
-      }
-      setStatusMessage(t.stillPending);
-    } catch {
-      setStatusMessage(locale === 'th' ? 'ไม่สามารถตรวจสอบได้ กรุณาลองใหม่' : 'Could not check. Please try again.');
-    } finally {
-      setChecking(false);
-    }
-  }, [orderId, checking, locale, t.paymentConfirmed, t.stillPending]);
+  // Immediately send user to the unified order page.
+  useEffect(() => {
+    if (!orderId || redirecting) return;
+    setRedirecting(true);
+    const url = `/order/${encodeURIComponent(orderId)}?v=${Date.now()}`;
+    window.location.href = url;
+  }, [orderId, redirecting]);
 
   const lineUrl = getLineContactUrl();
   const whatsappUrl = getWhatsAppContactUrl();
@@ -214,7 +199,6 @@ export function OrderPendingConfirmation({
   return (
     <div className="pending-page">
       <div className="pending-card">
-        {/* Floral wreath + checkmark — real SVG asset */}
         <div className="pending-wreath">
           <Image
             src="/check_out/2-removebg-preview.svg"
@@ -227,63 +211,14 @@ export function OrderPendingConfirmation({
         </div>
 
         <h1 className="pending-title">{t.title}</h1>
-        <p className="pending-subtitle">{t.subtitle}</p>
-
-        <CopyChip label={t.orderId} value={orderId} locale={locale} />
-
-        <div className="pending-divider">
-          <span className="pending-divider-dot" />
-          <span className="pending-divider-line" />
-          <span className="pending-divider-dot" />
-        </div>
-
-        <p className="pending-contact-heading">{t.contactHeading}</p>
-
-        <div className="pending-icons-row">
-          {channels.map((ch) => (
-            <a
-              key={ch.id}
-              href={ch.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`pending-icon ${ch.cls}`}
-              aria-label={ch.label}
-              onClick={() =>
-                trackMessengerClick({ channel: ch.id, page_location: 'order_pending_confirmation', link_url: ch.url })
-              }
-            >
-              <ch.Icon size={24} />
-            </a>
-          ))}
-
-          <a
-            href={emailUrl}
-            className="pending-icon icon-email"
-            aria-label="Email"
-            onClick={() =>
-              trackMessengerClick({ channel: 'line', page_location: 'order_pending_confirmation', link_url: emailUrl })
-            }
-          >
-            <EmailIcon size={22} />
-          </a>
-        </div>
-
-        <div className="pending-check-status-wrap">
-          <button
-            type="button"
-            className="pending-check-status-btn"
-            onClick={handleCheckStatus}
-            disabled={checking}
-            aria-busy={checking}
-          >
-            {checking ? (locale === 'th' ? 'กำลังตรวจสอบ…' : 'Checking…') : t.checkStatus}
-          </button>
-          {statusMessage && (
-            <p className="pending-status-msg" role="status">
-              {statusMessage}
-            </p>
-          )}
-        </div>
+        <p className="pending-subtitle">
+          {t.paymentConfirmed}
+        </p>
+        <p className="pending-status-msg" role="status">
+          {locale === 'th'
+            ? 'กำลังพาคุณไปหน้ารายละเอียดออเดอร์...'
+            : 'Taking you to your order details page…'}
+        </p>
       </div>
 
 

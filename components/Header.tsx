@@ -165,7 +165,7 @@ export function Header({ lang }: { lang: Locale }) {
               aria-label={t.cart}
               title={t.cart}
             >
-              <span className="material-symbols-outlined text-2xl mt-[5px]">shopping_bag</span>
+              <span className="material-symbols-outlined text-2xl mt-[4px]">shopping_bag</span>
               {cartCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-[#C5A059] text-white text-[10px] flex items-center justify-center rounded-full mt-[5px]">
                   {cartCount > 99 ? '99+' : cartCount}
@@ -175,7 +175,7 @@ export function Header({ lang }: { lang: Locale }) {
             {isMobile && (
               <button
                 type="button"
-                className="p-2 text-[#1A3C34]"
+                className="p-2 mt-[5px] text-[#1A3C34]"
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}

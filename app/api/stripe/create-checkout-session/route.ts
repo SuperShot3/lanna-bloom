@@ -300,7 +300,8 @@ export async function POST(request: NextRequest) {
         line_items: lineItems,
         client_reference_id: order.orderId,
         customer_email: data.customerEmail,
-        success_url: `${baseUrl}/${data.lang}/checkout/confirmation-pending?session_id={CHECKOUT_SESSION_ID}&orderId=${encodeURIComponent(order.orderId)}`,
+        // Redirect straight to public order page; order view handles pending vs paid.
+        success_url: `${baseUrl}/order/${encodeURIComponent(order.orderId)}`,
         cancel_url: `${baseUrl}/${data.lang}/cart`,
         metadata: stripeMetadata,
         payment_intent_data: {

@@ -167,3 +167,71 @@ export function trackPurchase(params: {
     });
   }
 }
+
+/** Dedupe key for Google Ads conversion (separate from GA4 purchase guard). */
+const GOOGLE_ADS_CONVERSION_SENT_PREFIX = 'google_ads_conversion_sent:';
+
+function getGoogleAdsConversionStorageKey(orderId: string): string {
+  return `${GOOGLE_ADS_CONVERSION_SENT_PREFIX}${normalizeOrderId(orderId)}`;
+}
+
+function wasGoogleAdsConversionSent(orderId: string): boolean {
+  if (typeof window === 'undefined') return true;
+  const key = getGoogleAdsConversionStorageKey(orderId);
+  return (
+    hasPurchaseSentFlag(window.localStorage, key) ||
+    hasPurchaseSentFlag(window.sessionStorage, key)
+  );
+}
+
+function markGoogleAdsConversionSent(orderId: string): void {
+  if (typeof window === 'undefined') return;
+  const key = getGoogleAdsConversionStorageKey(orderId);
+  try {
+    window.localStorage.setItem(key, '1');
+    window.sessionStorage.setItem(key, '1');
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Push google_ads_purchase to dataLayer for GTM → Google Ads Conversion tag.
+ * Fires at most once per orderId (dedupe via localStorage/sessionStorage).
+ * Call when user lands on paid order page (e.g. after Stripe redirect).
+ */
+export function trackGoogleAdsPurchase(params: {
+  orderId: string;
+  value: number;
+  currency?: string;
+  transactionId?: string;
+}): void {
+  if (typeof window === 'undefined') return;
+
+  const normalizedOrderId = normalizeOrderId(params.orderId);
+  if (!normalizedOrderId) return;
+
+  if (wasGoogleAdsConversionSent(normalizedOrderId)) {
+    if (isDev) {
+      console.debug('[analytics] google_ads_purchase duplicate prevented', { orderId: normalizedOrderId });
+    }
+    return;
+  }
+  markGoogleAdsConversionSent(normalizedOrderId);
+
+  const transactionId = params.transactionId ? normalizeOrderId(params.transactionId) : normalizedOrderId;
+  const currency = params.currency ?? 'THB';
+
+  pushToDataLayer('google_ads_purchase', {
+    transaction_id: transactionId,
+    value: params.value,
+    currency,
+  });
+  if (isDev) {
+    console.info('[analytics] google_ads_purchase pushed to dataLayer — GTM can fire Google Ads Conversion', {
+      orderId: normalizedOrderId,
+      value: params.value,
+      transactionId,
+    });
+  }
+}

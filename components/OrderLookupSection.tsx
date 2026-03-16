@@ -101,12 +101,6 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
 
   return (
     <section id="track-order" className={`cart-track-section ${emptyCart ? 'cart-track-section-empty' : ''}`}>
-      {emptyCart && (
-        <div className="cart-track-empty-note">
-          <p className="cart-track-empty-title">{t.cartEmpty}</p>
-          <p className="cart-track-empty-sub">{t.cartEmptySub}</p>
-        </div>
-      )}
       <div className="cart-track-header">
         <span className="cart-track-label">{t.searchMyOrder ?? t.trackOrder}</span>
         <span className="cart-track-sub">
@@ -207,25 +201,6 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           max-width: 560px;
           margin-left: auto;
           margin-right: auto;
-        }
-        .cart-track-empty-note {
-          text-align: center;
-          padding-bottom: 8px;
-          border-bottom: 1px solid var(--border);
-          margin-bottom: 8px;
-        }
-        .cart-track-empty-title {
-          font-family: var(--font-serif);
-          font-size: 22px;
-          font-weight: 400;
-          color: var(--text-muted);
-          font-style: italic;
-          margin: 0 0 4px;
-        }
-        .cart-track-empty-sub {
-          font-size: 13px;
-          color: var(--text-muted);
-          margin: 0;
         }
         .cart-track-header {
           display: flex;

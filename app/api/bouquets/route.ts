@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBouquetsFromSanityPaginated } from '@/lib/sanity';
 
+export const dynamic = 'force-dynamic';
+
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 24;
 

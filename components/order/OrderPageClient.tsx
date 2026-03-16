@@ -1,0 +1,1134 @@
+'use client';
+
+import { useState, useCallback, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  getLineOrderUrl,
+  getWhatsAppOrderUrl,
+  getTelegramOrderUrl,
+  getLineContactUrl,
+  getWhatsAppContactUrl,
+  getTelegramContactUrl,
+} from '@/lib/messenger';
+import { LineIcon, WhatsAppIcon, TelegramIcon, HomeIcon } from '@/components/icons';
+import { translations } from '@/lib/i18n';
+import type { Order } from '@/lib/orders';
+import type { Locale } from '@/lib/i18n';
+
+function formatDisplayDate(dateStr: string): string {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
+  const parts = slot.trim().split(/\s+/);
+  if (parts.length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
+    return { date: parts[0], time: parts.slice(1).join(' ') };
+  }
+  if (parts.length === 1 && /^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
+    return { date: parts[0], time: '' };
+  }
+  return { date: slot, time: '' };
+}
+
+function getFulfillmentLabel(status: string, t: Record<string, string>): string {
+  const map: Record<string, string> = {
+    new: t.orderStatusNew ?? 'New',
+    confirmed: t.orderStatusConfirmed ?? 'Confirmed',
+    preparing: t.orderStatusPreparing ?? 'Preparing',
+    ready_to_dispatch: t.orderStatusReadyToDispatch ?? 'Ready to dispatch',
+    dispatched: t.orderStatusDispatched ?? 'Dispatched',
+    delivered: t.orderStatusDelivered ?? 'Delivered',
+    cancelled: t.orderStatusCancelled ?? 'Cancelled',
+    issue: t.orderStatusIssue ?? 'Issue',
+  };
+  return map[status] ?? status;
+}
+
+export function OrderPageClient({
+  order,
+  orderId,
+  detailsUrl,
+  baseUrl,
+  paid,
+  canPay,
+  fulfillmentStatus,
+  fulfillmentStatusUpdatedAt,
+  supabasePaymentMethod,
+  supabasePaidAt,
+  locale = 'en',
+}: {
+  order: Order;
+  orderId: string;
+  detailsUrl: string;
+  baseUrl: string;
+  paid: boolean;
+  canPay: boolean;
+  fulfillmentStatus?: string;
+  fulfillmentStatusUpdatedAt?: string;
+  supabasePaymentMethod?: string;
+  supabasePaidAt?: string;
+  locale?: Locale;
+}) {
+  const router = useRouter();
+  const t = translations[locale].orderPage;
+  const [activeTab, setActiveTab] = useState<'details' | 'pay'>('details');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('card');
+  const [copied, setCopied] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+
+  const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(
+    order.delivery?.preferredTimeSlot ?? ''
+  );
+  const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+  const orderMessage = `Order ${orderId}\n${detailsUrl}`;
+  const fulfillmentLabel = getFulfillmentLabel(
+    String(fulfillmentStatus ?? 'new'),
+    t as unknown as Record<string, string>
+  );
+
+  const copyOrderId = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(orderId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }, [orderId]);
+
+  const payWithCard = useCallback(async () => {
+    if (payLoading || paid) return;
+    setPayLoading(true);
+    try {
+      const res = await fetch('/api/stripe/create-checkout-session-for-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, lang: locale }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      alert(data.error || (locale === 'th' ? 'ไม่สามารถเปิดหน้าชำระเงินได้' : 'Could not open payment page'));
+    } finally {
+      setPayLoading(false);
+    }
+  }, [orderId, locale, payLoading, paid]);
+
+  const contactChannels = [
+    { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, label: 'LINE' },
+    { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, label: 'WhatsApp' },
+    { id: 'telegram' as const, getUrl: () => getTelegramOrderUrl(orderMessage), Icon: TelegramIcon, label: 'Telegram' },
+  ];
+
+  const contactQuickLinks = {
+    line: getLineContactUrl(),
+    whatsapp: getWhatsAppContactUrl(),
+    telegram: getTelegramContactUrl(),
+  };
+
+  // Tooltip for disabled \"Make payment\" tab (order under review).
+  const [showPayTooltip, setShowPayTooltip] = useState(false);
+  const payTabWrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showPayTooltip) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!payTabWrapRef.current || !target) return;
+      if (!payTabWrapRef.current.contains(target)) {
+        setShowPayTooltip(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showPayTooltip]);
+
+  return (
+    <div className="order-redesign">
+      <header className="order-redesign-header">
+        <div className="order-redesign-logo">
+          <button
+            type="button"
+            className="order-redesign-logo-button"
+            onClick={() => router.push(baseUrl)}
+            aria-label={t.goToHome}
+          >
+            <Image
+              src="/logo_icon_64.png"
+              alt=""
+              width={40}
+              height={40}
+              className="order-redesign-logo-img"
+            />
+          </button>
+        </div>
+        <div>
+          <div className="order-redesign-shop-name">Lanna Bloom</div>
+          <div className="order-redesign-shop-sub">{t.flowerDeliveryChiangMai}</div>
+        </div>
+      </header>
+
+      <div className="order-redesign-tabs">
+        <button
+          type="button"
+          className={`order-redesign-tab ${activeTab === 'details' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('details');
+            setShowPayTooltip(false);
+          }}
+        >
+          {t.orderDetails}
+          <span className="order-redesign-badge badge-status">
+            {fulfillmentLabel}
+          </span>
+        </button>
+        <div className="order-redesign-tab-wrap" ref={payTabWrapRef}>
+          <button
+            type="button"
+            className={`order-redesign-tab ${activeTab === 'pay' ? 'active' : ''} ${
+              !paid && !canPay ? 'order-redesign-tab-disabled' : ''
+            }`}
+            onClick={() => {
+              if (!paid && !canPay) {
+                setShowPayTooltip((prev) => !prev);
+                return;
+              }
+              setActiveTab('pay');
+              setShowPayTooltip(false);
+            }}
+            aria-disabled={!paid && !canPay}
+          >
+            {t.makePayment}
+            <span
+              className={`order-redesign-badge ${
+                paid ? 'badge-paid' : canPay ? 'badge-ready' : 'badge-locked'
+              }`}
+            >
+              {paid ? t.tabPaid : canPay ? t.tabReadyToPay : t.tabLocked}
+            </span>
+          </button>
+          {!paid && !canPay && showPayTooltip && (
+            <div className="order-redesign-tooltip" role="dialog" aria-label={t.orderUnderReview}>
+              <div className="order-redesign-tooltip-arrow" />
+              <div className="order-redesign-tooltip-title">
+                {t.orderUnderReview}
+              </div>
+              <div className="order-redesign-tooltip-text">
+                {t.orderUnderReviewText}
+              </div>
+              <div className="order-redesign-tooltip-chips">
+                <a
+                  href={contactQuickLinks.line}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="order-redesign-tooltip-chip"
+                >
+                  <LineIcon size={14} /> LINE
+                </a>
+                <a
+                  href={contactQuickLinks.telegram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="order-redesign-tooltip-chip"
+                >
+                  <TelegramIcon size={14} /> Telegram
+                </a>
+                <a
+                  href={contactQuickLinks.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="order-redesign-tooltip-chip"
+                >
+                  <WhatsAppIcon size={14} /> WhatsApp
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {activeTab === 'details' && (
+        <section className="order-redesign-panel">
+          <div className="order-redesign-meta">
+            <div className="order-redesign-meta-card full">
+              <div className="order-redesign-meta-label">Order ID</div>
+              <div className="order-redesign-meta-value mono">{orderId}</div>
+              <button
+                type="button"
+                className="order-redesign-copy-btn"
+                onClick={copyOrderId}
+                aria-label={t.copyOrderId}
+              >
+                {copied ? t.copied : t.copyOrderId}
+              </button>
+            </div>
+            <div className="order-redesign-meta-card">
+              <div className="order-redesign-meta-label">{t.deliveryDate}</div>
+              <div className="order-redesign-meta-value">{formatDisplayDate(deliveryDate) || '—'}</div>
+            </div>
+            <div className="order-redesign-meta-card">
+              <div className="order-redesign-meta-label">{t.preferredTime}</div>
+              <div className="order-redesign-meta-value">{preferredTime || '—'}</div>
+            </div>
+            <div className="order-redesign-meta-card full">
+              <div className="order-redesign-meta-label">{t.address}</div>
+              <div className="order-redesign-meta-value">{order.delivery?.address || '—'}</div>
+            </div>
+          </div>
+
+          <div className="order-redesign-section-title">{t.item}</div>
+          {(order.items ?? []).map((item, i) => (
+            <div key={i} className="order-redesign-item-row">
+              <div className="order-redesign-item-img">
+                {item.imageUrl ? (
+                  <Image src={item.imageUrl} alt="" width={44} height={44} className="order-redesign-item-img-inner" unoptimized={item.imageUrl.startsWith('data:')} />
+                ) : (
+                  <span aria-hidden>🌸</span>
+                )}
+              </div>
+              <div className="order-redesign-item-info">
+                <div className="order-redesign-item-name">{item.bouquetTitle}</div>
+                <div className="order-redesign-item-sub">{item.size}</div>
+              </div>
+              <div className="order-redesign-item-price">฿{item.price.toLocaleString()}</div>
+            </div>
+          ))}
+
+          <div className="order-redesign-totals">
+            <div className="order-redesign-totals-row">
+              <span>{t.bouquetPrice}</span>
+              <span>฿{(order.pricing?.itemsTotal ?? 0).toLocaleString()}</span>
+            </div>
+            <div className="order-redesign-totals-row">
+              <span>{t.deliveryFee}</span>
+              <span>฿{(order.pricing?.deliveryFee ?? 0).toLocaleString()}</span>
+            </div>
+            {order.referralDiscount != null && order.referralDiscount > 0 && (
+              <div className="order-redesign-totals-row">
+                <span>{t.discount}</span>
+                <span>-฿{order.referralDiscount.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="order-redesign-totals-row total">
+              <span>{t.total}</span>
+              <span>฿{grandTotal.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {(order.customerName || order.phone) && (
+            <>
+              <div className="order-redesign-section-title">{t.sender}</div>
+              <div className="order-redesign-meta-card">
+                <div className="order-redesign-meta-value">{order.customerName || '—'}</div>
+                <div className="order-redesign-meta-sub">
+                  {order.phone ?? ''} {order.phone && order.customerEmail ? '·' : ''} {order.customerEmail ?? ''}
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="order-redesign-contact-bar">
+            <span className="order-redesign-contact-bar-label">{t.contactLannaBloom}:</span>
+            <div className="order-redesign-contact-icons">
+              {contactChannels.map((ch) => (
+                <a
+                  key={ch.id}
+                  href={ch.getUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="order-redesign-contact-icon"
+                  title={ch.label}
+                  aria-label={ch.label}
+                >
+                  <ch.Icon size={18} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {activeTab === 'pay' && (
+        <section className="order-redesign-panel">
+          {paid ? (
+            <div className="order-redesign-paid-view">
+              <div className="order-redesign-paid-check" aria-hidden>✓</div>
+              <div className="order-redesign-paid-title">{t.paymentConfirmedTitle}</div>
+              <div className="order-redesign-paid-sub">
+                {supabasePaidAt
+                  ? new Date(supabasePaidAt).toLocaleString(locale === 'th' ? 'th-TH' : undefined)
+                  : ''}
+                <br />
+                {t.paymentConfirmedSub}
+              </div>
+              <div className="order-redesign-paid-details">
+                <div className="order-redesign-totals-row">
+                  <span>{t.amountPaid}</span>
+                  <span>฿{grandTotal.toLocaleString()}</span>
+                </div>
+                <div className="order-redesign-totals-row">
+                  <span>{t.method}</span>
+                  <span>{(supabasePaymentMethod ?? 'Card').replace(/_/g, ' ')}</span>
+                </div>
+                <div className="order-redesign-totals-row">
+                  <span>{t.reference}</span>
+                  <span className="mono">{orderId}</span>
+                </div>
+              </div>
+            </div>
+          ) : !canPay ? (
+            <div className="order-redesign-paid-view">
+              <div className="order-redesign-paid-check" aria-hidden>🌸</div>
+              <div className="order-redesign-paid-title">
+                {locale === 'th' ? 'ออเดอร์อยู่ระหว่างตรวจสอบ' : 'Your order is under review'}
+              </div>
+              <div className="order-redesign-paid-sub">
+                {locale === 'th'
+                  ? 'เราจะเปิดให้ชำระเงินที่หน้านี้หลังจากแอดมินยืนยันออเดอร์แล้ว'
+                  : 'We will enable payment here after our team confirms your order.'}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="order-redesign-pay-banner ready">
+                🌸 {t.orderConfirmedReady}
+              </div>
+
+              <div className="order-redesign-method-tabs">
+                <button
+                  type="button"
+                  className={`order-redesign-method-tab ${paymentMethod === 'card' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('card')}
+                >
+                  <span className="order-redesign-method-icon">💳</span>
+                  <div className="order-redesign-method-name">{t.paymentMethodCard}</div>
+                  <div className="order-redesign-method-sub">{t.visaMastercard}</div>
+                </button>
+                <button
+                  type="button"
+                  className={`order-redesign-method-tab ${paymentMethod === 'qr' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('qr')}
+                >
+                  <span className="order-redesign-method-icon">▢</span>
+                  <div className="order-redesign-method-name">{t.paymentMethodQr}</div>
+                  <div className="order-redesign-method-sub">{t.promptPay}</div>
+                </button>
+                <button
+                  type="button"
+                  className={`order-redesign-method-tab ${paymentMethod === 'bank' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('bank')}
+                >
+                  <span className="order-redesign-method-icon">🏦</span>
+                  <div className="order-redesign-method-name">{t.paymentMethodBank}</div>
+                  <div className="order-redesign-method-sub">{t.directDeposit}</div>
+                </button>
+              </div>
+
+              {paymentMethod === 'card' && (
+                <div className="order-redesign-method-content">
+                  <p className="order-redesign-card-intro">
+                    {locale === 'th' ? 'คุณจะถูกนำไปยัง Stripe Checkout เพื่อชำระเงินอย่างปลอดภัย' : 'You will be redirected to Stripe Checkout to pay securely.'}
+                  </p>
+                  <button
+                    type="button"
+                    className="order-redesign-pay-btn"
+                    onClick={payWithCard}
+                    disabled={payLoading}
+                  >
+                    {payLoading
+                      ? (locale === 'th' ? 'กำลังเปิด…' : 'Opening…')
+                      : t.payAmount.replace('{amount}', grandTotal.toLocaleString())}
+                  </button>
+                  <div className="order-redesign-secured-note">{t.securedNote}</div>
+                </div>
+              )}
+
+              {paymentMethod === 'qr' && (
+                <div className="order-redesign-method-content">
+                  <p className="order-redesign-card-intro">
+                    {locale === 'th'
+                      ? 'สแกน QR พร้อมเพย์นี้ได้จากทุกแอปธนาคาร แล้วส่งสลิปให้เราทาง LINE หรือแชท'
+                      : 'Scan this PromptPay QR with any Thai banking app, then send your slip to us via LINE or chat.'}
+                  </p>
+                  <div className="order-redesign-qr-wrap">
+                    <Image
+                      src="/payments/promptpay-static-ttb.png"
+                      alt="PromptPay QR code"
+                      width={260}
+                      height={460}
+                      className="order-redesign-qr-img"
+                    />
+                  </div>
+                  <p className="order-redesign-qr-actions">
+                    <a
+                      href="/payments/promptpay-static-ttb.png"
+                      download="promptpay-qr.png"
+                      className="order-redesign-qr-download-btn"
+                    >
+                      {locale === 'th' ? 'ดาวน์โหลด QR' : 'Download QR'}
+                    </a>
+                  </p>
+                  <p className="order-redesign-coming-text">
+                    {locale === 'th'
+                      ? `ยอดชำระทั้งหมด: ฿${grandTotal.toLocaleString()} · กรุณาระบุหมายเลขออเดอร์ ${orderId} ในข้อความ`
+                      : `Total to pay: ฿${grandTotal.toLocaleString()} · Please mention order ID ${orderId} in your message.`}
+                  </p>
+                </div>
+              )}
+
+              {paymentMethod === 'bank' && (
+                <div className="order-redesign-method-content">
+                  <p className="order-redesign-card-intro">
+                    {locale === 'th'
+                      ? 'โอนเข้าบัญชีด้านล่าง แล้วส่งสลิปให้เราทาง LINE หรือแชท'
+                      : 'Make a bank transfer using the details below, then send your slip to us via LINE or chat.'}
+                  </p>
+                  <div className="order-redesign-bank-card">
+                    <div className="order-redesign-bank-row">
+                      <span className="order-redesign-bank-label">Bank</span>
+                      <span className="order-redesign-bank-value">ttb</span>
+                    </div>
+                    <div className="order-redesign-bank-row">
+                      <span className="order-redesign-bank-label">Account number</span>
+                      <span className="order-redesign-bank-value">592-2-11790-7</span>
+                    </div>
+                    <div className="order-redesign-bank-row">
+                      <span className="order-redesign-bank-label">Account name (TH)</span>
+                      <span className="order-redesign-bank-value">นส.วรพรรณ นันทเศรษฐา</span>
+                    </div>
+                    <div className="order-redesign-bank-row">
+                      <span className="order-redesign-bank-label">Account name (EN)</span>
+                      <span className="order-redesign-bank-value">Ms. Woraphan Nantaseththa</span>
+                    </div>
+                    <div className="order-redesign-bank-row">
+                      <span className="order-redesign-bank-label">Amount</span>
+                      <span className="order-redesign-bank-value">฿{grandTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="order-redesign-bank-row">
+                      <span className="order-redesign-bank-label">Reference</span>
+                      <span className="order-redesign-bank-value">{orderId}</span>
+                    </div>
+                  </div>
+                  <p className="order-redesign-coming-text">
+                    {locale === 'th'
+                      ? 'หลังจากโอนแล้ว กรุณาส่งสลิปและหมายเลขออเดอร์ให้เราทาง LINE หรือช่องทางแชทที่คุณใช้'
+                      : 'After transfer, please send your slip and order ID to us via LINE or your preferred chat channel.'}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      <div className="order-redesign-footer">
+        <button
+          type="button"
+          className="order-redesign-home-link"
+          onClick={() => router.push(baseUrl)}
+        >
+          <span className="order-redesign-home-icon" aria-hidden>
+            <HomeIcon size={16} />
+          </span>
+          <span className="order-redesign-home-text">{t.goToHome}</span>
+        </button>
+      </div>
+
+      <style jsx>{`
+        .order-redesign {
+          max-width: 680px;
+          margin: 0 auto;
+          padding: 1rem 0 2rem;
+        }
+        .order-redesign-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--border);
+        }
+        .order-redesign-logo {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .order-redesign-logo-button {
+          display: block;
+          width: 100%;
+          height: 100%;
+          padding: 0;
+          margin: 0;
+          border: none;
+          background: none;
+          cursor: pointer;
+        }
+        .order-redesign-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .order-redesign-shop-name {
+          font-family: var(--font-serif);
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--text);
+          letter-spacing: 0.04em;
+        }
+        .order-redesign-shop-sub {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+        .order-redesign-tabs {
+          display: flex;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 0;
+        }
+        .order-redesign-tab {
+          flex: 1;
+          padding: 12px 8px;
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: 0.03em;
+          border: none;
+          background: transparent;
+          color: var(--text-muted);
+          cursor: pointer;
+          position: relative;
+          transition: color 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+        .order-redesign-tab-disabled {
+          cursor: pointer;
+          opacity: 0.7;
+        }
+        .order-redesign-tab-wrap {
+          position: relative;
+          flex: 1;
+          display: flex;
+          justify-content: center;
+        }
+        .order-redesign-tooltip {
+          position: absolute;
+          top: calc(100% + 10px);
+          left: 50%;
+          transform: translateX(-50%);
+          max-width: 260px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          z-index: 10;
+          font-size: 11px;
+          color: var(--text-muted);
+        }
+        .order-redesign-tooltip-arrow {
+          position: absolute;
+          top: -5px;
+          left: 50%;
+          transform: translateX(-50%) rotate(45deg);
+          width: 9px;
+          height: 9px;
+          background: var(--surface);
+          border-left: 1px solid var(--border);
+          border-top: 1px solid var(--border);
+        }
+        .order-redesign-tooltip-title {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: 4px;
+        }
+        .order-redesign-tooltip-text {
+          font-size: 11px;
+          color: var(--text-muted);
+          line-height: 1.6;
+          margin-bottom: 10px;
+        }
+        .order-redesign-tooltip-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .order-redesign-tooltip-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: transparent;
+          font-size: 11px;
+          color: var(--text-muted);
+          cursor: pointer;
+          text-decoration: none;
+          transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+        }
+        .order-redesign-tooltip-chip:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+          background: var(--accent-soft, #f3e7d6);
+        }
+        .order-redesign-tab:hover {
+          color: var(--text);
+        }
+        .order-redesign-tab.active {
+          color: var(--accent);
+        }
+        .order-redesign-tab.active::after {
+          content: '';
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: var(--accent);
+          border-radius: 2px 2px 0 0;
+        }
+        .order-redesign-badge {
+          font-size: 10px;
+          padding: 2px 7px;
+          border-radius: 20px;
+          font-weight: 500;
+        }
+        .badge-new {
+          background: var(--pastel-cream);
+          color: var(--text-muted);
+        }
+        .badge-ready {
+          background: var(--accent-soft);
+          color: var(--accent-border, #a88b5c);
+        }
+        .badge-paid {
+          background: var(--pastel-mint);
+          color: #1a5f4a;
+        }
+        .badge-status {
+          background: var(--pastel-cream);
+          color: var(--text-muted);
+        }
+        .order-redesign-panel {
+          padding: 1.25rem 0;
+        }
+        .order-redesign-meta {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 1rem;
+        }
+        .order-redesign-meta-card {
+          background: var(--pastel-cream);
+          border-radius: var(--radius-sm);
+          padding: 10px 14px;
+        }
+        .order-redesign-meta-card.full {
+          grid-column: 1 / -1;
+        }
+        .order-redesign-meta-label {
+          font-size: 11px;
+          color: var(--text-muted);
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          margin-bottom: 3px;
+        }
+        .order-redesign-meta-value {
+          font-size: 13px;
+          color: var(--text);
+          font-weight: 500;
+        }
+        .order-redesign-meta-value.mono {
+          font-family: ui-monospace, monospace;
+          font-size: 12px;
+          letter-spacing: 0.05em;
+        }
+        .order-redesign-meta-sub {
+          font-size: 12px;
+          color: var(--text-muted);
+          margin-top: 3px;
+        }
+        .order-redesign-copy-btn {
+          font-size: 10px;
+          margin-top: 6px;
+          padding: 3px 8px;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--text-muted);
+          cursor: pointer;
+        }
+        .order-redesign-copy-btn:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+        .order-redesign-section-title {
+          font-size: 11px;
+          color: var(--text-muted);
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          margin: 1rem 0 8px;
+        }
+        .order-redesign-item-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid var(--border);
+        }
+        .order-redesign-item-row:last-of-type {
+          border-bottom: none;
+        }
+        .order-redesign-item-img {
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-sm);
+          background: linear-gradient(135deg, var(--pastel-cream), var(--accent-soft));
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          flex-shrink: 0;
+          overflow: hidden;
+        }
+        .order-redesign-item-img-inner {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .order-redesign-item-info {
+          flex: 1;
+          min-width: 0;
+        }
+        .order-redesign-item-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text);
+        }
+        .order-redesign-item-sub {
+          font-size: 11px;
+          color: var(--text-muted);
+          margin-top: 2px;
+        }
+        .order-redesign-item-price {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text);
+        }
+        .order-redesign-totals {
+          padding: 12px 0 4px;
+        }
+        .order-redesign-totals-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 5px 0;
+          font-size: 13px;
+          color: var(--text-muted);
+        }
+        .order-redesign-totals-row.total {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text);
+          border-top: 1px solid var(--border);
+          padding-top: 10px;
+          margin-top: 4px;
+        }
+        .order-redesign-contact-bar {
+          background: var(--pastel-cream);
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          margin-top: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .order-redesign-contact-bar-label {
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+        .order-redesign-contact-icons {
+          display: flex;
+          gap: 8px;
+        }
+        .order-redesign-contact-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          background: var(--surface);
+          color: var(--text-muted);
+          text-decoration: none;
+          transition: border-color 0.15s, color 0.15s;
+        }
+        .order-redesign-contact-icon:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+        .order-redesign-pay-banner {
+          border-radius: var(--radius-sm);
+          padding: 12px 16px;
+          margin-bottom: 1.25rem;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .order-redesign-pay-banner.paid {
+          background: var(--pastel-mint);
+          color: #1a5f4a;
+        }
+        .order-redesign-pay-banner.ready {
+          background: var(--pastel-pink);
+          color: #8b3a3a;
+        }
+        .order-redesign-method-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 1.25rem;
+          flex-wrap: wrap;
+        }
+        .order-redesign-method-tab {
+          flex: 1;
+          min-width: 100px;
+          padding: 10px 8px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+          background: var(--surface);
+          cursor: pointer;
+          text-align: center;
+          transition: all 0.15s;
+        }
+        .order-redesign-method-tab:hover:not(:disabled) {
+          border-color: var(--accent);
+        }
+        .order-redesign-method-tab.active {
+          border-color: var(--accent);
+          background: var(--accent-soft);
+        }
+        .order-redesign-method-tab:disabled {
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+        .order-redesign-method-icon {
+          font-size: 20px;
+          display: block;
+          margin-bottom: 4px;
+        }
+        .order-redesign-method-name {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+        }
+        .order-redesign-method-tab.active .order-redesign-method-name {
+          color: var(--accent);
+        }
+        .order-redesign-method-sub {
+          font-size: 10px;
+          color: var(--text-muted);
+          margin-top: 2px;
+        }
+        .order-redesign-method-content {
+          margin-top: 0;
+        }
+        .order-redesign-card-intro {
+          font-size: 13px;
+          color: var(--text-muted);
+          margin: 0 0 12px;
+        }
+        .order-redesign-pay-btn {
+          width: 100%;
+          padding: 14px;
+          background: var(--accent);
+          color: var(--accent-cta-text, #fff);
+          border: 2px solid var(--accent-border);
+          border-radius: var(--radius-sm);
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          letter-spacing: 0.03em;
+          margin-top: 6px;
+          transition: background 0.15s, transform 0.15s;
+          font-family: inherit;
+        }
+        .order-redesign-pay-btn:hover:not(:disabled) {
+          background: var(--accent-border);
+          transform: translateY(-1px);
+        }
+        .order-redesign-pay-btn:disabled {
+          opacity: 0.8;
+          cursor: wait;
+        }
+        .order-redesign-secured-note {
+          font-size: 11px;
+          color: var(--text-muted);
+          text-align: center;
+          margin-top: 10px;
+        }
+        .order-redesign-coming-soon {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--accent);
+          margin-bottom: 8px;
+        }
+        .order-redesign-coming-text {
+          font-size: 13px;
+          color: var(--text-muted);
+          margin: 0;
+        }
+        .order-redesign-qr-wrap {
+          margin: 12px 0;
+          display: flex;
+          justify-content: center;
+        }
+        .order-redesign-qr-img {
+          max-width: 260px;
+          width: 100%;
+          height: auto;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+          background: var(--surface);
+        }
+        .order-redesign-qr-actions {
+          text-align: center;
+          margin: 8px 0 4px;
+        }
+        .order-redesign-qr-download-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 14px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text);
+          text-decoration: none;
+          transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        }
+        .order-redesign-qr-download-btn:hover {
+          background: var(--accent-soft, #f3e7d6);
+          border-color: var(--accent);
+          transform: translateY(-1px);
+        }
+        .order-redesign-bank-card {
+          margin: 8px 0 10px;
+          padding: 12px 14px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+          background: var(--surface);
+        }
+        .order-redesign-bank-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 13px;
+          padding: 3px 0;
+        }
+        .order-redesign-bank-label {
+          color: var(--text-muted);
+        }
+        .order-redesign-bank-value {
+          font-weight: 500;
+          color: var(--text);
+        }
+        .order-redesign-paid-view {
+          padding: 2rem 0;
+          text-align: center;
+        }
+        .order-redesign-paid-check {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: var(--pastel-mint);
+          color: #1a5f4a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 12px;
+          font-size: 24px;
+          font-weight: 700;
+        }
+        .order-redesign-paid-title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #1a5f4a;
+          margin-bottom: 6px;
+        }
+        .order-redesign-paid-sub {
+          font-size: 12px;
+          color: var(--text-muted);
+          line-height: 1.7;
+          margin-bottom: 0;
+        }
+        .order-redesign-paid-details {
+          background: var(--pastel-cream);
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          margin-top: 16px;
+          text-align: left;
+        }
+        .order-redesign-paid-details .mono {
+          font-family: ui-monospace, monospace;
+          font-size: 12px;
+        }
+        .order-redesign-footer {
+          margin-top: 2rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border);
+        }
+        .order-redesign-home-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 14px;
+          font-size: 0.9rem;
+          color: var(--accent);
+          font-weight: 600;
+          text-decoration: none;
+          background: color-mix(in srgb, var(--accent-soft, #f3e7d6) 70%, #fff 30%);
+          border: 1px solid var(--accent-border, #d1b68a);
+          border-radius: 999px;
+          cursor: pointer;
+          font-family: inherit;
+        }
+        .order-redesign-home-link:hover {
+          background: color-mix(in srgb, var(--accent-soft, #f3e7d6) 85%, #fff 15%);
+        }
+        .order-redesign-home-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          border-radius: 999px;
+        }
+        .order-redesign-home-icon svg {
+          margin-bottom: 2px;
+        }
+        .order-redesign-home-text {
+          line-height: 1;
+        }
+      `}</style>
+    </div>
+  );
+}

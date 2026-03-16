@@ -31,6 +31,7 @@ import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
 import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
+import { OrderLookupSection } from '@/components/OrderLookupSection';
 
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
 function formatStickyDate(dateStr: string): string {
@@ -727,16 +728,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         <div className="container">
           <div className="cart-page-header">
             <h1 className="cart-page-title">{t.yourCart}</h1>
-            <span className="cart-page-count">{(t.cartItemsCount ?? '{count} items').replace('{count}', '0')}</span>
+            <span className="cart-page-count">
+              {(t as { cartItemsEmptyLabel?: string }).cartItemsEmptyLabel ?? 'Empty'}
+            </span>
           </div>
 
-          <p className="cart-empty-track-link">
-            <Link href={`/${lang}/track-order`}>
-              {(t as { searchMyOrder?: string; trackOrder?: string }).searchMyOrder ??
-                (t as { searchMyOrder?: string; trackOrder?: string }).trackOrder ??
-                'Search'}
-            </Link>
-          </p>
+          <OrderLookupSection lang={lang} emptyCart />
 
           <p className="cart-footer-note">{(t.cartFooterNote ?? 'Need help? Contact us via LINE or WhatsApp.')}</p>
         </div>
@@ -762,19 +759,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             font-size: 13px;
             color: var(--text-muted);
             font-weight: 400;
-          }
-          .cart-empty-track-link {
-            text-align: center;
-            margin: 0 0 24px;
-          }
-          .cart-empty-track-link a {
-            color: var(--accent);
-            font-weight: 500;
-            text-decoration: underline;
-            text-underline-offset: 3px;
-          }
-          .cart-empty-track-link a:hover {
-            opacity: 0.9;
           }
           .cart-footer-note {
             text-align: center;

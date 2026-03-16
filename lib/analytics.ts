@@ -9,6 +9,8 @@ import {
   trackPurchase as pushPurchaseToDataLayer,
 } from './analytics/gtag';
 
+export { trackGoogleAdsPurchase } from './analytics/gtag';
+
 const CURRENCY = 'THB';
 
 /** GA4 ecommerce item schema: item_id, item_name, item_category, item_variant, price, quantity, currency */

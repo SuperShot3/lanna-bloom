@@ -288,16 +288,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // GA4 purchase: send once via backend Measurement Protocol (idempotent, atomic claim)
-    const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
-    const ga4Result = await sendPurchaseForOrder(orderId, 'stripe_webhook');
-    if (ga4Result.sent) {
-      console.log('[stripe/webhook] GA4 purchase sent for order', orderId);
-    } else if (ga4Result.reason === 'already_sent') {
-      console.log('[stripe/webhook] GA4 purchase skipped (already sent) for order', orderId);
-    } else if (ga4Result.reason === 'send_failed') {
-      console.warn('[stripe/webhook] GA4 purchase send failed for order', orderId, ga4Result.error);
-    }
+    // GA4 purchase for Stripe: not sent from webhook. Purchase reaches GA4 only via browser
+    // (user lands on order page → dataLayer purchase → GTM → GA4). Direct-to-GA4 send is
+    // only when admin changes order status (mark-paid / payment-status).
   } catch (e) {
     console.error('[stripe/webhook] payment success handler error:', e);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

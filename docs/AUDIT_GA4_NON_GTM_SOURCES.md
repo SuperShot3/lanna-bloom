@@ -1,15 +1,14 @@
 # GA4 / GTM codebase audit: non-GTM sources of purchase events
 
-**Date:** 2025-03-11  
-**Scope:** Strict audit for anything that can send GA4 events outside GTM, and exact source of purchase during manual-order flow.
+**Date:** 2026-03-16  
+**Scope:** Audit of how GA4 events (especially purchase) are sent: client (GTM) vs server (Measurement Protocol), and source of purchase during manual-order flow.
 
 ---
 
 ## Summary
 
-- **No direct GA4 senders in codebase.** There is no `gtag.js`, no GA4 measurement ID (e.g. G-KBRBDXFBM1), no Measurement Protocol, and no script that talks to GA4 except via GTM.
-- **Purchase reaches GA4 only via dataLayer → GTM.** The app has a single code path that pushes `{ event: 'purchase', ... }` to `window.dataLayer`; GTM is the only thing that then sends to GA4.
-- **Likely cause of purchase on manual-order flow:** The app’s **purchase gate** can treat some manual orders as “Stripe paid” and therefore **push purchase to dataLayer** even when the user never went through Stripe. GTM then sends that push to GA4. So the “non-GTM” source is not a second analytics sender; it is the **app incorrectly deciding to fire purchase** for manual orders. The fix is to tighten the gate so purchase is only pushed when the success page has Stripe context from the URL (e.g. `session_id` + paid status), not when the order object alone has Stripe IDs.
+- **Two ways purchase reaches GA4:** (1) **Client:** App pushes `{ event: 'purchase', ... }` to `window.dataLayer`; GTM sends to GA4. (2) **Server:** Backend sends `purchase` to GA4 via **GA4 Measurement Protocol** (`lib/ga4/measurementProtocol.ts`, `lib/ga4/sendPurchaseForOrder.ts`) when an order is marked paid (Stripe webhook, admin mark-paid, or admin payment-status → PAID). No `gtag.js` or GA4 measurement ID in client code; Measurement Protocol uses `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET` on the server only.
+- **Manual-order flow:** For manual (e.g. bank) orders, the **server** can still send purchase via Measurement Protocol when admin marks the order paid. The **client** may also push purchase to dataLayer if the user later visits the order success page and the app’s gate treats the order as “Stripe paid” (e.g. due to `order.stripeSessionId` / `order.paymentIntentId`). To avoid double-counting or client-side purchase for manual orders, the client gate can be tightened so purchase is pushed only when the success page has Stripe context from the URL (`session_id` + `stripeStatus === 'paid'`).
 
 ---
 
@@ -24,24 +23,19 @@
 | `GoogleAnalytics` | Component name and docs only; no GA4 SDK or config. |
 | `next/script` | Only in `GoogleAnalytics.tsx` for consent defaults and GTM loader. |
 | Analytics script injection | No dynamic injection of gtag.js or GA4. |
-| Direct purchase send not using GTM | Single purchase path: `OrderPaidPurchaseTracker` on `/order/[orderId]` (when paid) → `trackPurchase` (lib/analytics) → `lib/analytics/gtag.ts` → `dataLayer.push({ event: 'purchase', ... })`. No `gtag('event','purchase',...)` or Measurement Protocol. |
-| Config/event send for GA4 or Google tag | No GA4 measurement ID or gtag config in repo. Only `NEXT_PUBLIC_GTM_ID` for GTM. |
+| Direct purchase send not using GTM | **Client:** `OrderPaidPurchaseTracker` → `trackPurchase` → `lib/analytics/gtag.ts` → `dataLayer.push({ event: 'purchase', ... })` (GTM then sends). **Server:** Stripe webhook, mark-paid, payment-status routes → `lib/ga4/sendPurchaseForOrder.ts` → `lib/ga4/measurementProtocol.ts` → GA4 Measurement Protocol (HTTPS POST to `google-analytics.com/mp/collect`). No `gtag('event','purchase',...)` in client. |
+| Config/event send for GA4 or Google tag | Client: no GA4 measurement ID or gtag config; only `NEXT_PUBLIC_GTM_ID` for GTM. Server: `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET` for Measurement Protocol (see `lib/ga4/measurementProtocol.ts`). |
 
 ---
 
-## 2. Exact non-GTM “source” of purchase on manual-order flow
+## 2. How purchase reaches GA4 (client vs server)
 
-There is **no second sender** (e.g. direct gtag or server) in the codebase. The only way a `purchase` event gets to GA4 is:
+A `purchase` event can reach GA4 in two ways:
 
-1. App pushes `{ event: 'purchase', ... }` to `window.dataLayer` (in `lib/analytics/gtag.ts`).
-2. A GTM tag (e.g. GA4 Event tag trigger: Custom Event = `purchase`) fires and sends to GA4.
+1. **Client (dataLayer → GTM):** App pushes `{ event: 'purchase', ... }` to `window.dataLayer` (in `lib/analytics/gtag.ts`). A GTM tag (e.g. GA4 Event, trigger: Custom Event = `purchase`) fires and sends to GA4. This happens when the user visits the order success page and the order is confirmed paid (e.g. after Stripe redirect or after admin marked paid).
+2. **Server (Measurement Protocol):** When an order becomes paid (Stripe webhook `checkout.session.completed` / `checkout.session.async_payment_succeeded`, or admin “Mark as paid”, or admin payment-status set to PAID), the backend calls `sendPurchaseForOrder` → `sendPurchaseToGA4` in `lib/ga4/measurementProtocol.ts`, which POSTs to GA4’s Measurement Protocol. No page visit required.
 
-So if GA4 shows a purchase during **manual-order** flow even though you’ve confirmed the GTM “purchase” tag doesn’t fire in that flow, then either:
-
-- Another GTM tag is sending a purchase (e.g. GA4 Configuration with “Send ecommerce/dataLayer events”, or a tag that fires on something else but sends event name `purchase`), or  
-- The app **is** pushing `purchase` to dataLayer in that flow (so a GTM tag **does** fire on it), because the app’s gate is treating the order as Stripe paid.
-
-The codebase points to the second case as the main risk.
+So for **manual-order** flow: if the admin marks the order paid, the **server** will send one purchase via Measurement Protocol. If the user then visits the order success page and the app’s client gate treats the order as “Stripe paid” (e.g. due to `order.stripeSessionId`), the **client** may also push purchase to dataLayer (GTM → GA4), which can lead to duplicate purchase events in GA4. The recommended fix is to tighten the client gate so purchase is only pushed when the success page has Stripe context from the URL (`session_id` + `stripeStatus === 'paid'`).
 
 ---
 
@@ -108,9 +102,13 @@ Remove the `hasStripePayment` leg from `isStripePaidOrder` for the purpose of **
 | `components/InternalTrafficBootstrap.tsx` | Pushes `traffic_type: 'internal'` on route change. No purchase. |
 | `lib/analytics/gtag.ts` | All events (including purchase) via `dataLayer.push`. No gtag.js, no GA4 ID. |
 | `lib/analytics.ts` | Re-exports and wraps gtag helpers; `trackPurchase` → gtag `trackPurchase`. |
-| `components/OrderPaidPurchaseTracker.tsx` (on order page when paid) | Only place that calls `trackPurchase`; runs only when order payment is confirmed (Supabase PAID or legacy paid). |
-| `app/order/[orderId]/page.tsx` | No analytics; no purchase. |
-| No API routes | No server-side GA4 or Measurement Protocol. |
+| `components/OrderPaidPurchaseTracker.tsx` (on order page when paid) | Client: only place that calls `trackPurchase`; runs when order payment is confirmed (Supabase PAID or legacy paid). |
+| `app/order/[orderId]/page.tsx` | Renders OrderPaidPurchaseTracker when order is paid; no direct analytics. |
+| `lib/ga4/measurementProtocol.ts` | Server: sends `purchase` to GA4 via Measurement Protocol (env: `GA4_MEASUREMENT_ID`, `GA4_MEASUREMENT_API_SECRET`). |
+| `lib/ga4/sendPurchaseForOrder.ts` | Server: idempotent send (atomic `ga4_purchase_sent` in DB); used by Stripe webhook, mark-paid, payment-status routes. |
+| `app/api/stripe/webhook/route.ts` | Calls `sendPurchaseForOrder` on checkout.session.completed / async_payment_succeeded. |
+| `app/api/admin/orders/[order_id]/mark-paid/route.ts` | Calls `sendPurchaseForOrder` when admin marks order paid. |
+| `app/api/admin/orders/[order_id]/payment-status/route.ts` | Calls `sendPurchaseForOrder` when payment status is set to PAID. |
 
 ---
 

@@ -1,0 +1,473 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Georgia',serif;background:transparent}
+.page{max-width:680px;margin:0 auto;padding:1rem}
+.shop-header{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:0.5px solid var(--color-border-tertiary)}
+.shop-logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f9c0d1,#f4a7bf);display:flex;align-items:center;justify-content:center;font-size:16px}
+.shop-name{font-size:15px;font-weight:500;color:var(--color-text-primary);letter-spacing:0.04em}
+.shop-sub{font-size:12px;color:var(--color-text-secondary);letter-spacing:0.06em;text-transform:uppercase}
+
+/* Status switcher demo */
+.demo-bar{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.demo-label{font-size:11px;color:var(--color-text-tertiary);letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap}
+.demo-btns{display:flex;gap:6px;flex-wrap:wrap}
+.demo-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;transition:all 0.15s}
+.demo-btn.active{background:#d4537e;border-color:#d4537e;color:#fff}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:0;position:relative}
+.tab{flex:1;padding:12px 8px;font-size:13px;font-weight:500;letter-spacing:0.03em;border:none;background:transparent;color:var(--color-text-secondary);cursor:pointer;position:relative;transition:color 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab:hover{color:var(--color-text-primary)}
+.tab.active{color:#c24a72}
+.tab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:#c24a72;border-radius:2px 2px 0 0}
+.tab.locked{cursor:not-allowed;color:var(--color-text-tertiary)}
+.tab.locked:hover{color:var(--color-text-tertiary)}
+.tab-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:0.03em}
+.badge-new{background:#faeeda;color:#854f0b}
+.badge-ready{background:#fbeaf0;color:#993556}
+.badge-paid{background:#eaf3de;color:#3b6d11}
+.badge-locked{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+
+/* Tooltip popup */
+.tooltip-wrap{position:relative;flex:1}
+.tooltip-box{display:none;position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);width:260px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:14px;z-index:100;box-shadow:none}
+.tooltip-box.show{display:block}
+.tooltip-arrow{position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:9px;height:9px;background:var(--color-background-primary);border-left:0.5px solid var(--color-border-secondary);border-top:0.5px solid var(--color-border-secondary);transform:translateX(-50%) rotate(45deg)}
+.tooltip-title{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.tooltip-text{font-size:11px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:10px}
+.contact-chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);cursor:pointer;display:flex;align-items:center;gap:4px;background:var(--color-background-secondary)}
+.chip:hover{border-color:#c24a72;color:#c24a72}
+
+/* Panels */
+.panel{display:none;padding:1.25rem 0}
+.panel.active{display:block}
+
+/* Order details */
+.order-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.meta-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 14px}
+.meta-label{font-size:11px;color:var(--color-text-tertiary);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px}
+.meta-value{font-size:13px;color:var(--color-text-primary);font-weight:500}
+.meta-value.mono{font-family:monospace;font-size:12px;letter-spacing:0.05em}
+.section-title{font-size:11px;color:var(--color-text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin:1rem 0 8px}
+.item-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.item-row:last-of-type{border-bottom:none}
+.item-img{width:44px;height:44px;border-radius:var(--border-radius-md);background:linear-gradient(135deg,#fbeaf0,#f4c0d1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.item-info{flex:1}
+.item-name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.item-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.item-price{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.totals-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:var(--color-text-secondary)}
+.totals-row.total{font-size:14px;font-weight:500;color:var(--color-text-primary);border-top:0.5px solid var(--color-border-tertiary);padding-top:10px;margin-top:4px}
+.contact-bar{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;margin-top:1rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.contact-bar-label{font-size:12px;color:var(--color-text-secondary)}
+.contact-icons{display:flex;gap:8px}
+.c-icon{width:32px;height:32px;border-radius:50%;border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--color-background-primary);font-size:14px}
+.c-icon:hover{border-color:#c24a72}
+
+/* Payment panel */
+.pay-status-banner{border-radius:var(--border-radius-md);padding:12px 16px;margin-bottom:1.25rem;font-size:13px;display:flex;align-items:center;gap:10px}
+.pay-status-banner.paid{background:#eaf3de;color:#3b6d11}
+.pay-status-banner.ready{background:#fbeaf0;color:#993556}
+.method-tabs{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.method-tab{flex:1;min-width:100px;padding:10px 8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);cursor:pointer;text-align:center;transition:all 0.15s}
+.method-tab:hover{border-color:#c24a72}
+.method-tab.active{border-color:#c24a72;background:#fbeaf0}
+.method-icon{font-size:20px;display:block;margin-bottom:4px}
+.method-name{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.method-sub{font-size:10px;color:var(--color-text-secondary);margin-top:2px}
+.method-tab.active .method-name{color:#c24a72}
+.method-content{display:none}
+.method-content.active{display:block}
+
+/* Card form */
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--color-text-secondary);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:5px;display:block}
+.form-input{width:100%;padding:9px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;font-family:inherit}
+.form-input:focus{outline:none;border-color:#c24a72}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pay-btn{width:100%;padding:12px;background:#c24a72;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:14px;font-weight:500;cursor:pointer;letter-spacing:0.03em;margin-top:6px;transition:background 0.15s;font-family:inherit}
+.pay-btn:hover{background:#a83c60}
+.pay-amount{font-size:13px;color:var(--color-text-secondary);text-align:center;margin-top:8px}
+.pay-amount strong{color:var(--color-text-primary)}
+
+/* QR */
+.qr-wrap{text-align:center;padding:1rem 0}
+.qr-box{width:160px;height:160px;margin:0 auto 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;background:var(--color-background-secondary);position:relative;overflow:hidden}
+.qr-inner{width:130px;height:130px;display:grid;grid-template-columns:repeat(10,1fr);gap:1px}
+.qr-cell{border-radius:1px}
+.qr-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.qr-amount{font-size:18px;font-weight:500;color:#c24a72;margin-bottom:12px}
+.qr-hint{font-size:11px;color:var(--color-text-tertiary);line-height:1.6}
+
+/* Bank transfer */
+.bank-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px;margin-bottom:10px}
+.bank-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+.bank-field{color:var(--color-text-secondary)}
+.bank-value{font-weight:500;color:var(--color-text-primary);font-family:monospace;font-size:12px;letter-spacing:0.05em}
+.copy-btn{font-size:10px;padding:3px 8px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer}
+.copy-btn:hover{border-color:#c24a72;color:#c24a72}
+.bank-notice{font-size:11px;color:var(--color-text-secondary);background:var(--color-background-secondary);border-left:2px solid #c24a72;padding:10px 12px;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;line-height:1.7;margin-top:6px}
+
+/* Paid state */
+.paid-check{width:56px;height:56px;border-radius:50%;background:#eaf3de;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px}
+.paid-title{font-size:16px;font-weight:500;color:#3b6d11;text-align:center;margin-bottom:6px}
+.paid-sub{font-size:12px;color:var(--color-text-secondary);text-align:center;line-height:1.7}
+.paid-details{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;margin-top:16px}
+</style>
+
+<div class="page">
+
+  <div class="shop-header">
+    <div class="shop-logo">&#127826;</div>
+    <div>
+      <div class="shop-name">Lanna Bloom</div>
+      <div class="shop-sub">Flower Delivery · Chiang Mai</div>
+    </div>
+  </div>
+
+  <!-- Demo status switcher -->
+  <div class="demo-bar">
+    <span class="demo-label">Preview status:</span>
+    <div class="demo-btns">
+      <button class="demo-btn active" onclick="setStatus('new')">New</button>
+      <button class="demo-btn" onclick="setStatus('ready')">Ready to Pay</button>
+      <button class="demo-btn" onclick="setStatus('paid')">Paid</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" id="tab-details" onclick="switchTab('details')">
+      Order Details
+      <span class="tab-badge badge-new" id="status-badge">New</span>
+    </button>
+    <div class="tooltip-wrap" id="pay-tab-wrap">
+      <button class="tab locked" id="tab-pay" onclick="handlePayTab()">
+        Make Payment
+        <span class="tab-badge badge-locked" id="pay-badge">Locked</span>
+      </button>
+      <div class="tooltip-box" id="tooltip">
+        <div class="tooltip-arrow"></div>
+        <div class="tooltip-title">Order under review</div>
+        <div class="tooltip-text">We're reviewing your order. Once confirmed, payment will be available here. For a quick reply, contact us:</div>
+        <div class="contact-chips">
+          <div class="chip">&#128172; LINE</div>
+          <div class="chip">&#9992; Telegram</div>
+          <div class="chip">&#128222; WhatsApp</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Details Panel -->
+  <div class="panel active" id="panel-details">
+    <div class="order-meta">
+      <div class="meta-card" style="grid-column:1/-1">
+        <div class="meta-label">Order ID</div>
+        <div class="meta-value mono">LB-2026-V5TJ7AB9</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Delivery date</div>
+        <div class="meta-value">Mar 19, 2026</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Time window</div>
+        <div class="meta-value">12:00 – 15:00</div>
+      </div>
+      <div class="meta-card" style="grid-column:1/-1">
+        <div class="meta-label">Delivery address</div>
+        <div class="meta-value">Rjevskaya street</div>
+      </div>
+    </div>
+
+    <div class="section-title">Items</div>
+    <div class="item-row">
+      <div class="item-img">&#127826;</div>
+      <div class="item-info">
+        <div class="item-name">51 Pink Roses</div>
+        <div class="item-sub">XL bouquet</div>
+      </div>
+      <div class="item-price">&#3647;5,700</div>
+    </div>
+    <div class="item-row">
+      <div class="item-img">&#127826;</div>
+      <div class="item-info">
+        <div class="item-name">51 Pink Roses</div>
+        <div class="item-sub">XL bouquet</div>
+      </div>
+      <div class="item-price">&#3647;5,700</div>
+    </div>
+
+    <div style="padding:12px 0 4px">
+      <div class="totals-row"><span>Bouquet subtotal</span><span>&#3647;11,400</span></div>
+      <div class="totals-row"><span>Delivery fee</span><span>&#3647;300</span></div>
+      <div class="totals-row total"><span>Total</span><span>&#3647;11,700</span></div>
+    </div>
+
+    <div class="section-title">Sender</div>
+    <div class="meta-card">
+      <div class="meta-value">Konstantin Polovnikov</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);margin-top:3px">60895272645 · Phone / LINE</div>
+    </div>
+
+    <div class="contact-bar">
+      <span class="contact-bar-label">Contact Lanna Bloom:</span>
+      <div class="contact-icons">
+        <div class="c-icon" title="LINE">&#128172;</div>
+        <div class="c-icon" title="WhatsApp">&#128222;</div>
+        <div class="c-icon" title="Telegram">&#9992;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Panel -->
+  <div class="panel" id="panel-pay">
+
+    <!-- Paid state -->
+    <div id="paid-view" style="display:none;padding:2rem 0;text-align:center">
+      <div class="paid-check">&#10003;</div>
+      <div class="paid-title">Payment confirmed</div>
+      <div class="paid-sub">Received on March 16, 2026 at 11:06 AM<br>Your flowers are being prepared with care.</div>
+      <div class="paid-details">
+        <div class="totals-row"><span>Amount paid</span><span style="color:var(--color-text-primary);font-weight:500">&#3647;11,700</span></div>
+        <div class="totals-row"><span>Method</span><span>PromptPay</span></div>
+        <div class="totals-row"><span>Reference</span><span style="font-family:monospace;font-size:12px">LB-2026-V5TJ7AB9</span></div>
+      </div>
+    </div>
+
+    <!-- Pay view -->
+    <div id="pay-view">
+      <div class="pay-status-banner ready" id="pay-banner">
+        &#127826; Your order is confirmed and ready for payment.
+      </div>
+
+      <div class="method-tabs">
+        <div class="method-tab active" onclick="setMethod('card')">
+          <span class="method-icon">&#128179;</span>
+          <div class="method-name">Card</div>
+          <div class="method-sub">Visa / Mastercard</div>
+        </div>
+        <div class="method-tab" onclick="setMethod('qr')">
+          <span class="method-icon">&#9638;</span>
+          <div class="method-name">QR Code</div>
+          <div class="method-sub">PromptPay</div>
+        </div>
+        <div class="method-tab" onclick="setMethod('bank')">
+          <span class="method-icon">&#127981;</span>
+          <div class="method-name">Bank Transfer</div>
+          <div class="method-sub">Direct deposit</div>
+        </div>
+      </div>
+
+      <!-- Card method -->
+      <div class="method-content active" id="mc-card">
+        <div class="form-group">
+          <label class="form-label">Cardholder name</label>
+          <input class="form-input" type="text" placeholder="Name on card">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Card number</label>
+          <input class="form-input" type="text" placeholder="0000 0000 0000 0000">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Expiry</label>
+            <input class="form-input" type="text" placeholder="MM / YY">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVV</label>
+            <input class="form-input" type="text" placeholder="123">
+          </div>
+        </div>
+        <button class="pay-btn">Pay &#3647;11,700</button>
+        <div class="pay-amount" style="margin-top:10px;font-size:11px;color:var(--color-text-tertiary)">&#128274; Secured by 3D Secure · SSL encrypted</div>
+      </div>
+
+      <!-- QR method -->
+      <div class="method-content" id="mc-qr">
+        <div class="qr-wrap">
+          <div class="qr-label">Scan with any Thai banking app</div>
+          <div class="qr-amount">&#3647;11,700</div>
+          <div class="qr-box" id="qr-canvas">
+            <svg width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="40" height="40" rx="4" fill="#c24a72"/>
+              <rect x="5" y="5" width="30" height="30" rx="3" fill="#fbeaf0"/>
+              <rect x="10" y="10" width="20" height="20" rx="2" fill="#c24a72"/>
+              <rect x="90" y="0" width="40" height="40" rx="4" fill="#c24a72"/>
+              <rect x="95" y="5" width="30" height="30" rx="3" fill="#fbeaf0"/>
+              <rect x="100" y="10" width="20" height="20" rx="2" fill="#c24a72"/>
+              <rect x="0" y="90" width="40" height="40" rx="4" fill="#c24a72"/>
+              <rect x="5" y="95" width="30" height="30" rx="3" fill="#fbeaf0"/>
+              <rect x="10" y="100" width="20" height="20" rx="2" fill="#c24a72"/>
+              <rect x="50" y="0" width="8" height="8" fill="#c24a72" rx="1"/>
+              <rect x="62" y="0" width="6" height="6" fill="#c24a72" rx="1"/>
+              <rect x="72" y="2" width="4" height="8" fill="#c24a72" rx="1"/>
+              <rect x="50" y="12" width="4" height="6" fill="#c24a72" rx="1"/>
+              <rect x="58" y="10" width="8" height="4" fill="#c24a72" rx="1"/>
+              <rect x="70" y="14" width="6" height="6" fill="#c24a72" rx="1"/>
+              <rect x="50" y="22" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="64" y="20" width="6" height="8" fill="#c24a72" rx="1"/>
+              <rect x="74" y="22" width="4" height="4" fill="#c24a72" rx="1"/>
+              <rect x="0" y="50" width="6" height="8" fill="#c24a72" rx="1"/>
+              <rect x="10" y="50" width="8" height="4" fill="#c24a72" rx="1"/>
+              <rect x="22" y="52" width="6" height="6" fill="#c24a72" rx="1"/>
+              <rect x="32" y="50" width="4" height="10" fill="#c24a72" rx="1"/>
+              <rect x="2" y="62" width="8" height="4" fill="#c24a72" rx="1"/>
+              <rect x="14" y="60" width="6" height="8" fill="#c24a72" rx="1"/>
+              <rect x="24" y="64" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="38" y="62" width="4" height="6" fill="#c24a72" rx="1"/>
+              <rect x="0" y="72" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="14" y="72" width="4" height="8" fill="#c24a72" rx="1"/>
+              <rect x="22" y="74" width="8" height="4" fill="#c24a72" rx="1"/>
+              <rect x="34" y="70" width="6" height="10" fill="#c24a72" rx="1"/>
+              <rect x="50" y="50" width="30" height="30" rx="4" fill="#c24a72"/>
+              <rect x="54" y="54" width="22" height="22" rx="3" fill="#fbeaf0"/>
+              <rect x="58" y="58" width="14" height="14" rx="2" fill="#c24a72"/>
+              <rect x="84" y="50" width="6" height="6" fill="#c24a72" rx="1"/>
+              <rect x="94" y="52" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="108" y="50" width="4" height="8" fill="#c24a72" rx="1"/>
+              <rect x="118" y="50" width="8" height="6" fill="#c24a72" rx="1"/>
+              <rect x="82" y="62" width="8" height="8" fill="#c24a72" rx="1"/>
+              <rect x="94" y="60" width="6" height="10" fill="#c24a72" rx="1"/>
+              <rect x="104" y="64" width="12" height="4" fill="#c24a72" rx="1"/>
+              <rect x="82" y="74" width="12" height="4" fill="#c24a72" rx="1"/>
+              <rect x="98" y="72" width="8" height="8" fill="#c24a72" rx="1"/>
+              <rect x="110" y="72" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="50" y="84" width="4" height="10" fill="#c24a72" rx="1"/>
+              <rect x="58" y="82" width="8" height="6" fill="#c24a72" rx="1"/>
+              <rect x="70" y="84" width="6" height="8" fill="#c24a72" rx="1"/>
+              <rect x="80" y="82" width="4" height="12" fill="#c24a72" rx="1"/>
+              <rect x="88" y="84" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="102" y="82" width="6" height="8" fill="#c24a72" rx="1"/>
+              <rect x="112" y="84" width="14" height="6" fill="#c24a72" rx="1"/>
+              <rect x="50" y="96" width="14" height="4" fill="#c24a72" rx="1"/>
+              <rect x="68" y="94" width="4" height="8" fill="#c24a72" rx="1"/>
+              <rect x="76" y="96" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="90" y="92" width="6" height="10" fill="#c24a72" rx="1"/>
+              <rect x="100" y="96" width="12" height="4" fill="#c24a72" rx="1"/>
+              <rect x="116" y="94" width="8" height="8" fill="#c24a72" rx="1"/>
+              <rect x="52" y="108" width="8" height="4" fill="#c24a72" rx="1"/>
+              <rect x="64" y="106" width="6" height="8" fill="#c24a72" rx="1"/>
+              <rect x="74" y="108" width="4" height="6" fill="#c24a72" rx="1"/>
+              <rect x="82" y="106" width="10" height="4" fill="#c24a72" rx="1"/>
+              <rect x="96" y="108" width="8" height="6" fill="#c24a72" rx="1"/>
+              <rect x="108" y="106" width="4" height="8" fill="#c24a72" rx="1"/>
+              <rect x="116" y="108" width="10" height="4" fill="#c24a72" rx="1"/>
+            </svg>
+          </div>
+          <div class="qr-hint">Reference: LB-2026-V5TJ7AB9<br>After payment, send your slip to LINE or Telegram</div>
+          <button class="pay-btn" style="margin-top:16px;width:auto;padding:10px 28px">Download QR</button>
+        </div>
+      </div>
+
+      <!-- Bank transfer method -->
+      <div class="method-content" id="mc-bank">
+        <div class="bank-card">
+          <div class="bank-row">
+            <span class="bank-field">Bank</span>
+            <span class="bank-value">Kasikorn Bank (KBank)</span>
+          </div>
+          <div class="bank-row">
+            <span class="bank-field">Account name</span>
+            <span class="bank-value">Lanna Bloom Co., Ltd.</span>
+          </div>
+          <div class="bank-row">
+            <span class="bank-field">Account number</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="bank-value">xxx-x-xxxxx-x</span>
+              <button class="copy-btn" onclick="copyText(this,'xxx-x-xxxxx-x')">Copy</button>
+            </div>
+          </div>
+          <div class="bank-row">
+            <span class="bank-field">Amount</span>
+            <span class="bank-value" style="color:#c24a72;font-size:14px">&#3647;11,700.00</span>
+          </div>
+          <div class="bank-row">
+            <span class="bank-field">Reference</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="bank-value">LB-2026-V5TJ7AB9</span>
+              <button class="copy-btn" onclick="copyText(this,'LB-2026-V5TJ7AB9')">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="bank-notice">
+          After transferring, please send your payment slip via <strong>LINE</strong> or <strong>Telegram</strong> with your order ID. Processing takes 15–30 minutes on business days.
+        </div>
+        <button class="pay-btn" style="margin-top:14px">I've sent the transfer — notify shop</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var currentStatus = 'new';
+var tooltipVisible = false;
+
+function setStatus(s){
+  currentStatus = s;
+  document.querySelectorAll('.demo-btn').forEach(function(b){b.classList.remove('active')});
+  event.target.classList.add('active');
+  var badge = document.getElementById('status-badge');
+  var payBadge = document.getElementById('pay-badge');
+  var payTab = document.getElementById('tab-pay');
+  if(s==='new'){
+    badge.textContent='New'; badge.className='tab-badge badge-new';
+    payBadge.textContent='Locked'; payBadge.className='tab-badge badge-locked';
+    payTab.className='tab locked';
+    if(document.getElementById('panel-pay').classList.contains('active')) switchTab('details');
+  } else if(s==='ready'){
+    badge.textContent='Ready to Pay'; badge.className='tab-badge badge-ready';
+    payBadge.textContent='Pay now'; payBadge.className='tab-badge badge-ready';
+    payTab.className='tab';
+    document.getElementById('paid-view').style.display='none';
+    document.getElementById('pay-view').style.display='block';
+  } else if(s==='paid'){
+    badge.textContent='Paid'; badge.className='tab-badge badge-paid';
+    payBadge.textContent='Paid'; payBadge.className='tab-badge badge-paid';
+    payTab.className='tab';
+    document.getElementById('paid-view').style.display='block';
+    document.getElementById('pay-view').style.display='none';
+  }
+  hideTooltip();
+}
+
+function handlePayTab(){
+  if(currentStatus==='new'){
+    tooltipVisible = !tooltipVisible;
+    document.getElementById('tooltip').className = 'tooltip-box' + (tooltipVisible ? ' show' : '');
+  } else {
+    switchTab('pay');
+    hideTooltip();
+  }
+}
+
+function hideTooltip(){tooltipVisible=false; document.getElementById('tooltip').className='tooltip-box';}
+
+function switchTab(t){
+  document.getElementById('panel-details').classList.remove('active');
+  document.getElementById('panel-pay').classList.remove('active');
+  document.getElementById('tab-details').classList.remove('active');
+  document.getElementById('tab-pay').classList.remove('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  hideTooltip();
+}
+
+function setMethod(m){
+  document.querySelectorAll('.method-tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.method-content').forEach(function(c){c.classList.remove('active')});
+  event.target.closest('.method-tab').classList.add('active');
+  document.getElementById('mc-'+m).classList.add('active');
+}
+
+function copyText(btn, text){
+  btn.textContent='Copied!';
+  setTimeout(function(){btn.textContent='Copy'},1500);
+}
+
+document.addEventListener('click', function(e){
+  if(!document.getElementById('pay-tab-wrap').contains(e.target)) hideTooltip();
+});
+</script>

@@ -28,12 +28,41 @@ interface PaymentCardProps {
 export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [savingStatus, setSavingStatus] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const paymentMethod = (order.payment_method ?? 'BANK_TRANSFER').toUpperCase();
   const paymentStatus = (order.payment_status ?? 'NOT_PAID').toUpperCase();
   const isManual = MANUAL_PAYMENT_METHODS.includes(paymentMethod);
   const showMarkPaidButton = canMarkPaid && isManual && paymentStatus !== 'PAID';
+
+  const handleSetPaymentStatus = async (nextStatus: 'NOT_PAID' | 'READY_TO_PAY') => {
+    if (!isManual || savingStatus || paymentStatus === nextStatus) return;
+    setSavingStatus(true);
+    setMessage(null);
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${encodeURIComponent(order.order_id)}/payment-status`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_status: nextStatus }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error ?? 'Failed to update payment status' });
+        return;
+      }
+      setMessage({ type: 'success', text: 'Payment status updated' });
+      setTimeout(() => setMessage(null), 3000);
+      router.refresh();
+    } catch (e) {
+      setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
+    } finally {
+      setSavingStatus(false);
+    }
+  };
 
   const handleMarkPaid = async () => {
     if (!showMarkPaidButton || saving) return;
@@ -62,42 +91,57 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
   return (
     <section className="admin-section admin-payment-card">
       <h2 className="admin-section-title">Payment</h2>
-      <div className="admin-status-grid">
-        <div className="admin-status-group">
-          <label>Payment method</label>
-          <p>
-            <span className="admin-badge admin-badge-payment-method">
-              {paymentMethodLabel(order.payment_method)}
-            </span>
-          </p>
-        </div>
-        <div className="admin-status-group">
-          <label>Payment status</label>
-          <p>
-            <span
-              className={`admin-badge admin-badge-payment-${(paymentStatus ?? '').toLowerCase()}`}
-            >
-              {formatPaymentStatus(paymentStatus)}
-            </span>
-          </p>
-        </div>
-      </div>
+      <p className="admin-muted" style={{ marginBottom: canMarkPaid ? 8 : 0 }}>
+        Method: {paymentMethodLabel(order.payment_method)} · Status: {formatPaymentStatus(paymentStatus)}
+      </p>
       {order.paid_at && (
-        <p className="admin-muted">
+        <p className="admin-muted" style={{ marginTop: 0, marginBottom: canMarkPaid ? 12 : 0 }}>
           Paid at: {new Date(order.paid_at).toLocaleString()}
         </p>
       )}
-      {showMarkPaidButton && (
-        <div className="admin-payment-actions">
+      {isManual && paymentStatus !== 'PAID' && (
+        <div className="admin-status-row" style={{ marginTop: 4, gap: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={handleMarkPaid}
-            disabled={saving}
-            className="admin-btn admin-btn-primary"
+            className="admin-btn admin-btn-sm admin-btn-outline"
+            disabled={savingStatus || paymentStatus === 'NOT_PAID'}
+            onClick={() => handleSetPaymentStatus('NOT_PAID')}
           >
-            {saving ? 'Saving…' : 'Mark as Paid'}
+            {savingStatus && paymentStatus !== 'NOT_PAID' ? 'Saving…' : 'Not ready'}
           </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-sm admin-btn-outline"
+            disabled={savingStatus || paymentStatus === 'READY_TO_PAY'}
+            onClick={() => handleSetPaymentStatus('READY_TO_PAY')}
+          >
+            {savingStatus && paymentStatus !== 'READY_TO_PAY' ? 'Saving…' : 'Ready to pay'}
+          </button>
+          {showMarkPaidButton && (
+            <button
+              type="button"
+              onClick={handleMarkPaid}
+              disabled={saving}
+              className="admin-btn admin-btn-sm admin-btn-primary"
+            >
+              {saving ? 'Saving…' : 'Mark as paid'}
+            </button>
+          )}
         </div>
+      )}
+      {showMarkPaidButton && (
+        !isManual && (
+          <div className="admin-payment-actions">
+            <button
+              type="button"
+              onClick={handleMarkPaid}
+              disabled={saving}
+              className="admin-btn admin-btn-primary"
+            >
+              {saving ? 'Saving…' : 'Mark as paid'}
+            </button>
+          </div>
+        )
       )}
       {paymentMethod === 'STRIPE' && paymentStatus !== 'PAID' && (
         <p className="admin-muted">
