@@ -1,0 +1,455 @@
+{
+  "generatedAt": "2026-03-18T12:48:55.370Z",
+  "baseUrl": "https://lannabloom.shop",
+  "sanity": {
+    "projectId": "moaf1lxq",
+    "dataset": "production"
+  },
+  "counts": {
+    "total": 44,
+    "bouquets": 39,
+    "products": 5
+  },
+  "items": [
+    {
+      "type": "bouquet",
+      "id": "2aaed48a-9353-4f35-bffa-5fa97fcb074d",
+      "slug": "101-mixed-roses",
+      "nameEn": "101 Roses",
+      "nameTh": "ช่อกุหลาบ 101 ดอก",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/101-mixed-roses",
+      "urlTh": "https://lannabloom.shop/th/catalog/101-mixed-roses"
+    },
+    {
+      "type": "bouquet",
+      "id": "bb91f694-4feb-4c22-90b6-33e3001abe14",
+      "slug": "51-pink-roses",
+      "nameEn": "51 Pink Roses",
+      "nameTh": "ช่อกุหลาบสีชมพู 51 ดอก",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/51-pink-roses",
+      "urlTh": "https://lannabloom.shop/th/catalog/51-pink-roses"
+    },
+    {
+      "type": "bouquet",
+      "id": "afe1ba0f-cf4e-4820-afdc-325f5a752289",
+      "slug": "51-mix-roses",
+      "nameEn": "51 Red & White Roses ",
+      "nameTh": "กุหลาบแดงและขาว 51 ดอก",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/51-mix-roses",
+      "urlTh": "https://lannabloom.shop/th/catalog/51-mix-roses"
+    },
+    {
+      "type": "bouquet",
+      "id": "2b6319f2-a807-42c4-8aa0-49831220a637",
+      "slug": "51-red-roses",
+      "nameEn": "51 Red Roses ",
+      "nameTh": "ช่อกุหลาบสีแดง 51 ดอก",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/51-red-roses",
+      "urlTh": "https://lannabloom.shop/th/catalog/51-red-roses"
+    },
+    {
+      "type": "bouquet",
+      "id": "99c8eca8-9e73-4c22-88c2-01313fa85781",
+      "slug": "classic-red-rose-mini",
+      "nameEn": "Classic Red Rose Mini",
+      "nameTh": "ช่อกุหลาบแดงคลาสสิกไซซ์มินิ",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/classic-red-rose-mini",
+      "urlTh": "https://lannabloom.shop/th/catalog/classic-red-rose-mini"
+    },
+    {
+      "type": "bouquet",
+      "id": "f21fed88-0e6a-467a-8ed6-17bda6cd2139",
+      "slug": "crimson-rose-bouquet",
+      "nameEn": "Crimson Rose Bouquet",
+      "nameTh": "ช่อกุหลาบแดงคริมสัน",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/crimson-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/crimson-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "235fcea7-dc18-4605-8c07-783034fd313d",
+      "slug": "elegant-classic-mix",
+      "nameEn": "Elegant Classic Mix",
+      "nameTh": "การผสมผสานที่ลงตัวและคลาสสิก",
+      "category": "mixed",
+      "urlEn": "https://lannabloom.shop/en/catalog/elegant-classic-mix",
+      "urlTh": "https://lannabloom.shop/th/catalog/elegant-classic-mix"
+    },
+    {
+      "type": "bouquet",
+      "id": "63620ba7-b719-4654-aaa2-3d273f6d4614",
+      "slug": "elegant-mix",
+      "nameEn": "Elegant Mix",
+      "nameTh": "การผสมผสานที่ลงตัว",
+      "category": "mixed",
+      "urlEn": "https://lannabloom.shop/en/catalog/elegant-mix",
+      "urlTh": "https://lannabloom.shop/th/catalog/elegant-mix"
+    },
+    {
+      "type": "bouquet",
+      "id": "c6c32e4c-3d67-45c0-8457-95acacee9346",
+      "slug": "elegant-mix-bouquet",
+      "nameEn": "Elegant Mix Bouquet",
+      "nameTh": "ช่อมิกซ์เรียบหรู",
+      "category": "mixed",
+      "urlEn": "https://lannabloom.shop/en/catalog/elegant-mix-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/elegant-mix-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "732c36ff-8e00-459d-9e93-8978f02533a4",
+      "slug": "gentle-pink-rose-bouquet",
+      "nameEn": "Gentle Pink Rose Bouquet",
+      "nameTh": "ช่อดอกกุหลาบสีชมพูอ่อนโยน",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/gentle-pink-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/gentle-pink-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "43ba59b2-3cdd-439e-817a-b2e9aa702103",
+      "slug": "gentle-rose-bouquet",
+      "nameEn": "Gentle Rose Bouquet",
+      "nameTh": "ช่อหวานสไตล์มินิมอล",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/gentle-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/gentle-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "55af5544-3625-4309-97a8-3f08cbb7c423",
+      "slug": "pastel-dream-bouquet",
+      "nameEn": "Pastel Dream Bouquet",
+      "nameTh": "ช่อพาสเทลในฝัน",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/pastel-dream-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/pastel-dream-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "77ce6dca-9b2b-4c02-97a6-5efaeb8612a1",
+      "slug": "red-rose-romance",
+      "nameEn": "Red Rose Romance",
+      "nameTh": "ช่อกุหลาบแดงโรแมนติก",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/red-rose-romance",
+      "urlTh": "https://lannabloom.shop/th/catalog/red-rose-romance"
+    },
+    {
+      "type": "bouquet",
+      "id": "f26941ed-4610-4895-929a-6772ac1632f0",
+      "slug": "red-roses",
+      "nameEn": "Red Roses Bouquet",
+      "nameTh": "ช่อกุหลาบแดง (ไซส์ S)",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/red-roses",
+      "urlTh": "https://lannabloom.shop/th/catalog/red-roses"
+    },
+    {
+      "type": "bouquet",
+      "id": "87814075-94a5-4f72-9960-03e26ce2c71c",
+      "slug": "classic-red-rose-bouquet",
+      "nameEn": "Red Round Rose Bouquet",
+      "nameTh": "ช่อดอกกุหลาบกลมสีแดง",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/classic-red-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/classic-red-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "4b7abde4-db59-431b-a031-c899fb600f5a",
+      "slug": "rose-cloud-bouquet",
+      "nameEn": "Rose Cloud Bouquet",
+      "nameTh": "ช่อกุหลาบฟูละมุน",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/rose-cloud-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/rose-cloud-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "32945e6a-fa30-47f4-a051-239f384ab4d3",
+      "slug": "rose-whisper",
+      "nameEn": "Rose Whisper",
+      "nameTh": "กุหลาบกระซิบรัก",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/rose-whisper",
+      "urlTh": "https://lannabloom.shop/th/catalog/rose-whisper"
+    },
+    {
+      "type": "bouquet",
+      "id": "19b57f26-4df6-4efc-b48e-72724021c69c",
+      "slug": "rose-whisper-bouquet",
+      "nameEn": "Rose Whisper Bouquet",
+      "nameTh": "ช่อดอกกุหลาบกระซิบ",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/rose-whisper-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/rose-whisper-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "4fa8cd57-6a6c-456e-bd7a-f963397f9486",
+      "slug": "rustic-rose-bouquet",
+      "nameEn": "Rustic Rose Bouquet",
+      "nameTh": "ช่อกุหลาบสไตล์รัสติก",
+      "category": "romantic",
+      "urlEn": "https://lannabloom.shop/en/catalog/rustic-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/rustic-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "4fffc29d-814c-4a87-838f-18a6ba6e3d37",
+      "slug": "single-rose-bouquet",
+      "nameEn": "Single Rose Bouquet",
+      "nameTh": "ช่อกุหลาบเดี่ยว",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/single-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/single-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "aa7dbcaf-f13f-48f7-be12-139a9bbd415e",
+      "slug": "soft-elegance-mix",
+      "nameEn": "Soft Elegance Mix",
+      "nameTh": "ซอฟต์เอลิแกนซ์มิกซ์",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/soft-elegance-mix",
+      "urlTh": "https://lannabloom.shop/th/catalog/soft-elegance-mix"
+    },
+    {
+      "type": "bouquet",
+      "id": "7b010937-b174-4ff0-afdb-f16a58a03db3",
+      "slug": "sunflower-bouquet",
+      "nameEn": "Sunflower Bouquet",
+      "nameTh": "ช่อดอกทานตะวัน",
+      "category": "mono",
+      "urlEn": "https://lannabloom.shop/en/catalog/sunflower-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/sunflower-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "162e5b19-f941-4c89-b329-864b7d9efce8",
+      "slug": "sweet-harmony-blue1",
+      "nameEn": "Sweet Harmony Blue",
+      "nameTh": "ฮาร์โมนีหวานละมุน",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/sweet-harmony-blue1",
+      "urlTh": "https://lannabloom.shop/th/catalog/sweet-harmony-blue1"
+    },
+    {
+      "type": "bouquet",
+      "id": "e5f22d11-a1b4-4439-b364-dab6d44f1b8e",
+      "slug": "sweet-harmony-blue2",
+      "nameEn": "Sweet Harmony Blue",
+      "nameTh": "ฮาร์โมนีหวานละมุน",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/sweet-harmony-blue2",
+      "urlTh": "https://lannabloom.shop/th/catalog/sweet-harmony-blue2"
+    },
+    {
+      "type": "bouquet",
+      "id": "a004ffe0-dd67-4654-9e44-f7c2d6c3ab4f",
+      "slug": "sweet-harmony-pink",
+      "nameEn": "Sweet Harmony Pink",
+      "nameTh": "สวีท ฮาร์โมนี ไวท์",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/sweet-harmony-pink",
+      "urlTh": "https://lannabloom.shop/th/catalog/sweet-harmony-pink"
+    },
+    {
+      "type": "bouquet",
+      "id": "a8d6a0bd-1a61-47e8-b301-d21f0bfb40e8",
+      "slug": "sweet-mix-bouquet",
+      "nameEn": "Sweet Mix Bouquet",
+      "nameTh": "ช่อดอกไม้รวมโทนหวาน",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/sweet-mix-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/sweet-mix-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "8791f1ee-26aa-4590-877a-b98b1ec4484e",
+      "slug": "sweet-rose-bloom",
+      "nameEn": "Sweet Rose Bloom",
+      "nameTh": "ช่อกุหลาบหวานละมุน",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/sweet-rose-bloom",
+      "urlTh": "https://lannabloom.shop/th/catalog/sweet-rose-bloom"
+    },
+    {
+      "type": "bouquet",
+      "id": "444b07b7-c0b7-4a4b-85ea-61e8dda38373",
+      "slug": "universal-flower-bouquet-red",
+      "nameEn": "Universal Flower Bouquet Red",
+      "nameTh": "ช่อดอกไม้สากล",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/universal-flower-bouquet-red",
+      "urlTh": "https://lannabloom.shop/th/catalog/universal-flower-bouquet-red"
+    },
+    {
+      "type": "bouquet",
+      "id": "9f5c1c9b-2d10-40bd-b03c-4736d4c3a26e",
+      "slug": "universal-flower-bouquet-white",
+      "nameEn": "Universal Flower Bouquet White",
+      "nameTh": "ช่อดอกไม้สากลสีขาว",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/universal-flower-bouquet-white",
+      "urlTh": "https://lannabloom.shop/th/catalog/universal-flower-bouquet-white"
+    },
+    {
+      "type": "bouquet",
+      "id": "9a4a7f6d-3979-4274-b673-cb6c5eca0fee",
+      "slug": "velvet-rose",
+      "nameEn": "Velvet Rose",
+      "nameTh": "ช่อกุหลาบเวลเวท",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/velvet-rose",
+      "urlTh": "https://lannabloom.shop/th/catalog/velvet-rose"
+    },
+    {
+      "type": "bouquet",
+      "id": "61af03af-aa34-47e0-be83-a35890f3325c",
+      "slug": "velvet-rose-bouquet",
+      "nameEn": "Velvet Rose Bouquet",
+      "nameTh": "ช่อกุหลาบเวลเวท",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/velvet-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/velvet-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "bf508636-be94-4a24-bd80-35dfcb4cd179",
+      "slug": "white-rose-cloud-bouquet",
+      "nameEn": "White Rose Cloud Bouquet ",
+      "nameTh": "ช่อดอกกุหลาบขาวเมฆ",
+      "category": null,
+      "urlEn": "https://lannabloom.shop/en/catalog/white-rose-cloud-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/white-rose-cloud-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "64af8c59-1026-47cc-99c1-f91eaa8b4db1",
+      "slug": "white-roses",
+      "nameEn": "White Roses Bouquet",
+      "nameTh": "ช่อดอกกุหลาบขาว",
+      "category": "roses",
+      "urlEn": "https://lannabloom.shop/en/catalog/white-roses",
+      "urlTh": "https://lannabloom.shop/th/catalog/white-roses"
+    },
+    {
+      "type": "bouquet",
+      "id": "54c970b8-99cb-46f2-81cb-4f7fa829c775",
+      "slug": "white-rustic-rose-bouquet",
+      "nameEn": "White Rustic Rose Bouquet",
+      "nameTh": "ช่อดอกกุหลาบขาวสไตล์ชนบท",
+      "category": "mono",
+      "urlEn": "https://lannabloom.shop/en/catalog/white-rustic-rose-bouquet",
+      "urlTh": "https://lannabloom.shop/th/catalog/white-rustic-rose-bouquet"
+    },
+    {
+      "type": "bouquet",
+      "id": "98bd0348-8ca8-407b-8a04-38e75fa13dcd",
+      "slug": "yellow-lilies",
+      "nameEn": "Yellow Lilies Bouquets ",
+      "nameTh": "ช่อดอกลิลลี่สีเหลือง",
+      "category": "mono",
+      "urlEn": "https://lannabloom.shop/en/catalog/yellow-lilies",
+      "urlTh": "https://lannabloom.shop/th/catalog/yellow-lilies"
+    },
+    {
+      "type": "bouquet",
+      "id": "27fe5139-4bd3-451b-8a3e-ea10ebc1b6ec",
+      "slug": "pink-tulips",
+      "nameEn": "🌷 Tulip Bouquet",
+      "nameTh": "🌷 ช่อดอกทิวลิป",
+      "category": "mono",
+      "urlEn": "https://lannabloom.shop/en/catalog/pink-tulips",
+      "urlTh": "https://lannabloom.shop/th/catalog/pink-tulips"
+    },
+    {
+      "type": "bouquet",
+      "id": "a4492005-b815-4fbe-aad7-763ad80e05fa",
+      "slug": "mixed-soft-romance",
+      "nameEn": "🌸 Soft Romance Mix",
+      "nameTh": "🌸 ส่วนผสมแห่งความโรแมนติกที่นุ่มนวล",
+      "category": "mixed",
+      "urlEn": "https://lannabloom.shop/en/catalog/mixed-soft-romance",
+      "urlTh": "https://lannabloom.shop/th/catalog/mixed-soft-romance"
+    },
+    {
+      "type": "bouquet",
+      "id": "173cbb3d-e892-4db2-95a5-15127d35cbcc",
+      "slug": "sunny-happiness-mix",
+      "nameEn": "🌼 Sunny Happiness Mix",
+      "nameTh": "🌼 ซันนี่ แฮปปี้ มิกซ์",
+      "category": "mixed",
+      "urlEn": "https://lannabloom.shop/en/catalog/sunny-happiness-mix",
+      "urlTh": "https://lannabloom.shop/th/catalog/sunny-happiness-mix"
+    },
+    {
+      "type": "bouquet",
+      "id": "fa7c7111-fad3-47d1-8864-10fd6954cf42",
+      "slug": "white-lilies",
+      "nameEn": "🌼White Lilies Bouquet",
+      "nameTh": "🤍 ช่อดอกลิลลี่สีขาว",
+      "category": "mono",
+      "urlEn": "https://lannabloom.shop/en/catalog/white-lilies",
+      "urlTh": "https://lannabloom.shop/th/catalog/white-lilies"
+    },
+    {
+      "type": "product",
+      "id": "41471e8d-a133-42a2-990c-0b09b152ee77",
+      "slug": "brown-teddy-bear-54-cm",
+      "nameEn": "Brown Bear 54 cm",
+      "nameTh": "หมีสีน้ำตาล 54 ซม.",
+      "category": "gifts",
+      "urlEn": "https://lannabloom.shop/en/catalog/brown-teddy-bear-54-cm",
+      "urlTh": "https://lannabloom.shop/th/catalog/brown-teddy-bear-54-cm"
+    },
+    {
+      "type": "product",
+      "id": "e2364ed3-c8fd-4eef-ac79-53fb8890f2e7",
+      "slug": "cream-teddy-bear-53-cm",
+      "nameEn": "Cream Bear 53 cm",
+      "nameTh": "หมีสีครีม 53 ซม.",
+      "category": "gifts",
+      "urlEn": "https://lannabloom.shop/en/catalog/cream-teddy-bear-53-cm",
+      "urlTh": "https://lannabloom.shop/th/catalog/cream-teddy-bear-53-cm"
+    },
+    {
+      "type": "product",
+      "id": "ff70ba4a-d274-4afc-b2e4-1a5c5ed93673",
+      "slug": "cream-teddy-bear-66-cm",
+      "nameEn": "Cream Bear 66 cm",
+      "nameTh": "หมีสีครีม 66 ซม",
+      "category": "gifts",
+      "urlEn": "https://lannabloom.shop/en/catalog/cream-teddy-bear-66-cm",
+      "urlTh": "https://lannabloom.shop/th/catalog/cream-teddy-bear-66-cm"
+    },
+    {
+      "type": "product",
+      "id": "213d8300-d54c-437f-babb-16662e4afbaa",
+      "slug": "happy-heart-teddy",
+      "nameEn": "Happy Bear 30 cm",
+      "nameTh": "Happy หมีขนาด 30 ซม",
+      "category": "gifts",
+      "urlEn": "https://lannabloom.shop/en/catalog/happy-heart-teddy",
+      "urlTh": "https://lannabloom.shop/th/catalog/happy-heart-teddy"
+    },
+    {
+      "type": "product",
+      "id": "1d0a6824-7fd1-42ca-b738-e47c18ddd331",
+      "slug": "large-cream-teddy-bear-106-cm",
+      "nameEn": "Large Bear 106 cm",
+      "nameTh": "หมีตัวใหญ่ 106 ซม",
+      "category": "gifts",
+      "urlEn": "https://lannabloom.shop/en/catalog/large-cream-teddy-bear-106-cm",
+      "urlTh": "https://lannabloom.shop/th/catalog/large-cream-teddy-bear-106-cm"
+    }
+  ]
+}
