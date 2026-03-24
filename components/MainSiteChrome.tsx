@@ -28,8 +28,7 @@ export function MainSiteChrome({
         <main>{children}</main>
       </div>
       <Footer lang={lang} />
-      {/* Hidden for now – set to true to show LINE contact FAB */}
-      {false && <LineFloatingButton />}
+      <LineFloatingButton />
     </>
   );
 }
