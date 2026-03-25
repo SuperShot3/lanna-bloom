@@ -1,10 +1,11 @@
 import type { LineDraftPayload, LineDraftCartItem } from './types';
+import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
-function isCartItem(v: unknown): v is LineDraftCartItem {
+function isCartItemShape(v: unknown): v is LineDraftCartItem {
   if (!v || typeof v !== 'object') return false;
   const i = v as Record<string, unknown>;
   if (!isNonEmptyString(i.bouquetId) || !isNonEmptyString(i.slug)) return false;
@@ -27,8 +28,16 @@ export function parseLineDraftPayload(body: unknown): { ok: true; draft: LineDra
     return { ok: false, message: 'draft.items must be a non-empty array' };
   }
   for (const it of items) {
-    if (!isCartItem(it)) {
+    if (!isCartItemShape(it)) {
       return { ok: false, message: 'Invalid draft item (need bouquetId, slug, size.key, size.price, addOns)' };
+    }
+    const i = it as Record<string, unknown>;
+    const refCheck = validateCatalogItemRef({
+      id: String(i.bouquetId),
+      slug: String(i.slug),
+    });
+    if (!refCheck.ok) {
+      return { ok: false, message: `Invalid draft item (not in website catalog): ${refCheck.message}` };
     }
   }
 

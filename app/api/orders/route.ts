@@ -5,6 +5,7 @@ import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
+import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') {
@@ -14,6 +15,18 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const items = b.items;
   if (!Array.isArray(items) || items.length === 0) {
     return { ok: false, message: 'items must be a non-empty array' };
+  }
+
+  // Enforce: orders can only contain products that exist in the website catalog.
+  for (const it of items) {
+    if (!it || typeof it !== 'object') return { ok: false, message: 'Invalid item in items[]' };
+    const i = it as Record<string, unknown>;
+    const bouquetId = typeof i.bouquetId === 'string' ? i.bouquetId.trim() : '';
+    const bouquetSlug = typeof i.bouquetSlug === 'string' ? i.bouquetSlug.trim() : '';
+    const ref = validateCatalogItemRef({ id: bouquetId, slug: bouquetSlug || undefined });
+    if (!ref.ok) {
+      return { ok: false, message: `Invalid catalog item in items[]: ${ref.message}` };
+    }
   }
   const delivery = b.delivery;
   if (!delivery || typeof delivery !== 'object') {
@@ -103,8 +116,11 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     items: items.map((it: unknown) => {
       const i = it as Record<string, unknown>;
       const addOns = (i.addOns as Record<string, unknown>) ?? {};
+      const bouquetId = typeof i.bouquetId === 'string' ? i.bouquetId.trim() : '';
+      const bouquetSlug = typeof i.bouquetSlug === 'string' ? i.bouquetSlug.trim() : '';
+      const catalog = validateCatalogItemRef({ id: bouquetId, slug: bouquetSlug || undefined });
       return {
-        bouquetId: typeof i.bouquetId === 'string' ? i.bouquetId : '',
+        bouquetId,
         bouquetTitle: typeof i.bouquetTitle === 'string' ? i.bouquetTitle : '',
         size: typeof i.size === 'string' ? i.size : '',
         price: typeof i.price === 'number' ? i.price : 0,
@@ -114,7 +130,8 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
           wrappingOption: (addOns.wrappingOption as OrderPayload['items'][0]['addOns']['wrappingOption']) ?? null,
         },
         imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
-        bouquetSlug: typeof i.bouquetSlug === 'string' ? i.bouquetSlug : undefined,
+        bouquetSlug: bouquetSlug || undefined,
+        ...(catalog.ok ? { itemType: catalog.item.type === 'product' ? 'product' : 'bouquet' } : {}),
       };
     }),
     delivery: {

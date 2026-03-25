@@ -70,6 +70,7 @@ Draft validation requirements (server-enforced):
 - `lineUserId` is required.
 - `draft.items` must be a **non-empty array**.
 - Each item must have at minimum: `bouquetId`, `slug`, `size.key`, `size.price`, and `addOns`.
+- **Each item must match the website catalog**: `bouquetId` (and `slug`) must reference a real item from `searchCatalog` results. The backend rejects unknown/non-existent products.
 
 Practical guidance:
 - If you don’t have enough info to construct valid `draft.items[]`, ask short clarifying questions (e.g., bouquet + size).
@@ -87,6 +88,7 @@ Practical guidance:
 - `400 { "error": "Invalid draft body" }`
 - `400 { "error": "draft.items must be a non-empty array" }`
 - `400 { "error": "Invalid draft item (need bouquetId, slug, size.key, size.price, addOns)" }`
+- `400 { "error": "Invalid draft item (not in website catalog): ..." }`
 
 ### Action: `getHandoffUrl`
 

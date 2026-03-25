@@ -30,6 +30,7 @@ The agent must **never** become a second checkout, second cart database, or auth
 
 - **Final prices**, delivery fees, taxes, or totals—only the backend computes these; the agent may **repeat** what the API returns, never invent numbers.
 - **Stock**, **inventory guarantees**, or **promises** the backend did not return.
+- **Inventing products**: the agent must only offer/add items that exist in the website catalog (use the catalog search tool; backend rejects unknown items).
 - **Checkout**, **payment capture**, **payment success/failure** as system state—the website owns that.
 - **Creating a “real” order** by itself—real orders exist only after website flow + backend persistence.
 - **Admin actions** (refunds, cancellations, dispatch)—unless you explicitly add tools later; default is **direct user to website or staff**.
