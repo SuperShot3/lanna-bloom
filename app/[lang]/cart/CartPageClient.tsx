@@ -556,6 +556,28 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const deliverySectionRef = useRef<HTMLDivElement>(null);
   const contactSectionRef = useRef<HTMLDivElement>(null);
 
+  // Hide the site footer while the user is editing checkout details
+  // (delivery + personal/contact information).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mql = window.matchMedia('(min-width: 1201px)'); // matches cart desktop breakpoint
+    const hideOnThisPage = () => {
+      const shouldHide = mql.matches || mobileOpenSection === 'delivery' || mobileOpenSection === 'contact';
+      document.body.classList.toggle('hide-checkout-footer', shouldHide);
+    };
+
+    hideOnThisPage();
+    if (mql.addEventListener) mql.addEventListener('change', hideOnThisPage);
+    else mql.addListener(hideOnThisPage);
+
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', hideOnThisPage);
+      else mql.removeListener(hideOnThisPage);
+      document.body.classList.remove('hide-checkout-footer');
+    };
+  }, [mobileOpenSection]);
+
   useEffect(() => {
     if (items.length === 0) return;
     saveCartFormToStorage({
