@@ -65,3 +65,7 @@ Marks those notifications delivered and updates admin “last LINE push” field
 - [`lib/line-draft/types.ts`](../../lib/line-draft/types.ts)
 - [`lib/line-draft/validate.ts`](../../lib/line-draft/validate.ts)
 - [`lib/line-notifications/pendingPayment.ts`](../../lib/line-notifications/pendingPayment.ts)
+
+## Runtime logs (Vercel)
+
+Each agent API request emits **one JSON line** to stdout with `"scope":"agent.line.api"` (search Logs for that string). Fields include `route`, `method`, `status`, `ms`, `action` (for `POST /api/agent/line`), redacted `lineUserId`, and a safe `error` / `extra` hint. Secrets are never logged.
