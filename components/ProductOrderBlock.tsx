@@ -14,7 +14,6 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
-import { ProductStickyBar } from '@/components/ProductStickyBar';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
@@ -48,6 +47,10 @@ export function ProductOrderBlock({
     const hasTime = !!deliveryTimeSlot?.trim();
     if (!hasDate || !hasTime) {
       setShowDeliveryValidation(true);
+      const scrollTarget = !hasDate ? dateWrapRef.current : timeSelectRef.current;
+      setTimeout(() => {
+        scrollTarget?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
       return;
     }
     setShowDeliveryValidation(false);
@@ -91,6 +94,8 @@ export function ProductOrderBlock({
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const minDate = todayStr;
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const dateWrapRef = useRef<HTMLDivElement>(null);
+  const timeSelectRef = useRef<HTMLSelectElement>(null);
 
   const formatDateDisplay = useCallback((dateStr: string): string => {
     if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
@@ -133,6 +138,7 @@ export function ProductOrderBlock({
           {tBuyNow.deliveryDateLabel ?? 'Delivery Date'}
         </label>
         <div
+          ref={dateWrapRef}
           className={`order-date-display-wrap${showDeliveryValidation && !deliveryDate?.trim() ? ' order-field-invalid' : ''}`}
           onClick={() => dateInputRef.current?.showPicker?.()}
           role="button"
@@ -185,6 +191,7 @@ export function ProductOrderBlock({
             {tBuyNow.preferredTime ?? 'Preferred time'}
           </label>
           <select
+            ref={timeSelectRef}
             value={deliveryTimeSlot}
             onChange={(e) => saveDeliveryTimeSlot(e.target.value)}
             className={`w-full px-4 py-3 rounded-xl border bg-white text-stone-800 text-sm ${showDeliveryValidation && !deliveryTimeSlot?.trim() ? 'order-field-invalid border-red-400' : 'border-stone-200'}`}
@@ -266,13 +273,6 @@ export function ProductOrderBlock({
             {t.addToCart} — ฿{totalPrice.toLocaleString()}
           </button>
         </>
-      )}
-      {!justAdded && (
-        <ProductStickyBar
-          totalPrice={totalPrice}
-          onAddToCart={handleAddToCart}
-          addToCartLabel={t.addToCart}
-        />
       )}
       <style jsx>{`
         @media (max-width: 480px) {

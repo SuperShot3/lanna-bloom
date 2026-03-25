@@ -52,7 +52,7 @@ export function LanguageSwitcher({
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-top: 3px;
+          margin-top: 4px;
           width: 44px;
           height: 44px;
           border-radius: 50%;
