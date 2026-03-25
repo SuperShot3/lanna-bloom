@@ -32,6 +32,10 @@ import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
+import { lineDraftItemToCartItem } from '@/lib/cart/lineHandoffNormalize';
+import type { LineDraftCartItem, LineDraftFormPartial } from '@/lib/line-draft/types';
+
+const LINE_CONTEXT_STORAGE_KEY = 'lanna-bloom-line-context';
 
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
 function formatStickyDate(dateStr: string): string {
@@ -64,6 +68,8 @@ function buildStripePayload(
     contactPreference: ContactPreferenceOption[];
     recipientName?: string;
     recipientPhone?: string;
+    lineUserId?: string;
+    orderSource?: 'line' | 'web';
   }
 ): Record<string, unknown> {
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
@@ -139,6 +145,8 @@ function buildStripePayload(
       referralCode: referral.code,
       referralDiscount,
     }),
+    ...(contact.lineUserId && { lineUserId: contact.lineUserId }),
+    ...(contact.orderSource && { orderSource: contact.orderSource }),
   };
 }
 
@@ -270,6 +278,8 @@ function buildOrderPayload(
     contactPreference: ContactPreferenceOption[];
     recipientName?: string;
     recipientPhone?: string;
+    lineUserId?: string;
+    orderSource?: 'line' | 'web';
   }
 ): OrderPayload {
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
@@ -341,6 +351,8 @@ function buildOrderPayload(
       referralCode: referral.code,
       referralDiscount,
     }),
+    ...(contact.lineUserId && { lineUserId: contact.lineUserId }),
+    ...(contact.orderSource && { orderSource: contact.orderSource }),
   };
 }
 
@@ -374,6 +386,101 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const beginCheckoutFiredRef = useRef(false);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
+
+  const [lineHandoffLoading, setLineHandoffLoading] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).has('handoff');
+  });
+  const [lineContext] = useState<{
+    lineUserId?: string;
+    orderSource?: 'line' | 'web';
+  }>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = localStorage.getItem(LINE_CONTEXT_STORAGE_KEY);
+      if (!raw) return {};
+      const p = JSON.parse(raw) as { lineUserId?: string; orderSource?: string };
+      if (!p.lineUserId) return {};
+      return { lineUserId: p.lineUserId, orderSource: p.orderSource === 'web' ? 'web' : 'line' };
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('handoff');
+    if (!token) return;
+    setLineHandoffLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/line-draft/resolve?token=${encodeURIComponent(token)}`);
+        if (!res.ok) {
+          window.location.replace(`/${lang}/line-handoff/invalid`);
+          return;
+        }
+        const data = (await res.json()) as {
+          lineUserId: string;
+          draft: { items: LineDraftCartItem[]; form?: LineDraftFormPartial; lang?: 'en' | 'th' };
+        };
+        const mapped = data.draft.items.map((it) => lineDraftItemToCartItem(it));
+        localStorage.setItem('lanna-bloom-cart', JSON.stringify(mapped));
+
+        const form = data.draft.form;
+        const defaultDelivery: DeliveryFormValues = {
+          addressLine: '',
+          date: '',
+          timeSlot: '',
+          deliveryLat: null,
+          deliveryLng: null,
+          deliveryGoogleMapsUrl: null,
+          deliveryDistrict: '',
+          isMueangCentral: false,
+        };
+        const fd = form?.delivery;
+        const mergedDelivery: DeliveryFormValues = {
+          ...defaultDelivery,
+          ...(fd
+            ? {
+                addressLine: fd.addressLine ?? defaultDelivery.addressLine,
+                date: fd.date ?? defaultDelivery.date,
+                timeSlot: fd.timeSlot ?? defaultDelivery.timeSlot,
+                deliveryLat: fd.deliveryLat ?? null,
+                deliveryLng: fd.deliveryLng ?? null,
+                deliveryGoogleMapsUrl: fd.deliveryGoogleMapsUrl ?? null,
+                deliveryDistrict: (fd.deliveryDistrict as DeliveryFormValues['deliveryDistrict']) || '',
+                isMueangCentral: fd.deliveryDistrict === 'MUEANG' && !!fd.isMueangCentral,
+              }
+            : {}),
+        };
+        const stored: StoredCartForm = {
+          delivery: mergedDelivery,
+          customerName: form?.customerName ?? '',
+          customerEmail: form?.customerEmail ?? '',
+          countryCode: form?.countryCode ?? '66',
+          phoneNational: form?.phoneNational ?? '',
+          recipientName: form?.recipientName ?? '',
+          recipientCountryCode: form?.recipientCountryCode ?? '66',
+          recipientPhoneNational: form?.recipientPhoneNational ?? '',
+          contactPreference: Array.isArray(form?.contactPreference)
+            ? form.contactPreference.filter((o): o is ContactPreferenceOption =>
+                CONTACT_OPTIONS.includes(o)
+              )
+            : [],
+          isOrderingForSomeoneElse: form?.isOrderingForSomeoneElse ?? false,
+        };
+        localStorage.setItem(CART_FORM_STORAGE_KEY, JSON.stringify(stored));
+        localStorage.setItem(
+          LINE_CONTEXT_STORAGE_KEY,
+          JSON.stringify({ lineUserId: data.lineUserId, orderSource: 'line' })
+        );
+        window.location.replace(`/${lang}/cart`);
+      } catch {
+        window.location.replace(`/${lang}/line-handoff/invalid`);
+      }
+    })();
+  }, [lang]);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -638,6 +745,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           recipientName: recipientName.trim(),
           recipientPhone: recipientPhone!,
         }),
+        ...(lineContext.lineUserId && {
+          lineUserId: lineContext.lineUserId,
+          orderSource: lineContext.orderSource ?? 'line',
+        }),
       });
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -699,6 +810,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           recipientName: recipientName.trim(),
           recipientPhone: recipientPhone!,
         }),
+        ...(lineContext.lineUserId && {
+          lineUserId: lineContext.lineUserId,
+          orderSource: lineContext.orderSource ?? 'line',
+        }),
       });
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -721,6 +836,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     setPlacingStripe(false);
   };
+
+  if (lineHandoffLoading) {
+    return (
+      <div className="cart-page" style={{ padding: '48px 20px', textAlign: 'center' }}>
+        <div className="container">
+          <p className="text-stone-600">Loading your cart…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

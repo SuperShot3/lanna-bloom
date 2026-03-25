@@ -5,6 +5,8 @@ import {
   getOrderByStripeSessionId,
   updateOrderPaymentStatus,
 } from '@/lib/orders';
+import { logLineIntegrationEvent } from '@/lib/line-integration/log';
+import { queuePaymentNotificationForAgent } from '@/lib/line-notifications/pendingPayment';
 import { getOrderDetailsUrl } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
@@ -286,6 +288,17 @@ export async function POST(request: NextRequest) {
       sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
         console.error('[stripe/webhook] Customer confirmation email failed:', e);
       });
+
+      const lineUid = updatedOrder.lineUserId?.trim();
+      if (lineUid) {
+        const { queued } = await queuePaymentNotificationForAgent(orderId, lineUid, publicOrderUrl);
+        if (queued) {
+          await logLineIntegrationEvent('payment_notify_queued_for_agent', {
+            lineUserId: lineUid,
+            orderId,
+          });
+        }
+      }
     }
 
     // GA4 purchase for Stripe: not sent from webhook. Purchase reaches GA4 only via browser

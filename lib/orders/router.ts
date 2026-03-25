@@ -65,3 +65,16 @@ export async function listOrders(): Promise<Order[]> {
   requireSupabase();
   return supabaseStore.supabaseListOrders();
 }
+
+export async function updateOrderLinePush(
+  orderId: string,
+  patch: { last_line_push_status: string; last_line_push_at: string }
+): Promise<void> {
+  requireSupabase();
+  return supabaseStore.supabaseUpdateOrderLinePush(orderId, patch);
+}
+
+export async function listOrdersByLineUserId(lineUserId: string, limit = 5): Promise<Order[]> {
+  requireSupabase();
+  return supabaseStore.supabaseListOrdersByLineUserId(lineUserId, limit);
+}

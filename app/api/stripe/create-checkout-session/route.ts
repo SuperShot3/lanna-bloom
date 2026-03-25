@@ -7,6 +7,7 @@ import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import type { DistrictKey } from '@/lib/deliveryFees';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
+import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 
 function validateStripePayload(
@@ -106,6 +107,15 @@ function validateStripePayload(
   const referralCode = typeof b.referralCode === 'string' ? b.referralCode.trim() : undefined;
   const referralDiscount = typeof b.referralDiscount === 'number' && b.referralDiscount > 0 ? b.referralDiscount : 0;
 
+  const lineUserIdRaw = typeof b.lineUserId === 'string' ? b.lineUserId.trim() : '';
+  const lineUserId = lineUserIdRaw.length > 0 && lineUserIdRaw.length <= 128 ? lineUserIdRaw : undefined;
+  const orderSource =
+    typeof b.orderSource === 'string' && (b.orderSource === 'line' || b.orderSource === 'web')
+      ? b.orderSource
+      : lineUserId
+        ? 'line'
+        : undefined;
+
   return {
     ok: true,
     data: {
@@ -117,6 +127,8 @@ function validateStripePayload(
       items: cartItems,
       referralCode: referralCode && referralDiscount > 0 ? referralCode : undefined,
       referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
+      lineUserId,
+      orderSource,
       delivery: {
         address,
         preferredTimeSlot,
@@ -142,6 +154,8 @@ interface StripeCheckoutPayload {
   items: CartItemIdentifier[];
   referralCode?: string;
   referralDiscount?: number;
+  lineUserId?: string;
+  orderSource?: 'line' | 'web';
   delivery: {
     address: string;
     preferredTimeSlot: string;
@@ -195,6 +209,8 @@ export async function POST(request: NextRequest) {
       phone: data.phone,
       customerEmail: data.customerEmail,
       contactPreference: data.contactPreference,
+      ...(data.lineUserId && { lineUserId: data.lineUserId }),
+      ...(data.orderSource && { orderSource: data.orderSource }),
       items: totals.items,
       delivery: {
         address: data.delivery.address,
@@ -220,12 +236,19 @@ export async function POST(request: NextRequest) {
     };
 
     const order = await createPendingOrder(orderPayload);
+    if (data.lineUserId) {
+      void logLineIntegrationEvent('line_user_linked_to_order', {
+        lineUserId: data.lineUserId,
+        orderId: order.orderId,
+      });
+    }
     const baseUrl = getBaseUrl();
     const stripeMetadata = buildStripeOrderMetadata({
       orderId: order.orderId,
       source: 'lanna_bloom_checkout',
       customerEmail: data.customerEmail,
       lang: data.lang,
+      lineUserId: data.lineUserId,
     });
 
     console.log('[stripe/create-checkout-session] pending order created', {

@@ -49,6 +49,11 @@ export interface SupabaseOrderRow {
   /** True after admin was notified once at order creation (one email per order). */
   admin_notified?: boolean | null;
   admin_notified_at?: string | null;
+  /** LINE OA handoff (optional). */
+  line_user_id?: string | null;
+  order_source?: string | null;
+  last_line_push_status?: string | null;
+  last_line_push_at?: string | null;
 }
 
 export interface SupabaseOrderItemRow {

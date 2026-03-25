@@ -5,6 +5,8 @@ export interface StripeOrderMetadataInput {
   source: string;
   customerEmail?: string;
   lang?: string;
+  /** LINE Messaging API user id for post-payment push (optional). */
+  lineUserId?: string;
 }
 
 function cleanValue(value: string | undefined): string | undefined {
@@ -23,6 +25,9 @@ export function buildStripeOrderMetadata(input: StripeOrderMetadataInput): Recor
 
   const lang = cleanValue(input.lang);
   if (lang) metadata.lang = lang;
+
+  const lineUserId = cleanValue(input.lineUserId);
+  if (lineUserId) metadata.line_user_id = lineUserId;
 
   return metadata;
 }

@@ -59,6 +59,10 @@ interface SupabaseOrderRow {
   /** True after admin was notified once at order creation (one email per order). */
   admin_notified?: boolean | null;
   admin_notified_at?: string | null;
+  line_user_id?: string | null;
+  order_source?: string | null;
+  last_line_push_status?: string | null;
+  last_line_push_at?: string | null;
 }
 
 interface SupabaseOrderItemRow {
@@ -83,6 +87,10 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       paidAt: row.paid_at ?? json.paidAt,
       fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? json.fulfillmentStatus ?? 'new',
       fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? json.fulfillmentStatusUpdatedAt,
+      ...(row.line_user_id && { lineUserId: row.line_user_id }),
+      ...(row.order_source && { orderSource: row.order_source as 'line' | 'web' }),
+      ...(row.last_line_push_status && { lastLinePushStatus: row.last_line_push_status }),
+      ...(row.last_line_push_at && { lastLinePushAt: row.last_line_push_at }),
     };
   }
 
@@ -134,6 +142,10 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     paidAt: row.paid_at ?? undefined,
     fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? 'new',
     fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? undefined,
+    ...(row.line_user_id && { lineUserId: row.line_user_id }),
+    ...(row.order_source && { orderSource: row.order_source as 'line' | 'web' }),
+    ...(row.last_line_push_status && { lastLinePushStatus: row.last_line_push_status }),
+    ...(row.last_line_push_at && { lastLinePushAt: row.last_line_push_at }),
   };
 }
 
@@ -230,6 +242,8 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
     ...((order as { ga_client_id?: string }).ga_client_id && {
       ga_client_id: (order as { ga_client_id: string }).ga_client_id,
     }),
+    ...(order.lineUserId && { line_user_id: order.lineUserId.trim() }),
+    ...(order.orderSource && { order_source: order.orderSource }),
   };
 
   const { error: upsertError } = await supabase
@@ -543,4 +557,49 @@ export async function supabaseLookupOrdersByOrderId(
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
   }));
+}
+
+export async function supabaseUpdateOrderLinePush(
+  orderId: string,
+  patch: { last_line_push_status: string; last_line_push_at: string }
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from('orders')
+    .update({
+      last_line_push_status: patch.last_line_push_status,
+      last_line_push_at: patch.last_line_push_at,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('order_id', orderId.trim());
+
+  if (error) {
+    console.error('[orders/supabase] updateOrderLinePush error:', error.message);
+  }
+}
+
+export async function supabaseListOrdersByLineUserId(
+  lineUserId: string,
+  limit: number
+): Promise<Order[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data: rows, error } = await supabase
+    .from('orders')
+    .select('order_id')
+    .eq('line_user_id', lineUserId.trim())
+    .order('created_at', { ascending: false })
+    .limit(Math.min(20, Math.max(1, limit)));
+
+  if (error || !rows?.length) return [];
+
+  const orders: Order[] = [];
+  for (const r of rows as { order_id: string }[]) {
+    const o = await supabaseGetOrderById(r.order_id);
+    if (o) orders.push(o);
+  }
+  return orders;
 }

@@ -144,6 +144,31 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         canRefund={canRefund(role)}
       />
       <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
+      {(order.order_source === 'line' ||
+        order.line_user_id ||
+        order.last_line_push_status ||
+        order.last_line_push_at) && (
+        <section className="admin-section">
+          <h2 className="admin-section-title">LINE</h2>
+          <p>
+            <strong>Order source:</strong> {order.order_source ?? '—'}
+          </p>
+          <p>
+            <strong>LINE user id linked:</strong> {order.line_user_id ? 'Yes' : 'No'}
+            {order.line_user_id ? (
+              <span className="text-stone-500 text-sm ml-1">({order.line_user_id.slice(0, 12)}…)</span>
+            ) : null}
+          </p>
+          <p>
+            <strong>Last payment LINE push:</strong> {order.last_line_push_status ?? '—'}
+            {order.last_line_push_at ? (
+              <span className="text-stone-500 text-sm ml-1">
+                ({new Date(order.last_line_push_at).toLocaleString()})
+              </span>
+            ) : null}
+          </p>
+        </section>
+      )}
       <OrderSummaryCard order={order} />
       <CostsAndProfitCard order={order} items={itemsToUse} canEdit={canEditCosts(role)} />
       <ItemsList
