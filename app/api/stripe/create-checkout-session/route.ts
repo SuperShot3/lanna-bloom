@@ -107,6 +107,14 @@ function validateStripePayload(
   const referralCode = typeof b.referralCode === 'string' ? b.referralCode.trim() : undefined;
   const referralDiscount = typeof b.referralDiscount === 'number' && b.referralDiscount > 0 ? b.referralDiscount : 0;
 
+  const submissionTokenRaw = typeof b.submission_token === 'string' ? b.submission_token.trim() : '';
+  if (!submissionTokenRaw || submissionTokenRaw.length < 8 || submissionTokenRaw.length > 128) {
+    return { ok: false, message: 'submission_token is required (8–128 characters)' };
+  }
+  if (!/^[0-9a-fA-F-]+$/.test(submissionTokenRaw)) {
+    return { ok: false, message: 'submission_token has invalid format' };
+  }
+
   const lineUserIdRaw = typeof b.lineUserId === 'string' ? b.lineUserId.trim() : '';
   const lineUserId = lineUserIdRaw.length > 0 && lineUserIdRaw.length <= 128 ? lineUserIdRaw : undefined;
   const orderSource =
@@ -129,6 +137,7 @@ function validateStripePayload(
       referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
       lineUserId,
       orderSource,
+      submissionToken: submissionTokenRaw,
       delivery: {
         address,
         preferredTimeSlot,
@@ -156,6 +165,7 @@ interface StripeCheckoutPayload {
   referralDiscount?: number;
   lineUserId?: string;
   orderSource?: 'line' | 'web';
+  submissionToken: string;
   delivery: {
     address: string;
     preferredTimeSlot: string;
@@ -233,10 +243,11 @@ export async function POST(request: NextRequest) {
         referralCode: data.referralCode,
         referralDiscount,
       }),
+      submissionToken: data.submissionToken,
     };
 
-    const order = await createPendingOrder(orderPayload);
-    if (data.lineUserId) {
+    const { order, created } = await createPendingOrder(orderPayload);
+    if (data.lineUserId && created) {
       void logLineIntegrationEvent('line_user_linked_to_order', {
         lineUserId: data.lineUserId,
         orderId: order.orderId,
@@ -251,11 +262,14 @@ export async function POST(request: NextRequest) {
       lineUserId: data.lineUserId,
     });
 
-    console.log('[stripe/create-checkout-session] pending order created', {
-      orderId: order.orderId,
-      mode: stripeConfig.mode,
-      hasCustomerEmail: Boolean(data.customerEmail),
-    });
+    console.log(
+      `[stripe/create-checkout-session] ${created ? 'pending order created' : 'idempotent reuse (same submission_token)'}`,
+      {
+        orderId: order.orderId,
+        mode: stripeConfig.mode,
+        hasCustomerEmail: Boolean(data.customerEmail),
+      }
+    );
 
     // Stripe requires unit_amount to be non-negative. Apply referral discount
     // proportionally across line items instead of adding a negative line.
@@ -324,7 +338,7 @@ export async function POST(request: NextRequest) {
         client_reference_id: order.orderId,
         customer_email: data.customerEmail,
         // Redirect straight to public order page; order view handles pending vs paid.
-        success_url: `${baseUrl}/order/${encodeURIComponent(order.orderId)}`,
+        success_url: `${baseUrl}/order/${encodeURIComponent(order.orderId)}?checkout_token=${encodeURIComponent(data.submissionToken)}`,
         cancel_url: `${baseUrl}/${data.lang}/cart`,
         metadata: stripeMetadata,
         payment_intent_data: {

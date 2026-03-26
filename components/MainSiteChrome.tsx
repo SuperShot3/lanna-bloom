@@ -16,6 +16,7 @@ export function MainSiteChrome({
   const pathname = usePathname();
   const isPartnerRoute = pathname?.includes('/partner');
   const isConfirmationPending = pathname?.includes('/checkout/confirmation-pending');
+  const isCartRoute = pathname?.includes('/cart');
 
   if (isPartnerRoute || isConfirmationPending) {
     return <>{children}</>;
@@ -28,7 +29,7 @@ export function MainSiteChrome({
         <main>{children}</main>
       </div>
       <Footer lang={lang} />
-      <LineFloatingButton />
+      {!isCartRoute && <LineFloatingButton />}
     </>
   );
 }

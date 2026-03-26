@@ -16,6 +16,15 @@ import { LineIcon, WhatsAppIcon, TelegramIcon, HomeIcon } from '@/components/ico
 import { translations } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
+import {
+  markCheckoutSubmissionCompleted,
+  readCheckoutTokenFromUrl,
+  stripCheckoutTokenFromUrl,
+} from '@/lib/checkout/submissionToken';
+
+/** Align with CartContext + cart checkout (order route is outside CartProvider). */
+const CART_STORAGE_KEY = 'lanna-bloom-cart';
+const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 
 function formatDisplayDate(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
@@ -75,6 +84,20 @@ export function OrderPageClient({
 }) {
   const router = useRouter();
   const t = translations[locale].orderPage;
+
+  useEffect(() => {
+    const token = readCheckoutTokenFromUrl();
+    if (token) {
+      markCheckoutSubmissionCompleted(token);
+      stripCheckoutTokenFromUrl();
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
+        localStorage.removeItem(CART_FORM_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
   const [activeTab, setActiveTab] = useState<'details' | 'pay'>('details');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('card');
   const [copied, setCopied] = useState(false);

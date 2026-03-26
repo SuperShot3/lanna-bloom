@@ -1,15 +1,13 @@
 /**
- * Referral code system (MVP). Client-side only; no database.
- * Applied via input field on cart page. Stored in localStorage.
+ * Promo codes (MVP). Applied via cart; stored in localStorage.
+ * Only keys listed in DISCOUNT_CODES receive a discount; unknown codes get 0.
  */
 
-export const REFERRAL_DISCOUNT_THB = 100;
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
-/** Discount code definitions: percent or fixed THB. CLOUD9 = 10% off. PROMO100 = 100% off (track as promotion expense). */
+/** Newsletter / welcome: 10% off subtotal. Rename the key to match what you email subscribers. */
 const DISCOUNT_CODES: Record<string, { type: 'percent'; value: number } | { type: 'fixed'; value: number }> = {
-  CLOUD9: { type: 'percent', value: 10 },
-  PROMO100: { type: 'percent', value: 100 },
+  WELCOME10: { type: 'percent', value: 10 },
 };
 
 /** Allowed chars: A–Z, 0–9, hyphen (-). Length 3–12. Returns normalized code or null if invalid. */
@@ -83,7 +81,7 @@ export function getDiscountForCode(code: string, subtotal: number): number {
     }
     return Math.min(def.value, subtotal);
   }
-  return Math.min(REFERRAL_DISCOUNT_THB, subtotal);
+  return 0;
 }
 
 /**

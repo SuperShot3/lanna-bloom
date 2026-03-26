@@ -87,9 +87,6 @@ html {
 }
 
 /* Material Symbols icons */
-span.material-symbols-outlined {
-  margin-top: 7px;
-}
 .material-symbols-filled {
   font-variation-settings: 'FILL' 1;
 }

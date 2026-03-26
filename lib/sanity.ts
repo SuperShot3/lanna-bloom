@@ -214,13 +214,57 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   sizes
 }`;
 
-/** Fisher-Yates shuffle; mutates array in place */
-function shuffleArray<T>(arr: T[]): T[] {
+/** Deterministic PRNG (0..1) for stable daily popular order + pagination */
+function mulberry32(seed: number): () => number {
+  return () => {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function getPopularShuffleSeed(): number {
+  const d = new Date();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+
+function shuffleArraySeeded<T>(arr: T[], random: () => number): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+/** Price-tier interleaving (same as previous popular logic, before shuffle) */
+function buildInterleavedPopularBouquets(bouquets: Bouquet[]): Bouquet[] {
+  if (bouquets.length === 0) return [];
+
+  const bouquetsWithPrice = bouquets.map((b) => ({
+    bouquet: b,
+    minPrice: minPriceFromSizes(b.sizes),
+  }));
+
+  bouquetsWithPrice.sort((a, b) => a.minPrice - b.minPrice);
+
+  const total = bouquetsWithPrice.length;
+  const thirdSize = Math.ceil(total / 3);
+
+  const expensive = bouquetsWithPrice.slice(-thirdSize).reverse();
+  const middle = bouquetsWithPrice.slice(thirdSize, total - thirdSize);
+  const cheap = bouquetsWithPrice.slice(0, thirdSize);
+
+  const interleaved: Bouquet[] = [];
+  const maxLength = Math.max(expensive.length, middle.length, cheap.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    if (i < expensive.length) interleaved.push(expensive[i].bouquet);
+    if (i < cheap.length) interleaved.push(cheap[i].bouquet);
+    if (i < middle.length) interleaved.push(middle[i].bouquet);
+  }
+
+  return interleaved;
 }
 
 const HERO_IMAGE_FALLBACK = '/HeroImage/heroimage.webp';
@@ -239,47 +283,33 @@ export async function getHeroImageFromSanity(): Promise<string> {
   }
 }
 
-/** Approved bouquets with variety pricing (expensive, cheap, middle) interleaved, then shuffled; for home "Popular" section. Order varies on each page generation. */
-export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouquet[]> {
+/**
+ * Home "Popular" + /api/bouquets: price-tier interleave, then daily seeded shuffle (not nameEn order,
+ * so names starting with digits are not stuck first). Same seed all day so pagination matches SSR.
+ */
+export async function getPopularBouquetsFromSanityPaginated(
+  start: number,
+  limit: number
+): Promise<Bouquet[]> {
   try {
     const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
     const bouquets = (docs ?? []).map(mapToBouquet);
-    
     if (bouquets.length === 0) return [];
-    
-    // Calculate min price for each bouquet
-    const bouquetsWithPrice = bouquets.map((b) => ({
-      bouquet: b,
-      minPrice: minPriceFromSizes(b.sizes),
-    }));
-    
-    // Sort by price (ascending)
-    bouquetsWithPrice.sort((a, b) => a.minPrice - b.minPrice);
-    
-    // Divide into three groups: expensive (top third), middle (middle third), cheap (bottom third)
-    const total = bouquetsWithPrice.length;
-    const thirdSize = Math.ceil(total / 3);
-    
-    const expensive = bouquetsWithPrice.slice(-thirdSize).reverse(); // Most expensive first
-    const middle = bouquetsWithPrice.slice(thirdSize, total - thirdSize);
-    const cheap = bouquetsWithPrice.slice(0, thirdSize);
-    
-    // Interleave: expensive, cheap, middle, expensive, cheap, middle...
-    const interleaved: Bouquet[] = [];
-    const maxLength = Math.max(expensive.length, middle.length, cheap.length);
-    
-    for (let i = 0; i < maxLength; i++) {
-      if (i < expensive.length) interleaved.push(expensive[i].bouquet);
-      if (i < cheap.length) interleaved.push(cheap[i].bouquet);
-      if (i < middle.length) interleaved.push(middle[i].bouquet);
-    }
-    
-    // Shuffle so different items appear first on each site update
-    return shuffleArray(interleaved).slice(0, limit);
+
+    const interleaved = buildInterleavedPopularBouquets(bouquets);
+    const rng = mulberry32(getPopularShuffleSeed());
+    const shuffled = shuffleArraySeeded([...interleaved], rng);
+    const safeStart = Math.max(0, start);
+    return shuffled.slice(safeStart, safeStart + limit);
   } catch (err) {
-    console.error('[Sanity] getPopularBouquetsFromSanity failed:', err);
+    console.error('[Sanity] getPopularBouquetsFromSanityPaginated failed:', err);
     return [];
   }
+}
+
+/** First N popular bouquets (guides, etc.). Order matches home popular for the same day. */
+export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouquet[]> {
+  return getPopularBouquetsFromSanityPaginated(0, limit);
 }
 
 export interface CatalogFilterParams {
@@ -381,8 +411,14 @@ export async function getBouquetsFilteredFromSanity(params: CatalogFilterParams)
 
     const sort = params.sort || 'newest';
     if (sort === 'newest') {
-      filtered.sort((a, b) => (b.doc._createdAt || '').localeCompare(a.doc._createdAt || ''));
-    } else if (sort === 'price_asc') {
+      // Match home "Popular": interleave by price tier, then daily seeded shuffle — avoids always
+      // showing the same items first (e.g. names starting with digits from strict date/name order).
+      const bouquetsOnly = filtered.map((x) => x.bouquet);
+      const interleaved = buildInterleavedPopularBouquets(bouquetsOnly);
+      const rng = mulberry32(getPopularShuffleSeed());
+      return shuffleArraySeeded([...interleaved], rng);
+    }
+    if (sort === 'price_asc') {
       filtered.sort((a, b) => minPriceFromSizes(a.bouquet.sizes) - minPriceFromSizes(b.bouquet.sizes));
     } else if (sort === 'price_desc') {
       filtered.sort((a, b) => minPriceFromSizes(b.bouquet.sizes) - minPriceFromSizes(a.bouquet.sizes));

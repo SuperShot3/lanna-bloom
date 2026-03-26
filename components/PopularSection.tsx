@@ -1,4 +1,4 @@
-import { getBouquetsFromSanityPaginated } from '@/lib/sanity';
+import { getPopularBouquetsFromSanityPaginated } from '@/lib/sanity';
 import { PopularSectionClient } from '@/components/PopularSectionClient';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -6,7 +6,7 @@ import { translations } from '@/lib/i18n';
 const INITIAL_LIMIT = 8;
 
 export async function PopularSection({ lang }: { lang: Locale }) {
-  const initialBouquets = await getBouquetsFromSanityPaginated(0, INITIAL_LIMIT);
+  const initialBouquets = await getPopularBouquetsFromSanityPaginated(0, INITIAL_LIMIT);
   const t = translations[lang].home;
 
   if (initialBouquets.length === 0) return null;

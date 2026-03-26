@@ -34,6 +34,11 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
 import { lineDraftItemToCartItem } from '@/lib/cart/lineHandoffNormalize';
 import type { LineDraftCartItem, LineDraftFormPartial } from '@/lib/line-draft/types';
+import {
+  CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY,
+  CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY,
+  validateSubmissionTokenFormat,
+} from '@/lib/checkout/submissionToken';
 
 const LINE_CONTEXT_STORAGE_KEY = 'lanna-bloom-line-context';
 
@@ -70,7 +75,8 @@ function buildStripePayload(
     recipientPhone?: string;
     lineUserId?: string;
     orderSource?: 'line' | 'web';
-  }
+  },
+  submissionToken: string
 ): Record<string, unknown> {
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
   const preferredTimeSlot =
@@ -147,6 +153,7 @@ function buildStripePayload(
     }),
     ...(contact.lineUserId && { lineUserId: contact.lineUserId }),
     ...(contact.orderSource && { orderSource: contact.orderSource }),
+    submission_token: submissionToken,
   };
 }
 
@@ -386,6 +393,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const beginCheckoutFiredRef = useRef(false);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
+  const orderSubmitInFlightRef = useRef(false);
+
+  const [checkoutSubmissionToken, setCheckoutSubmissionToken] = useState<string | null>(null);
+  const [alreadySubmittedBlock, setAlreadySubmittedBlock] = useState(false);
 
   const [lineHandoffLoading, setLineHandoffLoading] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -607,6 +618,32 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
   }, [delivery.addressLine, items, lang]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const completed = sessionStorage.getItem(CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY);
+    const current = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
+    if (completed && current && completed === current) {
+      setAlreadySubmittedBlock(true);
+      setCheckoutSubmissionToken(current);
+      return;
+    }
+    setAlreadySubmittedBlock(false);
+    if (items.length === 0) {
+      setCheckoutSubmissionToken(null);
+      return;
+    }
+    let token = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
+    if (!token || !validateSubmissionTokenFormat(token)) {
+      token = crypto.randomUUID();
+      try {
+        sessionStorage.setItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY, token);
+      } catch {
+        // ignore
+      }
+    }
+    setCheckoutSubmissionToken(token);
+  }, [items.length]);
+
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
@@ -746,12 +783,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     });
   };
 
+  const handleStartNewCheckout = () => {
+    if (typeof window === 'undefined') return;
+    const newToken = crypto.randomUUID();
+    try {
+      sessionStorage.removeItem(CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY);
+      sessionStorage.setItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY, newToken);
+    } catch {
+      // ignore
+    }
+    setCheckoutSubmissionToken(newToken);
+    setAlreadySubmittedBlock(false);
+  };
+
   const handlePlaceOrder = async () => {
     const hint = getFirstIncompleteHint();
     if (hint) {
       setOrderError(hint);
       return;
     }
+    if (!checkoutSubmissionToken) {
+      setOrderError(
+        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
+      );
+      return;
+    }
+    if (orderSubmitInFlightRef.current || placing) return;
+    orderSubmitInFlightRef.current = true;
     setOrderError(null);
     trackCheckoutStart();
     setPlacing(true);
@@ -775,12 +833,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          submission_token: checkoutSubmissionToken,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setOrderError(data.error ?? t.couldNotCreateOrder);
         setPlacing(false);
+        orderSubmitInFlightRef.current = false;
         return;
       }
       const { orderId, publicOrderUrl, shareText } = data;
@@ -796,11 +858,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         publicOrderUrl: publicOrderUrl ?? '',
         shareText: shareText ?? `New order: ${orderId}. Details: ${publicOrderUrl}`,
       });
-      // Redirect immediately so user never sees empty cart. Confirmation-pending page clears cart on mount.
-      window.location.href = `/${lang}/checkout/confirmation-pending?${params.toString()}`;
+      params.set('checkout_token', checkoutSubmissionToken);
+      window.location.replace(`/${lang}/checkout/confirmation-pending?${params.toString()}`);
     } catch {
       setOrderError(t.couldNotCreateOrder);
       setPlacing(false);
+      orderSubmitInFlightRef.current = false;
     }
   };
 
@@ -810,6 +873,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(hint);
       return;
     }
+    if (!checkoutSubmissionToken) {
+      setOrderError(
+        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
+      );
+      return;
+    }
+    if (orderSubmitInFlightRef.current || placingStripe) return;
+    orderSubmitInFlightRef.current = true;
     setOrderError(null);
     trackCheckoutStart();
     setPlacingStripe(true);
@@ -823,20 +894,26 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       items: analyticsItems,
     });
     try {
-      const payload = buildStripePayload(items, delivery, lang, {
-        customerName: customerName.trim(),
-        phone: fullPhone,
-        customerEmail: customerEmail.trim() || undefined,
-        contactPreference,
-        ...(isOrderingForSomeoneElse && {
-          recipientName: recipientName.trim(),
-          recipientPhone: recipientPhone!,
-        }),
-        ...(lineContext.lineUserId && {
-          lineUserId: lineContext.lineUserId,
-          orderSource: lineContext.orderSource ?? 'line',
-        }),
-      });
+      const payload = buildStripePayload(
+        items,
+        delivery,
+        lang,
+        {
+          customerName: customerName.trim(),
+          phone: fullPhone,
+          customerEmail: customerEmail.trim() || undefined,
+          contactPreference,
+          ...(isOrderingForSomeoneElse && {
+            recipientName: recipientName.trim(),
+            recipientPhone: recipientPhone!,
+          }),
+          ...(lineContext.lineUserId && {
+            lineUserId: lineContext.lineUserId,
+            orderSource: lineContext.orderSource ?? 'line',
+          }),
+        },
+        checkoutSubmissionToken
+      );
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -846,6 +923,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       if (!res.ok) {
         setOrderError(data.error ?? t.couldNotCreateOrder);
         setPlacingStripe(false);
+        orderSubmitInFlightRef.current = false;
         return;
       }
       if (data.url) {
@@ -857,6 +935,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.couldNotCreateOrder);
     }
     setPlacingStripe(false);
+    orderSubmitInFlightRef.current = false;
   };
 
   if (lineHandoffLoading) {
@@ -864,6 +943,58 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       <div className="cart-page" style={{ padding: '48px 20px', textAlign: 'center' }}>
         <div className="container">
           <p className="text-stone-600">Loading your cart…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (alreadySubmittedBlock) {
+    const lastOrderId =
+      typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-id') : null;
+    const th = lang === 'th';
+    return (
+      <div className="cart-page" style={{ padding: '48px 20px' }}>
+        <div className="container" style={{ maxWidth: 480 }}>
+          <h1
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: '1.75rem',
+              fontWeight: 600,
+              marginBottom: 12,
+            }}
+          >
+            {th ? 'ส่งคำสั่งซื้อนี้แล้ว' : 'This order was already submitted'}
+          </h1>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
+            {th
+              ? 'คุณได้ส่งคำสั่งซื้อนี้แล้ว หากต้องการสั่งใหม่ โปรดเริ่มคำสั่งซื้อใหม่'
+              : 'You already submitted this checkout. To place another order, start a new checkout.'}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {lastOrderId && (
+              <Link
+                href={`/order/${encodeURIComponent(lastOrderId)}`}
+                className="btn-primary"
+                style={{ textAlign: 'center', padding: '14px 20px', fontWeight: 600 }}
+              >
+                {th ? 'ดูคำสั่งซื้อ' : 'View order'}
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={handleStartNewCheckout}
+              style={{
+                padding: '14px 20px',
+                fontWeight: 600,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                cursor: 'pointer',
+                borderRadius: 8,
+              }}
+            >
+              {th ? 'เริ่มคำสั่งซื้อใหม่' : 'Start a new order'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1266,7 +1397,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             </div>
           </div>
           {(() => {
-            const paymentAvailability = getPaymentAvailability({
+            const paymentAvailabilityBase = getPaymentAvailability({
               hasDeliveryDistrict: !!delivery.deliveryDistrict,
               isFormValid: isPaymentUnlocked,
               isLoading: placing || placingStripe,
@@ -1276,6 +1407,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 processing: lang === 'th' ? 'กำลังดำเนินการ...' : 'Processing...',
               },
             });
+            const preparingCheckout =
+              lang === 'th' ? 'กำลังเตรียมการชำระเงิน…' : 'Preparing checkout…';
+            const paymentAvailability =
+              checkoutSubmissionToken || items.length === 0
+                ? paymentAvailabilityBase
+                : {
+                    stripe: { enabled: false, reason: preparingCheckout },
+                    bankTransfer: { enabled: false, reason: preparingCheckout },
+                  };
             const incompleteHint = !paymentAvailability.stripe.enabled
               ? paymentAvailability.stripe.reason
               : undefined;

@@ -96,7 +96,9 @@ export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: stri
           <div className="absolute bottom-4 left-4 lg:-bottom-10 lg:-left-10 bg-white p-4 lg:p-6 rounded-2xl shadow-2xl border border-stone-100 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite]">
             <div className="flex items-center gap-2 lg:gap-3 mb-2 lg:mb-3">
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
-                <span className="material-symbols-outlined text-xl lg:text-2xl">schedule</span>
+                <span className="material-symbols-outlined text-xl lg:text-2xl leading-none inline-flex items-center justify-center">
+                  schedule
+                </span>
               </div>
               <div className="min-w-0">
                 <p className="font-bold text-xs lg:text-sm">{t.expressDelivery}</p>

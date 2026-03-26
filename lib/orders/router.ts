@@ -31,12 +31,16 @@ export async function getOrderByStripeSessionId(stripeSessionId: string): Promis
   return supabaseStore.supabaseGetOrderByStripeSessionId(stripeSessionId);
 }
 
-export async function createOrder(payload: OrderPayload): Promise<Order> {
+export async function createOrder(
+  payload: OrderPayload
+): Promise<{ order: Order; created: boolean }> {
   requireSupabase();
   return supabaseStore.supabaseCreateOrder(payload);
 }
 
-export async function createPendingOrder(payload: OrderPayload): Promise<Order> {
+export async function createPendingOrder(
+  payload: OrderPayload
+): Promise<{ order: Order; created: boolean }> {
   requireSupabase();
   return supabaseStore.supabaseCreateOrder(payload, 'pending_payment');
 }

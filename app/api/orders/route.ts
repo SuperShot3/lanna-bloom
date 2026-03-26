@@ -99,6 +99,14 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const gaClientIdRaw = typeof b.ga_client_id === 'string' ? (b.ga_client_id as string).trim() : '';
   const ga_client_id = gaClientIdRaw.length > 0 && gaClientIdRaw.length <= 200 ? gaClientIdRaw : undefined;
 
+  const submissionTokenRaw = typeof b.submission_token === 'string' ? b.submission_token.trim() : '';
+  if (!submissionTokenRaw || submissionTokenRaw.length < 8 || submissionTokenRaw.length > 128) {
+    return { ok: false, message: 'submission_token is required (8–128 characters)' };
+  }
+  if (!/^[0-9a-fA-F-]+$/.test(submissionTokenRaw)) {
+    return { ok: false, message: 'submission_token has invalid format' };
+  }
+
   const lineUserIdRaw = typeof b.lineUserId === 'string' ? b.lineUserId.trim() : '';
   const lineUserId =
     lineUserIdRaw.length > 0 && lineUserIdRaw.length <= 128 ? lineUserIdRaw : undefined;
@@ -156,6 +164,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     ...(ga_client_id && { ga_client_id }),
     ...(lineUserId && { lineUserId }),
     ...(orderSource && { orderSource }),
+    submissionToken: submissionTokenRaw,
   };
   return { ok: true, payload };
 }
@@ -167,8 +176,8 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }
-    const order = await createOrder(result.payload);
-    if (result.payload.lineUserId) {
+    const { order, created } = await createOrder(result.payload);
+    if (result.payload.lineUserId && created) {
       void logLineIntegrationEvent('line_user_linked_to_order', {
         lineUserId: result.payload.lineUserId,
         orderId: order.orderId,

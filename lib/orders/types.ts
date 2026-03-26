@@ -73,6 +73,11 @@ export interface OrderPayload {
   lineUserId?: string;
   /** Channel hint for admin (e.g. line, web). */
   orderSource?: 'line' | 'web';
+  /**
+   * Browser-generated idempotency key for this checkout attempt.
+   * Stored in DB; not shown in customer UI. Omitted from persisted order_json.
+   */
+  submissionToken?: string;
 }
 
 export type OrderPaymentStatus = 'pending_payment' | 'paid' | 'payment_failed';

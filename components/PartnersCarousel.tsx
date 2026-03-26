@@ -54,7 +54,7 @@ export async function PartnersCarousel({ lang }: { lang: Locale }) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="material-symbols-outlined text-2xl text-stone-400 mt-[7px]">
+                    <span className="material-symbols-outlined text-2xl text-stone-400 leading-none inline-flex items-center justify-center">
                       store
                     </span>
                   )}

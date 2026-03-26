@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBouquetsFromSanityPaginated } from '@/lib/sanity';
+import { getPopularBouquetsFromSanityPaginated } from '@/lib/sanity';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       Math.max(1, parseInt(searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT)
     );
 
-    const bouquets = await getBouquetsFromSanityPaginated(offset, limit);
+    const bouquets = await getPopularBouquetsFromSanityPaginated(offset, limit);
     const hasMore = bouquets.length === limit;
 
     return NextResponse.json({ bouquets, hasMore });

@@ -6,6 +6,19 @@ import 'server-only';
 import { nanoid } from 'nanoid';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import type { Order, OrderPayload } from './types';
+
+function normalizeSubmissionToken(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim();
+  if (t.length < 8 || t.length > 128) return null;
+  if (!/^[0-9a-fA-F-]+$/.test(t)) return null;
+  return t;
+}
+
+function stripSubmissionTokenForStorage(payload: OrderPayload): OrderPayload {
+  const { submissionToken: _drop, ...rest } = payload as OrderPayload & { submissionToken?: string };
+  return rest;
+}
 import { orderStatusToFulfillmentDisplay } from './statusConstants';
 
 function mapSupabasePaymentToLegacy(paymentStatus: string | null | undefined): Order['status'] {
@@ -63,6 +76,7 @@ interface SupabaseOrderRow {
   order_source?: string | null;
   last_line_push_status?: string | null;
   last_line_push_at?: string | null;
+  submission_token?: string | null;
 }
 
 interface SupabaseOrderItemRow {
@@ -177,13 +191,49 @@ export async function supabaseGetOrderById(orderId: string): Promise<Order | nul
   return rowToOrder(orderRow as SupabaseOrderRow, (items ?? []) as SupabaseOrderItemRow[]);
 }
 
-export async function supabaseCreateOrder(payload: OrderPayload, status?: Order['status']): Promise<Order> {
+export async function supabaseGetOrderBySubmissionToken(token: string): Promise<Order | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const normalized = token.trim();
+  if (!normalized) return null;
+
+  const { data: row, error } = await supabase
+    .from('orders')
+    .select('order_id')
+    .eq('submission_token', normalized)
+    .maybeSingle();
+
+  if (error || !row?.order_id) {
+    if (process.env.SUPABASE_LOG_LEVEL === 'debug') {
+      console.log('[orders/supabase] getOrderBySubmissionToken:', error?.message);
+    }
+    return null;
+  }
+
+  return supabaseGetOrderById(String(row.order_id));
+}
+
+export async function supabaseCreateOrder(
+  payload: OrderPayload,
+  status?: Order['status']
+): Promise<{ order: Order; created: boolean }> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error('Supabase not configured');
 
+  const submissionToken = normalizeSubmissionToken(payload.submissionToken);
+  if (submissionToken) {
+    const existing = await supabaseGetOrderBySubmissionToken(submissionToken);
+    if (existing) {
+      return { order: existing, created: false };
+    }
+  }
+
+  const payloadForOrder = stripSubmissionTokenForStorage(payload);
+
   const orderId = (await import('./orderId')).generateOrderId();
   const order: Order = {
-    ...payload,
+    ...payloadForOrder,
     orderId,
     createdAt: new Date().toISOString(),
     fulfillmentStatus: 'new',
@@ -244,6 +294,7 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
     }),
     ...(order.lineUserId && { line_user_id: order.lineUserId.trim() }),
     ...(order.orderSource && { order_source: order.orderSource }),
+    ...(submissionToken ? { submission_token: submissionToken } : {}),
   };
 
   const { error: upsertError } = await supabase
@@ -251,6 +302,15 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
     .upsert(ordersRow, { onConflict: 'order_id', ignoreDuplicates: false });
 
   if (upsertError) {
+    const isUniqueViolation =
+      upsertError.code === '23505' ||
+      /duplicate key|unique constraint/i.test(String(upsertError.message ?? ''));
+    if (submissionToken && isUniqueViolation) {
+      const recovered = await supabaseGetOrderBySubmissionToken(submissionToken);
+      if (recovered) {
+        return { order: recovered, created: false };
+      }
+    }
     console.error('[orders/supabase] createOrder upsert error:', upsertError.message);
     throw upsertError;
   }
@@ -286,7 +346,7 @@ export async function supabaseCreateOrder(payload: OrderPayload, status?: Order[
   if (process.env.NODE_ENV === 'development') {
     console.log('[orders/supabase] Created', orderId);
   }
-  return order;
+  return { order, created: true };
 }
 
 export async function supabaseUpdateOrderPaymentStatus(
