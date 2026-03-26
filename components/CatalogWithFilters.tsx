@@ -66,7 +66,7 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
 
 export function CatalogWithFilters({ lang, bouquets = [], products = [], filterParams, title, description }: CatalogWithFiltersProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '/';
   const [drawerOpen, setDrawerOpen] = useState(false);
   const t = translations[lang].catalog;
   const activeCount = countActiveFilters(filterParams);

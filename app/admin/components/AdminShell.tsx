@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

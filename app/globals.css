@@ -537,9 +537,35 @@ a.filter-pill--active:hover {
   gap: 1rem;
   overflow-x: visible;
   padding-bottom: 0;
+  justify-content: center; /* keep grid centered even if widths shift */
+  justify-items: center; /* center each card slot horizontally */
 }
 .popular-card-slot {
   width: 100%;
+  max-width: 520px; /* prevents wide cards from pushing to screen edge */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.popular-card-slot--new {
+  animation: popular-card-in 320ms ease-out both;
+}
+
+@keyframes popular-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popular-card-slot--new {
+    animation: none;
+  }
 }
 
 /* Tablet: 3 columns */

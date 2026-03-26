@@ -8,6 +8,7 @@ import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
 import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,6 +16,7 @@ type NewsletterMessage = 'success' | 'already' | 'error' | 'invalid' | null;
 
 export function Footer({ lang }: { lang: Locale }) {
   const t = translations[lang].footer;
+  const { openPreferences } = useCookieConsent();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<NewsletterMessage>(null);
@@ -218,12 +220,22 @@ export function Footer({ lang }: { lang: Locale }) {
             <Link href={`/${lang}/refund-replacement`} className="hover:text-stone-600 transition-colors">
               {t.refundPolicy}
             </Link>
-            <Link href={`/${lang}/contact`} className="hover:text-stone-600 transition-colors">
+            <Link href={`/${lang}/terms`} className="hover:text-stone-600 transition-colors">
               {t.termsOfService}
             </Link>
-            <Link href={`/${lang}/refund-replacement`} className="hover:text-stone-600 transition-colors">
+            <Link href={`/${lang}/privacy`} className="hover:text-stone-600 transition-colors">
               {t.privacyPolicy}
             </Link>
+            <Link href={`/${lang}/cookies`} className="hover:text-stone-600 transition-colors">
+              {lang === 'th' ? 'นโยบายคุกกี้' : 'Cookie Policy'}
+            </Link>
+            <button
+              type="button"
+              onClick={openPreferences}
+              className="hover:text-stone-600 transition-colors"
+            >
+              {lang === 'th' ? 'ตั้งค่าคุกกี้' : 'Cookie settings'}
+            </button>
           </div>
         </div>
       </div>

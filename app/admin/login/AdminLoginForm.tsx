@@ -10,7 +10,7 @@ export function AdminLoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
-  const callbackError = searchParams.get('error');
+  const callbackError = (searchParams ?? new URLSearchParams()).get('error');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

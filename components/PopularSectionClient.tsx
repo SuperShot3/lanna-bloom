@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { BouquetCard } from '@/components/BouquetCard';
 import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 
 const PAGE_SIZE = 8;
+const NEW_CARD_ANIMATION_MS = 320;
 
 function SunflowerSpinner({ className }: { className?: string }) {
   return (
@@ -57,6 +58,15 @@ export function PopularSectionClient({
   const [bouquets, setBouquets] = useState<Bouquet[]>(initialBouquets);
   const [hasMore, setHasMore] = useState(initialBouquets.length >= PAGE_SIZE);
   const [loading, setLoading] = useState(false);
+  const [newIds, setNewIds] = useState<string[]>([]);
+
+  const newIdSet = useMemo(() => new Set(newIds), [newIds]);
+
+  useEffect(() => {
+    if (newIds.length === 0) return;
+    const t = window.setTimeout(() => setNewIds([]), NEW_CARD_ANIMATION_MS);
+    return () => window.clearTimeout(t);
+  }, [newIds]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -68,6 +78,7 @@ export function PopularSectionClient({
       if (!res.ok) return;
       const data = await res.json();
       const next = data.bouquets ?? [];
+      setNewIds(next.map((b: Bouquet) => b.id).filter(Boolean));
       setBouquets((prev) => [...prev, ...next]);
       setHasMore(Boolean(data.hasMore));
     } finally {
@@ -82,7 +93,12 @@ export function PopularSectionClient({
       <div className="popular-scroll-wrap">
         <div className="popular-scroll">
           {bouquets.map((bouquet) => (
-            <div key={bouquet.id} className="popular-card-slot">
+            <div
+              key={bouquet.id}
+              className={`popular-card-slot ${
+                newIdSet.has(bouquet.id) ? 'popular-card-slot--new' : ''
+              }`}
+            >
               <BouquetCard
                 bouquet={bouquet}
                 lang={lang}

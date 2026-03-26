@@ -35,10 +35,11 @@ export function OrdersListClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const returnTo = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  const sp = searchParams ?? new URLSearchParams();
+  const returnTo = `${pathname}${sp.toString() ? `?${sp.toString()}` : ''}`;
 
   const handleFilterChange = (updates: Record<string, string | undefined>) => {
-    const next = new URLSearchParams(searchParams.toString());
+    const next = new URLSearchParams(sp.toString());
     next.delete('page');
     Object.entries(updates).forEach(([k, v]) => {
       if (v && v !== 'all') next.set(k, v);
@@ -58,7 +59,7 @@ export function OrdersListClient({
         </div>
         <div className="admin-header-actions">
           <a
-            href={`/api/admin/orders/export?${searchParams.toString()}`}
+            href={`/api/admin/orders/export?${sp.toString()}`}
             className="admin-btn admin-btn-primary"
             download
           >
@@ -94,7 +95,7 @@ export function OrdersListClient({
                   type="button"
                   disabled={initialPage <= 1}
                   onClick={() => {
-                    const next = new URLSearchParams(searchParams.toString());
+                    const next = new URLSearchParams(sp.toString());
                     next.set('page', String(initialPage - 1));
                     router.push(`/admin/orders?${next.toString()}`);
                   }}
@@ -109,7 +110,7 @@ export function OrdersListClient({
                   type="button"
                   disabled={initialPage >= totalPages}
                   onClick={() => {
-                    const next = new URLSearchParams(searchParams.toString());
+                    const next = new URLSearchParams(sp.toString());
                     next.set('page', String(initialPage + 1));
                     router.push(`/admin/orders?${next.toString()}`);
                   }}
