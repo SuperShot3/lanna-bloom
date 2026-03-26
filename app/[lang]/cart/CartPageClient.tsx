@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
@@ -38,6 +38,8 @@ import {
   CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY,
   validateSubmissionTokenFormat,
 } from '@/lib/checkout/submissionToken';
+import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+import { PinIcon } from '@/components/icons/PinIcon';
 
 const LINE_CONTEXT_STORAGE_KEY = 'lanna-bloom-line-context';
 
@@ -447,6 +449,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [mapsLinkPromptOpen, setMapsLinkPromptOpen] = useState(false);
+  const [shouldFocusMapsLinkOnReturn, setShouldFocusMapsLinkOnReturn] = useState(false);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
@@ -644,16 +648,97 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           stripe: { enabled: false, reason: preparingCheckoutMsg },
           bankTransfer: { enabled: false, reason: preparingCheckoutMsg },
         };
-  const desktopPlaceOrderHoverHint =
-    !paymentAvailabilityDesktop.bankTransfer.enabled
+
+  /** Same priority as StickyCheckoutBar (orderError ?? incompleteHint). */
+  const desktopCheckoutHintMessage =
+    orderError ??
+    (!paymentAvailabilityDesktop.bankTransfer.enabled
       ? paymentAvailabilityDesktop.bankTransfer.reason
-      : undefined;
+      : null) ??
+    null;
+  const isDesktopCheckoutHintError = Boolean(orderError);
+
+  const [desktopHintDisplay, setDesktopHintDisplay] = useState<{
+    text: string;
+    isError: boolean;
+  } | null>(() =>
+    desktopCheckoutHintMessage
+      ? { text: desktopCheckoutHintMessage, isError: isDesktopCheckoutHintError }
+      : null
+  );
+  const [desktopHintAnimOpen, setDesktopHintAnimOpen] = useState(() =>
+    Boolean(desktopCheckoutHintMessage)
+  );
+
+  useEffect(() => {
+    if (!desktopCheckoutHintMessage) {
+      setDesktopHintAnimOpen(false);
+      return;
+    }
+    setDesktopHintDisplay({
+      text: desktopCheckoutHintMessage,
+      isError: isDesktopCheckoutHintError,
+    });
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setDesktopHintAnimOpen(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [desktopCheckoutHintMessage, isDesktopCheckoutHintError]);
+
+  const handleDesktopCheckoutHintTransitionEnd = useCallback(
+    (e: React.TransitionEvent<HTMLDivElement>) => {
+      if (e.target !== e.currentTarget) return;
+      if (e.propertyName !== 'max-height') return;
+      if (!desktopHintAnimOpen && !desktopCheckoutHintMessage) {
+        setDesktopHintDisplay(null);
+      }
+    },
+    [desktopHintAnimOpen, desktopCheckoutHintMessage]
+  );
 
   useEffect(() => {
     if (!orderError) return;
     const t = setTimeout(() => setOrderError(null), 5000);
     return () => clearTimeout(t);
   }, [orderError]);
+
+  useEffect(() => {
+    if (!mapsLinkPromptOpen) return;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMapsLinkPromptOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [mapsLinkPromptOpen]);
+
+  useEffect(() => {
+    if (!shouldFocusMapsLinkOnReturn) return;
+    if (!mapsLinkPromptOpen) return;
+    if (typeof window === 'undefined') return;
+
+    const focusMapsInput = () => {
+      const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
+      if (mapsUrl) {
+        setShouldFocusMapsLinkOnReturn(false);
+        return;
+      }
+      setMobileOpenSection('delivery');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // While the prompt is open, keep user at top.
+    focusMapsInput();
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') focusMapsInput();
+    }, 800);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [shouldFocusMapsLinkOnReturn, mapsLinkPromptOpen, delivery.deliveryGoogleMapsUrl]);
 
   const toggleMobileSection = (section: AccordionSection) => {
     setMobileOpenSection((prev) => (prev === section ? null : section));
@@ -714,12 +799,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setAlreadySubmittedBlock(false);
   };
 
-  const handlePlaceOrder = async () => {
-    const hint = getFirstIncompleteHint();
-    if (hint) {
-      setOrderError(hint);
-      return;
-    }
+  const mapsUrlInvalidMsg =
+    lang === 'th'
+      ? 'กรุณาวางลิงก์ Google Maps ที่ถูกต้อง (แชร์ → คัดลอกลิงก์จากแอป)'
+      : 'Please paste a valid Google Maps link (Share → Copy link from the Google Maps app).';
+
+  const runPlaceOrderSubmit = async () => {
     if (!checkoutSubmissionToken) {
       setOrderError(
         lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
@@ -783,6 +868,74 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setPlacing(false);
       orderSubmitInFlightRef.current = false;
     }
+  };
+
+  const handlePlaceOrder = async () => {
+    const hint = getFirstIncompleteHint();
+    if (hint) {
+      setOrderError(hint);
+      return;
+    }
+    if (!checkoutSubmissionToken) {
+      setOrderError(
+        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
+      );
+      return;
+    }
+    const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
+    if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) {
+      setOrderError(mapsUrlInvalidMsg);
+      return;
+    }
+    if (!mapsUrl) {
+      // Scroll to top first, then show the nudge modal.
+      setMobileOpenSection('delivery');
+      setShouldFocusMapsLinkOnReturn(true);
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      requestAnimationFrame(() => setMapsLinkPromptOpen(true));
+      return;
+    }
+    await runPlaceOrderSubmit();
+  };
+
+  const handleMapsPromptContinueWithoutLink = async () => {
+    setMapsLinkPromptOpen(false);
+    const hint = getFirstIncompleteHint();
+    if (hint) {
+      setOrderError(hint);
+      return;
+    }
+    if (!checkoutSubmissionToken) {
+      setOrderError(
+        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
+      );
+      return;
+    }
+    const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
+    if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) {
+      setOrderError(mapsUrlInvalidMsg);
+      return;
+    }
+    await runPlaceOrderSubmit();
+  };
+
+  const handleMapsPromptAddPin = () => {
+    setMapsLinkPromptOpen(false);
+    setMobileOpenSection('delivery');
+    setShouldFocusMapsLinkOnReturn(true);
+    const focusMapsInput = () => {
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    focusMapsInput();
+    if (typeof window !== 'undefined') {
+      window.open('https://www.google.com/maps', '_blank', 'noopener,noreferrer');
+    }
+    // Ensure the user lands back on the correct input even if layout shifts.
+    setTimeout(focusMapsInput, 250);
   };
 
   if (lineHandoffLoading) {
@@ -1323,11 +1476,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               <div className="cart-place-order">
                 {contactFormContent('')}
                 <div className="cart-place-order-actions">
+                <div className="cart-place-order-pc-stack">
                 <div className="cart-place-order-buttons">
-                  <span
-                    className="cart-place-order-pc-tooltip-wrap"
-                    title={desktopPlaceOrderHoverHint ?? undefined}
-                  >
+                  <span className="cart-place-order-pc-tooltip-wrap">
                     <button
                       type="button"
                       className={`cart-place-order-btn cart-place-order-bank-btn ${isPaymentUnlocked ? 'cart-place-order-ready' : ''}`}
@@ -1355,11 +1506,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     </button>
                   </span>
                 </div>
-                {orderError && (
-                  <p className="cart-place-order-error" role="alert">
-                    {orderError}
-                  </p>
-                )}
+                <div
+                  className={`cart-place-order-hint-slot ${desktopHintAnimOpen ? 'cart-place-order-hint-slot--visible' : ''}`}
+                  onTransitionEnd={handleDesktopCheckoutHintTransitionEnd}
+                >
+                  {desktopHintDisplay && (
+                    <div className="cart-place-order-hint-inner">
+                      <span className="cart-place-order-hint-icon" aria-hidden>
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="13" />
+                          <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
+                        </svg>
+                      </span>
+                      <p
+                        className={`cart-place-order-hint ${desktopHintDisplay.isError ? 'cart-place-order-hint--error' : ''}`}
+                        role={desktopHintDisplay.isError ? 'alert' : undefined}
+                        aria-live="polite"
+                      >
+                        {desktopHintDisplay.text}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                </div>
                 </div>
               </div>
             }
@@ -1503,7 +1673,151 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </div>
         </div>
       </div>
+      {mapsLinkPromptOpen && (
+        <div
+          className="cart-maps-prompt-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cart-maps-prompt-title"
+        >
+          <button
+            type="button"
+            className="cart-maps-prompt-backdrop"
+            aria-label={lang === 'th' ? 'ปิด' : 'Close'}
+            onClick={() => {
+              setMapsLinkPromptOpen(false);
+              setShouldFocusMapsLinkOnReturn(false);
+            }}
+          />
+          <div className="cart-maps-prompt-card">
+            <h2 id="cart-maps-prompt-title" className="cart-maps-prompt-title">
+              {lang === 'th' ? 'วิธีเพิ่มหมุด Google Maps' : 'How to add Google map pin'}
+            </h2>
+            <p className="cart-maps-prompt-text">
+              {lang === 'th'
+                ? 'หมุดบนแผนที่ช่วยให้คนขับหาจุดส่งได้เร็วขึ้น การเพิ่มให้จะช่วยเราได้มาก'
+                : 'Pin on the map helps our drivers find exact spot faster. Adding one would help us very much.'}
+            </p>
+            <ul className="cart-maps-prompt-steps" aria-label={lang === 'th' ? 'วิธีเพิ่มลิงก์' : 'How to add the link'}>
+              <li>{lang === 'th' ? 'เปิด Google Maps แล้ววางหมุด/เลือกสถานที่' : 'Open Google Maps and drop a pin / choose the place'}</li>
+              <li>{lang === 'th' ? 'กด “แชร์” (Share)' : 'Tap “Share”'}</li>
+              <li>{lang === 'th' ? 'กด “คัดลอกลิงก์” (Copy link)' : 'Tap “Copy link”'}</li>
+              <li>{lang === 'th' ? 'กลับมาวางลิงก์ลงในช่อง “Google Maps link”' : 'Come back and paste into the “Google Maps link” field'}</li>
+            </ul>
+            <div className="cart-maps-prompt-actions">
+              <button type="button" className="cart-maps-prompt-btn cart-maps-prompt-btn-primary" onClick={handleMapsPromptAddPin}>
+                <PinIcon className="cart-maps-prompt-btn-icon" size={18} />
+                {lang === 'th' ? 'เปิด Google Maps เพื่อวางหมุด' : 'Open Google Maps & add pin'}
+              </button>
+              <button
+                type="button"
+                className="cart-maps-prompt-btn cart-maps-prompt-btn-secondary"
+                onClick={() => void handleMapsPromptContinueWithoutLink()}
+              >
+                {lang === 'th' ? 'ดำเนินการต่อโดยไม่มีลิงก์' : 'Continue without link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style jsx>{`
+        .cart-maps-prompt-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          box-sizing: border-box;
+        }
+        .cart-maps-prompt-backdrop {
+          position: absolute;
+          inset: 0;
+          border: none;
+          margin: 0;
+          padding: 0;
+          background: rgba(0, 0, 0, 0.45);
+          cursor: pointer;
+        }
+        .cart-maps-prompt-card {
+          position: relative;
+          z-index: 1;
+          max-width: 400px;
+          width: 100%;
+          padding: 22px 20px 20px;
+          background: var(--surface);
+          border-radius: var(--radius);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+          border: 1px solid var(--border);
+        }
+        .cart-maps-prompt-title {
+          font-family: var(--font-serif);
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0 0 12px;
+          line-height: 1.3;
+        }
+        .cart-maps-prompt-text {
+          font-size: 0.92rem;
+          line-height: 1.55;
+          color: var(--text-muted);
+          margin: 0 0 18px;
+        }
+        .cart-maps-prompt-steps {
+          margin: -8px 0 18px;
+          padding-left: 1.15em;
+          color: var(--text);
+          font-size: 0.9rem;
+          line-height: 1.5;
+          list-style: disc;
+          list-style-position: outside;
+        }
+        .cart-maps-prompt-steps li {
+          margin: 6px 0;
+        }
+        .cart-maps-prompt-steps li::marker {
+          color: var(--text-muted);
+        }
+        .cart-maps-prompt-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .cart-maps-prompt-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 12px 16px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          font-family: inherit;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .cart-maps-prompt-btn-icon {
+          flex-shrink: 0;
+        }
+        .cart-maps-prompt-btn-primary {
+          background: var(--accent);
+          color: #fff;
+          border: none;
+        }
+        .cart-maps-prompt-btn-primary:hover {
+          filter: brightness(0.95);
+        }
+        .cart-maps-prompt-btn-secondary {
+          background: transparent;
+          color: var(--text);
+          border: 1px solid var(--border);
+        }
+        .cart-maps-prompt-btn-secondary:hover {
+          background: var(--pastel-cream);
+        }
         .cart-page {
           padding: 12px 0 48px;
         }
@@ -1844,6 +2158,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           gap: 8px;
           margin-top: 8px;
         }
+        .cart-place-order-pc-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          width: 100%;
+        }
         .cart-place-order-buttons {
           display: flex;
           flex-direction: column;
@@ -1889,10 +2209,59 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-color: #16a34a;
           color: #14532d;
         }
-        .cart-place-order-error {
-          margin: 0;
-          font-size: 0.85rem;
+        .cart-place-order-hint-slot {
+          max-height: 0;
+          margin-top: 0;
+          opacity: 0;
+          overflow: hidden;
+          flex-shrink: 0;
+          transform: translateZ(0);
+          transition:
+            max-height 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+            margin-top 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .cart-place-order-hint-slot--visible {
+          max-height: 56px;
+          margin-top: 6px;
+          opacity: 1;
+        }
+        .cart-place-order-hint-inner {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 2px 0 0;
+          min-height: 22px;
+        }
+        .cart-place-order-hint-icon {
+          flex-shrink: 0;
           color: #b91c1c;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 0.5px;
+        }
+        .cart-place-order-hint {
+          flex: 1;
+          min-width: 0;
+          margin: 0;
+          padding: 0;
+          font-size: 10px;
+          font-weight: 500;
+          color: #b91c1c;
+          line-height: 1.35;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+        }
+        .cart-place-order-hint--error {
+          font-weight: 600;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cart-place-order-hint-slot {
+            transition-duration: 0.01ms;
+          }
         }
         .cart-contact-info {
           margin-bottom: 16px;
@@ -2418,14 +2787,22 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             flex-direction: row;
             flex-wrap: wrap;
             align-items: flex-end;
+            justify-content: flex-end;
             gap: 12px;
+          }
+          .cart-delivery .cart-place-order-pc-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            width: auto;
+            max-width: 100%;
           }
           .cart-delivery .cart-place-order-buttons {
             flex-direction: row;
             flex-wrap: wrap;
             gap: 12px;
             margin-top: 0;
-            width: 100%;
+            width: auto;
             justify-content: flex-end;
           }
           /* Native title tooltip on hover: disabled buttons do not receive pointer events */
@@ -2445,9 +2822,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             min-width: 160px;
             max-width: 220px;
           }
-          .cart-delivery .cart-place-order-error {
-            flex: 1 1 100%;
-            order: 2;
+          .cart-delivery .cart-place-order-hint-slot {
+            flex: 0 1 auto;
+            width: auto;
+            max-width: min(280px, 100%);
+            align-self: flex-end;
           }
           .cart-delivery .cart-contact-label {
             display: block;

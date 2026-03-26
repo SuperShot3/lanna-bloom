@@ -9,6 +9,7 @@ import type { DistrictKey } from '@/lib/deliveryFees';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
+import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 
 function validateStripePayload(
   body: unknown
@@ -33,6 +34,11 @@ function validateStripePayload(
   const address = typeof d.address === 'string' ? d.address.trim() : '';
   if (!address || address.length < 10 || address.length > 500) {
     return { ok: false, message: 'delivery.address is required (10–500 characters)' };
+  }
+  const deliveryGoogleMapsUrlRaw =
+    typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl.trim() : '';
+  if (deliveryGoogleMapsUrlRaw && !isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
+    return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
   }
 
   const customerName = typeof b.customerName === 'string' ? b.customerName.trim() : '';
@@ -146,7 +152,7 @@ function validateStripePayload(
         notes: typeof d.notes === 'string' ? d.notes : undefined,
         deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
         deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
-        deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : undefined,
+        deliveryGoogleMapsUrl: deliveryGoogleMapsUrlRaw || undefined,
         deliveryDistrict,
         isMueangCentral,
       },

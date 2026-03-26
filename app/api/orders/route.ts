@@ -6,6 +6,7 @@ import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
+import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') {
@@ -39,6 +40,11 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
   if (!address || address.length < 10 || address.length > 500) {
     return { ok: false, message: 'delivery.address is required (10–500 characters)' };
+  }
+  const deliveryGoogleMapsUrlRaw =
+    typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl.trim() : '';
+  if (deliveryGoogleMapsUrlRaw && !isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
+    return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
   }
   const validDistricts: DeliveryDistrictKey[] = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'];
   const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as DeliveryDistrictKey)
@@ -150,7 +156,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       notes: typeof d.notes === 'string' ? d.notes : undefined,
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
-      deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : undefined,
+      deliveryGoogleMapsUrl: deliveryGoogleMapsUrlRaw || undefined,
       deliveryDistrict,
       isMueangCentral,
     },
