@@ -19,8 +19,10 @@ export type StickyBarProps = {
   incompleteHint?: string | null;
   orderError?: string | null;
   placing: boolean;
-  placingStripe: boolean;
-  onPayStripe: () => void;
+  /** When true, shows the compact Stripe shortcut next to Place order. */
+  showStripeButton?: boolean;
+  placingStripe?: boolean;
+  onPayStripe?: () => void;
   onPlaceOrder: () => void;
   /** Optional: scroll to delivery section when user clicks Change (used when no inline edit). */
   onDateChange?: () => void;
@@ -31,8 +33,8 @@ export type StickyBarProps = {
     dateLabel: string;
     deliveryFeeLabel: string;
     totalLabel: string;
-    payWithStripe: string;
-    completeDetailsToPay: string;
+    payWithStripe?: string;
+    completeDetailsToPay?: string;
     placeOrder: string;
     orderLabel: string;
     redirecting: string;
@@ -67,7 +69,8 @@ export function StickyCheckoutBar({
   incompleteHint,
   orderError,
   placing,
-  placingStripe,
+  showStripeButton = false,
+  placingStripe = false,
   onPayStripe,
   onPlaceOrder,
   onDateChange,
@@ -234,24 +237,30 @@ export function StickyCheckoutBar({
             </div>
           </div>
 
-          <div
-            role="button"
-            tabIndex={stripeButtonDisabled ? -1 : 0}
-            className={`sticky-checkout-bar__btn-stripe ${stripeButtonDisabled ? 'sticky-checkout-bar__btn-stripe--disabled' : ''} ${stripeLockedVisual ? 'sticky-checkout-bar__btn-stripe--locked' : ''} ${stripeLoading ? 'sticky-checkout-bar__btn-stripe--loading' : ''} ${stripeReady ? 'sticky-checkout-bar__btn-stripe--ready' : ''}`}
-            onClick={stripeButtonDisabled ? undefined : onPayStripe}
-            onKeyDown={(e) => {
-              if (!stripeButtonDisabled && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault();
-                onPayStripe();
+          {showStripeButton && (
+            <div
+              role="button"
+              tabIndex={stripeButtonDisabled ? -1 : 0}
+              className={`sticky-checkout-bar__btn-stripe ${stripeButtonDisabled ? 'sticky-checkout-bar__btn-stripe--disabled' : ''} ${stripeLockedVisual ? 'sticky-checkout-bar__btn-stripe--locked' : ''} ${stripeLoading ? 'sticky-checkout-bar__btn-stripe--loading' : ''} ${stripeReady ? 'sticky-checkout-bar__btn-stripe--ready' : ''}`}
+              onClick={stripeButtonDisabled ? undefined : onPayStripe}
+              onKeyDown={(e) => {
+                if (!stripeButtonDisabled && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  onPayStripe?.();
+                }
+              }}
+              aria-label={
+                stripeDisabled && incompleteHint
+                  ? labels.completeDetailsToPay ?? 'Complete details to pay'
+                  : labels.payWithStripe ?? 'Pay with Stripe'
               }
-            }}
-            aria-label={stripeDisabled && incompleteHint ? labels.completeDetailsToPay : labels.payWithStripe}
-            aria-busy={stripeLoading}
-            aria-disabled={stripeDisabled}
-            title={labels.payWithStripe}
-          >
-            <span className="sticky-checkout-bar__stripe-s" aria-hidden>S</span>
-          </div>
+              aria-busy={stripeLoading}
+              aria-disabled={stripeDisabled}
+              title={labels.payWithStripe ?? 'Pay with Stripe'}
+            >
+              <span className="sticky-checkout-bar__stripe-s" aria-hidden>S</span>
+            </div>
+          )}
 
           <button
             type="button"

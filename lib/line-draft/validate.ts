@@ -31,10 +31,9 @@ export function parseLineDraftPayload(body: unknown): { ok: true; draft: LineDra
     if (!isCartItemShape(it)) {
       return { ok: false, message: 'Invalid draft item (need bouquetId, slug, size.key, size.price, addOns)' };
     }
-    const i = it as Record<string, unknown>;
     const refCheck = validateCatalogItemRef({
-      id: String(i.bouquetId),
-      slug: String(i.slug),
+      id: it.bouquetId,
+      slug: it.slug,
     });
     if (!refCheck.ok) {
       return { ok: false, message: `Invalid draft item (not in website catalog): ${refCheck.message}` };

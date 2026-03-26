@@ -17,7 +17,6 @@ import {
   trackViewCart,
   trackRemoveFromCart,
   trackAddShippingInfo,
-  trackAddPaymentInfo,
 } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
@@ -59,102 +58,6 @@ function buildAddOnsSummaryForDisplay(): string {
 /** Add-on lines for order summary — not displayed on checkout. */
 function buildAddOnsSummaryLines(): string[] {
   return [];
-}
-
-/** Build identifiers-only payload for Stripe (no prices from client). */
-function buildStripePayload(
-  cartItems: CartItem[],
-  delivery: DeliveryFormValues,
-  lang: Locale,
-  contact: {
-    customerName: string;
-    phone: string;
-    customerEmail?: string;
-    contactPreference: ContactPreferenceOption[];
-    recipientName?: string;
-    recipientPhone?: string;
-    lineUserId?: string;
-    orderSource?: 'line' | 'web';
-  },
-  submissionToken: string
-): Record<string, unknown> {
-  const addressLineTrim = delivery.addressLine?.trim() ?? '';
-  const preferredTimeSlot =
-    delivery.date && delivery.timeSlot
-      ? `${delivery.date} ${delivery.timeSlot}`
-      : delivery.date || delivery.timeSlot || '';
-
-  const items: Array<{
-    itemType: 'bouquet' | 'product';
-    bouquetId: string;
-    bouquetSlug?: string;
-    size: string;
-    addOns: {
-      cardType: null;
-      cardMessage: string;
-      wrappingOption: null;
-      productAddOns?: Record<string, boolean>;
-    };
-    imageUrl?: string;
-  }> = [];
-  for (const item of cartItems) {
-    const qty = item.quantity ?? 1;
-    const base = {
-      itemType: (item.itemType ?? 'bouquet') as 'bouquet' | 'product',
-      bouquetId: item.bouquetId,
-      bouquetSlug: item.slug ?? undefined,
-      size: item.size.key ?? 'm',
-      addOns: {
-        cardType: null,
-        cardMessage: item.addOns.cardMessage?.trim() ?? '',
-        wrappingOption: null,
-        productAddOns: item.addOns.productAddOns ?? undefined,
-      },
-      imageUrl: item.imageUrl ?? undefined,
-    };
-    for (let i = 0; i < qty; i++) items.push(base);
-  }
-
-  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
-  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
-  const itemsTotal = cartItems.reduce(
-    (sum, item) =>
-      sum +
-      (item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})) *
-        (item.quantity ?? 1),
-    0
-  );
-  const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
-  const subtotal = itemsTotal + deliveryFee;
-  const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, referral);
-
-  return {
-    lang,
-    customerName: contact.customerName.trim(),
-    phone: contact.phone.trim(),
-    customerEmail: contact.customerEmail?.trim() || undefined,
-    contactPreference: contact.contactPreference,
-    items,
-    delivery: {
-      address: addressLineTrim,
-      preferredTimeSlot,
-      recipientName: contact.recipientName?.trim() || undefined,
-      recipientPhone: contact.recipientPhone?.trim() || undefined,
-      deliveryLat: delivery.deliveryLat ?? undefined,
-      deliveryLng: delivery.deliveryLng ?? undefined,
-      deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
-      deliveryDistrict: district,
-      isMueangCentral,
-    },
-    ...(referral && referralDiscount > 0 && {
-      referralCode: referral.code,
-      referralDiscount,
-    }),
-    ...(contact.lineUserId && { lineUserId: contact.lineUserId }),
-    ...(contact.orderSource && { orderSource: contact.orderSource }),
-    submission_token: submissionToken,
-  };
 }
 
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp', 'telegram'];
@@ -543,7 +446,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, []);
 
   const [placing, setPlacing] = useState(false);
-  const [placingStripe, setPlacingStripe] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
@@ -730,17 +632,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setMobileOpenSection((prev) => (prev === section ? null : section));
   };
 
-  const handleStickyCtaClick = () => {
-    if (isPaymentUnlocked) {
-      handlePayByCard();
-    } else {
-      const targetSection: AccordionSection = !isDeliveryValidNow ? 'delivery' : 'contact';
-      setMobileOpenSection(targetSection);
-      const ref = !isDeliveryValidNow ? deliverySectionRef : contactSectionRef;
-      setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-    }
-  };
-
   const handleMobileDeliverySave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)) return;
@@ -865,77 +756,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setPlacing(false);
       orderSubmitInFlightRef.current = false;
     }
-  };
-
-  const handlePayByCard = async () => {
-    const hint = getFirstIncompleteHint();
-    if (hint) {
-      setOrderError(hint);
-      return;
-    }
-    if (!checkoutSubmissionToken) {
-      setOrderError(
-        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
-      );
-      return;
-    }
-    if (orderSubmitInFlightRef.current || placingStripe) return;
-    orderSubmitInFlightRef.current = true;
-    setOrderError(null);
-    trackCheckoutStart();
-    setPlacingStripe(true);
-    const fullPhone = countryCode + phoneNational;
-    const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
-    const analyticsItems = cartItemsToAnalytics(items, lang);
-    trackAddPaymentInfo({
-      paymentType: 'card',
-      currency: 'THB',
-      value: grandTotalVal,
-      items: analyticsItems,
-    });
-    try {
-      const payload = buildStripePayload(
-        items,
-        delivery,
-        lang,
-        {
-          customerName: customerName.trim(),
-          phone: fullPhone,
-          customerEmail: customerEmail.trim() || undefined,
-          contactPreference,
-          ...(isOrderingForSomeoneElse && {
-            recipientName: recipientName.trim(),
-            recipientPhone: recipientPhone!,
-          }),
-          ...(lineContext.lineUserId && {
-            lineUserId: lineContext.lineUserId,
-            orderSource: lineContext.orderSource ?? 'line',
-          }),
-        },
-        checkoutSubmissionToken
-      );
-      const res = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setOrderError(data.error ?? t.couldNotCreateOrder);
-        setPlacingStripe(false);
-        orderSubmitInFlightRef.current = false;
-        return;
-      }
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setOrderError(t.couldNotCreateOrder);
-    } catch {
-      setOrderError(t.couldNotCreateOrder);
-    }
-    setPlacingStripe(false);
-    orderSubmitInFlightRef.current = false;
   };
 
   if (lineHandoffLoading) {
@@ -1400,7 +1220,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             const paymentAvailabilityBase = getPaymentAvailability({
               hasDeliveryDistrict: !!delivery.deliveryDistrict,
               isFormValid: isPaymentUnlocked,
-              isLoading: placing || placingStripe,
+              isLoading: placing,
               firstIncompleteHint: getFirstIncompleteHint(),
               messages: {
                 selectDeliveryArea: lang === 'th' ? 'กรุณาเลือกพื้นที่จัดส่งเพื่อดูตัวเลือกชำระเงิน' : 'Select a delivery area to see payment options',
@@ -1416,8 +1236,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     stripe: { enabled: false, reason: preparingCheckout },
                     bankTransfer: { enabled: false, reason: preparingCheckout },
                   };
-            const incompleteHint = !paymentAvailability.stripe.enabled
-              ? paymentAvailability.stripe.reason
+            const incompleteHint = !paymentAvailability.bankTransfer.enabled
+              ? paymentAvailability.bankTransfer.reason
               : undefined;
             const handleDeliveryDateTimeChange = (date: string, timeSlot: string) => {
               setDelivery((prev) => ({ ...prev, date, timeSlot }));
@@ -1435,8 +1255,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             incompleteHint={incompleteHint}
             orderError={orderError}
             placing={placing}
-            placingStripe={placingStripe}
-            onPayStripe={handleStickyCtaClick}
             onPlaceOrder={handlePlaceOrder}
             onDeliveryDateTimeChange={handleDeliveryDateTimeChange}
             formatDate={formatStickyDate}
@@ -1444,8 +1262,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               dateLabel: t.dateLabel ?? 'Date',
               deliveryFeeLabel: t.deliveryFeeLabel,
               totalLabel: t.totalLabel,
-              payWithStripe: translations[lang].cart.payWithStripe ?? 'Pay with Stripe',
-              completeDetailsToPay: (t as { completeDetailsToPay?: string }).completeDetailsToPay ?? 'Complete details to pay',
               placeOrder: t.placeOrder,
               orderLabel: (t as { orderLabel?: string }).orderLabel ?? (lang === 'th' ? 'สั่งซื้อ' : 'Order'),
               redirecting: lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting...',
@@ -1483,31 +1299,27 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <div className="cart-place-order-buttons">
                   <button
                     type="button"
-                    className="cart-place-order-btn cart-pay-by-stripe-btn"
-                    onClick={handlePayByCard}
-                    disabled={placing || placingStripe}
-                    aria-busy={placingStripe}
-                  >
-                    {placingStripe ? (
-                      lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting to payment...'
-                    ) : (
-                      <>
-                        <span className="cart-stripe-logo" aria-hidden>
-                          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                            <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z" />
-                          </svg>
-                        </span>
-                        {translations[lang].cart.payWithStripe ?? 'Pay with Stripe'}
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
                     className={`cart-place-order-btn cart-place-order-bank-btn ${isPaymentUnlocked ? 'cart-place-order-ready' : ''}`}
                     onClick={handlePlaceOrder}
-                    disabled={placing || placingStripe}
+                    disabled={placing || !isPaymentUnlocked}
                     aria-busy={placing}
                   >
+                    <svg
+                      className="cart-place-order-btn__icon"
+                      width={18}
+                      height={18}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.25}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                      <path d="M16 10a4 4 0 01-8 0" />
+                    </svg>
                     {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
                   </button>
                 </div>
@@ -2024,27 +1836,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-place-order-btn:disabled {
           opacity: 0.8;
           cursor: not-allowed;
-        }
-        .cart-pay-by-stripe-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          background: #635BFF;
-          border: 2px solid #635BFF;
-          box-shadow: 0 2px 8px rgba(99, 91, 255, 0.35);
-        }
-        .cart-pay-by-stripe-btn:hover:not(:disabled) {
-          background: #4f46e5;
-          border-color: #4f46e5;
-          box-shadow: 0 4px 12px rgba(99, 91, 255, 0.45);
-        }
-        .cart-stripe-logo {
-          display: inline-flex;
-          flex-shrink: 0;
-        }
-        .cart-stripe-logo svg {
-          display: block;
         }
         .cart-place-order-bank-btn {
           background: var(--surface);
@@ -2602,6 +2393,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             flex-wrap: wrap;
             gap: 12px;
             margin-top: 0;
+            width: 100%;
+            justify-content: flex-end;
           }
           .cart-delivery .cart-place-order-btn {
             width: auto;
@@ -2756,6 +2549,72 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
           .cart-delivery .cart-required {
             color: #b91c1c;
+          }
+
+          /* Desktop: Place Order — muted until form valid, then primary CTA */
+          .cart-delivery .cart-place-order-bank-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition:
+              background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .cart-delivery .cart-place-order-btn__icon {
+            flex-shrink: 0;
+          }
+          .cart-delivery .cart-place-order-bank-btn[aria-busy='true'] .cart-place-order-btn__icon {
+            display: none;
+          }
+          .cart-delivery .cart-place-order-bank-btn:not(.cart-place-order-ready) {
+            background: #e8ebe6;
+            border: 1px solid #d4d9d2;
+            color: #5c635f;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 1;
+            filter: none;
+          }
+          .cart-delivery .cart-place-order-bank-btn:not(.cart-place-order-ready):hover {
+            background: #e2e6e0;
+            border-color: #cdd3ca;
+            color: #525a56;
+            transform: none;
+          }
+          .cart-delivery .cart-place-order-bank-btn.cart-place-order-ready:not(:disabled) {
+            background: var(--primary);
+            border: 1px solid color-mix(in srgb, var(--primary) 90%, #0a0f0e);
+            color: #f7f8f6;
+            box-shadow: 0 4px 14px rgba(26, 60, 52, 0.22);
+            cursor: pointer;
+          }
+          .cart-delivery .cart-place-order-bank-btn.cart-place-order-ready:not(:disabled):hover {
+            background: #153029;
+            border-color: #153029;
+            color: #fafaf8;
+            box-shadow: 0 6px 18px rgba(26, 60, 52, 0.28);
+            transform: translateY(-1px);
+          }
+          .cart-delivery .cart-place-order-bank-btn.cart-place-order-ready:not(:disabled):active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(26, 60, 52, 0.2);
+          }
+          .cart-delivery .cart-place-order-bank-btn.cart-place-order-ready:disabled {
+            cursor: wait;
+            opacity: 0.92;
+          }
+          .cart-delivery .cart-place-order-bank-btn.cart-place-order-ready:focus-visible:not(:disabled) {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+          }
+        }
+        @media (min-width: 1201px) and (prefers-reduced-motion: reduce) {
+          .cart-delivery .cart-place-order-bank-btn {
+            transition: none;
           }
         }
         @media (max-width: 1200px) {
