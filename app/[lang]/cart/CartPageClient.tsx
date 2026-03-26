@@ -469,14 +469,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const deliverySectionRef = useRef<HTMLDivElement>(null);
   const contactSectionRef = useRef<HTMLDivElement>(null);
 
-  // Hide the site footer while the user is editing checkout details
-  // (delivery + personal/contact information).
+  // Hide the site footer on desktop cart, and on mobile whenever the cart has items (checkout flow).
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const mql = window.matchMedia('(min-width: 1201px)'); // matches cart desktop breakpoint
     const hideOnThisPage = () => {
-      const shouldHide = mql.matches || mobileOpenSection === 'delivery' || mobileOpenSection === 'contact';
+      const shouldHide = mql.matches || items.length > 0;
       document.body.classList.toggle('hide-checkout-footer', shouldHide);
     };
 
@@ -489,7 +488,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       else mql.removeListener(hideOnThisPage);
       document.body.classList.remove('hide-checkout-footer');
     };
-  }, [mobileOpenSection]);
+  }, [items.length]);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -621,6 +620,34 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     return '';
   };
+
+  /** Same copy as StickyCheckoutBar incompleteHint — shown on desktop Place Order hover (native title). */
+  const preparingCheckoutMsg =
+    lang === 'th' ? 'กำลังเตรียมการชำระเงิน…' : 'Preparing checkout…';
+  const paymentAvailabilityDesktopBase = getPaymentAvailability({
+    hasDeliveryDistrict: !!delivery.deliveryDistrict,
+    isFormValid: isPaymentUnlocked,
+    isLoading: placing,
+    firstIncompleteHint: getFirstIncompleteHint(),
+    messages: {
+      selectDeliveryArea:
+        lang === 'th'
+          ? 'กรุณาเลือกพื้นที่จัดส่งเพื่อดูตัวเลือกชำระเงิน'
+          : 'Select a delivery area to see payment options',
+      processing: lang === 'th' ? 'กำลังดำเนินการ...' : 'Processing...',
+    },
+  });
+  const paymentAvailabilityDesktop =
+    checkoutSubmissionToken || items.length === 0
+      ? paymentAvailabilityDesktopBase
+      : {
+          stripe: { enabled: false, reason: preparingCheckoutMsg },
+          bankTransfer: { enabled: false, reason: preparingCheckoutMsg },
+        };
+  const desktopPlaceOrderHoverHint =
+    !paymentAvailabilityDesktop.bankTransfer.enabled
+      ? paymentAvailabilityDesktop.bankTransfer.reason
+      : undefined;
 
   useEffect(() => {
     if (!orderError) return;
@@ -1297,31 +1324,36 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 {contactFormContent('')}
                 <div className="cart-place-order-actions">
                 <div className="cart-place-order-buttons">
-                  <button
-                    type="button"
-                    className={`cart-place-order-btn cart-place-order-bank-btn ${isPaymentUnlocked ? 'cart-place-order-ready' : ''}`}
-                    onClick={handlePlaceOrder}
-                    disabled={placing || !isPaymentUnlocked}
-                    aria-busy={placing}
+                  <span
+                    className="cart-place-order-pc-tooltip-wrap"
+                    title={desktopPlaceOrderHoverHint ?? undefined}
                   >
-                    <svg
-                      className="cart-place-order-btn__icon"
-                      width={18}
-                      height={18}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.25}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
+                    <button
+                      type="button"
+                      className={`cart-place-order-btn cart-place-order-bank-btn ${isPaymentUnlocked ? 'cart-place-order-ready' : ''}`}
+                      onClick={handlePlaceOrder}
+                      disabled={placing || !isPaymentUnlocked}
+                      aria-busy={placing}
                     >
-                      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                      <line x1="3" y1="6" x2="21" y2="6" />
-                      <path d="M16 10a4 4 0 01-8 0" />
-                    </svg>
-                    {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
-                  </button>
+                      <svg
+                        className="cart-place-order-btn__icon"
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.25}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <path d="M16 10a4 4 0 01-8 0" />
+                      </svg>
+                      {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
+                    </button>
+                  </span>
                 </div>
                 {orderError && (
                   <p className="cart-place-order-error" role="alert">
@@ -2395,6 +2427,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             margin-top: 0;
             width: 100%;
             justify-content: flex-end;
+          }
+          /* Native title tooltip on hover: disabled buttons do not receive pointer events */
+          .cart-delivery .cart-place-order-pc-tooltip-wrap {
+            display: inline-flex;
+            max-width: 100%;
+            vertical-align: middle;
+          }
+          .cart-delivery .cart-place-order-pc-tooltip-wrap:has(.cart-place-order-bank-btn:disabled) {
+            cursor: not-allowed;
+          }
+          .cart-delivery .cart-place-order-pc-tooltip-wrap .cart-place-order-bank-btn:disabled {
+            pointer-events: none;
           }
           .cart-delivery .cart-place-order-btn {
             width: auto;

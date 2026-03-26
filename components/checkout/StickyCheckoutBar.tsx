@@ -159,6 +159,34 @@ export function StickyCheckoutBar({
         ? formatDate(summary.date)
         : summary.timeSlot ?? null;
 
+  const hintMessage = orderError ?? incompleteHint ?? null;
+  const isHintError = Boolean(orderError);
+
+  const [hintDisplay, setHintDisplay] = useState<{ text: string; isError: boolean } | null>(() =>
+    hintMessage ? { text: hintMessage, isError: isHintError } : null
+  );
+  const [hintAnimOpen, setHintAnimOpen] = useState(() => Boolean(hintMessage));
+
+  useEffect(() => {
+    if (!hintMessage) {
+      setHintAnimOpen(false);
+      return;
+    }
+    setHintDisplay({ text: hintMessage, isError: isHintError });
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setHintAnimOpen(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [hintMessage, isHintError]);
+
+  const handleHintSlotTransitionEnd = useCallback((e: React.TransitionEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.propertyName !== 'max-height') return;
+    if (!hintAnimOpen && !hintMessage) {
+      setHintDisplay(null);
+    }
+  }, [hintAnimOpen, hintMessage]);
+
   return (
     <div
       className={`sticky-checkout-bar ${isCollapsed ? 'sticky-checkout-bar--collapsed' : ''}`}
@@ -179,13 +207,40 @@ export function StickyCheckoutBar({
         </button>
       ) : (
       <div className="sticky-checkout-bar__inner">
-        <div
-          className="sticky-checkout-bar__handle-wrap"
-          aria-hidden
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div className="sticky-checkout-bar__handle" />
+        <div className="sticky-checkout-bar__top-block">
+          <div
+            className="sticky-checkout-bar__handle-wrap"
+            aria-hidden
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="sticky-checkout-bar__handle" />
+          </div>
+
+          {/* Hint row: wrapper always in DOM; margin-top animates with height so removing inner never changes flex gap (avoids end jump) */}
+          <div
+            className={`sticky-checkout-bar__hint-slot ${hintAnimOpen ? 'sticky-checkout-bar__hint-slot--visible' : ''}`}
+            onTransitionEnd={handleHintSlotTransitionEnd}
+          >
+            {hintDisplay && (
+              <div className="sticky-checkout-bar__hint-inner">
+                <span className="sticky-checkout-bar__hint-icon" aria-hidden>
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="13" />
+                    <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
+                <p
+                  className={`sticky-checkout-bar__hint ${hintDisplay.isError ? 'sticky-checkout-bar__hint--error' : ''}`}
+                  role={hintDisplay.isError ? 'alert' : undefined}
+                  aria-live="polite"
+                >
+                  {hintDisplay.text}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Date row */}
@@ -289,17 +344,6 @@ export function StickyCheckoutBar({
             {bankLoading ? labels.creating : labels.orderLabel}
           </button>
         </div>
-
-        {/* Small red hint when something is missing */}
-        {(incompleteHint || orderError) && (
-          <p
-            className={`sticky-checkout-bar__hint ${orderError ? 'sticky-checkout-bar__hint--error' : ''}`}
-            role={orderError ? 'alert' : undefined}
-            aria-live="polite"
-          >
-            {orderError ?? incompleteHint}
-          </p>
-        )}
       </div>
       )}
 
@@ -383,6 +427,8 @@ export function StickyCheckoutBar({
 
       <style jsx>{`
         .sticky-checkout-bar {
+          /* Left inset for text/icons so rows share one vertical edge (matches date-row inner padding). */
+          --sticky-bar-content-inset: 10px;
           position: fixed;
           bottom: 0;
           left: 50%;
@@ -417,6 +463,48 @@ export function StickyCheckoutBar({
           flex-direction: column;
           gap: 8px;
         }
+        .sticky-checkout-bar__top-block {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .sticky-checkout-bar__hint-slot {
+          max-height: 0;
+          margin-top: 0;
+          opacity: 0;
+          overflow: hidden;
+          flex-shrink: 0;
+          transform: translateZ(0);
+          transition:
+            max-height 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+            margin-top 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .sticky-checkout-bar__hint-slot--visible {
+          max-height: 56px;
+          margin-top: 5px;
+          opacity: 1;
+        }
+        .sticky-checkout-bar__hint-inner {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 2px 2px 0 var(--sticky-bar-content-inset);
+          min-height: 22px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .sticky-checkout-bar__hint-slot {
+            transition-duration: 0.01ms;
+          }
+        }
+        .sticky-checkout-bar__hint-icon {
+          flex-shrink: 0;
+          color: #b91c1c;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 0.5px;
+        }
         .sticky-checkout-bar__handle-wrap {
           padding: 10px 20px;
           margin: -10px -20px 2px;
@@ -436,7 +524,7 @@ export function StickyCheckoutBar({
           gap: 6px;
           background: var(--pastel-cream);
           border-radius: 10px;
-          padding: 7px 10px;
+          padding: 7px 10px 7px var(--sticky-bar-content-inset);
         }
         .sticky-checkout-bar__date-icon {
           flex-shrink: 0;
@@ -480,6 +568,7 @@ export function StickyCheckoutBar({
         .sticky-checkout-bar__price-block {
           flex: 1;
           min-width: 0;
+          padding-left: var(--sticky-bar-content-inset);
         }
         .sticky-checkout-bar__price-meta {
           font-size: 10px;
@@ -620,15 +709,18 @@ export function StickyCheckoutBar({
           outline-offset: 2px;
         }
         .sticky-checkout-bar__hint {
+          flex: 1;
+          min-width: 0;
           font-size: 10px;
           font-weight: 500;
           color: #b91c1c;
-          line-height: 1.3;
+          line-height: 1.35;
           margin: 0;
-          padding: 0 2px;
+          padding: 0;
           overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
         }
         .sticky-checkout-bar__hint--error {
           font-weight: 600;
