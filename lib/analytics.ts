@@ -292,6 +292,42 @@ export function trackGenerateLead(params: {
   sendEvent('generate_lead', eventParams);
 }
 
+const GENERATE_LEAD_ORDER_CREATED_SESSION_PREFIX = 'lanna-bloom_generate_lead_order_created:';
+
+/**
+ * Fire generate_lead exactly once after an order is successfully created (manual checkout submit).
+ *
+ * This is intended for GTM → Google Ads lead conversion tags which require order metadata
+ * on the event object itself.
+ *
+ * IMPORTANT: sessionStorage-only dedupe so it won't fire on refresh/revisit of /order/[orderId].
+ */
+export function trackGenerateLeadOrderCreated(params: {
+  orderId: string;
+  value: number;
+  currency?: string;
+  publicOrderUrl: string;
+}): void {
+  if (typeof window === 'undefined') return;
+  const orderId = String(params.orderId ?? '').trim();
+  if (!orderId) return;
+
+  const storageKey = `${GENERATE_LEAD_ORDER_CREATED_SESSION_PREFIX}${orderId}`;
+  try {
+    if (window.sessionStorage.getItem(storageKey) === '1') return;
+    window.sessionStorage.setItem(storageKey, '1');
+  } catch {
+    // ignore
+  }
+
+  sendEvent('generate_lead', {
+    order_id: orderId,
+    value: params.value,
+    currency: params.currency ?? CURRENCY,
+    public_order_url: params.publicOrderUrl,
+  });
+}
+
 // --- Non-ecommerce UI events ---
 
 /**

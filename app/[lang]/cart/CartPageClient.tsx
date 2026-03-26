@@ -17,6 +17,7 @@ import {
   trackViewCart,
   trackRemoveFromCart,
   trackAddShippingInfo,
+  trackGenerateLeadOrderCreated,
 } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
@@ -849,6 +850,22 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         return;
       }
       const { orderId, publicOrderUrl, shareText } = data;
+      // Lead conversion tracking (GTM-only): fire exactly once after successful order creation.
+      // Dedupe guard uses sessionStorage keyed by order_id (inside trackGenerateLeadOrderCreated).
+      try {
+        const url =
+          typeof publicOrderUrl === 'string' && publicOrderUrl.trim()
+            ? publicOrderUrl.trim()
+            : `${window.location.origin}/order/${encodeURIComponent(orderId)}`;
+        trackGenerateLeadOrderCreated({
+          orderId,
+          value: grandTotalVal,
+          currency: 'THB',
+          publicOrderUrl: url,
+        });
+      } catch {
+        // ignore analytics errors
+      }
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
