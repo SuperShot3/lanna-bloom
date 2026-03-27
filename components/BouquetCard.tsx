@@ -194,13 +194,13 @@ export function BouquetCard({
           )}
         </div>
         <div className="card-body">
-          {(bouquet.partnerName || bouquet.partnerId) && (
-            <div className="card-partner-badge">
-              {bouquet.partnerName
+          <div className="card-partner-badge" aria-hidden={!(bouquet.partnerName || bouquet.partnerId)}>
+            {(bouquet.partnerName || bouquet.partnerId)
+              ? (bouquet.partnerName
                 ? `${t.handCraftedBy ?? 'Hand-crafted by'} ${bouquet.partnerName}`
-                : (t.handCraftedByPartner ?? 'Hand-crafted by local partner')}
-            </div>
-          )}
+                : (t.handCraftedByPartner ?? 'Hand-crafted by local partner'))
+              : '\u00A0'}
+          </div>
           {isPopular && (
             <div className="card-stars">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -231,13 +231,16 @@ export function BouquetCard({
           transition: transform 0.2s, box-shadow 0.2s;
           width: 100%;
           max-width: 100%;
+          height: 100%;
         }
         .card:hover {
           transform: translateY(-4px);
           box-shadow: var(--shadow-hover);
         }
         .card-link {
-          display: block;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
           color: inherit;
           text-decoration: none;
           touch-action: manipulation; /* Removes 300ms tap delay on iOS, reduces click-after-swipe glitch */
@@ -339,6 +342,10 @@ export function BouquetCard({
         }
         .card-body {
           padding: 11px 12px 13px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          min-height: 92px;
         }
         .card-name {
           font-family: var(--font-serif);

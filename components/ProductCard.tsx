@@ -76,13 +76,16 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           transition: transform 0.2s, box-shadow 0.2s;
           width: 100%;
           max-width: 100%;
+          height: 100%;
         }
         .card:hover {
           transform: translateY(-4px);
           box-shadow: var(--shadow-hover);
         }
         .card-link {
-          display: block;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
           text-decoration: none;
           color: inherit;
         }
@@ -115,6 +118,10 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         }
         .card-body {
           padding: 14px 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          min-height: 84px;
         }
         .card-name {
           font-size: 1rem;

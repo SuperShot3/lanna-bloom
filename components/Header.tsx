@@ -91,14 +91,20 @@ export function Header({ lang }: { lang: Locale }) {
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b transition-colors duration-300 ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b transition-colors duration-300 overflow-x-clip ${glassNavClass}`}
         data-scrolled={isScrolled}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-6 md:gap-8">
+        <div
+          className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-2 sm:gap-4"
+          style={{
+            paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+            paddingRight: 'max(1rem, env(safe-area-inset-right))',
+          }}
+        >
+          <div className="flex items-center gap-2 md:gap-8 min-w-0 flex-1">
             <Link
               href={homeHref}
-              className="flex items-center gap-2.5 group min-h-[40px]"
+              className="flex items-center gap-2 group min-h-[40px] min-w-0"
               aria-label={t.home}
             >
               <Image
@@ -108,7 +114,7 @@ export function Header({ lang }: { lang: Locale }) {
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"
               />
-              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34] leading-none">
+              <span className="font-[family-name:var(--font-family-display)] text-[clamp(1rem,4vw,1.5rem)] font-semibold tracking-tight text-[#1A3C34] leading-none truncate max-w-[45vw] sm:max-w-none">
                 Lanna Bloom
               </span>
             </Link>
@@ -148,7 +154,7 @@ export function Header({ lang }: { lang: Locale }) {
               </nav>
             )}
           </div>
-          <div className="flex items-center gap-1 md:gap-4 ml-[5px]">
+          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-4 shrink-0">
             {!isMobile && (
               <Link
                 href={catalogHref}
@@ -165,7 +171,7 @@ export function Header({ lang }: { lang: Locale }) {
               aria-label={t.cart}
               title={t.cart}
             >
-              <span className="material-symbols-outlined text-2xl mt-[4px]">shopping_bag</span>
+              <span className="material-symbols-outlined text-2xl">shopping_bag</span>
               {cartCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-[#C5A059] text-white text-[10px] flex items-center justify-center rounded-full mt-[5px]">
                   {cartCount > 99 ? '99+' : cartCount}
@@ -175,7 +181,7 @@ export function Header({ lang }: { lang: Locale }) {
             {isMobile && (
               <button
                 type="button"
-                className="p-2 mt-[5px] text-[#1A3C34]"
+                className="p-2 text-[#1A3C34]"
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}

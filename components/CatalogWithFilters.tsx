@@ -207,7 +207,7 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+              <div className="catalog-items-grid">
                 {bouquets.length > 0
                   ? bouquets.map((bouquet) => (
                       <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
@@ -304,6 +304,29 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
           font-size: 12px;
           color: var(--text-muted);
           flex-shrink: 0;
+        }
+        .catalog-items-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          align-items: stretch;
+          width: 100%;
+        }
+        @media (min-width: 640px) {
+          .catalog-items-grid {
+            gap: 20px;
+          }
+        }
+        @media (min-width: 1024px) {
+          .catalog-items-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+          }
+        }
+        @media (min-width: 1280px) {
+          .catalog-items-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+          }
         }
       `}</style>
     </div>
