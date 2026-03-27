@@ -232,10 +232,13 @@ export function BouquetCard({
           width: 100%;
           max-width: 100%;
           height: 100%;
+          min-width: 0;
         }
-        .card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--shadow-hover);
+        @media (hover: hover) {
+          .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+          }
         }
         .card-link {
           display: flex;
@@ -244,6 +247,7 @@ export function BouquetCard({
           color: inherit;
           text-decoration: none;
           touch-action: manipulation; /* Removes 300ms tap delay on iOS, reduces click-after-swipe glitch */
+          min-width: 0;
         }
         .card-link:focus-visible {
           outline: 2px solid var(--accent);
@@ -297,6 +301,10 @@ export function BouquetCard({
           font-size: 11px;
           color: #1a3c34;
           margin-bottom: 4px;
+          max-width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .card-image-shared {
           width: 100%;
@@ -305,8 +313,10 @@ export function BouquetCard({
           overflow: hidden;
           transition: transform 0.35s ease;
         }
-        .card:hover .card-image-shared {
-          transform: scale(1.18);
+        @media (hover: hover) {
+          .card:hover .card-image-shared {
+            transform: scale(1.18);
+          }
         }
         .card-dots {
           position: absolute;
@@ -346,6 +356,7 @@ export function BouquetCard({
           flex-direction: column;
           justify-content: flex-start;
           min-height: 92px;
+          min-width: 0;
         }
         .card-name {
           font-family: var(--font-serif);

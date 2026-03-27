@@ -77,10 +77,13 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           width: 100%;
           max-width: 100%;
           height: 100%;
+          min-width: 0;
         }
-        .card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--shadow-hover);
+        @media (hover: hover) {
+          .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+          }
         }
         .card-link {
           display: flex;
@@ -88,6 +91,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           height: 100%;
           text-decoration: none;
           color: inherit;
+          min-width: 0;
         }
         .card-image-wrap {
           position: relative;
@@ -102,8 +106,10 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           overflow: hidden;
           transition: transform 0.35s ease;
         }
-        .card:hover .card-image-shared {
-          transform: scale(1.18);
+        @media (hover: hover) {
+          .card:hover .card-image-shared {
+            transform: scale(1.18);
+          }
         }
         .card-image {
           object-fit: cover;
@@ -122,6 +128,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           flex-direction: column;
           justify-content: flex-start;
           min-height: 84px;
+          min-width: 0;
         }
         .card-name {
           font-size: 1rem;

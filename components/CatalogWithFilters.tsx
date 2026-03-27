@@ -312,6 +312,10 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
           align-items: stretch;
           width: 100%;
         }
+        /* Critical: allow grid children to shrink below content min-width */
+        .catalog-items-grid > * {
+          min-width: 0;
+        }
         @media (min-width: 640px) {
           .catalog-items-grid {
             gap: 20px;
