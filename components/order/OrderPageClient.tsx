@@ -84,6 +84,7 @@ export function OrderPageClient({
 }) {
   const router = useRouter();
   const t = translations[locale].orderPage;
+  const tCustom = translations[locale].customOrder;
 
   useEffect(() => {
     const token = readCheckoutTokenFromUrl();
@@ -304,6 +305,41 @@ export function OrderPageClient({
               <div className="order-redesign-meta-value">{order.delivery?.address || '—'}</div>
             </div>
           </div>
+
+          {order.customOrderDetails && (
+            <div className="order-redesign-custom-details">
+              <div className="order-redesign-section-title">{tCustom.title}</div>
+              <div className="order-redesign-meta-card full">
+                <div className="order-redesign-meta-label">{tCustom.giftDescription}</div>
+                <div className="order-redesign-meta-value">{order.customOrderDetails.giftDescription}</div>
+              </div>
+              {order.customOrderDetails.occasion && (
+                <div className="order-redesign-meta-card">
+                  <div className="order-redesign-meta-label">{tCustom.occasion}</div>
+                  <div className="order-redesign-meta-value">{order.customOrderDetails.occasion}</div>
+                </div>
+              )}
+              {order.customOrderDetails.referenceImageUrl && (
+                <div className="order-redesign-meta-card full">
+                  <div className="order-redesign-meta-label">{tCustom.attachImage}</div>
+                  <a
+                    href={order.customOrderDetails.referenceImageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="order-redesign-meta-value order-redesign-link"
+                  >
+                    {order.customOrderDetails.referenceImageFilename || tCustom.submitSuccessViewOrder}
+                  </a>
+                </div>
+              )}
+              {order.customOrderDetails.customerComments && (
+                <div className="order-redesign-meta-card full">
+                  <div className="order-redesign-meta-label">{tCustom.comments}</div>
+                  <div className="order-redesign-meta-value">{order.customOrderDetails.customerComments}</div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="order-redesign-section-title">{t.item}</div>
           {(order.items ?? []).map((item, i) => (
@@ -779,6 +815,11 @@ export function OrderPageClient({
           font-family: ui-monospace, monospace;
           font-size: 12px;
           letter-spacing: 0.05em;
+        }
+        a.order-redesign-link {
+          color: var(--accent);
+          text-decoration: underline;
+          font-weight: 600;
         }
         .order-redesign-meta-sub {
           font-size: 12px;

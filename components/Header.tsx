@@ -15,7 +15,6 @@ import {
   CatalogIcon,
   GiftIcon,
   UsersIcon,
-  StarIcon,
   InfoIcon,
   PhoneIcon,
   MapIcon,
@@ -24,18 +23,24 @@ import {
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
 
-export function Header({ lang }: { lang: Locale }) {
+export function Header({
+  lang,
+  hasPrimeHourBanner = false,
+}: {
+  lang: Locale;
+  hasPrimeHourBanner?: boolean;
+}) {
   const pathname = usePathname();
   const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
   const occasionsHref = `/${lang}/catalog`;
   const partnersHref = `/${lang}#partners`;
-  const reviewsHref = `/${lang}/reviews`;
   const cartHref = `/${lang}/cart`;
   const contactHref = `/${lang}/contact`;
   const infoHref = `/${lang}/info`;
   const trackOrderHref = `/${lang}/track-order`;
+  const customOrderHref = `/${lang}/custom-order`;
   const t = translations[lang].nav;
   const { count: cartCount } = useCart();
 
@@ -91,7 +96,7 @@ export function Header({ lang }: { lang: Locale }) {
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b transition-colors duration-300 overflow-x-clip ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b transition-[top,colors] duration-300 overflow-x-clip ${hasPrimeHourBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled}
       >
         <div
@@ -145,35 +150,37 @@ export function Header({ lang }: { lang: Locale }) {
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
-                  href={reviewsHref}
-                  label={t.reviews}
-                  active={basePath === '/reviews'}
+                  href={customOrderHref}
+                  label={t.customOrder}
+                  active={basePath === '/custom-order'}
                   variant="pill"
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
               </nav>
             )}
           </div>
-          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-4 shrink-0">
-            {!isMobile && (
-              <Link
-                href={catalogHref}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-stone-200 rounded-full hover:bg-stone-50 transition-all"
-              >
-                <span className="material-symbols-outlined text-xl">search</span>
-                <span>{t.search}</span>
-              </Link>
-            )}
+          <div className="flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+            <Link
+              href={catalogHref}
+              className="flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 px-0 text-sm font-medium text-[#1A3C34] transition-all hover:bg-stone-50 md:min-w-0 md:px-4"
+              aria-label={t.search}
+              title={t.search}
+            >
+              <span className="material-symbols-outlined text-2xl leading-none md:text-xl">
+                search
+              </span>
+              <span className="hidden md:inline">{t.search}</span>
+            </Link>
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
             <Link
               href={cartHref}
-              className="relative p-2 text-[#1A3C34]"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34]"
               aria-label={t.cart}
               title={t.cart}
             >
-              <span className="material-symbols-outlined text-2xl">shopping_bag</span>
+              <span className="material-symbols-outlined text-2xl leading-none">shopping_bag</span>
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-[#C5A059] text-white text-[10px] flex items-center justify-center rounded-full mt-[5px]">
+                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#C5A059] text-[10px] text-white">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
@@ -181,13 +188,13 @@ export function Header({ lang }: { lang: Locale }) {
             {isMobile && (
               <button
                 type="button"
-                className="p-2 text-[#1A3C34]"
+                className="flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34]"
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}
                 aria-controls="mobile-menu"
               >
-                <span className="material-symbols-outlined text-2xl">menu</span>
+                <span className="material-symbols-outlined text-2xl leading-none">menu</span>
               </button>
             )}
           </div>
@@ -272,10 +279,14 @@ export function Header({ lang }: { lang: Locale }) {
                 onClick={() => setMenuOpen(false)}
               />
               <NavItem
-                href={reviewsHref}
-                label={t.reviews}
-                icon={<StarIcon size={22} />}
-                active={basePath === '/reviews'}
+                href={customOrderHref}
+                label={t.customOrder}
+                icon={
+                  <span className="material-symbols-outlined text-[22px] leading-none w-[22px] flex items-center justify-center">
+                    edit_note
+                  </span>
+                }
+                active={basePath === '/custom-order'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />

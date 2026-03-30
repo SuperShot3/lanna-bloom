@@ -8,8 +8,6 @@
  * Purchase dedupe: localStorage + sessionStorage per orderId.
  */
 
-import { isConsentGranted, readConsentFromDocumentCookie } from '@/lib/cookieConsent';
-
 declare global {
   interface Window {
     dataLayer?: Record<string, unknown>[];
@@ -18,33 +16,12 @@ declare global {
 
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
 
-type NonEssentialCategory = 'analytics' | 'marketing';
-
-function eventCategory(eventName: string): NonEssentialCategory {
-  if (eventName.startsWith('google_ads_')) return 'marketing';
-  // `generate_lead` is commonly used for ad conversion tracking. Treat as marketing by default.
-  if (eventName === 'generate_lead') return 'marketing';
-  return 'analytics';
-}
-
-function hasConsent(category: NonEssentialCategory): boolean {
-  if (typeof window === 'undefined') return false;
-  const consent = readConsentFromDocumentCookie();
-  return isConsentGranted(consent, category);
-}
-
 /**
  * Safe helper for pushing events to the GTM dataLayer.
  * Every analytics event in the app MUST go through this function.
  */
 export function pushToDataLayer(eventName: string, params: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') return;
-  const category = eventCategory(eventName);
-  // Prevent pre-consent queueing: GTM reads existing dataLayer on load.
-  if (!hasConsent(category)) {
-    if (isDev) console.debug('[pushToDataLayer] blocked by consent', { eventName, category, params });
-    return;
-  }
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event: eventName, ...params });
   if (isDev) console.debug('[pushToDataLayer]', eventName, params);

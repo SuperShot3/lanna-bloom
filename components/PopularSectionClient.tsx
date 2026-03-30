@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { BouquetCard } from '@/components/BouquetCard';
 import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
-import { translations } from '@/lib/i18n';
 
 const PAGE_SIZE = 8;
 const NEW_CARD_ANIMATION_MS = 320;
@@ -59,6 +58,7 @@ export function PopularSectionClient({
   const [hasMore, setHasMore] = useState(initialBouquets.length >= PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [newIds, setNewIds] = useState<string[]>([]);
+  const fetchingRef = useRef(false);
 
   const newIdSet = useMemo(() => new Set(newIds), [newIds]);
 
@@ -69,7 +69,8 @@ export function PopularSectionClient({
   }, [newIds]);
 
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (fetchingRef.current || !hasMore) return;
+    fetchingRef.current = true;
     setLoading(true);
     try {
       const res = await fetch(
@@ -82,11 +83,32 @@ export function PopularSectionClient({
       setBouquets((prev) => [...prev, ...next]);
       setHasMore(Boolean(data.hasMore));
     } finally {
+      fetchingRef.current = false;
       setLoading(false);
     }
-  }, [bouquets.length, hasMore, loading]);
+  }, [bouquets.length, hasMore]);
 
-  const t = translations[lang].home;
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void loadMoreRef.current();
+        }
+      },
+      { root: null, rootMargin: '280px 0px', threshold: 0 }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, bouquets.length]);
 
   return (
     <>
@@ -109,35 +131,15 @@ export function PopularSectionClient({
         </div>
       </div>
       {hasMore && (
-        <div className="mt-8 sm:mt-10 text-center">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loading}
-            className="show-more-btn relative inline-flex items-center justify-center px-8 py-3 bg-[#C5A059] text-[#1A3C34] rounded-full font-semibold hover:opacity-90 transition-opacity disabled:opacity-70 disabled:pointer-events-none min-h-[52px] min-w-[180px]"
-          >
-            {/* Idle: label + arrow — fades out when loading */}
-            <span
-              className={`absolute inset-0 inline-flex items-center justify-center gap-2 transition-opacity duration-300 ease-in-out ${
-                loading ? 'opacity-0 pointer-events-none' : 'opacity-100'
-              }`}
-              aria-hidden={loading}
-            >
-              {t.showMore}
-              <span className="material-symbols-outlined text-xl">
-                expand_more
-              </span>
-            </span>
-            {/* Loading: flower only — fades in when loading */}
-            <span
-              className={`absolute inset-0 inline-flex items-center justify-center transition-opacity duration-300 ease-in-out ${
-                loading ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-              aria-hidden={!loading}
-            >
+        <div
+          ref={sentinelRef}
+          className="mt-8 sm:mt-10 flex min-h-[52px] items-center justify-center"
+        >
+          {loading ? (
+            <span role="status" aria-live="polite" className="inline-flex">
               <SunflowerSpinner />
             </span>
-          </button>
+          ) : null}
         </div>
       )}
     </>

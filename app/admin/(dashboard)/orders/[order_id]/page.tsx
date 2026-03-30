@@ -8,6 +8,8 @@ import { CostsAndProfitCard } from '@/app/admin/components/CostsAndProfitCard';
 import { StatusUpdateCard } from '@/app/admin/components/StatusUpdateCard';
 import { PaymentCard } from '@/app/admin/components/PaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
+import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
+import type { CustomOrderDetails } from '@/lib/orders';
 import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 
@@ -88,6 +90,9 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
   const jsonItems = jsonPayload?.items ?? [];
   const itemsToUse: SupabaseOrderItemRow[] =
     items.length > 0 ? items : jsonItems.length > 0 ? itemsFromOrderJson(order.order_id, jsonItems) : [];
+
+  const customOrderDetails = (order.order_json as { customOrderDetails?: CustomOrderDetails } | null | undefined)
+    ?.customOrderDetails;
 
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
     itemsToUse.map(async (item, index) => {
@@ -170,6 +175,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         </section>
       )}
       <OrderSummaryCard order={order} />
+      {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
       <CostsAndProfitCard order={order} items={itemsToUse} canEdit={canEditCosts(role)} />
       <ItemsList
         items={itemsWithCatalog}

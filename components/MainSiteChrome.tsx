@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { LineFloatingButton } from '@/components/LineFloatingButton';
-import { CookieConsentBanner } from '@/components/CookieConsentBanner';
+import { PrimeHourPromoBanner } from '@/components/PrimeHourPromoBanner';
 import type { Locale } from '@/lib/i18n';
 
 export function MainSiteChrome({
@@ -15,6 +16,7 @@ export function MainSiteChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [primeHourBanner, setPrimeHourBanner] = useState(false);
   const isPartnerRoute = pathname?.includes('/partner');
   const isConfirmationPending = pathname?.includes('/checkout/confirmation-pending');
   const isCartRoute = pathname?.includes('/cart');
@@ -25,11 +27,14 @@ export function MainSiteChrome({
 
   return (
     <>
-      <Header lang={lang} />
-      <div className="main-content-wrap pt-20" style={{ viewTransitionName: 'main-content' } as React.CSSProperties}>
+      <PrimeHourPromoBanner lang={lang} onActiveChange={setPrimeHourBanner} />
+      <Header lang={lang} hasPrimeHourBanner={primeHourBanner} />
+      <div
+        className={`main-content-wrap ${primeHourBanner ? 'pt-[calc(5rem+2.25rem+env(safe-area-inset-top,0px))]' : 'pt-20'}`}
+        style={{ viewTransitionName: 'main-content' } as React.CSSProperties}
+      >
         <main>{children}</main>
       </div>
-      <CookieConsentBanner lang={lang} />
       <Footer lang={lang} />
       {!isCartRoute && <LineFloatingButton />}
     </>

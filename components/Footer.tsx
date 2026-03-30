@@ -8,7 +8,6 @@ import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
 import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
-import { useCookieConsent } from '@/contexts/CookieConsentContext';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,7 +15,6 @@ type NewsletterMessage = 'success' | 'already' | 'error' | 'invalid' | null;
 
 export function Footer({ lang }: { lang: Locale }) {
   const t = translations[lang].footer;
-  const { openPreferences } = useCookieConsent();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<NewsletterMessage>(null);
@@ -204,7 +202,9 @@ export function Footer({ lang }: { lang: Locale }) {
             </form>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-stone-200 text-xs text-stone-400">
+        <div className="flex flex-col gap-4 pt-8 border-t border-stone-200 text-xs text-stone-400">
+          <p className="text-center text-stone-500 max-w-3xl mx-auto leading-relaxed px-2">{t.cookieNotice}</p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <p>{t.copyright}</p>
           <div className="flex flex-nowrap justify-center items-center gap-4">
             <PaymentBadges lang={lang} compact />
@@ -229,13 +229,7 @@ export function Footer({ lang }: { lang: Locale }) {
             <Link href={`/${lang}/cookies`} className="hover:text-stone-600 transition-colors">
               {lang === 'th' ? 'นโยบายคุกกี้' : 'Cookie Policy'}
             </Link>
-            <button
-              type="button"
-              onClick={openPreferences}
-              className="hover:text-stone-600 transition-colors"
-            >
-              {lang === 'th' ? 'ตั้งค่าคุกกี้' : 'Cookie settings'}
-            </button>
+          </div>
           </div>
         </div>
       </div>

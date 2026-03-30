@@ -102,7 +102,9 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? json.fulfillmentStatus ?? 'new',
       fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? json.fulfillmentStatusUpdatedAt,
       ...(row.line_user_id && { lineUserId: row.line_user_id }),
-      ...(row.order_source && { orderSource: row.order_source as 'line' | 'web' }),
+      ...(row.order_source && {
+        orderSource: row.order_source as 'line' | 'web' | 'custom_form',
+      }),
       ...(row.last_line_push_status && { lastLinePushStatus: row.last_line_push_status }),
       ...(row.last_line_push_at && { lastLinePushAt: row.last_line_push_at }),
     };
@@ -157,7 +159,9 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? 'new',
     fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? undefined,
     ...(row.line_user_id && { lineUserId: row.line_user_id }),
-    ...(row.order_source && { orderSource: row.order_source as 'line' | 'web' }),
+    ...(row.order_source && {
+      orderSource: row.order_source as 'line' | 'web' | 'custom_form',
+    }),
     ...(row.last_line_push_status && { lastLinePushStatus: row.last_line_push_status }),
     ...(row.last_line_push_at && { lastLinePushAt: row.last_line_push_at }),
   };

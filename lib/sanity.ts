@@ -345,6 +345,8 @@ export interface CatalogProduct {
   preparationTime?: number;
   /** Occasion (from structuredAttributes) */
   occasion?: string;
+  /** When true, show a “HIT” badge on the catalog card (optional CMS field later). */
+  isHit?: boolean;
 }
 
 type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };

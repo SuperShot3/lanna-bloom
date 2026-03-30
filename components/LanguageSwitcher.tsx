@@ -5,7 +5,7 @@ import { Locale } from '@/lib/i18n';
 import { trackLanguageChange } from '@/lib/analytics';
 
 const FLAG_CLASS: Record<Locale, string> = {
-  en: 'fi fi-us',
+  en: 'fi fi-gb',
   th: 'fi fi-th',
 };
 
@@ -52,7 +52,6 @@ export function LanguageSwitcher({
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-top: 4px;
           width: 44px;
           height: 44px;
           border-radius: 50%;
@@ -65,8 +64,8 @@ export function LanguageSwitcher({
           border-color: var(--accent-soft);
         }
         .lang-flag-icon {
-          font-size: 1.22 rem;
-          margin-top: 3px;
+          font-size: 1.22rem;
+          line-height: 1;
           border-radius: 2px;
         }
       `}</style>

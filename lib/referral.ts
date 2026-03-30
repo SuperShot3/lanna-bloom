@@ -5,9 +5,14 @@
 
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
+/** Same default as `PrimeHourPromoBanner` / `NEXT_PUBLIC_HAPPY_HOUR_PROMO_CODE`. */
+const HAPPY_HOUR_PROMO_CODE = (process.env.NEXT_PUBLIC_HAPPY_HOUR_PROMO_CODE ?? 'B4Y').trim().toUpperCase();
+
 /** Newsletter / welcome: 10% off subtotal. Rename the key to match what you email subscribers. */
 const DISCOUNT_CODES: Record<string, { type: 'percent'; value: number } | { type: 'fixed'; value: number }> = {
   WELCOME10: { type: 'percent', value: 10 },
+  /** Happy hour promo (banner): 10% off subtotal (items + delivery fee in API). */
+  [HAPPY_HOUR_PROMO_CODE]: { type: 'percent', value: 10 },
 };
 
 /** Allowed chars: A–Z, 0–9, hyphen (-). Length 3–12. Returns normalized code or null if invalid. */

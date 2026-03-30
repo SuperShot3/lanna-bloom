@@ -57,6 +57,22 @@ export interface OrderPricing {
 
 export type ContactPreferenceOption = 'phone' | 'line' | 'telegram' | 'whatsapp';
 
+/** Extra fields from the /custom-order form; stored in order_json for admin and customer view. */
+export interface CustomOrderDetails {
+  giftDescription: string;
+  occasion?: string;
+  greetingCard?: string;
+  estimatedBudgetTHB?: string;
+  /** Human-readable delivery date (or partial) */
+  deliveryDateLabel?: string;
+  timePreference?: string;
+  timeComments?: string;
+  referenceImageUrl?: string | null;
+  referenceImageFilename?: string | null;
+  customerComments?: string;
+  locale?: 'en' | 'th';
+}
+
 export interface OrderPayload {
   customerName?: string;
   phone?: string;
@@ -71,8 +87,10 @@ export interface OrderPayload {
   ga_client_id?: string;
   /** LINE Messaging API user id when order originated from LINE handoff (optional). */
   lineUserId?: string;
-  /** Channel hint for admin (e.g. line, web). */
-  orderSource?: 'line' | 'web';
+  /** Channel hint for admin (e.g. line, web, custom_form). */
+  orderSource?: 'line' | 'web' | 'custom_form';
+  /** When set, order came from the custom order form; details for ops and customer. */
+  customOrderDetails?: CustomOrderDetails;
   /**
    * Browser-generated idempotency key for this checkout attempt.
    * Stored in DB; not shown in customer UI. Omitted from persisted order_json.
