@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { applyPartnerAction } from './actions';
 import { Stepper } from '@/components/partner/Stepper';
 import { Card } from '@/components/partner/Card';
@@ -17,6 +17,8 @@ import { DISTRICTS, CATEGORY_OPTIONS, PREP_TIME_OPTIONS } from '@/lib/partnerPor
 import type { Locale } from '@/lib/i18n';
 
 const STORAGE_KEY = 'partner-apply-draft';
+const MAX_CATEGORIES = 3;
+const CUSTOM_PREFIX = 'custom:';
 
 type FormState = {
   shopName: string;
@@ -65,13 +67,21 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [f, setF] = useState<FormState>(initialForm);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
+  const [categoryAddMsg, setCategoryAddMsg] = useState<string | null>(null);
 
   useEffect(() => {
     try {
       const raw = typeof window !== 'undefined' && sessionStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as { form?: FormState; step?: number };
-        if (parsed.form) setF((prev) => ({ ...initialForm, ...parsed.form }));
+        if (parsed.form) {
+          let merged = { ...initialForm, ...parsed.form };
+          if (Array.isArray(merged.categories) && merged.categories.length > MAX_CATEGORIES) {
+            merged = { ...merged, categories: merged.categories.slice(0, MAX_CATEGORIES) };
+          }
+          setF(merged);
+        }
         if (typeof parsed.step === 'number' && parsed.step >= 0 && parsed.step <= 3) setStep(parsed.step);
       }
     } catch {
@@ -98,6 +108,10 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
   async function handleSubmit() {
     if (submitting) return;
     setError(null);
+    if (f.categories.length === 0) {
+      setError(t.categoriesRequired);
+      return;
+    }
     setSubmitting(true);
     try {
       const formData = new FormData();
@@ -140,11 +154,97 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
     label: lang === 'th' ? p.labelTh : p.labelEn,
   }));
 
-  const chipOptions = CATEGORY_OPTIONS.map((c) => ({
-    value: c.value,
-    label: lang === 'th' ? c.labelTh : c.labelEn,
-    icon: c.icon,
-  }));
+  const chipOptions = useMemo(
+    () =>
+      CATEGORY_OPTIONS.map((c) => ({
+        value: c.value,
+        label: lang === 'th' ? c.labelTh : c.labelEn,
+        icon: c.icon,
+      })),
+    [lang]
+  );
+
+  const mergedChipOptions = useMemo(() => {
+    const customs = f.categories
+      .filter((c) => c.startsWith(CUSTOM_PREFIX))
+      .map((c) => ({
+        value: c,
+        label: c.slice(CUSTOM_PREFIX.length).trim() || c,
+        icon: '✨',
+      }));
+    return [...chipOptions, ...customs];
+  }, [chipOptions, f.categories]);
+
+  function toggleCategory(value: string) {
+    setCategoryAddMsg(null);
+    setF((p) => {
+      const cur = p.categories;
+      if (cur.includes(value)) {
+        return { ...p, categories: cur.filter((x) => x !== value) };
+      }
+      if (cur.length >= MAX_CATEGORIES) return p;
+      return { ...p, categories: [...cur, value] };
+    });
+  }
+
+  function addCustomCategory() {
+    setCategoryAddMsg(null);
+    const raw = customCategoryInput.trim();
+    if (!raw) return;
+    if (f.categories.length >= MAX_CATEGORIES) {
+      setCategoryAddMsg(t.categoriesLimitReached);
+      return;
+    }
+    const normalized = raw.replace(/\s+/g, ' ').slice(0, 60);
+    const lower = normalized.toLowerCase();
+
+    const presetMatch = CATEGORY_OPTIONS.find(
+      (c) =>
+        c.value === lower ||
+        c.labelEn.toLowerCase() === lower ||
+        c.labelTh.trim() === normalized
+    );
+    if (presetMatch) {
+      if (f.categories.includes(presetMatch.value)) {
+        setCategoryAddMsg(t.categoriesDuplicate);
+        return;
+      }
+      if (f.categories.length >= MAX_CATEGORIES) {
+        setCategoryAddMsg(t.categoriesLimitReached);
+        return;
+      }
+      setF((p) => ({ ...p, categories: [...p.categories, presetMatch.value] }));
+      setCustomCategoryInput('');
+      return;
+    }
+
+    const value = `${CUSTOM_PREFIX}${normalized}`;
+    if (f.categories.includes(value)) {
+      setCategoryAddMsg(t.categoriesDuplicate);
+      return;
+    }
+    const dupCustom = f.categories.some(
+      (c) =>
+        c.startsWith(CUSTOM_PREFIX) &&
+        c.slice(CUSTOM_PREFIX.length).toLowerCase() === normalized.toLowerCase()
+    );
+    if (dupCustom) {
+      setCategoryAddMsg(t.categoriesDuplicate);
+      return;
+    }
+
+    setF((p) => ({ ...p, categories: [...p.categories, value] }));
+    setCustomCategoryInput('');
+  }
+
+  function goNext() {
+    setError(null);
+    if (step === 2 && f.categories.length === 0) {
+      setError(t.categoriesRequired);
+      return;
+    }
+    if (step < 3) setStep(step + 1);
+  }
 
   return (
     <div className="partner-apply-wizard">
@@ -215,11 +315,57 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
 
         {step === 2 && (
           <>
-            <SecTitle th={lang === 'th' ? 'หมวดหมู่และกำลังการผลิต' : 'Categories & Capacity'} en="Categories & Capacity" />
+            <SecTitle
+              th={lang === 'th' ? 'สิ่งที่คุณวางแผนจะขายบน Lanna Bloom' : 'What you plan to sell on Lanna Bloom'}
+              en="What you plan to sell on Lanna Bloom"
+            />
             <div className="partner-apply-chip-label">
               {t.categories} <span className="partner-inp-req">*</span>
             </div>
-            <Chips options={chipOptions} selected={f.categories} onToggle={(v) => u('categories', f.categories.includes(v) ? f.categories.filter((x) => x !== v) : [...f.categories, v])} />
+            <p className="partner-apply-category-hint">{t.categoriesMaxHint}</p>
+            <Chips
+              options={mergedChipOptions}
+              selected={f.categories}
+              onToggle={toggleCategory}
+              maxSelected={MAX_CATEGORIES}
+            />
+            <div className="partner-apply-category-add">
+              <span className="partner-apply-category-add-label">{t.addOtherCategory}</span>
+              <div className="partner-apply-category-add-row">
+                <input
+                  type="text"
+                  placeholder={t.otherCategoryPlaceholder}
+                  value={customCategoryInput}
+                  onChange={(e) => {
+                    setCustomCategoryInput(e.target.value);
+                    setCategoryAddMsg(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomCategory();
+                    }
+                  }}
+                  disabled={f.categories.length >= MAX_CATEGORIES}
+                  autoComplete="off"
+                  aria-label={t.addOtherCategory}
+                />
+                <Btn
+                  type="button"
+                  variant="secondary"
+                  small
+                  onClick={addCustomCategory}
+                  disabled={f.categories.length >= MAX_CATEGORIES || !customCategoryInput.trim()}
+                >
+                  {t.addCategory}
+                </Btn>
+              </div>
+              {categoryAddMsg && (
+                <p className="partner-error partner-apply-category-hint" role="status">
+                  {categoryAddMsg}
+                </p>
+              )}
+            </div>
             <Sel label={t.prepTime} sub={lang === 'th' ? 'Typical preparation time' : 'Typical prep time'} options={prepOptions} value={f.prepTime} onChange={(v) => u('prepTime', v)} required />
             <Inp label={t.cutoff} hint={t.cutoffHint} placeholder="e.g. 14:00" value={f.cutoff} onChange={(v) => u('cutoff', v)} />
             <Inp label={t.maxOrders} type="number" placeholder="e.g. 20" value={f.maxOrders} onChange={(v) => u('maxOrders', v)} />
@@ -244,7 +390,7 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
         </Btn>
         <div className="partner-apply-actions-right">
           {step < 3 ? (
-            <Btn onClick={() => setStep(step + 1)}>{t.next} →</Btn>
+            <Btn onClick={goNext}>{t.next} →</Btn>
           ) : (
             <Btn variant="rose" onClick={() => handleSubmit()} disabled={submitting}>
               {submitting ? (lang === 'th' ? 'กำลังส่ง…' : 'Submitting…') : `${t.submit} 🌸`}

@@ -3,6 +3,21 @@
 import { redirect } from 'next/navigation';
 import { insertPartnerApplication } from '@/lib/supabase/partnerQueries';
 import { isValidLocale } from '@/lib/i18n';
+import { CATEGORY_OPTIONS } from '@/lib/partnerPortal';
+
+const PRESET_CATEGORY_VALUES: Set<string> = new Set(
+  CATEGORY_OPTIONS.map((c) => c.value as string)
+);
+
+function isValidCategoryEntry(s: string): boolean {
+  const t = s.trim();
+  if (!t || t.length > 120) return false;
+  if (t.startsWith('custom:')) {
+    const rest = t.slice('custom:'.length).trim();
+    return rest.length > 0 && rest.length <= 100;
+  }
+  return PRESET_CATEGORY_VALUES.has(t);
+}
 
 function isRedirectError(err: unknown): boolean {
   return (
@@ -50,10 +65,21 @@ export async function applyPartnerAction(formData: FormData) {
   let categories: string[] = [];
   if (categoriesRaw) {
     try {
-      categories = JSON.parse(categoriesRaw);
+      const parsed = JSON.parse(categoriesRaw);
+      if (Array.isArray(parsed)) {
+        categories = parsed
+          .filter((x): x is string => typeof x === 'string')
+          .map((x) => x.trim())
+          .filter(isValidCategoryEntry)
+          .slice(0, 3);
+      }
     } catch {
       categories = [];
     }
+  }
+
+  if (categories.length === 0) {
+    return { error: 'Please select at least one category.' };
   }
 
   const maxOrders = maxOrdersRaw ? parseInt(maxOrdersRaw, 10) : undefined;

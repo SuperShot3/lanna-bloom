@@ -48,6 +48,7 @@ export function PartnerHowItWorksContent({ lang }: Props) {
           <h2 id="with-flowers-heading" className="partner-how-it-works-h2">
             {t.withFlowersTitle}
           </h2>
+          <p className="partner-how-it-works-p">{t.withFlowersIntro}</p>
           <ul className="partner-how-it-works-list">
             {t.withFlowersList.map((item) => (
               <li key={item}>{item}</li>
