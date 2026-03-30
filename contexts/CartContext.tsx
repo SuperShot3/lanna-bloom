@@ -33,6 +33,11 @@ interface CartContextValue {
   items: CartItem[];
   /** Total number of units across all items. */
   count: number;
+  /**
+   * Increments every time `addItem()` is called.
+   * Used for UI helpers that should re-run on each add.
+   */
+  lastAddEventId: number;
   addItem: (item: CartItem, quantity?: number) => void;
   removeItem: (index: number) => void;
   clearCart: () => void;
@@ -64,6 +69,7 @@ function saveToStorage(items: CartItem[]) {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [lastAddEventId, setLastAddEventId] = useState(0);
 
   useEffect(() => {
     setItems(loadFromStorage());
@@ -78,6 +84,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem = useCallback((item: CartItem, quantity: number = 1) => {
     const qty = Math.max(1, Math.floor(quantity));
     const itemWithQty = { ...item, quantity: item.quantity ?? 1 };
+
+    // Trigger UI attention/toast helpers even when the cart line merges.
+    setLastAddEventId((id) => id + 1);
+
     setItems((prev) => {
       const matchIndex = prev.findIndex(
         (p) =>
@@ -112,11 +122,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       items,
       count: items.reduce((sum, i) => sum + (i.quantity ?? 1), 0),
+      lastAddEventId,
       addItem,
       removeItem,
       clearCart,
     }),
-    [items, addItem, removeItem, clearCart]
+    [items, lastAddEventId, addItem, removeItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

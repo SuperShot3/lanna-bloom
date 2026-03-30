@@ -42,7 +42,10 @@ export function Header({
   const trackOrderHref = `/${lang}/track-order`;
   const customOrderHref = `/${lang}/custom-order`;
   const t = translations[lang].nav;
-  const { count: cartCount } = useCart();
+  const { count: cartCount, lastAddEventId } = useCart();
+
+  const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
+  const isHomePage = pathname === homeHref || pathname === `${homeHref}/`;
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -50,6 +53,9 @@ export function Header({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Pulsation stays on the main (home) page until the user opens the cart.
+  const [cartPulseAddId, setCartPulseAddId] = useState(0);
 
   useEffect(() => {
     const checkScroll = () => setIsScrolled(window.scrollY > SCROLL_THRESHOLD);
@@ -88,6 +94,23 @@ export function Header({
       setSwipeOffset(0);
     }
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (lastAddEventId === 0) return;
+    if (isCartPage) return;
+    // Keep pulsing until cart is opened.
+    setCartPulseAddId(lastAddEventId);
+  }, [lastAddEventId, isCartPage]);
+
+  useEffect(() => {
+    if (!isCartPage) return;
+    // Stop once cart is opened.
+    setCartPulseAddId(0);
+  }, [isCartPage]);
+
+  useEffect(() => {
+    if (cartCount === 0) setCartPulseAddId(0);
+  }, [cartCount]);
 
   const glassNavClass = isScrolled
     ? 'bg-[rgba(253,252,248,0.9)] backdrop-blur-xl border-stone-200'
@@ -178,11 +201,18 @@ export function Header({
               aria-label={t.cart}
               title={t.cart}
             >
-              <span className="material-symbols-outlined text-2xl leading-none">shopping_bag</span>
+              <span className="material-symbols-outlined text-2xl leading-none relative z-10">shopping_bag</span>
               {cartCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#C5A059] text-[10px] text-white">
+                <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-[#C5A059] text-[10px] text-white">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
+              )}
+              {cartPulseAddId > 0 && cartCount > 0 && isHomePage && !isCartPage && (
+                <span
+                  key={`cart-pulse-${cartPulseAddId}`}
+                  aria-hidden="true"
+                  className="cart-helper-pulse cart-helper-pulse--visible"
+                />
               )}
             </Link>
             {isMobile && (

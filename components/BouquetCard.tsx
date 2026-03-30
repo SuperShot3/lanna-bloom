@@ -97,7 +97,7 @@ export function BouquetCard({
       });
       if (mode === 'stay') {
         setJustAdded(true);
-        window.setTimeout(() => setJustAdded(false), 2200);
+        window.setTimeout(() => setJustAdded(false), 6000);
       } else {
         router.push(`/${lang}/cart`);
       }
@@ -353,9 +353,14 @@ export function BouquetCard({
               })}
             </ul>
             {justAdded ? (
-              <p className="card-hover-added" role="status">
-                {tCart.addedToCart}
-              </p>
+              <>
+                <p className="card-hover-added" role="status">
+                  {tCart.addedToCart}
+                </p>
+                <button type="button" className="card-hover-btn-cart" onClick={() => router.push(`/${lang}/cart`)}>
+                  {tCart.goToCart}
+                </button>
+              </>
             ) : (
               <>
                 <button type="button" className="card-hover-btn-cart" onClick={() => pushToCart('stay')}>
