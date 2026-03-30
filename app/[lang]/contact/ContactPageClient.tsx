@@ -95,12 +95,17 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
         <section className="contact-section contact-section-partner">
           <h2 className="contact-heading">{t.partnerHeading}</h2>
           <p className="contact-text">{t.partnerIntro}</p>
-          <Link
-            href={`/${lang}/partner/apply`}
-            className="contact-partner-link"
-          >
-            {t.partnerApply} →
-          </Link>
+          <div className="contact-partner-links">
+            <Link href={`/${lang}/partner/how-it-works`} className="contact-partner-link contact-partner-link--secondary">
+              {t.partnerHowItWorks} →
+            </Link>
+            <Link
+              href={`/${lang}/partner/apply`}
+              className="contact-partner-link"
+            >
+              {t.partnerApply} →
+            </Link>
+          </div>
         </section>
 
         <section className="contact-section contact-section-dbd">
@@ -227,13 +232,27 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
           border-radius: var(--radius-sm);
           border: 1px solid var(--border);
         }
+        .contact-partner-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px 20px;
+          margin-top: 8px;
+          align-items: baseline;
+        }
         .contact-partner-link {
           display: inline-block;
-          margin-top: 8px;
           font-size: 1rem;
           font-weight: 600;
           color: #967a4d;
           text-decoration: underline;
+        }
+        .contact-partner-link--secondary {
+          font-weight: 500;
+          color: var(--text-muted);
+          text-decoration: underline;
+        }
+        .contact-partner-link--secondary:hover {
+          color: #967a4d;
         }
         .contact-partner-link:hover {
           color: #7d6340;

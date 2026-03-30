@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation';
+import Link from 'next/link';
 import { isValidLocale, translations, type Locale } from '@/lib/i18n';
 import { PartnerNav } from '@/components/partner/PartnerNav';
 import { getPartnerSession } from '@/lib/supabase/partnerAuthServer';
@@ -20,6 +21,7 @@ export default async function PartnerLoginPage({
   }
 
   const t = translations[lang as Locale].partnerPortal.login;
+  const hiw = translations[lang as Locale].partnerPortal.howItWorks;
 
   return (
     <div className="partner-page partner-login-page">
@@ -28,6 +30,9 @@ export default async function PartnerLoginPage({
         <div className="partner-login-card">
           <h1 className="partner-login-title">{t.title}</h1>
           <PartnerLoginForm lang={lang as Locale} />
+          <p className="partner-login-hiw-hint">
+            <Link href={`/${lang}/partner/how-it-works`}>{hiw.loginFooterHint}</Link>
+          </p>
         </div>
       </div>
     </div>

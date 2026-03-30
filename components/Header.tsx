@@ -35,7 +35,7 @@ export function Header({
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
   const occasionsHref = `/${lang}/catalog`;
-  const partnersHref = `/${lang}#partners`;
+  const partnerApplyHref = `https://www.lannabloom.shop/${lang}/partner/apply`;
   const cartHref = `/${lang}/cart`;
   const contactHref = `/${lang}/contact`;
   const infoHref = `/${lang}/info`;
@@ -166,8 +166,8 @@ export function Header({
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
-                  href={partnersHref}
-                  label={t.ourPartners}
+                  href={partnerApplyHref}
+                  label={t.becomePartner}
                   active={false}
                   variant="pill"
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
@@ -302,8 +302,8 @@ export function Header({
                 onClick={() => setMenuOpen(false)}
               />
               <NavItem
-                href={partnersHref}
-                label={t.ourPartners}
+                href={partnerApplyHref}
+                label={t.becomePartner}
                 icon={<UsersIcon size={22} />}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}

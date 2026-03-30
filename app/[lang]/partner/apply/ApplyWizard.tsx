@@ -11,6 +11,7 @@ import { Toggle } from '@/components/partner/Toggle';
 import { Chips } from '@/components/partner/Chips';
 import { Btn } from '@/components/partner/Btn';
 import { SecTitle } from '@/components/partner/SecTitle';
+import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import { DISTRICTS, CATEGORY_OPTIONS, PREP_TIME_OPTIONS } from '@/lib/partnerPortal';
 import type { Locale } from '@/lib/i18n';
@@ -87,6 +88,7 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
   }, [f, step]);
 
   const t = translations[lang].partnerPortal.apply;
+  const hiw = translations[lang].partnerPortal.howItWorks;
   const steps = [t.stepContact, t.stepLocation, t.stepCategories, t.stepSamples];
 
   const u = <K extends keyof FormState>(k: K, v: FormState[K]) => {
@@ -152,6 +154,9 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
           <h1 className="partner-apply-hero-title">
             {lang === 'th' ? 'ร่วมเป็น Partner กับ Lanna Bloom 🌸' : 'Become a Partner with Lanna Bloom 🌸'}
           </h1>
+          <p className="partner-apply-hero-how-link">
+            <Link href={`/${lang}/partner/how-it-works`}>{hiw.applyHeroLink}</Link>
+          </p>
           <div className="partner-apply-hero-benefits">
             {[
               [lang === 'th' ? '🛒' : '🛒', lang === 'th' ? 'รับออเดอร์จากลูกค้าในเชียงใหม่' : 'Receive orders from Chiang Mai customers', 'Receive orders from Chiang Mai customers'],

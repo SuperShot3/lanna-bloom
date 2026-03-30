@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Locale } from '@/lib/i18n';
+import { translations } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PartnerLogoutButton } from '@/components/partner/PartnerLogoutButton';
 
 type PartnerNavProps = {
   lang: Locale;
-  current?: 'apply' | 'dashboard' | 'products' | 'productsAdd' | 'login';
+  current?: 'apply' | 'dashboard' | 'products' | 'productsAdd' | 'login' | 'howItWorks';
   pendingCount?: number;
   /** When true, show Dashboard/My products/Add Product/Log out. When false, show Apply/Login only. */
   isLoggedIn?: boolean;
@@ -19,6 +20,8 @@ export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false
   const pathBase = pathname?.replace(/^\/(en|th)/, '') || '/partner';
 
   const applyHref = `/${lang}/partner/apply`;
+  const howItWorksHref = `/${lang}/partner/how-it-works`;
+  const howLabel = translations[lang].partnerPortal.howItWorks.navLabel;
   const dashboardHref = `/${lang}/partner`;
   const productsHref = `/${lang}/partner/products`;
   const productsAddHref = `/${lang}/partner/products/new`;
@@ -67,6 +70,12 @@ export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false
             </>
           ) : (
             <>
+              <Link
+                href={howItWorksHref}
+                className={`partner-nav-link ${current === 'howItWorks' ? 'active' : ''}`}
+              >
+                {howLabel}
+              </Link>
               <Link
                 href={applyHref}
                 className={`partner-nav-link ${current === 'apply' ? 'active' : ''}`}

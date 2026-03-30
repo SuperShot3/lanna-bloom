@@ -1,3 +1,5 @@
+import { partnerHowItWorksEn, partnerHowItWorksTh } from '@/lib/partnerHowItWorksCopy';
+
 export type Locale = 'en' | 'th';
 
 export const locales: Locale[] = ['en', 'th'];
@@ -14,6 +16,7 @@ export const translations = {
       catalog: 'Catalog',
       occasions: 'Occasions',
       ourPartners: 'Our Partners',
+      becomePartner: 'Become a Partner',
       reviews: 'Reviews',
       delivery: 'Delivery',
       partnerRegister: 'Register as a Partner',
@@ -104,6 +107,7 @@ export const translations = {
       company: 'Company',
       aboutUs: 'About Us',
       partnerFlorists: 'Partner Florists',
+      partnerHowItWorks: 'Partner program — how it works',
       contact: 'Contact',
       location: 'Location',
       newsletter: 'Newsletter',
@@ -708,6 +712,7 @@ export const translations = {
         successSub: 'Your product is under review. We will notify you via LINE.',
         submit: 'Submit',
       },
+      howItWorks: partnerHowItWorksEn,
     },
     refundPolicy: {
       title: 'Refund & Replacement Policy',
@@ -792,6 +797,7 @@ export const translations = {
       partnerHeading: 'Become a Partner',
       partnerIntro: 'We welcome flower shops, gift makers, and artisans in Chiang Mai to join our platform. Sell your bouquets, balloons, gifts, and crafts through Lanna Bloom. Apply online and we\'ll contact you via LINE within 1–2 business days.',
       partnerApply: 'Apply to become a partner',
+      partnerHowItWorks: 'How partnering works',
     },
     customOrder: {
       title: 'Custom order',
@@ -928,6 +934,7 @@ export const translations = {
       catalog: 'แคตตาล็อก',
       occasions: 'โอกาส',
       ourPartners: 'พาร์ทเนอร์ของเรา',
+      becomePartner: 'สมัครเป็น Partner',
       reviews: 'รีวิว',
       delivery: 'การจัดส่ง',
       partnerRegister: 'ลงทะเบียนพาร์ทเนอร์',
@@ -1017,6 +1024,7 @@ export const translations = {
       company: 'บริษัท',
       aboutUs: 'เกี่ยวกับเรา',
       partnerFlorists: 'พาร์ทเนอร์',
+      partnerHowItWorks: 'โปรแกรม Partner — วิธีร่วมงาน',
       contact: 'ติดต่อ',
       location: 'ที่ตั้ง',
       newsletter: 'จดหมายข่าว',
@@ -1621,6 +1629,7 @@ export const translations = {
         successSub: 'สินค้าของคุณอยู่ระหว่างการตรวจสอบ — ทีมงานจะแจ้งผลผ่าน LINE',
         submit: 'ส่ง',
       },
+      howItWorks: partnerHowItWorksTh,
     },
     refundPolicy: {
       title: 'นโยบายการคืนเงินและการเปลี่ยนสินค้า',
@@ -1705,6 +1714,7 @@ export const translations = {
       partnerHeading: 'สมัครเป็น Partner',
       partnerIntro: 'เรายินดีต้อนรับร้านดอกไม้ ผู้ทำของขวัญ และช่างฝีมือในเชียงใหม่เข้าร่วมแพลตฟอร์มของเรา ขายช่อดอกไม้ บอลลูน ของขวัญ และงานประดิษฐ์ผ่าน Lanna Bloom สมัครออนไลน์ได้เลย เราจะติดต่อกลับทาง LINE ภายใน 1–2 วันทำการ',
       partnerApply: 'สมัครเป็น Partner',
+      partnerHowItWorks: 'วิธีร่วมงานกับเรา',
     },
     customOrder: {
       title: 'สั่งทำพิเศษ',

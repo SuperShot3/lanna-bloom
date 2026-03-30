@@ -128,6 +128,11 @@ export function Footer({ lang }: { lang: Locale }) {
                 </Link>
               </li>
               <li>
+                <Link href={`/${lang}/partner/how-it-works`} className="hover:text-[#C5A059] transition-colors">
+                  {t.partnerHowItWorks}
+                </Link>
+              </li>
+              <li>
                 <Link href={`/${lang}/partner/apply`} className="hover:text-[#C5A059] transition-colors">
                   {t.partnerFlorists}
                 </Link>

@@ -28,8 +28,7 @@ import {
 import { trackMessengerClick } from '@/lib/analytics';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-
-const SUPPORT_EMAIL = 'support@lannabloom.shop';
+import { SUPPORT_EMAIL } from '@/lib/siteContact';
 
 function CopyChip({ label, value, locale }: { label: string; value: string; locale: Locale }) {
   const [copied, setCopied] = useState(false);
