@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -31,7 +32,14 @@ export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false
     <nav className="partner-nav">
       <div className="partner-nav-inner">
         <Link href={`/${lang}`} className="partner-nav-logo">
-          <span className="partner-nav-emoji">🌸</span>
+          <Image
+            src="/favicon.svg"
+            alt="Lanna Bloom logo"
+            width={32}
+            height={32}
+            className="partner-nav-logo-img"
+            priority
+          />
           <div>
             <div className="partner-nav-title">Lanna Bloom</div>
             <div className="partner-nav-sub">PARTNER PORTAL</div>
