@@ -6,9 +6,44 @@ import {
   updateBouquetStatus,
   updateProductModerationStatus,
   updateProductCommission,
+  updateProductByAdmin,
   deleteProduct,
 } from '@/lib/sanityWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
+
+export async function updateProductByAdminAction(formData: FormData): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+  const productId = String(formData.get('productId') || '').trim();
+  if (!productId) return { error: 'Missing productId' };
+
+  const adminOverrides = {
+    nameEn: (String(formData.get('nameEn') ?? '') || '').trim() || null,
+    nameTh: (String(formData.get('nameTh') ?? '') || '').trim() || null,
+    descriptionEn: (String(formData.get('descriptionEn') ?? '') || '').trim() || null,
+    descriptionTh: (String(formData.get('descriptionTh') ?? '') || '').trim() || null,
+  };
+  const adminChangeSummary = (String(formData.get('adminChangeSummary') ?? '') || '').trim() || null;
+  const adminLastEditedBy = ((session.user as { email?: string | null }).email ?? '').trim() || null;
+
+  try {
+    await updateProductByAdmin(productId, { adminOverrides, adminChangeSummary, adminLastEditedBy });
+    revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/moderation/products/${productId}`);
+    // Partner portal pages that show this product read from Sanity.
+    revalidatePath('/en/partner/products', 'layout');
+    revalidatePath('/th/partner/products', 'layout');
+    // Catalog reads coalesce(...) from adminOverrides for live products.
+    revalidatePath('/en/catalog', 'layout');
+    revalidatePath('/th/catalog', 'layout');
+    return {};
+  } catch (err) {
+    console.error('[Moderation] updateProductByAdmin failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed' };
+  }
+}
 
 export async function approveBouquetAction(bouquetId: string): Promise<{ error?: string }> {
   const session = await auth();

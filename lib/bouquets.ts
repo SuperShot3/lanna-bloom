@@ -31,6 +31,13 @@ export interface Bouquet {
   partnerId?: string;
   /** Partner shop name (when expanded from Sanity); for "Hand-crafted by X" badge */
   partnerName?: string;
+  /** Partner city (optional, expanded from Sanity partner document) */
+  partnerCity?: string;
+  /** Partner shop bio (optional, expanded from Sanity partner document) */
+  partnerShopBioEn?: string;
+  partnerShopBioTh?: string;
+  /** Partner portrait URL (optional, expanded from Sanity partner document) */
+  partnerPortraitUrl?: string;
   /** Only approved bouquets appear on public catalog; missing = approved (backward compat) */
   status?: BouquetStatus;
 }
@@ -44,6 +51,9 @@ export interface Partner {
   phoneNumber: string;
   lineOrWhatsapp?: string;
   shopAddress?: string;
+  shopBioEn?: string;
+  shopBioTh?: string;
+  portraitUrl?: string;
   city: string;
   status: PartnerStatus;
   /** Set when partner is created from admin approval; links to Supabase auth user */

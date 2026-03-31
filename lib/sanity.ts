@@ -55,6 +55,11 @@ type SanityBouquet = {
   partner?: { _ref?: string };
   /** Expanded from partner->shopName in catalog query */
   partnerName?: string;
+  /** Expanded from partner doc on product page */
+  partnerCity?: string;
+  partnerShopBioEn?: string;
+  partnerShopBioTh?: string;
+  partnerPortrait?: { _type?: string; asset?: { _ref?: string } };
   status?: string;
   images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
   sizes?: Array<{
@@ -101,6 +106,10 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     sizes: sizes.length ? sizes : [{ key: 'm', label: 'M', price: 0, description: '' }],
     partnerId: doc.partner?._ref,
     partnerName: doc.partnerName ?? undefined,
+    partnerCity: doc.partnerCity ?? undefined,
+    partnerShopBioEn: doc.partnerShopBioEn ?? undefined,
+    partnerShopBioTh: doc.partnerShopBioTh ?? undefined,
+    partnerPortraitUrl: doc.partnerPortrait ? urlFor(doc.partnerPortrait) : undefined,
     status: doc.status === 'pending_review' || doc.status === 'approved' ? doc.status : undefined,
   };
 }
@@ -137,6 +146,12 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   colors,
   flowerTypes,
   occasion,
+  partner,
+  "partnerName": partner->shopName,
+  "partnerCity": partner->city,
+  "partnerShopBioEn": partner->shopBioEn,
+  "partnerShopBioTh": partner->shopBioTh,
+  "partnerPortrait": partner->portrait,
   images,
   sizes
 }`;
@@ -441,6 +456,9 @@ type SanityPartner = {
   phoneNumber?: string;
   lineOrWhatsapp?: string;
   shopAddress?: string;
+  shopBioEn?: string;
+  shopBioTh?: string;
+  portrait?: { _type?: string; asset?: { _ref?: string } };
   city?: string;
   status?: string;
   supabaseUserId?: string;
@@ -454,6 +472,9 @@ function mapToPartner(doc: SanityPartner): Partner {
     phoneNumber: doc.phoneNumber ?? '',
     lineOrWhatsapp: doc.lineOrWhatsapp,
     shopAddress: doc.shopAddress,
+    shopBioEn: doc.shopBioEn ?? undefined,
+    shopBioTh: doc.shopBioTh ?? undefined,
+    portraitUrl: doc.portrait ? urlFor(doc.portrait) : undefined,
     city: doc.city ?? 'Chiang Mai',
     status: (doc.status as PartnerStatus) ?? 'pending_review',
     supabaseUserId: doc.supabaseUserId,
@@ -463,7 +484,7 @@ function mapToPartner(doc: SanityPartner): Partner {
 export async function getPartnerById(partnerId: string): Promise<Partner | null> {
   try {
     const doc = await client.fetch<SanityPartner | null>(
-      `*[_type == "partner" && _id == $id][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status, supabaseUserId }`,
+      `*[_type == "partner" && _id == $id][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, shopBioEn, shopBioTh, portrait, city, status, supabaseUserId }`,
       { id: partnerId }
     );
     if (!doc) return null;
@@ -478,7 +499,7 @@ export async function getPartnerById(partnerId: string): Promise<Partner | null>
 export async function getPartnerBySupabaseUserId(supabaseUserId: string): Promise<Partner | null> {
   try {
     const doc = await client.fetch<SanityPartner | null>(
-      `*[_type == "partner" && supabaseUserId == $uid][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status, supabaseUserId }`,
+      `*[_type == "partner" && supabaseUserId == $uid][0] { _id, shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, shopBioEn, shopBioTh, portrait, city, status, supabaseUserId }`,
       { uid: supabaseUserId }
     );
     if (!doc) return null;
@@ -556,6 +577,14 @@ export interface PartnerProduct {
   price: number;
   moderationStatus: 'submitted' | 'live' | 'needs_changes';
   imageUrl?: string;
+  adminOverrides?: {
+    nameEn?: string;
+    nameTh?: string;
+    descriptionEn?: string;
+    descriptionTh?: string;
+  };
+  adminChangeSummary?: string;
+  adminLastEditedAt?: string;
 }
 
 /** All products (non-flower) for a partner — for partner dashboard */
@@ -570,10 +599,19 @@ export async function getProductsByPartnerId(partnerId: string): Promise<Partner
         price?: number;
         moderationStatus?: string;
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+        adminOverrides?: {
+          nameEn?: string;
+          nameTh?: string;
+          descriptionEn?: string;
+          descriptionTh?: string;
+        };
+        adminChangeSummary?: string;
+        adminLastEditedAt?: string;
       }>
     >(
       `*[_type == "product" && references($partnerId)] | order(_createdAt desc) {
-        _id, nameEn, nameTh, category, price, moderationStatus, images
+        _id, nameEn, nameTh, category, price, moderationStatus, images,
+        adminOverrides, adminChangeSummary, adminLastEditedAt
       }`,
       { partnerId }
     );
@@ -585,6 +623,9 @@ export async function getProductsByPartnerId(partnerId: string): Promise<Partner
       price: d.price ?? 0,
       moderationStatus: (d.moderationStatus as 'submitted' | 'live' | 'needs_changes') ?? 'submitted',
       imageUrl: d.images?.[0] ? urlFor(d.images[0]) : undefined,
+      adminOverrides: d.adminOverrides,
+      adminChangeSummary: d.adminChangeSummary,
+      adminLastEditedAt: d.adminLastEditedAt,
     }));
   } catch (err) {
     console.error('[Sanity] getProductsByPartnerId failed:', err);
@@ -710,7 +751,12 @@ export async function getProductsFilteredFromSanity(params: {
       }>
     >(
       `*[_type == "product" && moderationStatus == "live" && category == $categoryKey] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, images
+        _id, _createdAt, slug,
+        "nameEn": coalesce(adminOverrides.nameEn, nameEn),
+        "nameTh": coalesce(adminOverrides.nameTh, nameTh),
+        "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
+        "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
+        category, price, cost, commissionPercent, images
       }`,
       { categoryKey }
     );
@@ -770,7 +816,12 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       | null
     >(
       `*[_type == "product" && slug.current == $slug && moderationStatus == "live"][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, images,
+        _id, slug,
+        "nameEn": coalesce(adminOverrides.nameEn, nameEn),
+        "nameTh": coalesce(adminOverrides.nameTh, nameTh),
+        "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
+        "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
+        category, price, cost, commissionPercent, images,
         "structuredAttributes": structuredAttributes
       }`,
       { slug }
@@ -831,6 +882,14 @@ export async function getProductById(productId: string): Promise<{
   preparationTime?: number;
   occasion?: string;
   partnerId?: string;
+  adminOverrides?: {
+    nameEn?: string;
+    nameTh?: string;
+    descriptionEn?: string;
+    descriptionTh?: string;
+  };
+  adminChangeSummary?: string;
+  adminLastEditedAt?: string;
 } | null> {
   try {
     const doc = await clientNoCdn.fetch<
@@ -848,11 +907,20 @@ export async function getProductById(productId: string): Promise<{
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
           structuredAttributes?: { preparationTime?: number; occasion?: string };
           partner?: { _ref?: string };
+          adminOverrides?: {
+            nameEn?: string;
+            nameTh?: string;
+            descriptionEn?: string;
+            descriptionTh?: string;
+          };
+          adminChangeSummary?: string;
+          adminLastEditedAt?: string;
         }
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
-        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, moderationStatus, images, structuredAttributes, partner
+        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, moderationStatus, images, structuredAttributes, partner,
+        adminOverrides, adminChangeSummary, adminLastEditedAt
       }`,
       { id: productId }
     );
@@ -876,6 +944,9 @@ export async function getProductById(productId: string): Promise<{
       preparationTime: doc.structuredAttributes?.preparationTime,
       occasion: doc.structuredAttributes?.occasion,
       partnerId: doc.partner?._ref,
+      adminOverrides: doc.adminOverrides,
+      adminChangeSummary: doc.adminChangeSummary,
+      adminLastEditedAt: doc.adminLastEditedAt,
     };
   } catch (err) {
     console.error('[Sanity] getProductById failed:', err);
@@ -901,6 +972,15 @@ export interface AdminProductDetail {
   occasion?: string;
   customAttributes: Array<{ key: string; value: string }>;
   partnerId?: string;
+  adminOverrides?: {
+    nameEn?: string;
+    nameTh?: string;
+    descriptionEn?: string;
+    descriptionTh?: string;
+  };
+  adminChangeSummary?: string;
+  adminLastEditedAt?: string;
+  adminLastEditedBy?: string;
 }
 
 export async function getProductByIdForAdmin(productId: string): Promise<AdminProductDetail | null> {
@@ -922,12 +1002,22 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
           structuredAttributes?: { preparationTime?: number; occasion?: string };
           customAttributes?: Array<{ key?: string; value?: string }>;
           partner?: { _ref?: string };
+          adminOverrides?: {
+            nameEn?: string;
+            nameTh?: string;
+            descriptionEn?: string;
+            descriptionTh?: string;
+          };
+          adminChangeSummary?: string;
+          adminLastEditedAt?: string;
+          adminLastEditedBy?: string;
         }
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, moderationStatus, commissionPercent,
-        images, structuredAttributes, customAttributes, partner
+        images, structuredAttributes, customAttributes, partner,
+        adminOverrides, adminChangeSummary, adminLastEditedAt, adminLastEditedBy
       }`,
       { id: productId }
     );
@@ -954,6 +1044,10 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
         value: a.value ?? '',
       })).filter((a) => a.key || a.value),
       partnerId: doc.partner?._ref,
+      adminOverrides: doc.adminOverrides,
+      adminChangeSummary: doc.adminChangeSummary,
+      adminLastEditedAt: doc.adminLastEditedAt,
+      adminLastEditedBy: doc.adminLastEditedBy,
     };
   } catch (err) {
     console.error('[Sanity] getProductByIdForAdmin failed:', err);

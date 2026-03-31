@@ -259,8 +259,12 @@ export function ProductOrderBlock({
               <FloristCard
                 lang={lang}
                 partnerName={bouquet.partnerName}
-                studioName="Chiang Mai"
-                quote="We source our flowers daily from local markets to ensure maximum freshness and fragrance in every arrangement."
+                partnerImage={bouquet.partnerPortraitUrl ?? null}
+                studioName={bouquet.partnerCity || 'Chiang Mai'}
+                quote={
+                  (lang === 'th' ? bouquet.partnerShopBioTh : bouquet.partnerShopBioEn) ||
+                  "We source our flowers daily from local markets to ensure maximum freshness and fragrance in every arrangement."
+                }
               />
             </div>
           )}

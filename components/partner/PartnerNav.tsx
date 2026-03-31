@@ -10,7 +10,7 @@ import { PartnerLogoutButton } from '@/components/partner/PartnerLogoutButton';
 
 type PartnerNavProps = {
   lang: Locale;
-  current?: 'apply' | 'dashboard' | 'products' | 'productsAdd' | 'login' | 'howItWorks';
+  current?: 'apply' | 'dashboard' | 'products' | 'shop' | 'productsAdd' | 'login' | 'howItWorks';
   pendingCount?: number;
   /** When true, show Dashboard/My products/Add Product/Log out. When false, show Apply/Login only. */
   isLoggedIn?: boolean;
@@ -25,6 +25,7 @@ export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false
   const howLabel = translations[lang].partnerPortal.howItWorks.navLabel;
   const dashboardHref = `/${lang}/partner`;
   const productsHref = `/${lang}/partner/products`;
+  const shopHref = `/${lang}/partner/shop`;
   const productsAddHref = `/${lang}/partner/products/new`;
   const loginHref = `/${lang}/partner/login`;
 
@@ -67,6 +68,12 @@ export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false
                     {pendingCount}
                   </span>
                 )}
+              </Link>
+              <Link
+                href={shopHref}
+                className={`partner-nav-link ${current === 'shop' ? 'active' : ''}`}
+              >
+                {lang === 'th' ? 'ข้อมูลร้าน' : 'Shop info'}
               </Link>
               <Link
                 href={productsAddHref}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Partner } from '@/lib/bouquets';
 import type { Bouquet } from '@/lib/bouquets';
@@ -8,6 +9,8 @@ import { Card } from '@/components/partner/Card';
 import { Badge } from '@/components/partner/Badge';
 import { Btn } from '@/components/partner/Btn';
 import type { Locale } from '@/lib/i18n';
+import { getLineContactUrl } from '@/lib/messenger';
+import { SUPPORT_EMAIL } from '@/lib/siteContact';
 
 type DashboardT = {
   hello: string;
@@ -17,12 +20,6 @@ type DashboardT = {
   noProducts?: string;
   ordersSoon: string;
   contactSupport: string;
-  shopInfo: string;
-  editProfile: string;
-  copyLine: string;
-  openLine: string;
-  call: string;
-  openMaps: string;
 };
 
 type BadgeT = Record<string, string>;
@@ -63,20 +60,87 @@ export function PartnerDashboardClient({
   t,
   tBadge,
 }: PartnerDashboardClientProps) {
-  const lineId = partner.lineOrWhatsapp ?? '';
-  const phone = partner.phoneNumber ?? '';
-  const address = partner.shopAddress ?? '';
-  const mapsUrl = address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
-    : '';
-  const lineAddUrl = lineId
-    ? `https://line.me/ti/p/~${lineId.replace(/^@/, '')}`
-    : '';
+  const partnerLibraryHref: string | null = null;
+  const supportLineUrl = useMemo(() => getLineContactUrl(), []);
 
-  function handleCopyLine() {
-    if (lineId && typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(lineId);
+  const supportCardRef = useRef<HTMLButtonElement>(null);
+  const supportModalRef = useRef<HTMLDivElement>(null);
+  const supportModalCloseRef = useRef<HTMLButtonElement>(null);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const defaultSupportMessage = useMemo(() => {
+    const page = typeof window !== 'undefined' ? window.location.pathname : '';
+    return [
+      'Hello Lanna Bloom support, I need help with my partner account.',
+      '',
+      `Shop name: ${partner.shopName ?? ''}`,
+      'Issue:',
+      `Page I am on: ${page}`,
+      '',
+    ].join('\n');
+  }, [partner.shopName]);
+
+  const [supportMessage, setSupportMessage] = useState(defaultSupportMessage);
+
+  useEffect(() => {
+    // Keep draft in sync if shop name is loaded/changed.
+    setSupportMessage(defaultSupportMessage);
+  }, [defaultSupportMessage]);
+
+  useEffect(() => {
+    if (!isSupportOpen) return;
+    supportModalCloseRef.current?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsSupportOpen(false);
+        supportCardRef.current?.focus();
+      }
+      if (e.key === 'Tab') {
+        const el = supportModalRef.current;
+        if (!el) return;
+        const focusable = el.querySelectorAll<HTMLElement>(
+          'button, [href], textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+      supportCardRef.current?.focus();
+    };
+  }, [isSupportOpen]);
+
+  function handlePartnerLibraryClick() {
+    if (typeof window !== 'undefined') {
+      window.alert('Partner learning library is coming soon');
     }
+  }
+
+  async function handleCopySupportMessage() {
+    try {
+      await navigator.clipboard.writeText(supportMessage);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      window.alert('Could not copy. Please copy manually.');
+    }
+  }
+
+  function handleOpenLineSupport() {
+    window.open(supportLineUrl, '_blank', 'noopener,noreferrer');
   }
 
   return (
@@ -93,15 +157,24 @@ export function PartnerDashboardClient({
           <Badge status={partnerStatusToBadge(partner.status)} labelTh={tBadge[partnerStatusToBadge(partner.status)] ?? tBadge.pending} />
         </div>
         <div className="partner-dashboard-welcome-actions">
-          {lineAddUrl && (
-            <a href={lineAddUrl} target="_blank" rel="noopener noreferrer" className="partner-dashboard-link">
-              <Btn small variant="ghost">💬 {t.openLine}</Btn>
-            </a>
-          )}
-          {phone && (
-            <a href={`tel:${phone}`} className="partner-dashboard-link">
-              <Btn small variant="ghost">📞 {t.call}</Btn>
-            </a>
+          {partnerLibraryHref ? (
+            <Link href={partnerLibraryHref} className="partner-dashboard-link">
+              <Btn small variant="ghost">
+                Partner Library
+                <span className="partner-soon-badge" aria-hidden="true">
+                  Coming Soon
+                </span>
+              </Btn>
+            </Link>
+          ) : (
+            <span className="partner-dashboard-link">
+              <Btn small variant="ghost" className="partner-dashboard-soon-btn" onClick={handlePartnerLibraryClick}>
+                Partner Library
+                <span className="partner-soon-badge" aria-hidden="true">
+                  Coming Soon
+                </span>
+              </Btn>
+            </span>
           )}
         </div>
       </Card>
@@ -126,53 +199,82 @@ export function PartnerDashboardClient({
             <div className="partner-dashboard-action-label">{t.ordersSoon}</div>
           </Card>
         </div>
-        {lineAddUrl && (
-          <a href={lineAddUrl} target="_blank" rel="noopener noreferrer" className="partner-dashboard-action-card">
-            <Card style={{ padding: 16, cursor: 'pointer', height: '100%' }}>
-              <div className="partner-dashboard-action-icon">💬</div>
-              <div className="partner-dashboard-action-label">{t.contactSupport}</div>
-            </Card>
-          </a>
-        )}
+        <button
+          type="button"
+          className="partner-dashboard-action-card partner-dashboard-action-card--button"
+          onClick={() => setIsSupportOpen(true)}
+          ref={supportCardRef}
+        >
+          <Card style={{ padding: 16, cursor: 'pointer', height: '100%' }}>
+            <div className="partner-dashboard-action-icon">💬</div>
+            <div className="partner-dashboard-action-label">{t.contactSupport}</div>
+          </Card>
+        </button>
       </div>
 
-      <div className="partner-dashboard-section-title">{t.shopInfo}</div>
-      <Card style={{ marginBottom: 16 }}>
-        <div className="partner-dashboard-shop-row">
-          <span className="partner-dashboard-shop-icon">📍</span>
-          <div className="partner-dashboard-shop-content">
-            <div className="partner-dashboard-shop-label">ที่อยู่</div>
-            <div className="partner-dashboard-shop-value">{address || '—'}</div>
+      {isSupportOpen && (
+        <div className="partner-support-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="partner-support-modal-title" ref={supportModalRef}>
+          <div
+            className="partner-support-modal-backdrop"
+            onClick={() => setIsSupportOpen(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setIsSupportOpen(false)}
+            role="button"
+            tabIndex={0}
+            aria-label="Close"
+          />
+          <div className="partner-support-modal-card">
+            <div className="partner-support-modal-header">
+              <div>
+                <div id="partner-support-modal-title" className="partner-support-modal-title">
+                  Contact support
+                </div>
+                <div className="partner-support-modal-subtitle">
+                  Copy a message first, then choose LINE or email.
+                </div>
+                <div className="partner-support-modal-hint">
+                  We'll reply as soon as possible.
+                </div>
+              </div>
+              <button
+                type="button"
+                className="partner-support-modal-close"
+                onClick={() => setIsSupportOpen(false)}
+                ref={supportModalCloseRef}
+                aria-label="Close"
+              >
+                <span aria-hidden>×</span>
+              </button>
+            </div>
+
+            <div className="partner-support-modal-body">
+              <div className="partner-support-modal-field">
+                <div className="partner-support-modal-label">Message</div>
+                <textarea
+                  className="partner-support-modal-textarea"
+                  value={supportMessage}
+                  onChange={(e) => setSupportMessage(e.target.value)}
+                  rows={7}
+                />
+              </div>
+
+              <div className="partner-support-modal-actions">
+                <Btn small variant="secondary" onClick={handleCopySupportMessage}>
+                  {copied ? 'Copied' : 'Copy message'}
+                </Btn>
+                <button type="button" className="partner-support-line-btn" onClick={handleOpenLineSupport}>
+                  <span className="partner-support-line-logo" aria-hidden="true">
+                    LINE
+                  </span>
+                  Open LINE
+                </button>
+                <a className="partner-support-email-btn" href={`mailto:${SUPPORT_EMAIL}`} target="_blank" rel="noopener noreferrer">
+                  Email support
+                </a>
+              </div>
+            </div>
           </div>
-          {mapsUrl && (
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-              <Btn small variant="ghost">{t.openMaps}</Btn>
-            </a>
-          )}
         </div>
-        {lineId && (
-          <div className="partner-dashboard-shop-row">
-            <span className="partner-dashboard-shop-icon">💬</span>
-            <div className="partner-dashboard-shop-content">
-              <div className="partner-dashboard-shop-label">LINE ID</div>
-              <div className="partner-dashboard-shop-value">{lineId}</div>
-            </div>
-            <Btn small variant="ghost" onClick={handleCopyLine}>{t.copyLine}</Btn>
-          </div>
-        )}
-        {phone && (
-          <div className="partner-dashboard-shop-row">
-            <span className="partner-dashboard-shop-icon">📞</span>
-            <div className="partner-dashboard-shop-content">
-              <div className="partner-dashboard-shop-label">โทร</div>
-              <div className="partner-dashboard-shop-value">{phone}</div>
-            </div>
-            <a href={`tel:${phone}`}>
-              <Btn small variant="ghost">{t.call}</Btn>
-            </a>
-          </div>
-        )}
-      </Card>
+      )}
 
       <div className="partner-dashboard-section-title">{t.myProducts}</div>
       <Card>

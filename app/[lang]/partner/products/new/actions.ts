@@ -54,9 +54,9 @@ function parseSizes(formData: FormData): BouquetSizeInput[] {
   return sizes;
 }
 
-async function getImageAssetIds(formData: FormData): Promise<string[]> {
+async function getImageAssetIds(formData: FormData, maxImages = 5): Promise<string[]> {
   const ids: string[] = [];
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= maxImages; i++) {
     const file = formData.get(`image${i}`) as File | null;
     if (file && file.size > 0) {
       const id = await uploadImageToSanity(file);
@@ -132,17 +132,22 @@ export async function createProductAction(formData: FormData) {
   if (!nameEn) return { error: 'Name (EN) is required' };
 
   const category = formData.get('category') as string;
-  const validCategories = ['balloons', 'gifts', 'money_flowers', 'handmade_floral'];
+  const validCategories = [
+    'balloons', 'gifts', 'money_flowers', 'handmade_floral',
+    'food_sweets', 'wellness', 'toys_plush', 'home_lifestyle',
+    'stationery', 'baby_family', 'fashion', 'seasonal', 'other',
+  ];
   if (!validCategories.includes(category)) return { error: 'Invalid category' };
 
   const price = Number(formData.get('price'));
   if (isNaN(price) || price < 0) return { error: 'Valid price is required' };
 
-  const imageAssetIds = await getImageAssetIds(formData);
-  if (imageAssetIds.length === 0) return { error: 'At least one image is required (1–3)' };
+  const imageAssetIds = await getImageAssetIds(formData, 5);
+  if (imageAssetIds.length === 0) return { error: 'At least one image is required' };
 
   const preparationTime = formData.get('preparationTime') as string | null;
-  const occasion = (formData.get('occasion') as string)?.trim();
+  const occasions = (formData.get('occasions') as string)?.trim();
+  const customTag = (formData.get('customTag') as string)?.trim();
 
   try {
     await createProduct({
@@ -151,13 +156,18 @@ export async function createProductAction(formData: FormData) {
       nameTh: (formData.get('nameTh') as string)?.trim(),
       descriptionEn: (formData.get('descriptionEn') as string)?.trim(),
       descriptionTh: (formData.get('descriptionTh') as string)?.trim(),
-      category: category as 'balloons' | 'gifts' | 'money_flowers' | 'handmade_floral',
+      category,
       price,
       imageAssetIds,
-      preparationTime: preparationTime ? Number(preparationTime) : undefined,
-      occasion: occasion || undefined,
+      preparationTime: preparationTime && preparationTime !== 'made_to_order'
+        ? Number(preparationTime)
+        : undefined,
+      occasion: occasions || undefined,
+      ...(customTag && {
+        customAttributes: [{ key: 'customTag', value: customTag }],
+      }),
     });
-    redirect(`/${lang}/partner/products/new?success=product`);
+    return { success: true };
   } catch (err) {
     if (isRedirectError(err)) throw err;
     console.error('[Partner] createProduct failed:', err);

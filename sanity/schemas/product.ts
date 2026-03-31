@@ -28,9 +28,18 @@ export const product = defineType({
       options: {
         list: [
           { title: 'Balloons', value: 'balloons' },
-          { title: 'Gifts', value: 'gifts' },
+          { title: 'Gifts & Sets', value: 'gifts' },
           { title: 'Money Flowers', value: 'money_flowers' },
           { title: 'Handmade Floral', value: 'handmade_floral' },
+          { title: 'Food & Sweets', value: 'food_sweets' },
+          { title: 'Wellness', value: 'wellness' },
+          { title: 'Toys & Plush', value: 'toys_plush' },
+          { title: 'Home & Lifestyle', value: 'home_lifestyle' },
+          { title: 'Stationery', value: 'stationery' },
+          { title: 'Baby & Family', value: 'baby_family' },
+          { title: 'Fashion & Accessories', value: 'fashion' },
+          { title: 'Seasonal', value: 'seasonal' },
+          { title: 'Other', value: 'other' },
         ],
       },
       validation: (r) => r.required(),
@@ -102,6 +111,27 @@ export const product = defineType({
         },
       ],
     },
+    {
+      name: 'adminOverrides',
+      title: 'Admin overrides (pre-approval edits)',
+      type: 'object',
+      description:
+        'Optional edits made by admins during moderation (SEO/title/description polishing). These do not change the partner-submitted fields directly.',
+      fields: [
+        { name: 'nameEn', title: 'Name override (EN)', type: 'string' },
+        { name: 'nameTh', title: 'Name override (TH)', type: 'string' },
+        { name: 'descriptionEn', title: 'Description override (EN)', type: 'text' },
+        { name: 'descriptionTh', title: 'Description override (TH)', type: 'text' },
+      ],
+    },
+    {
+      name: 'adminChangeSummary',
+      title: 'Admin change summary (shown to partner)',
+      type: 'text',
+      description: 'Shown as a banner in the partner portal to explain what was changed and why.',
+    },
+    { name: 'adminLastEditedAt', title: 'Admin last edited at', type: 'datetime', readOnly: true },
+    { name: 'adminLastEditedBy', title: 'Admin last edited by', type: 'string', readOnly: true },
   ],
   preview: {
     select: { title: 'nameEn', category: 'category', status: 'moderationStatus' },

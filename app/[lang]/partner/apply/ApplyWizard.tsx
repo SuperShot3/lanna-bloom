@@ -13,7 +13,7 @@ import { Btn } from '@/components/partner/Btn';
 import { SecTitle } from '@/components/partner/SecTitle';
 import Link from 'next/link';
 import { translations } from '@/lib/i18n';
-import { DISTRICTS, CATEGORY_OPTIONS, PREP_TIME_OPTIONS } from '@/lib/partnerPortal';
+import { CATEGORY_OPTIONS, PREP_TIME_OPTIONS } from '@/lib/partnerPortal';
 import type { Locale } from '@/lib/i18n';
 
 const STORAGE_KEY = 'partner-apply-draft';
@@ -29,14 +29,12 @@ type FormState = {
   instagram: string;
   facebook: string;
   address: string;
-  district: string;
   selfDeliver: boolean;
   deliveryZones: string;
   deliveryFee: string;
   categories: string[];
   prepTime: string;
   cutoff: string;
-  maxOrders: string;
   portfolioLinks: string;
   experienceNote: string;
 };
@@ -50,14 +48,12 @@ const initialForm: FormState = {
   instagram: '',
   facebook: '',
   address: '',
-  district: '',
   selfDeliver: false,
   deliveryZones: '',
   deliveryFee: '',
   categories: [],
   prepTime: '60',
   cutoff: '',
-  maxOrders: '',
   portfolioLinks: '',
   experienceNote: '',
 };
@@ -124,14 +120,12 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
       formData.set('instagram', f.instagram);
       formData.set('facebook', f.facebook);
       formData.set('address', f.address);
-      formData.set('district', f.district);
       formData.set('selfDeliver', String(f.selfDeliver));
       formData.set('deliveryZones', f.deliveryZones);
       formData.set('deliveryFee', f.deliveryFee);
       formData.set('categories', JSON.stringify(f.categories));
       formData.set('prepTime', f.prepTime);
       formData.set('cutoff', f.cutoff);
-      formData.set('maxOrders', f.maxOrders);
       formData.set('portfolioLinks', f.portfolioLinks);
       formData.set('experienceNote', f.experienceNote);
 
@@ -143,11 +137,6 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
       setSubmitting(false);
     }
   }
-
-  const districtOptions = DISTRICTS.map((d) => ({
-    value: d.value,
-    label: lang === 'th' ? d.labelTh : d.labelEn,
-  }));
 
   const prepOptions = PREP_TIME_OPTIONS.map((p) => ({
     value: p.value,
@@ -296,7 +285,6 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
           <>
             <SecTitle lang={lang} th={lang === 'th' ? 'สถานที่และการจัดส่ง' : 'Location & Delivery'} en="Location & Delivery" />
             <Tx label={t.address} hint={t.addressHint} placeholder={lang === 'th' ? 'บ้านเลขที่ ซอย ถนน ตำบล' : 'Street, building, district'} value={f.address} onChange={(v) => u('address', v)} required rows={3} />
-            <Sel label={t.district} options={districtOptions} value={f.district} onChange={(v) => u('district', v)} required />
             <Toggle label={t.selfDeliver} sub={t.selfDeliverSub} value={f.selfDeliver} onChange={(v) => u('selfDeliver', v)} />
             {f.selfDeliver && (
               <div className="partner-apply-delivery-extra">
@@ -306,7 +294,7 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
             )}
             {!f.selfDeliver && (
               <div className="partner-apply-platform-note">
-                📦 {lang === 'th' ? 'ใช้ระบบจัดส่งของ Lanna Bloom' : "We'll handle delivery for you"}
+                📦 {lang === 'th' ? 'ใช้ระบบจัดส่งของ Lanna Bloom' : "Lanna Bloom handles delivery"}
               </div>
             )}
           </>
@@ -368,7 +356,6 @@ export function ApplyWizard({ lang }: { lang: Locale }) {
             </div>
             <Sel label={t.prepTime} sub={t.prepTimeSub} options={prepOptions} value={f.prepTime} onChange={(v) => u('prepTime', v)} required />
             <Inp label={t.cutoff} hint={t.cutoffHint} placeholder="e.g. 14:00" value={f.cutoff} onChange={(v) => u('cutoff', v)} />
-            <Inp label={t.maxOrders} type="number" placeholder="e.g. 20" value={f.maxOrders} onChange={(v) => u('maxOrders', v)} />
           </>
         )}
 

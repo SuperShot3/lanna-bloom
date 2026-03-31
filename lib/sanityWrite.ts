@@ -53,6 +53,31 @@ export async function createPartner(input: CreatePartnerInput): Promise<string> 
   return doc._id;
 }
 
+export interface UpdatePartnerProfileInput {
+  phoneNumber: string;
+  lineOrWhatsapp?: string;
+  shopAddress?: string;
+  city?: string;
+  shopBioEn?: string;
+  shopBioTh?: string;
+}
+
+/** Update partner profile fields (partner portal). */
+export async function updatePartnerProfile(partnerId: string, input: UpdatePartnerProfileInput): Promise<void> {
+  const client = getWriteClient();
+  await client
+    .patch(partnerId)
+    .set({
+      phoneNumber: input.phoneNumber.trim(),
+      ...(input.lineOrWhatsapp != null && { lineOrWhatsapp: input.lineOrWhatsapp.trim() || null }),
+      ...(input.shopAddress != null && { shopAddress: input.shopAddress.trim() || null }),
+      ...(input.city != null && { city: input.city.trim() || 'Chiang Mai' }),
+      ...(input.shopBioEn != null && { shopBioEn: input.shopBioEn.trim() || null }),
+      ...(input.shopBioTh != null && { shopBioTh: input.shopBioTh.trim() || null }),
+    })
+    .commit();
+}
+
 /** Upload image file to Sanity; returns asset document _id to use as image ref. */
 export async function uploadImageToSanity(file: File): Promise<string> {
   const client = getWriteClient();
@@ -165,7 +190,7 @@ export interface UpdateProductInput {
   nameTh?: string;
   descriptionEn?: string;
   descriptionTh?: string;
-  category: 'balloons' | 'gifts' | 'money_flowers' | 'handmade_floral';
+  category: string;
   price: number;
   imageAssetIds: string[];
   preparationTime?: number;
@@ -267,12 +292,40 @@ export interface CreateProductInput {
   nameTh?: string;
   descriptionEn?: string;
   descriptionTh?: string;
-  category: 'balloons' | 'gifts' | 'money_flowers' | 'handmade_floral';
+  category: string;
   price: number;
   imageAssetIds: string[];
   preparationTime?: number;
   occasion?: string;
   customAttributes?: Array<{ key: string; value: string }>;
+}
+
+export interface UpdateProductByAdminInput {
+  adminOverrides?: {
+    nameEn?: string | null;
+    nameTh?: string | null;
+    descriptionEn?: string | null;
+    descriptionTh?: string | null;
+  };
+  adminChangeSummary?: string | null;
+  adminLastEditedBy?: string | null;
+}
+
+/** Update product admin overrides (admin moderation). Does not change moderationStatus or commission. */
+export async function updateProductByAdmin(
+  productId: string,
+  input: UpdateProductByAdminInput
+): Promise<void> {
+  const client = getWriteClient();
+  await client
+    .patch(productId)
+    .set({
+      ...(input.adminOverrides != null && { adminOverrides: input.adminOverrides }),
+      ...(input.adminChangeSummary != null && { adminChangeSummary: input.adminChangeSummary }),
+      ...(input.adminLastEditedBy != null && { adminLastEditedBy: input.adminLastEditedBy }),
+      adminLastEditedAt: new Date().toISOString(),
+    })
+    .commit();
 }
 
 /** Create a partner product (non-flower); moderationStatus = submitted. Returns _id. */

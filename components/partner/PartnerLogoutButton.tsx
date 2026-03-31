@@ -24,8 +24,7 @@ export function PartnerLogoutButton({ lang }: PartnerLogoutButtonProps) {
     <button
       type="button"
       onClick={handleLogout}
-      className="partner-nav-link"
-      style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+      className="partner-btn partner-btn--ghost partner-btn--small"
     >
       {t.logOut}
     </button>

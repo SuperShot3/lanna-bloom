@@ -8,6 +8,7 @@ import {
   approveProductAction,
   rejectProductAction,
   needsChangesProductAction,
+  updateProductByAdminAction,
   deleteProductAction,
   updateCommissionAction,
 } from '../actions';
@@ -33,6 +34,11 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
   const [commissionPercent, setCommissionPercent] = useState<string>(
     product.commissionPercent != null ? String(product.commissionPercent) : ''
   );
+  const [adminNameEn, setAdminNameEn] = useState(product.adminOverrides?.nameEn ?? product.nameEn);
+  const [adminNameTh, setAdminNameTh] = useState(product.adminOverrides?.nameTh ?? product.nameTh ?? '');
+  const [adminDescEn, setAdminDescEn] = useState(product.adminOverrides?.descriptionEn ?? product.descriptionEn ?? '');
+  const [adminDescTh, setAdminDescTh] = useState(product.adminOverrides?.descriptionTh ?? product.descriptionTh ?? '');
+  const [adminChangeSummary, setAdminChangeSummary] = useState(product.adminChangeSummary ?? '');
   const [needsChangesNote, setNeedsChangesNote] = useState('');
   const [showNeedsChanges, setShowNeedsChanges] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
@@ -84,6 +90,25 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
     } else {
       setShowNeedsChanges(false);
       setNeedsChangesNote('');
+      window.location.reload();
+    }
+  }
+
+  async function handleSaveAdminEdits() {
+    setError(null);
+    setLoading('saveAdminEdits');
+    const formData = new FormData();
+    formData.set('productId', product.id);
+    formData.set('nameEn', adminNameEn);
+    formData.set('nameTh', adminNameTh);
+    formData.set('descriptionEn', adminDescEn);
+    formData.set('descriptionTh', adminDescTh);
+    formData.set('adminChangeSummary', adminChangeSummary);
+    const result = await updateProductByAdminAction(formData);
+    setLoading(null);
+    if (result.error) {
+      setError(result.error);
+    } else {
       window.location.reload();
     }
   }
@@ -155,6 +180,22 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
         </div>
       )}
       <div className="admin-product-detail-action-buttons">
+        <button
+          type="button"
+          className="admin-btn admin-btn-primary admin-moderation-btn-loading admin-product-detail-btn-full"
+          disabled={!!loading}
+          onClick={handleSaveAdminEdits}
+        >
+          {loading === 'saveAdminEdits' ? (
+            <>
+              <span className="admin-moderation-spinner" aria-hidden />
+              Saving…
+            </>
+          ) : (
+            'Save admin edits'
+          )}
+        </button>
+
         {(product.moderationStatus === 'submitted' ||
           product.moderationStatus === 'needs_changes' ||
           product.moderationStatus === 'rejected') && (
@@ -380,13 +421,102 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
 
             <div className="admin-product-detail-price">฿{product.price.toLocaleString()}</div>
 
-            <div className="admin-product-detail-section">
-              <h3>Description (EN)</h3>
-              <p className="admin-product-detail-desc">{descEn}</p>
-            </div>
-            <div className="admin-product-detail-section">
-              <h3>Description (TH)</h3>
-              <p className="admin-product-detail-desc">{descTh}</p>
+            <div className="admin-product-detail-section admin-product-detail-admin-form">
+              <div className="admin-product-detail-admin-form-header">
+                <h3>Admin content adjustments</h3>
+                {(product.adminLastEditedAt || product.adminLastEditedBy) && (
+                  <p className="admin-product-detail-commission-hint">
+                    Last edited{product.adminLastEditedBy ? ` by ${product.adminLastEditedBy}` : ''}{' '}
+                    {product.adminLastEditedAt ? `(${new Date(product.adminLastEditedAt).toLocaleString()})` : ''}
+                  </p>
+                )}
+              </div>
+
+              <div className="admin-product-detail-admin-grid">
+                <div className="admin-product-detail-admin-field">
+                  <label className="admin-label" htmlFor="admin-name-en">Name (EN)</label>
+                  <input
+                    id="admin-name-en"
+                    type="text"
+                    className="admin-input"
+                    value={adminNameEn}
+                    onChange={(e) => setAdminNameEn(e.target.value)}
+                    placeholder={product.nameEn}
+                  />
+                  <p className="admin-product-detail-admin-helper">
+                    Original: <span className="admin-product-detail-admin-original">{product.nameEn}</span>
+                  </p>
+                </div>
+
+                <div className="admin-product-detail-admin-field">
+                  <label className="admin-label" htmlFor="admin-name-th">Name (TH)</label>
+                  <input
+                    id="admin-name-th"
+                    type="text"
+                    className="admin-input"
+                    value={adminNameTh}
+                    onChange={(e) => setAdminNameTh(e.target.value)}
+                    placeholder={product.nameTh || 'Thai product name (optional)'}
+                  />
+                  {product.nameTh && (
+                    <p className="admin-product-detail-admin-helper">
+                      Original: <span className="admin-product-detail-admin-original">{product.nameTh}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="admin-product-detail-admin-grid">
+                <div className="admin-product-detail-admin-field admin-product-detail-admin-field-full">
+                  <label className="admin-label" htmlFor="admin-desc-en">Description (EN)</label>
+                  <textarea
+                    id="admin-desc-en"
+                    className="admin-input"
+                    value={adminDescEn}
+                    onChange={(e) => setAdminDescEn(e.target.value)}
+                    placeholder={descEn}
+                    rows={4}
+                  />
+                  {descEn && (
+                    <p className="admin-product-detail-admin-helper">
+                      Original: <span className="admin-product-detail-admin-original">{descEn}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="admin-product-detail-admin-grid">
+                <div className="admin-product-detail-admin-field admin-product-detail-admin-field-full">
+                  <label className="admin-label" htmlFor="admin-desc-th">Description (TH)</label>
+                  <textarea
+                    id="admin-desc-th"
+                    className="admin-input"
+                    value={adminDescTh}
+                    onChange={(e) => setAdminDescTh(e.target.value)}
+                    placeholder={descTh}
+                    rows={4}
+                  />
+                  {descTh && (
+                    <p className="admin-product-detail-admin-helper">
+                      Original: <span className="admin-product-detail-admin-original">{descTh}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="admin-product-detail-admin-grid">
+                <div className="admin-product-detail-admin-field admin-product-detail-admin-field-full">
+                  <label className="admin-label" htmlFor="admin-change-summary">Summary for partner</label>
+                  <textarea
+                    id="admin-change-summary"
+                    className="admin-input"
+                    value={adminChangeSummary}
+                    onChange={(e) => setAdminChangeSummary(e.target.value)}
+                    placeholder="Explain what was changed and why (shown to partner)"
+                    rows={3}
+                  />
+                </div>
+              </div>
             </div>
 
             {(product.preparationTime != null || product.occasion) && (

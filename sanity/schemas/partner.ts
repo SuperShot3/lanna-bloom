@@ -9,11 +9,20 @@ export const partner = defineType({
     { name: 'contactName', title: 'Contact name', type: 'string', validation: (r) => r.required() },
     { name: 'phoneNumber', title: 'Phone number', type: 'string', validation: (r) => r.required() },
     {
+      name: 'portrait',
+      title: 'Portrait (optional)',
+      type: 'image',
+      options: { hotspot: true },
+      description: 'Optional shop/studio profile photo used on product pages.',
+    },
+    {
       name: 'lineOrWhatsapp',
       title: 'LINE or WhatsApp',
       type: 'string',
       description: 'LINE ID or WhatsApp number',
     },
+    { name: 'shopBioEn', title: 'Shop bio (EN)', type: 'text', description: 'Short story about your shop/studio (shown on product pages).' },
+    { name: 'shopBioTh', title: 'Shop bio (TH)', type: 'text', description: 'เรื่องสั้นเกี่ยวกับร้าน/สตูดิโอของคุณ (แสดงในหน้าสินค้า)' },
     { name: 'shopAddress', title: 'Shop address', type: 'text' },
     {
       name: 'city',
