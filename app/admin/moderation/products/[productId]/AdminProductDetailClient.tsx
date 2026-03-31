@@ -30,6 +30,16 @@ const STATUS_LABELS: Record<string, string> = {
 
 type AdminProductDetailClientProps = { product: AdminProductDetail };
 
+function formatDateTimeUtc(iso: string): string {
+  // Deterministic formatting to avoid server/client locale & timezone hydration mismatches.
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  // "YYYY-MM-DD HH:mm UTC"
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(
+    d.getUTCHours()
+  ).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
+}
+
 export function AdminProductDetailClient({ product }: AdminProductDetailClientProps) {
   const [commissionPercent, setCommissionPercent] = useState<string>(
     product.commissionPercent != null ? String(product.commissionPercent) : ''
@@ -43,6 +53,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
   const [showNeedsChanges, setShowNeedsChanges] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const canApprove =
     (product.moderationStatus === 'submitted' || product.moderationStatus === 'needs_changes' || product.moderationStatus === 'rejected') &&
@@ -54,25 +65,27 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
   async function handleApprove() {
     if (!canApprove) return;
     setError(null);
+    setSuccess(null);
     setLoading('approve');
     const result = await approveProductAction(product.id, Number(commissionPercent));
     setLoading(null);
     if (result.error) {
       setError(result.error);
     } else {
-      window.location.reload();
+      router.refresh();
     }
   }
 
   async function handleReject() {
     setError(null);
+    setSuccess(null);
     setLoading('reject');
     const result = await rejectProductAction(product.id);
     setLoading(null);
     if (result.error) {
       setError(result.error);
     } else {
-      window.location.reload();
+      router.refresh();
     }
   }
 
@@ -82,6 +95,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
       return;
     }
     setError(null);
+    setSuccess(null);
     setLoading('needsChanges');
     const result = await needsChangesProductAction(product.id, needsChangesNote);
     setLoading(null);
@@ -90,12 +104,13 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
     } else {
       setShowNeedsChanges(false);
       setNeedsChangesNote('');
-      window.location.reload();
+      router.refresh();
     }
   }
 
   async function handleSaveAdminEdits() {
     setError(null);
+    setSuccess(null);
     setLoading('saveAdminEdits');
     const formData = new FormData();
     formData.set('productId', product.id);
@@ -105,16 +120,38 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
     formData.set('descriptionTh', adminDescTh);
     formData.set('adminChangeSummary', adminChangeSummary);
     const result = await updateProductByAdminAction(formData);
-    setLoading(null);
     if (result.error) {
+      setLoading(null);
       setError(result.error);
-    } else {
-      window.location.reload();
+      return;
     }
+
+    // Persist commission early (optional) so it doesn't disappear before approval.
+    const pctRaw = commissionPercent.trim();
+    if (pctRaw !== '') {
+      const pct = Number(pctRaw);
+      if (!Number.isNaN(pct) && pct >= 0 && pct <= 500) {
+        const commissionResult = await updateCommissionAction(product.id, pct);
+        if (commissionResult.error) {
+          setLoading(null);
+          setError(commissionResult.error);
+          return;
+        }
+      }
+    }
+
+    setLoading(null);
+    setSuccess('Saved');
+    router.refresh();
   }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showEditCommission, setShowEditCommission] = useState(false);
+  const [showEditCommission, setShowEditCommission] = useState<boolean>(
+    (product.commissionPercent == null || String(product.commissionPercent).trim() === '') &&
+      (product.moderationStatus === 'submitted' ||
+        product.moderationStatus === 'needs_changes' ||
+        product.moderationStatus === 'rejected')
+  );
   const [editCommissionValue, setEditCommissionValue] = useState<string>(
     product.commissionPercent != null ? String(product.commissionPercent) : ''
   );
@@ -127,6 +164,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
       return;
     }
     setError(null);
+    setSuccess(null);
     setLoading('updateCommission');
     const result = await updateCommissionAction(product.id, pct);
     setLoading(null);
@@ -134,12 +172,15 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
       setError(result.error);
     } else {
       setShowEditCommission(false);
-      window.location.reload();
+      setCommissionPercent(String(pct));
+      setSuccess('Saved');
+      router.refresh();
     }
   }
 
   async function handleDelete() {
     setError(null);
+    setSuccess(null);
     setLoading('delete');
     const result = await deleteProductAction(product.id);
     setLoading(null);
@@ -158,27 +199,77 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
   const actionCard = (
     <div className="admin-product-detail-action-card">
       <h3 className="admin-product-detail-action-card-title">Actions</h3>
-      {(product.moderationStatus === 'submitted' ||
-        product.moderationStatus === 'needs_changes' ||
-        product.moderationStatus === 'rejected') && (
-        <div className="admin-product-detail-commission">
-          <label htmlFor="commission">Commission (%) *</label>
-          <input
-            id="commission"
-            type="number"
-            min={0}
-            max={500}
-            step={0.5}
-            value={commissionPercent}
-            onChange={(e) => setCommissionPercent(e.target.value)}
-            placeholder="0–500"
-            className="admin-input"
-          />
-          <span className="admin-product-detail-commission-hint">
-            Required before approving. Platform commission per sale.
-          </span>
-        </div>
-      )}
+      <div className="admin-product-detail-commission">
+        {showEditCommission ? (
+          <>
+            <label htmlFor="commission">Commission (%)</label>
+            <input
+              id="commission"
+              type="number"
+              min={0}
+              max={500}
+              step={0.5}
+              value={editCommissionValue}
+              onChange={(e) => setEditCommissionValue(e.target.value)}
+              placeholder="0–500"
+              className="admin-input"
+            />
+            <div className="admin-product-detail-commission-edit-btns">
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
+                disabled={!!loading || editCommissionValue.trim() === ''}
+                onClick={handleUpdateCommission}
+              >
+                {loading === 'updateCommission' ? (
+                  <>
+                    <span className="admin-moderation-spinner" aria-hidden />
+                    Saving…
+                  </>
+                ) : (
+                  'Save'
+                )}
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-outline admin-btn-sm"
+                disabled={!!loading}
+                onClick={() => {
+                  setShowEditCommission(false);
+                  const current = product.commissionPercent != null ? String(product.commissionPercent) : '';
+                  setEditCommissionValue(current);
+                  setCommissionPercent(current);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+            {(product.moderationStatus === 'submitted' ||
+              product.moderationStatus === 'needs_changes' ||
+              product.moderationStatus === 'rejected') && (
+              <span className="admin-product-detail-commission-hint">
+                Required before approving. Platform commission per sale.
+              </span>
+            )}
+          </>
+        ) : (
+          <p className="admin-product-detail-commission-set">
+            Commission:{' '}
+            {commissionPercent.trim() !== '' ? `${commissionPercent}%` : product.commissionPercent != null ? `${product.commissionPercent}%` : '—'}
+            <button
+              type="button"
+              className="admin-product-detail-commission-edit-btn"
+              onClick={() => {
+                setShowEditCommission(true);
+                const current = commissionPercent.trim() !== '' ? commissionPercent : product.commissionPercent != null ? String(product.commissionPercent) : '';
+                setEditCommissionValue(current);
+              }}
+            >
+              Edit
+            </button>
+          </p>
+        )}
+      </div>
       <div className="admin-product-detail-action-buttons">
         <button
           type="button"
@@ -286,66 +377,6 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
         </div>
       )}
 
-      {product.moderationStatus === 'live' && (
-        <div className="admin-product-detail-commission-edit">
-          {showEditCommission ? (
-            <div className="admin-product-detail-commission">
-              <label htmlFor="edit-commission">Commission (%)</label>
-              <input
-                id="edit-commission"
-                type="number"
-                min={0}
-                max={500}
-                step={0.5}
-                value={editCommissionValue}
-                onChange={(e) => setEditCommissionValue(e.target.value)}
-                placeholder="0–500"
-                className="admin-input"
-              />
-              <div className="admin-product-detail-commission-edit-btns">
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
-                  disabled={!!loading || editCommissionValue.trim() === ''}
-                  onClick={handleUpdateCommission}
-                >
-                  {loading === 'updateCommission' ? (
-                    <>
-                      <span className="admin-moderation-spinner" aria-hidden />
-                      Saving…
-                    </>
-                  ) : (
-                    'Save'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-outline admin-btn-sm"
-                  disabled={!!loading}
-                  onClick={() => {
-                    setShowEditCommission(false);
-                    setEditCommissionValue(product.commissionPercent != null ? String(product.commissionPercent) : '');
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <p className="admin-product-detail-commission-set">
-              Commission: {product.commissionPercent != null ? `${product.commissionPercent}%` : '—'}
-              <button
-                type="button"
-                className="admin-product-detail-commission-edit-btn"
-                onClick={() => setShowEditCommission(true)}
-              >
-                Edit
-              </button>
-            </p>
-          )}
-        </div>
-      )}
-
       {showDeleteConfirm && (
         <div className="admin-product-detail-delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
           <div className="admin-product-detail-delete-modal-backdrop" onClick={() => setShowDeleteConfirm(false)} />
@@ -389,6 +420,11 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
           {error}
         </div>
       )}
+      {success && (
+        <div className="admin-product-detail-success">
+          {success}
+        </div>
+      )}
 
       <div className="admin-product-detail-layout">
         <div className="admin-product-detail-gallery">
@@ -427,7 +463,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
                 {(product.adminLastEditedAt || product.adminLastEditedBy) && (
                   <p className="admin-product-detail-commission-hint">
                     Last edited{product.adminLastEditedBy ? ` by ${product.adminLastEditedBy}` : ''}{' '}
-                    {product.adminLastEditedAt ? `(${new Date(product.adminLastEditedAt).toLocaleString()})` : ''}
+                    {product.adminLastEditedAt ? `(${formatDateTimeUtc(product.adminLastEditedAt)})` : ''}
                   </p>
                 )}
               </div>
