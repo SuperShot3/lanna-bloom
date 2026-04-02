@@ -13,7 +13,10 @@ import { canChangeStatus } from '@/lib/adminRbac';
 
 export async function updateProductByAdminAction(formData: FormData): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   const productId = String(formData.get('productId') || '').trim();
@@ -47,7 +50,10 @@ export async function updateProductByAdminAction(formData: FormData): Promise<{ 
 
 export async function approveBouquetAction(bouquetId: string): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   try {
@@ -62,7 +68,10 @@ export async function approveBouquetAction(bouquetId: string): Promise<{ error?:
 
 export async function rejectBouquetAction(bouquetId: string): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   try {
@@ -80,7 +89,10 @@ export async function approveProductAction(
   commissionPercent: number
 ): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   const pct = Number(commissionPercent);
@@ -106,7 +118,10 @@ export async function rejectProductAction(
   adminNote?: string
 ): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   try {
@@ -125,7 +140,10 @@ export async function needsChangesProductAction(
   adminNote: string
 ): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   if (!adminNote?.trim()) return { error: 'Admin note is required' };
@@ -145,7 +163,10 @@ export async function updateCommissionAction(
   commissionPercent: number
 ): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   const pct = Number(commissionPercent);
@@ -167,7 +188,10 @@ export async function updateCommissionAction(
 
 export async function deleteProductAction(productId: string): Promise<{ error?: string }> {
   const session = await auth();
-  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
     return { error: 'Forbidden' };
   }
   try {

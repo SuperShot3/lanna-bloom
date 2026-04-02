@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { ViewTransitions } from 'next-view-transitions';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
+import { MicrosoftClarity } from '@/components/MicrosoftClarity';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 
@@ -102,6 +102,7 @@ export default function RootLayout({
           <LoadingScreen />
           <InternalTrafficBootstrap />
           <GoogleAnalytics />
+          <MicrosoftClarity />
           <ViewTransitions>
             {children}
           </ViewTransitions>

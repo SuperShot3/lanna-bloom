@@ -71,7 +71,11 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
     setLoading(null);
     if (result.error) {
       setError(result.error);
+      if (result.error.toLowerCase().includes('unauthorized')) {
+        router.push('/admin/login');
+      }
     } else {
+      setSuccess('Approved & deployed');
       router.refresh();
     }
   }

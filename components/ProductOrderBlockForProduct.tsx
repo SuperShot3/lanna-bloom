@@ -40,11 +40,11 @@ export function ProductOrderBlockForProduct({
 
   const handleAddToCart = () => {
     const qty = Math.max(1, Math.floor(quantity));
-    const itemPrice = finalPrice + addOnsTotal;
     const syntheticSize = {
       key: 'm' as const,
       label: '—',
-      price: itemPrice,
+      // IMPORTANT: Cart totals add add-ons separately, so keep base price here.
+      price: finalPrice,
       description: '',
       preparationTime: undefined as number | undefined,
       availability: true,
