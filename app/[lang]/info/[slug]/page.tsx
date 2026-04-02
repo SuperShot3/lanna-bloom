@@ -69,6 +69,7 @@ export async function generateMetadata({
 
 export function generateStaticParams() {
   const slugs = [
+    'order-flowers-website-vs-facebook-chiang-mai',
     'how-to-order-flower-delivery-chiang-mai',
     'rose-bouquets-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
@@ -142,6 +143,18 @@ export default async function InfoArticlePage({
     ),
     li: (props: React.HTMLAttributes<HTMLLIElement>) => (
       <li className="info-article-li" {...props} />
+    ),
+    blockquote: (props: React.HTMLAttributes<HTMLElement>) => (
+      <blockquote className="info-article-callout" {...props} />
+    ),
+    hr: (props: React.HTMLAttributes<HTMLHRElement>) => (
+      <hr className="info-article-divider" {...props} />
+    ),
+    em: (props: React.HTMLAttributes<HTMLElement>) => (
+      <em className="info-article-em" {...props} />
+    ),
+    strong: (props: React.HTMLAttributes<HTMLElement>) => (
+      <strong className="info-article-strong" {...props} />
     ),
   };
 

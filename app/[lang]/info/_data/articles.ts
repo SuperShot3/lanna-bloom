@@ -36,6 +36,25 @@ export type ArticleMeta = {
 
 export const articles: ArticleMeta[] = [
   {
+    slug: 'order-flowers-website-vs-facebook-chiang-mai',
+    title:
+      'Why Ordering Flowers on a Website Can Be Easier Than Ordering Through Facebook Messages in Chiang Mai',
+    excerpt:
+      'Many people find flower shops on Facebook first—but chat orders can feel slow and unclear. Here is how using the website can make browsing, comparing, and ordering simpler, especially for busy customers and overseas buyers.',
+    titleTh:
+      'ทำไมการสั่งดอกไม้ผ่านเว็บไซต์อาจสะดวกกว่าการสั่งผ่านข้อความ Facebook ในเชียงใหม่',
+    excerptTh:
+      'หลายคนรู้จักร้านดอกไม้ผ่าน Facebook ก่อน แต่การสั่งทางแชทบางครั้งช้าและไม่ชัดเจน บทความนี้อธิบายว่าทำไมการใช้เว็บไซต์จึงช่วยให้ดูตัวเลือก เปรียบเทียบ และสั่งซื้อได้ง่ายขึ้น โดยเฉพาะลูกค้าที่ยุ่งหรือสั่งจากต่างประเทศ',
+    publishedAt: '2026-04-02T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/order_onwebsite/lannabloom_website.webp',
+      alt: 'Lanna Bloom website shown on a laptop',
+    },
+    ctaLinks: [{ label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' }],
+  },
+  {
     slug: 'how-to-order-flower-delivery-chiang-mai',
     title: 'How to Order Flower Delivery in Chiang Mai',
     excerpt:
