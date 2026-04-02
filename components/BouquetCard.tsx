@@ -11,6 +11,14 @@ import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
+import {
+  addFavorite,
+  isFavorite,
+  removeFavorite,
+  setPreferredBouquetSize,
+  FAVORITES_STORAGE_KEY,
+  type FavoriteItem,
+} from '@/lib/favorites';
 
 function defaultSizeKeyForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -28,10 +36,28 @@ export function BouquetCard({
   bouquet,
   lang,
   variant = 'default',
+  alwaysShowActions = false,
+  showFavoriteButton,
+  showHoverPanel = true,
+  showPartnerBadge = true,
+  persistPreferredSizeOnClick = false,
 }: {
   bouquet: Bouquet;
   lang: Locale;
   variant?: BouquetCardVariant;
+  /**
+   * When true, keep the CTA panel visible even on devices without hover.
+   * Useful for the `/favorites` grid.
+   */
+  alwaysShowActions?: boolean;
+  /** If omitted, defaults to showing the heart button only for `popular*` variants. */
+  showFavoriteButton?: boolean;
+  /** When false, hide the CTA/quick-add panel entirely (simple “catalog card” mode). */
+  showHoverPanel?: boolean;
+  /** When false, hide the “hand-crafted by …” badge area. */
+  showPartnerBadge?: boolean;
+  /** When true, store the selected size for this bouquet before navigation. */
+  persistPreferredSizeOnClick?: boolean;
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
@@ -48,17 +74,40 @@ export function BouquetCard({
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
   const isPopular = variant === 'popular' || variant === 'popular-compact';
   const canSwipe = images.length > 1 && !isPopular;
-  /** Same quick-add panel on catalog and homepage (popular) cards. */
-  const showHoverPanel = true;
+  const showPanel = showHoverPanel;
 
   const defaultKey = useMemo(() => defaultSizeKeyForBouquet(bouquet), [bouquet]);
   const [hovered, setHovered] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>(defaultKey);
   const [justAdded, setJustAdded] = useState(false);
 
+  const [favoriteActive, setFavoriteActive] = useState(false);
+
   useEffect(() => {
     setSelectedKey(defaultKey);
   }, [defaultKey]);
+
+  useEffect(() => {
+    if (!showPanel) return;
+    setHovered(alwaysShowActions);
+  }, [alwaysShowActions, showPanel]);
+
+  useEffect(() => {
+    const sync = () => {
+      setFavoriteActive(isFavorite(bouquet.id));
+    };
+    sync();
+    window.addEventListener('favorites-updated', sync as EventListener);
+    // Cross-tab sync for sessionStorage (where supported) + defensive re-sync.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key === FAVORITES_STORAGE_KEY) sync();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('favorites-updated', sync as EventListener);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [bouquet.id]);
 
   const selectedSize: BouquetSize | undefined =
     bouquet.sizes?.find((s) => s.key === selectedKey) ?? bouquet.sizes?.[0];
@@ -184,6 +233,11 @@ export function BouquetCard({
         e.preventDefault();
         return;
       }
+
+      if (persistPreferredSizeOnClick && selectedSize) {
+        setPreferredBouquetSize(bouquet.id, selectedSize.key);
+      }
+
       const item: AnalyticsItem = {
         item_id: bouquet.id,
         item_name: name,
@@ -195,7 +249,7 @@ export function BouquetCard({
       };
       trackSelectItem('catalog', item);
     },
-    [bouquet.id, bouquet.category, bouquet.sizes, name, minPrice]
+    [bouquet.id, bouquet.category, bouquet.sizes, name, minPrice, persistPreferredSizeOnClick, selectedSize]
   );
 
   const viewTransitionName = `product-${bouquet.id}`;
@@ -203,15 +257,54 @@ export function BouquetCard({
 
   const radioName = `bouquet-opt-${bouquet.id}`;
 
+  const showFavorite = showFavoriteButton ?? (variant === 'popular' || variant === 'popular-compact');
+
+  const toggleFavorite = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement> | React.MouseEvent<HTMLSpanElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const selected = selectedSize;
+      const option = selected
+        ? ({
+            sizeKey: selected.key,
+            sizeLabel: selected.label,
+            sizePrice: selected.price,
+          } as const)
+        : undefined;
+
+      const fav: FavoriteItem = {
+        id: bouquet.id,
+        name: lang === 'th' ? bouquet.nameTh : bouquet.nameEn,
+        nameEn: bouquet.nameEn,
+        nameTh: bouquet.nameTh,
+        price: minPrice,
+        image: imgSrc || bouquet.images?.[0] || '',
+        slug: bouquet.slug,
+        url: `/${lang}/catalog/${bouquet.slug}`,
+        options: option ? { sizeKey: option.sizeKey, sizeLabel: option.sizeLabel, sizePrice: option.sizePrice } : undefined,
+      };
+
+      if (favoriteActive) {
+        removeFavorite(bouquet.id);
+        setFavoriteActive(false);
+      } else {
+        addFavorite(fav);
+        setFavoriteActive(true);
+      }
+    },
+    [bouquet, favoriteActive, imgSrc, lang, minPrice, selectedSize]
+  );
+
   return (
     <article
-      className={isPopular ? 'card card-popular' : 'card'}
-      data-expanded={showHoverPanel && hovered ? 'true' : 'false'}
+      className={`${isPopular ? 'card card-popular' : 'card'} ${alwaysShowActions ? 'card--always-actions' : ''}`}
+      data-expanded={showPanel && hovered ? 'true' : 'false'}
       onMouseEnter={() => {
-        if (showHoverPanel) setHovered(true);
+        if (showPanel && !alwaysShowActions) setHovered(true);
       }}
       onMouseLeave={() => {
-        if (showHoverPanel) setHovered(false);
+        if (showPanel && !alwaysShowActions) setHovered(false);
       }}
     >
       <PrefetchLink
@@ -233,14 +326,19 @@ export function BouquetCard({
           onMouseDown={canSwipe ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
-          {isPopular && (
+          {showFavorite && (
             <button
               type="button"
-              className="card-favorite"
-              aria-label="Add to favorites"
-              onClick={(e) => e.preventDefault()}
+              className={`card-favorite ${favoriteActive ? 'is-active' : ''}`}
+              aria-label={favoriteActive ? 'Remove from favorites' : 'Add to favorites'}
+              aria-pressed={favoriteActive}
+              onClick={toggleFavorite}
             >
-              <span className="material-symbols-outlined">favorite</span>
+              <span
+                className={`material-symbols-outlined ${favoriteActive ? 'material-symbols-filled' : ''}`}
+              >
+                favorite
+              </span>
             </button>
           )}
           {imgSrc ? (
@@ -275,13 +373,13 @@ export function BouquetCard({
           )}
         </div>
         <div className="card-body">
-          <div className="card-partner-badge" aria-hidden={!(bouquet.partnerName || bouquet.partnerId)}>
-            {(bouquet.partnerName || bouquet.partnerId)
-              ? (bouquet.partnerName
+          {showPartnerBadge && (bouquet.partnerName || bouquet.partnerId) ? (
+            <div className="card-partner-badge" aria-hidden={false}>
+              {bouquet.partnerName
                 ? `${t.handCraftedBy ?? 'Hand-crafted by'} ${bouquet.partnerName}`
-                : (t.handCraftedByPartner ?? 'Hand-crafted by local partner'))
-              : '\u00A0'}
-          </div>
+                : t.handCraftedByPartner ?? 'Hand-crafted by local partner'}
+            </div>
+          ) : null}
           {isPopular && (
             <div className="card-stars">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -303,7 +401,7 @@ export function BouquetCard({
         </div>
       </PrefetchLink>
 
-      {showHoverPanel && (
+      {showPanel && (
         <div
           className="card-hover-panel"
           aria-hidden={!hovered}
@@ -444,10 +542,19 @@ export function BouquetCard({
           justify-content: center;
           cursor: pointer;
           color: #666;
+          transition: transform 0.18s ease, color 0.18s ease, background-color 0.18s ease;
           z-index: 2;
+        }
+        .card-favorite.is-active {
+          transform: scale(1.08);
+          color: #e11d48;
+          background-color: rgba(225, 29, 72, 0.12);
         }
         .card-favorite:hover {
           color: #c5a059;
+        }
+        .card-favorite.is-active:hover {
+          color: #e11d48;
         }
         .card-stars {
           display: flex;
@@ -556,6 +663,10 @@ export function BouquetCard({
         @media (hover: none) {
           .card-hover-panel {
             display: none;
+          }
+          .card--always-actions .card-hover-panel {
+            display: block;
+            pointer-events: auto;
           }
         }
 

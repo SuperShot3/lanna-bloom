@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom — Flower & Gift Delivery</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --warm-white: #FDF9F4;
+    --blush: #F2C4C0;
+    --blush-deep: #E8A89E;
+    --sage: #8FAF8A;
+    --sage-light: #C5D9C1;
+    --bark: #5C4A3A;
+    --bark-light: #8A7468;
+    --charcoal: #2C2420;
+    --dust: #E8E0D8;
+    --dust-mid: #D4C8BC;
+    --price-green: #4A7C59;
+    --tag-bg: #F0EBE3;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-pill: 100px;
+    --shadow-card: 0 2px 16px rgba(44,36,32,0.08);
+    --shadow-hover: 0 8px 32px rgba(44,36,32,0.14);
+    --transition: 0.22s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--charcoal);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── HEADER ─── */
+  .site-header {
+    background: var(--warm-white);
+    border-bottom: 1px solid var(--dust);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--charcoal);
+    text-decoration: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--blush-deep);
+    display: inline-block;
+    margin-bottom: 2px;
+  }
+
+  .header-search {
+    flex: 1;
+    max-width: 420px;
+    position: relative;
+  }
+  .header-search input {
+    width: 100%;
+    height: 40px;
+    border: 1.5px solid var(--dust);
+    border-radius: var(--radius-pill);
+    background: var(--cream);
+    padding: 0 16px 0 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--charcoal);
+    outline: none;
+    transition: border-color var(--transition);
+  }
+  .header-search input::placeholder { color: var(--bark-light); }
+  .header-search input:focus { border-color: var(--blush-deep); }
+  .search-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--bark-light);
+    pointer-events: none;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-icon-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bark);
+    transition: background var(--transition);
+    position: relative;
+  }
+  .header-icon-btn:hover { background: var(--dust); }
+  .cart-badge {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--blush-deep);
+    color: white;
+    font-size: 10px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .delivery-banner {
+    background: var(--sage);
+    color: white;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    padding: 7px 16px;
+    letter-spacing: 0.02em;
+  }
+  .delivery-banner strong { font-weight: 500; }
+
+  /* ─── SECTION BANNER ─── */
+  .section-banner {
+    border-bottom: 1px solid var(--dust);
+    background: var(--warm-white);
+    transition: background 0.3s ease;
+  }
+  .section-banner[data-section="flowers"] { background: #FDF7F5; }
+  .section-banner[data-section="occasions"] { background: #F5F8F5; }
+  .section-banner[data-section="gifts"] { background: #F6F5F0; }
+
+  .section-banner-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 28px 32px 28px;
+  }
+
+  /* Section switcher — 3 buttons, lives INSIDE the banner */
+  .section-switcher {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .section-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 18px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--dust-mid);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .section-btn:hover {
+    border-color: var(--bark-light);
+    color: var(--charcoal);
+  }
+  .section-btn.active {
+    background: var(--charcoal);
+    border-color: var(--charcoal);
+    color: white;
+    font-weight: 500;
+  }
+  .section-btn .btn-icon { font-size: 15px; }
+
+  /* Title + subtitle block */
+  .banner-heading {
+    margin-bottom: 20px;
+  }
+  .catalog-section-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--bark-light);
+    margin-bottom: 6px;
+  }
+  .catalog-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 300;
+    color: var(--charcoal);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .catalog-title em { font-style: italic; color: var(--bark); }
+  .catalog-subtitle {
+    font-size: 14px;
+    color: var(--bark-light);
+    max-width: 480px;
+  }
+
+  /* Chips row — flush to the banner bottom, no gap */
+  .chips-row {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -32px;
+    padding: 0 32px;
+  }
+  .chips-row::-webkit-scrollbar { display: none; }
+
+  /* ─── CATALOG LAYOUT ─── */
+  .catalog-outer {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px 64px;
+  }
+
+  /* ─── SUBCATEGORY ROW (inside catalog, not banner) ─── */
+  .subcategory-row {
+    border-bottom: 1px solid var(--dust);
+    margin: 20px -32px 0;
+    padding: 0 32px;
+    background: var(--warm-white);
+  }
+  .subcategory-chips {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .subcategory-chips::-webkit-scrollbar { display: none; }
+
+  /* Chips as underline-tabs inside catalog */
+  .chip {
+    padding: 11px 18px;
+    border: none;
+    border-bottom: 2.5px solid transparent;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--bark-light);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--transition);
+    flex-shrink: 0;
+    margin-bottom: -1px;
+  }
+  .chip:hover { color: var(--charcoal); }
+  .chip.active {
+    color: var(--charcoal);
+    border-bottom-color: var(--blush-deep);
+    font-weight: 500;
+  }
+
+  /* top spacing for catalog body */
+  .catalog-top-gap { height: 24px; }
+
+  /* ─── MAIN CATALOG BODY ─── */
+  .catalog-body {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ─── FILTER SIDEBAR ─── */
+  .filter-sidebar {
+    background: var(--warm-white);
+    border: 1px solid var(--dust);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    position: sticky;
+    top: 140px;
+  }
+  .filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .filter-title {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bark-light);
+  }
+  .filter-clear {
+    font-size: 12px;
+    color: var(--blush-deep);
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    padding: 0;
+    transition: opacity var(--transition);
+  }
+  .filter-clear:hover { opacity: 0.7; }
+
+  /* Active filter pills */
+  .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .active-filters:empty { display: none; }
+  .filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px 4px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--blush);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--bark);
+    cursor: pointer;
+    transition: background var(--transition);
+  }
+  .filter-pill:hover { background: var(--blush-deep); color: white; }
+  .filter-pill-x { font-size: 14px; line-height: 1; }
+
+  .filter-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--dust);
+  }
+  .filter-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .filter-section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--charcoal);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .filter-section-title svg {
+    color: var(--bark-light);
+    transition: transform var(--transition);
+  }
+  .filter-section-title.open svg { transform: rotate(180deg); }
+
+  /* Price range */
+  .price-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .price-input {
+    position: relative;
+  }
+  .price-input span {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--bark-light);
+  }
+  .price-input input {
+    width: 100%;
+    height: 36px;
+    border: 1.5px solid var(--dust);
+    border-radius: var(--radius-sm);
+    background: var(--cream);
+    padding: 0 10px 0 22px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--charcoal);
+    outline: none;
+  }
+  .price-input input:focus { border-color: var(--blush-deep); }
+
+  /* Color swatches */
+  .color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .swatch {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform var(--transition), border-color var(--transition);
+    position: relative;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.active { border-color: var(--charcoal); }
+  .swatch-label {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    white-space: nowrap;
+    color: var(--bark-light);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .swatch:hover .swatch-label { opacity: 1; }
+
+  /* Checkbox filters */
+  .filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--bark);
+    transition: color var(--transition);
+  }
+  .filter-option:hover { color: var(--charcoal); }
+  .filter-check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--dust-mid);
+    border-radius: 4px;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--transition);
+  }
+  .filter-option.checked .filter-check {
+    background: var(--charcoal);
+    border-color: var(--charcoal);
+  }
+  .filter-option.checked .filter-check::after {
+    content: '';
+    width: 9px; height: 5px;
+    border-left: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(-45deg) translate(1px, -1px);
+    display: block;
+  }
+  .option-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--dust-mid);
+  }
+
+  /* Format pills in filter */
+  .format-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .format-chip {
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--dust-mid);
+    font-size: 12px;
+    color: var(--bark);
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--cream);
+  }
+  .format-chip:hover { border-color: var(--bark-light); }
+  .format-chip.active {
+    background: var(--charcoal);
+    border-color: var(--charcoal);
+    color: white;
+  }
+
+  /* ─── PRODUCT GRID ─── */
+  .catalog-right {}
+
+  .catalog-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .result-count {
+    font-size: 14px;
+    color: var(--bark-light);
+  }
+  .result-count strong { color: var(--charcoal); font-weight: 500; }
+
+  .sort-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--bark);
+  }
+  .sort-select select {
+    border: 1.5px solid var(--dust);
+    border-radius: var(--radius-sm);
+    background: var(--warm-white);
+    padding: 6px 28px 6px 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--charcoal);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238A7468' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+
+  /* Product grid */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .product-card {
+    background: var(--warm-white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--dust);
+    transition: box-shadow var(--transition), transform var(--transition);
+    cursor: pointer;
+    position: relative;
+  }
+  .product-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .card-img-wrap {
+    position: relative;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background: var(--dust);
+  }
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .product-card:hover .card-img { transform: scale(1.04); }
+
+  /* Placeholder flower images using CSS */
+  .card-img-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 56px;
+  }
+
+  .card-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .badge-same-day { background: var(--sage); color: white; }
+  .badge-bestseller { background: var(--blush-deep); color: white; }
+  .badge-new { background: var(--charcoal); color: white; }
+
+  .card-wishlist {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(250,247,242,0.85);
+    backdrop-filter: blur(4px);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bark-light);
+    transition: all var(--transition);
+    font-size: 16px;
+  }
+  .card-wishlist:hover { background: white; color: var(--blush-deep); }
+  .card-wishlist.active { color: var(--blush-deep); }
+
+  .card-body {
+    padding: 14px 16px 16px;
+  }
+  .card-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: var(--bark-light);
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-price {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--price-green);
+  }
+  .card-price-orig {
+    font-size: 12px;
+    color: var(--bark-light);
+    text-decoration: line-through;
+    margin-left: 4px;
+  }
+  .card-delivery {
+    font-size: 11px;
+    color: var(--sage);
+    font-weight: 500;
+  }
+
+  .card-add-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: var(--charcoal);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background var(--transition), transform var(--transition);
+  }
+  .card-add-btn:hover { background: var(--bark); transform: scale(1.08); }
+
+  /* ─── MOBILE FILTER DRAWER TOGGLE ─── */
+  .mobile-filter-bar {
+    display: none;
+  }
+
+  /* ─── SECTION SWITCHER DEMO ─── */
+  .demo-notice {
+    background: var(--tag-bg);
+    border: 1px solid var(--dust-mid);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--bark-light);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .demo-notice strong { color: var(--bark); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .product-grid { grid-template-columns: repeat(2, 1fr); }
+    .catalog-body { grid-template-columns: 220px 1fr; gap: 20px; }
+  }
+
+  @media (max-width: 768px) {
+    .header-top { padding: 0 16px; height: 60px; }
+    .header-search { max-width: none; }
+    .header-search input { display: none; }
+    .section-banner-inner { padding: 20px 16px 20px; }
+    .section-switcher { gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .section-switcher::-webkit-scrollbar { display: none; }
+    .catalog-title { font-size: 22px; }
+    .catalog-subtitle { font-size: 13px; }
+    .subcategory-row { margin: 0 -16px; padding: 0 16px; }
+    .catalog-outer { padding: 0 16px 48px; }
+    .catalog-body { grid-template-columns: 1fr; }
+    .filter-sidebar { display: none; }
+    .mobile-filter-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .mobile-filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 1.5px solid var(--dust-mid);
+      border-radius: var(--radius-pill);
+      background: var(--warm-white);
+      font-size: 13px;
+      color: var(--bark);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .mobile-filter-btn.has-filters { border-color: var(--blush-deep); color: var(--charcoal); }
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .card-body { padding: 10px 12px 12px; }
+    .card-name { font-size: 15px; }
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .product-card {
+    animation: fadeUp 0.3s ease both;
+  }
+  .product-card:nth-child(1) { animation-delay: 0.04s; }
+  .product-card:nth-child(2) { animation-delay: 0.08s; }
+  .product-card:nth-child(3) { animation-delay: 0.12s; }
+  .product-card:nth-child(4) { animation-delay: 0.16s; }
+  .product-card:nth-child(5) { animation-delay: 0.20s; }
+  .product-card:nth-child(6) { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="site-header">
+
+  <!-- Delivery banner -->
+  <div class="delivery-banner">
+    🌸 <strong>Free delivery</strong> on orders over ฿999 &nbsp;·&nbsp; Same-day delivery available until 2 PM
+  </div>
+
+  <!-- Top bar: logo / search / actions -->
+  <div class="header-top">
+    <a href="#" class="logo">
+      <span class="logo-dot"></span> Bloom
+    </a>
+
+    <div class="header-search">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input type="text" placeholder="Search flowers, occasions, gifts…">
+    </div>
+
+    <div class="header-actions">
+      <button class="header-icon-btn" title="Account">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="header-icon-btn" title="Cart">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M2 2h2l2.5 10h9l1.5-6H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="16.5" r="1.2" fill="currentColor"/>
+          <circle cx="14" cy="16.5" r="1.2" fill="currentColor"/>
+        </svg>
+        <span class="cart-badge">3</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Header is now utility-only: logo, search, cart -->
+
+</header>
+
+<!-- ═══ SECTION BANNER ═══ -->
+<div class="section-banner" id="section-banner" data-section="flowers">
+  <div class="section-banner-inner">
+
+    <!-- 3 section buttons: the real entry point -->
+    <div class="section-switcher">
+      <button class="section-btn active" onclick="switchSection('flowers', this)" data-section="flowers">
+        <span class="btn-icon">🌸</span> Flower Delivery
+      </button>
+      <button class="section-btn" onclick="switchSection('occasions', this)" data-section="occasions">
+        <span class="btn-icon">🎀</span> Occasions
+      </button>
+      <button class="section-btn" onclick="switchSection('gifts', this)" data-section="gifts">
+        <span class="btn-icon">✨</span> Gifts & Sets
+      </button>
+    </div>
+
+    <!-- Section title + subtitle — banner ends here -->
+    <div class="banner-heading">
+      <p class="catalog-section-label" id="section-label">Flower Delivery</p>
+      <h1 class="catalog-title" id="catalog-title">Flower Delivery in Bangkok — Same Day & Next Day</h1>
+      <p class="catalog-subtitle" id="catalog-subtitle">Order fresh flowers online. Same-day delivery available across Bangkok until 2 PM.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ CATALOG ═══ -->
+<main class="catalog-outer">
+
+  <!-- Demo helper -->
+  <div class="demo-notice" style="margin-top:20px;">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M7 6v4M7 4.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <strong>Prototype:</strong> Click the 3 section buttons or subcategory chips — filters update per section.
+  </div>
+
+  <!-- Subcategory chips — lives in the catalog, not the banner -->
+  <div class="subcategory-row">
+    <div class="subcategory-chips" id="chips-container">
+      <!-- injected by JS -->
+    </div>
+  </div>
+
+  <!-- Body: sidebar filters + grid -->
+  <div class="catalog-body" style="margin-top:24px;">
+
+    <!-- Mobile filter bar -->
+    <div class="mobile-filter-bar">
+      <button class="mobile-filter-btn has-filters" onclick="alert('Filter drawer would open on mobile')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 3.5h10M4 7h6M6 10.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Filters <span id="mobile-filter-count" style="background:var(--blush-deep);color:white;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:2px;">2</span>
+      </button>
+      <select style="border:1.5px solid var(--dust);border-radius:20px;padding:7px 12px;font-size:13px;font-family:DM Sans,sans-serif;background:var(--warm-white);color:var(--charcoal);outline:none;">
+        <option>Best Selling</option>
+        <option>Price: Low to High</option>
+        <option>Price: High to Low</option>
+        <option>Newest</option>
+      </select>
+    </div>
+
+    <!-- Filter sidebar -->
+    <aside class="filter-sidebar" id="filter-sidebar">
+      <div class="filter-header">
+        <span class="filter-title">Filters</span>
+        <button class="filter-clear" onclick="clearFilters()">Clear all</button>
+      </div>
+
+      <!-- Active filter pills -->
+      <div class="active-filters" id="active-filters">
+        <span class="filter-pill" onclick="removePill(this)">Red <span class="filter-pill-x">×</span></span>
+        <span class="filter-pill" onclick="removePill(this)">Same Day <span class="filter-pill-x">×</span></span>
+      </div>
+
+      <!-- Filter groups injected by JS -->
+      <div id="filter-groups"></div>
+    </aside>
+
+    <!-- Product grid -->
+    <div class="catalog-right">
+      <div class="catalog-toolbar">
+        <p class="result-count"><strong id="result-count">48</strong> products</p>
+        <label class="sort-select">
+          Sort by
+          <select>
+            <option>Best Selling</option>
+            <option>Price: Low to High</option>
+            <option>Price: High to Low</option>
+            <option>Newest First</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="product-grid" id="product-grid">
+        <!-- Cards injected by JS -->
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────
+
+const SECTIONS = {
+  flowers: {
+    label: 'Flower Delivery',
+    title: 'Flower Delivery in Bangkok — Same Day & Next Day',
+    chips: ['Same Day Delivery','Next Day Delivery','Bouquets','Red Roses','Lilies','Flower Boxes','Money Flowers','Artificial & Handmade'],
+    resultCount: 48,
+    filters: [
+      { id: 'price', title: 'Price', type: 'range' },
+      { id: 'color', title: 'Color', type: 'color' },
+      { id: 'flower_type', title: 'Flower Type', type: 'check',
+        options: [['Roses','(124)'],['Lilies','(87)'],['Tulips','(62)'],['Sunflowers','(45)'],['Mixed','(93)']] },
+      { id: 'delivery', title: 'Delivery', type: 'check',
+        options: [['Same Day','(38)'],['Next Day','(48)'],['Standard 2-3 Days','(48)']] },
+      { id: 'format', title: 'Format', type: 'format',
+        options: ['Bouquet','Box','Vase','Basket','Arrangement'] },
+      { id: 'size', title: 'Size / Stems', type: 'format',
+        options: ['Small (6–10)','Medium (11–20)','Large (21–30)','Grand (30+)'] },
+    ]
+  },
+  occasions: {
+    label: 'Occasions',
+    title: 'Flowers for Every Occasion — Birthday, Anniversary & More',
+    chips: ['Birthday Flowers','Anniversary Flowers','Romantic Flowers','Get Well Flowers','Thank You Flowers','Sorry Flowers','Congratulations Flowers','Sympathy Flowers','New Baby Flowers'],
+    resultCount: 62,
+    filters: [
+      { id: 'product_type', title: 'Product Type', type: 'check',
+        options: [['Flowers','(48)'],['Gift Sets','(22)'],['Soft Toys + Flowers','(14)'],['Cards','(8)']] },
+      { id: 'price', title: 'Price', type: 'range' },
+      { id: 'color', title: 'Color', type: 'color' },
+      { id: 'same_day', title: 'Availability', type: 'check',
+        options: [['Same Day Available','(31)'],['Next Day','(62)']] },
+      { id: 'delivery_date', title: 'Delivery Date', type: 'format',
+        options: ['Today','Tomorrow','This Weekend','Choose Date'] },
+    ]
+  },
+  gifts: {
+    label: 'Gifts & Sets',
+    title: 'Gift Sets & Hampers Delivery Bangkok — Same Day',
+    chips: ['Soft Toys','Fruit Baskets','Food & Sweet Sets','Bird\'s Nest Sets','Wellness Gifts','Gift Cards'],
+    resultCount: 34,
+    filters: [
+      { id: 'price', title: 'Price', type: 'range' },
+      { id: 'gift_type', title: 'Gift Type', type: 'check',
+        options: [['Soft Toys','(18)'],['Fruit Basket','(12)'],['Sweet Set','(15)'],['Wellness','(9)'],['Gift Card','(6)']] },
+      { id: 'occasion', title: 'Occasion', type: 'check',
+        options: [['Birthday','(34)'],['Anniversary','(22)'],['New Baby','(14)'],['Get Well','(18)'],['Thank You','(16)']] },
+      { id: 'recipient', title: 'Recipient', type: 'format',
+        options: ['For Her','For Him','For Kids','For Parents','For Friend'] },
+      { id: 'same_day', title: 'Availability', type: 'check',
+        options: [['Same Day Available','(18)'],['Next Day','(34)']] },
+    ]
+  }
+};
+
+const PRODUCTS = [
+  { name:'Red Rose Bouquet', desc:'12 premium red roses', price:'฿699', badge:'bestseller', badgeLabel:'Bestseller', delivery:'Same Day', emoji:'🌹', wishlist: true },
+  { name:'Pink Garden Mix', desc:'Seasonal garden blooms', price:'฿549', orig:'฿699', badge:'same-day', badgeLabel:'Same Day', delivery:'Same Day', emoji:'🌸', wishlist: false },
+  { name:'Sunflower Bliss', desc:'10 bright sunflowers', price:'฿449', badge:'new', badgeLabel:'New', delivery:'Next Day', emoji:'🌻', wishlist: false },
+  { name:'White Lily Elegance', desc:'8 stems, wrapped', price:'฿589', badge:'', delivery:'Same Day', emoji:'🤍', wishlist: true },
+  { name:'Pastel Dream Box', desc:'Mixed pastels in gift box', price:'฿849', orig:'฿999', badge:'bestseller', badgeLabel:'Bestseller', delivery:'Same Day', emoji:'💐', wishlist: false },
+  { name:'Tulip Arrangement', desc:'15 Dutch tulips', price:'฿659', badge:'same-day', badgeLabel:'Same Day', delivery:'Same Day', emoji:'🌷', wishlist: false },
+];
+
+const GIFTS = [
+  { name:'Teddy & Roses', desc:'Plush bear + 6 roses', price:'฿899', badge:'bestseller', badgeLabel:'Bestseller', delivery:'Same Day', emoji:'🧸', wishlist: false },
+  { name:'Fruit Luxury Box', desc:'Seasonal fruits, premium', price:'฿1,299', badge:'same-day', badgeLabel:'Same Day', delivery:'Same Day', emoji:'🍓', wishlist: false },
+  { name:'Sweet & Blooms', desc:'Chocolates + mini bouquet', price:'฿749', badge:'', delivery:'Next Day', emoji:'🍫', wishlist: true },
+  { name:'Wellness Gift Set', desc:'Spa essentials, candle', price:'฿1,099', badge:'new', badgeLabel:'New', delivery:'Next Day', emoji:'🕯️', wishlist: false },
+  { name:'Gift Card', desc:'Choose any amount', price:'฿200+', badge:'', delivery:'Instant', emoji:'🎁', wishlist: false },
+  { name:'Bird\'s Nest Deluxe', desc:'Premium wellness set', price:'฿1,599', badge:'bestseller', badgeLabel:'Bestseller', delivery:'Same Day', emoji:'🫙', wishlist: false },
+];
+
+const OCCASIONS = [
+  { name:'Birthday Surprise', desc:'Bright & cheerful mix', price:'฿699', badge:'bestseller', badgeLabel:'Bestseller', delivery:'Same Day', emoji:'🎂', wishlist: true },
+  { name:'Anniversary Reds', desc:'24 premium red roses', price:'฿1,299', badge:'same-day', badgeLabel:'Same Day', delivery:'Same Day', emoji:'💖', wishlist: false },
+  { name:'Get Well Sunshine', desc:'Uplifting yellow blooms', price:'฿549', badge:'', delivery:'Same Day', emoji:'☀️', wishlist: false },
+  { name:'Congratulations!', desc:'Vibrant celebration mix', price:'฿749', badge:'new', badgeLabel:'New', delivery:'Next Day', emoji:'🥳', wishlist: false },
+  { name:'Sympathy Whites', desc:'Peaceful white lilies', price:'฿649', badge:'', delivery:'Same Day', emoji:'🕊️', wishlist: false },
+  { name:'New Baby Blush', desc:'Soft pink & white blooms', price:'฿799', badge:'same-day', badgeLabel:'Same Day', delivery:'Same Day', emoji:'👶', wishlist: true },
+];
+
+// ─── RENDER ─────────────────────────────────────────────────
+
+const SUBTITLES = {
+  flowers: 'Order fresh flowers online. Same-day delivery available across Bangkok until 2 PM.',
+  occasions: 'Birthday, anniversary, sympathy and more — flowers delivered same day in Bangkok.',
+  gifts: 'Premium gift sets, hampers and soft toys. Same-day delivery in Bangkok.'
+};
+
+let currentSection = 'flowers';
+let activeChip = 0;
+
+function switchSection(section, btn) {
+  currentSection = section;
+  activeChip = 0;
+
+  // Update section switcher buttons
+  document.querySelectorAll('.section-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update banner background
+  const banner = document.getElementById('section-banner');
+  banner.setAttribute('data-section', section);
+
+  const data = SECTIONS[section];
+  document.getElementById('section-label').textContent = data.label;
+  document.getElementById('catalog-title').innerHTML = data.title;
+  document.getElementById('catalog-subtitle').textContent = SUBTITLES[section];
+  document.getElementById('result-count').textContent = data.resultCount;
+
+  renderChips();
+  renderFilters();
+  renderProducts();
+  clearActivePills();
+}
+
+function renderChips() {
+  const data = SECTIONS[currentSection];
+  const container = document.getElementById('chips-container');
+  container.innerHTML = data.chips.map((c, i) =>
+    `<button class="chip${i === activeChip ? ' active' : ''}" onclick="selectChip(${i}, this)">${c}</button>`
+  ).join('');
+}
+
+function selectChip(i, el) {
+  activeChip = i;
+  document.querySelectorAll('#chips-container .chip').forEach((c, idx) => {
+    c.classList.toggle('active', idx === i);
+  });
+  renderProducts();
+}
+
+function renderFilters() {
+  const filters = SECTIONS[currentSection].filters;
+  const container = document.getElementById('filter-groups');
+  container.innerHTML = filters.map((f, fi) => renderFilterGroup(f, fi)).join('');
+}
+
+function renderFilterGroup(f, fi) {
+  let inner = '';
+
+  if (f.type === 'range') {
+    inner = `<div class="price-inputs">
+      <div class="price-input"><span>฿</span><input type="number" placeholder="Min" style="width:100%"></div>
+      <div class="price-input"><span>฿</span><input type="number" placeholder="Max" style="width:100%"></div>
+    </div>`;
+  } else if (f.type === 'color') {
+    const colors = [
+      ['#E8504A','Red'],['#F2A7C3','Pink'],['#F7E26B','Yellow'],
+      ['#FFFFFF','White'],['#9B59B6','Purple'],['#F5A623','Orange'],
+      ['#5B8C5A','Green'],['#E8D5B7','Peach']
+    ];
+    inner = `<div class="color-swatches">${colors.map(([c, l]) =>
+      `<div class="swatch" style="background:${c};${c==='#FFFFFF'?'border:1.5px solid var(--dust-mid);':''}" title="${l}" onclick="this.classList.toggle('active')">
+        <span class="swatch-label">${l}</span>
+      </div>`).join('')}</div>`;
+  } else if (f.type === 'check') {
+    inner = `<div class="filter-options">${f.options.map(([label, count]) =>
+      `<label class="filter-option" onclick="this.classList.toggle('checked')">
+        <span class="filter-check"></span>
+        ${label}
+        <span class="option-count">${count}</span>
+      </label>`).join('')}</div>`;
+  } else if (f.type === 'format') {
+    inner = `<div class="format-options">${f.options.map(o =>
+      `<button class="format-chip" onclick="this.classList.toggle('active')">${o}</button>`
+    ).join('')}</div>`;
+  }
+
+  return `<div class="filter-section">
+    <div class="filter-section-title open" onclick="toggleSection(this)">
+      ${f.title}
+      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+        <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    ${inner}
+  </div>`;
+}
+
+function toggleSection(el) {
+  el.classList.toggle('open');
+}
+
+function renderProducts() {
+  const products = currentSection === 'gifts' ? GIFTS
+    : currentSection === 'occasions' ? OCCASIONS
+    : PRODUCTS;
+  const grid = document.getElementById('product-grid');
+  grid.innerHTML = products.map(p => `
+    <div class="product-card">
+      <div class="card-img-wrap">
+        <div class="card-img-placeholder">${p.emoji}</div>
+        ${p.badge ? `<span class="card-badge badge-${p.badge}">${p.badgeLabel}</span>` : ''}
+        <button class="card-wishlist${p.wishlist ? ' active' : ''}" onclick="this.classList.toggle('active')">
+          ${p.wishlist ? '♥' : '♡'}
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-desc">${p.desc}</div>
+        <div class="card-meta">
+          <div>
+            <span class="card-price">${p.price}</span>
+            ${p.orig ? `<span class="card-price-orig">${p.orig}</span>` : ''}
+            <br>
+            <span class="card-delivery">📦 ${p.delivery}</span>
+          </div>
+          <button class="card-add-btn">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removePill(el) {
+  el.remove();
+  updateActivePillCount();
+}
+
+function clearFilters() {
+  document.getElementById('active-filters').innerHTML = '';
+  document.querySelectorAll('.filter-option.checked').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.swatch.active').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.format-chip.active').forEach(el => el.classList.remove('active'));
+  updateActivePillCount();
+}
+
+function clearActivePills() {
+  document.getElementById('active-filters').innerHTML = '';
+  updateActivePillCount();
+}
+
+function updateActivePillCount() {
+  const count = document.getElementById('active-filters').children.length;
+  const mobileCount = document.getElementById('mobile-filter-count');
+  if (mobileCount) {
+    mobileCount.textContent = count;
+    mobileCount.style.display = count > 0 ? 'inline' : 'none';
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+renderChips();
+renderFilters();
+renderProducts();
+</script>
+</body>
+</html>

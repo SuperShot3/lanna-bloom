@@ -4,6 +4,7 @@ import { CartProvider } from '@/contexts/CartContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { locales, isValidLocale, type Locale } from '@/lib/i18n';
 import { MainSiteChrome } from '@/components/MainSiteChrome';
+import { FloatingFavoritesBadge } from '@/components/FloatingFavoritesBadge';
 
 export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
@@ -27,6 +28,7 @@ export default function LangLayout({
       <ToastProvider>
         <ViewportSync />
         <div className="lang-layout">
+          <FloatingFavoritesBadge lang={lang as Locale} />
           <MainSiteChrome lang={lang as Locale}>{children}</MainSiteChrome>
         </div>
       </ToastProvider>

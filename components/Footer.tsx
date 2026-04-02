@@ -123,8 +123,13 @@ export function Footer({ lang }: { lang: Locale }) {
             <h4 className="font-bold mb-6">{t.company}</h4>
             <ul className="space-y-3 text-sm text-stone-500">
               <li>
-                <Link href={`/${lang}/info`} className="hover:text-[#C5A059] transition-colors">
+                <Link href={`/${lang}`} className="hover:text-[#C5A059] transition-colors">
                   {t.aboutUs}
+                </Link>
+              </li>
+              <li>
+                <Link href={`/${lang}/info`} className="hover:text-[#C5A059] transition-colors">
+                  {t.guides}
                 </Link>
               </li>
               <li>

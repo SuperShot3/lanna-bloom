@@ -18,6 +18,7 @@ import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
 import type { CatalogProduct } from '@/lib/sanity';
+import { getPreferredBouquetSize } from '@/lib/favorites';
 
 export function ProductOrderBlock({
   bouquet,
@@ -30,7 +31,14 @@ export function ProductOrderBlock({
   selectedImageUrl?: string | null;
   gifts?: CatalogProduct[];
 }) {
-  const [selectedSize, setSelectedSize] = useState<BouquetSize>(bouquet.sizes[0]);
+  const [selectedSize, setSelectedSize] = useState<BouquetSize>(() => {
+    const preferredKey = getPreferredBouquetSize(bouquet.id);
+    if (preferredKey) {
+      const found = bouquet.sizes.find((s) => s.key === preferredKey);
+      if (found) return found;
+    }
+    return bouquet.sizes[0];
+  });
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
