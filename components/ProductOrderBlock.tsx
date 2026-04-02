@@ -32,10 +32,12 @@ export function ProductOrderBlock({
   gifts?: CatalogProduct[];
 }) {
   const [selectedSize, setSelectedSize] = useState<BouquetSize>(() => {
-    const preferredKey = getPreferredBouquetSize(bouquet.id);
-    if (preferredKey) {
-      const found = bouquet.sizes.find((s) => s.key === preferredKey);
+    const preferredId = getPreferredBouquetSize(bouquet.id);
+    if (preferredId) {
+      const found = bouquet.sizes.find((s) => s.optionId === preferredId);
       if (found) return found;
+      const legacy = bouquet.sizes.find((s) => s.key === preferredId);
+      if (legacy) return legacy;
     }
     return bouquet.sizes[0];
   });

@@ -116,6 +116,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           nameTh: product.nameTh ?? product.nameEn,
           imageUrl: imgSrc || undefined,
           size: {
+            optionId: `product_${product.id}_${selected.id}`,
             key: selected.sizeKey,
             label: selected.label,
             price: selected.price,

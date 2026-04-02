@@ -1,6 +1,15 @@
 import { createClient } from 'next-sanity';
 import imageUrlBuilder from '@sanity/image-url';
-import type { Bouquet, BouquetSize, Partner, PartnerStatus } from './bouquets';
+import type { Bouquet, BouquetSize, Partner, PartnerStatus, ProductKind, SizeKey } from './bouquets';
+import {
+  bouquetMatchesStemBucket,
+  friendlyLegacyLabel,
+  labelCustomTier,
+  labelFixedVariant,
+  labelSingleStemCount,
+  minPriceFromOptions,
+  type StemBucketKey,
+} from './bouquetOptions';
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
@@ -49,6 +58,34 @@ type SanityBouquet = {
   compositionEn?: string;
   compositionTh?: string;
   category?: string;
+  productKind?: string;
+  singleStemOptions?: Array<{
+    stemCount?: number;
+    price?: number;
+    labelEn?: string;
+    labelTh?: string;
+    preparationTime?: number;
+    availability?: boolean;
+  }>;
+  fixedVariants?: Array<{
+    variantKey?: string;
+    nameEn?: string;
+    nameTh?: string;
+    price?: number;
+    stemMin?: number;
+    stemMax?: number;
+    preparationTime?: number;
+    availability?: boolean;
+  }>;
+  customTiers?: Array<{
+    minPrice?: number;
+    labelEn?: string;
+    labelTh?: string;
+    preparationTime?: number;
+    availability?: boolean;
+  }>;
+  deliveryOptions?: string[];
+  presentationFormats?: string[];
   colors?: string[];
   flowerTypes?: string[];
   occasion?: string | string[];
@@ -72,16 +109,83 @@ type SanityBouquet = {
   }>;
 };
 
+function resolveProductKind(doc: SanityBouquet): ProductKind {
+  const k = doc.productKind;
+  if (k === 'single_stem_count' || k === 'fixed_bouquet' || k === 'customizable_bouquet') return k;
+  return 'legacy';
+}
+
+function buildSellableOptionsFromDoc(doc: SanityBouquet): BouquetSize[] {
+  const kind = resolveProductKind(doc);
+
+  if (kind === 'single_stem_count' && doc.singleStemOptions?.length) {
+    return doc.singleStemOptions.map((o, i) => {
+      const stem = o.stemCount ?? 0;
+      return {
+        optionId: `stem_${stem}_${i}`,
+        price: o.price ?? 0,
+        label: labelSingleStemCount('en', stem, o.labelEn, o.labelTh),
+        labelTh: labelSingleStemCount('th', stem, o.labelEn, o.labelTh),
+        stemCount: stem,
+        preparationTime: o.preparationTime,
+        availability: o.availability ?? true,
+      };
+    });
+  }
+
+  if (kind === 'fixed_bouquet' && doc.fixedVariants?.length) {
+    return doc.fixedVariants.map((v, i) => {
+      const vk = v.variantKey ?? `v${i}`;
+      return {
+        optionId: `fixed_${vk}`,
+        price: v.price ?? 0,
+        label: labelFixedVariant('en', v.nameEn ?? '', v.nameTh ?? '', v.stemMin, v.stemMax),
+        labelTh: labelFixedVariant('th', v.nameEn ?? '', v.nameTh ?? '', v.stemMin, v.stemMax),
+        stemMin: v.stemMin,
+        stemMax: v.stemMax,
+        preparationTime: v.preparationTime,
+        availability: v.availability ?? true,
+      };
+    });
+  }
+
+  if (kind === 'customizable_bouquet' && doc.customTiers?.length) {
+    return doc.customTiers.map((t, i) => {
+      const mp = t.minPrice ?? 0;
+      return {
+        optionId: `custom_${i}_${mp}`,
+        price: mp,
+        label: labelCustomTier('en', mp, t.labelEn, t.labelTh),
+        labelTh: labelCustomTier('th', mp, t.labelEn, t.labelTh),
+        preparationTime: t.preparationTime,
+        availability: t.availability ?? true,
+      };
+    });
+  }
+
+  const rows = doc.sizes ?? [];
+  if (!rows.length) {
+    return [{ optionId: 'default', key: 'm', label: '—', price: 0, description: '' }];
+  }
+  return rows.map((s) => {
+    const key = (s.key ?? 'm') as SizeKey;
+    const friendly = friendlyLegacyLabel(s.label, s.description);
+    return {
+      optionId: `legacy_${key}`,
+      key,
+      price: s.price ?? 0,
+      label: friendly,
+      labelTh: friendly,
+      description: s.description ?? '',
+      preparationTime: s.preparationTime,
+      availability: s.availability ?? true,
+    };
+  });
+}
+
 function mapToBouquet(doc: SanityBouquet): Bouquet {
   const slug = doc.slug?.current ?? doc._id;
-  const sizes: BouquetSize[] = (doc.sizes ?? []).map((s) => ({
-    key: (s.key ?? 'm') as BouquetSize['key'],
-    label: s.label ?? 'M',
-    price: s.price ?? 0,
-    description: s.description ?? '',
-    preparationTime: s.preparationTime,
-    availability: s.availability ?? true,
-  }));
+  const sizes = buildSellableOptionsFromDoc(doc);
   const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
   const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
 
@@ -95,15 +199,18 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     compositionEn: doc.compositionEn ?? '',
     compositionTh: doc.compositionTh ?? '',
     category: doc.category ?? 'mixed',
+    productKind: resolveProductKind(doc),
     colors: Array.isArray(doc.colors) ? doc.colors : [],
     flowerTypes: Array.isArray(doc.flowerTypes) ? doc.flowerTypes : [],
+    deliveryOptions: Array.isArray(doc.deliveryOptions) ? doc.deliveryOptions : undefined,
+    presentationFormats: Array.isArray(doc.presentationFormats) ? doc.presentationFormats : undefined,
     occasion: (() => {
       const o = doc.occasion;
       if (!o) return undefined;
       return Array.isArray(o) ? o.filter(Boolean) : o ? [o] : undefined;
     })(),
     images: imageUrls.length ? imageUrls : [placeholder],
-    sizes: sizes.length ? sizes : [{ key: 'm', label: 'M', price: 0, description: '' }],
+    sizes,
     partnerId: doc.partner?._ref,
     partnerName: doc.partnerName ?? undefined,
     partnerCity: doc.partnerCity ?? undefined,
@@ -125,6 +232,12 @@ const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "a
   compositionEn,
   compositionTh,
   category,
+  productKind,
+  singleStemOptions,
+  fixedVariants,
+  customTiers,
+  deliveryOptions,
+  presentationFormats,
   colors,
   flowerTypes,
   occasion,
@@ -143,6 +256,12 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   compositionEn,
   compositionTh,
   category,
+  productKind,
+  singleStemOptions,
+  fixedVariants,
+  customTiers,
+  deliveryOptions,
+  presentationFormats,
   colors,
   flowerTypes,
   occasion,
@@ -176,6 +295,12 @@ const bouquetsPaginatedQuery = `*[_type == "bouquet" && (!defined(status) || sta
   compositionEn,
   compositionTh,
   category,
+  productKind,
+  singleStemOptions,
+  fixedVariants,
+  customTiers,
+  deliveryOptions,
+  presentationFormats,
   colors,
   flowerTypes,
   occasion,
@@ -222,6 +347,12 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   compositionEn,
   compositionTh,
   category,
+  productKind,
+  singleStemOptions,
+  fixedVariants,
+  customTiers,
+  deliveryOptions,
+  presentationFormats,
   colors,
   flowerTypes,
   occasion,
@@ -258,7 +389,7 @@ function buildInterleavedPopularBouquets(bouquets: Bouquet[]): Bouquet[] {
 
   const bouquetsWithPrice = bouquets.map((b) => ({
     bouquet: b,
-    minPrice: minPriceFromSizes(b.sizes),
+    minPrice: minPriceFromOptions(b.sizes),
   }));
 
   bouquetsWithPrice.sort((a, b) => a.minPrice - b.minPrice);
@@ -338,6 +469,9 @@ export interface CatalogFilterParams {
   min?: number;
   max?: number;
   sort?: 'newest' | 'price_asc' | 'price_desc';
+  delivery?: string[];
+  formats?: string[];
+  stemBucket?: StemBucketKey;
 }
 
 /** Catalog product (non-flower) for display — matches BouquetCard-like shape */
@@ -366,11 +500,6 @@ export interface CatalogProduct {
 
 type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };
 
-function minPriceFromSizes(sizes: BouquetSize[]): number {
-  if (!sizes?.length) return 0;
-  return Math.min(...sizes.map((s) => s.price ?? Infinity));
-}
-
 /** Single parameter-free query; all filtering done in JS for reliability */
 const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] {
   _id,
@@ -383,6 +512,12 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   compositionEn,
   compositionTh,
   category,
+  productKind,
+  singleStemOptions,
+  fixedVariants,
+  customTiers,
+  deliveryOptions,
+  presentationFormats,
   colors,
   flowerTypes,
   occasion,
@@ -410,41 +545,74 @@ function matchesFilters(bouquet: Bouquet, params: CatalogFilterParams): boolean 
     const bOccasions = bouquet.occasion ?? [];
     if (!bOccasions.includes(params.occasion)) return false;
   }
+  if (params.delivery?.length) {
+    const bDel = bouquet.deliveryOptions ?? [];
+    const ok = params.delivery.some((d) => bDel.includes(d));
+    if (!ok) return false;
+  }
+  if (params.formats?.length) {
+    const bFmt = bouquet.presentationFormats ?? [];
+    const ok = params.formats.some((f) => bFmt.includes(f));
+    if (!ok) return false;
+  }
+  if (params.stemBucket && !bouquetMatchesStemBucket(bouquet.sizes, params.stemBucket)) {
+    return false;
+  }
   if (params.min != null && params.min > 0) {
-    if (minPriceFromSizes(bouquet.sizes) < params.min) return false;
+    if (minPriceFromOptions(bouquet.sizes) < params.min) return false;
   }
   if (params.max != null && params.max > 0) {
-    if (minPriceFromSizes(bouquet.sizes) > params.max) return false;
+    if (minPriceFromOptions(bouquet.sizes) > params.max) return false;
   }
   return true;
 }
 
 /** Catalog with filters and sort; fetches all then filters in JS for reliable behavior */
+async function fetchBouquetsCatalogFiltered(params: CatalogFilterParams): Promise<{
+  bouquets: Bouquet[];
+  allBouquets: Bouquet[];
+}> {
+  const docs = await client.fetch<SanityBouquetWithCreated[]>(catalogAllQuery);
+  const allBouquets = (docs ?? []).map((d) => mapToBouquet(d));
+  let filtered = allBouquets.filter((b) => matchesFilters(b, params));
+
+  const sort = params.sort || 'newest';
+  if (sort === 'newest') {
+    const interleaved = buildInterleavedPopularBouquets(filtered);
+    const rng = mulberry32(getPopularShuffleSeed());
+    return {
+      bouquets: shuffleArraySeeded([...interleaved], rng),
+      allBouquets,
+    };
+  }
+  if (sort === 'price_asc') {
+    filtered = [...filtered].sort((a, b) => minPriceFromOptions(a.sizes) - minPriceFromOptions(b.sizes));
+  } else if (sort === 'price_desc') {
+    filtered = [...filtered].sort((a, b) => minPriceFromOptions(b.sizes) - minPriceFromOptions(a.sizes));
+  }
+  return { bouquets: filtered, allBouquets };
+}
+
 export async function getBouquetsFilteredFromSanity(params: CatalogFilterParams): Promise<Bouquet[]> {
   try {
-    const docs = await client.fetch<SanityBouquetWithCreated[]>(catalogAllQuery);
-    const mapped = (docs ?? []).map((d) => ({ doc: d, bouquet: mapToBouquet(d) }));
-    let filtered = mapped.filter(({ bouquet }) => matchesFilters(bouquet, params));
-
-    const sort = params.sort || 'newest';
-    if (sort === 'newest') {
-      // Match home "Popular": interleave by price tier, then daily seeded shuffle — avoids always
-      // showing the same items first (e.g. names starting with digits from strict date/name order).
-      const bouquetsOnly = filtered.map((x) => x.bouquet);
-      const interleaved = buildInterleavedPopularBouquets(bouquetsOnly);
-      const rng = mulberry32(getPopularShuffleSeed());
-      return shuffleArraySeeded([...interleaved], rng);
-    }
-    if (sort === 'price_asc') {
-      filtered.sort((a, b) => minPriceFromSizes(a.bouquet.sizes) - minPriceFromSizes(b.bouquet.sizes));
-    } else if (sort === 'price_desc') {
-      filtered.sort((a, b) => minPriceFromSizes(b.bouquet.sizes) - minPriceFromSizes(a.bouquet.sizes));
-    }
-
-    return filtered.map((x) => x.bouquet);
+    const { bouquets } = await fetchBouquetsCatalogFiltered(params);
+    return bouquets;
   } catch (err) {
     console.error('[Sanity] getBouquetsFilteredFromSanity failed:', err);
     return [];
+  }
+}
+
+/** Same fetch as catalog list; includes unfiltered list for facet counts */
+export async function getBouquetsCatalogData(params: CatalogFilterParams): Promise<{
+  bouquets: Bouquet[];
+  allBouquets: Bouquet[];
+}> {
+  try {
+    return await fetchBouquetsCatalogFiltered(params);
+  } catch (err) {
+    console.error('[Sanity] getBouquetsCatalogData failed:', err);
+    return { bouquets: [], allBouquets: [] };
   }
 }
 
@@ -515,7 +683,9 @@ export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet
   try {
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, colors, flowerTypes, occasion, partner, status, images, sizes
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category,
+        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
+        colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
       { partnerId }
     );
@@ -531,7 +701,9 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
   try {
     const doc = await client.fetch<SanityBouquet | null>(
       `*[_type == "bouquet" && _id == $id][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, colors, flowerTypes, occasion, partner, status, images, sizes
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category,
+        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
+        colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
       { id: bouquetId }
     );
@@ -548,7 +720,9 @@ export async function getPendingBouquets(): Promise<Bouquet[]> {
   try {
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && status == "pending_review"] | order(_createdAt desc) {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category, colors, flowerTypes, occasion, partner, status, images, sizes
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category,
+        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
+        colors, flowerTypes, occasion, partner, status, images, sizes
       }`
     );
     return (docs ?? []).map(mapToBouquet);

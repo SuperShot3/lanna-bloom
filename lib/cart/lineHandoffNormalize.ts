@@ -12,8 +12,11 @@ export function lineDraftItemToCartItem(raw: LineDraftCartItem): CartItem {
     imageUrl: raw.imageUrl,
     quantity: raw.quantity ?? 1,
     size: {
+      optionId:
+        raw.size.optionId ??
+        (raw.size.key ? `legacy_${raw.size.key}` : 'legacy_m'),
       key: raw.size.key,
-      label: raw.size.label ?? String(raw.size.key),
+      label: raw.size.label ?? String(raw.size.key ?? ''),
       price: raw.size.price,
       description: raw.size.description ?? '',
       preparationTime: raw.size.preparationTime,

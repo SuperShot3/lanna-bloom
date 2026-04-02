@@ -1,40 +1,23 @@
 import { notFound } from 'next/navigation';
-import { getBouquetsFilteredFromSanity, getProductsFilteredFromSanity, type CatalogFilterParams } from '@/lib/sanity';
+import { getBouquetsCatalogData, getProductsFilteredFromSanity } from '@/lib/sanity';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { CatalogWithFilters } from '@/components/CatalogWithFilters';
 import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
+import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
+import type { Bouquet } from '@/lib/bouquets';
 
 // Revalidate catalog every 60 seconds so new flowers from Sanity appear without rebuild
 export const revalidate = 60;
 
-function parseSearchParams(searchParams: Record<string, string | string[] | undefined>): CatalogFilterParams {
-  const topCategoryRaw = typeof searchParams.topCategory === 'string' ? searchParams.topCategory : undefined;
-  const topCategory =
-    topCategoryRaw === 'flowers' || (topCategoryRaw && PRODUCT_CATEGORIES.includes(topCategoryRaw as (typeof PRODUCT_CATEGORIES)[number]))
-      ? topCategoryRaw
-      : undefined;
-  const category = typeof searchParams.category === 'string' ? searchParams.category : undefined;
-  const colorsRaw = typeof searchParams.colors === 'string' ? searchParams.colors : undefined;
-  const colors = colorsRaw ? colorsRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-  const typesRaw = typeof searchParams.types === 'string' ? searchParams.types : undefined;
-  const types = typesRaw ? typesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-  const occasion = typeof searchParams.occasion === 'string' ? searchParams.occasion : undefined;
-  const minRaw = typeof searchParams.min === 'string' ? searchParams.min : undefined;
-  const min = minRaw ? parseInt(minRaw, 10) : undefined;
-  const maxRaw = typeof searchParams.max === 'string' ? searchParams.max : undefined;
-  const max = maxRaw ? parseInt(maxRaw, 10) : undefined;
-  const sort = typeof searchParams.sort === 'string' ? searchParams.sort as CatalogFilterParams['sort'] : undefined;
-  return {
-    topCategory: topCategory || undefined,
-    category: category || undefined,
-    colors: colors?.length ? colors : undefined,
-    types: types?.length ? types : undefined,
-    occasion: occasion || undefined,
-    min: min != null && !isNaN(min) ? min : undefined,
-    max: max != null && !isNaN(max) ? max : undefined,
-    sort: sort && ['newest', 'price_asc', 'price_desc'].includes(sort) ? sort : undefined,
-  };
+function flowerTypeCountsFromBouquets(bouquets: Bouquet[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const b of bouquets) {
+    for (const ft of b.flowerTypes ?? []) {
+      counts[ft] = (counts[ft] ?? 0) + 1;
+    }
+  }
+  return counts;
 }
 
 export default async function CatalogPage({
@@ -46,14 +29,17 @@ export default async function CatalogPage({
 }) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
-  const filterParams = parseSearchParams(searchParams);
+  const filterParams = parseCatalogSearchParams(searchParams);
   const topCategory = filterParams.topCategory || 'flowers';
 
-  let bouquets: Awaited<ReturnType<typeof getBouquetsFilteredFromSanity>> = [];
+  let bouquets: Bouquet[] = [];
+  let allBouquetsForFacets: Bouquet[] = [];
   let products: Awaited<ReturnType<typeof getProductsFilteredFromSanity>> = [];
 
   if (topCategory === 'flowers') {
-    bouquets = await getBouquetsFilteredFromSanity(filterParams);
+    const data = await getBouquetsCatalogData(filterParams);
+    bouquets = data.bouquets;
+    allBouquetsForFacets = data.allBouquets;
   } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {
     products = await getProductsFilteredFromSanity({
       categoryKey: topCategory,
@@ -88,6 +74,11 @@ export default async function CatalogPage({
           bouquets={bouquets.length > 0 ? bouquets : undefined}
           products={products.length > 0 ? products : undefined}
           filterParams={filterParams}
+          flowerTypeCounts={
+            topCategory === 'flowers' && allBouquetsForFacets.length > 0
+              ? flowerTypeCountsFromBouquets(allBouquetsForFacets)
+              : undefined
+          }
           title={title}
           description={description}
         />

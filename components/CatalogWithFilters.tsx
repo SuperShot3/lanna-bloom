@@ -3,12 +3,19 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
-import { CatalogFilterBar, countActiveFilters } from '@/components/CatalogFilterBar';
+import { CatalogFilterBar } from '@/components/CatalogFilterBar';
 import { CatalogDeliveryBar } from '@/components/CatalogDeliveryBar';
-import { CatalogSidebarFilters } from '@/components/CatalogSidebarFilters';
-import { FilterDrawer } from '@/components/FilterDrawer';
+import { FlowerFilterSidebar, FlowerFilterMobileDrawer } from '@/components/FlowerFilterSidebar';
+import {
+  buildCatalogSearchString,
+  catalogHasAnyNarrowingFilters,
+  catalogHasNarrowingFiltersBeyondTopCategory,
+  countActiveCatalogFilters,
+} from '@/lib/catalogFilterParams';
+import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { Bouquet } from '@/lib/bouquets';
@@ -30,20 +37,8 @@ export interface CatalogWithFiltersProps {
   title?: string;
   /** Optional description shown below title when occasion is selected */
   description?: string;
-}
-
-function buildSearchString(params: CatalogFilterParams): string {
-  const sp = new URLSearchParams();
-  if (params.topCategory && params.topCategory !== 'flowers') sp.set('topCategory', params.topCategory);
-  if (params.category && params.category !== 'all') sp.set('category', params.category);
-  if (params.colors?.length) sp.set('colors', params.colors.join(','));
-  if (params.types?.length) sp.set('types', params.types.join(','));
-  if (params.occasion) sp.set('occasion', params.occasion);
-  if (params.min != null && params.min > 0) sp.set('min', String(params.min));
-  if (params.max != null && params.max > 0) sp.set('max', String(params.max));
-  if (params.sort && params.sort !== 'newest') sp.set('sort', params.sort);
-  const s = sp.toString();
-  return s ? `?${s}` : '';
+  /** Facet counts for flower types (unfiltered catalog) */
+  flowerTypeCounts?: Record<string, number>;
 }
 
 const LIST_NAME_CATALOG = 'catalog';
@@ -56,7 +51,7 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
       item_id: b.id,
       item_name: name,
       item_category: b.category,
-      item_variant: b.sizes?.[0]?.label,
+      item_variant: b.sizes?.[0] ? optionDisplayLabel(b.sizes[0], lang) : undefined,
       price: minPrice,
       quantity: 1,
       index: i,
@@ -64,14 +59,25 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
   });
 }
 
-export function CatalogWithFilters({ lang, bouquets = [], products = [], filterParams, title, description }: CatalogWithFiltersProps) {
+export function CatalogWithFilters({
+  lang,
+  bouquets = [],
+  products = [],
+  filterParams,
+  title,
+  description,
+  flowerTypeCounts,
+}: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const t = translations[lang].catalog;
-  const activeCount = countActiveFilters(filterParams);
+  const activeCount = countActiveCatalogFilters(filterParams);
+  const hasAnyNarrowingFilters = catalogHasAnyNarrowingFilters(filterParams);
+  const hasNarrowingBeyondTopCategory = catalogHasNarrowingFiltersBeyondTopCategory(filterParams);
   const items = bouquets.length > 0 ? bouquets : products;
   const isProductsMode = !!(filterParams.topCategory && filterParams.topCategory !== 'flowers');
+  const showFlowerFilters = !isProductsMode;
 
   useEffect(() => {
     if (bouquets.length > 0) {
@@ -88,9 +94,14 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
     }
   }, [lang, bouquets, products]);
 
+  /** Balloons/gifts mode hides the flower sheet — clear stale open state so returning to flowers does not reopen it. */
+  useEffect(() => {
+    if (isProductsMode) setMobileFilterOpen(false);
+  }, [isProductsMode]);
+
   const handleApply = useCallback(
     (params: CatalogFilterParams) => {
-      const qs = buildSearchString(params);
+      const qs = buildCatalogSearchString(params);
       router.push(`${pathname}${qs}`);
     },
     [router, pathname]
@@ -102,6 +113,9 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
 
   const handleQuickFilter = useCallback(
     (partial: Partial<CatalogFilterParams>) => {
+      // Bar actions should not leave the mobile sheet open (e.g. switching category
+      // unmounts the drawer but state could stay true and reopen when returning to flowers).
+      setMobileFilterOpen(false);
       const merged = { ...filterParams };
 
       // Handle max toggle
@@ -133,6 +147,9 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
           merged.colors = undefined;
           merged.types = undefined;
           merged.occasion = undefined;
+          merged.delivery = undefined;
+          merged.formats = undefined;
+          merged.stemBucket = undefined;
         }
       }
 
@@ -141,7 +158,7 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
         merged.occasion = partial.occasion || undefined;
       }
 
-      const qs = buildSearchString(merged);
+      const qs = buildCatalogSearchString(merged);
       router.push(`${pathname}${qs}`);
     },
     [filterParams, router, pathname]
@@ -155,27 +172,37 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
       <CatalogFilterBar
         lang={lang}
         activeCount={activeCount}
-        isDrawerOpen={drawerOpen}
-        onOpenDrawer={() => setDrawerOpen(true)}
+        isDrawerOpen={mobileFilterOpen}
+        onOpenDrawer={() => setMobileFilterOpen(true)}
         filterParams={filterParams}
         onQuickFilter={handleQuickFilter}
         onClearAll={handleClear}
+        hideFilterButtonOnDesktop={showFlowerFilters}
       />
-      <FilterDrawer
-        lang={lang}
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        values={filterParams}
-        onApply={handleApply}
-        onClear={handleClear}
-      />
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-        <CatalogSidebarFilters
+      {showFlowerFilters && (
+        <FlowerFilterMobileDrawer
           lang={lang}
+          isOpen={mobileFilterOpen}
+          onClose={() => setMobileFilterOpen(false)}
           values={filterParams}
-          onApply={handleApply}
+          onApply={(p) => {
+            handleApply(p);
+            setMobileFilterOpen(false);
+          }}
           onClear={handleClear}
+          flowerTypeCounts={flowerTypeCounts}
         />
+      )}
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mt-5 lg:mt-6">
+        {showFlowerFilters ? (
+          <FlowerFilterSidebar
+            lang={lang}
+            values={filterParams}
+            onApply={handleApply}
+            onClear={handleClear}
+            flowerTypeCounts={flowerTypeCounts}
+          />
+        ) : null}
         <div className="flex-1 min-w-0">
           {(title || description) && (
             <div className="catalog-page-header">
@@ -194,15 +221,43 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
           )}
           {items.length === 0 ? (
             <div className="catalog-empty">
-              <p className="catalog-empty-text">
-                {activeCount > 0
-                  ? (isProductsMode ? t.noProductsMatch : t.noResults)
-                  : (isProductsMode ? t.catalogProductsEmpty : t.catalogEmpty)}
-              </p>
-              {activeCount > 0 && (
-                <Link href={`/${lang}/catalog`} className="catalog-empty-link">
-                  {t.viewAll}
-                </Link>
+              {isProductsMode && !hasNarrowingBeyondTopCategory ? (
+                <>
+                  <div className="catalog-empty-visual" aria-hidden>
+                    <Image
+                      src="/images_other/sad_cat_flower_andBaloon.png"
+                      alt=""
+                      width={200}
+                      height={200}
+                      className="catalog-empty-visual-img"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
+                  <p className="catalog-empty-text catalog-empty-heading">{t.catalogComingSoonTitle}</p>
+                  <p className="catalog-empty-hint">{t.catalogComingSoonHint}</p>
+                  <Link
+                    href={`/${lang}/catalog`}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-[#C5A059] text-[#1A3C34] font-bold text-sm tracking-wide no-underline shadow-md hover:bg-[#b8913e] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150"
+                  >
+                    {t.catalogEmptyCtaBrand}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="catalog-empty-text">
+                    {hasAnyNarrowingFilters
+                      ? (isProductsMode ? t.noProductsMatch : t.noResults)
+                      : (isProductsMode ? t.catalogProductsEmpty : t.catalogEmpty)}
+                  </p>
+                  {(hasAnyNarrowingFilters || isProductsMode) && (
+                    <Link
+                      href={`/${lang}/catalog`}
+                      className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-[#C5A059] text-[#1A3C34] font-bold text-sm tracking-wide no-underline shadow-md hover:bg-[#b8913e] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150"
+                    >
+                      {t.catalogEmptyCtaBrand}
+                    </Link>
+                  )}
+                </>
               )}
             </div>
           ) : (
@@ -253,28 +308,39 @@ export function CatalogWithFilters({ lang, bouquets = [], products = [], filterP
           text-align: center;
           padding: 48px 20px;
         }
+        .catalog-empty-visual {
+          margin: 0 auto 24px;
+          width: min(200px, 60vw);
+          aspect-ratio: 20 / 25;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 8px 28px rgba(26, 60, 52, 0.12);
+        }
+        .catalog-empty-visual-img {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover;
+          display: block;
+        }
         .catalog-empty-text {
           font-size: 1rem;
           color: var(--text-muted);
           margin: 0 0 16px;
         }
-        .catalog-empty-link {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 44px;
-          padding: 0 24px;
-          background: var(--accent);
-          color: #fff;
-          font-weight: 600;
-          border-radius: 9999px;
-          transition: transform 0.2s;
+        .catalog-empty-heading {
+          font-family: var(--font-serif);
+          font-size: clamp(1.35rem, 3vw, 1.75rem);
+          font-weight: 300;
+          font-style: italic;
+          color: var(--text);
+          margin-bottom: 10px;
         }
-        .catalog-empty-link:hover,
-        .catalog-empty-link:focus-visible {
-          transform: translateY(-2px);
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
+        .catalog-empty-hint {
+          font-size: 0.95rem;
+          line-height: 1.55;
+          color: var(--text-muted);
+          margin: 0 auto 22px;
+          max-width: 40ch;
         }
         .catalog-page-header {
           padding: 6px 0 14px;

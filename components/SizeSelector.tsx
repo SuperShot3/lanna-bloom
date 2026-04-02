@@ -1,6 +1,8 @@
 'use client';
 
 import { BouquetSize } from '@/lib/bouquets';
+import type { Locale } from '@/lib/i18n';
+import { optionDisplayLabel } from '@/lib/bouquetOptions';
 
 export function SizeSelector({
   sizes,
@@ -11,23 +13,25 @@ export function SizeSelector({
   sizes: BouquetSize[];
   selected: BouquetSize;
   onSelect: (size: BouquetSize) => void;
-  lang: string;
+  lang: Locale;
 }) {
   return (
     <div className="size-selector">
-      <p className="size-label">Size</p>
-      <div className="size-options" role="group" aria-label="Bouquet size">
+      <p className="size-label">Options</p>
+      <div className="size-options" role="group" aria-label="Bouquet options">
         {sizes.map((size) => (
           <button
-            key={size.key}
+            key={size.optionId}
             type="button"
-            className={`size-btn ${selected.key === size.key ? 'active' : ''}`}
+            className={`size-btn ${selected.optionId === size.optionId ? 'active' : ''}`}
             onClick={() => onSelect(size)}
-            aria-pressed={selected.key === size.key}
+            aria-pressed={selected.optionId === size.optionId}
           >
-            <span className="size-btn-label">{size.label}</span>
+            <span className="size-btn-label">{optionDisplayLabel(size, lang)}</span>
             <span className="size-btn-price">฿{size.price.toLocaleString()}</span>
-            <span className="size-btn-desc">{size.description}</span>
+            {size.description ? (
+              <span className="size-btn-desc">{size.description}</span>
+            ) : null}
           </button>
         ))}
       </div>

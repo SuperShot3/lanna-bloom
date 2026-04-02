@@ -31,10 +31,10 @@ const OCCASION_OPTIONS = [
 const SIZE_KEYS: SizeKey[] = ['s', 'm', 'l', 'xl'];
 
 const defaultSizes: Array<BouquetSize & { preparationTime?: number; availability?: boolean }> = [
-  { key: 's', label: 'S', price: 0, description: '', preparationTime: undefined, availability: true },
-  { key: 'm', label: 'M', price: 0, description: '', preparationTime: undefined, availability: true },
-  { key: 'l', label: 'L', price: 0, description: '', preparationTime: undefined, availability: true },
-  { key: 'xl', label: 'XL', price: 0, description: '', preparationTime: undefined, availability: true },
+  { optionId: 'legacy_s', key: 's', label: 'S', price: 0, description: '', preparationTime: undefined, availability: true },
+  { optionId: 'legacy_m', key: 'm', label: 'M', price: 0, description: '', preparationTime: undefined, availability: true },
+  { optionId: 'legacy_l', key: 'l', label: 'L', price: 0, description: '', preparationTime: undefined, availability: true },
+  { optionId: 'legacy_xl', key: 'xl', label: 'XL', price: 0, description: '', preparationTime: undefined, availability: true },
 ];
 
 export interface BouquetFormProps {

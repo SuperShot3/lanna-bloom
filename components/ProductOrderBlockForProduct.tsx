@@ -41,6 +41,7 @@ export function ProductOrderBlockForProduct({
   const handleAddToCart = () => {
     const qty = Math.max(1, Math.floor(quantity));
     const syntheticSize = {
+      optionId: 'product_default',
       key: 'm' as const,
       label: '—',
       // IMPORTANT: Cart totals add add-ons separately, so keep base price here.

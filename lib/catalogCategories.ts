@@ -1,6 +1,6 @@
 /**
  * Single source of truth for catalog categories.
- * Used by FilterDrawer, catalog page, and i18n.
+ * Used by catalog filters, catalog page, and i18n.
  * Partners do NOT create new categories — platform-defined only.
  */
 
@@ -59,3 +59,24 @@ export const FLOWER_SUBCATEGORY_I18N_KEYS: Record<FlowerSubcategory, string> = {
   birthday: 'birthday',
   sympathy: 'sympathy',
 };
+
+/** Occasion quick filters for bouquets (URL param occasion) — bar + sidebar */
+export const CATALOG_OCCASION_CHIPS: {
+  value: string;
+  labelKey:
+    | 'occasionAny'
+    | 'occasionRomantic'
+    | 'occasionBirthday'
+    | 'occasionAnniversary'
+    | 'occasionSympathy'
+    | 'occasionCongrats'
+    | 'occasionGetWell';
+}[] = [
+  { value: '', labelKey: 'occasionAny' },
+  { value: 'romantic', labelKey: 'occasionRomantic' },
+  { value: 'birthday', labelKey: 'occasionBirthday' },
+  { value: 'anniversary', labelKey: 'occasionAnniversary' },
+  { value: 'sympathy', labelKey: 'occasionSympathy' },
+  { value: 'congrats', labelKey: 'occasionCongrats' },
+  { value: 'get_well', labelKey: 'occasionGetWell' },
+];

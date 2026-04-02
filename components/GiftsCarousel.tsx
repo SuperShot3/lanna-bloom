@@ -28,7 +28,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
       (i) =>
         i.bouquetId === product.id &&
         i.itemType === 'product' &&
-        i.size.key === 'm' &&
+        i.size.optionId === 'product_default' &&
         (i.addOns.cardMessage ?? '').trim() === (defaultAddOns.cardMessage ?? '').trim() &&
         JSON.stringify(i.addOns.productAddOns ?? {}) === JSON.stringify(defaultAddOns.productAddOns ?? {})
     );
@@ -59,6 +59,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
       });
     } else {
       const syntheticSize = {
+        optionId: 'product_default',
         key: 'm' as const,
         label: '—',
         price: finalPrice,

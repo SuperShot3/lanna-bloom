@@ -4,6 +4,7 @@
  */
 
 import { getBouquetById, getProductById } from '@/lib/sanity';
+import { resolveBouquetOptionFromIdentifier } from '@/lib/bouquetOptions';
 import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFees';
 import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
@@ -112,8 +113,8 @@ export async function computeOrderTotals(
         return { ok: false, message: `Bouquet not found: ${item.bouquetId}` };
       }
 
-      const sizeKey = (item.size?.toLowerCase() || 'm') as 's' | 'm' | 'l' | 'xl';
-      const size = bouquet.sizes?.find((s) => s.key === sizeKey) ?? bouquet.sizes?.[0];
+      const size =
+        resolveBouquetOptionFromIdentifier(bouquet, item.size) ?? bouquet.sizes?.[0];
       if (!size) {
         return { ok: false, message: `Bouquet ${bouquet.slug} has no sizes` };
       }
@@ -128,7 +129,7 @@ export async function computeOrderTotals(
       items.push({
         bouquetId: bouquet.id,
         bouquetTitle,
-        size: size.label ?? sizeKey.toUpperCase(),
+        size: size.label,
         price: itemPrice,
         addOns: {
           cardType: item.addOns?.cardType ?? null,

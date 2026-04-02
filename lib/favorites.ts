@@ -4,7 +4,10 @@ export const FAVORITES_STORAGE_KEY = 'lanna-bloom-favorites';
 export const PREFERRED_BOUQUET_SIZE_STORAGE_KEY_PREFIX = 'lanna-bloom-preferred-bouquet-size';
 
 export type FavoriteSize = {
-  sizeKey: SizeKey;
+  /** Preferred sellable option (canonical) */
+  optionId: string;
+  /** @deprecated old session data */
+  sizeKey?: SizeKey;
   sizeLabel: string;
   sizePrice: number;
 };
@@ -26,7 +29,6 @@ export type FavoriteItem = {
 type FavoritesEventDetail = { count: number };
 
 function dispatchFavoritesUpdated(count: number) {
-  // Helps sync all mounted components in the same tab without relying on `storage` event quirks.
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent<FavoritesEventDetail>('favorites-updated', { detail: { count } }));
 }
@@ -67,7 +69,6 @@ export function addFavorite(item: FavoriteItem) {
   if (!item?.id) return;
   const list = readFromSessionStorage();
 
-  // Dedupe per product id; update stored payload if it already exists.
   const without = list.filter((f) => f.id !== item.id);
   const next = [...without, item];
   writeToSessionStorage(next);
@@ -90,40 +91,38 @@ function preferredSizeKeyForBouquet(bouquetId: string) {
   return `${PREFERRED_BOUQUET_SIZE_STORAGE_KEY_PREFIX}:${bouquetId}`;
 }
 
-export function setPreferredBouquetSize(bouquetId: string, sizeKey: SizeKey) {
+/** Stores preferred sellable option id (e.g. legacy_m, stem_19_0) */
+export function setPreferredBouquetSize(bouquetId: string, optionId: string) {
   if (typeof window === 'undefined') return;
   if (!bouquetId) return;
   try {
-    window.sessionStorage.setItem(preferredSizeKeyForBouquet(bouquetId), sizeKey);
+    window.sessionStorage.setItem(preferredSizeKeyForBouquet(bouquetId), optionId);
   } catch {
     // ignore
   }
 }
 
-export function getPreferredBouquetSize(bouquetId: string): SizeKey | undefined {
+export function getPreferredBouquetSize(bouquetId: string): string | undefined {
   if (typeof window === 'undefined') return undefined;
   if (!bouquetId) return undefined;
   try {
     const raw = window.sessionStorage.getItem(preferredSizeKeyForBouquet(bouquetId));
     if (!raw) return undefined;
-    if (raw === 's' || raw === 'm' || raw === 'l' || raw === 'xl') return raw;
-    return undefined;
+    return raw;
   } catch {
     return undefined;
   }
 }
 
-export function takePreferredBouquetSize(bouquetId: string): SizeKey | undefined {
+export function takePreferredBouquetSize(bouquetId: string): string | undefined {
   if (typeof window === 'undefined') return undefined;
   if (!bouquetId) return undefined;
   try {
     const raw = window.sessionStorage.getItem(preferredSizeKeyForBouquet(bouquetId));
     if (!raw) return undefined;
     window.sessionStorage.removeItem(preferredSizeKeyForBouquet(bouquetId));
-    if (raw === 's' || raw === 'm' || raw === 'l' || raw === 'xl') return raw;
-    return undefined;
+    return raw;
   } catch {
     return undefined;
   }
 }
-

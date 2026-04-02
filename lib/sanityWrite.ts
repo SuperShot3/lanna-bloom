@@ -134,6 +134,7 @@ export async function createBouquet(input: CreateBouquetInput): Promise<string> 
 
   const doc = await client.create({
     _type: 'bouquet',
+    productKind: 'legacy',
     slug: { _type: 'slug', current: slug },
     nameEn: input.nameEn.trim(),
     nameTh: (input.nameTh || '').trim(),

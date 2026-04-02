@@ -16,15 +16,19 @@ function normalizeSizeKey(raw: string | undefined): SizeKey {
 function buildSyntheticBouquet(fav: FavoriteItem): Bouquet {
   const size: BouquetSize = fav.options
     ? {
-        key: normalizeSizeKey(fav.options.sizeKey),
-        label: fav.options.sizeLabel ?? fav.options.sizeKey.toUpperCase(),
+        optionId:
+          fav.options.optionId ??
+          (fav.options.sizeKey ? `legacy_${normalizeSizeKey(fav.options.sizeKey)}` : 'legacy_m'),
+        key: fav.options.sizeKey ? normalizeSizeKey(fav.options.sizeKey) : 'm',
+        label: fav.options.sizeLabel ?? '—',
         price: fav.options.sizePrice ?? fav.price,
         description: '',
         availability: true,
       }
     : {
+        optionId: 'legacy_m',
         key: 'm',
-        label: 'M',
+        label: '—',
         price: fav.price,
         description: '',
         availability: true,

@@ -1,13 +1,8 @@
-export type SizeKey = 's' | 'm' | 'l' | 'xl';
+import type { BouquetSellableOption, ProductKind, SizeKey } from '@/lib/bouquetOptions';
 
-export interface BouquetSize {
-  key: SizeKey;
-  label: string;
-  price: number;
-  description: string;
-  preparationTime?: number;
-  availability?: boolean;
-}
+export type { BouquetSellableOption, ProductKind, SizeKey } from '@/lib/bouquetOptions';
+/** @deprecated use BouquetSellableOption */
+export type BouquetSize = BouquetSellableOption;
 
 export type BouquetStatus = 'pending_review' | 'approved' | 'rejected';
 
@@ -21,24 +16,23 @@ export interface Bouquet {
   compositionEn: string;
   compositionTh: string;
   category: string;
-  /** Filter attributes */
+  /** Hybrid model; default legacy when unset in CMS */
+  productKind?: ProductKind;
   colors?: string[];
   flowerTypes?: string[];
   occasion?: string[];
+  /** Catalog facets */
+  deliveryOptions?: string[];
+  presentationFormats?: string[];
   images: string[];
-  sizes: BouquetSize[];
-  /** Partner reference ID; undefined for Lanna Bloom own bouquets */
+  /** Unified sellable lines — always non-empty after map */
+  sizes: BouquetSellableOption[];
   partnerId?: string;
-  /** Partner shop name (when expanded from Sanity); for "Hand-crafted by X" badge */
   partnerName?: string;
-  /** Partner city (optional, expanded from Sanity partner document) */
   partnerCity?: string;
-  /** Partner shop bio (optional, expanded from Sanity partner document) */
   partnerShopBioEn?: string;
   partnerShopBioTh?: string;
-  /** Partner portrait URL (optional, expanded from Sanity partner document) */
   partnerPortraitUrl?: string;
-  /** Only approved bouquets appear on public catalog; missing = approved (backward compat) */
   status?: BouquetStatus;
 }
 
@@ -56,13 +50,28 @@ export interface Partner {
   portraitUrl?: string;
   city: string;
   status: PartnerStatus;
-  /** Set when partner is created from admin approval; links to Supabase auth user */
   supabaseUserId?: string;
 }
 
 // Placeholder images (Unsplash) – replace with your CMS URLs later
 const img = (id: string, w = 600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80`;
+
+function legacyOption(
+  key: SizeKey,
+  label: string,
+  price: number,
+  description: string
+): BouquetSellableOption {
+  return {
+    optionId: `legacy_${key}`,
+    key,
+    price,
+    label,
+    description,
+    availability: true,
+  };
+}
 
 export const bouquets: Bouquet[] = [
   {
@@ -75,16 +84,17 @@ export const bouquets: Bouquet[] = [
     compositionEn: 'Red roses, eucalyptus, ribbon',
     compositionTh: 'กุหลาบแดง ยูคาลิปตัส ริบบิ้น',
     category: 'roses',
+    productKind: 'legacy',
     images: [
       img('1518895949257-762e860e6f5b'),
       img('1490757867850-704c4c2d6aac'),
       img('1455659817273-f96807779a8a'),
     ],
     sizes: [
-      { key: 's', label: 'S', price: 890, description: '7 stems' },
-      { key: 'm', label: 'M', price: 1290, description: '12 stems' },
-      { key: 'l', label: 'L', price: 1890, description: '24 stems' },
-      { key: 'xl', label: 'XL', price: 2590, description: '36 stems' },
+      legacyOption('s', '7 stems', 890, '7 stems'),
+      legacyOption('m', '12 stems', 1290, '12 stems'),
+      legacyOption('l', '24 stems', 1890, '24 stems'),
+      legacyOption('xl', '36 stems', 2590, '36 stems'),
     ],
   },
   {
@@ -97,16 +107,17 @@ export const bouquets: Bouquet[] = [
     compositionEn: 'Pink roses, white hydrangea, baby\'s breath',
     compositionTh: 'กุหลาบชมพู ไฮเดรนเยียขาว เบบี้เบรธ',
     category: 'mixed',
+    productKind: 'legacy',
     images: [
       img('1490757867850-704c4c2d6aac'),
       img('1518895949257-762e860e6f5b'),
       img('1455659817273-f96807779a8a'),
     ],
     sizes: [
-      { key: 's', label: 'S', price: 990, description: 'Small hand-tied' },
-      { key: 'm', label: 'M', price: 1490, description: 'Medium hand-tied' },
-      { key: 'l', label: 'L', price: 2190, description: 'Large hand-tied' },
-      { key: 'xl', label: 'XL', price: 2990, description: 'Premium large' },
+      legacyOption('s', 'Small hand-tied', 990, 'Small hand-tied'),
+      legacyOption('m', 'Medium hand-tied', 1490, 'Medium hand-tied'),
+      legacyOption('l', 'Large hand-tied', 2190, 'Large hand-tied'),
+      legacyOption('xl', 'Premium large', 2990, 'Premium large'),
     ],
   },
   {
@@ -119,16 +130,17 @@ export const bouquets: Bouquet[] = [
     compositionEn: 'Sunflowers, chrysanthemums, greens',
     compositionTh: 'ดอกทานตะวัน เบญจมาศ ใบไม้เขียว',
     category: 'inBox',
+    productKind: 'legacy',
     images: [
       img('1455659817273-f96807779a8a'),
       img('1490757867850-704c4c2d6aac'),
       img('1518895949257-762e860e6f5b'),
     ],
     sizes: [
-      { key: 's', label: 'S', price: 790, description: 'Compact box' },
-      { key: 'm', label: 'M', price: 1190, description: 'Standard box' },
-      { key: 'l', label: 'L', price: 1690, description: 'Large box' },
-      { key: 'xl', label: 'XL', price: 2290, description: 'Premium box' },
+      legacyOption('s', 'Compact box', 790, 'Compact box'),
+      legacyOption('m', 'Standard box', 1190, 'Standard box'),
+      legacyOption('l', 'Large box', 1690, 'Large box'),
+      legacyOption('xl', 'Premium box', 2290, 'Premium box'),
     ],
   },
   {
@@ -141,16 +153,17 @@ export const bouquets: Bouquet[] = [
     compositionEn: 'Pink roses, peonies, eucalyptus',
     compositionTh: 'กุหลาบชมพู ดอกโบตั๋น ยูคาลิปตัส',
     category: 'romantic',
+    productKind: 'legacy',
     images: [
       img('1490757867850-704c4c2d6aac'),
       img('1455659817273-f96807779a8a'),
       img('1518895949257-762e860e6f5b'),
     ],
     sizes: [
-      { key: 's', label: 'S', price: 1090, description: 'Petite' },
-      { key: 'm', label: 'M', price: 1590, description: 'Classic' },
-      { key: 'l', label: 'L', price: 2290, description: 'Grand' },
-      { key: 'xl', label: 'XL', price: 3190, description: 'Luxury' },
+      legacyOption('s', 'Petite', 1090, 'Petite'),
+      legacyOption('m', 'Classic', 1590, 'Classic'),
+      legacyOption('l', 'Grand', 2290, 'Grand'),
+      legacyOption('xl', 'Luxury', 3190, 'Luxury'),
     ],
   },
   {
@@ -163,16 +176,17 @@ export const bouquets: Bouquet[] = [
     compositionEn: 'Mixed seasonal flowers, ribbon',
     compositionTh: 'ดอกไม้ตามฤดูกาลผสม ริบบิ้น',
     category: 'birthday',
+    productKind: 'legacy',
     images: [
       img('1518895949257-762e860e6f5b'),
       img('1490757867850-704c4c2d6aac'),
       img('1455659817273-f96807779a8a'),
     ],
     sizes: [
-      { key: 's', label: 'S', price: 690, description: 'Small' },
-      { key: 'm', label: 'M', price: 990, description: 'Medium' },
-      { key: 'l', label: 'L', price: 1390, description: 'Large' },
-      { key: 'xl', label: 'XL', price: 1890, description: 'Extra large' },
+      legacyOption('s', 'Small', 690, 'Small'),
+      legacyOption('m', 'Medium', 990, 'Medium'),
+      legacyOption('l', 'Large', 1390, 'Large'),
+      legacyOption('xl', 'Extra large', 1890, 'Extra large'),
     ],
   },
   {
@@ -185,16 +199,17 @@ export const bouquets: Bouquet[] = [
     compositionEn: 'White lilies, roses, chrysanthemums',
     compositionTh: 'ดอกลิลลี่ขาว กุหลาบขาว เบญจมาศขาว',
     category: 'sympathy',
+    productKind: 'legacy',
     images: [
       img('1455659817273-f96807779a8a'),
       img('1518895949257-762e860e6f5b'),
       img('1490757867850-704c4c2d6aac'),
     ],
     sizes: [
-      { key: 's', label: 'S', price: 990, description: 'Modest' },
-      { key: 'm', label: 'M', price: 1490, description: 'Standard' },
-      { key: 'l', label: 'L', price: 2190, description: 'Standing' },
-      { key: 'xl', label: 'XL', price: 2990, description: 'Premium' },
+      legacyOption('s', 'Modest', 990, 'Modest'),
+      legacyOption('m', 'Standard', 1490, 'Standard'),
+      legacyOption('l', 'Standing', 2190, 'Standing'),
+      legacyOption('xl', 'Premium', 2990, 'Premium'),
     ],
   },
 ];

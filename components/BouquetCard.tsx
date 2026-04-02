@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { Bouquet, type BouquetSize } from '@/lib/bouquets';
+import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
@@ -20,12 +21,12 @@ import {
   type FavoriteItem,
 } from '@/lib/favorites';
 
-function defaultSizeKeyForBouquet(bouquet: Bouquet): string {
+function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
   const available = sizes.filter((s) => s.availability !== false);
   const pool = available.length ? available : sizes;
-  if (!pool.length) return sizes[0]?.key ?? 'm';
-  return pool.reduce((best, s) => (s.price >= best.price ? s : best), pool[0]).key;
+  if (!pool.length) return sizes[0]?.optionId ?? 'default';
+  return pool.reduce((best, s) => (s.price >= best.price ? s : best), pool[0]).optionId;
 }
 
 const SWIPE_THRESHOLD_PX = 50;
@@ -76,16 +77,16 @@ export function BouquetCard({
   const canSwipe = images.length > 1 && !isPopular;
   const showPanel = showHoverPanel;
 
-  const defaultKey = useMemo(() => defaultSizeKeyForBouquet(bouquet), [bouquet]);
+  const defaultOid = useMemo(() => defaultOptionIdForBouquet(bouquet), [bouquet]);
   const [hovered, setHovered] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<string>(defaultKey);
+  const [selectedOptionId, setSelectedOptionId] = useState<string>(defaultOid);
   const [justAdded, setJustAdded] = useState(false);
 
   const [favoriteActive, setFavoriteActive] = useState(false);
 
   useEffect(() => {
-    setSelectedKey(defaultKey);
-  }, [defaultKey]);
+    setSelectedOptionId(defaultOid);
+  }, [defaultOid]);
 
   useEffect(() => {
     if (!showPanel) return;
@@ -110,7 +111,7 @@ export function BouquetCard({
   }, [bouquet.id]);
 
   const selectedSize: BouquetSize | undefined =
-    bouquet.sizes?.find((s) => s.key === selectedKey) ?? bouquet.sizes?.[0];
+    bouquet.sizes?.find((s) => s.optionId === selectedOptionId) ?? bouquet.sizes?.[0];
 
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
@@ -140,7 +141,7 @@ export function BouquetCard({
             quantity: 1,
             index: 0,
             item_category: bouquet.category,
-            item_variant: selectedSize.label,
+            item_variant: selectedSize ? optionDisplayLabel(selectedSize, lang) : undefined,
           },
         ],
       });
@@ -235,14 +236,14 @@ export function BouquetCard({
       }
 
       if (persistPreferredSizeOnClick && selectedSize) {
-        setPreferredBouquetSize(bouquet.id, selectedSize.key);
+        setPreferredBouquetSize(bouquet.id, selectedSize.optionId);
       }
 
       const item: AnalyticsItem = {
         item_id: bouquet.id,
         item_name: name,
         item_category: bouquet.category,
-        item_variant: bouquet.sizes?.[0]?.label,
+        item_variant: bouquet.sizes?.[0] ? optionDisplayLabel(bouquet.sizes[0], lang) : undefined,
         price: minPrice,
         quantity: 1,
         index: 0,
@@ -267,8 +268,9 @@ export function BouquetCard({
       const selected = selectedSize;
       const option = selected
         ? ({
+            optionId: selected.optionId,
             sizeKey: selected.key,
-            sizeLabel: selected.label,
+            sizeLabel: optionDisplayLabel(selected, lang),
             sizePrice: selected.price,
           } as const)
         : undefined;
@@ -282,7 +284,14 @@ export function BouquetCard({
         image: imgSrc || bouquet.images?.[0] || '',
         slug: bouquet.slug,
         url: `/${lang}/catalog/${bouquet.slug}`,
-        options: option ? { sizeKey: option.sizeKey, sizeLabel: option.sizeLabel, sizePrice: option.sizePrice } : undefined,
+        options: option
+          ? {
+              optionId: option.optionId,
+              sizeKey: option.sizeKey,
+              sizeLabel: option.sizeLabel,
+              sizePrice: option.sizePrice,
+            }
+          : undefined,
       };
 
       if (favoriteActive) {
@@ -415,28 +424,28 @@ export function BouquetCard({
                 const unavailable = s.availability === false;
                 if (unavailable) {
                   return (
-                    <li key={s.key} className="card-hover-option card-hover-option--disabled">
+                    <li key={s.optionId} className="card-hover-option card-hover-option--disabled">
                       <span className="card-hover-option-label">
                         <input type="radio" disabled className="card-hover-radio" />
-                        <span>{s.label}</span>
+                        <span>{optionDisplayLabel(s, lang)}</span>
                       </span>
                       <span className="card-hover-option-right">{t.productCardNotAvailable}</span>
                     </li>
                   );
                 }
-                const isChecked = selectedKey === s.key;
+                const isChecked = selectedOptionId === s.optionId;
                 return (
-                  <li key={s.key} className="card-hover-option">
+                  <li key={s.optionId} className="card-hover-option">
                     <label className="card-hover-option-label">
                       <input
                         type="radio"
                         className="card-hover-radio"
                         name={radioName}
                         checked={isChecked}
-                        onChange={() => setSelectedKey(s.key)}
+                        onChange={() => setSelectedOptionId(s.optionId)}
                       />
                       <span className="card-hover-label-text">
-                        {s.label}
+                        {optionDisplayLabel(s, lang)}
                         {isChecked ? (
                           <span className="card-hover-check" aria-hidden>
                             {' '}
@@ -736,19 +745,18 @@ export function BouquetCard({
           width: 100%;
           margin-top: 10px;
           padding: 10px 12px;
-          border: 1px solid rgba(26, 60, 52, 0.14);
+          border: 1px solid rgba(197, 160, 89, 0.35);
           border-radius: var(--radius-sm);
-          background: var(--pastel-mint);
-          color: var(--primary);
+          background: rgba(197, 160, 89, 0.15);
+          color: #c5a059;
           font-size: 12px;
           font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
+          letter-spacing: 0.02em;
           cursor: pointer;
           transition: background 0.2s;
         }
         .card-hover-btn-cart:hover {
-          background: #dceee4;
+          background: rgba(197, 160, 89, 0.28);
         }
         .card-hover-btn-cart:focus-visible {
           outline: 2px solid var(--accent);
@@ -764,14 +772,14 @@ export function BouquetCard({
           text-align: center;
           font-size: 12px;
           font-weight: 600;
-          color: var(--accent);
+          color: #c0392b;
           text-decoration: underline;
           text-underline-offset: 3px;
           cursor: pointer;
           font-family: inherit;
         }
         .card-hover-buy-1:hover {
-          color: var(--accent-border);
+          color: #96281b;
         }
         .card-hover-buy-1:focus-visible {
           outline: 2px solid var(--accent);
