@@ -9,7 +9,11 @@ import { isValidLocale, type Locale } from '@/lib/i18n';
 import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLinks } from '../_data/articles';
 import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
+import { ArticleListenPlayer } from './ArticleListenPlayer';
 import styles from './article.module.css';
+
+/** Public static URL; file must live under /public */
+const ORDER_FROM_ABROAD_AUDIO = '/content/voice/order_flowers_from_abroad.mp3';
 
 export const revalidate = 3600;
 
@@ -70,6 +74,7 @@ export async function generateMetadata({
 export function generateStaticParams() {
   const slugs = [
     'order-flowers-website-vs-facebook-chiang-mai',
+    'birthday-flowers-chiang-mai-from-abroad',
     'how-to-order-flower-delivery-chiang-mai',
     'rose-bouquets-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
@@ -155,6 +160,9 @@ export default async function InfoArticlePage({
     ),
     strong: (props: React.HTMLAttributes<HTMLElement>) => (
       <strong className="info-article-strong" {...props} />
+    ),
+    ArticleListen: () => (
+      <ArticleListenPlayer src={ORDER_FROM_ABROAD_AUDIO} lang={lang} />
     ),
   };
 

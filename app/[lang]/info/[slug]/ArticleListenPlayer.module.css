@@ -1,0 +1,83 @@
+.listenWrap {
+  margin: 0 0 2rem;
+}
+
+.listenCard {
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--pastel-cream, #faf7f2) 0%, rgba(232, 240, 237, 0.45) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.listenHeader {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.listenIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-cta-text, #1a3c34);
+}
+
+.listenTitle {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  color: var(--text);
+}
+
+.listenHint {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.listenPlay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.55rem 1.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid var(--accent-border);
+  border-radius: 9999px;
+  background: var(--accent);
+  color: var(--accent-cta-text, #1a3c34);
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.listenPlay:hover {
+  opacity: 0.97;
+  transform: translateY(-1px);
+}
+
+.listenPlay:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.listenAudio {
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+}
+
+@media (max-width: 400px) {
+  .listenCard {
+    padding: 1rem 1.1rem;
+  }
+}

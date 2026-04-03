@@ -55,6 +55,26 @@ export const articles: ArticleMeta[] = [
     ctaLinks: [{ label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' }],
   },
   {
+    slug: 'birthday-flowers-chiang-mai-from-abroad',
+    title: 'What to Expect When Sending Birthday Flowers to Chiang Mai From Abroad',
+    excerpt:
+      'Ordering from another country should feel thoughtful, not stressful. Here is what overseas customers can expect: clear steps, honest confirmation, and local delivery handled with care.',
+    titleTh: 'สิ่งที่ควรคาดหวังเมื่อส่งดอกไม้วันเกิดให้คนในเชียงใหม่จากต่างประเทศ',
+    excerptTh:
+      'การสั่งจากต่างประเทศควรรู้สึกใส่ใจ ไม่ใช่เครียด บทความนี้อธิบายว่าลูกค้าต่างประเทศจะได้รับอะไร: ขั้นตอนชัดเจน การยืนยันที่ตรงไปตรงมา และการจัดส่งในพื้นที่อย่างใส่ใจ',
+    publishedAt: '2026-04-03T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff5f7 0%, #f0e6ff 50%, #e8f4fc 100%)',
+      center: { kind: 'emoji', value: '🎂' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy-chiang-mai' },
+    ],
+  },
+  {
     slug: 'how-to-order-flower-delivery-chiang-mai',
     title: 'How to Order Flower Delivery in Chiang Mai',
     excerpt:
