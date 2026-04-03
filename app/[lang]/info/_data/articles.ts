@@ -38,13 +38,13 @@ export const articles: ArticleMeta[] = [
   {
     slug: 'order-flowers-website-vs-facebook-chiang-mai',
     title:
-      'Why Ordering Flowers on a Website Can Be Easier Than Ordering Through Facebook Messages in Chiang Mai',
+      'Why Ordering Flowers on a Website Can Be Easier Than Ordering Through Facebook Messages',
     excerpt:
-      'Many people find flower shops on Facebook first—but chat orders can feel slow and unclear. Here is how using the website can make browsing, comparing, and ordering simpler, especially for busy customers and overseas buyers.',
+      'Many people find flower shops on Facebook first—but chat orders can feel slow and unclear. Here is how using the website can make browsing, comparing, and ordering simpler, especially for busy customers and overseas buyers. Delivery is available in Chiang Mai and nearby areas only. See below for more details.',
     titleTh:
-      'ทำไมการสั่งดอกไม้ผ่านเว็บไซต์อาจสะดวกกว่าการสั่งผ่านข้อความ Facebook ในเชียงใหม่',
+      'ทำไมการสั่งดอกไม้ผ่านเว็บไซต์อาจสะดวกกว่าการสั่งผ่านข้อความ Facebook',
     excerptTh:
-      'หลายคนรู้จักร้านดอกไม้ผ่าน Facebook ก่อน แต่การสั่งทางแชทบางครั้งช้าและไม่ชัดเจน บทความนี้อธิบายว่าทำไมการใช้เว็บไซต์จึงช่วยให้ดูตัวเลือก เปรียบเทียบ และสั่งซื้อได้ง่ายขึ้น โดยเฉพาะลูกค้าที่ยุ่งหรือสั่งจากต่างประเทศ',
+      'หลายคนรู้จักร้านดอกไม้ผ่าน Facebook ก่อน แต่การสั่งทางแชทบางครั้งช้าและไม่ชัดเจน บทความนี้อธิบายว่าทำไมการใช้เว็บไซต์จึงช่วยให้ดูตัวเลือก เปรียบเทียบ และสั่งซื้อได้ง่ายขึ้น โดยเฉพาะลูกค้าที่ยุ่งหรือสั่งจากต่างประเทศ จัดส่งเฉพาะในเชียงใหม่และพื้นที่ใกล้เคียงเท่านั้น ดูรายละเอียดเพิ่มเติมด้านล่าง',
     publishedAt: '2026-04-02T00:00:00.000Z',
     featured: false,
     cover: {

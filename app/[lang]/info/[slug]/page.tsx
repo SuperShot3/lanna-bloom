@@ -176,6 +176,7 @@ export default async function InfoArticlePage({
             {formatDate(article.publishedAt)}
           </time>
           <h1 className={styles.infoArticleTitle}>{articleTitle}</h1>
+          <p className={styles.infoArticleSubtitle}>{articleExcerpt}</p>
           <div className={styles.infoArticleShare}>
             <ShareButton
               url={articleUrl}
@@ -187,7 +188,9 @@ export default async function InfoArticlePage({
           </div>
         </header>
         <div className={styles.infoArticleBody}>
-          <MDXRemote source={mdxSource} components={mdxComponents} />
+          <div className={styles.infoArticleMdx}>
+            <MDXRemote source={mdxSource} components={mdxComponents} />
+          </div>
           <ArticleCta links={ctaLinks} lang={lang} />
         </div>
       </article>

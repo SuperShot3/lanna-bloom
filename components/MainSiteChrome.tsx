@@ -30,7 +30,7 @@ export function MainSiteChrome({
       <PrimeHourPromoBanner lang={lang} onActiveChange={setPrimeHourBanner} />
       <Header lang={lang} hasPrimeHourBanner={primeHourBanner} />
       <div
-        className={`main-content-wrap ${primeHourBanner ? 'pt-[calc(5rem+2.25rem+env(safe-area-inset-top,0px))]' : 'pt-20'}`}
+        className={`main-content-wrap ${primeHourBanner ? 'pt-[calc(5rem+2.25rem+env(safe-area-inset-top,0px))]' : 'pt-[calc(5rem+1px+0.5rem)]'}`}
         style={{ viewTransitionName: 'main-content' } as React.CSSProperties}
       >
         <main>{children}</main>
