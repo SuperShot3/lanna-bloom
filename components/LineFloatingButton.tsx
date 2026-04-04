@@ -1,6 +1,5 @@
 import { LineIcon } from '@/components/icons/LineIcon';
-
-const LINE_URL = 'https://line.me/R/ti/p/@085tqlor';
+import { getLineContactUrl } from '@/lib/messenger';
 
 export function LineFloatingButton() {
   return (
@@ -27,7 +26,7 @@ export function LineFloatingButton() {
         </div>
 
         <a
-          href={LINE_URL}
+          href={getLineContactUrl()}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Chat with us on LINE"
