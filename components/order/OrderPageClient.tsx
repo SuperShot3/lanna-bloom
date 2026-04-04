@@ -18,6 +18,53 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
+import { SUPPORT_EMAIL } from '@/lib/siteContact';
+
+function EmailIconSmall({ size = 18 }: { size?: number }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M22 7l-10 6L2 7" />
+    </svg>
+  );
+}
+
+/** Mini QR motif for payment method tab — matches emoji icon size (~20px). */
+function QrTabIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      aria-hidden
+      className="order-redesign-qr-tab-svg"
+    >
+      {/* Corner finders (stroke frame + inner square) */}
+      <rect x="2" y="2" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.35" />
+      <rect x="4.25" y="4.25" width="2.5" height="2.5" fill="currentColor" />
+      <rect x="15" y="2" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.35" />
+      <rect x="17.25" y="4.25" width="2.5" height="2.5" fill="currentColor" />
+      <rect x="2" y="15" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.35" />
+      <rect x="4.25" y="17.25" width="2.5" height="2.5" fill="currentColor" />
+      {/* Data modules */}
+      <rect x="11" y="3" width="2" height="2" fill="currentColor" />
+      <rect x="11" y="7" width="2" height="2" fill="currentColor" />
+      <rect x="13" y="11" width="2" height="2" fill="currentColor" />
+      <rect x="17" y="11" width="2" height="2" fill="currentColor" />
+      <rect x="11" y="13" width="2" height="2" fill="currentColor" />
+      <rect x="15" y="13" width="2" height="2" fill="currentColor" />
+      <rect x="19" y="13" width="2" height="2" fill="currentColor" />
+      <rect x="13" y="15" width="2" height="2" fill="currentColor" />
+      <rect x="17" y="15" width="2" height="2" fill="currentColor" />
+      <rect x="11" y="17" width="2" height="2" fill="currentColor" />
+      <rect x="15" y="17" width="2" height="2" fill="currentColor" />
+      <rect x="19" y="17" width="2" height="2" fill="currentColor" />
+      <rect x="13" y="19" width="2" height="2" fill="currentColor" />
+      <rect x="17" y="19" width="2" height="2" fill="currentColor" />
+    </svg>
+  );
+}
 
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
@@ -82,6 +129,8 @@ export function OrderPageClient({
   const router = useRouter();
   const t = translations[locale].orderPage;
   const tCustom = translations[locale].customOrder;
+  const tr = t as Record<string, string>;
+  const qrOrderIdLine = tr.qrOrderIdReminder?.replace('{orderId}', orderId) ?? `Order ID: ${orderId}`;
 
   useEffect(() => {
     const token = readCheckoutTokenFromUrl();
@@ -164,7 +213,7 @@ export function OrderPageClient({
       cancelled = true;
     };
   }, [paid, orderId, router]);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('qr');
   const [copied, setCopied] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
 
@@ -215,6 +264,22 @@ export function OrderPageClient({
     line: getLineContactUrl(),
     whatsapp: getWhatsAppContactUrl(),
   };
+
+  const emphasizePayTab = !paid && canPay && activeTab === 'details';
+  const slipWhatsAppMessage =
+    locale === 'th'
+      ? `สวัสดีค่ะ ส่งสลิปชำระเงินสำหรับออเดอร์ ${orderId} ค่ะ`
+      : `Hi — here is my payment slip for order ${orderId}. Thank you!`;
+  const slipWhatsAppUrl = getWhatsAppOrderUrl(slipWhatsAppMessage);
+  const paymentSlipMailto = (() => {
+    const subject =
+      locale === 'th' ? `สลิปชำระเงิน — ${orderId}` : `Payment slip — Order ${orderId}`;
+    const body =
+      locale === 'th'
+        ? `รหัสออเดอร์: ${orderId}\n\nแนบหรือส่งสลิปชำระเงินด้านล่างค่ะ\n`
+        : `Order ID: ${orderId}\n\nI am sending my payment slip below.\n`;
+    return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  })();
 
   // Tooltip for disabled \"Make payment\" tab (order under review).
   const [showPayTooltip, setShowPayTooltip] = useState(false);
@@ -285,7 +350,7 @@ export function OrderPageClient({
             type="button"
             className={`order-redesign-tab ${activeTab === 'pay' ? 'active' : ''} ${
               !paid && !canPay ? 'order-redesign-tab-disabled' : ''
-            }`}
+            } ${emphasizePayTab ? 'order-redesign-tab-pay-cta' : ''}`}
             onClick={() => {
               if (!paid && !canPay) {
                 setShowPayTooltip((prev) => !prev);
@@ -295,6 +360,10 @@ export function OrderPageClient({
               setShowPayTooltip(false);
             }}
             aria-disabled={!paid && !canPay}
+            title={emphasizePayTab ? tr.payTabCtaHint : undefined}
+            aria-label={
+              emphasizePayTab ? `${t.makePayment}. ${tr.payTabCtaHint ?? ''}` : undefined
+            }
           >
             {t.makePayment}
             <span
@@ -522,21 +591,23 @@ export function OrderPageClient({
               <div className="order-redesign-method-tabs">
                 <button
                   type="button"
+                  className={`order-redesign-method-tab ${paymentMethod === 'qr' ? 'active' : ''}`}
+                  onClick={() => setPaymentMethod('qr')}
+                >
+                  <span className="order-redesign-method-icon order-redesign-method-icon-qr" aria-hidden>
+                    <QrTabIcon size={20} />
+                  </span>
+                  <div className="order-redesign-method-name">{t.paymentMethodQr}</div>
+                  <div className="order-redesign-method-sub">{t.promptPay}</div>
+                </button>
+                <button
+                  type="button"
                   className={`order-redesign-method-tab ${paymentMethod === 'card' ? 'active' : ''}`}
                   onClick={() => setPaymentMethod('card')}
                 >
                   <span className="order-redesign-method-icon">💳</span>
                   <div className="order-redesign-method-name">{t.paymentMethodCard}</div>
                   <div className="order-redesign-method-sub">{t.visaMastercard}</div>
-                </button>
-                <button
-                  type="button"
-                  className={`order-redesign-method-tab ${paymentMethod === 'qr' ? 'active' : ''}`}
-                  onClick={() => setPaymentMethod('qr')}
-                >
-                  <span className="order-redesign-method-icon">▢</span>
-                  <div className="order-redesign-method-name">{t.paymentMethodQr}</div>
-                  <div className="order-redesign-method-sub">{t.promptPay}</div>
                 </button>
                 <button
                   type="button"
@@ -551,9 +622,7 @@ export function OrderPageClient({
 
               {paymentMethod === 'card' && (
                 <div className="order-redesign-method-content">
-                  <p className="order-redesign-card-intro">
-                    {locale === 'th' ? 'คุณจะถูกนำไปยัง Stripe Checkout เพื่อชำระเงินอย่างปลอดภัย' : 'You will be redirected to Stripe Checkout to pay securely.'}
-                  </p>
+                  <p className="order-redesign-card-intro">{tr.cardPaymentIntro}</p>
                   <button
                     type="button"
                     className="order-redesign-pay-btn"
@@ -570,11 +639,42 @@ export function OrderPageClient({
 
               {paymentMethod === 'qr' && (
                 <div className="order-redesign-method-content">
-                  <p className="order-redesign-card-intro">
-                    {locale === 'th'
-                      ? 'สแกน QR พร้อมเพย์นี้ได้จากทุกแอปธนาคาร แล้วส่งสลิปให้เราทาง LINE หรือแชท'
-                      : 'Scan this PromptPay QR with any Thai banking app, then send your slip to us via LINE or chat.'}
-                  </p>
+                  <div className="order-redesign-qr-above-image">
+                    <p className="order-redesign-qr-step">{tr.qrPaymentIntro}</p>
+                    <p className="order-redesign-qr-step order-redesign-qr-step-slip">{tr.qrAfterPaySlip}</p>
+                    <div
+                      className="order-redesign-qr-amount-block"
+                      role="group"
+                      aria-label={`${tr.qrAmountToPayLabel}. ${tr.sendSlipContactHeading}`}
+                    >
+                      <div className="order-redesign-qr-amount-label">{tr.qrAmountToPayLabel}</div>
+                      <div className="order-redesign-qr-amount-value">฿{grandTotal.toLocaleString()}</div>
+                      <div className="order-redesign-slip-heading order-redesign-slip-heading--inAmount">
+                        {tr.sendSlipContactHeading}
+                      </div>
+                      <div className="order-redesign-slip-row order-redesign-slip-row--inAmount">
+                        <a
+                          href={contactQuickLinks.line}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="order-redesign-slip-btn"
+                        >
+                          <LineIcon size={18} /> {tr.slipContactLine}
+                        </a>
+                        <a
+                          href={slipWhatsAppUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="order-redesign-slip-btn"
+                        >
+                          <WhatsAppIcon size={18} /> {tr.slipContactWhatsApp}
+                        </a>
+                        <a href={paymentSlipMailto} className="order-redesign-slip-btn">
+                          <EmailIconSmall size={18} /> {tr.slipContactEmail}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                   <div className="order-redesign-qr-wrap">
                     <Image
                       src="/payments/promptpay-static-ttb.png"
@@ -593,11 +693,21 @@ export function OrderPageClient({
                       {locale === 'th' ? 'ดาวน์โหลด QR' : 'Download QR'}
                     </a>
                   </p>
-                  <p className="order-redesign-coming-text">
-                    {locale === 'th'
-                      ? `ยอดชำระทั้งหมด: ฿${grandTotal.toLocaleString()} · กรุณาระบุหมายเลขออเดอร์ ${orderId} ในข้อความ`
-                      : `Total to pay: ฿${grandTotal.toLocaleString()} · Please mention order ID ${orderId} in your message.`}
-                  </p>
+                  <div className="order-redesign-qr-below-image">
+                    <p className="order-redesign-qr-order-id mono">{qrOrderIdLine}</p>
+                    <div className="order-redesign-line-id-row">
+                      <div className="order-redesign-line-id-pair">
+                        <span className="order-redesign-line-id-label">{tr.qrLineIdLabel}</span>
+                        <span className="order-redesign-line-id-value">{tr.lineIdDisplay}</span>
+                      </div>
+                      <div className="order-redesign-line-id-pair">
+                        <span className="order-redesign-line-id-label">{tr.qrEmailLabel}</span>
+                        <span className="order-redesign-line-id-value order-redesign-line-id-email">
+                          {SUPPORT_EMAIL}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -829,6 +939,32 @@ export function OrderPageClient({
           height: 2px;
           background: var(--accent);
           border-radius: 2px 2px 0 0;
+        }
+        .order-redesign-tab.order-redesign-tab-pay-cta {
+          margin: 4px 4px 0;
+          border-radius: var(--radius-sm);
+          background: linear-gradient(145deg, var(--accent-soft, #f3e7d6), var(--pastel-cream));
+          border: 1px solid var(--accent-border, #c4a574);
+          box-shadow: 0 0 0 1px rgba(180, 140, 90, 0.2);
+          animation: orderPayTabPulse 2.5s ease-in-out infinite;
+          color: var(--text);
+        }
+        .order-redesign-tab.order-redesign-tab-pay-cta:hover {
+          color: var(--accent);
+        }
+        @keyframes orderPayTabPulse {
+          0%,
+          100% {
+            box-shadow: 0 0 0 1px rgba(180, 140, 90, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 0 4px rgba(180, 140, 90, 0.12);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .order-redesign-tab.order-redesign-tab-pay-cta {
+            animation: none;
+          }
         }
         .order-redesign-badge {
           font-size: 10px;
@@ -1067,6 +1203,25 @@ export function OrderPageClient({
           display: block;
           margin-bottom: 4px;
         }
+        .order-redesign-method-icon-qr {
+          font-size: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: auto;
+          margin-right: auto;
+          margin-bottom: 4px;
+          width: 20px;
+          height: 20px;
+          color: var(--text-muted);
+        }
+        .order-redesign-method-tab.active .order-redesign-method-icon-qr {
+          color: var(--accent);
+        }
+        .order-redesign-qr-tab-svg {
+          display: block;
+          flex-shrink: 0;
+        }
         .order-redesign-method-name {
           font-size: 12px;
           font-weight: 600;
@@ -1128,6 +1283,9 @@ export function OrderPageClient({
           color: var(--text-muted);
           margin: 0;
         }
+        .order-redesign-qr-below-image {
+          margin-top: 12px;
+        }
         .order-redesign-qr-wrap {
           margin: 12px 0;
           display: flex;
@@ -1163,6 +1321,140 @@ export function OrderPageClient({
           background: var(--accent-soft, #f3e7d6);
           border-color: var(--accent);
           transform: translateY(-1px);
+        }
+        .order-redesign-qr-above-image {
+          margin-bottom: 1rem;
+        }
+        .order-redesign-qr-step {
+          font-size: 14px;
+          line-height: 1.55;
+          color: var(--text-muted);
+          margin: 0 0 10px;
+        }
+        .order-redesign-qr-step-slip {
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: 14px;
+        }
+        .order-redesign-qr-amount-block {
+          text-align: center;
+          padding: 16px 18px 18px;
+          margin: 0 0 12px;
+          border-radius: var(--radius-sm);
+          border: 2px solid var(--accent-border, #c4a574);
+          background: linear-gradient(180deg, var(--surface), var(--pastel-cream));
+        }
+        .order-redesign-qr-amount-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          margin-bottom: 6px;
+        }
+        .order-redesign-qr-amount-value {
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: 0.02em;
+          line-height: 1.15;
+        }
+        .order-redesign-qr-order-id {
+          font-family: ui-monospace, 'Cascadia Code', monospace;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text);
+          text-align: center;
+          margin: 0 0 12px;
+          letter-spacing: 0.04em;
+        }
+        .order-redesign-line-id-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px 16px;
+          align-items: start;
+          margin-bottom: 12px;
+          padding: 12px 14px;
+          background: var(--pastel-cream);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+        }
+        @media (max-width: 520px) {
+          .order-redesign-line-id-row {
+            grid-template-columns: 1fr;
+          }
+        }
+        .order-redesign-line-id-pair {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+        .order-redesign-line-id-label {
+          color: var(--text-muted);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+        }
+        .order-redesign-line-id-value {
+          font-weight: 700;
+          color: var(--text);
+          font-size: 13px;
+        }
+        .order-redesign-line-id-email {
+          font-weight: 600;
+          word-break: break-all;
+          line-height: 1.35;
+        }
+        .order-redesign-slip-heading {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          text-align: center;
+          margin: 16px 0 10px;
+        }
+        .order-redesign-slip-heading--inAmount {
+          margin: 14px 0 10px;
+          padding-top: 12px;
+          border-top: 1px solid var(--border);
+        }
+        .order-redesign-slip-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: center;
+          margin-bottom: 4px;
+        }
+        .order-redesign-slip-row--inAmount {
+          margin: 0;
+          max-width: 100%;
+        }
+        .order-redesign-qr-amount-block .order-redesign-slip-btn {
+          padding: 8px 12px;
+          font-size: 0.8rem;
+        }
+        .order-redesign-slip-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+          background: var(--surface);
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text);
+          text-decoration: none;
+          cursor: pointer;
+          font-family: inherit;
+          transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .order-redesign-slip-btn:hover {
+          border-color: var(--accent);
+          background: var(--accent-soft, #f3e7d6);
+          color: var(--accent);
         }
         .order-redesign-bank-card {
           margin: 8px 0 10px;

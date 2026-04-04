@@ -76,10 +76,11 @@ export default async function OrderDetailsPage({
     ?? supabasePayment?.updated_at
     ?? order.fulfillmentStatusUpdatedAt;
 
-  // Gate public \"Make payment\" UI: default payment status is NOT_PAID (not ready for payment).
-  // Admin must explicitly set payment_status to READY_TO_PAY in the dashboard.
+  // Payment tab: show as soon as the order is unpaid. Admin still confirms manual (QR/bank) slips
+  // in the dashboard; Stripe still sets PAID via webhook.
   const paymentStatusUpper = (supabasePayment?.payment_status ?? 'NOT_PAID').toUpperCase();
-  const canPay = !paid && paymentStatusUpper === 'READY_TO_PAY';
+  const canPay =
+    !paid && paymentStatusUpper !== 'CANCELLED' && paymentStatusUpper !== 'ERROR';
 
   const conversionValue = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
   const conversionCurrency = order.currency ?? 'THB';
