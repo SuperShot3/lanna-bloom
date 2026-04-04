@@ -60,7 +60,7 @@ function validateStripePayload(
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
         (v): v is ContactPreferenceOption =>
-          v === 'phone' || v === 'line' || v === 'telegram' || v === 'whatsapp'
+          v === 'phone' || v === 'line' || v === 'whatsapp'
       )
     : [];
   if (contactPreference.length === 0) {

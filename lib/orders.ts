@@ -13,6 +13,7 @@ export type {
   OrderDelivery,
   OrderPricing,
   ContactPreferenceOption,
+  ContactPreferenceStored,
   CustomOrderDetails,
   OrderPayload,
   OrderPaymentStatus,

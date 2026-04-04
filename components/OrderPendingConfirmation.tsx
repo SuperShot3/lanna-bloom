@@ -19,16 +19,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
-import {
-  getLineContactUrl,
-  getWhatsAppContactUrl,
-  getTelegramContactUrl,
-} from '@/lib/messenger';
-import { trackMessengerClick } from '@/lib/analytics';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-import { SUPPORT_EMAIL } from '@/lib/siteContact';
 
 function CopyChip({ label, value, locale }: { label: string; value: string; locale: Locale }) {
   const [copied, setCopied] = useState(false);
@@ -184,17 +176,6 @@ export function OrderPendingConfirmation({
     window.location.href = url;
   }, [orderId, redirecting]);
 
-  const lineUrl = getLineContactUrl();
-  const whatsappUrl = getWhatsAppContactUrl();
-  const telegramUrl = getTelegramContactUrl();
-  const emailUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Order ${orderId}`)}`;
-
-  const channels = [
-    { id: 'line' as const, url: lineUrl, Icon: LineIcon, label: 'LINE', cls: 'icon-line' },
-    { id: 'whatsapp' as const, url: whatsappUrl, Icon: WhatsAppIcon, label: 'WhatsApp', cls: 'icon-whatsapp' },
-    { id: 'telegram' as const, url: telegramUrl, Icon: TelegramIcon, label: 'Telegram', cls: 'icon-telegram' },
-  ];
-
   return (
     <div className="pending-page">
       <div className="pending-card">
@@ -338,13 +319,6 @@ export function OrderPendingConfirmation({
         }
         .icon-whatsapp:hover {
           box-shadow: 0 5px 20px rgba(37, 211, 102, 0.4);
-        }
-        .icon-telegram {
-          background: #3aace2;
-          box-shadow: 0 3px 12px rgba(58, 172, 226, 0.3);
-        }
-        .icon-telegram:hover {
-          box-shadow: 0 5px 20px rgba(58, 172, 226, 0.4);
         }
         .icon-email {
           background: #f6f2ed;

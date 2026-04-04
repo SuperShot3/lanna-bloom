@@ -3,15 +3,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShareIcon, LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
+import { ShareIcon, LineIcon, WhatsAppIcon } from '@/components/icons';
 import {
   getWhatsAppOrderUrl,
   getLineOrderUrl,
-  getTelegramOrderUrl,
 } from '@/lib/messenger';
 import { trackMessengerClick } from '@/lib/analytics';
 import type { Order, FulfillmentStatus } from '@/lib/orders';
-import type { ContactPreferenceOption } from '@/lib/orders';
+import type { ContactPreferenceStored } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
@@ -185,11 +184,11 @@ export function OrderDetailsView({
     order
   );
 
-  const contactPreferenceLabels: Record<ContactPreferenceOption, string> = {
+  const contactPreferenceLabels: Record<ContactPreferenceStored, string> = {
     phone: tCart.contactPhone,
     line: tCart.contactLine,
     whatsapp: tCart.contactWhatsApp,
-    telegram: tCart.contactTelegram,
+    telegram: 'Telegram',
   };
 
   const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(
@@ -269,7 +268,6 @@ export function OrderDetailsView({
   const contactChannels = [
     { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, color: '#00B900', label: 'LINE' },
     { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, color: '#25D366', label: 'WhatsApp' },
-    { id: 'telegram' as const, getUrl: () => getTelegramOrderUrl(orderMessage), Icon: TelegramIcon, color: '#26A5E4', label: 'Telegram' },
   ];
 
   const paymentBadgeLabel =
@@ -328,7 +326,7 @@ export function OrderDetailsView({
         </div>
       </div>
 
-      {/* Contact Lanna Bloom - LINE, WhatsApp, Telegram */}
+      {/* Contact Lanna Bloom - LINE, WhatsApp */}
       <div className="order-details-section order-details-contact-block">
         <h2 className="order-details-contact-heading">{t.contactLannaBloom}</h2>
         <div className="order-details-contact-icons">

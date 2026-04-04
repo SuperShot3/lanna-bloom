@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'Lanna Bloom | Fresh flowers delivered',
-  description: 'Order beautiful bouquets via LINE, WhatsApp, or Telegram. Fresh flowers delivered with care.',
+  description: 'Order beautiful bouquets via LINE or WhatsApp. Fresh flowers delivered with care.',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Lanna Bloom | Fresh flowers delivered',
-    description: 'Order beautiful bouquets via LINE, WhatsApp, or Telegram.',
+    description: 'Order beautiful bouquets via LINE or WhatsApp.',
   },
 };
 

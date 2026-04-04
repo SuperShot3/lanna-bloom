@@ -383,7 +383,23 @@ function shuffleArraySeeded<T>(arr: T[], random: () => number): T[] {
   return arr;
 }
 
-/** Price-tier interleaving (same as previous popular logic, before shuffle) */
+/** Stable dedupe by bouquet id (safety net if interleave or CMS ever repeats an id). */
+function dedupeBouquetsById(bouquets: Bouquet[]): Bouquet[] {
+  const seen = new Set<string>();
+  const out: Bouquet[] = [];
+  for (const b of bouquets) {
+    if (seen.has(b.id)) continue;
+    seen.add(b.id);
+    out.push(b);
+  }
+  return out;
+}
+
+/**
+ * Price-tier interleaving (same as previous popular logic, before shuffle).
+ * Buckets must be disjoint: the old split used slice(0, thirdSize) and slice(-thirdSize),
+ * which both select the same item when total === 1, duplicating that card in the grid.
+ */
 function buildInterleavedPopularBouquets(bouquets: Bouquet[]): Bouquet[] {
   if (bouquets.length === 0) return [];
 
@@ -394,12 +410,14 @@ function buildInterleavedPopularBouquets(bouquets: Bouquet[]): Bouquet[] {
 
   bouquetsWithPrice.sort((a, b) => a.minPrice - b.minPrice);
 
-  const total = bouquetsWithPrice.length;
-  const thirdSize = Math.ceil(total / 3);
+  const n = bouquetsWithPrice.length;
+  const nCheap = Math.ceil(n / 3);
+  const nMid = Math.ceil((n - nCheap) / 2);
+  const nExp = n - nCheap - nMid;
 
-  const expensive = bouquetsWithPrice.slice(-thirdSize).reverse();
-  const middle = bouquetsWithPrice.slice(thirdSize, total - thirdSize);
-  const cheap = bouquetsWithPrice.slice(0, thirdSize);
+  const cheap = bouquetsWithPrice.slice(0, nCheap);
+  const middle = bouquetsWithPrice.slice(nCheap, nCheap + nMid);
+  const expensive = bouquetsWithPrice.slice(nCheap + nMid).reverse();
 
   const interleaved: Bouquet[] = [];
   const maxLength = Math.max(expensive.length, middle.length, cheap.length);
@@ -410,7 +428,7 @@ function buildInterleavedPopularBouquets(bouquets: Bouquet[]): Bouquet[] {
     if (i < middle.length) interleaved.push(middle[i].bouquet);
   }
 
-  return interleaved;
+  return dedupeBouquetsById(interleaved);
 }
 
 const HERO_IMAGE_FALLBACK = '/HeroImage/heroimage.webp';
@@ -573,7 +591,7 @@ async function fetchBouquetsCatalogFiltered(params: CatalogFilterParams): Promis
   allBouquets: Bouquet[];
 }> {
   const docs = await client.fetch<SanityBouquetWithCreated[]>(catalogAllQuery);
-  const allBouquets = (docs ?? []).map((d) => mapToBouquet(d));
+  const allBouquets = dedupeBouquetsById((docs ?? []).map((d) => mapToBouquet(d)));
   let filtered = allBouquets.filter((b) => matchesFilters(b, params));
 
   const sort = params.sort || 'newest';
@@ -590,7 +608,7 @@ async function fetchBouquetsCatalogFiltered(params: CatalogFilterParams): Promis
   } else if (sort === 'price_desc') {
     filtered = [...filtered].sort((a, b) => minPriceFromOptions(b.sizes) - minPriceFromOptions(a.sizes));
   }
-  return { bouquets: filtered, allBouquets };
+  return { bouquets: dedupeBouquetsById(filtered), allBouquets };
 }
 
 export async function getBouquetsFilteredFromSanity(params: CatalogFilterParams): Promise<Bouquet[]> {

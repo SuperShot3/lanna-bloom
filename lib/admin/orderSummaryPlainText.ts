@@ -1,5 +1,5 @@
 import type { Order } from '@/lib/orders';
-import type { ContactPreferenceOption } from '@/lib/orders/types';
+import type { ContactPreferenceStored } from '@/lib/orders/types';
 import type {
   OrderItemAddOnsDisplay,
   SupabaseOrderItemRow,
@@ -11,11 +11,11 @@ export type OrderSummaryItemRow = SupabaseOrderItemRow & {
   addOns?: OrderItemAddOnsDisplay;
 };
 
-const CONTACT_PREF_LABELS: Record<ContactPreferenceOption, string> = {
+const CONTACT_PREF_LABELS: Record<ContactPreferenceStored, string> = {
   phone: 'Phone',
   line: 'LINE',
-  telegram: 'Telegram',
   whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
 };
 
 function orderJsonDelivery(order: SupabaseOrderRow): Order['delivery'] | undefined {
@@ -49,16 +49,16 @@ export function preferredContactDisplay(order: SupabaseOrderRow): string {
     : 'N/A';
 }
 
-function parseContactPreference(raw: string | null | undefined): ContactPreferenceOption[] {
+function parseContactPreference(raw: string | null | undefined): ContactPreferenceStored[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    const allowed = new Set<ContactPreferenceOption>(['phone', 'line', 'telegram', 'whatsapp']);
-    const out: ContactPreferenceOption[] = [];
+    const allowed = new Set<ContactPreferenceStored>(['phone', 'line', 'telegram', 'whatsapp']);
+    const out: ContactPreferenceStored[] = [];
     for (const x of parsed) {
-      if (typeof x === 'string' && allowed.has(x as ContactPreferenceOption)) {
-        out.push(x as ContactPreferenceOption);
+      if (typeof x === 'string' && allowed.has(x as ContactPreferenceStored)) {
+        out.push(x as ContactPreferenceStored);
       }
     }
     return out;

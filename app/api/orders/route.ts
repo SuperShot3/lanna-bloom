@@ -85,11 +85,11 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
         (v): v is ContactPreferenceOption =>
-          v === 'phone' || v === 'line' || v === 'telegram' || v === 'whatsapp'
+          v === 'phone' || v === 'line' || v === 'whatsapp'
       )
     : [];
   if (contactPreference.length === 0) {
-    return { ok: false, message: 'At least one contactPreference is required (phone, line, whatsapp, or telegram)' };
+    return { ok: false, message: 'At least one contactPreference is required (phone, line, or whatsapp)' };
   }
 
   const itemsFromPayload = items.map((it: unknown) => {

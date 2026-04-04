@@ -6,12 +6,10 @@ import { useRouter } from 'next/navigation';
 import {
   getLineOrderUrl,
   getWhatsAppOrderUrl,
-  getTelegramOrderUrl,
   getLineContactUrl,
   getWhatsAppContactUrl,
-  getTelegramContactUrl,
 } from '@/lib/messenger';
-import { LineIcon, WhatsAppIcon, TelegramIcon, HomeIcon } from '@/components/icons';
+import { LineIcon, WhatsAppIcon, HomeIcon } from '@/components/icons';
 import { translations } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
@@ -211,13 +209,11 @@ export function OrderPageClient({
   const contactChannels = [
     { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, label: 'LINE' },
     { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, label: 'WhatsApp' },
-    { id: 'telegram' as const, getUrl: () => getTelegramOrderUrl(orderMessage), Icon: TelegramIcon, label: 'Telegram' },
   ];
 
   const contactQuickLinks = {
     line: getLineContactUrl(),
     whatsapp: getWhatsAppContactUrl(),
-    telegram: getTelegramContactUrl(),
   };
 
   // Tooltip for disabled \"Make payment\" tab (order under review).
@@ -326,14 +322,6 @@ export function OrderPageClient({
                   className="order-redesign-tooltip-chip"
                 >
                   <LineIcon size={14} /> LINE
-                </a>
-                <a
-                  href={contactQuickLinks.telegram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="order-redesign-tooltip-chip"
-                >
-                  <TelegramIcon size={14} /> Telegram
                 </a>
                 <a
                   href={contactQuickLinks.whatsapp}

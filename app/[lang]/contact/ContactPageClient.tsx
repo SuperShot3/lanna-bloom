@@ -4,11 +4,10 @@ import Link from 'next/link';
 import {
   getLineContactUrl,
   getWhatsAppContactUrl,
-  getTelegramContactUrl,
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-import { LineIcon, WhatsAppIcon, TelegramIcon } from '@/components/icons';
+import { LineIcon, WhatsAppIcon } from '@/components/icons';
 
 const MAP_EMBED_SRC =
   'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d135191.1219770273!2d98.84911349726562!3d18.790684900000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30da3aa55e42373d%3A0x21d25773d6402e79!2sFlorist%20Market%20Mueang%20Chiang%20Mai!5e1!3m2!1sen!2sth!4v1770516315547!5m2!1sen!2sth';
@@ -20,7 +19,6 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
   const channels = [
     { id: 'line' as const, label: t.line, href: getLineContactUrl(), Icon: LineIcon, color: '#00B900' },
     { id: 'whatsapp' as const, label: t.whatsapp, href: getWhatsAppContactUrl(), Icon: WhatsAppIcon, color: '#25D366' },
-    { id: 'telegram' as const, label: t.telegram, href: getTelegramContactUrl(), Icon: TelegramIcon, color: '#26A5E4' },
   ];
 
   return (

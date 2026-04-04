@@ -25,7 +25,7 @@ export interface AnalyticsItem {
   currency?: string;
 }
 
-export type MessengerChannel = 'line' | 'whatsapp' | 'telegram';
+export type MessengerChannel = 'line' | 'whatsapp';
 
 export type MessengerPageLocation =
   | 'header'
@@ -331,7 +331,7 @@ export function trackGenerateLeadOrderCreated(params: {
 // --- Non-ecommerce UI events ---
 
 /**
- * contact_click: LINE / WhatsApp / Telegram buttons.
+ * contact_click: LINE / WhatsApp buttons.
  * Params: channel, page_path, bouquet_id (optional).
  */
 export function trackContactClick(params: {

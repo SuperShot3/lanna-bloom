@@ -27,8 +27,8 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
         <h2>{isTh ? 'การสั่งซื้อและการยืนยัน' : 'Orders & confirmation'}</h2>
         <p>
           {isTh
-            ? 'คำสั่งซื้ออาจต้องมีการยืนยันผ่านช่องทางแชท (LINE/WhatsApp/Telegram) ก่อนการชำระเงินหรือการจัดส่ง'
-            : 'Orders may require confirmation via chat (LINE/WhatsApp/Telegram) before payment or delivery.'}
+            ? 'คำสั่งซื้ออาจต้องมีการยืนยันผ่านช่องทางแชท (LINE/WhatsApp) ก่อนการชำระเงินหรือการจัดส่ง'
+            : 'Orders may require confirmation via chat (LINE/WhatsApp) before payment or delivery.'}
         </p>
         <h2>{isTh ? 'การคืนเงิน/เปลี่ยนสินค้า' : 'Refunds / replacements'}</h2>
         <p>

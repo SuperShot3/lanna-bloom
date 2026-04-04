@@ -63,7 +63,7 @@ function buildAddOnsSummaryLines(): string[] {
   return [];
 }
 
-const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp', 'telegram'];
+const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 const PREFERRED_DELIVERY_KEY = 'lanna-bloom-preferred-delivery-date';
@@ -1134,8 +1134,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               const label =
                 option === 'phone' ? t.contactPhone
                 : option === 'line' ? t.contactLine
-                : option === 'whatsapp' ? t.contactWhatsApp
-                : t.contactTelegram;
+                : t.contactWhatsApp;
               return (
                 <label
                   key={option}

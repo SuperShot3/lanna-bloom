@@ -4,7 +4,6 @@ import Link from 'next/link';
 import {
   getLineContactUrl,
   getWhatsAppContactUrl,
-  getTelegramContactUrl,
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -19,7 +18,6 @@ export function RefundReplacementClient({ lang }: { lang: Locale }) {
   const contactLinks = [
     { label: t.contactOnLine, href: getLineContactUrl() },
     { label: t.contactOnWhatsApp, href: getWhatsAppContactUrl() },
-    { label: t.contactOnTelegram, href: getTelegramContactUrl() },
   ];
 
   return (

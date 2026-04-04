@@ -7,20 +7,17 @@ import {
   getLineOrderUrl,
   getLineShareUrl,
   getLineContactUrl,
-  getTelegramOrderUrl,
-  getTelegramContactUrl,
   buildOrderMessage,
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { MessengerPageLocation } from '@/lib/analytics';
 import { trackMessengerClick } from '@/lib/analytics';
-import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
+import { LineIcon, WhatsAppIcon } from './icons';
 
 const CHANNELS_ORDER = [
   { id: 'line' as const, getUrl: getLineOrderUrl, contactUrl: getLineContactUrl, labelKey: 'orderLine' as const, Icon: LineIcon, color: '#00B900' },
   { id: 'whatsapp' as const, getUrl: getWhatsAppOrderUrl, contactUrl: getWhatsAppContactUrl, labelKey: 'orderWhatsApp' as const, Icon: WhatsAppIcon, color: '#25D366' },
-  { id: 'telegram' as const, getUrl: getTelegramOrderUrl, contactUrl: getTelegramContactUrl, labelKey: 'orderTelegram' as const, Icon: TelegramIcon, color: '#26A5E4' },
 ] as const;
 
 export function MessengerOrderButtons({
@@ -123,7 +120,7 @@ export function MessengerOrderButtons({
         }
         .order-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
+          grid-template-columns: 1fr 1fr;
           gap: 10px;
         }
         .order-btn {

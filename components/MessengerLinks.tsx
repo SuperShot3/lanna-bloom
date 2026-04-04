@@ -2,11 +2,10 @@
 
 import {
   getWhatsAppContactUrl,
-  getTelegramContactUrl,
   getLineContactUrl,
 } from '@/lib/messenger';
 import { trackMessengerClick } from '@/lib/analytics';
-import { LineIcon, WhatsAppIcon, TelegramIcon } from './icons';
+import { LineIcon, WhatsAppIcon } from './icons';
 
 const MESSENGERS = [
   {
@@ -24,14 +23,6 @@ const MESSENGERS = [
     ariaLabel: 'Contact us on WhatsApp',
     Icon: WhatsAppIcon,
     color: '#25D366',
-  },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    getHref: getTelegramContactUrl,
-    ariaLabel: 'Contact us on Telegram',
-    Icon: TelegramIcon,
-    color: '#26A5E4',
   },
 ] as const;
 

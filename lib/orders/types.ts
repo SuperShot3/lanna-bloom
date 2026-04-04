@@ -55,7 +55,10 @@ export interface OrderPricing {
   grandTotal: number;
 }
 
-export type ContactPreferenceOption = 'phone' | 'line' | 'telegram' | 'whatsapp';
+export type ContactPreferenceOption = 'phone' | 'line' | 'whatsapp';
+
+/** Legacy value that may still appear in stored order JSON. */
+export type ContactPreferenceStored = ContactPreferenceOption | 'telegram';
 
 /** Extra fields from the /custom-order form; stored in order_json for admin and customer view. */
 export interface CustomOrderDetails {
@@ -80,7 +83,7 @@ export interface OrderPayload {
   items: OrderItem[];
   delivery: OrderDelivery;
   pricing: OrderPricing;
-  contactPreference?: ContactPreferenceOption[];
+  contactPreference?: ContactPreferenceStored[];
   referralCode?: string;
   referralDiscount?: number;
   /** Optional GA4 client_id from frontend for server-side purchase attribution (stored in DB only). */

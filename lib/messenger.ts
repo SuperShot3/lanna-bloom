@@ -1,6 +1,6 @@
 /**
  * Build messenger deep links with pre-filled order message.
- * Contact number: +66803313431 — used for WhatsApp and Telegram.
+ * Contact number: +66803313431 — used for WhatsApp.
  *
  * LINE:
  * - Personal account (no Official Account): set NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK to your
@@ -12,7 +12,7 @@
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 
-/** E.164 format, no + (used for WhatsApp; Telegram uses same number via +66803313431). */
+/** E.164 format, no + (used for WhatsApp). */
 const CONTACT_PHONE = '66803313431';
 
 const WHATSAPP_PHONE = CONTACT_PHONE;
@@ -20,8 +20,6 @@ const WHATSAPP_PHONE = CONTACT_PHONE;
 const LINE_OA_ID = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ID) || '@lannabloom';
 /** LINE link for contact and (for personal accounts) order. Default: personal LINE add-friend link; override with NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK. */
 const LINE_ADD_FRIEND_LINK = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK) || 'https://line.me/ti/p/4sZ7z5fYAB';
-/** Telegram: link by phone number so all contact goes to +66803313431. */
-const TELEGRAM_PHONE = '@Lannabloom';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
 
 function encode(text: string): string {
@@ -54,10 +52,6 @@ export function getLineOrderUrl(message: string): string {
   return getLineOaChatUrl(message);
 }
 
-export function getTelegramOrderUrl(message: string): string {
-  return `https://t.me/+${TELEGRAM_PHONE}?text=${encode(message)}`;
-}
-
 export function getFacebookOrderUrl(message: string): string {
   const base = `https://www.facebook.com/${FACEBOOK_PAGE}`;
   return `${base}/messages?text=${encode(message)}`;
@@ -66,9 +60,6 @@ export function getFacebookOrderUrl(message: string): string {
 /** Base contact URLs (no pre-filled message) for header/footer links. */
 export function getWhatsAppContactUrl(): string {
   return `https://wa.me/${WHATSAPP_PHONE}`;
-}
-export function getTelegramContactUrl(): string {
-  return `https://t.me/+${TELEGRAM_PHONE}`;
 }
 /** LINE contact link. When NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK is set (personal or OA override), use it. Otherwise build OA add-friend URL from LINE_OA_ID (Official Accounts only). */
 export function getLineContactUrl(): string {
