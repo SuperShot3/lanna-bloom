@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { getOrderByOrderId, type SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
-import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
+import type { ItemWithCatalog } from '@/app/admin/components/ItemsList';
 import { CostsAndProfitCard } from '@/app/admin/components/CostsAndProfitCard';
 import { StatusUpdateCard } from '@/app/admin/components/StatusUpdateCard';
 import { PaymentCard } from '@/app/admin/components/PaymentCard';
@@ -174,32 +174,9 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           </p>
         </section>
       )}
-      <OrderSummaryCard order={order} />
+      <OrderSummaryCard order={order} items={itemsWithCatalog} />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
       <CostsAndProfitCard order={order} items={itemsToUse} canEdit={canEditCosts(role)} />
-      <ItemsList
-        items={itemsWithCatalog}
-        summary={{
-          itemsTotal: order.items_total ?? null,
-          deliveryFee: order.delivery_fee ?? null,
-          grandTotal: order.grand_total ?? null,
-        }}
-      />
-      {(order.address || order.delivery_google_maps_url) && (
-        <section className="admin-section">
-          <h2 className="admin-section-title">Delivery</h2>
-          <p><strong>Date:</strong> {order.delivery_date ?? '—'}</p>
-          <p><strong>Window:</strong> {order.delivery_window ?? '—'}</p>
-          <p><strong>Address:</strong> {order.address ?? '—'}</p>
-          {order.delivery_google_maps_url && (
-            <p>
-              <a href={order.delivery_google_maps_url} target="_blank" rel="noopener noreferrer" className="admin-link">
-                Open in Google Maps
-              </a>
-            </p>
-          )}
-        </section>
-      )}
       {(order.recipient_name || order.recipient_phone) && (
         <section className="admin-section">
           <h2 className="admin-section-title">Recipient</h2>

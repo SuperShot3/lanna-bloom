@@ -17,6 +17,8 @@ interface ItemsListProps {
   items: ItemWithCatalog[];
   /** Order totals to show at bottom of items section (flowers total, delivery, grand total). */
   summary?: ItemsListSummary | null;
+  /** When true, render without outer <section> (for use inside Order summary card). */
+  embedded?: boolean;
 }
 
 function formatAmount(n: number | null | undefined): string {
@@ -33,10 +35,13 @@ function getWrappingLabel(opt: string | null | undefined): string {
   return opt;
 }
 
-export function ItemsList({ items, summary }: ItemsListProps) {
-  const showSummary = summary && (summary.itemsTotal != null || summary.deliveryFee != null || summary.grandTotal != null);
+export function ItemsList({ items, summary, embedded }: ItemsListProps) {
+  const showSummary =
+    !embedded &&
+    summary &&
+    (summary.itemsTotal != null || summary.deliveryFee != null || summary.grandTotal != null);
 
-  if (items.length === 0 && !showSummary) {
+  if (!embedded && items.length === 0 && !showSummary) {
     return (
       <section className="admin-section">
         <h2 className="admin-section-title">Items</h2>
@@ -45,9 +50,15 @@ export function ItemsList({ items, summary }: ItemsListProps) {
     );
   }
 
-  return (
-    <section className="admin-section">
-      <h2 className="admin-section-title">Items</h2>
+  const title = embedded ? (
+    <h3 className="admin-section-title">Items</h3>
+  ) : (
+    <h2 className="admin-section-title">Items</h2>
+  );
+
+  const body = (
+    <>
+      {title}
       {items.length === 0 ? (
         <p className="admin-empty">No line items in this order.</p>
       ) : (
@@ -122,7 +133,7 @@ export function ItemsList({ items, summary }: ItemsListProps) {
           ))}
         </ul>
       )}
-      {showSummary && (
+      {showSummary && summary && (
         <div className="admin-summary">
           {summary.itemsTotal != null && (
             <p><strong>Flowers / products total:</strong> {formatAmount(summary.itemsTotal)}</p>
@@ -135,6 +146,12 @@ export function ItemsList({ items, summary }: ItemsListProps) {
           )}
         </div>
       )}
-    </section>
+    </>
   );
+
+  if (embedded) {
+    return <div className="admin-summary-items">{body}</div>;
+  }
+
+  return <section className="admin-section">{body}</section>;
 }
