@@ -368,6 +368,20 @@ export async function supabaseUpdateOrderPaymentStatus(
   if (!supabase) return null;
 
   const normalized = orderId.trim();
+
+  const { data: rowBefore, error: fetchError } = await supabase
+    .from('orders')
+    .select('payment_status, order_json')
+    .eq('order_id', normalized)
+    .single();
+
+  if (fetchError || !rowBefore) {
+    console.error('[orders/supabase] updatePaymentStatus fetch error:', fetchError?.message);
+    return null;
+  }
+
+  const prevPaymentUpper = (rowBefore.payment_status ?? 'NOT_PAID').toUpperCase();
+
   const paymentStatus = update.status === 'paid' ? 'PAID' : 'ERROR';
   const orderStatus = update.status === 'paid' ? 'PROCESSING' : 'NEW';
 
@@ -391,15 +405,32 @@ export async function supabaseUpdateOrderPaymentStatus(
     return null;
   }
 
-  // Update order_json if it exists (keep payment fields in sync)
-  const { data: existing } = await supabase
-    .from('orders')
-    .select('order_json')
-    .eq('order_id', normalized)
-    .single();
+  // Same convention as admin PATCH payment-status: record payment_status transition in history.
+  if (update.status === 'paid' && prevPaymentUpper !== 'PAID') {
+    const { error: histError } = await supabase.from('order_status_history').insert({
+      order_id: normalized,
+      from_status: rowBefore.payment_status ?? 'NOT_PAID',
+      to_status: 'PAID',
+      created_at: new Date().toISOString(),
+    });
+    if (histError) {
+      console.error('[orders/supabase] updatePaymentStatus history insert error:', histError.message);
+    }
+  } else if (update.status === 'payment_failed' && prevPaymentUpper !== 'ERROR') {
+    const { error: histError } = await supabase.from('order_status_history').insert({
+      order_id: normalized,
+      from_status: rowBefore.payment_status ?? 'NOT_PAID',
+      to_status: 'ERROR',
+      created_at: new Date().toISOString(),
+    });
+    if (histError) {
+      console.error('[orders/supabase] updatePaymentStatus history insert error:', histError.message);
+    }
+  }
 
-  if (existing?.order_json && typeof existing.order_json === 'object') {
-    const json = existing.order_json as Record<string, unknown>;
+  // Update order_json if it exists (keep payment fields in sync)
+  if (rowBefore.order_json && typeof rowBefore.order_json === 'object') {
+    const json = rowBefore.order_json as Record<string, unknown>;
     await supabase
       .from('orders')
       .update({

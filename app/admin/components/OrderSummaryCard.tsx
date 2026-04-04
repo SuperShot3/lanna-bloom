@@ -1,57 +1,15 @@
-import type { Order } from '@/lib/orders';
-import type { ContactPreferenceOption } from '@/lib/orders/types';
+import {
+  buildOrderSummaryPlainText,
+  checkoutMapsUrl,
+  formatAmountNa,
+  naText,
+  preferredContactDisplay,
+  recipientNameDisplay,
+  recipientPhoneDisplay,
+} from '@/lib/admin/orderSummaryPlainText';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
-
-function orderJsonDelivery(order: SupabaseOrderRow): Order['delivery'] | undefined {
-  const o = order.order_json as Partial<Order> | null | undefined;
-  return o?.delivery;
-}
-
-/** Column or checkout payload in `order_json` (some rows only have one). */
-function checkoutMapsUrl(order: SupabaseOrderRow): string | null {
-  const col = order.delivery_google_maps_url?.trim();
-  if (col) return col;
-  const u = orderJsonDelivery(order)?.deliveryGoogleMapsUrl?.trim();
-  return u || null;
-}
-
-function recipientNameDisplay(order: SupabaseOrderRow): string {
-  const col = order.recipient_name?.trim();
-  if (col) return col;
-  return orderJsonDelivery(order)?.recipientName?.trim() ?? '';
-}
-
-function recipientPhoneDisplay(order: SupabaseOrderRow): string {
-  const col = order.recipient_phone?.trim();
-  if (col) return col;
-  return orderJsonDelivery(order)?.recipientPhone?.trim() ?? '';
-}
-
-const CONTACT_PREF_LABELS: Record<ContactPreferenceOption, string> = {
-  phone: 'Phone',
-  line: 'LINE',
-  telegram: 'Telegram',
-  whatsapp: 'WhatsApp',
-};
-
-function parseContactPreference(raw: string | null | undefined): ContactPreferenceOption[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const allowed = new Set<ContactPreferenceOption>(['phone', 'line', 'telegram', 'whatsapp']);
-    const out: ContactPreferenceOption[] = [];
-    for (const x of parsed) {
-      if (typeof x === 'string' && allowed.has(x as ContactPreferenceOption)) {
-        out.push(x as ContactPreferenceOption);
-      }
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
+import { OrderSummaryCopyAllButton } from '@/app/admin/components/OrderSummaryCopyAllButton';
 
 interface OrderSummaryCardProps {
   order: SupabaseOrderRow;
@@ -59,7 +17,7 @@ interface OrderSummaryCardProps {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return 'N/A';
   try {
     return new Date(iso).toLocaleString();
   } catch {
@@ -67,24 +25,22 @@ function formatDate(iso: string | null): string {
   }
 }
 
-function formatAmount(n: number | null | undefined): string {
-  if (n == null) return '—';
-  return `฿${Number(n).toLocaleString()}`;
-}
-
 export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
-  const contactPrefs = parseContactPreference(order.contact_preference);
   const mapsUrl = checkoutMapsUrl(order);
   const recipientName = recipientNameDisplay(order);
   const recipientPhone = recipientPhoneDisplay(order);
+  const copyText = buildOrderSummaryPlainText(order, items);
 
   return (
     <section className="admin-section admin-summary-card">
-      <h2 className="admin-section-title">Order summary</h2>
+      <div className="admin-summary-card-header">
+        <h2 className="admin-section-title">Order summary</h2>
+        <OrderSummaryCopyAllButton text={copyText} />
+      </div>
       <div className="admin-summary-grid">
         <div>
           <strong>Order ID</strong>
-          <p>{order.order_id}</p>
+          <p>{naText(order.order_id)}</p>
         </div>
         <div>
           <strong>Created</strong>
@@ -92,47 +48,40 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
         </div>
         <div>
           <strong>Customer</strong>
-          <p>{order.customer_name ?? '—'}</p>
-          {order.customer_email && (
-            <p className="admin-muted">{order.customer_email}</p>
-          )}
-          <p className="admin-muted">{order.phone ?? ''}</p>
-          {contactPrefs.length > 0 && (
-            <p className="admin-muted">
-              Preferred contact:{' '}
-              {contactPrefs.map((opt) => CONTACT_PREF_LABELS[opt]).join(' · ')}
-            </p>
-          )}
+          <p>{naText(order.customer_name)}</p>
+          <p className="admin-muted">Email: {naText(order.customer_email)}</p>
+          <p className="admin-muted">Phone: {naText(order.phone)}</p>
+          <p className="admin-muted">Preferred contact: {preferredContactDisplay(order)}</p>
         </div>
         <ItemsList items={items} embedded summary={null} />
         <div>
           <strong>Items total</strong>
-          <p>{formatAmount(order.items_total)}</p>
+          <p>{formatAmountNa(order.items_total)}</p>
         </div>
         <div>
           <strong>Delivery fee</strong>
-          <p>{formatAmount(order.delivery_fee)}</p>
+          <p>{formatAmountNa(order.delivery_fee)}</p>
         </div>
         {(order.referral_discount != null && order.referral_discount > 0) && (
           <div>
             <strong>Discount</strong>
-            <p className="admin-discount">-{formatAmount(order.referral_discount)}</p>
+            <p className="admin-discount">-{formatAmountNa(order.referral_discount)}</p>
           </div>
         )}
         <div>
           <strong>Grand total</strong>
-          <p className="admin-total">{formatAmount(order.grand_total)}</p>
+          <p className="admin-total">{formatAmountNa(order.grand_total)}</p>
         </div>
         <div className="admin-summary-delivery">
           <strong>Delivery</strong>
           <p>
-            <span className="admin-summary-inline-label">Date:</span> {order.delivery_date ?? '—'}
+            <span className="admin-summary-inline-label">Date:</span> {naText(order.delivery_date)}
           </p>
           <p>
-            <span className="admin-summary-inline-label">Window:</span> {order.delivery_window ?? '—'}
+            <span className="admin-summary-inline-label">Window:</span> {naText(order.delivery_window)}
           </p>
           <p>
-            <span className="admin-summary-inline-label">Address:</span> {order.address ?? '—'}
+            <span className="admin-summary-inline-label">Address:</span> {naText(order.address)}
           </p>
           <p>
             <span className="admin-summary-inline-label">Google Maps (checkout):</span>{' '}
@@ -141,17 +90,17 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
                 Open in Google Maps
               </a>
             ) : (
-              <span className="admin-muted">—</span>
+              <span className="admin-muted">N/A</span>
             )}
           </p>
         </div>
         <div className="admin-summary-recipient">
           <strong>Recipient</strong>
           <p>
-            <span className="admin-summary-inline-label">Name:</span> {recipientName || '—'}
+            <span className="admin-summary-inline-label">Name:</span> {naText(recipientName)}
           </p>
           <p>
-            <span className="admin-summary-inline-label">Phone:</span> {recipientPhone || '—'}
+            <span className="admin-summary-inline-label">Phone:</span> {naText(recipientPhone)}
           </p>
         </div>
       </div>

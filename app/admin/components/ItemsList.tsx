@@ -22,12 +22,12 @@ interface ItemsListProps {
 }
 
 function formatAmount(n: number | null | undefined): string {
-  if (n == null) return '—';
+  if (n == null) return 'N/A';
   return `฿${Number(n).toLocaleString()}`;
 }
 
 function getWrappingLabel(opt: string | null | undefined): string {
-  if (!opt) return '—';
+  if (!opt) return 'N/A';
   const lower = String(opt).toLowerCase();
   if (lower === 'standard' || lower === 'classic') return 'Free';
   if (lower === 'premium') return 'Premium';
@@ -88,7 +88,7 @@ export function ItemsList({ items, summary, embedded }: ItemsListProps) {
               )}
               <div className="admin-item-details">
                 <div className="admin-item-header">
-                  <strong>{item.bouquet_title ?? '—'}</strong>
+                  <strong>{item.bouquet_title?.trim() ? item.bouquet_title : 'N/A'}</strong>
                   <span className="admin-item-type-badge">
                     {(item.item_type ?? 'bouquet') === 'product' ? 'Product' : 'Bouquet'}
                   </span>
@@ -100,7 +100,7 @@ export function ItemsList({ items, summary, embedded }: ItemsListProps) {
                   </div>
                 )}
                 <div className="admin-item-meta">
-                  <span>Size: {item.size ?? '—'}</span>
+                  <span>Size: {item.size?.trim() ? item.size : 'N/A'}</span>
                   <span>Qty: 1</span>
                   <span>{formatAmount(item.price)}</span>
                 </div>

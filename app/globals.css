@@ -3879,6 +3879,20 @@ a.filter-pill--active:hover {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+.admin-summary-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.admin-summary-card-header .admin-section-title {
+  margin: 0;
+}
+.admin-summary-copy-btn {
+  flex-shrink: 0;
+}
 .admin-summary-items {
   grid-column: 1 / -1;
   margin-top: 4px;
