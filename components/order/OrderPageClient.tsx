@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   getLineOrderUrl,
@@ -99,7 +98,74 @@ export function OrderPageClient({
       }
     }
   }, []);
+
   const [activeTab, setActiveTab] = useState<'details' | 'pay'>('details');
+  const [stripeSyncing, setStripeSyncing] = useState(false);
+
+  // After Stripe Checkout redirect, the webhook may lag; verify the session server-side and refresh.
+  useEffect(() => {
+    if (paid) return;
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id')?.trim();
+    if (!sessionId) return;
+
+    const doneKey = `stripe_sync_ok_${orderId}_${sessionId}`;
+    try {
+      if (sessionStorage.getItem(doneKey) === '1') {
+        if (params.has('session_id') || params.has('stripe')) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('session_id');
+          url.searchParams.delete('stripe');
+          const qs = url.searchParams.toString();
+          window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
+        }
+        router.refresh();
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    if (params.get('stripe') === 'success') {
+      setActiveTab('pay');
+    }
+
+    setStripeSyncing(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/stripe/sync-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, orderId }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { paid?: boolean };
+        if (cancelled) return;
+        if (res.ok && data.paid) {
+          try {
+            sessionStorage.setItem(doneKey, '1');
+          } catch {
+            // ignore
+          }
+          router.refresh();
+          const url = new URL(window.location.href);
+          url.searchParams.delete('session_id');
+          url.searchParams.delete('stripe');
+          const qs = url.searchParams.toString();
+          window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
+        } else {
+          // Webhook may have updated the order while sync failed or raced.
+          router.refresh();
+        }
+      } finally {
+        if (!cancelled) setStripeSyncing(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [paid, orderId, router]);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('card');
   const [copied, setCopied] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
@@ -197,6 +263,12 @@ export function OrderPageClient({
           <div className="order-redesign-shop-sub">{t.flowerDeliveryChiangMai}</div>
         </div>
       </header>
+
+      {stripeSyncing && !paid && (
+        <div className="order-redesign-stripe-sync" role="status" aria-live="polite">
+          {locale === 'th' ? 'กำลังยืนยันการชำระเงิน…' : 'Confirming your payment…'}
+        </div>
+      )}
 
       <div className="order-redesign-tabs">
         <button
@@ -650,6 +722,16 @@ export function OrderPageClient({
           color: var(--text-muted);
           letter-spacing: 0.06em;
           text-transform: uppercase;
+        }
+        .order-redesign-stripe-sync {
+          font-size: 13px;
+          color: var(--text-muted);
+          text-align: center;
+          padding: 10px 12px;
+          margin-bottom: 0.75rem;
+          background: var(--pastel-cream);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
         }
         .order-redesign-tabs {
           display: flex;

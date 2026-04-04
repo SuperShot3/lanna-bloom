@@ -1,6 +1,32 @@
+import type { Order } from '@/lib/orders';
 import type { ContactPreferenceOption } from '@/lib/orders/types';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
+
+function orderJsonDelivery(order: SupabaseOrderRow): Order['delivery'] | undefined {
+  const o = order.order_json as Partial<Order> | null | undefined;
+  return o?.delivery;
+}
+
+/** Column or checkout payload in `order_json` (some rows only have one). */
+function checkoutMapsUrl(order: SupabaseOrderRow): string | null {
+  const col = order.delivery_google_maps_url?.trim();
+  if (col) return col;
+  const u = orderJsonDelivery(order)?.deliveryGoogleMapsUrl?.trim();
+  return u || null;
+}
+
+function recipientNameDisplay(order: SupabaseOrderRow): string {
+  const col = order.recipient_name?.trim();
+  if (col) return col;
+  return orderJsonDelivery(order)?.recipientName?.trim() ?? '';
+}
+
+function recipientPhoneDisplay(order: SupabaseOrderRow): string {
+  const col = order.recipient_phone?.trim();
+  if (col) return col;
+  return orderJsonDelivery(order)?.recipientPhone?.trim() ?? '';
+}
 
 const CONTACT_PREF_LABELS: Record<ContactPreferenceOption, string> = {
   phone: 'Phone',
@@ -48,6 +74,9 @@ function formatAmount(n: number | null | undefined): string {
 
 export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
   const contactPrefs = parseContactPreference(order.contact_preference);
+  const mapsUrl = checkoutMapsUrl(order);
+  const recipientName = recipientNameDisplay(order);
+  const recipientPhone = recipientPhoneDisplay(order);
 
   return (
     <section className="admin-section admin-summary-card">
@@ -105,18 +134,25 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
           <p>
             <span className="admin-summary-inline-label">Address:</span> {order.address ?? '—'}
           </p>
-          {order.delivery_google_maps_url && (
-            <p>
-              <a
-                href={order.delivery_google_maps_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="admin-link"
-              >
+          <p>
+            <span className="admin-summary-inline-label">Google Maps (checkout):</span>{' '}
+            {mapsUrl ? (
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="admin-link">
                 Open in Google Maps
               </a>
-            </p>
-          )}
+            ) : (
+              <span className="admin-muted">—</span>
+            )}
+          </p>
+        </div>
+        <div className="admin-summary-recipient">
+          <strong>Recipient</strong>
+          <p>
+            <span className="admin-summary-inline-label">Name:</span> {recipientName || '—'}
+          </p>
+          <p>
+            <span className="admin-summary-inline-label">Phone:</span> {recipientPhone || '—'}
+          </p>
         </div>
       </div>
     </section>

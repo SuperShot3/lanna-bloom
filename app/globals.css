@@ -3891,7 +3891,14 @@ a.filter-pill--active:hover {
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
-.admin-summary-delivery strong {
+.admin-summary-recipient {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.admin-summary-delivery strong,
+.admin-summary-recipient strong {
   display: block;
   font-size: 0.85rem;
   color: var(--text-muted);

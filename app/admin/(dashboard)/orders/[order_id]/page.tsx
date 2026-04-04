@@ -177,13 +177,6 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
       <OrderSummaryCard order={order} items={itemsWithCatalog} />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
       <CostsAndProfitCard order={order} items={itemsToUse} canEdit={canEditCosts(role)} />
-      {(order.recipient_name || order.recipient_phone) && (
-        <section className="admin-section">
-          <h2 className="admin-section-title">Recipient</h2>
-          <p><strong>Name:</strong> {order.recipient_name ?? '—'}</p>
-          <p><strong>Phone:</strong> {order.recipient_phone ?? '—'}</p>
-        </section>
-      )}
       {(order.driver_name || order.driver_phone) && (
         <section className="admin-section">
           <h2 className="admin-section-title">Driver (internal)</h2>

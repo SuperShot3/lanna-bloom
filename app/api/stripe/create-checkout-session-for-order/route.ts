@@ -116,7 +116,9 @@ export async function POST(request: NextRequest) {
     pd.unit_amount = Math.max(0, (pd.unit_amount ?? 0) + diff);
   }
 
-  const successUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}?stripe=success`;
+  // Stripe replaces {CHECKOUT_SESSION_ID} so the order page can verify payment client-side
+  // if the webhook has not run yet (fixes UI still showing “pay again” after success).
+  const successUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}?stripe=success&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}`;
 
   const session = await stripe.checkout.sessions.create(
