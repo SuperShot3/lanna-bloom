@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
-import { getIncomeRecordById, updateIncomeRecord } from '@/lib/accounting/incomeRecords';
+import { getIncomeRecordById, updateIncomeRecord, deleteIncomeRecord } from '@/lib/accounting/incomeRecords';
 
 export async function GET(
   _request: NextRequest,
@@ -69,4 +69,20 @@ export async function PATCH(
   }
 
   return NextResponse.json({ record });
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireRole(['OWNER', 'MANAGER']);
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await params;
+  if (!id?.trim()) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  const ok = await deleteIncomeRecord(id.trim());
+  if (!ok) return NextResponse.json({ error: 'Not found or delete failed' }, { status: 404 });
+
+  return NextResponse.json({ ok: true });
 }

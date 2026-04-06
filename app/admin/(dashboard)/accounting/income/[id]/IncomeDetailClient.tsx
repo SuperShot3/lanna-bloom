@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { IncomeRecord } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, INCOME_PAYMENT_METHODS, MONEY_LOCATIONS, INCOME_STATUSES } from '@/types/accounting';
@@ -31,11 +32,14 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
+  const router = useRouter();
   const [loadingProof, setLoadingProof] = useState(false);
   const [proofError, setProofError]     = useState<string | null>(null);
   const [statusUpdate, setStatusUpdate] = useState<string>(record.income_status);
   const [savingStatus, setSavingStatus] = useState(false);
   const [saveMsg, setSaveMsg]           = useState<string | null>(null);
+  const [deleting, setDeleting]         = useState(false);
+  const [deleteError, setDeleteError]   = useState<string | null>(null);
 
   const handleViewProof = async () => {
     setLoadingProof(true);
@@ -68,6 +72,25 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
       setSaveMsg('Network error');
     } finally {
       setSavingStatus(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Permanently delete this income record? This cannot be undone.')) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/admin/accounting/income/${record.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error ?? 'Delete failed');
+        return;
+      }
+      router.push('/admin/accounting/income');
+    } catch {
+      setDeleteError('Network error. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -161,6 +184,19 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
             This record was created automatically from an order payment. Status and amount are locked.
           </p>
         )}
+
+        {/* Delete — available for all record types */}
+        <div className="admin-accounting-delete-zone">
+          <button
+            type="button"
+            className="admin-btn admin-btn-danger admin-btn-sm"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting…' : 'Delete record'}
+          </button>
+          {deleteError && <p className="admin-field-error" style={{ marginTop: 6 }}>{deleteError}</p>}
+        </div>
       </div>
     </div>
   );

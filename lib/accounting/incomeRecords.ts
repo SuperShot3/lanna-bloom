@@ -110,6 +110,36 @@ export async function incomeExistsForOrder(orderId: string): Promise<boolean> {
   return !!data;
 }
 
+/**
+ * Hard-delete the income record linked to an order (e.g. when the order is deleted).
+ * Safe to call even if no income record exists — silently does nothing in that case.
+ */
+export async function cancelIncomeForOrder(orderId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  await supabase
+    .from(TABLE)
+    .delete()
+    .eq('order_id', orderId);
+}
+
+/**
+ * Hard-delete a single income record by its UUID.
+ * Returns true on success, false if not found or on error.
+ */
+export async function deleteIncomeRecord(id: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('id', id);
+
+  return !error;
+}
+
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 export interface CreateIncomeInput {

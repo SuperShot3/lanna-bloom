@@ -3,6 +3,7 @@ import { deleteOrder } from '@/lib/orders';
 import { deleteSupabaseOrder } from '@/lib/supabase/orderAdapter';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { cancelIncomeForOrder } from '@/lib/accounting/incomeRecords';
 
 export async function DELETE(
   _request: Request,
@@ -22,7 +23,10 @@ export async function DELETE(
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  await deleteSupabaseOrder(order_id.trim());
+  await Promise.all([
+    deleteSupabaseOrder(order_id.trim()),
+    cancelIncomeForOrder(order_id.trim()),
+  ]);
 
   const adminEmail = session.user.email ?? 'unknown';
   await logAudit(adminEmail, 'ORDER_REMOVED', order_id.trim(), {});

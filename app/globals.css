@@ -5893,6 +5893,11 @@ a.filter-pill--active:hover {
 
 /* Detail page actions */
 .admin-accounting-detail-actions { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+.admin-accounting-delete-zone {
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  margin-top: 8px;
+}
 .admin-accounting-status-update {
   display: flex;
   flex-direction: column;
