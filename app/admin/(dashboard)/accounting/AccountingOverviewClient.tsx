@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { MoneyLocationTotal } from '@/types/accounting';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
@@ -28,7 +28,7 @@ interface Props {
   initialDateFrom?: string;
   initialDateTo?: string;
   activeTab: 'overview' | 'expenses';
-  expensesData: ExpensesResult | null;
+  expensesData: ExpensesResult;
   expensesPage: number;
   expensesPageSize: number;
   expensesFilters: ExpenseFilters;
@@ -95,11 +95,20 @@ export function AccountingOverviewClient({
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<string | null>(null);
 
+  /** Keep date inputs aligned with URL when navigating (useState only uses initial value on mount). */
+  useEffect(() => {
+    setDateFrom(initialDateFrom ?? '');
+    setDateTo(initialDateTo ?? '');
+  }, [initialDateFrom, initialDateTo]);
+
   const switchTab = (tab: 'overview' | 'expenses') => {
-    const next = new URLSearchParams();
+    const next = new URLSearchParams(sp.toString());
     if (dateFrom) next.set('dateFrom', dateFrom);
-    if (dateTo)   next.set('dateTo', dateTo);
+    else next.delete('dateFrom');
+    if (dateTo) next.set('dateTo', dateTo);
+    else next.delete('dateTo');
     if (tab === 'expenses') next.set('tab', 'expenses');
+    else next.delete('tab');
     router.push(`${pathname}?${next.toString()}`);
   };
 
@@ -114,8 +123,12 @@ export function AccountingOverviewClient({
   const clearFilter = () => {
     setDateFrom('');
     setDateTo('');
-    const next = new URLSearchParams();
+    const next = new URLSearchParams(sp.toString());
+    next.delete('dateFrom');
+    next.delete('dateTo');
+    next.delete('page');
     if (activeTab === 'expenses') next.set('tab', 'expenses');
+    else next.delete('tab');
     router.push(`${pathname}?${next.toString()}`);
   };
 
@@ -418,11 +431,7 @@ export function AccountingOverviewClient({
             )}
           </div>
 
-          {expensesData === null ? (
-            <div className="admin-error"><p>Failed to load expenses.</p></div>
-          ) : (
-            <>
-              {/* Summary */}
+          {/* Summary */}
               <div className="admin-expenses-summary">
                 <span className="admin-hint">
                   {expensesData.total} expense{expensesData.total !== 1 ? 's' : ''} found
@@ -535,8 +544,6 @@ export function AccountingOverviewClient({
                   )}
                 </>
               )}
-            </>
-          )}
         </div>
       )}
     </div>

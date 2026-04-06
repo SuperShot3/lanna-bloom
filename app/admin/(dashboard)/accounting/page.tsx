@@ -26,11 +26,11 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
     payment_method: params.payment_method,
   };
 
+  // Always load expenses with overview so the Expenses tab has data on first paint after tab switch
+  // (conditional fetch left expensesData null and relied on RSC refetch, which often felt stale).
   const [overview, expensesData] = await Promise.all([
     getAccountingOverview({ dateFrom: params.dateFrom, dateTo: params.dateTo }),
-    activeTab === 'expenses'
-      ? getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize })
-      : Promise.resolve(null),
+    getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize }),
   ]);
 
   const periodLabel =
