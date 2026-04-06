@@ -66,32 +66,32 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
   const { district, isMueangCentral } = input;
 
   if (district === 'MUEANG') {
-    return isMueangCentral ? 200 : 300;
+    return isMueangCentral ? 250 : 350;
   }
 
   switch (district) {
     case 'SARAPHI':
     case 'SAN_SAI':
-      return 300;
+      return 350;
     case 'HANG_DONG':
     case 'SAN_KAMPHAENG':
     case 'MAE_RIM':
-      return 400;
+      return 450;
     case 'LAMPHUN':
-      return 700;
+      return 350;
     case 'DOI_SAKET':
     case 'MAE_ON':
     case 'SAMOENG':
     case 'MAE_TAENG':
     case 'UNKNOWN':
     default:
-      return 500;
+      return 550;
   }
 }
 
 /**
  * Get delivery fee in THB from DeliveryInput (district + central toggle).
- * Falls back to 500 THB (unknown) when district not provided.
+ * Falls back to 550 THB (unknown) when district not provided.
  */
 export function getDeliveryFeeTHB(input?: DeliveryInput): number {
   const district = (input?.deliveryDistrict as DistrictKey) ?? 'UNKNOWN';

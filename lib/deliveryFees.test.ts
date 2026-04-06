@@ -10,25 +10,25 @@ function assert(condition: boolean, msg: string) {
 }
 
 // Mueang Chiang Mai
-assert(calcDeliveryFeeTHB({ district: 'MUEANG', isMueangCentral: true }) === 200, 'Mueang central = 200');
-assert(calcDeliveryFeeTHB({ district: 'MUEANG', isMueangCentral: false }) === 300, 'Mueang non-central = 300');
+assert(calcDeliveryFeeTHB({ district: 'MUEANG', isMueangCentral: true }) === 250, 'Mueang central = 250');
+assert(calcDeliveryFeeTHB({ district: 'MUEANG', isMueangCentral: false }) === 350, 'Mueang non-central = 350');
 
-// 300 THB districts
-assert(calcDeliveryFeeTHB({ district: 'SARAPHI', isMueangCentral: false }) === 300, 'Saraphi = 300');
-assert(calcDeliveryFeeTHB({ district: 'SAN_SAI', isMueangCentral: false }) === 300, 'San Sai = 300');
+// 350 THB districts
+assert(calcDeliveryFeeTHB({ district: 'SARAPHI', isMueangCentral: false }) === 350, 'Saraphi = 350');
+assert(calcDeliveryFeeTHB({ district: 'SAN_SAI', isMueangCentral: false }) === 350, 'San Sai = 350');
+assert(calcDeliveryFeeTHB({ district: 'LAMPHUN', isMueangCentral: false }) === 350, 'Lamphun = 350');
 
-// 400 THB districts
-assert(calcDeliveryFeeTHB({ district: 'HANG_DONG', isMueangCentral: false }) === 400, 'Hang Dong = 400');
-assert(calcDeliveryFeeTHB({ district: 'SAN_KAMPHAENG', isMueangCentral: false }) === 400, 'San Kamphaeng = 400');
-assert(calcDeliveryFeeTHB({ district: 'MAE_RIM', isMueangCentral: false }) === 400, 'Mae Rim = 400');
+// 450 THB districts
+assert(calcDeliveryFeeTHB({ district: 'HANG_DONG', isMueangCentral: false }) === 450, 'Hang Dong = 450');
+assert(calcDeliveryFeeTHB({ district: 'SAN_KAMPHAENG', isMueangCentral: false }) === 450, 'San Kamphaeng = 450');
+assert(calcDeliveryFeeTHB({ district: 'MAE_RIM', isMueangCentral: false }) === 450, 'Mae Rim = 450');
 
-// 500 THB districts
-assert(calcDeliveryFeeTHB({ district: 'DOI_SAKET', isMueangCentral: false }) === 500, 'Doi Saket = 500');
-assert(calcDeliveryFeeTHB({ district: 'MAE_ON', isMueangCentral: false }) === 500, 'Mae On = 500');
-assert(calcDeliveryFeeTHB({ district: 'SAMOENG', isMueangCentral: false }) === 500, 'Samoeng = 500');
-assert(calcDeliveryFeeTHB({ district: 'MAE_TAENG', isMueangCentral: false }) === 500, 'Mae Taeng = 500');
-assert(calcDeliveryFeeTHB({ district: 'LAMPHUN', isMueangCentral: false }) === 700, 'Lamphun = 700');
-assert(calcDeliveryFeeTHB({ district: 'UNKNOWN', isMueangCentral: false }) === 500, 'Unknown = 500');
+// 550 THB districts
+assert(calcDeliveryFeeTHB({ district: 'DOI_SAKET', isMueangCentral: false }) === 550, 'Doi Saket = 550');
+assert(calcDeliveryFeeTHB({ district: 'MAE_ON', isMueangCentral: false }) === 550, 'Mae On = 550');
+assert(calcDeliveryFeeTHB({ district: 'SAMOENG', isMueangCentral: false }) === 550, 'Samoeng = 550');
+assert(calcDeliveryFeeTHB({ district: 'MAE_TAENG', isMueangCentral: false }) === 550, 'Mae Taeng = 550');
+assert(calcDeliveryFeeTHB({ district: 'UNKNOWN', isMueangCentral: false }) === 550, 'Unknown = 550');
 
 // Auto-detect
 assert(detectDistrictFromAddress('123 Nimman Road') === 'MUEANG', 'Nimman -> Mueang');
