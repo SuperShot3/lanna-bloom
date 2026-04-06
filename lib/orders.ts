@@ -11,6 +11,7 @@ export type {
   OrderItem,
   DeliveryDistrictKey,
   OrderDelivery,
+  OrderDeliveryCustomerView,
   OrderPricing,
   ContactPreferenceOption,
   ContactPreferenceStored,
@@ -19,6 +20,7 @@ export type {
   OrderPaymentStatus,
   FulfillmentStatus,
   Order,
+  OrderCustomerView,
 } from './orders/types';
 
 export {

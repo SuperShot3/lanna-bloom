@@ -4,13 +4,13 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 const BUCKET = 'receipts';
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_TYPES = new Set([
+const ALLOWED_TYPES: readonly string[] = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/heic',
   'application/pdf',
-]);
+];
 
 function fileExtension(mimeType: string): string {
   const map: Record<string, string> = {
@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'file field is required' }, { status: 400 });
   }
 
-  if (!ALLOWED_TYPES.has(file.type)) {
+  if (!ALLOWED_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: `File type not allowed. Accepted: ${[...ALLOWED_TYPES].join(', ')}` },
+      { error: `File type not allowed. Accepted: ${ALLOWED_TYPES.join(', ')}` },
       { status: 400 }
     );
   }

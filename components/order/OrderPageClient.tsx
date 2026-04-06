@@ -11,7 +11,7 @@ import {
 } from '@/lib/messenger';
 import { LineIcon, WhatsAppIcon, HomeIcon } from '@/components/icons';
 import { translations } from '@/lib/i18n';
-import type { Order } from '@/lib/orders';
+import type { OrderCustomerView } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import {
   markCheckoutSubmissionCompleted,
@@ -117,7 +117,7 @@ export function OrderPageClient({
   addressHidden = false,
   locale = 'en',
 }: {
-  order: Order;
+  order: OrderCustomerView;
   orderId: string;
   detailsUrl: string;
   baseUrl: string;

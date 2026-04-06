@@ -128,3 +128,20 @@ export interface Order extends OrderPayload {
   lastLinePushStatus?: string;
   lastLinePushAt?: string;
 }
+
+/**
+ * Public order page: after delivery, sensitive fields may be redacted to null.
+ */
+export type OrderDeliveryCustomerView = Omit<
+  OrderDelivery,
+  'address' | 'deliveryGoogleMapsUrl' | 'recipientName' | 'recipientPhone'
+> & {
+  address: string | null;
+  deliveryGoogleMapsUrl?: string | null;
+  recipientName?: string | null;
+  recipientPhone?: string | null;
+};
+
+export type OrderCustomerView = Omit<Order, 'delivery'> & {
+  delivery: OrderDeliveryCustomerView;
+};
