@@ -63,6 +63,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="admin-shell-sidebar-footer">
+          <Link
+            href="/admin/accounting/info"
+            className="admin-shell-nav-link admin-shell-nav-link-info"
+          >
+            <span className="material-symbols-outlined admin-shell-icon">info</span>
+            <span>Accounting info</span>
+          </Link>
           <a
             href="/api/auth/signout?callbackUrl=/admin/login"
             className="admin-shell-nav-link admin-shell-nav-link-logout"

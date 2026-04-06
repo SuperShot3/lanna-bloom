@@ -5078,9 +5078,20 @@ a.filter-pill--active:hover {
   background: #fef2f2;
   color: #b91c1c;
 }
+.admin-shell-nav-link-info {
+  color: var(--admin-text-muted, #6b7280);
+  margin-bottom: 4px;
+}
+.admin-shell-nav-link-info:hover {
+  background: var(--admin-bg-light);
+  color: var(--admin-primary);
+}
 .admin-shell-sidebar-footer {
   padding: 16px 12px;
   border-top: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .admin-shell-main {
@@ -5769,6 +5780,10 @@ a.filter-pill--active:hover {
   margin-bottom: 14px;
   color: var(--admin-text, #111827);
 }
+.admin-accounting-section-hint {
+  margin: -8px 0 14px;
+  max-width: 52rem;
+}
 
 /* Money location cards */
 .admin-accounting-location-grid {
@@ -5890,6 +5905,44 @@ a.filter-pill--active:hover {
 
 /* Income list page */
 .admin-income { max-width: 1100px; margin: 0 auto; padding: 0 0 40px; }
+.admin-income-summary-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: baseline;
+  justify-content: flex-end;
+}
+
+/* Accounting info (help) page */
+.admin-accounting-info {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 0 48px;
+}
+.admin-accounting-info-body {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--admin-text, #111827);
+}
+.admin-accounting-info-section {
+  margin-bottom: 28px;
+}
+.admin-accounting-info-heading {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--admin-text, #111827);
+}
+.admin-accounting-info-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.admin-accounting-info-list li {
+  margin-bottom: 10px;
+}
+.admin-accounting-info-list li:last-child {
+  margin-bottom: 0;
+}
 
 /* Detail page actions */
 .admin-accounting-detail-actions { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }

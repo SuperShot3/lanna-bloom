@@ -24,7 +24,10 @@ export interface IncomeRecord {
   order_id: string | null;
   source_mode: IncomeSourceMode;
   source_type: IncomeSourceType;
+  /** Gross amount (customer payment) in `currency`. */
   amount: number;
+  /** Stripe/card: 5.3% of `amount`; otherwise 0. Omitted on legacy rows until backfilled. */
+  processing_fee_amount?: number;
   currency: string;
   payment_method: IncomePaymentMethod;
   money_location: MoneyLocation;
@@ -90,9 +93,15 @@ export interface MoneyLocationTotal {
 export interface AccountingOverview {
   periodLabel: string;
   totalIncome: number;
+  /** Sum of confirmed gross amounts (all payment methods). */
   confirmedIncome: number;
+  /** Sum of processing fees on confirmed Stripe rows (5.3% of gross each). */
+  stripeProcessingFees: number;
+  /** Confirmed income minus Stripe processing fees (realistic revenue before expenses). */
+  confirmedIncomeNet: number;
   pendingIncome: number;
   totalExpenses: number;
+  /** `confirmedIncomeNet - totalExpenses` */
   netResult: number;
   incomeByLocation: MoneyLocationTotal[];
   incomeCount: number;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { IncomeRecord } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, INCOME_PAYMENT_METHODS, MONEY_LOCATIONS, INCOME_STATUSES } from '@/types/accounting';
+import { netAfterProcessingFee, processingFeeForIncome, STRIPE_FEE_PERCENT_LABEL } from '@/lib/accounting/stripeFee';
 
 const SOURCE_TYPE_LABEL = Object.fromEntries(INCOME_SOURCE_TYPES.map((t) => [t.value, t.label]));
 const PM_LABEL          = Object.fromEntries(INCOME_PAYMENT_METHODS.map((m) => [m.value, m.label]));
@@ -96,6 +97,13 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
 
   const isAutoOrder = record.source_mode === 'auto_order';
 
+  const processingFee =
+    typeof record.processing_fee_amount === 'number'
+      ? record.processing_fee_amount
+      : processingFeeForIncome(record.amount, record.payment_method);
+  const netAfterFees = netAfterProcessingFee(record.amount, processingFee);
+  const isStripe = record.payment_method === 'stripe';
+
   return (
     <div className="admin-expenses-detail">
       <header className="admin-header admin-page-header">
@@ -108,6 +116,11 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
       {/* Hero */}
       <div className="admin-expenses-hero">
         <span className="admin-expenses-hero-amount">{fmt(record.amount)}</span>
+        {isStripe && (
+          <span className="admin-hint" style={{ display: 'block', marginTop: 4 }}>
+            Gross amount (before {STRIPE_FEE_PERCENT_LABEL} Stripe fee)
+          </span>
+        )}
         <span className={`admin-badge ${isAutoOrder ? 'admin-badge-auto' : 'admin-badge-manual'}`}>
           {isAutoOrder ? 'Auto-generated' : 'Manual entry'}
         </span>
@@ -119,6 +132,15 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
         <Row label="Description"    value={record.description} />
         <Row label="Source Type"    value={SOURCE_TYPE_LABEL[record.source_type] ?? record.source_type} />
         <Row label="Payment Method" value={PM_LABEL[record.payment_method] ?? record.payment_method} />
+        {isStripe && (
+          <>
+            <Row
+              label={`Stripe fee (${STRIPE_FEE_PERCENT_LABEL})`}
+              value={fmt(processingFee)}
+            />
+            <Row label="Net after Stripe fee" value={fmt(netAfterFees)} />
+          </>
+        )}
         <Row label="Money Location" value={LOC_LABEL[record.money_location] ?? record.money_location} />
         <Row label="Status"         value={<StatusBadge status={record.income_status} />} />
         {record.order_id && (

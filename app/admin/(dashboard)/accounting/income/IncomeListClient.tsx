@@ -9,6 +9,8 @@ interface Props {
   initialRecords: IncomeRecord[];
   initialTotal: number;
   initialConfirmedAmount: number;
+  initialConfirmedStripeFees: number;
+  initialConfirmedNetAmount: number;
   initialPendingAmount: number;
   initialError?: string;
   initialFilters: IncomeFilters;
@@ -47,8 +49,16 @@ function ModeBadge({ mode }: { mode: string }) {
 }
 
 export function IncomeListClient({
-  initialRecords, initialTotal, initialConfirmedAmount, initialPendingAmount,
-  initialError, initialFilters, initialPage, pageSize,
+  initialRecords,
+  initialTotal,
+  initialConfirmedAmount,
+  initialConfirmedStripeFees,
+  initialConfirmedNetAmount,
+  initialPendingAmount,
+  initialError,
+  initialFilters,
+  initialPage,
+  pageSize,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -119,13 +129,21 @@ export function IncomeListClient({
       {/* Summary */}
       <div className="admin-expenses-summary">
         <span className="admin-hint">{initialTotal} record{initialTotal !== 1 ? 's' : ''}</span>
-        <div style={{ display: 'flex', gap: 16 }}>
+        <div className="admin-income-summary-totals">
           <span className="admin-expenses-total">
-            Confirmed: <strong>{fmt(initialConfirmedAmount)}</strong>
+            Confirmed (gross): <strong>{fmt(initialConfirmedAmount)}</strong>
+          </span>
+          {initialConfirmedStripeFees > 0 && (
+            <span className="admin-expenses-total">
+              Stripe fees (5.3%): <strong>−{fmt(initialConfirmedStripeFees)}</strong>
+            </span>
+          )}
+          <span className="admin-expenses-total">
+            Confirmed (net): <strong>{fmt(initialConfirmedNetAmount)}</strong>
           </span>
           {initialPendingAmount > 0 && (
             <span className="admin-expenses-total" style={{ color: '#d97706' }}>
-              Pending: <strong>{fmt(initialPendingAmount)}</strong>
+              Pending (gross): <strong>{fmt(initialPendingAmount)}</strong>
             </span>
           )}
         </div>

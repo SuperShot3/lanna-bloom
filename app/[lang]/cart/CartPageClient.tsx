@@ -296,7 +296,6 @@ function cartValue(items: CartItem[]): number {
 
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, count: totalItemCount, removeItem, clearCart } = useCart();
-  const beginCheckoutFiredRef = useRef(false);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
   const orderSubmitInFlightRef = useRef(false);
@@ -407,6 +406,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       viewCartFiredRef.current = true;
       trackViewCart(analyticsItems, value);
     }
+    // begin_checkout: funnel start when user reaches cart (e.g. "Go to cart"); deduped per session in lib/analytics.
+    trackBeginCheckout({
+      currency: 'THB',
+      value,
+      items: analyticsItems,
+    });
   }, [items, lang]);
 
   const defaultDelivery: DeliveryFormValues = {
@@ -776,17 +781,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setRecipientPhoneNational(digitsOnly);
   };
 
-  const trackCheckoutStart = () => {
-    if (beginCheckoutFiredRef.current) return;
-    beginCheckoutFiredRef.current = true;
-    const analyticsItems = cartItemsToAnalytics(items, lang);
-    trackBeginCheckout({
-      currency: 'THB',
-      value: grandTotalVal,
-      items: analyticsItems,
-    });
-  };
-
   const handleStartNewCheckout = () => {
     if (typeof window === 'undefined') return;
     const newToken = crypto.randomUUID();
@@ -815,7 +809,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (orderSubmitInFlightRef.current || placing) return;
     orderSubmitInFlightRef.current = true;
     setOrderError(null);
-    trackCheckoutStart();
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
     const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;

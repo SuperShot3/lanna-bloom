@@ -37,10 +37,12 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    records:              result.records,
-    total:                result.total,
-    totalConfirmedAmount: result.totalConfirmedAmount,
-    totalPendingAmount:   result.totalPendingAmount,
+    records:                    result.records,
+    total:                      result.total,
+    totalConfirmedAmount:       result.totalConfirmedAmount,
+    totalConfirmedStripeFees:   result.totalConfirmedStripeFees,
+    totalConfirmedNetAmount:    result.totalConfirmedNetAmount,
+    totalPendingAmount:         result.totalPendingAmount,
     page,
     pageSize,
   });

@@ -11,6 +11,8 @@ import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
 interface OverviewData {
   totalIncome: number;
   confirmedIncome: number;
+  stripeProcessingFees: number;
+  confirmedIncomeNet: number;
   pendingIncome: number;
   totalExpenses: number;
   netResult: number;
@@ -239,13 +241,39 @@ export function AccountingOverviewClient({
           <>
             {/* KPI cards */}
             <div className="admin-accounting-kpi-grid">
-              <KpiCard
-                label="Confirmed Income"
-                value={fmt(overview.confirmedIncome)}
-                sub={`${overview.incomeCount} record${overview.incomeCount !== 1 ? 's' : ''}`}
-                color="green"
-                icon="trending_up"
-              />
+              {overview.stripeProcessingFees > 0 ? (
+                <>
+                  <KpiCard
+                    label="Confirmed Income (gross)"
+                    value={fmt(overview.confirmedIncome)}
+                    sub={`${overview.incomeCount} record${overview.incomeCount !== 1 ? 's' : ''} · before Stripe fees`}
+                    color="green"
+                    icon="trending_up"
+                  />
+                  <KpiCard
+                    label="Stripe Processing Fees"
+                    value={`−${fmt(overview.stripeProcessingFees)}`}
+                    sub="Fixed 5.3% on card/Stripe payments"
+                    color="blue"
+                    icon="percent"
+                  />
+                  <KpiCard
+                    label="Confirmed Income (net)"
+                    value={fmt(overview.confirmedIncomeNet)}
+                    sub="After Stripe fees · used for profit"
+                    color="green"
+                    icon="payments"
+                  />
+                </>
+              ) : (
+                <KpiCard
+                  label="Confirmed Income"
+                  value={fmt(overview.confirmedIncome)}
+                  sub={`${overview.incomeCount} record${overview.incomeCount !== 1 ? 's' : ''} · no Stripe fees in this period`}
+                  color="green"
+                  icon="trending_up"
+                />
+              )}
               {overview.pendingIncome > 0 && (
                 <KpiCard
                   label="Pending Income"
@@ -265,7 +293,7 @@ export function AccountingOverviewClient({
               <KpiCard
                 label="Net Result"
                 value={fmt(net)}
-                sub={isProfit ? 'Profit' : 'Loss'}
+                sub={isProfit ? 'Profit after Stripe fees & expenses' : 'Loss after Stripe fees & expenses'}
                 color={isProfit ? 'green' : 'red'}
                 icon={isProfit ? 'savings' : 'trending_down'}
                 large
@@ -276,6 +304,9 @@ export function AccountingOverviewClient({
             {overview.incomeByLocation.length > 0 && (
               <div className="admin-accounting-section">
                 <h2 className="admin-accounting-section-title">Income by Money Location</h2>
+                <p className="admin-hint admin-accounting-section-hint">
+                  Gross customer payments (before Stripe fees). See Accounting info for how this relates to net income.
+                </p>
                 <div className="admin-accounting-location-grid">
                   {overview.incomeByLocation
                     .sort((a, b) => b.total - a.total)

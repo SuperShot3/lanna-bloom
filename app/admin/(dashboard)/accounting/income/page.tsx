@@ -32,6 +32,8 @@ export default async function AdminIncomeListPage({ searchParams }: PageProps) {
       initialRecords={result.records}
       initialTotal={result.total}
       initialConfirmedAmount={result.totalConfirmedAmount}
+      initialConfirmedStripeFees={result.totalConfirmedStripeFees}
+      initialConfirmedNetAmount={result.totalConfirmedNetAmount}
       initialPendingAmount={result.totalPendingAmount}
       initialError={result.error}
       initialFilters={filters}

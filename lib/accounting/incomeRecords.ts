@@ -1,5 +1,6 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { netAfterProcessingFee, processingFeeForIncome } from '@/lib/accounting/stripeFee';
 import type {
   IncomeRecord,
   IncomeFilters,
@@ -17,7 +18,12 @@ const TABLE = 'income_records';
 export interface IncomeListResult {
   records: IncomeRecord[];
   total: number;
+  /** Confirmed rows: gross sum */
   totalConfirmedAmount: number;
+  /** Confirmed Stripe rows only: sum of processing_fee_amount */
+  totalConfirmedStripeFees: number;
+  /** Confirmed rows: gross minus processing fees */
+  totalConfirmedNetAmount: number;
   totalPendingAmount: number;
   error?: string;
 }
@@ -28,7 +34,15 @@ export async function getIncomeRecords(
 ): Promise<IncomeListResult> {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
-    return { records: [], total: 0, totalConfirmedAmount: 0, totalPendingAmount: 0, error: 'Supabase not configured' };
+    return {
+      records: [],
+      total: 0,
+      totalConfirmedAmount: 0,
+      totalConfirmedStripeFees: 0,
+      totalConfirmedNetAmount: 0,
+      totalPendingAmount: 0,
+      error: 'Supabase not configured',
+    };
   }
 
   const { page, pageSize } = pagination;
@@ -49,11 +63,22 @@ export async function getIncomeRecords(
 
   if (error) {
     console.error('[incomeRecords] list error:', error.message);
-    return { records: [], total: 0, totalConfirmedAmount: 0, totalPendingAmount: 0, error: error.message };
+    return {
+      records: [],
+      total: 0,
+      totalConfirmedAmount: 0,
+      totalConfirmedStripeFees: 0,
+      totalConfirmedNetAmount: 0,
+      totalPendingAmount: 0,
+      error: error.message,
+    };
   }
 
   // Total amount calculation over full filtered set
-  let amountQuery = supabase.from(TABLE).select('amount, income_status').neq('income_status', 'cancelled');
+  let amountQuery = supabase
+    .from(TABLE)
+    .select('amount, income_status, payment_method, processing_fee_amount')
+    .neq('income_status', 'cancelled');
   if (filters.dateFrom)   amountQuery = amountQuery.gte('created_at', filters.dateFrom);
   if (filters.dateTo)     amountQuery = amountQuery.lte('created_at', filters.dateTo + 'T23:59:59');
   if (filters.source_mode && filters.source_mode !== 'all') amountQuery = amountQuery.eq('source_mode', filters.source_mode);
@@ -61,17 +86,31 @@ export async function getIncomeRecords(
 
   const { data: amountRows } = await amountQuery;
   let totalConfirmedAmount = 0;
+  let totalConfirmedStripeFees = 0;
+  let totalConfirmedNetAmount = 0;
   let totalPendingAmount = 0;
   for (const row of amountRows ?? []) {
-    const v = parseFloat(String(row.amount)) || 0;
-    if (row.income_status === 'confirmed') totalConfirmedAmount += v;
-    else totalPendingAmount += v;
+    const gross = parseFloat(String(row.amount)) || 0;
+    const feeRaw = row.processing_fee_amount;
+    const fee =
+      feeRaw != null && feeRaw !== ''
+        ? parseFloat(String(feeRaw)) || 0
+        : processingFeeForIncome(gross, row.payment_method as IncomePaymentMethod);
+    if (row.income_status === 'confirmed') {
+      totalConfirmedAmount += gross;
+      totalConfirmedStripeFees += fee;
+      totalConfirmedNetAmount += netAfterProcessingFee(gross, fee);
+    } else {
+      totalPendingAmount += gross;
+    }
   }
 
   return {
     records: (data ?? []) as IncomeRecord[],
     total: count ?? 0,
     totalConfirmedAmount,
+    totalConfirmedStripeFees,
+    totalConfirmedNetAmount,
     totalPendingAmount,
   };
 }
@@ -165,6 +204,8 @@ export async function createIncomeRecord(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { record: null, error: 'Supabase not configured' };
 
+  const fee = processingFeeForIncome(input.amount, input.payment_method);
+
   const { data, error } = await supabase
     .from(TABLE)
     .insert({
@@ -172,6 +213,7 @@ export async function createIncomeRecord(
       source_mode:       input.source_mode,
       source_type:       input.source_type,
       amount:            input.amount,
+      processing_fee_amount: fee,
       currency:          input.currency ?? 'THB',
       payment_method:    input.payment_method,
       money_location:    input.money_location,
@@ -224,11 +266,13 @@ export async function upsertOrderIncomeRecord(
 
   try {
     const now = new Date().toISOString();
+    const fee = processingFeeForIncome(input.amount, input.payment_method);
     const { error } = await supabase.from(TABLE).insert({
       order_id:          input.order_id,
       source_mode:       'auto_order',
       source_type:       'order',
       amount:            input.amount,
+      processing_fee_amount: fee,
       currency:          input.currency ?? 'THB',
       payment_method:    input.payment_method,
       money_location:    input.money_location,
@@ -311,7 +355,9 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   if (!supabase) return null;
 
   // Income: all non-cancelled records in period
-  let incomeQuery = supabase.from(TABLE).select('amount, income_status, money_location');
+  let incomeQuery = supabase
+    .from(TABLE)
+    .select('amount, income_status, money_location, payment_method, processing_fee_amount');
   if (filter.dateFrom) incomeQuery = incomeQuery.gte('created_at', filter.dateFrom);
   if (filter.dateTo)   incomeQuery = incomeQuery.lte('created_at', filter.dateTo + 'T23:59:59');
   incomeQuery = incomeQuery.neq('income_status', 'cancelled');
@@ -328,18 +374,28 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
 
   let totalIncome = 0;
   let confirmedIncome = 0;
+  let stripeProcessingFees = 0;
+  let confirmedIncomeNet = 0;
   let pendingIncome = 0;
   const locationMap: Record<string, number> = {};
 
   for (const row of incomeRows ?? []) {
-    const v = parseFloat(String(row.amount)) || 0;
-    totalIncome += v;
+    const gross = parseFloat(String(row.amount)) || 0;
+    const pm = row.payment_method as IncomePaymentMethod;
+    const feeStored = row.processing_fee_amount;
+    const fee =
+      feeStored != null && feeStored !== ''
+        ? parseFloat(String(feeStored)) || 0
+        : processingFeeForIncome(gross, pm);
+    totalIncome += gross;
     if (row.income_status === 'confirmed') {
-      confirmedIncome += v;
+      confirmedIncome += gross;
+      stripeProcessingFees += fee;
+      confirmedIncomeNet += netAfterProcessingFee(gross, fee);
       const loc = String(row.money_location ?? 'other');
-      locationMap[loc] = (locationMap[loc] ?? 0) + v;
+      locationMap[loc] = (locationMap[loc] ?? 0) + gross;
     } else {
-      pendingIncome += v;
+      pendingIncome += gross;
     }
   }
 
@@ -351,9 +407,11 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   return {
     totalIncome,
     confirmedIncome,
+    stripeProcessingFees,
+    confirmedIncomeNet,
     pendingIncome,
     totalExpenses,
-    netResult: confirmedIncome - totalExpenses,
+    netResult: confirmedIncomeNet - totalExpenses,
     incomeByLocation: Object.entries(locationMap).map(([location, total]) => ({ location, total })),
     incomeCount: (incomeRows ?? []).length,
     expenseCount: (expenseRows ?? []).length,
