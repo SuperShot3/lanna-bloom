@@ -105,7 +105,7 @@ function validateStripePayload(
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
   const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
 
-  const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'] as const;
+  const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'] as const;
   const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as typeof validDistricts[number])
     ? (d.deliveryDistrict as typeof validDistricts[number])
     : 'UNKNOWN';

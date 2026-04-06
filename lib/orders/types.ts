@@ -33,7 +33,7 @@ export interface OrderItem {
 /** District key for delivery fee calculation. */
 export type DeliveryDistrictKey =
   | 'MUEANG' | 'SARAPHI' | 'SAN_SAI' | 'HANG_DONG' | 'SAN_KAMPHAENG'
-  | 'MAE_RIM' | 'DOI_SAKET' | 'MAE_ON' | 'SAMOENG' | 'MAE_TAENG' | 'UNKNOWN';
+  | 'MAE_RIM' | 'DOI_SAKET' | 'MAE_ON' | 'SAMOENG' | 'MAE_TAENG' | 'LAMPHUN' | 'UNKNOWN';
 
 export interface OrderDelivery {
   address: string;

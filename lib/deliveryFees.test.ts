@@ -27,12 +27,14 @@ assert(calcDeliveryFeeTHB({ district: 'DOI_SAKET', isMueangCentral: false }) ===
 assert(calcDeliveryFeeTHB({ district: 'MAE_ON', isMueangCentral: false }) === 500, 'Mae On = 500');
 assert(calcDeliveryFeeTHB({ district: 'SAMOENG', isMueangCentral: false }) === 500, 'Samoeng = 500');
 assert(calcDeliveryFeeTHB({ district: 'MAE_TAENG', isMueangCentral: false }) === 500, 'Mae Taeng = 500');
+assert(calcDeliveryFeeTHB({ district: 'LAMPHUN', isMueangCentral: false }) === 700, 'Lamphun = 700');
 assert(calcDeliveryFeeTHB({ district: 'UNKNOWN', isMueangCentral: false }) === 500, 'Unknown = 500');
 
 // Auto-detect
 assert(detectDistrictFromAddress('123 Nimman Road') === 'MUEANG', 'Nimman -> Mueang');
 assert(detectDistrictFromAddress('หางดง') === 'HANG_DONG', 'Thai Hang Dong');
 assert(detectDistrictFromAddress('อ.สันกำแพง') === 'SAN_KAMPHAENG', 'Thai San Kamphaeng');
+assert(detectDistrictFromAddress('Mueang Lamphun') === 'LAMPHUN', 'Lamphun before generic mueang');
 assert(detectDistrictFromAddress('random address') === null, 'No match -> null');
 
 // Districts array

@@ -429,7 +429,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const stored = loadCartFormFromStorage();
     const d = stored?.delivery;
     if (!d || typeof d !== 'object') return defaultDelivery;
-    const validDistrict = d.deliveryDistrict && ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'].includes(d.deliveryDistrict)
+    const validDistrict = d.deliveryDistrict && ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'].includes(d.deliveryDistrict)
       ? d.deliveryDistrict
       : '';
     return {

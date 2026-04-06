@@ -15,6 +15,7 @@ export type DistrictKey =
   | 'MAE_ON'
   | 'SAMOENG'
   | 'MAE_TAENG'
+  | 'LAMPHUN'
   | 'UNKNOWN';
 
 export interface DistrictOption {
@@ -34,6 +35,7 @@ export const DISTRICTS: DistrictOption[] = [
   { key: 'MAE_ON', labelEn: 'Mae On', labelTh: 'อำเภอแม่ออน' },
   { key: 'SAMOENG', labelEn: 'Samoeng', labelTh: 'อำเภอสะเมิง' },
   { key: 'MAE_TAENG', labelEn: 'Mae Taeng', labelTh: 'อำเภอแม่แตง' },
+  { key: 'LAMPHUN', labelEn: 'Lamphun', labelTh: 'จังหวัดลำพูน' },
   { key: 'UNKNOWN', labelEn: 'Other / Unknown', labelTh: 'อื่นๆ / ไม่ทราบ' },
 ];
 
@@ -75,6 +77,8 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
     case 'SAN_KAMPHAENG':
     case 'MAE_RIM':
       return 400;
+    case 'LAMPHUN':
+      return 700;
     case 'DOI_SAKET':
     case 'MAE_ON':
     case 'SAMOENG':
@@ -106,6 +110,20 @@ const DISTRICT_KEYWORDS: { key: DistrictKey; patterns: string[] }[] = [
   { key: 'HANG_DONG', patterns: ['hang dong', 'หางดง', 'อ.หางดง', 'อำเภอหางดง'] },
   { key: 'SAN_SAI', patterns: ['san sai', 'สันทราย', 'อ.สันทราย', 'อำเภอสันทราย'] },
   { key: 'SARAPHI', patterns: ['saraphi', 'สารภี', 'อ.สารภี', 'อำเภอสารภี'] },
+  {
+    key: 'LAMPHUN',
+    patterns: [
+      'lamphun',
+      'lampoon',
+      'ลำพูน',
+      'จ.ลำพูน',
+      'จังหวัดลำพูน',
+      'mueang lamphun',
+      'เมืองลำพูน',
+      'อ.เมืองลำพูน',
+      'อำเภอเมืองลำพูน',
+    ],
+  },
   {
     key: 'MUEANG',
     patterns: [

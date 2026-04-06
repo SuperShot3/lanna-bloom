@@ -46,7 +46,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   if (deliveryGoogleMapsUrlRaw && !isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
     return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
   }
-  const validDistricts: DeliveryDistrictKey[] = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','UNKNOWN'];
+  const validDistricts: DeliveryDistrictKey[] = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'];
   const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as DeliveryDistrictKey)
     ? (d.deliveryDistrict as DeliveryDistrictKey)
     : 'UNKNOWN';
