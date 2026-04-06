@@ -57,6 +57,13 @@ export default async function OrderDetailsPage({
     order.status,
     supabasePayment?.paid_at ?? order.paidAt,
   );
+  console.log('[stripe/purchase] order page SSR: paid computed', {
+    orderId: order.orderId,
+    paid,
+    supabasePaymentStatus: supabasePayment?.payment_status ?? null,
+    orderStatus: order.status,
+    paidAt: supabasePayment?.paid_at ?? order.paidAt ?? null,
+  });
 
   // Derive fulfillment / order status for customer view (badge on \"Order details\" tab).
   const fulfillmentFromOrderStatus =
@@ -71,6 +78,21 @@ export default async function OrderDetailsPage({
     ?? order.fulfillmentStatus
     ?? supabasePayment?.fulfillment_status
     ?? 'new';
+
+  // Redact address fields for delivered orders — data stays in Supabase for accounting.
+  const isDelivered = (supabasePayment?.order_status ?? '').toUpperCase() === 'DELIVERED';
+  const orderForClient = isDelivered
+    ? {
+        ...order,
+        delivery: {
+          ...order.delivery,
+          address: null,
+          deliveryGoogleMapsUrl: null,
+          recipientName: null,
+          recipientPhone: null,
+        },
+      }
+    : order;
   const fulfillmentStatusUpdatedAt =
     supabasePayment?.fulfillment_status_updated_at
     ?? supabasePayment?.updated_at
@@ -105,8 +127,9 @@ export default async function OrderDetailsPage({
       )}
       <div className="container">
         <OrderPageClient
-          order={order}
+          order={orderForClient}
           orderId={order.orderId}
+          addressHidden={isDelivered}
           detailsUrl={detailsUrl}
           baseUrl={baseUrl}
           paid={paid}

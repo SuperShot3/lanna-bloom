@@ -134,12 +134,10 @@ export function trackPurchase(params: {
 
   // Guard FIRST: check both storages so only one push per order (cross-tab / revisit safe)
   if (wasPurchaseSent(normalizedOrderId)) {
-    if (isDev) {
-      console.info('[analytics] purchase duplicate prevented by storage guard (no dataLayer push)', {
-        orderId: normalizedOrderId,
-        ...getPurchaseGuardDebug(normalizedOrderId),
-      });
-    }
+    console.log('[stripe/purchase] trackPurchase: BLOCKED by dedupe guard — already sent for this orderId', {
+      orderId: normalizedOrderId,
+      ...getPurchaseGuardDebug(normalizedOrderId),
+    });
     return;
   }
   markPurchaseSent(normalizedOrderId);
@@ -160,12 +158,13 @@ export function trackPurchase(params: {
     currency,
     items: ensuredItems,
   });
-  if (isDev) {
-    console.info('[analytics] purchase pushed to dataLayer once — GTM will send to GA4', {
-      orderId: normalizedOrderId,
-      transactionId,
-    });
-  }
+  console.log('[stripe/purchase] trackPurchase: pushed to dataLayer ✓ — GTM will forward to GA4', {
+    orderId: normalizedOrderId,
+    transaction_id: transactionId,
+    value,
+    currency,
+    itemCount: ensuredItems.length,
+  });
 }
 
 /** Dedupe key for Google Ads conversion (separate from GA4 purchase guard). */

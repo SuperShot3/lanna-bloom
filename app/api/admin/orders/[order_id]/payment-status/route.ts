@@ -102,6 +102,19 @@ export async function PATCH(
     payment_to: paymentStatus,
   });
 
+  // Create income record when transitioning to PAID (idempotent, fire-and-forget)
+  if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
+    void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
+      upsertOrderIncome({
+        orderId:       order_id.trim(),
+        amount:        updated.grand_total ?? updated.items_total ?? 0,
+        currency:      'THB',
+        paymentMethod: updated.payment_method,
+        createdBy:     `admin:${adminEmail}`,
+      }).catch((e) => console.error('[admin/payment-status] income upsert error:', e))
+    );
+  }
+
   // GA4 purchase: send only when transitioning to PAID (backend Measurement Protocol, atomic claim)
   if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
     const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');

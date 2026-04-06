@@ -85,6 +85,11 @@ export async function POST(request: NextRequest) {
     session.payment_status === 'paid' || paymentIntent?.status === 'succeeded';
 
   if (!paidInStripe) {
+    console.log('[stripe/purchase] sync-checkout-session: Stripe session not paid yet', {
+      orderId,
+      stripePaymentStatus: session.payment_status,
+      paymentIntentStatus: paymentIntent?.status ?? null,
+    });
     return NextResponse.json({
       ok: true,
       paid: false,
@@ -147,7 +152,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[stripe/sync-checkout-session] order marked paid', { orderId, stripeSessionId });
+    // Create income record (idempotent, fire-and-forget — must not break payment flow)
+    void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
+      upsertOrderIncome({
+        orderId:               orderId,
+        amount:                amountTotal ?? 0,
+        currency:              currency ?? 'THB',
+        paymentMethod:         'STRIPE',
+        stripePaymentIntentId: paymentIntentId ?? null,
+        createdBy:             'system:sync_checkout',
+      }).catch((e) => console.error('[sync-checkout-session] income upsert error:', e))
+    );
+
+    console.log('[stripe/purchase] sync-checkout-session: order marked PAID in DB', { orderId, stripeSessionId });
     return NextResponse.json({ ok: true, paid: true });
   } catch (e) {
     console.error('[stripe/sync-checkout-session] update error:', e);

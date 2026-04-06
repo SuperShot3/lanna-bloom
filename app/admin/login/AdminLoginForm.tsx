@@ -69,7 +69,7 @@ export function AdminLoginForm() {
           required
         />
       </div>
-      <button type="submit" className="admin-btn" disabled={loading}>
+      <button type="submit" className="admin-btn admin-btn-primary admin-btn-full" disabled={loading}>
         {loading ? 'Signing in…' : 'Sign in'}
       </button>
     </form>

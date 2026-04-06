@@ -91,6 +91,7 @@ export function OrderDetailsView({
   supabasePaidAt,
   fulfillmentStatus = 'new',
   fulfillmentStatusUpdatedAt,
+  addressHidden = false,
 }: {
   order: Order;
   orderId?: string;
@@ -105,6 +106,7 @@ export function OrderDetailsView({
   supabasePaidAt?: string;
   fulfillmentStatus?: FulfillmentStatus | string;
   fulfillmentStatusUpdatedAt?: string;
+  addressHidden?: boolean;
 }) {
   const resolvedOrderId = orderId ?? order.orderId;
   const t = translations[locale].orderPage;
@@ -216,16 +218,18 @@ export function OrderDetailsView({
     lines.push(`${t.deliveryDate}: ${formatDisplayDate(deliveryDate) || '—'}`);
     if (preferredTime) lines.push(`${t.preferredTime}: ${preferredTime}`);
     lines.push('');
-    lines.push(`${t.address}:`);
-    lines.push(order.delivery.address || '—');
-    if (order.delivery.deliveryGoogleMapsUrl) {
-      lines.push(order.delivery.deliveryGoogleMapsUrl);
-    }
-    if (order.delivery.recipientName || order.delivery.recipientPhone) {
-      lines.push('');
-      lines.push(`${t.recipientName}: ${order.delivery.recipientName || '—'}`);
-      if (order.delivery.recipientPhone) {
-        lines.push(`${t.recipientPhone}: ${order.delivery.recipientPhone}`);
+    if (!addressHidden) {
+      lines.push(`${t.address}:`);
+      lines.push(order.delivery.address || '—');
+      if (order.delivery.deliveryGoogleMapsUrl) {
+        lines.push(order.delivery.deliveryGoogleMapsUrl);
+      }
+      if (order.delivery.recipientName || order.delivery.recipientPhone) {
+        lines.push('');
+        lines.push(`${t.recipientName}: ${order.delivery.recipientName || '—'}`);
+        if (order.delivery.recipientPhone) {
+          lines.push(`${t.recipientPhone}: ${order.delivery.recipientPhone}`);
+        }
       }
     }
     lines.push('');
@@ -401,36 +405,44 @@ export function OrderDetailsView({
       {/* Delivery address */}
       <div className="order-details-section">
         <h2 className="order-details-heading">{t.address}</h2>
-        <p className="order-details-value">{order.delivery.address || '—'}</p>
-        {order.delivery.deliveryGoogleMapsUrl && (
+        {addressHidden ? (
+          <p className="order-details-value order-details-address-hidden">
+            {locale === 'th' ? 'ที่อยู่จะถูกลบออกหลังการจัดส่ง' : 'Address removed after delivery'}
+          </p>
+        ) : (
           <>
-            <p className="order-details-gmaps-wrap">
-              <a
-                href={order.delivery.deliveryGoogleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="order-details-gmaps-btn"
-              >
-                {t.openInGoogleMaps}
-              </a>
-            </p>
-            <p className="order-details-link-line">
-              <span className="order-details-link-label">{t.googleMapLink}: </span>
-              <a
-                href={order.delivery.deliveryGoogleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="order-details-link-url"
-              >
-                {order.delivery.deliveryGoogleMapsUrl}
-              </a>
-            </p>
+            <p className="order-details-value">{order.delivery.address || '—'}</p>
+            {order.delivery.deliveryGoogleMapsUrl && (
+              <>
+                <p className="order-details-gmaps-wrap">
+                  <a
+                    href={order.delivery.deliveryGoogleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="order-details-gmaps-btn"
+                  >
+                    {t.openInGoogleMaps}
+                  </a>
+                </p>
+                <p className="order-details-link-line">
+                  <span className="order-details-link-label">{t.googleMapLink}: </span>
+                  <a
+                    href={order.delivery.deliveryGoogleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="order-details-link-url"
+                  >
+                    {order.delivery.deliveryGoogleMapsUrl}
+                  </a>
+                </p>
+              </>
+            )}
           </>
         )}
       </div>
 
       {/* Recipient */}
-      {(order.delivery.recipientName || order.delivery.recipientPhone) && (
+      {!addressHidden && (order.delivery.recipientName || order.delivery.recipientPhone) && (
         <div className="order-details-section">
           <h2 className="order-details-heading">{t.recipientName}</h2>
           <p className="order-details-value">{order.delivery.recipientName || '—'}</p>
@@ -583,6 +595,10 @@ export function OrderDetailsView({
           font-size: 0.95rem;
           color: var(--text);
           margin: 0 0 4px;
+        }
+        .order-details-address-hidden {
+          color: var(--text-muted);
+          font-style: italic;
         }
         .order-details-order-id {
           font-size: 1.1rem;

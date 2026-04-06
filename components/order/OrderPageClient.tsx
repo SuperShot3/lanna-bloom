@@ -19,6 +19,8 @@ import {
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
 import { SUPPORT_EMAIL } from '@/lib/siteContact';
+import { trackPurchase } from '@/lib/analytics';
+import type { AnalyticsItem } from '@/lib/analytics';
 
 function EmailIconSmall({ size = 18 }: { size?: number }) {
   return (
@@ -112,6 +114,7 @@ export function OrderPageClient({
   fulfillmentStatusUpdatedAt,
   supabasePaymentMethod,
   supabasePaidAt,
+  addressHidden = false,
   locale = 'en',
 }: {
   order: Order;
@@ -124,6 +127,7 @@ export function OrderPageClient({
   fulfillmentStatusUpdatedAt?: string;
   supabasePaymentMethod?: string;
   supabasePaidAt?: string;
+  addressHidden?: boolean;
   locale?: Locale;
 }) {
   const router = useRouter();
@@ -182,12 +186,14 @@ export function OrderPageClient({
     let cancelled = false;
     (async () => {
       try {
+        console.log('[stripe/purchase] calling sync-checkout-session', { orderId, sessionId });
         const res = await fetch('/api/stripe/sync-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, orderId }),
         });
         const data = (await res.json().catch(() => ({}))) as { paid?: boolean };
+        console.log('[stripe/purchase] sync-checkout-session response', { ok: res.ok, paid: data.paid, orderId });
         if (cancelled) return;
         if (res.ok && data.paid) {
           try {
@@ -195,6 +201,34 @@ export function OrderPageClient({
           } catch {
             // ignore
           }
+
+          // Fire purchase immediately — do NOT wait for server re-render + tracker mount.
+          // The tracker (OrderPaidConversionTracker) acts as a secondary path; the
+          // localStorage dedupe in trackPurchase prevents any double push.
+          const purchaseValue = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+          const purchaseCurrency = order.currency ?? 'THB';
+          const purchaseItems: AnalyticsItem[] = (order.items ?? []).map((it, idx) => ({
+            item_id: it.bouquetId,
+            item_name: it.bouquetTitle,
+            price: it.price,
+            quantity: 1,
+            index: idx,
+            ...(it.size ? { item_variant: it.size } : {}),
+          }));
+          console.log('[stripe/purchase] firing purchase from sync path', {
+            orderId,
+            value: purchaseValue,
+            currency: purchaseCurrency,
+            itemCount: purchaseItems.length,
+          });
+          trackPurchase({
+            orderId,
+            value: purchaseValue,
+            currency: purchaseCurrency,
+            items: purchaseItems,
+            transactionId: orderId,
+          });
+
           router.refresh();
           const url = new URL(window.location.href);
           url.searchParams.delete('session_id');
@@ -202,7 +236,9 @@ export function OrderPageClient({
           const qs = url.searchParams.toString();
           window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
         } else {
-          // Webhook may have updated the order while sync failed or raced.
+          // Webhook may have already updated the order. Refresh so the server can
+          // re-check Supabase; OrderPaidConversionTracker handles purchase if paid.
+          console.log('[stripe/purchase] sync returned not-paid, refreshing for webhook catch-up', { orderId });
           router.refresh();
         }
       } finally {
@@ -212,7 +248,7 @@ export function OrderPageClient({
     return () => {
       cancelled = true;
     };
-  }, [paid, orderId, router]);
+  }, [paid, orderId, router, order]);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('qr');
   const [copied, setCopied] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
@@ -431,7 +467,13 @@ export function OrderPageClient({
             </div>
             <div className="order-redesign-meta-card full">
               <div className="order-redesign-meta-label">{t.address}</div>
-              <div className="order-redesign-meta-value">{order.delivery?.address || '—'}</div>
+              {addressHidden ? (
+                <div className="order-redesign-meta-value order-redesign-address-hidden">
+                  {locale === 'th' ? 'ที่อยู่จะถูกลบออกหลังการจัดส่ง' : 'Address removed after delivery'}
+                </div>
+              ) : (
+                <div className="order-redesign-meta-value">{order.delivery?.address || '—'}</div>
+              )}
             </div>
           </div>
 
@@ -1021,6 +1063,11 @@ export function OrderPageClient({
           font-family: ui-monospace, monospace;
           font-size: 12px;
           letter-spacing: 0.05em;
+        }
+        .order-redesign-address-hidden {
+          color: var(--text-muted);
+          font-style: italic;
+          font-weight: 400;
         }
         a.order-redesign-link {
           color: var(--accent);

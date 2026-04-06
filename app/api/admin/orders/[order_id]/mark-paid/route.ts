@@ -104,6 +104,17 @@ export async function PATCH(
     console.warn('[admin/mark-paid] GA4 purchase send failed for order', order_id.trim(), ga4Result.error);
   }
 
+  // Create income record (idempotent, fire-and-forget)
+  void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
+    upsertOrderIncome({
+      orderId:       order_id.trim(),
+      amount:        updated.grand_total ?? updated.items_total ?? 0,
+      currency:      'THB',
+      paymentMethod: updated.payment_method,
+      createdBy:     `admin:${adminEmail}`,
+    }).catch((e) => console.error('[admin/mark-paid] income upsert error:', e))
+  );
+
   // Payment-confirmation only: customer email. No admin email here (admin is notified once at order placement).
   const trimmedId = order_id.trim();
   getOrderById(trimmedId).then((fullOrder) => {

@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 const NAV_ITEMS = [
   { href: '/admin/orders', label: 'Orders', icon: 'shopping_bag' },
+  { href: '/admin/accounting', label: 'Accounting', icon: 'account_balance_wallet' },
   { href: '/admin/partners/applications', label: 'Partners', icon: 'group' },
   { href: '/admin/moderation/products', label: 'Product Moderation', icon: 'verified_user' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'reviews' },
@@ -66,7 +67,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             href="/api/auth/signout?callbackUrl=/admin/login"
             className="admin-shell-nav-link admin-shell-nav-link-logout"
           >
-            <span className="admin-shell-icon">logout</span>
+            <span className="material-symbols-outlined admin-shell-icon">logout</span>
             <span>Sign out</span>
           </a>
         </div>
@@ -88,7 +89,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             href="/api/auth/signout?callbackUrl=/admin/login"
             className="admin-shell-header-logout"
           >
-            Sign out
+            <span className="material-symbols-outlined admin-shell-icon">logout</span>
+            <span>Sign out</span>
           </a>
         </header>
         <main className="admin-shell-content">{children}</main>

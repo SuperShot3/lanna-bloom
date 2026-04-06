@@ -267,12 +267,13 @@ export async function POST(request: NextRequest) {
       paidAt,
     });
 
-    console.log('[stripe/webhook] order updated successfully', {
+    console.log('[stripe/webhook] order updated successfully — DB now PAID', {
       orderId,
       stripeSessionId,
       paymentIntentId,
       paidAt,
     });
+    console.log('[stripe/purchase] webhook: DB marked PAID — purchase will fire client-side when user lands on order page', { orderId });
 
     // Legacy dual-write: sync to Supabase when primary is Blob
     void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentSuccess }) =>
@@ -300,6 +301,18 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    // Create income record (idempotent, fire-and-forget — must not break payment flow)
+    void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
+      upsertOrderIncome({
+        orderId:               orderId,
+        amount:                amountTotal ? amountTotal / 100 : 0,
+        currency:              currency?.toUpperCase() ?? 'THB',
+        paymentMethod:         'STRIPE',
+        stripePaymentIntentId: paymentIntentId ?? null,
+        createdBy:             'system:stripe_webhook',
+      }).catch((e) => console.error('[stripe/webhook] income upsert error:', e))
+    );
 
     // GA4 purchase for Stripe: not sent from webhook. Purchase reaches GA4 only via browser
     // (user lands on order page → dataLayer purchase → GTM → GA4). Direct-to-GA4 send is

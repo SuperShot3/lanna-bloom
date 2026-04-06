@@ -25,8 +25,22 @@ export function OrderPaidConversionTracker({
   const firedRef = useRef(false);
 
   useEffect(() => {
-    if (!orderId || value == null || value < 0 || firedRef.current) return;
+    console.log('[stripe/purchase] OrderPaidConversionTracker mounted', { orderId, value, currency });
+    if (!orderId || value == null || value < 0 || firedRef.current) {
+      console.log('[stripe/purchase] tracker skipped (guard)', {
+        orderId,
+        value,
+        firedRef: firedRef.current,
+      });
+      return;
+    }
     firedRef.current = true;
+    console.log('[stripe/purchase] tracker calling trackPurchase (server-rendered paid path)', {
+      orderId,
+      value,
+      currency,
+      itemCount: Array.isArray(items) ? items.length : 0,
+    });
     trackPurchase({
       orderId,
       value,
