@@ -1,11 +1,12 @@
 import { unstable_noStore } from 'next/cache';
 import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
-import { orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
+import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 import { OrderPageClient } from '@/components/order/OrderPageClient';
 import { OrderPaidConversionTracker } from '@/components/OrderPaidConversionTracker';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
+import { OrderDeliveredBlock } from './OrderDeliveredBlock';
 
 /** Always fetch fresh data; never cache. Status comes from Supabase (admin updates). */
 export const dynamic = 'force-dynamic';
@@ -71,28 +72,34 @@ export default async function OrderDetailsPage({
       ? orderStatusToFulfillmentDisplay(supabasePayment.order_status)
       : null;
 
-  // For customer-facing UI, always treat Supabase order_status as source of truth.
-  // fulfillment_status is legacy and may remain "new" even after admin updates order_status.
+  const fulfillmentFromLegacyColumn = supabasePayment?.fulfillment_status
+    ? orderStatusToFulfillmentDisplay(supabasePayment.fulfillment_status)
+    : null;
+
+  // For customer-facing UI, prefer Supabase order_status when present; otherwise the order
+  // row from getOrderById (covers a failed second query or legacy fulfillment_status-only rows).
   const fulfillmentStatus =
     fulfillmentFromOrderStatus
     ?? order.fulfillmentStatus
-    ?? supabasePayment?.fulfillment_status
+    ?? fulfillmentFromLegacyColumn
     ?? 'new';
 
-  // Redact address fields for delivered orders — data stays in Supabase for accounting.
-  const isDelivered = (supabasePayment?.order_status ?? '').toUpperCase() === 'DELIVERED';
-  const orderForClient = isDelivered
-    ? {
-        ...order,
-        delivery: {
-          ...order.delivery,
-          address: null,
-          deliveryGoogleMapsUrl: null,
-          recipientName: null,
-          recipientPhone: null,
-        },
-      }
-    : order;
+  // Delivered must match the resolved badge — not only supabasePayment.order_status,
+  // which can be null if the second query fails while getOrderById still has DELIVERED.
+  const isDelivered =
+    fulfillmentStatus === 'delivered' ||
+    normalizeOrderStatus(supabasePayment?.order_status) === 'DELIVERED';
+
+  if (isDelivered) {
+    return (
+      <div className="order-page">
+        <div className="container">
+          <OrderDeliveredBlock orderId={order.orderId} t={t} locale={defaultLocale} />
+        </div>
+      </div>
+    );
+  }
+
   const fulfillmentStatusUpdatedAt =
     supabasePayment?.fulfillment_status_updated_at
     ?? supabasePayment?.updated_at
@@ -127,9 +134,8 @@ export default async function OrderDetailsPage({
       )}
       <div className="container">
         <OrderPageClient
-          order={orderForClient}
+          order={order}
           orderId={order.orderId}
-          addressHidden={isDelivered}
           detailsUrl={detailsUrl}
           baseUrl={baseUrl}
           paid={paid}

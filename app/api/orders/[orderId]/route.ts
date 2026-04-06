@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderById } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
-import { orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
+import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +21,43 @@ export async function GET(
 
   const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
   const orderStatus = supabasePayment?.order_status ?? null;
-  const fulfillmentStatus = orderStatusToFulfillmentDisplay(orderStatus);
+  const fulfillmentFromOrderStatus =
+    orderStatus != null ? orderStatusToFulfillmentDisplay(orderStatus) : null;
+  const fulfillmentFromLegacyColumn = supabasePayment?.fulfillment_status
+    ? orderStatusToFulfillmentDisplay(supabasePayment.fulfillment_status)
+    : null;
+  const fulfillmentStatus =
+    fulfillmentFromOrderStatus
+    ?? order.fulfillmentStatus
+    ?? fulfillmentFromLegacyColumn
+    ?? 'new';
+
+  const isDelivered =
+    fulfillmentStatus === 'delivered' ||
+    normalizeOrderStatus(supabasePayment?.order_status) === 'DELIVERED';
+
+  if (isDelivered) {
+    const fulfillmentStatusUpdatedAt =
+      supabasePayment?.fulfillment_status_updated_at
+      ?? supabasePayment?.updated_at
+      ?? order.fulfillmentStatusUpdatedAt;
+    return NextResponse.json(
+      {
+        orderId: order.orderId,
+        order_status: orderStatus,
+        fulfillmentStatus: 'delivered',
+        fulfillmentStatusUpdatedAt,
+        payment_status: supabasePayment?.payment_status ?? order.status,
+        payment_method: supabasePayment?.payment_method,
+        paid_at: supabasePayment?.paid_at ?? order.paidAt,
+        deliveredPublicClosed: true,
+      },
+      {
+        headers: { 'Cache-Control': 'no-store' },
+      },
+    );
+  }
+
   const response = {
     ...order,
     order_status: orderStatus,

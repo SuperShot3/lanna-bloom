@@ -1,6 +1,16 @@
 import Link from 'next/link';
 import { STRIPE_FEE_PERCENT_LABEL } from '@/lib/accounting/stripeFee';
 
+/** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
+const ARTICLE_CREATED = '2026-04-06';
+/** ISO date (YYYY-MM-DD) — bump when you change the text below. */
+const ARTICLE_LAST_UPDATED = '2026-04-06';
+
+function formatArticleDate(iso: string) {
+  const d = new Date(`${iso}T12:00:00`);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export default function AccountingInfoPage() {
   return (
     <div className="admin-accounting-info">
@@ -36,6 +46,13 @@ export default function AccountingInfoPage() {
             <li>
               <strong>Expenses</strong> — Business spending with date, category, payment method, and
               optional receipt file. Used for the expense total and net profit.
+            </li>
+            <li>
+              <strong>Per-order costs &amp; profit</strong> — For each order, you can enter COGS, delivery
+              cost, and payment fee; the system shows estimated profit for that order. From the{' '}
+              <strong>Orders</strong> list open an order, then use <strong>Edit costs &amp; profit in
+              Accounting</strong>, or open{' '}
+              <code className="admin-expenses-id">/admin/accounting/orders/[order_id]</code> directly.
             </li>
             <li>
               <strong>Stripe processing fees (estimate)</strong> — For income recorded as{' '}
@@ -106,14 +123,41 @@ export default function AccountingInfoPage() {
         </section>
 
         <section className="admin-accounting-info-section">
-          <h2 className="admin-accounting-info-heading">Dates</h2>
-          <p>
-            Income filters use the <strong>record creation time</strong> in the admin; expenses use the{' '}
-            <strong>expense date</strong> you enter. For a given month, the two may not align perfectly —
-            use the same range when comparing, and keep that difference in mind.
-          </p>
+          <h2 className="admin-accounting-info-heading">Dates &amp; creation time</h2>
+          <ul className="admin-accounting-info-list">
+            <li>
+              <strong>Income records — created date</strong> — Each row has a <strong>created</strong>{' '}
+              timestamp (when it was saved in the system). The accounting overview and income list filters
+              use this <strong>creation time</strong> for the selected period, not the day the customer paid
+              (unless they happen to match).
+            </li>
+            <li>
+              <strong>Expenses — expense date vs created</strong> — You choose an <strong>expense date</strong>{' '}
+              (the business day the cost belongs to). Totals and filters use that date. The row also has a{' '}
+              <strong>created</strong> time for when it was first entered; that is mainly for audit, not for
+              the main totals.
+            </li>
+            <li>
+              Comparing income and expenses for one calendar month: income is grouped by <strong>creation
+              date</strong>, expenses by <strong>expense date</strong> — they may not line up exactly; use the
+              same range and interpret with that in mind.
+            </li>
+          </ul>
         </section>
       </div>
+
+      <footer className="admin-accounting-info-meta" aria-label="Article dates">
+        <p>
+          <span className="admin-accounting-info-meta-label">Article created:</span>{' '}
+          <time dateTime={ARTICLE_CREATED}>{formatArticleDate(ARTICLE_CREATED)}</time>
+          <span className="admin-accounting-info-meta-sep" aria-hidden="true">
+            {' '}
+            ·{' '}
+          </span>
+          <span className="admin-accounting-info-meta-label">Last updated:</span>{' '}
+          <time dateTime={ARTICLE_LAST_UPDATED}>{formatArticleDate(ARTICLE_LAST_UPDATED)}</time>
+        </p>
+      </footer>
     </div>
   );
 }

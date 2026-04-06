@@ -1,44 +1,17 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { getOrderByOrderId, type SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
+import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
+import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
 import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import type { ItemWithCatalog } from '@/app/admin/components/ItemsList';
-import { CostsAndProfitCard } from '@/app/admin/components/CostsAndProfitCard';
 import { StatusUpdateCard } from '@/app/admin/components/StatusUpdateCard';
 import { PaymentCard } from '@/app/admin/components/PaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
 import type { CustomOrderDetails } from '@/lib/orders';
-import { canEditCosts, canChangeStatus, canRefund } from '@/lib/adminRbac';
+import { canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
-
-/** Build order_items-style rows from order_json when order_items table is empty (e.g. legacy orders). */
-function itemsFromOrderJson(
-  orderId: string,
-  jsonItems: Array<{
-    bouquetId?: string;
-    bouquetTitle?: string;
-    size?: string;
-    price?: number;
-    imageUrl?: string;
-    itemType?: string;
-    cost?: number;
-    commissionAmount?: number;
-  }>
-): SupabaseOrderItemRow[] {
-  return jsonItems.map((it) => ({
-    order_id: orderId,
-    bouquet_id: it.bouquetId ?? null,
-    bouquet_title: it.bouquetTitle ?? null,
-    size: it.size ?? null,
-    price: it.price ?? null,
-    image_url_snapshot: it.imageUrl ?? null,
-    item_type: (it.itemType === 'product' ? 'product' : 'bouquet') as 'bouquet' | 'product',
-    cost: it.cost ?? null,
-    commission_amount: it.commissionAmount ?? null,
-  }));
-}
 
 interface PageProps {
   params: Promise<{ order_id: string }>;
@@ -88,7 +61,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
     }>;
   } | undefined;
   const jsonItems = jsonPayload?.items ?? [];
-  const itemsToUse: SupabaseOrderItemRow[] =
+  const itemsToUse =
     items.length > 0 ? items : jsonItems.length > 0 ? itemsFromOrderJson(order.order_id, jsonItems) : [];
 
   const customOrderDetails = (order.order_json as { customOrderDetails?: CustomOrderDetails } | null | undefined)
@@ -176,7 +149,18 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
       )}
       <OrderSummaryCard order={order} items={itemsWithCatalog} />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
-      <CostsAndProfitCard order={order} items={itemsToUse} canEdit={canEditCosts(role)} />
+      <section className="admin-section">
+        <h2 className="admin-section-title">Costs & profit</h2>
+        <p className="admin-hint" style={{ marginBottom: 12 }}>
+          Per-order COGS, delivery cost, payment fee, and profit are managed under Accounting (same data as before).
+        </p>
+        <Link
+          href={`/admin/accounting/orders/${encodeURIComponent(order.order_id)}`}
+          className="admin-btn admin-btn-outline"
+        >
+          Edit costs & profit in Accounting
+        </Link>
+      </section>
       {(order.driver_name || order.driver_phone) && (
         <section className="admin-section">
           <h2 className="admin-section-title">Driver (internal)</h2>

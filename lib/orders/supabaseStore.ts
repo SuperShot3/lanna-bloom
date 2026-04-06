@@ -19,7 +19,25 @@ function stripSubmissionTokenForStorage(payload: OrderPayload): OrderPayload {
   const { submissionToken: _drop, ...rest } = payload as OrderPayload & { submissionToken?: string };
   return rest;
 }
-import { orderStatusToFulfillmentDisplay } from './statusConstants';
+import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from './statusConstants';
+
+/**
+ * Customer fulfillment key from DB columns. If `order_status` is empty, use `fulfillment_status`
+ * (legacy rows). Treat DELIVERED / delivered display as authoritative.
+ */
+function fulfillmentDisplayFromSupabaseRow(
+  row: Pick<SupabaseOrderRow, 'order_status' | 'fulfillment_status'>,
+  jsonFallback?: Order['fulfillmentStatus'],
+): Order['fulfillmentStatus'] {
+  if (normalizeOrderStatus(row.order_status) === 'DELIVERED') return 'delivered';
+  const fsDisp = row.fulfillment_status
+    ? orderStatusToFulfillmentDisplay(row.fulfillment_status)
+    : null;
+  if (fsDisp === 'delivered') return 'delivered';
+  const hasOrderStatus = row.order_status != null && String(row.order_status).trim() !== '';
+  const osDisp = hasOrderStatus ? orderStatusToFulfillmentDisplay(row.order_status) : null;
+  return (osDisp ?? fsDisp ?? jsonFallback ?? 'new') as Order['fulfillmentStatus'];
+}
 
 function mapSupabasePaymentToLegacy(paymentStatus: string | null | undefined): Order['status'] {
   const s = (paymentStatus ?? '').toUpperCase();
@@ -99,7 +117,7 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       stripeSessionId: row.stripe_session_id ?? json.stripeSessionId,
       paymentIntentId: row.stripe_payment_intent_id ?? json.paymentIntentId,
       paidAt: row.paid_at ?? json.paidAt,
-      fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? json.fulfillmentStatus ?? 'new',
+      fulfillmentStatus: fulfillmentDisplayFromSupabaseRow(row, json.fulfillmentStatus),
       fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? json.fulfillmentStatusUpdatedAt,
       ...(row.line_user_id && { lineUserId: row.line_user_id }),
       ...(row.order_source && {
@@ -156,7 +174,7 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     stripeSessionId: row.stripe_session_id ?? undefined,
     paymentIntentId: row.stripe_payment_intent_id ?? undefined,
     paidAt: row.paid_at ?? undefined,
-    fulfillmentStatus: (orderStatusToFulfillmentDisplay(row.order_status) as Order['fulfillmentStatus']) ?? (row.fulfillment_status as Order['fulfillmentStatus']) ?? 'new',
+    fulfillmentStatus: fulfillmentDisplayFromSupabaseRow(row),
     fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? undefined,
     ...(row.line_user_id && { lineUserId: row.line_user_id }),
     ...(row.order_source && {

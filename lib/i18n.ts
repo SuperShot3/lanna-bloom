@@ -493,6 +493,10 @@ export const translations = {
       notFound: 'Order not found',
       notFoundSubtext: 'This order link is invalid or the order is no longer available.',
       notFoundContact: 'If you just placed this order, contact the shop with the order ID above so they can look it up.',
+      deliveredTitle: 'This order has been delivered',
+      deliveredSubtext:
+        'For privacy, full order details are no longer shown on this page. You can keep this order ID for your records.',
+      deliveredContact: 'If you need more information, please contact us.',
       orderIdLabel: 'Order ID:',
       goToHome: 'Go to home',
       copyOrderId: 'Copy Order ID',
@@ -1462,6 +1466,10 @@ export const translations = {
       notFound: 'ไม่พบออเดอร์',
       notFoundSubtext: 'ลิงก์ออเดอร์นี้ไม่ถูกต้องหรือออเดอร์ไม่พร้อมให้ดูแล้ว',
       notFoundContact: 'ถ้าคุณเพิ่งสั่งออเดอร์นี้ กรุณาติดต่อร้านและแจ้งรหัสออเดอร์ด้านบน',
+      deliveredTitle: 'ออเดอร์นี้จัดส่งแล้ว',
+      deliveredSubtext:
+        'เพื่อความเป็นส่วนตัว เราไม่แสดงรายละเอียดออเดอร์เต็มบนหน้านี้อีกต่อไป คุณคงรหัสออเดอร์ไว้สำหรับอ้างอิงได้',
+      deliveredContact: 'หากต้องการข้อมูลเพิ่มเติม กรุณาติดต่อเรา',
       orderIdLabel: 'รหัสออเดอร์:',
       goToHome: 'กลับหน้าแรก',
       copyOrderId: 'คัดลอกรหัสออเดอร์',

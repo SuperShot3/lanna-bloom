@@ -5944,6 +5944,24 @@ a.filter-pill--active:hover {
   margin-bottom: 0;
 }
 
+.admin-accounting-info-meta {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  font-size: 0.85rem;
+  color: var(--admin-text-muted, #6b7280);
+}
+.admin-accounting-info-meta p {
+  margin: 0;
+}
+.admin-accounting-info-meta-label {
+  font-weight: 500;
+  color: var(--admin-text-muted, #6b7280);
+}
+.admin-accounting-info-meta-sep {
+  color: var(--admin-border, #e5e7eb);
+}
+
 /* Detail page actions */
 .admin-accounting-detail-actions { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
 .admin-accounting-delete-zone {

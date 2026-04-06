@@ -340,6 +340,10 @@ export function AccountingOverviewClient({
                   <span className="material-symbols-outlined">arrow_forward</span>
                   View Expense Records
                 </button>
+                <Link href="/admin/orders" className="admin-accounting-quicklink">
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                  Orders — per-order COGS &amp; profit
+                </Link>
               </div>
             </div>
 
