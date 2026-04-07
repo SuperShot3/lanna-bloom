@@ -87,7 +87,14 @@ export const INCOME_STATUSES: { value: IncomeStatus; label: string }[] = [
 
 export interface MoneyLocationTotal {
   location: string;
-  total: number;
+  /** Gross confirmed income recorded in this money location */
+  grossTotal: number;
+  /** Confirmed income net of Stripe fees for this location */
+  netAfterFees: number;
+  /** Full period expenses on Stripe row only; 0 for bank, cash, other */
+  allocatedExpenses: number;
+  /** netAfterFees − allocatedExpenses (Stripe bears all period expenses) */
+  netAfterFeesAndExpenses: number;
 }
 
 export interface AccountingOverview {

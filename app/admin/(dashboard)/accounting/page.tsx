@@ -1,3 +1,4 @@
+import { getLedgerEntries } from '@/lib/accounting/ledger';
 import { getAccountingOverview } from '@/lib/accounting/incomeRecords';
 import { getExpenses } from '@/lib/expenses/expenseQueries';
 import { AccountingOverviewClient } from './AccountingOverviewClient';
@@ -28,9 +29,12 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
 
   // Always load expenses with overview so the Expenses tab has data on first paint after tab switch
   // (conditional fetch left expensesData null and relied on RSC refetch, which often felt stale).
-  const [overview, expensesData] = await Promise.all([
-    getAccountingOverview({ dateFrom: params.dateFrom, dateTo: params.dateTo }),
+  const period = { dateFrom: params.dateFrom, dateTo: params.dateTo };
+
+  const [overview, expensesData, ledger] = await Promise.all([
+    getAccountingOverview(period),
     getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize }),
+    getLedgerEntries(period),
   ]);
 
   const periodLabel =
@@ -42,6 +46,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
   return (
     <AccountingOverviewClient
       overview={overview}
+      ledger={ledger}
       periodLabel={periodLabel}
       initialDateFrom={params.dateFrom}
       initialDateTo={params.dateTo}

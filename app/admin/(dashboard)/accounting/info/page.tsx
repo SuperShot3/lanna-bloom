@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { STRIPE_FEE_PERCENT_LABEL } from '@/lib/accounting/stripeFee';
+import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDisplay';
 
 /** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
 const ARTICLE_CREATED = '2026-04-06';
 /** ISO date (YYYY-MM-DD) — bump when you change the text below. */
-const ARTICLE_LAST_UPDATED = '2026-04-06';
+const ARTICLE_LAST_UPDATED = '2026-04-07';
 
 function formatArticleDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
@@ -115,9 +116,12 @@ export default function AccountingInfoPage() {
               does not count toward net result.
             </li>
             <li>
-              <strong>Income by money location</strong> — Uses <strong>gross</strong> confirmed amounts
-              (where the money was recorded), so Stripe totals there are before the {STRIPE_FEE_PERCENT_LABEL}{' '}
-              fee is applied.
+              <strong>Net by money location</strong> — Shows confirmed income <strong>after Stripe fees</strong>.
+              <strong> All period expenses</strong> are deducted only from the <strong>Stripe balance</strong> row
+              (money that sits in Stripe until it is paid out to your bank). Bank, cash, and other rows show
+              net after fees only. The Stripe row includes that full expense total so the rows still add up to
+              Net Result. Next scheduled bank payout (for UI reference): <strong>{formatStripeNextPayoutShort()}</strong>{' '}
+              — update the date in code when your Stripe schedule changes.
             </li>
           </ul>
         </section>

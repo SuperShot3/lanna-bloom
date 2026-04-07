@@ -7,6 +7,9 @@ import type { MoneyLocationTotal } from '@/types/accounting';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
+import type { LedgerResult } from '@/types/ledger';
+import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDisplay';
+import { AccountingLedgerTable } from './AccountingLedgerTable';
 
 interface OverviewData {
   totalIncome: number;
@@ -24,6 +27,7 @@ interface OverviewData {
 
 interface Props {
   overview: OverviewData | null;
+  ledger: LedgerResult;
   periodLabel: string;
   initialDateFrom?: string;
   initialDateTo?: string;
@@ -76,6 +80,7 @@ function formatDate(iso: string) {
 
 export function AccountingOverviewClient({
   overview,
+  ledger,
   periodLabel,
   initialDateFrom,
   initialDateTo,
@@ -316,13 +321,15 @@ export function AccountingOverviewClient({
             {/* Money location breakdown */}
             {overview.incomeByLocation.length > 0 && (
               <div className="admin-accounting-section">
-                <h2 className="admin-accounting-section-title">Income by Money Location</h2>
+                <h2 className="admin-accounting-section-title">Net by Money Location</h2>
                 <p className="admin-hint admin-accounting-section-hint">
-                  Gross customer payments (before Stripe fees). See Accounting info for how this relates to net income.
+                  After Stripe fees, <strong>all period expenses</strong> are deducted only from{' '}
+                  <strong>Stripe balance</strong> (funds stay in Stripe until payout to bank). Bank, cash, and other
+                  rows are net after fees only. Row totals still sum to Net Result.
                 </p>
                 <div className="admin-accounting-location-grid">
                   {overview.incomeByLocation
-                    .sort((a, b) => b.total - a.total)
+                    .sort((a, b) => b.netAfterFeesAndExpenses - a.netAfterFeesAndExpenses)
                     .map((loc) => (
                       <div key={loc.location} className="admin-accounting-location-card">
                         <span className="material-symbols-outlined admin-accounting-location-icon">
@@ -330,7 +337,12 @@ export function AccountingOverviewClient({
                         </span>
                         <div>
                           <p className="admin-accounting-location-label">{LOCATION_LABELS[loc.location] ?? loc.location}</p>
-                          <p className="admin-accounting-location-amount">{fmt(loc.total)}</p>
+                          <p className="admin-accounting-location-amount">{fmt(loc.netAfterFeesAndExpenses)}</p>
+                          {loc.location === 'stripe' && (
+                            <p className="admin-hint admin-accounting-location-payout-hint">
+                              In Stripe until bank payout · next: {formatStripeNextPayoutShort()}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -360,9 +372,16 @@ export function AccountingOverviewClient({
               </div>
             </div>
 
-            {/* Backfill section */}
-            <div className="admin-accounting-section admin-accounting-backfill">
-              <h2 className="admin-accounting-section-title">Historical Backfill</h2>
+            <AccountingLedgerTable ledger={ledger} periodLabel={periodLabel} />
+
+            {/* Backfill — collapsed by default */}
+            <details className="admin-accounting-section admin-accounting-backfill">
+              <summary className="admin-accounting-backfill-summary">
+                <span className="admin-accounting-section-title admin-accounting-backfill-summary-title">
+                  Historical Backfill
+                </span>
+                <span className="admin-hint admin-accounting-backfill-summary-hint">Advanced — one-time setup</span>
+              </summary>
               <p className="admin-hint">
                 Run once to create income records for paid orders that existed before the accounting system was added.
                 The operation is idempotent — already-linked orders are skipped automatically.
@@ -388,7 +407,7 @@ export function AccountingOverviewClient({
               {backfillResult && (
                 <p className="admin-accounting-backfill-result">{backfillResult}</p>
               )}
-            </div>
+            </details>
           </>
         )
       )}

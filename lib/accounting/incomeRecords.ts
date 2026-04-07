@@ -377,23 +377,26 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   let stripeProcessingFees = 0;
   let confirmedIncomeNet = 0;
   let pendingIncome = 0;
-  const locationMap: Record<string, number> = {};
+  const locationGross: Record<string, number> = {};
+  const locationNet: Record<string, number> = {};
 
   for (const row of incomeRows ?? []) {
     const gross = parseFloat(String(row.amount)) || 0;
     const pm = row.payment_method as IncomePaymentMethod;
     const feeStored = row.processing_fee_amount;
     const fee =
-      feeStored != null && feeStored !== ''
+      feeStored != null && String(feeStored) !== ''
         ? parseFloat(String(feeStored)) || 0
         : processingFeeForIncome(gross, pm);
     totalIncome += gross;
     if (row.income_status === 'confirmed') {
       confirmedIncome += gross;
       stripeProcessingFees += fee;
-      confirmedIncomeNet += netAfterProcessingFee(gross, fee);
+      const net = netAfterProcessingFee(gross, fee);
+      confirmedIncomeNet += net;
       const loc = String(row.money_location ?? 'other');
-      locationMap[loc] = (locationMap[loc] ?? 0) + gross;
+      locationGross[loc] = (locationGross[loc] ?? 0) + gross;
+      locationNet[loc] = (locationNet[loc] ?? 0) + net;
     } else {
       pendingIncome += gross;
     }
@@ -404,6 +407,29 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     0
   );
 
+  // Expenses reduce the Stripe bucket only (operational rule). Other locations stay
+  // net-after-fees only; include an explicit Stripe row when there are expenses so
+  // the breakdown still reconciles to Net Result.
+  const locationKeys = new Set([
+    ...Object.keys(locationNet),
+    ...Object.keys(locationGross),
+  ]);
+  if (totalExpenses > 0) locationKeys.add('stripe');
+
+  const incomeByLocation = Array.from(locationKeys).map((location) => {
+    const netAfterFees = locationNet[location] ?? 0;
+    const grossTotal = locationGross[location] ?? 0;
+    const allocatedExpenses = location === 'stripe' ? totalExpenses : 0;
+    const netAfterFeesAndExpenses = netAfterFees - allocatedExpenses;
+    return {
+      location,
+      grossTotal,
+      netAfterFees,
+      allocatedExpenses,
+      netAfterFeesAndExpenses,
+    };
+  });
+
   return {
     totalIncome,
     confirmedIncome,
@@ -412,7 +438,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     pendingIncome,
     totalExpenses,
     netResult: confirmedIncomeNet - totalExpenses,
-    incomeByLocation: Object.entries(locationMap).map(([location, total]) => ({ location, total })),
+    incomeByLocation,
     incomeCount: (incomeRows ?? []).length,
     expenseCount: (expenseRows ?? []).length,
     currency: 'THB',

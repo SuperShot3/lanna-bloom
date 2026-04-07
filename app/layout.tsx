@@ -20,12 +20,13 @@ export const metadata: Metadata = {
   description: 'Order beautiful bouquets via LINE or WhatsApp. Fresh flowers delivered with care.',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png' },
+      { url: '/favicon_io/favicon.ico', sizes: 'any' },
+      { url: '/favicon_io/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon_io/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
     ],
-    apple: '/icon.png',
+    apple: '/favicon_io/apple-touch-icon.png',
   },
+  manifest: '/favicon_io/site.webmanifest',
   openGraph: {
     title: 'Lanna Bloom | Fresh flowers delivered',
     description: 'Order beautiful bouquets via LINE or WhatsApp.',

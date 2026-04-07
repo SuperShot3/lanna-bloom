@@ -7,6 +7,11 @@ const nextConfig = {
       { source: '/th/info/flowers-chiang-mai', destination: '/th/info/how-to-order-flower-delivery-chiang-mai', permanent: true },
     ];
   },
+  async rewrites() {
+    return [
+      { source: '/feeds/google-merchant-feed.tsv', destination: '/feeds/google-merchant-feed' },
+    ];
+  },
   experimental: {
     serverComponentsExternalPackages: ['@sanity/client', 'next-sanity', '@sanity/image-url'],
   },
