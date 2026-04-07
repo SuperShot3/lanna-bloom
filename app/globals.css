@@ -5740,6 +5740,25 @@ a.filter-pill--active:hover {
   background: var(--admin-card-bg, #f9fafb);
 }
 .admin-accounting-kpi-large { border-width: 2px; }
+
+/* Hero card — full-width first card, stands out as the primary business metric */
+.admin-accounting-kpi-hero {
+  grid-column: 1 / -1;
+  border-width: 2px;
+  padding: 24px 28px;
+}
+.admin-accounting-kpi-hero .admin-accounting-kpi-value { font-size: 2rem; }
+.admin-accounting-kpi-hero .admin-accounting-kpi-icon  { font-size: 2.6rem; }
+
+/* Small KPI grid — for secondary/detail metric groups */
+.admin-accounting-kpi-grid-sm {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  margin-bottom: 16px;
+}
+.admin-accounting-kpi-grid-sm .admin-accounting-kpi { padding: 14px 16px; }
+.admin-accounting-kpi-grid-sm .admin-accounting-kpi-value { font-size: 1.1rem; }
+.admin-accounting-kpi-grid-sm .admin-accounting-kpi-icon  { font-size: 1.5rem; }
+
 .admin-accounting-kpi-green  { border-color: #86efac; background: #f0fdf4; }
 .admin-accounting-kpi-red    { border-color: #fca5a5; background: #fff1f2; }
 .admin-accounting-kpi-yellow { border-color: #fde68a; background: #fffbeb; }

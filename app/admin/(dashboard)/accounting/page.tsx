@@ -16,7 +16,9 @@ interface PageProps {
 
 export default async function AdminAccountingPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const activeTab = params.tab === 'expenses' ? 'expenses' : 'overview';
+  const activeTab =
+    params.tab === 'expenses' ? 'expenses' :
+    params.tab === 'ledger'   ? 'ledger'   : 'overview';
   const expensePage = Math.max(1, parseInt(params.page ?? '1', 10));
   const expensePageSize = 30;
 

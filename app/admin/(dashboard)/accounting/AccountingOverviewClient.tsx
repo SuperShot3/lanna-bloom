@@ -31,7 +31,7 @@ interface Props {
   periodLabel: string;
   initialDateFrom?: string;
   initialDateTo?: string;
-  activeTab: 'overview' | 'expenses';
+  activeTab: 'overview' | 'expenses' | 'ledger';
   expensesData: ExpensesResult;
   expensesPage: number;
   expensesPageSize: number;
@@ -106,13 +106,14 @@ export function AccountingOverviewClient({
     setDateTo(initialDateTo ?? '');
   }, [initialDateFrom, initialDateTo]);
 
-  const switchTab = (tab: 'overview' | 'expenses') => {
+  const switchTab = (tab: 'overview' | 'expenses' | 'ledger') => {
     const next = new URLSearchParams(sp.toString());
     if (dateFrom) next.set('dateFrom', dateFrom);
     else next.delete('dateFrom');
     if (dateTo) next.set('dateTo', dateTo);
     else next.delete('dateTo');
     if (tab === 'expenses') next.set('tab', 'expenses');
+    else if (tab === 'ledger') next.set('tab', 'ledger');
     else next.delete('tab');
     router.push(`${pathname}?${next.toString()}`);
   };
@@ -133,6 +134,7 @@ export function AccountingOverviewClient({
     next.delete('dateTo');
     next.delete('page');
     if (activeTab === 'expenses') next.set('tab', 'expenses');
+    else if (activeTab === 'ledger') next.set('tab', 'ledger');
     else next.delete('tab');
     router.push(`${pathname}?${next.toString()}`);
   };
@@ -223,6 +225,17 @@ export function AccountingOverviewClient({
             <span className="admin-accounting-tab-count">{overview.expenseCount}</span>
           )}
         </button>
+        <button
+          type="button"
+          className={`admin-accounting-tab${activeTab === 'ledger' ? ' admin-accounting-tab-active' : ''}`}
+          onClick={() => switchTab('ledger')}
+        >
+          <span className="material-symbols-outlined">table_rows</span>
+          Ledger
+          {ledger.rows.length > 0 && (
+            <span className="admin-accounting-tab-count">{ledger.rows.length}</span>
+          )}
+        </button>
       </div>
 
       {/* Period filter — shown on both tabs */}
@@ -257,41 +270,44 @@ export function AccountingOverviewClient({
           <div className="admin-error"><p>Failed to load accounting data. Check Supabase configuration.</p></div>
         ) : (
           <>
-            {/* KPI cards */}
+            {/* Primary KPIs — Net Profit first as hero, then supporting metrics */}
             <div className="admin-accounting-kpi-grid">
-              {overview.stripeProcessingFees > 0 ? (
-                <>
-                  <KpiCard
-                    label="Confirmed Income (gross)"
-                    value={fmt(overview.confirmedIncome)}
-                    sub={`${overview.incomeCount} record${overview.incomeCount !== 1 ? 's' : ''} · before Stripe fees`}
-                    color="green"
-                    icon="trending_up"
-                  />
-                  <KpiCard
-                    label="Stripe Processing Fees"
-                    value={`−${fmt(overview.stripeProcessingFees)}`}
-                    sub="Fixed 5.3% on card/Stripe payments"
-                    color="blue"
-                    icon="percent"
-                  />
-                  <KpiCard
-                    label="Confirmed Income (net)"
-                    value={fmt(overview.confirmedIncomeNet)}
-                    sub="After Stripe fees · used for profit"
-                    color="green"
-                    icon="payments"
-                  />
-                </>
-              ) : (
-                <KpiCard
-                  label="Confirmed Income"
-                  value={fmt(overview.confirmedIncome)}
-                  sub={`${overview.incomeCount} record${overview.incomeCount !== 1 ? 's' : ''} · no Stripe fees in this period`}
-                  color="green"
-                  icon="trending_up"
-                />
-              )}
+              <KpiCard
+                label="Net Profit"
+                value={fmt(net)}
+                sub={isProfit ? 'After all fees & expenses' : 'Loss after all fees & expenses'}
+                color={isProfit ? 'green' : 'red'}
+                icon={isProfit ? 'savings' : 'trending_down'}
+                hero
+              />
+              <KpiCard
+                label="Revenue"
+                value={fmt(overview.confirmedIncome)}
+                sub="Confirmed income · gross"
+                color="green"
+                icon="trending_up"
+              />
+              <KpiCard
+                label="Expenses"
+                value={fmt(overview.totalExpenses)}
+                sub={`${overview.expenseCount} record${overview.expenseCount !== 1 ? 's' : ''}`}
+                color="red"
+                icon="receipt_long"
+              />
+              <KpiCard
+                label="Orders"
+                value={String(overview.incomeCount)}
+                sub="Income records in period"
+                color="blue"
+                icon="shopping_bag"
+              />
+              <KpiCard
+                label="Avg. Order Value"
+                value={overview.incomeCount > 0 ? fmt(overview.confirmedIncome / overview.incomeCount) : '—'}
+                sub="Revenue ÷ confirmed orders"
+                color="blue"
+                icon="calculate"
+              />
               {overview.pendingIncome > 0 && (
                 <KpiCard
                   label="Pending Income"
@@ -301,31 +317,38 @@ export function AccountingOverviewClient({
                   icon="schedule"
                 />
               )}
-              <KpiCard
-                label="Total Expenses"
-                value={fmt(overview.totalExpenses)}
-                sub={`${overview.expenseCount} record${overview.expenseCount !== 1 ? 's' : ''}`}
-                color="red"
-                icon="receipt_long"
-              />
-              <KpiCard
-                label="Net Result"
-                value={fmt(net)}
-                sub={isProfit ? 'Profit after Stripe fees & expenses' : 'Loss after Stripe fees & expenses'}
-                color={isProfit ? 'green' : 'red'}
-                icon={isProfit ? 'savings' : 'trending_down'}
-                large
-              />
             </div>
+
+            {/* Stripe fee breakdown — secondary detail, only shown when relevant */}
+            {overview.stripeProcessingFees > 0 && (
+              <div className="admin-accounting-section">
+                <h2 className="admin-accounting-section-title">Stripe Fee Breakdown</h2>
+                <div className="admin-accounting-kpi-grid admin-accounting-kpi-grid-sm">
+                  <KpiCard
+                    label="Processing Fees"
+                    value={`−${fmt(overview.stripeProcessingFees)}`}
+                    sub="Fixed 5.3% on card/Stripe payments"
+                    color="blue"
+                    icon="percent"
+                  />
+                  <KpiCard
+                    label="Net After Fees"
+                    value={fmt(overview.confirmedIncomeNet)}
+                    sub="Revenue minus Stripe fees"
+                    color="green"
+                    icon="payments"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Money location breakdown */}
             {overview.incomeByLocation.length > 0 && (
               <div className="admin-accounting-section">
-                <h2 className="admin-accounting-section-title">Net by Money Location</h2>
+                <h2 className="admin-accounting-section-title">Where the Money Is</h2>
                 <p className="admin-hint admin-accounting-section-hint">
-                  After Stripe fees, <strong>all period expenses</strong> are deducted only from{' '}
-                  <strong>Stripe balance</strong> (funds stay in Stripe until payout to bank). Bank, cash, and other
-                  rows are net after fees only. Row totals still sum to Net Result.
+                  Net balance per channel after fees and expenses. Each expense is deducted from
+                  the account it was paid from (cash → Cash, bank transfer/card/QR → Bank Account).
                 </p>
                 <div className="admin-accounting-location-grid">
                   {overview.incomeByLocation
@@ -355,7 +378,7 @@ export function AccountingOverviewClient({
               <div className="admin-accounting-quicklinks">
                 <Link href="/admin/accounting/income" className="admin-accounting-quicklink">
                   <span className="material-symbols-outlined">arrow_forward</span>
-                  View Income Records
+                  Income Records
                 </Link>
                 <button
                   type="button"
@@ -363,16 +386,22 @@ export function AccountingOverviewClient({
                   onClick={() => switchTab('expenses')}
                 >
                   <span className="material-symbols-outlined">arrow_forward</span>
-                  View Expense Records
+                  Expense Records
+                </button>
+                <button
+                  type="button"
+                  className="admin-accounting-quicklink"
+                  onClick={() => switchTab('ledger')}
+                >
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                  Ledger &amp; Export
                 </button>
                 <Link href="/admin/orders" className="admin-accounting-quicklink">
                   <span className="material-symbols-outlined">arrow_forward</span>
-                  Orders — per-order COGS &amp; profit
+                  Orders
                 </Link>
               </div>
             </div>
-
-            <AccountingLedgerTable ledger={ledger} periodLabel={periodLabel} />
 
             {/* Backfill — collapsed by default */}
             <details className="admin-accounting-section admin-accounting-backfill">
@@ -565,6 +594,11 @@ export function AccountingOverviewClient({
               )}
         </div>
       )}
+
+      {/* ── LEDGER TAB ── */}
+      {activeTab === 'ledger' && (
+        <AccountingLedgerTable ledger={ledger} periodLabel={periodLabel} />
+      )}
     </div>
   );
 }
@@ -576,6 +610,7 @@ function KpiCard({
   color,
   icon,
   large = false,
+  hero = false,
 }: {
   label: string;
   value: string;
@@ -583,9 +618,16 @@ function KpiCard({
   color: 'green' | 'red' | 'yellow' | 'blue';
   icon: string;
   large?: boolean;
+  hero?: boolean;
 }) {
+  const cls = [
+    'admin-accounting-kpi',
+    `admin-accounting-kpi-${color}`,
+    large ? 'admin-accounting-kpi-large' : '',
+    hero  ? 'admin-accounting-kpi-hero'  : '',
+  ].filter(Boolean).join(' ');
   return (
-    <div className={`admin-accounting-kpi admin-accounting-kpi-${color}${large ? ' admin-accounting-kpi-large' : ''}`}>
+    <div className={cls}>
       <span className={`material-symbols-outlined admin-accounting-kpi-icon admin-accounting-kpi-icon-${color}`}>
         {icon}
       </span>

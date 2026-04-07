@@ -362,8 +362,8 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   if (filter.dateTo)   incomeQuery = incomeQuery.lte('created_at', filter.dateTo + 'T23:59:59');
   incomeQuery = incomeQuery.neq('income_status', 'cancelled');
 
-  // Expenses in period
-  let expenseQuery = supabase.from('expenses').select('amount');
+  // Expenses in period — include payment_method so we can allocate to the correct location
+  let expenseQuery = supabase.from('expenses').select('amount, payment_method');
   if (filter.dateFrom) expenseQuery = expenseQuery.gte('date', filter.dateFrom?.slice(0, 10));
   if (filter.dateTo)   expenseQuery = expenseQuery.lte('date', filter.dateTo?.slice(0, 10));
 
@@ -402,24 +402,38 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     }
   }
 
-  const totalExpenses = (expenseRows ?? []).reduce(
-    (sum, row) => sum + (parseFloat(String(row.amount)) || 0),
-    0
-  );
+  // Map each expense to the money_location it actually came out of.
+  // Expense payment_method → income money_location:
+  //   cash         → cash  (paid from petty cash)
+  //   bank_transfer → bank  (paid from bank account)
+  //   card          → bank  (business debit/credit card = bank funds)
+  //   qr_payment    → bank  (PromptPay settles to bank account)
+  //   other / unknown → other
+  const expensesByLocation: Record<string, number> = {};
+  for (const row of expenseRows ?? []) {
+    const amount = parseFloat(String(row.amount)) || 0;
+    const pm = String(row.payment_method ?? 'other');
+    const loc =
+      pm === 'cash'          ? 'cash'  :
+      pm === 'bank_transfer' ? 'bank'  :
+      pm === 'card'          ? 'bank'  :
+      pm === 'qr_payment'    ? 'bank'  :
+      'other';
+    expensesByLocation[loc] = (expensesByLocation[loc] ?? 0) + amount;
+  }
 
-  // Expenses reduce the Stripe bucket only (operational rule). Other locations stay
-  // net-after-fees only; include an explicit Stripe row when there are expenses so
-  // the breakdown still reconciles to Net Result.
+  const totalExpenses = Object.values(expensesByLocation).reduce((s, v) => s + v, 0);
+
   const locationKeys = new Set([
     ...Object.keys(locationNet),
     ...Object.keys(locationGross),
+    ...Object.keys(expensesByLocation),
   ]);
-  if (totalExpenses > 0) locationKeys.add('stripe');
 
   const incomeByLocation = Array.from(locationKeys).map((location) => {
     const netAfterFees = locationNet[location] ?? 0;
     const grossTotal = locationGross[location] ?? 0;
-    const allocatedExpenses = location === 'stripe' ? totalExpenses : 0;
+    const allocatedExpenses = expensesByLocation[location] ?? 0;
     const netAfterFeesAndExpenses = netAfterFees - allocatedExpenses;
     return {
       location,
