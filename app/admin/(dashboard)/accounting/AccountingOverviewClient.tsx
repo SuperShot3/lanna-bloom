@@ -236,6 +236,16 @@ export function AccountingOverviewClient({
             <span className="admin-accounting-tab-count">{ledger.rows.length}</span>
           )}
         </button>
+        <Link
+          href="/admin/accounting/income"
+          className="admin-accounting-tab"
+        >
+          <span className="material-symbols-outlined">payments</span>
+          Income Records
+          {overview && overview.incomeCount > 0 && (
+            <span className="admin-accounting-tab-count">{overview.incomeCount}</span>
+          )}
+        </Link>
       </div>
 
       {/* Period filter — shown on both tabs */}
@@ -331,13 +341,6 @@ export function AccountingOverviewClient({
                     color="blue"
                     icon="percent"
                   />
-                  <KpiCard
-                    label="Net After Fees"
-                    value={fmt(overview.confirmedIncomeNet)}
-                    sub="Revenue minus Stripe fees"
-                    color="green"
-                    icon="payments"
-                  />
                 </div>
               </div>
             )}
@@ -376,10 +379,6 @@ export function AccountingOverviewClient({
             {/* Quick links */}
             <div className="admin-accounting-section">
               <div className="admin-accounting-quicklinks">
-                <Link href="/admin/accounting/income" className="admin-accounting-quicklink">
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                  Income Records
-                </Link>
                 <button
                   type="button"
                   className="admin-accounting-quicklink"
