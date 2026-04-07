@@ -1,5 +1,10 @@
 import { notFound } from 'next/navigation';
-import { getBouquetsCatalogData, getProductsFilteredFromSanity } from '@/lib/sanity';
+import {
+  getBouquetsCatalogData,
+  getPlushyToysFilteredFromSanity,
+  getProductsFilteredFromSanity,
+  type CatalogProduct,
+} from '@/lib/sanity';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { CatalogWithFilters } from '@/components/CatalogWithFilters';
@@ -34,12 +39,16 @@ export default async function CatalogPage({
 
   let bouquets: Bouquet[] = [];
   let allBouquetsForFacets: Bouquet[] = [];
-  let products: Awaited<ReturnType<typeof getProductsFilteredFromSanity>> = [];
+  let products: CatalogProduct[] = [];
 
   if (topCategory === 'flowers') {
     const data = await getBouquetsCatalogData(filterParams);
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
+  } else if (topCategory === 'plushy_toys') {
+    products = await getPlushyToysFilteredFromSanity({
+      sort: filterParams.sort || 'newest',
+    });
   } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {
     products = await getProductsFilteredFromSanity({
       categoryKey: topCategory,

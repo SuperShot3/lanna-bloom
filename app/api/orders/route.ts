@@ -145,7 +145,16 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
         },
         imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
         bouquetSlug: bouquetSlug || undefined,
-        ...(catalog.ok ? { itemType: catalog.item.type === 'product' ? 'product' : 'bouquet' } : {}),
+        ...(catalog.ok
+          ? {
+              itemType:
+                catalog.item.type === 'product'
+                  ? 'product'
+                  : catalog.item.type === 'plushyToy'
+                    ? 'plushyToy'
+                    : 'bouquet',
+            }
+          : {}),
       };
     }),
     delivery: {

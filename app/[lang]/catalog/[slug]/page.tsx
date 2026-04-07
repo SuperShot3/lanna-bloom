@@ -5,6 +5,8 @@ import { ProductDetailClient } from './ProductDetailClient';
 import {
   getBouquetBySlugFromSanity,
   getBouquetsFromSanity,
+  getPlushyToyBySlugFromSanity,
+  getPopularBouquetsFromSanity,
   getProductBySlugFromSanity,
   getProductsFilteredFromSanity,
 } from '@/lib/sanity';
@@ -31,11 +33,9 @@ export default async function ProductPage({
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
 
-  const [bouquet, gifts] = await Promise.all([
-    getBouquetBySlugFromSanity(params.slug),
-    getProductsFilteredFromSanity({ categoryKey: 'gifts' }),
-  ]);
+  const bouquet = await getBouquetBySlugFromSanity(params.slug);
   if (bouquet) {
+    const gifts = await getProductsFilteredFromSanity({ categoryKey: 'gifts' });
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const description = lang === 'th' ? bouquet.descriptionTh : bouquet.descriptionEn;
     const composition = lang === 'th' ? bouquet.compositionTh : bouquet.compositionEn;
@@ -69,8 +69,42 @@ export default async function ProductPage({
     );
   }
 
+  const plushyToy = await getPlushyToyBySlugFromSanity(params.slug);
+  if (plushyToy) {
+    const name = lang === 'th' && plushyToy.nameTh ? plushyToy.nameTh : plushyToy.nameEn;
+    const description = (lang === 'th' ? plushyToy.descriptionTh : plushyToy.descriptionEn) || '';
+    const nav = translations[lang as Locale].nav;
+    const catalogHref = `/${lang}/catalog`;
+    const suggestedBouquets = await getPopularBouquetsFromSanity(8);
+
+    return (
+      <div className="product-page">
+        <div className="container product-layout">
+          <nav className="breadcrumb" aria-label="Breadcrumb">
+            <Link href={`/${lang}`}>{nav.home}</Link>
+            <span className="sep">/</span>
+            <Link href={catalogHref}>{nav.catalog}</Link>
+            <span className="sep">/</span>
+            <span aria-current="page">{name}</span>
+          </nav>
+          <div className="product-grid">
+            <ProductDetailClient
+              product={plushyToy}
+              lang={lang as Locale}
+              name={name}
+              description={description}
+              gifts={[]}
+              suggestedBouquets={suggestedBouquets}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const product = await getProductBySlugFromSanity(params.slug);
   if (product) {
+    const gifts = await getProductsFilteredFromSanity({ categoryKey: 'gifts' });
     const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
     const description = (lang === 'th' ? product.descriptionTh : product.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;

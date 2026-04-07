@@ -1,14 +1,15 @@
 {
-  "generatedAt": "2026-03-18T12:48:55.370Z",
+  "generatedAt": "2026-04-07T11:30:12.082Z",
   "baseUrl": "https://lannabloom.shop",
   "sanity": {
     "projectId": "moaf1lxq",
     "dataset": "production"
   },
   "counts": {
-    "total": 44,
+    "total": 46,
     "bouquets": 39,
-    "products": 5
+    "products": 6,
+    "plushyToys": 1
   },
   "items": [
     {
@@ -450,6 +451,26 @@
       "category": "gifts",
       "urlEn": "https://lannabloom.shop/en/catalog/large-cream-teddy-bear-106-cm",
       "urlTh": "https://lannabloom.shop/th/catalog/large-cream-teddy-bear-106-cm"
+    },
+    {
+      "type": "product",
+      "id": "1GVRZEHykc8RVHPy49KmLS",
+      "slug": "money-flower",
+      "nameEn": "Money Flower",
+      "nameTh": "",
+      "category": "money_flowers",
+      "urlEn": "https://lannabloom.shop/en/catalog/money-flower",
+      "urlTh": "https://lannabloom.shop/th/catalog/money-flower"
+    },
+    {
+      "type": "plushyToy",
+      "id": "f9a23781-c1e2-4c17-b40e-818f5952208f",
+      "slug": "large-teddy-bear-gift-62inch",
+      "nameEn": "Large Teddy Bear Gift",
+      "nameTh": "ของขวัญตุ๊กตาหมีเท็ดดี้ตัวใหญ่",
+      "category": "plushy_toys",
+      "urlEn": "https://lannabloom.shop/en/catalog/large-teddy-bear-gift-62inch",
+      "urlTh": "https://lannabloom.shop/th/catalog/large-teddy-bear-gift-62inch"
     }
   ]
 }

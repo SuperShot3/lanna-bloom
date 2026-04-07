@@ -13,6 +13,7 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
+import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 
@@ -21,11 +22,14 @@ export function ProductOrderBlockForProduct({
   lang,
   selectedImageUrl,
   gifts = [],
+  suggestedBouquets = [],
 }: {
   product: CatalogProduct;
   lang: Locale;
   selectedImageUrl?: string | null;
   gifts?: CatalogProduct[];
+  /** Bouquet cross-sell (e.g. on plushy toy PDP — pair with flowers) */
+  suggestedBouquets?: Bouquet[];
 }) {
   const [quantity, setQuantity] = useState(1);
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
@@ -38,12 +42,14 @@ export function ProductOrderBlockForProduct({
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const totalPrice = (finalPrice + addOnsTotal) * Math.max(1, Math.floor(quantity));
 
+  const sizeLabel = (product.sizeLabel || '').trim();
+
   const handleAddToCart = () => {
     const qty = Math.max(1, Math.floor(quantity));
     const syntheticSize = {
       optionId: 'product_default',
       key: 'm' as const,
-      label: '—',
+      label: sizeLabel || '—',
       // IMPORTANT: Cart totals add add-ons separately, so keep base price here.
       price: finalPrice,
       description: '',
@@ -52,7 +58,7 @@ export function ProductOrderBlockForProduct({
     };
     addItem(
       {
-        itemType: 'product',
+        itemType: product.catalogKind === 'plushyToy' ? 'plushyToy' : 'product',
         bouquetId: product.id,
         slug: product.slug,
         nameEn: product.nameEn,
@@ -83,6 +89,7 @@ export function ProductOrderBlockForProduct({
   return (
     <div className="order-block">
       <h2 className="order-block-title">{tBuyNow.title}</h2>
+      {sizeLabel ? <p className="order-size">Size: {sizeLabel}</p> : null}
       {justAdded ? (
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>
@@ -102,6 +109,7 @@ export function ProductOrderBlockForProduct({
             value={addOns}
             onChange={setAddOns}
             gifts={gifts.filter((g) => g.id !== product.id)}
+            suggestedBouquets={suggestedBouquets}
           />
           <div className="order-qty-row">
             <span className="order-qty-label">{tBuyNow.quantity ?? 'Quantity'}</span>
@@ -147,6 +155,12 @@ export function ProductOrderBlockForProduct({
           margin: 0 0 16px;
           text-transform: uppercase;
           letter-spacing: 0.02em;
+        }
+        .order-size {
+          margin: -6px 0 14px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: var(--text-muted);
         }
         .order-qty-row {
           display: flex;

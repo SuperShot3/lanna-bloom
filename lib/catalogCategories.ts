@@ -7,6 +7,7 @@
 /** Top-level catalog categories (flowers = bouquets, others = Sanity products) */
 export const CATALOG_TOP_CATEGORIES = [
   'flowers',
+  'plushy_toys',
   'balloons',
   'gifts',
   'money_flowers',
@@ -35,6 +36,7 @@ export const PRODUCT_CATEGORIES = [
   'gifts',
   'money_flowers',
   'handmade_floral',
+  'plushy_toys',
 ] as const;
 
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
@@ -46,6 +48,7 @@ export const CATEGORY_I18N_KEYS: Record<CatalogTopCategory, string> = {
   gifts: 'topCategoryGifts',
   money_flowers: 'topCategoryMoneyFlowers',
   handmade_floral: 'topCategoryHandmadeFloral',
+  plushy_toys: 'topCategoryPlushyToys',
 };
 
 /** i18n keys for flower subcategories (under catalog.categories.* — existing) */

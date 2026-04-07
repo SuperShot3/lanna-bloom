@@ -3,7 +3,7 @@
  * Fetches prices from Sanity and computes items, add-ons, delivery fee.
  */
 
-import { getBouquetById, getProductById } from '@/lib/sanity';
+import { getBouquetById, getPlushyToyById, getProductById } from '@/lib/sanity';
 import { resolveBouquetOptionFromIdentifier } from '@/lib/bouquetOptions';
 import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFees';
 import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
@@ -15,7 +15,7 @@ import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 const CARD_BEAUTIFUL_PRICE_THB = 20;
 
 export interface CartItemIdentifier {
-  itemType?: 'bouquet' | 'product';
+  itemType?: 'bouquet' | 'product' | 'plushyToy';
   bouquetId: string;
   bouquetSlug?: string;
   size: string;
@@ -40,7 +40,7 @@ export interface ComputedOrderItem {
   };
   imageUrl?: string;
   bouquetSlug?: string;
-  itemType?: 'bouquet' | 'product';
+  itemType?: 'bouquet' | 'product' | 'plushyToy';
   cost?: number;
   commissionAmount?: number;
 }
@@ -70,8 +70,40 @@ export async function computeOrderTotals(
 
   for (const item of cartItems) {
     const isProduct = item.itemType === 'product';
+    const isPlushyToy = item.itemType === 'plushyToy';
 
-    if (isProduct) {
+    if (isPlushyToy) {
+      const toy = await getPlushyToyById(item.bouquetId);
+      if (!toy) {
+        return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
+      }
+      const finalPrice = toy.price;
+      let itemPrice = finalPrice;
+      if (item.addOns?.cardType === 'premium') {
+        itemPrice += CARD_BEAUTIFUL_PRICE_THB;
+      }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+
+      const toyTitle = lang === 'th' && toy.nameTh ? toy.nameTh : toy.nameEn;
+      const sizeLabel = (item.size || toy.sizeLabel || '—').trim() || '—';
+      items.push({
+        bouquetId: toy.id,
+        bouquetTitle: toyTitle,
+        size: sizeLabel,
+        price: itemPrice,
+        addOns: {
+          cardType: item.addOns?.cardType ?? null,
+          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          wrappingOption: item.addOns?.wrappingOption ?? null,
+        },
+        imageUrl: item.imageUrl ?? toy.imageUrl,
+        bouquetSlug: item.bouquetSlug,
+        itemType: 'plushyToy',
+        cost: undefined,
+        commissionAmount: undefined,
+      });
+      itemsTotal += itemPrice;
+    } else if (isProduct) {
       const product = await getProductById(item.bouquetId);
       if (!product) {
         return { ok: false, message: `Product not found: ${item.bouquetId}` };

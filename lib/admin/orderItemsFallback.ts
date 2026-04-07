@@ -21,7 +21,11 @@ export function itemsFromOrderJson(
     size: it.size ?? null,
     price: it.price ?? null,
     image_url_snapshot: it.imageUrl ?? null,
-    item_type: (it.itemType === 'product' ? 'product' : 'bouquet') as 'bouquet' | 'product',
+    item_type: (it.itemType === 'product'
+      ? 'product'
+      : it.itemType === 'plushyToy'
+        ? 'plushyToy'
+        : 'bouquet') as 'bouquet' | 'product' | 'plushyToy',
     cost: it.cost ?? null,
     commission_amount: it.commissionAmount ?? null,
   }));

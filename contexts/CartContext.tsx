@@ -14,8 +14,8 @@ import type { AddOnsValues } from '@/components/AddOnsSection';
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 
 export interface CartItem {
-  /** 'bouquet' | 'product' — default 'bouquet' for backward compat */
-  itemType?: 'bouquet' | 'product';
+  /** 'bouquet' | 'product' | 'plushyToy' — default 'bouquet' for backward compat */
+  itemType?: 'bouquet' | 'product' | 'plushyToy';
   /** Sanity document ID (bouquet or product) */
   bouquetId: string;
   slug: string;
@@ -92,6 +92,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const matchIndex = prev.findIndex(
         (p) =>
           p.bouquetId === item.bouquetId &&
+          (p.itemType ?? 'bouquet') === (item.itemType ?? 'bouquet') &&
           p.size.optionId === item.size.optionId &&
           (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim() &&
           JSON.stringify(p.addOns.productAddOns ?? {}) ===

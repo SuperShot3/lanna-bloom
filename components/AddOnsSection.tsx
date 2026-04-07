@@ -2,7 +2,9 @@
 
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { BouquetsCarousel } from '@/components/BouquetsCarousel';
 import { GiftsCarousel } from '@/components/GiftsCarousel';
+import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 
 export type CardType = 'free' | 'beautiful' | null;
@@ -35,12 +37,15 @@ export function AddOnsSection({
   value,
   onChange,
   gifts = [],
+  suggestedBouquets = [],
 }: {
   lang: Locale;
   value: AddOnsValues;
   onChange: (v: AddOnsValues) => void;
   /** Gift products from catalog (category=gifts) to display in "You might be interested" carousel */
   gifts?: CatalogProduct[];
+  /** When set (e.g. plushy toy PDP), show bouquet cross-sell instead of gifts */
+  suggestedBouquets?: Bouquet[];
 }) {
   const tRaw = translations[lang].buyNow;
   const t = tRaw as {
@@ -49,19 +54,27 @@ export function AddOnsSection({
     cardMessagePlaceholder?: string;
     cardMessageMax?: number;
     giftsSectionTitle?: string;
+    flowersSectionTitle?: string;
   };
   const cardMessageMax = typeof t.cardMessageMax === 'number' ? t.cardMessageMax : CARD_MESSAGE_MAX;
 
   return (
     <div className="addons-section">
-      {gifts.length > 0 && (
+      {suggestedBouquets.length > 0 ? (
+        <>
+          <h3 className="addons-gifts-heading">
+            {t.flowersSectionTitle ?? t.giftsSectionTitle ?? 'You might be interested as well'}
+          </h3>
+          <BouquetsCarousel bouquets={suggestedBouquets} lang={lang} />
+        </>
+      ) : gifts.length > 0 ? (
         <>
           <h3 className="addons-gifts-heading">
             {t.giftsSectionTitle ?? 'You might be interested as well'}
           </h3>
           <GiftsCarousel gifts={gifts} lang={lang} />
         </>
-      )}
+      ) : null}
       <div className="addons-field">
         <label className="addons-label" htmlFor="addons-card-message">
           {t.giftMessageLabel ?? t.cardMessageLabel ?? 'Gift Message'}

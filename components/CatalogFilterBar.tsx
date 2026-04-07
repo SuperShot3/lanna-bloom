@@ -82,9 +82,9 @@ export function CatalogFilterBar({
           )}
         </button>
 
-        {/* Top-level categories (flowers, balloons, gifts, …) as chips */}
+        {/* Top-level categories (flowers, balloons, …) as chips — gifts hidden from bar */}
         {onQuickFilter &&
-          CATALOG_TOP_CATEGORIES.map((key) => (
+          CATALOG_TOP_CATEGORIES.filter((key) => key !== 'gifts').map((key) => (
             <button
               key={key}
               type="button"

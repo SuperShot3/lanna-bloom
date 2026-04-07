@@ -8,6 +8,7 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
+import interest from '@/components/interestCarouselItem.module.css';
 
 export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: Locale }) {
   const [emblaRef] = useEmblaCarousel({
@@ -110,36 +111,42 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
 
             return (
               <div key={product.id} className="gifts-carousel-slide">
-                <button
-                  type="button"
-                  className="gifts-product-card"
-                  onClick={() => handleToggleGift(product)}
-                  aria-label={inCart ? `${name} — Added` : `${name} — ฿${finalPrice.toLocaleString()} — Add to cart`}
-                >
-                  <div className="gifts-product-image-wrap">
-                    {imgSrc ? (
-                      <Image
-                        src={imgSrc}
-                        alt={name}
-                        width={120}
-                        height={120}
-                        className="gifts-product-image"
-                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                        unoptimized={isDataUrl}
-                        draggable={false}
-                      />
-                    ) : (
-                      <div className="gifts-product-image-placeholder" aria-hidden />
-                    )}
-                    {inCart && (
-                      <span className="gifts-product-checkmark" aria-hidden>
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                  <p className="gifts-product-name">{name}</p>
-                  <p className="gifts-product-price">฿{finalPrice.toLocaleString()}</p>
-                </button>
+                <div className={interest.frame}>
+                  <button
+                    type="button"
+                    className={interest.surface}
+                    onClick={() => handleToggleGift(product)}
+                    aria-label={inCart ? `${name} — Added` : `${name} — ฿${finalPrice.toLocaleString()} — Add to cart`}
+                  >
+                    <div className={interest.imageWrap}>
+                      {imgSrc ? (
+                        <Image
+                          src={imgSrc}
+                          alt={name}
+                          width={120}
+                          height={120}
+                          className="gifts-product-image"
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          unoptimized={isDataUrl}
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className={interest.imagePlaceholder} aria-hidden />
+                      )}
+                      {inCart && (
+                        <span className={interest.checkmark} aria-hidden>
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    <div className={interest.meta}>
+                      <p className={interest.name} title={name}>
+                        {name}
+                      </p>
+                      <p className={interest.price}>฿{finalPrice.toLocaleString()}</p>
+                    </div>
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -154,6 +161,9 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
         .gifts-carousel-wrap {
           position: relative;
           margin-bottom: 20px;
+          /* Room so tile frames are not clipped by viewport overflow */
+          padding-top: 6px;
+          padding-bottom: 4px;
         }
         .gifts-carousel-viewport {
           overflow: hidden;
@@ -172,7 +182,8 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
         .gifts-carousel-slide {
           flex: 0 0 45%;
           min-width: 0;
-          padding-left: 7px;
+          padding: 4px 0 8px 7px;
+          box-sizing: border-box;
         }
         @media (min-width: 480px) {
           .gifts-carousel-slide {
@@ -189,66 +200,6 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           color: var(--text-muted);
           text-align: center;
           margin-top: 6px;
-        }
-        .gifts-product-card {
-          display: block;
-          width: 100%;
-          padding: 12px;
-          border: 2px solid var(--border);
-          border-radius: 12px;
-          background: var(--surface);
-          text-align: center;
-          color: inherit;
-          cursor: pointer;
-          font: inherit;
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .gifts-product-card:hover {
-          border-color: #1a3c34;
-          background: rgba(26, 60, 52, 0.05);
-        }
-        .gifts-product-image-wrap {
-          position: relative;
-          width: 56px;
-          height: 56px;
-          margin: 0 auto 8px;
-          border-radius: 8px;
-          overflow: hidden;
-          background: var(--pastel-cream);
-        }
-        .gifts-product-checkmark {
-          position: absolute;
-          top: 4px;
-          right: 4px;
-          width: 18px;
-          height: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #1a3c34;
-          color: #fff;
-          border-radius: 50%;
-          font-size: 11px;
-          font-weight: 700;
-          line-height: 1;
-        }
-        .gifts-product-image-placeholder {
-          width: 100%;
-          height: 100%;
-          background: var(--pastel-cream);
-        }
-        .gifts-product-name {
-          font-size: 12px;
-          font-weight: 600;
-          margin: 0 0 4px;
-          color: var(--text);
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-        .gifts-product-price {
-          font-size: 10px;
-          color: #c5a059;
-          margin: 0;
         }
       `}</style>
     </div>

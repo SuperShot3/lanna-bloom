@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,8 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import type { SizeKey } from '@/lib/bouquets';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
+
+const SWIPE_THRESHOLD_PX = 50;
 
 type OptionRow = {
   id: string;
@@ -71,9 +73,97 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
   const { addItem } = useCart();
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const href = `/${lang}/catalog/${product.slug}`;
-  const imgSrc = product.images?.[0] ?? '';
-  const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+  const isPlushyToys = product.catalogKind === 'plushyToy';
+  const sizeLabel = (product.sizeLabel || '').trim();
+
+  const images = useMemo(() => {
+    const raw = product.images ?? [];
+    return raw.filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
+  }, [product.images]);
+
+  const [imageIndex, setImageIndex] = useState(0);
+  useEffect(() => {
+    setImageIndex(0);
+  }, [product.id]);
+
+  const imgSrc = isPlushyToys
+    ? (images[imageIndex] ?? images[0] ?? '')
+    : (product.images?.[0] ?? '');
+  const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
+  const canSwipePlushyImages = isPlushyToys && images.length > 1;
+
+  const touchStartX = useRef<number | null>(null);
+  const didSwipeRef = useRef(false);
+  const mouseStartX = useRef<number | null>(null);
+  const mouseUpListenerRef = useRef<((e: MouseEvent) => void) | null>(null);
+
+  const goPrevImage = useCallback(() => {
+    setImageIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
+  }, [images.length]);
+
+  const goNextImage = useCallback(() => {
+    setImageIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
+  }, [images.length]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartX.current == null || !canSwipePlushyImages) {
+        touchStartX.current = null;
+        return;
+      }
+      const endX = e.changedTouches[0].clientX;
+      const delta = endX - touchStartX.current;
+      touchStartX.current = null;
+      if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+        didSwipeRef.current = true;
+        if (delta < 0) goNextImage();
+        else goPrevImage();
+        window.setTimeout(() => {
+          didSwipeRef.current = false;
+        }, 450);
+      }
+    },
+    [canSwipePlushyImages, goNextImage, goPrevImage]
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!canSwipePlushyImages) return;
+      mouseStartX.current = e.clientX;
+      const onMouseUp = (upEv: MouseEvent) => {
+        window.removeEventListener('mouseup', onMouseUp);
+        mouseUpListenerRef.current = null;
+        if (mouseStartX.current == null) return;
+        const delta = upEv.clientX - mouseStartX.current;
+        mouseStartX.current = null;
+        if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+          didSwipeRef.current = true;
+          if (delta < 0) goNextImage();
+          else goPrevImage();
+          window.setTimeout(() => {
+            didSwipeRef.current = false;
+          }, 450);
+        }
+      };
+      mouseUpListenerRef.current = onMouseUp;
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [canSwipePlushyImages, goNextImage, goPrevImage]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (mouseUpListenerRef.current) {
+        window.removeEventListener('mouseup', mouseUpListenerRef.current);
+        mouseUpListenerRef.current = null;
+      }
+    };
+  }, []);
 
   const options = useMemo(
     () =>
@@ -104,8 +194,59 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
     trackSelectItem('catalog', item);
   };
 
+  const handleLinkClickGuarded = (e: React.MouseEvent) => {
+    if (didSwipeRef.current) {
+      e.preventDefault();
+      return;
+    }
+    handleLinkClick();
+  };
+
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
+      if (isPlushyToys) {
+        addItem(
+          {
+            itemType: 'plushyToy',
+            bouquetId: product.id,
+            slug: product.slug,
+            nameEn: product.nameEn,
+            nameTh: product.nameTh ?? product.nameEn,
+            imageUrl: imgSrc || undefined,
+            size: {
+              optionId: 'product_default',
+              key: 'm',
+              label: sizeLabel || '—',
+              price: finalPrice,
+              description: '',
+            },
+            addOns: getDefaultAddOns(),
+          },
+          1
+        );
+        trackAddToCart({
+          currency: 'THB',
+          value: finalPrice,
+          items: [
+            {
+              item_id: product.id,
+              item_name: name,
+              price: finalPrice,
+              quantity: 1,
+              index: 0,
+              item_category: product.category,
+              item_variant: sizeLabel || undefined,
+            },
+          ],
+        });
+        if (mode === 'stay') {
+          setJustAdded(true);
+          window.setTimeout(() => setJustAdded(false), 6000);
+        } else {
+          router.push(`/${lang}/cart`);
+        }
+        return;
+      }
       if (!selected) return;
       addItem(
         {
@@ -148,7 +289,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         router.push(`/${lang}/cart`);
       }
     },
-    [addItem, imgSrc, lang, name, product, router, selected]
+    [addItem, finalPrice, imgSrc, isPlushyToys, lang, name, product, router, selected, sizeLabel]
   );
 
   const radioName = `product-opt-${product.id}`;
@@ -164,11 +305,30 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         href={href}
         className="pcard-link"
         data-ga-select-item="catalog"
-        onClick={handleLinkClick}
+        onClick={handleLinkClickGuarded}
         aria-label={`${name} — ${t.from} ฿${finalPrice.toLocaleString()}`}
       >
-        <div className="pcard-image-wrap">
+        <div
+          className="pcard-image-wrap"
+          style={canSwipePlushyImages ? { touchAction: 'pan-y' as const } : undefined}
+          onTouchStart={canSwipePlushyImages ? handleTouchStart : undefined}
+          onTouchEnd={canSwipePlushyImages ? handleTouchEnd : undefined}
+          onMouseDown={canSwipePlushyImages ? handleMouseDown : undefined}
+          aria-label={canSwipePlushyImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
+        >
           {product.isHit ? <span className="pcard-hit">{t.hitBadge}</span> : null}
+          {isPlushyToys ? (
+            <span className="pcard-toy-icon" aria-hidden>
+              <Image
+                src="/icons/toy-teddy-bear-baby-svgrepo-com.svg"
+                alt=""
+                width={22}
+                height={22}
+                unoptimized
+                draggable={false}
+              />
+            </span>
+          ) : null}
           {imgSrc ? (
             <div className="pcard-image-shared">
               <Image
@@ -186,14 +346,23 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           ) : (
             <div className="pcard-image pcard-image-placeholder" aria-hidden />
           )}
+          {canSwipePlushyImages ? (
+            <div className="pcard-dots" aria-hidden>
+              {images.map((_, i) => (
+                <span key={i} className={`pcard-dot ${i === imageIndex ? 'active' : ''}`} />
+              ))}
+            </div>
+          ) : null}
         </div>
         <div className="pcard-body">
           <div className="pcard-name" title={name}>
             {name}
           </div>
           <div className="pcard-price">
-            {t.from} ฿{finalPrice.toLocaleString()}
+            <span className="pcard-price-from">{t.from}</span>{' '}
+            <span className="pcard-price-amount">฿{finalPrice.toLocaleString()}</span>
           </div>
+          {isPlushyToys && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
         </div>
       </Link>
 
@@ -204,59 +373,71 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="pcard-panel-inner">
-          <p className="pcard-options-title">{t.productCardOptions}</p>
-          <ul className="pcard-option-list" role="list">
-            {options.map((row) => {
-              if (!row.available) {
-                return (
-                  <li key={row.id} className="pcard-option pcard-option--disabled">
-                    <span className="pcard-option-label">
-                      <input type="radio" disabled className="pcard-radio" />
-                      <span>{row.label}</span>
-                    </span>
-                    <span className="pcard-option-right">{t.productCardNotAvailable}</span>
-                  </li>
-                );
-              }
-              const isChecked = selectedId === row.id;
-              return (
-                <li key={row.id} className="pcard-option">
-                  <label className="pcard-option-label">
-                    <input
-                      type="radio"
-                      className="pcard-radio"
-                      name={radioName}
-                      checked={isChecked}
-                      onChange={() => setSelectedId(row.id)}
-                    />
-                    <span className="pcard-label-text">
-                      {row.label}
-                      {isChecked ? (
-                        <span className="pcard-check" aria-hidden>
-                          {' '}
-                          ✓
+          {isPlushyToys ? null : (
+            <>
+              <p className="pcard-options-title">{t.productCardOptions}</p>
+              <ul className="pcard-option-list" role="list">
+                {options.map((row) => {
+                  if (!row.available) {
+                    return (
+                      <li key={row.id} className="pcard-option pcard-option--disabled">
+                        <span className="pcard-option-label">
+                          <input type="radio" disabled className="pcard-radio" />
+                          <span>{row.label}</span>
                         </span>
-                      ) : null}
-                    </span>
-                  </label>
-                  <span className="pcard-option-price">฿{row.price.toLocaleString()}</span>
-                </li>
-              );
-            })}
-          </ul>
+                        <span className="pcard-option-right">{t.productCardNotAvailable}</span>
+                      </li>
+                    );
+                  }
+                  const isChecked = selectedId === row.id;
+                  return (
+                    <li key={row.id} className="pcard-option">
+                      <label className="pcard-option-label">
+                        <input
+                          type="radio"
+                          className="pcard-radio"
+                          name={radioName}
+                          checked={isChecked}
+                          onChange={() => setSelectedId(row.id)}
+                        />
+                        <span className="pcard-label-text">
+                          {row.label}
+                          {isChecked ? (
+                            <span className="pcard-check" aria-hidden>
+                              {' '}
+                              ✓
+                            </span>
+                          ) : null}
+                        </span>
+                      </label>
+                      <span className="pcard-option-price">฿{row.price.toLocaleString()}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
 
           {justAdded ? (
             <>
               <p className="pcard-added" role="status">
                 {tCart.addedToCart}
               </p>
-              <button type="button" className="pcard-btn-cart" onClick={() => router.push(`/${lang}/cart`)}>
+              <button
+                type="button"
+                className={`pcard-btn-cart ${isPlushyToys ? 'pcard-btn-cart--plushy' : ''}`}
+                onClick={() => router.push(`/${lang}/cart`)}
+              >
                 {tCart.goToCart}
               </button>
             </>
           ) : (
             <>
-              <button type="button" className="pcard-btn-cart" onClick={() => pushToCart('stay')}>
+              <button
+                type="button"
+                className={`pcard-btn-cart ${isPlushyToys ? 'pcard-btn-cart--plushy' : ''}`}
+                onClick={() => pushToCart('stay')}
+              >
                 {tCart.addToCart}
               </button>
               <button type="button" className="pcard-buy-1" onClick={() => pushToCart('checkout')}>
@@ -316,6 +497,48 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           background: var(--pastel-mint);
           color: var(--primary);
         }
+        .pcard-toy-icon {
+          position: absolute;
+          bottom: 10px;
+          right: 10px;
+          z-index: 2;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid rgba(45, 42, 38, 0.08);
+          box-shadow: 0 2px 10px rgba(45, 42, 38, 0.1);
+          pointer-events: none;
+        }
+        .pcard-toy-icon :global(img) {
+          display: block;
+          width: 22px;
+          height: 22px;
+          object-fit: contain;
+        }
+        .pcard-dots {
+          position: absolute;
+          bottom: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 6px;
+          pointer-events: none;
+          z-index: 3;
+        }
+        .pcard-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.6);
+          transition: background 0.2s;
+        }
+        .pcard-dot.active {
+          background: var(--accent);
+        }
         .pcard-image-shared {
           width: 100%;
           height: 100%;
@@ -351,8 +574,27 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           white-space: nowrap;
         }
         .pcard-price {
-          font-size: 0.95rem;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 6px;
+          font-size: 1.02rem;
+          color: var(--text);
+          font-variant-numeric: tabular-nums;
+          letter-spacing: 0.01em;
+        }
+        .pcard-price-from {
           color: var(--text-muted);
+          font-size: 0.92rem;
+          font-weight: 500;
+        }
+        .pcard-price-amount {
+          font-weight: 800;
+        }
+        .pcard-size {
+          margin-top: 6px;
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          font-weight: 600;
         }
 
         .pcard-panel {
@@ -456,10 +698,25 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
           letter-spacing: 0.04em;
           text-transform: uppercase;
           cursor: pointer;
-          transition: background 0.2s, transform 0.15s;
+          transition: background 0.2s, transform 0.15s, box-shadow 0.2s, border-color 0.2s;
         }
         .pcard-btn-cart:hover {
           background: #dceee4;
+        }
+        .pcard-btn-cart--plushy {
+          background: var(--accent);
+          color: var(--accent-cta-text, #1a3c34);
+          border: 2px solid var(--accent-border);
+          box-shadow: 0 3px 0 var(--accent-border), 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .pcard-btn-cart--plushy:hover {
+          background: var(--accent-border);
+          border-color: var(--accent-border);
+          box-shadow: 0 3px 0 var(--accent-border), 0 6px 16px rgba(0, 0, 0, 0.18);
+        }
+        .pcard-btn-cart--plushy:active {
+          transform: translateY(1px);
+          box-shadow: 0 2px 0 var(--accent-border), 0 3px 8px rgba(0, 0, 0, 0.12);
         }
         .pcard-btn-cart:focus-visible {
           outline: 2px solid var(--accent);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlockForProduct } from '@/components/ProductOrderBlockForProduct';
+import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
@@ -14,12 +15,14 @@ export function ProductDetailClient({
   name,
   description,
   gifts = [],
+  suggestedBouquets = [],
 }: {
   product: CatalogProduct;
   lang: Locale;
   name: string;
   description: string;
   gifts?: CatalogProduct[];
+  suggestedBouquets?: Bouquet[];
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = product.images ?? [];
@@ -80,7 +83,14 @@ export function ProductDetailClient({
           product={product}
           lang={lang}
           selectedImageUrl={selectedImageUrl}
-          gifts={product.category === 'gifts' ? [] : gifts}
+          gifts={
+            product.catalogKind === 'plushyToy'
+              ? []
+              : product.category === 'gifts'
+                ? []
+                : gifts
+          }
+          suggestedBouquets={product.catalogKind === 'plushyToy' ? suggestedBouquets : []}
         />
       </div>
     </>

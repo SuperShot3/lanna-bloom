@@ -44,6 +44,11 @@ import { PinIcon } from '@/components/icons/PinIcon';
 
 const LINE_CONTEXT_STORAGE_KEY = 'lanna-bloom-line-context';
 
+/** Non-flower catalog lines (partner products or standalone plushy toys). */
+function isNonBouquetCartLine(item: CartItem): boolean {
+  return item.itemType === 'product' || item.itemType === 'plushyToy';
+}
+
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
 function formatStickyDate(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
@@ -219,6 +224,11 @@ function buildOrderPayload(
         },
         imageUrl: item.imageUrl ?? undefined,
         bouquetSlug: item.slug ?? undefined,
+        ...(item.itemType === 'plushyToy'
+          ? { itemType: 'plushyToy' as const }
+          : item.itemType === 'product'
+            ? { itemType: 'product' as const }
+            : {}),
       });
     }
   }
@@ -1274,8 +1284,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                           <div className="cart-item-main">
                             <h3 className="cart-item-name">{name}</h3>
                             <p className="cart-item-size">
-                              {item.itemType === 'product'
-                                ? `฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
+                              {isNonBouquetCartLine(item)
+                                ? `${((item.size.label || '').trim() || '—')} — ฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
                                 : (item.quantity ?? 1) > 1
                                   ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
                                   : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
@@ -1311,7 +1321,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
                       const unitPrice = item.size.price + addOnsTotal;
                       const lineTotal = unitPrice * qty;
-                      const itemLabel = item.itemType === 'product' ? name : qty > 1 ? `${name} — ${item.size.label} × ${qty}` : `${name} — ${item.size.label}`;
+                      const itemLabel = isNonBouquetCartLine(item)
+                        ? name
+                        : qty > 1
+                          ? `${name} — ${item.size.label} × ${qty}`
+                          : `${name} — ${item.size.label}`;
                       return (
                         <div key={`mob-sum-${item.bouquetId}-${i}`} className="cart-order-summary-row cart-order-summary-item">
                           <span>{itemLabel}</span>
@@ -1569,8 +1583,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <div className="cart-item-main">
                   <h3 className="cart-item-name">{name}</h3>
                   <p className="cart-item-size">
-                    {item.itemType === 'product'
-                      ? `฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
+                    {isNonBouquetCartLine(item)
+                      ? `${((item.size.label || '').trim() || '—')} — ฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
                       : (item.quantity ?? 1) > 1
                         ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
                         : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
@@ -1622,7 +1636,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   const unitPrice = item.size.price + addOnsTotal;
                   const lineTotal = unitPrice * qty;
                   const priceStr = lineTotal.toLocaleString();
-                  const sizePart = item.itemType === 'product' ? '—' : item.size.label;
+                  const sizePart = isNonBouquetCartLine(item)
+                    ? ((item.size.label || '').trim() || '—')
+                    : item.size.label;
                   const itemLine = itemLineFmt
                     .replace('{name}', name)
                     .replace('{size}', sizePart)

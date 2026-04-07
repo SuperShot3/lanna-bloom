@@ -33,7 +33,6 @@ export const product = defineType({
           { title: 'Handmade Floral', value: 'handmade_floral' },
           { title: 'Food & Sweets', value: 'food_sweets' },
           { title: 'Wellness', value: 'wellness' },
-          { title: 'Toys & Plush', value: 'toys_plush' },
           { title: 'Home & Lifestyle', value: 'home_lifestyle' },
           { title: 'Stationery', value: 'stationery' },
           { title: 'Baby & Family', value: 'baby_family' },

@@ -78,7 +78,11 @@ function validateStripePayload(
         ? (productAddOnsRaw as Record<string, boolean>)
         : undefined;
     return {
-      itemType: (i.itemType === 'product' ? 'product' : 'bouquet') as 'bouquet' | 'product',
+      itemType: (i.itemType === 'product'
+        ? 'product'
+        : i.itemType === 'plushyToy'
+          ? 'plushyToy'
+          : 'bouquet') as 'bouquet' | 'product' | 'plushyToy',
       bouquetId: typeof i.bouquetId === 'string' ? i.bouquetId : '',
       bouquetSlug: typeof i.bouquetSlug === 'string' ? i.bouquetSlug : undefined,
       size: typeof i.size === 'string' ? i.size : 'm',
