@@ -368,7 +368,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   if (filter.dateFrom) expenseQuery = expenseQuery.gte('date', filter.dateFrom?.slice(0, 10));
   if (filter.dateTo)   expenseQuery = expenseQuery.lte('date', filter.dateTo?.slice(0, 10));
 
-  const [{ data: incomeRows }, { data: expenseRows }, { transfers }] = await Promise.all([
+  const [{ data: incomeRows }, { data: expenseRows }, { data: transferRows }] = await Promise.all([
     incomeQuery,
     expenseQuery,
     supabase
@@ -443,7 +443,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     let netAfterFeesAndExpenses = netAfterFees - allocatedExpenses;
 
     // Apply transfers: move balance between locations without affecting profit.
-    for (const t of transfers ?? []) {
+    for (const t of transferRows ?? []) {
       const amt = parseFloat(String(t.amount)) || 0;
       const from = String(t.from_location ?? '');
       const to = String(t.to_location ?? '');
