@@ -1,5 +1,5 @@
 import { getLedgerEntries } from '@/lib/accounting/ledger';
-import { getAccountingOverview } from '@/lib/accounting/incomeRecords';
+import { getAccountingOverview, getIncomeRecords } from '@/lib/accounting/incomeRecords';
 import { getExpenses } from '@/lib/expenses/expenseQueries';
 import { AccountingOverviewClient } from './AccountingOverviewClient';
 
@@ -10,6 +10,9 @@ interface PageProps {
     tab?: string;
     category?: string;
     payment_method?: string;
+    source_mode?: string;
+    source_type?: string;
+    income_status?: string;
     page?: string;
   }>;
 }
@@ -18,9 +21,12 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const activeTab =
     params.tab === 'expenses' ? 'expenses' :
-    params.tab === 'ledger'   ? 'ledger'   : 'overview';
+    params.tab === 'ledger'   ? 'ledger'   :
+    params.tab === 'income'   ? 'income'   : 'overview';
   const expensePage = Math.max(1, parseInt(params.page ?? '1', 10));
   const expensePageSize = 30;
+  const incomePage = Math.max(1, parseInt(params.page ?? '1', 10));
+  const incomePageSize = 30;
 
   const expenseFilters = {
     dateFrom:       params.dateFrom,
@@ -29,14 +35,21 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
     payment_method: params.payment_method,
   };
 
-  // Always load expenses with overview so the Expenses tab has data on first paint after tab switch
-  // (conditional fetch left expensesData null and relied on RSC refetch, which often felt stale).
+  const incomeFilters = {
+    dateFrom:      params.dateFrom,
+    dateTo:        params.dateTo,
+    source_mode:   params.source_mode,
+    source_type:   params.source_type,
+    income_status: params.income_status,
+  };
+
   const period = { dateFrom: params.dateFrom, dateTo: params.dateTo };
 
-  const [overview, expensesData, ledger] = await Promise.all([
+  const [overview, expensesData, ledger, incomeData] = await Promise.all([
     getAccountingOverview(period),
     getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize }),
     getLedgerEntries(period),
+    getIncomeRecords(incomeFilters, { page: incomePage, pageSize: incomePageSize }),
   ]);
 
   const periodLabel =
@@ -57,6 +70,10 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
       expensesPage={expensePage}
       expensesPageSize={expensePageSize}
       expensesFilters={expenseFilters}
+      incomeData={incomeData}
+      incomePage={incomePage}
+      incomePageSize={incomePageSize}
+      incomeFilters={incomeFilters}
     />
   );
 }

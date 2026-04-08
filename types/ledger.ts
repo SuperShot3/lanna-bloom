@@ -2,7 +2,7 @@
  * Unified accounting ledger row (income + expenses) for the admin Overview register.
  */
 
-export type LedgerKind = 'income' | 'expense';
+export type LedgerKind = 'income' | 'expense' | 'transfer';
 
 export interface LedgerRow {
   id: string;

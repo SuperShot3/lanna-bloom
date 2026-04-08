@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import type { MoneyLocationTotal } from '@/types/accounting';
+import type { MoneyLocationTotal, IncomeRecord, IncomeFilters } from '@/types/accounting';
+import { INCOME_SOURCE_TYPES, INCOME_STATUSES, MONEY_LOCATIONS } from '@/types/accounting';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
 import type { LedgerResult } from '@/types/ledger';
+import type { IncomeListResult } from '@/lib/accounting/incomeRecords';
 import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDisplay';
 import { AccountingLedgerTable } from './AccountingLedgerTable';
 
@@ -31,11 +33,15 @@ interface Props {
   periodLabel: string;
   initialDateFrom?: string;
   initialDateTo?: string;
-  activeTab: 'overview' | 'expenses' | 'ledger';
+  activeTab: 'overview' | 'expenses' | 'ledger' | 'income';
   expensesData: ExpensesResult;
   expensesPage: number;
   expensesPageSize: number;
   expensesFilters: ExpenseFilters;
+  incomeData: IncomeListResult;
+  incomePage: number;
+  incomePageSize: number;
+  incomeFilters: IncomeFilters;
 }
 
 const LOCATION_LABELS: Record<string, string> = {
@@ -89,6 +95,10 @@ export function AccountingOverviewClient({
   expensesPage,
   expensesPageSize,
   expensesFilters,
+  incomeData,
+  incomePage,
+  incomePageSize,
+  incomeFilters,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -97,8 +107,14 @@ export function AccountingOverviewClient({
 
   const [dateFrom, setDateFrom] = useState(initialDateFrom ?? '');
   const [dateTo, setDateTo]     = useState(initialDateTo ?? '');
-  const [backfilling, setBackfilling] = useState(false);
-  const [backfillResult, setBackfillResult] = useState<string | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [transferFrom, setTransferFrom] = useState('bank');
+  const [transferTo, setTransferTo] = useState('cash');
+  const [transferNote, setTransferNote] = useState('');
+  const [transferSaving, setTransferSaving] = useState(false);
+  const [transferMsg, setTransferMsg] = useState<string | null>(null);
 
   /** Keep date inputs aligned with URL when navigating (useState only uses initial value on mount). */
   useEffect(() => {
@@ -106,7 +122,7 @@ export function AccountingOverviewClient({
     setDateTo(initialDateTo ?? '');
   }, [initialDateFrom, initialDateTo]);
 
-  const switchTab = (tab: 'overview' | 'expenses' | 'ledger') => {
+  const switchTab = (tab: 'overview' | 'expenses' | 'ledger' | 'income') => {
     const next = new URLSearchParams(sp.toString());
     if (dateFrom) next.set('dateFrom', dateFrom);
     else next.delete('dateFrom');
@@ -114,7 +130,9 @@ export function AccountingOverviewClient({
     else next.delete('dateTo');
     if (tab === 'expenses') next.set('tab', 'expenses');
     else if (tab === 'ledger') next.set('tab', 'ledger');
+    else if (tab === 'income') next.set('tab', 'income');
     else next.delete('tab');
+    next.delete('page');
     router.push(`${pathname}?${next.toString()}`);
   };
 
@@ -135,6 +153,7 @@ export function AccountingOverviewClient({
     next.delete('page');
     if (activeTab === 'expenses') next.set('tab', 'expenses');
     else if (activeTab === 'ledger') next.set('tab', 'ledger');
+    else if (activeTab === 'income') next.set('tab', 'income');
     else next.delete('tab');
     router.push(`${pathname}?${next.toString()}`);
   };
@@ -149,39 +168,28 @@ export function AccountingOverviewClient({
     router.push(`${pathname}?${next.toString()}`);
   };
 
-  const runBackfill = async (dryRun: boolean) => {
-    setBackfilling(true);
-    setBackfillResult(null);
-    try {
-      const res = await fetch('/api/admin/accounting/backfill-income', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dryRun }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setBackfillResult(`Error: ${data.error ?? 'Unknown error'}`);
-      } else if (dryRun) {
-        setBackfillResult(
-          `Dry run: Would create ${data.wouldCreate} records, skip ${data.wouldSkip} already existing (out of ${data.total} paid orders)`
-        );
-      } else {
-        setBackfillResult(data.message ?? `Created: ${data.created}, Skipped: ${data.skipped}`);
-        setTimeout(() => router.refresh(), 1500);
-      }
-    } catch {
-      setBackfillResult('Network error. Please try again.');
-    } finally {
-      setBackfilling(false);
-    }
-  };
-
   const net = overview?.netResult ?? 0;
   const isProfit = net >= 0;
 
   const expensesTotalPages = expensesData
     ? Math.ceil(expensesData.total / expensesPageSize) || 1
     : 1;
+
+  const incomeTotalPages = Math.ceil(incomeData.total / incomePageSize) || 1;
+
+  const incomeSummaryRowFiltersActive = Boolean(
+    incomeFilters.source_mode || incomeFilters.source_type || incomeFilters.income_status
+  );
+
+  const handleIncomeFilterChange = (updates: Record<string, string | undefined>) => {
+    const next = new URLSearchParams(sp.toString());
+    next.delete('page');
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v && v !== 'all') next.set(k, v); else next.delete(k);
+    });
+    next.set('tab', 'income');
+    router.push(`${pathname}?${next.toString()}`);
+  };
 
   return (
     <div className="admin-accounting">
@@ -192,17 +200,123 @@ export function AccountingOverviewClient({
           <p className="admin-hint">{periodLabel}</p>
         </div>
         <div className="admin-header-actions">
+          <button
+            type="button"
+            className="admin-btn admin-btn-outline"
+            onClick={() => {
+              setTransferOpen((v) => !v);
+              setTransferMsg(null);
+            }}
+          >
+            ⇄ Transfer
+          </button>
           <Link href="/admin/accounting/income/new" className="admin-btn admin-btn-primary">
             + Manual Income
-          </Link>
-          <Link href="/admin/accounting/income" className="admin-btn admin-btn-outline">
-            All Income
           </Link>
           <Link href="/admin/expenses/new" className="admin-btn admin-btn-outline">
             + Add Expense
           </Link>
         </div>
       </header>
+
+      {transferOpen && (
+        <div className="admin-accounting-section" style={{ marginTop: 12 }}>
+          <h2 className="admin-accounting-section-title">Transfer funds</h2>
+          <p className="admin-hint">
+            Moves money between locations (example: Stripe payout = Stripe → Bank). Does not change profit.
+          </p>
+          <div className="admin-accounting-backfill-actions" style={{ flexWrap: 'wrap' }}>
+            <input
+              type="date"
+              className="admin-input admin-input-date"
+              value={transferDate}
+              onChange={(e) => setTransferDate(e.target.value)}
+              aria-label="Transfer date"
+            />
+            <input
+              type="number"
+              className="admin-input"
+              value={transferAmount}
+              onChange={(e) => setTransferAmount(e.target.value)}
+              placeholder="Amount"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              aria-label="Amount"
+              style={{ maxWidth: 160 }}
+            />
+            <select
+              className="admin-select"
+              value={transferFrom}
+              onChange={(e) => setTransferFrom(e.target.value)}
+              aria-label="From location"
+            >
+              {MONEY_LOCATIONS.map((l) => (
+                <option key={l.value} value={l.value}>{l.label}</option>
+              ))}
+            </select>
+            <span className="admin-hint" aria-hidden="true">→</span>
+            <select
+              className="admin-select"
+              value={transferTo}
+              onChange={(e) => setTransferTo(e.target.value)}
+              aria-label="To location"
+            >
+              {MONEY_LOCATIONS.map((l) => (
+                <option key={l.value} value={l.value}>{l.label}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              className="admin-input"
+              value={transferNote}
+              onChange={(e) => setTransferNote(e.target.value)}
+              placeholder="Note (optional)"
+              aria-label="Note"
+              style={{ minWidth: 220 }}
+            />
+            <button
+              type="button"
+              className="admin-btn admin-btn-primary admin-btn-sm"
+              disabled={transferSaving}
+              onClick={async () => {
+                setTransferSaving(true);
+                setTransferMsg(null);
+                try {
+                  const amt = parseFloat(transferAmount);
+                  const res = await fetch('/api/admin/accounting/transfers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      amount: amt,
+                      transfer_date: transferDate,
+                      from_location: transferFrom,
+                      to_location: transferTo,
+                      note: transferNote.trim() || null,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    setTransferMsg(data.error ?? 'Transfer failed');
+                  } else {
+                    setTransferMsg('Transfer saved');
+                    setTransferAmount('');
+                    setTransferNote('');
+                    router.refresh();
+                  }
+                } catch {
+                  setTransferMsg('Network error. Please try again.');
+                } finally {
+                  setTransferSaving(false);
+                }
+              }}
+            >
+              {transferSaving ? 'Saving…' : 'Save transfer'}
+            </button>
+          </div>
+          {transferMsg && <p className="admin-hint" style={{ marginTop: 6 }}>{transferMsg}</p>}
+        </div>
+      )}
 
       {/* Tab switcher */}
       <div className="admin-accounting-tabs">
@@ -227,6 +341,17 @@ export function AccountingOverviewClient({
         </button>
         <button
           type="button"
+          className={`admin-accounting-tab${activeTab === 'income' ? ' admin-accounting-tab-active' : ''}`}
+          onClick={() => switchTab('income')}
+        >
+          <span className="material-symbols-outlined">payments</span>
+          Income Records
+          {overview && overview.incomeCount > 0 && (
+            <span className="admin-accounting-tab-count">{overview.incomeCount}</span>
+          )}
+        </button>
+        <button
+          type="button"
           className={`admin-accounting-tab${activeTab === 'ledger' ? ' admin-accounting-tab-active' : ''}`}
           onClick={() => switchTab('ledger')}
         >
@@ -236,16 +361,6 @@ export function AccountingOverviewClient({
             <span className="admin-accounting-tab-count">{ledger.rows.length}</span>
           )}
         </button>
-        <Link
-          href="/admin/accounting/income"
-          className="admin-accounting-tab"
-        >
-          <span className="material-symbols-outlined">payments</span>
-          Income Records
-          {overview && overview.incomeCount > 0 && (
-            <span className="admin-accounting-tab-count">{overview.incomeCount}</span>
-          )}
-        </Link>
       </div>
 
       {/* Period filter — shown on both tabs */}
@@ -375,67 +490,6 @@ export function AccountingOverviewClient({
                 </div>
               </div>
             )}
-
-            {/* Quick links */}
-            <div className="admin-accounting-section">
-              <div className="admin-accounting-quicklinks">
-                <button
-                  type="button"
-                  className="admin-accounting-quicklink"
-                  onClick={() => switchTab('expenses')}
-                >
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                  Expense Records
-                </button>
-                <button
-                  type="button"
-                  className="admin-accounting-quicklink"
-                  onClick={() => switchTab('ledger')}
-                >
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                  Ledger &amp; Export
-                </button>
-                <Link href="/admin/orders" className="admin-accounting-quicklink">
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                  Orders
-                </Link>
-              </div>
-            </div>
-
-            {/* Backfill — collapsed by default */}
-            <details className="admin-accounting-section admin-accounting-backfill">
-              <summary className="admin-accounting-backfill-summary">
-                <span className="admin-accounting-section-title admin-accounting-backfill-summary-title">
-                  Historical Backfill
-                </span>
-                <span className="admin-hint admin-accounting-backfill-summary-hint">Advanced — one-time setup</span>
-              </summary>
-              <p className="admin-hint">
-                Run once to create income records for paid orders that existed before the accounting system was added.
-                The operation is idempotent — already-linked orders are skipped automatically.
-              </p>
-              <div className="admin-accounting-backfill-actions">
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-outline admin-btn-sm"
-                  onClick={() => runBackfill(true)}
-                  disabled={backfilling}
-                >
-                  {backfilling ? 'Checking…' : 'Dry Run (preview only)'}
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-primary admin-btn-sm"
-                  onClick={() => runBackfill(false)}
-                  disabled={backfilling}
-                >
-                  {backfilling ? 'Running…' : 'Run Backfill'}
-                </button>
-              </div>
-              {backfillResult && (
-                <p className="admin-accounting-backfill-result">{backfillResult}</p>
-              )}
-            </details>
           </>
         )
       )}
@@ -597,6 +651,168 @@ export function AccountingOverviewClient({
       {/* ── LEDGER TAB ── */}
       {activeTab === 'ledger' && (
         <AccountingLedgerTable ledger={ledger} periodLabel={periodLabel} />
+      )}
+
+      {/* ── INCOME TAB ── */}
+      {activeTab === 'income' && (
+        <div className="admin-income">
+          {/* Income-specific filters */}
+          <div className="admin-expenses-filters">
+            <select className="admin-select" value={incomeFilters.source_mode ?? 'all'}
+              onChange={(e) => handleIncomeFilterChange({ source_mode: e.target.value })} aria-label="Source mode">
+              <option value="all">All modes</option>
+              <option value="auto_order">Auto (Order)</option>
+              <option value="manual">Manual</option>
+            </select>
+            <select className="admin-select" value={incomeFilters.source_type ?? 'all'}
+              onChange={(e) => handleIncomeFilterChange({ source_type: e.target.value })} aria-label="Source type">
+              <option value="all">All types</option>
+              {INCOME_SOURCE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+            <select className="admin-select" value={incomeFilters.income_status ?? 'all'}
+              onChange={(e) => handleIncomeFilterChange({ income_status: e.target.value })} aria-label="Status">
+              <option value="all">All statuses</option>
+              {INCOME_STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+            {(incomeFilters.source_mode || incomeFilters.source_type || incomeFilters.income_status) && (
+              <button type="button" className="admin-btn admin-btn-outline admin-btn-sm"
+                onClick={() => handleIncomeFilterChange({ source_mode: undefined, source_type: undefined, income_status: undefined })}>
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Summary */}
+          <div className="admin-expenses-summary">
+            <span className="admin-hint">{incomeData.total} record{incomeData.total !== 1 ? 's' : ''}</span>
+            <div className="admin-income-summary-totals">
+              <span className="admin-expenses-total">
+                Confirmed revenue (gross): <strong>{fmt(incomeData.totalConfirmedAmount)}</strong>
+              </span>
+              {incomeData.totalConfirmedStripeFees > 0 && (
+                <span className="admin-expenses-total">
+                  Stripe fees: <strong>−{fmt(incomeData.totalConfirmedStripeFees)}</strong>
+                </span>
+              )}
+              {overview && (
+                <span className="admin-expenses-total">
+                  Net profit (period): <strong>{fmt(overview.netResult)}</strong>
+                </span>
+              )}
+              {incomeData.totalPendingAmount > 0 && (
+                <span className="admin-expenses-total" style={{ color: '#d97706' }}>
+                  Pending: <strong>{fmt(incomeData.totalPendingAmount)}</strong>
+                </span>
+              )}
+            </div>
+            {incomeSummaryRowFiltersActive && (
+              <p className="admin-hint" style={{ marginTop: 8, maxWidth: '42rem' }}>
+                Gross and Stripe fee totals reflect the filters above. Net profit (period) is still for all income
+                in the selected date range, same as the Overview tab.
+              </p>
+            )}
+          </div>
+
+          {incomeData.error ? (
+            <div className="admin-error">
+              <p><strong>Error loading income records</strong></p>
+              <p>{incomeData.error}</p>
+            </div>
+          ) : incomeData.records.length === 0 ? (
+            <p className="admin-empty">No income records found.</p>
+          ) : (
+            <>
+              <div className="admin-expenses-table-wrap">
+                <table className="admin-expenses-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Source</th>
+                      <th>Mode</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Proof</th>
+                      <th className="admin-expenses-col-amount">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {incomeData.records.map((rec: IncomeRecord) => (
+                      <tr
+                        key={rec.id}
+                        className="admin-expenses-row"
+                        onClick={() => router.push(`/admin/accounting/income/${rec.id}`)}
+                        role="link"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/admin/accounting/income/${rec.id}`); }}
+                      >
+                        <td className="admin-expenses-date">
+                          {new Date(rec.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td className="admin-expenses-desc">
+                          <span className="admin-expenses-desc-text">{rec.description}</span>
+                          {rec.order_id && (
+                            <span className="admin-expenses-notes">Order: {rec.order_id}</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="admin-badge admin-badge-category">
+                            {rec.payment_method === 'stripe' ? 'Stripe' :
+                             rec.payment_method === 'bank_transfer' ? 'Bank transfer' :
+                             rec.payment_method === 'qr_payment' ? 'QR payment' :
+                             rec.payment_method === 'cash' ? 'Cash' : 'Other'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`admin-badge ${rec.source_mode === 'auto_order' ? 'admin-badge-auto' : 'admin-badge-manual'}`}>
+                            {rec.source_mode === 'auto_order' ? 'Auto' : 'Manual'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="admin-badge admin-badge-category">
+                            {rec.source_type}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`admin-badge ${rec.income_status === 'confirmed' ? 'admin-badge-paid' : rec.income_status === 'cancelled' ? 'admin-badge-payment-cancelled' : 'admin-badge-payment-pending'}`}>
+                            {rec.income_status}
+                          </span>
+                        </td>
+                        <td>
+                          {rec.receipt_attached
+                            ? <span className="admin-badge admin-badge-paid">✓</span>
+                            : <span className="admin-badge admin-badge-payment-pending">—</span>}
+                        </td>
+                        <td className="admin-expenses-amount">{fmt(rec.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {incomeTotalPages > 1 && (
+                <div className="admin-pagination">
+                  <span>Showing {(incomePage - 1) * incomePageSize + 1}–{Math.min(incomePage * incomePageSize, incomeData.total)} of {incomeData.total}</span>
+                  <div className="admin-pagination-btns">
+                    <button type="button" disabled={incomePage <= 1} className="admin-btn admin-btn-sm"
+                      onClick={() => { const n = new URLSearchParams(sp.toString()); n.set('page', String(incomePage - 1)); n.set('tab', 'income'); router.push(`${pathname}?${n.toString()}`); }}>
+                      Previous
+                    </button>
+                    <span className="admin-pagination-info">Page {incomePage} of {incomeTotalPages}</span>
+                    <button type="button" disabled={incomePage >= incomeTotalPages} className="admin-btn admin-btn-sm"
+                      onClick={() => { const n = new URLSearchParams(sp.toString()); n.set('page', String(incomePage + 1)); n.set('tab', 'income'); router.push(`${pathname}?${n.toString()}`); }}>
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
     </div>
   );

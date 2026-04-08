@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getIncomeRecordById, updateIncomeRecord, deleteIncomeRecord } from '@/lib/accounting/incomeRecords';
+import { MONEY_LOCATIONS } from '@/types/accounting';
+
+const VALID_MONEY_LOCATIONS = MONEY_LOCATIONS.map((x) => x.value);
 
 export async function GET(
   _request: NextRequest,
@@ -47,6 +50,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid income_status' }, { status: 400 });
     }
     updateInput.income_status = s as 'confirmed' | 'pending' | 'cancelled';
+  }
+  if ('money_location' in b) {
+    const loc = typeof b.money_location === 'string' ? b.money_location.trim() : '';
+    if (!VALID_MONEY_LOCATIONS.includes(loc as never)) {
+      return NextResponse.json(
+        { error: `money_location must be one of: ${VALID_MONEY_LOCATIONS.join(', ')}` },
+        { status: 400 }
+      );
+    }
+    updateInput.money_location = loc as never;
   }
   if ('proof_file_path' in b) {
     updateInput.proof_file_path =

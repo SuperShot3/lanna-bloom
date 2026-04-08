@@ -145,7 +145,7 @@ export function AccountingLedgerTable({ ledger, periodLabel }: Props) {
   return (
     <div className="admin-accounting-section admin-ledger">
       <div className="admin-ledger-header">
-        <h2 className="admin-accounting-section-title">Ledger</h2>
+        <h2 className="admin-accounting-section-title">Export</h2>
         <button
           type="button"
           className="admin-btn admin-btn-outline admin-btn-sm"

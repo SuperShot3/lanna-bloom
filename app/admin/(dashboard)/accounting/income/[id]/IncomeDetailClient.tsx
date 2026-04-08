@@ -38,6 +38,8 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
   const [proofError, setProofError]     = useState<string | null>(null);
   const [statusUpdate, setStatusUpdate] = useState<string>(record.income_status);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [locUpdate, setLocUpdate]       = useState<string>(record.money_location);
+  const [savingLoc, setSavingLoc]       = useState(false);
   const [saveMsg, setSaveMsg]           = useState<string | null>(null);
   const [deleting, setDeleting]         = useState(false);
   const [deleteError, setDeleteError]   = useState<string | null>(null);
@@ -73,6 +75,25 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
       setSaveMsg('Network error');
     } finally {
       setSavingStatus(false);
+    }
+  };
+
+  const handleLocSave = async () => {
+    setSavingLoc(true);
+    setSaveMsg(null);
+    try {
+      const res = await fetch(`/api/admin/accounting/income/${record.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ money_location: locUpdate }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSaveMsg(data.error ?? 'Update failed'); }
+      else { setSaveMsg('Money location updated'); }
+    } catch {
+      setSaveMsg('Network error');
+    } finally {
+      setSavingLoc(false);
     }
   };
 
@@ -170,6 +191,36 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
               {loadingProof ? 'Loading…' : 'View Proof File'}
             </button>
             {proofError && <p className="admin-field-error">{proofError}</p>}
+          </div>
+        )}
+
+        {/* Money location override (manual only) */}
+        {!isAutoOrder && (
+          <div className="admin-accounting-status-update">
+            <label htmlFor="loc-select" className="admin-hint" style={{ fontWeight: 600 }}>
+              Money Location
+            </label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select
+                id="loc-select"
+                className="admin-select"
+                value={locUpdate}
+                onChange={(e) => setLocUpdate(e.target.value)}
+              >
+                {MONEY_LOCATIONS.map((l) => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary admin-btn-sm"
+                onClick={handleLocSave}
+                disabled={savingLoc || locUpdate === record.money_location}
+              >
+                {savingLoc ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+            {saveMsg && <p className="admin-hint" style={{ marginTop: 4 }}>{saveMsg}</p>}
           </div>
         )}
 

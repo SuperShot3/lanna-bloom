@@ -306,6 +306,7 @@ export async function upsertOrderIncomeRecord(
 
 export interface UpdateIncomeInput {
   income_status?: IncomeStatus;
+  money_location?: MoneyLocation;
   proof_file_path?: string | null;
   receipt_attached?: boolean;
   notes?: string | null;
@@ -367,9 +368,14 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   if (filter.dateFrom) expenseQuery = expenseQuery.gte('date', filter.dateFrom?.slice(0, 10));
   if (filter.dateTo)   expenseQuery = expenseQuery.lte('date', filter.dateTo?.slice(0, 10));
 
-  const [{ data: incomeRows }, { data: expenseRows }] = await Promise.all([
+  const [{ data: incomeRows }, { data: expenseRows }, { transfers }] = await Promise.all([
     incomeQuery,
     expenseQuery,
+    supabase
+      .from('accounting_transfers')
+      .select('amount, from_location, to_location')
+      .gte('transfer_date', filter.dateFrom?.slice(0, 10) ?? '0001-01-01')
+      .lte('transfer_date', filter.dateTo?.slice(0, 10) ?? '9999-12-31'),
   ]);
 
   let totalIncome = 0;
@@ -434,7 +440,17 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     const netAfterFees = locationNet[location] ?? 0;
     const grossTotal = locationGross[location] ?? 0;
     const allocatedExpenses = expensesByLocation[location] ?? 0;
-    const netAfterFeesAndExpenses = netAfterFees - allocatedExpenses;
+    let netAfterFeesAndExpenses = netAfterFees - allocatedExpenses;
+
+    // Apply transfers: move balance between locations without affecting profit.
+    for (const t of transfers ?? []) {
+      const amt = parseFloat(String(t.amount)) || 0;
+      const from = String(t.from_location ?? '');
+      const to = String(t.to_location ?? '');
+      if (!amt || !from || !to) continue;
+      if (location === from) netAfterFeesAndExpenses -= amt;
+      if (location === to) netAfterFeesAndExpenses += amt;
+    }
     return {
       location,
       grossTotal,

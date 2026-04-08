@@ -70,6 +70,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <span className="material-symbols-outlined admin-shell-icon">info</span>
             <span>Accounting info</span>
           </Link>
+          <Link
+            href="/admin/settings/collections"
+            className="admin-shell-nav-link admin-shell-nav-link-info"
+          >
+            <span className="material-symbols-outlined admin-shell-icon">settings</span>
+            <span>Collection settings</span>
+          </Link>
           <a
             href="/api/auth/signout?callbackUrl=/admin/login"
             className="admin-shell-nav-link admin-shell-nav-link-logout"
@@ -92,6 +99,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <span className="material-symbols-outlined admin-shell-icon">menu</span>
           </button>
           <div className="admin-shell-header-spacer" />
+          <Link
+            href="/admin/settings/collections"
+            className="admin-shell-header-logout"
+            aria-label="Collection settings"
+            title="Collection settings"
+          >
+            <span className="material-symbols-outlined admin-shell-icon">settings</span>
+            <span>Settings</span>
+          </Link>
           <a
             href="/api/auth/signout?callbackUrl=/admin/login"
             className="admin-shell-header-logout"

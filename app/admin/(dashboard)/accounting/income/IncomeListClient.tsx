@@ -10,12 +10,13 @@ interface Props {
   initialTotal: number;
   initialConfirmedAmount: number;
   initialConfirmedStripeFees: number;
-  initialConfirmedNetAmount: number;
   initialPendingAmount: number;
   initialError?: string;
   initialFilters: IncomeFilters;
   initialPage: number;
   pageSize: number;
+  /** Same as Overview “Net profit” for the selected date range (all income minus fees and expenses). */
+  periodNetProfit?: number;
 }
 
 const SOURCE_TYPE_LABEL: Record<string, string> = Object.fromEntries(
@@ -53,12 +54,12 @@ export function IncomeListClient({
   initialTotal,
   initialConfirmedAmount,
   initialConfirmedStripeFees,
-  initialConfirmedNetAmount,
   initialPendingAmount,
   initialError,
   initialFilters,
   initialPage,
   pageSize,
+  periodNetProfit,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,22 +132,30 @@ export function IncomeListClient({
         <span className="admin-hint">{initialTotal} record{initialTotal !== 1 ? 's' : ''}</span>
         <div className="admin-income-summary-totals">
           <span className="admin-expenses-total">
-            Confirmed (gross): <strong>{fmt(initialConfirmedAmount)}</strong>
+            Confirmed revenue (gross): <strong>{fmt(initialConfirmedAmount)}</strong>
           </span>
           {initialConfirmedStripeFees > 0 && (
             <span className="admin-expenses-total">
               Stripe fees (5.3%): <strong>−{fmt(initialConfirmedStripeFees)}</strong>
             </span>
           )}
-          <span className="admin-expenses-total">
-            Confirmed (net): <strong>{fmt(initialConfirmedNetAmount)}</strong>
-          </span>
+          {periodNetProfit != null && (
+            <span className="admin-expenses-total">
+              Net profit (period): <strong>{fmt(periodNetProfit)}</strong>
+            </span>
+          )}
           {initialPendingAmount > 0 && (
             <span className="admin-expenses-total" style={{ color: '#d97706' }}>
               Pending (gross): <strong>{fmt(initialPendingAmount)}</strong>
             </span>
           )}
         </div>
+        {hasFilters && periodNetProfit != null && (
+          <p className="admin-hint" style={{ marginTop: 8, maxWidth: '42rem' }}>
+            Gross and Stripe fee totals reflect the filters above. Net profit (period) is for all income in the
+            selected date range, same as Accounting Overview.
+          </p>
+        )}
       </div>
 
       {initialError ? (

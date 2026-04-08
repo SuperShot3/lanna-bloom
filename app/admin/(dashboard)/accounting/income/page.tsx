@@ -1,4 +1,4 @@
-import { getIncomeRecords } from '@/lib/accounting/incomeRecords';
+import { getAccountingOverview, getIncomeRecords } from '@/lib/accounting/incomeRecords';
 import { IncomeListClient } from './IncomeListClient';
 
 interface PageProps {
@@ -25,7 +25,11 @@ export default async function AdminIncomeListPage({ searchParams }: PageProps) {
     income_status: params.income_status,
   };
 
-  const result = await getIncomeRecords(filters, { page, pageSize });
+  const period = { dateFrom: params.dateFrom, dateTo: params.dateTo };
+  const [result, overview] = await Promise.all([
+    getIncomeRecords(filters, { page, pageSize }),
+    getAccountingOverview(period),
+  ]);
 
   return (
     <IncomeListClient
@@ -33,12 +37,12 @@ export default async function AdminIncomeListPage({ searchParams }: PageProps) {
       initialTotal={result.total}
       initialConfirmedAmount={result.totalConfirmedAmount}
       initialConfirmedStripeFees={result.totalConfirmedStripeFees}
-      initialConfirmedNetAmount={result.totalConfirmedNetAmount}
       initialPendingAmount={result.totalPendingAmount}
       initialError={result.error}
       initialFilters={filters}
       initialPage={page}
       pageSize={pageSize}
+      periodNetProfit={overview?.netResult}
     />
   );
 }

@@ -8,6 +8,8 @@ import type { IncomePaymentMethod, IncomeRecord } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, MONEY_LOCATIONS } from '@/types/accounting';
 import type { Expense } from '@/types/expenses';
 import { EXPENSE_CATEGORIES } from '@/types/expenses';
+import type { AccountingTransfer } from '@/types/accountingTransfers';
+import { getAccountingTransfers } from '@/lib/accounting/transfers';
 import type {
   LedgerLocationBreakdown,
   LedgerPeriodFilter,
@@ -157,6 +159,35 @@ function toExpenseLedgerRow(
   };
 }
 
+function toTransferLedgerRow(
+  t: AccountingTransfer,
+  runningBalance: number,
+  sortIso: string
+): LedgerRow {
+  const from = MONEY_LOC_LABEL[t.from_location] ?? t.from_location;
+  const to = MONEY_LOC_LABEL[t.to_location] ?? t.to_location;
+  const note = t.note ? ` · ${t.note}` : '';
+  return {
+    id: t.id,
+    kind: 'transfer',
+    sortIso,
+    displayDate: t.transfer_date.slice(0, 10),
+    transactionType: 'income', // neutral for filters; delta=0 so doesn't affect totals
+    category: 'Transfer',
+    description: `${from} → ${to}${note}`,
+    sourceAccount: `${from} → ${to}`,
+    amountIn: null,
+    amountOut: null,
+    delta: 0,
+    runningBalance,
+    referenceId: null,
+    createdBy: t.created_by,
+    status: null,
+    currency: t.currency || 'THB',
+    detailHref: '/admin/accounting', // no detail page yet
+  };
+}
+
 export async function getLedgerEntries(
   filter: LedgerPeriodFilter = {}
 ): Promise<LedgerResult> {
@@ -176,14 +207,19 @@ export async function getLedgerEntries(
     };
   }
 
-  const [{ data: incomeData, error: incomeErr }, { data: expenseData, error: expErr }] =
-    await Promise.all([
-      supabase.from('income_records').select('*').neq('income_status', 'cancelled'),
-      supabase.from('expenses').select('*'),
-    ]);
+  const [
+    { data: incomeData, error: incomeErr },
+    { data: expenseData, error: expErr },
+    transferResult,
+  ] = await Promise.all([
+    supabase.from('income_records').select('*').neq('income_status', 'cancelled'),
+    supabase.from('expenses').select('*'),
+    getAccountingTransfers(filter),
+  ]);
 
-  if (incomeErr || expErr) {
-    const msg = incomeErr?.message || expErr?.message || 'Query failed';
+  if (incomeErr || expErr || transferResult.error) {
+    const msg =
+      incomeErr?.message || expErr?.message || transferResult.error || 'Query failed';
     console.error('[ledger]', msg);
     return {
       openingBalance: 0,
@@ -201,6 +237,7 @@ export async function getLedgerEntries(
 
   const incomes = (incomeData ?? []) as IncomeRecord[];
   const expenses = (expenseData ?? []) as Expense[];
+  const transfers = (transferResult.transfers ?? []) as AccountingTransfer[];
 
   const hasPeriod = Boolean(filter.dateFrom || filter.dateTo);
 
@@ -216,7 +253,14 @@ export async function getLedgerEntries(
     }
   }
 
-  type Raw = { type: 'income' | 'expense'; sortMs: number; sortIso: string; income?: IncomeRecord; expense?: Expense };
+  type Raw = {
+    type: 'income' | 'expense' | 'transfer';
+    sortMs: number;
+    sortIso: string;
+    income?: IncomeRecord;
+    expense?: Expense;
+    transfer?: AccountingTransfer;
+  };
   const raw: Raw[] = [];
 
   for (const r of incomes) {
@@ -241,6 +285,16 @@ export async function getLedgerEntries(
       });
     }
   }
+  for (const t of transfers) {
+    // Use transfer_date for filtering but created_at for sort stability.
+    const sortIso = t.created_at;
+    raw.push({
+      type: 'transfer',
+      sortMs: new Date(t.created_at).getTime(),
+      sortIso,
+      transfer: t,
+    });
+  }
 
   raw.sort((a, b) => {
     if (a.sortMs !== b.sortMs) return a.sortMs - b.sortMs;
@@ -260,6 +314,8 @@ export async function getLedgerEntries(
       const amt = Number(e.amount) || 0;
       balance -= amt;
       rows.push(toExpenseLedgerRow(e, balance, item.sortIso));
+    } else if (item.type === 'transfer' && item.transfer) {
+      rows.push(toTransferLedgerRow(item.transfer, balance, item.sortIso));
     }
   }
 
