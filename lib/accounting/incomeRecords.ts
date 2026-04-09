@@ -451,8 +451,8 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   const transferNetByLocation: Record<string, number> = {};
   for (const t of transferRows ?? []) {
     const amt = parseFloat(String(t.amount)) || 0;
-    const from = String(t.from_location ?? '');
-    const to = String(t.to_location ?? '');
+    const from = String(t.from_location ?? '').trim().toLowerCase();
+    const to = String(t.to_location ?? '').trim().toLowerCase();
     if (!amt || !from || !to) continue;
     transferNetByLocation[from] = (transferNetByLocation[from] ?? 0) - amt;
     transferNetByLocation[to] = (transferNetByLocation[to] ?? 0) + amt;
