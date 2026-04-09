@@ -1,7 +1,13 @@
+'use client';
+
 import { LineIcon } from '@/components/icons/LineIcon';
+import { useFlowerFilterSheetOpen } from '@/contexts/FlowerFilterSheetOpenContext';
 import { getLineContactUrl } from '@/lib/messenger';
 
 export function LineFloatingButton() {
+  const { isOpen: flowerFilterSheetOpen } = useFlowerFilterSheetOpen();
+  if (flowerFilterSheetOpen) return null;
+
   return (
     <div
       className="

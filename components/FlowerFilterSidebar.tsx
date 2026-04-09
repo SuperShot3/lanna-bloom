@@ -225,12 +225,14 @@ export function FlowerFilterPanel({
 
   return (
     <div className={filterPanelClassName(mobileSheet)}>
-      <div className="flower-filter-header-row">
-        <h2 className="flower-filter-title">{t.filters}</h2>
-        <button type="button" className="flower-filter-clear-all" onClick={onClear}>
-          {t.clearAllFilters}
-        </button>
-      </div>
+      {!mobileSheet && (
+        <div className="flower-filter-header-row">
+          <h2 className="flower-filter-title">{t.filters}</h2>
+          <button type="button" className="flower-filter-clear-all" onClick={onClear}>
+            {t.clearAllFilters}
+          </button>
+        </div>
+      )}
 
       <button
         type="button"
@@ -320,7 +322,7 @@ export function FlowerFilterPanel({
         </div>
       </div>
 
-      <div className="flower-filter-group">
+      <div className="flower-filter-group flower-filter-group--swatches">
         <p className="flower-filter-group-static-heading">{t.filterColors}</p>
         <div className="flower-swatch-grid">
           {COLOR_KEYS.map((c) => {
@@ -512,6 +514,13 @@ export function FlowerFilterPanel({
           font-weight: 500;
           color: #2c2420;
         }
+        .flower-filter-panel .flower-filter-group--swatches {
+          padding-bottom: 8px;
+          margin-bottom: 8px;
+        }
+        .flower-filter-panel .flower-filter-group--swatches .flower-filter-group-static-heading {
+          padding: 4px 0 6px;
+        }
       `}</style>
       <style jsx>{`
         .flower-filter-panel {
@@ -525,10 +534,11 @@ export function FlowerFilterPanel({
         }
         .flower-filter-panel--sheet {
           width: 100%;
-          border-radius: 20px 20px 0 0;
-          border-bottom: none;
-          max-height: 85vh;
-          overflow-y: auto;
+          border: none;
+          border-radius: 0;
+          padding: 12px 16px 16px;
+          max-height: none;
+          overflow: visible;
         }
         .flower-filter-header-row {
           display: flex;
@@ -720,27 +730,30 @@ export function FlowerFilterPanel({
           background: #fff;
         }
         .flower-swatch-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px 6px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 9px;
+          justify-content: flex-start;
         }
         .flower-swatch-wrap {
           position: relative;
           display: flex;
           flex-direction: column;
           align-items: center;
+          flex: 0 0 auto;
         }
         .flower-swatch {
-          width: 24px;
-          height: 24px;
+          width: 22px;
+          height: 22px;
           border-radius: 50%;
           border: 2px solid #e8e0d8;
           cursor: pointer;
           padding: 0;
         }
         .flower-swatch.is-active {
-          outline: 3px solid #2c2420;
-          outline-offset: 2px;
+          outline: 2px solid #2c2420;
+          outline-offset: 1px;
         }
         .flower-swatch-tip {
           position: absolute;
@@ -849,42 +862,89 @@ export function FlowerFilterMobileDrawer({
   onClose,
   ...panelProps
 }: FlowerFilterPanelProps & { isOpen: boolean; onClose: () => void }) {
+  const tCat = translations[lang].catalog;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
   return (
     <>
       <div
         className="flower-m-backdrop"
         onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
         role="presentation"
+        aria-hidden
       />
-      <div className="flower-m-sheet" role="dialog" aria-modal="true" aria-labelledby="flower-m-title">
-        <div className="flower-m-sheet-head">
-          <h2 id="flower-m-title" className="sr-only">
-            {translations[lang].catalog.filters}
-          </h2>
-          <button type="button" className="flower-m-close" onClick={onClose} aria-label={translations[lang].catalog.close}>
-            ×
-          </button>
+      <div
+        id="filter-drawer"
+        className="flower-m-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="flower-m-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flower-m-sheet-chrome">
+          <div className="flower-m-sheet-handle" aria-hidden />
+          <div className="flower-m-toolbar">
+            <button
+              type="button"
+              className="flower-m-close"
+              onClick={onClose}
+              aria-label={tCat.close}
+            >
+              ×
+            </button>
+            <h2 id="flower-m-title" className="flower-m-toolbar-title">
+              {tCat.filters}
+            </h2>
+            <button type="button" className="flower-m-toolbar-clear" onClick={panelProps.onClear}>
+              {tCat.clearAllFilters}
+            </button>
+          </div>
         </div>
-        <FlowerFilterPanel {...panelProps} lang={lang} mobileSheet />
+        <div className="flower-m-scroll">
+          <FlowerFilterPanel {...panelProps} lang={lang} mobileSheet />
+        </div>
       </div>
       <style jsx>{`
         .flower-m-backdrop {
           position: fixed;
           inset: 0;
           background: rgba(44, 36, 32, 0.45);
-          z-index: 200;
+          z-index: 300;
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
         }
         .flower-m-sheet {
           position: fixed;
           left: 0;
           right: 0;
           bottom: 0;
-          z-index: 201;
-          max-height: 90vh;
+          z-index: 301;
+          display: flex;
+          flex-direction: column;
+          max-height: min(78vh, 560px);
+          background: #fdf9f4;
+          border-radius: 20px 20px 0 0;
+          box-shadow: 0 -10px 40px rgba(44, 36, 32, 0.18);
           overflow: hidden;
-          animation: sheetUp 0.25s ease;
+          animation: sheetUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+          padding-bottom: env(safe-area-inset-bottom, 0px);
         }
         @keyframes sheetUp {
           from {
@@ -894,31 +954,75 @@ export function FlowerFilterMobileDrawer({
             transform: translateY(0);
           }
         }
-        .flower-m-sheet-head {
-          display: flex;
-          justify-content: flex-end;
-          padding: 8px 12px 0;
+        .flower-m-sheet-chrome {
+          flex-shrink: 0;
           background: #fdf9f4;
+          border-bottom: 1px solid #e8e0d8;
+        }
+        .flower-m-sheet-handle {
+          width: 40px;
+          height: 4px;
+          border-radius: 999px;
+          background: #c9bfb4;
+          margin: 10px auto 6px;
+        }
+        .flower-m-toolbar {
+          display: grid;
+          grid-template-columns: 48px 1fr auto;
+          align-items: center;
+          gap: 6px;
+          padding: 0 8px 12px;
+          min-height: 44px;
         }
         .flower-m-close {
           width: 44px;
           height: 44px;
           border: none;
-          background: transparent;
-          font-size: 28px;
+          background: rgba(232, 224, 216, 0.55);
+          border-radius: 12px;
+          font-size: 26px;
           line-height: 1;
           cursor: pointer;
+          color: #2c2420;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          justify-self: start;
+        }
+        .flower-m-close:active {
+          background: rgba(232, 224, 216, 0.95);
+        }
+        .flower-m-toolbar-title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #2c2420;
+          text-align: center;
+          line-height: 1.25;
+          padding: 0 4px;
+        }
+        .flower-m-toolbar-clear {
+          justify-self: end;
+          font-size: 12px;
+          font-weight: 500;
+          color: #8a7a72;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 10px 4px;
+          text-align: right;
+          line-height: 1.25;
+          max-width: min(40vw, 140px);
+        }
+        .flower-m-toolbar-clear:active {
           color: #5c4a3a;
         }
-        .sr-only {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          border: 0;
+        .flower-m-scroll {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
         }
       `}</style>
     </>

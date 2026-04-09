@@ -110,8 +110,8 @@ export function AccountingOverviewClient({
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [transferFrom, setTransferFrom] = useState('bank');
-  const [transferTo, setTransferTo] = useState('cash');
+  const [transferFrom, setTransferFrom] = useState('');
+  const [transferTo, setTransferTo] = useState('');
   const [transferNote, setTransferNote] = useState('');
   const [transferSaving, setTransferSaving] = useState(false);
   const [transferMsg, setTransferMsg] = useState<string | null>(null);
@@ -252,6 +252,7 @@ export function AccountingOverviewClient({
               onChange={(e) => setTransferFrom(e.target.value)}
               aria-label="From location"
             >
+              <option value="" disabled>From</option>
               {MONEY_LOCATIONS.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>
               ))}
@@ -263,6 +264,7 @@ export function AccountingOverviewClient({
               onChange={(e) => setTransferTo(e.target.value)}
               aria-label="To location"
             >
+              <option value="" disabled>To</option>
               {MONEY_LOCATIONS.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>
               ))}

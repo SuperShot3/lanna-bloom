@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,6 +15,7 @@ import {
   catalogHasNarrowingFiltersBeyondTopCategory,
   countActiveCatalogFilters,
 } from '@/lib/catalogFilterParams';
+import { useFlowerFilterSheetOpen } from '@/contexts/FlowerFilterSheetOpenContext';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -70,7 +71,7 @@ export function CatalogWithFilters({
 }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const { isOpen: mobileFilterOpen, setOpen: setMobileFilterOpen } = useFlowerFilterSheetOpen();
   const t = translations[lang].catalog;
   const activeCount = countActiveCatalogFilters(filterParams);
   const hasAnyNarrowingFilters = catalogHasAnyNarrowingFilters(filterParams);
@@ -97,7 +98,11 @@ export function CatalogWithFilters({
   /** Balloons/gifts mode hides the flower sheet — clear stale open state so returning to flowers does not reopen it. */
   useEffect(() => {
     if (isProductsMode) setMobileFilterOpen(false);
-  }, [isProductsMode]);
+  }, [isProductsMode, setMobileFilterOpen]);
+
+  useEffect(() => {
+    return () => setMobileFilterOpen(false);
+  }, [setMobileFilterOpen]);
 
   const handleApply = useCallback(
     (params: CatalogFilterParams) => {
