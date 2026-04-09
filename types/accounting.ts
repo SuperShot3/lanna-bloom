@@ -91,9 +91,11 @@ export interface MoneyLocationTotal {
   grossTotal: number;
   /** Confirmed income net of Stripe fees for this location */
   netAfterFees: number;
-  /** Full period expenses on Stripe row only; 0 for bank, cash, other */
+  /** Expenses allocated to this location */
   allocatedExpenses: number;
-  /** netAfterFees − allocatedExpenses (Stripe bears all period expenses) */
+  /** Net effect of transfers into/out of this location */
+  transfersNet?: number;
+  /** netAfterFees − allocatedExpenses + transfersNet */
   netAfterFeesAndExpenses: number;
 }
 

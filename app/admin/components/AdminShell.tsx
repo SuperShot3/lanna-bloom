@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { MissingCogsNotice } from './MissingCogsNotice';
 
 const NAV_ITEMS = [
   { href: '/admin/orders', label: 'Orders', icon: 'shopping_bag' },
@@ -18,6 +19,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="admin-shell">
+      <MissingCogsNotice />
       {/* Mobile overlay */}
       <button
         type="button"

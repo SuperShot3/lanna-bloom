@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Expense } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 
@@ -44,8 +45,10 @@ interface ExpenseDetailClientProps {
 }
 
 export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
+  const router = useRouter();
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleViewReceipt = async () => {
     setLoadingReceipt(true);
@@ -72,6 +75,36 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         <div>
           <Link href="/admin/expenses" className="admin-back-link">← Back to Expenses</Link>
           <h1 className="admin-title">Expense Detail</h1>
+        </div>
+        <div className="admin-header-actions">
+          <button
+            type="button"
+            className="admin-btn admin-btn-outline admin-btn-danger"
+            disabled={deleting}
+            onClick={async () => {
+              if (!confirm('Delete this expense? This cannot be undone.')) return;
+              setDeleting(true);
+              try {
+                const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expense.id)}`, {
+                  method: 'DELETE',
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  alert(data.error ?? 'Failed to delete expense');
+                  return;
+                }
+                router.push('/admin/expenses');
+                router.refresh();
+              } catch (err) {
+                alert(err instanceof Error ? err.message : 'Network error');
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            title="Delete expense"
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
         </div>
       </header>
 

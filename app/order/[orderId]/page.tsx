@@ -122,9 +122,23 @@ export default async function OrderDetailsPage({
     item_variant: it.size || undefined,
   }));
 
+  /**
+   * Client-side purchase (dataLayer → GTM → GA4) is Stripe-only.
+   *
+   * Manual payments (PromptPay / bank transfer) send GA4 purchase from the backend
+   * when admin marks the order as PAID (Measurement Protocol + DB idempotency).
+   * If we also fire browser purchase for those orders, GA4 would double-count revenue.
+   */
+  const paymentMethodUpper = (supabasePayment?.payment_method ?? '').toUpperCase();
+  const isStripePayment =
+    paymentMethodUpper === 'STRIPE' ||
+    Boolean(order.stripeSessionId) ||
+    Boolean(order.paymentIntentId);
+  const shouldFireClientPurchase = paid && isStripePayment;
+
   return (
     <div className="order-page">
-      {paid && (
+      {shouldFireClientPurchase && (
         <OrderPaidConversionTracker
           orderId={order.orderId}
           value={conversionValue}

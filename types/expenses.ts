@@ -54,8 +54,5 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
 
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'cash',          label: 'Cash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'card',          label: 'Card' },
-  { value: 'qr_payment',   label: 'QR Payment' },
-  { value: 'other',         label: 'Other' },
+  { value: 'bank_transfer', label: 'Bank Account' },
 ];

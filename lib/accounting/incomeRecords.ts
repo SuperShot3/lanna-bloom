@@ -355,6 +355,22 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
 
+  const effectiveIncomeLocation = (row: {
+    payment_method?: unknown;
+    money_location?: unknown;
+  }): string => {
+    const pm = String(row.payment_method ?? '');
+    // Stripe money is locked in Stripe until a payout (transfer) moves it.
+    if (pm === 'stripe') return 'stripe';
+    // Cash payments land in cash.
+    if (pm === 'cash') return 'cash';
+    // Bank/QR settle to the bank account.
+    if (pm === 'bank_transfer' || pm === 'qr_payment') return 'bank';
+    // Fall back to explicit money_location for manual/other income.
+    const loc = String(row.money_location ?? 'other');
+    return loc || 'other';
+  };
+
   // Income: all non-cancelled records in period
   let incomeQuery = supabase
     .from(TABLE)
@@ -400,7 +416,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
       stripeProcessingFees += fee;
       const net = netAfterProcessingFee(gross, fee);
       confirmedIncomeNet += net;
-      const loc = String(row.money_location ?? 'other');
+      const loc = effectiveIncomeLocation(row);
       locationGross[loc] = (locationGross[loc] ?? 0) + gross;
       locationNet[loc] = (locationNet[loc] ?? 0) + net;
     } else {
@@ -424,38 +440,43 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
       pm === 'bank_transfer' ? 'bank'  :
       pm === 'card'          ? 'bank'  :
       pm === 'qr_payment'    ? 'bank'  :
-      'other';
+      // For this project we treat any unknown/legacy expense method as bank.
+      // Stripe balance is locked and cannot be spent from, so expenses must reduce bank or cash.
+      'bank';
     expensesByLocation[loc] = (expensesByLocation[loc] ?? 0) + amount;
   }
 
   const totalExpenses = Object.values(expensesByLocation).reduce((s, v) => s + v, 0);
 
+  const transferNetByLocation: Record<string, number> = {};
+  for (const t of transferRows ?? []) {
+    const amt = parseFloat(String(t.amount)) || 0;
+    const from = String(t.from_location ?? '');
+    const to = String(t.to_location ?? '');
+    if (!amt || !from || !to) continue;
+    transferNetByLocation[from] = (transferNetByLocation[from] ?? 0) - amt;
+    transferNetByLocation[to] = (transferNetByLocation[to] ?? 0) + amt;
+  }
+
   const locationKeys = new Set([
     ...Object.keys(locationNet),
     ...Object.keys(locationGross),
     ...Object.keys(expensesByLocation),
+    ...Object.keys(transferNetByLocation),
   ]);
 
   const incomeByLocation = Array.from(locationKeys).map((location) => {
     const netAfterFees = locationNet[location] ?? 0;
     const grossTotal = locationGross[location] ?? 0;
     const allocatedExpenses = expensesByLocation[location] ?? 0;
-    let netAfterFeesAndExpenses = netAfterFees - allocatedExpenses;
-
-    // Apply transfers: move balance between locations without affecting profit.
-    for (const t of transferRows ?? []) {
-      const amt = parseFloat(String(t.amount)) || 0;
-      const from = String(t.from_location ?? '');
-      const to = String(t.to_location ?? '');
-      if (!amt || !from || !to) continue;
-      if (location === from) netAfterFeesAndExpenses -= amt;
-      if (location === to) netAfterFeesAndExpenses += amt;
-    }
+    const transfersNet = transferNetByLocation[location] ?? 0;
+    const netAfterFeesAndExpenses = netAfterFees - allocatedExpenses + transfersNet;
     return {
       location,
       grossTotal,
       netAfterFees,
       allocatedExpenses,
+      transfersNet,
       netAfterFeesAndExpenses,
     };
   });

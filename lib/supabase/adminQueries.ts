@@ -57,6 +57,7 @@ export interface SupabaseOrderRow {
 }
 
 export interface SupabaseOrderItemRow {
+  id?: string | number;
   order_id: string;
   bouquet_id: string | null;
   bouquet_title: string | null;

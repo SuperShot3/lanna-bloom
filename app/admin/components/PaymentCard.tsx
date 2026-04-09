@@ -36,7 +36,7 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
   const isManual = MANUAL_PAYMENT_METHODS.includes(paymentMethod);
   const showMarkPaidButton = canMarkPaid && isManual && paymentStatus !== 'PAID';
 
-  const handleSetPaymentStatus = async (nextStatus: 'NOT_PAID' | 'READY_TO_PAY') => {
+  const handleSetPaymentStatus = async (nextStatus: 'NOT_PAID') => {
     if (!isManual || savingStatus || paymentStatus === nextStatus) return;
     setSavingStatus(true);
     setMessage(null);
@@ -107,15 +107,7 @@ export function PaymentCard({ order, canMarkPaid }: PaymentCardProps) {
             disabled={savingStatus || paymentStatus === 'NOT_PAID'}
             onClick={() => handleSetPaymentStatus('NOT_PAID')}
           >
-            {savingStatus && paymentStatus !== 'NOT_PAID' ? 'Saving…' : 'Not ready'}
-          </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            disabled={savingStatus || paymentStatus === 'READY_TO_PAY'}
-            onClick={() => handleSetPaymentStatus('READY_TO_PAY')}
-          >
-            {savingStatus && paymentStatus !== 'READY_TO_PAY' ? 'Saving…' : 'Ready to pay'}
+            {savingStatus && paymentStatus !== 'NOT_PAID' ? 'Saving…' : 'Pending payment'}
           </button>
           {showMarkPaidButton && (
             <button

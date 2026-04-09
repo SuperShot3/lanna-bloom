@@ -115,6 +115,7 @@ export function AccountingOverviewClient({
   const [transferNote, setTransferNote] = useState('');
   const [transferSaving, setTransferSaving] = useState(false);
   const [transferMsg, setTransferMsg] = useState<string | null>(null);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
 
   /** Keep date inputs aligned with URL when navigating (useState only uses initial value on mount). */
   useEffect(() => {
@@ -470,6 +471,7 @@ export function AccountingOverviewClient({
                 </p>
                 <div className="admin-accounting-location-grid">
                   {overview.incomeByLocation
+                    .filter((loc) => loc.location !== 'other')
                     .sort((a, b) => b.netAfterFeesAndExpenses - a.netAfterFeesAndExpenses)
                     .map((loc) => (
                       <div key={loc.location} className="admin-accounting-location-card">
@@ -479,6 +481,11 @@ export function AccountingOverviewClient({
                         <div>
                           <p className="admin-accounting-location-label">{LOCATION_LABELS[loc.location] ?? loc.location}</p>
                           <p className="admin-accounting-location-amount">{fmt(loc.netAfterFeesAndExpenses)}</p>
+                          {typeof loc.transfersNet === 'number' && loc.transfersNet !== 0 && (
+                            <p className="admin-hint" style={{ marginTop: 2 }}>
+                              Transfers: {loc.transfersNet > 0 ? '+' : ''}{fmt(loc.transfersNet)}
+                            </p>
+                          )}
                           {loc.location === 'stripe' && (
                             <p className="admin-hint admin-accounting-location-payout-hint">
                               In Stripe until bank payout · next: {formatStripeNextPayoutShort()}
@@ -565,6 +572,7 @@ export function AccountingOverviewClient({
                           <th>Payment</th>
                           <th>Receipt</th>
                           <th className="admin-expenses-col-amount">Amount</th>
+                          <th style={{ width: 1 }} aria-label="Actions" />
                         </tr>
                       </thead>
                       <tbody>
@@ -601,6 +609,37 @@ export function AccountingOverviewClient({
                             </td>
                             <td className="admin-expenses-amount">
                               {formatAmount(exp.amount, exp.currency)}
+                            </td>
+                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <button
+                                type="button"
+                                className="admin-btn admin-btn-outline admin-btn-danger admin-btn-sm"
+                                disabled={deletingExpenseId === exp.id}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (!confirm('Delete this expense? This cannot be undone.')) return;
+                                  setDeletingExpenseId(exp.id);
+                                  try {
+                                    const res = await fetch(`/api/admin/expenses/${encodeURIComponent(exp.id)}`, {
+                                      method: 'DELETE',
+                                    });
+                                    const data = await res.json().catch(() => ({}));
+                                    if (!res.ok) {
+                                      alert(data.error ?? 'Failed to delete expense');
+                                      return;
+                                    }
+                                    router.refresh();
+                                  } catch (err) {
+                                    alert(err instanceof Error ? err.message : 'Network error');
+                                  } finally {
+                                    setDeletingExpenseId(null);
+                                  }
+                                }}
+                                title="Delete expense"
+                              >
+                                {deletingExpenseId === exp.id ? 'Deleting…' : 'Delete'}
+                              </button>
                             </td>
                           </tr>
                         ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
@@ -42,14 +42,45 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const itemCostStateInit = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const it of items) {
+      const id = it.id;
+      if (id == null) continue;
+      map[String(id)] = toInputValue(it.cost ?? null);
+    }
+    return map;
+  }, [items]);
+  const [itemCosts, setItemCosts] = useState<Record<string, string>>(itemCostStateInit);
+
+  const computedCogsFromItems = useMemo(() => {
+    const withIds = items.filter((it) => it.id != null);
+    if (withIds.length === 0) return null;
+    let sum = 0;
+    for (const it of withIds) {
+      const v = itemCosts[String(it.id)];
+      const n = v == null ? null : parseInput(String(v));
+      sum += n ?? 0;
+    }
+    return Math.round(sum * 100) / 100;
+  }, [items, itemCosts]);
+
+  const usingPerItem = items.some((it) => it.id != null);
+  const effectiveCogsNum = usingPerItem ? computedCogsFromItems : parseInput(cogs);
+
+  const displayCogs = effectiveCogsNum ?? 0;
+
   const initialCogs = toInputValue(effectiveInitialCogs);
   const initialDelivery = toInputValue(order.delivery_cost);
   const initialPayment = toInputValue(order.payment_fee);
 
   const hasChanges =
-    cogs !== initialCogs || deliveryCost !== initialDelivery || paymentFee !== initialPayment;
+    cogs !== initialCogs ||
+    deliveryCost !== initialDelivery ||
+    paymentFee !== initialPayment ||
+    (usingPerItem && JSON.stringify(itemCosts) !== JSON.stringify(itemCostStateInit));
 
-  const cogsNum = parseInput(cogs);
+  const cogsNum = effectiveCogsNum;
   const deliveryNum = parseInput(deliveryCost);
   const paymentNum = parseInput(paymentFee);
 
@@ -61,10 +92,24 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
     setSaving(true);
     setMessage(null);
     try {
-      const body: Record<string, number | null> = {};
+      // COGS is required (must be > 0) for proper accounting.
+      if (cogsNum == null || cogsNum <= 0) {
+        setMessage({ type: 'error', text: 'COGS is required and must be greater than 0' });
+        return;
+      }
+      const body: Record<string, unknown> = {};
       body.cogs_amount = cogsNum;
       body.delivery_cost = deliveryNum;
       body.payment_fee = paymentNum;
+      if (usingPerItem) {
+        const payload = items
+          .filter((it) => it.id != null)
+          .map((it) => ({
+            id: it.id,
+            cost: parseInput(itemCosts[String(it.id)] ?? ''),
+          }));
+        body.item_costs = payload;
+      }
 
       const res = await fetch(`/api/admin/orders/${encodeURIComponent(order.order_id)}/costs`, {
         method: 'PATCH',
@@ -112,25 +157,87 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
         <p className="admin-costs-warning">Costs not set (profit is estimated)</p>
       )}
 
-      <div className="admin-costs-grid">
-        {canEdit ? (
-          <>
-            <div className="admin-costs-input-group">
-              <label htmlFor="cogs">COGS (฿)</label>
-              <input
-                id="cogs"
-                type="number"
-                min={0}
-                step={0.01}
-                value={cogs}
-                onChange={(e) => setCogs(e.target.value)}
-                onBlur={(e) => handleBlur(e, setCogs)}
-                placeholder="0"
-                className="admin-input"
-              />
-            </div>
-            <div className="admin-costs-input-group">
-              <label htmlFor="delivery-cost">Delivery cost (฿)</label>
+      {/* Items: one cost field per item */}
+      {items.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <h3 className="admin-section-title" style={{ fontSize: 16, marginBottom: 8 }}>
+            Items
+          </h3>
+          <div
+            className="admin-expenses-table-wrap"
+            style={{ display: 'inline-block', maxWidth: '100%', overflowX: 'auto' }}
+          >
+            <table
+              className="admin-expenses-table"
+              style={{ width: 'fit-content', display: 'inline-table' }}
+            >
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th className="admin-expenses-col-amount">Sell price</th>
+                  <th className="admin-expenses-col-amount">Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, idx) => {
+                  const title = it.bouquet_title ?? it.bouquet_id ?? `Item ${idx + 1}`;
+                  const size = it.size ? ` · ${it.size}` : '';
+                  const sell = it.price ?? null;
+                  const rowKey = it.id != null ? String(it.id) : `${it.bouquet_id ?? 'x'}-${idx}`;
+                  const canEditItem = canEdit && it.id != null;
+                  const value = it.id != null ? (itemCosts[String(it.id)] ?? '') : '';
+                  return (
+                    <tr key={rowKey}>
+                      <td>{title}{size}</td>
+                      <td className="admin-expenses-amount">{sell != null ? formatThb(sell) : '—'}</td>
+                      <td className="admin-expenses-amount">
+                        {canEditItem ? (
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            className="admin-input"
+                            style={{ maxWidth: 140 }}
+                            value={value}
+                            onChange={(e) => setItemCosts((prev) => ({ ...prev, [String(it.id)]: e.target.value }))}
+                            onBlur={(e) => {
+                              const v = e.target.value.trim();
+                              if (v === '') return;
+                              const n = parseFloat(v);
+                              if (!Number.isNaN(n) && n >= 0) {
+                                setItemCosts((prev) => ({ ...prev, [String(it.id)]: String(Math.round(n * 100) / 100) }));
+                              }
+                            }}
+                            placeholder="0"
+                            aria-label={`Cost for ${title}${size}`}
+                          />
+                        ) : (
+                          formatThb(it.cost ?? null)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {usingPerItem && (
+            <p className="admin-hint" style={{ marginTop: 8 }}>
+              Total COGS is calculated automatically from item costs.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Extra costs */}
+      <div style={{ marginTop: 14 }}>
+        <h3 className="admin-section-title" style={{ fontSize: 16, marginBottom: 8 }}>
+          Extra costs
+        </h3>
+        <div className="admin-costs-grid">
+          <div className="admin-costs-input-group">
+            <label htmlFor="delivery-cost">Delivery (฿)</label>
+            {canEdit ? (
               <input
                 id="delivery-cost"
                 type="number"
@@ -142,9 +249,13 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
                 placeholder="0"
                 className="admin-input"
               />
-            </div>
-            <div className="admin-costs-input-group">
-              <label htmlFor="payment-fee">Payment fee (฿)</label>
+            ) : (
+              <p>{deliveryCost || '—'}</p>
+            )}
+          </div>
+          <div className="admin-costs-input-group">
+            <label htmlFor="payment-fee">Other fee (฿)</label>
+            {canEdit ? (
               <input
                 id="payment-fee"
                 type="number"
@@ -156,30 +267,21 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
                 placeholder="0"
                 className="admin-input"
               />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="admin-costs-input-group">
-              <label>COGS (฿)</label>
-              <p>{cogs || '—'}</p>
-            </div>
-            <div className="admin-costs-input-group">
-              <label>Delivery cost (฿)</label>
-              <p>{deliveryCost || '—'}</p>
-            </div>
-            <div className="admin-costs-input-group">
-              <label>Payment fee (฿)</label>
+            ) : (
               <p>{paymentFee || '—'}</p>
-            </div>
-          </>
-        )}
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="admin-costs-display">
         <div>
           <strong>Total</strong>
           <p>{totalAmount != null ? formatThb(totalAmount) : 'Total unknown'}</p>
+        </div>
+        <div>
+          <strong>Total COGS</strong>
+          <p>{formatThb(displayCogs)}</p>
         </div>
         <div>
           <strong>Profit</strong>

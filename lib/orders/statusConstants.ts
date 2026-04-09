@@ -14,7 +14,13 @@ export const ORDER_STATUS = [
 
 export type OrderStatus = (typeof ORDER_STATUS)[number];
 
-export const PAYMENT_STATUS = ['NOT_PAID', 'READY_TO_PAY', 'PAID', 'CANCELLED', 'ERROR'] as const;
+/**
+ * Payment status values must match the DB constraint `orders_payment_status_check`.
+ *
+ * NOTE: The admin UI previously exposed READY_TO_PAY, but the database constraint does not
+ * allow it. Keeping the enum aligned prevents “it saves but DB rejects” behavior.
+ */
+export const PAYMENT_STATUS = ['NOT_PAID', 'PAID', 'CANCELLED', 'ERROR'] as const;
 
 export type PaymentStatus = (typeof PAYMENT_STATUS)[number];
 
@@ -29,8 +35,8 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
-  NOT_PAID: 'Not ready for payment',
-  READY_TO_PAY: 'Ready for payment',
+  // Semantics: order exists but no confirmed payment yet.
+  NOT_PAID: 'Pending payment',
   PAID: 'Paid',
   CANCELLED: 'Cancelled',
   ERROR: 'Error',
@@ -104,7 +110,7 @@ export const OLD_ORDER_STATUS_TO_NEW: Record<string, OrderStatus> = {
 export const OLD_PAYMENT_STATUS_TO_NEW: Record<string, PaymentStatus> = {
   PENDING: 'NOT_PAID',
   NOT_PAID: 'NOT_PAID',
-  READY_TO_PAY: 'READY_TO_PAY',
+  READY_TO_PAY: 'NOT_PAID',
   PAID: 'PAID',
   FAILED: 'ERROR',
   ERROR: 'ERROR',

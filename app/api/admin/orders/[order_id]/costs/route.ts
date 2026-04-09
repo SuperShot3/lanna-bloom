@@ -20,6 +20,26 @@ function parseCost(value: unknown): { value: number | null; invalid: boolean } {
   return { value: null, invalid: true };
 }
 
+function parseItemCosts(value: unknown): { items: Array<{ id: string; cost: number | null }> | null; invalid: boolean } {
+  if (value == null) return { items: null, invalid: false };
+  if (!Array.isArray(value)) return { items: null, invalid: true };
+  const items: Array<{ id: string; cost: number | null }> = [];
+  for (const it of value) {
+    if (!it || typeof it !== 'object') return { items: null, invalid: true };
+    const obj = it as Record<string, unknown>;
+    const idRaw = obj.id;
+    const id =
+      typeof idRaw === 'string' ? idRaw.trim() :
+      typeof idRaw === 'number' ? String(idRaw) :
+      '';
+    if (!id) return { items: null, invalid: true };
+    const c = parseCost(obj.cost);
+    if (c.invalid) return { items: null, invalid: true };
+    items.push({ id, cost: c.value });
+  }
+  return { items, invalid: false };
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ order_id: string }> }
@@ -48,10 +68,11 @@ export async function PATCH(
   const hasCogs = 'cogs_amount' in b;
   const hasDelivery = 'delivery_cost' in b;
   const hasPayment = 'payment_fee' in b;
+  const hasItemCosts = 'item_costs' in b;
 
-  if (!hasCogs && !hasDelivery && !hasPayment) {
+  if (!hasCogs && !hasDelivery && !hasPayment && !hasItemCosts) {
     return NextResponse.json(
-      { error: 'At least one of cogs_amount, delivery_cost, payment_fee must be provided' },
+      { error: 'At least one of cogs_amount, delivery_cost, payment_fee, item_costs must be provided' },
       { status: 400 }
     );
   }
@@ -59,8 +80,9 @@ export async function PATCH(
   const cogsResult = hasCogs ? parseCost(b.cogs_amount) : null;
   const deliveryResult = hasDelivery ? parseCost(b.delivery_cost) : null;
   const paymentResult = hasPayment ? parseCost(b.payment_fee) : null;
+  const itemCostsResult = hasItemCosts ? parseItemCosts(b.item_costs) : null;
 
-  if (cogsResult?.invalid || deliveryResult?.invalid || paymentResult?.invalid) {
+  if (cogsResult?.invalid || deliveryResult?.invalid || paymentResult?.invalid || itemCostsResult?.invalid) {
     return NextResponse.json(
       { error: 'Invalid value: only numeric values >= 0 allowed (max 2 decimal places)' },
       { status: 400 }
@@ -85,6 +107,61 @@ export async function PATCH(
   if (hasPayment) updatePayload.payment_fee = payment_fee ?? null;
 
   try {
+    // Enforce required COGS (> 0). Allow omitting cogs_amount only if the order already has COGS set.
+    const { data: existingOrder, error: existingErr } = await supabase
+      .from('orders')
+      .select('order_id, cogs_amount, paid_at, created_at')
+      .eq('order_id', order_id.trim())
+      .single();
+    if (existingErr || !existingOrder) {
+      return NextResponse.json({ error: existingErr?.message ?? 'Order not found' }, { status: 404 });
+    }
+
+    // If item_costs provided, update those rows and recompute total COGS from items.
+    let nextCogs = hasCogs ? (cogs_amount ?? null) : (existingOrder.cogs_amount ?? null);
+    if (hasItemCosts && itemCostsResult?.items && itemCostsResult.items.length > 0) {
+      // Ensure item ids belong to this order, then update costs.
+      const ids = itemCostsResult.items.map((x) => x.id);
+      const { data: orderItems, error: itemsErr } = await supabase
+        .from('order_items')
+        .select('id')
+        .eq('order_id', order_id.trim())
+        .in('id', ids);
+      if (itemsErr) {
+        return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+      }
+      const allowed = new Set((orderItems ?? []).map((x) => String((x as { id?: unknown }).id ?? '')));
+      for (const it of itemCostsResult.items) {
+        if (!allowed.has(it.id)) {
+          return NextResponse.json({ error: 'Invalid item id for this order' }, { status: 400 });
+        }
+      }
+      for (const it of itemCostsResult.items) {
+        await supabase
+          .from('order_items')
+          .update({ cost: it.cost, })
+          .eq('order_id', order_id.trim())
+          .eq('id', it.id);
+      }
+      const { data: allItems, error: allItemsErr } = await supabase
+        .from('order_items')
+        .select('cost')
+        .eq('order_id', order_id.trim());
+      if (allItemsErr) {
+        return NextResponse.json({ error: allItemsErr.message }, { status: 500 });
+      }
+      const sum = (allItems ?? []).reduce((s, r) => s + (parseFloat(String(r.cost)) || 0), 0);
+      nextCogs = Math.round(sum * 100) / 100;
+      updatePayload.cogs_amount = nextCogs;
+    }
+
+    if (nextCogs == null || Number(nextCogs) <= 0) {
+      return NextResponse.json(
+        { error: 'COGS is required and must be greater than 0' },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .update({
@@ -103,7 +180,52 @@ export async function PATCH(
       );
     }
 
+    // Upsert COGS as an expense so it flows into Accounting automatically.
+    // We link by linked_order_id so we can update the same row when COGS changes.
+    const expenseDateIso =
+      (existingOrder.paid_at ? String(existingOrder.paid_at).slice(0, 10) : '') ||
+      (existingOrder.created_at ? String(existingOrder.created_at).slice(0, 10) : '') ||
+      new Date().toISOString().slice(0, 10);
+    const cogsExpenseDesc = `COGS (flowers) — order ${order_id.trim()}`;
     const adminEmail = session.user.email ?? 'unknown';
+
+    const { data: existingExpense } = await supabase
+      .from('expenses')
+      .select('id')
+      .eq('linked_order_id', order_id.trim())
+      .eq('category', 'flowers')
+      .limit(1)
+      .maybeSingle();
+
+    if (existingExpense?.id) {
+      await supabase
+        .from('expenses')
+        .update({
+          amount: Number(nextCogs),
+          currency: 'THB',
+          date: expenseDateIso,
+          description: cogsExpenseDesc,
+          payment_method: 'bank_transfer',
+          notes: 'Auto from order COGS',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingExpense.id);
+    } else {
+      await supabase.from('expenses').insert({
+        amount: Number(nextCogs),
+        currency: 'THB',
+        date: expenseDateIso,
+        category: 'flowers',
+        description: cogsExpenseDesc,
+        payment_method: 'bank_transfer',
+        receipt_file_path: null,
+        receipt_attached: false,
+        created_by: adminEmail,
+        notes: 'Auto from order COGS',
+        linked_order_id: order_id.trim(),
+      });
+    }
+
     await logAudit(adminEmail, 'COSTS_UPDATE', order_id.trim(), {
       before: {},
       after: updatePayload,
