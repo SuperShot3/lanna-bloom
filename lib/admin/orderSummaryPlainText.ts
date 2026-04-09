@@ -5,6 +5,7 @@ import type {
   SupabaseOrderItemRow,
   SupabaseOrderRow,
 } from '@/lib/supabase/adminQueries';
+import { formatShopDateTime } from '@/lib/shopTime';
 
 export type OrderSummaryItemRow = SupabaseOrderItemRow & {
   catalogHref?: string;
@@ -78,15 +79,6 @@ export function formatAmountNa(n: number | null | undefined): string {
   return `฿${Number(n).toLocaleString()}`;
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return 'N/A';
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
-
 function getWrappingLabel(opt: string | null | undefined): string {
   if (!opt) return 'N/A';
   const lower = String(opt).toLowerCase();
@@ -108,7 +100,7 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push('ORDER SUMMARY');
   lines.push('');
   lines.push(`Order ID: ${naText(order.order_id)}`);
-  lines.push(`Created: ${formatDate(order.created_at)}`);
+  lines.push(`Created: ${formatShopDateTime(order.created_at, 'N/A')}`);
   lines.push('');
   lines.push('Customer');
   lines.push(`  Name: ${naText(order.customer_name)}`);

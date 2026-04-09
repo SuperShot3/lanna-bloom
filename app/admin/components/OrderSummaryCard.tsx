@@ -10,19 +10,11 @@ import {
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
 import { OrderSummaryCopyAllButton } from '@/app/admin/components/OrderSummaryCopyAllButton';
+import { formatShopDateTime } from '@/lib/shopTime';
 
 interface OrderSummaryCardProps {
   order: SupabaseOrderRow;
   items: ItemWithCatalog[];
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return 'N/A';
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
 }
 
 export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
@@ -44,7 +36,7 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
         </div>
         <div>
           <strong>Created</strong>
-          <p>{formatDate(order.created_at)}</p>
+          <p>{formatShopDateTime(order.created_at, 'N/A')}</p>
         </div>
         <div>
           <strong>Customer</strong>

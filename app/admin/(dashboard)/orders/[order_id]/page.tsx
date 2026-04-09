@@ -12,6 +12,7 @@ import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDet
 import type { CustomOrderDetails } from '@/lib/orders';
 import { canChangeStatus, canRefund } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
+import { formatShopDateTime } from '@/lib/shopTime';
 
 interface PageProps {
   params: Promise<{ order_id: string }>;
@@ -184,7 +185,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
                   {h.from_status ?? '—'} → {h.to_status ?? '—'}
                 </span>
                 <span className="admin-timeline-date">
-                  {h.created_at ? new Date(h.created_at).toLocaleString() : '—'}
+                  {h.created_at ? formatShopDateTime(h.created_at) : '—'}
                 </span>
               </li>
             ))}

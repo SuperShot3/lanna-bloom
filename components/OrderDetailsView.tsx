@@ -13,6 +13,7 @@ import type { Order, FulfillmentStatus } from '@/lib/orders';
 import type { ContactPreferenceStored } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { formatShopDateTime } from '@/lib/shopTime';
 
 /** Parse preferredTimeSlot: "2025-02-15 09:00-10:00" -> { date, time } or legacy format. */
 function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
@@ -264,7 +265,7 @@ export function OrderDetailsView({
       if (order.phone) lines.push(order.phone);
     }
     lines.push('');
-    lines.push(`Created: ${new Date(order.createdAt).toLocaleString()}`);
+    lines.push(`Created: ${formatShopDateTime(order.createdAt)}`);
     return lines.join('\n');
   }, [order, detailsUrl, deliveryDate, preferredTime, t]);
 
@@ -301,7 +302,7 @@ export function OrderDetailsView({
         </span>
         {paymentDisplay === 'confirmed' && effectivePaidAt && (
           <span className="order-details-paid-at">
-            {new Date(effectivePaidAt).toLocaleString()}
+            {formatShopDateTime(effectivePaidAt)}
           </span>
         )}
       </div>
@@ -315,7 +316,7 @@ export function OrderDetailsView({
           </span>
           {finalUpdatedAt && (
             <span className="order-details-fulfillment-updated">
-              {t.orderStatusUpdatedAt ?? 'Updated'}: {new Date(finalUpdatedAt).toLocaleString()}
+              {t.orderStatusUpdatedAt ?? 'Updated'}: {formatShopDateTime(finalUpdatedAt)}
             </span>
           )}
           <button
@@ -566,7 +567,7 @@ export function OrderDetailsView({
         </div>
       )}
 
-      <p className="order-details-created">Created: {new Date(order.createdAt).toLocaleString()}</p>
+      <p className="order-details-created">Created: {formatShopDateTime(order.createdAt)}</p>
       <button
         type="button"
         className="order-details-copy-all-btn"

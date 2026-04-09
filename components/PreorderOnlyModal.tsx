@@ -4,26 +4,25 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { SHOP_TIMEZONE } from '@/lib/shopTime';
 
 const STORAGE_KEY = 'lannabloom_preorder_only_dismissed_date';
 
-const BANGKOK_TZ = 'Asia/Bangkok';
-
 function getTodayBangkok(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: BANGKOK_TZ });
+  return new Date().toLocaleDateString('en-CA', { timeZone: SHOP_TIMEZONE });
 }
 
 function getFormattedDateBangkok(lang: 'en' | 'th'): string {
   const d = new Date();
   if (lang === 'th') {
     return d.toLocaleDateString('th-TH', {
-      timeZone: BANGKOK_TZ,
+      timeZone: SHOP_TIMEZONE,
       day: 'numeric',
       month: 'long',
     });
   }
   return d.toLocaleDateString('en-GB', {
-    timeZone: BANGKOK_TZ,
+    timeZone: SHOP_TIMEZONE,
     day: 'numeric',
     month: 'long',
   });

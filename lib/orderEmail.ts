@@ -6,6 +6,7 @@
 
 import { Resend } from 'resend';
 import type { Order } from '@/lib/orders';
+import { formatShopDateTime } from '@/lib/shopTime';
 
 function getEnv(): {
   apiKey: string;
@@ -109,7 +110,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   Phone: ${order.phone ? escapeHtml(order.phone) : '—'}<br/>
   Preferred contact: ${escapeHtml(contactPref)}</p>
 
-  <p style="font-size: 0.9rem; color: #666;">Created: ${new Date(order.createdAt).toISOString()}</p>
+  <p style="font-size: 0.9rem; color: #666;">Created: ${escapeHtml(formatShopDateTime(order.createdAt))}</p>
 </body>
 </html>
 `.trim();

@@ -3,23 +3,11 @@
 import Link from 'next/link';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { formatOrderStatus, formatPaymentStatus } from '@/lib/orders/statusConstants';
+import { formatShopDateTime } from '@/lib/shopTime';
 
 interface OrderTableProps {
   orders: SupabaseOrderRow[];
   returnTo?: string;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function formatAmount(n: number | null | undefined): string {
@@ -55,7 +43,7 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
           <tbody>
             {orders.map((o) => (
               <tr key={o.order_id}>
-                <td>{formatDate(o.created_at)}</td>
+                <td>{formatShopDateTime(o.created_at)}</td>
                 <td>
                   <Link href={detailHref(o.order_id)} className="admin-link">
                     {o.order_id}

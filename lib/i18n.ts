@@ -234,6 +234,12 @@ export const translations = {
       deliveryBarTitle: 'Delivering to Chiang Mai, Thailand',
       deliveryDate: 'Delivery date',
       availableToday: 'Available Today',
+      /** Shown next to the live clock (Bangkok / shop time). */
+      localTimeBangkok: 'Chiang Mai',
+      /** When selected date is today but before 08:00 local — same-day delivery not started yet. */
+      deliverySameDayOpens: 'Same-day from 08:00 today',
+      /** When selected date is today but after 20:00 — next window; {date} is a short date. */
+      deliverySameDayNext: 'Next same-day from 08:00 ({date})',
       chatWithUs: 'Chat with us',
       catalogReviewsCta: 'Love our bouquets?',
       productCardOptions: 'Options:',
@@ -1209,6 +1215,9 @@ export const translations = {
       deliveryBarTitle: 'จัดส่งถึงเชียงใหม่ ประเทศไทย',
       deliveryDate: 'วันจัดส่ง',
       availableToday: 'พร้อมบริการวันนี้',
+      localTimeBangkok: 'เชียงใหม่',
+      deliverySameDayOpens: 'เริ่มรับจัดส่งวันนี้ 08:00 น.',
+      deliverySameDayNext: 'เริ่มรับวันถัดไป 08:00 น. ({date})',
       chatWithUs: 'แชทกับเรา',
       catalogReviewsCta: 'ชอบช่อดอกไม้ของเราไหม?',
       productCardOptions: 'ตัวเลือก:',

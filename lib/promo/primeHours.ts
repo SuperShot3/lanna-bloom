@@ -1,4 +1,4 @@
-const SHOP_TIMEZONE = 'Asia/Bangkok';
+import { SHOP_TIMEZONE } from '@/lib/shopTime';
 
 /** Minutes since midnight in `SHOP_TIMEZONE` for the given instant. */
 function minutesSinceMidnightInZone(date: Date, timeZone: string): number {
