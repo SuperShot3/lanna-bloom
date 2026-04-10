@@ -18,56 +18,6 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { SUPPORT_EMAIL } from '@/lib/siteContact';
-import { trackPurchase } from '@/lib/analytics';
-import type { AnalyticsItem } from '@/lib/analytics';
-
-function EmailIconSmall({ size = 18 }: { size?: number }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="M22 7l-10 6L2 7" />
-    </svg>
-  );
-}
-
-/** Mini QR motif for payment method tab — matches emoji icon size (~20px). */
-function QrTabIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-hidden
-      className="order-redesign-qr-tab-svg"
-    >
-      {/* Corner finders (stroke frame + inner square) */}
-      <rect x="2" y="2" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.35" />
-      <rect x="4.25" y="4.25" width="2.5" height="2.5" fill="currentColor" />
-      <rect x="15" y="2" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.35" />
-      <rect x="17.25" y="4.25" width="2.5" height="2.5" fill="currentColor" />
-      <rect x="2" y="15" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1.35" />
-      <rect x="4.25" y="17.25" width="2.5" height="2.5" fill="currentColor" />
-      {/* Data modules */}
-      <rect x="11" y="3" width="2" height="2" fill="currentColor" />
-      <rect x="11" y="7" width="2" height="2" fill="currentColor" />
-      <rect x="13" y="11" width="2" height="2" fill="currentColor" />
-      <rect x="17" y="11" width="2" height="2" fill="currentColor" />
-      <rect x="11" y="13" width="2" height="2" fill="currentColor" />
-      <rect x="15" y="13" width="2" height="2" fill="currentColor" />
-      <rect x="19" y="13" width="2" height="2" fill="currentColor" />
-      <rect x="13" y="15" width="2" height="2" fill="currentColor" />
-      <rect x="17" y="15" width="2" height="2" fill="currentColor" />
-      <rect x="11" y="17" width="2" height="2" fill="currentColor" />
-      <rect x="15" y="17" width="2" height="2" fill="currentColor" />
-      <rect x="19" y="17" width="2" height="2" fill="currentColor" />
-      <rect x="13" y="19" width="2" height="2" fill="currentColor" />
-      <rect x="17" y="19" width="2" height="2" fill="currentColor" />
-    </svg>
-  );
-}
-
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -134,7 +84,6 @@ export function OrderPageClient({
   const t = translations[locale].orderPage;
   const tCustom = translations[locale].customOrder;
   const tr = t as Record<string, string>;
-  const qrOrderIdLine = tr.qrOrderIdReminder?.replace('{orderId}', orderId) ?? `Order ID: ${orderId}`;
 
   useEffect(() => {
     const token = readCheckoutTokenFromUrl();
@@ -202,33 +151,6 @@ export function OrderPageClient({
             // ignore
           }
 
-          // Fire purchase immediately — do NOT wait for server re-render + tracker mount.
-          // The tracker (OrderPaidConversionTracker) acts as a secondary path; the
-          // localStorage dedupe in trackPurchase prevents any double push.
-          const purchaseValue = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-          const purchaseCurrency = order.currency ?? 'THB';
-          const purchaseItems: AnalyticsItem[] = (order.items ?? []).map((it, idx) => ({
-            item_id: it.bouquetId,
-            item_name: it.bouquetTitle,
-            price: it.price,
-            quantity: 1,
-            index: idx,
-            ...(it.size ? { item_variant: it.size } : {}),
-          }));
-          console.log('[stripe/purchase] firing purchase from sync path', {
-            orderId,
-            value: purchaseValue,
-            currency: purchaseCurrency,
-            itemCount: purchaseItems.length,
-          });
-          trackPurchase({
-            orderId,
-            value: purchaseValue,
-            currency: purchaseCurrency,
-            items: purchaseItems,
-            transactionId: orderId,
-          });
-
           router.refresh();
           const url = new URL(window.location.href);
           url.searchParams.delete('session_id');
@@ -236,8 +158,7 @@ export function OrderPageClient({
           const qs = url.searchParams.toString();
           window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
         } else {
-          // Webhook may have already updated the order. Refresh so the server can
-          // re-check Supabase; OrderPaidConversionTracker handles purchase if paid.
+          // Webhook may have already updated the order. Refresh for catch-up.
           console.log('[stripe/purchase] sync returned not-paid, refreshing for webhook catch-up', { orderId });
           router.refresh();
         }
@@ -249,7 +170,6 @@ export function OrderPageClient({
       cancelled = true;
     };
   }, [paid, orderId, router, order]);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'qr' | 'bank'>('qr');
   const [copied, setCopied] = useState(false);
   const [payLoading, setPayLoading] = useState(false);
 
@@ -302,20 +222,6 @@ export function OrderPageClient({
   };
 
   const emphasizePayTab = !paid && canPay && activeTab === 'details';
-  const slipWhatsAppMessage =
-    locale === 'th'
-      ? `สวัสดีค่ะ ส่งสลิปชำระเงินสำหรับออเดอร์ ${orderId} ค่ะ`
-      : `Hi — here is my payment slip for order ${orderId}. Thank you!`;
-  const slipWhatsAppUrl = getWhatsAppOrderUrl(slipWhatsAppMessage);
-  const paymentSlipMailto = (() => {
-    const subject =
-      locale === 'th' ? `สลิปชำระเงิน — ${orderId}` : `Payment slip — Order ${orderId}`;
-    const body =
-      locale === 'th'
-        ? `รหัสออเดอร์: ${orderId}\n\nแนบหรือส่งสลิปชำระเงินด้านล่างค่ะ\n`
-        : `Order ID: ${orderId}\n\nI am sending my payment slip below.\n`;
-    return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  })();
 
   // Tooltip for disabled \"Make payment\" tab (order under review).
   const [showPayTooltip, setShowPayTooltip] = useState(false);
@@ -630,169 +536,20 @@ export function OrderPageClient({
                 🌸 {t.orderConfirmedReady}
               </div>
 
-              <div className="order-redesign-method-tabs">
+              <div className="order-redesign-method-content">
+                <p className="order-redesign-card-intro">{tr.cardPaymentIntro}</p>
                 <button
                   type="button"
-                  className={`order-redesign-method-tab ${paymentMethod === 'qr' ? 'active' : ''}`}
-                  onClick={() => setPaymentMethod('qr')}
+                  className="order-redesign-pay-btn"
+                  onClick={payWithCard}
+                  disabled={payLoading}
                 >
-                  <span className="order-redesign-method-icon order-redesign-method-icon-qr" aria-hidden>
-                    <QrTabIcon size={20} />
-                  </span>
-                  <div className="order-redesign-method-name">{t.paymentMethodQr}</div>
-                  <div className="order-redesign-method-sub">{t.promptPay}</div>
+                  {payLoading
+                    ? (locale === 'th' ? 'กำลังเปิด…' : 'Opening…')
+                    : t.payAmount.replace('{amount}', grandTotal.toLocaleString())}
                 </button>
-                <button
-                  type="button"
-                  className={`order-redesign-method-tab ${paymentMethod === 'card' ? 'active' : ''}`}
-                  onClick={() => setPaymentMethod('card')}
-                >
-                  <span className="order-redesign-method-icon">💳</span>
-                  <div className="order-redesign-method-name">{t.paymentMethodCard}</div>
-                  <div className="order-redesign-method-sub">{t.visaMastercard}</div>
-                </button>
-                <button
-                  type="button"
-                  className={`order-redesign-method-tab ${paymentMethod === 'bank' ? 'active' : ''}`}
-                  onClick={() => setPaymentMethod('bank')}
-                >
-                  <span className="order-redesign-method-icon">🏦</span>
-                  <div className="order-redesign-method-name">{t.paymentMethodBank}</div>
-                  <div className="order-redesign-method-sub">{t.directDeposit}</div>
-                </button>
+                <div className="order-redesign-secured-note">{t.securedNote}</div>
               </div>
-
-              {paymentMethod === 'card' && (
-                <div className="order-redesign-method-content">
-                  <p className="order-redesign-card-intro">{tr.cardPaymentIntro}</p>
-                  <button
-                    type="button"
-                    className="order-redesign-pay-btn"
-                    onClick={payWithCard}
-                    disabled={payLoading}
-                  >
-                    {payLoading
-                      ? (locale === 'th' ? 'กำลังเปิด…' : 'Opening…')
-                      : t.payAmount.replace('{amount}', grandTotal.toLocaleString())}
-                  </button>
-                  <div className="order-redesign-secured-note">{t.securedNote}</div>
-                </div>
-              )}
-
-              {paymentMethod === 'qr' && (
-                <div className="order-redesign-method-content">
-                  <div className="order-redesign-qr-above-image">
-                    <p className="order-redesign-qr-step">{tr.qrPaymentIntro}</p>
-                    <p className="order-redesign-qr-step order-redesign-qr-step-slip">{tr.qrAfterPaySlip}</p>
-                    <div
-                      className="order-redesign-qr-amount-block"
-                      role="group"
-                      aria-label={`${tr.qrAmountToPayLabel}. ${tr.sendSlipContactHeading}`}
-                    >
-                      <div className="order-redesign-qr-amount-label">{tr.qrAmountToPayLabel}</div>
-                      <div className="order-redesign-qr-amount-value">฿{grandTotal.toLocaleString()}</div>
-                      <div className="order-redesign-slip-heading order-redesign-slip-heading--inAmount">
-                        {tr.sendSlipContactHeading}
-                      </div>
-                      <div className="order-redesign-slip-row order-redesign-slip-row--inAmount">
-                        <a
-                          href={contactQuickLinks.line}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="order-redesign-slip-btn"
-                        >
-                          <LineIcon size={18} /> {tr.slipContactLine}
-                        </a>
-                        <a
-                          href={slipWhatsAppUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="order-redesign-slip-btn"
-                        >
-                          <WhatsAppIcon size={18} /> {tr.slipContactWhatsApp}
-                        </a>
-                        <a href={paymentSlipMailto} className="order-redesign-slip-btn">
-                          <EmailIconSmall size={18} /> {tr.slipContactEmail}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="order-redesign-qr-wrap">
-                    <Image
-                      src="/payments/promptpay-static-ttb.png"
-                      alt="PromptPay QR code"
-                      width={260}
-                      height={460}
-                      className="order-redesign-qr-img"
-                    />
-                  </div>
-                  <p className="order-redesign-qr-actions">
-                    <a
-                      href="/payments/promptpay-static-ttb.png"
-                      download="promptpay-qr.png"
-                      className="order-redesign-qr-download-btn"
-                    >
-                      {locale === 'th' ? 'ดาวน์โหลด QR' : 'Download QR'}
-                    </a>
-                  </p>
-                  <div className="order-redesign-qr-below-image">
-                    <p className="order-redesign-qr-order-id mono">{qrOrderIdLine}</p>
-                    <div className="order-redesign-line-id-row">
-                      <div className="order-redesign-line-id-pair">
-                        <span className="order-redesign-line-id-label">{tr.qrLineIdLabel}</span>
-                        <span className="order-redesign-line-id-value">{tr.lineIdDisplay}</span>
-                      </div>
-                      <div className="order-redesign-line-id-pair">
-                        <span className="order-redesign-line-id-label">{tr.qrEmailLabel}</span>
-                        <span className="order-redesign-line-id-value order-redesign-line-id-email">
-                          {SUPPORT_EMAIL}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === 'bank' && (
-                <div className="order-redesign-method-content">
-                  <p className="order-redesign-card-intro">
-                    {locale === 'th'
-                      ? 'โอนเข้าบัญชีด้านล่าง แล้วส่งสลิปให้เราทาง LINE หรือแชท'
-                      : 'Make a bank transfer using the details below, then send your slip to us via LINE or chat.'}
-                  </p>
-                  <div className="order-redesign-bank-card">
-                    <div className="order-redesign-bank-row">
-                      <span className="order-redesign-bank-label">Bank</span>
-                      <span className="order-redesign-bank-value">ttb</span>
-                    </div>
-                    <div className="order-redesign-bank-row">
-                      <span className="order-redesign-bank-label">Account number</span>
-                      <span className="order-redesign-bank-value">592-2-11790-7</span>
-                    </div>
-                    <div className="order-redesign-bank-row">
-                      <span className="order-redesign-bank-label">Account name (TH)</span>
-                      <span className="order-redesign-bank-value">นส.วรพรรณ นันทเศรษฐา</span>
-                    </div>
-                    <div className="order-redesign-bank-row">
-                      <span className="order-redesign-bank-label">Account name (EN)</span>
-                      <span className="order-redesign-bank-value">Ms. Woraphan Nantaseththa</span>
-                    </div>
-                    <div className="order-redesign-bank-row">
-                      <span className="order-redesign-bank-label">Amount</span>
-                      <span className="order-redesign-bank-value">฿{grandTotal.toLocaleString()}</span>
-                    </div>
-                    <div className="order-redesign-bank-row">
-                      <span className="order-redesign-bank-label">Reference</span>
-                      <span className="order-redesign-bank-value">{orderId}</span>
-                    </div>
-                  </div>
-                  <p className="order-redesign-coming-text">
-                    {locale === 'th'
-                      ? 'หลังจากโอนแล้ว กรุณาส่งสลิปและหมายเลขออเดอร์ให้เราทาง LINE หรือช่องทางแชทที่คุณใช้'
-                      : 'After transfer, please send your slip and order ID to us via LINE or your preferred chat channel.'}
-                  </p>
-                </div>
-              )}
             </>
           )}
         </section>

@@ -7,17 +7,14 @@ import { useCart } from '@/contexts/CartContext';
 import { DeliveryForm, DELIVERY_TIME_SLOTS, type DeliveryFormValues } from '@/components/DeliveryForm';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-import type {
-  OrderPayload,
-  ContactPreferenceOption,
-} from '@/lib/orders';
+import type { ContactPreferenceOption } from '@/lib/orders';
 import type { CartItem } from '@/contexts/CartContext';
 import {
   trackBeginCheckout,
   trackViewCart,
   trackRemoveFromCart,
   trackAddShippingInfo,
-  trackGenerateLeadOrderCreated,
+  trackAddPaymentInfo,
 } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
@@ -30,6 +27,7 @@ import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
 import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
+import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
 import { lineDraftItemToCartItem } from '@/lib/cart/lineHandoffNormalize';
@@ -184,100 +182,6 @@ const COUNTRY_CODES: { code: string; label: string }[] = [
   { code: '44', label: '🇬🇧 (+44)' },
   { code: '81', label: '🇯🇵 (+81)' },
 ];
-
-function buildOrderPayload(
-  cartItems: CartItem[],
-  delivery: DeliveryFormValues,
-  lang: Locale,
-  contact: {
-    customerName: string;
-    phone: string;
-    customerEmail?: string;
-    contactPreference: ContactPreferenceOption[];
-    recipientName?: string;
-    recipientPhone?: string;
-    lineUserId?: string;
-    orderSource?: 'line' | 'web';
-  }
-): OrderPayload {
-  const addressLineTrim = delivery.addressLine?.trim() ?? '';
-  const preferredTimeSlot = delivery.date && delivery.timeSlot
-    ? `${delivery.date} ${delivery.timeSlot}`
-    : delivery.date || delivery.timeSlot || '';
-
-  const orderItems: OrderPayload['items'] = [];
-  for (const item of cartItems) {
-    const qty = item.quantity ?? 1;
-    const bouquetTitle = lang === 'th' ? item.nameTh : item.nameEn;
-    const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-    const itemPrice = item.size.price + addOnsTotal;
-    for (let i = 0; i < qty; i++) {
-      orderItems.push({
-        bouquetId: item.bouquetId,
-        bouquetTitle,
-        size: item.size.label,
-        price: itemPrice,
-        addOns: {
-          cardType: null,
-          cardMessage: item.addOns.cardMessage?.trim() ?? '',
-          wrappingOption: null,
-        },
-        imageUrl: item.imageUrl ?? undefined,
-        bouquetSlug: item.slug ?? undefined,
-        ...(item.itemType === 'plushyToy'
-          ? { itemType: 'plushyToy' as const }
-          : item.itemType === 'product'
-            ? { itemType: 'product' as const }
-            : {}),
-      });
-    }
-  }
-
-  const itemsTotal = cartItems.reduce(
-    (sum, item) =>
-      sum +
-      (item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})) *
-        (item.quantity ?? 1),
-    0
-  );
-  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
-  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
-  const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
-  const subtotal = itemsTotal + deliveryFee;
-  const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, referral);
-  const grandTotal = subtotal - referralDiscount;
-
-  return {
-    customerName: contact.customerName.trim(),
-    phone: contact.phone.trim(),
-    customerEmail: contact.customerEmail?.trim() || undefined,
-    items: orderItems,
-    delivery: {
-      address: addressLineTrim,
-      preferredTimeSlot,
-      recipientName: contact.recipientName?.trim() || undefined,
-      recipientPhone: contact.recipientPhone?.trim() || undefined,
-      deliveryLat: delivery.deliveryLat ?? undefined,
-      deliveryLng: delivery.deliveryLng ?? undefined,
-      deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl ?? undefined,
-      deliveryDistrict: district,
-      isMueangCentral,
-    },
-    pricing: {
-      itemsTotal,
-      deliveryFee,
-      grandTotal,
-    },
-    contactPreference: contact.contactPreference.length > 0 ? contact.contactPreference : ['phone'],
-    ...(referral && referralDiscount > 0 && {
-      referralCode: referral.code,
-      referralDiscount,
-    }),
-    ...(contact.lineUserId && { lineUserId: contact.lineUserId }),
-    ...(contact.orderSource && { orderSource: contact.orderSource }),
-  };
-}
 
 function cartItemsToAnalytics(items: CartItem[], lang: Locale): AnalyticsItem[] {
   return items.flatMap((item, index) => {
@@ -662,14 +566,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       ? paymentAvailabilityDesktopBase
       : {
           stripe: { enabled: false, reason: preparingCheckoutMsg },
-          bankTransfer: { enabled: false, reason: preparingCheckoutMsg },
         };
 
   /** Same priority as StickyCheckoutBar (orderError ?? incompleteHint). */
   const desktopCheckoutHintMessage =
     orderError ??
-    (!paymentAvailabilityDesktop.bankTransfer.enabled
-      ? paymentAvailabilityDesktop.bankTransfer.reason
+    (!paymentAvailabilityDesktop.stripe.enabled
+      ? paymentAvailabilityDesktop.stripe.reason
       : null) ??
     null;
   const isDesktopCheckoutHintError = Boolean(orderError);
@@ -809,7 +712,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       ? 'กรุณาวางลิงก์ Google Maps ที่ถูกต้อง (แชร์ → คัดลอกลิงก์จากแอป)'
       : 'Please paste a valid Google Maps link (Share → Copy link from the Google Maps app).';
 
-  const runPlaceOrderSubmit = async () => {
+  const runStripeCheckoutSubmit = async () => {
     if (!checkoutSubmissionToken) {
       setOrderError(
         lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
@@ -823,66 +726,63 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const fullPhone = countryCode + phoneNational;
     const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
     try {
-      const payload = buildOrderPayload(items, delivery, lang, {
+      const analyticsItems = cartItemsToAnalytics(items, lang);
+      trackAddPaymentInfo({
+        paymentType: 'card',
+        currency: 'THB',
+        value: grandTotalVal,
+        items: analyticsItems,
+      });
+
+      const body = buildStripeCheckoutSessionRequestBody({
+        lang,
+        cartItems: items,
+        delivery,
         customerName: customerName.trim(),
         phone: fullPhone,
         customerEmail: customerEmail.trim() || undefined,
         contactPreference,
-        ...(isOrderingForSomeoneElse && {
-          recipientName: recipientName.trim(),
-          recipientPhone: recipientPhone!,
-        }),
+        submissionToken: checkoutSubmissionToken,
         ...(lineContext.lineUserId && {
           lineUserId: lineContext.lineUserId,
           orderSource: lineContext.orderSource ?? 'line',
         }),
-      });
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...payload,
-          submission_token: checkoutSubmissionToken,
+        ...(isOrderingForSomeoneElse && {
+          recipientName: recipientName.trim(),
+          recipientPhone: recipientPhone!,
         }),
       });
-      const data = await res.json().catch(() => ({}));
+
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json().catch(() => ({}))) as { url?: string; orderId?: string; error?: string };
       if (!res.ok) {
-        setOrderError(data.error ?? t.couldNotCreateOrder);
+        setOrderError(
+          typeof data.error === 'string' && data.error.trim()
+            ? data.error
+            : t.couldNotCreateOrder
+        );
         setPlacing(false);
         orderSubmitInFlightRef.current = false;
         return;
       }
-      const { orderId, publicOrderUrl, shareText } = data;
-      // Lead conversion tracking (GTM-only): fire exactly once after successful order creation.
-      // Dedupe guard uses sessionStorage keyed by order_id (inside trackGenerateLeadOrderCreated).
-      try {
-        const url =
-          typeof publicOrderUrl === 'string' && publicOrderUrl.trim()
-            ? publicOrderUrl.trim()
-            : `${window.location.origin}/order/${encodeURIComponent(orderId)}`;
-        trackGenerateLeadOrderCreated({
-          orderId,
-          value: grandTotalVal,
-          currency: 'THB',
-          publicOrderUrl: url,
-        });
-      } catch {
-        // ignore analytics errors
-      }
-      if (typeof window !== 'undefined') {
+      if (typeof data.orderId === 'string' && data.orderId.trim()) {
         try {
-          window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
+          window.localStorage.setItem('lanna-bloom-last-order-id', data.orderId.trim());
         } catch {
           // ignore
         }
       }
-      const params = new URLSearchParams({
-        orderId,
-        publicOrderUrl: publicOrderUrl ?? '',
-        shareText: shareText ?? `New order: ${orderId}. Details: ${publicOrderUrl}`,
-      });
-      params.set('checkout_token', checkoutSubmissionToken);
-      window.location.replace(`/${lang}/checkout/confirmation-pending?${params.toString()}`);
+      if (typeof data.url === 'string' && data.url.trim()) {
+        window.location.href = data.url.trim();
+        return;
+      }
+      setOrderError(t.couldNotCreateOrder);
+      setPlacing(false);
+      orderSubmitInFlightRef.current = false;
     } catch {
       setOrderError(t.couldNotCreateOrder);
       setPlacing(false);
@@ -917,7 +817,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       requestAnimationFrame(() => setMapsLinkPromptOpen(true));
       return;
     }
-    await runPlaceOrderSubmit();
+    await runStripeCheckoutSubmit();
   };
 
   const handleMapsPromptContinueWithoutLink = async () => {
@@ -938,7 +838,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(mapsUrlInvalidMsg);
       return;
     }
-    await runPlaceOrderSubmit();
+    await runStripeCheckoutSubmit();
   };
 
   const handleMapsPromptAddPin = () => {
@@ -1437,10 +1337,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 ? paymentAvailabilityBase
                 : {
                     stripe: { enabled: false, reason: preparingCheckout },
-                    bankTransfer: { enabled: false, reason: preparingCheckout },
                   };
-            const incompleteHint = !paymentAvailability.bankTransfer.enabled
-              ? paymentAvailability.bankTransfer.reason
+            const incompleteHint = !paymentAvailability.stripe.enabled
+              ? paymentAvailability.stripe.reason
               : undefined;
             const handleDeliveryDateTimeChange = (date: string, timeSlot: string) => {
               setDelivery((prev) => ({ ...prev, date, timeSlot }));
@@ -1465,10 +1364,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               dateLabel: t.dateLabel ?? 'Date',
               deliveryFeeLabel: t.deliveryFeeLabel,
               totalLabel: t.totalLabel,
-              placeOrder: t.placeOrder,
-              orderLabel: (t as { orderLabel?: string }).orderLabel ?? (lang === 'th' ? 'สั่งซื้อ' : 'Order'),
+              placeOrder: t.payWithStripe,
+              orderLabel: (t as { orderLabel?: string }).orderLabel ?? (lang === 'th' ? 'ชำระเงิน' : 'Pay'),
               redirecting: lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting...',
-              creating: lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating...',
+              creating: lang === 'th' ? 'กำลังเปิดหน้าชำระเงิน...' : 'Opening secure checkout...',
               unavailableRightNow: lang === 'th' ? 'ไม่พร้อมใช้งานในขณะนี้' : 'Unavailable right now',
               change: lang === 'th' ? 'เปลี่ยน' : 'Change',
               delivery: lang === 'th' ? 'จัดส่ง' : 'Delivery',
@@ -1492,7 +1391,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             lang={lang}
             value={delivery}
             onChange={setDelivery}
-            title={t.placeOrder}
+            title={t.payWithStripe}
             showLocationPicker
             step3Heading={t.contactInfoStepHeading}
             step3Content={
@@ -1525,7 +1424,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                         <line x1="3" y1="6" x2="21" y2="6" />
                         <path d="M16 10a4 4 0 01-8 0" />
                       </svg>
-                      {placing ? (lang === 'th' ? 'กำลังสร้างออเดอร์...' : 'Creating order...') : t.placeOrder}
+                      {placing ? (lang === 'th' ? 'กำลังเปิดหน้าชำระเงิน...' : 'Opening secure checkout...') : t.payWithStripe}
                     </button>
                   </span>
                 </div>

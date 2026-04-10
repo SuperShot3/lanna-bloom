@@ -3,7 +3,6 @@ import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 import { OrderPageClient } from '@/components/order/OrderPageClient';
-import { OrderPaidConversionTracker } from '@/components/OrderPaidConversionTracker';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 import { OrderDeliveredBlock } from './OrderDeliveredBlock';
@@ -105,47 +104,15 @@ export default async function OrderDetailsPage({
     ?? supabasePayment?.updated_at
     ?? order.fulfillmentStatusUpdatedAt;
 
-  // Payment tab: show as soon as the order is unpaid. Admin still confirms manual (QR/bank) slips
-  // in the dashboard; Stripe still sets PAID via webhook.
+  // Payment tab: unpaid orders pay via Stripe Checkout. Manual methods are admin-only (legacy rows).
   const paymentStatusUpper = (supabasePayment?.payment_status ?? 'NOT_PAID').toUpperCase();
   const canPay =
     !paid && paymentStatusUpper !== 'CANCELLED' && paymentStatusUpper !== 'ERROR';
 
-  const conversionValue = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-  const conversionCurrency = order.currency ?? 'THB';
-  const purchaseItems = (order.items ?? []).map((it, i) => ({
-    item_id: it.bouquetId,
-    item_name: it.bouquetTitle,
-    price: it.price,
-    quantity: 1,
-    index: i,
-    item_variant: it.size || undefined,
-  }));
-
-  /**
-   * Client-side purchase (dataLayer → GTM → GA4) is Stripe-only.
-   *
-   * Manual payments (PromptPay / bank transfer) send GA4 purchase from the backend
-   * when admin marks the order as PAID (Measurement Protocol + DB idempotency).
-   * If we also fire browser purchase for those orders, GA4 would double-count revenue.
-   */
-  const paymentMethodUpper = (supabasePayment?.payment_method ?? '').toUpperCase();
-  const isStripePayment =
-    paymentMethodUpper === 'STRIPE' ||
-    Boolean(order.stripeSessionId) ||
-    Boolean(order.paymentIntentId);
-  const shouldFireClientPurchase = paid && isStripePayment;
+  /** GA4 `purchase`: Measurement Protocol (webhook / admin), not browser dataLayer — see lib/ga4/sendPurchaseForOrder. */
 
   return (
     <div className="order-page">
-      {shouldFireClientPurchase && (
-        <OrderPaidConversionTracker
-          orderId={order.orderId}
-          value={conversionValue}
-          currency={conversionCurrency}
-          items={purchaseItems}
-        />
-      )}
       <div className="container">
         <OrderPageClient
           order={order}

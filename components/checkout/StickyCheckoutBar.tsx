@@ -79,14 +79,15 @@ export function StickyCheckoutBar({
   labels,
 }: StickyBarProps) {
   const stripeDisabled = !availability.stripe.enabled;
-  const bankDisabled = !availability.bankTransfer.enabled;
+  /** Primary checkout CTA (Stripe) uses same availability as the optional Stripe shortcut. */
+  const checkoutDisabled = !availability.stripe.enabled;
   const stripeLoading = placingStripe;
-  const bankLoading = placing;
+  const checkoutLoading = placing;
   const stripeButtonDisabled = stripeLoading;
   const stripeLockedVisual = stripeDisabled && !stripeLoading;
-  const bankLockedVisual = bankDisabled && !bankLoading;
+  const checkoutLockedVisual = checkoutDisabled && !checkoutLoading;
   const stripeReady = !stripeDisabled && !stripeLoading;
-  const bankReady = !bankDisabled && !bankLoading;
+  const checkoutReady = !checkoutDisabled && !checkoutLoading;
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
@@ -319,12 +320,12 @@ export function StickyCheckoutBar({
 
           <button
             type="button"
-            className={`sticky-checkout-bar__btn-order ${bankLockedVisual ? 'sticky-checkout-bar__btn-order--locked' : ''} ${bankReady ? 'sticky-checkout-bar__btn-order--ready' : ''} ${bankLoading ? 'sticky-checkout-bar__btn-order--loading' : ''}`}
+            className={`sticky-checkout-bar__btn-order ${checkoutLockedVisual ? 'sticky-checkout-bar__btn-order--locked' : ''} ${checkoutReady ? 'sticky-checkout-bar__btn-order--ready' : ''} ${checkoutLoading ? 'sticky-checkout-bar__btn-order--loading' : ''}`}
             onClick={onPlaceOrder}
-            disabled={bankDisabled || bankLoading}
+            disabled={checkoutDisabled || checkoutLoading}
             aria-label={labels.placeOrder}
-            aria-busy={bankLoading}
-            aria-disabled={bankDisabled}
+            aria-busy={checkoutLoading}
+            aria-disabled={checkoutDisabled}
           >
             <svg
               width={15}
@@ -341,7 +342,7 @@ export function StickyCheckoutBar({
               <line x1="3" y1="6" x2="21" y2="6" />
               <path d="M16 10a4 4 0 01-8 0" />
             </svg>
-            {bankLoading ? labels.creating : labels.orderLabel}
+            {checkoutLoading ? labels.creating : labels.orderLabel}
           </button>
         </div>
       </div>

@@ -1,7 +1,8 @@
 /**
- * One admin "new order" email per order, sent only when the order is first created/placed.
- * Idempotent: admin_notified on the order row prevents duplicates (retries, refresh).
- * Do NOT send from mark-paid / payment-confirmation flow.
+ * One admin "new order" email per order (idempotent via admin_notified).
+ * Stripe checkout: sent when payment succeeds (webhook or sync-checkout-session).
+ * Custom / manual flows may still send at creation where applicable.
+ * Do NOT send from mark-paid for Stripe (webhook handles payment).
  */
 
 import { getSupabaseAdmin } from '@/lib/supabase/server';

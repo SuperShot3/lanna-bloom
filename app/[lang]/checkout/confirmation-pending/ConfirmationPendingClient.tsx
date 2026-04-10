@@ -117,14 +117,6 @@ export function ConfirmationPendingClient({
       });
   }, [orderId, sessionId, stripeStatus]);
 
-  // Notify admin when pending page is seen (manual path). Idempotent: only one email per order.
-  const notifyAdminFiredRef = useRef(false);
-  useEffect(() => {
-    if (!orderId || sessionId || notifyAdminFiredRef.current) return;
-    notifyAdminFiredRef.current = true;
-    fetch(`/api/orders/${encodeURIComponent(orderId)}/notify-admin`, { method: 'POST' }).catch(() => {});
-  }, [orderId, sessionId]);
-
   // Poll payment status on manual path so that when admin marks paid, user is redirected
   useEffect(() => {
     if (!orderId || sessionId || redirectingRef.current) return;
@@ -197,7 +189,7 @@ export function ConfirmationPendingClient({
         <div className="container">
           <h1 className="confirmation-pending-title">{t.orderCreated}</h1>
           <p className="confirmation-pending-text">
-            {lang === 'th' ? 'การชำระเงินล้มเหลว กรุณาลองอีกครั้งหรือสั่งผ่านธนาคาร' : 'Payment failed. Please try again or place order via bank transfer.'}
+            {lang === 'th' ? 'การชำระเงินล้มเหลว กรุณาลองอีกครั้งจากตะกร้า' : 'Payment failed. Please try again from your cart.'}
           </p>
           <Link href={`/${lang}/cart`} className="confirmation-pending-link">
             {tNav.cart}

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
-import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
@@ -201,10 +200,8 @@ export async function POST(request: NextRequest) {
     const publicOrderUrl = getOrderDetailsUrl(order.orderId);
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
 
-    // Exactly one admin email per order, only at placement (idempotent; admin_notified prevents duplicates).
-    await sendAdminNewOrderNotificationOnce(order.orderId).catch((e) => {
-      console.error('[api/orders] Admin new-order notification failed:', e);
-    });
+    // Admin email: website checkout uses Stripe (notify on payment). Legacy POST callers that
+    // create unpaid orders do not trigger admin email here — use custom-order or ops workflows.
 
     return NextResponse.json({
       orderId: order.orderId,

@@ -9,6 +9,7 @@ import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { queuePaymentNotificationForAgent } from '@/lib/line-notifications/pendingPayment';
 import { getOrderDetailsUrl } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
+import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getOrderIdFromStripeMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
@@ -285,7 +286,9 @@ export async function POST(request: NextRequest) {
     const updatedOrder = await getOrderById(orderId);
     if (updatedOrder) {
       const publicOrderUrl = getOrderDetailsUrl(orderId);
-      // Payment-confirmation only: customer email and GA4. No admin email here (admin is notified once at order placement).
+      void sendAdminNewOrderNotificationOnce(orderId).catch((e) => {
+        console.error('[stripe/webhook] Admin new-order notification failed:', e);
+      });
       sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
         console.error('[stripe/webhook] Customer confirmation email failed:', e);
       });
@@ -314,9 +317,11 @@ export async function POST(request: NextRequest) {
       }).catch((e) => console.error('[stripe/webhook] income upsert error:', e))
     );
 
-    // GA4 purchase for Stripe: not sent from webhook. Purchase reaches GA4 only via browser
-    // (user lands on order page → dataLayer purchase → GTM → GA4). Direct-to-GA4 send is
-    // only when admin changes order status (mark-paid / payment-status).
+    void import('@/lib/ga4/sendPurchaseForOrder').then(({ sendPurchaseForOrder }) =>
+      sendPurchaseForOrder(orderId, 'stripe_webhook').then((r) => {
+        if (r.sent) console.log('[stripe/webhook] GA4 purchase sent (Measurement Protocol)', { orderId });
+      }).catch((e) => console.error('[stripe/webhook] GA4 purchase error:', e))
+    );
   } catch (e) {
     console.error('[stripe/webhook] payment success handler error:', e);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

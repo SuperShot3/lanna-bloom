@@ -38,6 +38,10 @@ If either is missing, the app still works; the backend logs a warning and does n
 
 If `NEXT_PUBLIC_GTM_ID` is missing or `NODE_ENV !== 'production'`, the app does not load GTM.
 
+### Stripe Dashboard (account emails)
+
+Enable account notifications in **Stripe Dashboard → Settings → Emails** (e.g. successful payments, disputes). This is separate from app code.
+
 ## Consent Defaults
 
 Consent Mode defaults are bootstrapped before GTM loads:
@@ -106,11 +110,11 @@ Create GTM custom event triggers for:
 | `add_to_cart` | Product add to cart | Includes `items`, `value`, `currency` |
 | `remove_from_cart` | Cart line removal | Includes removed item payload |
 | `view_cart` | Cart page with items | Deduped once per session |
-| `begin_checkout` | User starts order/payment flow | No longer fires on cart page view |
+| `begin_checkout` | User starts order/payment flow | Fires on cart page load (deduped per session) |
 | `add_shipping_info` | Delivery info added | Triggered once shipping info is meaningfully present |
-| `add_payment_info` | User clicks Stripe payment CTA | Includes `payment_type: 'card'` |
-| `purchase` | Order is confirmed paid | **Server:** Stripe webhook or admin mark-paid/payment-status → Measurement Protocol (no page visit). **Client:** Success page (`/order/[orderId]`) when order is paid → dataLayer → GTM. Manual-payment success can fire from server when admin marks paid, and from client if user revisits success page. |
-| `generate_lead` | Manual-payment order created but not yet paid | Separate from revenue |
+| `add_payment_info` | User continues to Stripe Checkout | Includes `payment_type: 'card'` (cart pay CTA) |
+| `purchase` | Order is confirmed paid | **Server only:** Measurement Protocol — Stripe webhook / `sync-checkout-session`, or admin mark-paid / payment-status → `sendPurchaseForOrder`. No browser `purchase` on `/order/[orderId]` (avoids double-counting with MP). |
+| `generate_lead` | Legacy / confirmation-pending manual flows | Separate from revenue; website checkout is Stripe-first |
 | `contact_click` | LINE / WhatsApp / Telegram click | Canonical contact event |
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
 | `language_change` | Language switcher | Includes `language` and `page_path` |
@@ -125,8 +129,7 @@ Removed legacy messenger events:
 
 ### Stripe
 
-- `purchase` fires only after Stripe payment confirmation.
-- `purchase_sent:{orderId}` in local storage prevents duplicates on refresh or back/forward.
+- `purchase` is sent via Measurement Protocol when the webhook (or sync-checkout-session) confirms payment, idempotent via `ga4_purchase_sent` in the database.
 
 ### Manual Payment Methods
 

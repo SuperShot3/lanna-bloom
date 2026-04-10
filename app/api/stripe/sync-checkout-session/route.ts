@@ -7,6 +7,7 @@ import {
 } from '@/lib/orders';
 import { getOrderDetailsUrl } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
+import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { queuePaymentNotificationForAgent } from '@/lib/line-notifications/pendingPayment';
 import { getOrderIdFromStripeMetadata } from '@/lib/stripe/metadata';
@@ -136,6 +137,9 @@ export async function POST(request: NextRequest) {
     const updatedOrder = await getOrderById(orderId);
     if (updatedOrder) {
       const publicOrderUrl = getOrderDetailsUrl(orderId);
+      void sendAdminNewOrderNotificationOnce(orderId).catch((e) => {
+        console.error('[stripe/sync-checkout-session] Admin new-order notification failed:', e);
+      });
       sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
         console.error('[stripe/sync-checkout-session] confirmation email failed:', e);
       });
@@ -162,6 +166,12 @@ export async function POST(request: NextRequest) {
         stripePaymentIntentId: paymentIntentId ?? null,
         createdBy:             'system:sync_checkout',
       }).catch((e) => console.error('[sync-checkout-session] income upsert error:', e))
+    );
+
+    void import('@/lib/ga4/sendPurchaseForOrder').then(({ sendPurchaseForOrder }) =>
+      sendPurchaseForOrder(orderId, 'stripe_webhook').catch((e) =>
+        console.error('[sync-checkout-session] GA4 purchase error:', e)
+      )
     );
 
     console.log('[stripe/purchase] sync-checkout-session: order marked PAID in DB', { orderId, stripeSessionId });

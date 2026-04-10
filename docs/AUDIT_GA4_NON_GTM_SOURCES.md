@@ -5,10 +5,10 @@
 
 ---
 
-## Summary
+## Summary (updated after Stripe-first checkout)
 
-- **Two ways purchase reaches GA4:** (1) **Client:** App pushes `{ event: 'purchase', ... }` to `window.dataLayer`; GTM sends to GA4. (2) **Server:** Backend sends `purchase` to GA4 via **GA4 Measurement Protocol** (`lib/ga4/measurementProtocol.ts`, `lib/ga4/sendPurchaseForOrder.ts`) when an order is marked paid (Stripe webhook, admin mark-paid, or admin payment-status → PAID). No `gtag.js` or GA4 measurement ID in client code; Measurement Protocol uses `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET` on the server only.
-- **Manual-order flow:** For manual (e.g. bank) orders, the **server** can still send purchase via Measurement Protocol when admin marks the order paid. The **client** may also push purchase to dataLayer if the user later visits the order success page and the app’s gate treats the order as “Stripe paid” (e.g. due to `order.stripeSessionId` / `order.paymentIntentId`). To avoid double-counting or client-side purchase for manual orders, the client gate can be tightened so purchase is pushed only when the success page has Stripe context from the URL (`session_id` + `stripeStatus === 'paid'`).
+- **Purchase for revenue:** **Measurement Protocol only** — `sendPurchaseForOrder` from Stripe webhook, `sync-checkout-session` (same idempotency), admin mark-paid, and admin payment-status. **No** `purchase` push from `app/order/[orderId]/page.tsx` (removed `OrderPaidConversionTracker`).
+- **Other ecommerce events** (cart, `add_payment_info`, etc.) still use **dataLayer → GTM** (`lib/analytics/gtag.ts`).
 
 ---
 
@@ -23,7 +23,7 @@
 | `GoogleAnalytics` | Component name and docs only; no GA4 SDK or config. |
 | `next/script` | Only in `GoogleAnalytics.tsx` for consent defaults and GTM loader. |
 | Analytics script injection | No dynamic injection of gtag.js or GA4. |
-| Direct purchase send not using GTM | **Client:** `OrderPaidPurchaseTracker` → `trackPurchase` → `lib/analytics/gtag.ts` → `dataLayer.push({ event: 'purchase', ... })` (GTM then sends). **Server:** Stripe webhook, mark-paid, payment-status routes → `lib/ga4/sendPurchaseForOrder.ts` → `lib/ga4/measurementProtocol.ts` → GA4 Measurement Protocol (HTTPS POST to `google-analytics.com/mp/collect`). No `gtag('event','purchase',...)` in client. |
+| Direct purchase send not using GTM | **Server:** Stripe webhook, sync-checkout-session, mark-paid, payment-status → `sendPurchaseForOrder` → Measurement Protocol. **Client:** `trackPurchase` / dataLayer still exists in `lib/analytics/gtag.ts` for potential GTM use but order success page no longer calls it for paid orders. |
 | Config/event send for GA4 or Google tag | Client: no GA4 measurement ID or gtag config; only `NEXT_PUBLIC_GTM_ID` for GTM. Server: `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET` for Measurement Protocol (see `lib/ga4/measurementProtocol.ts`). |
 
 ---

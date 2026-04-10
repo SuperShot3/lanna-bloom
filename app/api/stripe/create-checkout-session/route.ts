@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { computeOrderTotals, type CartItemIdentifier } from '@/lib/stripePricing';
+import {
+  buildStripeCheckoutLineItems,
+  stripeOrderSuccessUrl,
+} from '@/lib/stripe/checkoutStripeLineItems';
 import { createPendingOrder, getBaseUrl } from '@/lib/orders';
 import { getDiscountForCode } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
@@ -281,65 +285,13 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Stripe requires unit_amount to be non-negative. Apply referral discount
-    // proportionally across line items instead of adding a negative line.
-    const subtotalCents = Math.round((totals.itemsTotal + totals.deliveryFee) * 100);
-    const discountCents = Math.round(referralDiscount * 100);
-    const discountRatio = subtotalCents > 0 ? discountCents / subtotalCents : 0;
-
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = totals.items.map(
-      (item) => {
-        const originalCents = Math.round(item.price * 100);
-        const discountedCents = Math.max(0, Math.round(originalCents * (1 - discountRatio)));
-        const productName = item.size === '—' ? item.bouquetTitle : `${item.bouquetTitle} — ${item.size}`;
-        return {
-          price_data: {
-            currency: 'thb',
-            product_data: {
-              name: productName,
-              description:
-                item.addOns.cardType === 'premium'
-                  ? 'With premium message card'
-                  : undefined,
-            },
-            unit_amount: discountedCents,
-          },
-          quantity: 1,
-        };
-      }
-    );
-
-    if (totals.deliveryFee > 0) {
-      const feeCents = Math.round(totals.deliveryFee * 100);
-      const discountedFeeCents = Math.max(0, Math.round(feeCents * (1 - discountRatio)));
-      lineItems.push({
-        price_data: {
-          currency: 'thb',
-          product_data: {
-            name:
-              referralDiscount > 0 && data.referralCode
-                ? `Delivery fee (referral: ${data.referralCode})`
-                : 'Delivery fee',
-          },
-          unit_amount: discountedFeeCents,
-        },
-        quantity: 1,
-      });
-    }
-
-    // Absorb any rounding difference into the first line item so Stripe total matches
-    const currentTotalCents = lineItems.reduce(
-      (sum, li) => sum + (li.price_data as { unit_amount?: number }).unit_amount! * (li.quantity ?? 1),
-      0
-    );
-    const targetCents = Math.round(effectiveGrandTotal * 100);
-    const diff = targetCents - currentTotalCents;
-    if (diff !== 0 && lineItems.length > 0) {
-      const first = lineItems[0];
-      const pd = first.price_data as { unit_amount?: number };
-      const newAmount = Math.max(0, (pd.unit_amount ?? 0) + diff);
-      pd.unit_amount = newAmount;
-    }
+    const lineItems = buildStripeCheckoutLineItems({
+      computedItems: totals.items,
+      deliveryFee: totals.deliveryFee,
+      effectiveGrandTotal,
+      referralCode: data.referralCode,
+      referralDiscount,
+    });
 
     const session = await stripe.checkout.sessions.create(
       {
@@ -347,8 +299,10 @@ export async function POST(request: NextRequest) {
         line_items: lineItems,
         client_reference_id: order.orderId,
         customer_email: data.customerEmail,
-        // Redirect straight to public order page; order view handles pending vs paid.
-        success_url: `${baseUrl}/order/${encodeURIComponent(order.orderId)}?checkout_token=${encodeURIComponent(data.submissionToken)}`,
+        // Order page syncs session if webhook lags; checkout_token matches submission idempotency.
+        success_url: stripeOrderSuccessUrl(baseUrl, order.orderId, {
+          checkoutToken: data.submissionToken,
+        }),
         cancel_url: `${baseUrl}/${data.lang}/cart`,
         metadata: stripeMetadata,
         payment_intent_data: {

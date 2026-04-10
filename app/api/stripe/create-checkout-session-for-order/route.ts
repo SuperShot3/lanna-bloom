@@ -4,6 +4,10 @@ import { getOrderById, getBaseUrl } from '@/lib/orders';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
+import {
+  buildStripeCheckoutLineItems,
+  stripeOrderSuccessUrl,
+} from '@/lib/stripe/checkoutStripeLineItems';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,72 +57,18 @@ export async function POST(request: NextRequest) {
   });
 
   const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-  const itemsTotal = order.pricing?.itemsTotal ?? 0;
   const deliveryFee = order.pricing?.deliveryFee ?? 0;
   const referralDiscount = order.referralDiscount ?? 0;
-  const subtotal = itemsTotal + deliveryFee;
-  const discountRatio = subtotal > 0 ? referralDiscount / subtotal : 0;
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = (order.items ?? []).map(
-    (item) => {
-      const originalCents = Math.round(item.price * 100);
-      const discountedCents = Math.max(
-        0,
-        Math.round(originalCents * (1 - discountRatio))
-      );
-      const productName =
-        item.size === '—' || !item.size
-          ? item.bouquetTitle
-          : `${item.bouquetTitle} — ${item.size}`;
-      return {
-        price_data: {
-          currency: 'thb',
-          product_data: {
-            name: productName,
-            description:
-              item.addOns?.cardType === 'premium' ? 'With premium message card' : undefined,
-          },
-          unit_amount: discountedCents,
-        },
-        quantity: 1,
-      };
-    }
-  );
+  const lineItems = buildStripeCheckoutLineItems({
+    computedItems: order.items ?? [],
+    deliveryFee,
+    effectiveGrandTotal: grandTotal,
+    referralCode: order.referralCode,
+    referralDiscount,
+  });
 
-  if (deliveryFee > 0) {
-    const feeCents = Math.round(deliveryFee * 100);
-    const discountedFeeCents = Math.max(0, Math.round(feeCents * (1 - discountRatio)));
-    lineItems.push({
-      price_data: {
-        currency: 'thb',
-        product_data: {
-          name:
-            referralDiscount > 0 && order.referralCode
-              ? `Delivery fee (referral: ${order.referralCode})`
-              : 'Delivery fee',
-        },
-        unit_amount: discountedFeeCents,
-      },
-      quantity: 1,
-    });
-  }
-
-  const currentTotalCents = lineItems.reduce(
-    (sum, li) =>
-      sum + ((li.price_data as { unit_amount?: number }).unit_amount ?? 0) * (li.quantity ?? 1),
-    0
-  );
-  const targetCents = Math.round(grandTotal * 100);
-  const diff = targetCents - currentTotalCents;
-  if (diff !== 0 && lineItems.length > 0) {
-    const first = lineItems[0];
-    const pd = first.price_data as { unit_amount?: number };
-    pd.unit_amount = Math.max(0, (pd.unit_amount ?? 0) + diff);
-  }
-
-  // Stripe replaces {CHECKOUT_SESSION_ID} so the order page can verify payment client-side
-  // if the webhook has not run yet (fixes UI still showing “pay again” after success).
-  const successUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}?stripe=success&session_id={CHECKOUT_SESSION_ID}`;
+  const successUrl = stripeOrderSuccessUrl(baseUrl, orderId);
   const cancelUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}`;
 
   const session = await stripe.checkout.sessions.create(

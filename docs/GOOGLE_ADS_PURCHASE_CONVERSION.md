@@ -16,11 +16,8 @@ Goal: Record a **purchase** conversion in Google Ads when a customer completes S
 
 ### Option 2: Fire conversion from browser (recommended for best attribution)
 
-- **How:** When the user lands on the **order confirmation page** after Stripe (same session as the ad click), the app pushes a dedicated event to the dataLayer. GTM fires a **Google Ads Conversion** tag on that event. Google Ads can then attribute the conversion to the click (e.g. gclid in the same session).
-- **What we added:**
-  - **Event:** `google_ads_purchase` with `value`, `currency`, `transaction_id`.
-  - **Component:** `OrderPaidConversionTracker` runs on the paid order page and pushes the event **once per order** (dedupe by orderId in localStorage).
-  - **GTM:** You add a Google Ads Conversion tag that fires on Custom Event = `google_ads_purchase` and reads value/transaction_id from the dataLayer.
+- **How:** When the user lands on the **order confirmation page** after Stripe (same session as the ad click), the app can push a dedicated event to the dataLayer. GTM fires a **Google Ads Conversion** tag on that event.
+- **Current code:** `google_ads_purchase` helpers remain in `lib/analytics/gtag.ts`, but **`OrderPaidConversionTracker` is not mounted** on the order page (purchase revenue uses GA4 Measurement Protocol). To use Option 2, either re-attach a small client component on the paid order page or rely on **Option 1** (GA4 import).
 
 **GTM setup (Option 2):**
 
