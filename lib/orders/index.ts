@@ -7,6 +7,7 @@ export {
   generateOrderId,
   getOrderById,
   getOrderByStripeSessionId,
+  getOrderBySubmissionToken,
   createOrder,
   createPendingOrder,
   updateOrderPaymentStatus,

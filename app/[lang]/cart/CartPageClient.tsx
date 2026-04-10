@@ -758,7 +758,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = (await res.json().catch(() => ({}))) as { url?: string; orderId?: string; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!res.ok) {
         setOrderError(
           typeof data.error === 'string' && data.error.trim()
@@ -768,13 +768,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         setPlacing(false);
         orderSubmitInFlightRef.current = false;
         return;
-      }
-      if (typeof data.orderId === 'string' && data.orderId.trim()) {
-        try {
-          window.localStorage.setItem('lanna-bloom-last-order-id', data.orderId.trim());
-        } catch {
-          // ignore
-        }
       }
       if (typeof data.url === 'string' && data.url.trim()) {
         window.location.href = data.url.trim();

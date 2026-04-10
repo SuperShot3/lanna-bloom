@@ -3,15 +3,15 @@ import Stripe from 'stripe';
 import { computeOrderTotals, type CartItemIdentifier } from '@/lib/stripePricing';
 import {
   buildStripeCheckoutLineItems,
-  stripeOrderSuccessUrl,
+  stripeCheckoutDraftSuccessUrl,
 } from '@/lib/stripe/checkoutStripeLineItems';
-import { createPendingOrder, getBaseUrl } from '@/lib/orders';
+import { getBaseUrl } from '@/lib/orders';
 import { getDiscountForCode } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import type { DistrictKey } from '@/lib/deliveryFees';
-import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
-import { logLineIntegrationEvent } from '@/lib/line-integration/log';
+import { buildStripeCheckoutDraftMetadata } from '@/lib/stripe/metadata';
+import { upsertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 
@@ -260,30 +260,26 @@ export async function POST(request: NextRequest) {
       submissionToken: data.submissionToken,
     };
 
-    const { order, created } = await createPendingOrder(orderPayload);
-    if (data.lineUserId && created) {
-      void logLineIntegrationEvent('line_user_linked_to_order', {
-        lineUserId: data.lineUserId,
-        orderId: order.orderId,
-      });
-    }
+    const { id: checkoutDraftId } = await upsertCheckoutDraft({
+      submissionToken: data.submissionToken,
+      payload: orderPayload,
+    });
+
     const baseUrl = getBaseUrl();
-    const stripeMetadata = buildStripeOrderMetadata({
-      orderId: order.orderId,
+    const stripeMetadata = buildStripeCheckoutDraftMetadata({
+      checkoutDraftId,
+      submissionToken: data.submissionToken,
       source: 'lanna_bloom_checkout',
       customerEmail: data.customerEmail,
       lang: data.lang,
       lineUserId: data.lineUserId,
     });
 
-    console.log(
-      `[stripe/create-checkout-session] ${created ? 'pending order created' : 'idempotent reuse (same submission_token)'}`,
-      {
-        orderId: order.orderId,
-        mode: stripeConfig.mode,
-        hasCustomerEmail: Boolean(data.customerEmail),
-      }
-    );
+    console.log('[stripe/create-checkout-session] checkout draft saved (order created after payment)', {
+      checkoutDraftId,
+      mode: stripeConfig.mode,
+      hasCustomerEmail: Boolean(data.customerEmail),
+    });
 
     const lineItems = buildStripeCheckoutLineItems({
       computedItems: totals.items,
@@ -297,19 +293,16 @@ export async function POST(request: NextRequest) {
       {
         mode: 'payment',
         line_items: lineItems,
-        client_reference_id: order.orderId,
+        client_reference_id: checkoutDraftId,
         customer_email: data.customerEmail,
-        // Order page syncs session if webhook lags; checkout_token matches submission idempotency.
-        success_url: stripeOrderSuccessUrl(baseUrl, order.orderId, {
-          checkoutToken: data.submissionToken,
-        }),
+        success_url: stripeCheckoutDraftSuccessUrl(baseUrl, data.lang),
         cancel_url: `${baseUrl}/${data.lang}/cart`,
         metadata: stripeMetadata,
         payment_intent_data: {
           metadata: stripeMetadata,
         },
       },
-      { idempotencyKey: order.orderId }
+      { idempotencyKey: `checkout-${data.submissionToken}` }
     );
 
     if (!session.url) {
@@ -317,14 +310,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[stripe/create-checkout-session] session created', {
-      orderId: order.orderId,
+      checkoutDraftId,
       sessionId: session.id,
       mode: stripeConfig.mode,
       metadata: stripeMetadata,
     });
 
     return NextResponse.json({
-      orderId: order.orderId,
       sessionId: session.id,
       url: session.url,
     });

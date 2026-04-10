@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import {
-  getOrderById,
-  getOrderByStripeSessionId,
-  updateOrderPaymentStatus,
-} from '@/lib/orders';
+import { getOrderById, getOrderByStripeSessionId, updateOrderPaymentStatus } from '@/lib/orders';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
-import { queuePaymentNotificationForAgent } from '@/lib/line-notifications/pendingPayment';
-import { getOrderDetailsUrl } from '@/lib/orders';
-import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
-import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
+import { getOrderIdFromStripeMetadata, resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { getOrderIdFromStripeMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
+import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCheckout';
+import { deleteCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
 
 const PAYMENT_SUCCESS_EVENTS = [
   'checkout.session.completed',
@@ -67,7 +61,9 @@ async function resolveCheckoutSessionContext(
 
   let orderId =
     getOrderIdFromStripeMetadata(session.metadata) ??
-    session.client_reference_id?.trim() ??
+    (session.client_reference_id?.trim().startsWith('LB-')
+      ? session.client_reference_id.trim()
+      : null) ??
     null;
 
   let paymentIntent: Stripe.PaymentIntent | null = null;
@@ -144,28 +140,26 @@ export async function POST(request: NextRequest) {
   });
 
   const eventObject = event.data.object;
-  const paymentContext =
-    event.type === 'payment_intent.succeeded'
-      ? resolvePaymentIntentContext(eventObject as Stripe.PaymentIntent)
-      : await resolveCheckoutSessionContext(stripe, eventObject as Stripe.Checkout.Session);
-  const { orderId, stripeSessionId, paymentIntentId, amountTotal, currency } = paymentContext;
-
-  console.log('[stripe/webhook] resolved payment context', {
-    eventId: event.id,
-    eventType: event.type,
-    orderId,
-    stripeSessionId,
-    paymentIntentId,
-    amountTotal,
-    currency,
-  });
-
-  if (!orderId) {
-    console.error('[stripe/webhook] Missing order_id/client_reference_id in Stripe event');
-    return NextResponse.json({ error: 'Missing order_id in metadata' }, { status: 400 });
-  }
 
   if (event.type === PAYMENT_FAILED_EVENT) {
+    const session = eventObject as Stripe.Checkout.Session;
+    const orderId =
+      getOrderIdFromStripeMetadata(session.metadata) ??
+      (session.client_reference_id?.trim().startsWith('LB-')
+        ? session.client_reference_id.trim()
+        : null);
+
+    if (!orderId) {
+      const draftId =
+        typeof session.metadata?.checkout_draft_id === 'string'
+          ? session.metadata.checkout_draft_id.trim()
+          : '';
+      if (draftId) {
+        await deleteCheckoutDraftById(draftId).catch(() => {});
+      }
+      return NextResponse.json({ received: true });
+    }
+
     if (!(await recordStripeEventIfNew(event.id, event.type))) {
       return NextResponse.json({ received: true });
     }
@@ -173,7 +167,7 @@ export async function POST(request: NextRequest) {
       const order = await getOrderById(orderId);
       if (!order) {
         console.error('[stripe/webhook] Order not found for payment_failed:', orderId);
-        return NextResponse.json({ received: true }); // 200 to avoid retry - order may be in Blob only
+        return NextResponse.json({ received: true });
       }
       console.log('[stripe/webhook] order found for payment_failed', {
         orderId,
@@ -195,31 +189,68 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = eventObject as Stripe.Checkout.Session;
-    console.log('[stripe/webhook] checkout.session.completed payload', {
-      eventId: event.id,
-      orderId,
-      sessionId: session.id,
-      paymentStatus: session.payment_status,
-      paymentIntent:
-        typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : session.payment_intent?.id ?? null,
-    });
-    if (session.payment_status !== 'paid') {
-      console.log('[stripe/webhook] checkout.session.completed not paid yet', {
-        eventId: event.id,
-        orderId,
-        paymentStatus: session.payment_status,
+  /** Resolve Checkout Session for success events (including payment_intent.succeeded via Checkout). */
+  let session: Stripe.Checkout.Session | null = null;
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+    session = eventObject as Stripe.Checkout.Session;
+  } else if (event.type === 'payment_intent.succeeded') {
+    const pi = eventObject as Stripe.PaymentIntent;
+    const list = await stripe.checkout.sessions.list({ payment_intent: pi.id, limit: 1 });
+    session = list.data[0] ?? null;
+    if (!session) {
+      console.log('[stripe/webhook] payment_intent.succeeded: no Checkout Session for PI', {
+        paymentIntentId: pi.id,
       });
       return NextResponse.json({ received: true });
     }
   }
 
-  if (stripeSessionId) {
+  if (!session) {
+    return NextResponse.json({ received: true });
+  }
+
+  const paymentContext =
+    event.type === 'payment_intent.succeeded'
+      ? resolvePaymentIntentContext(eventObject as Stripe.PaymentIntent)
+      : await resolveCheckoutSessionContext(stripe, session);
+  const { orderId, stripeSessionId } = paymentContext;
+
+  console.log('[stripe/webhook] resolved payment context', {
+    eventId: event.id,
+    eventType: event.type,
+    orderId,
+    stripeSessionId,
+    paymentIntentId: paymentContext.paymentIntentId,
+    amountTotal: paymentContext.amountTotal,
+    currency: paymentContext.currency,
+  });
+
+  if (event.type === 'checkout.session.completed') {
+    const s = eventObject as Stripe.Checkout.Session;
+    console.log('[stripe/webhook] checkout.session.completed payload', {
+      eventId: event.id,
+      orderId,
+      sessionId: s.id,
+      paymentStatus: s.payment_status,
+      paymentIntent:
+        typeof s.payment_intent === 'string'
+          ? s.payment_intent
+          : s.payment_intent?.id ?? null,
+    });
+    if (s.payment_status !== 'paid') {
+      console.log('[stripe/webhook] checkout.session.completed not paid yet', {
+        eventId: event.id,
+        orderId,
+        paymentStatus: s.payment_status,
+      });
+      return NextResponse.json({ received: true });
+    }
+  }
+
+  const { orderId: resolvedOrderId } = resolveStripeCheckoutSessionIds(session);
+  if (stripeSessionId && resolvedOrderId) {
     const existingBySession = await getOrderByStripeSessionId(stripeSessionId);
-    if (existingBySession && existingBySession.orderId !== orderId) {
+    if (existingBySession && existingBySession.orderId !== resolvedOrderId) {
       console.error('[stripe/webhook] stripeSessionId already used by another order');
       return NextResponse.json({ error: 'Duplicate session' }, { status: 400 });
     }
@@ -234,94 +265,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  const order = await getOrderById(orderId);
-  if (!order) {
-    console.error('[stripe/webhook] Order not found for payment success:', orderId);
-    return NextResponse.json({ received: true }); // 200 to avoid retry
-  }
-
-  console.log('[stripe/webhook] order found for payment success', {
-    orderId,
-    currentStatus: order.status,
-  });
-
-  if (order.status === 'paid') {
-    console.log('[stripe/webhook] payment success ignored because order already paid', {
-      eventId: event.id,
-      eventType: event.type,
-      orderId,
-      stripeSessionId,
-      paymentIntentId,
-    });
-    return NextResponse.json({ received: true });
-  }
-
-  const paidAt = new Date().toISOString();
-
   try {
-    await updateOrderPaymentStatus(orderId, {
-      status: 'paid',
-      stripeSessionId,
-      paymentIntentId,
-      amountTotal: amountTotal ? amountTotal / 100 : undefined,
-      currency: currency?.toUpperCase(),
-      paidAt,
+    const result = await fulfillPaidStripeCheckoutSession({
+      stripe,
+      session,
+      trigger: 'stripe_webhook',
     });
 
-    console.log('[stripe/webhook] order updated successfully — DB now PAID', {
-      orderId,
-      stripeSessionId,
-      paymentIntentId,
-      paidAt,
-    });
-    console.log('[stripe/purchase] webhook: DB marked PAID — purchase will fire client-side when user lands on order page', { orderId });
-
-    // Legacy dual-write: sync to Supabase when primary is Blob
-    void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentSuccess }) =>
-      syncSupabasePaymentSuccess(orderId, paymentIntentId, paidAt, stripeSessionId).catch((e) => {
-        console.error('[stripe/webhook] Supabase payment sync error:', e);
-      })
-    );
-
-    const updatedOrder = await getOrderById(orderId);
-    if (updatedOrder) {
-      const publicOrderUrl = getOrderDetailsUrl(orderId);
-      void sendAdminNewOrderNotificationOnce(orderId).catch((e) => {
-        console.error('[stripe/webhook] Admin new-order notification failed:', e);
+    if (result.kind === 'pending_payment') {
+      console.log('[stripe/webhook] fulfill pending (not paid in Stripe yet)', {
+        eventId: event.id,
+        sessionId: session.id,
       });
-      sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
-        console.error('[stripe/webhook] Customer confirmation email failed:', e);
-      });
-
-      const lineUid = updatedOrder.lineUserId?.trim();
-      if (lineUid) {
-        const { queued } = await queuePaymentNotificationForAgent(orderId, lineUid, publicOrderUrl);
-        if (queued) {
-          await logLineIntegrationEvent('payment_notify_queued_for_agent', {
-            lineUserId: lineUid,
-            orderId,
-          });
-        }
-      }
+      return NextResponse.json({ received: true });
     }
 
-    // Create income record (idempotent, fire-and-forget — must not break payment flow)
-    void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
-      upsertOrderIncome({
-        orderId:               orderId,
-        amount:                amountTotal ? amountTotal / 100 : 0,
-        currency:              currency?.toUpperCase() ?? 'THB',
-        paymentMethod:         'STRIPE',
-        stripePaymentIntentId: paymentIntentId ?? null,
-        createdBy:             'system:stripe_webhook',
-      }).catch((e) => console.error('[stripe/webhook] income upsert error:', e))
-    );
+    if (result.kind === 'error') {
+      console.error('[stripe/webhook] fulfill error:', result.message, {
+        eventId: event.id,
+        sessionId: session.id,
+      });
+      return NextResponse.json({ error: 'Fulfillment failed' }, { status: 500 });
+    }
 
-    void import('@/lib/ga4/sendPurchaseForOrder').then(({ sendPurchaseForOrder }) =>
-      sendPurchaseForOrder(orderId, 'stripe_webhook').then((r) => {
-        if (r.sent) console.log('[stripe/webhook] GA4 purchase sent (Measurement Protocol)', { orderId });
-      }).catch((e) => console.error('[stripe/webhook] GA4 purchase error:', e))
-    );
+    console.log('[stripe/webhook] fulfill ok', {
+      orderId: result.orderId,
+      didCreate: result.didCreate,
+      sessionId: session.id,
+    });
   } catch (e) {
     console.error('[stripe/webhook] payment success handler error:', e);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

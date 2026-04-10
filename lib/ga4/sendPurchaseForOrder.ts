@@ -18,7 +18,12 @@ export type SendPurchaseResult =
   | { sent: false; reason: 'ga4_not_configured' }
   | { sent: false; reason: 'send_failed'; error: string };
 
-export type PurchaseSource = 'stripe_webhook' | 'admin_mark_paid' | 'admin_payment_status';
+export type PurchaseSource =
+  | 'stripe_webhook'
+  | 'stripe_sync_checkout'
+  | 'stripe_order_status'
+  | 'admin_mark_paid'
+  | 'admin_payment_status';
 
 /**
  * If the order is paid and GA4 purchase has not been sent yet, send it and mark sent.

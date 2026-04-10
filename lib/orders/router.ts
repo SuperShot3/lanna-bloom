@@ -31,6 +31,11 @@ export async function getOrderByStripeSessionId(stripeSessionId: string): Promis
   return supabaseStore.supabaseGetOrderByStripeSessionId(stripeSessionId);
 }
 
+export async function getOrderBySubmissionToken(submissionToken: string): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderBySubmissionToken(submissionToken);
+}
+
 export async function createOrder(
   payload: OrderPayload
 ): Promise<{ order: Order; created: boolean }> {

@@ -1,14 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import {
-  getLineOrderUrl,
-  getWhatsAppOrderUrl,
-  getLineContactUrl,
-  getWhatsAppContactUrl,
-} from '@/lib/messenger';
+import { getLineOrderUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
 import { LineIcon, WhatsAppIcon, HomeIcon } from '@/components/icons';
 import { translations } from '@/lib/i18n';
 import type { OrderCustomerView } from '@/lib/orders';
@@ -83,7 +78,6 @@ export function OrderPageClient({
   const router = useRouter();
   const t = translations[locale].orderPage;
   const tCustom = translations[locale].customOrder;
-  const tr = t as Record<string, string>;
 
   useEffect(() => {
     const token = readCheckoutTokenFromUrl();
@@ -99,7 +93,6 @@ export function OrderPageClient({
     }
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'details' | 'pay'>('details');
   const [stripeSyncing, setStripeSyncing] = useState(false);
 
   // After Stripe Checkout redirect, the webhook may lag; verify the session server-side and refresh.
@@ -125,10 +118,6 @@ export function OrderPageClient({
       }
     } catch {
       // ignore
-    }
-
-    if (params.get('stripe') === 'success') {
-      setActiveTab('pay');
     }
 
     setStripeSyncing(true);
@@ -171,7 +160,6 @@ export function OrderPageClient({
     };
   }, [paid, orderId, router, order]);
   const [copied, setCopied] = useState(false);
-  const [payLoading, setPayLoading] = useState(false);
 
   const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(
     order.delivery?.preferredTimeSlot ?? ''
@@ -191,56 +179,10 @@ export function OrderPageClient({
     } catch {}
   }, [orderId]);
 
-  const payWithCard = useCallback(async () => {
-    if (payLoading || paid) return;
-    setPayLoading(true);
-    try {
-      const res = await fetch('/api/stripe/create-checkout-session-for-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, lang: locale }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      alert(data.error || (locale === 'th' ? 'ไม่สามารถเปิดหน้าชำระเงินได้' : 'Could not open payment page'));
-    } finally {
-      setPayLoading(false);
-    }
-  }, [orderId, locale, payLoading, paid]);
-
   const contactChannels = [
     { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, label: 'LINE' },
     { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, label: 'WhatsApp' },
   ];
-
-  const contactQuickLinks = {
-    line: getLineContactUrl(),
-    whatsapp: getWhatsAppContactUrl(),
-  };
-
-  const emphasizePayTab = !paid && canPay && activeTab === 'details';
-
-  // Tooltip for disabled \"Make payment\" tab (order under review).
-  const [showPayTooltip, setShowPayTooltip] = useState(false);
-  const payTabWrapRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!showPayTooltip) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!payTabWrapRef.current || !target) return;
-      if (!payTabWrapRef.current.contains(target)) {
-        setShowPayTooltip(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [showPayTooltip]);
 
   return (
     <div className="order-redesign">
@@ -274,82 +216,13 @@ export function OrderPageClient({
       )}
 
       <div className="order-redesign-tabs">
-        <button
-          type="button"
-          className={`order-redesign-tab ${activeTab === 'details' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('details');
-            setShowPayTooltip(false);
-          }}
-        >
+        <div className="order-redesign-tab order-redesign-tab-static active">
           {t.orderDetails}
-          <span className="order-redesign-badge badge-status">
-            {fulfillmentLabel}
-          </span>
-        </button>
-        <div className="order-redesign-tab-wrap" ref={payTabWrapRef}>
-          <button
-            type="button"
-            className={`order-redesign-tab ${activeTab === 'pay' ? 'active' : ''} ${
-              !paid && !canPay ? 'order-redesign-tab-disabled' : ''
-            } ${emphasizePayTab ? 'order-redesign-tab-pay-cta' : ''}`}
-            onClick={() => {
-              if (!paid && !canPay) {
-                setShowPayTooltip((prev) => !prev);
-                return;
-              }
-              setActiveTab('pay');
-              setShowPayTooltip(false);
-            }}
-            aria-disabled={!paid && !canPay}
-            title={emphasizePayTab ? tr.payTabCtaHint : undefined}
-            aria-label={
-              emphasizePayTab ? `${t.makePayment}. ${tr.payTabCtaHint ?? ''}` : undefined
-            }
-          >
-            {t.makePayment}
-            <span
-              className={`order-redesign-badge ${
-                paid ? 'badge-paid' : canPay ? 'badge-ready' : 'badge-locked'
-              }`}
-            >
-              {paid ? t.tabPaid : canPay ? t.tabReadyToPay : t.tabLocked}
-            </span>
-          </button>
-          {!paid && !canPay && showPayTooltip && (
-            <div className="order-redesign-tooltip" role="dialog" aria-label={t.orderUnderReview}>
-              <div className="order-redesign-tooltip-arrow" />
-              <div className="order-redesign-tooltip-title">
-                {t.orderUnderReview}
-              </div>
-              <div className="order-redesign-tooltip-text">
-                {t.orderUnderReviewText}
-              </div>
-              <div className="order-redesign-tooltip-chips">
-                <a
-                  href={contactQuickLinks.line}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="order-redesign-tooltip-chip"
-                >
-                  <LineIcon size={14} /> LINE
-                </a>
-                <a
-                  href={contactQuickLinks.whatsapp}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="order-redesign-tooltip-chip"
-                >
-                  <WhatsAppIcon size={14} /> WhatsApp
-                </a>
-              </div>
-            </div>
-          )}
+          <span className="order-redesign-badge badge-status">{fulfillmentLabel}</span>
         </div>
       </div>
 
-      {activeTab === 'details' && (
-        <section className="order-redesign-panel">
+      <section className="order-redesign-panel">
           <div className="order-redesign-meta">
             <div className="order-redesign-meta-card full">
               <div className="order-redesign-meta-label">Order ID</div>
@@ -382,6 +255,65 @@ export function OrderPageClient({
               )}
             </div>
           </div>
+
+          {paid && (
+            <div className="order-redesign-paid-view order-redesign-paid-inline">
+              <div className="order-redesign-paid-check" aria-hidden>
+                ✓
+              </div>
+              <div className="order-redesign-paid-title">{t.paymentConfirmedTitle}</div>
+              <div className="order-redesign-paid-sub">
+                {supabasePaidAt
+                  ? new Date(supabasePaidAt).toLocaleString(locale === 'th' ? 'th-TH' : undefined)
+                  : ''}
+                <br />
+                {t.paymentConfirmedSub}
+              </div>
+              <div className="order-redesign-paid-details">
+                <div className="order-redesign-totals-row">
+                  <span>{t.amountPaid}</span>
+                  <span>฿{grandTotal.toLocaleString()}</span>
+                </div>
+                <div className="order-redesign-totals-row">
+                  <span>{t.method}</span>
+                  <span>{(supabasePaymentMethod ?? 'Card').replace(/_/g, ' ')}</span>
+                </div>
+                <div className="order-redesign-totals-row">
+                  <span>{t.reference}</span>
+                  <span className="mono">{orderId}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!paid && !canPay && (
+            <div className="order-redesign-paid-view order-redesign-paid-inline">
+              <div className="order-redesign-paid-check" aria-hidden>
+                🌸
+              </div>
+              <div className="order-redesign-paid-title">
+                {locale === 'th' ? 'ออเดอร์อยู่ระหว่างตรวจสอบ' : 'Your order is under review'}
+              </div>
+              <div className="order-redesign-paid-sub">
+                {locale === 'th'
+                  ? 'ทีมงานจะติดต่อหรือแจ้งขั้นตอนถัดไปทาง LINE / WhatsApp'
+                  : 'Our team will follow up or confirm next steps via LINE / WhatsApp.'}
+              </div>
+            </div>
+          )}
+
+          {!paid && canPay && (
+            <div className="order-redesign-paid-view order-redesign-paid-inline">
+              <div className="order-redesign-paid-title">
+                {locale === 'th' ? 'รอการชำระเงิน' : 'Payment pending'}
+              </div>
+              <div className="order-redesign-paid-sub">
+                {locale === 'th'
+                  ? 'การชำระเงินออนไลน์ทำผ่าน Stripe จากหน้าตะกร้าเมื่อกดสั่งซื้อ หากต้องการความช่วยเหลือติดต่อเราได้ทาง LINE / WhatsApp'
+                  : 'Online payment runs on Stripe when you place your order from the cart. Contact us on LINE or WhatsApp if you need help.'}
+              </div>
+            </div>
+          )}
 
           {order.customOrderDetails && (
             <div className="order-redesign-custom-details">
@@ -488,72 +420,6 @@ export function OrderPageClient({
             </div>
           </div>
         </section>
-      )}
-
-      {activeTab === 'pay' && (
-        <section className="order-redesign-panel">
-          {paid ? (
-            <div className="order-redesign-paid-view">
-              <div className="order-redesign-paid-check" aria-hidden>✓</div>
-              <div className="order-redesign-paid-title">{t.paymentConfirmedTitle}</div>
-              <div className="order-redesign-paid-sub">
-                {supabasePaidAt
-                  ? new Date(supabasePaidAt).toLocaleString(locale === 'th' ? 'th-TH' : undefined)
-                  : ''}
-                <br />
-                {t.paymentConfirmedSub}
-              </div>
-              <div className="order-redesign-paid-details">
-                <div className="order-redesign-totals-row">
-                  <span>{t.amountPaid}</span>
-                  <span>฿{grandTotal.toLocaleString()}</span>
-                </div>
-                <div className="order-redesign-totals-row">
-                  <span>{t.method}</span>
-                  <span>{(supabasePaymentMethod ?? 'Card').replace(/_/g, ' ')}</span>
-                </div>
-                <div className="order-redesign-totals-row">
-                  <span>{t.reference}</span>
-                  <span className="mono">{orderId}</span>
-                </div>
-              </div>
-            </div>
-          ) : !canPay ? (
-            <div className="order-redesign-paid-view">
-              <div className="order-redesign-paid-check" aria-hidden>🌸</div>
-              <div className="order-redesign-paid-title">
-                {locale === 'th' ? 'ออเดอร์อยู่ระหว่างตรวจสอบ' : 'Your order is under review'}
-              </div>
-              <div className="order-redesign-paid-sub">
-                {locale === 'th'
-                  ? 'เราจะเปิดให้ชำระเงินที่หน้านี้หลังจากแอดมินยืนยันออเดอร์แล้ว'
-                  : 'We will enable payment here after our team confirms your order.'}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="order-redesign-pay-banner ready">
-                🌸 {t.orderConfirmedReady}
-              </div>
-
-              <div className="order-redesign-method-content">
-                <p className="order-redesign-card-intro">{tr.cardPaymentIntro}</p>
-                <button
-                  type="button"
-                  className="order-redesign-pay-btn"
-                  onClick={payWithCard}
-                  disabled={payLoading}
-                >
-                  {payLoading
-                    ? (locale === 'th' ? 'กำลังเปิด…' : 'Opening…')
-                    : t.payAmount.replace('{amount}', grandTotal.toLocaleString())}
-                </button>
-                <div className="order-redesign-secured-note">{t.securedNote}</div>
-              </div>
-            </>
-          )}
-        </section>
-      )}
 
       <div className="order-redesign-footer">
         <button
@@ -738,6 +604,19 @@ export function OrderPageClient({
           height: 2px;
           background: var(--accent);
           border-radius: 2px 2px 0 0;
+        }
+        .order-redesign-tab-static {
+          cursor: default;
+          width: 100%;
+          justify-content: center;
+        }
+        .order-redesign-tab-static:hover {
+          color: var(--accent);
+        }
+        .order-redesign-paid-inline {
+          margin: 0 0 1.25rem;
+          padding: 1rem 0 1.25rem;
+          border-bottom: 1px solid var(--border);
         }
         .order-redesign-tab.order-redesign-tab-pay-cta {
           margin: 4px 4px 0;

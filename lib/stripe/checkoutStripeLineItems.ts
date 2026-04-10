@@ -83,3 +83,9 @@ export function stripeOrderSuccessUrl(
       : '';
   return `${baseUrl}/order/${id}?${tokenQs}stripe=success&session_id={CHECKOUT_SESSION_ID}`;
 }
+
+/** Cart checkout: no order id yet — landing page polls until the order exists, then redirects to /order/[id]. */
+export function stripeCheckoutDraftSuccessUrl(baseUrl: string, lang: string): string {
+  const l = lang === 'th' || lang === 'en' ? lang : 'en';
+  return `${baseUrl}/${l}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+}
