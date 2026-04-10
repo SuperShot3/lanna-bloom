@@ -76,6 +76,34 @@
   color: var(--text);
 }
 
+/* Inline catalog product cards embedded in MDX */
+.inlineCatalogCard {
+  /* 50% smaller than the catalog-style card width, but only inside articles */
+  max-width: 220px;
+  margin: 1.25em auto 1.75em;
+  min-width: 0;
+  /* Isolate from article typography / img rules */
+  isolation: isolate;
+}
+
+.inlineCatalogCardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 1.25em 0 1.75em;
+}
+
+@media (min-width: 680px) {
+  .inlineCatalogCardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .inlineCatalogCardGrid .inlineCatalogCard {
+    max-width: none;
+    margin: 0;
+  }
+}
+
 /* Wraps MDX only so inline <a> styles do not affect ArticleCta links */
 .infoArticleMdx {
   min-width: 0;
@@ -111,8 +139,8 @@
   color: var(--text-muted);
 }
 
-/* Images */
-.infoArticleBody :global(img) {
+/* Images in MDX (module-scoped wrapper class; cards reset below) */
+.infoArticleBody .infoArticleMdx img {
   width: 100%;
   max-width: 100%;
   height: auto;
@@ -120,6 +148,30 @@
   margin: 2em 0 0;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+/* Embedded catalog cards: undo article img rules; keep ProductCard image + plush badge aligned */
+.infoArticleBody .infoArticleMdx .inlineCatalogCard img {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-image),
+.infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-image-shared img) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover;
+  object-position: top center;
+  display: block !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-toy-icon img) {
+  width: 22px !important;
+  height: 22px !important;
+  max-width: 22px !important;
+  object-fit: contain !important;
 }
 
 /* em directly after an image acts as a caption */

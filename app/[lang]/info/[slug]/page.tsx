@@ -10,6 +10,7 @@ import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLink
 import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
 import { ArticleListenPlayer } from './ArticleListenPlayer';
+import { CatalogProductCard } from './CatalogProductCard';
 import styles from './article.module.css';
 
 /** Public static URL; file must live under /public */
@@ -73,6 +74,7 @@ export async function generateMetadata({
 
 export function generateStaticParams() {
   const slugs = [
+    'plush-toys-teddy-bears-chiang-mai',
     'order-flowers-website-vs-facebook-chiang-mai',
     'birthday-flowers-chiang-mai-from-abroad',
     'how-to-order-flower-delivery-chiang-mai',
@@ -163,6 +165,12 @@ export default async function InfoArticlePage({
     ),
     ArticleListen: () => (
       <ArticleListenPlayer src={ORDER_FROM_ABROAD_AUDIO} lang={lang} />
+    ),
+    CatalogProductCard: ({ slug: productSlug }: { slug: string }) => (
+      <CatalogProductCard slug={productSlug} lang={lang as Locale} />
+    ),
+    CatalogProductCardGrid: ({ children }: { children: React.ReactNode }) => (
+      <div className={styles.inlineCatalogCardGrid}>{children}</div>
     ),
   };
 
