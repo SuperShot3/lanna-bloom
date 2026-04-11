@@ -19,6 +19,7 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
 import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
+import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 
 export function ProductOrderBlock({
   bouquet,
@@ -100,8 +101,8 @@ export function ProductOrderBlock({
 
   const PREFERRED_DELIVERY_KEY = 'lanna-bloom-preferred-delivery-date';
   const PREFERRED_TIME_KEY = 'lanna-bloom-preferred-delivery-time';
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const todayStr = getLocalTodayYmd();
+  const tomorrowStr = getLocalTomorrowYmd();
   const minDate = todayStr;
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dateWrapRef = useRef<HTMLDivElement>(null);
@@ -177,17 +178,19 @@ export function ProductOrderBlock({
         <div className="order-date-quick-btns">
           <button
             type="button"
-            className="order-date-quick-btn"
+            className={`order-date-quick-btn${deliveryDate === todayStr ? ' order-date-quick-btn--active' : ''}`}
             onClick={() => saveDeliveryDate(todayStr)}
             aria-label={tBuyNow.todayLabel}
+            aria-pressed={deliveryDate === todayStr}
           >
             {tBuyNow.todayLabel}
           </button>
           <button
             type="button"
-            className="order-date-quick-btn"
+            className={`order-date-quick-btn${deliveryDate === tomorrowStr ? ' order-date-quick-btn--active' : ''}`}
             onClick={() => saveDeliveryDate(tomorrowStr)}
             aria-label={tBuyNow.tomorrowLabel}
+            aria-pressed={deliveryDate === tomorrowStr}
           >
             {tBuyNow.tomorrowLabel}
           </button>
@@ -413,7 +416,7 @@ export function ProductOrderBlock({
           color: var(--text);
           min-height: 42px;
           line-height: 1.4;
-          text-align: center;
+          text-align: left;
         }
         .order-date-display-wrap:focus-within .order-date-display,
         .order-date-display-wrap:hover .order-date-display {
@@ -433,19 +436,30 @@ export function ProductOrderBlock({
           margin-top: 8px;
         }
         .order-date-quick-btn {
-          padding: 6px 12px;
+          padding: 8px 14px;
           font-size: 0.85rem;
           font-family: inherit;
-          color: var(--text-muted);
-          background: transparent;
-          border: 1px solid var(--border);
+          font-weight: 600;
+          color: var(--text);
+          background: color-mix(in srgb, var(--accent-soft) 58%, var(--pastel-cream));
+          border: 1px solid color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
           border-radius: var(--radius-sm);
           cursor: pointer;
           transition: border-color 0.15s, color 0.15s, background 0.15s;
         }
         .order-date-quick-btn:hover {
-          border-color: var(--accent);
+          background: color-mix(in srgb, var(--accent-soft) 78%, var(--pastel-cream));
+          border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+        }
+        .order-date-quick-btn--active {
+          background: color-mix(in srgb, var(--pastel-pink) 88%, var(--pastel-cream));
           color: var(--text);
+          border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+          font-weight: 600;
+        }
+        .order-date-quick-btn--active:hover {
+          background: color-mix(in srgb, var(--pastel-pink) 92%, white);
+          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
         }
         .order-added-confirm {
           margin-top: 20px;

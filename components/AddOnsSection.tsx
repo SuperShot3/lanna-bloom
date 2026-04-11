@@ -115,7 +115,7 @@ export function AddOnsSection({
         .addons-label {
           display: block;
           font-size: 0.85rem;
-          font-weight: 500;
+          font-weight: 700;
           color: var(--text-muted);
           margin-bottom: 8px;
         }

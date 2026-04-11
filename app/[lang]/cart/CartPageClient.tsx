@@ -38,6 +38,7 @@ import {
   validateSubmissionTokenFormat,
 } from '@/lib/checkout/submissionToken';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+import { getLocalTodayYmd } from '@/lib/localDateYmd';
 import { PinIcon } from '@/components/icons/PinIcon';
 
 const LINE_CONTEXT_STORAGE_KEY = 'lanna-bloom-line-context';
@@ -74,7 +75,7 @@ const PREFERRED_TIME_KEY = 'lanna-bloom-preferred-delivery-time';
 
 function getProductPageDeliveryPreference(): { date: string; timeSlot: string } {
   if (typeof window === 'undefined') return { date: '', timeSlot: '' };
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getLocalTodayYmd();
   const storedDate = sessionStorage.getItem(PREFERRED_DELIVERY_KEY);
   const storedTime = sessionStorage.getItem(PREFERRED_TIME_KEY);
   const date = storedDate && /^\d{4}-\d{2}-\d{2}$/.test(storedDate) && storedDate >= todayStr

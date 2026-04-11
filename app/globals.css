@@ -1153,13 +1153,14 @@ a.filter-pill--active:hover {
   .product-info .mb-6 {
     margin-bottom: 1rem !important;
   }
-  .product-info [class*='order-date-display'] {
+  /* Substring selectors must not match wrappers: order-date-display-wrap, order-date-quick-btns */
+  .product-info [class*='order-date-display']:not([class*='order-date-display-wrap']) {
     padding: 8px 10px !important;
     min-height: 36px !important;
     font-size: 0.9rem !important;
   }
-  .product-info [class*='order-date-quick-btn'] {
-    padding: 5px 10px !important;
+  .product-info button[class*='order-date-quick-btn'] {
+    padding: 7px 12px !important;
     font-size: 0.8rem !important;
   }
 }

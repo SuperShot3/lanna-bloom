@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { PaymentMethodsAvailability } from '@/lib/checkout/paymentAvailability';
 import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
+import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 
 export type StickyBarSummary = {
   date?: string;
@@ -55,13 +56,6 @@ export type StickyBarProps = {
 
 const BUTTON_HEIGHT = 48;
 
-function getTodayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-function getTomorrowStr(): string {
-  return new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-}
-
 export function StickyCheckoutBar({
   lang,
   summary,
@@ -95,7 +89,8 @@ export function StickyCheckoutBar({
   const [editTimeSlot, setEditTimeSlot] = useState('');
   const touchStartY = useRef(0);
 
-  const minDate = getTodayStr();
+  const minDate = getLocalTodayYmd();
+  const tomorrowQuickStr = getLocalTomorrowYmd();
   const timeSlots = DELIVERY_TIME_SLOTS;
 
   const openEditSheet = useCallback(() => {
@@ -308,11 +303,11 @@ export function StickyCheckoutBar({
               aria-label={
                 stripeDisabled && incompleteHint
                   ? labels.completeDetailsToPay ?? 'Complete details to pay'
-                  : labels.payWithStripe ?? 'Pay with Stripe'
+                  : labels.payWithStripe ?? 'Pay now'
               }
               aria-busy={stripeLoading}
               aria-disabled={stripeDisabled}
-              title={labels.payWithStripe ?? 'Pay with Stripe'}
+              title={labels.payWithStripe ?? 'Pay now'}
             >
               <span className="sticky-checkout-bar__stripe-s" aria-hidden>S</span>
             </div>
@@ -383,15 +378,17 @@ export function StickyCheckoutBar({
               <div className="sticky-checkout-bar__sheet-quick">
                 <button
                   type="button"
-                  className="sticky-checkout-bar__sheet-quick-btn"
-                  onClick={() => setEditDate(getTodayStr())}
+                  className={`sticky-checkout-bar__sheet-quick-btn${editDate === minDate ? ' sticky-checkout-bar__sheet-quick-btn--active' : ''}`}
+                  onClick={() => setEditDate(minDate)}
+                  aria-pressed={editDate === minDate}
                 >
                   {labels.todayLabel ?? 'Today'}
                 </button>
                 <button
                   type="button"
-                  className="sticky-checkout-bar__sheet-quick-btn"
-                  onClick={() => setEditDate(getTomorrowStr())}
+                  className={`sticky-checkout-bar__sheet-quick-btn${editDate === tomorrowQuickStr ? ' sticky-checkout-bar__sheet-quick-btn--active' : ''}`}
+                  onClick={() => setEditDate(tomorrowQuickStr)}
+                  aria-pressed={editDate === tomorrowQuickStr}
                 >
                   {labels.tomorrowLabel ?? 'Tomorrow'}
                 </button>
@@ -841,18 +838,30 @@ export function StickyCheckoutBar({
           margin-top: 8px;
         }
         .sticky-checkout-bar__sheet-quick-btn {
-          padding: 6px 14px;
+          padding: 8px 16px;
           border-radius: 20px;
-          border: 1px solid var(--border);
-          background: var(--surface);
+          border: 1px solid color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
+          background: color-mix(in srgb, var(--accent-soft) 58%, var(--pastel-cream));
           font-size: 13px;
           font-weight: 600;
           color: var(--text);
           cursor: pointer;
           font-family: inherit;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
         }
         .sticky-checkout-bar__sheet-quick-btn:hover {
-          background: var(--pastel-cream);
+          background: color-mix(in srgb, var(--accent-soft) 78%, var(--pastel-cream));
+          border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+        }
+        .sticky-checkout-bar__sheet-quick-btn--active {
+          background: color-mix(in srgb, var(--pastel-pink) 88%, var(--pastel-cream));
+          color: var(--text);
+          border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+          font-weight: 600;
+        }
+        .sticky-checkout-bar__sheet-quick-btn--active:hover {
+          background: color-mix(in srgb, var(--pastel-pink) 92%, white);
+          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
         }
         .sticky-checkout-bar__sheet-select {
           width: 100%;

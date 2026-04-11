@@ -218,7 +218,7 @@ export function trackAddShippingInfo(params: {
 
 /**
  * Fire add_payment_info when user adds payment info (GA4 ecommerce).
- * Call when user selects payment method and proceeds (e.g. clicks "Pay with Stripe").
+ * Call when user selects payment method and proceeds (e.g. clicks "Pay now").
  */
 export function trackAddPaymentInfo(params: {
   paymentType: string;

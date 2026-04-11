@@ -5,6 +5,7 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
 import { PinIcon } from '@/components/icons/PinIcon';
+import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 
 /** 4 delivery windows from 08:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
@@ -86,8 +87,8 @@ export function DeliveryForm({
     return `${day} ${month}`;
   }, [lang]);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const todayStr = getLocalTodayYmd();
+  const tomorrowStr = getLocalTomorrowYmd();
   const minDate = todayStr;
 
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -228,17 +229,19 @@ export function DeliveryForm({
                 <div className="buy-now-date-quick-btns">
                   <button
                     type="button"
-                    className="buy-now-date-quick-btn"
+                    className={`buy-now-date-quick-btn${value.date === todayStr ? ' buy-now-date-quick-btn--active' : ''}`}
                     onClick={() => onChange({ ...value, date: todayStr })}
                     aria-label={t.todayLabel}
+                    aria-pressed={value.date === todayStr}
                   >
                     {t.todayLabel}
                   </button>
                   <button
                     type="button"
-                    className="buy-now-date-quick-btn"
+                    className={`buy-now-date-quick-btn${value.date === tomorrowStr ? ' buy-now-date-quick-btn--active' : ''}`}
                     onClick={() => onChange({ ...value, date: tomorrowStr })}
                     aria-label={t.tomorrowLabel}
+                    aria-pressed={value.date === tomorrowStr}
                   >
                     {t.tomorrowLabel}
                   </button>
@@ -638,19 +641,30 @@ export function DeliveryForm({
           margin-top: 8px;
         }
         .buy-now-date-quick-btn {
-          padding: 4px 10px;
-          font-size: 0.75rem;
+          padding: 6px 12px;
+          font-size: 0.8rem;
           font-family: inherit;
-          color: var(--text-muted);
-          background: transparent;
-          border: 1px solid var(--border);
+          font-weight: 600;
+          color: var(--text);
+          background: color-mix(in srgb, var(--accent-soft) 58%, var(--pastel-cream));
+          border: 1px solid color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
           border-radius: var(--radius-sm);
           cursor: pointer;
           transition: border-color 0.15s, color 0.15s, background 0.15s;
         }
         .buy-now-date-quick-btn:hover {
-          border-color: var(--accent);
+          background: color-mix(in srgb, var(--accent-soft) 78%, var(--pastel-cream));
+          border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+        }
+        .buy-now-date-quick-btn--active {
+          background: color-mix(in srgb, var(--pastel-pink) 88%, var(--pastel-cream));
           color: var(--text);
+          border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+          font-weight: 600;
+        }
+        .buy-now-date-quick-btn--active:hover {
+          background: color-mix(in srgb, var(--pastel-pink) 92%, white);
+          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
         }
       `}</style>
     </div>
