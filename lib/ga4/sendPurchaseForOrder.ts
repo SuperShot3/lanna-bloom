@@ -1,9 +1,7 @@
 /**
- * Send GA4 purchase for an order exactly once (idempotent).
- * Called when order status becomes paid (admin payment-status, mark-paid, or Stripe webhook).
- *
- * Race-condition safety: an atomic conditional UPDATE claims the send lock before
- * the HTTP call, so concurrent callers cannot both send.
+ * @deprecated Legacy GA4 Measurement Protocol sender. Not called by app routes anymore —
+ * ecommerce **purchase** is pushed to the GTM dataLayer from the paid order page (`trackPurchase`).
+ * Kept for reference or one-off scripts; requires GA4_MEASUREMENT_ID + GA4_MEASUREMENT_API_SECRET.
  */
 
 import 'server-only';

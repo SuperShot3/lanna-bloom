@@ -5,18 +5,9 @@ import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { queuePaymentNotificationForAgent } from '@/lib/line-notifications/pendingPayment';
-import type { PurchaseSource } from '@/lib/ga4/sendPurchaseForOrder';
-
-function mapTriggerToPurchaseSource(
-  trigger: 'stripe_webhook' | 'sync_checkout' | 'order_status'
-): PurchaseSource {
-  if (trigger === 'stripe_webhook') return 'stripe_webhook';
-  if (trigger === 'sync_checkout') return 'stripe_sync_checkout';
-  return 'stripe_order_status';
-}
-
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or polling).
+ * GA4 **purchase** is sent via GTM when the customer views the paid order page (`trackPurchase`), not Measurement Protocol.
  */
 export async function runStripePostPaymentSuccessHooks(params: {
   orderId: string;
@@ -76,17 +67,5 @@ export async function runStripePostPaymentSuccessHooks(params: {
       stripePaymentIntentId: params.paymentIntentId ?? null,
       createdBy,
     }).catch((e) => console.error('[stripe/postPayment] income upsert error:', e))
-  );
-
-  const gaSource = mapTriggerToPurchaseSource(params.trigger);
-  void import('@/lib/ga4/sendPurchaseForOrder').then(({ sendPurchaseForOrder }) =>
-    sendPurchaseForOrder(orderId, gaSource).then((r) => {
-      if (r.sent) {
-        console.log('[stripe/postPayment] GA4 purchase sent (Measurement Protocol)', {
-          orderId,
-          trigger: params.trigger,
-        });
-      }
-    }).catch((e) => console.error('[stripe/postPayment] GA4 purchase error:', e))
   );
 }

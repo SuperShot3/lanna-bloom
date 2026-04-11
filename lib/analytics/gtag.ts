@@ -1,12 +1,11 @@
 /**
  * Analytics helpers — GTM dataLayer pushes only.
  *
- * Architecture: App → window.dataLayer.push(...) → GTM → GA4.
+ * Architecture: App → window.dataLayer.push(...) → GTM → GA4 / Ads.
  * The app NEVER calls gtag('event', ...) or loads gtag.js directly.
- * GTM is the single system responsible for sending browser events to GA4.
  *
- * GA4 ecommerce **purchase** (revenue) is sent server-side via Measurement Protocol
- * (`sendPurchaseForOrder`), not via dataLayer.
+ * **Purchase (ecommerce revenue):** `trackPurchase` pushes `purchase` to the dataLayer when the
+ * customer views a **paid** order — GTM forwards to GA4. Deduped per orderId (localStorage + sessionStorage).
  */
 
 declare global {
@@ -49,7 +48,115 @@ function hasStorageSentFlag(storage: Storage | undefined, key: string): boolean 
   }
 }
 
-/** Dedupe key for optional GTM Google Ads conversion helper (unused unless you call `trackGoogleAdsPurchase`). */
+/** GA4 purchase dedupe: storage key per orderId. */
+const PURCHASE_SENT_PREFIX = 'purchase_sent:';
+
+function getPurchaseStorageKey(orderId: string): string {
+  return `${PURCHASE_SENT_PREFIX}${normalizeOrderId(orderId)}`;
+}
+
+export function getPurchaseGuardDebug(orderId: string): {
+  storageKey: string;
+  localStorageSent: boolean;
+  sessionStorageSent: boolean;
+} {
+  const key = getPurchaseStorageKey(orderId);
+  if (typeof window === 'undefined') {
+    return {
+      storageKey: key,
+      localStorageSent: false,
+      sessionStorageSent: false,
+    };
+  }
+
+  return {
+    storageKey: key,
+    localStorageSent: hasStorageSentFlag(window.localStorage, key),
+    sessionStorageSent: hasStorageSentFlag(window.sessionStorage, key),
+  };
+}
+
+export function wasPurchaseSent(orderId: string): boolean {
+  if (typeof window === 'undefined') return true;
+  const debug = getPurchaseGuardDebug(orderId);
+  return debug.localStorageSent || debug.sessionStorageSent;
+}
+
+function markPurchaseSent(orderId: string): void {
+  if (typeof window === 'undefined') return;
+  const key = getPurchaseStorageKey(orderId);
+  try {
+    window.localStorage.setItem(key, '1');
+    window.sessionStorage.setItem(key, '1');
+  } catch {
+    // ignore
+  }
+}
+
+export interface PurchaseItem {
+  item_id: string;
+  item_name: string;
+  price: number;
+  quantity?: number;
+  index?: number;
+  item_category?: string;
+  item_variant?: string;
+  currency?: string;
+}
+
+/**
+ * Fire purchase event at most once per orderId. GTM should forward to GA4.
+ */
+export function trackPurchase(params: {
+  orderId: string;
+  value: number;
+  currency?: string;
+  items: PurchaseItem[];
+  transactionId?: string;
+}): void {
+  if (typeof window === 'undefined') return;
+
+  const normalizedOrderId = normalizeOrderId(params.orderId);
+  if (!normalizedOrderId) return;
+
+  if (wasPurchaseSent(normalizedOrderId)) {
+    if (isDev) {
+      console.log('[gtag] trackPurchase skipped (already sent)', {
+        orderId: normalizedOrderId,
+        ...getPurchaseGuardDebug(normalizedOrderId),
+      });
+    }
+    return;
+  }
+  markPurchaseSent(normalizedOrderId);
+
+  const { value, currency = 'THB', items } = params;
+  const transactionId = params.transactionId ? normalizeOrderId(params.transactionId) : normalizedOrderId;
+
+  const ensuredItems = items.map((it, i) => ({
+    ...it,
+    quantity: it.quantity ?? 1,
+    index: it.index ?? i,
+    currency: it.currency ?? currency,
+  }));
+
+  pushToDataLayer('purchase', {
+    transaction_id: transactionId,
+    value,
+    currency,
+    items: ensuredItems,
+  });
+  if (isDev) {
+    console.log('[gtag] purchase pushed to dataLayer', {
+      orderId: normalizedOrderId,
+      transaction_id: transactionId,
+      value,
+      itemCount: ensuredItems.length,
+    });
+  }
+}
+
+/** Google Ads conversion dedupe (separate key from GA4 purchase). */
 const GOOGLE_ADS_CONVERSION_SENT_PREFIX = 'google_ads_conversion_sent:';
 
 function getGoogleAdsConversionStorageKey(orderId: string): string {
@@ -77,8 +184,8 @@ function markGoogleAdsConversionSent(orderId: string): void {
 }
 
 /**
- * Push google_ads_purchase to dataLayer for GTM → Google Ads Conversion tag (optional).
- * Fires at most once per orderId (dedupe via localStorage/sessionStorage).
+ * Push google_ads_purchase to dataLayer for GTM → Google Ads Conversion tag.
+ * Fires at most once per orderId.
  */
 export function trackGoogleAdsPurchase(params: {
   orderId: string;
@@ -108,7 +215,7 @@ export function trackGoogleAdsPurchase(params: {
     currency,
   });
   if (isDev) {
-    console.info('[analytics] google_ads_purchase pushed to dataLayer — GTM can fire Google Ads Conversion', {
+    console.info('[analytics] google_ads_purchase pushed to dataLayer', {
       orderId: normalizedOrderId,
       value: params.value,
       transactionId,

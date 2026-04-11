@@ -93,16 +93,7 @@ export async function PATCH(
     order_status: { from: previousOrderStatus, to: newOrderStatus },
   });
 
-  // GA4 purchase: send once via backend Measurement Protocol (idempotent, atomic claim)
-  const { sendPurchaseForOrder } = await import('@/lib/ga4/sendPurchaseForOrder');
-  const ga4Result = await sendPurchaseForOrder(order_id.trim(), 'admin_mark_paid');
-  if (ga4Result.sent) {
-    console.log('[admin/mark-paid] GA4 purchase sent for order', order_id.trim());
-  } else if (ga4Result.reason === 'already_sent') {
-    console.log('[admin/mark-paid] GA4 purchase skipped (already sent) for order', order_id.trim());
-  } else if (ga4Result.reason === 'send_failed') {
-    console.warn('[admin/mark-paid] GA4 purchase send failed for order', order_id.trim(), ga4Result.error);
-  }
+  // GA4 purchase: GTM fires when the customer opens the paid order page (client dataLayer).
 
   // Create income record (idempotent, fire-and-forget)
   void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>

@@ -13,6 +13,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
+import { trackPurchase, trackGoogleAdsPurchase } from '@/lib/analytics';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -159,6 +160,29 @@ export function OrderPageClient({
       cancelled = true;
     };
   }, [paid, orderId, router, order]);
+
+  // GTM: purchase + optional Google Ads conversion when the order is paid (single source for ecommerce revenue).
+  useEffect(() => {
+    if (!paid || typeof window === 'undefined') return;
+    const value =
+      order.pricing?.grandTotal ??
+      (order as { amountTotal?: number }).amountTotal ??
+      0;
+    const rawItems = order.items ?? [];
+    if (rawItems.length === 0) return;
+    const items = rawItems.map((it, i) => ({
+      item_id: it.bouquetId,
+      item_name: it.bouquetTitle,
+      price: it.price,
+      quantity: 1,
+      index: i,
+      item_variant: it.size,
+      currency: 'THB' as const,
+    }));
+    trackPurchase({ orderId, value, currency: 'THB', items });
+    trackGoogleAdsPurchase({ orderId, value, currency: 'THB' });
+  }, [paid, orderId, order.pricing?.grandTotal, order.items]);
+
   const [copied, setCopied] = useState(false);
 
   const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(

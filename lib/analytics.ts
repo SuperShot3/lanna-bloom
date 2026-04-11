@@ -2,10 +2,10 @@
  * Analytics helpers for GTM-owned Google Analytics 4 tracking.
  * The app only pushes structured events to dataLayer; GTM owns transport and pageviews.
  * All events fire only on client; per-event dedupe where noted.
- * GA4 **purchase** for ecommerce revenue is server-side only (`sendPurchaseForOrder` → Measurement Protocol).
+ * **Purchase (revenue):** `trackPurchase` → dataLayer → GTM → GA4 when the user views a paid order.
  */
 
-import { pushToDataLayer } from './analytics/gtag';
+import { pushToDataLayer, trackPurchase as pushPurchaseToDataLayer } from './analytics/gtag';
 
 export { trackGoogleAdsPurchase } from './analytics/gtag';
 
@@ -235,6 +235,25 @@ export function trackAddPaymentInfo(params: {
   };
   if (value != null) eventParams.value = value;
   sendEvent('add_payment_info', eventParams);
+}
+
+/**
+ * Push `purchase` to the dataLayer for GTM → GA4 (ecommerce). Deduped in `gtag.ts` per orderId.
+ */
+export function trackPurchase(params: {
+  orderId: string;
+  value: number;
+  currency?: string;
+  items: AnalyticsItem[];
+  transactionId?: string;
+}): void {
+  pushPurchaseToDataLayer({
+    orderId: params.orderId,
+    value: params.value,
+    currency: params.currency ?? CURRENCY,
+    items: params.items,
+    transactionId: params.transactionId,
+  });
 }
 
 const GENERATE_LEAD_DEDUPE_PREFIX = 'lanna-bloom_sent_generate_lead_';
