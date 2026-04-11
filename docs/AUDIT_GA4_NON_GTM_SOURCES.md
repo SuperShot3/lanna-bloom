@@ -7,7 +7,7 @@
 
 ## Summary (updated after Stripe-first checkout)
 
-- **Purchase for revenue:** **Measurement Protocol only** — `sendPurchaseForOrder` from Stripe webhook, `sync-checkout-session` (same idempotency), admin mark-paid, and admin payment-status. **No** `purchase` push from `app/order/[orderId]/page.tsx` (removed `OrderPaidConversionTracker`).
+- **Purchase for revenue:** **Measurement Protocol only** — `sendPurchaseForOrder` from Stripe webhook, fulfill/sync/order-status paths, admin mark-paid, and admin payment-status. **No** client `purchase` dataLayer push (removed legacy client purchase helper).
 - **Other ecommerce events** (cart, `add_payment_info`, etc.) still use **dataLayer → GTM** (`lib/analytics/gtag.ts`).
 
 ---

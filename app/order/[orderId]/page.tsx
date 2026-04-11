@@ -57,14 +57,6 @@ export default async function OrderDetailsPage({
     order.status,
     supabasePayment?.paid_at ?? order.paidAt,
   );
-  console.log('[stripe/purchase] order page SSR: paid computed', {
-    orderId: order.orderId,
-    paid,
-    supabasePaymentStatus: supabasePayment?.payment_status ?? null,
-    orderStatus: order.status,
-    paidAt: supabasePayment?.paid_at ?? order.paidAt ?? null,
-  });
-
   // Derive fulfillment / order status for customer view (badge on \"Order details\" tab).
   const fulfillmentFromOrderStatus =
     supabasePayment?.order_status != null
@@ -104,12 +96,10 @@ export default async function OrderDetailsPage({
     ?? supabasePayment?.updated_at
     ?? order.fulfillmentStatusUpdatedAt;
 
-  // Payment tab: unpaid orders pay via Stripe Checkout. Manual methods are admin-only (legacy rows).
+  /** Website checkout is Stripe-only; unpaid here means not yet paid or legacy unpaid rows. */
   const paymentStatusUpper = (supabasePayment?.payment_status ?? 'NOT_PAID').toUpperCase();
   const canPay =
     !paid && paymentStatusUpper !== 'CANCELLED' && paymentStatusUpper !== 'ERROR';
-
-  /** GA4 `purchase`: Measurement Protocol (webhook / admin), not browser dataLayer — see lib/ga4/sendPurchaseForOrder. */
 
   return (
     <div className="order-page">

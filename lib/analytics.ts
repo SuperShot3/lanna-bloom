@@ -1,13 +1,11 @@
 /**
  * Analytics helpers for GTM-owned Google Analytics 4 tracking.
  * The app only pushes structured events to dataLayer; GTM owns transport and pageviews.
- * All events fire only on client; dedupe and purchase persistence applied.
+ * All events fire only on client; per-event dedupe where noted.
+ * GA4 **purchase** for ecommerce revenue is server-side only (`sendPurchaseForOrder` → Measurement Protocol).
  */
 
-import {
-  pushToDataLayer,
-  trackPurchase as pushPurchaseToDataLayer,
-} from './analytics/gtag';
+import { pushToDataLayer } from './analytics/gtag';
 
 export { trackGoogleAdsPurchase } from './analytics/gtag';
 
@@ -239,26 +237,6 @@ export function trackAddPaymentInfo(params: {
   sendEvent('add_payment_info', eventParams);
 }
 
-/**
- * Push purchase to dataLayer only. GTM is the only sender to GA4.
- * Dedupe is applied in gtag (localStorage/sessionStorage per orderId).
- */
-export function trackPurchase(params: {
-  orderId: string;
-  value: number;
-  currency?: string;
-  items: AnalyticsItem[];
-  transactionId?: string;
-}): void {
-  pushPurchaseToDataLayer({
-    orderId: params.orderId,
-    value: params.value,
-    currency: params.currency ?? CURRENCY,
-    items: params.items,
-    transactionId: params.transactionId,
-  });
-}
-
 const GENERATE_LEAD_DEDUPE_PREFIX = 'lanna-bloom_sent_generate_lead_';
 
 /**
@@ -290,42 +268,6 @@ export function trackGenerateLead(params: {
   if (lead_type != null) eventParams.lead_type = lead_type;
   if (lead_source != null) eventParams.lead_source = lead_source;
   sendEvent('generate_lead', eventParams);
-}
-
-const GENERATE_LEAD_ORDER_CREATED_SESSION_PREFIX = 'lanna-bloom_generate_lead_order_created:';
-
-/**
- * Fire generate_lead exactly once after an order is successfully created (manual checkout submit).
- *
- * This is intended for GTM → Google Ads lead conversion tags which require order metadata
- * on the event object itself.
- *
- * IMPORTANT: sessionStorage-only dedupe so it won't fire on refresh/revisit of /order/[orderId].
- */
-export function trackGenerateLeadOrderCreated(params: {
-  orderId: string;
-  value: number;
-  currency?: string;
-  publicOrderUrl: string;
-}): void {
-  if (typeof window === 'undefined') return;
-  const orderId = String(params.orderId ?? '').trim();
-  if (!orderId) return;
-
-  const storageKey = `${GENERATE_LEAD_ORDER_CREATED_SESSION_PREFIX}${orderId}`;
-  try {
-    if (window.sessionStorage.getItem(storageKey) === '1') return;
-    window.sessionStorage.setItem(storageKey, '1');
-  } catch {
-    // ignore
-  }
-
-  sendEvent('generate_lead', {
-    order_id: orderId,
-    value: params.value,
-    currency: params.currency ?? CURRENCY,
-    public_order_url: params.publicOrderUrl,
-  });
 }
 
 // --- Non-ecommerce UI events ---

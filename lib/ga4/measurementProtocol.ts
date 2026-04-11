@@ -1,6 +1,6 @@
 /**
- * GA4 Measurement Protocol — server-side purchase event only.
- * Purchase is sent only when admin sets order to paid/confirmed_paid (or Stripe webhook).
+ * GA4 Measurement Protocol — server-side `purchase` only (revenue).
+ * Triggered when an order becomes PAID (Stripe fulfillment, sync, admin mark-paid, etc.).
  *
  * Env: GA4_MEASUREMENT_ID, GA4_MEASUREMENT_API_SECRET, GA4_MP_DEBUG (true = use debug endpoint).
  */
