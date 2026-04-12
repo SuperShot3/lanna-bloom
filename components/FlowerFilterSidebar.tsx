@@ -91,6 +91,8 @@ export interface FlowerFilterPanelProps {
   onClear: () => void;
   /** When true, panel is inside mobile bottom sheet (full width) */
   mobileSheet?: boolean;
+  /** Lets the mobile drawer render Apply in the fixed header (next to Clear). */
+  onMobileToolbarChange?: (state: { isDirty: boolean; apply: () => void } | null) => void;
 }
 
 export function FlowerFilterPanel({
@@ -100,6 +102,7 @@ export function FlowerFilterPanel({
   onApply,
   onClear,
   mobileSheet = false,
+  onMobileToolbarChange,
 }: FlowerFilterPanelProps) {
   const t = translations[lang].catalog;
   const committedKey = useMemo(() => buildCatalogSearchString(values), [values]);
@@ -127,6 +130,18 @@ export function FlowerFilterPanel({
 
   const draftKey = useMemo(() => buildCatalogSearchString(draft), [draft]);
   const isDirty = draftKey !== committedKey;
+
+  useEffect(() => {
+    if (!onMobileToolbarChange) return;
+    if (!mobileSheet) {
+      onMobileToolbarChange(null);
+      return;
+    }
+    onMobileToolbarChange({
+      isDirty,
+      apply: () => onApply(draft),
+    });
+  }, [mobileSheet, onMobileToolbarChange, isDirty, draft, onApply]);
 
   const applyPrice = useCallback(() => {
     const min = minStr ? parseInt(minStr, 10) : undefined;
@@ -234,14 +249,16 @@ export function FlowerFilterPanel({
         </div>
       )}
 
-      <button
-        type="button"
-        className="flower-filter-apply"
-        disabled={!isDirty}
-        onClick={() => onApply(draft)}
-      >
-        {t.applyFilters}
-      </button>
+      {!mobileSheet && (
+        <button
+          type="button"
+          className="flower-filter-apply"
+          disabled={!isDirty}
+          onClick={() => onApply(draft)}
+        >
+          {t.applyFilters}
+        </button>
+      )}
 
       {activePills.length > 0 && (
         <div className="flower-filter-active">
@@ -322,6 +339,28 @@ export function FlowerFilterPanel({
         </div>
       </div>
 
+      <Collapsible title={t.filterTypes}>
+        <div className="flower-pill-row">
+          {FLOWER_TYPES.map((ty) => {
+            const active = draft.types?.includes(ty) ?? false;
+            const count = flowerTypeCounts?.[ty];
+            const label = t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string;
+            return (
+              <button
+                key={ty}
+                type="button"
+                className={`flower-pill ${active ? 'is-active' : ''}`}
+                onClick={() => toggleMulti('types', ty)}
+                aria-pressed={active}
+              >
+                {label}
+                {count != null ? <span className="flower-count-muted"> ({count})</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      </Collapsible>
+
       <div className="flower-filter-group flower-filter-group--swatches">
         <p className="flower-filter-group-static-heading">{t.filterColors}</p>
         <div className="flower-swatch-grid">
@@ -367,28 +406,6 @@ export function FlowerFilterPanel({
           </div>
         </Collapsible>
       )}
-
-      <Collapsible title={t.filterTypes}>
-        <ul className="flower-check-list">
-          {FLOWER_TYPES.map((ty) => {
-            const checked = values.types?.includes(ty) ?? false;
-            const count = flowerTypeCounts?.[ty];
-            return (
-              <li key={ty}>
-                <label className="flower-check-row">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleMulti('types', ty)}
-                  />
-                  <span>{t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string}</span>
-                  {count != null && <span className="flower-count-muted">({count})</span>}
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      </Collapsible>
 
       <Collapsible title={t.filterDelivery}>
         <ul className="flower-check-list">
@@ -863,8 +880,16 @@ export function FlowerFilterMobileDrawer({
   ...panelProps
 }: FlowerFilterPanelProps & { isOpen: boolean; onClose: () => void }) {
   const tCat = translations[lang].catalog;
+  const [mobileToolbar, setMobileToolbar] = useState<{
+    isDirty: boolean;
+    apply: () => void;
+  } | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!isOpen) setMobileToolbar(null);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -912,13 +937,28 @@ export function FlowerFilterMobileDrawer({
             <h2 id="flower-m-title" className="flower-m-toolbar-title">
               {tCat.filters}
             </h2>
-            <button type="button" className="flower-m-toolbar-clear" onClick={panelProps.onClear}>
-              {tCat.clearAllFilters}
-            </button>
+            <div className="flower-m-toolbar-actions">
+              <button
+                type="button"
+                className="flower-m-toolbar-apply"
+                disabled={!mobileToolbar?.isDirty}
+                onClick={() => mobileToolbar?.apply()}
+              >
+                {tCat.applyFilters}
+              </button>
+              <button type="button" className="flower-m-toolbar-clear" onClick={panelProps.onClear}>
+                {tCat.clearAllFilters}
+              </button>
+            </div>
           </div>
         </div>
         <div className="flower-m-scroll">
-          <FlowerFilterPanel {...panelProps} lang={lang} mobileSheet />
+          <FlowerFilterPanel
+            {...panelProps}
+            lang={lang}
+            mobileSheet
+            onMobileToolbarChange={setMobileToolbar}
+          />
         </div>
       </div>
       <style jsx>{`
@@ -968,7 +1008,7 @@ export function FlowerFilterMobileDrawer({
         }
         .flower-m-toolbar {
           display: grid;
-          grid-template-columns: 48px 1fr auto;
+          grid-template-columns: 48px 1fr minmax(0, auto);
           align-items: center;
           gap: 6px;
           padding: 0 8px 12px;
@@ -1001,18 +1041,52 @@ export function FlowerFilterMobileDrawer({
           line-height: 1.25;
           padding: 0 4px;
         }
-        .flower-m-toolbar-clear {
+        .flower-m-toolbar-actions {
           justify-self: end;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          min-width: 0;
+        }
+        .flower-m-toolbar-apply {
+          flex: 0 1 auto;
+          padding: 8px 12px;
+          border: none;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          background: #c5a059;
+          color: #1a3c34;
+          box-shadow: 0 2px 0 #a88b5c;
+          transition: background 0.15s ease, opacity 0.15s ease;
+          white-space: nowrap;
+          line-height: 1.2;
+          max-width: 46vw;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .flower-m-toolbar-apply:hover:not(:disabled) {
+          background: #d4af37;
+        }
+        .flower-m-toolbar-apply:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+        .flower-m-toolbar-clear {
+          flex-shrink: 0;
           font-size: 12px;
           font-weight: 500;
           color: #8a7a72;
           background: none;
           border: none;
           cursor: pointer;
-          padding: 10px 4px;
+          padding: 10px 2px;
           text-align: right;
           line-height: 1.25;
-          max-width: min(40vw, 140px);
+          max-width: min(36vw, 120px);
         }
         .flower-m-toolbar-clear:active {
           color: #5c4a3a;
