@@ -6,6 +6,7 @@ import {
   preferredContactDisplay,
   recipientNameDisplay,
   recipientPhoneDisplay,
+  surpriseDeliveryAdminLabel,
 } from '@/lib/admin/orderSummaryPlainText';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsList';
@@ -21,6 +22,7 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
   const mapsUrl = checkoutMapsUrl(order);
   const recipientName = recipientNameDisplay(order);
   const recipientPhone = recipientPhoneDisplay(order);
+  const surpriseDelivery = surpriseDeliveryAdminLabel(order);
   const copyText = buildOrderSummaryPlainText(order, items);
 
   return (
@@ -94,6 +96,11 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
           <p>
             <span className="admin-summary-inline-label">Phone:</span> {naText(recipientPhone)}
           </p>
+          {surpriseDelivery != null && (
+            <p>
+              <span className="admin-summary-inline-label">Surprise delivery:</span> {surpriseDelivery}
+            </p>
+          )}
         </div>
       </div>
     </section>

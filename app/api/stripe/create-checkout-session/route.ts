@@ -112,6 +112,8 @@ function validateStripePayload(
     typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
   const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  const surpriseDelivery =
+    d.surpriseDelivery === true ? true : d.surpriseDelivery === false ? false : undefined;
 
   const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'] as const;
   const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as typeof validDistricts[number])
@@ -157,6 +159,7 @@ function validateStripePayload(
         preferredTimeSlot,
         recipientName,
         recipientPhone,
+        surpriseDelivery,
         notes: typeof d.notes === 'string' ? d.notes : undefined,
         deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
         deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
@@ -185,6 +188,7 @@ interface StripeCheckoutPayload {
     preferredTimeSlot: string;
     recipientName?: string;
     recipientPhone?: string;
+    surpriseDelivery?: boolean;
     notes?: string;
     deliveryLat?: number;
     deliveryLng?: number;
@@ -241,6 +245,9 @@ export async function POST(request: NextRequest) {
         preferredTimeSlot: data.delivery.preferredTimeSlot,
         recipientName: data.delivery.recipientName,
         recipientPhone: data.delivery.recipientPhone,
+        ...(data.delivery.surpriseDelivery !== undefined && {
+          surpriseDelivery: data.delivery.surpriseDelivery,
+        }),
         notes: data.delivery.notes,
         deliveryLat: data.delivery.deliveryLat,
         deliveryLng: data.delivery.deliveryLng,

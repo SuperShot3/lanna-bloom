@@ -93,7 +93,14 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   ${(order.delivery.recipientName || order.delivery.recipientPhone) ? `
   <h2 style="font-size: 1rem;">Recipient</h2>
   <p>${order.delivery.recipientName ? escapeHtml(order.delivery.recipientName) : '—'}<br/>
-  Phone: ${order.delivery.recipientPhone ? escapeHtml(order.delivery.recipientPhone) : '—'}</p>
+  Phone: ${order.delivery.recipientPhone ? escapeHtml(order.delivery.recipientPhone) : '—'}<br/>
+  Surprise delivery: ${
+    order.delivery.surpriseDelivery === true
+      ? 'Yes'
+      : order.delivery.surpriseDelivery === false
+        ? 'No'
+        : '—'
+  }</p>
   ` : ''}
 
   <h2 style="font-size: 1rem;">Items</h2>

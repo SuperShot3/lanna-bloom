@@ -41,6 +41,8 @@ export interface OrderDelivery {
   preferredTimeSlot: string;
   recipientName?: string;
   recipientPhone?: string;
+  /** When ordering for someone else: true = surprise (do not tip off recipient), false = not a surprise. */
+  surpriseDelivery?: boolean;
   notes?: string;
   deliveryLat?: number;
   deliveryLng?: number;

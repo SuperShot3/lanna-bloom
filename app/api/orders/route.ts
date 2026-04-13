@@ -37,6 +37,8 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const preferredTimeSlot = typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
   const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  const surpriseDelivery =
+    d.surpriseDelivery === true ? true : d.surpriseDelivery === false ? false : undefined;
   if (!address || address.length < 10 || address.length > 500) {
     return { ok: false, message: 'delivery.address is required (10–500 characters)' };
   }
@@ -161,6 +163,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       preferredTimeSlot,
       recipientName: recipientName || undefined,
       recipientPhone: recipientPhone || undefined,
+      ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       notes: typeof d.notes === 'string' ? d.notes : undefined,
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,

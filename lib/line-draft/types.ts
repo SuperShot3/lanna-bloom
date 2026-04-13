@@ -50,6 +50,8 @@ export interface LineDraftFormPartial {
   recipientPhoneNational?: string;
   contactPreference?: ContactPreferenceOption[];
   isOrderingForSomeoneElse?: boolean;
+  /** When ordering for someone else; omitted defaults at cart to “surprise” unchecked. */
+  surpriseDelivery?: boolean;
   delivery?: LineDraftDeliveryPartial;
 }
 

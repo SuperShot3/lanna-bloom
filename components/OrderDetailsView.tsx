@@ -231,6 +231,20 @@ export function OrderDetailsView({
         if (order.delivery.recipientPhone) {
           lines.push(`${t.recipientPhone}: ${order.delivery.recipientPhone}`);
         }
+        if (typeof order.delivery.surpriseDelivery === 'boolean') {
+          const tp = t as {
+            surpriseDelivery?: string;
+            surpriseDeliveryYes?: string;
+            surpriseDeliveryNo?: string;
+          };
+          lines.push(
+            `${tp.surpriseDelivery ?? 'Surprise delivery'}: ${
+              order.delivery.surpriseDelivery
+                ? (tp.surpriseDeliveryYes ?? 'Yes')
+                : (tp.surpriseDeliveryNo ?? 'No')
+            }`
+          );
+        }
       }
     }
     lines.push('');
@@ -449,6 +463,14 @@ export function OrderDetailsView({
           <p className="order-details-value">{order.delivery.recipientName || '—'}</p>
           {order.delivery.recipientPhone && (
             <p className="order-details-value">{t.recipientPhone}: {order.delivery.recipientPhone}</p>
+          )}
+          {typeof order.delivery.surpriseDelivery === 'boolean' && (
+            <p className="order-details-value">
+              {(t as { surpriseDelivery?: string }).surpriseDelivery ?? 'Surprise delivery'}:{' '}
+              {order.delivery.surpriseDelivery
+                ? ((t as { surpriseDeliveryYes?: string }).surpriseDeliveryYes ?? 'Yes')
+                : ((t as { surpriseDeliveryNo?: string }).surpriseDeliveryNo ?? 'No')}
+            </p>
           )}
         </div>
       )}

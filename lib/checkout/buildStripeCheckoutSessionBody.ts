@@ -67,6 +67,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   orderSource?: 'line' | 'web';
   recipientName?: string;
   recipientPhone?: string;
+  surpriseDelivery?: boolean;
 }): Record<string, unknown> {
   const {
     lang,
@@ -81,6 +82,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     orderSource,
     recipientName,
     recipientPhone,
+    surpriseDelivery,
   } = params;
 
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
@@ -116,6 +118,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       preferredTimeSlot,
       recipientName: recipientName?.trim() || undefined,
       recipientPhone: recipientPhone?.trim() || undefined,
+      ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       deliveryDistrict: district,
       isMueangCentral,
       deliveryLat: delivery.deliveryLat ?? undefined,

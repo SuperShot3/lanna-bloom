@@ -98,6 +98,7 @@ type StoredCartForm = {
   recipientPhoneNational: string;
   contactPreference: ContactPreferenceOption[];
   isOrderingForSomeoneElse?: boolean;
+  surpriseDelivery?: boolean;
 };
 
 function loadCartFormFromStorage(): StoredCartForm | null {
@@ -300,6 +301,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               )
             : [],
           isOrderingForSomeoneElse: form?.isOrderingForSomeoneElse ?? false,
+          surpriseDelivery: form?.surpriseDelivery ?? false,
         };
         localStorage.setItem(CART_FORM_STORAGE_KEY, JSON.stringify(stored));
         localStorage.setItem(
@@ -381,6 +383,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [recipientCountryCode, setRecipientCountryCode] = useState(() => loadCartFormFromStorage()?.recipientCountryCode ?? '66');
   const [recipientPhoneNational, setRecipientPhoneNational] = useState(() => loadCartFormFromStorage()?.recipientPhoneNational ?? '');
   const [isOrderingForSomeoneElse, setIsOrderingForSomeoneElse] = useState(() => loadCartFormFromStorage()?.isOrderingForSomeoneElse ?? false);
+  const [surpriseDelivery, setSurpriseDelivery] = useState(() => loadCartFormFromStorage()?.surpriseDelivery ?? false);
   const [contactPreference, setContactPreference] = useState<ContactPreferenceOption[]>(() => {
     const stored = loadCartFormFromStorage()?.contactPreference;
     if (!Array.isArray(stored)) return [];
@@ -428,8 +431,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       recipientPhoneNational,
       contactPreference,
       isOrderingForSomeoneElse,
+      surpriseDelivery,
     });
-  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, isOrderingForSomeoneElse]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, isOrderingForSomeoneElse, surpriseDelivery]);
 
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
@@ -751,6 +755,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         ...(isOrderingForSomeoneElse && {
           recipientName: recipientName.trim(),
           recipientPhone: recipientPhone!,
+          surpriseDelivery,
         }),
       });
 
@@ -1130,6 +1135,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
             </p>
           </div>
+          <label className="cart-contact-checkbox-label cart-ordering-for-else">
+            <input
+              type="checkbox"
+              checked={surpriseDelivery}
+              onChange={(e) => setSurpriseDelivery(e.target.checked)}
+              className="cart-contact-checkbox"
+            />
+            <span className="cart-ordering-for-else-text">
+              {(t as { surpriseDeliveryCheckbox?: string }).surpriseDeliveryCheckbox ??
+                'Surprise delivery (do not contact the recipient in advance about the delivery)'}
+            </span>
+          </label>
         </>
       )}
     </div>

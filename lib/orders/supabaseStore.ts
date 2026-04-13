@@ -148,6 +148,9 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
 
   const preferredTimeSlot = mapDeliveryWindowToTimeSlot(row.delivery_window, row.delivery_date);
 
+  const looseJson = row.order_json as Partial<Order> | null | undefined;
+  const surpriseFromJson = looseJson?.delivery?.surpriseDelivery;
+
   return {
     orderId: row.order_id,
     customerName: row.customer_name ?? undefined,
@@ -159,6 +162,7 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       preferredTimeSlot,
       recipientName: row.recipient_name ?? undefined,
       recipientPhone: row.recipient_phone ?? undefined,
+      ...(surpriseFromJson !== undefined && { surpriseDelivery: surpriseFromJson }),
       deliveryDistrict: (row.district as Order['delivery']['deliveryDistrict']) ?? 'UNKNOWN',
     },
     pricing: {

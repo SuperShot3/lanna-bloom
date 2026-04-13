@@ -280,6 +280,30 @@ export function OrderPageClient({
             </div>
           </div>
 
+          {!addressHidden &&
+            (order.delivery?.recipientName || order.delivery?.recipientPhone) && (
+              <>
+                <div className="order-redesign-section-title">{t.recipient}</div>
+                <div className="order-redesign-meta-card full">
+                  <div className="order-redesign-meta-label">{t.recipientName}</div>
+                  <div className="order-redesign-meta-value">{order.delivery?.recipientName || '—'}</div>
+                  {order.delivery?.recipientPhone ? (
+                    <div className="order-redesign-meta-sub">
+                      {t.recipientPhone}: {order.delivery.recipientPhone}
+                    </div>
+                  ) : null}
+                  {typeof order.delivery?.surpriseDelivery === 'boolean' && (
+                    <div className="order-redesign-meta-sub">
+                      {(t as { surpriseDelivery?: string }).surpriseDelivery ?? 'Surprise delivery'}:{' '}
+                      {order.delivery.surpriseDelivery
+                        ? ((t as { surpriseDeliveryYes?: string }).surpriseDeliveryYes ?? 'Yes')
+                        : ((t as { surpriseDeliveryNo?: string }).surpriseDeliveryNo ?? 'No')}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
           {paid && (
             <div className="order-redesign-paid-view order-redesign-paid-inline">
               <div className="order-redesign-paid-check" aria-hidden>

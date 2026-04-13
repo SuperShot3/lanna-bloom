@@ -43,6 +43,17 @@ export function recipientPhoneDisplay(order: SupabaseOrderRow): string {
   return orderJsonDelivery(order)?.recipientPhone?.trim() ?? '';
 }
 
+/** Plain label for admin when ordering for someone else; null if no recipient on order. */
+export function surpriseDeliveryAdminLabel(order: SupabaseOrderRow): string | null {
+  const rName = recipientNameDisplay(order);
+  const rPhone = recipientPhoneDisplay(order);
+  if (!rName && !rPhone) return null;
+  const v = orderJsonDelivery(order)?.surpriseDelivery;
+  if (v === true) return 'Yes';
+  if (v === false) return 'No';
+  return '—';
+}
+
 export function preferredContactDisplay(order: SupabaseOrderRow): string {
   const prefs = parseContactPreference(order.contact_preference);
   return prefs.length > 0
@@ -96,6 +107,7 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   const mapsUrl = checkoutMapsUrl(order);
   const rName = recipientNameDisplay(order);
   const rPhone = recipientPhoneDisplay(order);
+  const surprise = surpriseDeliveryAdminLabel(order);
 
   lines.push('ORDER SUMMARY');
   lines.push('');
@@ -149,6 +161,9 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push('Recipient');
   lines.push(`  Name: ${naText(rName)}`);
   lines.push(`  Phone: ${naText(rPhone)}`);
+  if (surprise != null) {
+    lines.push(`  Surprise delivery: ${surprise}`);
+  }
 
   return lines.join('\n');
 }
