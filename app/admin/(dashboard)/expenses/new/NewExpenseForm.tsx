@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 
+const MAX_RECEIPT_BYTES = 500 * 1024;
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -31,6 +33,26 @@ export function NewExpenseForm() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    if (!file) {
+      setReceiptFile(null);
+      setReceiptPreview(null);
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files are allowed for receipt.');
+      setReceiptFile(null);
+      setReceiptPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      setError('Receipt image is too large. Max size is 500 KB.');
+      setReceiptFile(null);
+      setReceiptPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setError(null);
     setReceiptFile(file);
     if (file && file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
@@ -247,14 +269,14 @@ export function NewExpenseForm() {
               <div className="admin-expenses-upload-placeholder">
                 <span className="material-symbols-outlined">add_photo_alternate</span>
                 <span>Tap to attach receipt</span>
-                <span className="admin-hint">JPG, PNG, WebP, HEIC or PDF · max 10 MB</span>
+                <span className="admin-hint">JPG, PNG, WebP, HEIC · max 500 KB</span>
               </div>
             )}
           </div>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+            accept="image/jpeg,image/png,image/webp,image/heic"
             className="admin-expenses-file-input"
             onChange={handleFileChange}
             aria-label="Upload receipt file"

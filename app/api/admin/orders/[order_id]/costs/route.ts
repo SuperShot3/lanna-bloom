@@ -189,16 +189,20 @@ export async function PATCH(
     const cogsExpenseDesc = `COGS (flowers) — order ${order_id.trim()}`;
     const adminEmail = session.user.email ?? 'unknown';
 
-    const { data: existingExpense } = await supabase
+    const { data: existingExpense, error: existingExpenseErr } = await supabase
       .from('expenses')
-      .select('id')
+      .select('id, receipt_attached, receipt_file_path')
       .eq('linked_order_id', order_id.trim())
       .eq('category', 'flowers')
       .limit(1)
       .maybeSingle();
+    if (existingExpenseErr) {
+      return NextResponse.json({ error: existingExpenseErr.message }, { status: 500 });
+    }
 
+    let cogsExpense: { id: string; receipt_attached: boolean; receipt_file_path: string | null } | null = null;
     if (existingExpense?.id) {
-      await supabase
+      const { data: updatedExpense, error: updateExpenseErr } = await supabase
         .from('expenses')
         .update({
           amount: Number(nextCogs),
@@ -209,21 +213,43 @@ export async function PATCH(
           notes: 'Auto from order COGS',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', existingExpense.id);
+        .eq('id', existingExpense.id)
+        .select('id, receipt_attached, receipt_file_path')
+        .single();
+      if (updateExpenseErr) {
+        return NextResponse.json({ error: updateExpenseErr.message }, { status: 500 });
+      }
+      cogsExpense = {
+        id: String(updatedExpense.id),
+        receipt_attached: updatedExpense.receipt_attached === true,
+        receipt_file_path: (updatedExpense.receipt_file_path as string | null) ?? null,
+      };
     } else {
-      await supabase.from('expenses').insert({
-        amount: Number(nextCogs),
-        currency: 'THB',
-        date: expenseDateIso,
-        category: 'flowers',
-        description: cogsExpenseDesc,
-        payment_method: 'bank_transfer',
-        receipt_file_path: null,
-        receipt_attached: false,
-        created_by: adminEmail,
-        notes: 'Auto from order COGS',
-        linked_order_id: order_id.trim(),
-      });
+      const { data: insertedExpense, error: insertExpenseErr } = await supabase
+        .from('expenses')
+        .insert({
+          amount: Number(nextCogs),
+          currency: 'THB',
+          date: expenseDateIso,
+          category: 'flowers',
+          description: cogsExpenseDesc,
+          payment_method: 'bank_transfer',
+          receipt_file_path: null,
+          receipt_attached: false,
+          created_by: adminEmail,
+          notes: 'Auto from order COGS',
+          linked_order_id: order_id.trim(),
+        })
+        .select('id, receipt_attached, receipt_file_path')
+        .single();
+      if (insertExpenseErr) {
+        return NextResponse.json({ error: insertExpenseErr.message }, { status: 500 });
+      }
+      cogsExpense = {
+        id: String(insertedExpense.id),
+        receipt_attached: insertedExpense.receipt_attached === true,
+        receipt_file_path: (insertedExpense.receipt_file_path as string | null) ?? null,
+      };
     }
 
     await logAudit(adminEmail, 'COSTS_UPDATE', order_id.trim(), {
@@ -231,7 +257,7 @@ export async function PATCH(
       after: updatePayload,
     });
 
-    return NextResponse.json({ ok: true, order: data });
+    return NextResponse.json({ ok: true, order: data, cogsExpense });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[admin] costs update exception:', msg);

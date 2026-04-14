@@ -3,13 +3,12 @@ import { requireRole } from '@/lib/adminRbac';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 const BUCKET = 'receipts';
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_BYTES = 500 * 1024; // 500 KB
 const ALLOWED_TYPES: readonly string[] = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/heic',
-  'application/pdf',
 ];
 
 function fileExtension(mimeType: string): string {
@@ -18,7 +17,6 @@ function fileExtension(mimeType: string): string {
     'image/png':        'png',
     'image/webp':       'webp',
     'image/heic':       'heic',
-    'application/pdf':  'pdf',
   };
   return map[mimeType] ?? 'bin';
 }
@@ -52,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'File too large (max 10 MB)' }, { status: 413 });
+    return NextResponse.json({ error: 'File too large (max 500 KB)' }, { status: 413 });
   }
 
   const supabase = getSupabaseAdmin();

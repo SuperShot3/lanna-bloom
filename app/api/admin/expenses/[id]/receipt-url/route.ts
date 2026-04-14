@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 const SIGNED_URL_TTL_SECONDS = 60 * 15; // 15 minutes
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const authResult = await requireRole(['OWNER', 'MANAGER']);
@@ -30,9 +30,15 @@ export async function GET(
     return NextResponse.json({ error: 'Storage not configured' }, { status: 503 });
   }
 
+  const downloadParam = request.nextUrl.searchParams.get('download');
+  const shouldDownload = downloadParam === '1' || downloadParam === 'true' || downloadParam === 'yes';
+  const fallbackFileName = expense.receipt_file_path.split('/').pop() ?? `receipt-${expense.id}`;
+
   const { data, error } = await supabase.storage
     .from('receipts')
-    .createSignedUrl(expense.receipt_file_path, SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(expense.receipt_file_path, SIGNED_URL_TTL_SECONDS, {
+      download: shouldDownload ? fallbackFileName : undefined,
+    });
 
   if (error || !data?.signedUrl) {
     console.error('[receipt-url] signed URL error:', error?.message);

@@ -84,6 +84,26 @@ export async function getExpenseById(id: string): Promise<Expense | null> {
   return data as Expense;
 }
 
+export async function getCogsExpenseByOrderId(orderId: string): Promise<Expense | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('linked_order_id', orderId)
+    .eq('category', 'flowers')
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[expenseQueries] getCogsExpenseByOrderId error:', error.message);
+    return null;
+  }
+
+  return (data as Expense | null) ?? null;
+}
+
 export interface CreateExpenseInput {
   amount: number;
   currency?: string;

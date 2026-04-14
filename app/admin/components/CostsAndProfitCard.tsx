@@ -1,14 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
+import type { Expense } from '@/types/expenses';
+
+const MAX_RECEIPT_BYTES = 500 * 1024;
+
+type CogsExpenseRef = Pick<Expense, 'id' | 'receipt_attached' | 'receipt_file_path'> | null;
 
 interface CostsAndProfitCardProps {
   order: SupabaseOrderRow;
   items?: SupabaseOrderItemRow[];
   canEdit?: boolean;
+  initialCogsExpense?: CogsExpenseRef;
 }
 
 function sumPartnerItemsCost(items: SupabaseOrderItemRow[]): number {
@@ -30,8 +36,14 @@ function parseInput(s: string): number | null {
   return Math.round(n * 100) / 100;
 }
 
-export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsAndProfitCardProps) {
+export function CostsAndProfitCard({
+  order,
+  items = [],
+  canEdit = true,
+  initialCogsExpense = null,
+}: CostsAndProfitCardProps) {
   const router = useRouter();
+  const receiptFileInputRef = useRef<HTMLInputElement>(null);
   const totalAmount = order.total_amount ?? order.grand_total ?? null;
   const partnerItemsCogs = sumPartnerItemsCost(items);
   const effectiveInitialCogs =
@@ -41,6 +53,11 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
   const [paymentFee, setPaymentFee] = useState(toInputValue(order.payment_fee));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [cogsExpense, setCogsExpense] = useState<CogsExpenseRef>(initialCogsExpense);
+  const [receiptBusy, setReceiptBusy] = useState(false);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [receiptMessage, setReceiptMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const itemCostStateInit = useMemo(() => {
     const map: Record<string, string> = {};
@@ -125,6 +142,16 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
       }
 
       setMessage({ type: 'success', text: 'Costs saved' });
+      if (data.cogsExpense && typeof data.cogsExpense.id === 'string') {
+        setCogsExpense({
+          id: data.cogsExpense.id,
+          receipt_attached: data.cogsExpense.receipt_attached === true,
+          receipt_file_path:
+            typeof data.cogsExpense.receipt_file_path === 'string'
+              ? data.cogsExpense.receipt_file_path
+              : null,
+        });
+      }
       setTimeout(() => setMessage(null), 3000);
       router.refresh();
     } catch (e) {
@@ -146,6 +173,108 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
     const n = parseFloat(v);
     if (!Number.isNaN(n) && n >= 0) {
       setter(String(Math.round(n * 100) / 100));
+    }
+  };
+
+  const handleViewReceipt = async () => {
+    if (!cogsExpense?.id || !cogsExpense.receipt_file_path) return;
+    setLoadingReceipt(true);
+    setReceiptMessage(null);
+    try {
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(cogsExpense.id)}/receipt-url`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReceiptMessage({ type: 'error', text: data.error ?? 'Failed to load receipt image' });
+        return;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      setReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt image' });
+    } finally {
+      setLoadingReceipt(false);
+    }
+  };
+
+  const handleReceiptFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (receiptFileInputRef.current) receiptFileInputRef.current.value = '';
+
+    setReceiptMessage(null);
+    if (!cogsExpense?.id) {
+      setReceiptMessage({
+        type: 'error',
+        text: 'Save COGS first. The order expense must exist before attaching receipt image.',
+      });
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setReceiptMessage({ type: 'error', text: 'Only image files are allowed.' });
+      return;
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      setReceiptMessage({ type: 'error', text: 'Image is too large. Max size is 500 KB.' });
+      return;
+    }
+
+    setReceiptBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await fetch('/api/admin/expenses/upload-receipt', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok || typeof uploadData.path !== 'string') {
+        setReceiptMessage({ type: 'error', text: uploadData.error ?? 'Receipt upload failed' });
+        return;
+      }
+
+      const patchRes = await fetch(`/api/admin/expenses/${encodeURIComponent(cogsExpense.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receipt_file_path: uploadData.path,
+          receipt_attached: true,
+        }),
+      });
+      const patchData = await patchRes.json().catch(() => ({}));
+      if (!patchRes.ok || !patchData.expense) {
+        setReceiptMessage({ type: 'error', text: patchData.error ?? 'Failed to attach receipt image' });
+        return;
+      }
+
+      setCogsExpense({
+        id: patchData.expense.id,
+        receipt_attached: patchData.expense.receipt_attached === true,
+        receipt_file_path: patchData.expense.receipt_file_path ?? null,
+      });
+      setReceiptMessage({ type: 'success', text: 'Receipt image attached' });
+      router.refresh();
+    } catch {
+      setReceiptMessage({ type: 'error', text: 'Network error while uploading receipt image' });
+    } finally {
+      setReceiptBusy(false);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!cogsExpense?.id || !cogsExpense.receipt_file_path) return;
+    setDownloadingReceipt(true);
+    setReceiptMessage(null);
+    try {
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(cogsExpense.id)}/receipt-url?download=1`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReceiptMessage({ type: 'error', text: data.error ?? 'Failed to prepare download' });
+        return;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      setReceiptMessage({ type: 'error', text: 'Unexpected error preparing download' });
+    } finally {
+      setDownloadingReceipt(false);
     }
   };
 
@@ -311,6 +440,56 @@ export function CostsAndProfitCard({ order, items = [], canEdit = true }: CostsA
             </span>
           )}
         </div>
+      )}
+
+      <div className="admin-costs-actions" style={{ marginTop: 10, gap: 10 }}>
+        <input
+          ref={receiptFileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          onChange={handleReceiptFileSelected}
+          style={{ display: 'none' }}
+          aria-label="Add COGS receipt image"
+        />
+        <button
+          type="button"
+          className="admin-btn admin-btn-outline"
+          onClick={() => receiptFileInputRef.current?.click()}
+          disabled={receiptBusy || !canEdit}
+        >
+          {receiptBusy ? 'Uploading image…' : 'Add image'}
+        </button>
+        {cogsExpense?.receipt_attached && cogsExpense.receipt_file_path && (
+          <>
+            <button
+              type="button"
+              className="admin-btn admin-btn-primary"
+              onClick={handleViewReceipt}
+              disabled={loadingReceipt}
+            >
+              {loadingReceipt ? 'Loading image…' : 'View receipt image'}
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline"
+              onClick={handleDownloadReceipt}
+              disabled={downloadingReceipt}
+            >
+              {downloadingReceipt ? 'Preparing download…' : 'Download image'}
+            </button>
+          </>
+        )}
+        {!cogsExpense?.id && (
+          <span className="admin-hint">Save costs first to create linked COGS expense.</span>
+        )}
+      </div>
+      <p className="admin-hint" style={{ marginTop: 8 }}>
+        Receipt images only, max size 500 KB.
+      </p>
+      {receiptMessage && (
+        <p className={receiptMessage.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
+          {receiptMessage.text}
+        </p>
       )}
     </section>
   );
