@@ -467,34 +467,36 @@ export function CostsAndProfitCard({
           style={{ display: 'none' }}
           aria-label="Add COGS receipt image"
         />
-        <button
-          type="button"
-          className="admin-btn admin-btn-outline"
-          onClick={() => receiptFileInputRef.current?.click()}
-          disabled={receiptBusy || !canEdit}
-        >
-          {receiptBusy ? 'Uploading image…' : 'Add image'}
-        </button>
-        {receiptCount > 0 && cogsExpense?.id && (
-          <>
-            <button
-              type="button"
-              className="admin-btn admin-btn-primary"
-              onClick={handleViewReceipt}
-              disabled={loadingReceipt}
-            >
-              {loadingReceipt ? 'Loading image…' : 'View receipt image'}
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-outline"
-              onClick={handleDownloadReceipt}
-              disabled={downloadingReceipt}
-            >
-              {downloadingReceipt ? 'Preparing download…' : 'Download image'}
-            </button>
-          </>
-        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <button
+            type="button"
+            className="admin-btn admin-btn-sm admin-btn-outline"
+            onClick={() => receiptFileInputRef.current?.click()}
+            disabled={receiptBusy || !canEdit}
+          >
+            {receiptBusy ? 'Uploading image…' : 'Add image'}
+          </button>
+          {receiptCount > 0 && cogsExpense?.id && (
+            <>
+              <button
+                type="button"
+                className="admin-btn admin-btn-sm admin-btn-primary"
+                onClick={handleViewReceipt}
+                disabled={loadingReceipt}
+              >
+                {loadingReceipt ? 'Loading image…' : 'View receipt image'}
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-sm admin-btn-outline"
+                onClick={handleDownloadReceipt}
+                disabled={downloadingReceipt}
+              >
+                {downloadingReceipt ? 'Preparing download…' : 'Download image'}
+              </button>
+            </>
+          )}
+        </div>
         {!cogsExpense?.id && (
           <span className="admin-hint">Save costs first to create linked COGS expense.</span>
         )}
@@ -507,28 +509,38 @@ export function CostsAndProfitCard({
         Images added: {receiptCount} {currentReceiptName ? `| Image name: ${currentReceiptName}` : ''}
       </p>
       {receiptCount > 0 && cogsExpense?.id ? (
-        <div className="admin-expenses-detail-grid" style={{ marginTop: 8 }}>
-          {receipts.map((r) => (
-            <div key={r.id} className="admin-expenses-detail-row">
-              <dt className="admin-expenses-detail-label">{r.file_name}</dt>
-              <dd className="admin-expenses-detail-value" style={{ display: 'inline-flex', gap: 8 }}>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-sm admin-btn-outline"
-                  onClick={() => { void openReceipt(cogsExpense.id, r.file_path, false); }}
-                >
-                  View
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-sm admin-btn-outline"
-                  onClick={() => { void openReceipt(cogsExpense.id, r.file_path, true); }}
-                >
-                  Download
-                </button>
-              </dd>
-            </div>
-          ))}
+        <div className="admin-expenses-table-wrap" style={{ marginTop: 10 }}>
+          <table className="admin-expenses-table">
+            <thead>
+              <tr>
+                <th>Image name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receipts.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.file_name}</td>
+                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-sm admin-btn-outline"
+                      onClick={() => { void openReceipt(cogsExpense.id, r.file_path, false); }}
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-sm admin-btn-outline"
+                      onClick={() => { void openReceipt(cogsExpense.id, r.file_path, true); }}
+                    >
+                      Download
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : null}
       {receiptMessage && (
