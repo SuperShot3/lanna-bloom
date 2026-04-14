@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { IncomeRecord } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, INCOME_PAYMENT_METHODS, MONEY_LOCATIONS, INCOME_STATUSES } from '@/types/accounting';
 import { netAfterProcessingFee, processingFeeForIncome, STRIPE_FEE_PERCENT_LABEL } from '@/lib/accounting/stripeFee';
+import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
 const SOURCE_TYPE_LABEL = Object.fromEntries(INCOME_SOURCE_TYPES.map((t) => [t.value, t.label]));
 const PM_LABEL          = Object.fromEntries(INCOME_PAYMENT_METHODS.map((m) => [m.value, m.label]));
@@ -98,7 +99,7 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Permanently delete this income record? This cannot be undone.')) return;
+    if (!confirmDeleteAction('Permanently delete this income record? This cannot be undone.')) return;
     setDeleting(true);
     setDeleteError(null);
     try {

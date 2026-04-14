@@ -21,22 +21,42 @@ export async function GET(
   if (!expense) {
     return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
   }
-  if (!expense.receipt_file_path) {
-    return NextResponse.json({ error: 'No receipt attached to this expense' }, { status: 404 });
-  }
-
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return NextResponse.json({ error: 'Storage not configured' }, { status: 503 });
   }
 
+  const requestedPath = request.nextUrl.searchParams.get('path')?.trim() || null;
+  let targetPath = requestedPath ?? expense.receipt_file_path ?? null;
+
+  if (requestedPath) {
+    const { data: linkedReceipt, error: linkedReceiptError } = await supabase
+      .from('expense_receipt_images')
+      .select('file_path')
+      .eq('expense_id', expense.id)
+      .eq('file_path', requestedPath)
+      .limit(1)
+      .maybeSingle();
+    if (linkedReceiptError) {
+      return NextResponse.json({ error: linkedReceiptError.message }, { status: 500 });
+    }
+    if (!linkedReceipt && requestedPath !== expense.receipt_file_path) {
+      return NextResponse.json({ error: 'Receipt image not found for this expense' }, { status: 404 });
+    }
+    targetPath = requestedPath;
+  }
+
+  if (!targetPath) {
+    return NextResponse.json({ error: 'No receipt attached to this expense' }, { status: 404 });
+  }
+
   const downloadParam = request.nextUrl.searchParams.get('download');
   const shouldDownload = downloadParam === '1' || downloadParam === 'true' || downloadParam === 'yes';
-  const fallbackFileName = expense.receipt_file_path.split('/').pop() ?? `receipt-${expense.id}`;
+  const fallbackFileName = targetPath.split('/').pop() ?? `receipt-${expense.id}`;
 
   const { data, error } = await supabase.storage
     .from('receipts')
-    .createSignedUrl(expense.receipt_file_path, SIGNED_URL_TTL_SECONDS, {
+    .createSignedUrl(targetPath, SIGNED_URL_TTL_SECONDS, {
       download: shouldDownload ? fallbackFileName : undefined,
     });
 

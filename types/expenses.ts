@@ -33,6 +33,14 @@ export interface Expense {
   updated_at: string;
 }
 
+export interface ExpenseReceiptImage {
+  id: string;
+  file_path: string;
+  file_name: string;
+  created_at: string;
+  is_legacy: boolean;
+}
+
 export interface ExpenseFilters {
   dateFrom?: string;
   dateTo?: string;

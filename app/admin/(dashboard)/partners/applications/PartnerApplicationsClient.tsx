@@ -8,6 +8,7 @@ import {
   deletePartnerApplicationAction,
   reissuePartnerPasswordAction,
 } from './actions';
+import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
 
 type PartnerApplicationsClientProps = {
@@ -86,7 +87,7 @@ export function PartnerApplicationsClient({
     const msg = app.status === 'approved'
       ? 'Delete this partner? Their login will be removed and they will no longer access the partner portal. This cannot be undone.'
       : 'Delete this application? This cannot be undone.';
-    if (!confirm(msg)) return;
+    if (!confirmDeleteAction(msg)) return;
     setDeleting(true);
     const result = await deletePartnerApplicationAction(app.id);
     setDeleting(false);

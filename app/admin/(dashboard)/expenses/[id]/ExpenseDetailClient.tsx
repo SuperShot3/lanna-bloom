@@ -1,10 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Expense } from '@/types/expenses';
+import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
+import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
@@ -40,6 +41,12 @@ function formatDate(iso: string) {
   });
 }
 
+function receiptFileName(path: string | null): string | null {
+  if (!path) return null;
+  const raw = path.split('/').pop() ?? path;
+  return decodeURIComponent(raw);
+}
+
 interface ExpenseDetailClientProps {
   expense: Expense;
 }
@@ -53,21 +60,57 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [receipts, setReceipts] = useState<ExpenseReceiptImage[]>([]);
+  const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const receiptCount = receipts.length;
+  const currentReceiptName = receiptCount > 0 ? receipts[0].file_name : receiptFileName(expenseState.receipt_file_path);
 
-  const handleViewReceipt = async () => {
-    if (!expenseState.receipt_file_path) return;
-    setLoadingReceipt(true);
-    setReceiptError(null);
+  const loadReceipts = async () => {
+    setLoadingReceipts(true);
     try {
-      const res = await fetch(`/api/admin/expenses/${expenseState.id}/receipt-url`);
-      const data = await res.json();
+      const res = await fetch(`/api/admin/expenses/${expenseState.id}/receipts`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setReceiptError(data.error ?? 'Failed to load receipt');
+        setReceiptError(data.error ?? 'Failed to load receipt images');
         return;
       }
-      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      setReceipts(Array.isArray(data.receipts) ? (data.receipts as ExpenseReceiptImage[]) : []);
+    } catch {
+      setReceiptError('Unexpected error loading receipt images');
+    } finally {
+      setLoadingReceipts(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadReceipts();
+  }, [expenseState.id]);
+
+  const openReceipt = async (filePath: string, download = false) => {
+    if (!filePath) return;
+    setReceiptError(null);
+    try {
+      const q = new URLSearchParams({ path: filePath });
+      if (download) q.set('download', '1');
+      const res = await fetch(`/api/admin/expenses/${expenseState.id}/receipt-url?${q.toString()}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReceiptError(data.error ?? 'Failed to open image');
+        return;
+      }
+      window.location.assign(data.signedUrl);
+    } catch {
+      setReceiptError('Unexpected error opening image');
+    }
+  };
+
+  const handleViewReceipt = async () => {
+    if (!receipts[0]?.file_path) return;
+    setLoadingReceipt(true);
+    try {
+      await openReceipt(receipts[0].file_path, false);
     } catch {
       setReceiptError('Unexpected error loading receipt');
     } finally {
@@ -94,32 +137,18 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-
-      const uploadRes = await fetch('/api/admin/expenses/upload-receipt', {
+      const uploadRes = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseState.id)}/receipts`, {
         method: 'POST',
         body: formData,
       });
       const uploadData = await uploadRes.json().catch(() => ({}));
-      if (!uploadRes.ok || typeof uploadData.path !== 'string') {
+      if (!uploadRes.ok) {
         setReceiptError(uploadData.error ?? 'Receipt upload failed');
         return;
       }
-
-      const updateRes = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseState.id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          receipt_file_path: uploadData.path,
-          receipt_attached: true,
-        }),
-      });
-      const updateData = await updateRes.json().catch(() => ({}));
-      if (!updateRes.ok || !updateData.expense) {
-        setReceiptError(updateData.error ?? 'Failed to save receipt');
-        return;
-      }
-
-      setExpenseState(updateData.expense as Expense);
+      setExpenseState((prev) => ({ ...prev, receipt_attached: true }));
+      await loadReceipts();
+      setReceiptError(null);
     } catch {
       setReceiptError('Unexpected error while uploading image');
     } finally {
@@ -128,17 +157,10 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   };
 
   const handleDownloadReceipt = async () => {
-    if (!expenseState.receipt_file_path) return;
+    if (!receipts[0]?.file_path) return;
     setDownloadingReceipt(true);
-    setReceiptError(null);
     try {
-      const res = await fetch(`/api/admin/expenses/${expenseState.id}/receipt-url?download=1`);
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setReceiptError(data.error ?? 'Failed to prepare download');
-        return;
-      }
-      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      await openReceipt(receipts[0].file_path, true);
     } catch {
       setReceiptError('Unexpected error preparing download');
     } finally {
@@ -160,7 +182,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             className="admin-btn admin-btn-outline admin-btn-danger"
             disabled={deleting}
             onClick={async () => {
-              if (!confirm('Delete this expense? This cannot be undone.')) return;
+              if (!confirmDeleteAction('Delete this expense? This cannot be undone.')) return;
               setDeleting(true);
               try {
                 const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseState.id)}`, {
@@ -211,6 +233,8 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             )
           }
         />
+        <DetailRow label="Images added" value={String(receiptCount)} />
+        <DetailRow label="Image name" value={currentReceiptName ?? '—'} />
         {expenseState.notes && <DetailRow label="Notes" value={expenseState.notes} />}
         {expenseState.linked_order_id && (
           <DetailRow
@@ -246,7 +270,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         >
           {uploadingReceipt ? 'Uploading image…' : 'Add image'}
         </button>
-        {expenseState.receipt_attached && expenseState.receipt_file_path ? (
+        {receiptCount > 0 ? (
           <>
             <button
               type="button"
@@ -267,6 +291,35 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
           </>
         ) : null}
         <p className="admin-hint">Receipt images only, max size 500 KB.</p>
+        {loadingReceipts ? <p className="admin-hint">Loading images…</p> : null}
+        {receiptCount > 0 ? (
+          <div className="admin-expenses-detail-grid" style={{ marginTop: 8 }}>
+            {receipts.map((r) => (
+              <DetailRow
+                key={r.id}
+                label={`Image: ${r.file_name}`}
+                value={
+                  <span style={{ display: 'inline-flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-sm admin-btn-outline"
+                      onClick={() => void openReceipt(r.file_path, false)}
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-sm admin-btn-outline"
+                      onClick={() => void openReceipt(r.file_path, true)}
+                    >
+                      Download
+                    </button>
+                  </span>
+                }
+              />
+            ))}
+          </div>
+        ) : null}
         {receiptError && <span className="admin-field-error">{receiptError}</span>}
       </div>
     </div>

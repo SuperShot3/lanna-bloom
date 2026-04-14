@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
 interface RemoveOrderButtonProps {
   orderId: string;
@@ -16,7 +17,7 @@ export function RemoveOrderButton({ orderId, returnTo, canEdit }: RemoveOrderBut
   if (!canEdit) return null;
 
   const handleRemove = async () => {
-    if (!confirm('Remove this order from the system? This cannot be undone. The customer order link will no longer work.')) {
+    if (!confirmDeleteAction('Remove this order from the system? This cannot be undone. The customer order link will no longer work.')) {
       return;
     }
     setRemoving(true);

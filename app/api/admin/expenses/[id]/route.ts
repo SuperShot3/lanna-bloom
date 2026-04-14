@@ -46,6 +46,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
   }
 
+  const { data: receiptRows } = await supabase
+    .from('expense_receipt_images')
+    .select('file_path')
+    .eq('expense_id', expenseId);
+
   const { error } = await supabase
     .from('expenses')
     .delete()
@@ -56,11 +61,18 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 });
   }
 
-  // Best-effort cleanup of attached receipt file (if any).
-  if (existing.receipt_file_path) {
+  // Best-effort cleanup of attached receipt files (legacy + multi-image table).
+  const receiptPaths = new Set<string>();
+  if (existing.receipt_file_path) receiptPaths.add(existing.receipt_file_path);
+  for (const row of receiptRows ?? []) {
+    const p = typeof row.file_path === 'string' ? row.file_path : '';
+    if (p) receiptPaths.add(p);
+  }
+
+  if (receiptPaths.size > 0) {
     const { error: storageError } = await supabase.storage
       .from('receipts')
-      .remove([existing.receipt_file_path]);
+      .remove(Array.from(receiptPaths));
     if (storageError) {
       console.error('[expenses] receipt cleanup error:', storageError.message);
     }

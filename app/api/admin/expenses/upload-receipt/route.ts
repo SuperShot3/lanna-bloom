@@ -21,6 +21,16 @@ function fileExtension(mimeType: string): string {
   return map[mimeType] ?? 'bin';
 }
 
+function sanitizeBaseName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\.[^.]+$/, '')
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 50) || 'receipt';
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await requireRole(['OWNER', 'MANAGER']);
   if (!authResult.ok) return authResult.response;
@@ -60,7 +70,9 @@ export async function POST(request: NextRequest) {
 
   const timestamp = Date.now();
   const ext = fileExtension(file.type);
-  const storagePath = `${timestamp}-${crypto.randomUUID()}.${ext}`;
+  const sourceName = file instanceof File ? file.name : 'receipt';
+  const baseName = sanitizeBaseName(sourceName);
+  const storagePath = `${timestamp}-${baseName}-${crypto.randomUUID()}.${ext}`;
 
   const arrayBuffer = await file.arrayBuffer();
   const { error } = await supabase.storage
@@ -75,5 +87,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 
-  return NextResponse.json({ path: storagePath }, { status: 201 });
+  return NextResponse.json({ path: storagePath, fileName: `${baseName}.${ext}` }, { status: 201 });
 }

@@ -11,6 +11,7 @@ import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
 import type { LedgerResult } from '@/types/ledger';
 import type { IncomeListResult } from '@/lib/accounting/incomeRecords';
 import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDisplay';
+import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { AccountingLedgerTable } from './AccountingLedgerTable';
 
 interface OverviewData {
@@ -620,7 +621,7 @@ export function AccountingOverviewClient({
                                 onClick={async (e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  if (!confirm('Delete this expense? This cannot be undone.')) return;
+                                  if (!confirmDeleteAction('Delete this expense? This cannot be undone.')) return;
                                   setDeletingExpenseId(exp.id);
                                   try {
                                     const res = await fetch(`/api/admin/expenses/${encodeURIComponent(exp.id)}`, {
