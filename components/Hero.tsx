@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
+import { HeroSwipeCards } from '@/components/HeroSwipeCards';
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
 
-export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: string }) {
+export function Hero({ lang, heroImageUrl, carouselImages }: { lang: Locale; heroImageUrl?: string; carouselImages?: string[] }) {
   const t = translations[lang].hero;
   const catalogHref = `/${lang}/catalog`;
   const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
@@ -82,18 +82,9 @@ export function Hero({ lang, heroImageUrl }: { lang: Locale; heroImageUrl?: stri
           </div>
         </div>
         <div className="relative">
-          <div className="aspect-[4/5] rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl rotate-0 md:rotate-2 hover:rotate-0 transition-transform duration-700">
-            <Image
-              src={imageSrc}
-              alt="Beautiful boutique floral arrangement"
-              width={600}
-              height={750}
-              className="w-full h-full object-cover"
-              priority
-              sizes="(max-width: 1024px) 100%, 50vw"
-            />
-          </div>
-          <div className="absolute bottom-4 left-4 lg:-bottom-10 lg:-left-10 bg-white p-4 lg:p-6 rounded-2xl shadow-xl md:shadow-2xl border border-stone-100 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite]">
+          <HeroSwipeCards initialHeroImage={imageSrc} carouselImages={carouselImages} />
+          
+          <div className="absolute bottom-20 left-4 lg:bottom-12 lg:-left-10 bg-white p-4 lg:p-6 rounded-2xl shadow-xl md:shadow-2xl border border-stone-100 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite] pointer-events-none z-30">
             <div className="flex items-center gap-2 lg:gap-3 mb-2 lg:mb-3">
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
                 <span className="material-symbols-outlined text-xl lg:text-2xl leading-none inline-flex items-center justify-center">
