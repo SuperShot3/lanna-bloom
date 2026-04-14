@@ -866,6 +866,8 @@ export function StickyCheckoutBar({
         .sticky-checkout-bar__sheet-select {
           width: 100%;
           padding: 10px 12px;
+          padding-right: 36px;
+          background-position: right 12px center;
           border: 1px solid var(--border);
           border-radius: 10px;
           font-size: 15px;
