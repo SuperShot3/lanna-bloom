@@ -700,6 +700,8 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         .co-select {
           cursor: pointer;
           appearance: auto;
+          padding-right: 36px;
+          background-position: right 14px center;
         }
         .co-select-full {
           width: 100%;
@@ -781,6 +783,8 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
           border: 1px solid var(--border);
           border-radius: 12px;
           padding: 8px 10px;
+          padding-right: 32px;
+          background-position: right 10px center;
           cursor: pointer;
           transition: border-color 0.2s, box-shadow 0.2s;
         }

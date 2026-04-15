@@ -447,6 +447,25 @@ export async function getHeroImageFromSanity(): Promise<string> {
   }
 }
 
+/** Hero carousel image URLs for homepage swipe carousel. Editable in Sanity Studio → Site Settings → Hero Carousel Images. */
+export async function getHeroCarouselImagesFromSanity(): Promise<string[]> {
+  try {
+    const doc = await client.fetch<{
+      heroCarouselImages?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+    } | null>(
+      `*[_type == "siteSettings"][0] { heroCarouselImages }`
+    );
+    if (!doc?.heroCarouselImages?.length) return [];
+    return doc.heroCarouselImages
+      .map((img) => (img?.asset?._ref ? builder.image(img).width(800).height(1000).fit('crop').url() : ''))
+      .filter(Boolean);
+  } catch (err) {
+    console.error('[Sanity] getHeroCarouselImagesFromSanity failed:', err);
+    return [];
+  }
+}
+
+
 /**
  * Home "Popular" + /api/bouquets: price-tier interleave, then daily seeded shuffle (not nameEn order,
  * so names starting with digits are not stuck first). Same seed all day so pagination matches SSR.
