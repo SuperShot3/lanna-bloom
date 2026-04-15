@@ -207,7 +207,7 @@ export function ProductOrderBlock({
             ref={timeSelectRef}
             value={deliveryTimeSlot}
             onChange={(e) => saveDeliveryTimeSlot(e.target.value)}
-            className={`w-full px-4 py-3 rounded-xl border bg-white text-stone-800 text-sm ${showDeliveryValidation && !deliveryTimeSlot?.trim() ? 'order-field-invalid border-red-400' : 'border-stone-200'}`}
+            className={`order-time-select w-full px-4 py-3 rounded-xl border bg-white text-stone-800 text-sm ${showDeliveryValidation && !deliveryTimeSlot?.trim() ? 'order-field-invalid border-red-400' : 'border-stone-200'}`}
             aria-label={tBuyNow.selectTimeSlot ?? 'Select time slot'}
             aria-invalid={showDeliveryValidation && !deliveryTimeSlot?.trim()}
           >
@@ -424,6 +424,10 @@ export function ProductOrderBlock({
         }
         .order-date-display-wrap.order-field-invalid .order-date-display {
           border-color: #e87171;
+        }
+        .order-time-select {
+          padding-right: 36px;
+          background-position: right 10px center;
         }
         .order-validation-msg {
           margin-top: 8px;

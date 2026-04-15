@@ -1739,7 +1739,7 @@ a.filter-pill--active:hover {
 }
 .partner-form select {
   padding-right: 36px;
-  background-position: right 14px center;
+  background-position: right 10px center;
 }
 .partner-form input:focus,
 .partner-form textarea:focus,
@@ -2036,7 +2036,7 @@ a.filter-pill--active:hover {
 }
 .partner-sel select {
   padding-right: 36px;
-  background-position: right 14px center;
+  background-position: right 10px center;
 }
 .partner-inp input:focus,
 .partner-sel select:focus {
@@ -3660,15 +3660,28 @@ a.filter-pill--active:hover {
 .admin-select {
   padding: 8px 12px;
   padding-right: 36px;
-  background-position: right 12px center;
+  background-position: right 10px center;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
 }
 select.admin-input {
   padding-right: 36px;
-  background-position: right 12px center;
+  background-position: right 10px center;
 }
+
+/* Keep dropdown chevrons close to the right edge site-wide. */
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  padding-right: 36px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b6560' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-size: 14px 14px !important;
+  background-position: right 14px center !important;
+}
+select::-ms-expand { display: none; }
 .admin-date-btns {
   display: flex;
   flex-wrap: wrap;

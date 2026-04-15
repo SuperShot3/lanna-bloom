@@ -421,7 +421,7 @@ export function DeliveryForm({
         }
         .buy-now-select {
           padding-right: 36px;
-          background-position: right 12px center;
+          background-position: right 10px center;
         }
         .buy-now-input:focus,
         .buy-now-select:focus {
