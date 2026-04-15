@@ -1175,6 +1175,12 @@ a.filter-pill--active:hover {
   line-height: 1.6;
   margin: 0 0 var(--space-5);
 }
+.product-section-heading {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--space-2);
+}
 .product-attributes {
   margin: 0 0 var(--space-4);
   padding: var(--space-3) var(--space-4);

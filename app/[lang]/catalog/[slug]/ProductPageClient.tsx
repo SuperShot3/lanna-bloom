@@ -75,6 +75,7 @@ export function ProductPageClient({
           gifts={gifts}
         />
         <div className="product-details-below">
+          <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
           <p className="product-desc">{description}</p>
           <div className="product-composition">
             <h2 className="composition-heading">{compositionHeading}</h2>

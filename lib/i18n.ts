@@ -274,6 +274,7 @@ export const translations = {
       activeFiltersLabel: 'Active filters',
     },
     product: {
+      descriptionHeading: 'Product Description',
       composition: 'Composition',
       seasonalDisclaimer: 'Flower varieties and greenery may vary slightly based on seasonal availability, while keeping the same overall style and value.',
       size: 'Size',
@@ -1262,6 +1263,7 @@ export const translations = {
       activeFiltersLabel: 'ตัวกรองที่ใช้',
     },
     product: {
+      descriptionHeading: 'รายละเอียดสินค้า',
       composition: 'องค์ประกอบ',
       seasonalDisclaimer: 'ชนิดดอกไม้และใบไม้ประกอบอาจแตกต่างกันเล็กน้อยตามฤดูกาล โดยคงสไตล์และมูลค่ารวมเท่าเดิม',
       size: 'ขนาด',

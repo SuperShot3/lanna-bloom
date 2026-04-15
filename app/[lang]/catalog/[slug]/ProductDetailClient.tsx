@@ -60,6 +60,7 @@ export function ProductDetailClient({
       </div>
       <div className="product-info">
         <h1 className="product-title">{name}</h1>
+        <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
         <p className="product-desc">{descDisplay}</p>
         {(product.preparationTime != null || product.occasion) && (
           <div className="product-attributes">
