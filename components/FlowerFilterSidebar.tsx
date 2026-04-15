@@ -10,7 +10,7 @@ import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { CATALOG_OCCASION_CHIPS } from '@/lib/catalogCategories';
 
 const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
-const FLOWER_TYPES = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'mixed'] as const;
+const FLOWER_TYPES = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'mixed'] as const;
 const DELIVERY_OPTS = ['same_day', 'next_day'] as const;
 const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement'] as const;
 const STEM_OPTS: { key: StemBucketKey; labelKey: 'stemSmall' | 'stemMedium' | 'stemLarge' | 'stemGrand' }[] = [
