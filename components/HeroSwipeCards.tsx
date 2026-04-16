@@ -18,38 +18,41 @@ type SwipeCardHandle = { flyOff: () => void };
 
 type SwipeCardProps = {
   card: { id: number; src: string };
+  onSwipeStart?: () => void;
   onComplete: () => void;
 };
 
 // forwardRef lets the parent call flyOff() directly on the active card
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
-  function SwipeCard({ card, onComplete }, ref) {
+  function SwipeCard({ card, onSwipeStart, onComplete }, ref) {
     const x = useMotionValue(0);
     // Rotate card as it moves left/right — same feel as Tinder
     const rotate = useTransform(x, [-300, 300], [-18, 18]);
     // LIKE badge fades in only when dragging right
     const likeOpacity = useTransform(x, [20, 100], [0, 1]);
 
-    // Called by the parent's Like button — springs the card off, then advances the deck
+    const triggerFlyOff = (velocity = 0) => {
+      onSwipeStart?.();
+      animate(x, 820, {
+        type: 'tween',
+        duration: 0.22,
+        ease: [0.22, 1, 0.36, 1],
+        velocity,
+        onComplete,
+      });
+    };
+
+    // Called by the parent's Like button — throws card out, then advances the deck
     useImperativeHandle(ref, () => ({
       flyOff() {
-        animate(x, 620, {
-          type: 'spring',
-          stiffness: 320,
-          damping: 28,
-        }).then(() => onComplete());
+        triggerFlyOff();
       },
     }));
 
     const handleDragEnd = (_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
       if (info.offset.x > 100) {
         // Throw card off-screen using drag velocity for a natural feel
-        animate(x, 620, {
-          type: 'spring',
-          stiffness: 300,
-          damping: 28,
-          velocity: info.velocity.x,
-        }).then(() => onComplete());
+        triggerFlyOff(info.velocity.x);
       } else {
         // Snap back to center
         animate(x, 0, { type: 'spring', stiffness: 500, damping: 40 });
@@ -69,8 +72,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
         className="absolute inset-0 z-10 rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl cursor-grab active:cursor-grabbing"
         initial={{ scale: 0.92, opacity: 0, y: 16 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        // Exit only fades/shrinks — x is already off-screen, so no positional conflict
-        exit={{ opacity: 0, scale: 0.88, transition: { duration: 0.15, ease: 'easeIn' } }}
+        // Exit is very short so card doesn't linger after fly-out.
+        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.08, ease: 'easeIn' } }}
         transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         <Image
@@ -132,9 +135,18 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
     <div className="relative w-full h-full flex flex-col items-center">
       {/* Cards Stack Container */}
       <div className="relative w-full aspect-[4/5]">
-        {/* Static background card — visible behind the top card as a depth hint */}
+        {/* Background card subtly moves forward while the top card flies out */}
         {nextCard && (
-          <div className="absolute inset-0 z-0 scale-[0.95] translate-y-4 rounded-[2rem] overflow-hidden shadow-md opacity-70">
+          <motion.div
+            className="absolute inset-0 z-0 rounded-[2rem] overflow-hidden shadow-md"
+            initial={false}
+            animate={
+              isAnimating
+                ? { scale: 0.985, y: 2, opacity: 0.9 }
+                : { scale: 0.95, y: 16, opacity: 0.7 }
+            }
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
             <Image
               src={nextCard.src}
               alt="Next floral arrangement"
@@ -142,7 +154,7 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
               className="w-full h-full object-cover"
               sizes="(max-width: 1024px) 100%, 50vw"
             />
-          </div>
+          </motion.div>
         )}
 
         {/*
@@ -155,6 +167,7 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
             key={activeCard.id}
             ref={cardRef}
             card={activeCard}
+            onSwipeStart={() => setIsAnimating(true)}
             onComplete={advance}
           />
         </AnimatePresence>
