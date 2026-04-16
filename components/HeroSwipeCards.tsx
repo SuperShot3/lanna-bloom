@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import { motion, useMotionValue, useTransform, AnimatePresence, animate } from 'framer-motion';
 import Image from 'next/image';
 
 // Fallback images used ONLY when no images are set in Sanity Studio.
@@ -14,51 +14,85 @@ const FALLBACK_CARDS = [
   { id: 5, src: 'https://images.unsplash.com/photo-1490750967868-88cb4ec0f07c?auto=format&fit=crop&q=80&w=800&h=1000' },
 ];
 
-function SwipeCard({ card, onSwipeRight, exitDirection }: any) {
-  // Each card must have its OWN motion value!
-  // This prevents the currently exiting card from freezing when the parent attempts to reset position
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-10, 10]);
+type SwipeCardHandle = { flyOff: () => void };
 
-  const handleDragEnd = (event: any, info: any) => {
-    const swipeThreshold = 100;
-    // Let go! Only trigger swipe out if they swiped right strongly. Otherwise it snaps back.
-    if (info.offset.x > swipeThreshold) {
-      onSwipeRight();
-    }
-  };
+type SwipeCardProps = {
+  card: { id: number; src: string };
+  onComplete: () => void;
+};
 
-  return (
-    <motion.div
-      style={{ x, rotate, willChange: 'transform' }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.8}
-      onDragEnd={handleDragEnd}
-      className="absolute inset-0 z-10 rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl cursor-grab active:cursor-grabbing"
-      initial={{ scale: 0.96, opacity: 1 }}
-      animate={{ scale: 1, opacity: 1, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] } }}
-      exit={{ x: exitDirection === 'right' ? 500 : -500, opacity: 1, scale: 0.95, transition: { duration: 0.32, ease: [0.55, 0, 1, 0.45] } }}
-    >
-      <Image
-        src={card.src}
-        alt="Beautiful boutique floral arrangement"
-        fill
-        className="w-full h-full object-cover pointer-events-none"
-        priority
-        sizes="(max-width: 1024px) 100%, 50vw"
-      />
+// forwardRef lets the parent call flyOff() directly on the active card
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(
+  function SwipeCard({ card, onComplete }, ref) {
+    const x = useMotionValue(0);
+    // Rotate card as it moves left/right — same feel as Tinder
+    const rotate = useTransform(x, [-300, 300], [-18, 18]);
+    // LIKE badge fades in only when dragging right
+    const likeOpacity = useTransform(x, [20, 100], [0, 1]);
+
+    // Called by the parent's Like button — springs the card off, then advances the deck
+    useImperativeHandle(ref, () => ({
+      flyOff() {
+        animate(x, 620, {
+          type: 'spring',
+          stiffness: 320,
+          damping: 28,
+        }).then(() => onComplete());
+      },
+    }));
+
+    const handleDragEnd = (_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+      if (info.offset.x > 100) {
+        // Throw card off-screen using drag velocity for a natural feel
+        animate(x, 620, {
+          type: 'spring',
+          stiffness: 300,
+          damping: 28,
+          velocity: info.velocity.x,
+        }).then(() => onComplete());
+      } else {
+        // Snap back to center
+        animate(x, 0, { type: 'spring', stiffness: 500, damping: 40 });
+      }
+    };
+
+    return (
       <motion.div
-        style={{ opacity: useTransform(x, [0, 150], [0, 1]) }}
-        className="absolute top-8 left-8 z-20 pointer-events-none"
+        // x and rotate are driven entirely by our MotionValues — no conflict with exit
+        style={{ x, rotate, willChange: 'transform' }}
+        drag="x"
+        // Wide constraints so Framer never fights our manual snap-back/fly-off animations
+        dragConstraints={{ left: -600, right: 600 }}
+        dragElastic={0}
+        dragMomentum={false}
+        onDragEnd={handleDragEnd}
+        className="absolute inset-0 z-10 rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl cursor-grab active:cursor-grabbing"
+        initial={{ scale: 0.92, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        // Exit only fades/shrinks — x is already off-screen, so no positional conflict
+        exit={{ opacity: 0, scale: 0.88, transition: { duration: 0.15, ease: 'easeIn' } }}
+        transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        <div className="border-4 border-emerald-500 rounded-lg text-emerald-500 font-extrabold text-3xl px-4 py-1 uppercase tracking-wider -rotate-12 bg-white/90 shadow-sm">
-          LIKE
-        </div>
+        <Image
+          src={card.src}
+          alt="Beautiful boutique floral arrangement"
+          fill
+          className="w-full h-full object-cover pointer-events-none"
+          priority
+          sizes="(max-width: 1024px) 100%, 50vw"
+        />
+        <motion.div
+          style={{ opacity: likeOpacity }}
+          className="absolute top-8 left-8 z-20 pointer-events-none"
+        >
+          <div className="border-4 border-emerald-500 rounded-lg text-emerald-500 font-extrabold text-3xl px-4 py-1 uppercase tracking-wider -rotate-12 bg-white/90 shadow-sm">
+            LIKE
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
-  );
-}
+    );
+  }
+);
 
 export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHeroImage?: string; carouselImages?: string[] }) {
   // Prefer Sanity images. Fall back to hardcoded placeholders only when Sanity has nothing configured.
@@ -69,26 +103,24 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
   const allCards = sourceImages.map((src, i) => ({ id: i, src }));
 
   const [cards, setCards] = useState(allCards);
-  const [likedCards, setLikedCards] = useState<number[]>([]);
-  const [exitDirection, setExitDirection] = useState<'left' | 'right'>('right');
+  // Prevents double-taps while a fly-off spring is in flight
+  const [isAnimating, setIsAnimating] = useState(false);
+  // Ref to the active card so we can imperatively trigger flyOff()
+  const cardRef = useRef<SwipeCardHandle>(null);
 
-  const handleSwipeRight = () => {
-    if (cards.length === 0) return;
-    setExitDirection('right');
-    const activeCard = cards[0];
-    
-    setLikedCards((prev) => [...prev, activeCard.id]);
-    
-    // Cycle the cards indefinitely
+  // Called after the card's spring animation reaches off-screen
+  const advance = () => {
     setCards((prev) => {
-      const rest = prev.slice(1);
-      return [...rest, activeCard];
+      const [first, ...rest] = prev;
+      return [...rest, first];
     });
-    // NOTICE NO x.set(0) needed here anymore!
+    setIsAnimating(false);
   };
 
   const handleButtonLike = () => {
-    handleSwipeRight();
+    if (isAnimating || !cardRef.current) return;
+    setIsAnimating(true);
+    cardRef.current.flyOff();
   };
 
   if (cards.length === 0) return null;
@@ -100,7 +132,7 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
     <div className="relative w-full h-full flex flex-col items-center">
       {/* Cards Stack Container */}
       <div className="relative w-full aspect-[4/5]">
-        {/* Next Card Background */}
+        {/* Static background card — visible behind the top card as a depth hint */}
         {nextCard && (
           <div className="absolute inset-0 z-0 scale-[0.95] translate-y-4 rounded-[2rem] overflow-hidden shadow-md opacity-70">
             <Image
@@ -113,21 +145,27 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
           </div>
         )}
 
+        {/*
+          Default AnimatePresence mode: new card mounts while old card exits.
+          By the time advance() fires, the old card is already off-screen (x=620),
+          so the brief exit fade happens invisibly — the transition feels instant.
+        */}
         <AnimatePresence>
-          <SwipeCard 
-            key={activeCard.id} 
-            card={activeCard} 
-            onSwipeRight={handleSwipeRight} 
-            exitDirection={exitDirection} 
+          <SwipeCard
+            key={activeCard.id}
+            ref={cardRef}
+            card={activeCard}
+            onComplete={advance}
           />
         </AnimatePresence>
       </div>
 
-      {/* Action Buttons overlay */}
+      {/* Action Buttons */}
       <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center gap-6 z-40 pointer-events-none px-4">
         <button
           onClick={handleButtonLike}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-800/90 shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-2xl hover:bg-emerald-700 transition-all duration-300 ring-2 ring-white/30 active:scale-95 pointer-events-auto"
+          disabled={isAnimating}
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-800/90 shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-2xl hover:bg-emerald-700 transition-all duration-300 ring-2 ring-white/30 active:scale-95 pointer-events-auto disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
           aria-label="Like"
         >
           <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>

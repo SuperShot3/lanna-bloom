@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { sendDeliveredCustomerEmailOnce } from '@/lib/orderNotification';
 import { ORDER_STATUS } from '@/lib/orders/statusConstants';
 
 const VALID_ORDER_STATUSES = [...ORDER_STATUS];
@@ -85,6 +86,13 @@ export async function PATCH(
     from: previousStatus,
     to: orderStatus,
   });
+
+  if (orderStatus === 'DELIVERED') {
+    const trimmed = order_id.trim();
+    void sendDeliveredCustomerEmailOnce(trimmed).catch((e) =>
+      console.error('[admin/status] Delivered customer email:', e)
+    );
+  }
 
   return NextResponse.json({ ok: true, order: updated });
 }

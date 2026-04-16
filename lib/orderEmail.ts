@@ -198,6 +198,58 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
   }
 }
 
+const DELIVERED_REVIEW_URL = 'https://g.page/r/CclGzPBur8RbEBM/review';
+
+/**
+ * Post-delivery email: delivered confirmation + review ask.
+ * Same env as customer confirmation (RESEND_API_KEY, ORDERS_FROM_EMAIL).
+ * Returns true if sent or skipped as no-op (invalid email); false if Resend failed.
+ */
+export async function sendOrderDeliveredCustomerEmail(order: Order): Promise<boolean> {
+  const customerEmail = order.customerEmail?.trim();
+  if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+    return false;
+  }
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.ORDERS_FROM_EMAIL?.trim();
+  if (!apiKey || !from) {
+    return false;
+  }
+
+  const name = order.customerName?.trim();
+  const greeting = name ? escapeHtml(name) : 'there';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Your order has been delivered</title></head>
+<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+  <p>Hello ${greeting},</p>
+  <p>We’re happy to let you know that your order has been delivered.</p>
+  <p>Thank you for choosing Lanna Bloom. We hope everything arrived well and brought joy to the recipient.</p>
+  <p>If you have a moment, we would really appreciate your review:<br/>
+  <a href="${escapeHtml(DELIVERED_REVIEW_URL)}" style="color: #967a4d; font-weight: 600;">${escapeHtml(DELIVERED_REVIEW_URL)}</a></p>
+  <p>Thank you again for your support.</p>
+  <p style="font-size: 0.9rem; color: #666;">Best regards,<br/>Lanna Bloom</p>
+</body>
+</html>
+`.trim();
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from,
+    to: [customerEmail],
+    subject: 'Your order has been delivered 🌸',
+    html,
+  });
+  if (error) {
+    console.error('[orderEmail] Delivered confirmation Resend error:', error);
+    return false;
+  }
+  return true;
+}
+
 /** Newsletter notification env. Uses NEWSLETTER_NOTIFY_EMAIL or falls back to ORDERS_NOTIFY_EMAIL. */
 function getNewsletterEnv(): { apiKey: string; to: string; from: string } | null {
   const apiKey = process.env.RESEND_API_KEY?.trim();

@@ -49,6 +49,8 @@ export interface SupabaseOrderRow {
   /** True after admin was notified once at order creation (one email per order). */
   admin_notified?: boolean | null;
   admin_notified_at?: string | null;
+  /** Set when post-delivery customer email was sent (at most once per order). */
+  delivered_email_sent_at?: string | null;
   /** LINE OA handoff (optional). */
   line_user_id?: string | null;
   order_source?: string | null;

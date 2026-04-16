@@ -96,11 +96,9 @@ export function OrderSummaryCard({ order, items }: OrderSummaryCardProps) {
           <p>
             <span className="admin-summary-inline-label">Phone:</span> {naText(recipientPhone)}
           </p>
-          {surpriseDelivery != null && (
-            <p>
-              <span className="admin-summary-inline-label">Surprise delivery:</span> {surpriseDelivery}
-            </p>
-          )}
+          <p>
+            <span className="admin-summary-inline-label">Surprise delivery:</span> {surpriseDelivery}
+          </p>
         </div>
       </div>
     </section>

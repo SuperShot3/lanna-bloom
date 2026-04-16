@@ -43,11 +43,10 @@ export function recipientPhoneDisplay(order: SupabaseOrderRow): string {
   return orderJsonDelivery(order)?.recipientPhone?.trim() ?? '';
 }
 
-/** Plain label for admin when ordering for someone else; null if no recipient on order. */
-export function surpriseDeliveryAdminLabel(order: SupabaseOrderRow): string | null {
+/** Admin label for surprise delivery; N/A when recipient name is missing (same as Name: N/A). */
+export function surpriseDeliveryAdminLabel(order: SupabaseOrderRow): string {
   const rName = recipientNameDisplay(order);
-  const rPhone = recipientPhoneDisplay(order);
-  if (!rName && !rPhone) return null;
+  if (!rName.trim()) return 'N/A';
   const v = orderJsonDelivery(order)?.surpriseDelivery;
   if (v === true) return 'Yes';
   if (v === false) return 'No';
@@ -161,9 +160,7 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push('Recipient');
   lines.push(`  Name: ${naText(rName)}`);
   lines.push(`  Phone: ${naText(rPhone)}`);
-  if (surprise != null) {
-    lines.push(`  Surprise delivery: ${surprise}`);
-  }
+  lines.push(`  Surprise delivery: ${surprise}`);
 
   return lines.join('\n');
 }
