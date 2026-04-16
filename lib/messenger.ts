@@ -3,11 +3,8 @@
  * Contact number: +66803313431 — used for WhatsApp.
  *
  * LINE:
- * - Personal account (no Official Account): set NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK to your
- *   shareable LINE link (e.g. from LINE app: Profile → Share, or a lin.ee/xxxx link). Both
- *   "Contact LINE" and "Order via LINE" will use this link (no message prefill for personal).
- * - Official Account: set NEXT_PUBLIC_LINE_OA_ID to @your_oa_id; optionally set ADD_FRIEND_LINK
- *   to override the add-friend URL. Order button can open OA chat with prefilled message.
+ * - Contact-only mode: set NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK to your shareable LINE link
+ *   (e.g. line.me/ti/p/... or lin.ee/...).
  */
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -16,9 +13,7 @@ import type { Locale } from '@/lib/i18n';
 const CONTACT_PHONE = '66803313431';
 
 const WHATSAPP_PHONE = CONTACT_PHONE;
-/** LINE Official Account ID including @ (only used when ADD_FRIEND_LINK is not set). */
-const LINE_OA_ID = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ID) || '@lannabloom';
-/** LINE link for contact and (for personal accounts) order. Default: personal LINE add-friend link; override with NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK. */
+/** LINE contact link (contact-only). */
 const LINE_ADD_FRIEND_LINK = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK) || 'https://line.me/ti/p/4sZ7z5fYAB';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
 
@@ -30,26 +25,15 @@ export function getWhatsAppOrderUrl(message: string): string {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encode(message)}`;
 }
 
-/**
- * Open LINE OA chat with pre-filled message (Official Accounts only). Not used for personal LINE.
- */
-export function getLineOaChatUrl(message: string): string {
-  const oaId = encodeURIComponent(LINE_OA_ID);
-  const text = encodeURIComponent(message);
-  return `https://line.me/R/oaMessage/${oaId}/?${text}`;
+/** Backward-compatible alias used by order UIs; LINE always opens contact link. */
+export function getLineOrderUrl(_message: string): string {
+  return getLineContactUrl();
 }
 
-/**
- * Open LINE share screen (line.me/R/share?text=...). Used as fallback for OA on desktop.
- */
-export function getLineShareUrl(message: string): string {
-  return `https://line.me/R/share?text=${encodeURIComponent(message)}`;
-}
-
-/** LINE order URL: when ADD_FRIEND_LINK is set (personal or custom), use that link (no prefill). Otherwise OA chat with message. */
-export function getLineOrderUrl(message: string): string {
-  if (LINE_ADD_FRIEND_LINK) return getLineContactUrl();
-  return getLineOaChatUrl(message);
+/** LINE contact link. */
+export function getLineContactUrl(): string {
+  if (LINE_ADD_FRIEND_LINK) return LINE_ADD_FRIEND_LINK;
+  return 'https://line.me/ti/p/4sZ7z5fYAB';
 }
 
 export function getFacebookOrderUrl(message: string): string {
@@ -60,12 +44,6 @@ export function getFacebookOrderUrl(message: string): string {
 /** Base contact URLs (no pre-filled message) for header/footer links. */
 export function getWhatsAppContactUrl(): string {
   return `https://wa.me/${WHATSAPP_PHONE}`;
-}
-/** LINE contact link. When NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK is set (personal or OA override), use it. Otherwise build OA add-friend URL from LINE_OA_ID (Official Accounts only). */
-export function getLineContactUrl(): string {
-  if (LINE_ADD_FRIEND_LINK) return LINE_ADD_FRIEND_LINK;
-  const encodedId = encodeURIComponent(LINE_OA_ID);
-  return `https://line.me/R/ti/p/${encodedId}`;
 }
 export function getFacebookContactUrl(): string {
   return `https://www.facebook.com/${FACEBOOK_PAGE}`;

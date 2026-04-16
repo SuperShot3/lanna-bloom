@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getOrderById, getOrderByStripeSessionId, updateOrderPaymentStatus } from '@/lib/orders';
-import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { getOrderIdFromStripeMetadata, resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';

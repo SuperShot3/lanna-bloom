@@ -12,7 +12,6 @@ import {
 import { resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { runStripePostPaymentSuccessHooks } from '@/lib/stripe/postStripePaymentSuccess';
 import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
-import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 
 export type FulfillStripeCheckoutResult =
   | { kind: 'order_ready'; orderId: string; order: Order; didCreate: boolean }
@@ -205,13 +204,6 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   }
 
   const { order, created } = await createOrder(payload);
-
-  if (created && order.lineUserId) {
-    void logLineIntegrationEvent('line_user_linked_to_order', {
-      lineUserId: order.lineUserId,
-      orderId: order.orderId,
-    });
-  }
 
   const updated = await markOrderPaidFromSession({
     orderId: order.orderId,

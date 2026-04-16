@@ -30,8 +30,6 @@ import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
-import { lineDraftItemToCartItem } from '@/lib/cart/lineHandoffNormalize';
-import type { LineDraftCartItem, LineDraftFormPartial } from '@/lib/line-draft/types';
 import {
   CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY,
   CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY,
@@ -40,8 +38,6 @@ import {
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import { getLocalTodayYmd } from '@/lib/localDateYmd';
 import { PinIcon } from '@/components/icons/PinIcon';
-
-const LINE_CONTEXT_STORAGE_KEY = 'lanna-bloom-line-context';
 
 /** Non-flower catalog lines (partner products or standalone plushy toys). */
 function isNonBouquetCartLine(item: CartItem): boolean {
@@ -218,102 +214,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [checkoutSubmissionToken, setCheckoutSubmissionToken] = useState<string | null>(null);
   const [alreadySubmittedBlock, setAlreadySubmittedBlock] = useState(false);
-
-  const [lineHandoffLoading, setLineHandoffLoading] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return new URLSearchParams(window.location.search).has('handoff');
-  });
-  const [lineContext] = useState<{
-    lineUserId?: string;
-    orderSource?: 'line' | 'web';
-  }>(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      const raw = localStorage.getItem(LINE_CONTEXT_STORAGE_KEY);
-      if (!raw) return {};
-      const p = JSON.parse(raw) as { lineUserId?: string; orderSource?: string };
-      if (!p.lineUserId) return {};
-      return { lineUserId: p.lineUserId, orderSource: p.orderSource === 'web' ? 'web' : 'line' };
-    } catch {
-      return {};
-    }
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('handoff');
-    if (!token) return;
-    setLineHandoffLoading(true);
-    (async () => {
-      try {
-        const res = await fetch(`/api/line-draft/resolve?token=${encodeURIComponent(token)}`);
-        if (!res.ok) {
-          window.location.replace(`/${lang}/line-handoff/invalid`);
-          return;
-        }
-        const data = (await res.json()) as {
-          lineUserId: string;
-          draft: { items: LineDraftCartItem[]; form?: LineDraftFormPartial; lang?: 'en' | 'th' };
-        };
-        const mapped = data.draft.items.map((it) => lineDraftItemToCartItem(it));
-        localStorage.setItem('lanna-bloom-cart', JSON.stringify(mapped));
-
-        const form = data.draft.form;
-        const defaultDelivery: DeliveryFormValues = {
-          addressLine: '',
-          date: '',
-          timeSlot: '',
-          deliveryLat: null,
-          deliveryLng: null,
-          deliveryGoogleMapsUrl: null,
-          deliveryDistrict: '',
-          isMueangCentral: false,
-        };
-        const fd = form?.delivery;
-        const mergedDelivery: DeliveryFormValues = {
-          ...defaultDelivery,
-          ...(fd
-            ? {
-                addressLine: fd.addressLine ?? defaultDelivery.addressLine,
-                date: fd.date ?? defaultDelivery.date,
-                timeSlot: fd.timeSlot ?? defaultDelivery.timeSlot,
-                deliveryLat: fd.deliveryLat ?? null,
-                deliveryLng: fd.deliveryLng ?? null,
-                deliveryGoogleMapsUrl: fd.deliveryGoogleMapsUrl ?? null,
-                deliveryDistrict: (fd.deliveryDistrict as DeliveryFormValues['deliveryDistrict']) || '',
-                isMueangCentral: fd.deliveryDistrict === 'MUEANG' && !!fd.isMueangCentral,
-              }
-            : {}),
-        };
-        const stored: StoredCartForm = {
-          delivery: mergedDelivery,
-          customerName: form?.customerName ?? '',
-          customerEmail: form?.customerEmail ?? '',
-          countryCode: form?.countryCode ?? '66',
-          phoneNational: form?.phoneNational ?? '',
-          recipientName: form?.recipientName ?? '',
-          recipientCountryCode: form?.recipientCountryCode ?? '66',
-          recipientPhoneNational: form?.recipientPhoneNational ?? '',
-          contactPreference: Array.isArray(form?.contactPreference)
-            ? form.contactPreference.filter((o): o is ContactPreferenceOption =>
-                CONTACT_OPTIONS.includes(o)
-              )
-            : [],
-          isOrderingForSomeoneElse: form?.isOrderingForSomeoneElse ?? false,
-          surpriseDelivery: form?.surpriseDelivery ?? false,
-        };
-        localStorage.setItem(CART_FORM_STORAGE_KEY, JSON.stringify(stored));
-        localStorage.setItem(
-          LINE_CONTEXT_STORAGE_KEY,
-          JSON.stringify({ lineUserId: data.lineUserId, orderSource: 'line' })
-        );
-        window.location.replace(`/${lang}/cart`);
-      } catch {
-        window.location.replace(`/${lang}/line-handoff/invalid`);
-      }
-    })();
-  }, [lang]);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -748,10 +648,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         customerEmail: customerEmail.trim() || undefined,
         contactPreference,
         submissionToken: checkoutSubmissionToken,
-        ...(lineContext.lineUserId && {
-          lineUserId: lineContext.lineUserId,
-          orderSource: lineContext.orderSource ?? 'line',
-        }),
         ...(isOrderingForSomeoneElse && {
           recipientName: recipientName.trim(),
           recipientPhone: recipientPhone!,
@@ -856,16 +752,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     // Ensure the user lands back on the correct input even if layout shifts.
     setTimeout(focusMapsInput, 250);
   };
-
-  if (lineHandoffLoading) {
-    return (
-      <div className="cart-page" style={{ padding: '48px 20px', textAlign: 'center' }}>
-        <div className="container">
-          <p className="text-stone-600">Loading your cart…</p>
-        </div>
-      </div>
-    );
-  }
 
   if (alreadySubmittedBlock) {
     const lastOrderId =

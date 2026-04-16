@@ -3,8 +3,6 @@ import 'server-only';
 import { getOrderById, getOrderDetailsUrl } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
-import { logLineIntegrationEvent } from '@/lib/line-integration/log';
-import { queuePaymentNotificationForAgent } from '@/lib/line-notifications/pendingPayment';
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or polling).
  * GA4 **purchase** is sent via GTM when the customer views the paid order page (`trackPurchase`), not Measurement Protocol.
@@ -39,17 +37,6 @@ export async function runStripePostPaymentSuccessHooks(params: {
   sendCustomerConfirmationEmail(updatedOrder, publicOrderUrl).catch((e) => {
     console.error('[stripe/postPayment] Customer confirmation email failed:', e);
   });
-
-  const lineUid = updatedOrder.lineUserId?.trim();
-  if (lineUid) {
-    const { queued } = await queuePaymentNotificationForAgent(orderId, lineUid, publicOrderUrl);
-    if (queued) {
-      await logLineIntegrationEvent('payment_notify_queued_for_agent', {
-        lineUserId: lineUid,
-        orderId,
-      });
-    }
-  }
 
   const createdBy =
     params.trigger === 'stripe_webhook'

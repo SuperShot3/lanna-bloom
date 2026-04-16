@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MessengerLinks } from './MessengerLinks';
-import { PaymentBadges } from './PaymentBadges';
 import { SocialLinks } from './SocialLinks';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -220,7 +219,20 @@ export function Footer({ lang }: { lang: Locale }) {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <p>{t.copyright}</p>
           <div className="flex flex-nowrap justify-center items-center gap-4">
-            <PaymentBadges lang={lang} compact />
+            <img
+              src="/icons/stripe-v2.svg"
+              alt="Pay with Stripe"
+              className="h-10 w-10 object-contain"
+              loading="lazy"
+              decoding="async"
+            />
+            <img
+              src="/payments/Thai_QR_Logo.svg"
+              alt="Thai QR Payment"
+              className="h-10 w-10 object-contain"
+              loading="lazy"
+              decoding="async"
+            />
             <img
               src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
               alt="DBD Verified (Thailand Department of Business Development)"

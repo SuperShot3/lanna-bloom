@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ShareIcon, LineIcon, WhatsAppIcon } from '@/components/icons';
 import {
   getWhatsAppOrderUrl,
-  getLineOrderUrl,
+  getLineContactUrl,
 } from '@/lib/messenger';
 import { trackMessengerClick } from '@/lib/analytics';
 import type { Order, FulfillmentStatus } from '@/lib/orders';
@@ -285,7 +285,7 @@ export function OrderDetailsView({
 
   const orderMessage = `Order ${order.orderId}\n${detailsUrl}`;
   const contactChannels = [
-    { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, color: '#00B900', label: 'LINE' },
+    { id: 'line' as const, getUrl: () => getLineContactUrl(), Icon: LineIcon, color: '#00B900', label: 'LINE' },
     { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, color: '#25D366', label: 'WhatsApp' },
   ];
 

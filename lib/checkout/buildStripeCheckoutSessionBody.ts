@@ -63,8 +63,6 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   customerEmail?: string;
   contactPreference: ContactPreferenceOption[];
   submissionToken: string;
-  lineUserId?: string;
-  orderSource?: 'line' | 'web';
   recipientName?: string;
   recipientPhone?: string;
   surpriseDelivery?: boolean;
@@ -78,8 +76,6 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     customerEmail,
     contactPreference,
     submissionToken,
-    lineUserId,
-    orderSource,
     recipientName,
     recipientPhone,
     surpriseDelivery,
@@ -134,11 +130,6 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   if (referral && referralDiscount > 0) {
     body.referralCode = referral.code;
     body.referralDiscount = referralDiscount;
-  }
-
-  if (lineUserId) {
-    body.lineUserId = lineUserId;
-    body.orderSource = orderSource ?? 'line';
   }
 
   return body;

@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   getWhatsAppOrderUrl,
   getWhatsAppContactUrl,
-  getLineOrderUrl,
-  getLineShareUrl,
   getLineContactUrl,
   buildOrderMessage,
 } from '@/lib/messenger';
@@ -16,7 +13,7 @@ import { trackMessengerClick } from '@/lib/analytics';
 import { LineIcon, WhatsAppIcon } from './icons';
 
 const CHANNELS_ORDER = [
-  { id: 'line' as const, getUrl: getLineOrderUrl, contactUrl: getLineContactUrl, labelKey: 'orderLine' as const, Icon: LineIcon, color: '#00B900' },
+  { id: 'line' as const, getUrl: () => getLineContactUrl(), contactUrl: getLineContactUrl, labelKey: 'orderLine' as const, Icon: LineIcon, color: '#00B900' },
   { id: 'whatsapp' as const, getUrl: getWhatsAppOrderUrl, contactUrl: getWhatsAppContactUrl, labelKey: 'orderWhatsApp' as const, Icon: WhatsAppIcon, color: '#25D366' },
 ] as const;
 
@@ -28,7 +25,6 @@ export function MessengerOrderButtons({
   deliveryDate = '',
   addOnsSummary = '',
   prebuiltMessage,
-  lineUseContactUrl,
   contactOnly,
   pageLocation = 'product',
 }: {
@@ -40,8 +36,6 @@ export function MessengerOrderButtons({
   addOnsSummary?: string;
   /** When provided, use this message instead of building from bouquet/delivery/addOns (e.g. for cart page). */
   prebuiltMessage?: string;
-  /** When true, LINE button uses add-friend/contact link (no prefilled message). Use on checkout success so user can add and chat. */
-  lineUseContactUrl?: boolean;
   /** When true, all buttons use contact links only (no prefilled message). Use on guide/SEO pages. */
   contactOnly?: boolean;
   /** Where these buttons are shown (for analytics: header, checkout_success, product, cart, guide). */
@@ -66,16 +60,6 @@ export function MessengerOrderButtons({
             : undefined
         );
 
-  // Use LINE share URL on desktop (oaMessage often unreliable); OA chat on mobile. Set after mount to avoid hydration mismatch.
-  const [useLineShareFallback, setUseLineShareFallback] = useState(false);
-  useEffect(() => {
-    const isDesktop = typeof navigator !== 'undefined' && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    setUseLineShareFallback(isDesktop);
-  }, []);
-
-  const getLineHref = (msg: string) =>
-    lineUseContactUrl || contactOnly ? getLineContactUrl() : (useLineShareFallback ? getLineShareUrl(msg) : getLineOrderUrl(msg));
-
   return (
     <div className="order-buttons">
       <p className="order-via">{t.orderVia}</p>
@@ -83,7 +67,7 @@ export function MessengerOrderButtons({
         {CHANNELS_ORDER.map(({ id, getUrl, contactUrl, labelKey, Icon, color }) => {
           const href = contactOnly
             ? (id === 'line' ? getLineContactUrl() : contactUrl())
-            : (id === 'line' ? getLineHref(message) : getUrl(message));
+            : (id === 'line' ? getLineContactUrl() : getUrl(message));
           return (
             <a
               key={id}

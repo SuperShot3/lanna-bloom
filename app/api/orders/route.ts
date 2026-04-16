@@ -3,7 +3,6 @@ import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
-import { logLineIntegrationEvent } from '@/lib/line-integration/log';
 import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 
@@ -114,16 +113,6 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     return { ok: false, message: 'submission_token has invalid format' };
   }
 
-  const lineUserIdRaw = typeof b.lineUserId === 'string' ? b.lineUserId.trim() : '';
-  const lineUserId =
-    lineUserIdRaw.length > 0 && lineUserIdRaw.length <= 128 ? lineUserIdRaw : undefined;
-  const orderSource =
-    typeof b.orderSource === 'string' && (b.orderSource === 'line' || b.orderSource === 'web')
-      ? (b.orderSource as 'line' | 'web')
-      : lineUserId
-        ? 'line'
-        : undefined;
-
   const payload: OrderPayload = {
     customerName,
     phone: typeof b.phone === 'string' ? b.phone.trim() || undefined : undefined,
@@ -179,8 +168,6 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     contactPreference,
     ...(refCode && refDiscount > 0 ? { referralCode: refCode, referralDiscount: refDiscount } : {}),
     ...(ga_client_id && { ga_client_id }),
-    ...(lineUserId && { lineUserId }),
-    ...(orderSource && { orderSource }),
     submissionToken: submissionTokenRaw,
   };
   return { ok: true, payload };
@@ -193,13 +180,7 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }
-    const { order, created } = await createOrder(result.payload);
-    if (result.payload.lineUserId && created) {
-      void logLineIntegrationEvent('line_user_linked_to_order', {
-        lineUserId: result.payload.lineUserId,
-        orderId: order.orderId,
-      });
-    }
+    const { order } = await createOrder(result.payload);
     const publicOrderUrl = getOrderDetailsUrl(order.orderId);
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
 

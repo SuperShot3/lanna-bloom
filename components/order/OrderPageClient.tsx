@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getLineOrderUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
+import { getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
 import { LineIcon, WhatsAppIcon, HomeIcon } from '@/components/icons';
 import { translations } from '@/lib/i18n';
 import type { OrderCustomerView } from '@/lib/orders';
@@ -204,7 +204,7 @@ export function OrderPageClient({
   }, [orderId]);
 
   const contactChannels = [
-    { id: 'line' as const, getUrl: () => getLineOrderUrl(orderMessage), Icon: LineIcon, label: 'LINE' },
+    { id: 'line' as const, getUrl: () => getLineContactUrl(), Icon: LineIcon, label: 'LINE' },
     { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, label: 'WhatsApp' },
   ];
 

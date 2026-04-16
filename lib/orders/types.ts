@@ -90,10 +90,8 @@ export interface OrderPayload {
   referralDiscount?: number;
   /** Optional GA4 client_id from frontend for server-side purchase attribution (stored in DB only). */
   ga_client_id?: string;
-  /** LINE Messaging API user id when order originated from LINE handoff (optional). */
-  lineUserId?: string;
-  /** Channel hint for admin (e.g. line, web, custom_form). */
-  orderSource?: 'line' | 'web' | 'custom_form';
+  /** Channel hint for admin/ops reporting. */
+  orderSource?: 'web' | 'custom_form' | 'legacy_line';
   /** When set, order came from the custom order form; details for ops and customer. */
   customOrderDetails?: CustomOrderDetails;
   /**
@@ -126,9 +124,6 @@ export interface Order extends OrderPayload {
   /** Customer-facing fulfillment status. Stored in Supabase. */
   fulfillmentStatus?: FulfillmentStatus;
   fulfillmentStatusUpdatedAt?: string;
-  /** Last payment-confirmation LINE push attempt (admin visibility). */
-  lastLinePushStatus?: string;
-  lastLinePushAt?: string;
 }
 
 /**
