@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { animate, motion, useMotionValue, useTransform } from 'framer-motion';
 import Image from 'next/image';
 
@@ -18,13 +18,31 @@ type HeroCard = {
 };
 
 type OutgoingCard = {
+  id: string;
   card: HeroCard;
   startX: number;
   startRotate: number;
 };
 
 const SWIPE_THRESHOLD = 110;
-const SWIPE_OUT_X = 720;
+const SWIPE_OUT_X = 980;
+const SWIPE_OUT_TRANSITION = {
+  duration: 1.12,
+  ease: [0.16, 0.92, 0.2, 1],
+} as const;
+const STACK_TRANSITION = {
+  type: 'spring',
+  stiffness: 170,
+  damping: 24,
+  mass: 1.05,
+} as const;
+const SNAP_BACK_TRANSITION = {
+  type: 'spring',
+  stiffness: 260,
+  damping: 24,
+  mass: 0.95,
+} as const;
+const BUTTON_SWIPE_START_X = 36;
 
 function cycleCards(cards: HeroCard[]) {
   if (cards.length <= 1) return cards;
@@ -38,10 +56,10 @@ function getCardLayout(index: number) {
   }
 
   if (index === 1) {
-    return { scale: 0.955, y: 18, opacity: 0.74 };
+    return { scale: 0.96, y: 20, opacity: 0.78 };
   }
 
-  return { scale: 0.915, y: 34, opacity: 0.48 };
+  return { scale: 0.925, y: 38, opacity: 0.54 };
 }
 
 export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHeroImage?: string; carouselImages?: string[] }) {
@@ -50,8 +68,9 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
     : FALLBACK_CARDS.map((card) => card.src);
 
   const [cards, setCards] = useState(() => sourceImages.map((src, index) => ({ id: index, src })));
-  const [outgoingCard, setOutgoingCard] = useState<OutgoingCard | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [outgoingCards, setOutgoingCards] = useState<OutgoingCard[]>([]);
+  const swipeSequenceRef = useRef(0);
+  const lastCommittedCardIdRef = useRef<number | null>(null);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-280, 280], [-14, 14]);
@@ -60,45 +79,41 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
   const visibleCards = cards.slice(0, 3);
   const activeCard = visibleCards[0];
 
-  const finishSwipe = () => {
-    setOutgoingCard(null);
-    setIsAnimating(false);
+  const finishSwipe = (outgoingId: string) => {
+    setOutgoingCards((prev) => prev.filter((card) => card.id !== outgoingId));
   };
 
   const commitSwipeRight = (startX = 0) => {
-    if (isAnimating || cards.length <= 1 || !activeCard) return;
+    if (cards.length <= 1 || !activeCard) return;
+    if (lastCommittedCardIdRef.current === activeCard.id) return;
 
-    setIsAnimating(true);
-    setOutgoingCard({
+    lastCommittedCardIdRef.current = activeCard.id;
+    swipeSequenceRef.current += 1;
+
+    setOutgoingCards((prev) => [...prev, {
+      id: `${activeCard.id}-${swipeSequenceRef.current}`,
       card: activeCard,
       startX,
       startRotate: Math.max(-14, Math.min(14, startX / 20)),
-    });
+    }]);
     setCards((prev) => cycleCards(prev));
     x.set(0);
   };
 
   const handleButtonLike = () => {
-    commitSwipeRight(0);
+    commitSwipeRight(BUTTON_SWIPE_START_X);
   };
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: { offset: { x: number }; velocity: { x: number } }) => {
-    if (isAnimating) return;
-
     const currentX = x.get();
-    const shouldSwipe = info.offset.x > SWIPE_THRESHOLD || info.velocity.x > 600;
+    const shouldSwipe = info.offset.x > SWIPE_THRESHOLD || info.velocity.x > 700;
 
     if (shouldSwipe) {
       commitSwipeRight(currentX);
       return;
     }
 
-    animate(x, 0, {
-      type: 'spring',
-      stiffness: 380,
-      damping: 32,
-      mass: 0.8,
-    });
+    animate(x, 0, SNAP_BACK_TRANSITION);
   };
 
   if (!activeCard) return null;
@@ -116,11 +131,11 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
               key={card.id}
               initial={false}
               animate={layout}
-              transition={{ type: 'spring', stiffness: 260, damping: 28, mass: 0.9 }}
+              transition={STACK_TRANSITION}
               style={isTopCard ? { x, rotate, willChange: 'transform' } : undefined}
-              drag={isTopCard && !isAnimating && cards.length > 1 ? 'x' : false}
+              drag={isTopCard && cards.length > 1 ? 'x' : false}
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.18}
+              dragElastic={0.12}
               dragMomentum={false}
               onDragEnd={isTopCard ? handleDragEnd : undefined}
               className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl"
@@ -148,9 +163,9 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
           );
         })}
 
-        {outgoingCard && (
+        {outgoingCards.map((outgoingCard) => (
           <motion.div
-            key={`outgoing-${outgoingCard.card.id}`}
+            key={`outgoing-${outgoingCard.id}`}
             initial={{
               x: outgoingCard.startX,
               rotate: outgoingCard.startRotate,
@@ -159,15 +174,12 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
             }}
             animate={{
               x: SWIPE_OUT_X,
-              rotate: 16,
-              scale: 1,
-              opacity: 1,
+              rotate: 15,
+              scale: 0.965,
+              opacity: 0.18,
             }}
-            transition={{
-              duration: 0.32,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            onAnimationComplete={finishSwipe}
+            transition={SWIPE_OUT_TRANSITION}
+            onAnimationComplete={() => finishSwipe(outgoingCard.id)}
             className="absolute inset-0 z-20 rounded-[2rem] overflow-hidden shadow-xl md:shadow-2xl pointer-events-none"
           >
             <Image
@@ -179,13 +191,13 @@ export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHe
               sizes="(max-width: 1024px) 100%, 50vw"
             />
           </motion.div>
-        )}
+        ))}
       </div>
 
       <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center gap-6 z-40 pointer-events-none px-4">
         <button
           onClick={handleButtonLike}
-          disabled={isAnimating || cards.length <= 1}
+          disabled={cards.length <= 1}
           className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-800/90 shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-2xl hover:bg-emerald-700 transition-all duration-300 ring-2 ring-white/30 active:scale-95 pointer-events-auto disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
           aria-label="Like"
         >
