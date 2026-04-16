@@ -220,9 +220,9 @@ export function Footer({ lang }: { lang: Locale }) {
           <p>{t.copyright}</p>
           <div className="flex flex-nowrap justify-center items-center gap-4">
             <img
-              src="/icons/stripe-v2.svg"
+              src="/payments/stripe-cc-payments1.png"
               alt="Pay with Stripe"
-              className="h-10 w-10 object-contain"
+              className="h-10 w-auto object-contain"
               loading="lazy"
               decoding="async"
             />
