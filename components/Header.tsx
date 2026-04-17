@@ -250,7 +250,7 @@ export function Header({
             aria-label="Close menu"
           />
           <div
-            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[#FDFCF8] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] p-14 px-6 flex flex-col gap-6 transform transition-transform duration-250"
+            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[#FDFCF8] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] pb-14 pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+2.25rem))] px-6 flex flex-col gap-6 transform transition-transform duration-250"
             style={{
               transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             }}

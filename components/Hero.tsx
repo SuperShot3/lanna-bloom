@@ -16,13 +16,13 @@ export function Hero({ lang, heroImageUrl, carouselImages }: { lang: Locale; her
 
   return (
     <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-10 md:pt-8 md:pb-12 lg:pt-12 lg:pb-20 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-center">
-        <div className="relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-center min-w-0">
+        <div className="relative z-10 min-w-0">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4">
             <span className="material-symbols-outlined text-lg">verified</span>
             {t.badge}
           </div>
-          <h1 className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6">
+          <h1 className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words">
             {t.headlineNew} <br />
             <span className="italic text-[#C5A059]">{t.headlineAccent}</span>
           </h1>
@@ -81,7 +81,7 @@ export function Hero({ lang, heroImageUrl, carouselImages }: { lang: Locale; her
             </div>
           </div>
         </div>
-        <div className="relative">
+        <div className="relative min-w-0 w-full">
           <HeroSwipeCards initialHeroImage={imageSrc} carouselImages={carouselImages} />
           
           <div className="absolute bottom-20 left-4 lg:bottom-12 lg:-left-10 bg-white p-4 lg:p-6 rounded-2xl shadow-xl md:shadow-2xl border border-stone-100 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite] pointer-events-none z-30">

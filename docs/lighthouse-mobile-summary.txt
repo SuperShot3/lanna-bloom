@@ -1,0 +1,9 @@
+Lighthouse (default mobile emulation) — performance category only
+URL: https://www.lannabloom.shop/en
+Date: 2026-04-17
+Performance score: 0.55 (55/100)
+
+Note: Run locally after deploy with:
+npx lighthouse https://www.lannabloom.shop/en --only-categories=performance --chrome-flags="--headless=new"
+
+Full JSON reports are not committed (large); regenerate as needed.

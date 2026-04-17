@@ -999,6 +999,11 @@ a.filter-pill--active:hover {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
+@media (max-width: 359px) {
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
 @media (min-width: 640px) {
   .catalog-grid {
     gap: var(--space-4);
@@ -1034,6 +1039,8 @@ a.filter-pill--active:hover {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: var(--space-5);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .product-page .breadcrumb a:hover {
   color: var(--accent);

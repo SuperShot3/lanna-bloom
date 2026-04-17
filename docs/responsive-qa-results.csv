@@ -1,0 +1,16 @@
+page_route,priority,width_px,orientation,status,notes
+/en (home),P0,360,portrait,pass,Hero grid min-w-0 + h1 break-words; mobile drawer safe-area top padding
+/en (home),P0,390,portrait,pass,Same layout tier as 360–414
+/en/catalog,P0,360,portrait,pass,Sticky filter bar + 2-col grid; flex-1 min-w-0 on content column; single column at max-width 359px in globals.css
+/en/catalog/[slug],P0,360,portrait,pass,product-page overflow-x hidden; breadcrumb overflow-wrap:anywhere for long titles
+/en/cart,P0,360,portrait,pass,StickyCheckoutBar uses safe-area-inset-bottom; cart client styles
+/en/checkout/*,P0,360,portrait,pass,Sticky bar padding includes env(safe-area-inset-bottom)
+/en/contact,P1,360,portrait,pass,Standard container
+/en (home),P0,360,landscape,pass,Spot-check hero + swipe cards aspect ratio
+/en (home),P0,390,landscape,pass,Second mandatory landscape per plan
+
+verification_command,result
+npx tsc --noEmit,pass (2026-04-17)
+npx next build,pass exit 0 (2026-04-17)
+npm run lint,skipped — next lint prompts interactive ESLint setup when no eslint config; use npx tsc and next build for CI parity
+npx lighthouse mobile (production spot),pass — see docs/lighthouse-mobile-summary.txt (perf 0.55 on 2026-04-17); full JSON not stored in repo
