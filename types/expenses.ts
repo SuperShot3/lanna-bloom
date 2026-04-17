@@ -7,6 +7,7 @@ export type ExpenseCategory =
   | 'transport'
   | 'tools_equipment'
   | 'soft_toys'
+  | 'greeting_cards'
   | 'other';
 
 export type PaymentMethod =
@@ -57,6 +58,7 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'transport',        label: 'Transport' },
   { value: 'tools_equipment',  label: 'Tools & Equipment' },
   { value: 'soft_toys',        label: 'Soft toys' },
+  { value: 'greeting_cards',   label: 'Greeting cards' },
   { value: 'other',            label: 'Other' },
 ];
 
