@@ -12,6 +12,53 @@ const orderLookupStore = new Map<string, { count: number; resetAt: number }>();
 const ORDER_LOOKUP_WINDOW_MS = 60 * 1000; // 1 minute
 const ORDER_LOOKUP_MAX = 10;
 
+/** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
+const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const ADMIN_PASSWORD_MAX_FAILURES = 5;
+const ADMIN_PASSWORD_LOCKOUT_MS = 30 * 60 * 1000; // 30 minutes from lock trigger
+
+type AdminPasswordEntry = { failures: number[]; lockoutUntil: number | null };
+const adminPasswordStore = new Map<string, AdminPasswordEntry>();
+
+function pruneAdminFailures(failures: number[]): number[] {
+  const cutoff = Date.now() - ADMIN_PASSWORD_WINDOW_MS;
+  return failures.filter((t) => t > cutoff);
+}
+
+export function isAdminPasswordLockedOut(email: string): boolean {
+  const key = email.trim().toLowerCase();
+  const entry = adminPasswordStore.get(key);
+  if (!entry) return false;
+  const now = Date.now();
+  if (entry.lockoutUntil && now < entry.lockoutUntil) return true;
+  if (entry.lockoutUntil && now >= entry.lockoutUntil) {
+    entry.lockoutUntil = null;
+    entry.failures = pruneAdminFailures(entry.failures);
+  }
+  return false;
+}
+
+export function recordAdminPasswordFailure(email: string): void {
+  const key = email.trim().toLowerCase();
+  let entry = adminPasswordStore.get(key);
+  if (!entry) {
+    entry = { failures: [], lockoutUntil: null };
+    adminPasswordStore.set(key, entry);
+  }
+  if (entry.lockoutUntil && Date.now() < entry.lockoutUntil) return;
+
+  const now = Date.now();
+  entry.failures = pruneAdminFailures(entry.failures);
+  entry.failures.push(now);
+  if (entry.failures.length >= ADMIN_PASSWORD_MAX_FAILURES) {
+    entry.lockoutUntil = now + ADMIN_PASSWORD_LOCKOUT_MS;
+  }
+}
+
+export function clearAdminPasswordFailures(email: string): void {
+  adminPasswordStore.delete(email.trim().toLowerCase());
+}
+
 export function checkOrderLookupRateLimit(ip: string): boolean {
   const now = Date.now();
   const entry = orderLookupStore.get(ip);

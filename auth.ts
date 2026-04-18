@@ -1,8 +1,13 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { headers } from 'next/headers';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { checkLoginRateLimit } from '@/lib/rateLimit';
+import {
+  checkLoginRateLimit,
+  isAdminPasswordLockedOut,
+  recordAdminPasswordFailure,
+  clearAdminPasswordFailures,
+} from '@/lib/rateLimit';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -15,6 +20,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const email = String(credentials.email).trim().toLowerCase();
+        const password = String(credentials.password);
+
+        if (isAdminPasswordLockedOut(email)) {
+          const err = new CredentialsSignin();
+          err.code = 'locked_out';
+          throw err;
+        }
+
         const headersList = await headers();
         const ip =
           headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -25,9 +39,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const supabase = getSupabaseAdmin();
         if (!supabase) return null;
-
-        const email = String(credentials.email).trim().toLowerCase();
-        const password = String(credentials.password);
 
         const { data: admin, error } = await supabase
           .from('admin_users')
@@ -40,7 +51,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const bcrypt = await import('bcryptjs').then((m) => m.default);
         const valid = await bcrypt.compare(password, admin.password_hash);
-        if (!valid) return null;
+        if (!valid) {
+          recordAdminPasswordFailure(email);
+          return null;
+        }
+
+        clearAdminPasswordFailures(email);
 
         return {
           id: admin.id,

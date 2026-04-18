@@ -11,6 +11,7 @@ export function AdminLoginForm() {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const callbackError = (searchParams ?? new URLSearchParams()).get('error');
+  const callbackCode = searchParams?.get('code');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,13 @@ export function AdminLoginForm() {
         redirect: false,
       });
       if (result?.error) {
-        setError('Invalid email or password.');
+        if (result.code === 'locked_out') {
+          setError(
+            'Too many incorrect password attempts. Try again in 30 minutes (from your last attempt).'
+          );
+        } else {
+          setError('Invalid email or password.');
+        }
         return;
       }
       if (result?.ok) {
@@ -41,7 +48,12 @@ export function AdminLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="admin-form">
       {(error || callbackError === 'CredentialsSignin') && (
-        <p className="admin-error">{error || 'Invalid email or password.'}</p>
+        <p className="admin-error">
+          {error ||
+            (callbackCode === 'locked_out'
+              ? 'Too many incorrect password attempts. Try again in 30 minutes (from your last attempt).'
+              : 'Invalid email or password.')}
+        </p>
       )}
       <div className="admin-form-group">
         <label htmlFor="admin-email">Email</label>
