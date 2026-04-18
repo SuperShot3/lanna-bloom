@@ -49,6 +49,21 @@ async function recordStripeEventIfNew(eventId: string, type: string): Promise<bo
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+/**
+ * Stripe only delivers webhooks via POST. Browsers, crawlers, and uptime checks
+ * often GET this URL and would otherwise see 405 — not a Stripe delivery failure.
+ */
+export function GET() {
+  return NextResponse.json(
+    { ok: true, message: 'Stripe webhooks use POST with Signing secret verification.' },
+    { status: 200 }
+  );
+}
+
+export function HEAD() {
+  return new NextResponse(null, { status: 200 });
+}
+
 async function resolveCheckoutSessionContext(
   stripe: Stripe,
   session: Stripe.Checkout.Session
