@@ -222,7 +222,7 @@ export function Footer({ lang }: { lang: Locale }) {
             <img
               src="/payments/stripe-cc-payments1.png"
               alt="Pay with Stripe"
-              className="h-10 w-auto object-contain"
+              className="h-7 w-auto max-w-[min(100%,200px)] object-contain"
               loading="lazy"
               decoding="async"
             />

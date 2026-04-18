@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
 interface RemoveOrderButtonProps {
   orderId: string;
@@ -13,13 +12,12 @@ interface RemoveOrderButtonProps {
 export function RemoveOrderButton({ orderId, returnTo, canEdit }: RemoveOrderButtonProps) {
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   if (!canEdit) return null;
 
-  const handleRemove = async () => {
-    if (!confirmDeleteAction('Remove this order from the system? This cannot be undone. The customer order link will no longer work.')) {
-      return;
-    }
+  const performRemove = async () => {
+    setShowConfirm(false);
     setRemoving(true);
     try {
       const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/remove`, {
@@ -40,14 +38,56 @@ export function RemoveOrderButton({ orderId, returnTo, canEdit }: RemoveOrderBut
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleRemove}
-      disabled={removing}
-      className="admin-btn admin-btn-outline admin-btn-danger"
-      title="Remove from system (e.g. after delivery)"
-    >
-      {removing ? 'Removing…' : 'Delivered — Remove'}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setShowConfirm(true)}
+        disabled={removing}
+        className="admin-btn admin-btn-outline admin-btn-danger"
+        title="Remove from system (e.g. after delivery)"
+      >
+        {removing ? 'Removing…' : 'Delivered — Remove'}
+      </button>
+
+      {showConfirm && (
+        <div
+          className="admin-product-detail-delete-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-order-modal-title"
+        >
+          <div
+            className="admin-product-detail-delete-modal-backdrop"
+            onClick={() => !removing && setShowConfirm(false)}
+            aria-hidden
+          />
+          <div className="admin-product-detail-delete-modal-content">
+            <h3 id="remove-order-modal-title">Remove this order?</h3>
+            <p>
+              Are you sure you want to delete this order? This cannot be undone. The customer order link will no
+              longer work.
+            </p>
+            <div className="admin-product-detail-delete-modal-actions">
+              <button
+                type="button"
+                className="admin-btn admin-btn-outline"
+                disabled={removing}
+                onClick={() => setShowConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-danger"
+                disabled={removing}
+                onClick={performRemove}
+              >
+                Delete order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
