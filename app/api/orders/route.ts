@@ -5,6 +5,7 @@ import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') {
@@ -35,7 +36,10 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const address = typeof d.address === 'string' ? d.address.trim() : '';
   const preferredTimeSlot = typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
-  const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  const recipientPhoneRaw = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  const recipientPhone = recipientPhoneRaw
+    ? stripDuplicateThaiLeading66(recipientPhoneRaw)
+    : undefined;
   const surpriseDelivery =
     d.surpriseDelivery === true ? true : d.surpriseDelivery === false ? false : undefined;
   if (!address || address.length < 10 || address.length > 500) {
@@ -65,7 +69,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     return { ok: false, message: 'customerName is required' };
   }
 
-  const phone = typeof b.phone === 'string' ? b.phone.trim() : '';
+  const phone = stripDuplicateThaiLeading66(typeof b.phone === 'string' ? b.phone.trim() : '');
   if (!phone) {
     return { ok: false, message: 'phone is required' };
   }
@@ -74,6 +78,23 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   }
   if (phone.length < 9 || phone.length > 16) {
     return { ok: false, message: 'phone must be 9–16 digits (country code + number)' };
+  }
+  if (thaiFullPhoneHasDuplicateCountryCode(phone)) {
+    return {
+      ok: false,
+      message: 'phone must not repeat country code 66 (use one full number, e.g. 66952572645)',
+    };
+  }
+  if (
+    recipientPhone &&
+    /^\d+$/.test(recipientPhone) &&
+    thaiFullPhoneHasDuplicateCountryCode(recipientPhone)
+  ) {
+    return {
+      ok: false,
+      message:
+        'recipientPhone must not repeat country code 66 (use one full number, e.g. 66952572645)',
+    };
   }
 
   const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.trim() : undefined;

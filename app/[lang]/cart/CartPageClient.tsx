@@ -41,7 +41,7 @@ import { PinIcon } from '@/components/icons/PinIcon';
 import {
   CHECKOUT_NATIONAL_MAX,
   getNationalPhoneHint,
-  normalizeThailandNationalOnBlur,
+  normalizeNationalPhoneOnBlur,
   nationalDigitsValidForCheckout,
 } from '@/lib/phoneFieldHints';
 
@@ -930,28 +930,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               value={phoneNational}
               onChange={handlePhoneInput}
               onBlur={() =>
-                setPhoneNational((p) => normalizeThailandNationalOnBlur(p, countryCode))
+                setPhoneNational((p) => normalizeNationalPhoneOnBlur(p, countryCode))
               }
               placeholder={t.phoneNumberPlaceholder}
               className="cart-contact-input cart-phone-input"
               autoComplete="tel-national"
               maxLength={PHONE_MAX_DIGITS}
-              aria-describedby={`${idPrefix}cart-phone-hint ${idPrefix}cart-phone-hint-expanded`}
-              aria-invalid={senderPhoneHint.tone === 'warn'}
+              aria-describedby={
+                phoneNational.length > 0 && senderPhoneHint.tone !== 'success'
+                  ? `${idPrefix}cart-phone-hint`
+                  : undefined
+              }
+              aria-invalid={phoneNational.length > 0 && senderPhoneHint.tone === 'warn'}
             />
           </div>
-          <div className="cart-phone-hint-stack">
+          {phoneNational.length > 0 && senderPhoneHint.tone !== 'success' && (
             <p
               id={`${idPrefix}cart-phone-hint`}
               className={`cart-phone-hint cart-phone-hint--${senderPhoneHint.tone}`}
               role={senderPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+              aria-live="polite"
             >
               {senderHintText}
             </p>
-            <div className="cart-phone-hint-expanded" id={`${idPrefix}cart-phone-hint-expanded`}>
-              <p className="cart-phone-hint-expanded-text">{tc.phoneHintExpandedGuide}</p>
-            </div>
-          </div>
+          )}
         </div>
         <fieldset className="cart-contact-preferences" aria-label={t.preferredContact}>
           <legend className="cart-contact-legend">
@@ -1049,32 +1051,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 onChange={handleRecipientPhoneInput}
                 onBlur={() =>
                   setRecipientPhoneNational((p) =>
-                    normalizeThailandNationalOnBlur(p, recipientCountryCode)
+                    normalizeNationalPhoneOnBlur(p, recipientCountryCode)
                   )
                 }
                 placeholder={t.recipientPhonePlaceholder}
                 className="cart-contact-input cart-phone-input"
                 autoComplete="tel-national"
                 maxLength={PHONE_MAX_DIGITS}
-                aria-describedby={`${idPrefix}cart-recipient-phone-hint ${idPrefix}cart-recipient-phone-hint-expanded`}
-                aria-invalid={recipientPhoneHint.tone === 'warn'}
+                aria-describedby={
+                  recipientPhoneNational.length > 0 && recipientPhoneHint.tone !== 'success'
+                    ? `${idPrefix}cart-recipient-phone-hint`
+                    : undefined
+                }
+                aria-invalid={
+                  recipientPhoneNational.length > 0 && recipientPhoneHint.tone === 'warn'
+                }
               />
             </div>
-            <div className="cart-phone-hint-stack">
+            {recipientPhoneNational.length > 0 && recipientPhoneHint.tone !== 'success' && (
               <p
                 id={`${idPrefix}cart-recipient-phone-hint`}
                 className={`cart-phone-hint cart-phone-hint--${recipientPhoneHint.tone}`}
                 role={recipientPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+                aria-live="polite"
               >
                 {recipientHintText}
               </p>
-              <div
-                className="cart-phone-hint-expanded"
-                id={`${idPrefix}cart-recipient-phone-hint-expanded`}
-              >
-                <p className="cart-phone-hint-expanded-text">{tc.phoneHintExpandedGuide}</p>
-              </div>
-            </div>
+            )}
           </div>
           <label className="cart-contact-checkbox-label cart-ordering-for-else">
             <input
@@ -2247,15 +2250,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-phone-field-group {
           position: relative;
         }
-        .cart-phone-hint-stack {
-          margin-top: 0.125rem;
-        }
         .cart-phone-hint {
-          font-size: 0.6875rem;
+          font-size: 0.625rem;
           font-weight: 500;
-          margin: 0;
-          line-height: 1.4;
-          transition: color 0.15s ease;
+          margin: 3px 0 0;
+          line-height: 1.35;
+          max-width: 100%;
+          transition: color 0.12s ease;
         }
         .cart-phone-hint--neutral {
           color: #94a3b8;
@@ -2269,27 +2270,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-phone-hint--success {
           color: #15803d;
-        }
-        .cart-phone-hint-expanded {
-          max-height: 0;
-          opacity: 0;
-          overflow: hidden;
-          transition: max-height 0.28s ease, opacity 0.22s ease, margin 0.22s ease;
-        }
-        .cart-phone-field-group:focus-within .cart-phone-hint-expanded {
-          max-height: 120px;
-          opacity: 1;
-          margin-top: 8px;
-        }
-        .cart-phone-hint-expanded-text {
-          font-size: 0.7rem;
-          line-height: 1.45;
-          color: var(--text-muted);
-          margin: 0;
-          padding: 10px 12px;
-          background: var(--pastel-cream);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
         }
         .cart-contact-preferences {
           margin: 0;

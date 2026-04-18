@@ -14,6 +14,7 @@ import { buildStripeCheckoutDraftMetadata } from '@/lib/stripe/metadata';
 import { upsertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
 function validateStripePayload(
   body: unknown
@@ -48,11 +49,17 @@ function validateStripePayload(
   const customerName = typeof b.customerName === 'string' ? b.customerName.trim() : '';
   if (!customerName) return { ok: false, message: 'customerName is required' };
 
-  const phone = typeof b.phone === 'string' ? b.phone.trim() : '';
+  const phone = stripDuplicateThaiLeading66(typeof b.phone === 'string' ? b.phone.trim() : '');
   if (!phone) return { ok: false, message: 'phone is required' };
   if (!/^\d+$/.test(phone)) return { ok: false, message: 'phone must contain only digits' };
   if (phone.length < 9 || phone.length > 16) {
     return { ok: false, message: 'phone must be 9–16 digits' };
+  }
+  if (thaiFullPhoneHasDuplicateCountryCode(phone)) {
+    return {
+      ok: false,
+      message: 'phone must not repeat country code 66 (e.g. use 66952572645, not 666952572645)',
+    };
   }
 
   const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.trim() : undefined;
@@ -111,9 +118,24 @@ function validateStripePayload(
   const preferredTimeSlot =
     typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
-  const recipientPhone = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  const recipientPhoneRaw = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
+  const recipientPhone = recipientPhoneRaw
+    ? stripDuplicateThaiLeading66(recipientPhoneRaw)
+    : undefined;
   const surpriseDelivery =
     d.surpriseDelivery === true ? true : d.surpriseDelivery === false ? false : undefined;
+
+  if (
+    recipientPhone &&
+    /^\d+$/.test(recipientPhone) &&
+    thaiFullPhoneHasDuplicateCountryCode(recipientPhone)
+  ) {
+    return {
+      ok: false,
+      message:
+        'recipientPhone must not repeat country code 66 (e.g. use 66952572645, not 666952572645)',
+    };
+  }
 
   const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'] as const;
   const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as typeof validDistricts[number])

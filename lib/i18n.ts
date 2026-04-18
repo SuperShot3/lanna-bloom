@@ -436,13 +436,14 @@ export const translations = {
       contactPhoneDigitsOnly: 'Phone number must contain only digits (numbers).',
       contactPhoneMinLength: 'Phone number must be at least 8 digits.',
       contactPhoneMaxLength: 'Phone number must be at most 15 digits.',
-      phoneHintNeutralNational:
-        'Digits only — no spaces. Country code is chosen on the left.',
-      phoneHintExpandedGuide:
-        'Use your mobile number without + or spaces. For Thailand (+66), type 9 digits and skip the first 0 (example: 812345678, not 0812345678). Other countries: enter the part that comes after the country code.',
-      phoneHintThSkipLeadingZero:
-        'Tip: with +66 selected, omit the leading 0 (use 812345678, not 0812345678).',
-      phoneHintLooksGood: 'Looks good — we can use this number.',
+      phoneHintNeutralNational: '',
+      phoneHintTooShortNational: 'Too short — need 8–15 digits.',
+      phoneHintTooLongNational: 'Too long — max 15 digits here.',
+      phoneHintNationalHasCountryCode: 'Drop 66 here — it’s already on the left.',
+      phoneHintDuplicateThai66: '66 appears twice — use 11 digits (e.g. 66952572645).',
+      phoneHintThSkipLeadingZero: 'With +66, skip the first 0 (81… not 081…).',
+      phoneHintLooksGood: 'OK',
+      phoneHintInlineDigitsOnly: 'Numbers only.',
       contactMethodRequired: 'Please select at least one way to contact you.',
       referralLabel: 'Referral code (optional)',
       referralPlaceholder: 'Enter code',
@@ -942,14 +943,11 @@ export const translations = {
         'Submitting creates an order in our system. You will receive the same admin notification as catalog orders. You can track status on the order page.',
       fileTooLarge: 'Please choose an image under 4 MB.',
       waSubjectLine: 'Custom bouquet order — Lanna Bloom',
-      phoneHintNeutralFull:
-        'Digits only — include country code (e.g. 66812345678) or a valid local number.',
-      phoneHintExpandedGuideFull:
-        'Use digits only (no spaces). Thai numbers: either 9 digits without the leading 0, or the full international form starting with 66. Other countries: include the country code — 9 to 16 digits total.',
-      phoneHintThSkipLeadingZeroFull:
-        'Tip: for Thai numbers, drop the leading 0 (e.g. 812345678) or use the full international form (66812345678).',
-      phoneHintTooShortFull: 'Add a few more digits — we need a complete number (9–16 digits).',
-      phoneHintTooLongFull: 'That number looks too long — please check (max 16 digits).',
+      phoneHintNeutralFull: '',
+      phoneHintDuplicateThai66: '66 appears twice — use one full number (e.g. 66952572645).',
+      phoneHintThSkipLeadingZeroFull: 'Remove the leading 0 or use 66…',
+      phoneHintTooShortFull: 'Need 9–16 digits.',
+      phoneHintTooLongFull: 'Max 16 digits.',
     },
     location: {
       title: 'Find us',
@@ -1440,12 +1438,14 @@ export const translations = {
       contactPhoneDigitsOnly: 'เบอร์โทรศัพท์ต้องเป็นตัวเลขเท่านั้น',
       contactPhoneMinLength: 'เบอร์โทรศัพท์ต้องมีอย่างน้อย 8 หลัก',
       contactPhoneMaxLength: 'เบอร์โทรศัพท์ต้องไม่เกิน 15 หลัก',
-      phoneHintNeutralNational: 'กรอกเฉพาะตัวเลข ไม่เว้นวรรค — เลือกรหัสประเทศทางซ้าย',
-      phoneHintExpandedGuide:
-        'ใส่เบอร์มือถือโดยไม่ต้องพิมพ์ + หรือเว้นวรรค สำหรับไทย (+66) ใส่ 9 หลักและไม่ต้องใส่เลข 0 นำหน้า (เช่น 812345678 ไม่ใช่ 0812345678) ประเทศอื่นใส่ส่วนที่อยู่หลังรหัสประเทศ',
-      phoneHintThSkipLeadingZero:
-        'คำแนะนำ: เลือก +66 แล้วไม่ต้องใส่ 0 นำหน้า (ใช้ 812345678 ไม่ใช่ 0812345678)',
-      phoneHintLooksGood: 'เบอร์นี้ใช้ได้ — ติดต่อคุณที่หมายเลขนี้ได้',
+      phoneHintNeutralNational: '',
+      phoneHintTooShortNational: 'สั้นไป — ต้อง 8–15 หลัก',
+      phoneHintTooLongNational: 'ยาวไป — สูงสุด 15 หลัก',
+      phoneHintNationalHasCountryCode: 'ไม่ต้องใส่ 66 ในช่องนี้ — เลือกไว้ซ้ายแล้ว',
+      phoneHintDuplicateThai66: 'เลข 66 ซ้ำ — ใส่เบอร์เต็ม 11 หลัก (เช่น 66952572645)',
+      phoneHintThSkipLeadingZero: '+66 ไม่ใส่ 0 นำหน้า (81… ไม่ใช่ 081…)',
+      phoneHintLooksGood: 'ใช้ได้',
+      phoneHintInlineDigitsOnly: 'ตัวเลขเท่านั้น',
       contactMethodRequired: 'กรุณาเลือกอย่างน้อยหนึ่งช่องทางในการติดต่อ',
       referralLabel: 'รหัสแนะนำ (ไม่บังคับ)',
       referralPlaceholder: 'กรอกรหัส',
@@ -1943,14 +1943,11 @@ export const translations = {
         'การส่งแบบฟอร์มจะสร้างออเดอร์ในระบบ ทีมจะได้รับการแจ้งเตือนแบบเดียวกับออเดอร์จากแคตตาล็อก ติดตามสถานะได้ที่หน้าออเดอร์',
       fileTooLarge: 'กรุณาเลือกรูปขนาดไม่เกิน 4 MB',
       waSubjectLine: 'สั่งช่อดอกไม้พิเศษ — Lanna Bloom',
-      phoneHintNeutralFull:
-        'กรอกเฉพาะตัวเลข — รวมรหัสประเทศ (เช่น 66812345678) หรือเบอร์ที่ถูกต้อง',
-      phoneHintExpandedGuideFull:
-        'กรอกเฉพาะตัวเลข ไม่เว้นวรรค เบอร์ไทย: ใส่ 9 หลักโดยไม่มี 0 นำหน้า หรือใส่แบบต่างประเทศขึ้นต้นด้วย 66 ประเทศอื่นให้รวมรหัสประเทศ รวม 9–16 หลัก',
-      phoneHintThSkipLeadingZeroFull:
-        'คำแนะนำ: เบอร์ไทยไม่ต้องใส่ 0 นำหน้า (เช่น 812345678) หรือใส่แบบต่างประเทศ (66812345678)',
-      phoneHintTooShortFull: 'เบอร์ยังไม่ครบ — ต้องมี 9–16 หลัก',
-      phoneHintTooLongFull: 'เบอร์ยาวเกินไป กรุณาตรวจสอบ (สูงสุด 16 หลัก)',
+      phoneHintNeutralFull: '',
+      phoneHintDuplicateThai66: 'เลข 66 ซ้ำ — ใส่เบอร์เดียวครบ (เช่น 66952572645)',
+      phoneHintThSkipLeadingZeroFull: 'ตัด 0 นำหน้า หรือใส่ 66…',
+      phoneHintTooShortFull: 'ต้อง 9–16 หลัก',
+      phoneHintTooLongFull: 'สูงสุด 16 หลัก',
     },
     location: {
       title: 'แผนที่ร้าน',

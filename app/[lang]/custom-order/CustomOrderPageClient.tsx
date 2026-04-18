@@ -20,10 +20,10 @@ function resolveFullPhoneHintMessage(
   tCart: Record<string, string>
 ): string {
   const key = hint.messageKey;
-  if (key === 'contactPhoneDigitsOnly' || key === 'phoneHintLooksGood') {
+  if (key === 'phoneHintLooksGood' || key === 'phoneHintInlineDigitsOnly') {
     return tCart[key] ?? key;
   }
-  return tCo[key] ?? key;
+  return tCo[key] ?? tCart[key] ?? key;
 }
 
 export function CustomOrderPageClient({ lang }: { lang: Locale }) {
@@ -317,21 +317,25 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
                   )
                 }
                 onBlur={() => setRecipientPhoneDigits((d) => normalizeFullPhoneOnBlur(d))}
-                aria-describedby="recipientPhone-hint recipientPhone-hint-expanded"
-                aria-invalid={recipientPhoneHint.tone === 'warn'}
+                aria-describedby={
+                  recipientPhoneDigits.length > 0 && recipientPhoneHint.tone !== 'success'
+                    ? 'recipientPhone-hint'
+                    : undefined
+                }
+                aria-invalid={
+                  recipientPhoneDigits.length > 0 && recipientPhoneHint.tone === 'warn'
+                }
               />
-              <div className="co-phone-hint-stack">
+              {recipientPhoneDigits.length > 0 && recipientPhoneHint.tone !== 'success' && (
                 <p
                   id="recipientPhone-hint"
                   className={`co-phone-hint co-phone-hint--${recipientPhoneHint.tone}`}
                   role={recipientPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+                  aria-live="polite"
                 >
                   {resolveFullPhoneHintMessage(recipientPhoneHint, tCo, tCart)}
                 </p>
-                <div className="co-phone-hint-expanded" id="recipientPhone-hint-expanded">
-                  <p className="co-phone-hint-expanded-text">{tCo.phoneHintExpandedGuideFull}</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -607,21 +611,23 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
                   setYourPhoneDigits(e.target.value.replace(/\D/g, '').slice(0, FULL_PHONE_MAX))
                 }
                 onBlur={() => setYourPhoneDigits((d) => normalizeFullPhoneOnBlur(d))}
-                aria-describedby="yourPhone-hint yourPhone-hint-expanded"
-                aria-invalid={yourPhoneHint.tone === 'warn'}
+                aria-describedby={
+                  yourPhoneDigits.length > 0 && yourPhoneHint.tone !== 'success'
+                    ? 'yourPhone-hint'
+                    : undefined
+                }
+                aria-invalid={yourPhoneDigits.length > 0 && yourPhoneHint.tone === 'warn'}
               />
-              <div className="co-phone-hint-stack">
+              {yourPhoneDigits.length > 0 && yourPhoneHint.tone !== 'success' && (
                 <p
                   id="yourPhone-hint"
                   className={`co-phone-hint co-phone-hint--${yourPhoneHint.tone}`}
                   role={yourPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+                  aria-live="polite"
                 >
                   {resolveFullPhoneHintMessage(yourPhoneHint, tCo, tCart)}
                 </p>
-                <div className="co-phone-hint-expanded" id="yourPhone-hint-expanded">
-                  <p className="co-phone-hint-expanded-text">{tCo.phoneHintExpandedGuideFull}</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -784,14 +790,12 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         .co-phone-field-group {
           position: relative;
         }
-        .co-phone-hint-stack {
-          margin-top: 6px;
-        }
         .co-phone-hint {
-          font-size: 0.8125rem;
+          font-size: 0.6875rem;
           font-weight: 500;
-          margin: 0;
-          line-height: 1.4;
+          margin: 4px 0 0;
+          line-height: 1.35;
+          max-width: 100%;
         }
         .co-phone-hint--neutral {
           color: var(--text-muted);
@@ -805,27 +809,6 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         }
         .co-phone-hint--success {
           color: #15803d;
-        }
-        .co-phone-hint-expanded {
-          max-height: 0;
-          opacity: 0;
-          overflow: hidden;
-          transition: max-height 0.28s ease, opacity 0.22s ease, margin 0.22s ease;
-        }
-        .co-phone-field-group:focus-within .co-phone-hint-expanded {
-          max-height: 140px;
-          opacity: 1;
-          margin-top: 8px;
-        }
-        .co-phone-hint-expanded-text {
-          font-size: 0.8125rem;
-          line-height: 1.45;
-          color: var(--text-muted);
-          margin: 0;
-          padding: 10px 14px;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 16px;
         }
         .co-textarea {
           min-height: 88px;

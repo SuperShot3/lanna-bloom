@@ -6,6 +6,7 @@ import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { detectDistrictFromAddress } from '@/lib/deliveryFees';
 import { uploadCustomOrderReferenceImage } from '@/lib/customOrder/uploadReferenceImage';
+import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
 const CUSTOM_ORDER_ITEM_ID = 'custom-order-request';
 
@@ -70,9 +71,15 @@ export async function POST(request: NextRequest) {
     }
 
     const recipientPhoneRaw = getString(form, 'recipientPhone');
-    const recipientPhone = normalizeDigits(recipientPhoneRaw);
+    const recipientPhone = stripDuplicateThaiLeading66(normalizeDigits(recipientPhoneRaw));
     if (recipientPhone.length < 9 || recipientPhone.length > 16) {
       return NextResponse.json({ error: 'recipientPhone must be 9–16 digits' }, { status: 400 });
+    }
+    if (thaiFullPhoneHasDuplicateCountryCode(recipientPhone)) {
+      return NextResponse.json(
+        { error: 'recipientPhone must not repeat 66 (use one full number, e.g. 66952572645)' },
+        { status: 400 }
+      );
     }
 
     const giftDescription = getString(form, 'giftDescription');
@@ -86,9 +93,15 @@ export async function POST(request: NextRequest) {
     }
 
     const yourPhoneRaw = getString(form, 'yourPhone');
-    const yourPhone = normalizeDigits(yourPhoneRaw);
+    const yourPhone = stripDuplicateThaiLeading66(normalizeDigits(yourPhoneRaw));
     if (yourPhone.length < 9 || yourPhone.length > 16) {
       return NextResponse.json({ error: 'yourPhone must be 9–16 digits' }, { status: 400 });
+    }
+    if (thaiFullPhoneHasDuplicateCountryCode(yourPhone)) {
+      return NextResponse.json(
+        { error: 'yourPhone must not repeat 66 (use one full number, e.g. 66952572645)' },
+        { status: 400 }
+      );
     }
 
     const timePreference = getString(form, 'timePreference');

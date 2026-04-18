@@ -14,18 +14,20 @@ export type PhoneHintTone = 'neutral' | 'tip' | 'warn' | 'success';
 
 export type NationalPhoneMessageKey =
   | 'phoneHintNeutralNational'
+  | 'phoneHintNationalHasCountryCode'
   | 'phoneHintThSkipLeadingZero'
-  | 'contactPhoneMinLength'
-  | 'contactPhoneMaxLength'
-  | 'contactPhoneDigitsOnly'
+  | 'phoneHintTooShortNational'
+  | 'phoneHintTooLongNational'
+  | 'phoneHintInlineDigitsOnly'
   | 'phoneHintLooksGood';
 
 export type FullPhoneMessageKey =
   | 'phoneHintNeutralFull'
+  | 'phoneHintDuplicateThai66'
   | 'phoneHintThSkipLeadingZeroFull'
   | 'phoneHintTooShortFull'
   | 'phoneHintTooLongFull'
-  | 'contactPhoneDigitsOnly'
+  | 'phoneHintInlineDigitsOnly'
   | 'phoneHintLooksGood';
 
 export interface NationalPhoneHint {
@@ -38,6 +40,31 @@ export interface FullPhoneHint {
   messageKey: FullPhoneMessageKey;
 }
 
+/** National part pasted with country code again, e.g. +66 selected and "66952572645" in the box → 6669… */
+export function nationalNumberIncludesCountryCode(countryCode: string, nationalDigits: string): boolean {
+  const cc = countryCode.trim();
+  if (!cc || !nationalDigits) return false;
+  return nationalDigits.startsWith(cc) && nationalDigits.length > cc.length;
+}
+
+/**
+ * Full digits start with 66 but the subscriber part again starts with 66 (double country code).
+ * Valid: 66952572645. Invalid: 6666952572645.
+ */
+export function thaiFullPhoneHasDuplicateCountryCode(phoneDigits: string): boolean {
+  if (!phoneDigits.startsWith('66')) return false;
+  return phoneDigits.slice(2).startsWith('66');
+}
+
+/** Collapse accidental double Thailand country code (e.g. pasting 66 twice). Safe to run before validation. */
+export function stripDuplicateThaiLeading66(phoneDigits: string): string {
+  let d = phoneDigits.replace(/\D/g, '');
+  while (thaiFullPhoneHasDuplicateCountryCode(d)) {
+    d = d.slice(2);
+  }
+  return d;
+}
+
 /** National digits only; country code chosen separately (+66, +1, …). */
 export function getNationalPhoneHint(countryCode: string, nationalDigits: string): NationalPhoneHint {
   const d = nationalDigits.trim();
@@ -45,16 +72,19 @@ export function getNationalPhoneHint(countryCode: string, nationalDigits: string
     return { tone: 'neutral', messageKey: 'phoneHintNeutralNational' };
   }
   if (!/^\d+$/.test(d)) {
-    return { tone: 'warn', messageKey: 'contactPhoneDigitsOnly' };
+    return { tone: 'warn', messageKey: 'phoneHintInlineDigitsOnly' };
+  }
+  if (nationalNumberIncludesCountryCode(countryCode, d)) {
+    return { tone: 'warn', messageKey: 'phoneHintNationalHasCountryCode' };
   }
   if (countryCode === '66' && d.startsWith('0')) {
     return { tone: 'tip', messageKey: 'phoneHintThSkipLeadingZero' };
   }
   if (d.length < CHECKOUT_NATIONAL_MIN) {
-    return { tone: 'warn', messageKey: 'contactPhoneMinLength' };
+    return { tone: 'warn', messageKey: 'phoneHintTooShortNational' };
   }
   if (d.length > CHECKOUT_NATIONAL_MAX) {
-    return { tone: 'warn', messageKey: 'contactPhoneMaxLength' };
+    return { tone: 'warn', messageKey: 'phoneHintTooLongNational' };
   }
   return { tone: 'success', messageKey: 'phoneHintLooksGood' };
 }
@@ -64,13 +94,19 @@ export function nationalDigitsValidForCheckout(countryCode: string, nationalDigi
 }
 
 /**
- * After blur: strip a single leading 0 from Thai domestic mobiles (08… / 09…) when using +66.
+ * After blur: remove country code if pasted into the national box; strip Thai leading 0 from domestic pastes.
  */
-export function normalizeThailandNationalOnBlur(nationalDigits: string, countryCode: string): string {
-  if (countryCode !== '66') return nationalDigits;
-  if (!nationalDigits.startsWith('0')) return nationalDigits;
-  if (nationalDigits.length < 10) return nationalDigits;
-  return nationalDigits.slice(1);
+export function normalizeNationalPhoneOnBlur(nationalDigits: string, countryCode: string): string {
+  let d = nationalDigits.replace(/\D/g, '').slice(0, CHECKOUT_NATIONAL_MAX);
+  const cc = countryCode.trim();
+  while (cc && d.startsWith(cc) && d.length > cc.length) {
+    d = d.slice(cc.length);
+  }
+  d = d.slice(0, CHECKOUT_NATIONAL_MAX);
+  if (countryCode === '66' && d.startsWith('0') && d.length >= 10) {
+    d = d.slice(1);
+  }
+  return d.slice(0, CHECKOUT_NATIONAL_MAX);
 }
 
 /** Full-number field: digits only, optional leading + stripped by caller. */
@@ -80,9 +116,13 @@ export function getFullPhoneFieldHint(digits: string): FullPhoneHint {
     return { tone: 'neutral', messageKey: 'phoneHintNeutralFull' };
   }
   if (!/^\d+$/.test(d)) {
-    return { tone: 'warn', messageKey: 'contactPhoneDigitsOnly' };
+    return { tone: 'warn', messageKey: 'phoneHintInlineDigitsOnly' };
   }
-  if (d.startsWith('0') && d.length >= 10) {
+  if (thaiFullPhoneHasDuplicateCountryCode(d)) {
+    return { tone: 'warn', messageKey: 'phoneHintDuplicateThai66' };
+  }
+  /** International numbers should not keep a domestic leading 0; nudge until blur strips long pastes. */
+  if (d.startsWith('0')) {
     return { tone: 'tip', messageKey: 'phoneHintThSkipLeadingZeroFull' };
   }
   if (d.length < FULL_PHONE_MIN) {
@@ -98,9 +138,11 @@ export function fullPhoneDigitsValid(digits: string): boolean {
   return getFullPhoneFieldHint(digits).tone === 'success';
 }
 
-/** Thai domestic paste: 0 + nine digits → drop leading 0. */
+/** Full single field: strip duplicate leading 66, then Thai domestic leading 0 on long pastes. */
 export function normalizeFullPhoneOnBlur(digits: string): string {
-  if (!digits.startsWith('0')) return digits;
-  if (digits.length >= 10) return digits.slice(1);
-  return digits;
+  let d = stripDuplicateThaiLeading66(digits).slice(0, FULL_PHONE_MAX);
+  if (d.startsWith('0') && d.length >= 10) {
+    d = d.slice(1);
+  }
+  return d.slice(0, FULL_PHONE_MAX);
 }
