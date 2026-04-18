@@ -38,6 +38,12 @@ import {
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import { getLocalTodayYmd } from '@/lib/localDateYmd';
 import { PinIcon } from '@/components/icons/PinIcon';
+import {
+  CHECKOUT_NATIONAL_MAX,
+  getNationalPhoneHint,
+  normalizeThailandNationalOnBlur,
+  nationalDigitsValidForCheckout,
+} from '@/lib/phoneFieldHints';
 
 /** Non-flower catalog lines (partner products or standalone plushy toys). */
 function isNonBouquetCartLine(item: CartItem): boolean {
@@ -128,8 +134,7 @@ function clearCartFormStorage() {
   }
 }
 
-const PHONE_MIN_DIGITS = 8;
-const PHONE_MAX_DIGITS = 15;
+const PHONE_MAX_DIGITS = CHECKOUT_NATIONAL_MAX;
 
 /** Validation helpers for accordion Save & Continue (same rules as handlePlaceOrder). */
 function isDeliveryValid(
@@ -145,22 +150,23 @@ function isDeliveryValid(
 
 function isContactValid(
   customerName: string,
+  countryCode: string,
   phoneNational: string,
   contactPreference: ContactPreferenceOption[],
   customerEmail: string,
   isOrderingForSomeoneElse: boolean,
   recipientName: string,
+  recipientCountryCode: string,
   recipientPhoneNational: string,
   _t: Record<string, string | number>
 ): boolean {
   if (!customerName.trim()) return false;
-  if (!phoneNational || phoneNational.length < PHONE_MIN_DIGITS || phoneNational.length > PHONE_MAX_DIGITS) return false;
-  if (!/^\d+$/.test(phoneNational)) return false;
+  if (!nationalDigitsValidForCheckout(countryCode, phoneNational)) return false;
   if (contactPreference.length === 0) return false;
   if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return false;
   if (isOrderingForSomeoneElse) {
     if (!recipientName.trim() || !recipientPhoneNational) return false;
-    if (recipientPhoneNational.length < PHONE_MIN_DIGITS) return false;
+    if (!nationalDigitsValidForCheckout(recipientCountryCode, recipientPhoneNational)) return false;
   }
   return true;
 }
@@ -390,7 +396,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
 
   const isDeliveryValidNow = isDeliveryValid(delivery, tBuyNow as Record<string, string | number>);
-  const isContactValidNow = isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>);
+  const isContactValidNow = isContactValid(
+    customerName,
+    countryCode,
+    phoneNational,
+    contactPreference,
+    customerEmail,
+    isOrderingForSomeoneElse,
+    recipientName,
+    recipientCountryCode,
+    recipientPhoneNational,
+    t as Record<string, string | number>
+  );
   const isPaymentUnlocked = isDeliveryValidNow && isContactValidNow;
 
   /** Returns the first incomplete field's name for the sticky bar lock message. */
@@ -421,13 +438,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (!phoneNational) {
       return fmt(String(tC.phoneNumber ?? 'Phone'));
     }
-    if (phoneNational.length < PHONE_MIN_DIGITS) {
-      return fmt(String(tC.phoneNumber ?? 'Phone'));
-    }
-    if (phoneNational.length > PHONE_MAX_DIGITS) {
-      return fmt(String(tC.phoneNumber ?? 'Phone'));
-    }
-    if (!/^\d+$/.test(phoneNational)) {
+    if (!nationalDigitsValidForCheckout(countryCode, phoneNational)) {
       return fmt(String(tC.phoneNumber ?? 'Phone'));
     }
     if (contactPreference.length === 0) {
@@ -443,7 +454,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       if (!recipientPhoneNational) {
         return fmt(String(tC.recipientPhone ?? 'Recipient phone'));
       }
-      if (recipientPhoneNational.length < PHONE_MIN_DIGITS) {
+      if (!nationalDigitsValidForCheckout(recipientCountryCode, recipientPhoneNational)) {
         return fmt(String(tC.recipientPhone ?? 'Recipient phone'));
       }
     }
@@ -578,7 +589,21 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const handleMobileContactSave = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)) return;
+    if (
+      !isContactValid(
+        customerName,
+        countryCode,
+        phoneNational,
+        contactPreference,
+        customerEmail,
+        isOrderingForSomeoneElse,
+        recipientName,
+        recipientCountryCode,
+        recipientPhoneNational,
+        t as Record<string, string | number>
+      )
+    )
+      return;
     setMobileCompleted((prev) => new Set(prev).add('contact'));
     setMobileOpenSection(null);
   };
@@ -856,7 +881,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     );
   }
 
-  const contactFormContent = (idPrefix: string) => (
+  const contactFormContent = (idPrefix: string) => {
+    const tc = t as Record<string, string>;
+    const senderPhoneHint = getNationalPhoneHint(countryCode, phoneNational);
+    const recipientPhoneHint = getNationalPhoneHint(recipientCountryCode, recipientPhoneNational);
+    const senderHintText = tc[senderPhoneHint.messageKey] ?? senderPhoneHint.messageKey;
+    const recipientHintText = tc[recipientPhoneHint.messageKey] ?? recipientPhoneHint.messageKey;
+
+    return (
     <div className={`cart-contact-info ${idPrefix ? 'cart-mobile-contact-fields' : ''}`}>
       <div className="cart-contact-field">
         <label className="cart-contact-label" htmlFor={`${idPrefix}cart-customer-name`}>
@@ -874,7 +906,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         />
       </div>
       <div className="cart-phone-and-contact-wrap">
-        <div className="cart-contact-field">
+        <div className="cart-contact-field cart-phone-field-group">
           <label className="cart-contact-label" htmlFor={`${idPrefix}cart-phone`}>
             {t.phoneNumber} <span className="cart-required" aria-hidden>*</span>
           </label>
@@ -897,20 +929,29 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               pattern="[0-9]*"
               value={phoneNational}
               onChange={handlePhoneInput}
+              onBlur={() =>
+                setPhoneNational((p) => normalizeThailandNationalOnBlur(p, countryCode))
+              }
               placeholder={t.phoneNumberPlaceholder}
               className="cart-contact-input cart-phone-input"
               autoComplete="tel-national"
               maxLength={PHONE_MAX_DIGITS}
-              aria-describedby={`${idPrefix}cart-phone-hint`}
+              aria-describedby={`${idPrefix}cart-phone-hint ${idPrefix}cart-phone-hint-expanded`}
+              aria-invalid={senderPhoneHint.tone === 'warn'}
             />
           </div>
-          <p
-            id={`${idPrefix}cart-phone-hint`}
-            className="cart-phone-hint"
-            style={{ fontSize: '0.625rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.125rem', marginBottom: 0 }}
-          >
-            {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
-          </p>
+          <div className="cart-phone-hint-stack">
+            <p
+              id={`${idPrefix}cart-phone-hint`}
+              className={`cart-phone-hint cart-phone-hint--${senderPhoneHint.tone}`}
+              role={senderPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+            >
+              {senderHintText}
+            </p>
+            <div className="cart-phone-hint-expanded" id={`${idPrefix}cart-phone-hint-expanded`}>
+              <p className="cart-phone-hint-expanded-text">{tc.phoneHintExpandedGuide}</p>
+            </div>
+          </div>
         </div>
         <fieldset className="cart-contact-preferences" aria-label={t.preferredContact}>
           <legend className="cart-contact-legend">
@@ -983,7 +1024,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               autoComplete="name"
             />
           </div>
-          <div className="cart-contact-field">
+          <div className="cart-contact-field cart-phone-field-group">
             <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-phone`}>
               {t.recipientPhone} <span className="cart-required" aria-hidden>*</span>
             </label>
@@ -1006,20 +1047,34 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 pattern="[0-9]*"
                 value={recipientPhoneNational}
                 onChange={handleRecipientPhoneInput}
+                onBlur={() =>
+                  setRecipientPhoneNational((p) =>
+                    normalizeThailandNationalOnBlur(p, recipientCountryCode)
+                  )
+                }
                 placeholder={t.recipientPhonePlaceholder}
                 className="cart-contact-input cart-phone-input"
                 autoComplete="tel-national"
                 maxLength={PHONE_MAX_DIGITS}
-                aria-describedby={`${idPrefix}cart-recipient-phone-hint`}
+                aria-describedby={`${idPrefix}cart-recipient-phone-hint ${idPrefix}cart-recipient-phone-hint-expanded`}
+                aria-invalid={recipientPhoneHint.tone === 'warn'}
               />
             </div>
-            <p
-              id={`${idPrefix}cart-recipient-phone-hint`}
-              className="cart-phone-hint"
-              style={{ fontSize: '0.625rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.125rem', marginBottom: 0 }}
-            >
-              {lang === 'th' ? 'เฉพาะตัวเลข 8–15 หลัก' : 'Digits only, 8–15 characters'}
-            </p>
+            <div className="cart-phone-hint-stack">
+              <p
+                id={`${idPrefix}cart-recipient-phone-hint`}
+                className={`cart-phone-hint cart-phone-hint--${recipientPhoneHint.tone}`}
+                role={recipientPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+              >
+                {recipientHintText}
+              </p>
+              <div
+                className="cart-phone-hint-expanded"
+                id={`${idPrefix}cart-recipient-phone-hint-expanded`}
+              >
+                <p className="cart-phone-hint-expanded-text">{tc.phoneHintExpandedGuide}</p>
+              </div>
+            </div>
           </div>
           <label className="cart-contact-checkbox-label cart-ordering-for-else">
             <input
@@ -1036,7 +1091,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="cart-page">
@@ -1207,7 +1263,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <button
                     type="button"
                     className="cart-accordion-save-btn"
-                    disabled={!isContactValid(customerName, phoneNational, contactPreference, customerEmail, isOrderingForSomeoneElse, recipientName, recipientPhoneNational, t as Record<string, string | number>)}
+                    disabled={
+                      !isContactValid(
+                        customerName,
+                        countryCode,
+                        phoneNational,
+                        contactPreference,
+                        customerEmail,
+                        isOrderingForSomeoneElse,
+                        recipientName,
+                        recipientCountryCode,
+                        recipientPhoneNational,
+                        t as Record<string, string | number>
+                      )
+                    }
                     onClick={handleMobileContactSave}
                   >
                     {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
@@ -2175,11 +2244,52 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           outline: none;
           box-shadow: none;
         }
+        .cart-phone-field-group {
+          position: relative;
+        }
+        .cart-phone-hint-stack {
+          margin-top: 0.125rem;
+        }
         .cart-phone-hint {
-          font-size: 0.625rem;
+          font-size: 0.6875rem;
+          font-weight: 500;
+          margin: 0;
+          line-height: 1.4;
+          transition: color 0.15s ease;
+        }
+        .cart-phone-hint--neutral {
           color: #94a3b8;
-          font-weight: normal;
-          margin: 0.125rem 0 0;
+          font-weight: 400;
+        }
+        .cart-phone-hint--tip {
+          color: #b45309;
+        }
+        .cart-phone-hint--warn {
+          color: #b91c1c;
+        }
+        .cart-phone-hint--success {
+          color: #15803d;
+        }
+        .cart-phone-hint-expanded {
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
+          transition: max-height 0.28s ease, opacity 0.22s ease, margin 0.22s ease;
+        }
+        .cart-phone-field-group:focus-within .cart-phone-hint-expanded {
+          max-height: 120px;
+          opacity: 1;
+          margin-top: 8px;
+        }
+        .cart-phone-hint-expanded-text {
+          font-size: 0.7rem;
+          line-height: 1.45;
+          color: var(--text-muted);
+          margin: 0;
+          padding: 10px 12px;
+          background: var(--pastel-cream);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
         }
         .cart-contact-preferences {
           margin: 0;
@@ -2436,10 +2546,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             margin: 0 0 8px;
           }
           .cart-accordion-body-contact .cart-phone-hint {
-            font-size: 0.625rem;
-            color: #94a3b8;
-            font-weight: normal;
-            margin: 0.125rem 0 0;
+            font-size: 0.7rem;
+            margin: 0;
           }
           .cart-accordion-body-contact .cart-contact-preferences {
             margin: 16px 0 0;
@@ -2709,10 +2817,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             box-shadow: none;
           }
           .cart-delivery .cart-phone-hint {
-            font-size: 0.625rem;
-            color: #94a3b8;
-            font-weight: normal;
-            margin: 0.125rem 0 0;
+            font-size: 0.65rem;
+            margin: 0;
           }
           .cart-delivery .cart-section-label {
             font-size: 0.9rem;

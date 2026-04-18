@@ -4,17 +4,40 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import {
+  FULL_PHONE_MAX,
+  fullPhoneDigitsValid,
+  getFullPhoneFieldHint,
+  normalizeFullPhoneOnBlur,
+  type FullPhoneHint,
+} from '@/lib/phoneFieldHints';
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 
+function resolveFullPhoneHintMessage(
+  hint: FullPhoneHint,
+  tCo: Record<string, string>,
+  tCart: Record<string, string>
+): string {
+  const key = hint.messageKey;
+  if (key === 'contactPhoneDigitsOnly' || key === 'phoneHintLooksGood') {
+    return tCart[key] ?? key;
+  }
+  return tCo[key] ?? key;
+}
+
 export function CustomOrderPageClient({ lang }: { lang: Locale }) {
   const t = translations[lang].customOrder;
+  const tCo = t as Record<string, string>;
+  const tCart = translations[lang].cart as Record<string, string>;
   const contactHref = `/${lang}/contact`;
   const [fileError, setFileError] = useState<string | null>(null);
   const [pickedFileName, setPickedFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [recipientPhoneDigits, setRecipientPhoneDigits] = useState('');
+  const [yourPhoneDigits, setYourPhoneDigits] = useState('');
 
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
@@ -137,12 +160,33 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
     setPickedFileName(f.name);
   }, [t]);
 
+  const recipientPhoneHint = getFullPhoneFieldHint(recipientPhoneDigits);
+  const yourPhoneHint = getFullPhoneFieldHint(yourPhoneDigits);
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitError(null);
     setSubmitting(true);
     const form = e.currentTarget;
+    const recipientNorm = normalizeFullPhoneOnBlur(
+      recipientPhoneDigits.replace(/\D/g, '').slice(0, FULL_PHONE_MAX)
+    );
+    const yourNorm = normalizeFullPhoneOnBlur(
+      yourPhoneDigits.replace(/\D/g, '').slice(0, FULL_PHONE_MAX)
+    );
+    if (!fullPhoneDigitsValid(recipientNorm)) {
+      setSubmitError(resolveFullPhoneHintMessage(getFullPhoneFieldHint(recipientNorm), tCo, tCart));
+      setSubmitting(false);
+      return;
+    }
+    if (!fullPhoneDigitsValid(yourNorm)) {
+      setSubmitError(resolveFullPhoneHintMessage(getFullPhoneFieldHint(yourNorm), tCo, tCart));
+      setSubmitting(false);
+      return;
+    }
     const fd = new FormData(form);
+    fd.set('recipientPhone', recipientNorm);
+    fd.set('yourPhone', yourNorm);
     fd.set('submission_token', crypto.randomUUID());
     fd.set('lang', lang);
     try {
@@ -158,6 +202,8 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
       if (data.orderId) {
         setSuccessOrderId(data.orderId);
         form.reset();
+        setRecipientPhoneDigits('');
+        setYourPhoneDigits('');
         setPickedFileName(null);
         setFileError(null);
         setSelectedDate(null);
@@ -255,15 +301,37 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
                 </span>
               </span>
             </label>
-            <div className="co-field-cell">
+            <div className="co-field-cell co-phone-field-group">
               <input
                 id="recipientPhone"
                 name="recipientPhone"
                 type="tel"
-                required
+                inputMode="numeric"
                 autoComplete="tel"
+                required
                 className="co-input"
+                value={recipientPhoneDigits}
+                onChange={(e) =>
+                  setRecipientPhoneDigits(
+                    e.target.value.replace(/\D/g, '').slice(0, FULL_PHONE_MAX)
+                  )
+                }
+                onBlur={() => setRecipientPhoneDigits((d) => normalizeFullPhoneOnBlur(d))}
+                aria-describedby="recipientPhone-hint recipientPhone-hint-expanded"
+                aria-invalid={recipientPhoneHint.tone === 'warn'}
               />
+              <div className="co-phone-hint-stack">
+                <p
+                  id="recipientPhone-hint"
+                  className={`co-phone-hint co-phone-hint--${recipientPhoneHint.tone}`}
+                  role={recipientPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+                >
+                  {resolveFullPhoneHintMessage(recipientPhoneHint, tCo, tCart)}
+                </p>
+                <div className="co-phone-hint-expanded" id="recipientPhone-hint-expanded">
+                  <p className="co-phone-hint-expanded-text">{tCo.phoneHintExpandedGuideFull}</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -525,15 +593,35 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
                 </span>
               </span>
             </label>
-            <div className="co-field-cell">
+            <div className="co-field-cell co-phone-field-group">
               <input
                 id="yourPhone"
                 name="yourPhone"
                 type="tel"
-                required
+                inputMode="numeric"
                 autoComplete="tel"
+                required
                 className="co-input"
+                value={yourPhoneDigits}
+                onChange={(e) =>
+                  setYourPhoneDigits(e.target.value.replace(/\D/g, '').slice(0, FULL_PHONE_MAX))
+                }
+                onBlur={() => setYourPhoneDigits((d) => normalizeFullPhoneOnBlur(d))}
+                aria-describedby="yourPhone-hint yourPhone-hint-expanded"
+                aria-invalid={yourPhoneHint.tone === 'warn'}
               />
+              <div className="co-phone-hint-stack">
+                <p
+                  id="yourPhone-hint"
+                  className={`co-phone-hint co-phone-hint--${yourPhoneHint.tone}`}
+                  role={yourPhoneHint.tone === 'warn' ? 'alert' : 'status'}
+                >
+                  {resolveFullPhoneHintMessage(yourPhoneHint, tCo, tCart)}
+                </p>
+                <div className="co-phone-hint-expanded" id="yourPhone-hint-expanded">
+                  <p className="co-phone-hint-expanded-text">{tCo.phoneHintExpandedGuideFull}</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -692,6 +780,52 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         }
         .co-input-short {
           max-width: 12rem;
+        }
+        .co-phone-field-group {
+          position: relative;
+        }
+        .co-phone-hint-stack {
+          margin-top: 6px;
+        }
+        .co-phone-hint {
+          font-size: 0.8125rem;
+          font-weight: 500;
+          margin: 0;
+          line-height: 1.4;
+        }
+        .co-phone-hint--neutral {
+          color: var(--text-muted);
+          font-weight: 400;
+        }
+        .co-phone-hint--tip {
+          color: #b45309;
+        }
+        .co-phone-hint--warn {
+          color: #b91c1c;
+        }
+        .co-phone-hint--success {
+          color: #15803d;
+        }
+        .co-phone-hint-expanded {
+          max-height: 0;
+          opacity: 0;
+          overflow: hidden;
+          transition: max-height 0.28s ease, opacity 0.22s ease, margin 0.22s ease;
+        }
+        .co-phone-field-group:focus-within .co-phone-hint-expanded {
+          max-height: 140px;
+          opacity: 1;
+          margin-top: 8px;
+        }
+        .co-phone-hint-expanded-text {
+          font-size: 0.8125rem;
+          line-height: 1.45;
+          color: var(--text-muted);
+          margin: 0;
+          padding: 10px 14px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
         }
         .co-textarea {
           min-height: 88px;

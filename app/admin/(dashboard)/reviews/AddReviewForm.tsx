@@ -1,8 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export function AddReviewForm() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -41,7 +43,7 @@ export function AddReviewForm() {
       setComment('');
       setReviewDate('');
       setRating(5);
-      window.location.reload();
+      router.refresh();
     } catch {
       setStatus('error');
       setMessage('Something went wrong.');

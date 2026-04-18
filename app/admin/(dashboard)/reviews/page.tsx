@@ -23,7 +23,7 @@ export default async function AdminReviewsPage() {
             rel="noopener noreferrer"
             className="admin-btn admin-btn-primary"
           >
-            Open Google review page
+            Leave a review
           </a>
         </div>
       </header>

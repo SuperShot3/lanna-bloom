@@ -1,22 +1,40 @@
 /**
  * Send order notification email via Resend.
  * Requires: RESEND_API_KEY, ORDERS_NOTIFY_EMAIL, ORDERS_FROM_EMAIL (e.g. "Lanna Bloom Orders <orders@lannabloom.shop>").
- * If any is missing, no email is sent.
+ * Optional: ORDERS_NOTIFY_EMAIL_CC — comma-separated extra recipients (e.g. partner inbox).
+ * You can also list multiple addresses in ORDERS_NOTIFY_EMAIL separated by commas.
+ * If any required value is missing, no email is sent.
  */
 
 import { Resend } from 'resend';
-import type { Order } from '@/lib/orders';
+import { getOrderDetailsUrl, type Order } from '@/lib/orders';
 import { formatShopDateTime } from '@/lib/shopTime';
+
+/** Primary + CC addresses for order admin emails, deduped. */
+function getOrderNotifyRecipientList(): string[] {
+  const primaryRaw = process.env.ORDERS_NOTIFY_EMAIL?.trim();
+  const ccRaw = process.env.ORDERS_NOTIFY_EMAIL_CC?.trim();
+  const parts: string[] = [];
+  const pushSplit = (raw: string) => {
+    for (const p of raw.split(',')) {
+      const e = p.trim();
+      if (e) parts.push(e);
+    }
+  };
+  if (primaryRaw) pushSplit(primaryRaw);
+  if (ccRaw) pushSplit(ccRaw);
+  return Array.from(new Set(parts));
+}
 
 function getEnv(): {
   apiKey: string;
-  to: string;
+  to: string[];
   from: string;
 } | null {
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const to = process.env.ORDERS_NOTIFY_EMAIL?.trim();
+  const to = getOrderNotifyRecipientList();
   const from = process.env.ORDERS_FROM_EMAIL?.trim();
-  if (!apiKey || !to || !from) return null;
+  if (!apiKey || to.length === 0 || !from) return null;
   return { apiKey, to, from };
 }
 
@@ -36,6 +54,7 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
   const env = getEnv();
   if (!env) return;
 
+  const orderUrl = getOrderDetailsUrl(orderId);
   const subject = `New order placed — ${orderId}`;
   const body = `A new order was created. Order ID: ${orderId}`;
   const html = `
@@ -44,16 +63,20 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
 <head><meta charset="utf-8"><title>${subject}</title></head>
 <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
   <p>${body}</p>
+  <p><a href="${escapeHtml(orderUrl)}" style="color: #967a4d; font-weight: 600;">View order details (opens full order page)</a></p>
+  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(orderUrl)}</p>
 </body>
 </html>
 `.trim();
+  const text = `${body}\n\nView order: ${orderUrl}`;
 
   const resend = new Resend(env.apiKey);
   const { error } = await resend.emails.send({
     from: env.from,
-    to: [env.to],
+    to: env.to,
     subject,
     html,
+    text,
   });
   if (error) {
     throw new Error(`Resend error: ${JSON.stringify(error)}`);
@@ -125,7 +148,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   const resend = new Resend(env.apiKey);
   const { error } = await resend.emails.send({
     from: env.from,
-    to: [env.to],
+    to: env.to,
     subject: `Order ${order.orderId} — Lanna Bloom`,
     html,
   });
@@ -250,12 +273,12 @@ export async function sendOrderDeliveredCustomerEmail(order: Order): Promise<boo
   return true;
 }
 
-/** Newsletter notification env. Uses NEWSLETTER_NOTIFY_EMAIL or falls back to ORDERS_NOTIFY_EMAIL. */
+/** Newsletter notification env. Uses NEWSLETTER_NOTIFY_EMAIL or the first address in ORDERS_NOTIFY_EMAIL. */
 function getNewsletterEnv(): { apiKey: string; to: string; from: string } | null {
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const to =
-    process.env.NEWSLETTER_NOTIFY_EMAIL?.trim() ||
-    process.env.ORDERS_NOTIFY_EMAIL?.trim();
+  const explicit = process.env.NEWSLETTER_NOTIFY_EMAIL?.trim();
+  const primaryFirst = process.env.ORDERS_NOTIFY_EMAIL?.split(',')[0]?.trim();
+  const to = explicit || primaryFirst;
   const from = process.env.ORDERS_FROM_EMAIL?.trim();
   if (!apiKey || !to || !from) return null;
   return { apiKey, to, from };
