@@ -5229,6 +5229,27 @@ select::-ms-expand { display: none; }
   }
 }
 
+/* Missing COGS floating notice: dark panel — shell link/button tokens are dark-on-light */
+.admin-shell .admin-missing-cogs {
+  color: #e2e8f0;
+}
+.admin-shell .admin-missing-cogs .admin-link {
+  color: #7dd3fc !important;
+}
+.admin-shell .admin-missing-cogs .admin-link:hover {
+  color: #bae6fd !important;
+}
+.admin-shell .admin-missing-cogs .admin-btn-outline {
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  color: #f1f5f9 !important;
+  background: rgba(15, 23, 42, 0.35) !important;
+}
+.admin-shell .admin-missing-cogs .admin-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(186, 230, 253, 0.45) !important;
+  color: #ffffff !important;
+}
+
 /* Admin theme overrides for buttons, links, badges */
 .admin-theme .admin-btn-primary,
 .admin-shell .admin-btn-primary {
