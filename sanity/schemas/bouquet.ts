@@ -113,6 +113,7 @@ export const bouquet = defineType({
           { title: 'Vase', value: 'vase' },
           { title: 'Basket', value: 'basket' },
           { title: 'Arrangement', value: 'arrangement' },
+          { title: 'Potted', value: 'potted' },
         ],
       },
     },

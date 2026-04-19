@@ -12,7 +12,7 @@ import { CATALOG_OCCASION_CHIPS } from '@/lib/catalogCategories';
 const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
 const FLOWER_TYPES = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'chrysanthemums', 'lisianthus', 'daisy', 'mixed'] as const;
 const DELIVERY_OPTS = ['same_day', 'next_day'] as const;
-const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement'] as const;
+const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement', 'potted'] as const;
 const STEM_OPTS: { key: StemBucketKey; labelKey: 'stemSmall' | 'stemMedium' | 'stemLarge' | 'stemGrand' }[] = [
   { key: 'small', labelKey: 'stemSmall' },
   { key: 'medium', labelKey: 'stemMedium' },
@@ -196,6 +196,7 @@ export function FlowerFilterPanel({
       vase: 'formatVase',
       basket: 'formatBasket',
       arrangement: 'formatArrangement',
+      potted: 'formatPotted',
     };
     draft.formats?.forEach((f) =>
       add(`f-${f}`, t[fmtLabel[f]], () =>
@@ -433,6 +434,7 @@ export function FlowerFilterPanel({
               vase: 'formatVase',
               basket: 'formatBasket',
               arrangement: 'formatArrangement',
+              potted: 'formatPotted',
             }[f] as keyof typeof t;
             return (
               <button
