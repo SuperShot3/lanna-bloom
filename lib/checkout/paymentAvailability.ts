@@ -1,6 +1,6 @@
 /**
  * Payment availability model for checkout sticky bar.
- * Website checkout is Stripe-only; manual bank/PromptPay is not offered here.
+ * Checkout redirects to Stripe Checkout; Stripe chooses eligible methods (cards, PromptPay in TH, wallets, etc.) from Dashboard settings — not manual off-site bank transfer in our UI.
  */
 
 export type PaymentAvailability = {
