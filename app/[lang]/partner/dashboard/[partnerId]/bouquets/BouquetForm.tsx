@@ -18,7 +18,7 @@ const CATEGORY_OPTIONS = [
 ] as const;
 
 const COLOR_OPTIONS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
-const FLOWER_TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'daisy', 'mixed'] as const;
+const FLOWER_TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'chrysanthemums', 'lisianthus', 'daisy', 'mixed'] as const;
 const OCCASION_OPTIONS = [
   { value: 'birthday', labelEn: 'Birthday' },
   { value: 'anniversary', labelEn: 'Anniversary' },

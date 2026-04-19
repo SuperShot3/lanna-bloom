@@ -10,6 +10,11 @@ export interface ShareButtonProps {
   showFacebook?: boolean;
   /** Aria label for the Share button */
   ariaLabel?: string;
+  /** Visible label (hidden in compact variant). Defaults to "Share". */
+  buttonText?: string;
+  /** Toast when link is copied (clipboard fallback) */
+  copySuccessMessage?: string;
+  copyErrorMessage?: string;
   /** Optional className for styling */
   className?: string;
   /** Compact variant for card footer */
@@ -22,45 +27,59 @@ export function ShareButton({
   text,
   showFacebook = false,
   ariaLabel = 'Share',
+  buttonText = 'Share',
+  copySuccessMessage = 'Link copied',
+  copyErrorMessage = 'Could not copy link',
   className = '',
   variant = 'default',
 }: ShareButtonProps) {
   const { showToast } = useToast();
 
+  const resolveUrl = () => {
+    if (url && url !== '#') return url;
+    if (typeof window !== 'undefined') return window.location.href;
+    return url;
+  };
+
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const resolvedUrl = resolveUrl();
+    if (!resolvedUrl || resolvedUrl === '#') return;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
           title,
           text: text ?? title,
-          url,
+          url: resolvedUrl,
         });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
-          await copyToClipboard(url);
+          await copyToClipboard(resolvedUrl);
         }
       }
     } else {
-      await copyToClipboard(url);
+      await copyToClipboard(resolvedUrl);
     }
   };
 
   const copyToClipboard = async (urlToCopy: string) => {
     try {
       await navigator.clipboard.writeText(urlToCopy);
-      showToast('Link copied');
+      showToast(copySuccessMessage);
     } catch {
-      showToast('Could not copy link');
+      showToast(copyErrorMessage);
     }
   };
 
   const handleFacebookShare = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    const resolvedUrl = resolveUrl();
+    if (!resolvedUrl || resolvedUrl === '#') return;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(resolvedUrl)}`;
     window.open(fbUrl, '_blank', 'noopener,noreferrer,width=600,height=400');
   };
 
@@ -74,7 +93,7 @@ export function ShareButton({
         title={ariaLabel}
       >
         <ShareIcon />
-        <span className="share-button-text">Share</span>
+        <span className="share-button-text">{buttonText}</span>
       </button>
       {showFacebook && (
         <button

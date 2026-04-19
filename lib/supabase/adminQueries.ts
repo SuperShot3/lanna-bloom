@@ -56,6 +56,8 @@ export interface SupabaseOrderRow {
   order_source?: string | null;
   last_line_push_status?: string | null;
   last_line_push_at?: string | null;
+  /** 1 = pending delivery pipeline; 0 = DELIVERED/CANCELLED — for admin list sort (generated column). */
+  admin_needs_delivery_sort?: number | null;
 }
 
 export interface SupabaseOrderItemRow {
@@ -149,7 +151,11 @@ export async function getOrders(
       query = query.lte('delivery_date', filters.deliveryDateTo);
     }
 
-    query = query.order('created_at', { ascending: false });
+    // Pending deliveries first, then earliest delivery_date, then newest created.
+    query = query
+      .order('admin_needs_delivery_sort', { ascending: false })
+      .order('delivery_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
 
     const offset = (pagination.page - 1) * pagination.pageSize;
     const { data, count, error } = await query
@@ -257,7 +263,11 @@ export async function getOrdersForExport(
       query = query.lte('delivery_date', filters.deliveryDateTo);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
+    const { data, error } = await query
+      .order('admin_needs_delivery_sort', { ascending: false })
+      .order('delivery_date', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) {
       console.error('[admin] getOrdersForExport error:', error);

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import { CareGuideSection } from '@/components/CareGuideSection';
+import { ProductShareLink } from '@/components/ProductShareLink';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
@@ -67,7 +68,10 @@ export function ProductPageClient({
         />
       </div>
       <div className="product-info">
-        <h1 className="product-title">{name}</h1>
+        <div className="product-title-row">
+          <h1 className="product-title">{name}</h1>
+          <ProductShareLink lang={lang} productTitle={name} />
+        </div>
         <ProductOrderBlock
           bouquet={bouquet}
           lang={lang}

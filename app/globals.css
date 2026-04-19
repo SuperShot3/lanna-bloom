@@ -1094,6 +1094,22 @@ a.filter-pill--active:hover {
   background: #05b04c;
   transform: translateY(-2px);
 }
+.product-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+.product-title-row .product-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.product-share-link.share-button-wrap {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 .product-title {
   font-family: var(--font-serif);
   font-size: clamp(1.5rem, 4vw, 2rem);

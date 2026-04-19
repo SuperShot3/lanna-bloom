@@ -164,6 +164,8 @@ export const bouquet = defineType({
           { title: 'Gerbera', value: 'gerbera' },
           { title: 'Carnation', value: 'carnation' },
           { title: 'Mums', value: 'mums' },
+          { title: 'Chrysanthemums', value: 'chrysanthemums' },
+          { title: 'Lisianthus', value: 'lisianthus' },
           { title: 'Daisy', value: 'daisy' },
           { title: 'Mixed', value: 'mixed' },
         ],

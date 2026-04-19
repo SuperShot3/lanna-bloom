@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
+import { ProductShareLink } from '@/components/ProductShareLink';
 import { ProductOrderBlockForProduct } from '@/components/ProductOrderBlockForProduct';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
@@ -59,7 +60,10 @@ export function ProductDetailClient({
         />
       </div>
       <div className="product-info">
-        <h1 className="product-title">{name}</h1>
+        <div className="product-title-row">
+          <h1 className="product-title">{name}</h1>
+          <ProductShareLink lang={lang} productTitle={name} />
+        </div>
         <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
         <p className="product-desc">{descDisplay}</p>
         {(product.preparationTime != null || product.occasion) && (
