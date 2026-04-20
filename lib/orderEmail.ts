@@ -221,6 +221,167 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
   }
 }
 
+/**
+ * Send a payment-failed email to the customer with retry guidance (different card / PromptPay)
+ * and a link back to the order page where they can re-initiate Stripe Checkout.
+ *
+ * Fired from the Stripe webhook for `checkout.session.async_payment_failed`
+ * (e.g. PromptPay didn't settle) and `checkout.session.expired` (customer abandoned
+ * after card decline / 3DS failure on Stripe's hosted page). No-op if no customerEmail
+ * or env vars are not set. Bilingual: picks `th` or `en` from the lang argument; defaults to en.
+ *
+ * Returns true if Resend accepted the message (or no-op skip), false on Resend error.
+ * Caller is responsible for idempotency — see `sendPaymentFailedNotificationsOnce`.
+ */
+export async function sendCustomerPaymentFailedEmail(
+  order: Order,
+  retryUrl: string,
+  lang: 'en' | 'th' = 'en'
+): Promise<boolean> {
+  const customerEmail = order.customerEmail?.trim();
+  if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) return true;
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.ORDERS_FROM_EMAIL?.trim();
+  if (!apiKey || !from) return true;
+
+  const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+  const amountLabel = `฿${grandTotal.toLocaleString()}`;
+  const safeRetryUrl = escapeHtml(retryUrl);
+  const safeOrderId = escapeHtml(order.orderId);
+  const greetName = order.customerName?.trim() ? escapeHtml(order.customerName.trim()) : null;
+
+  const isTh = lang === 'th';
+  const subject = isTh
+    ? `การชำระเงินสำหรับคำสั่งซื้อ ${order.orderId} ยังไม่สำเร็จ — Lanna Bloom`
+    : `Payment didn't complete for order ${order.orderId} — Lanna Bloom`;
+
+  const html = isTh
+    ? `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head>
+<body style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 560px;">
+  <h1 style="font-size: 1.2rem; margin-bottom: 0.5rem;">การชำระเงินยังไม่สำเร็จ</h1>
+  <p>สวัสดี${greetName ? ` คุณ${greetName}` : ''} ค่ะ</p>
+  <p>เราพยายามเก็บเงินสำหรับคำสั่งซื้อ <strong>${safeOrderId}</strong> จำนวน <strong>${amountLabel}</strong> แต่การชำระเงินยังไม่สำเร็จ</p>
+  <p><strong>สาเหตุที่อาจเกิดขึ้น:</strong> ธนาคารผู้ออกบัตรของคุณอาจไม่อนุญาตให้ทำธุรกรรมข้ามประเทศมายังร้านค้าในประเทศไทย หรือบัตรประเภทนั้นอาจไม่รองรับการชำระเงินข้ามประเทศ</p>
+
+  <h2 style="font-size: 1rem; margin-top: 1.25rem; margin-bottom: 0.5rem;">วิธีชำระเงินให้สำเร็จ</h2>
+  <ul style="padding-left: 1.2rem;">
+    <li><strong>ใช้บัตรอื่น</strong> — ลองใช้บัตรเครดิตหรือเดบิตใบอื่น</li>
+    <li><strong>ใช้พร้อมเพย์ (PromptPay)</strong> — สแกน QR ผ่านแอปธนาคารไทย ชำระได้ทันที (สำหรับสกุลเงิน THB)</li>
+  </ul>
+
+  <p style="margin-top: 1.25rem;">
+    <a href="${safeRetryUrl}" style="display: inline-block; background: #967a4d; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 600;">ชำระเงินอีกครั้ง</a>
+  </p>
+  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${safeRetryUrl}</p>
+
+  <p style="margin-top: 1.25rem;">หากต้องการความช่วยเหลือหรือต้องการชำระผ่านการโอนเงินผ่านธนาคาร กรุณาตอบกลับอีเมลนี้ หรือติดต่อเราทาง LINE / WhatsApp ค่ะ</p>
+
+  <p style="font-size: 0.9rem; color: #666; margin-top: 1.5rem;">— Lanna Bloom</p>
+</body>
+</html>
+`.trim()
+    : `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head>
+<body style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 560px;">
+  <h1 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Your payment didn't complete</h1>
+  <p>Hi ${greetName ?? 'there'},</p>
+  <p>We attempted to process your payment of <strong>${amountLabel}</strong> for order <strong>${safeOrderId}</strong>, but it didn't go through.</p>
+  <p><strong>Why this happened:</strong> Your card issuer may have restrictions on international payments, or that card type may not be supported for cross-border transactions to Thai merchants.</p>
+
+  <h2 style="font-size: 1rem; margin-top: 1.25rem; margin-bottom: 0.5rem;">How to complete your payment</h2>
+  <ul style="padding-left: 1.2rem;">
+    <li><strong>Use a different card</strong> — try another credit or debit card.</li>
+    <li><strong>Pay with PromptPay</strong> — scan the QR with any Thai banking app, pay instantly (THB only).</li>
+  </ul>
+
+  <p style="margin-top: 1.25rem;">
+    <a href="${safeRetryUrl}" style="display: inline-block; background: #967a4d; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 600;">Retry payment</a>
+  </p>
+  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${safeRetryUrl}</p>
+
+  <p style="margin-top: 1.25rem;">If you'd like to use bank transfer or need any assistance, just reply to this email or contact us via LINE / WhatsApp.</p>
+
+  <p style="font-size: 0.9rem; color: #666; margin-top: 1.5rem;">— Lanna Bloom</p>
+</body>
+</html>
+`.trim();
+
+  const text = isTh
+    ? `การชำระเงินสำหรับคำสั่งซื้อ ${order.orderId} (${amountLabel}) ยังไม่สำเร็จ\n\nวิธีชำระเงินให้สำเร็จ:\n• ใช้บัตรอื่น\n• ใช้พร้อมเพย์ผ่านแอปธนาคารไทย (THB เท่านั้น)\n\nชำระเงินอีกครั้ง: ${retryUrl}\n\nหากต้องการความช่วยเหลือ กรุณาตอบกลับอีเมลนี้ หรือติดต่อทาง LINE / WhatsApp\n— Lanna Bloom`
+    : `Your payment of ${amountLabel} for order ${order.orderId} didn't complete.\n\nHow to complete your payment:\n• Use a different card\n• Pay with PromptPay via any Thai banking app (THB only)\n\nRetry payment: ${retryUrl}\n\nReply to this email or contact us via LINE / WhatsApp if you need help.\n— Lanna Bloom`;
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from,
+    to: [customerEmail],
+    subject,
+    html,
+    text,
+  });
+  if (error) {
+    console.error('[orderEmail] Customer payment-failed Resend error:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Minimal admin notification when a Stripe payment fails or the checkout session expires unpaid.
+ * No-op if env vars not set. Sent at most once per order via the same idempotency claim
+ * as the customer email.
+ */
+export async function sendAdminPaymentFailedEmail(
+  orderId: string,
+  reason: 'async_payment_failed' | 'session_expired',
+  customerEmail?: string | null
+): Promise<boolean> {
+  const env = getEnv();
+  if (!env) return true;
+
+  const orderUrl = getOrderDetailsUrl(orderId);
+  const reasonLabel =
+    reason === 'async_payment_failed' ? 'async payment failed (e.g. PromptPay)' : 'checkout session expired (likely card decline / abandonment)';
+  const subject = `Payment failed — order ${orderId}`;
+  const customerLine = customerEmail?.trim()
+    ? `<p>Customer email: <a href="mailto:${escapeHtml(customerEmail.trim())}">${escapeHtml(customerEmail.trim())}</a></p>`
+    : '<p style="color: #888;">No customer email on file (no follow-up email sent to customer).</p>';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head>
+<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+  <p><strong>Stripe payment failed</strong> for order <strong>${escapeHtml(orderId)}</strong>.</p>
+  <p>Reason: ${escapeHtml(reasonLabel)}</p>
+  ${customerLine}
+  <p><a href="${escapeHtml(orderUrl)}" style="color: #967a4d; font-weight: 600;">View order</a></p>
+  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(orderUrl)}</p>
+</body>
+</html>
+`.trim();
+  const text = `Stripe payment failed for order ${orderId} (${reasonLabel}).\nCustomer email: ${customerEmail?.trim() || 'none'}\nView: ${orderUrl}`;
+
+  const resend = new Resend(env.apiKey);
+  const { error } = await resend.emails.send({
+    from: env.from,
+    to: env.to,
+    subject,
+    html,
+    text,
+  });
+  if (error) {
+    console.error('[orderEmail] Admin payment-failed Resend error:', error);
+    return false;
+  }
+  return true;
+}
+
 const DELIVERED_REVIEW_URL = 'https://g.page/r/CclGzPBur8RbEBM/review';
 
 /**

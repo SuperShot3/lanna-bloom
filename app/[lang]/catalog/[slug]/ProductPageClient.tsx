@@ -9,6 +9,7 @@ import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
+import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 
 export function ProductPageClient({
   bouquet,
@@ -49,12 +50,12 @@ export function ProductPageClient({
           price,
           quantity: 1,
           index: 0,
-          item_category: bouquet.category,
+          item_category: getBouquetDisplayCategory(bouquet),
           item_variant: sizeLabel,
         },
       ],
     });
-  }, [bouquet.id, bouquet.nameEn, bouquet.nameTh, bouquet.sizes, bouquet.category, lang]);
+  }, [bouquet, lang]);
 
   return (
     <>

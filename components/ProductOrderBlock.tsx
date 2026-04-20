@@ -13,6 +13,7 @@ import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
+import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { TrustBadges } from '@/components/TrustBadges';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
@@ -91,7 +92,7 @@ export function ProductOrderBlock({
           price,
           quantity: qty,
           index: 0,
-          item_category: bouquet.category,
+          item_category: getBouquetDisplayCategory(bouquet),
           item_variant: selectedSize.label,
         },
       ],

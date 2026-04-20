@@ -7,6 +7,7 @@ import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { trackSelectItem } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
+import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 
 export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang: Locale }) {
@@ -37,7 +38,7 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
               const item: AnalyticsItem = {
                 item_id: bouquet.id,
                 item_name: name,
-                item_category: bouquet.category,
+                item_category: getBouquetDisplayCategory(bouquet),
                 price: minPrice,
                 quantity: 1,
                 index: 0,

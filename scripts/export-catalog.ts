@@ -9,7 +9,10 @@ type CatalogItem = {
   slug: string;
   nameEn: string;
   nameTh?: string;
+  /** For non-bouquet products: the Sanity product.category value. Bouquets do not use this. */
   category?: string;
+  /** For bouquets: product format(s) like 'bouquet', 'box', 'vase', 'basket', 'arrangement', 'potted'. */
+  presentationFormats?: string[];
   urlEn: string;
   urlTh: string;
 };
@@ -44,7 +47,7 @@ async function main() {
     "slug": coalesce(slug.current, _id),
     nameEn,
     nameTh,
-    category
+    presentationFormats
   }`;
 
   const productsQuery = `*[_type == "product" && moderationStatus == "live"] | order(nameEn asc) {
@@ -63,7 +66,7 @@ async function main() {
   }`;
 
   const [bouquets, products, plushyToys] = await Promise.all([
-    client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string; category?: string }>>(bouquetsQuery),
+    client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string; presentationFormats?: string[] }>>(bouquetsQuery),
     client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string; category?: string }>>(productsQuery),
     client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string }>>(plushyQuery),
   ]);
@@ -75,7 +78,7 @@ async function main() {
       slug: b.slug,
       nameEn: b.nameEn ?? '',
       nameTh: b.nameTh,
-      category: b.category,
+      presentationFormats: b.presentationFormats,
       urlEn: toItemUrl(baseUrl, 'en', b.slug),
       urlTh: toItemUrl(baseUrl, 'th', b.slug),
     })),

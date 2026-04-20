@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { Bouquet, type BouquetSize } from '@/lib/bouquets';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
+import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
@@ -140,7 +141,7 @@ export function BouquetCard({
             price: selectedSize.price,
             quantity: 1,
             index: 0,
-            item_category: bouquet.category,
+            item_category: getBouquetDisplayCategory(bouquet),
             item_variant: selectedSize ? optionDisplayLabel(selectedSize, lang) : undefined,
           },
         ],
@@ -242,7 +243,7 @@ export function BouquetCard({
       const item: AnalyticsItem = {
         item_id: bouquet.id,
         item_name: name,
-        item_category: bouquet.category,
+        item_category: getBouquetDisplayCategory(bouquet),
         item_variant: bouquet.sizes?.[0] ? optionDisplayLabel(bouquet.sizes[0], lang) : undefined,
         price: minPrice,
         quantity: 1,
@@ -250,7 +251,7 @@ export function BouquetCard({
       };
       trackSelectItem('catalog', item);
     },
-    [bouquet.id, bouquet.category, bouquet.sizes, name, minPrice, persistPreferredSizeOnClick, selectedSize]
+    [bouquet, name, minPrice, persistPreferredSizeOnClick, selectedSize, lang]
   );
 
   const viewTransitionName = `product-${bouquet.id}`;

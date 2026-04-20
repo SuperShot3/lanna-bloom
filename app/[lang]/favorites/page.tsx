@@ -43,7 +43,6 @@ function buildSyntheticBouquet(fav: FavoriteItem): Bouquet {
     descriptionTh: '',
     compositionEn: '',
     compositionTh: '',
-    category: 'favorites',
     images: fav.image ? [fav.image] : [],
     sizes: [size],
   };

@@ -7,16 +7,6 @@ import type { Locale } from '@/lib/i18n';
 import type { BouquetSize } from '@/lib/bouquets';
 import type { SizeKey } from '@/lib/bouquets';
 
-const CATEGORY_OPTIONS = [
-  { value: 'roses', labelKey: 'roses' as const },
-  { value: 'mixed', labelKey: 'mixed' as const },
-  { value: 'mono', labelKey: 'mono' as const },
-  { value: 'inBox', labelKey: 'inBox' as const },
-  { value: 'romantic', labelKey: 'romantic' as const },
-  { value: 'birthday', labelKey: 'birthday' as const },
-  { value: 'sympathy', labelKey: 'sympathy' as const },
-] as const;
-
 const COLOR_OPTIONS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
 const FLOWER_TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'chrysanthemums', 'lisianthus', 'daisy', 'mixed'] as const;
 const OCCASION_OPTIONS = [
@@ -26,6 +16,14 @@ const OCCASION_OPTIONS = [
   { value: 'sympathy', labelEn: 'Sympathy' },
   { value: 'congrats', labelEn: 'Congratulations' },
   { value: 'get_well', labelEn: 'Get well' },
+] as const;
+const PRESENTATION_FORMAT_OPTIONS = [
+  { value: 'bouquet', labelEn: 'Bouquet' },
+  { value: 'box', labelEn: 'Box' },
+  { value: 'vase', labelEn: 'Vase' },
+  { value: 'basket', labelEn: 'Basket' },
+  { value: 'arrangement', labelEn: 'Arrangement' },
+  { value: 'potted', labelEn: 'Potted' },
 ] as const;
 
 const SIZE_KEYS: SizeKey[] = ['s', 'm', 'l', 'xl'];
@@ -48,10 +46,10 @@ export interface BouquetFormProps {
     descriptionTh: string;
     compositionEn: string;
     compositionTh: string;
-    category: string;
     colors?: string[];
     flowerTypes?: string[];
     occasion?: string[];
+    presentationFormats?: string[];
     sizes: Array<BouquetSize & { preparationTime?: number; availability?: boolean }>;
   };
   action: (formData: FormData) => Promise<{ error?: string } | void>;
@@ -71,7 +69,6 @@ export function BouquetForm({
   backLabel,
 }: BouquetFormProps) {
   const t = translations[lang].partner;
-  const categories = translations[lang].categories;
   const [sizes, setSizes] = useState<Array<BouquetSize & { preparationTime?: number; availability?: boolean }>>(
     initial?.sizes?.length ? initial.sizes : defaultSizes
   );
@@ -115,8 +112,10 @@ export function BouquetForm({
     formData.set('sizes', json);
     const colors = formData.getAll('colors') as string[];
     const flowerTypes = formData.getAll('flowerTypes') as string[];
+    const presentationFormats = formData.getAll('presentationFormats') as string[];
     if (colors.length) formData.set('colors', colors.join(','));
     if (flowerTypes.length) formData.set('flowerTypes', flowerTypes.join(','));
+    if (presentationFormats.length) formData.set('presentationFormats', presentationFormats.join(','));
     const result = await action(formData);
     if (result?.error) setError(result.error);
   }
@@ -154,16 +153,22 @@ export function BouquetForm({
         {t.compositionTh}
         <input type="text" name="compositionTh" defaultValue={initial?.compositionTh} />
       </label>
-      <label>
-        {t.category}
-        <select name="category" defaultValue={initial?.category || 'mixed'}>
-          {CATEGORY_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {categories[opt.labelKey]}
-            </option>
+      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+        <legend>Product format</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          {PRESENTATION_FORMAT_OPTIONS.map((opt) => (
+            <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input
+                type="checkbox"
+                name="presentationFormats"
+                value={opt.value}
+                defaultChecked={initial?.presentationFormats?.includes(opt.value)}
+              />
+              <span>{opt.labelEn}</span>
+            </label>
           ))}
-        </select>
-      </label>
+        </div>
+      </fieldset>
       <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
         <legend>{t.colors}</legend>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>

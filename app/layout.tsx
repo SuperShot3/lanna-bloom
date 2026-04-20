@@ -17,7 +17,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'Lanna Bloom | Fresh flowers delivered',
-  description: 'Order beautiful bouquets via LINE or WhatsApp. Fresh flowers delivered with care.',
+  description:
+    'Order beautiful flowers online and get same-day delivery in Chiang Mai.',
   icons: {
     icon: [
       { url: '/favicon_io/favicon.ico', sizes: 'any' },
@@ -29,7 +30,8 @@ export const metadata: Metadata = {
   manifest: '/favicon_io/site.webmanifest',
   openGraph: {
     title: 'Lanna Bloom | Fresh flowers delivered',
-    description: 'Order beautiful bouquets via LINE or WhatsApp.',
+    description:
+      'Order beautiful flowers online and get same-day delivery in Chiang Mai.',
   },
 };
 

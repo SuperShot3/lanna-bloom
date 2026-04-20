@@ -6,13 +6,37 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCheckout';
 import { deleteCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
+import { sendPaymentFailedNotificationsOnce } from '@/lib/orderNotification';
 
 const PAYMENT_SUCCESS_EVENTS = [
   'checkout.session.completed',
   'checkout.session.async_payment_succeeded',
   'payment_intent.succeeded',
 ];
-const PAYMENT_FAILED_EVENT = 'checkout.session.async_payment_failed';
+/**
+ * Failure-side events we react to:
+ *   - async_payment_failed: PromptPay / async method tried and failed
+ *   - session.expired: customer abandoned (often after a card decline on Stripe's hosted page)
+ *
+ * Synchronous card declines do NOT fire a webhook on their own — they show inline on
+ * Stripe's page. We catch those abandoners via session.expired (~24h after creation).
+ */
+const PAYMENT_FAILED_EVENTS = [
+  'checkout.session.async_payment_failed',
+  'checkout.session.expired',
+] as const;
+type PaymentFailedEvent = (typeof PAYMENT_FAILED_EVENTS)[number];
+
+function isPaymentFailedEvent(type: string): type is PaymentFailedEvent {
+  return (PAYMENT_FAILED_EVENTS as readonly string[]).includes(type);
+}
+
+function resolveLangFromMetadata(
+  metadata: Stripe.Metadata | Record<string, string> | null | undefined
+): 'en' | 'th' {
+  const raw = metadata && typeof metadata.lang === 'string' ? metadata.lang.trim() : '';
+  return raw === 'th' ? 'th' : 'en';
+}
 
 type StripePaymentContext = {
   orderId: string | null;
@@ -141,10 +165,7 @@ export async function POST(request: NextRequest) {
     mode: stripeConfig.mode,
   });
 
-  if (
-    !PAYMENT_SUCCESS_EVENTS.includes(event.type) &&
-    event.type !== PAYMENT_FAILED_EVENT
-  ) {
+  if (!PAYMENT_SUCCESS_EVENTS.includes(event.type) && !isPaymentFailedEvent(event.type)) {
     return NextResponse.json({ received: true });
   }
 
@@ -155,13 +176,16 @@ export async function POST(request: NextRequest) {
 
   const eventObject = event.data.object;
 
-  if (event.type === PAYMENT_FAILED_EVENT) {
+  if (isPaymentFailedEvent(event.type)) {
     const session = eventObject as Stripe.Checkout.Session;
     const orderId =
       getOrderIdFromStripeMetadata(session.metadata) ??
       (session.client_reference_id?.trim().startsWith('LB-')
         ? session.client_reference_id.trim()
         : null);
+    const lang = resolveLangFromMetadata(session.metadata);
+    const reason: 'async_payment_failed' | 'session_expired' =
+      event.type === 'checkout.session.expired' ? 'session_expired' : 'async_payment_failed';
 
     if (!orderId) {
       const draftId =
@@ -180,12 +204,16 @@ export async function POST(request: NextRequest) {
     try {
       const order = await getOrderById(orderId);
       if (!order) {
-        console.error('[stripe/webhook] Order not found for payment_failed:', orderId);
+        console.error('[stripe/webhook] Order not found for payment failure:', {
+          orderId,
+          eventType: event.type,
+        });
         return NextResponse.json({ received: true });
       }
-      console.log('[stripe/webhook] order found for payment_failed', {
+      console.log('[stripe/webhook] order found for payment failure', {
         orderId,
         currentStatus: order.status,
+        eventType: event.type,
       });
       if (order.status === 'paid') {
         return NextResponse.json({ received: true });
@@ -196,8 +224,12 @@ export async function POST(request: NextRequest) {
           console.error('[stripe/webhook] Supabase payment_failed sync error:', e);
         })
       );
+      // Idempotent across multiple failure events (claim-based) and skips if order is paid.
+      void sendPaymentFailedNotificationsOnce({ orderId, reason, lang }).catch((e) => {
+        console.error('[stripe/webhook] payment-failed notification error:', e);
+      });
     } catch (e) {
-      console.error('[stripe/webhook] payment_failed handler error:', e);
+      console.error('[stripe/webhook] payment-failed handler error:', e);
       return NextResponse.json({ error: 'Internal error' }, { status: 500 });
     }
     return NextResponse.json({ received: true });

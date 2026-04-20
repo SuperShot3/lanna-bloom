@@ -24,6 +24,7 @@ import type { CatalogFilterParams, CatalogProduct } from '@/lib/sanity';
 import { trackViewItemList } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { getBouquetDisplayCategory, getProductDisplayCategory } from '@/lib/catalogCategories';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 
 export interface CatalogWithFiltersProps {
@@ -51,7 +52,7 @@ function bouquetsToAnalyticsItems(bouquets: Bouquet[], lang: Locale): AnalyticsI
     return {
       item_id: b.id,
       item_name: name,
-      item_category: b.category,
+      item_category: getBouquetDisplayCategory(b),
       item_variant: b.sizes?.[0] ? optionDisplayLabel(b.sizes[0], lang) : undefined,
       price: minPrice,
       quantity: 1,
@@ -87,7 +88,7 @@ export function CatalogWithFilters({
       trackViewItemList(LIST_NAME_CATALOG, products.map((p, i) => ({
         item_id: p.id,
         item_name: (lang === 'th' && p.nameTh ? p.nameTh : p.nameEn) || '',
-        item_category: p.category,
+        item_category: getProductDisplayCategory(p),
         price: computeFinalPrice(p.cost ?? p.price, p.commissionPercent),
         quantity: 1,
         index: i,

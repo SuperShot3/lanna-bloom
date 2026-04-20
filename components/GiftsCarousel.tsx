@@ -8,6 +8,7 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
+import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 
 export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: Locale }) {
@@ -54,7 +55,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
             price: finalPrice,
             quantity: 1,
             index: 0,
-            item_category: product.category,
+            item_category: getProductDisplayCategory(product),
           },
         ],
       });
@@ -91,7 +92,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
             price: finalPrice,
             quantity: 1,
             index: 0,
-            item_category: product.category,
+            item_category: getProductDisplayCategory(product),
           },
         ],
       });

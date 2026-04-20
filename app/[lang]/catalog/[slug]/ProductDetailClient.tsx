@@ -9,6 +9,7 @@ import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { getProductDisplayCategory } from '@/lib/catalogCategories';
 
 export function ProductDetailClient({
   product,
@@ -42,11 +43,11 @@ export function ProductDetailClient({
           price: finalPrice,
           quantity: 1,
           index: 0,
-          item_category: product.category,
+          item_category: getProductDisplayCategory(product),
         },
       ],
     });
-  }, [product.id, product.price, product.commissionPercent, product.category, name, lang, finalPrice]);
+  }, [product, name, lang, finalPrice]);
 
   return (
     <>

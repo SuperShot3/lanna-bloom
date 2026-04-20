@@ -16,6 +16,7 @@ import { TrustBadges } from '@/components/TrustBadges';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { getProductDisplayCategory } from '@/lib/catalogCategories';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -79,7 +80,7 @@ export function ProductOrderBlockForProduct({
           price: finalPrice,
           quantity: qty,
           index: 0,
-          item_category: product.category,
+          item_category: getProductDisplayCategory(product),
         },
       ],
     });

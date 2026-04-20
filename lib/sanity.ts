@@ -57,7 +57,6 @@ type SanityBouquet = {
   descriptionTh?: string;
   compositionEn?: string;
   compositionTh?: string;
-  category?: string;
   productKind?: string;
   singleStemOptions?: Array<{
     stemCount?: number;

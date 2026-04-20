@@ -124,6 +124,10 @@ export async function updateBouquetAction(formData: FormData) {
     : undefined;
   const occasionRaw = formData.getAll('occasion') as string[];
   const occasion = occasionRaw?.map((s) => s.trim()).filter(Boolean) || undefined;
+  const presentationFormatsRaw = formData.get('presentationFormats') as string | null;
+  const presentationFormats = presentationFormatsRaw
+    ? presentationFormatsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined;
 
   try {
     await updateBouquet(bouquetId, {
@@ -133,10 +137,10 @@ export async function updateBouquetAction(formData: FormData) {
       descriptionTh: (formData.get('descriptionTh') as string)?.trim(),
       compositionEn: (formData.get('compositionEn') as string)?.trim(),
       compositionTh: (formData.get('compositionTh') as string)?.trim(),
-      category: (formData.get('category') as string) || 'mixed',
       colors,
       flowerTypes,
       occasion,
+      presentationFormats,
       imageAssetIds,
       sizes,
     });

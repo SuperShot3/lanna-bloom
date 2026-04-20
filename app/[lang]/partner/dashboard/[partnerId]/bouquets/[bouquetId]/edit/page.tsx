@@ -36,10 +36,10 @@ export default async function PartnerBouquetEditPage({
             descriptionTh: bouquet.descriptionTh,
             compositionEn: bouquet.compositionEn,
             compositionTh: bouquet.compositionTh,
-            category: bouquet.category,
             colors: bouquet.colors,
             flowerTypes: bouquet.flowerTypes,
             occasion: bouquet.occasion,
+            presentationFormats: bouquet.presentationFormats,
             sizes: bouquet.sizes.map((s) => ({
               ...s,
               preparationTime: s.preparationTime,

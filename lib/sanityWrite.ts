@@ -105,10 +105,10 @@ export interface CreateBouquetInput {
   descriptionTh?: string;
   compositionEn?: string;
   compositionTh?: string;
-  category: string;
   colors?: string[];
   flowerTypes?: string[];
   occasion?: string[];
+  presentationFormats?: string[];
   imageAssetIds: string[]; // 1–3 asset _ids from uploadImageToSanity
   sizes: BouquetSizeInput[];
 }
@@ -142,10 +142,10 @@ export async function createBouquet(input: CreateBouquetInput): Promise<string> 
     descriptionTh: (input.descriptionTh || '').trim(),
     compositionEn: (input.compositionEn || '').trim(),
     compositionTh: (input.compositionTh || '').trim(),
-    category: input.category || 'mixed',
     ...(input.colors?.length ? { colors: input.colors } : {}),
     ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : {}),
     ...(input.occasion?.length ? { occasion: input.occasion } : {}),
+    ...(input.presentationFormats?.length ? { presentationFormats: input.presentationFormats } : {}),
     partner: { _type: 'reference', _ref: input.partnerId },
     status: 'pending_review',
     images,
@@ -169,10 +169,10 @@ export interface UpdateBouquetInput {
   descriptionTh?: string;
   compositionEn?: string;
   compositionTh?: string;
-  category: string;
   colors?: string[];
   flowerTypes?: string[];
   occasion?: string[];
+  presentationFormats?: string[];
   imageAssetIds: string[];
   sizes: BouquetSizeInput[];
 }
@@ -268,10 +268,12 @@ export async function updateBouquet(bouquetId: string, input: UpdateBouquetInput
       descriptionTh: (input.descriptionTh || '').trim(),
       compositionEn: (input.compositionEn || '').trim(),
       compositionTh: (input.compositionTh || '').trim(),
-      category: input.category || 'mixed',
-      ...(input.colors?.length ? { colors: input.colors } : {}),
-      ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : {}),
+      ...(input.colors?.length ? { colors: input.colors } : { colors: [] }),
+      ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : { flowerTypes: [] }),
       ...(input.occasion?.length ? { occasion: input.occasion } : { occasion: [] }),
+      ...(input.presentationFormats?.length
+        ? { presentationFormats: input.presentationFormats }
+        : { presentationFormats: [] }),
       status: 'pending_review',
       images,
       sizes: input.sizes.map((s) => ({

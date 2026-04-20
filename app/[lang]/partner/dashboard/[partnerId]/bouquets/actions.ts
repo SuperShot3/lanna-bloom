@@ -17,7 +17,6 @@ import { getPartnerById } from '@/lib/sanity';
 import { isValidLocale } from '@/lib/i18n';
 import type { SizeKey } from '@/lib/bouquets';
 
-const CATEGORIES = ['roses', 'mixed', 'mono', 'inBox', 'romantic', 'birthday', 'sympathy'] as const;
 const SIZE_KEYS: SizeKey[] = ['s', 'm', 'l', 'xl'];
 
 function parseSizes(formData: FormData): BouquetSizeInput[] {
@@ -88,6 +87,10 @@ export async function createBouquetAction(formData: FormData) {
   const flowerTypes = flowerTypesRaw ? flowerTypesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
   const occasionRaw = formData.getAll('occasion') as string[];
   const occasion = occasionRaw?.map((s) => s.trim()).filter(Boolean) || undefined;
+  const presentationFormatsRaw = formData.get('presentationFormats') as string | null;
+  const presentationFormats = presentationFormatsRaw
+    ? presentationFormatsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined;
 
   try {
     const bouquetId = await createBouquet({
@@ -98,10 +101,10 @@ export async function createBouquetAction(formData: FormData) {
       descriptionTh: (formData.get('descriptionTh') as string)?.trim(),
       compositionEn: (formData.get('compositionEn') as string)?.trim(),
       compositionTh: (formData.get('compositionTh') as string)?.trim(),
-      category: (formData.get('category') as string) || 'mixed',
       colors,
       flowerTypes,
       occasion,
+      presentationFormats,
       imageAssetIds,
       sizes,
     });
@@ -148,6 +151,10 @@ export async function updateBouquetAction(formData: FormData) {
   const flowerTypes = flowerTypesRaw ? flowerTypesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
   const occasionRaw = formData.getAll('occasion') as string[];
   const occasion = occasionRaw?.map((s) => s.trim()).filter(Boolean) || undefined;
+  const presentationFormatsRaw = formData.get('presentationFormats') as string | null;
+  const presentationFormats = presentationFormatsRaw
+    ? presentationFormatsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined;
 
   try {
     await updateBouquet(bouquetId, {
@@ -157,10 +164,10 @@ export async function updateBouquetAction(formData: FormData) {
       descriptionTh: (formData.get('descriptionTh') as string)?.trim(),
       compositionEn: (formData.get('compositionEn') as string)?.trim(),
       compositionTh: (formData.get('compositionTh') as string)?.trim(),
-      category: (formData.get('category') as string) || 'mixed',
       colors,
       flowerTypes,
       occasion,
+      presentationFormats,
       imageAssetIds,
       sizes,
     });

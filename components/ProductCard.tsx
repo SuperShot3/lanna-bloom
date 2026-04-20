@@ -10,6 +10,7 @@ import { translations } from '@/lib/i18n';
 import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
+import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import type { SizeKey } from '@/lib/bouquets';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
@@ -186,7 +187,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
     const item: AnalyticsItem = {
       item_id: product.id,
       item_name: name,
-      item_category: product.category,
+      item_category: getProductDisplayCategory(product),
       price: finalPrice,
       quantity: 1,
       index: 0,
@@ -234,7 +235,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
               price: finalPrice,
               quantity: 1,
               index: 0,
-              item_category: product.category,
+              item_category: getProductDisplayCategory(product),
               item_variant: sizeLabel || undefined,
             },
           ],
@@ -277,7 +278,7 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
             price: selected.price,
             quantity: 1,
             index: 0,
-            item_category: product.category,
+            item_category: getProductDisplayCategory(product),
             item_variant: selected.label,
           },
         ],
