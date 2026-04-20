@@ -30,7 +30,14 @@ export function CategoryGrid({ lang }: { lang: Locale }) {
       <div className="container category-container">
         <div className="category-scroll" role="navigation" aria-label="Categories">
           {HERO_CATEGORY_KEYS.map((key) => {
-            const href = `/${lang}/catalog${key === 'all' ? '' : `?category=${key}`}`;
+            let query = '';
+            if (key === 'roses') query = '?types=rose';
+            else if (key === 'mixed') query = '?types=mixed';
+            else if (key === 'inBox') query = '?formats=box';
+            else if (key === 'romantic') query = '?occasion=romantic';
+            else if (key === 'birthday') query = '?occasion=birthday';
+
+            const href = `/${lang}/catalog${query}`;
             const label = t[key];
             const icon = CATEGORY_ICONS[key] || '🌸';
             return (

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getBouquetsByCategoryFromSanity } from '@/lib/sanity';
+import { getBouquetsFilteredFromSanity } from '@/lib/sanity';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, translations, type Locale } from '@/lib/i18n';
 import { BouquetCard } from '@/components/BouquetCard';
@@ -49,7 +49,7 @@ export default async function RoseBouquetsChiangMaiGuidePage({
   if (!isValidLocale(lang)) notFound();
   const locale = lang as Locale;
   const t = translations[locale].guides.roseBouquetsChiangMai;
-  const bouquets = await getBouquetsByCategoryFromSanity('roses');
+  const bouquets = await getBouquetsFilteredFromSanity({ topCategory: 'flowers', types: ['rose'] });
   const catalogHref = `/${lang}/catalog`;
 
   return (

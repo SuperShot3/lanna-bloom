@@ -103,7 +103,7 @@ export const bouquet = defineType({
     },
     {
       name: 'presentationFormats',
-      title: 'Format / presentation',
+      title: 'Product Format',
       type: 'array',
       of: [{ type: 'string' }],
       options: {
@@ -114,22 +114,6 @@ export const bouquet = defineType({
           { title: 'Basket', value: 'basket' },
           { title: 'Arrangement', value: 'arrangement' },
           { title: 'Potted', value: 'potted' },
-        ],
-      },
-    },
-    {
-      name: 'category',
-      title: 'Category',
-      type: 'string',
-      options: {
-        list: [
-          { title: 'Roses', value: 'roses' },
-          { title: 'Mixed bouquets', value: 'mixed' },
-          { title: 'Mono bouquets', value: 'mono' },
-          { title: 'Flowers in a box', value: 'inBox' },
-          { title: 'Romantic', value: 'romantic' },
-          { title: 'Birthday', value: 'birthday' },
-          { title: 'Sympathy', value: 'sympathy' },
         ],
       },
     },

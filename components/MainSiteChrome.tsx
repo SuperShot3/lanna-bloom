@@ -19,9 +19,10 @@ export function MainSiteChrome({
   const [primeHourBanner, setPrimeHourBanner] = useState(false);
   const isPartnerRoute = pathname?.includes('/partner');
   const isConfirmationPending = pathname?.includes('/checkout/confirmation-pending');
+  const isCheckoutComplete = pathname?.includes('/checkout/complete');
   const isCartRoute = pathname?.includes('/cart');
 
-  if (isPartnerRoute || isConfirmationPending) {
+  if (isPartnerRoute || isConfirmationPending || isCheckoutComplete) {
     return <>{children}</>;
   }
 

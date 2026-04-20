@@ -128,9 +128,9 @@ export const articles: ArticleMeta[] = [
       center: { kind: 'emoji', value: '🚕' },
     },
     ctaLinks: [
-      { label: 'Browse rose bouquets', labelTh: 'ดูช่อกุหลาบ', href: '/catalog?category=roses' },
-      { label: 'Red roses', labelTh: 'กุหลาบแดง', href: '/catalog?category=roses&colors=red' },
-      { label: 'White roses', labelTh: 'กุหลาบขาว', href: '/catalog?category=roses&colors=white' },
+      { label: 'Browse rose bouquets', labelTh: 'ดูช่อกุหลาบ', href: '/catalog?types=rose' },
+      { label: 'Red roses', labelTh: 'กุหลาบแดง', href: '/catalog?types=rose&colors=red' },
+      { label: 'White roses', labelTh: 'กุหลาบขาว', href: '/catalog?types=rose&colors=white' },
       { label: 'Order now', labelTh: 'สั่งซื้อเลย', href: '/catalog' },
     ],
   },

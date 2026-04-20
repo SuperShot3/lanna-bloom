@@ -16,19 +16,7 @@ export const CATALOG_TOP_CATEGORIES = [
 
 export type CatalogTopCategory = (typeof CATALOG_TOP_CATEGORIES)[number];
 
-/** Bouquet subcategories — only used when topCategory === 'flowers' */
-export const FLOWER_SUBCATEGORIES = [
-  'all',
-  'roses',
-  'mixed',
-  'mono',
-  'inBox',
-  'romantic',
-  'birthday',
-  'sympathy',
-] as const;
 
-export type FlowerSubcategory = (typeof FLOWER_SUBCATEGORIES)[number];
 
 /** Non-flower product categories (must match Sanity product.category options) */
 export const PRODUCT_CATEGORIES = [
@@ -51,17 +39,7 @@ export const CATEGORY_I18N_KEYS: Record<CatalogTopCategory, string> = {
   plushy_toys: 'topCategoryPlushyToys',
 };
 
-/** i18n keys for flower subcategories (under catalog.categories.* — existing) */
-export const FLOWER_SUBCATEGORY_I18N_KEYS: Record<FlowerSubcategory, string> = {
-  all: 'all',
-  roses: 'roses',
-  mixed: 'mixed',
-  mono: 'mono',
-  inBox: 'inBox',
-  romantic: 'romantic',
-  birthday: 'birthday',
-  sympathy: 'sympathy',
-};
+
 
 /** Occasion quick filters for bouquets (URL param occasion) — bar + sidebar */
 export const CATALOG_OCCASION_CHIPS: {

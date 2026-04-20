@@ -29,7 +29,16 @@ export function FilterPills({ lang, currentCategory = 'all' }: FilterPillsProps)
       <div className="container filter-pills-container">
         <div className="filter-pills-scroll" role="navigation">
           {PILL_CATEGORY_KEYS.map((key) => {
-            const href = `/${lang}/catalog${key === 'all' ? '' : `?category=${key}`}`;
+            let query = '';
+            if (key === 'roses') query = '?types=rose';
+            else if (key === 'mixed') query = '?types=mixed';
+            else if (key === 'mono') query = '?types=mono';
+            else if (key === 'inBox') query = '?formats=box';
+            else if (key === 'romantic') query = '?occasion=romantic';
+            else if (key === 'birthday') query = '?occasion=birthday';
+            else if (key === 'sympathy') query = '?occasion=sympathy';
+
+            const href = `/${lang}/catalog${query}`;
             const label = t[key];
             const isActive = currentCategory === key;
             return (

@@ -15,7 +15,6 @@ export interface Bouquet {
   descriptionTh: string;
   compositionEn: string;
   compositionTh: string;
-  category: string;
   /** Hybrid model; default legacy when unset in CMS */
   productKind?: ProductKind;
   colors?: string[];
@@ -83,7 +82,6 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'ความสง่างามเหนือกาลเวลาด้วยกุหลาบแดงพรีเมียม',
     compositionEn: 'Red roses, eucalyptus, ribbon',
     compositionTh: 'กุหลาบแดง ยูคาลิปตัส ริบบิ้น',
-    category: 'roses',
     productKind: 'legacy',
     images: [
       img('1518895949257-762e860e6f5b'),
@@ -106,7 +104,6 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'ช่อผสมพาสเทลนุ่มสำหรับความประทับใจอันอ่อนโยน',
     compositionEn: 'Pink roses, white hydrangea, baby\'s breath',
     compositionTh: 'กุหลาบชมพู ไฮเดรนเยียขาว เบบี้เบรธ',
-    category: 'mixed',
     productKind: 'legacy',
     images: [
       img('1490757867850-704c4c2d6aac'),
@@ -129,7 +126,6 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'ดอกไม้ตามฤดูกาลสดใสในกล่องสวยงาม',
     compositionEn: 'Sunflowers, chrysanthemums, greens',
     compositionTh: 'ดอกทานตะวัน เบญจมาศ ใบไม้เขียว',
-    category: 'inBox',
     productKind: 'legacy',
     images: [
       img('1455659817273-f96807779a8a'),
@@ -152,7 +148,6 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'เหมาะสำหรับแสดงความรักและความซาบซึ้ง',
     compositionEn: 'Pink roses, peonies, eucalyptus',
     compositionTh: 'กุหลาบชมพู ดอกโบตั๋น ยูคาลิปตัส',
-    category: 'romantic',
     productKind: 'legacy',
     images: [
       img('1490757867850-704c4c2d6aac'),
@@ -175,7 +170,6 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'สดใสและรื่นเริงสำหรับงานฉลอง',
     compositionEn: 'Mixed seasonal flowers, ribbon',
     compositionTh: 'ดอกไม้ตามฤดูกาลผสม ริบบิ้น',
-    category: 'birthday',
     productKind: 'legacy',
     images: [
       img('1518895949257-762e860e6f5b'),
@@ -198,7 +192,6 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'จัดดอกไม้สีขาวสง่างามเพื่อระลึกถึง',
     compositionEn: 'White lilies, roses, chrysanthemums',
     compositionTh: 'ดอกลิลลี่ขาว กุหลาบขาว เบญจมาศขาว',
-    category: 'sympathy',
     productKind: 'legacy',
     images: [
       img('1455659817273-f96807779a8a'),
@@ -224,7 +217,4 @@ export function getBouquetById(id: string): Bouquet | undefined {
   return bouquets.find((b) => b.id === id);
 }
 
-export function getBouquetsByCategory(category: string): Bouquet[] {
-  if (!category || category === 'all') return bouquets;
-  return bouquets.filter((b) => b.category === category);
-}
+

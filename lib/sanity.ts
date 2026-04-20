@@ -198,7 +198,6 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     descriptionTh: doc.descriptionTh ?? '',
     compositionEn: doc.compositionEn ?? '',
     compositionTh: doc.compositionTh ?? '',
-    category: doc.category ?? 'mixed',
     productKind: resolveProductKind(doc),
     colors: Array.isArray(doc.colors) ? doc.colors : [],
     flowerTypes: Array.isArray(doc.flowerTypes) ? doc.flowerTypes : [],
@@ -231,7 +230,6 @@ const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "a
   descriptionTh,
   compositionEn,
   compositionTh,
-  category,
   productKind,
   singleStemOptions,
   fixedVariants,
@@ -255,7 +253,6 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   descriptionTh,
   compositionEn,
   compositionTh,
-  category,
   productKind,
   singleStemOptions,
   fixedVariants,
@@ -294,7 +291,6 @@ const bouquetsPaginatedQuery = `*[_type == "bouquet" && (!defined(status) || sta
   descriptionTh,
   compositionEn,
   compositionTh,
-  category,
   productKind,
   singleStemOptions,
   fixedVariants,
@@ -331,11 +327,6 @@ export async function getBouquetBySlugFromSanity(slug: string): Promise<Bouquet 
   }
 }
 
-export async function getBouquetsByCategoryFromSanity(category: string): Promise<Bouquet[]> {
-  const all = await getBouquetsFromSanity();
-  if (!category || category === 'all') return all;
-  return all.filter((b) => b.category === category);
-}
 
 const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] {
   _id,
@@ -346,7 +337,6 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   descriptionTh,
   compositionEn,
   compositionTh,
-  category,
   productKind,
   singleStemOptions,
   fixedVariants,
@@ -552,7 +542,6 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   descriptionTh,
   compositionEn,
   compositionTh,
-  category,
   productKind,
   singleStemOptions,
   fixedVariants,
@@ -569,9 +558,6 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
 }`;
 
 function matchesFilters(bouquet: Bouquet, params: CatalogFilterParams): boolean {
-  if (params.category && params.category !== 'all' && bouquet.category !== params.category) {
-    return false;
-  }
   if (params.colors?.length) {
     const bColors = bouquet.colors ?? [];
     const hasMatch = params.colors.some((c) => bColors.includes(c));
@@ -724,7 +710,7 @@ export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet
   try {
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category,
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
         colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
@@ -742,7 +728,7 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
   try {
     const doc = await client.fetch<SanityBouquet | null>(
       `*[_type == "bouquet" && _id == $id][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category,
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
         colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
@@ -761,7 +747,7 @@ export async function getPendingBouquets(): Promise<Bouquet[]> {
   try {
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && status == "pending_review"] | order(_createdAt desc) {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh, category,
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
         colors, flowerTypes, occasion, partner, status, images, sizes
       }`

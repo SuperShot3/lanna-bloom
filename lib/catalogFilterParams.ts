@@ -13,12 +13,13 @@ export function parseCatalogSearchParams(
     (topCategoryRaw && PRODUCT_CATEGORIES.includes(topCategoryRaw as (typeof PRODUCT_CATEGORIES)[number]))
       ? topCategoryRaw
       : undefined;
-  const category = typeof searchParams.category === 'string' ? searchParams.category : undefined;
+  const categoryRaw = typeof searchParams.category === 'string' ? searchParams.category : undefined;
   const colorsRaw = typeof searchParams.colors === 'string' ? searchParams.colors : undefined;
   const colors = colorsRaw ? colorsRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
   const typesRaw = typeof searchParams.types === 'string' ? searchParams.types : undefined;
-  const types = typesRaw ? typesRaw.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-  const occasion = typeof searchParams.occasion === 'string' ? searchParams.occasion : undefined;
+  const types = typesRaw ? typesRaw.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const occasionRaw = typeof searchParams.occasion === 'string' ? searchParams.occasion : undefined;
+  let occasion = occasionRaw;
   const minRaw = typeof searchParams.min === 'string' ? searchParams.min : undefined;
   const min = minRaw ? parseInt(minRaw, 10) : undefined;
   const maxRaw = typeof searchParams.max === 'string' ? searchParams.max : undefined;
@@ -32,22 +33,38 @@ export function parseCatalogSearchParams(
   const formatsRaw = typeof searchParams.formats === 'string' ? searchParams.formats : undefined;
   const formats = formatsRaw
     ? formatsRaw.split(',').map((s) => s.trim()).filter(Boolean)
-    : undefined;
+    : [];
   const stemRaw = typeof searchParams.stemBucket === 'string' ? searchParams.stemBucket : undefined;
   const stemBucket =
     stemRaw && STEM_BUCKETS.includes(stemRaw as StemBucketKey) ? (stemRaw as StemBucketKey) : undefined;
+
+  // Legacy category mapping for bouquet backward compatibility
+  let category = categoryRaw;
+  if (categoryRaw && (topCategory === 'flowers' || !topCategory)) {
+    if (categoryRaw === 'roses' && !types.includes('rose')) types.push('rose');
+    if (categoryRaw === 'mixed' && !types.includes('mixed')) types.push('mixed');
+    if (categoryRaw === 'inBox' && !formats.includes('box')) formats.push('box');
+    if (categoryRaw === 'romantic' && !occasion) occasion = 'romantic';
+    if (categoryRaw === 'birthday' && !occasion) occasion = 'birthday';
+    if (categoryRaw === 'sympathy' && !occasion) occasion = 'sympathy';
+    
+    // Unset category so we don't pass it down for flowers 
+    // unless it's "all" or we decide to strip it completely. 
+    // We strip it completely for flowers to rely on the new filters.
+    category = undefined; 
+  }
 
   return {
     topCategory: topCategory || undefined,
     category: category || undefined,
     colors: colors?.length ? colors : undefined,
-    types: types?.length ? types : undefined,
+    types: types.length ? types : undefined,
     occasion: occasion || undefined,
     min: min != null && !isNaN(min) ? min : undefined,
     max: max != null && !isNaN(max) ? max : undefined,
     sort: sort && ['newest', 'price_asc', 'price_desc'].includes(sort) ? sort : undefined,
     delivery: delivery?.length ? delivery : undefined,
-    formats: formats?.length ? formats : undefined,
+    formats: formats.length ? formats : undefined,
     stemBucket,
   };
 }
