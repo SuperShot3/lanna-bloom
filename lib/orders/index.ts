@@ -6,8 +6,10 @@ export * from './types';
 export {
   generateOrderId,
   getOrderById,
+  getOrderByIdWithPublicToken,
   getOrderByStripeSessionId,
   getOrderBySubmissionToken,
+  getOrderPublicToken,
   createOrder,
   createPendingOrder,
   updateOrderPaymentStatus,

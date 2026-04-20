@@ -4,7 +4,7 @@
 
 import 'server-only';
 import { nanoid } from 'nanoid';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { createSupabaseAnonWithOrderToken, getSupabaseAdmin } from '@/lib/supabase/server';
 import type { Order, OrderPayload } from './types';
 
 function normalizeSubmissionToken(raw: unknown): string | null {
@@ -12,6 +12,14 @@ function normalizeSubmissionToken(raw: unknown): string | null {
   const t = raw.trim();
   if (t.length < 8 || t.length > 128) return null;
   if (!/^[0-9a-fA-F-]+$/.test(t)) return null;
+  return t;
+}
+
+function normalizePublicOrderToken(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim();
+  if (t.length < 8 || t.length > 128) return null;
+  if (!/^[A-Za-z0-9_-]+$/.test(t)) return null;
   return t;
 }
 
@@ -209,6 +217,52 @@ export async function supabaseGetOrderById(orderId: string): Promise<Order | nul
     .order('bouquet_id');
 
   return rowToOrder(orderRow as SupabaseOrderRow, (items ?? []) as SupabaseOrderItemRow[]);
+}
+
+export async function supabaseGetOrderByIdWithPublicToken(
+  orderId: string,
+  publicToken: string
+): Promise<Order | null> {
+  const normalizedOrderId = orderId.trim();
+  const normalizedToken = normalizePublicOrderToken(publicToken);
+  if (!normalizedOrderId || !normalizedToken) return null;
+
+  const supabase = createSupabaseAnonWithOrderToken(normalizedToken);
+  if (!supabase) return null;
+
+  const { data: orderRow, error: orderError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('order_id', normalizedOrderId)
+    .single();
+
+  if (orderError || !orderRow) {
+    return null;
+  }
+
+  const { data: items } = await supabase
+    .from('order_items')
+    .select('bouquet_id, bouquet_title, size, price, image_url_snapshot')
+    .eq('order_id', normalizedOrderId)
+    .order('bouquet_id');
+
+  return rowToOrder(orderRow as SupabaseOrderRow, (items ?? []) as SupabaseOrderItemRow[]);
+}
+
+export async function supabaseGetOrderPublicToken(orderId: string): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const normalized = orderId.trim();
+  if (!normalized) return null;
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('public_token')
+    .eq('order_id', normalized)
+    .maybeSingle();
+  if (error || !data?.public_token) return null;
+  return String(data.public_token);
 }
 
 export async function supabaseGetOrderBySubmissionToken(token: string): Promise<Order | null> {
@@ -590,6 +644,7 @@ export interface OrderLookupSummary {
   fulfillmentStatus: string;
   deliveryDate: string | null;
   createdAt: string;
+  orderToken?: string | null;
 }
 
 export async function supabaseLookupOrdersByPhone(
@@ -608,7 +663,7 @@ export async function supabaseLookupOrdersByPhone(
 
   let query = supabase
     .from('orders')
-    .select('order_id, order_status, delivery_date, created_at')
+    .select('order_id, order_status, delivery_date, created_at, public_token')
     .or(`phone.ilike.${pattern},recipient_phone.ilike.${pattern}`);
 
   if (name?.trim()) {
@@ -617,7 +672,7 @@ export async function supabaseLookupOrdersByPhone(
 
   const { data: rows, error } = await query
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(5);
 
   if (error) {
     if (process.env.SUPABASE_LOG_LEVEL === 'debug') {
@@ -626,11 +681,18 @@ export async function supabaseLookupOrdersByPhone(
     return [];
   }
 
-  return (rows ?? []).map((r: { order_id: string; order_status: string | null; delivery_date: string | null; created_at: string | null }) => ({
+  return (rows ?? []).map((r: {
+    order_id: string;
+    order_status: string | null;
+    delivery_date: string | null;
+    created_at: string | null;
+    public_token: string | null;
+  }) => ({
     orderId: r.order_id,
     fulfillmentStatus: orderStatusToFulfillmentDisplay(r.order_status),
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
+    orderToken: r.public_token ?? null,
   }));
 }
 
@@ -648,10 +710,10 @@ export async function supabaseLookupOrdersByOrderId(
 
   const { data: rows, error } = await supabase
     .from('orders')
-    .select('order_id, order_status, delivery_date, created_at')
+    .select('order_id, order_status, delivery_date, created_at, public_token')
     .ilike('order_id', pattern)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(5);
 
   if (error) {
     if (process.env.SUPABASE_LOG_LEVEL === 'debug') {
@@ -660,11 +722,18 @@ export async function supabaseLookupOrdersByOrderId(
     return [];
   }
 
-  return (rows ?? []).map((r: { order_id: string; order_status: string | null; delivery_date: string | null; created_at: string | null }) => ({
+  return (rows ?? []).map((r: {
+    order_id: string;
+    order_status: string | null;
+    delivery_date: string | null;
+    created_at: string | null;
+    public_token: string | null;
+  }) => ({
     orderId: r.order_id,
     fulfillmentStatus: orderStatusToFulfillmentDisplay(r.order_status),
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
+    orderToken: r.public_token ?? null,
   }));
 }
 

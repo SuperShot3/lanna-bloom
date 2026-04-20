@@ -26,6 +26,14 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return supabaseStore.supabaseGetOrderById(orderId);
 }
 
+export async function getOrderByIdWithPublicToken(
+  orderId: string,
+  publicToken: string
+): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderByIdWithPublicToken(orderId, publicToken);
+}
+
 export async function getOrderByStripeSessionId(stripeSessionId: string): Promise<Order | null> {
   requireSupabase();
   return supabaseStore.supabaseGetOrderByStripeSessionId(stripeSessionId);
@@ -34,6 +42,11 @@ export async function getOrderByStripeSessionId(stripeSessionId: string): Promis
 export async function getOrderBySubmissionToken(submissionToken: string): Promise<Order | null> {
   requireSupabase();
   return supabaseStore.supabaseGetOrderBySubmissionToken(submissionToken);
+}
+
+export async function getOrderPublicToken(orderId: string): Promise<string | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderPublicToken(orderId);
 }
 
 export async function createOrder(

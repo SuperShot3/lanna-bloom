@@ -135,7 +135,12 @@ export function OrderDetailsView({
   const refreshStatus = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(resolvedOrderId)}`, { cache: 'no-store' });
+      const token =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('token')?.trim()
+          : '';
+      const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+      const res = await fetch(`/api/orders/${encodeURIComponent(resolvedOrderId)}${qs}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         // [DEBUG] Temporary: log what the API returned so we can see what would overwrite state.

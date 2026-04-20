@@ -11,6 +11,7 @@ interface OrderLookupSummary {
   fulfillmentStatus: string;
   deliveryDate: string | null;
   createdAt: string;
+  orderToken?: string | null;
 }
 
 function getFulfillmentLabel(status: string, t: Record<string, string>): string {
@@ -172,7 +173,14 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           <ul className="cart-track-order-list">
             {orders.map((order) => (
               <li key={order.orderId}>
-                <Link href={`/order/${encodeURIComponent(order.orderId)}`} className="cart-track-order-link">
+                <Link
+                  href={
+                    order.orderToken
+                      ? `/order/${encodeURIComponent(order.orderId)}?token=${encodeURIComponent(order.orderToken)}`
+                      : `/order/${encodeURIComponent(order.orderId)}`
+                  }
+                  className="cart-track-order-link"
+                >
                   <span className="cart-track-order-id">{order.orderId}</span>
                   <span className="cart-track-order-status">
                     {getFulfillmentLabel(order.fulfillmentStatus, tOrder)}

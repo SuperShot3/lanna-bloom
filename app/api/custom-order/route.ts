@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
+import { createOrder, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import type { CustomOrderDetails, DeliveryDistrictKey, OrderPayload, OrderItem } from '@/lib/orders';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
@@ -203,7 +203,8 @@ export async function POST(request: NextRequest) {
     };
 
     const { order, created } = await createOrder(payload);
-    const publicOrderUrl = getOrderDetailsUrl(order.orderId);
+    const orderToken = await getOrderPublicToken(order.orderId);
+    const publicOrderUrl = getOrderDetailsUrl(order.orderId, { token: orderToken });
 
     await sendAdminNewOrderNotificationOnce(order.orderId).catch((e) => {
       console.error('[api/custom-order] Admin new-order notification failed:', e);

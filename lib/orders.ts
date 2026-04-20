@@ -26,8 +26,10 @@ export type {
 export {
   generateOrderId,
   getOrderById,
+  getOrderByIdWithPublicToken,
   getOrderByStripeSessionId,
   getOrderBySubmissionToken,
+  getOrderPublicToken,
   createOrder,
   createPendingOrder,
   updateOrderPaymentStatus,
@@ -47,6 +49,10 @@ export function getBaseUrl(): string {
   return 'http://localhost:3000';
 }
 
-export function getOrderDetailsUrl(orderId: string): string {
-  return `${getBaseUrl()}/order/${encodeURIComponent(orderId)}`;
+export function getOrderDetailsUrl(orderId: string, options?: { token?: string | null }): string {
+  const base = `${getBaseUrl()}/order/${encodeURIComponent(orderId)}`;
+  const token = options?.token?.trim();
+  if (!token) return base;
+  const qs = new URLSearchParams({ token }).toString();
+  return `${base}?${qs}`;
 }

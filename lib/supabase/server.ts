@@ -19,3 +19,27 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   }
   return adminClient;
 }
+
+/**
+ * Create a short-lived anon client for token-scoped customer order reads.
+ * Uses x-order-token header so RLS policies can authorize by orders.public_token.
+ */
+export function createSupabaseAnonWithOrderToken(orderToken: string): SupabaseClient | null {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    process.env.SUPABASE_URL?.trim();
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.SUPABASE_ANON_KEY?.trim();
+  const token = orderToken.trim();
+  if (!url || !anonKey || !token) return null;
+
+  return createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      headers: {
+        'x-order-token': token,
+      },
+    },
+  });
+}

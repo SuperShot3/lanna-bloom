@@ -60,10 +60,9 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
                         <Image
                           src={imgSrc}
                           alt={name}
-                          width={120}
-                          height={120}
-                          className="bouquets-product-image"
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          fill
+                          sizes="84px"
+                          className={`${interest.carouselFillImage} bouquets-product-image`}
                           unoptimized={isDataUrl}
                           draggable={false}
                         />

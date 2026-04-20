@@ -21,21 +21,6 @@ function getClientIp(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (!checkOrderLookupRateLimit(ip)) {
-    return NextResponse.json(
-      { error: 'Too many lookup attempts. Please try again later.' },
-      { status: 429 }
-    );
-  }
-
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return NextResponse.json(
-      { error: 'Order lookup is not available.' },
-      { status: 503 }
-    );
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -60,6 +45,23 @@ export async function POST(req: NextRequest) {
   const searchQuery = searchByOrderId ? (orderId || phone) : phone;
   const digits = searchQuery.replace(/\D/g, '');
 
+  const rateLimitScope = searchByOrderId ? 'order-id' : 'phone';
+  if (!checkOrderLookupRateLimit(ip, rateLimitScope)) {
+    console.warn('[orders/lookup] rate-limited', { ip, scope: rateLimitScope });
+    return NextResponse.json(
+      { error: 'Too many lookup attempts. Please try again later.' },
+      { status: 429 }
+    );
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return NextResponse.json(
+      { error: 'Order lookup is not available.' },
+      { status: 503 }
+    );
+  }
+
   if (!searchQuery) {
     return NextResponse.json(
       { error: 'Enter your phone number or order ID (e.g. LB-2025-XXXX)' },
@@ -68,16 +70,16 @@ export async function POST(req: NextRequest) {
   }
 
   if (searchByOrderId) {
-    if (searchQuery.length < 3) {
+    if (searchQuery.length < 6) {
       return NextResponse.json(
-        { error: 'Order ID should be at least 3 characters' },
+        { error: 'Order ID should be at least 6 characters' },
         { status: 400 }
       );
     }
   } else {
-    if (digits.length < 8) {
+    if (digits.length < 9) {
       return NextResponse.json(
-        { error: 'Phone number must have at least 8 digits' },
+        { error: 'Phone number must have at least 9 digits' },
         { status: 400 }
       );
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder, getOrderDetailsUrl } from '@/lib/orders';
+import { createOrder, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
@@ -202,7 +202,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }
     const { order } = await createOrder(result.payload);
-    const publicOrderUrl = getOrderDetailsUrl(order.orderId);
+    const orderToken = await getOrderPublicToken(order.orderId);
+    const publicOrderUrl = getOrderDetailsUrl(order.orderId, { token: orderToken });
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;
 
     // Admin email: website checkout uses Stripe (notify on payment). Legacy POST callers that

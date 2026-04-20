@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrderById } from '@/lib/orders';
+import { getOrderByIdWithPublicToken } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 
 export const dynamic = 'force-dynamic';
 
+function normalizeOrderToken(raw: string | null): string | null {
+  if (!raw) return null;
+  const t = raw.trim();
+  if (t.length < 8 || t.length > 128) return null;
+  if (!/^[A-Za-z0-9_-]+$/.test(t)) return null;
+  return t;
+}
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   const { orderId } = await params;
@@ -14,12 +22,52 @@ export async function GET(
   if (!normalized) {
     return NextResponse.json({ error: 'orderId required' }, { status: 400 });
   }
-  const order = await getOrderById(normalized);
+  const tokenFromQuery = request.nextUrl.searchParams.get('token');
+  const tokenFromHeader = request.headers.get('x-order-token');
+  const orderToken = normalizeOrderToken(tokenFromQuery ?? tokenFromHeader);
+
+  const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
+  if (!supabasePayment) {
+    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+  }
+
+  if (!orderToken) {
+    const orderStatus = supabasePayment.order_status ?? null;
+    const fulfillmentFromOrderStatus =
+      orderStatus != null ? orderStatusToFulfillmentDisplay(orderStatus) : null;
+    const fulfillmentFromLegacyColumn = supabasePayment.fulfillment_status
+      ? orderStatusToFulfillmentDisplay(supabasePayment.fulfillment_status)
+      : null;
+    const fulfillmentStatus =
+      fulfillmentFromOrderStatus
+      ?? fulfillmentFromLegacyColumn
+      ?? 'new';
+    return NextResponse.json(
+      {
+        orderId: normalized,
+        order_status: orderStatus,
+        fulfillmentStatus,
+        fulfillmentStatusUpdatedAt:
+          supabasePayment.fulfillment_status_updated_at ??
+          supabasePayment.updated_at ??
+          null,
+        payment_status: supabasePayment.payment_status,
+        payment_method: supabasePayment.payment_method,
+        paid_at: supabasePayment.paid_at,
+        privacyLimited: true,
+        requiresToken: true,
+      },
+      {
+        headers: { 'Cache-Control': 'no-store' },
+      },
+    );
+  }
+
+  const order = await getOrderByIdWithPublicToken(normalized, orderToken);
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
   const orderStatus = supabasePayment?.order_status ?? null;
   const fulfillmentFromOrderStatus =
     orderStatus != null ? orderStatusToFulfillmentDisplay(orderStatus) : null;

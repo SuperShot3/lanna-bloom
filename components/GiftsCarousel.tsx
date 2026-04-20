@@ -11,6 +11,15 @@ import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 
+/** Visible name length on gift tiles (full name in title + aria-label; price is not clipped). */
+const GIFT_TILE_NAME_MAX = 7;
+
+function clipGiftTileName(text: string, max = GIFT_TILE_NAME_MAX): string {
+  const chars = Array.from(text);
+  if (chars.length <= max) return text;
+  return `${chars.slice(0, max).join('')}…`;
+}
+
 export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: Locale }) {
   const [emblaRef] = useEmblaCarousel({
     align: 'start',
@@ -109,43 +118,45 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
             const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
             const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
             const inCart = isInCart(product);
+            const priceLabel = `฿${finalPrice.toLocaleString()}`;
 
             return (
               <div key={product.id} className="gifts-carousel-slide">
                 <div className={interest.frame}>
                   <button
                     type="button"
-                    className={interest.surface}
+                    className={`${interest.surface} ${interest.surfaceWithCover}`}
                     onClick={() => handleToggleGift(product)}
                     aria-label={inCart ? `${name} — Added` : `${name} — ฿${finalPrice.toLocaleString()} — Add to cart`}
                   >
-                    <div className={interest.imageWrap}>
-                      {imgSrc ? (
+                    {imgSrc ? (
+                      <span className={interest.surfaceCover} aria-hidden>
                         <Image
                           src={imgSrc}
-                          alt={name}
-                          width={120}
-                          height={120}
-                          className="gifts-product-image"
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          alt=""
+                          fill
+                          sizes="(max-width: 480px) 50vw, (max-width: 640px) 34vw, 26vw"
+                          className={`${interest.surfaceCoverImage} gifts-product-image`}
                           unoptimized={isDataUrl}
                           draggable={false}
                         />
-                      ) : (
-                        <div className={interest.imagePlaceholder} aria-hidden />
-                      )}
-                      {inCart && (
-                        <span className={interest.checkmark} aria-hidden>
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                    <div className={interest.meta}>
-                      <p className={interest.name} title={name}>
-                        {name}
-                      </p>
-                      <p className={interest.price}>฿{finalPrice.toLocaleString()}</p>
-                    </div>
+                      </span>
+                    ) : (
+                      <span className={interest.surfaceCoverPlaceholder} aria-hidden />
+                    )}
+                    {inCart && (
+                      <span className={interest.checkmark} aria-hidden>
+                        ✓
+                      </span>
+                    )}
+                    <span className={interest.surfaceStack}>
+                      <div className={interest.meta}>
+                        <p className={interest.name} title={name}>
+                          {clipGiftTileName(name)}
+                        </p>
+                        <p className={interest.price}>{priceLabel}</p>
+                      </div>
+                    </span>
                   </button>
                 </div>
               </div>

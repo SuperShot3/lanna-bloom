@@ -9,8 +9,8 @@ const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_ATTEMPTS = 5;
 
 const orderLookupStore = new Map<string, { count: number; resetAt: number }>();
-const ORDER_LOOKUP_WINDOW_MS = 60 * 1000; // 1 minute
-const ORDER_LOOKUP_MAX = 10;
+const ORDER_LOOKUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const ORDER_LOOKUP_MAX = 6;
 
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -59,15 +59,16 @@ export function clearAdminPasswordFailures(email: string): void {
   adminPasswordStore.delete(email.trim().toLowerCase());
 }
 
-export function checkOrderLookupRateLimit(ip: string): boolean {
+export function checkOrderLookupRateLimit(ip: string, scope = 'default'): boolean {
   const now = Date.now();
-  const entry = orderLookupStore.get(ip);
+  const key = `${ip}:${scope}`;
+  const entry = orderLookupStore.get(key);
   if (!entry) {
-    orderLookupStore.set(ip, { count: 1, resetAt: now + ORDER_LOOKUP_WINDOW_MS });
+    orderLookupStore.set(key, { count: 1, resetAt: now + ORDER_LOOKUP_WINDOW_MS });
     return true;
   }
   if (now > entry.resetAt) {
-    orderLookupStore.set(ip, { count: 1, resetAt: now + ORDER_LOOKUP_WINDOW_MS });
+    orderLookupStore.set(key, { count: 1, resetAt: now + ORDER_LOOKUP_WINDOW_MS });
     return true;
   }
   entry.count++;
