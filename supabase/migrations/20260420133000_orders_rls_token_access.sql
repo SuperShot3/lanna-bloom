@@ -70,10 +70,10 @@ CREATE POLICY "order_status_history_token_scoped_read"
 -- Adjacent sensitive/operational tables: enable RLS with no anon/auth policies.
 -- This keeps them private unless accessed by service-role trusted backend.
 -- -----------------------------------------------------------------------------
-ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.stripe_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.line_order_drafts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.line_integration_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.line_agent_payment_notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_notification_sent ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.stripe_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.line_order_drafts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.line_integration_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.line_agent_payment_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.order_notification_sent ENABLE ROW LEVEL SECURITY;

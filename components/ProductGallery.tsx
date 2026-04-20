@@ -11,7 +11,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function touchDistance(touchA: Touch, touchB: Touch): number {
+function touchDistance(
+  touchA: { clientX: number; clientY: number },
+  touchB: { clientX: number; clientY: number }
+): number {
   const dx = touchA.clientX - touchB.clientX;
   const dy = touchA.clientY - touchB.clientY;
   return Math.hypot(dx, dy);
@@ -59,6 +62,9 @@ export function ProductGallery({
   const tapRef = useRef<{ x: number; y: number } | null>(null);
   const panRef = useRef<{ x: number; y: number; baseX: number; baseY: number } | null>(null);
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
+  /** True while a pointer is down and Embla has scrolled (drag vs tap). */
+  const emblaDragDuringPointerRef = useRef(false);
+  const emblaPointerDownRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,11 +169,11 @@ export function ProductGallery({
 
   const openLightbox = useCallback(() => {
     if (!isTouchDevice) return;
-    if (emblaApi && !emblaApi.clickAllowed()) return;
+    if (emblaDragDuringPointerRef.current) return;
     setLightboxIndex(active);
     setIsLightboxOpen(true);
     resetLightboxTransform();
-  }, [active, emblaApi, isTouchDevice, resetLightboxTransform]);
+  }, [active, isTouchDevice, resetLightboxTransform]);
 
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -288,6 +294,28 @@ export function ProductGallery({
       emblaApi.off('settle', onSettle);
     };
   }, [emblaApi, setActive]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onPointerDown = () => {
+      emblaPointerDownRef.current = true;
+      emblaDragDuringPointerRef.current = false;
+    };
+    const onPointerUp = () => {
+      emblaPointerDownRef.current = false;
+    };
+    const onScroll = () => {
+      if (emblaPointerDownRef.current) emblaDragDuringPointerRef.current = true;
+    };
+    emblaApi.on('pointerDown', onPointerDown);
+    emblaApi.on('pointerUp', onPointerUp);
+    emblaApi.on('scroll', onScroll);
+    return () => {
+      emblaApi.off('pointerDown', onPointerDown);
+      emblaApi.off('pointerUp', onPointerUp);
+      emblaApi.off('scroll', onScroll);
+    };
+  }, [emblaApi]);
 
   useEffect(() => {
     if (emblaApi && isControlled && activeIndex !== undefined) {
