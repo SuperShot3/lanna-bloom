@@ -123,7 +123,11 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         canRefund={canRefund(role)}
       />
       <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
-      <OrderSummaryCard order={order} items={itemsWithCatalog} />
+      <OrderSummaryCard
+        order={order}
+        items={itemsWithCatalog}
+        customGreetingCard={customOrderDetails?.greetingCard}
+      />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
       <section className="admin-section">
         <h2 className="admin-section-title">Costs & profit</h2>

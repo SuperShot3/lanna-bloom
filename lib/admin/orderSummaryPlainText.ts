@@ -89,6 +89,87 @@ export function formatAmountNa(n: number | null | undefined): string {
   return `฿${Number(n).toLocaleString()}`;
 }
 
+/**
+ * Plain text for clipboard: card messages from line items plus optional custom-order greeting.
+ */
+export function buildClipboardCardText(
+  items: OrderSummaryItemRow[],
+  customGreetingCard?: string | null
+): string {
+  const withMsg = items.filter((i) => i.addOns?.cardMessage?.trim());
+  const fromItems: string[] = [];
+  items.forEach((item, i) => {
+    const msg = item.addOns?.cardMessage?.trim();
+    if (!msg) return;
+    if (withMsg.length > 1) {
+      const title = item.bouquet_title?.trim() || `Item ${i + 1}`;
+      fromItems.push(`${title}: ${msg}`);
+    } else {
+      fromItems.push(msg);
+    }
+  });
+  const g = customGreetingCard?.trim();
+  const blocks: string[] = [];
+  if (fromItems.length) {
+    blocks.push(fromItems.join('\n\n'));
+  }
+  if (g) {
+    blocks.push(fromItems.length > 0 ? `Custom order (message card):\n${g}` : g);
+  }
+  return blocks.join('\n\n---\n\n');
+}
+
+/**
+ * One block to paste to a driver on LINE/Messenger: time, place, pin, recipient, card text, order ref.
+ */
+export function buildDriverMessengerPlainText(
+  order: SupabaseOrderRow,
+  items: OrderSummaryItemRow[],
+  customGreetingCard?: string | null
+): string {
+  const mapsUrl = checkoutMapsUrl(order);
+  const rName = recipientNameDisplay(order);
+  const rPhone = recipientPhoneDisplay(order);
+  const surprise = surpriseDeliveryAdminLabel(order);
+  const cardBlock = buildClipboardCardText(items, customGreetingCard);
+
+  const datePart = order.delivery_date?.trim() ?? '';
+  const windowPart = order.delivery_window?.trim() ?? '';
+  const when = [datePart, windowPart].filter(Boolean).join(' · ') || 'N/A';
+
+  const lines: string[] = [];
+  lines.push(`Order: ${order.order_id}`);
+  lines.push('');
+  lines.push(`When: ${when}`);
+  if (order.district?.trim()) {
+    lines.push(`Area: ${order.district.trim()}`);
+  }
+  lines.push('');
+  lines.push('Address:');
+  lines.push(naText(order.address));
+  lines.push('');
+  if (mapsUrl) {
+    lines.push('Google Maps pin:');
+    lines.push(mapsUrl);
+    lines.push('');
+  }
+  lines.push('Recipient:');
+  lines.push(`Name: ${naText(rName)}`);
+  lines.push(`Phone: ${naText(rPhone)}`);
+  lines.push(`Surprise delivery: ${surprise}`);
+  lines.push('');
+  lines.push(`Sender / customer phone: ${naText(order.phone)}`);
+  lines.push('');
+  if (cardBlock.trim()) {
+    lines.push('Card message:');
+    lines.push(cardBlock);
+  } else {
+    lines.push('Card message: —');
+  }
+
+  return lines.join('\n');
+}
+
 function getWrappingLabel(opt: string | null | undefined): string {
   if (!opt) return 'N/A';
   const lower = String(opt).toLowerCase();

@@ -7,7 +7,7 @@
  */
 
 import { Resend } from 'resend';
-import { getOrderDetailsUrl, type Order } from '@/lib/orders';
+import { getBaseUrl, getOrderDetailsUrl, type Order } from '@/lib/orders';
 import { formatShopDateTime } from '@/lib/shopTime';
 
 /** Primary + CC addresses for order admin emails, deduped. */
@@ -54,7 +54,8 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
   const env = getEnv();
   if (!env) return;
 
-  const orderUrl = getOrderDetailsUrl(orderId);
+  const customerOrderUrl = getOrderDetailsUrl(orderId);
+  const adminOrderUrl = `${getBaseUrl()}/admin/orders/${encodeURIComponent(orderId)}`;
   const subject = `New order placed — ${orderId}`;
   const body = `A new order was created. Order ID: ${orderId}`;
   const html = `
@@ -63,12 +64,14 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
 <head><meta charset="utf-8"><title>${subject}</title></head>
 <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
   <p>${body}</p>
-  <p><a href="${escapeHtml(orderUrl)}" style="color: #967a4d; font-weight: 600;">View order details (opens full order page)</a></p>
-  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(orderUrl)}</p>
+  <p><a href="${escapeHtml(customerOrderUrl)}" style="color: #967a4d; font-weight: 600;">Customer order page</a></p>
+  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(customerOrderUrl)}</p>
+  <p><a href="${escapeHtml(adminOrderUrl)}" style="color: #967a4d; font-weight: 600;">Admin dashboard order page</a></p>
+  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(adminOrderUrl)}</p>
 </body>
 </html>
 `.trim();
-  const text = `${body}\n\nView order: ${orderUrl}`;
+  const text = `${body}\n\nCustomer order page: ${customerOrderUrl}\nAdmin dashboard order page: ${adminOrderUrl}`;
 
   const resend = new Resend(env.apiKey);
   const { error } = await resend.emails.send({
