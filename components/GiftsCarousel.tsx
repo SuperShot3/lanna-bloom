@@ -137,6 +137,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
                           fill
                           sizes="(max-width: 480px) 50vw, (max-width: 640px) 34vw, 26vw"
                           className={`${interest.surfaceCoverImage} gifts-product-image`}
+                          style={{ objectFit: 'contain', objectPosition: 'center center' }}
                           unoptimized={isDataUrl}
                           draggable={false}
                         />

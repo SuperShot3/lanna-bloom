@@ -8,8 +8,8 @@ Chiang Mai, Thailand (delivery area selection is based on Chiang Mai province di
 
 ## Main offerings
 - Bouquets (catalog-managed; product pages include gallery and size selection)
-- Gift add-ons: Gift Chocolates, Gift Vase, Teddy Bear
-- Message-based ordering support via LINE / WhatsApp / Telegram (pre-filled order message)
+- Gift add-ons: Teddy Bears
+- Website-based ordering and support via LINE / WhatsApp /
 
 ## Delivery
 - Customer selects a Chiang Mai district and a delivery date during checkout/cart flow
@@ -21,9 +21,7 @@ Chiang Mai, Thailand (delivery area selection is based on Chiang Mai province di
 - Delivery fees, discounts, seasonal pricing, and “same-day delivery” promises require confirmation
 
 ## Payments
-- Requires confirmation (payment methods are not stated as a customer-facing policy in the repo)
-- Requires confirmation (whether online payment is enabled for customers)
-- If asked about paying by card/bank transfer/cash, route to human or confirm current policy first
+- Stripe handle payments 
 
 ## Order flow
 - Browse catalog → choose bouquet and size → add to cart
@@ -31,9 +29,9 @@ Chiang Mai, Thailand (delivery area selection is based on Chiang Mai province di
 - Place order → receive a success page with a shareable order link plus messenger buttons (LINE / WhatsApp / Telegram) with a pre-filled order message
 
 ## Customization
-- Customers can choose bouquet size (S/M/L/XL) when available for the bouquet
-- Customers can add optional add-ons and include a card message (when supported in cart flow)
-- Do not assume availability, exact flower composition substitutions, special requests, or custom bouquet design without confirmation
+- Customers can choose bouquet size on website. 
+- Customers can add optional add-ons and include a card message
+
 
 ## Customer communication rules
 - Use only the business’s official channels/links in this repo for contact and reviews
@@ -42,10 +40,7 @@ Chiang Mai, Thailand (delivery area selection is based on Chiang Mai province di
 - Never promise delivery times/fees, same-day delivery, stock availability, or payment options unless confirmed
 - If details are missing (price, delivery fee, availability, payment method), ask for the order link/order ID or hand off for human confirmation
 
-## Escalation rules
-- Hand off to a human for: payment method questions, delivery fee quotes, same-day/urgent delivery, out-of-area delivery, cancellations/refunds, or complaints
-- Confirmation required for: availability, substitutions, delivery windows, delivery pricing, promotions, and any policy not explicitly documented
-- Must not answer directly: anything requiring personal data access (order status/payment) without an order link/order ID and authorized workflow
+
 
 ## Links
 - Main site (base URL): https://lannabloom.shop
@@ -56,8 +51,5 @@ Chiang Mai, Thailand (delivery area selection is based on Chiang Mai province di
 - Instagram: https://www.instagram.com/lannabloomchiangmai/
 - Google reviews: https://g.page/r/CclGzPBur8RbEBM (leave a review: https://g.page/r/CclGzPBur8RbEBM/review)
 
-## Boundaries
-- Never claim: exact delivery fees/times, same-day delivery, payment methods, refund policy, or availability without confirmation
-- Never invent: prices for specific bouquets/sizes, promotions, operating hours, address details, or service coverage beyond Chiang Mai districts
-- Never invent product URLs or slugs; if the slug is unknown, send the catalog link instead and ask which bouquet they mean
+
 
