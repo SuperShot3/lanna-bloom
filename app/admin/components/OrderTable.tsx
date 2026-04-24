@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
-import { formatOrderStatus, formatPaymentStatus } from '@/lib/orders/statusConstants';
+import { formatOrderStatus, formatPaymentStatus, normalizeOrderStatus } from '@/lib/orders/statusConstants';
 import { formatShopDateTime } from '@/lib/shopTime';
 
 interface OrderTableProps {
@@ -13,6 +13,19 @@ interface OrderTableProps {
 function formatAmount(n: number | null | undefined): string {
   if (n == null) return '—';
   return `฿${Number(n).toLocaleString()}`;
+}
+
+/** Orders still in the delivery pipeline (not terminal). */
+function isOpenPipelineStatus(status: string | null | undefined): boolean {
+  const n = normalizeOrderStatus(status);
+  return n !== 'DELIVERED' && n !== 'CANCELLED';
+}
+
+function statusBadgeClass(status: string | null | undefined): string {
+  const raw = (status ?? '').trim();
+  const slug = raw ? raw.toLowerCase().replace(/_/g, '-') : 'new';
+  const open = isOpenPipelineStatus(status);
+  return `admin-badge admin-badge-${slug}${open ? ' admin-badge-pipeline-open' : ''}`;
 }
 
 export function OrderTable({ orders, returnTo }: OrderTableProps) {
@@ -42,7 +55,10 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.order_id}>
+              <tr
+                key={o.order_id}
+                className={isOpenPipelineStatus(o.order_status) ? 'admin-order-row-pipeline' : undefined}
+              >
                 <td>{formatShopDateTime(o.created_at)}</td>
                 <td>
                   <Link href={detailHref(o.order_id)} className="admin-link">
@@ -50,7 +66,7 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
                   </Link>
                 </td>
                 <td>
-                  <span className={`admin-badge admin-badge-${(o.order_status ?? '').toLowerCase().replace(/_/g, '-')}`}>
+                  <span className={statusBadgeClass(o.order_status)}>
                     {formatOrderStatus(o.order_status)}
                   </span>
                 </td>
@@ -78,10 +94,14 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
       {/* Mobile cards */}
       <div className="admin-orders-cards">
         {orders.map((o) => (
-          <Link key={o.order_id} href={detailHref(o.order_id)} className="admin-order-card">
+          <Link
+            key={o.order_id}
+            href={detailHref(o.order_id)}
+            className={`admin-order-card${isOpenPipelineStatus(o.order_status) ? ' admin-order-card-pipeline' : ''}`}
+          >
             <div className="admin-order-card-header">
               <span className="admin-order-card-id">{o.order_id}</span>
-              <span className={`admin-badge admin-badge-${(o.order_status ?? '').toLowerCase().replace(/_/g, '-')}`}>
+              <span className={statusBadgeClass(o.order_status)}>
                 {formatOrderStatus(o.order_status)}
               </span>
             </div>

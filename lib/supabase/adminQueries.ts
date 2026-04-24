@@ -151,11 +151,8 @@ export async function getOrders(
       query = query.lte('delivery_date', filters.deliveryDateTo);
     }
 
-    // Pending deliveries first, then earliest delivery_date, then newest created.
-    query = query
-      .order('admin_needs_delivery_sort', { ascending: false })
-      .order('delivery_date', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: false });
+    // Newest orders first (creation time).
+    query = query.order('created_at', { ascending: false });
 
     const offset = (pagination.page - 1) * pagination.pageSize;
     const { data, count, error } = await query
@@ -264,8 +261,6 @@ export async function getOrdersForExport(
     }
 
     const { data, error } = await query
-      .order('admin_needs_delivery_sort', { ascending: false })
-      .order('delivery_date', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(limit);
 

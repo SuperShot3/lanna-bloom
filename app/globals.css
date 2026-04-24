@@ -3905,6 +3905,10 @@ select::-ms-expand { display: none; }
 .admin-detail {
   padding: 24px 0;
 }
+.admin-order-remove-footer {
+  margin-top: 8px;
+  border-color: color-mix(in srgb, #c53030 22%, var(--border));
+}
 .admin-section {
   margin-bottom: 28px;
   padding: 20px;
@@ -3951,52 +3955,27 @@ select::-ms-expand { display: none; }
 .admin-summary-card-header .admin-section-title {
   margin: 0;
 }
+.admin-summary-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
 .admin-summary-copy-btn {
   flex-shrink: 0;
 }
-.admin-summary-quick-copy {
-  margin-bottom: 20px;
-  padding: 14px 16px;
-  background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--accent-border) 35%, var(--border));
-  border-radius: var(--radius-sm);
+.admin-summary-header-actions .admin-summary-copy-btn,
+.admin-summary-header-actions .admin-summary-copy-driver {
+  flex-shrink: 0;
 }
-.admin-summary-quick-copy-title {
-  margin: 0 0 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
+/* Left / secondary: smaller than Copy all */
+.admin-summary-header-actions .admin-summary-copy-driver.admin-copy-text-btn {
+  font-size: 0.8rem;
+  padding: 6px 12px;
 }
-.admin-summary-quick-copy-hint {
-  margin: 0 0 12px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-.admin-summary-quick-copy-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.admin-summary-quick-copy-group {
-  margin-bottom: 4px;
-}
-.admin-summary-quick-copy-group--driver {
-  padding: 12px 14px;
-  margin: 0 0 14px;
-  background: color-mix(in srgb, var(--surface) 88%, var(--accent-soft));
-  border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--accent-border) 28%, var(--border));
-}
-.admin-summary-quick-copy-subtitle {
-  margin: 0 0 6px;
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-.admin-summary-quick-copy-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 14px 0 16px;
-}
+/* Right / primary: uses default .admin-btn sizing (larger than .admin-summary-copy-driver) */
 .admin-copy-text-btn {
   font-size: 0.82rem;
   padding: 6px 12px;
@@ -4065,6 +4044,34 @@ a.admin-summary-key-value {
   color: var(--text-muted);
   font-size: 0.85rem;
   margin-right: 4px;
+}
+.admin-summary-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 0 0 8px;
+}
+.admin-summary-field-row:last-child {
+  margin-bottom: 0;
+}
+.admin-summary-field-main {
+  flex: 1;
+  min-width: min(12rem, 100%);
+  margin: 0;
+}
+.admin-summary-recipient-line {
+  margin: 0 0 6px;
+}
+.admin-summary-recipient-line:last-child {
+  margin-bottom: 0;
+}
+.admin-copy-text-btn--inline {
+  flex-shrink: 0;
+  font-size: 0.8rem !important;
+  padding: 5px 10px !important;
+  margin-top: 1px;
 }
 .admin-items-list {
   list-style: none;
@@ -5438,10 +5445,30 @@ a.admin-summary-key-value {
 .admin-shell .admin-badge-accepted,
 .admin-shell .admin-badge-preparing,
 .admin-shell .admin-badge-ready_for_dispatch,
-.admin-shell .admin-badge-out_for_delivery {
+.admin-shell .admin-badge-ready-to-dispatch,
+.admin-shell .admin-badge-out_for_delivery,
+.admin-shell .admin-badge-out-for-delivery,
+.admin-shell .admin-badge-dispatched,
+.admin-shell .admin-badge-processing {
   background: rgba(197, 160, 89, 0.15);
   color: #9A7B4F;
   font-weight: 700;
+  border-radius: 9999px;
+  padding: 4px 10px;
+}
+/* Open pipeline (not delivered / cancelled): stronger than delivered-green, draws the eye */
+.admin-shell .admin-badge-pipeline-open {
+  background: rgba(251, 146, 60, 0.28) !important;
+  color: #9a3412 !important;
+  font-weight: 800 !important;
+  box-shadow:
+    0 0 0 1px rgba(234, 88, 12, 0.65),
+    0 1px 2px rgba(234, 88, 12, 0.2);
+}
+.admin-shell .admin-badge-cancelled {
+  background: rgba(107, 114, 128, 0.18);
+  color: #4b5563;
+  font-weight: 600;
   border-radius: 9999px;
   padding: 4px 10px;
 }
@@ -5484,6 +5511,13 @@ a.admin-summary-key-value {
 .admin-orders-table tbody tr:hover td {
   background: rgba(26, 60, 52, 0.02);
 }
+.admin-orders-table tbody tr.admin-order-row-pipeline td {
+  background: rgba(251, 146, 60, 0.09);
+  box-shadow: inset 4px 0 0 #ea580c;
+}
+.admin-orders-table tbody tr.admin-order-row-pipeline:hover td {
+  background: rgba(251, 146, 60, 0.14);
+}
 .admin-orders-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -5517,6 +5551,18 @@ a.admin-summary-key-value {
   box-shadow: var(--admin-shadow-lg);
   border-color: var(--admin-accent);
   transform: translateY(-2px);
+}
+.admin-order-card.admin-order-card-pipeline {
+  border-left: 4px solid #ea580c;
+  background: linear-gradient(
+    90deg,
+    rgba(251, 146, 60, 0.12) 0%,
+    var(--admin-surface) 14%
+  );
+  box-shadow: var(--admin-shadow-sm), 0 0 0 1px rgba(234, 88, 12, 0.12);
+}
+.admin-order-card.admin-order-card-pipeline:hover {
+  border-color: rgba(234, 88, 12, 0.45);
 }
 .admin-order-card-header {
   display: flex;

@@ -109,11 +109,6 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-outline">
             View public page
           </Link>
-          <RemoveOrderButton
-            orderId={order.order_id}
-            returnTo={backHref}
-            canEdit={canChangeStatus(role)}
-          />
         </div>
       </header>
 
@@ -169,6 +164,16 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {canChangeStatus(role) && (
+        <section className="admin-section admin-order-remove-footer" aria-label="Remove order">
+          <h2 className="admin-section-title">Remove order</h2>
+          <p className="admin-hint" style={{ marginBottom: 12 }}>
+            Delete this order from the system after delivery. This cannot be undone.
+          </p>
+          <RemoveOrderButton orderId={order.order_id} returnTo={backHref} canEdit />
         </section>
       )}
     </div>

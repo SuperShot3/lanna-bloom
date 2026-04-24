@@ -21,7 +21,7 @@ export function OrderSummaryCopyAllButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className="admin-btn admin-btn-outline admin-summary-copy-btn"
+      className="admin-btn admin-btn-outline admin-summary-copy-btn admin-summary-copy-all"
       onClick={onCopy}
       aria-label="Copy full order summary to clipboard"
     >

@@ -64,10 +64,8 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
 <head><meta charset="utf-8"><title>${subject}</title></head>
 <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
   <p>${body}</p>
-  <p><a href="${escapeHtml(customerOrderUrl)}" style="color: #967a4d; font-weight: 600;">Customer order page</a></p>
-  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(customerOrderUrl)}</p>
   <p><a href="${escapeHtml(adminOrderUrl)}" style="color: #967a4d; font-weight: 600;">Admin dashboard order page</a></p>
-  <p style="font-size: 0.85rem; color: #666; word-break: break-all;">${escapeHtml(adminOrderUrl)}</p>
+  <p><a href="${escapeHtml(customerOrderUrl)}" style="color: #967a4d; font-weight: 600;">Customer order page</a></p>
 </body>
 </html>
 `.trim();
