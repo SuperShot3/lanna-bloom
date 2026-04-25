@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Locale, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -31,6 +31,8 @@ export function Header({
   hasPrimeHourBanner?: boolean;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
@@ -41,18 +43,32 @@ export function Header({
   const infoHref = `/${lang}/info`;
   const trackOrderHref = `/${lang}/track-order`;
   const customOrderHref = `/${lang}/custom-order`;
+  const searchHref = useMemo(() => {
+    if (basePath === '/catalog') {
+      const qs = new URLSearchParams(searchParams.toString());
+      qs.set('openSearch', '1');
+      const query = qs.toString();
+      return query ? `${catalogHref}?${query}` : catalogHref;
+    }
+    return `${catalogHref}?openSearch=1`;
+  }, [basePath, catalogHref, searchParams]);
   const t = translations[lang].nav;
   const { count: cartCount, lastAddEventId } = useCart();
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
   const isHomePage = pathname === homeHref || pathname === `${homeHref}/`;
+  const isCatalogPage = basePath === '/catalog';
+  const headerSearchOpen = isCatalogPage && searchParams.get('openSearch') === '1';
+  const headerSearchQuery = searchParams.get('q') ?? '';
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
+  const [searchDraft, setSearchDraft] = useState(headerSearchQuery);
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
 
   // Pulsation stays on the main (home) page until the user opens the cart.
   const [cartPulseAddId, setCartPulseAddId] = useState(0);
@@ -96,6 +112,26 @@ export function Header({
   }, [menuOpen]);
 
   useEffect(() => {
+    setSearchDraft(headerSearchQuery);
+  }, [headerSearchQuery]);
+
+  useEffect(() => {
+    if (!headerSearchOpen) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (searchPanelRef.current?.contains(target)) return;
+      closeHeaderSearch(true);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+    };
+  }, [headerSearchOpen, closeHeaderSearch]);
+
+  useEffect(() => {
     if (lastAddEventId === 0) return;
     if (isCartPage) return;
     // Keep pulsing until cart is opened.
@@ -115,6 +151,29 @@ export function Header({
   const glassNavClass = isScrolled
     ? 'bg-[rgba(253,252,248,0.9)] backdrop-blur-xl border-stone-200'
     : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
+
+  const updateHeaderSearch = (value: string) => {
+    const qs = new URLSearchParams(searchParams.toString());
+    qs.set('openSearch', '1');
+    const normalized = value.trim();
+    if (normalized.length > 0) qs.set('q', value);
+    else qs.delete('q');
+    const next = qs.toString();
+    router.replace(next ? `${catalogHref}?${next}` : catalogHref);
+  };
+
+  const closeHeaderSearch = (keepQuery = true) => {
+    const qs = new URLSearchParams(searchParams.toString());
+    qs.delete('openSearch');
+    if (keepQuery) {
+      if (searchDraft.length > 0) qs.set('q', searchDraft);
+      else qs.delete('q');
+    } else {
+      qs.delete('q');
+    }
+    const next = qs.toString();
+    router.replace(next ? `${catalogHref}?${next}` : catalogHref);
+  };
 
   return (
     <>
@@ -183,17 +242,65 @@ export function Header({
             )}
           </div>
           <div className="flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
-            <Link
-              href={catalogHref}
-              className="flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 px-0 text-sm font-medium text-[#1A3C34] transition-all hover:bg-stone-50 md:min-w-0 md:px-4"
-              aria-label={t.search}
-              title={t.search}
-            >
-              <span className="material-symbols-outlined text-2xl leading-none md:text-xl">
-                search
-              </span>
-              <span className="hidden md:inline">{t.search}</span>
-            </Link>
+            {headerSearchOpen ? (
+              <div
+                ref={searchPanelRef}
+                className="header-search-panel flex h-11 items-center gap-1 rounded-full border border-stone-200 bg-white pl-2 pr-1 min-w-[210px] sm:min-w-[260px] md:min-w-[320px]"
+              >
+                <span className="material-symbols-outlined text-xl leading-none text-stone-500" aria-hidden>
+                  search
+                </span>
+                <input
+                  type="search"
+                  value={searchDraft}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setSearchDraft(next);
+                    updateHeaderSearch(next);
+                  }}
+                  placeholder={translations[lang].catalog.searchPlaceholder}
+                  aria-label={translations[lang].catalog.searchPlaceholder}
+                  className="h-9 flex-1 min-w-0 border-0 bg-transparent text-sm text-[#1A3C34] outline-none"
+                  autoFocus
+                />
+                {searchDraft.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchDraft('');
+                      updateHeaderSearch('');
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
+                    aria-label={translations[lang].catalog.clearFilters}
+                  >
+                    <span className="material-symbols-outlined text-lg leading-none">close</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => closeHeaderSearch(true)}
+                  className="flex h-9 items-center justify-center rounded-full px-2 text-xs font-semibold text-[#1A3C34] hover:bg-stone-100"
+                >
+                  {translations[lang].catalog.close}
+                </button>
+              </div>
+            ) : (
+              <Link
+                href={searchHref}
+                className="header-search-trigger flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 px-0 text-sm font-medium text-[#1A3C34] transition-all hover:bg-stone-50 md:min-w-0 md:px-4"
+                aria-label={t.search}
+                title={t.search}
+              >
+                <span className="material-symbols-outlined text-2xl leading-none md:text-xl">
+                  search
+                </span>
+                <span
+                  className={`header-search-trigger-label ${headerSearchQuery ? 'header-search-trigger-label--query' : ''}`}
+                >
+                  {headerSearchQuery || t.search}
+                </span>
+              </Link>
+            )}
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
             <Link
               href={cartHref}
@@ -348,6 +455,58 @@ export function Header({
           </div>
         </div>
       )}
+      <style jsx>{`
+        .header-search-trigger,
+        .header-search-panel {
+          will-change: transform, opacity;
+          transition:
+            width 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 220ms ease,
+            transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 220ms ease;
+        }
+        .header-search-panel {
+          animation: headerSearchExpand 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .header-search-trigger-label {
+          display: none;
+        }
+        /* Hide browser-native search clear icon so only our custom clear button is shown. */
+        :global(.header-search-panel input[type='search']::-webkit-search-cancel-button),
+        :global(.header-search-panel input[type='search']::-webkit-search-decoration),
+        :global(.header-search-panel input[type='search']::-webkit-search-results-button),
+        :global(.header-search-panel input[type='search']::-webkit-search-results-decoration) {
+          -webkit-appearance: none;
+          appearance: none;
+          display: none;
+        }
+        .header-search-trigger-label--query {
+          display: inline-block;
+          max-width: 16ch;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+          .header-search-trigger-label {
+            display: inline-block;
+            max-width: 18ch;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+        @keyframes headerSearchExpand {
+          from {
+            opacity: 0;
+            transform: translateX(8px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+      `}</style>
     </>
   );
 }

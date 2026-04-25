@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BouquetCard } from '@/components/BouquetCard';
@@ -72,6 +72,7 @@ export function CatalogWithFilters({
 }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
+  const searchParams = useSearchParams();
   const { isOpen: mobileFilterOpen, setOpen: setMobileFilterOpen } = useFlowerFilterSheetOpen();
   const t = translations[lang].catalog;
   const activeCount = countActiveCatalogFilters(filterParams);
@@ -80,6 +81,31 @@ export function CatalogWithFilters({
   const items = bouquets.length > 0 ? bouquets : products;
   const isProductsMode = !!(filterParams.topCategory && filterParams.topCategory !== 'flowers');
   const showFlowerFilters = !isProductsMode;
+  const isNameSearchOpen = searchParams.get('openSearch') === '1';
+  const nameQuery = searchParams.get('q') ?? '';
+  const normalizedQuery = nameQuery.trim().toLocaleLowerCase();
+  const hasNameQuery = normalizedQuery.length > 0;
+
+  const filteredBouquets = useMemo(() => {
+    if (!hasNameQuery || bouquets.length === 0) return bouquets;
+    return bouquets.filter((bouquet) => {
+      const localizedName = (lang === 'th' ? bouquet.nameTh : bouquet.nameEn) ?? '';
+      return localizedName.toLocaleLowerCase().includes(normalizedQuery);
+    });
+  }, [bouquets, hasNameQuery, lang, normalizedQuery]);
+
+  const filteredProducts = useMemo(() => {
+    if (!hasNameQuery || products.length === 0) return products;
+    return products.filter((product) => {
+      const localizedName = (lang === 'th' && product.nameTh ? product.nameTh : product.nameEn) ?? '';
+      return localizedName.toLocaleLowerCase().includes(normalizedQuery);
+    });
+  }, [products, hasNameQuery, lang, normalizedQuery]);
+
+  const visibleBouquets = hasNameQuery ? filteredBouquets : bouquets;
+  const visibleProducts = hasNameQuery ? filteredProducts : products;
+  const visibleItems = visibleBouquets.length > 0 ? visibleBouquets : visibleProducts;
+  const hasSearchNoMatches = hasNameQuery && items.length > 0 && visibleItems.length === 0;
 
   useEffect(() => {
     if (bouquets.length > 0) {
@@ -170,6 +196,13 @@ export function CatalogWithFilters({
     [filterParams, router, pathname]
   );
 
+  const clearNameSearch = useCallback(() => {
+    const qs = new URLSearchParams(searchParams.toString());
+    qs.delete('q');
+    const next = qs.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  }, [pathname, router, searchParams]);
+
   return (
     <div className="catalog-with-filters">
       <div className="mb-6">
@@ -214,9 +247,9 @@ export function CatalogWithFilters({
             <div className="catalog-page-header">
               <div className="catalog-page-title">
                 <h1 className="catalog-title">{title || t.title}</h1>
-                {items.length > 0 && (
+                {visibleItems.length > 0 && (
                   <span className="catalog-result-count">
-                    {t.resultCountAvailable.replace('{count}', String(items.length))}
+                    {t.resultCountAvailable.replace('{count}', String(visibleItems.length))}
                   </span>
                 )}
               </div>
@@ -225,9 +258,20 @@ export function CatalogWithFilters({
               )}
             </div>
           )}
-          {items.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <div className="catalog-empty">
-              {isProductsMode && !hasNarrowingBeyondTopCategory ? (
+              {hasSearchNoMatches ? (
+                <>
+                  <p className="catalog-empty-text">{t.searchNoMatches}</p>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-[#C5A059] text-[#1A3C34] font-bold text-sm tracking-wide shadow-md hover:bg-[#b8913e] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150"
+                    onClick={clearNameSearch}
+                  >
+                    {t.clearFilters}
+                  </button>
+                </>
+              ) : isProductsMode && !hasNarrowingBeyondTopCategory ? (
                 <>
                   <div className="catalog-empty-visual" aria-hidden>
                     <Image
@@ -269,11 +313,11 @@ export function CatalogWithFilters({
           ) : (
             <>
               <div className="catalog-items-grid">
-                {bouquets.length > 0
-                  ? bouquets.map((bouquet) => (
+                {visibleBouquets.length > 0
+                  ? visibleBouquets.map((bouquet) => (
                       <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
                     ))
-                  : products.map((product) => (
+                  : visibleProducts.map((product) => (
                       <ProductCard key={product.id} product={product} lang={lang} />
                     ))}
               </div>
@@ -391,6 +435,13 @@ export function CatalogWithFilters({
         @media (min-width: 640px) {
           .catalog-items-grid {
             gap: 20px;
+          }
+        }
+        @media (max-width: 639px) {
+          .catalog-page-title {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 4px;
           }
         }
         @media (min-width: 1024px) {
