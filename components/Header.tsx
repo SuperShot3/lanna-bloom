@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -115,6 +115,19 @@ export function Header({
     setSearchDraft(headerSearchQuery);
   }, [headerSearchQuery]);
 
+  const closeHeaderSearch = useCallback((keepQuery = true) => {
+    const qs = new URLSearchParams(searchParams.toString());
+    qs.delete('openSearch');
+    if (keepQuery) {
+      if (searchDraft.length > 0) qs.set('q', searchDraft);
+      else qs.delete('q');
+    } else {
+      qs.delete('q');
+    }
+    const next = qs.toString();
+    router.replace(next ? `${catalogHref}?${next}` : catalogHref);
+  }, [catalogHref, router, searchDraft, searchParams]);
+
   useEffect(() => {
     if (!headerSearchOpen) return;
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
@@ -158,19 +171,6 @@ export function Header({
     const normalized = value.trim();
     if (normalized.length > 0) qs.set('q', value);
     else qs.delete('q');
-    const next = qs.toString();
-    router.replace(next ? `${catalogHref}?${next}` : catalogHref);
-  };
-
-  const closeHeaderSearch = (keepQuery = true) => {
-    const qs = new URLSearchParams(searchParams.toString());
-    qs.delete('openSearch');
-    if (keepQuery) {
-      if (searchDraft.length > 0) qs.set('q', searchDraft);
-      else qs.delete('q');
-    } else {
-      qs.delete('q');
-    }
     const next = qs.toString();
     router.replace(next ? `${catalogHref}?${next}` : catalogHref);
   };
