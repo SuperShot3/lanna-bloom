@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -31,8 +31,6 @@ export function Header({
   hasPrimeHourBanner?: boolean;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
   const homeHref = `/${lang}`;
   const catalogHref = `/${lang}/catalog`;
@@ -43,32 +41,18 @@ export function Header({
   const infoHref = `/${lang}/info`;
   const trackOrderHref = `/${lang}/track-order`;
   const customOrderHref = `/${lang}/custom-order`;
-  const searchHref = useMemo(() => {
-    if (basePath === '/catalog') {
-      const qs = new URLSearchParams(searchParams.toString());
-      qs.set('openSearch', '1');
-      const query = qs.toString();
-      return query ? `${catalogHref}?${query}` : catalogHref;
-    }
-    return `${catalogHref}?openSearch=1`;
-  }, [basePath, catalogHref, searchParams]);
   const t = translations[lang].nav;
   const { count: cartCount, lastAddEventId } = useCart();
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
   const isHomePage = pathname === homeHref || pathname === `${homeHref}/`;
-  const isCatalogPage = basePath === '/catalog';
-  const headerSearchOpen = isCatalogPage && searchParams.get('openSearch') === '1';
-  const headerSearchQuery = searchParams.get('q') ?? '';
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
-  const [searchDraft, setSearchDraft] = useState(headerSearchQuery);
   const menuRef = useRef<HTMLDivElement>(null);
-  const searchPanelRef = useRef<HTMLDivElement>(null);
 
   // Pulsation stays on the main (home) page until the user opens the cart.
   const [cartPulseAddId, setCartPulseAddId] = useState(0);
@@ -112,39 +96,6 @@ export function Header({
   }, [menuOpen]);
 
   useEffect(() => {
-    setSearchDraft(headerSearchQuery);
-  }, [headerSearchQuery]);
-
-  const closeHeaderSearch = useCallback((keepQuery = true) => {
-    const qs = new URLSearchParams(searchParams.toString());
-    qs.delete('openSearch');
-    if (keepQuery) {
-      if (searchDraft.length > 0) qs.set('q', searchDraft);
-      else qs.delete('q');
-    } else {
-      qs.delete('q');
-    }
-    const next = qs.toString();
-    router.replace(next ? `${catalogHref}?${next}` : catalogHref);
-  }, [catalogHref, router, searchDraft, searchParams]);
-
-  useEffect(() => {
-    if (!headerSearchOpen) return;
-    const onPointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (searchPanelRef.current?.contains(target)) return;
-      closeHeaderSearch(true);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('touchstart', onPointerDown, { passive: true });
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('touchstart', onPointerDown);
-    };
-  }, [headerSearchOpen, closeHeaderSearch]);
-
-  useEffect(() => {
     if (lastAddEventId === 0) return;
     if (isCartPage) return;
     // Keep pulsing until cart is opened.
@@ -164,16 +115,6 @@ export function Header({
   const glassNavClass = isScrolled
     ? 'bg-[rgba(253,252,248,0.9)] backdrop-blur-xl border-stone-200'
     : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
-
-  const updateHeaderSearch = (value: string) => {
-    const qs = new URLSearchParams(searchParams.toString());
-    qs.set('openSearch', '1');
-    const normalized = value.trim();
-    if (normalized.length > 0) qs.set('q', value);
-    else qs.delete('q');
-    const next = qs.toString();
-    router.replace(next ? `${catalogHref}?${next}` : catalogHref);
-  };
 
   return (
     <>
@@ -242,65 +183,21 @@ export function Header({
             )}
           </div>
           <div className="flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
-            {headerSearchOpen ? (
-              <div
-                ref={searchPanelRef}
-                className="header-search-panel flex h-11 items-center gap-1 rounded-full border border-stone-200 bg-white pl-2 pr-1 min-w-[210px] sm:min-w-[260px] md:min-w-[320px]"
-              >
-                <span className="material-symbols-outlined text-xl leading-none text-stone-500" aria-hidden>
-                  search
-                </span>
-                <input
-                  type="search"
-                  value={searchDraft}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setSearchDraft(next);
-                    updateHeaderSearch(next);
-                  }}
-                  placeholder={translations[lang].catalog.searchPlaceholder}
-                  aria-label={translations[lang].catalog.searchPlaceholder}
-                  className="h-9 flex-1 min-w-0 border-0 bg-transparent text-sm text-[#1A3C34] outline-none"
-                  autoFocus
+            <Suspense
+              fallback={
+                <HeaderSearchLink
+                  href={`${catalogHref}?openSearch=1`}
+                  label={t.search}
+                  title={t.search}
                 />
-                {searchDraft.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchDraft('');
-                      updateHeaderSearch('');
-                    }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
-                    aria-label={translations[lang].catalog.clearFilters}
-                  >
-                    <span className="material-symbols-outlined text-lg leading-none">close</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => closeHeaderSearch(true)}
-                  className="flex h-9 items-center justify-center rounded-full px-2 text-xs font-semibold text-[#1A3C34] hover:bg-stone-100"
-                >
-                  {translations[lang].catalog.close}
-                </button>
-              </div>
-            ) : (
-              <Link
-                href={searchHref}
-                className="header-search-trigger flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 px-0 text-sm font-medium text-[#1A3C34] transition-all hover:bg-stone-50 md:min-w-0 md:px-4"
-                aria-label={t.search}
-                title={t.search}
-              >
-                <span className="material-symbols-outlined text-2xl leading-none md:text-xl">
-                  search
-                </span>
-                <span
-                  className={`header-search-trigger-label ${headerSearchQuery ? 'header-search-trigger-label--query' : ''}`}
-                >
-                  {headerSearchQuery || t.search}
-                </span>
-              </Link>
-            )}
+              }
+            >
+              <HeaderSearchControl
+                lang={lang}
+                basePath={basePath}
+                catalogHref={catalogHref}
+              />
+            </Suspense>
             <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
             <Link
               href={cartHref}
@@ -455,7 +352,7 @@ export function Header({
           </div>
         </div>
       )}
-      <style jsx>{`
+      <style jsx global>{`
         .header-search-trigger,
         .header-search-panel {
           will-change: transform, opacity;
@@ -508,5 +405,168 @@ export function Header({
         }
       `}</style>
     </>
+  );
+}
+
+function HeaderSearchLink({
+  href,
+  label,
+  title,
+  query,
+}: {
+  href: string;
+  label: string;
+  title: string;
+  query?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="header-search-trigger flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 px-0 text-sm font-medium text-[#1A3C34] transition-all hover:bg-stone-50 md:min-w-0 md:px-4"
+      aria-label={label}
+      title={title}
+    >
+      <span className="material-symbols-outlined text-2xl leading-none md:text-xl">
+        search
+      </span>
+      <span className={`header-search-trigger-label ${query ? 'header-search-trigger-label--query' : ''}`}>
+        {query || label}
+      </span>
+    </Link>
+  );
+}
+
+function HeaderSearchControl({
+  lang,
+  basePath,
+  catalogHref,
+}: {
+  lang: Locale;
+  basePath: string;
+  catalogHref: string;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams?.toString() ?? '';
+  const isCatalogPage = basePath === '/catalog';
+  const headerSearchOpen = isCatalogPage && searchParams?.get('openSearch') === '1';
+  const headerSearchQuery = searchParams?.get('q') ?? '';
+  const [searchDraft, setSearchDraft] = useState(headerSearchQuery);
+  const searchPanelRef = useRef<HTMLDivElement>(null);
+  const tNav = translations[lang].nav;
+  const tCatalog = translations[lang].catalog;
+
+  const searchHref = useMemo(() => {
+    if (isCatalogPage) {
+      const qs = new URLSearchParams(searchParamsString);
+      qs.set('openSearch', '1');
+      const query = qs.toString();
+      return query ? `${catalogHref}?${query}` : catalogHref;
+    }
+    return `${catalogHref}?openSearch=1`;
+  }, [catalogHref, isCatalogPage, searchParamsString]);
+
+  useEffect(() => {
+    setSearchDraft(headerSearchQuery);
+  }, [headerSearchQuery]);
+
+  const updateHeaderSearch = useCallback(
+    (value: string) => {
+      const qs = new URLSearchParams(searchParamsString);
+      qs.set('openSearch', '1');
+      const normalized = value.trim();
+      if (normalized.length > 0) qs.set('q', value);
+      else qs.delete('q');
+      const next = qs.toString();
+      router.replace(next ? `${catalogHref}?${next}` : catalogHref);
+    },
+    [catalogHref, router, searchParamsString]
+  );
+
+  const closeHeaderSearch = useCallback(
+    (keepQuery = true) => {
+      const qs = new URLSearchParams(searchParamsString);
+      qs.delete('openSearch');
+      if (keepQuery) {
+        if (searchDraft.length > 0) qs.set('q', searchDraft);
+        else qs.delete('q');
+      } else {
+        qs.delete('q');
+      }
+      const next = qs.toString();
+      router.replace(next ? `${catalogHref}?${next}` : catalogHref);
+    },
+    [catalogHref, router, searchDraft, searchParamsString]
+  );
+
+  useEffect(() => {
+    if (!headerSearchOpen) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (searchPanelRef.current?.contains(target)) return;
+      closeHeaderSearch(true);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+    };
+  }, [headerSearchOpen, closeHeaderSearch]);
+
+  if (!headerSearchOpen) {
+    return (
+      <HeaderSearchLink
+        href={searchHref}
+        label={tNav.search}
+        title={tNav.search}
+        query={headerSearchQuery}
+      />
+    );
+  }
+
+  return (
+    <div
+      ref={searchPanelRef}
+      className="header-search-panel flex h-11 items-center gap-1 rounded-full border border-stone-200 bg-white pl-2 pr-1 min-w-[210px] sm:min-w-[260px] md:min-w-[320px]"
+    >
+      <span className="material-symbols-outlined text-xl leading-none text-stone-500" aria-hidden>
+        search
+      </span>
+      <input
+        type="search"
+        value={searchDraft}
+        onChange={(e) => {
+          const next = e.target.value;
+          setSearchDraft(next);
+          updateHeaderSearch(next);
+        }}
+        placeholder={tCatalog.searchPlaceholder}
+        aria-label={tCatalog.searchPlaceholder}
+        className="h-9 flex-1 min-w-0 border-0 bg-transparent text-sm text-[#1A3C34] outline-none"
+        autoFocus
+      />
+      {searchDraft.length > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setSearchDraft('');
+            updateHeaderSearch('');
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
+          aria-label={tCatalog.clearFilters}
+        >
+          <span className="material-symbols-outlined text-lg leading-none">close</span>
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => closeHeaderSearch(true)}
+        className="flex h-9 items-center justify-center rounded-full px-2 text-xs font-semibold text-[#1A3C34] hover:bg-stone-100"
+      >
+        {tCatalog.close}
+      </button>
+    </div>
   );
 }

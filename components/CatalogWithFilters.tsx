@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BouquetCard } from '@/components/BouquetCard';
@@ -41,6 +41,8 @@ export interface CatalogWithFiltersProps {
   description?: string;
   /** Facet counts for flower types (unfiltered catalog) */
   flowerTypeCounts?: Record<string, number>;
+  /** Current lightweight name-search query from URL (?q=...). */
+  nameSearchQuery?: string;
 }
 
 const LIST_NAME_CATALOG = 'catalog';
@@ -69,10 +71,10 @@ export function CatalogWithFilters({
   title,
   description,
   flowerTypeCounts,
+  nameSearchQuery = '',
 }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
-  const searchParams = useSearchParams();
   const { isOpen: mobileFilterOpen, setOpen: setMobileFilterOpen } = useFlowerFilterSheetOpen();
   const t = translations[lang].catalog;
   const activeCount = countActiveCatalogFilters(filterParams);
@@ -81,8 +83,7 @@ export function CatalogWithFilters({
   const items = bouquets.length > 0 ? bouquets : products;
   const isProductsMode = !!(filterParams.topCategory && filterParams.topCategory !== 'flowers');
   const showFlowerFilters = !isProductsMode;
-  const isNameSearchOpen = searchParams.get('openSearch') === '1';
-  const nameQuery = searchParams.get('q') ?? '';
+  const nameQuery = nameSearchQuery;
   const normalizedQuery = nameQuery.trim().toLocaleLowerCase();
   const hasNameQuery = normalizedQuery.length > 0;
 
@@ -197,11 +198,11 @@ export function CatalogWithFilters({
   );
 
   const clearNameSearch = useCallback(() => {
-    const qs = new URLSearchParams(searchParams.toString());
+    const qs = new URLSearchParams(window.location.search);
     qs.delete('q');
     const next = qs.toString();
     router.replace(next ? `${pathname}?${next}` : pathname);
-  }, [pathname, router, searchParams]);
+  }, [pathname, router]);
 
   return (
     <div className="catalog-with-filters">

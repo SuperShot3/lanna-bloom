@@ -35,6 +35,10 @@ export default async function CatalogPage({
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
   const filterParams = parseCatalogSearchParams(searchParams);
+  const nameSearchQueryParam = searchParams.q;
+  const nameSearchQuery = Array.isArray(nameSearchQueryParam)
+    ? nameSearchQueryParam[0] ?? ''
+    : nameSearchQueryParam ?? '';
   const topCategory = filterParams.topCategory || 'flowers';
 
   let bouquets: Bouquet[] = [];
@@ -90,6 +94,7 @@ export default async function CatalogPage({
           }
           title={title}
           description={description}
+          nameSearchQuery={nameSearchQuery}
         />
       </div>
     </div>
