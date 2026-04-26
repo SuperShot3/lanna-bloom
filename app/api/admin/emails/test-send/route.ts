@@ -11,10 +11,8 @@ import {
   getDefaultSocialLinks,
   getEmailBrandHeaderHtml,
   getEmailBrandLogoUrl,
+  getSocialFooterHtml,
 } from '@/lib/email/socialFooter';
-
-const MOCK_FOOTER =
-  '<p><a href="https://lannabloom.shop">Website</a> · social footer in preview</p>';
 
 function buildMock(base: string): Record<string, string> {
   const b = base.replace(/\/$/, '') || 'https://lannabloom.shop';
@@ -47,7 +45,7 @@ function buildMock(base: string): Record<string, string> {
   unsubscribe_url: 'https://lannabloom.shop/reminders/unsubscribe?token=preview',
   brand_header: '',
   logo_url: '',
-  social_footer: MOCK_FOOTER,
+  social_footer: '',
   };
 }
 
@@ -81,6 +79,7 @@ export async function POST(request: NextRequest) {
     ...buildMock(base),
     brand_header: getEmailBrandHeaderHtml(links),
     logo_url: getEmailBrandLogoUrl(),
+    social_footer: getSocialFooterHtml(links),
   };
   let loadedOrder = false;
   if (body.orderId) {

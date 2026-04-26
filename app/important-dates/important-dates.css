@@ -95,10 +95,18 @@
   opacity: 0.7;
   cursor: wait;
 }
+.id-submit-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 .id-error {
   color: #b00020;
   font-size: 0.9rem;
   margin: 0;
+}
+.id-error-submit {
+  text-align: center;
 }
 .id-success {
   text-align: center;

@@ -157,7 +157,6 @@ export function ImportantDatesForm() {
 
   return (
     <form onSubmit={submit} className="id-form">
-      {err && <p className="id-error" role="alert">{err}</p>}
       <label className="id-label">
         Your name
         <input
@@ -279,9 +278,12 @@ export function ImportantDatesForm() {
           dates with flower suggestions. I can unsubscribe anytime.
         </span>
       </label>
-      <button type="submit" className="id-submit" disabled={saving}>
-        {saving ? 'Saving…' : 'Save my reminder'}
-      </button>
+      <div className="id-submit-area">
+        <button type="submit" className="id-submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save my reminder'}
+        </button>
+        {err && <p className="id-error id-error-submit" role="alert">{err}</p>}
+      </div>
     </form>
   );
 }
