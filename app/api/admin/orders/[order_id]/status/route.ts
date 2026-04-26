@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
-import { sendDeliveredCustomerEmailOnce } from '@/lib/orderNotification';
+import { getOrCreateDeliveredOutboxDraft } from '@/lib/email/outbox';
 import { ORDER_STATUS } from '@/lib/orders/statusConstants';
 
 const VALID_ORDER_STATUSES = [...ORDER_STATUS];
@@ -87,12 +87,33 @@ export async function PATCH(
     to: orderStatus,
   });
 
+  const trimmed = order_id.trim();
+  let deliveredEmailPreview: {
+    outboxId: string;
+    subject: string;
+    htmlBody: string;
+    textBody: string | null;
+    customerEmail: string;
+    missingVariables: string[];
+  } | null = null;
+
   if (orderStatus === 'DELIVERED') {
-    const trimmed = order_id.trim();
-    void sendDeliveredCustomerEmailOnce(trimmed).catch((e) =>
-      console.error('[admin/status] Delivered customer email:', e)
-    );
+    const adminId = session.user.email ?? 'unknown';
+    const draft = await getOrCreateDeliveredOutboxDraft(trimmed, adminId).catch((e) => {
+      console.error('[admin/status] Delivered outbox draft:', e);
+      return null;
+    });
+    if (draft) {
+      deliveredEmailPreview = {
+        outboxId: draft.outbox.id,
+        subject: draft.outbox.subject,
+        htmlBody: draft.outbox.html_body,
+        textBody: draft.outbox.text_body,
+        customerEmail: draft.outbox.customer_email,
+        missingVariables: draft.missingVariables,
+      };
+    }
   }
 
-  return NextResponse.json({ ok: true, order: updated });
+  return NextResponse.json({ ok: true, order: updated, deliveredEmailPreview });
 }

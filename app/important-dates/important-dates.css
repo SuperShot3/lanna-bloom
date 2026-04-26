@@ -1,0 +1,179 @@
+.id-page {
+  min-height: 100vh;
+  background: #fdfcf8;
+  color: #2c2415;
+  font-family: 'Mulish', system-ui, sans-serif;
+  padding: 1.5rem 1rem 3rem;
+}
+.id-inner {
+  max-width: 28rem;
+  margin: 0 auto;
+}
+.id-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #2c2415;
+  font-family: 'Arima Madurai', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.id-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  object-fit: contain;
+}
+.id-title {
+  font-family: 'Arima Madurai', Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  text-align: center;
+}
+.id-lead {
+  text-align: center;
+  color: #5c4a32;
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+.id-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.id-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #3a3228;
+}
+.id-label-inline {
+  flex: 1;
+  min-width: 0;
+}
+.id-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.id-input {
+  border: 1px solid #d4c4a8;
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  font-size: 1rem;
+  background: #fff;
+}
+.id-consent {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #4a4035;
+  cursor: pointer;
+}
+.id-consent input {
+  margin-top: 0.2rem;
+}
+.id-submit {
+  margin-top: 0.5rem;
+  background: #967a4d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.id-submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+.id-error {
+  color: #b00020;
+  font-size: 0.9rem;
+  margin: 0;
+}
+.id-success {
+  text-align: center;
+  padding: 2rem 0;
+}
+.id-success-mark {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 0.85rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #1a3c34;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.id-success-title {
+  font-family: 'Arima Madurai', Georgia, serif;
+  font-size: 1.45rem;
+  line-height: 1.25;
+  margin: 0 0 0.5rem;
+  color: #2c2415;
+}
+.id-success-p {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #5c4a32;
+  margin: 0 0 1.25rem;
+}
+.id-success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0 1.4rem;
+}
+.id-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d4c4a8;
+  border-radius: 8px;
+  padding: 0.72rem 1.25rem;
+  color: #967a4d;
+  background: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.id-contact-card {
+  border: 1px solid #eadfcd;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1rem;
+  text-align: center;
+}
+.id-contact-title {
+  margin: 0 0 0.75rem;
+  color: #5c4a32;
+  font-size: 0.92rem;
+}
+.id-contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.id-contact-links a {
+  border-radius: 999px;
+  background: #faf7ef;
+  color: #2c2415;
+  padding: 0.45rem 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.id-link {
+  color: #967a4d;
+  font-weight: 600;
+}

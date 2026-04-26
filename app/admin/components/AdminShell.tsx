@@ -7,6 +7,7 @@ import { MissingCogsNotice } from './MissingCogsNotice';
 
 const NAV_ITEMS = [
   { href: '/admin/orders', label: 'Orders', icon: 'shopping_bag' },
+  { href: '/admin/emails', label: 'Emails', icon: 'mail' },
   { href: '/admin/accounting', label: 'Accounting', icon: 'account_balance_wallet' },
   { href: '/admin/partners/applications', label: 'Partners', icon: 'group' },
   { href: '/admin/moderation/products', label: 'Product Moderation', icon: 'verified_user' },

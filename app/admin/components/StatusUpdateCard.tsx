@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
+import { DeliveredEmailPreviewModal, type DeliveredPreviewPayload } from './DeliveredEmailPreviewModal';
 import {
   ORDER_STATUS,
   ORDER_STATUS_LABELS,
@@ -22,6 +23,7 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
   const [orderStatus, setOrderStatus] = useState(normalizeOrderStatus(order.order_status));
   const [savingOrder, setSavingOrder] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [deliveredPreview, setDeliveredPreview] = useState<DeliveredPreviewPayload | null>(null);
 
   const handleOrderStatusChange = async (newStatus: string) => {
     if (!canEdit || savingOrder) return;
@@ -44,6 +46,11 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
       }
       setMessage({ type: 'success', text: 'Order status updated' });
       setTimeout(() => setMessage(null), 3000);
+      const preview = (data as { deliveredEmailPreview?: DeliveredPreviewPayload | null })
+        .deliveredEmailPreview;
+      if (preview?.outboxId) {
+        setDeliveredPreview(preview);
+      }
       router.refresh();
     } catch (e) {
       setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
@@ -89,6 +96,15 @@ export function StatusUpdateCard({ order, canEdit }: StatusUpdateCardProps) {
         <p className={message.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
           {message.text}
         </p>
+      )}
+      {deliveredPreview && (
+        <DeliveredEmailPreviewModal
+          key={deliveredPreview.outboxId}
+          open={!!deliveredPreview}
+          orderId={order.order_id}
+          initial={deliveredPreview}
+          onClose={() => setDeliveredPreview(null)}
+        />
       )}
     </section>
   );

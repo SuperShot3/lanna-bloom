@@ -6357,3 +6357,121 @@ a.admin-summary-key-value {
   .admin-accounting-period-row { flex-direction: column; align-items: stretch; }
   .admin-accounting-backfill-actions { flex-direction: column; }
 }
+
+/* Email Control Center: delivered preview modal + editor */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.admin-modal {
+  max-width: 100%;
+  width: 520px;
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+.admin-modal-wide {
+  width: 720px;
+}
+.admin-mail-preview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+  margin: 12px 0 16px;
+  max-height: 45vh;
+  overflow: auto;
+}
+.admin-mail-iframe {
+  width: 100%;
+  min-height: 220px;
+  border: 0;
+  display: block;
+  background: #fdfcf8;
+}
+.admin-mail-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+.admin-mail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+.admin-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.admin-textarea {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--foreground);
+  resize: vertical;
+}
+/* Tighter fields in email template editor (modal) */
+.admin-input-compact {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.admin-textarea-compact {
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.admin-mail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.admin-mail-tabs button {
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+.admin-mail-tabs button.admin-mail-tab--active {
+  background: var(--accent-soft, color-mix(in srgb, #967a4d 12%, #fff));
+  border-color: color-mix(in srgb, #967a4d 50%, var(--border));
+  font-weight: 600;
+}
+.admin-mail-iframe--narrow {
+  max-width: 360px;
+  margin: 0 auto;
+}
+.email-html-preview-box {
+  border: 1px solid var(--border);
+  background: #fff;
+  min-height: 200px;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 0;
+  border-radius: 8px;
+}
