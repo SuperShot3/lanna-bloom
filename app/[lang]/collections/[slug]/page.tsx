@@ -9,10 +9,8 @@ import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getBaseUrl } from '@/lib/orders';
 import {
-  getBalloonsFilteredFromSanity,
   getBouquetsFilteredFromSanity,
   getPlushyToysFilteredFromSanity,
-  getProductsFilteredFromSanity,
   type CatalogProduct,
 } from '@/lib/sanity';
 import {
@@ -27,28 +25,10 @@ export const revalidate = 60;
 const MAX_BOUQUETS = 6;
 const MAX_ADD_ONS = 3;
 
-function selectAddOns(groups: CatalogProduct[][]): CatalogProduct[] {
-  const selected: CatalogProduct[] = [];
-  const seen = new Set<string>();
-
-  for (const group of groups) {
-    const item = group.find((product) => !seen.has(product.id));
-    if (!item) continue;
-    selected.push(item);
-    seen.add(item.id);
-    if (selected.length >= MAX_ADD_ONS) return selected;
-  }
-
-  for (const group of groups) {
-    for (const item of group) {
-      if (seen.has(item.id)) continue;
-      selected.push(item);
-      seen.add(item.id);
-      if (selected.length >= MAX_ADD_ONS) return selected;
-    }
-  }
-
-  return selected;
+function selectRandomAddOns(products: CatalogProduct[]): CatalogProduct[] {
+  return [...products]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, MAX_ADD_ONS);
 }
 
 export function generateStaticParams() {
@@ -105,21 +85,19 @@ export default async function CollectionLandingPage({
   const locale = lang as Locale;
   const copy = page.copy[locale];
   const catalogHref = `/${locale}/catalog${buildCatalogSearchString(page.filters)}`;
-  const giftsHref = `/${locale}/catalog${buildCatalogSearchString({ topCategory: 'gifts' })}`;
+  const addOnsHref = `/${locale}/catalog${buildCatalogSearchString({ topCategory: 'plushy_toys' })}`;
   const allRosesHref = `/${locale}/catalog${buildCatalogSearchString({
     topCategory: 'flowers',
     types: ['rose'],
   })}`;
 
-  const [allBouquets, plushyToys, balloons, gifts] = await Promise.all([
+  const [allBouquets, plushyToys] = await Promise.all([
     getBouquetsFilteredFromSanity(page.filters),
     getPlushyToysFilteredFromSanity({ sort: 'newest' }),
-    getBalloonsFilteredFromSanity({ sort: 'newest' }),
-    getProductsFilteredFromSanity({ categoryKey: 'gifts', sort: 'newest' }),
   ]);
 
   const bouquets = allBouquets.slice(0, MAX_BOUQUETS);
-  const addOns = selectAddOns([plushyToys, balloons, gifts]);
+  const addOns = selectRandomAddOns(plushyToys);
   const heroImage = bouquets[0]?.images?.[0];
   const tabs = getCollectionLandingTabs(locale);
 
@@ -241,7 +219,7 @@ export default async function CollectionLandingPage({
                 </h2>
                 <p className={styles.sectionIntro}>{copy.addOnsIntro}</p>
               </div>
-              <Link href={giftsHref} className={styles.sectionLink}>
+              <Link href={addOnsHref} className={styles.sectionLink}>
                 {locale === 'th' ? 'ดูของเสริมทั้งหมด' : 'View all add-ons'}
               </Link>
             </div>
