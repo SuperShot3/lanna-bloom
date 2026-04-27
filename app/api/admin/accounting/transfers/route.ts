@@ -4,6 +4,7 @@ import { MONEY_LOCATIONS } from '@/types/accounting';
 import { createAccountingTransfer, getAccountingTransfers } from '@/lib/accounting/transfers';
 
 const VALID_MONEY_LOCATIONS = MONEY_LOCATIONS.map((x) => x.value);
+const VALID_TRANSFER_STATUSES = ['pending', 'received', 'reconciled'] as const;
 
 export async function GET(request: NextRequest) {
   const authResult = await requireRole(['OWNER', 'MANAGER']);
@@ -65,6 +66,24 @@ export async function POST(request: NextRequest) {
   }
 
   const currency = typeof b.currency === 'string' ? b.currency.trim() || 'THB' : 'THB';
+  const status = typeof b.status === 'string' ? b.status.trim() : 'received';
+  if (!VALID_TRANSFER_STATUSES.includes(status as never)) {
+    return NextResponse.json(
+      { error: `status must be one of: ${VALID_TRANSFER_STATUSES.join(', ')}` },
+      { status: 400 }
+    );
+  }
+
+  const bank_received_date =
+    typeof b.bank_received_date === 'string' ? b.bank_received_date.trim() || null : null;
+  if (bank_received_date && !/^\d{4}-\d{2}-\d{2}$/.test(bank_received_date)) {
+    return NextResponse.json({ error: 'bank_received_date must be in YYYY-MM-DD format' }, { status: 400 });
+  }
+
+  const external_reference =
+    typeof b.external_reference === 'string' ? b.external_reference.trim() || null : null;
+  const attachment_file_path =
+    typeof b.attachment_file_path === 'string' ? b.attachment_file_path.trim() || null : null;
   const note = typeof b.note === 'string' ? b.note.trim() || null : null;
   const created_by = session.user.email ?? 'unknown';
 
@@ -74,6 +93,11 @@ export async function POST(request: NextRequest) {
     transfer_date,
     from_location,
     to_location,
+    status: status as never,
+    external_reference,
+    bank_received_date,
+    attachment_file_path,
+    attachment_attached: !!attachment_file_path,
     note,
     created_by,
   });

@@ -167,22 +167,23 @@ function toTransferLedgerRow(
   const from = MONEY_LOC_LABEL[t.from_location] ?? t.from_location;
   const to = MONEY_LOC_LABEL[t.to_location] ?? t.to_location;
   const note = t.note ? ` · ${t.note}` : '';
+  const ref = t.external_reference ? ` · Ref ${t.external_reference}` : '';
   return {
     id: t.id,
     kind: 'transfer',
     sortIso,
     displayDate: t.transfer_date.slice(0, 10),
-    transactionType: 'income', // neutral for filters; delta=0 so doesn't affect totals
+    transactionType: 'transfer',
     category: 'Transfer',
-    description: `${from} → ${to}${note}`,
+    description: `${from} → ${to}${ref}${note}`,
     sourceAccount: `${from} → ${to}`,
     amountIn: null,
     amountOut: null,
     delta: 0,
     runningBalance,
-    referenceId: null,
+    referenceId: t.external_reference,
     createdBy: t.created_by,
-    status: null,
+    status: t.status,
     currency: t.currency || 'THB',
     detailHref: '/admin/accounting', // no detail page yet
   };

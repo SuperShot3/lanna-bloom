@@ -11,7 +11,7 @@ export interface LedgerRow {
   sortIso: string;
   /** YYYY-MM-DD or short display date */
   displayDate: string;
-  transactionType: 'income' | 'expense';
+  transactionType: 'income' | 'expense' | 'transfer';
   category: string;
   description: string;
   sourceAccount: string;

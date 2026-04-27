@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import type { AccountingTransfer } from '@/types/accountingTransfers';
+import type { AccountingTransfer, AccountingTransferStatus } from '@/types/accountingTransfers';
 
 const TABLE = 'accounting_transfers';
 
@@ -10,6 +10,11 @@ export interface CreateTransferInput {
   transfer_date: string;
   from_location: string;
   to_location: string;
+  status?: AccountingTransferStatus;
+  external_reference?: string | null;
+  bank_received_date?: string | null;
+  attachment_file_path?: string | null;
+  attachment_attached?: boolean;
   note?: string | null;
   created_by: string;
 }
@@ -28,6 +33,11 @@ export async function createAccountingTransfer(
       transfer_date: input.transfer_date,
       from_location: input.from_location,
       to_location: input.to_location,
+      status: input.status ?? 'received',
+      external_reference: input.external_reference ?? null,
+      bank_received_date: input.bank_received_date ?? null,
+      attachment_file_path: input.attachment_file_path ?? null,
+      attachment_attached: input.attachment_attached ?? false,
       note: input.note ?? null,
       created_by: input.created_by,
     })
@@ -40,6 +50,24 @@ export async function createAccountingTransfer(
   }
 
   return { transfer: data as AccountingTransfer };
+}
+
+export async function getAccountingTransferById(id: string): Promise<AccountingTransfer | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('[transfers] getAccountingTransferById error:', error.message);
+    return null;
+  }
+
+  return data as AccountingTransfer;
 }
 
 export async function getAccountingTransfers(

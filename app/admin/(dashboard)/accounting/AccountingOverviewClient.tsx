@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MoneyLocationTotal, IncomeRecord, IncomeFilters } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, INCOME_STATUSES, MONEY_LOCATIONS } from '@/types/accounting';
+import type { AccountingTransfer } from '@/types/accountingTransfers';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
 import type { LedgerResult } from '@/types/ledger';
 import type { IncomeListResult } from '@/lib/accounting/incomeRecords';
-import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDisplay';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { AccountingLedgerTable } from './AccountingLedgerTable';
 
@@ -34,7 +34,7 @@ interface Props {
   periodLabel: string;
   initialDateFrom?: string;
   initialDateTo?: string;
-  activeTab: 'overview' | 'expenses' | 'ledger' | 'income';
+  activeTab: 'overview' | 'expenses' | 'ledger' | 'income' | 'transfers';
   expensesData: ExpensesResult;
   expensesPage: number;
   expensesPageSize: number;
@@ -43,6 +43,7 @@ interface Props {
   incomePage: number;
   incomePageSize: number;
   incomeFilters: IncomeFilters;
+  transfersData: { transfers: AccountingTransfer[]; error?: string };
 }
 
 const LOCATION_LABELS: Record<string, string> = {
@@ -58,6 +59,12 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
 const PM_LABEL: Record<string, string> = Object.fromEntries(
   PAYMENT_METHODS.map((m) => [m.value, m.label])
 );
+
+const TRANSFER_STATUS_LABEL: Record<string, string> = {
+  pending: 'Pending',
+  received: 'Received',
+  reconciled: 'Reconciled',
+};
 
 function fmt(amount: number) {
   return new Intl.NumberFormat('th-TH', {
@@ -100,20 +107,27 @@ export function AccountingOverviewClient({
   incomePage,
   incomePageSize,
   incomeFilters,
+  transfersData,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const sp = searchParams ?? new URLSearchParams();
+  const transferFileInputRef = useRef<HTMLInputElement>(null);
 
   const [dateFrom, setDateFrom] = useState(initialDateFrom ?? '');
   const [dateTo, setDateTo]     = useState(initialDateTo ?? '');
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
+  const [transferCurrency, setTransferCurrency] = useState('THB');
   const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [transferFrom, setTransferFrom] = useState('');
-  const [transferTo, setTransferTo] = useState('');
+  const [transferFrom, setTransferFrom] = useState('stripe');
+  const [transferTo, setTransferTo] = useState('bank');
+  const [transferStatus, setTransferStatus] = useState('received');
+  const [transferExternalRef, setTransferExternalRef] = useState('');
+  const [transferBankReceivedDate, setTransferBankReceivedDate] = useState('');
   const [transferNote, setTransferNote] = useState('');
+  const [transferAttachment, setTransferAttachment] = useState<File | null>(null);
   const [transferSaving, setTransferSaving] = useState(false);
   const [transferMsg, setTransferMsg] = useState<string | null>(null);
   const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
@@ -124,7 +138,7 @@ export function AccountingOverviewClient({
     setDateTo(initialDateTo ?? '');
   }, [initialDateFrom, initialDateTo]);
 
-  const switchTab = (tab: 'overview' | 'expenses' | 'ledger' | 'income') => {
+  const switchTab = (tab: 'overview' | 'expenses' | 'ledger' | 'income' | 'transfers') => {
     const next = new URLSearchParams(sp.toString());
     if (dateFrom) next.set('dateFrom', dateFrom);
     else next.delete('dateFrom');
@@ -133,6 +147,7 @@ export function AccountingOverviewClient({
     if (tab === 'expenses') next.set('tab', 'expenses');
     else if (tab === 'ledger') next.set('tab', 'ledger');
     else if (tab === 'income') next.set('tab', 'income');
+    else if (tab === 'transfers') next.set('tab', 'transfers');
     else next.delete('tab');
     next.delete('page');
     router.push(`${pathname}?${next.toString()}`);
@@ -156,6 +171,7 @@ export function AccountingOverviewClient({
     if (activeTab === 'expenses') next.set('tab', 'expenses');
     else if (activeTab === 'ledger') next.set('tab', 'ledger');
     else if (activeTab === 'income') next.set('tab', 'income');
+    else if (activeTab === 'transfers') next.set('tab', 'transfers');
     else next.delete('tab');
     router.push(`${pathname}?${next.toString()}`);
   };
@@ -193,6 +209,20 @@ export function AccountingOverviewClient({
     router.push(`${pathname}?${next.toString()}`);
   };
 
+  const handleViewTransferAttachment = async (transferId: string) => {
+    try {
+      const res = await fetch(`/api/admin/accounting/transfers/${transferId}/attachment-url`);
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? 'Failed to load attachment');
+        return;
+      }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert('Failed to load attachment');
+    }
+  };
+
   return (
     <div className="admin-accounting">
       {/* Header */}
@@ -210,7 +240,7 @@ export function AccountingOverviewClient({
               setTransferMsg(null);
             }}
           >
-            ⇄ Transfer
+            Record Stripe Payout
           </button>
           <Link href="/admin/accounting/income/new" className="admin-btn admin-btn-primary">
             + Manual Income
@@ -223,9 +253,9 @@ export function AccountingOverviewClient({
 
       {transferOpen && (
         <div className="admin-accounting-section" style={{ marginTop: 12 }}>
-          <h2 className="admin-accounting-section-title">Transfer funds</h2>
+          <h2 className="admin-accounting-section-title">Record Stripe Payout / Money Transfer</h2>
           <p className="admin-hint">
-            Moves money between locations (example: Stripe payout = Stripe → Bank). Does not change profit.
+            Moves already-recorded money between locations. This is not income and does not change revenue or profit.
           </p>
           <div className="admin-accounting-backfill-actions" style={{ flexWrap: 'wrap' }}>
             <input
@@ -246,6 +276,15 @@ export function AccountingOverviewClient({
               inputMode="decimal"
               aria-label="Amount"
               style={{ maxWidth: 160 }}
+            />
+            <input
+              type="text"
+              className="admin-input"
+              value={transferCurrency}
+              onChange={(e) => setTransferCurrency(e.target.value.toUpperCase())}
+              placeholder="Currency"
+              aria-label="Currency"
+              style={{ maxWidth: 110 }}
             />
             <select
               className="admin-select"
@@ -270,6 +309,32 @@ export function AccountingOverviewClient({
                 <option key={l.value} value={l.value}>{l.label}</option>
               ))}
             </select>
+            <select
+              className="admin-select"
+              value={transferStatus}
+              onChange={(e) => setTransferStatus(e.target.value)}
+              aria-label="Payout status"
+            >
+              <option value="pending">Pending</option>
+              <option value="received">Received</option>
+              <option value="reconciled">Reconciled</option>
+            </select>
+            <input
+              type="text"
+              className="admin-input"
+              value={transferExternalRef}
+              onChange={(e) => setTransferExternalRef(e.target.value)}
+              placeholder="Stripe payout ID / reference"
+              aria-label="Stripe payout reference"
+              style={{ minWidth: 220 }}
+            />
+            <input
+              type="date"
+              className="admin-input admin-input-date"
+              value={transferBankReceivedDate}
+              onChange={(e) => setTransferBankReceivedDate(e.target.value)}
+              aria-label="Bank received date"
+            />
             <input
               type="text"
               className="admin-input"
@@ -279,6 +344,21 @@ export function AccountingOverviewClient({
               aria-label="Note"
               style={{ minWidth: 220 }}
             />
+            <input
+              ref={transferFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+              className="admin-expenses-file-input"
+              onChange={(e) => setTransferAttachment(e.target.files?.[0] ?? null)}
+              aria-label="Attach payout proof"
+            />
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline admin-btn-sm"
+              onClick={() => transferFileInputRef.current?.click()}
+            >
+              {transferAttachment ? transferAttachment.name : 'Attach proof'}
+            </button>
             <button
               type="button"
               className="admin-btn admin-btn-primary admin-btn-sm"
@@ -288,14 +368,36 @@ export function AccountingOverviewClient({
                 setTransferMsg(null);
                 try {
                   const amt = parseFloat(transferAmount);
+                  let attachmentPath: string | null = null;
+
+                  if (transferAttachment) {
+                    const fd = new FormData();
+                    fd.append('file', transferAttachment);
+                    const uploadRes = await fetch('/api/admin/accounting/upload-proof', {
+                      method: 'POST',
+                      body: fd,
+                    });
+                    const uploadData = await uploadRes.json().catch(() => ({}));
+                    if (!uploadRes.ok) {
+                      setTransferMsg(uploadData.error ?? 'Attachment upload failed');
+                      return;
+                    }
+                    attachmentPath = uploadData.path ?? null;
+                  }
+
                   const res = await fetch('/api/admin/accounting/transfers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       amount: amt,
+                      currency: transferCurrency.trim() || 'THB',
                       transfer_date: transferDate,
                       from_location: transferFrom,
                       to_location: transferTo,
+                      status: transferStatus,
+                      external_reference: transferExternalRef.trim() || null,
+                      bank_received_date: transferBankReceivedDate || null,
+                      attachment_file_path: attachmentPath,
                       note: transferNote.trim() || null,
                     }),
                   });
@@ -305,7 +407,11 @@ export function AccountingOverviewClient({
                   } else {
                     setTransferMsg('Transfer saved');
                     setTransferAmount('');
+                    setTransferExternalRef('');
+                    setTransferBankReceivedDate('');
                     setTransferNote('');
+                    setTransferAttachment(null);
+                    if (transferFileInputRef.current) transferFileInputRef.current.value = '';
                     router.refresh();
                   }
                 } catch {
@@ -315,7 +421,7 @@ export function AccountingOverviewClient({
                 }
               }}
             >
-              {transferSaving ? 'Saving…' : 'Save transfer'}
+              {transferSaving ? 'Saving…' : 'Record transfer'}
             </button>
           </div>
           {transferMsg && <p className="admin-hint" style={{ marginTop: 6 }}>{transferMsg}</p>}
@@ -352,6 +458,17 @@ export function AccountingOverviewClient({
           Income Records
           {overview && overview.incomeCount > 0 && (
             <span className="admin-accounting-tab-count">{overview.incomeCount}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          className={`admin-accounting-tab${activeTab === 'transfers' ? ' admin-accounting-tab-active' : ''}`}
+          onClick={() => switchTab('transfers')}
+        >
+          <span className="material-symbols-outlined">swap_horiz</span>
+          Payouts & Transfers
+          {transfersData.transfers.length > 0 && (
+            <span className="admin-accounting-tab-count">{transfersData.transfers.length}</span>
           )}
         </button>
         <button
@@ -487,11 +604,6 @@ export function AccountingOverviewClient({
                           {typeof loc.transfersNet === 'number' && loc.transfersNet !== 0 && (
                             <p className="admin-hint" style={{ marginTop: 2 }}>
                               Transfers: {loc.transfersNet > 0 ? '+' : ''}{fmt(loc.transfersNet)}
-                            </p>
-                          )}
-                          {loc.location === 'stripe' && (
-                            <p className="admin-hint admin-accounting-location-payout-hint">
-                              In Stripe until bank payout · next: {formatStripeNextPayoutShort()}
                             </p>
                           )}
                         </div>
@@ -687,6 +799,90 @@ export function AccountingOverviewClient({
                   )}
                 </>
               )}
+        </div>
+      )}
+
+      {/* ── PAYOUTS & TRANSFERS TAB ── */}
+      {activeTab === 'transfers' && (
+        <div className="admin-expenses">
+          <div className="admin-expenses-summary">
+            <span className="admin-hint">
+              {transfersData.transfers.length} transfer{transfersData.transfers.length !== 1 ? 's' : ''} found
+            </span>
+            <span className="admin-expenses-total">
+              Stripe payouts are money movement only, not income.
+            </span>
+          </div>
+
+          {transfersData.error ? (
+            <div className="admin-error">
+              <p><strong>Error loading transfers</strong></p>
+              <p>{transfersData.error}</p>
+            </div>
+          ) : transfersData.transfers.length === 0 ? (
+            <p className="admin-empty">
+              No transfers found. Use <strong>Record Stripe Payout</strong> to move money from Stripe Balance to Bank Account.
+            </p>
+          ) : (
+            <div className="admin-expenses-table-wrap">
+              <table className="admin-expenses-table">
+                <thead>
+                  <tr>
+                    <th>Payout date</th>
+                    <th>Movement</th>
+                    <th>Status</th>
+                    <th>Stripe ref</th>
+                    <th>Bank received</th>
+                    <th>Attachment</th>
+                    <th className="admin-expenses-col-amount">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transfersData.transfers.map((transfer) => (
+                    <tr key={transfer.id} className="admin-expenses-row">
+                      <td className="admin-expenses-date">{formatDate(transfer.transfer_date)}</td>
+                      <td className="admin-expenses-desc">
+                        <span className="admin-expenses-desc-text">
+                          {(LOCATION_LABELS[transfer.from_location] ?? transfer.from_location)} →{' '}
+                          {LOCATION_LABELS[transfer.to_location] ?? transfer.to_location}
+                        </span>
+                        {transfer.note && (
+                          <span className="admin-expenses-notes">{transfer.note}</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`admin-badge ${transfer.status === 'pending' ? 'admin-badge-payment-pending' : 'admin-badge-paid'}`}>
+                          {TRANSFER_STATUS_LABEL[transfer.status] ?? transfer.status}
+                        </span>
+                      </td>
+                      <td className="admin-ledger-mono">
+                        {transfer.external_reference ?? '—'}
+                      </td>
+                      <td className="admin-expenses-date">
+                        {transfer.bank_received_date ? formatDate(transfer.bank_received_date) : '—'}
+                      </td>
+                      <td>
+                        {transfer.attachment_attached && transfer.attachment_file_path ? (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-outline admin-btn-sm"
+                            onClick={() => handleViewTransferAttachment(transfer.id)}
+                          >
+                            View
+                          </button>
+                        ) : (
+                          <span className="admin-badge admin-badge-payment-pending">None</span>
+                        )}
+                      </td>
+                      <td className="admin-expenses-amount">
+                        {formatAmount(transfer.amount, transfer.currency)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

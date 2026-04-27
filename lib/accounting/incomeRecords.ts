@@ -389,7 +389,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     expenseQuery,
     supabase
       .from('accounting_transfers')
-      .select('amount, from_location, to_location')
+      .select('amount, from_location, to_location, status')
       .gte('transfer_date', filter.dateFrom?.slice(0, 10) ?? '0001-01-01')
       .lte('transfer_date', filter.dateTo?.slice(0, 10) ?? '9999-12-31'),
   ]);
@@ -450,6 +450,8 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
 
   const transferNetByLocation: Record<string, number> = {};
   for (const t of transferRows ?? []) {
+    const status = String(t.status ?? 'received');
+    if (status !== 'received' && status !== 'reconciled') continue;
     const amt = parseFloat(String(t.amount)) || 0;
     const from = String(t.from_location ?? '').trim().toLowerCase();
     const to = String(t.to_location ?? '').trim().toLowerCase();

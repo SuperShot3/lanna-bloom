@@ -1,5 +1,6 @@
 import { getLedgerEntries } from '@/lib/accounting/ledger';
 import { getAccountingOverview, getIncomeRecords } from '@/lib/accounting/incomeRecords';
+import { getAccountingTransfers } from '@/lib/accounting/transfers';
 import { getExpenses } from '@/lib/expenses/expenseQueries';
 import { AccountingOverviewClient } from './AccountingOverviewClient';
 
@@ -22,6 +23,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
   const activeTab =
     params.tab === 'expenses' ? 'expenses' :
     params.tab === 'ledger'   ? 'ledger'   :
+    params.tab === 'transfers' ? 'transfers' :
     params.tab === 'income'   ? 'income'   : 'overview';
   const expensePage = Math.max(1, parseInt(params.page ?? '1', 10));
   const expensePageSize = 30;
@@ -45,11 +47,12 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
 
   const period = { dateFrom: params.dateFrom, dateTo: params.dateTo };
 
-  const [overview, expensesData, ledger, incomeData] = await Promise.all([
+  const [overview, expensesData, ledger, incomeData, transfersData] = await Promise.all([
     getAccountingOverview(period),
     getExpenses(expenseFilters, { page: expensePage, pageSize: expensePageSize }),
     getLedgerEntries(period),
     getIncomeRecords(incomeFilters, { page: incomePage, pageSize: incomePageSize }),
+    getAccountingTransfers(period),
   ]);
 
   const periodLabel =
@@ -74,6 +77,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
       incomePage={incomePage}
       incomePageSize={incomePageSize}
       incomeFilters={incomeFilters}
+      transfersData={transfersData}
     />
   );
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { LedgerResult, LedgerRow } from '@/types/ledger';
 
 type SortMode = 'date-asc' | 'date-desc' | 'amount-desc' | 'amount-asc';
-type TypeFilter = 'all' | 'income' | 'expense';
+type TypeFilter = 'all' | 'income' | 'expense' | 'transfer';
 
 function fmt(amount: number, currency = 'THB') {
   return new Intl.NumberFormat('th-TH', {
@@ -102,6 +102,7 @@ export function AccountingLedgerTable({ ledger, periodLabel }: Props) {
 
     if (typeFilter === 'income') list = list.filter((r) => r.kind === 'income');
     else if (typeFilter === 'expense') list = list.filter((r) => r.kind === 'expense');
+    else if (typeFilter === 'transfer') list = list.filter((r) => r.kind === 'transfer');
 
     const canShowRb =
       sortMode === 'date-asc' && typeFilter === 'all';
@@ -168,6 +169,7 @@ export function AccountingLedgerTable({ ledger, periodLabel }: Props) {
             <option value="all">All</option>
             <option value="income">Income only</option>
             <option value="expense">Expenses only</option>
+            <option value="transfer">Transfers only</option>
           </select>
         </label>
         <label className="admin-ledger-field">
@@ -220,7 +222,9 @@ export function AccountingLedgerTable({ ledger, periodLabel }: Props) {
                   className={
                     r.kind === 'income'
                       ? 'admin-ledger-row admin-ledger-row-income'
-                      : 'admin-ledger-row admin-ledger-row-expense'
+                      : r.kind === 'transfer'
+                        ? 'admin-ledger-row'
+                        : 'admin-ledger-row admin-ledger-row-expense'
                   }
                   role="link"
                   tabIndex={0}
