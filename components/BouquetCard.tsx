@@ -82,6 +82,7 @@ export function BouquetCard({
   const [hovered, setHovered] = useState(false);
   const [selectedOptionId, setSelectedOptionId] = useState<string>(defaultOid);
   const [justAdded, setJustAdded] = useState(false);
+  const [actionsPinned, setActionsPinned] = useState(false);
 
   const [favoriteActive, setFavoriteActive] = useState(false);
 
@@ -91,7 +92,16 @@ export function BouquetCard({
 
   useEffect(() => {
     if (!showPanel) return;
-    setHovered(alwaysShowActions);
+    const media = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const sync = () => {
+      const shouldPin = alwaysShowActions && !media.matches;
+      setActionsPinned(shouldPin);
+      setHovered(shouldPin);
+    };
+
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
   }, [alwaysShowActions, showPanel]);
 
   useEffect(() => {
@@ -311,10 +321,10 @@ export function BouquetCard({
       className={`${isPopular ? 'card card-popular' : 'card'} ${alwaysShowActions ? 'card--always-actions' : ''}`}
       data-expanded={showPanel && hovered ? 'true' : 'false'}
       onMouseEnter={() => {
-        if (showPanel && !alwaysShowActions) setHovered(true);
+        if (showPanel && !actionsPinned) setHovered(true);
       }}
       onMouseLeave={() => {
-        if (showPanel && !alwaysShowActions) setHovered(false);
+        if (showPanel && !actionsPinned) setHovered(false);
       }}
     >
       <PrefetchLink

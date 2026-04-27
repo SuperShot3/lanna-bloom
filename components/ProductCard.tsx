@@ -67,7 +67,15 @@ function buildSyntheticOptions(
   ];
 }
 
-export function ProductCard({ product, lang }: { product: CatalogProduct; lang: Locale }) {
+export function ProductCard({
+  product,
+  lang,
+  alwaysShowActions = false,
+}: {
+  product: CatalogProduct;
+  lang: Locale;
+  alwaysShowActions?: boolean;
+}) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
   const router = useRouter();
@@ -180,6 +188,20 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
   const [hovered, setHovered] = useState(false);
   const [selectedId, setSelectedId] = useState('business');
   const [justAdded, setJustAdded] = useState(false);
+  const [actionsPinned, setActionsPinned] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const sync = () => {
+      const shouldPin = alwaysShowActions && !media.matches;
+      setActionsPinned(shouldPin);
+      setHovered(shouldPin);
+    };
+
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, [alwaysShowActions]);
 
   const selected = options.find((o) => o.id === selectedId && o.available) ?? options.filter((o) => o.available).pop();
 
@@ -297,10 +319,14 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
 
   return (
     <article
-      className="pcard"
+      className={`pcard ${alwaysShowActions ? 'pcard--always-actions' : ''}`}
       data-expanded={hovered ? 'true' : 'false'}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        if (!actionsPinned) setHovered(true);
+      }}
+      onMouseLeave={() => {
+        if (!actionsPinned) setHovered(false);
+      }}
     >
       <Link
         href={href}
@@ -617,6 +643,15 @@ export function ProductCard({ product, lang }: { product: CatalogProduct; lang: 
         .pcard[data-expanded='true'] .pcard-panel {
           max-height: 320px;
           pointer-events: auto;
+        }
+        @media (hover: none) {
+          .pcard-panel {
+            display: none;
+          }
+          .pcard--always-actions .pcard-panel {
+            display: block;
+            pointer-events: auto;
+          }
         }
         /* Only hide on devices that truly have no hover (e.g. phones). Do NOT use pointer:coarse — many laptops report coarse and would never see the panel. */
         @media (hover: none) {

@@ -116,6 +116,10 @@ export function resolveBouquetOptionFromIdentifier(
   const byId = sizes.find((s) => s.optionId === r);
   if (byId) return byId;
   const lower = r.toLowerCase();
+  const byLabel = sizes.find(
+    (s) => s.label.toLowerCase() === lower || s.labelTh?.toLowerCase() === lower
+  );
+  if (byLabel) return byLabel;
   if (lower === 's' || lower === 'm' || lower === 'l' || lower === 'xl') {
     return (
       sizes.find((s) => s.key === lower) ??

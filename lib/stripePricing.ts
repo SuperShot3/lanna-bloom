@@ -3,7 +3,12 @@
  * Fetches prices from Sanity and computes items, add-ons, delivery fee.
  */
 
-import { getBouquetById, getPlushyToyById, getProductById } from '@/lib/sanity';
+import {
+  getBouquetById,
+  getBouquetBySlugFromSanity,
+  getPlushyToyById,
+  getProductById,
+} from '@/lib/sanity';
 import { resolveBouquetOptionFromIdentifier } from '@/lib/bouquetOptions';
 import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFees';
 import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
@@ -140,7 +145,9 @@ export async function computeOrderTotals(
       });
       itemsTotal += itemPrice;
     } else {
-      const bouquet = await getBouquetById(item.bouquetId);
+      const bouquet =
+        (item.bouquetSlug ? await getBouquetBySlugFromSanity(item.bouquetSlug) : null) ??
+        (await getBouquetById(item.bouquetId));
       if (!bouquet) {
         return { ok: false, message: `Bouquet not found: ${item.bouquetId}` };
       }

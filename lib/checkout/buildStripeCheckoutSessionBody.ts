@@ -40,7 +40,7 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
         itemType: item.itemType ?? 'bouquet',
         bouquetId: item.bouquetId,
         bouquetSlug: item.slug,
-        size: item.size.label,
+        size: item.size.optionId,
         addOns: {
           cardType,
           cardMessage: item.addOns.cardMessage?.trim() ?? '',
