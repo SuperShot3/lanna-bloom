@@ -6,6 +6,7 @@ import { getDiscountForCode } from '@/lib/referral';
 import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
+import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
   if (!body || typeof body !== 'object') {
@@ -26,6 +27,17 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
     const ref = validateCatalogItemRef({ id: bouquetId, slug: bouquetSlug || undefined });
     if (!ref.ok) {
       return { ok: false, message: `Invalid catalog item in items[]: ${ref.message}` };
+    }
+    const addOns = (i.addOns as Record<string, unknown>) ?? {};
+    if (
+      ref.item.type === 'balloon' &&
+      typeof addOns.balloonText === 'string' &&
+      addOns.balloonText.trim().length > BALLOON_TEXT_MAX_LENGTH
+    ) {
+      return {
+        ok: false,
+        message: `balloonText must be ${BALLOON_TEXT_MAX_LENGTH} characters or fewer`,
+      };
     }
   }
   const delivery = b.delivery;
@@ -144,6 +156,10 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       const bouquetId = typeof i.bouquetId === 'string' ? i.bouquetId.trim() : '';
       const bouquetSlug = typeof i.bouquetSlug === 'string' ? i.bouquetSlug.trim() : '';
       const catalog = validateCatalogItemRef({ id: bouquetId, slug: bouquetSlug || undefined });
+      const balloonText =
+        catalog.ok && catalog.item.type === 'balloon'
+          ? normalizeBalloonText(addOns.balloonText)
+          : undefined;
       return {
         bouquetId,
         bouquetTitle: typeof i.bouquetTitle === 'string' ? i.bouquetTitle : '',
@@ -153,6 +169,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
           cardType: (addOns.cardType as OrderPayload['items'][0]['addOns']['cardType']) ?? null,
           cardMessage: typeof addOns.cardMessage === 'string' ? addOns.cardMessage : '',
           wrappingOption: (addOns.wrappingOption as OrderPayload['items'][0]['addOns']['wrappingOption']) ?? null,
+          ...(balloonText && { balloonText }),
         },
         imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
         bouquetSlug: bouquetSlug || undefined,

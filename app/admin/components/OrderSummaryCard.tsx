@@ -60,7 +60,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
         <div className="admin-summary-header-actions">
           <AdminCopyTextButton
             text={driverMessengerText}
-            ariaLabel="Copy message for driver: when, where, map pin, recipient, card text, order id"
+            ariaLabel="Copy message for driver: when, where, map pin, recipient, card text, balloon text, order id"
             className="admin-summary-copy-driver"
           >
             Copy for driver

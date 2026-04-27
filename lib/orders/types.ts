@@ -12,6 +12,8 @@ export interface OrderItemAddOns {
   cardType: OrderCardType;
   cardMessage: string;
   wrappingOption: OrderWrappingOption;
+  /** Optional custom text requested for standalone balloons. */
+  balloonText?: string;
 }
 
 export interface OrderItem {

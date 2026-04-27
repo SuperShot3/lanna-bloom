@@ -35,6 +35,13 @@ function getWrappingLabel(opt: string | null | undefined): string {
   return opt;
 }
 
+function getItemTypeLabel(type: string | null | undefined): string {
+  if (type === 'product') return 'Product';
+  if (type === 'plushyToy') return 'Plushy toy';
+  if (type === 'balloon') return 'Balloon';
+  return 'Bouquet';
+}
+
 export function ItemsList({ items, summary, embedded }: ItemsListProps) {
   const showSummary =
     !embedded &&
@@ -90,13 +97,19 @@ export function ItemsList({ items, summary, embedded }: ItemsListProps) {
                 <div className="admin-item-header">
                   <strong>{item.bouquet_title?.trim() ? item.bouquet_title : 'N/A'}</strong>
                   <span className="admin-item-type-badge">
-                    {(item.item_type ?? 'bouquet') === 'product' ? 'Product' : 'Bouquet'}
+                    {getItemTypeLabel(item.item_type)}
                   </span>
                 </div>
                 {item.addOns?.cardMessage?.trim() && (
                   <div className="admin-item-card-text">
                     <span className="admin-addon-label">Card text:</span>
                     <span className="admin-addon-message">&quot;{item.addOns.cardMessage.trim()}&quot;</span>
+                  </div>
+                )}
+                {item.addOns?.balloonText?.trim() && (
+                  <div className="admin-item-card-text">
+                    <span className="admin-addon-label">Balloon text:</span>
+                    <span className="admin-addon-message">&quot;{item.addOns.balloonText.trim()}&quot;</span>
                   </div>
                 )}
                 <div className="admin-item-meta">

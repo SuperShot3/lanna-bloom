@@ -16,6 +16,7 @@ import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
+import { normalizeBalloonText } from '@/lib/balloonCustomization';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -29,6 +30,7 @@ export interface CartItemIdentifier {
     cardType: OrderCardType;
     cardMessage: string;
     wrappingOption: OrderWrappingOption;
+    balloonText?: string;
     productAddOns?: ProductAddOnsSelected;
   };
   imageUrl?: string;
@@ -43,6 +45,7 @@ export interface ComputedOrderItem {
     cardType: OrderCardType;
     cardMessage: string;
     wrappingOption: OrderWrappingOption;
+    balloonText?: string;
   };
   imageUrl?: string;
   bouquetSlug?: string;
@@ -133,6 +136,9 @@ export async function computeOrderTotals(
           cardType: item.addOns?.cardType ?? null,
           cardMessage: item.addOns?.cardMessage?.trim() ?? '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
+          ...(normalizeBalloonText(item.addOns?.balloonText) && {
+            balloonText: normalizeBalloonText(item.addOns?.balloonText),
+          }),
         },
         imageUrl: item.imageUrl ?? balloon.imageUrl,
         bouquetSlug: item.bouquetSlug,

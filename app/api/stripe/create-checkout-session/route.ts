@@ -16,6 +16,7 @@ import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/se
 import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
+import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 
 function validateStripePayload(
   body: unknown
@@ -30,6 +31,20 @@ function validateStripePayload(
   const items = b.items;
   if (!Array.isArray(items) || items.length === 0) {
     return { ok: false, message: 'items must be a non-empty array' };
+  }
+  for (const it of items) {
+    const i = it as Record<string, unknown>;
+    const addOns = (i.addOns as Record<string, unknown>) ?? {};
+    if (
+      i.itemType === 'balloon' &&
+      typeof addOns.balloonText === 'string' &&
+      addOns.balloonText.trim().length > BALLOON_TEXT_MAX_LENGTH
+    ) {
+      return {
+        ok: false,
+        message: `balloonText must be ${BALLOON_TEXT_MAX_LENGTH} characters or fewer`,
+      };
+    }
   }
 
   const delivery = b.delivery;
@@ -84,19 +99,21 @@ function validateStripePayload(
     const addOns = (i.addOns as Record<string, unknown>) ?? {};
     const cardType = addOns.cardType as string | undefined;
     const wrappingOption = addOns.wrappingOption as string | undefined;
+    const itemType = (i.itemType === 'product'
+      ? 'product'
+      : i.itemType === 'plushyToy'
+        ? 'plushyToy'
+        : i.itemType === 'balloon'
+          ? 'balloon'
+        : 'bouquet') as 'bouquet' | 'product' | 'plushyToy' | 'balloon';
+    const balloonText = itemType === 'balloon' ? normalizeBalloonText(addOns.balloonText) : undefined;
     const productAddOnsRaw = addOns.productAddOns;
     const productAddOns =
       productAddOnsRaw && typeof productAddOnsRaw === 'object'
         ? (productAddOnsRaw as Record<string, boolean>)
         : undefined;
     return {
-      itemType: (i.itemType === 'product'
-        ? 'product'
-        : i.itemType === 'plushyToy'
-          ? 'plushyToy'
-          : i.itemType === 'balloon'
-            ? 'balloon'
-          : 'bouquet') as 'bouquet' | 'product' | 'plushyToy' | 'balloon',
+      itemType,
       bouquetId: typeof i.bouquetId === 'string' ? i.bouquetId : '',
       bouquetSlug: typeof i.bouquetSlug === 'string' ? i.bouquetSlug : undefined,
       size: typeof i.size === 'string' ? i.size : 'm',
@@ -112,6 +129,7 @@ function validateStripePayload(
               : wrappingOption === 'no paper' || wrappingOption === 'none'
                 ? 'no paper'
                 : null,
+        ...(balloonText && { balloonText }),
         productAddOns,
       },
       imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,

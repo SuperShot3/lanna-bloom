@@ -32,6 +32,7 @@ export function ProductDetailClient({
   const descDisplay = description?.trim() || (lang === 'th' ? 'ยังไม่มีรายละเอียดสินค้า' : 'No description provided.');
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const isStandaloneAddOn = product.catalogKind === 'plushyToy' || product.catalogKind === 'balloon';
+  const showDescriptionBelowBalloonText = product.catalogKind === 'balloon';
 
   useEffect(() => {
     trackViewItem({
@@ -66,8 +67,12 @@ export function ProductDetailClient({
           <h1 className="product-title">{name}</h1>
           <ProductShareLink lang={lang} productTitle={name} />
         </div>
-        <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
-        <p className="product-desc">{descDisplay}</p>
+        {!showDescriptionBelowBalloonText && (
+          <>
+            <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
+            <p className="product-desc">{descDisplay}</p>
+          </>
+        )}
         {(product.preparationTime != null || product.occasion) && (
           <div className="product-attributes">
             {product.preparationTime != null && (
@@ -98,6 +103,7 @@ export function ProductDetailClient({
                 : gifts
           }
           suggestedBouquets={isStandaloneAddOn ? suggestedBouquets : []}
+          description={showDescriptionBelowBalloonText ? descDisplay : undefined}
         />
       </div>
     </>

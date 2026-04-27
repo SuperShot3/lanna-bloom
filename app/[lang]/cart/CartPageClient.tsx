@@ -59,14 +59,19 @@ function formatStickyDate(dateStr: string): string {
   return `${day} ${month}`;
 }
 
-/** Add-ons are not displayed on cart/checkout per UX. */
-function buildAddOnsSummaryForDisplay(): string {
-  return '';
+function balloonTextLabel(t: { balloonTextLabel?: string }): string {
+  return t.balloonTextLabel ?? 'Balloon text';
 }
 
-/** Add-on lines for order summary — not displayed on checkout. */
-function buildAddOnsSummaryLines(): string[] {
-  return [];
+/** Balloon custom text is shown on cart so customers can review it before checkout. */
+function buildAddOnsSummaryForDisplay(item: CartItem, t: { balloonTextLabel?: string }): string {
+  const balloonText = item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
+  return balloonText ? `${balloonTextLabel(t)}: "${balloonText}"` : '';
+}
+
+function buildAddOnsSummaryLines(item: CartItem, t: { balloonTextLabel?: string }): string[] {
+  const balloonText = item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
+  return balloonText ? [`${balloonTextLabel(t)}: "${balloonText}"`] : [];
 }
 
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
@@ -1341,7 +1346,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <div className="cart-list cart-mobile-list">
                     {items.map((item, index) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
-                      const addOnsSummary = buildAddOnsSummaryForDisplay();
+                      const addOnsSummary = buildAddOnsSummaryForDisplay(item, t);
                       return (
                         <div key={`${item.bouquetId}-${index}`} className="cart-item">
                           {item.imageUrl && (
@@ -1382,7 +1387,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     })}
                   </div>
                   <div className="cart-order-summary cart-mobile-summary">
-                    <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
+                    <h3 className="cart-order-summary-title">
+                      {t.orderComposition ?? 'Order composition'}
+                    </h3>
                     {items.map((item, i) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
                       const qty = item.quantity ?? 1;
@@ -1394,10 +1401,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                         : qty > 1
                           ? `${name} — ${item.size.label} × ${qty}`
                           : `${name} — ${item.size.label}`;
+                      const addOnLines = buildAddOnsSummaryLines(item, t);
                       return (
-                        <div key={`mob-sum-${item.bouquetId}-${i}`} className="cart-order-summary-row cart-order-summary-item">
-                          <span>{itemLabel}</span>
-                          <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                        <div key={`mob-sum-${item.bouquetId}-${i}`}>
+                          <div className="cart-order-summary-row cart-order-summary-item">
+                            <span>{itemLabel}</span>
+                            <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                          </div>
+                          {addOnLines.map((line, j) => (
+                            <div key={j} className="cart-order-summary-row cart-order-summary-addon">
+                              <span>{line}</span>
+                            </div>
+                          ))}
                         </div>
                       );
                     })}
@@ -1641,11 +1656,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </div>
         <div className="cart-desktop-column-right">
         <aside className="cart-sticky-sidebar">
+        <h2 className="cart-sticky-sidebar-title">Order Summary</h2>
         <div className="cart-items-and-summary">
         <div className="cart-list">
           {items.map((item, index) => {
             const name = lang === 'th' ? item.nameTh : item.nameEn;
-            const addOnsSummary = buildAddOnsSummaryForDisplay();
+            const addOnsSummary = buildAddOnsSummaryForDisplay(item, t);
             return (
               <div key={`${item.bouquetId}-${index}`} className="cart-item">
                 {item.imageUrl && (
@@ -1708,7 +1724,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           return (
             <div className="cart-summary-section">
               <div className="cart-order-summary">
-                <h3 className="cart-order-summary-title">{t.orderSummary}</h3>
+                <h3 className="cart-order-summary-title">
+                  {t.orderComposition ?? 'Order composition'}
+                </h3>
                 {items.map((item, i) => {
                   const name = lang === 'th' ? item.nameTh : item.nameEn;
                   const qty = item.quantity ?? 1;
@@ -1725,7 +1743,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     .replace('{qty}', String(qty))
                     .replace('{lineTotal}', priceStr)
                     .replace('{price}', priceStr);
-                  const addOnLines = buildAddOnsSummaryLines();
+                  const addOnLines = buildAddOnsSummaryLines(item, t);
                   return (
                     <div key={`summary-${item.bouquetId}-${i}`}>
                       <div className="cart-order-summary-row cart-order-summary-item">
@@ -1990,6 +2008,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           word-break: break-word;
           min-width: 0;
         }
+        .cart-sticky-sidebar-title {
+          margin: 0 0 14px;
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--foreground);
+        }
         .cart-items-and-summary {
           display: flex;
           flex-direction: column;
@@ -2216,9 +2240,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
         }
         .cart-order-summary-addon {
-          font-size: 0.95rem;
-          color: var(--text-muted);
-          padding-left: 8px;
+          display: block;
+          margin: -2px 0 8px;
+          padding: 8px 10px;
+          border-radius: var(--radius-sm);
+          background: var(--pastel-cream, #fdf8f3);
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text);
         }
         .cart-order-summary-referral {
           flex-wrap: wrap;

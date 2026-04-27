@@ -267,6 +267,9 @@ export function OrderDetailsView({
       if (item.addOns?.cardMessage?.trim()) {
         lines.push(`  ${t.cardMessage}: ${item.addOns.cardMessage.trim()}`);
       }
+      if (item.addOns?.balloonText?.trim()) {
+        lines.push(`  ${t.balloonText ?? 'Balloon text'}: ${item.addOns.balloonText.trim()}`);
+      }
     });
     lines.push('');
     lines.push(t.totalsHeading + ':');
@@ -524,6 +527,14 @@ export function OrderDetailsView({
                       <p className="order-details-addon-row">
                         <span className="order-details-addon-label">{t.cardMessage}:</span>
                         <span className="order-details-addon-value">"{item.addOns.cardMessage.trim()}"</span>
+                      </p>
+                    )}
+                    {item.addOns?.balloonText?.trim() && (
+                      <p className="order-details-addon-row">
+                        <span className="order-details-addon-label">
+                          {t.balloonText ?? 'Balloon text'}:
+                        </span>
+                        <span className="order-details-addon-value">"{item.addOns.balloonText.trim()}"</span>
                       </p>
                     )}
                   </div>

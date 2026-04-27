@@ -81,6 +81,7 @@ export interface OrderItemAddOnsDisplay {
   cardType?: 'free' | 'premium' | null;
   wrappingOption?: string | null;
   cardMessage?: string | null;
+  balloonText?: string | null;
 }
 
 export interface SupabaseStatusHistoryRow {

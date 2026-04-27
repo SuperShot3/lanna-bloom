@@ -14,6 +14,8 @@ export interface AddOnsValues {
   cardType: CardType;
   cardMessage: string;
   wrappingPreference: WrappingPreference;
+  /** Custom text to write/print on standalone balloons. */
+  balloonText?: string;
   /** Product add-ons (legacy) — kept for cart/order compatibility */
   productAddOns?: Record<string, boolean>;
 }

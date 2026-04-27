@@ -95,6 +95,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           (p.itemType ?? 'bouquet') === (item.itemType ?? 'bouquet') &&
           p.size.optionId === item.size.optionId &&
           (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim() &&
+          (p.addOns.balloonText ?? '').trim() === (item.addOns.balloonText ?? '').trim() &&
           JSON.stringify(p.addOns.productAddOns ?? {}) ===
             JSON.stringify(item.addOns.productAddOns ?? {})
       );

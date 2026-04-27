@@ -1073,8 +1073,8 @@ a.filter-pill--active:hover {
   margin: var(--space-4) 0;
 }
 .product-price {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  font-weight: 700;
   color: var(--text);
 }
 .product-order-line-btn {
@@ -1129,7 +1129,7 @@ a.filter-pill--active:hover {
     margin: var(--space-3) 0;
   }
   .product-info .product-price {
-    font-size: 1.1rem;
+    font-size: clamp(1.5rem, 2vw, 1.75rem);
   }
   /* Order block - compact (styled-jsx adds hash to classes) */
   .product-info [class*='order-block-title'] {

@@ -95,6 +95,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
       let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
       if (i.addOns?.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
       if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
+      if (i.addOns?.balloonText) line += ` — Balloon text: ${escapeHtml(i.addOns.balloonText)}`;
       return line;
     })
     .join('<br/>');
@@ -173,6 +174,7 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
       let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
       if (i.addOns?.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
       if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
+      if (i.addOns?.balloonText) line += ` — Balloon text: ${escapeHtml(i.addOns.balloonText)}`;
       return line;
     })
     .join('<br/>');

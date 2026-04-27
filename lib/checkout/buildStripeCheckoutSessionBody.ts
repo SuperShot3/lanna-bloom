@@ -10,6 +10,7 @@ import type { CartItem } from '@/contexts/CartContext';
 import { getStoredReferral, computeReferralDiscount } from '@/lib/referral';
 import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
+import { normalizeBalloonText } from '@/lib/balloonCustomization';
 
 function mapWrappingForStripe(
   pref: CartItem['addOns']['wrappingPreference']
@@ -35,6 +36,9 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
     const qty = item.quantity ?? 1;
     const wrappingOption = mapWrappingForStripe(item.addOns.wrappingPreference);
     const cardType = mapCardTypeForStripe(item.addOns.cardType);
+    const balloonText = item.itemType === 'balloon'
+      ? normalizeBalloonText(item.addOns.balloonText)
+      : undefined;
     for (let i = 0; i < qty; i++) {
       rows.push({
         itemType: item.itemType ?? 'bouquet',
@@ -45,6 +49,7 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
           cardType,
           cardMessage: item.addOns.cardMessage?.trim() ?? '',
           wrappingOption,
+          ...(balloonText && { balloonText }),
           productAddOns: item.addOns.productAddOns,
         },
         imageUrl: item.imageUrl,

@@ -17,6 +17,7 @@ import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
+import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -24,6 +25,7 @@ export function ProductOrderBlockForProduct({
   selectedImageUrl,
   gifts = [],
   suggestedBouquets = [],
+  description,
 }: {
   product: CatalogProduct;
   lang: Locale;
@@ -31,6 +33,7 @@ export function ProductOrderBlockForProduct({
   gifts?: CatalogProduct[];
   /** Bouquet cross-sell (e.g. on plushy toy PDP — pair with flowers) */
   suggestedBouquets?: Bouquet[];
+  description?: string;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
@@ -38,12 +41,20 @@ export function ProductOrderBlockForProduct({
   const { addItem } = useCart();
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
+  const tBalloon = tBuyNow as typeof tBuyNow & {
+    balloonTextTitle?: string;
+    balloonTextIntro?: string;
+    balloonTextLabel?: string;
+    balloonTextPlaceholder?: string;
+    balloonTextHelper?: string;
+  };
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const totalPrice = (finalPrice + addOnsTotal) * Math.max(1, Math.floor(quantity));
   const itemType =
     product.catalogKind === 'plushyToy' ? 'plushyToy' : product.catalogKind === 'balloon' ? 'balloon' : 'product';
+  const isBalloon = itemType === 'balloon';
 
   const sizeLabel = (product.sizeLabel || '').trim();
 
@@ -59,6 +70,7 @@ export function ProductOrderBlockForProduct({
       preparationTime: undefined as number | undefined,
       availability: true,
     };
+    const balloonText = isBalloon ? normalizeBalloonText(addOns.balloonText) : undefined;
     addItem(
       {
         itemType,
@@ -68,7 +80,7 @@ export function ProductOrderBlockForProduct({
         nameTh: product.nameTh ?? product.nameEn,
         imageUrl: selectedImageUrl ?? product.images?.[0],
         size: syntheticSize,
-        addOns: { ...addOns },
+        addOns: { ...addOns, balloonText },
       },
       qty
     );
@@ -107,13 +119,58 @@ export function ProductOrderBlockForProduct({
         </div>
       ) : (
         <>
-          <AddOnsSection
-            lang={lang}
-            value={addOns}
-            onChange={setAddOns}
-            gifts={gifts.filter((g) => g.id !== product.id)}
-            suggestedBouquets={suggestedBouquets}
-          />
+          {!isBalloon && (
+            <AddOnsSection
+              lang={lang}
+              value={addOns}
+              onChange={setAddOns}
+              gifts={gifts.filter((g) => g.id !== product.id)}
+              suggestedBouquets={suggestedBouquets}
+            />
+          )}
+          {isBalloon && (
+            <div className="balloon-customization">
+              <h3 className="balloon-customization-title">
+                {tBalloon.balloonTextTitle ?? 'Custom balloon text'}
+              </h3>
+              <p className="balloon-customization-intro">
+                {tBalloon.balloonTextIntro ??
+                  'We can add short custom text to this balloon. The shop will use this exact text when preparing your order.'}
+              </p>
+              <label className="balloon-customization-label" htmlFor="balloon-custom-text">
+                {tBalloon.balloonTextLabel ?? 'Text for balloon'}
+              </label>
+              <textarea
+                id="balloon-custom-text"
+                className="balloon-customization-textarea"
+                value={addOns.balloonText ?? ''}
+                onChange={(e) =>
+                  setAddOns((current) => ({
+                    ...current,
+                    balloonText: e.target.value.slice(0, BALLOON_TEXT_MAX_LENGTH),
+                  }))
+                }
+                placeholder={tBalloon.balloonTextPlaceholder ?? 'Happy Birthday Anna'}
+                maxLength={BALLOON_TEXT_MAX_LENGTH}
+                rows={2}
+              />
+              <div className="balloon-customization-footer">
+                <span>
+                  {tBalloon.balloonTextHelper ??
+                    'Short text works best. Final placement depends on balloon shape and available space.'}
+                </span>
+                <span aria-live="polite">
+                  {(addOns.balloonText ?? '').length}/{BALLOON_TEXT_MAX_LENGTH}
+                </span>
+              </div>
+            </div>
+          )}
+          {isBalloon && description ? (
+            <div className="balloon-product-description">
+              <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
+              <p className="product-desc">{description}</p>
+            </div>
+          ) : null}
           <div className="order-qty-row">
             <span className="order-qty-label">{tBuyNow.quantity ?? 'Quantity'}</span>
             <div className="order-qty-control">
@@ -171,6 +228,60 @@ export function ProductOrderBlockForProduct({
           gap: 12px;
           margin-top: 16px;
           flex-wrap: wrap;
+        }
+        .balloon-customization {
+          margin-top: 16px;
+          padding: 14px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          background: var(--pastel-cream, #fdf8f3);
+        }
+        .balloon-customization-title {
+          margin: 0 0 6px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text);
+        }
+        .balloon-customization-intro {
+          margin: 0 0 12px;
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          line-height: 1.5;
+        }
+        .balloon-customization-label {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-muted);
+        }
+        .balloon-customization-textarea {
+          display: block;
+          width: 100%;
+          min-height: 64px;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font: inherit;
+          color: var(--text);
+          resize: vertical;
+          background: #fff;
+        }
+        .balloon-customization-textarea:focus {
+          outline: none;
+          border-color: var(--accent);
+        }
+        .balloon-customization-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 6px;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          line-height: 1.4;
+        }
+        .balloon-product-description {
+          margin-top: 16px;
         }
         .order-qty-label {
           font-size: 0.9rem;

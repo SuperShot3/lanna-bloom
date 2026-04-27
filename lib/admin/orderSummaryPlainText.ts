@@ -119,6 +119,22 @@ export function buildClipboardCardText(
   return blocks.join('\n\n---\n\n');
 }
 
+function buildClipboardBalloonText(items: OrderSummaryItemRow[]): string {
+  const withText = items.filter((i) => i.addOns?.balloonText?.trim());
+  const lines: string[] = [];
+  items.forEach((item, i) => {
+    const text = item.addOns?.balloonText?.trim();
+    if (!text) return;
+    if (withText.length > 1) {
+      const title = item.bouquet_title?.trim() || `Item ${i + 1}`;
+      lines.push(`${title}: ${text}`);
+    } else {
+      lines.push(text);
+    }
+  });
+  return lines.join('\n\n');
+}
+
 /**
  * One block to paste to a driver on LINE/Messenger: time, place, pin, recipient, card text, order ref.
  */
@@ -132,6 +148,7 @@ export function buildDriverMessengerPlainText(
   const rPhone = recipientPhoneDisplay(order);
   const surprise = surpriseDeliveryAdminLabel(order);
   const cardBlock = buildClipboardCardText(items, customGreetingCard);
+  const balloonBlock = buildClipboardBalloonText(items);
 
   const datePart = order.delivery_date?.trim() ?? '';
   const windowPart = order.delivery_window?.trim() ?? '';
@@ -166,6 +183,11 @@ export function buildDriverMessengerPlainText(
   } else {
     lines.push('Card message: —');
   }
+  if (balloonBlock.trim()) {
+    lines.push('');
+    lines.push('Balloon text:');
+    lines.push(balloonBlock);
+  }
 
   return lines.join('\n');
 }
@@ -177,6 +199,13 @@ function getWrappingLabel(opt: string | null | undefined): string {
   if (lower === 'premium') return 'Premium';
   if (lower === 'no paper' || lower === 'none') return 'No paper';
   return opt;
+}
+
+function getItemTypeLabel(type: string | null | undefined): string {
+  if (type === 'product') return 'Product';
+  if (type === 'plushyToy') return 'Plushy toy';
+  if (type === 'balloon') return 'Balloon';
+  return 'Bouquet';
 }
 
 /**
@@ -205,13 +234,16 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
     lines.push('  (No line items)');
   } else {
     items.forEach((item, i) => {
-      const type = (item.item_type ?? 'bouquet') === 'bouquet' ? 'Bouquet' : 'Product';
+      const type = getItemTypeLabel(item.item_type);
       lines.push(`  ${i + 1}. ${naText(item.bouquet_title)} (${type})`);
       lines.push(
         `     Size: ${naText(item.size)} | Qty: 1 | Price: ${formatAmountNa(item.price)}`
       );
       if (item.addOns?.cardMessage?.trim()) {
         lines.push(`     Card text: "${item.addOns.cardMessage.trim()}"`);
+      }
+      if (item.addOns?.balloonText?.trim()) {
+        lines.push(`     Balloon text: "${item.addOns.balloonText.trim()}"`);
       }
       if (item.addOns?.cardType != null) {
         lines.push(`     Card: ${item.addOns.cardType === 'premium' ? 'Premium' : 'Free'}`);
