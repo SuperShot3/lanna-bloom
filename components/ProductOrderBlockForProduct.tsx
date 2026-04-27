@@ -42,6 +42,8 @@ export function ProductOrderBlockForProduct({
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const totalPrice = (finalPrice + addOnsTotal) * Math.max(1, Math.floor(quantity));
+  const itemType =
+    product.catalogKind === 'plushyToy' ? 'plushyToy' : product.catalogKind === 'balloon' ? 'balloon' : 'product';
 
   const sizeLabel = (product.sizeLabel || '').trim();
 
@@ -59,7 +61,7 @@ export function ProductOrderBlockForProduct({
     };
     addItem(
       {
-        itemType: product.catalogKind === 'plushyToy' ? 'plushyToy' : 'product',
+        itemType,
         bouquetId: product.id,
         slug: product.slug,
         nameEn: product.nameEn,

@@ -205,7 +205,7 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
     lines.push('  (No line items)');
   } else {
     items.forEach((item, i) => {
-      const type = (item.item_type ?? 'bouquet') === 'product' ? 'Product' : 'Bouquet';
+      const type = (item.item_type ?? 'bouquet') === 'bouquet' ? 'Bouquet' : 'Product';
       lines.push(`  ${i + 1}. ${naText(item.bouquet_title)} (${type})`);
       lines.push(
         `     Size: ${naText(item.size)} | Qty: 1 | Price: ${formatAmountNa(item.price)}`

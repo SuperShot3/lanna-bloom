@@ -1,5 +1,7 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import {
+  getBalloonsFilteredFromSanity,
   getBouquetsCatalogData,
   getPlushyToysFilteredFromSanity,
   getProductsFilteredFromSanity,
@@ -11,9 +13,42 @@ import { CatalogWithFilters } from '@/components/CatalogWithFilters';
 import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
+import { getBaseUrl } from '@/lib/orders';
 
 // Revalidate catalog every 60 seconds so new flowers from Sanity appear without rebuild
 export const revalidate = 60;
+
+const BALLOONS_SEO_TITLE = 'Balloons Delivery in Chiang Mai';
+const BALLOONS_SEO_DESCRIPTION =
+  'Order balloons for birthdays, surprises, flower add-ons, and gift delivery in Chiang Mai. Available with flowers, plush toys, and gifts from Lanna Bloom.';
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: { lang: string };
+  searchParams: Record<string, string | string[] | undefined>;
+}): Promise<Metadata> {
+  if (!isValidLocale(params.lang)) return { title: 'Lanna Bloom' };
+  const filterParams = parseCatalogSearchParams(searchParams);
+  if (filterParams.topCategory !== 'balloons') return {};
+
+  const locale = params.lang as Locale;
+  const canonical = `${getBaseUrl()}/${locale}/catalog?topCategory=balloons`;
+  return {
+    title: BALLOONS_SEO_TITLE,
+    description: BALLOONS_SEO_DESCRIPTION,
+    alternates: { canonical },
+    openGraph: {
+      title: BALLOONS_SEO_TITLE,
+      description: BALLOONS_SEO_DESCRIPTION,
+      url: canonical,
+      siteName: 'Lanna Bloom',
+      locale: locale === 'th' ? 'th_TH' : 'en_US',
+      type: 'website',
+    },
+  };
+}
 
 function flowerTypeCountsFromBouquets(bouquets: Bouquet[]): Record<string, number> {
   const counts: Record<string, number> = {};
@@ -51,6 +86,10 @@ export default async function CatalogPage({
     allBouquetsForFacets = data.allBouquets;
   } else if (topCategory === 'plushy_toys') {
     products = await getPlushyToysFilteredFromSanity({
+      sort: filterParams.sort || 'newest',
+    });
+  } else if (topCategory === 'balloons') {
+    products = await getBalloonsFilteredFromSanity({
       sort: filterParams.sort || 'newest',
     });
   } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {

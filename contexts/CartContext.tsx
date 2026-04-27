@@ -14,8 +14,8 @@ import type { AddOnsValues } from '@/components/AddOnsSection';
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 
 export interface CartItem {
-  /** 'bouquet' | 'product' | 'plushyToy' — default 'bouquet' for backward compat */
-  itemType?: 'bouquet' | 'product' | 'plushyToy';
+  /** 'bouquet' | 'product' | 'plushyToy' | 'balloon' — default 'bouquet' for backward compat */
+  itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
   /** Sanity document ID (bouquet or product) */
   bouquetId: string;
   slug: string;

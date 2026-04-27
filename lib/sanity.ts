@@ -509,9 +509,9 @@ export interface CatalogProduct {
   descriptionEn?: string;
   descriptionTh?: string;
   category: string;
-  /** Sanity source: partner `product` vs standalone `plushyToy` document. */
-  catalogKind?: 'product' | 'plushyToy';
-  /** Single-size label (plushy toys). Optional for non-plushy products. */
+  /** Sanity source: partner `product` vs standalone product documents. */
+  catalogKind?: 'product' | 'plushyToy' | 'balloon';
+  /** Single-size label (standalone non-flower products). Optional for partner products. */
   sizeLabel?: string;
   /** Partner cost (what we pay partner). For display use computeFinalPrice(cost ?? price, commissionPercent). */
   price: number;
@@ -1191,6 +1191,144 @@ export async function getPlushyToyById(id: string): Promise<{
     };
   } catch (err) {
     console.error('[Sanity] getPlushyToyById failed:', err);
+    return null;
+  }
+}
+
+/** Live balloons (standalone `balloon` documents — not partner `product`). */
+export async function getBalloonsFilteredFromSanity(params: {
+  sort?: 'newest' | 'price_asc' | 'price_desc';
+}): Promise<CatalogProduct[]> {
+  const { sort = 'newest' } = params;
+  try {
+    const docs = await clientNoCdn.fetch<
+      Array<{
+        _id: string;
+        _createdAt?: string;
+        slug?: { current?: string };
+        nameEn?: string;
+        nameTh?: string;
+        descriptionEn?: string;
+        descriptionTh?: string;
+        price?: number;
+        sizeLabel?: string;
+        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+      }>
+    >(
+      `*[_type == "balloon"] | order(_createdAt desc) {
+        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, sizeLabel, images
+      }`
+    );
+    const mapped = (docs ?? []).map((d) => {
+      const slug = d.slug?.current ?? d._id;
+      const imageUrls = (d.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+      const price = d.price ?? 0;
+      return {
+        id: d._id,
+        slug,
+        nameEn: d.nameEn ?? '',
+        nameTh: d.nameTh,
+        descriptionEn: d.descriptionEn,
+        descriptionTh: d.descriptionTh,
+        category: 'balloons',
+        catalogKind: 'balloon' as const,
+        sizeLabel: d.sizeLabel,
+        price,
+        images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
+        _createdAt: d._createdAt,
+        _partnerCost: price,
+      };
+    });
+    if (sort === 'price_asc') {
+      mapped.sort((a, b) => a._partnerCost! - b._partnerCost!);
+    } else if (sort === 'price_desc') {
+      mapped.sort((a, b) => b._partnerCost! - a._partnerCost!);
+    } else {
+      mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
+    }
+    return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
+  } catch (err) {
+    console.error('[Sanity] getBalloonsFilteredFromSanity failed:', err);
+    return [];
+  }
+}
+
+/** Balloon by slug (detail page). */
+export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogProduct | null> {
+  try {
+    const doc = await clientNoCdn.fetch<
+      | {
+          _id: string;
+          slug?: { current?: string };
+          nameEn?: string;
+          nameTh?: string;
+          descriptionEn?: string;
+          descriptionTh?: string;
+          price?: number;
+          sizeLabel?: string;
+          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+        }
+      | null
+    >(
+      `*[_type == "balloon" && slug.current == $slug][0] {
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, sizeLabel, images
+      }`,
+      { slug }
+    );
+    if (!doc) return null;
+    const slugVal = doc.slug?.current ?? doc._id;
+    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    return {
+      id: doc._id,
+      slug: slugVal,
+      nameEn: doc.nameEn ?? '',
+      nameTh: doc.nameTh,
+      descriptionEn: doc.descriptionEn,
+      descriptionTh: doc.descriptionTh,
+      category: 'balloons',
+      catalogKind: 'balloon',
+      sizeLabel: doc.sizeLabel,
+      price: doc.price ?? 0,
+      images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
+    };
+  } catch (err) {
+    console.error('[Sanity] getBalloonBySlugFromSanity failed:', err);
+    return null;
+  }
+}
+
+/** Balloon by id (Stripe / server pricing). */
+export async function getBalloonById(id: string): Promise<{
+  id: string;
+  nameEn: string;
+  nameTh?: string;
+  price: number;
+  sizeLabel?: string;
+  imageUrl?: string;
+} | null> {
+  try {
+    const doc = await clientNoCdn.fetch<
+      | {
+          _id: string;
+          nameEn?: string;
+          nameTh?: string;
+          price?: number;
+          sizeLabel?: string;
+          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+        }
+      | null
+    >(`*[_type == "balloon" && _id == $id][0] { _id, nameEn, nameTh, price, sizeLabel, images }`, { id });
+    if (!doc) return null;
+    return {
+      id: doc._id,
+      nameEn: doc.nameEn ?? '',
+      nameTh: doc.nameTh,
+      price: doc.price ?? 0,
+      sizeLabel: doc.sizeLabel,
+      imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
+    };
+  } catch (err) {
+    console.error('[Sanity] getBalloonById failed:', err);
     return null;
   }
 }

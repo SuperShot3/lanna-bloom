@@ -1,4 +1,8 @@
-import { getBouquetsFromSanity, getPlushyToysFilteredFromSanity } from '@/lib/sanity';
+import {
+  getBalloonsFilteredFromSanity,
+  getBouquetsFromSanity,
+  getPlushyToysFilteredFromSanity,
+} from '@/lib/sanity';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,9 +39,10 @@ function formatColors(colors: string[] | undefined): string {
 
 export async function GET() {
   try {
-    const [bouquets, toys] = await Promise.all([
+    const [bouquets, toys, balloons] = await Promise.all([
       getBouquetsFromSanity(),
       getPlushyToysFilteredFromSanity({ sort: 'newest' }),
+      getBalloonsFilteredFromSanity({ sort: 'newest' }),
     ]);
 
     const TSV_HEADERS = [
@@ -139,6 +144,46 @@ export async function GET() {
           'Toys & Games > Toys > Dolls, Playsets & Toy Figures > Stuffed Animals',
           '',        // color not applicable
           sanitise(toy.sizeLabel ?? ''),
+          '',        // no occasion label
+          SHIPPING,
+        ].join('\t')
+      );
+    }
+
+    // ── Balloon rows (one per balloon product) ───────────────────────────────
+    for (const balloon of balloons) {
+      const link = `${BASE_URL}/en/catalog/${balloon.slug}`;
+      const allImages = balloon.images.map(publicImageUrl).filter(Boolean);
+      const imageLink = allImages[0];
+      if (!imageLink) continue; // skip balloons without a real product photo
+
+      // Google accepts exactly one URL per additional_image_link field.
+      const additionalImage = allImages[1] ?? '';
+      const title = balloon.sizeLabel
+        ? sanitise(`${balloon.nameEn} — ${balloon.sizeLabel}`)
+        : sanitise(balloon.nameEn);
+      const description = sanitise(
+        balloon.descriptionEn ||
+          `${balloon.nameEn}. Balloons for birthdays, surprises, and gift delivery in Chiang Mai. Price includes VAT.`
+      );
+
+      rows.push(
+        [
+          sanitise(balloon.id),
+          title,
+          description,
+          link,
+          imageLink,
+          additionalImage,
+          'new',
+          'in_stock',
+          formatPrice(balloon.price),
+          BRAND,
+          'no',
+          '',        // no item_group_id — each balloon is a single-variant item
+          'Arts & Entertainment > Party & Celebration > Party Supplies > Balloons',
+          '',        // color not modeled for standalone balloons
+          sanitise(balloon.sizeLabel ?? ''),
           '',        // no occasion label
           SHIPPING,
         ].join('\t')

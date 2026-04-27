@@ -4,6 +4,7 @@
  */
 
 import {
+  getBalloonById,
   getBouquetById,
   getBouquetBySlugFromSanity,
   getPlushyToyById,
@@ -20,7 +21,7 @@ import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 const CARD_BEAUTIFUL_PRICE_THB = 20;
 
 export interface CartItemIdentifier {
-  itemType?: 'bouquet' | 'product' | 'plushyToy';
+  itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
   bouquetId: string;
   bouquetSlug?: string;
   size: string;
@@ -45,7 +46,7 @@ export interface ComputedOrderItem {
   };
   imageUrl?: string;
   bouquetSlug?: string;
-  itemType?: 'bouquet' | 'product' | 'plushyToy';
+  itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
   cost?: number;
   commissionAmount?: number;
 }
@@ -76,6 +77,7 @@ export async function computeOrderTotals(
   for (const item of cartItems) {
     const isProduct = item.itemType === 'product';
     const isPlushyToy = item.itemType === 'plushyToy';
+    const isBalloon = item.itemType === 'balloon';
 
     if (isPlushyToy) {
       const toy = await getPlushyToyById(item.bouquetId);
@@ -104,6 +106,37 @@ export async function computeOrderTotals(
         imageUrl: item.imageUrl ?? toy.imageUrl,
         bouquetSlug: item.bouquetSlug,
         itemType: 'plushyToy',
+        cost: undefined,
+        commissionAmount: undefined,
+      });
+      itemsTotal += itemPrice;
+    } else if (isBalloon) {
+      const balloon = await getBalloonById(item.bouquetId);
+      if (!balloon) {
+        return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
+      }
+      const finalPrice = balloon.price;
+      let itemPrice = finalPrice;
+      if (item.addOns?.cardType === 'premium') {
+        itemPrice += CARD_BEAUTIFUL_PRICE_THB;
+      }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+
+      const balloonTitle = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
+      const sizeLabel = (item.size || balloon.sizeLabel || '—').trim() || '—';
+      items.push({
+        bouquetId: balloon.id,
+        bouquetTitle: balloonTitle,
+        size: sizeLabel,
+        price: itemPrice,
+        addOns: {
+          cardType: item.addOns?.cardType ?? null,
+          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          wrappingOption: item.addOns?.wrappingOption ?? null,
+        },
+        imageUrl: item.imageUrl ?? balloon.imageUrl,
+        bouquetSlug: item.bouquetSlug,
+        itemType: 'balloon',
         cost: undefined,
         commissionAmount: undefined,
       });

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
 import {
+  getBalloonBySlugFromSanity,
   getBouquetBySlugFromSanity,
   getBouquetsFromSanity,
   getPlushyToyBySlugFromSanity,
@@ -90,6 +91,39 @@ export default async function ProductPage({
           <div className="product-grid">
             <ProductDetailClient
               product={plushyToy}
+              lang={lang as Locale}
+              name={name}
+              description={description}
+              gifts={[]}
+              suggestedBouquets={suggestedBouquets}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const balloon = await getBalloonBySlugFromSanity(params.slug);
+  if (balloon) {
+    const name = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
+    const description = (lang === 'th' ? balloon.descriptionTh : balloon.descriptionEn) || '';
+    const nav = translations[lang as Locale].nav;
+    const catalogHref = `/${lang}/catalog?topCategory=balloons`;
+    const suggestedBouquets = await getPopularBouquetsFromSanity(8);
+
+    return (
+      <div className="product-page">
+        <div className="container product-layout">
+          <nav className="breadcrumb" aria-label="Breadcrumb">
+            <Link href={`/${lang}`}>{nav.home}</Link>
+            <span className="sep">/</span>
+            <Link href={catalogHref}>{nav.catalog}</Link>
+            <span className="sep">/</span>
+            <span aria-current="page">{name}</span>
+          </nav>
+          <div className="product-grid">
+            <ProductDetailClient
+              product={balloon}
               lang={lang as Locale}
               name={name}
               description={description}

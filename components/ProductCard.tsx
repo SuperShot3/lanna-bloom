@@ -84,6 +84,8 @@ export function ProductCard({
   const href = `/${lang}/catalog/${product.slug}`;
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const isPlushyToys = product.catalogKind === 'plushyToy';
+  const isBalloon = product.catalogKind === 'balloon';
+  const isStandaloneProduct = isPlushyToys || isBalloon;
   const sizeLabel = (product.sizeLabel || '').trim();
 
   const images = useMemo(() => {
@@ -96,11 +98,11 @@ export function ProductCard({
     setImageIndex(0);
   }, [product.id]);
 
-  const imgSrc = isPlushyToys
+  const imgSrc = isStandaloneProduct
     ? (images[imageIndex] ?? images[0] ?? '')
     : (product.images?.[0] ?? '');
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
-  const canSwipePlushyImages = isPlushyToys && images.length > 1;
+  const canSwipeStandaloneImages = isStandaloneProduct && images.length > 1;
 
   const touchStartX = useRef<number | null>(null);
   const didSwipeRef = useRef(false);
@@ -121,7 +123,7 @@ export function ProductCard({
 
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
-      if (touchStartX.current == null || !canSwipePlushyImages) {
+      if (touchStartX.current == null || !canSwipeStandaloneImages) {
         touchStartX.current = null;
         return;
       }
@@ -137,12 +139,12 @@ export function ProductCard({
         }, 450);
       }
     },
-    [canSwipePlushyImages, goNextImage, goPrevImage]
+    [canSwipeStandaloneImages, goNextImage, goPrevImage]
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!canSwipePlushyImages) return;
+      if (!canSwipeStandaloneImages) return;
       mouseStartX.current = e.clientX;
       const onMouseUp = (upEv: MouseEvent) => {
         window.removeEventListener('mouseup', onMouseUp);
@@ -162,7 +164,7 @@ export function ProductCard({
       mouseUpListenerRef.current = onMouseUp;
       window.addEventListener('mouseup', onMouseUp);
     },
-    [canSwipePlushyImages, goNextImage, goPrevImage]
+    [canSwipeStandaloneImages, goNextImage, goPrevImage]
   );
 
   useEffect(() => {
@@ -227,10 +229,10 @@ export function ProductCard({
 
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
-      if (isPlushyToys) {
+      if (isStandaloneProduct) {
         addItem(
           {
-            itemType: 'plushyToy',
+            itemType: isBalloon ? 'balloon' : 'plushyToy',
             bouquetId: product.id,
             slug: product.slug,
             nameEn: product.nameEn,
@@ -312,7 +314,7 @@ export function ProductCard({
         router.push(`/${lang}/cart`);
       }
     },
-    [addItem, finalPrice, imgSrc, isPlushyToys, lang, name, product, router, selected, sizeLabel]
+    [addItem, finalPrice, imgSrc, isBalloon, isStandaloneProduct, lang, name, product, router, selected, sizeLabel]
   );
 
   const radioName = `product-opt-${product.id}`;
@@ -337,11 +339,11 @@ export function ProductCard({
       >
         <div
           className="pcard-image-wrap"
-          style={canSwipePlushyImages ? { touchAction: 'pan-y' as const } : undefined}
-          onTouchStart={canSwipePlushyImages ? handleTouchStart : undefined}
-          onTouchEnd={canSwipePlushyImages ? handleTouchEnd : undefined}
-          onMouseDown={canSwipePlushyImages ? handleMouseDown : undefined}
-          aria-label={canSwipePlushyImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
+          style={canSwipeStandaloneImages ? { touchAction: 'pan-y' as const } : undefined}
+          onTouchStart={canSwipeStandaloneImages ? handleTouchStart : undefined}
+          onTouchEnd={canSwipeStandaloneImages ? handleTouchEnd : undefined}
+          onMouseDown={canSwipeStandaloneImages ? handleMouseDown : undefined}
+          aria-label={canSwipeStandaloneImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
         >
           {product.isHit ? <span className="pcard-hit">{t.hitBadge}</span> : null}
           {isPlushyToys ? (
@@ -373,7 +375,7 @@ export function ProductCard({
           ) : (
             <div className="pcard-image pcard-image-placeholder" aria-hidden />
           )}
-          {canSwipePlushyImages ? (
+          {canSwipeStandaloneImages ? (
             <div className="pcard-dots" aria-hidden>
               {images.map((_, i) => (
                 <span key={i} className={`pcard-dot ${i === imageIndex ? 'active' : ''}`} />
@@ -389,7 +391,7 @@ export function ProductCard({
             <span className="pcard-price-from">{t.from}</span>{' '}
             <span className="pcard-price-amount">฿{finalPrice.toLocaleString()}</span>
           </div>
-          {isPlushyToys && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
+          {isStandaloneProduct && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
         </div>
       </Link>
 
@@ -400,7 +402,7 @@ export function ProductCard({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="pcard-panel-inner">
-          {isPlushyToys ? null : (
+          {isStandaloneProduct ? null : (
             <>
               <p className="pcard-options-title">{t.productCardOptions}</p>
               <ul className="pcard-option-list" role="list">
@@ -452,7 +454,7 @@ export function ProductCard({
               </p>
               <button
                 type="button"
-                className={`pcard-btn-cart ${isPlushyToys ? 'pcard-btn-cart--plushy' : ''}`}
+                className={`pcard-btn-cart ${isStandaloneProduct ? 'pcard-btn-cart--plushy' : ''}`}
                 onClick={() => router.push(`/${lang}/cart`)}
               >
                 {tCart.goToCart}
@@ -462,7 +464,7 @@ export function ProductCard({
             <>
               <button
                 type="button"
-                className={`pcard-btn-cart ${isPlushyToys ? 'pcard-btn-cart--plushy' : ''}`}
+                className={`pcard-btn-cart ${isStandaloneProduct ? 'pcard-btn-cart--plushy' : ''}`}
                 onClick={() => pushToCart('stay')}
               >
                 {tCart.addToCart}

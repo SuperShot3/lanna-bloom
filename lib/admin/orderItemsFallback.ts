@@ -25,7 +25,9 @@ export function itemsFromOrderJson(
       ? 'product'
       : it.itemType === 'plushyToy'
         ? 'plushyToy'
-        : 'bouquet') as 'bouquet' | 'product' | 'plushyToy',
+        : it.itemType === 'balloon'
+          ? 'balloon'
+          : 'bouquet') as 'bouquet' | 'product' | 'plushyToy' | 'balloon',
     cost: it.cost ?? null,
     commission_amount: it.commissionAmount ?? null,
   }));

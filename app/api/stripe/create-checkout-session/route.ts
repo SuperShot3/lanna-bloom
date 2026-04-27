@@ -94,7 +94,9 @@ function validateStripePayload(
         ? 'product'
         : i.itemType === 'plushyToy'
           ? 'plushyToy'
-          : 'bouquet') as 'bouquet' | 'product' | 'plushyToy',
+          : i.itemType === 'balloon'
+            ? 'balloon'
+          : 'bouquet') as 'bouquet' | 'product' | 'plushyToy' | 'balloon',
       bouquetId: typeof i.bouquetId === 'string' ? i.bouquetId : '',
       bouquetSlug: typeof i.bouquetSlug === 'string' ? i.bouquetSlug : undefined,
       size: typeof i.size === 'string' ? i.size : 'm',

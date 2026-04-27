@@ -45,9 +45,9 @@ import {
   nationalDigitsValidForCheckout,
 } from '@/lib/phoneFieldHints';
 
-/** Non-flower catalog lines (partner products or standalone plushy toys). */
+/** Non-flower catalog lines (partner products or standalone add-ons). */
 function isNonBouquetCartLine(item: CartItem): boolean {
-  return item.itemType === 'product' || item.itemType === 'plushyToy';
+  return item.itemType === 'product' || item.itemType === 'plushyToy' || item.itemType === 'balloon';
 }
 
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */

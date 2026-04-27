@@ -163,6 +163,8 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
                   ? 'product'
                   : catalog.item.type === 'plushyToy'
                     ? 'plushyToy'
+                    : catalog.item.type === 'balloon'
+                      ? 'balloon'
                     : 'bouquet',
             }
           : {}),

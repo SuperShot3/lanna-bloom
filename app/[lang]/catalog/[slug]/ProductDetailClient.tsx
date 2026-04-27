@@ -31,6 +31,7 @@ export function ProductDetailClient({
   const selectedImageUrl = images[selectedImageIndex] ?? images[0];
   const descDisplay = description?.trim() || (lang === 'th' ? 'ยังไม่มีรายละเอียดสินค้า' : 'No description provided.');
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+  const isStandaloneAddOn = product.catalogKind === 'plushyToy' || product.catalogKind === 'balloon';
 
   useEffect(() => {
     trackViewItem({
@@ -90,13 +91,13 @@ export function ProductDetailClient({
           lang={lang}
           selectedImageUrl={selectedImageUrl}
           gifts={
-            product.catalogKind === 'plushyToy'
+            isStandaloneAddOn
               ? []
               : product.category === 'gifts'
                 ? []
                 : gifts
           }
-          suggestedBouquets={product.catalogKind === 'plushyToy' ? suggestedBouquets : []}
+          suggestedBouquets={isStandaloneAddOn ? suggestedBouquets : []}
         />
       </div>
     </>

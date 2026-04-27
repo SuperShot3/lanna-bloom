@@ -4,7 +4,7 @@ import { createClient } from 'next-sanity';
 import dotenv from 'dotenv';
 
 type CatalogItem = {
-  type: 'bouquet' | 'product' | 'plushyToy';
+  type: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
   id: string;
   slug: string;
   nameEn: string;
@@ -65,10 +65,18 @@ async function main() {
     nameTh
   }`;
 
-  const [bouquets, products, plushyToys] = await Promise.all([
+  const balloonsQuery = `*[_type == "balloon"] | order(nameEn asc) {
+    _id,
+    "slug": coalesce(slug.current, _id),
+    nameEn,
+    nameTh
+  }`;
+
+  const [bouquets, products, plushyToys, balloons] = await Promise.all([
     client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string; presentationFormats?: string[] }>>(bouquetsQuery),
     client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string; category?: string }>>(productsQuery),
     client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string }>>(plushyQuery),
+    client.fetch<Array<{ _id: string; slug: string; nameEn?: string; nameTh?: string }>>(balloonsQuery),
   ]);
 
   const items: CatalogItem[] = [
@@ -102,6 +110,16 @@ async function main() {
       urlEn: toItemUrl(baseUrl, 'en', p.slug),
       urlTh: toItemUrl(baseUrl, 'th', p.slug),
     })),
+    ...(balloons ?? []).map((p) => ({
+      type: 'balloon' as const,
+      id: p._id,
+      slug: p.slug,
+      nameEn: p.nameEn ?? '',
+      nameTh: p.nameTh,
+      category: 'balloons',
+      urlEn: toItemUrl(baseUrl, 'en', p.slug),
+      urlTh: toItemUrl(baseUrl, 'th', p.slug),
+    })),
   ].filter((x) => x.slug && x.nameEn);
 
   const out = {
@@ -113,6 +131,7 @@ async function main() {
       bouquets: items.filter((i) => i.type === 'bouquet').length,
       products: items.filter((i) => i.type === 'product').length,
       plushyToys: items.filter((i) => i.type === 'plushyToy').length,
+      balloons: items.filter((i) => i.type === 'balloon').length,
     },
     items,
   };

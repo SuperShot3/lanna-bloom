@@ -22,8 +22,8 @@ export interface OrderItem {
   addOns: OrderItemAddOns;
   imageUrl?: string;
   bouquetSlug?: string;
-  /** 'bouquet' | 'product' | 'plushyToy' — for profit/cost tracking */
-  itemType?: 'bouquet' | 'product' | 'plushyToy';
+  /** 'bouquet' | 'product' | 'plushyToy' | 'balloon' — for profit/cost tracking */
+  itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
   /** Partner cost (for products); used for COGS auto-fill */
   cost?: number;
   /** Platform commission amount (for products) */

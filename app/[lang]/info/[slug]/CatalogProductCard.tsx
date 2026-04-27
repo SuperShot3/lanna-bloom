@@ -1,6 +1,10 @@
 import type { Locale } from '@/lib/i18n';
 import { ProductCard } from '@/components/ProductCard';
-import { getPlushyToyBySlugFromSanity, getProductBySlugFromSanity } from '@/lib/sanity';
+import {
+  getBalloonBySlugFromSanity,
+  getPlushyToyBySlugFromSanity,
+  getProductBySlugFromSanity,
+} from '@/lib/sanity';
 import styles from './article.module.css';
 
 export async function CatalogProductCard({
@@ -13,9 +17,11 @@ export async function CatalogProductCard({
   const trimmed = (slug || '').trim();
   if (!trimmed) return null;
 
-  // Prefer plushyToy documents first, then fall back to partner products.
+  // Prefer standalone catalog documents first, then fall back to partner products.
   const product =
-    (await getPlushyToyBySlugFromSanity(trimmed)) ?? (await getProductBySlugFromSanity(trimmed));
+    (await getPlushyToyBySlugFromSanity(trimmed)) ??
+    (await getBalloonBySlugFromSanity(trimmed)) ??
+    (await getProductBySlugFromSanity(trimmed));
   if (!product) return null;
 
   return (

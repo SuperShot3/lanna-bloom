@@ -9,6 +9,7 @@ import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getBaseUrl } from '@/lib/orders';
 import {
+  getBalloonsFilteredFromSanity,
   getBouquetsFilteredFromSanity,
   getPlushyToysFilteredFromSanity,
   getProductsFilteredFromSanity,
@@ -113,7 +114,7 @@ export default async function CollectionLandingPage({
   const [allBouquets, plushyToys, balloons, gifts] = await Promise.all([
     getBouquetsFilteredFromSanity(page.filters),
     getPlushyToysFilteredFromSanity({ sort: 'newest' }),
-    getProductsFilteredFromSanity({ categoryKey: 'balloons', sort: 'newest' }),
+    getBalloonsFilteredFromSanity({ sort: 'newest' }),
     getProductsFilteredFromSanity({ categoryKey: 'gifts', sort: 'newest' }),
   ]);
 

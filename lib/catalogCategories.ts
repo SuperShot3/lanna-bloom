@@ -111,9 +111,10 @@ export function getBouquetDisplayCategory(b: { presentationFormats?: string[] })
 /** Derive a display category for a non-bouquet product / plushy toy. */
 export function getProductDisplayCategory(p: {
   category?: string;
-  catalogKind?: 'product' | 'plushyToy';
+  catalogKind?: 'product' | 'plushyToy' | 'balloon';
 }): DisplayCategory {
   if (p.catalogKind === 'plushyToy' || p.category === 'plushy_toys') return 'Plushy toys';
+  if (p.catalogKind === 'balloon' || p.category === 'balloons') return 'Balloons';
   const key = p.category ?? '';
   return PRODUCT_CATEGORY_LABEL[key] ?? key;
 }
