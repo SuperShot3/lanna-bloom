@@ -13,6 +13,7 @@ import type { DistrictKey } from '@/lib/deliveryFees';
 import { buildStripeCheckoutDraftMetadata } from '@/lib/stripe/metadata';
 import { upsertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
+import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
@@ -302,20 +303,23 @@ export async function POST(request: NextRequest) {
       referralDiscount,
     });
 
-    const session = await stripe.checkout.sessions.create(
-      {
-        mode: 'payment',
-        line_items: lineItems,
-        client_reference_id: checkoutDraftId,
-        customer_email: data.customerEmail,
-        success_url: stripeCheckoutDraftSuccessUrl(baseUrl, data.lang),
-        cancel_url: `${baseUrl}/${data.lang}/cart`,
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: 'payment',
+      line_items: lineItems,
+      client_reference_id: checkoutDraftId,
+      customer_email: data.customerEmail,
+      success_url: stripeCheckoutDraftSuccessUrl(baseUrl, data.lang),
+      cancel_url: `${baseUrl}/${data.lang}/cart`,
+      metadata: stripeMetadata,
+      payment_intent_data: {
         metadata: stripeMetadata,
-        payment_intent_data: {
-          metadata: stripeMetadata,
-        },
       },
-      { idempotencyKey: `checkout-${data.submissionToken}` }
+    };
+    const session = await stripe.checkout.sessions.create(
+      sessionParams,
+      {
+        idempotencyKey: `checkout-${data.submissionToken}-${stripeIdempotencyFingerprint(sessionParams)}`,
+      }
     );
 
     if (!session.url) {

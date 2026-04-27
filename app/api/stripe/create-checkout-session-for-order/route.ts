@@ -8,6 +8,7 @@ import {
   buildStripeCheckoutLineItems,
   stripeOrderSuccessUrl,
 } from '@/lib/stripe/checkoutStripeLineItems';
+import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,18 +72,22 @@ export async function POST(request: NextRequest) {
   const successUrl = stripeOrderSuccessUrl(baseUrl, orderId);
   const cancelUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}`;
 
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode: 'payment',
+    line_items: lineItems,
+    client_reference_id: order.orderId,
+    customer_email: order.customerEmail,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata,
+    payment_intent_data: { metadata },
+  };
+
   const session = await stripe.checkout.sessions.create(
+    sessionParams,
     {
-      mode: 'payment',
-      line_items: lineItems,
-      client_reference_id: order.orderId,
-      customer_email: order.customerEmail,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata,
-      payment_intent_data: { metadata },
-    },
-    { idempotencyKey: `order-page-${orderId}` }
+      idempotencyKey: `order-page-${orderId}-${stripeIdempotencyFingerprint(sessionParams)}`,
+    }
   );
 
   if (!session.url) {
