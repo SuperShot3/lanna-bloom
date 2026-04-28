@@ -15,6 +15,14 @@ const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 
 const POLL_MS = 2000;
 const MAX_MS = 90000;
+const REDIRECT_DELAY_MS = 5000;
+const REDIRECT_PROGRESS_INTERVAL_MS = 100;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
   const router = useRouter();
@@ -22,6 +30,23 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
   const sessionId = searchParams?.get('session_id')?.trim() ?? '';
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [redirectMsLeft, setRedirectMsLeft] = useState(REDIRECT_DELAY_MS);
+
+  useEffect(() => {
+    if (!success) return;
+
+    const started = Date.now();
+    setRedirectMsLeft(REDIRECT_DELAY_MS);
+
+    const timer = window.setInterval(() => {
+      const elapsed = Date.now() - started;
+      setRedirectMsLeft(Math.max(0, REDIRECT_DELAY_MS - elapsed));
+    }, REDIRECT_PROGRESS_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [success]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -54,6 +79,9 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
           
           setSuccess(true);
 
+          const redirectDelay = wait(REDIRECT_DELAY_MS);
+          let trackingPurchase = Promise.resolve();
+
           if (data.order) {
             const rawItems = data.order.items ?? [];
             if (rawItems.length > 0) {
@@ -68,7 +96,7 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
               }));
               const value = data.order.pricing?.grandTotal ?? (data.order as any).amountTotal ?? 0;
               trackPurchase({ orderId: oid, value, currency: 'THB', items });
-              await trackCheckoutPurchase({
+              trackingPurchase = trackCheckoutPurchase({
                 orderId: oid,
                 value,
                 currency: data.order.currency?.toUpperCase() ?? 'THB',
@@ -92,7 +120,8 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
             // ignore
           }
 
-          // Redirect after GTM has received google_ads_purchase, or after its 5s eventTimeout.
+          // Keep the thank-you screen visible while GTM gets the purchase event.
+          await Promise.all([trackingPurchase.catch(() => undefined), redirectDelay]);
           setTimeout(() => {
             if (!cancelled) {
               window.location.replace(`/order/${encodeURIComponent(oid)}${qs}`);
@@ -117,6 +146,9 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
   }, [sessionId, lang]);
 
   if (success) {
+    const redirectSecondsLeft = Math.ceil(redirectMsLeft / 1000);
+    const redirectProgress = Math.max(0, Math.min(100, (redirectMsLeft / REDIRECT_DELAY_MS) * 100));
+
     return (
       <div
         style={{
@@ -154,6 +186,48 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
             ? 'กำลังพากลับไปยังหน้ารายละเอียดคำสั่งซื้อ...' 
             : 'Redirecting you to the order details...'}
         </p>
+        <div
+          role="timer"
+          aria-live="polite"
+          style={{
+            width: 'min(320px, 100%)',
+            marginTop: '1rem',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.78rem',
+              color: 'var(--text-muted, #777)',
+              marginBottom: 8,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {lang === 'th'
+              ? `จะเปลี่ยนหน้าใน ${redirectSecondsLeft} วินาที`
+              : `Redirecting in ${redirectSecondsLeft} second${redirectSecondsLeft === 1 ? '' : 's'}`}
+          </div>
+          <div
+            aria-hidden
+            style={{
+              height: 8,
+              width: '100%',
+              overflow: 'hidden',
+              borderRadius: 999,
+              background: 'rgba(180, 140, 90, 0.16)',
+              border: '1px solid rgba(180, 140, 90, 0.18)',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${redirectProgress}%`,
+                borderRadius: 999,
+                background: 'linear-gradient(90deg, var(--accent, #b48c5a), #d4b068)',
+                transition: 'width 0.1s linear',
+              }}
+            />
+          </div>
+        </div>
         
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes bounceIn {

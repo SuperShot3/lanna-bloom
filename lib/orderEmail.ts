@@ -183,35 +183,84 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
     order.referralDiscount != null && order.referralDiscount > 0
       ? `<br/>Discount: -฿${order.referralDiscount.toLocaleString()}`
       : '';
+  const vars = buildOrderTemplateVariables(order);
+  const greeting = escapeHtml(vars.customer_name || 'there');
+  const safeOrderId = escapeHtml(vars.order_id);
+  const safeDetailsUrl = escapeHtml(detailsUrl);
+  const safeDeliveryDate = escapeHtml(order.delivery.preferredTimeSlot || '—');
+  const safeDeliveryAddress = escapeHtml(order.delivery.address);
 
   const html = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Order confirmation ${escapeHtml(order.orderId)}</title></head>
-<body style="font-family: sans-serif; line-height: 1.5; color: #333;">
-  <h1 style="font-size: 1.25rem;">Thank you for your order!</h1>
-  <p>Hi ${order.customerName ? escapeHtml(order.customerName) : 'there'},</p>
-  <p>Your order <strong>${escapeHtml(order.orderId)}</strong> has been received.</p>
-  <p><a href="${escapeHtml(detailsUrl)}" style="color: #967a4d; font-weight: 600;">View your order details</a></p>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width" /><title>Order confirmation ${safeOrderId}</title></head>
+<body style="font-family: Georgia, 'Times New Roman', serif; line-height: 1.6; color: #2c2415; max-width: 560px; margin: 0 auto; padding: 16px; background: #fdfcf8;">
+  ${vars.brand_header}
+  <div style="background: #ffffff; border: 1px solid #eadfcd; border-radius: 14px; padding: 24px;">
+    <p style="font-size: 18px; margin: 0 0 12px 0;">Hi ${greeting},</p>
+    <h1 style="font-size: 24px; line-height: 1.3; margin: 0 0 14px 0; color: #2c2415;">Thank you for your order</h1>
+    <p style="margin: 0 0 16px 0;">
+      Your order <strong>${safeOrderId}</strong> has been received. We will prepare your flowers with care and keep your order details available online.
+    </p>
 
-  <h2 style="font-size: 1rem;">Delivery</h2>
-  <p>Date & time: ${escapeHtml(order.delivery.preferredTimeSlot || '—')}<br/>
-  Address: ${escapeHtml(order.delivery.address)}</p>
-  ${order.delivery.deliveryGoogleMapsUrl ? `<p><a href="${escapeHtml(order.delivery.deliveryGoogleMapsUrl)}">Open in Google Maps</a></p>` : ''}
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 20px 0 12px 0; width: 100%;">
+      <tr>
+        <td style="border-radius: 8px; background: #967a4d; text-align: center;">
+          <a href="${safeDetailsUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 22px; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px;">View your order details</a>
+        </td>
+      </tr>
+    </table>
 
-  <h2 style="font-size: 1rem;">Items</h2>
-  <p>${itemsList}</p>
+    <div style="background: #faf7ef; border: 1px solid #eadfcd; border-radius: 10px; padding: 14px 16px; margin: 20px 0;">
+      <h2 style="font-size: 16px; margin: 0 0 8px 0; color: #2c2415;">Delivery</h2>
+      <p style="margin: 0 0 6px 0;"><strong>Date &amp; time:</strong> ${safeDeliveryDate}</p>
+      <p style="margin: 0;"><strong>Address:</strong> ${safeDeliveryAddress}</p>
+      ${order.delivery.deliveryGoogleMapsUrl ? `<p style="margin: 10px 0 0 0;"><a href="${escapeHtml(order.delivery.deliveryGoogleMapsUrl)}" target="_blank" rel="noopener noreferrer" style="color: #967a4d; font-weight: 600; text-decoration: none;">Open in Google Maps</a></p>` : ''}
+    </div>
 
-  <h2 style="font-size: 1rem;">Price summary</h2>
-  <p>Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
-  Delivery fee: ฿${order.pricing.deliveryFee.toLocaleString()}${discountLine}<br/>
-  <strong>Total: ฿${order.pricing.grandTotal.toLocaleString()}</strong></p>
+    <div style="background: #faf7ef; border: 1px solid #eadfcd; border-radius: 10px; padding: 14px 16px; margin: 20px 0;">
+      <h2 style="font-size: 16px; margin: 0 0 8px 0; color: #2c2415;">Order summary</h2>
+      <p style="margin: 0 0 12px 0;">${itemsList}</p>
+      <p style="margin: 0;">Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
+      Delivery fee: ฿${order.pricing.deliveryFee.toLocaleString()}${discountLine}<br/>
+      <strong>Total: ฿${order.pricing.grandTotal.toLocaleString()}</strong></p>
+    </div>
 
-  <p style="font-size: 0.9rem; color: #666;">If you have any questions, please contact us via LINE, WhatsApp, or the contact details on our website.</p>
-  <p style="font-size: 0.9rem; color: #666;">— Lanna Bloom</p>
+    <p style="font-size: 15px; margin: 20px 0 0 0;">If you have any questions, please reply to this email or contact us via LINE, WhatsApp, or the contact details on our website.</p>
+    <p style="font-size: 15px; margin: 12px 0 0 0;">Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.</p>
+  </div>
+
+  <div style="margin-top: 24px;">
+    ${vars.social_footer}
+  </div>
 </body>
 </html>
 `.trim();
+  const text = `Hi ${vars.customer_name || 'there'},
+
+Thank you for your order. Your order ${vars.order_id} has been received.
+
+View your order details: ${detailsUrl}
+
+Delivery
+Date & time: ${order.delivery.preferredTimeSlot || '—'}
+Address: ${order.delivery.address}
+
+Items
+${order.items.map((i) => `${i.bouquetTitle} — ${i.size} — ฿${i.price.toLocaleString()}`).join('\n')}
+
+Price summary
+Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}
+Delivery fee: ฿${order.pricing.deliveryFee.toLocaleString()}${
+  order.referralDiscount != null && order.referralDiscount > 0
+    ? `\nDiscount: -฿${order.referralDiscount.toLocaleString()}`
+    : ''
+}
+Total: ฿${order.pricing.grandTotal.toLocaleString()}
+
+If you have any questions, please reply to this email or contact us via LINE, WhatsApp, or the contact details on our website.
+
+Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.`;
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
@@ -219,6 +268,7 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
     to: [customerEmail],
     subject: `Order confirmation ${order.orderId} — Lanna Bloom`,
     html,
+    text,
   });
   if (error) {
     console.error('[orderEmail] Customer confirmation Resend error:', error);

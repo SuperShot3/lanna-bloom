@@ -45,6 +45,15 @@ export function getFacebookOrderUrl(message: string): string {
 export function getWhatsAppContactUrl(): string {
   return `https://wa.me/${WHATSAPP_PHONE}`;
 }
+
+export function getContactPhoneTelUrl(): string {
+  return `tel:+${CONTACT_PHONE}`;
+}
+
+export function getContactPhoneDisplay(): string {
+  return '+66 80 331 3431';
+}
+
 export function getFacebookContactUrl(): string {
   return `https://www.facebook.com/${FACEBOOK_PAGE}`;
 }

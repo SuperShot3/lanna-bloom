@@ -3,11 +3,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
-import { LineIcon, WhatsAppIcon, HomeIcon } from '@/components/icons';
+import { getContactPhoneDisplay, getContactPhoneTelUrl, getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
+import { LineIcon, WhatsAppIcon, HomeIcon, PhoneIcon, EmailIcon } from '@/components/icons';
 import { translations } from '@/lib/i18n';
 import type { OrderCustomerView } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
+import { SUPPORT_EMAIL } from '@/lib/siteContact';
 import {
   markCheckoutSubmissionCompleted,
   readCheckoutTokenFromUrl,
@@ -183,8 +184,23 @@ export function OrderPageClient({
   }, [orderId]);
 
   const contactChannels = [
-    { id: 'line' as const, getUrl: () => getLineContactUrl(), Icon: LineIcon, label: 'LINE' },
-    { id: 'whatsapp' as const, getUrl: () => getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, label: 'WhatsApp' },
+    { id: 'line' as const, href: getLineContactUrl(), Icon: LineIcon, label: 'LINE', external: true },
+    { id: 'whatsapp' as const, href: getWhatsAppOrderUrl(orderMessage), Icon: WhatsAppIcon, label: 'WhatsApp', external: true },
+    {
+      id: 'email' as const,
+      href: `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Order ${orderId}`)}`,
+      Icon: EmailIcon,
+      label: locale === 'th' ? 'อีเมล' : 'Email',
+      external: false,
+    },
+    {
+      id: 'phone' as const,
+      href: getContactPhoneTelUrl(),
+      Icon: PhoneIcon,
+      label: locale === 'th' ? 'โทรหาเรา' : 'Call us',
+      title: `${locale === 'th' ? 'โทรหาเรา' : 'Call us'}: ${getContactPhoneDisplay()}`,
+      external: false,
+    },
   ];
 
   return (
@@ -434,11 +450,11 @@ export function OrderPageClient({
               {contactChannels.map((ch) => (
                 <a
                   key={ch.id}
-                  href={ch.getUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={ch.href}
+                  target={ch.external ? '_blank' : undefined}
+                  rel={ch.external ? 'noopener noreferrer' : undefined}
                   className="order-redesign-contact-icon"
-                  title={ch.label}
+                  title={ch.title ?? ch.label}
                   aria-label={ch.label}
                 >
                   <ch.Icon size={18} />
