@@ -3544,7 +3544,41 @@ a.filter-pill--active:hover {
 }
 .admin-login {
   padding: var(--space-12) 0;
-  max-width: 400px;
+  max-width: 420px;
+}
+.admin-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: var(--space-5);
+}
+.admin-login-brand-logo {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 9999px;
+}
+.admin-login-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-login-brand-name {
+  font-family: var(--font-family-display);
+  font-size: clamp(1.25rem, 4vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1a3c34;
+  line-height: 1.15;
+}
+.admin-login-brand-sub {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
 }
 .admin-title {
   font-size: 1.5rem;
@@ -3561,6 +3595,58 @@ a.filter-pill--active:hover {
   flex-direction: column;
   gap: var(--space-4);
   max-width: 320px;
+}
+.admin-password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.admin-password-input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 48px;
+  box-sizing: border-box;
+}
+.admin-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.admin-password-toggle:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.admin-password-toggle-icon {
+  font-size: 22px;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+.admin-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.admin-checkbox {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 .admin-form-group {
   display: flex;
@@ -5302,6 +5388,26 @@ a.admin-summary-key-value {
   .admin-shell-menu-btn {
     display: none;
   }
+}
+.admin-shell-header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: min(50vw, 320px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text);
+}
+.admin-shell-header-user-icon {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: var(--admin-text-muted);
+}
+.admin-shell-header-user-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .admin-shell-header-spacer {
   flex: 1;

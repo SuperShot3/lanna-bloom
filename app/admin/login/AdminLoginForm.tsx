@@ -7,6 +7,8 @@ import { useSearchParams } from 'next/navigation';
 export function AdminLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -21,6 +23,7 @@ export function AdminLoginForm() {
       const result = await signIn('credentials', {
         email: email.trim().toLowerCase(),
         password,
+        remember: rememberMe ? 'true' : 'false',
         redirect: false,
       });
       if (result?.error) {
@@ -70,17 +73,39 @@ export function AdminLoginForm() {
       </div>
       <div className="admin-form-group">
         <label htmlFor="admin-password">Password</label>
-        <input
-          id="admin-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          autoComplete="current-password"
-          className="admin-input"
-          required
-        />
+        <div className="admin-password-field">
+          <input
+            id="admin-password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            autoComplete="current-password"
+            className="admin-input admin-password-input"
+            required
+          />
+          <button
+            type="button"
+            className="admin-password-toggle"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-pressed={showPassword}
+            onClick={() => setShowPassword((v) => !v)}
+          >
+            <span className="material-symbols-outlined admin-password-toggle-icon" aria-hidden>
+              {showPassword ? 'visibility_off' : 'visibility'}
+            </span>
+          </button>
+        </div>
       </div>
+      <label className="admin-checkbox-row">
+        <input
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+          className="admin-checkbox"
+        />
+        <span>Remember me for 30 days</span>
+      </label>
       <button type="submit" className="admin-btn admin-btn-primary admin-btn-full" disabled={loading}>
         {loading ? 'Signing in…' : 'Sign in'}
       </button>

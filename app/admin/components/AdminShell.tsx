@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { MissingCogsNotice } from './MissingCogsNotice';
 
@@ -17,6 +18,8 @@ const NAV_ITEMS = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: session } = useSession();
+  const userEmail = session?.user?.email;
 
   return (
     <div className="admin-shell">
@@ -101,6 +104,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           >
             <span className="material-symbols-outlined admin-shell-icon">menu</span>
           </button>
+          {userEmail ? (
+            <div className="admin-shell-header-user" title={userEmail}>
+              <span className="material-symbols-outlined admin-shell-icon admin-shell-header-user-icon">
+                account_circle
+              </span>
+              <span className="admin-shell-header-user-email">{userEmail}</span>
+            </div>
+          ) : null}
           <div className="admin-shell-header-spacer" />
           <Link
             href="/admin/settings/collections"
