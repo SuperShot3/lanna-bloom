@@ -611,7 +611,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const deliveryFeeVal = hasChosenLocation ? calcDeliveryFeeTHB({ district, isMueangCentral }) : 0;
   const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
   const referralVal = getStoredReferral();
-  const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, referralVal);
+  const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, referralVal, {
+    deliveryFee: deliveryFeeVal,
+  });
   const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
 
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());

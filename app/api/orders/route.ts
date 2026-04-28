@@ -133,7 +133,7 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
   const deliveryFee = calcDeliveryFeeTHB({ district: deliveryDistrict, isMueangCentral });
   const subtotal = itemsTotal + deliveryFee;
   const refCode = typeof b.referralCode === 'string' ? (b.referralCode as string).trim() : '';
-  const refDiscount = refCode ? getDiscountForCode(refCode, subtotal) : 0;
+  const refDiscount = refCode ? getDiscountForCode(refCode, subtotal, { deliveryFee }) : 0;
 
   const gaClientIdRaw = typeof b.ga_client_id === 'string' ? (b.ga_client_id as string).trim() : '';
   const ga_client_id = gaClientIdRaw.length > 0 && gaClientIdRaw.length <= 200 ? gaClientIdRaw : undefined;

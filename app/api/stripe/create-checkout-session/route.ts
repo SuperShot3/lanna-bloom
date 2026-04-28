@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
     const { totals } = computed;
     const subtotal = totals.itemsTotal + totals.deliveryFee;
     const referralDiscount = data.referralCode
-      ? getDiscountForCode(data.referralCode, subtotal)
+      ? getDiscountForCode(data.referralCode, subtotal, { deliveryFee: totals.deliveryFee })
       : 0;
     const effectiveGrandTotal = Math.max(0, totals.grandTotal - referralDiscount);
 

@@ -105,7 +105,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
   const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, referral);
+  const referralDiscount = computeReferralDiscount(subtotal, referral, { deliveryFee });
 
   const body: Record<string, unknown> = {
     lang,
