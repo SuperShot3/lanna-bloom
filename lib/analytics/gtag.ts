@@ -157,7 +157,8 @@ export function trackPurchase(params: {
 }
 
 /** Google Ads conversion dedupe (separate key from GA4 purchase). */
-const GOOGLE_ADS_CONVERSION_SENT_PREFIX = 'google_ads_conversion_sent:';
+const GOOGLE_ADS_CONVERSION_SENT_PREFIX = 'google_ads_purchase_sent:';
+const GTM_CALLBACK_TIMEOUT_MS = 5000;
 
 function getGoogleAdsConversionStorageKey(orderId: string): string {
   return `${GOOGLE_ADS_CONVERSION_SENT_PREFIX}${normalizeOrderId(orderId)}`;
@@ -181,6 +182,98 @@ function markGoogleAdsConversionSent(orderId: string): void {
   } catch {
     // ignore
   }
+}
+
+function normalizeEmail(email?: string | null): string | undefined {
+  const normalized = email?.trim().toLowerCase();
+  return normalized && normalized.includes('@') ? normalized : undefined;
+}
+
+export function normalizeThaiPhoneNumber(phone?: string | null): string | undefined {
+  const cleaned = phone?.replace(/[^\d+]/g, '').trim();
+  if (!cleaned) return undefined;
+  if (cleaned.startsWith('+66')) return cleaned;
+  if (cleaned.startsWith('66')) return `+${cleaned}`;
+  if (cleaned.startsWith('0')) return `+66${cleaned.slice(1)}`;
+  return cleaned.startsWith('+') ? cleaned : undefined;
+}
+
+function pushToDataLayerWithCallback(eventName: string, params: Record<string, unknown>): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  window.dataLayer = window.dataLayer || [];
+
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+
+    window.setTimeout(finish, GTM_CALLBACK_TIMEOUT_MS);
+    window.dataLayer!.push({
+      event: eventName,
+      ...params,
+      eventCallback: finish,
+      eventTimeout: GTM_CALLBACK_TIMEOUT_MS,
+    });
+  });
+}
+
+export function trackCheckoutPurchase(params: {
+  orderId: string;
+  value: number;
+  currency?: string;
+  email?: string | null;
+  phone?: string | null;
+  items: PurchaseItem[];
+}): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+
+  const normalizedOrderId = normalizeOrderId(params.orderId);
+  const value = Number(params.value);
+  const currency = params.currency ?? 'THB';
+  if (!normalizedOrderId || !Number.isFinite(value) || value <= 0 || params.items.length === 0) {
+    return Promise.resolve();
+  }
+
+  if (wasGoogleAdsConversionSent(normalizedOrderId)) {
+    if (isDev) {
+      console.debug('[analytics] google_ads_purchase duplicate prevented', { orderId: normalizedOrderId });
+    }
+    return Promise.resolve();
+  }
+  markGoogleAdsConversionSent(normalizedOrderId);
+
+  const items = params.items.map((item) => ({
+    item_id: item.item_id,
+    item_name: item.item_name,
+    price: item.price,
+    quantity: item.quantity ?? 1,
+  }));
+
+  const pushed = pushToDataLayerWithCallback('google_ads_purchase', {
+    order_id: normalizedOrderId,
+    value,
+    currency,
+    user_data: {
+      email_address: normalizeEmail(params.email),
+      phone_number: normalizeThaiPhoneNumber(params.phone),
+    },
+    ecommerce: {
+      items,
+    },
+  });
+
+  if (isDev) {
+    console.info('[analytics] google_ads_purchase pushed to dataLayer', {
+      orderId: normalizedOrderId,
+      value,
+      itemCount: items.length,
+    });
+  }
+
+  return pushed;
 }
 
 /**

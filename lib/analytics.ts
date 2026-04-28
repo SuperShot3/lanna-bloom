@@ -7,7 +7,7 @@
 
 import { pushToDataLayer, trackPurchase as pushPurchaseToDataLayer } from './analytics/gtag';
 
-export { trackGoogleAdsPurchase } from './analytics/gtag';
+export { trackCheckoutPurchase, trackGoogleAdsPurchase } from './analytics/gtag';
 
 const CURRENCY = 'THB';
 

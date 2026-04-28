@@ -7,7 +7,7 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
-import { trackPurchase, trackGoogleAdsPurchase } from '@/lib/analytics';
+import { trackCheckoutPurchase, trackPurchase } from '@/lib/analytics';
 import type { OrderCustomerView } from '@/lib/orders';
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
@@ -68,7 +68,14 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
               }));
               const value = data.order.pricing?.grandTotal ?? (data.order as any).amountTotal ?? 0;
               trackPurchase({ orderId: oid, value, currency: 'THB', items });
-              trackGoogleAdsPurchase({ orderId: oid, value, currency: 'THB' });
+              await trackCheckoutPurchase({
+                orderId: oid,
+                value,
+                currency: data.order.currency?.toUpperCase() ?? 'THB',
+                email: data.order.customerEmail,
+                phone: data.order.phone,
+                items,
+              });
             }
           }
 
@@ -85,12 +92,12 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
             // ignore
           }
 
-          // Redirect to the regular order page after showing the thank you message briefly
+          // Redirect after GTM has received google_ads_purchase, or after its 5s eventTimeout.
           setTimeout(() => {
             if (!cancelled) {
               window.location.replace(`/order/${encodeURIComponent(oid)}${qs}`);
             }
-          }, 3500);
+          }, 0);
 
           return;
         }
