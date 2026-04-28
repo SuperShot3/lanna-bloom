@@ -20,6 +20,10 @@ export function canChangeStatus(role: string | undefined): boolean {
   return role === 'OWNER' || role === 'MANAGER';
 }
 
+export function canRemoveOrder(role: string | undefined): boolean {
+  return role === 'OWNER';
+}
+
 export function canAssignDriver(role: string | undefined): boolean {
   return role === 'OWNER' || role === 'MANAGER';
 }

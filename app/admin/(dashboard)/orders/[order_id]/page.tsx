@@ -10,7 +10,7 @@ import { PaymentCard } from '@/app/admin/components/PaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
 import type { CustomOrderDetails } from '@/lib/orders';
-import { canChangeStatus, canRefund } from '@/lib/adminRbac';
+import { canChangeStatus, canRefund, canRemoveOrder } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
 import { formatShopDateTime } from '@/lib/shopTime';
 
@@ -168,7 +168,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         </section>
       )}
 
-      {canChangeStatus(role) && (
+      {canRemoveOrder(role) && (
         <section className="admin-section admin-order-remove-footer" aria-label="Remove order">
           <h2 className="admin-section-title">Remove order</h2>
           <p className="admin-hint" style={{ marginBottom: 12 }}>

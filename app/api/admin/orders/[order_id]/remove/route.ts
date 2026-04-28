@@ -9,7 +9,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ order_id: string }> }
 ) {
-  const authResult = await requireRole(['OWNER', 'MANAGER']);
+  const authResult = await requireRole(['OWNER']);
   if (!authResult.ok) return authResult.response;
   const { session } = authResult;
 

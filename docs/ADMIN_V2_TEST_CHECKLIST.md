@@ -60,7 +60,7 @@
 - [ ] Notes (if internal_notes exists)
 - [ ] Status history timeline (if data exists)
 - [ ] "View public page" opens `/order/[order_id]` in new tab
-- [ ] "Delivered — Remove" button (OWNER/MANAGER) removes order after confirmation
+- [ ] "Delivered — Remove" button (OWNER only) removes order after confirmation
 - [ ] "Back to orders" returns to list
 
 ### 8. Error states
