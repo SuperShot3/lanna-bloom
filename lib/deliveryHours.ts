@@ -1,11 +1,11 @@
 /**
  * Same-day delivery window in Chiang Mai (Asia/Bangkok).
- * Matches site copy: 08:00–20:00; orders after 20:00 go to the next day.
+ * Matches site copy: 09:00–20:00; orders after 20:00 go to the next day.
  */
 export const DELIVERY_SHOP_TIMEZONE = 'Asia/Bangkok';
 
-const START_MIN = 8 * 60;
-/** Half-open: includes 08:00, excludes 20:00 (closed from 20:00). */
+const START_MIN = 9 * 60;
+/** Half-open: includes 09:00, excludes 20:00 (closed from 20:00). */
 const END_MIN = 20 * 60;
 
 function minutesSinceMidnightInZone(date: Date, timeZone: string): number {
@@ -73,7 +73,7 @@ export function getSameDayDeliveryPhaseBangkok(now: Date): SameDayDeliveryPhase 
   return 'after';
 }
 
-/** Human-readable tomorrow date in Bangkok (for "next from 08:00" line). */
+/** Human-readable tomorrow date in Bangkok (for "next from 09:00" line). */
 export function getTomorrowBangkokDisplayDate(now: Date, lang: 'en' | 'th'): string {
   const tomorrowYmd = addDaysToYmd(getBangkokYmd(now), 1);
   return formatYmdForLocale(tomorrowYmd, lang);

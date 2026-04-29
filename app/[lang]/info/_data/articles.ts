@@ -99,10 +99,10 @@ export const articles: ArticleMeta[] = [
     slug: 'how-to-order-flower-delivery-chiang-mai',
     title: 'How to Order Flower Delivery in Chiang Mai',
     excerpt:
-      'Place an order on our website, then message us your order link or number to confirm details. Payment happens after confirmation. Delivery in Chiang Mai 08:00–20:00; orders after 18:00 may move to the next day.',
+      'Place an order on our website, then message us your order link or number to confirm details. Payment happens after confirmation. Delivery in Chiang Mai 09:00–20:00; orders after 18:00 may move to the next day.',
     titleTh: 'วิธีสั่งดอกไม้จัดส่งในเชียงใหม่',
     excerptTh:
-      'สั่งซื้อบนเว็บไซต์ แล้วส่งลิงก์หรือหมายเลขออเดอร์มาที่แชทเพื่อยืนยันรายละเอียด ชำระเงินหลังยืนยัน จัดส่งในเชียงใหม่ 08:00–20:00 สั่งหลัง 18:00 อาจจัดส่งวันถัดไป',
+      'สั่งซื้อบนเว็บไซต์ แล้วส่งลิงก์หรือหมายเลขออเดอร์มาที่แชทเพื่อยืนยันรายละเอียด ชำระเงินหลังยืนยัน จัดส่งในเชียงใหม่ 09:00–20:00 สั่งหลัง 18:00 อาจจัดส่งวันถัดไป',
     publishedAt: '2026-02-17T00:00:00.000Z',
     featured: false,
     cover: {
@@ -138,9 +138,9 @@ export const articles: ArticleMeta[] = [
     slug: 'same-day-flower-delivery-chiang-mai',
     title: 'Same-day flower delivery in Chiang Mai',
     excerpt:
-      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai. Message us early for the best choice; we deliver during working hours (08:00–20:00).',
+      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai. Message us early for the best choice; we deliver during working hours (09:00–20:00).',
       titleTh: 'บริการส่งดอกไม้ในวันเดียวกันในเชียงใหม่',
-      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ได้เลย ติดต่อเราล่วงหน้าเพื่อเลือกดอกไม้ที่ชอบที่สุด เราจัดส่งในช่วงเวลาทำการ (08:00–20:00)',
+      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ได้เลย ติดต่อเราล่วงหน้าเพื่อเลือกดอกไม้ที่ชอบที่สุด เราจัดส่งในช่วงเวลาทำการ (09:00–20:00)',
     publishedAt: '2026-02-19T00:00:00.000Z',
     featured: false,
     cover: {
@@ -157,10 +157,10 @@ export const articles: ArticleMeta[] = [
     slug: 'delivery-policy-chiang-mai',
     title: 'Delivery Policy (Chiang Mai)',
     excerpt:
-      'Lanna Bloom delivery policy for Chiang Mai: service hours 08:00–20:00, delivery areas, required chat confirmation, address requirements, and more. Contact us via LINE or WhatsApp to confirm your order.',
+      'Lanna Bloom delivery policy for Chiang Mai: service hours 09:00–20:00, delivery areas, required chat confirmation, address requirements, and more. Contact us via LINE or WhatsApp to confirm your order.',
     titleTh: 'นโยบายการจัดส่ง (Lanna Bloom)',
     excerptTh:
-      'นโยบายการจัดส่งของ Lanna Bloom ในเชียงใหม่: เวลาบริการ 08:00–20:00 พื้นที่จัดส่ง การยืนยันผ่านแชท ข้อมูลที่อยู่ และอื่นๆ ติดต่อเราผ่าน LINE หรือ WhatsApp เพื่อยืนยันออเดอร์',
+      'นโยบายการจัดส่งของ Lanna Bloom ในเชียงใหม่: เวลาบริการ 09:00–20:00 พื้นที่จัดส่ง การยืนยันผ่านแชท ข้อมูลที่อยู่ และอื่นๆ ติดต่อเราผ่าน LINE หรือ WhatsApp เพื่อยืนยันออเดอร์',
     publishedAt: '2026-02-20T00:00:00.000Z',
     featured: false,
     cover: {

@@ -23,7 +23,7 @@ function mapPreferredTimeSlotToWindow(slot: string): DeliveryWindow {
   if (slot.includes('12:00–15:00')) return 'MIDDAY_12_15';
   if (slot.includes('15:00–18:00')) return 'AFTERNOON_15_18';
   if (slot.includes('18:00–20:00')) return 'EVENING_18_20';
-  if (slot.includes('08:00–12:00')) return 'MORNING_9_12';
+  if (slot.includes('09:00–12:00') || slot.includes('08:00–12:00')) return 'MORNING_9_12';
   return 'MORNING_9_12';
 }
 

@@ -57,7 +57,7 @@ function mapSupabasePaymentToLegacy(paymentStatus: string | null | undefined): O
 function mapDeliveryWindowToTimeSlot(window: string | null | undefined, date: string | null | undefined): string {
   const d = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().slice(0, 10);
   const timeMap: Record<string, string> = {
-    MORNING_9_12: '08:00–12:00',
+    MORNING_9_12: '09:00–12:00',
     MIDDAY_12_15: '12:00–15:00',
     AFTERNOON_15_18: '15:00–18:00',
     EVENING_18_20: '18:00–20:00',

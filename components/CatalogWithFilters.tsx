@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -75,6 +75,7 @@ export function CatalogWithFilters({
 }: CatalogWithFiltersProps) {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
+  const [isPending, startTransition] = useTransition();
   const { isOpen: mobileFilterOpen, setOpen: setMobileFilterOpen } = useFlowerFilterSheetOpen();
   const t = translations[lang].catalog;
   const activeCount = countActiveCatalogFilters(filterParams);
@@ -107,6 +108,22 @@ export function CatalogWithFilters({
   const visibleProducts = hasNameQuery ? filteredProducts : products;
   const visibleItems = visibleBouquets.length > 0 ? visibleBouquets : visibleProducts;
   const hasSearchNoMatches = hasNameQuery && items.length > 0 && visibleItems.length === 0;
+  const catalogAnimationKey = useMemo(() => {
+    const itemKey = visibleItems.map((item) => item.id).join('|');
+    return [
+      filterParams.topCategory ?? 'flowers',
+      filterParams.category ?? '',
+      filterParams.occasion ?? '',
+      filterParams.sort ?? 'newest',
+      filterParams.max ?? '',
+      filterParams.colors?.join(',') ?? '',
+      filterParams.types?.join(',') ?? '',
+      filterParams.formats?.join(',') ?? '',
+      filterParams.stemBucket ?? '',
+      normalizedQuery,
+      itemKey,
+    ].join('::');
+  }, [filterParams, normalizedQuery, visibleItems]);
 
   useEffect(() => {
     if (bouquets.length > 0) {
@@ -135,14 +152,18 @@ export function CatalogWithFilters({
   const handleApply = useCallback(
     (params: CatalogFilterParams) => {
       const qs = buildCatalogSearchString(params);
-      router.push(`${pathname}${qs}`);
+      startTransition(() => {
+        router.push(`${pathname}${qs}`);
+      });
     },
-    [router, pathname]
+    [router, pathname, startTransition]
   );
 
   const handleClear = useCallback(() => {
-    router.push(pathname);
-  }, [router, pathname]);
+    startTransition(() => {
+      router.push(pathname);
+    });
+  }, [router, pathname, startTransition]);
 
   const handleQuickFilter = useCallback(
     (partial: Partial<CatalogFilterParams>) => {
@@ -192,21 +213,25 @@ export function CatalogWithFilters({
       }
 
       const qs = buildCatalogSearchString(merged);
-      router.push(`${pathname}${qs}`);
+      startTransition(() => {
+        router.push(`${pathname}${qs}`);
+      });
     },
-    [filterParams, router, pathname]
+    [filterParams, router, pathname, startTransition]
   );
 
   const clearNameSearch = useCallback(() => {
     const qs = new URLSearchParams(window.location.search);
     qs.delete('q');
     const next = qs.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
-  }, [pathname, router]);
+    startTransition(() => {
+      router.replace(next ? `${pathname}?${next}` : pathname);
+    });
+  }, [pathname, router, startTransition]);
 
   return (
     <div className="catalog-with-filters">
-      <div className="mb-6">
+      <div className="mb-2 sm:mb-3">
         <CatalogDeliveryBar lang={lang} />
       </div>
       <CatalogFilterBar
@@ -233,7 +258,7 @@ export function CatalogWithFilters({
           flowerTypeCounts={flowerTypeCounts}
         />
       )}
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mt-5 lg:mt-6">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mt-3 lg:mt-4">
         {showFlowerFilters ? (
           <FlowerFilterSidebar
             lang={lang}
@@ -276,7 +301,7 @@ export function CatalogWithFilters({
                 <>
                   <div className="catalog-empty-visual" aria-hidden>
                     <Image
-                      src="/images_other/sad_cat_flower_andBaloon.png"
+                      src="/images_other/sad_cat_flower_andBaloon.webp"
                       alt=""
                       width={200}
                       height={200}
@@ -313,7 +338,10 @@ export function CatalogWithFilters({
             </div>
           ) : (
             <>
-              <div className="catalog-items-grid">
+              <div
+                key={catalogAnimationKey}
+                className={`catalog-items-grid ${isPending ? 'catalog-items-grid--pending' : ''}`}
+              >
                 {visibleBouquets.length > 0
                   ? visibleBouquets.map((bouquet) => (
                       <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
@@ -428,10 +456,55 @@ export function CatalogWithFilters({
           gap: 12px;
           align-items: stretch;
           width: 100%;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .catalog-items-grid--pending {
+          opacity: 0.55;
+          transform: translateY(4px);
+          pointer-events: none;
         }
         /* Critical: allow grid children to shrink below content min-width */
         .catalog-items-grid > * {
           min-width: 0;
+          animation: catalog-card-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .catalog-items-grid > *:nth-child(2) {
+          animation-delay: 35ms;
+        }
+        .catalog-items-grid > *:nth-child(3) {
+          animation-delay: 70ms;
+        }
+        .catalog-items-grid > *:nth-child(4) {
+          animation-delay: 105ms;
+        }
+        .catalog-items-grid > *:nth-child(5) {
+          animation-delay: 140ms;
+        }
+        .catalog-items-grid > *:nth-child(6) {
+          animation-delay: 175ms;
+        }
+        .catalog-items-grid > *:nth-child(n + 7) {
+          animation-delay: 210ms;
+        }
+        @keyframes catalog-card-enter {
+          from {
+            opacity: 0;
+            transform: translateY(14px) scale(0.985);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .catalog-items-grid,
+          .catalog-items-grid > * {
+            transition: none;
+            animation: none;
+          }
+          .catalog-items-grid--pending {
+            transform: none;
+          }
         }
         @media (min-width: 640px) {
           .catalog-items-grid {

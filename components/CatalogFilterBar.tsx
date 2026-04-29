@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { CatalogFilterParams } from '@/lib/sanity';
@@ -11,6 +12,12 @@ const SORT_OPTIONS: { value: CatalogFilterParams['sort']; labelKey: 'sortFeature
   { value: 'price_asc', labelKey: 'sortPriceAsc' },
   { value: 'price_desc', labelKey: 'sortPriceDesc' },
 ];
+
+const CATEGORY_ICONS: Partial<Record<CatalogTopCategory, string>> = {
+  flowers: '/icons/category_icons/fllwoers_icon.svg',
+  plushy_toys: '/icons/category_icons/bear_icon.svg',
+  balloons: '/icons/category_icons/baloon_icon.svg',
+};
 
 export interface CatalogFilterBarProps {
   lang: Locale;
@@ -41,11 +48,19 @@ export function CatalogFilterBar({
   hideFilterButtonOnDesktop = false,
 }: CatalogFilterBarProps) {
   const t = translations[lang].catalog;
+  const [jiggleCategory, setJiggleCategory] = useState<{ key: CatalogTopCategory; id: number } | null>(null);
+  const jiggleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentTopCategory = filterParams?.topCategory ?? 'flowers';
   const currentSort = filterParams?.sort ?? 'newest';
 
   const handleTopCategoryClick = (key: CatalogTopCategory) => {
+    if (jiggleTimerRef.current) {
+      clearTimeout(jiggleTimerRef.current);
+    }
+    setJiggleCategory({ key, id: Date.now() });
+    jiggleTimerRef.current = setTimeout(() => setJiggleCategory(null), 360);
+
     if (onQuickFilter) {
       onQuickFilter({ topCategory: key === 'flowers' ? undefined : key });
     }
@@ -56,6 +71,14 @@ export function CatalogFilterBar({
       onQuickFilter({ sort: value });
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (jiggleTimerRef.current) {
+        clearTimeout(jiggleTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="catalog-filter-bar">
@@ -84,17 +107,31 @@ export function CatalogFilterBar({
 
         {/* Top-level categories (flowers, balloons, …) as chips — gifts hidden from bar */}
         {onQuickFilter &&
-          CATALOG_TOP_CATEGORIES.filter((key) => key !== 'gifts').map((key) => (
-            <button
-              key={key}
-              type="button"
-              className={`catalog-chip catalog-chip--category ${currentTopCategory === key ? 'active' : ''}`}
-              onClick={() => handleTopCategoryClick(key)}
-              aria-pressed={currentTopCategory === key}
-            >
-              {t[CATEGORY_I18N_KEYS[key] as keyof typeof t] as string}
-            </button>
-          ))}
+          CATALOG_TOP_CATEGORIES.filter((key) => key !== 'gifts').map((key) => {
+            const iconSrc = CATEGORY_ICONS[key];
+            const isJiggling = jiggleCategory?.key === key;
+
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`catalog-chip catalog-chip--category ${currentTopCategory === key ? 'active' : ''}`}
+                onClick={() => handleTopCategoryClick(key)}
+                aria-pressed={currentTopCategory === key}
+              >
+                {iconSrc && (
+                  <img
+                    key={`${key}-${jiggleCategory?.id ?? 0}`}
+                    className={`catalog-chip-icon ${isJiggling ? 'catalog-chip-icon--jiggle' : ''}`}
+                    src={iconSrc}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="catalog-chip-label">{t[CATEGORY_I18N_KEYS[key] as keyof typeof t] as string}</span>
+              </button>
+            );
+          })}
 
         {/* Sort chip */}
         {onQuickFilter && (
@@ -194,6 +231,9 @@ export function CatalogFilterBar({
         /* Chips */
         .catalog-chip {
           flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 5px;
           border: 1.5px solid var(--border);
           background: var(--surface);
           border-radius: 100px;
@@ -236,6 +276,39 @@ export function CatalogFilterBar({
           max-width: 200px;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        .catalog-chip-icon {
+          width: 25px;
+          height: 25px;
+          flex-shrink: 0;
+          object-fit: contain;
+          background: transparent;
+          mix-blend-mode: multiply;
+        }
+        .catalog-chip-icon--jiggle {
+          animation: catalog-chip-icon-jiggle 0.35s ease-in-out;
+        }
+        .catalog-chip-label {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @keyframes catalog-chip-icon-jiggle {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          20% {
+            transform: translateX(-2px);
+          }
+          40% {
+            transform: translateX(2px);
+          }
+          60% {
+            transform: translateX(-1px);
+          }
+          80% {
+            transform: translateX(1px);
+          }
         }
 
         /* Sort chip */

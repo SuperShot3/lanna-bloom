@@ -7,9 +7,9 @@ import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/de
 import { PinIcon } from '@/components/icons/PinIcon';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 
-/** 4 delivery windows from 08:00 to 20:00. */
+/** 4 delivery windows from 09:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
-  '08:00–12:00',  // Morning
+  '09:00–12:00',  // Morning
   '12:00–15:00',  // Midday
   '15:00–18:00',  // Afternoon
   '18:00–20:00',  // Evening

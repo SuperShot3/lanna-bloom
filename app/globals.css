@@ -980,11 +980,11 @@ a.filter-pill--active:hover {
 
 /* Catalog page */
 .catalog-page {
-  padding: var(--space-4) 0 var(--space-12);
+  padding: var(--space-2) 0 var(--space-12);
 }
 @media (min-width: 768px) {
   .catalog-page {
-    padding: var(--space-6) 0 var(--space-16);
+    padding: var(--space-3) 0 var(--space-16);
   }
 }
 .catalog-title {
