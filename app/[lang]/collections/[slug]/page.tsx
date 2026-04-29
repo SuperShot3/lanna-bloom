@@ -9,6 +9,7 @@ import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getBaseUrl } from '@/lib/orders';
 import {
+  getBalloonsFilteredFromSanity,
   getBouquetsFilteredFromSanity,
   getPlushyToysFilteredFromSanity,
   type CatalogProduct,
@@ -23,12 +24,57 @@ import styles from './CollectionLandingPage.module.css';
 export const revalidate = 60;
 
 const MAX_BOUQUETS = 6;
-const MAX_ADD_ONS = 3;
+const MAX_ADD_ONS_PER_TYPE = 3;
 
-function selectRandomAddOns(products: CatalogProduct[]): CatalogProduct[] {
+const TRUST_ICONS = [
+  (
+    <svg key="delivery" viewBox="0 0 24 24" focusable="false">
+      <path d="M3 7h11v8H3z" />
+      <path d="M14 10h3.5l2.5 3v2h-6z" />
+      <path d="M6.5 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+      <path d="M17.5 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+    </svg>
+  ),
+  (
+    <svg key="payment" viewBox="0 0 24 24" focusable="false">
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M7 15h4" />
+    </svg>
+  ),
+  (
+    <svg key="message" viewBox="0 0 24 24" focusable="false">
+      <path d="M5 6h14v10H9l-4 3z" />
+      <path d="M8 10h8" />
+      <path d="M8 13h5" />
+    </svg>
+  ),
+  (
+    <svg key="checkout" viewBox="0 0 24 24" focusable="false">
+      <path d="M4 12l4 4L19 5" />
+      <path d="M5 19h14" />
+    </svg>
+  ),
+] as const;
+
+function selectRandomAddOns(products: CatalogProduct[], limit = MAX_ADD_ONS_PER_TYPE): CatalogProduct[] {
   return [...products]
     .sort(() => Math.random() - 0.5)
-    .slice(0, MAX_ADD_ONS);
+    .slice(0, limit);
+}
+
+function interleaveAddOns(groups: CatalogProduct[][]): CatalogProduct[] {
+  const maxLength = Math.max(...groups.map((group) => group.length), 0);
+  const result: CatalogProduct[] = [];
+
+  for (let i = 0; i < maxLength; i++) {
+    for (const group of groups) {
+      const item = group[i];
+      if (item) result.push(item);
+    }
+  }
+
+  return result;
 }
 
 export function generateStaticParams() {
@@ -85,19 +131,23 @@ export default async function CollectionLandingPage({
   const locale = lang as Locale;
   const copy = page.copy[locale];
   const catalogHref = `/${locale}/catalog${buildCatalogSearchString(page.filters)}`;
-  const addOnsHref = `/${locale}/catalog${buildCatalogSearchString({ topCategory: 'plushy_toys' })}`;
+  const addOnsHref = `/${locale}/catalog${buildCatalogSearchString({ topCategory: 'balloons' })}`;
   const allRosesHref = `/${locale}/catalog${buildCatalogSearchString({
     topCategory: 'flowers',
     types: ['rose'],
   })}`;
 
-  const [allBouquets, plushyToys] = await Promise.all([
+  const [allBouquets, plushyToys, balloons] = await Promise.all([
     getBouquetsFilteredFromSanity(page.filters),
     getPlushyToysFilteredFromSanity({ sort: 'newest' }),
+    getBalloonsFilteredFromSanity({ sort: 'newest' }),
   ]);
 
   const bouquets = allBouquets.slice(0, MAX_BOUQUETS);
-  const addOns = selectRandomAddOns(plushyToys);
+  const addOns = interleaveAddOns([
+    selectRandomAddOns(plushyToys),
+    selectRandomAddOns(balloons),
+  ]);
   const heroImage = bouquets[0]?.images?.[0];
   const tabs = getCollectionLandingTabs(locale);
 
@@ -233,10 +283,15 @@ export default async function CollectionLandingPage({
 
         <section className={styles.section} aria-label={locale === 'th' ? 'จุดเด่นบริการ' : 'Service highlights'}>
           <div className={styles.trustBand}>
-            {copy.trustItems.map((item) => (
+            {copy.trustItems.map((item, index) => (
               <div key={item.title} className={styles.trustItem}>
-                <p className={styles.trustTitle}>{item.title}</p>
-                <p className={styles.trustText}>{item.text}</p>
+                <span className={styles.trustIcon} aria-hidden>
+                  {TRUST_ICONS[index % TRUST_ICONS.length]}
+                </span>
+                <div>
+                  <p className={styles.trustTitle}>{item.title}</p>
+                  <p className={styles.trustText}>{item.text}</p>
+                </div>
               </div>
             ))}
           </div>

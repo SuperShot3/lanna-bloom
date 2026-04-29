@@ -2,7 +2,11 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { PaymentMethodsAvailability } from '@/lib/checkout/paymentAvailability';
-import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
+import {
+  DELIVERY_TIME_SLOTS,
+  getSelectableDeliveryTimeSlotsForDate,
+  isDeliveryTimeSlotSelectableForDate,
+} from '@/components/DeliveryForm';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 
 export type StickyBarSummary = {
@@ -97,9 +101,11 @@ export function StickyCheckoutBar({
     const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
       ? summary.date
       : minDate;
-    const timeSlot = summary.timeSlot && timeSlots.includes(summary.timeSlot as typeof timeSlots[number])
+    const timeSlot = summary.timeSlot &&
+      timeSlots.includes(summary.timeSlot as typeof timeSlots[number]) &&
+      isDeliveryTimeSlotSelectableForDate(date, summary.timeSlot)
       ? summary.timeSlot
-      : timeSlots[0];
+      : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
     setEditDate(date);
     setEditTimeSlot(timeSlot);
     setEditSheetOpen(true);
@@ -110,19 +116,32 @@ export function StickyCheckoutBar({
     const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
       ? summary.date
       : minDate;
-    const timeSlot = summary.timeSlot && timeSlots.includes(summary.timeSlot as typeof timeSlots[number])
+    const timeSlot = summary.timeSlot &&
+      timeSlots.includes(summary.timeSlot as typeof timeSlots[number]) &&
+      isDeliveryTimeSlotSelectableForDate(date, summary.timeSlot)
       ? summary.timeSlot
-      : timeSlots[0];
+      : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
     setEditDate(date);
     setEditTimeSlot(timeSlot);
   }, [editSheetOpen, summary.date, summary.timeSlot, minDate, timeSlots]);
 
   const handleEditConfirm = useCallback(() => {
     const date = editDate && editDate >= minDate ? editDate : minDate;
-    const slot = timeSlots.includes(editTimeSlot as typeof timeSlots[number]) ? editTimeSlot : timeSlots[0];
+    const slot = isDeliveryTimeSlotSelectableForDate(date, editTimeSlot)
+      ? editTimeSlot
+      : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
     onDeliveryDateTimeChange?.(date, slot);
     setEditSheetOpen(false);
   }, [editDate, editTimeSlot, minDate, timeSlots, onDeliveryDateTimeChange]);
+
+  const handleEditDateChange = useCallback((date: string) => {
+    setEditDate(date);
+    setEditTimeSlot((current) =>
+      isDeliveryTimeSlotSelectableForDate(date, current)
+        ? current
+        : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? ''
+    );
+  }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
@@ -371,7 +390,7 @@ export function StickyCheckoutBar({
                 type="date"
                 value={editDate}
                 min={minDate}
-                onChange={(e) => setEditDate(e.target.value)}
+                onChange={(e) => handleEditDateChange(e.target.value)}
                 className="sticky-checkout-bar__sheet-date"
                 aria-label={labels.specifyDeliveryDate ?? 'Delivery date'}
               />
@@ -379,7 +398,7 @@ export function StickyCheckoutBar({
                 <button
                   type="button"
                   className={`sticky-checkout-bar__sheet-quick-btn${editDate === minDate ? ' sticky-checkout-bar__sheet-quick-btn--active' : ''}`}
-                  onClick={() => setEditDate(minDate)}
+                  onClick={() => handleEditDateChange(minDate)}
                   aria-pressed={editDate === minDate}
                 >
                   {labels.todayLabel ?? 'Today'}
@@ -387,7 +406,7 @@ export function StickyCheckoutBar({
                 <button
                   type="button"
                   className={`sticky-checkout-bar__sheet-quick-btn${editDate === tomorrowQuickStr ? ' sticky-checkout-bar__sheet-quick-btn--active' : ''}`}
-                  onClick={() => setEditDate(tomorrowQuickStr)}
+                  onClick={() => handleEditDateChange(tomorrowQuickStr)}
                   aria-pressed={editDate === tomorrowQuickStr}
                 >
                   {labels.tomorrowLabel ?? 'Tomorrow'}
@@ -405,8 +424,15 @@ export function StickyCheckoutBar({
                 className="sticky-checkout-bar__sheet-select"
                 aria-label={labels.selectTimeSlot ?? 'Select time slot'}
               >
+                <option value="" disabled>
+                  {labels.selectTimeSlot ?? 'Select time slot'}
+                </option>
                 {timeSlots.map((slot) => (
-                  <option key={slot} value={slot}>
+                  <option
+                    key={slot}
+                    value={slot}
+                    disabled={editDate ? !isDeliveryTimeSlotSelectableForDate(editDate, slot) : false}
+                  >
                     {slot}
                   </option>
                 ))}

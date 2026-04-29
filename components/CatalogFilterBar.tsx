@@ -14,9 +14,9 @@ const SORT_OPTIONS: { value: CatalogFilterParams['sort']; labelKey: 'sortFeature
 ];
 
 const CATEGORY_ICONS: Partial<Record<CatalogTopCategory, string>> = {
-  flowers: '/icons/category_icons/fllwoers_icon.svg',
-  plushy_toys: '/icons/category_icons/bear_icon.svg',
-  balloons: '/icons/category_icons/baloon_icon.svg',
+  flowers: '/icons/category_icons/flowers_icon.webp',
+  plushy_toys: '/icons/category_icons/teadybear_category_icon.webp',
+  balloons: '/icons/category_icons/Ballons_category_icon.webp',
 };
 
 export interface CatalogFilterBarProps {

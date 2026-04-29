@@ -6,6 +6,7 @@ import type { Locale } from '@/lib/i18n';
 import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
 import { PinIcon } from '@/components/icons/PinIcon';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
+import { getBangkokYmd } from '@/lib/deliveryHours';
 
 /** 4 delivery windows from 09:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
@@ -14,6 +15,51 @@ export const DELIVERY_TIME_SLOTS = [
   '15:00–18:00',  // Afternoon
   '18:00–20:00',  // Evening
 ] as const;
+
+type DeliveryTimeSlot = typeof DELIVERY_TIME_SLOTS[number];
+
+function minutesSinceMidnightBangkok(date: Date): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Bangkok',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
+}
+
+function slotEndMinutes(slot: string): number | null {
+  const end = slot.split('–')[1]?.trim();
+  const match = end?.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+export function isDeliveryTimeSlotSelectableForDate(
+  deliveryDate: string,
+  slot: string,
+  now: Date = new Date()
+): boolean {
+  if (!deliveryDate || !slot) return true;
+  if (!DELIVERY_TIME_SLOTS.includes(slot as DeliveryTimeSlot)) return false;
+  if (deliveryDate !== getBangkokYmd(now)) return true;
+
+  const endMinutes = slotEndMinutes(slot);
+  if (endMinutes === null) return false;
+  return endMinutes > minutesSinceMidnightBangkok(now);
+}
+
+export function getSelectableDeliveryTimeSlotsForDate(
+  deliveryDate: string,
+  now: Date = new Date()
+): DeliveryTimeSlot[] {
+  return DELIVERY_TIME_SLOTS.filter((slot) =>
+    isDeliveryTimeSlotSelectableForDate(deliveryDate, slot, now)
+  );
+}
 
 export interface DeliveryFormValues {
   addressLine: string;
@@ -90,6 +136,14 @@ export function DeliveryForm({
   const todayStr = getLocalTodayYmd();
   const tomorrowStr = getLocalTomorrowYmd();
   const minDate = todayStr;
+  const selectableTimeSlots = getSelectableDeliveryTimeSlotsForDate(value.date);
+
+  const updateDate = (date: string) => {
+    const nextTimeSlot = isDeliveryTimeSlotSelectableForDate(date, value.timeSlot)
+      ? value.timeSlot
+      : '';
+    onChange({ ...value, date, timeSlot: nextTimeSlot });
+  };
 
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -217,7 +271,7 @@ export function DeliveryForm({
                     id="buy-now-date"
                     type="date"
                     value={value.date}
-                    onChange={(e) => onChange({ ...value, date: e.target.value })}
+                    onChange={(e) => updateDate(e.target.value)}
                     min={minDate}
                     className="buy-now-input buy-now-date-input"
                     aria-label={t.specifyDeliveryDate}
@@ -230,7 +284,7 @@ export function DeliveryForm({
                   <button
                     type="button"
                     className={`buy-now-date-quick-btn${value.date === todayStr ? ' buy-now-date-quick-btn--active' : ''}`}
-                    onClick={() => onChange({ ...value, date: todayStr })}
+                    onClick={() => updateDate(todayStr)}
                     aria-label={t.todayLabel}
                     aria-pressed={value.date === todayStr}
                   >
@@ -239,7 +293,7 @@ export function DeliveryForm({
                   <button
                     type="button"
                     className={`buy-now-date-quick-btn${value.date === tomorrowStr ? ' buy-now-date-quick-btn--active' : ''}`}
-                    onClick={() => onChange({ ...value, date: tomorrowStr })}
+                    onClick={() => updateDate(tomorrowStr)}
                     aria-label={t.tomorrowLabel}
                     aria-pressed={value.date === tomorrowStr}
                   >
@@ -257,7 +311,11 @@ export function DeliveryForm({
                 >
                   <option value="">{t.selectTimeSlot}</option>
                   {DELIVERY_TIME_SLOTS.map((slot) => (
-                    <option key={slot} value={slot}>
+                    <option
+                      key={slot}
+                      value={slot}
+                      disabled={value.date ? !selectableTimeSlots.includes(slot) : false}
+                    >
                       {slot}
                     </option>
                   ))}

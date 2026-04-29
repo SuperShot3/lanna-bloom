@@ -4,7 +4,13 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
-import { DeliveryForm, DELIVERY_TIME_SLOTS, type DeliveryFormValues } from '@/components/DeliveryForm';
+import {
+  DeliveryForm,
+  DELIVERY_TIME_SLOTS,
+  getSelectableDeliveryTimeSlotsForDate,
+  isDeliveryTimeSlotSelectableForDate,
+  type DeliveryFormValues,
+} from '@/components/DeliveryForm';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { ContactPreferenceOption } from '@/lib/orders';
@@ -88,9 +94,11 @@ function getProductPageDeliveryPreference(): { date: string; timeSlot: string } 
   const date = storedDate && /^\d{4}-\d{2}-\d{2}$/.test(storedDate) && storedDate >= todayStr
     ? storedDate
     : todayStr;
-  const timeSlot = storedTime && DELIVERY_TIME_SLOTS.includes(storedTime as typeof DELIVERY_TIME_SLOTS[number])
+  const timeSlot = storedTime &&
+    DELIVERY_TIME_SLOTS.includes(storedTime as typeof DELIVERY_TIME_SLOTS[number]) &&
+    isDeliveryTimeSlotSelectableForDate(date, storedTime)
     ? storedTime
-    : DELIVERY_TIME_SLOTS[0];
+    : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
   return { date, timeSlot };
 }
 
@@ -150,6 +158,7 @@ function isDeliveryValid(
   const addressTrim = delivery.addressLine?.trim() ?? '';
   if (addressTrim.length < 10 || addressTrim.length > 300) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
+  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
 }
 
@@ -497,6 +506,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }));
   }, []);
 
+  useEffect(() => {
+    if (!delivery.date || !delivery.timeSlot) return;
+    if (isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return;
+    setDelivery((prev) => ({ ...prev, timeSlot: '' }));
+  }, [delivery.date, delivery.timeSlot]);
+
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [mapsLinkPromptOpen, setMapsLinkPromptOpen] = useState(false);
@@ -653,6 +668,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return fmt(String(tB.specifyDeliveryDate ?? tC.dateLabel ?? 'Date'));
     }
     if (!delivery.timeSlot) {
+      return fmt(String(tB.selectTimeSlot ?? 'Time slot'));
+    }
+    if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) {
       return fmt(String(tB.selectTimeSlot ?? 'Time slot'));
     }
     if (!customerName.trim()) {
@@ -1540,7 +1558,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               ? paymentAvailability.stripe.reason
               : undefined;
             const handleDeliveryDateTimeChange = (date: string, timeSlot: string) => {
-              setDelivery((prev) => ({ ...prev, date, timeSlot }));
+              const nextTimeSlot = isDeliveryTimeSlotSelectableForDate(date, timeSlot)
+                ? timeSlot
+                : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
+              setDelivery((prev) => ({ ...prev, date, timeSlot: nextTimeSlot }));
             };
             return (
           <StickyCheckoutBar

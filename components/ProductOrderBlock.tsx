@@ -17,7 +17,11 @@ import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { TrustBadges } from '@/components/TrustBadges';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
-import { DELIVERY_TIME_SLOTS } from '@/components/DeliveryForm';
+import {
+  DELIVERY_TIME_SLOTS,
+  getSelectableDeliveryTimeSlotsForDate,
+  isDeliveryTimeSlotSelectableForDate,
+} from '@/components/DeliveryForm';
 import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
@@ -56,7 +60,9 @@ export function ProductOrderBlock({
 
   const handleAddToCart = () => {
     const hasDate = !!deliveryDate?.trim();
-    const hasTime = !!deliveryTimeSlot?.trim();
+    const hasTime =
+      !!deliveryTimeSlot?.trim() &&
+      isDeliveryTimeSlotSelectableForDate(deliveryDate, deliveryTimeSlot);
     if (!hasDate || !hasTime) {
       setShowDeliveryValidation(true);
       const scrollTarget = !hasDate ? dateWrapRef.current : timeSelectRef.current;
@@ -121,6 +127,9 @@ export function ProductOrderBlock({
 
   const saveDeliveryDate = useCallback((v: string) => {
     setDeliveryDate(v);
+    setDeliveryTimeSlot((current) =>
+      isDeliveryTimeSlotSelectableForDate(v, current) ? current : ''
+    );
     setShowDeliveryValidation((prev) => (prev ? false : prev));
     if (typeof window !== 'undefined' && v) {
       sessionStorage.setItem(PREFERRED_DELIVERY_KEY, v);
@@ -130,12 +139,15 @@ export function ProductOrderBlock({
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState<string>(() => '');
 
   const saveDeliveryTimeSlot = useCallback((v: string) => {
+    if (!isDeliveryTimeSlotSelectableForDate(deliveryDate, v)) return;
     setDeliveryTimeSlot(v);
     setShowDeliveryValidation((prev) => (prev ? false : prev));
     if (typeof window !== 'undefined' && v) {
       sessionStorage.setItem(PREFERRED_TIME_KEY, v);
     }
-  }, []);
+  }, [deliveryDate]);
+
+  const selectableTimeSlots = getSelectableDeliveryTimeSlotsForDate(deliveryDate);
 
   return (
     <div className="order-block">
@@ -216,7 +228,11 @@ export function ProductOrderBlock({
               {lang === 'th' ? 'เลือกช่วงเวลา' : 'Select time'}
             </option>
             {DELIVERY_TIME_SLOTS.map((slot) => (
-              <option key={slot} value={slot}>
+              <option
+                key={slot}
+                value={slot}
+                disabled={deliveryDate ? !selectableTimeSlots.includes(slot) : false}
+              >
                 {slot}
               </option>
             ))}
