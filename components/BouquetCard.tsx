@@ -877,23 +877,31 @@ export function BouquetCard({
           .card-mobile-actions button {
             min-width: 0;
             min-height: 32px;
+            box-sizing: border-box;
+            padding: 0 4px;
             border-radius: 8px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
             font-family: inherit;
-            font-size: 10px;
+            font-size: clamp(9px, 2.25vw, 10px);
             font-weight: 700;
             line-height: 1;
             white-space: nowrap;
+            overflow: hidden;
             cursor: pointer;
             touch-action: manipulation;
           }
           .card-mobile-actions .material-symbols-outlined {
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1;
             flex: 0 0 auto;
+          }
+          .card-mobile-actions button span:last-child {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
           .card-mobile-buy {
             border: 1px solid rgba(26, 60, 52, 0.18);
