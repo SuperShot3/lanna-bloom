@@ -191,6 +191,7 @@ export function ProductCard({
   const [selectedId, setSelectedId] = useState('business');
   const [justAdded, setJustAdded] = useState(false);
   const [actionsPinned, setActionsPinned] = useState(false);
+  const [showMobileActions, setShowMobileActions] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia('(hover: hover) and (pointer: fine)');
@@ -204,6 +205,15 @@ export function ProductCard({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, [alwaysShowActions]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 639px)');
+    const sync = () => setShowMobileActions(media.matches);
+
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
 
   const selected = options.find((o) => o.id === selectedId && o.available) ?? options.filter((o) => o.available).pop();
 
@@ -394,6 +404,31 @@ export function ProductCard({
           {isStandaloneProduct && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
         </div>
       </Link>
+
+      {showMobileActions && (
+        <div
+          className="pcard-mobile-actions"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button type="button" className="pcard-mobile-buy" onClick={() => pushToCart('checkout')}>
+            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
+              bolt
+            </span>
+            <span>{t.buyInOneClick}</span>
+          </button>
+          <button
+            type="button"
+            className="pcard-mobile-cart"
+            onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              {justAdded ? 'shopping_bag' : 'shopping_cart'}
+            </span>
+            <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
+          </button>
+        </div>
+      )}
 
       <div
         className="pcard-panel"
@@ -665,6 +700,9 @@ export function ProductCard({
         .pcard-panel-inner {
           padding: 10px 14px 14px;
         }
+        .pcard-mobile-actions {
+          display: none;
+        }
         .pcard-options-title {
           font-size: 12px;
           font-weight: 600;
@@ -792,6 +830,70 @@ export function ProductCard({
           font-weight: 600;
           color: var(--primary);
           text-align: center;
+        }
+        @media (max-width: 639px) {
+          .pcard-body {
+            padding: 9px 10px 8px;
+            min-height: 78px;
+          }
+          .pcard-name {
+            font-family: var(--font-serif);
+            font-size: 15px;
+            line-height: 1.2;
+            margin-bottom: 5px;
+          }
+          .pcard-price {
+            gap: 4px;
+            font-size: 14px;
+          }
+          .pcard-price-from {
+            font-size: 14px;
+          }
+          .pcard-size {
+            font-size: 11px;
+            margin-top: 4px;
+          }
+          .pcard-mobile-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+            gap: 6px;
+            padding: 0 10px 10px;
+          }
+          .pcard-mobile-actions button {
+            min-width: 0;
+            min-height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            cursor: pointer;
+            touch-action: manipulation;
+          }
+          .pcard-mobile-actions .material-symbols-outlined {
+            font-size: 14px;
+            line-height: 1;
+            flex: 0 0 auto;
+          }
+          .pcard-mobile-buy {
+            border: 1px solid rgba(26, 60, 52, 0.18);
+            background: var(--primary);
+            color: #fff;
+          }
+          .pcard-mobile-cart {
+            border: 1px solid rgba(197, 160, 89, 0.5);
+            background: #fff;
+            color: var(--text);
+          }
+          .pcard-mobile-actions button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+          }
         }
       `}</style>
     </article>

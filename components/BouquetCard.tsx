@@ -83,6 +83,7 @@ export function BouquetCard({
   const [selectedOptionId, setSelectedOptionId] = useState<string>(defaultOid);
   const [justAdded, setJustAdded] = useState(false);
   const [actionsPinned, setActionsPinned] = useState(false);
+  const [showMobileActions, setShowMobileActions] = useState(false);
 
   const [favoriteActive, setFavoriteActive] = useState(false);
 
@@ -103,6 +104,16 @@ export function BouquetCard({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, [alwaysShowActions, showPanel]);
+
+  useEffect(() => {
+    if (!showPanel) return;
+    const media = window.matchMedia('(max-width: 639px)');
+    const sync = () => setShowMobileActions(media.matches);
+
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, [showPanel]);
 
   useEffect(() => {
     const sync = () => {
@@ -269,7 +280,7 @@ export function BouquetCard({
 
   const radioName = `bouquet-opt-${bouquet.id}`;
 
-  const showFavorite = showFavoriteButton ?? (variant === 'popular' || variant === 'popular-compact');
+  const showFavorite = showFavoriteButton ?? true;
 
   const toggleFavorite = useCallback(
     (e: React.MouseEvent<HTMLButtonElement> | React.MouseEvent<HTMLSpanElement>) => {
@@ -420,6 +431,31 @@ export function BouquetCard({
           </div>
         </div>
       </PrefetchLink>
+
+      {showPanel && showMobileActions && (
+        <div
+          className="card-mobile-actions"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button type="button" className="card-mobile-buy" onClick={() => pushToCart('checkout')}>
+            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
+              bolt
+            </span>
+            <span>{t.buyInOneClick}</span>
+          </button>
+          <button
+            type="button"
+            className="card-mobile-cart"
+            onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              {justAdded ? 'shopping_bag' : 'shopping_cart'}
+            </span>
+            <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
+          </button>
+        </div>
+      )}
 
       {showPanel && (
         <div
@@ -576,6 +612,11 @@ export function BouquetCard({
         .card-favorite.is-active:hover {
           color: #e11d48;
         }
+        @media (min-width: 640px) {
+          .card:not(.card-popular) .card-favorite {
+            display: none;
+          }
+        }
         .card-stars {
           display: flex;
           gap: 2px;
@@ -693,6 +734,9 @@ export function BouquetCard({
         .card-hover-panel-inner {
           padding: 10px 14px 14px;
         }
+        .card-mobile-actions {
+          display: none;
+        }
         .card-hover-options-title {
           font-size: 12px;
           font-weight: 600;
@@ -803,6 +847,68 @@ export function BouquetCard({
           font-weight: 600;
           color: var(--primary);
           text-align: center;
+        }
+        @media (max-width: 639px) {
+          .card-body {
+            padding: 9px 10px 8px;
+            min-height: 78px;
+          }
+          .card-name {
+            font-size: 15px;
+            margin-bottom: 5px;
+          }
+          .card-price {
+            font-size: 14px;
+          }
+          .card-favorite {
+            top: 10px;
+            right: 10px;
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(45, 42, 38, 0.08);
+            box-shadow: 0 2px 10px rgba(45, 42, 38, 0.1);
+          }
+          .card-mobile-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+            gap: 6px;
+            padding: 0 10px 10px;
+          }
+          .card-mobile-actions button {
+            min-width: 0;
+            min-height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            cursor: pointer;
+            touch-action: manipulation;
+          }
+          .card-mobile-actions .material-symbols-outlined {
+            font-size: 14px;
+            line-height: 1;
+            flex: 0 0 auto;
+          }
+          .card-mobile-buy {
+            border: 1px solid rgba(26, 60, 52, 0.18);
+            background: var(--primary);
+            color: #fff;
+          }
+          .card-mobile-cart {
+            border: 1px solid rgba(197, 160, 89, 0.5);
+            background: #fff;
+            color: var(--text);
+          }
+          .card-mobile-actions button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+          }
         }
       `}</style>
     </article>
