@@ -8,7 +8,7 @@ import { getHeroImageFromSanity, getHeroCarouselImagesFromSanity } from '@/lib/s
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { Suspense } from 'react';
 
-/** Regenerate every 60s so popular flowers shuffle on each update */
+/** Regenerate every 60s so popular catalog items shuffle on each update */
 export const revalidate = 60;
 
 export default async function HomePage({

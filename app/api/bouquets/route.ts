@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPopularBouquetsFromSanityPaginated } from '@/lib/sanity';
+import { getPopularCatalogItemsFromSanityPaginated } from '@/lib/sanity';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,14 +15,14 @@ export async function GET(request: NextRequest) {
       Math.max(1, parseInt(searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT)
     );
 
-    const bouquets = await getPopularBouquetsFromSanityPaginated(offset, limit);
-    const hasMore = bouquets.length === limit;
+    const items = await getPopularCatalogItemsFromSanityPaginated(offset, limit);
+    const hasMore = items.length === limit;
 
-    return NextResponse.json({ bouquets, hasMore });
+    return NextResponse.json({ items, hasMore });
   } catch (err) {
     console.error('[API] GET /api/bouquets failed:', err);
     return NextResponse.json(
-      { error: 'Failed to load bouquets' },
+      { error: 'Failed to load popular items' },
       { status: 500 }
     );
   }

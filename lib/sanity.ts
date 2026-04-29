@@ -10,6 +10,7 @@ import {
   minPriceFromOptions,
   type StemBucketKey,
 } from './bouquetOptions';
+import { PRODUCT_CATEGORIES } from './catalogCategories';
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
@@ -455,6 +456,21 @@ export async function getHeroCarouselImagesFromSanity(): Promise<string[]> {
 }
 
 
+async function getOrderedPopularBouquetsFromSanity(): Promise<Bouquet[]> {
+  try {
+    const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
+    const bouquets = (docs ?? []).map(mapToBouquet);
+    if (bouquets.length === 0) return [];
+
+    const interleaved = buildInterleavedPopularBouquets(bouquets);
+    const rng = mulberry32(getPopularShuffleSeed());
+    return shuffleArraySeeded([...interleaved], rng);
+  } catch (err) {
+    console.error('[Sanity] getOrderedPopularBouquetsFromSanity failed:', err);
+    return [];
+  }
+}
+
 /**
  * Home "Popular" + /api/bouquets: price-tier interleave, then daily seeded shuffle (not nameEn order,
  * so names starting with digits are not stuck first). Same seed all day so pagination matches SSR.
@@ -463,25 +479,101 @@ export async function getPopularBouquetsFromSanityPaginated(
   start: number,
   limit: number
 ): Promise<Bouquet[]> {
-  try {
-    const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
-    const bouquets = (docs ?? []).map(mapToBouquet);
-    if (bouquets.length === 0) return [];
-
-    const interleaved = buildInterleavedPopularBouquets(bouquets);
-    const rng = mulberry32(getPopularShuffleSeed());
-    const shuffled = shuffleArraySeeded([...interleaved], rng);
-    const safeStart = Math.max(0, start);
-    return shuffled.slice(safeStart, safeStart + limit);
-  } catch (err) {
-    console.error('[Sanity] getPopularBouquetsFromSanityPaginated failed:', err);
-    return [];
-  }
+  const ordered = await getOrderedPopularBouquetsFromSanity();
+  const safeStart = Math.max(0, start);
+  return ordered.slice(safeStart, safeStart + limit);
 }
 
 /** First N popular bouquets (guides, etc.). Order matches home popular for the same day. */
 export async function getPopularBouquetsFromSanity(limit: number): Promise<Bouquet[]> {
   return getPopularBouquetsFromSanityPaginated(0, limit);
+}
+
+export type PopularCatalogItem =
+  | { itemType: 'bouquet'; item: Bouquet }
+  | { itemType: 'product'; item: CatalogProduct };
+
+function getPopularCatalogCategory(item: PopularCatalogItem): string {
+  if (item.itemType === 'bouquet') return 'flowers';
+  if (item.item.catalogKind === 'plushyToy') return 'plushy_toys';
+  if (item.item.catalogKind === 'balloon') return 'balloons';
+  return item.item.category || 'other';
+}
+
+function interleavePopularCatalogItems(items: PopularCatalogItem[]): PopularCatalogItem[] {
+  const categoryOrder = [
+    'flowers',
+    'plushy_toys',
+    'balloons',
+    'gifts',
+    'money_flowers',
+    'handmade_floral',
+  ];
+  const groups = new Map<string, PopularCatalogItem[]>();
+
+  for (const item of items) {
+    const key = getPopularCatalogCategory(item);
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+
+  const order = [
+    ...categoryOrder.filter((key) => groups.has(key)),
+    ...Array.from(groups.keys()).filter((key) => !categoryOrder.includes(key)).sort(),
+  ];
+  const interleaved: PopularCatalogItem[] = [];
+  let added = true;
+
+  while (added) {
+    added = false;
+    for (const key of order) {
+      const next = groups.get(key)?.shift();
+      if (!next) continue;
+      interleaved.push(next);
+      added = true;
+    }
+  }
+
+  return interleaved;
+}
+
+/**
+ * Home Popular catalog: bouquets plus all live non-flower categories, including plushy toys and balloons.
+ */
+export async function getPopularCatalogItemsFromSanityPaginated(
+  start: number,
+  limit: number
+): Promise<PopularCatalogItem[]> {
+  try {
+    const productCategoryKeys = PRODUCT_CATEGORIES.filter(
+      (category) => category !== 'plushy_toys' && category !== 'balloons'
+    );
+    const [
+      bouquets,
+      plushyToys,
+      balloons,
+      ...productGroups
+    ] = await Promise.all([
+      getOrderedPopularBouquetsFromSanity(),
+      getPlushyToysFilteredFromSanity({ sort: 'newest' }),
+      getBalloonsFilteredFromSanity({ sort: 'newest' }),
+      ...productCategoryKeys.map((categoryKey) =>
+        getProductsFilteredFromSanity({ categoryKey, sort: 'newest' })
+      ),
+    ]);
+    const rng = mulberry32(getPopularShuffleSeed() + 17);
+    const allItems: PopularCatalogItem[] = [
+      ...bouquets.map((item) => ({ itemType: 'bouquet' as const, item })),
+      ...plushyToys.map((item) => ({ itemType: 'product' as const, item })),
+      ...balloons.map((item) => ({ itemType: 'product' as const, item })),
+      ...productGroups.flat().map((item) => ({ itemType: 'product' as const, item })),
+    ];
+    const mixed = interleavePopularCatalogItems(shuffleArraySeeded(allItems, rng));
+    const safeStart = Math.max(0, start);
+    return mixed.slice(safeStart, safeStart + limit);
+  } catch (err) {
+    console.error('[Sanity] getPopularCatalogItemsFromSanityPaginated failed:', err);
+    return [];
+  }
 }
 
 export interface CatalogFilterParams {

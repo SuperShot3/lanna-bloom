@@ -77,7 +77,7 @@ export const translations = {
       avgDelivery: '60 Min Avg.',
     },
     home: {
-      popularTitle: 'Popular bouquets',
+      popularTitle: 'Popular picks',
       viewAllBouquets: 'View all bouquets',
       showMore: 'Show More',
       browseBouquets: 'Browse bouquets',
@@ -1109,7 +1109,7 @@ export const translations = {
       avgDelivery: 'เฉลี่ย 60 นาที',
     },
     home: {
-      popularTitle: 'ช่อดอกไม้ยอดนิยม',
+      popularTitle: 'สินค้ายอดนิยม',
       viewAllBouquets: 'ดูช่อดอกไม้ทั้งหมด',
       showMore: 'แสดงเพิ่มเติม',
       browseBouquets: 'เลือกช่อดอกไม้',

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { BouquetCard } from '@/components/BouquetCard';
-import type { Bouquet } from '@/lib/bouquets';
+import { ProductCard } from '@/components/ProductCard';
+import type { PopularCatalogItem } from '@/lib/sanity';
 import type { Locale } from '@/lib/i18n';
 
 const PAGE_SIZE = 8;
@@ -48,14 +49,14 @@ function SunflowerSpinner({ className }: { className?: string }) {
 }
 
 export function PopularSectionClient({
-  initialBouquets,
+  initialItems,
   lang,
 }: {
-  initialBouquets: Bouquet[];
+  initialItems: PopularCatalogItem[];
   lang: Locale;
 }) {
-  const [bouquets, setBouquets] = useState<Bouquet[]>(initialBouquets);
-  const [hasMore, setHasMore] = useState(initialBouquets.length >= PAGE_SIZE);
+  const [items, setItems] = useState<PopularCatalogItem[]>(initialItems);
+  const [hasMore, setHasMore] = useState(initialItems.length >= PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [newIds, setNewIds] = useState<string[]>([]);
   const fetchingRef = useRef(false);
@@ -74,19 +75,19 @@ export function PopularSectionClient({
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/bouquets?offset=${bouquets.length}&limit=${PAGE_SIZE}`
+        `/api/bouquets?offset=${items.length}&limit=${PAGE_SIZE}`
       );
       if (!res.ok) return;
       const data = await res.json();
-      const next = data.bouquets ?? [];
-      setNewIds(next.map((b: Bouquet) => b.id).filter(Boolean));
-      setBouquets((prev) => [...prev, ...next]);
+      const next: PopularCatalogItem[] = data.items ?? [];
+      setNewIds(next.map((entry) => entry.item.id).filter(Boolean));
+      setItems((prev) => [...prev, ...next]);
       setHasMore(Boolean(data.hasMore));
     } finally {
       fetchingRef.current = false;
       setLoading(false);
     }
-  }, [bouquets.length, hasMore]);
+  }, [items.length, hasMore]);
 
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
@@ -108,24 +109,28 @@ export function PopularSectionClient({
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, [hasMore, bouquets.length]);
+  }, [hasMore, items.length]);
 
   return (
     <>
       <div className="popular-scroll-wrap">
         <div className="popular-scroll">
-          {bouquets.map((bouquet) => (
+          {items.map((entry) => (
             <div
-              key={bouquet.id}
+              key={`${entry.itemType}-${entry.item.id}`}
               className={`popular-card-slot ${
-                newIdSet.has(bouquet.id) ? 'popular-card-slot--new' : ''
+                newIdSet.has(entry.item.id) ? 'popular-card-slot--new' : ''
               }`}
             >
-              <BouquetCard
-                bouquet={bouquet}
-                lang={lang}
-                variant="popular-compact"
-              />
+              {entry.itemType === 'bouquet' ? (
+                <BouquetCard
+                  bouquet={entry.item}
+                  lang={lang}
+                  variant="popular-compact"
+                />
+              ) : (
+                <ProductCard product={entry.item} lang={lang} />
+              )}
             </div>
           ))}
         </div>
