@@ -256,7 +256,7 @@ export function DeliveryForm({
         <div className="buy-now-step">
           {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
           <div className="buy-now-step-content">
-            <div className="buy-now-fields">
+            <div className="buy-now-fields buy-now-date-time-row">
               <div className="buy-now-field buy-now-date-field">
                 <div
                   className="buy-now-date-display-wrap"
@@ -727,6 +727,17 @@ export function DeliveryForm({
         .buy-now-date-quick-btn--active:hover {
           background: color-mix(in srgb, var(--pastel-pink) 92%, white);
           border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+        }
+        @media (max-width: 640px) {
+          .buy-now-form-accordion .buy-now-date-time-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            align-items: start;
+            gap: 10px;
+          }
+          .buy-now-form-accordion .buy-now-date-time-row .buy-now-field {
+            min-width: 0;
+          }
         }
       `}</style>
     </div>

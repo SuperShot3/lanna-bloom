@@ -122,7 +122,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
 
             return (
               <div key={product.id} className="gifts-carousel-slide">
-                <div className={interest.frame}>
+                <div className={`${interest.frame} gifts-carousel-frame`}>
                   <button
                     type="button"
                     className={`${interest.surface} ${interest.surfaceWithCover}`}
@@ -135,9 +135,9 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
                           src={imgSrc}
                           alt=""
                           fill
-                          sizes="(max-width: 480px) 50vw, (max-width: 640px) 34vw, 26vw"
+                          sizes="100px"
                           className={`${interest.surfaceCoverImage} gifts-product-image`}
-                          style={{ objectFit: 'contain', objectPosition: 'center center' }}
+                          style={{ objectFit: 'cover', objectPosition: 'center center' }}
                           unoptimized={isDataUrl}
                           draggable={false}
                         />
@@ -174,9 +174,8 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
         .gifts-carousel-wrap {
           position: relative;
           margin-bottom: 20px;
-          /* Room so tile frames are not clipped by viewport overflow */
-          padding-top: 6px;
-          padding-bottom: 4px;
+          padding-top: 2px;
+          padding-bottom: 0;
         }
         .gifts-carousel-viewport {
           overflow: hidden;
@@ -190,29 +189,62 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
         .gifts-carousel-container {
           display: flex;
           gap: 7px;
-          margin-left: -7px;
+          margin-left: 0;
         }
         .gifts-carousel-slide {
-          flex: 0 0 45%;
-          min-width: 0;
-          padding: 4px 0 8px 7px;
+          flex: 0 0 100px;
+          min-width: 100px;
+          padding: 2px 0 10px 0;
           box-sizing: border-box;
+        }
+        .gifts-carousel-frame {
+          width: 100px;
+          height: 100px;
+          min-width: 100px;
+          min-height: 100px;
+          overflow: hidden;
+          box-sizing: border-box;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          border-radius: 11px;
+        }
+        .gifts-carousel-slide :global(button) {
+          width: 100% !important;
+          height: 100% !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+        }
+        @media (max-width: 767px) {
+          .gifts-carousel-slide {
+            flex: 0 0 100px;
+          }
+          .gifts-carousel-slide :global(button) {
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+          }
         }
         @media (min-width: 480px) {
           .gifts-carousel-slide {
-            flex: 0 0 33.333%;
+            flex: 0 0 100px;
           }
         }
         @media (min-width: 640px) {
           .gifts-carousel-slide {
-            flex: 0 0 25%;
+            flex: 0 0 100px;
           }
         }
         .gifts-carousel-swipe-hint {
-          font-size: 11px;
+          font-size: 10px;
           color: var(--text-muted);
           text-align: center;
-          margin-top: 6px;
+          margin-top: 4px;
+          position: relative;
+          z-index: 0;
+          line-height: 1.2;
         }
       `}</style>
     </div>

@@ -137,14 +137,19 @@ a.surface {
   overflow: hidden;
   justify-content: flex-end;
   align-items: stretch;
-  min-height: 136px;
-  padding: 8px 10px 10px;
+  min-height: 0;
+  width: 100px;
+  height: 100px;
+  min-width: 100px;
+  min-height: 100px;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: 11px;
 }
 
 @media (max-width: 480px) {
   .surfaceWithCover {
-    /* Slightly taller on phones so portrait product shots breathe (less letterboxing with contain). */
-    min-height: 152px;
+    min-height: 0;
   }
 }
 
@@ -171,6 +176,8 @@ a.surface {
   z-index: 0;
   pointer-events: none;
   background: var(--pastel-cream);
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .surfaceCover > :global(:first-child) {
@@ -182,12 +189,7 @@ a.surface {
 }
 
 .surfaceCoverImage {
-  /*
-   * cover + any object-position still crops tall plushy photos badly in a short tile.
-   * contain shows the full product; letterboxing uses .surfaceCover background.
-   * !important: wins over globals `img { max-width }` / iOS quirks with next/image fill.
-   */
-  object-fit: contain !important;
+  object-fit: cover !important;
   object-position: center center !important;
   max-width: none;
   max-height: none;
@@ -197,6 +199,7 @@ a.surface {
   position: absolute;
   inset: 0;
   background: var(--pastel-cream);
+  border-radius: inherit;
 }
 
 .surfaceStack {
@@ -209,7 +212,7 @@ a.surface {
   width: 100%;
   min-width: 0;
   margin-top: auto;
-  padding-top: 28px;
+  padding-top: 12px;
 }
 
 .surfaceWithCover .meta {

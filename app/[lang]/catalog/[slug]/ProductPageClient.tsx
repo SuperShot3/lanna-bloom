@@ -59,7 +59,7 @@ export function ProductPageClient({
 
   return (
     <>
-      <div className="product-gallery-wrap pb-24 md:pb-0">
+      <div className="product-gallery-wrap pb-8 md:pb-0">
         <ProductGallery
           images={images}
           imageAlts={bouquet.imageAlts}
