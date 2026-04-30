@@ -7,7 +7,7 @@ import { isValidLocale, type Locale } from '@/lib/i18n';
 import { getBouquetBySlugFromSanity } from '@/lib/sanity';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
-import { GuideFaq } from '../flowers-chiang-mai/GuideFaq';
+import { GuideFaq } from '../_components/GuideFaq';
 
 const BOUQUET_SECTIONS = [
   {
@@ -19,7 +19,7 @@ const BOUQUET_SECTIONS = [
       'Choose a bouquet that reads confident and celebratory from the first glance.',
     ],
     whyItFits:
-      'Warm, rich presence makes the day feel like a main event—not an afterthought.',
+      'Warm, rich presence makes the day feel like a main event-not an afterthought.',
     sectionMatch:
       'Bold milestone birthdays and evening celebrations.',
   },
@@ -28,7 +28,7 @@ const BOUQUET_SECTIONS = [
     fallbackNameEn: 'Crimson & Clementine Luxury Bouquet',
     heading: 'Luxury Birthday Flowers for Vibrant, Modern Celebrations',
     paragraphs: [
-      'Some birthdays call for citrus-bright confidence—not whisper-soft pastels.',
+      'Some birthdays call for citrus-bright confidence-not whisper-soft pastels.',
       'If your recipient loves fashion-forward color, steer toward a bouquet that feels alive.',
     ],
     whyItFits:
@@ -42,7 +42,7 @@ const BOUQUET_SECTIONS = [
     heading: 'Timeless Birthday Flower Gift Style You Can Trust',
     paragraphs: [
       'When you need a safe-yet-stunning choice, lean on pairing that never goes out of style.',
-      'You still feel thoughtful—just without taking a big creative risk.',
+      'You still feel thoughtful-just without taking a big creative risk.',
     ],
     subheading: 'Parents, mentors, and polished dinner parties',
     subParagraphs: [
@@ -59,10 +59,10 @@ const BOUQUET_SECTIONS = [
     heading: 'Romantic Birthday Bouquets for Partners You Cherish',
     paragraphs: [
       'Romantic gifting is less about size and more about intimacy.',
-      'Texture and depth signal that you notice the little things—not only the big day.',
+      'Texture and depth signal that you notice the little things-not only the big day.',
     ],
     whyItFits:
-      'Depth and texture read as thoughtful—perfect when the birthday is also an emotional milestone.',
+      'Depth and texture read as thoughtful-perfect when the birthday is also an emotional milestone.',
     sectionMatch:
       'Partners and close loved ones sharing a romantic moment.',
   },
@@ -75,7 +75,7 @@ const faqItems = [
   },
   {
     q: 'Which bouquet feels the most celebratory and bold?',
-    a: 'Sunset Velvet Grand Bouquet leans into drama and presence—ideal when you want the gift to feel like the centerpiece of the day.',
+    a: 'Sunset Velvet Grand Bouquet leans into drama and presence-ideal when you want the gift to feel like the centerpiece of the day.',
   },
   {
     q: 'What if they love color but not traditional romance?',
@@ -104,19 +104,19 @@ export async function generateMetadata({
   const title =
     'Birthday Flower Gift Guide: 4 Luxury Bouquets | Lanna Bloom';
   const description =
-    'Find a memorable birthday flower gift: compare four luxury bouquets—bold sunset, vivid citrus, timeless roses & lilies, romantic ruby—then shop online.';
+    'Find a memorable birthday flower gift: compare four luxury bouquets-bold sunset, vivid citrus, timeless roses & lilies, romantic ruby-then shop online.';
 
   return {
     title,
     description,
     alternates: {
-      canonical: `${base}/${lang}/guides/birthday-flower-gift`,
+      canonical: `${base}/${lang}/info/birthday-flower-gift`,
     },
     openGraph: {
       title: 'New Birthday Flower Gifts Worth Sending This Year',
       description:
-        'Four luxury birthday bouquets with personality—tap through and order in minutes.',
-      url: `${base}/${lang}/guides/birthday-flower-gift`,
+        'Four luxury birthday bouquets with personality-tap through and order in minutes.',
+      url: `${base}/${lang}/info/birthday-flower-gift`,
       type: 'article',
     },
   };
@@ -167,8 +167,8 @@ export default async function BirthdayFlowerGiftGuidePage({
             Introduction
           </h2>
           <p className="guide-section-lede">
-            The best birthday flower gift speaks to who they are—not only what is trending.
-            Choose by mood, then scroll—each bouquet sits beside its story so you can compare while
+            The best birthday flower gift speaks to who they are-not only what is trending.
+            Choose by mood, then scroll-each bouquet sits beside its story so you can compare while
             you read.
           </p>
         </section>
@@ -194,7 +194,7 @@ export default async function BirthdayFlowerGiftGuidePage({
           </h2>
           <p className="guide-body-text">
             When a bouquet is live in our catalog, you see the same shop tile as everywhere else on
-            the site—only our standard card is used here. If you do not see a tile yet, follow the
+            the site-only our standard card is used here. If you do not see a tile yet, follow the
             Recommended link below that section.
           </p>
 
@@ -279,7 +279,7 @@ export default async function BirthdayFlowerGiftGuidePage({
             Birthday Flower Gift at a Glance: Which One Fits?
           </h2>
           <p className="guide-body-text">
-            Use this snapshot if you are deciding in under a minute—each line connects mood to
+            Use this snapshot if you are deciding in under a minute-each line connects mood to
             bouquet.
           </p>
           <ul className="guide-highlights">
@@ -340,7 +340,7 @@ export default async function BirthdayFlowerGiftGuidePage({
             Ready to Send the Perfect Birthday Flower Gift?
           </h2>
           <p className="guide-final-cta-copy">
-            You already know the mood and the recipient—pick the bouquet that matches, then
+            You already know the mood and the recipient-pick the bouquet that matches, then
             checkout from the product page. Your thoughtful birthday flower gift is only a few taps
             away.
           </p>

@@ -71,7 +71,7 @@ export const articles: ArticleMeta[] = [
     titleTh: 'ไอเดียของขวัญดอกไม้วันเกิด: ช่อพรีเมียมสี่สไตล์',
     excerptTh:
       'เลือกของขวัญดอกไม้วันเกิดให้จำได้นาน: เปรียบเทียบช่อพรีเมียมสี่สไตล์—โทนซันเซ็ตสะดุดตา ซิตรัสสดใส กุหลาบและลิลลี่คลาสสิก โรแมนติกโทนรูบี้—แล้วเลือกซื้อออนไลน์ได้จากแต่ละหัวข้อ',
-    externalPath: '/guides/birthday-flower-gift',
+    externalPath: '/info/birthday-flower-gift',
     publishedAt: '2026-04-30T00:00:00.000Z',
     featured: false,
     cover: {

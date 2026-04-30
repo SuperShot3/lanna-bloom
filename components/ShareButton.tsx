@@ -114,7 +114,19 @@ export function ShareButton({
           gap: 8px;
         }
         .share-button-wrap.compact .share-button-text {
-          display: none;
+          display: inline;
+          font-size: 0.7rem;
+          line-height: 1;
+        }
+        .share-button-wrap.compact .share-button {
+          flex-direction: column;
+          justify-content: center;
+          gap: 4px;
+          min-width: 56px;
+          padding: 6px 8px;
+          background: #4e342e;
+          border-color: #4e342e;
+          color: #fff;
         }
         .share-button {
           display: inline-flex;
@@ -135,6 +147,12 @@ export function ShareButton({
           background: var(--pastel-cream);
           color: var(--text);
           border-color: var(--accent);
+        }
+        .share-button-wrap.compact .share-button:hover,
+        .share-button-wrap.compact .share-button:focus-visible {
+          background: #3e2723;
+          border-color: #3e2723;
+          color: #fff;
         }
         .share-button:focus-visible {
           outline: 2px solid var(--accent);

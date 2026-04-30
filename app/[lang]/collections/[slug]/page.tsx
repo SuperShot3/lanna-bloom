@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
-import { GuideFaq } from '@/app/[lang]/guides/flowers-chiang-mai/GuideFaq';
+import { GuideFaq } from '@/app/[lang]/info/_components/GuideFaq';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getBaseUrl } from '@/lib/orders';
@@ -307,7 +307,7 @@ export default async function CollectionLandingPage({
             <div className={styles.internalLinks}>
               <Link href={catalogHref}>{copy.collectionTitle}</Link>
               <Link href={allRosesHref}>{locale === 'th' ? 'กุหลาบทั้งหมด' : 'All rose bouquets'}</Link>
-              <Link href={`/${locale}/guides/rose-bouquets-chiang-mai`}>
+              <Link href={`/${locale}/info/rose-bouquets-chiang-mai`}>
                 {locale === 'th' ? 'คู่มือช่อกุหลาบ' : 'Rose bouquet guide'}
               </Link>
               <Link href={`/${locale}/contact`}>{locale === 'th' ? 'ติดต่อเรา' : 'Contact us'}</Link>

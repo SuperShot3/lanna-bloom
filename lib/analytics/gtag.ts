@@ -158,7 +158,7 @@ export function trackPurchase(params: {
 
 /** Google Ads conversion dedupe (separate key from GA4 purchase). */
 const GOOGLE_ADS_CONVERSION_SENT_PREFIX = 'google_ads_purchase_sent:';
-const GTM_CALLBACK_TIMEOUT_MS = 5000;
+const GTM_CALLBACK_TIMEOUT_MS = 3000;
 
 function getGoogleAdsConversionStorageKey(orderId: string): string {
   return `${GOOGLE_ADS_CONVERSION_SENT_PREFIX}${normalizeOrderId(orderId)}`;
