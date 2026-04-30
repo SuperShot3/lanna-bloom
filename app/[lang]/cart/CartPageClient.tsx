@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import {
   DeliveryForm,
-  DELIVERY_TIME_SLOTS,
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
   type DeliveryFormValues,
@@ -42,7 +41,6 @@ import {
   validateSubmissionTokenFormat,
 } from '@/lib/checkout/submissionToken';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
-import { getLocalTodayYmd } from '@/lib/localDateYmd';
 import { PinIcon } from '@/components/icons/PinIcon';
 import {
   CHECKOUT_NATIONAL_MAX,
@@ -83,24 +81,6 @@ function buildAddOnsSummaryLines(item: CartItem, t: { balloonTextLabel?: string 
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
-const PREFERRED_DELIVERY_KEY = 'lanna-bloom-preferred-delivery-date';
-const PREFERRED_TIME_KEY = 'lanna-bloom-preferred-delivery-time';
-
-function getProductPageDeliveryPreference(): { date: string; timeSlot: string } {
-  if (typeof window === 'undefined') return { date: '', timeSlot: '' };
-  const todayStr = getLocalTodayYmd();
-  const storedDate = sessionStorage.getItem(PREFERRED_DELIVERY_KEY);
-  const storedTime = sessionStorage.getItem(PREFERRED_TIME_KEY);
-  const date = storedDate && /^\d{4}-\d{2}-\d{2}$/.test(storedDate) && storedDate >= todayStr
-    ? storedDate
-    : todayStr;
-  const timeSlot = storedTime &&
-    DELIVERY_TIME_SLOTS.includes(storedTime as typeof DELIVERY_TIME_SLOTS[number]) &&
-    isDeliveryTimeSlotSelectableForDate(date, storedTime)
-    ? storedTime
-    : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
-  return { date, timeSlot };
-}
 
 type StoredCartForm = {
   delivery: DeliveryFormValues;
@@ -496,15 +476,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       isMueangCentral: d.deliveryDistrict === 'MUEANG' && !!d.isMueangCentral,
     };
   });
-
-  useEffect(() => {
-    const pref = getProductPageDeliveryPreference();
-    setDelivery((prev) => ({
-      ...prev,
-      date: pref.date || prev.date,
-      timeSlot: pref.timeSlot || prev.timeSlot,
-    }));
-  }, []);
 
   useEffect(() => {
     if (!delivery.date || !delivery.timeSlot) return;
@@ -1482,7 +1453,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     onChange={setDelivery}
                     showLocationPicker
                     accordionMode
-                    hideDateAndTime
                   />
                   <button
                     type="button"
@@ -1589,7 +1559,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               creating: lang === 'th' ? 'กำลังเปิดหน้าชำระเงิน...' : 'Opening secure checkout...',
               unavailableRightNow: lang === 'th' ? 'ไม่พร้อมใช้งานในขณะนี้' : 'Unavailable right now',
               change: lang === 'th' ? 'เปลี่ยน' : 'Change',
-              delivery: lang === 'th' ? 'จัดส่ง' : 'Delivery',
+              delivery: lang === 'th' ? 'เวลาจัดส่ง' : 'Delivery time',
               showCheckout: lang === 'th' ? 'แสดงชำระเงิน' : 'Show checkout',
               specifyDeliveryDate: tBuyNow.specifyDeliveryDate,
               todayLabel: tBuyNow.todayLabel,

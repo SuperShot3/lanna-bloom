@@ -102,7 +102,7 @@ export default function FavoritesPage({ params }: { params: { lang: string } }) 
                 variant="popular-compact"
                 showHoverPanel={false}
                 showPartnerBadge={false}
-                showFavoriteButton={false}
+                showFavoriteButton
                 persistPreferredSizeOnClick
               />
             ))}

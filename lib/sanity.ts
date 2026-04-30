@@ -55,6 +55,11 @@ function mapImagesWithAlt(images: SanityImageAsset[] | undefined): { imageUrls: 
   };
 }
 
+function withFallbackImageAlts(imageUrls: string[], imageAlts: string[], fallbackText: string): string[] {
+  const fallback = fallbackText.trim();
+  return imageUrls.map((_, i) => imageAlts[i]?.trim() || fallback || '');
+}
+
 /** Hero image URL (600×750) for homepage. Returns empty string if not set in Sanity. */
 export function urlForHeroImage(source: { _type?: string; asset?: { _ref?: string } } | undefined): string {
   if (!source?.asset?._ref) return '';
@@ -199,6 +204,11 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
   const slug = doc.slug?.current ?? doc._id;
   const sizes = buildSellableOptionsFromDoc(doc);
   const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
+  const fallbackImageAlts = withFallbackImageAlts(
+    imageUrls,
+    imageAlts,
+    doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+  );
   const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
 
   return {
@@ -221,7 +231,7 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
       return Array.isArray(o) ? o.filter(Boolean) : o ? [o] : undefined;
     })(),
     images: imageUrls.length ? imageUrls : [placeholder],
-    imageAlts: imageUrls.length ? imageAlts : [''],
+    imageAlts: imageUrls.length ? fallbackImageAlts : [''],
     sizes,
     partnerId: doc.partner?._ref,
     partnerName: doc.partnerName ?? undefined,
@@ -1076,6 +1086,11 @@ export async function getProductsFilteredFromSanity(params: {
       const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
       const partnerCost = d.cost ?? d.price ?? 0;
+      const fallbackImageAlts = withFallbackImageAlts(
+        imageUrls,
+        imageAlts,
+        d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
+      );
       return {
         id: d._id,
         slug,
@@ -1089,7 +1104,7 @@ export async function getProductsFilteredFromSanity(params: {
         cost: d.cost,
         commissionPercent: d.commissionPercent,
         images: imageUrls.length ? imageUrls : [placeholder],
-        imageAlts: imageUrls.length ? imageAlts : [''],
+        imageAlts: imageUrls.length ? fallbackImageAlts : [''],
         _createdAt: d._createdAt,
         _partnerCost: partnerCost,
       };
@@ -1144,6 +1159,11 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
     const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
     const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
     const attrs = doc.structuredAttributes;
+    const fallbackImageAlts = withFallbackImageAlts(
+      imageUrls,
+      imageAlts,
+      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+    );
     return {
       id: doc._id,
       slug: slugVal,
@@ -1157,7 +1177,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       cost: doc.cost,
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
-      imageAlts: imageUrls.length ? imageAlts : [''],
+      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
       preparationTime: attrs?.preparationTime,
       occasion: attrs?.occasion,
     };
@@ -1198,6 +1218,11 @@ export async function getPlushyToysFilteredFromSanity(params: {
       const slug = d.slug?.current ?? d._id;
       const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const price = d.price ?? 0;
+      const fallbackImageAlts = withFallbackImageAlts(
+        imageUrls,
+        imageAlts,
+        d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
+      );
       return {
         id: d._id,
         slug,
@@ -1210,7 +1235,7 @@ export async function getPlushyToysFilteredFromSanity(params: {
         sizeLabel: d.sizeLabel,
         price,
         images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-        imageAlts: imageUrls.length ? imageAlts : [''],
+        imageAlts: imageUrls.length ? fallbackImageAlts : [''],
         _createdAt: d._createdAt,
         _partnerCost: price,
       };
@@ -1254,6 +1279,11 @@ export async function getPlushyToyBySlugFromSanity(slug: string): Promise<Catalo
     if (!doc) return null;
     const slugVal = doc.slug?.current ?? doc._id;
     const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
+    const fallbackImageAlts = withFallbackImageAlts(
+      imageUrls,
+      imageAlts,
+      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+    );
     return {
       id: doc._id,
       slug: slugVal,
@@ -1266,7 +1296,7 @@ export async function getPlushyToyBySlugFromSanity(slug: string): Promise<Catalo
       sizeLabel: doc.sizeLabel,
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-      imageAlts: imageUrls.length ? imageAlts : [''],
+      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
     };
   } catch (err) {
     console.error('[Sanity] getPlushyToyBySlugFromSanity failed:', err);
@@ -1338,6 +1368,11 @@ export async function getBalloonsFilteredFromSanity(params: {
       const slug = d.slug?.current ?? d._id;
       const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const price = d.price ?? 0;
+      const fallbackImageAlts = withFallbackImageAlts(
+        imageUrls,
+        imageAlts,
+        d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
+      );
       return {
         id: d._id,
         slug,
@@ -1350,7 +1385,7 @@ export async function getBalloonsFilteredFromSanity(params: {
         sizeLabel: d.sizeLabel,
         price,
         images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-        imageAlts: imageUrls.length ? imageAlts : [''],
+        imageAlts: imageUrls.length ? fallbackImageAlts : [''],
         _createdAt: d._createdAt,
         _partnerCost: price,
       };
@@ -1394,6 +1429,11 @@ export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogP
     if (!doc) return null;
     const slugVal = doc.slug?.current ?? doc._id;
     const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
+    const fallbackImageAlts = withFallbackImageAlts(
+      imageUrls,
+      imageAlts,
+      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+    );
     return {
       id: doc._id,
       slug: slugVal,
@@ -1406,7 +1446,7 @@ export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogP
       sizeLabel: doc.sizeLabel,
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-      imageAlts: imageUrls.length ? imageAlts : [''],
+      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
     };
   } catch (err) {
     console.error('[Sanity] getBalloonBySlugFromSanity failed:', err);
@@ -1623,6 +1663,11 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
     if (!doc) return null;
     const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
     const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+    const fallbackImageAlts = withFallbackImageAlts(
+      imageUrls,
+      imageAlts,
+      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+    );
     return {
       id: doc._id,
       slug: doc.slug?.current,
@@ -1636,7 +1681,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
       moderationStatus: doc.moderationStatus ?? 'submitted',
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
-      imageAlts: imageUrls.length ? imageAlts : [''],
+      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
       preparationTime: doc.structuredAttributes?.preparationTime,
       occasion: doc.structuredAttributes?.occasion,
       customAttributes: (doc.customAttributes ?? []).map((a) => ({

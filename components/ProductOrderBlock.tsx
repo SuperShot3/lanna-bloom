@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
@@ -17,14 +17,8 @@ import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { TrustBadges } from '@/components/TrustBadges';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
-import {
-  DELIVERY_TIME_SLOTS,
-  getSelectableDeliveryTimeSlotsForDate,
-  isDeliveryTimeSlotSelectableForDate,
-} from '@/components/DeliveryForm';
 import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
-import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 
 export function ProductOrderBlock({
   bouquet,
@@ -50,7 +44,6 @@ export function ProductOrderBlock({
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
-  const [showDeliveryValidation, setShowDeliveryValidation] = useState(false);
   const { addItem } = useCart();
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
@@ -59,19 +52,6 @@ export function ProductOrderBlock({
   const totalPrice = (selectedSize.price + addOnsTotal) * Math.max(1, Math.floor(quantity));
 
   const handleAddToCart = () => {
-    const hasDate = !!deliveryDate?.trim();
-    const hasTime =
-      !!deliveryTimeSlot?.trim() &&
-      isDeliveryTimeSlotSelectableForDate(deliveryDate, deliveryTimeSlot);
-    if (!hasDate || !hasTime) {
-      setShowDeliveryValidation(true);
-      const scrollTarget = !hasDate ? dateWrapRef.current : timeSelectRef.current;
-      setTimeout(() => {
-        scrollTarget?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-      return;
-    }
-    setShowDeliveryValidation(false);
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const price = selectedSize.price + addOnsTotal;
     const qty = Math.max(1, Math.floor(quantity));
@@ -106,49 +86,6 @@ export function ProductOrderBlock({
     setJustAdded(true);
   };
 
-  const PREFERRED_DELIVERY_KEY = 'lanna-bloom-preferred-delivery-date';
-  const PREFERRED_TIME_KEY = 'lanna-bloom-preferred-delivery-time';
-  const todayStr = getLocalTodayYmd();
-  const tomorrowStr = getLocalTomorrowYmd();
-  const minDate = todayStr;
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const dateWrapRef = useRef<HTMLDivElement>(null);
-  const timeSelectRef = useRef<HTMLSelectElement>(null);
-
-  const formatDateDisplay = useCallback((dateStr: string): string => {
-    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
-    const d = new Date(dateStr + 'T12:00:00');
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en', { month: 'long' });
-    return `${day} ${month}`;
-  }, [lang]);
-
-  const [deliveryDate, setDeliveryDate] = useState<string>(() => '');
-
-  const saveDeliveryDate = useCallback((v: string) => {
-    setDeliveryDate(v);
-    setDeliveryTimeSlot((current) =>
-      isDeliveryTimeSlotSelectableForDate(v, current) ? current : ''
-    );
-    setShowDeliveryValidation((prev) => (prev ? false : prev));
-    if (typeof window !== 'undefined' && v) {
-      sessionStorage.setItem(PREFERRED_DELIVERY_KEY, v);
-    }
-  }, []);
-
-  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState<string>(() => '');
-
-  const saveDeliveryTimeSlot = useCallback((v: string) => {
-    if (!isDeliveryTimeSlotSelectableForDate(deliveryDate, v)) return;
-    setDeliveryTimeSlot(v);
-    setShowDeliveryValidation((prev) => (prev ? false : prev));
-    if (typeof window !== 'undefined' && v) {
-      sessionStorage.setItem(PREFERRED_TIME_KEY, v);
-    }
-  }, [deliveryDate]);
-
-  const selectableTimeSlots = getSelectableDeliveryTimeSlotsForDate(deliveryDate);
-
   return (
     <div className="order-block">
       <SizeSelector
@@ -157,93 +94,6 @@ export function ProductOrderBlock({
         onSelect={setSelectedSize}
         lang={lang}
       />
-      <div className="mb-6">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">
-          {tBuyNow.deliveryDateLabel ?? 'Delivery Date'}
-        </label>
-        <div
-          ref={dateWrapRef}
-          className={`order-date-display-wrap${showDeliveryValidation && !deliveryDate?.trim() ? ' order-field-invalid' : ''}`}
-          onClick={() => dateInputRef.current?.showPicker?.()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              dateInputRef.current?.showPicker?.();
-            }
-          }}
-          aria-label={tBuyNow.specifyDeliveryDate ?? 'Specify delivery date'}
-        >
-          <input
-            ref={dateInputRef}
-            type="date"
-            className="order-date-input"
-            min={minDate}
-            value={deliveryDate}
-            onChange={(e) => saveDeliveryDate(e.target.value)}
-            aria-label={tBuyNow.specifyDeliveryDate ?? 'Specify delivery date'}
-          />
-          <span className="order-date-display">
-            {deliveryDate ? formatDateDisplay(deliveryDate) : (lang === 'th' ? 'เลือกวันที่' : 'Select date')}
-          </span>
-        </div>
-        <div className="order-date-quick-btns">
-          <button
-            type="button"
-            className={`order-date-quick-btn${deliveryDate === todayStr ? ' order-date-quick-btn--active' : ''}`}
-            onClick={() => saveDeliveryDate(todayStr)}
-            aria-label={tBuyNow.todayLabel}
-            aria-pressed={deliveryDate === todayStr}
-          >
-            {tBuyNow.todayLabel}
-          </button>
-          <button
-            type="button"
-            className={`order-date-quick-btn${deliveryDate === tomorrowStr ? ' order-date-quick-btn--active' : ''}`}
-            onClick={() => saveDeliveryDate(tomorrowStr)}
-            aria-label={tBuyNow.tomorrowLabel}
-            aria-pressed={deliveryDate === tomorrowStr}
-          >
-            {tBuyNow.tomorrowLabel}
-          </button>
-        </div>
-        <p className="text-[11px] text-stone-400 italic mt-1 flex items-center gap-1">
-          <span className="material-symbols-outlined text-xs">info</span>
-          {tBuyNow.sameDayHint ?? 'Same-day delivery available for orders before 2 PM.'}
-        </p>
-        <div className="mt-4">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2">
-            {tBuyNow.preferredTime ?? 'Preferred time'}
-          </label>
-          <select
-            ref={timeSelectRef}
-            value={deliveryTimeSlot}
-            onChange={(e) => saveDeliveryTimeSlot(e.target.value)}
-            className={`order-time-select w-full px-4 py-3 rounded-xl border bg-white text-stone-800 text-sm ${showDeliveryValidation && !deliveryTimeSlot?.trim() ? 'order-field-invalid border-red-400' : 'border-stone-200'}`}
-            aria-label={tBuyNow.selectTimeSlot ?? 'Select time slot'}
-            aria-invalid={showDeliveryValidation && !deliveryTimeSlot?.trim()}
-          >
-            <option value="">
-              {lang === 'th' ? 'เลือกช่วงเวลา' : 'Select time'}
-            </option>
-            {DELIVERY_TIME_SLOTS.map((slot) => (
-              <option
-                key={slot}
-                value={slot}
-                disabled={deliveryDate ? !selectableTimeSlots.includes(slot) : false}
-              >
-                {slot}
-              </option>
-            ))}
-          </select>
-        </div>
-        {showDeliveryValidation && (!deliveryDate?.trim() || !deliveryTimeSlot?.trim()) && (
-          <p className="order-validation-msg" role="alert">
-            {tBuyNow.deliveryDateAndTimeRequired ?? 'Please select delivery date and time to continue.'}
-          </p>
-        )}
-      </div>
       <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} gifts={gifts} />
       {justAdded ? (
         <div className="order-added-confirm" role="status">
@@ -407,80 +257,6 @@ export function ProductOrderBlock({
         .order-add-to-cart-btn:focus-visible {
           outline: 2px solid var(--accent);
           outline-offset: 2px;
-        }
-        .order-date-display-wrap {
-          position: relative;
-          display: block;
-          cursor: pointer;
-          text-align: left;
-        }
-        .order-date-input {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          width: 100%;
-          height: 100%;
-          cursor: pointer;
-        }
-        .order-date-display {
-          display: block;
-          padding: 10px 12px;
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-          font-size: 0.95rem;
-          font-family: inherit;
-          background: var(--surface);
-          color: var(--text);
-          min-height: 42px;
-          line-height: 1.4;
-          text-align: left;
-        }
-        .order-date-display-wrap:focus-within .order-date-display,
-        .order-date-display-wrap:hover .order-date-display {
-          border-color: var(--accent);
-        }
-        .order-date-display-wrap.order-field-invalid .order-date-display {
-          border-color: #e87171;
-        }
-        .order-time-select {
-          padding-right: 36px;
-          background-position: right 10px center;
-        }
-        .order-validation-msg {
-          margin-top: 8px;
-          font-size: 0.875rem;
-          color: #b91c1c;
-        }
-        .order-date-quick-btns {
-          display: flex;
-          gap: 8px;
-          margin-top: 8px;
-        }
-        .order-date-quick-btn {
-          padding: 8px 14px;
-          font-size: 0.85rem;
-          font-family: inherit;
-          font-weight: 600;
-          color: var(--text);
-          background: color-mix(in srgb, var(--accent-soft) 58%, var(--pastel-cream));
-          border: 1px solid color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          transition: border-color 0.15s, color 0.15s, background 0.15s;
-        }
-        .order-date-quick-btn:hover {
-          background: color-mix(in srgb, var(--accent-soft) 78%, var(--pastel-cream));
-          border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
-        }
-        .order-date-quick-btn--active {
-          background: color-mix(in srgb, var(--pastel-pink) 88%, var(--pastel-cream));
-          color: var(--text);
-          border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
-          font-weight: 600;
-        }
-        .order-date-quick-btn--active:hover {
-          background: color-mix(in srgb, var(--pastel-pink) 92%, white);
-          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
         }
         .order-added-confirm {
           margin-top: 20px;
