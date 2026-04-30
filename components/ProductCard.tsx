@@ -101,6 +101,9 @@ export function ProductCard({
   const imgSrc = isStandaloneProduct
     ? (images[imageIndex] ?? images[0] ?? '')
     : (product.images?.[0] ?? '');
+  const imgAlt = isStandaloneProduct
+    ? (product.imageAlts?.[imageIndex]?.trim() || product.imageAlts?.[0]?.trim() || name)
+    : (product.imageAlts?.[0]?.trim() || name);
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
   const canSwipeStandaloneImages = isStandaloneProduct && images.length > 1;
 
@@ -372,7 +375,7 @@ export function ProductCard({
             <div className="pcard-image-shared">
               <Image
                 src={imgSrc}
-                alt={name}
+                alt={imgAlt}
                 width={400}
                 height={400}
                 className="pcard-image"

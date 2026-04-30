@@ -56,6 +56,7 @@ export function ProductDetailClient({
       <div className="product-gallery-wrap">
         <ProductGallery
           images={images}
+          imageAlts={product.imageAlts}
           name={name}
           productId={product.id}
           activeIndex={selectedImageIndex}

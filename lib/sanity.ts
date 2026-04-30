@@ -43,6 +43,18 @@ function urlFor(source: { _type?: string; asset?: { _ref?: string } } | undefine
   return builder.image(source).width(600).url();
 }
 
+type SanityImageAsset = { _type?: string; asset?: { _ref?: string }; alt?: string };
+
+function mapImagesWithAlt(images: SanityImageAsset[] | undefined): { imageUrls: string[]; imageAlts: string[] } {
+  const mapped = (images ?? [])
+    .map((img) => ({ url: urlFor(img), alt: img.alt?.trim() ?? '' }))
+    .filter((img) => Boolean(img.url));
+  return {
+    imageUrls: mapped.map((img) => img.url),
+    imageAlts: mapped.map((img) => img.alt),
+  };
+}
+
 /** Hero image URL (600×750) for homepage. Returns empty string if not set in Sanity. */
 export function urlForHeroImage(source: { _type?: string; asset?: { _ref?: string } } | undefined): string {
   if (!source?.asset?._ref) return '';
@@ -96,9 +108,9 @@ type SanityBouquet = {
   partnerCity?: string;
   partnerShopBioEn?: string;
   partnerShopBioTh?: string;
-  partnerPortrait?: { _type?: string; asset?: { _ref?: string } };
+  partnerPortrait?: { _type?: string; asset?: { _ref?: string }; alt?: string };
   status?: string;
-  images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+  images?: SanityImageAsset[];
   sizes?: Array<{
     key?: string;
     label?: string;
@@ -186,7 +198,7 @@ function buildSellableOptionsFromDoc(doc: SanityBouquet): BouquetSize[] {
 function mapToBouquet(doc: SanityBouquet): Bouquet {
   const slug = doc.slug?.current ?? doc._id;
   const sizes = buildSellableOptionsFromDoc(doc);
-  const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+  const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
   const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
 
   return {
@@ -209,6 +221,7 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
       return Array.isArray(o) ? o.filter(Boolean) : o ? [o] : undefined;
     })(),
     images: imageUrls.length ? imageUrls : [placeholder],
+    imageAlts: imageUrls.length ? imageAlts : [''],
     sizes,
     partnerId: doc.partner?._ref,
     partnerName: doc.partnerName ?? undefined,
@@ -617,6 +630,7 @@ export interface CatalogProduct {
   /** Admin sets before approving. Null/0 = own item, no markup. */
   commissionPercent?: number;
   images: string[];
+  imageAlts?: string[];
   /** Prep time in minutes (from structuredAttributes) */
   preparationTime?: number;
   /** Occasion (from structuredAttributes) */
@@ -1059,7 +1073,7 @@ export async function getProductsFilteredFromSanity(params: {
     );
     const mapped = (docs ?? []).map((d) => {
       const slug = d.slug?.current ?? d._id;
-      const imageUrls = (d.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+      const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
       const partnerCost = d.cost ?? d.price ?? 0;
       return {
@@ -1075,6 +1089,7 @@ export async function getProductsFilteredFromSanity(params: {
         cost: d.cost,
         commissionPercent: d.commissionPercent,
         images: imageUrls.length ? imageUrls : [placeholder],
+        imageAlts: imageUrls.length ? imageAlts : [''],
         _createdAt: d._createdAt,
         _partnerCost: partnerCost,
       };
@@ -1126,7 +1141,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
     );
     if (!doc) return null;
     const slugVal = doc.slug?.current ?? doc._id;
-    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
     const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
     const attrs = doc.structuredAttributes;
     return {
@@ -1142,6 +1157,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       cost: doc.cost,
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
+      imageAlts: imageUrls.length ? imageAlts : [''],
       preparationTime: attrs?.preparationTime,
       occasion: attrs?.occasion,
     };
@@ -1180,7 +1196,7 @@ export async function getPlushyToysFilteredFromSanity(params: {
     );
     const mapped = (docs ?? []).map((d) => {
       const slug = d.slug?.current ?? d._id;
-      const imageUrls = (d.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+      const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const price = d.price ?? 0;
       return {
         id: d._id,
@@ -1194,6 +1210,7 @@ export async function getPlushyToysFilteredFromSanity(params: {
         sizeLabel: d.sizeLabel,
         price,
         images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
+        imageAlts: imageUrls.length ? imageAlts : [''],
         _createdAt: d._createdAt,
         _partnerCost: price,
       };
@@ -1236,7 +1253,7 @@ export async function getPlushyToyBySlugFromSanity(slug: string): Promise<Catalo
     );
     if (!doc) return null;
     const slugVal = doc.slug?.current ?? doc._id;
-    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
     return {
       id: doc._id,
       slug: slugVal,
@@ -1249,6 +1266,7 @@ export async function getPlushyToyBySlugFromSanity(slug: string): Promise<Catalo
       sizeLabel: doc.sizeLabel,
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
+      imageAlts: imageUrls.length ? imageAlts : [''],
     };
   } catch (err) {
     console.error('[Sanity] getPlushyToyBySlugFromSanity failed:', err);
@@ -1318,7 +1336,7 @@ export async function getBalloonsFilteredFromSanity(params: {
     );
     const mapped = (docs ?? []).map((d) => {
       const slug = d.slug?.current ?? d._id;
-      const imageUrls = (d.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+      const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const price = d.price ?? 0;
       return {
         id: d._id,
@@ -1332,6 +1350,7 @@ export async function getBalloonsFilteredFromSanity(params: {
         sizeLabel: d.sizeLabel,
         price,
         images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
+        imageAlts: imageUrls.length ? imageAlts : [''],
         _createdAt: d._createdAt,
         _partnerCost: price,
       };
@@ -1374,7 +1393,7 @@ export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogP
     );
     if (!doc) return null;
     const slugVal = doc.slug?.current ?? doc._id;
-    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
     return {
       id: doc._id,
       slug: slugVal,
@@ -1387,6 +1406,7 @@ export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogP
       sizeLabel: doc.sizeLabel,
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
+      imageAlts: imageUrls.length ? imageAlts : [''],
     };
   } catch (err) {
     console.error('[Sanity] getBalloonBySlugFromSanity failed:', err);
@@ -1546,6 +1566,7 @@ export interface AdminProductDetail {
   moderationStatus: string;
   commissionPercent?: number;
   images: string[];
+  imageAlts?: string[];
   preparationTime?: number;
   occasion?: string;
   customAttributes: Array<{ key: string; value: string }>;
@@ -1600,7 +1621,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
       { id: productId }
     );
     if (!doc) return null;
-    const imageUrls = (doc.images ?? []).map((img) => urlFor(img)).filter(Boolean);
+    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
     const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
     return {
       id: doc._id,
@@ -1615,6 +1636,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
       moderationStatus: doc.moderationStatus ?? 'submitted',
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
+      imageAlts: imageUrls.length ? imageAlts : [''],
       preparationTime: doc.structuredAttributes?.preparationTime,
       occasion: doc.structuredAttributes?.occasion,
       customAttributes: (doc.customAttributes ?? []).map((a) => ({

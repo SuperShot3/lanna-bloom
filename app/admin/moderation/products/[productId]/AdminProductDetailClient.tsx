@@ -434,6 +434,7 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
         <div className="admin-product-detail-gallery">
           <ProductGallery
             images={product.images}
+            imageAlts={product.imageAlts}
             name={product.nameEn}
             productId={product.id}
           />

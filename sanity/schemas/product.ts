@@ -85,7 +85,13 @@ export const product = defineType({
       name: 'images',
       title: 'Images',
       type: 'array',
-      of: [{ type: 'image', options: { hotspot: true } }],
+      of: [
+        {
+          type: 'image',
+          options: { hotspot: true },
+          fields: [{ name: 'alt', title: 'Alt text', type: 'string' }],
+        },
+      ],
     },
     {
       name: 'structuredAttributes',

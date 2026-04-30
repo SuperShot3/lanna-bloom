@@ -24,6 +24,7 @@ export interface Bouquet {
   deliveryOptions?: string[];
   presentationFormats?: string[];
   images: string[];
+  imageAlts?: string[];
   /** Unified sellable lines — always non-empty after map */
   sizes: BouquetSellableOption[];
   partnerId?: string;

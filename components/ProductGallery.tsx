@@ -22,12 +22,14 @@ function touchDistance(
 
 export function ProductGallery({
   images,
+  imageAlts,
   name,
   productId,
   activeIndex,
   onActiveChange,
 }: {
   images: string[];
+  imageAlts?: string[];
   name: string;
   /** Sanity document id - used for shared element view-transition-name */
   productId?: string;
@@ -342,7 +344,7 @@ export function ProductGallery({
                 >
                   <Image
                     src={src}
-                    alt={i === 0 ? name : `${name} - image ${i + 1}`}
+                    alt={imageAlts?.[i]?.trim() || (i === 0 ? name : `${name} - image ${i + 1}`)}
                     width={600}
                     height={600}
                     className="gallery-image"
@@ -458,7 +460,7 @@ export function ProductGallery({
           >
             <Image
               src={list[lightboxIndex]}
-              alt={`${name} - zoomed image ${lightboxIndex + 1}`}
+              alt={imageAlts?.[lightboxIndex]?.trim() || `${name} - zoomed image ${lightboxIndex + 1}`}
               width={1200}
               height={1200}
               className="gallery-lightbox-image"

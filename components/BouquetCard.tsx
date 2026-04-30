@@ -73,6 +73,7 @@ export function BouquetCard({
   const images = bouquet.images?.length ? bouquet.images : [];
   const [imageIndex, setImageIndex] = useState(0);
   const imgSrc = images[imageIndex] ?? images[0] ?? '';
+  const imgAlt = bouquet.imageAlts?.[imageIndex]?.trim() || bouquet.imageAlts?.[0]?.trim() || name;
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
   const isPopular = variant === 'popular' || variant === 'popular-compact';
   const canSwipe = images.length > 1 && !isPopular;
@@ -379,7 +380,7 @@ export function BouquetCard({
             >
               <Image
                 src={imgSrc}
-                alt={name}
+                alt={imgAlt}
                 width={400}
                 height={400}
                 className="card-image"

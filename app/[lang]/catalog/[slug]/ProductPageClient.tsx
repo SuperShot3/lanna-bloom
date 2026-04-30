@@ -62,6 +62,7 @@ export function ProductPageClient({
       <div className="product-gallery-wrap pb-24 md:pb-0">
         <ProductGallery
           images={images}
+          imageAlts={bouquet.imageAlts}
           name={name}
           productId={bouquet.id}
           activeIndex={selectedImageIndex}

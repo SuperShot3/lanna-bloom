@@ -13,6 +13,7 @@ export const partner = defineType({
       title: 'Portrait (optional)',
       type: 'image',
       options: { hotspot: true },
+      fields: [{ name: 'alt', title: 'Alt text', type: 'string' }],
       description: 'Optional shop/studio profile photo used on product pages.',
     },
     {
