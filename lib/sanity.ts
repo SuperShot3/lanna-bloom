@@ -502,7 +502,6 @@ function getPopularCatalogCategory(item: PopularCatalogItem): string {
 
 function interleavePopularCatalogItems(items: PopularCatalogItem[]): PopularCatalogItem[] {
   const categoryOrder = [
-    'flowers',
     'plushy_toys',
     'balloons',
     'gifts',
@@ -561,13 +560,19 @@ export async function getPopularCatalogItemsFromSanityPaginated(
       ),
     ]);
     const rng = mulberry32(getPopularShuffleSeed() + 17);
-    const allItems: PopularCatalogItem[] = [
-      ...bouquets.map((item) => ({ itemType: 'bouquet' as const, item })),
+    const flowerItems: PopularCatalogItem[] = bouquets.map((item) => ({
+      itemType: 'bouquet' as const,
+      item,
+    }));
+    const productItems: PopularCatalogItem[] = [
       ...plushyToys.map((item) => ({ itemType: 'product' as const, item })),
       ...balloons.map((item) => ({ itemType: 'product' as const, item })),
       ...productGroups.flat().map((item) => ({ itemType: 'product' as const, item })),
     ];
-    const mixed = interleavePopularCatalogItems(shuffleArraySeeded(allItems, rng));
+    const mixed = [
+      ...flowerItems,
+      ...interleavePopularCatalogItems(shuffleArraySeeded(productItems, rng)),
+    ];
     const safeStart = Math.max(0, start);
     return mixed.slice(safeStart, safeStart + limit);
   } catch (err) {
