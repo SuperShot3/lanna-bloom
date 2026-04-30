@@ -33,6 +33,7 @@ export const translations = {
       flowerDeliveryChiangMai: 'Flower delivery Chiang Mai',
       roseBouquetsChiangMai: 'Rose bouquets Chiang Mai',
       sameDayFlowerDeliveryChiangMai: 'Same-day delivery Chiang Mai',
+      birthdayFlowerGiftGuide: 'Birthday flower gifts',
       themeSwitchToLight: 'Switch to light mode',
       themeSwitchToDark: 'Switch to dark mode',
     },
@@ -982,6 +983,25 @@ export const translations = {
       address: '90 Wichayanon Rd, Tambon Chang Moi, Mueang Chiang Mai District, Chiang Mai 50300',
     },
     guides: {
+      hub: {
+        metaTitle: 'Flower Guides | Lanna Bloom',
+        metaDescription:
+          'Birthday bouquet ideas and Chiang Mai flower delivery guides—choose bouquets with confidence and order online.',
+        h1: 'Guides',
+        intro:
+          'Occasion tips and local delivery help in one place. Open any guide below—or read longer articles and policies on our info hub.',
+        articlesLink: 'Articles & delivery policies',
+        readGuide: 'Read guide',
+        birthdayFlowerGiftTitle: 'Birthday flower gift ideas: four luxury bouquets',
+        birthdayFlowerGiftExcerpt:
+          'Compare four bouquet personalities—from bold sunset tones to timeless roses—and shop straight from each section.',
+        flowersChiangMaiExcerpt:
+          'Order fresh bouquets online with delivery across Chiang Mai. Same-day delivery during working hours.',
+        roseBouquetsChiangMaiExcerpt:
+          'Rose bouquets for anniversaries, thanks, and romance—with delivery across Chiang Mai.',
+        sameDayFlowerDeliveryChiangMaiExcerpt:
+          'Need flowers today? Same-day delivery during working hours when you message us early.',
+      },
       flowersChiangMai: {
         h1: 'Flower delivery in Chiang Mai',
         intro: 'Order fresh bouquets online and have them delivered across Chiang Mai. We offer same-day delivery during working hours. Message us via LINE or WhatsApp with your choice and delivery details.',
@@ -1066,6 +1086,7 @@ export const translations = {
       flowerDeliveryChiangMai: 'ส่งดอกไม้ในเชียงใหม่',
       roseBouquetsChiangMai: 'ช่อกุหลาบในเชียงใหม่',
       sameDayFlowerDeliveryChiangMai: 'จัดส่งวันเดียวเชียงใหม่',
+      birthdayFlowerGiftGuide: 'ของขวัญดอกไม้วันเกิด',
       themeSwitchToLight: 'สลับเป็นโหมดสว่าง',
       themeSwitchToDark: 'สลับเป็นโหมดมืด',
     },
@@ -2009,6 +2030,25 @@ export const translations = {
       address: '90 ถนนวิชยานนท์ ตำบลช้างม่อย อำเภอเมืองเชียงใหม่ เชียงใหม่ 50300',
     },
     guides: {
+      hub: {
+        metaTitle: 'คู่มือดอกไม้ | Lanna Bloom',
+        metaDescription:
+          'ไอเดียช่อดอกไม้วันเกิดและคู่มือจัดส่งดอกไม้เชียงใหม่—เลือกช่อได้มั่นใจและสั่งออนไลน์ได้',
+        h1: 'คู่มือ',
+        intro:
+          'เคล็ดลับเลือกช่อตามโอกาส และข้อมูลจัดส่งในเชียงใหม่ในที่เดียว เลือกเปิดคู่มือด้านล่าง—หรืออ่านบทความและนโยบายเพิ่มเติมได้ที่ศูนย์ข้อมูล',
+        articlesLink: 'บทความและนโยบายการจัดส่ง',
+        readGuide: 'อ่านคู่มือ',
+        birthdayFlowerGiftTitle: 'ไอเดียของขวัญดอกไม้วันเกิด: ช่อพรีเมียมสี่สไตล์',
+        birthdayFlowerGiftExcerpt:
+          'เปรียบเทียบสี่สไตล์ช่อ—ตั้งแต่โทนซันเซ็ตถึงกุหลาบคลาสสิก—แล้วเลือกซื้อได้จากแต่ละหัวข้อ',
+        flowersChiangMaiExcerpt:
+          'สั่งช่อดอกไม้สดออนไลน์ พร้อมจัดส่งทั่วเชียงใหม่ จัดส่งวันเดียวได้ในช่วงเวลาทำการ',
+        roseBouquetsChiangMaiExcerpt:
+          'ช่อกุหลาบสำหรับวันครบรอบ ขอบคุณ หรือโมเมนต์โรแมนติก—พร้อมจัดส่งในเชียงใหม่',
+        sameDayFlowerDeliveryChiangMaiExcerpt:
+          'ต้องการดอกไม้วันนี้? จัดส่งวันเดียวในช่วงเวลาทำการเมื่อทักมาล่วงหน้า',
+      },
       flowersChiangMai: {
         h1: 'บริการส่งดอกไม้ในเชียงใหม่',
         intro: 'สั่งช่อดอกไม้สดออนไลน์ พร้อมบริการจัดส่งทั่วเชียงใหม่ เราจัดส่งวันเดียวได้ในช่วงเวลาทำการ ส่งข้อความมาที่ LINE หรือ WhatsApp พร้อมบอกช่อที่ชอบ ที่อยู่และวันที่จัดส่งได้เลย',

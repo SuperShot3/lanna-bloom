@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { MDXRemote } from 'next-mdx-remote/rsc';
@@ -50,7 +50,9 @@ export async function generateMetadata({
   const article = getArticleBySlug(slug);
   if (!article) return { title: 'Lanna Bloom' };
   const base = getBaseUrl();
-  const canonical = `${base}/${lang}/info/${slug}`;
+  const canonical = article.externalPath
+    ? `${base}/${lang}${article.externalPath}`
+    : `${base}/${lang}/info/${slug}`;
   const title = getArticleTitle(article, lang);
   const description = getArticleExcerpt(article, lang);
   return {
@@ -75,6 +77,7 @@ export async function generateMetadata({
 export function generateStaticParams() {
   const slugs = [
     'plush-toys-teddy-bears-chiang-mai',
+    'birthday-flower-gift-guide',
     'order-flowers-website-vs-facebook-chiang-mai',
     'birthday-flowers-chiang-mai-from-abroad',
     'how-to-order-flower-delivery-chiang-mai',
@@ -101,6 +104,9 @@ export default async function InfoArticlePage({
   if (!isValidLocale(lang)) notFound();
   const article = getArticleBySlug(slug);
   if (!article) notFound();
+  if (article.externalPath) {
+    redirect(`/${lang}${article.externalPath}`);
+  }
   const mdxSource = await getMdxContent(slug, lang);
   if (!mdxSource) notFound();
 

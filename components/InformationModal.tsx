@@ -88,6 +88,13 @@ export function InformationModal({ lang, isOpen, onClose, triggerRef }: Informat
         </div>
         <nav className="information-modal-body" aria-label="Information">
           <Link
+            href={`/${lang}/guides/birthday-flower-gift`}
+            className="information-modal-link"
+            onClick={onClose}
+          >
+            {t.birthdayFlowerGiftGuide}
+          </Link>
+          <Link
             href={`/${lang}/guides/flowers-chiang-mai`}
             className="information-modal-link"
             onClick={onClose}

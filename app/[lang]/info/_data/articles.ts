@@ -1,9 +1,11 @@
 /**
  * Articles registry for the Guides / Info section.
- * Each article maps to a slug and MDX files:
+ * Each article maps to a slug and usually MDX files:
  * - content/info/[slug].en.mdx (English)
  * - content/info/[slug].th.mdx (Thai)
  * If .th.mdx is missing, falls back to .en.mdx for Thai locale.
+ *
+ * Entries with `externalPath` skip MDX and redirect `/info/{slug}` to `/{locale}{externalPath}`.
  */
 
 /** CTA link shown at bottom of article. href is path without lang (e.g. /catalog, /catalog?category=roses) */
@@ -21,6 +23,11 @@ export type ArticleMeta = {
   titleTh?: string;
   /** Thai excerpt (optional; falls back to excerpt if missing) */
   excerptTh?: string;
+  /**
+   * If set, the info hub card links to `/{locale}{externalPath}` (e.g. guide route).
+   * The `/info/{slug}` page redirects there; no MDX file is required for this slug.
+   */
+  externalPath?: string;
   publishedAt: string; // ISO date
   featured?: boolean;
   /** CTA links at bottom of article. If empty, default "Browse bouquets" link is shown. */
@@ -54,6 +61,27 @@ export const articles: ArticleMeta[] = [
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'birthday-flower-gift-guide',
+    title: 'Birthday Flower Gift Guide: Four Luxury Bouquets to Shop Now',
+    excerpt:
+      'Find a memorable birthday flower gift: compare four luxury bouquets—bold sunset, vivid citrus, timeless roses and lilies, romantic ruby—then shop online from each section.',
+    titleTh: 'ไอเดียของขวัญดอกไม้วันเกิด: ช่อพรีเมียมสี่สไตล์',
+    excerptTh:
+      'เลือกของขวัญดอกไม้วันเกิดให้จำได้นาน: เปรียบเทียบช่อพรีเมียมสี่สไตล์—โทนซันเซ็ตสะดุดตา ซิตรัสสดใส กุหลาบและลิลลี่คลาสสิก โรแมนติกโทนรูบี้—แล้วเลือกซื้อออนไลน์ได้จากแต่ละหัวข้อ',
+    externalPath: '/guides/birthday-flower-gift',
+    publishedAt: '2026-04-30T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff5f7 0%, #fce7f3 45%, #fef3c7 100%)',
+      center: { kind: 'emoji', value: '🎂' },
+    },
+    ctaLinks: [
+      { label: 'Browse birthday flowers', labelTh: 'ดูดอกไม้วันเกิด', href: '/catalog?occasion=birthday' },
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
     ],
   },
   {
@@ -226,5 +254,8 @@ export function getFeaturedArticle(): ArticleMeta {
 }
 
 export function getMoreGuides(excludeSlug?: string): ArticleMeta[] {
-  return articles.filter((a) => a.slug !== excludeSlug);
+  const filtered = articles.filter((a) => a.slug !== excludeSlug);
+  return [...filtered].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  );
 }

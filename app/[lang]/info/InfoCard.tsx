@@ -16,7 +16,9 @@ export function InfoCard({
   basePath: string;
   baseUrl: string;
 }) {
-  const href = `${basePath}/${article.slug}`;
+  const href = article.externalPath
+    ? `/${lang}${article.externalPath}`
+    : `${basePath}/${article.slug}`;
   const fullUrl = `${baseUrl}${href}`;
   const title = getArticleTitle(article, lang);
   const excerpt = getArticleExcerpt(article, lang);

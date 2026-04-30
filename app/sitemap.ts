@@ -69,12 +69,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7 as const,
         lastModified: now,
       },
-      ...articles.map((a) => ({
-        url: `${base}/${lang}/info/${a.slug}`,
-        changeFrequency: 'monthly' as const,
-        priority: 0.6 as const,
+      ...articles
+        .filter((a) => !a.externalPath)
+        .map((a) => ({
+          url: `${base}/${lang}/info/${a.slug}`,
+          changeFrequency: 'monthly' as const,
+          priority: 0.6 as const,
+          lastModified: now,
+        })),
+      {
+        url: `${base}/${lang}/guides`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.68 as const,
         lastModified: now,
-      })),
+      },
+      {
+        url: `${base}/${lang}/guides/birthday-flower-gift`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.62 as const,
+        lastModified: now,
+      },
       {
         url: `${base}/${lang}/guides/flowers-chiang-mai`,
         changeFrequency: 'monthly' as const,
