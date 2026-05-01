@@ -31,5 +31,6 @@ yarn-error.log*
 # rendered videos
 *.mp4
 
-# hyperframes — entire folder and all contents (not versioned)
+# hyperframes — folder itself and everything inside (not versioned)
+hyperframes
 hyperframes/
