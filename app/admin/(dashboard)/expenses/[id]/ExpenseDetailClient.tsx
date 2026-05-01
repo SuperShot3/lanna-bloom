@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Expense, ExpenseBillLine, ExpenseReceiptImage } from '@/types/expenses';
-import { billLineCheckpointCount, billTrackingProgress } from '@/types/expenses';
+import { billLineCheckpointCount, billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
@@ -67,6 +67,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [deleting, setDeleting] = useState(false);
   const [billLines, setBillLines] = useState<ExpenseBillLine[]>(expense.bill_tracking ?? []);
   const [billSaving, setBillSaving] = useState(false);
+  const [paperBillPdfBusy, setPaperBillPdfBusy] = useState(false);
   const receiptCount = receipts.length;
   const currentReceiptName = receiptCount > 0 ? receipts[0].file_name : receiptFileName(expenseState.receipt_file_path);
 
@@ -220,6 +221,42 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
 
   const billProg = billTrackingProgress(billLines);
 
+  const downloadPaperBillRequestPdf = async () => {
+    setPaperBillPdfBusy(true);
+    setReceiptError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/expenses/${encodeURIComponent(expenseState.id)}/paper-bill-request`,
+        { method: 'POST' }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setReceiptError(typeof data.error === 'string' ? data.error : 'Failed to generate PDF');
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition');
+      let name = 'paper-bill-request.pdf';
+      const m = cd?.match(/filename="([^"]+)"/);
+      if (m?.[1]) name = m[1];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExpenseState((prev) => ({
+        ...prev,
+        paper_bill_requested_at: new Date().toISOString(),
+      }));
+      router.refresh();
+    } catch {
+      setReceiptError('Network error while generating PDF');
+    } finally {
+      setPaperBillPdfBusy(false);
+    }
+  };
+
   return (
     <div className="admin-expenses-detail">
       {/* Header */}
@@ -314,6 +351,18 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             }
           />
         )}
+        <DetailRow
+          label="Paper bill request"
+          value={
+            expenseState.paper_bill_requested_at ? (
+              <span title={new Date(expenseState.paper_bill_requested_at).toLocaleString('en-GB')}>
+                PDF generated {formatDateTime(expenseState.paper_bill_requested_at)}
+              </span>
+            ) : (
+              <span className="admin-hint">Not yet</span>
+            )
+          }
+        />
         <DetailRow label="Created by" value={expenseState.created_by} />
         <DetailRow label="Created at" value={formatDateTime(expenseState.created_at)} />
         <DetailRow label="Updated at" value={formatDateTime(expenseState.updated_at)} />
@@ -388,6 +437,28 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               </tbody>
             </table>
           </div>
+        </section>
+      )}
+
+      {expenseState.linked_order_id && (
+        <section className="admin-expenses-bill-checklist" aria-label="Paper bill request">
+          <h2 className="admin-accounting-section-title">Paper bill from shop</h2>
+          <p className="admin-hint admin-accounting-section-hint">
+            When the vendor bill is still missing, generate a PDF you can send or print. It includes order
+            details, customer contact preference, item photos from the order, and any payment slips already
+            attached to this expense.
+          </p>
+          {!expenseDocumentationComplete(expenseState) && (
+            <p className="admin-hint">This expense is not fully documented yet — a PDF is especially useful here.</p>
+          )}
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary admin-btn-sm"
+            disabled={paperBillPdfBusy}
+            onClick={() => void downloadPaperBillRequestPdf()}
+          >
+            {paperBillPdfBusy ? 'Generating PDF…' : 'Generate paper bill request PDF'}
+          </button>
         </section>
       )}
 

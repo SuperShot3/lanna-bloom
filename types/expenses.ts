@@ -59,6 +59,8 @@ export interface Expense {
    * Persisted as JSONB; empty until first resolve (detail page or create).
    */
   bill_tracking?: ExpenseBillLine[] | null;
+  /** Set when staff generates the vendor paper-bill request PDF. */
+  paper_bill_requested_at?: string | null;
 }
 
 export interface ExpenseReceiptImage {

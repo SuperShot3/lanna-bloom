@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useState } from 'react';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS, billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
 
 interface ExpensesListClientProps {
   initialExpenses: Expense[];
@@ -54,6 +55,37 @@ export function ExpensesListClient({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const sp = searchParams ?? new URLSearchParams();
+  const [paperBillPdfExpenseId, setPaperBillPdfExpenseId] = useState<string | null>(null);
+
+  const downloadPaperBillRequestPdf = async (expenseId: string) => {
+    setPaperBillPdfExpenseId(expenseId);
+    try {
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseId)}/paper-bill-request`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(typeof data.error === 'string' ? data.error : 'Failed to generate PDF');
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition');
+      let name = 'paper-bill-request.pdf';
+      const m = cd?.match(/filename="([^"]+)"/);
+      if (m?.[1]) name = m[1];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+      router.refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Network error');
+    } finally {
+      setPaperBillPdfExpenseId(null);
+    }
+  };
 
   const handleFilterChange = (updates: Record<string, string | undefined>) => {
     const next = new URLSearchParams(sp.toString());
@@ -183,7 +215,11 @@ export function ExpensesListClient({
                   <th>Category</th>
                   <th>Payment</th>
                   <th>Receipt</th>
+                  <th>Bills</th>
+                  <th title="Checked when documentation is still incomplete">Incomplete</th>
+                  <th title="Paper bill request PDF was generated">Bill req</th>
                   <th className="admin-expenses-col-amount">Amount</th>
+                  <th style={{ width: 1 }} aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
@@ -218,8 +254,67 @@ export function ExpensesListClient({
                         <span className="admin-badge admin-badge-payment-pending">Missing</span>
                       )}
                     </td>
+                    <td>
+                      {(() => {
+                        const p = billTrackingProgress(exp.bill_tracking);
+                        if (!p) return <span className="admin-hint">—</span>;
+                        const done = p.done === p.total;
+                        return (
+                          <span
+                            className={`admin-badge ${done ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
+                            title="Bill checklist progress"
+                          >
+                            {p.done}/{p.total}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {!expenseDocumentationComplete(exp) ? (
+                        <span
+                          className="admin-badge admin-badge-payment-pending"
+                          title="Receipt and/or bill checklist still incomplete"
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span className="admin-hint">—</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {exp.paper_bill_requested_at ? (
+                        <span
+                          className="admin-badge admin-badge-paid"
+                          title={new Date(exp.paper_bill_requested_at).toLocaleString('en-GB')}
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span className="admin-hint">—</span>
+                      )}
+                    </td>
                     <td className="admin-expenses-amount">
                       {formatAmount(exp.amount, exp.currency)}
+                    </td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-outline admin-btn-sm"
+                        disabled={!exp.linked_order_id || paperBillPdfExpenseId === exp.id}
+                        title={
+                          exp.linked_order_id
+                            ? 'Download PDF to request a missing paper bill from the shop'
+                            : 'Link this expense to an order first'
+                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!exp.linked_order_id) return;
+                          void downloadPaperBillRequestPdf(exp.id);
+                        }}
+                      >
+                        {paperBillPdfExpenseId === exp.id ? 'PDF…' : 'Bill PDF'}
+                      </button>
                     </td>
                   </tr>
                 ))}

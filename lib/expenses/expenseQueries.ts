@@ -249,6 +249,7 @@ export interface UpdateExpenseInput {
   receipt_attached?: boolean;
   notes?: string | null;
   bill_tracking?: ExpenseBillLine[];
+  paper_bill_requested_at?: string | null;
 }
 
 export async function updateExpense(

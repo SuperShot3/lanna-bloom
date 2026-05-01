@@ -161,6 +161,7 @@ export function AccountingOverviewClient({
   const [transferSaving, setTransferSaving] = useState(false);
   const [transferMsg, setTransferMsg] = useState<string | null>(null);
   const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+  const [paperBillPdfExpenseId, setPaperBillPdfExpenseId] = useState<string | null>(null);
 
   /** Keep date inputs aligned with URL when navigating (useState only uses initial value on mount). */
   useEffect(() => {
@@ -270,6 +271,36 @@ export function AccountingOverviewClient({
     router.push(`${pathname}?${next.toString()}`);
   };
 
+  const downloadPaperBillRequestPdf = async (expenseId: string) => {
+    setPaperBillPdfExpenseId(expenseId);
+    try {
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseId)}/paper-bill-request`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(typeof data.error === 'string' ? data.error : 'Failed to generate PDF');
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition');
+      let name = 'paper-bill-request.pdf';
+      const m = cd?.match(/filename="([^"]+)"/);
+      if (m?.[1]) name = m[1];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+      router.refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Network error');
+    } finally {
+      setPaperBillPdfExpenseId(null);
+    }
+  };
+
   /** CSV export — Expenses tab. Uses currently-loaded expensesData (already filtered). */
   const exportExpensesCsv = () => {
     const headers = [
@@ -280,6 +311,8 @@ export function AccountingOverviewClient({
       'Receipt attached',
       'Bill checks (done/total)',
       'Documentation complete',
+      'Incomplete (flag)',
+      'Paper bill request sent',
       'Amount',
       'Currency',
       'Notes',
@@ -297,6 +330,8 @@ export function AccountingOverviewClient({
         exp.receipt_attached ? 'Yes' : 'MISSING',
         escapeCsvCell(p ? `${p.done}/${p.total}` : '—'),
         expenseDocumentationComplete(exp) ? 'Yes' : 'No',
+        !expenseDocumentationComplete(exp) ? 'YES' : '',
+        exp.paper_bill_requested_at ? 'Yes' : '',
         String(exp.amount),
         escapeCsvCell(exp.currency || 'THB'),
         escapeCsvCell(exp.notes ?? ''),
@@ -973,6 +1008,8 @@ export function AccountingOverviewClient({
                           <th>Payment</th>
                           <th>Receipt</th>
                           <th>Bills</th>
+                          <th title="Checked when documentation is still incomplete">Incomplete</th>
+                          <th title="Paper bill request PDF was generated">Bill req</th>
                           <th className="admin-expenses-col-amount">Amount</th>
                           <th style={{ width: 1 }} aria-label="Actions" />
                         </tr>
@@ -1026,39 +1063,83 @@ export function AccountingOverviewClient({
                                 );
                               })()}
                             </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {!expenseDocumentationComplete(exp) ? (
+                                <span
+                                  className="admin-badge admin-badge-payment-pending"
+                                  title="Receipt and/or bill checklist still incomplete"
+                                >
+                                  ✓
+                                </span>
+                              ) : (
+                                <span className="admin-hint">—</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {exp.paper_bill_requested_at ? (
+                                <span
+                                  className="admin-badge admin-badge-paid"
+                                  title={new Date(exp.paper_bill_requested_at).toLocaleString('en-GB')}
+                                >
+                                  ✓
+                                </span>
+                              ) : (
+                                <span className="admin-hint">—</span>
+                              )}
+                            </td>
                             <td className="admin-expenses-amount">
                               {formatAmount(exp.amount, exp.currency)}
                             </td>
                             <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                              <button
-                                type="button"
-                                className="admin-btn admin-btn-outline admin-btn-danger admin-btn-sm"
-                                disabled={deletingExpenseId === exp.id}
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (!confirmDeleteAction('Delete this expense? This cannot be undone.')) return;
-                                  setDeletingExpenseId(exp.id);
-                                  try {
-                                    const res = await fetch(`/api/admin/expenses/${encodeURIComponent(exp.id)}`, {
-                                      method: 'DELETE',
-                                    });
-                                    const data = await res.json().catch(() => ({}));
-                                    if (!res.ok) {
-                                      alert(data.error ?? 'Failed to delete expense');
-                                      return;
-                                    }
-                                    router.refresh();
-                                  } catch (err) {
-                                    alert(err instanceof Error ? err.message : 'Network error');
-                                  } finally {
-                                    setDeletingExpenseId(null);
+                              <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-outline admin-btn-sm"
+                                  disabled={!exp.linked_order_id || paperBillPdfExpenseId === exp.id}
+                                  title={
+                                    exp.linked_order_id
+                                      ? 'Download PDF to request a missing paper bill from the shop'
+                                      : 'Link this expense to an order first'
                                   }
-                                }}
-                                title="Delete expense"
-                              >
-                                {deletingExpenseId === exp.id ? 'Deleting…' : 'Delete'}
-                              </button>
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (!exp.linked_order_id) return;
+                                    void downloadPaperBillRequestPdf(exp.id);
+                                  }}
+                                >
+                                  {paperBillPdfExpenseId === exp.id ? 'PDF…' : 'Bill PDF'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-outline admin-btn-danger admin-btn-sm"
+                                  disabled={deletingExpenseId === exp.id}
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (!confirmDeleteAction('Delete this expense? This cannot be undone.')) return;
+                                    setDeletingExpenseId(exp.id);
+                                    try {
+                                      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(exp.id)}`, {
+                                        method: 'DELETE',
+                                      });
+                                      const data = await res.json().catch(() => ({}));
+                                      if (!res.ok) {
+                                        alert(data.error ?? 'Failed to delete expense');
+                                        return;
+                                      }
+                                      router.refresh();
+                                    } catch (err) {
+                                      alert(err instanceof Error ? err.message : 'Network error');
+                                    } finally {
+                                      setDeletingExpenseId(null);
+                                    }
+                                  }}
+                                  title="Delete expense"
+                                >
+                                  {deletingExpenseId === exp.id ? 'Deleting…' : 'Delete'}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
