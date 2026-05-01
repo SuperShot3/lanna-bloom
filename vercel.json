@@ -2,6 +2,12 @@
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/en", "destination": "/index.html" },
+    { "source": "/en/", "destination": "/index.html" },
+    { "source": "/en/:path*", "destination": "/index.html" },
+    { "source": "/th", "destination": "/index.html" },
+    { "source": "/th/", "destination": "/index.html" },
+    { "source": "/th/:path*", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
