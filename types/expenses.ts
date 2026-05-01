@@ -17,13 +17,18 @@ export type PaymentMethod =
   | 'qr_payment'
   | 'other';
 
-/** One row in the dual bill checklist (transfer to shop + bill from shop). */
+/** One row in the bill checklist (usually shop transfer + vendor bill; delivery is payment-only). */
 export interface ExpenseBillLine {
   line_id: string;
   label: string;
-  /** We have documentation for money transferred / paid to the shop (e.g. slip). */
+  /**
+   * When `false`, only `transfer_to_shop` counts (e.g. delivery paid to driver — no shop vendor bill).
+   * When `true` or omitted, both transfer and vendor bill are required. Default true.
+   */
+  vendor_bill_applicable?: boolean;
+  /** We have documentation for money transferred / paid (shop or driver). */
   transfer_to_shop: boolean;
-  /** We have the vendor bill from the shop. */
+  /** We have the vendor bill from the shop (ignored when `vendor_bill_applicable === false`). */
   bill_from_shop: boolean;
 }
 
@@ -31,6 +36,7 @@ export interface ExpenseBillLine {
 export interface ExpenseBillLineTemplate {
   line_id: string;
   label: string;
+  vendor_bill_applicable?: boolean;
 }
 
 export interface Expense {
@@ -104,16 +110,27 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'bank_transfer', label: 'Bank Account' },
 ];
 
-/** Progress for list UI: done / total (2 checks per line). Safe for client components. */
+/** Number of checklist boxes for one line (1 = driver payment only, 2 = shop transfer + vendor bill). */
+export function billLineCheckpointCount(line: ExpenseBillLine): number {
+  return line.vendor_bill_applicable === false ? 1 : 2;
+}
+
+/** Progress for list UI. Safe for client components. */
 export function billTrackingProgress(
   lines: ExpenseBillLine[] | null | undefined
 ): { done: number; total: number } | null {
   if (!lines || lines.length === 0) return null;
-  const total = lines.length * 2;
-  const done = lines.reduce(
-    (s, l) => s + (l.transfer_to_shop ? 1 : 0) + (l.bill_from_shop ? 1 : 0),
-    0
-  );
+  let total = 0;
+  let done = 0;
+  for (const l of lines) {
+    const n = billLineCheckpointCount(l);
+    total += n;
+    if (n === 1) {
+      if (l.transfer_to_shop) done += 1;
+    } else {
+      done += (l.transfer_to_shop ? 1 : 0) + (l.bill_from_shop ? 1 : 0);
+    }
+  }
   return { done, total };
 }
 
@@ -126,11 +143,14 @@ export function parseExpenseBillTrackingJson(bt: unknown): ExpenseBillLine[] | u
     if (!x || typeof x !== 'object') continue;
     const o = x as Record<string, unknown>;
     if (typeof o.line_id !== 'string' || !o.line_id) continue;
+    const vendorBillApplicable =
+      o.line_id === 'order:delivery' ? false : o.vendor_bill_applicable !== false;
     lines.push({
       line_id: o.line_id,
       label: typeof o.label === 'string' && o.label ? o.label : o.line_id,
+      vendor_bill_applicable: vendorBillApplicable,
       transfer_to_shop: o.transfer_to_shop === true,
-      bill_from_shop: o.bill_from_shop === true,
+      bill_from_shop: vendorBillApplicable ? o.bill_from_shop === true : false,
     });
   }
   return lines;

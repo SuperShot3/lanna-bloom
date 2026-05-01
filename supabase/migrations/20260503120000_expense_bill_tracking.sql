@@ -6,4 +6,4 @@ ALTER TABLE public.expenses
   ADD COLUMN IF NOT EXISTS bill_tracking jsonb NOT NULL DEFAULT '[]'::jsonb;
 
 COMMENT ON COLUMN public.expenses.bill_tracking IS
-  'Array of { line_id, label, transfer_to_shop, bill_from_shop }. Line IDs: oi:<order_items.id>, oj:<index> from order_json, or "default".';
+  'Array of { line_id, label, transfer_to_shop, bill_from_shop, vendor_bill_applicable? }. order:delivery = driver payment only (vendor_bill_applicable false). Else oi:/oj:/default.';

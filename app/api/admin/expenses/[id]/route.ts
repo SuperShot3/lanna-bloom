@@ -11,14 +11,17 @@ function parseBillTrackingBody(raw: unknown): ExpenseBillLine[] | null {
     if (!x || typeof x !== 'object') continue;
     const o = x as Record<string, unknown>;
     if (typeof o.line_id !== 'string' || o.line_id.length > 120) continue;
+    const vendorBillApplicable =
+      o.line_id === 'order:delivery' ? false : o.vendor_bill_applicable !== false;
     out.push({
       line_id: o.line_id,
       label:
         typeof o.label === 'string' && o.label.length <= 500
           ? o.label
           : o.line_id,
+      vendor_bill_applicable: vendorBillApplicable,
       transfer_to_shop: o.transfer_to_shop === true,
-      bill_from_shop: o.bill_from_shop === true,
+      bill_from_shop: vendorBillApplicable ? o.bill_from_shop === true : false,
     });
   }
   return out.length > 0 ? out : null;

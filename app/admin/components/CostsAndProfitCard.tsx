@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
@@ -508,6 +509,16 @@ export function CostsAndProfitCard({
       <p className="admin-hint" style={{ marginTop: 8 }}>
         Receipt images only, max size 500 KB.
       </p>
+      {deliveryNum != null && deliveryNum > 0 && cogsExpense?.id && (
+        <p className="admin-hint" style={{ marginTop: 6, maxWidth: '36rem' }}>
+          Delivery cost is above zero — open the{' '}
+          <Link href={`/admin/expenses/${encodeURIComponent(cogsExpense.id)}`} className="admin-link">
+            linked COGS expense
+          </Link>{' '}
+          and tick the <strong>Delivery</strong> row in the bill checklist (<strong>payment to driver</strong> only —
+          one check).
+        </p>
+      )}
       {loadingReceipts ? <p className="admin-hint">Loading images…</p> : null}
       <p className="admin-hint" style={{ marginTop: 4 }}>
         Images added: {receiptCount} {currentReceiptName ? `| Image name: ${currentReceiptName}` : ''}

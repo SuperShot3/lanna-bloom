@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Expense, ExpenseBillLine, ExpenseReceiptImage } from '@/types/expenses';
-import { billTrackingProgress } from '@/types/expenses';
+import { billLineCheckpointCount, billTrackingProgress } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
@@ -208,6 +208,9 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   };
 
   const toggleBillLine = (lineId: string, key: 'transfer_to_shop' | 'bill_from_shop') => {
+    const target = billLines.find((l) => l.line_id === lineId);
+    if (!target) return;
+    if (key === 'bill_from_shop' && billLineCheckpointCount(target) === 1) return;
     const next = billLines.map((l) =>
       l.line_id === lineId ? { ...l, [key]: !l[key] } : l
     );
@@ -322,9 +325,9 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         <section className="admin-expenses-bill-checklist" aria-label="Bill checklist">
           <h2 className="admin-accounting-section-title">Bill checklist</h2>
           <p className="admin-hint admin-accounting-section-hint">
-            For each line item: tick when you have <strong>proof you paid / transferred to the shop</strong>, and
-            when you have the <strong>bill from the shop</strong> (vendor receipt). Linked orders show one row per
-            product (e.g. flowers + toys = 4 checkboxes).
+            For each product line: tick <strong>payment to the shop</strong> and <strong>bill from the shop</strong>.
+            Linked orders show one row per product (two checks each). <strong>Delivery</strong> is only{' '}
+            <strong>payment to the driver</strong> (one check — no shop bill).
           </p>
           {billSaving && <p className="admin-hint">Saving checklist…</p>}
           <div className="admin-expenses-table-wrap">
@@ -332,12 +335,14 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>Transfer / payment to shop</th>
+                  <th>Payment proof (shop or driver)</th>
                   <th>Bill from shop</th>
                 </tr>
               </thead>
               <tbody>
-                {billLines.map((line) => (
+                {billLines.map((line) => {
+                  const singleCheck = billLineCheckpointCount(line) === 1;
+                  return (
                   <tr key={line.line_id}>
                     <td className="admin-expenses-desc">
                       <span className="admin-expenses-desc-text">{line.label}</span>
@@ -350,25 +355,36 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                           checked={line.transfer_to_shop}
                           disabled={billSaving}
                           onChange={() => toggleBillLine(line.line_id, 'transfer_to_shop')}
-                          aria-label={`Transfer proof received for ${line.label}`}
+                          aria-label={
+                            singleCheck
+                              ? `Proof of payment to driver for ${line.label}`
+                              : `Payment / transfer to shop for ${line.label}`
+                          }
                         />
-                        <span>Received</span>
+                        <span>{singleCheck ? 'Paid driver (proof)' : 'Received'}</span>
                       </label>
                     </td>
                     <td>
-                      <label className="admin-bill-check-label">
-                        <input
-                          type="checkbox"
-                          checked={line.bill_from_shop}
-                          disabled={billSaving}
-                          onChange={() => toggleBillLine(line.line_id, 'bill_from_shop')}
-                          aria-label={`Shop bill received for ${line.label}`}
-                        />
-                        <span>Received</span>
-                      </label>
+                      {singleCheck ? (
+                        <span className="admin-hint" title="Delivery is paid to the driver; no shop vendor bill.">
+                          —
+                        </span>
+                      ) : (
+                        <label className="admin-bill-check-label">
+                          <input
+                            type="checkbox"
+                            checked={line.bill_from_shop}
+                            disabled={billSaving}
+                            onChange={() => toggleBillLine(line.line_id, 'bill_from_shop')}
+                            aria-label={`Shop bill received for ${line.label}`}
+                          />
+                          <span>Received</span>
+                        </label>
+                      )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -1019,7 +1019,7 @@ export function AccountingOverviewClient({
                                 return (
                                   <span
                                     className={`admin-badge ${done ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
-                                    title="Transfer + shop bill checks per line"
+                                    title="Bill checklist progress (delivery = 1 step; products = 2)"
                                   >
                                     {p.done}/{p.total}
                                   </span>

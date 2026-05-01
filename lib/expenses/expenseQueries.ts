@@ -162,7 +162,7 @@ function normalizeExpenseRow(data: Record<string, unknown>): Expense {
  * and persist when line structure changed or was empty.
  */
 export async function ensureBillTrackingUpToDate(expense: Expense): Promise<Expense> {
-  const templates = await resolveBillLinesTarget(expense.linked_order_id);
+  const templates = await resolveBillLinesTarget(expense.linked_order_id, expense.category);
   const merged = mergeBillTracking(expense.bill_tracking, templates);
   if (!billLinesNeedPersist(expense.bill_tracking, merged)) {
     return { ...expense, bill_tracking: merged };
@@ -215,7 +215,7 @@ export async function createExpense(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { expense: null, error: 'Supabase not configured' };
 
-  const templates = await resolveBillLinesTarget(input.linked_order_id ?? null);
+  const templates = await resolveBillLinesTarget(input.linked_order_id ?? null, input.category);
   const bill_tracking = mergeBillTracking([], templates);
 
   const { data, error } = await supabase

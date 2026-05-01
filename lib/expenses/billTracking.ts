@@ -54,12 +54,37 @@ function labelFromJsonItem(
   return `${title}${size}`;
 }
 
+function deliveryCostFromRow(row: { delivery_cost?: unknown } | null | undefined): number {
+  const n = parseFloat(String(row?.delivery_cost ?? ''));
+  if (Number.isNaN(n) || n <= 0) return 0;
+  return Math.round(n * 100) / 100;
+}
+
+/** Append COGS delivery line when order has delivery_cost &gt; 0 (flowers / linked COGS expense). */
+function appendCogsDeliveryLine(
+  base: ExpenseBillLineTemplate[],
+  deliveryCost: number
+): ExpenseBillLineTemplate[] {
+  if (deliveryCost <= 0) return base;
+  return [
+    ...base,
+    {
+      line_id: 'order:delivery',
+      label: `Delivery · ${deliveryCost} THB`,
+      vendor_bill_applicable: false,
+    },
+  ];
+}
+
 /**
  * Resolve checklist rows for an expense: one row per order line when `linked_order_id`
  * is set (from `order_items`, else `order_json.items`), otherwise a single default row.
+ * For **flowers** (order COGS) expenses, when the linked order has `delivery_cost` &gt; 0,
+ * adds a **delivery** row (payment to driver only — one checklist step).
  */
 export async function resolveBillLinesTarget(
-  linkedOrderId: string | null | undefined
+  linkedOrderId: string | null | undefined,
+  expenseCategory?: string | null
 ): Promise<ExpenseBillLineTemplate[]> {
   if (!linkedOrderId?.trim()) {
     return [{ line_id: 'default', label: 'This purchase' }];
@@ -71,6 +96,7 @@ export async function resolveBillLinesTarget(
   }
 
   const oid = linkedOrderId.trim();
+  const includeCogsDelivery = expenseCategory === 'flowers';
 
   const { data: rows } = await supabase
     .from('order_items')
@@ -79,27 +105,42 @@ export async function resolveBillLinesTarget(
     .order('id', { ascending: true });
 
   if (rows && rows.length > 0) {
-    return rows.map((oi) => ({
+    const base = rows.map((oi) => ({
       line_id: `oi:${oi.id}`,
       label: formatDbOrderItem(oi),
     }));
+    if (!includeCogsDelivery) return base;
+    const { data: orderRow } = await supabase
+      .from('orders')
+      .select('delivery_cost')
+      .eq('order_id', oid)
+      .maybeSingle();
+    return appendCogsDeliveryLine(base, deliveryCostFromRow(orderRow));
   }
 
   const { data: orderRow } = await supabase
     .from('orders')
-    .select('order_json')
+    .select('order_json, delivery_cost')
     .eq('order_id', oid)
     .maybeSingle();
 
   const jsonItems = extractItemsFromOrderJson(orderRow?.order_json);
   if (jsonItems.length > 0) {
-    return jsonItems.map((it, idx) => ({
+    const base = jsonItems.map((it, idx) => ({
       line_id: `oj:${idx}`,
       label: labelFromJsonItem(it, idx),
     }));
+    return appendCogsDeliveryLine(
+      base,
+      includeCogsDelivery ? deliveryCostFromRow(orderRow) : 0
+    );
   }
 
-  return [{ line_id: 'default', label: 'This purchase (linked order)' }];
+  const base = [{ line_id: 'default', label: 'This purchase (linked order)' }];
+  return appendCogsDeliveryLine(
+    base,
+    includeCogsDelivery ? deliveryCostFromRow(orderRow) : 0
+  );
 }
 
 /** Merge server-resolved line keys/labels with stored checkbox state. */
@@ -110,11 +151,13 @@ export function mergeBillTracking(
   const byId = new Map((stored ?? []).map((l) => [l.line_id, l]));
   return templates.map((t) => {
     const prev = byId.get(t.line_id);
+    const vendorBillApplicable = t.vendor_bill_applicable !== false;
     return {
       line_id: t.line_id,
       label: t.label,
+      vendor_bill_applicable: vendorBillApplicable,
       transfer_to_shop: prev?.transfer_to_shop ?? false,
-      bill_from_shop: prev?.bill_from_shop ?? false,
+      bill_from_shop: vendorBillApplicable ? (prev?.bill_from_shop ?? false) : false,
     };
   });
 }
@@ -125,9 +168,13 @@ export function billLinesNeedPersist(
 ): boolean {
   if (!stored || stored.length === 0) return merged.length > 0;
   if (stored.length !== merged.length) return true;
-  const ids = new Set(stored.map((l) => l.line_id));
+  const byId = new Map(stored.map((l) => [l.line_id, l]));
   for (const l of merged) {
-    if (!ids.has(l.line_id)) return true;
+    if (!byId.has(l.line_id)) return true;
+    const prev = byId.get(l.line_id)!;
+    const prevV = prev.vendor_bill_applicable !== false;
+    const nextV = l.vendor_bill_applicable !== false;
+    if (prevV !== nextV) return true;
   }
   return false;
 }
