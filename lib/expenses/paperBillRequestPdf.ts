@@ -1,7 +1,11 @@
 import 'server-only';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage } from 'pdf-lib';
 import type { Expense } from '@/types/expenses';
-import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
+import type {
+  SupabaseOrderRow,
+  SupabaseOrderItemRow,
+  SupabaseStatusHistoryRow,
+} from '@/lib/supabase/adminQueries';
 
 const PAGE_W = 595;
 const PAGE_H = 842;
@@ -12,6 +16,83 @@ function formatThbPdfAmount(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return 'THB n/a';
   const s = Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   return `THB ${s}`;
+}
+
+function formatPdfDateTime(iso: string | null | undefined): string {
+  if (!iso?.trim()) return 'n/a';
+  try {
+    const d = new Date(iso.trim());
+    if (Number.isNaN(d.getTime())) return iso.trim();
+    return d.toLocaleString('en-GB', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Bangkok',
+    });
+  } catch {
+    return iso.trim();
+  }
+}
+
+/** First transition to DELIVERED in chronological history (history must be oldest-first). */
+function deriveDeliveredAtIso(
+  order: SupabaseOrderRow,
+  history: SupabaseStatusHistoryRow[]
+): string | null {
+  const deliveredRow = history.find(
+    (h) => String(h.to_status ?? '').trim().toUpperCase() === 'DELIVERED'
+  );
+  if (deliveredRow?.created_at?.trim()) return deliveredRow.created_at.trim();
+  const os = String(order.order_status ?? '').trim().toUpperCase();
+  if (os === 'DELIVERED') {
+    return (
+      order.fulfillment_status_updated_at?.trim() ||
+      order.updated_at?.trim() ||
+      null
+    );
+  }
+  return null;
+}
+
+function formatContactPreference(raw: string | null | undefined): string {
+  const s = raw?.trim();
+  if (!s) return 'n/a';
+  if (s.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(s) as unknown;
+      if (Array.isArray(parsed)) return parsed.map(String).join(', ');
+    } catch {
+      /* fall through */
+    }
+  }
+  return s;
+}
+
+function collectDeliveryLines(order: SupabaseOrderRow): string[] {
+  const lines: string[] = [];
+  const addr = order.address?.trim();
+  const district = order.district?.trim();
+  if (addr || district) {
+    const parts = [addr, district].filter(Boolean);
+    if (parts.length) lines.push(`Drop-off: ${parts.join(', ')}`);
+  }
+  if (order.delivery_date?.trim()) {
+    lines.push(`Requested delivery date: ${order.delivery_date.trim()}`);
+  }
+  if (order.delivery_window?.trim()) {
+    lines.push(`Delivery window: ${order.delivery_window.trim()}`);
+  }
+  const driver = order.driver_name?.trim();
+  const driverPhone = order.driver_phone?.trim();
+  if (driver || driverPhone) {
+    lines.push(`Driver: ${[driver, driverPhone].filter(Boolean).join(' · ') || 'n/a'}`);
+  }
+  if (order.delivery_google_maps_url?.trim()) {
+    lines.push(`Maps: ${order.delivery_google_maps_url.trim()}`);
+  }
+  lines.push(
+    `Our delivery cost (paid to driver / courier, not customer retail fee): ${formatThbPdfAmount(order.delivery_cost)}`
+  );
+  return lines;
 }
 
 /**
@@ -168,11 +249,13 @@ export interface PaperBillPdfInput {
   expense: Expense;
   order: SupabaseOrderRow;
   items: SupabaseOrderItemRow[];
+  /** Oldest-first (matches getOrderByOrderId) — used for delivered timestamp. */
+  statusHistory?: SupabaseStatusHistoryRow[];
   receiptFiles: { bytes: Uint8Array; label: string }[];
 }
 
 export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promise<Uint8Array> {
-  const { expense, order, items, receiptFiles } = input;
+  const { expense, order, items, statusHistory = [], receiptFiles } = input;
   const pdfDoc = await PDFDocument.create();
   const bodyFont = await embedBodyFont(pdfDoc);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -212,7 +295,7 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
     order.customer_name?.trim() ||
     order.recipient_name?.trim() ||
     'n/a';
-  const contactPref = order.contact_preference?.trim() || 'n/a';
+  const contactPref = formatContactPreference(order.contact_preference);
   const phone = order.phone?.trim() || order.recipient_phone?.trim() || 'n/a';
   const email = order.customer_email?.trim() || 'n/a';
   const amt = formatThbPdfAmount(expense.amount);
@@ -225,6 +308,43 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
   y -= 4;
   y = drawWrapped(page, bodyFont, `Email: ${email}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
   y -= 12;
+
+  const placedIso = order.created_at?.trim();
+  const deliveredIso = deriveDeliveredAtIso(order, statusHistory);
+  y = drawWrapped(
+    page,
+    bodyFont,
+    `Order placed: ${formatPdfDateTime(placedIso ?? null)}`,
+    MARGIN,
+    y,
+    PAGE_W - 2 * MARGIN,
+    11,
+    14
+  );
+  y -= 4;
+  const deliveredLabel =
+    deliveredIso != null
+      ? `Delivered: ${formatPdfDateTime(deliveredIso)}`
+      : order.order_status?.trim().toUpperCase() === 'DELIVERED'
+        ? 'Delivered: time not on record (status shows DELIVERED)'
+        : `Delivered: pending / not recorded (status: ${order.order_status?.trim() || 'n/a'})`;
+  y = drawWrapped(page, bodyFont, deliveredLabel, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
+  y -= 14;
+
+  page.drawText('Delivery (our records)', {
+    x: MARGIN,
+    y,
+    size: 11,
+    font: fontBold,
+    color: rgb(0.15, 0.15, 0.2),
+  });
+  y -= 16;
+  for (const dl of collectDeliveryLines(order)) {
+    y = drawWrapped(page, bodyFont, dl, MARGIN, y, PAGE_W - 2 * MARGIN, 10, 13);
+    y -= 2;
+  }
+  y -= 8;
+
   y = drawWrapped(
     page,
     bodyFont,
@@ -256,8 +376,7 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
       y = PAGE_H - MARGIN;
     }
     const label =
-      `${it.bouquet_title ?? it.bouquet_id ?? 'Item'}${it.size ? ` · ${it.size}` : ''}` +
-      (it.price != null ? ` · ${formatThbPdfAmount(it.price)}` : '');
+      `${it.bouquet_title ?? it.bouquet_id ?? 'Item'}${it.size ? ` · ${it.size}` : ''}`;
 
     const url = absoluteImageUrl(it.image_url_snapshot ?? null);
     let img: PDFImage | null = null;

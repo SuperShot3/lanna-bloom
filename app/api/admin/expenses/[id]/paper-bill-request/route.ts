@@ -38,7 +38,7 @@ export async function POST(
     );
   }
 
-  const { order, items, error: orderErr } = await getOrderByOrderId(orderId);
+  const { order, items, statusHistory, error: orderErr } = await getOrderByOrderId(orderId);
   if (orderErr || !order) {
     return NextResponse.json(
       { error: orderErr ?? 'Linked order not found' },
@@ -96,6 +96,7 @@ export async function POST(
       expense,
       order,
       items,
+      statusHistory,
       receiptFiles,
     });
   } catch (e) {
