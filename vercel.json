@@ -1,16 +1,7 @@
 {
-  "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/cron/send-reminders",
-      "schedule": "0 2 * * *"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/en",
-      "permanent": false
-    }
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
