@@ -53,6 +53,8 @@ interface ExpenseDetailClientProps {
 }
 
 const MAX_RECEIPT_BYTES = 500 * 1024;
+const DELETE_RECEIPT_CONFIRM =
+  'Are you sure you want to delete this receipt? This cannot be undone.';
 
 export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const router = useRouter();
@@ -64,6 +66,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [receipts, setReceipts] = useState<ExpenseReceiptImage[]>([]);
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [billLines, setBillLines] = useState<ExpenseBillLine[]>(expense.bill_tracking ?? []);
   const [billSaving, setBillSaving] = useState(false);
@@ -177,6 +180,35 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
       setReceiptError('Unexpected error preparing download');
     } finally {
       setDownloadingReceipt(false);
+    }
+  };
+
+  const handleDeleteReceipt = async (receiptId: string) => {
+    if (!confirmDeleteAction(DELETE_RECEIPT_CONFIRM)) return;
+    setDeletingReceiptId(receiptId);
+    setReceiptError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/expenses/${encodeURIComponent(expenseState.id)}/receipts/${encodeURIComponent(receiptId)}`,
+        { method: 'DELETE' }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReceiptError(typeof data.error === 'string' ? data.error : 'Delete failed');
+        return;
+      }
+      setExpenseState((prev) => ({
+        ...prev,
+        receipt_attached: data.receipt_attached === true,
+        receipt_file_path:
+          typeof data.receipt_file_path === 'string' ? data.receipt_file_path : null,
+      }));
+      await loadReceipts();
+      router.refresh();
+    } catch {
+      setReceiptError('Unexpected error while deleting receipt');
+    } finally {
+      setDeletingReceiptId(null);
     }
   };
 
@@ -534,6 +566,14 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                         onClick={() => void openReceipt(r.file_path, true)}
                       >
                         Download
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-sm admin-btn-outline admin-btn-danger"
+                        disabled={deletingReceiptId === r.id || uploadingReceipt}
+                        onClick={() => void handleDeleteReceipt(r.id)}
+                      >
+                        {deletingReceiptId === r.id ? 'Deleting…' : 'Delete'}
                       </button>
                     </td>
                   </tr>

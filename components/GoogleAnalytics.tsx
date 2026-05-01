@@ -1,4 +1,7 @@
+'use client';
+
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim();
 const SHOULD_LOAD_ANALYTICS = process.env.NODE_ENV === 'production' && Boolean(GTM_ID);
@@ -6,8 +9,11 @@ const SHOULD_LOAD_ANALYTICS = process.env.NODE_ENV === 'production' && Boolean(G
 /**
  * GTM + Google Consent Mode v2 defaults.
  * Footer uses a short notice (implied consent by continued use). Align defaults with that.
+ * Skips loading on /admin so staff sessions are not sent to GA4 (via GTM).
  */
 export function GoogleAnalytics() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/admin')) return null;
   if (!SHOULD_LOAD_ANALYTICS || !GTM_ID) return null;
 
   return (

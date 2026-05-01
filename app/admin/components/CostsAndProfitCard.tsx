@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
+import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
 const MAX_RECEIPT_BYTES = 500 * 1024;
+const DELETE_RECEIPT_CONFIRM =
+  'Are you sure you want to delete this receipt? This cannot be undone.';
 
 type LinkedExpenseRef = Pick<Expense, 'id' | 'receipt_attached' | 'receipt_file_path'> | null;
 
@@ -73,6 +76,7 @@ export function CostsAndProfitCard({
   );
   const [flowerReceipts, setFlowerReceipts] = useState<ExpenseReceiptImage[]>([]);
   const [loadingFlowerReceipts, setLoadingFlowerReceipts] = useState(false);
+  const [flowerReceiptDeletingId, setFlowerReceiptDeletingId] = useState<string | null>(null);
   const flowerReceiptCount = flowerReceipts.length;
   const currentFlowerReceiptName =
     flowerReceiptCount > 0 ? flowerReceipts[0].file_name : receiptFileName(cogsExpense?.receipt_file_path ?? null);
@@ -85,6 +89,7 @@ export function CostsAndProfitCard({
   );
   const [deliveryReceipts, setDeliveryReceipts] = useState<ExpenseReceiptImage[]>([]);
   const [loadingDeliveryReceipts, setLoadingDeliveryReceipts] = useState(false);
+  const [deliveryReceiptDeletingId, setDeliveryReceiptDeletingId] = useState<string | null>(null);
   const deliveryReceiptCount = deliveryReceipts.length;
   const currentDeliveryReceiptName =
     deliveryReceiptCount > 0
@@ -367,6 +372,41 @@ export function CostsAndProfitCard({
     }
   };
 
+  const handleDeleteFlowerReceipt = async (receiptId: string) => {
+    if (!cogsExpense?.id) return;
+    if (!confirmDeleteAction(DELETE_RECEIPT_CONFIRM)) return;
+    setFlowerReceiptDeletingId(receiptId);
+    setFlowerReceiptMessage(null);
+    try {
+      const res = await fetch(
+        `/api/admin/expenses/${encodeURIComponent(cogsExpense.id)}/receipts/${encodeURIComponent(receiptId)}`,
+        { method: 'DELETE' }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFlowerReceiptMessage({ type: 'error', text: data.error ?? 'Delete failed' });
+        return;
+      }
+      setCogsExpense((prev) =>
+        prev
+          ? {
+              ...prev,
+              receipt_attached: data.receipt_attached === true,
+              receipt_file_path:
+                typeof data.receipt_file_path === 'string' ? data.receipt_file_path : null,
+            }
+          : prev
+      );
+      await loadFlowerReceipts(cogsExpense.id);
+      setFlowerReceiptMessage({ type: 'success', text: 'Receipt removed' });
+      router.refresh();
+    } catch {
+      setFlowerReceiptMessage({ type: 'error', text: 'Network error while deleting receipt' });
+    } finally {
+      setFlowerReceiptDeletingId(null);
+    }
+  };
+
   const handleViewDeliveryReceipt = async () => {
     if (!deliveryExpense?.id || !deliveryReceipts[0]?.file_path) return;
     setLoadingDeliveryReceipt(true);
@@ -438,6 +478,41 @@ export function CostsAndProfitCard({
       setDeliveryReceiptMessage({ type: 'error', text: 'Unexpected error preparing download' });
     } finally {
       setDownloadingDeliveryReceipt(false);
+    }
+  };
+
+  const handleDeleteDeliveryReceipt = async (receiptId: string) => {
+    if (!deliveryExpense?.id) return;
+    if (!confirmDeleteAction(DELETE_RECEIPT_CONFIRM)) return;
+    setDeliveryReceiptDeletingId(receiptId);
+    setDeliveryReceiptMessage(null);
+    try {
+      const res = await fetch(
+        `/api/admin/expenses/${encodeURIComponent(deliveryExpense.id)}/receipts/${encodeURIComponent(receiptId)}`,
+        { method: 'DELETE' }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeliveryReceiptMessage({ type: 'error', text: data.error ?? 'Delete failed' });
+        return;
+      }
+      setDeliveryExpense((prev) =>
+        prev
+          ? {
+              ...prev,
+              receipt_attached: data.receipt_attached === true,
+              receipt_file_path:
+                typeof data.receipt_file_path === 'string' ? data.receipt_file_path : null,
+            }
+          : prev
+      );
+      await loadDeliveryReceipts(deliveryExpense.id);
+      setDeliveryReceiptMessage({ type: 'success', text: 'Receipt removed' });
+      router.refresh();
+    } catch {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Network error while deleting receipt' });
+    } finally {
+      setDeliveryReceiptDeletingId(null);
     }
   };
 
@@ -699,6 +774,14 @@ export function CostsAndProfitCard({
                       >
                         Download
                       </button>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-sm admin-btn-outline admin-btn-danger"
+                        disabled={!canEdit || flowerReceiptDeletingId === r.id}
+                        onClick={() => { void handleDeleteFlowerReceipt(r.id); }}
+                      >
+                        {flowerReceiptDeletingId === r.id ? 'Deleting…' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -800,6 +883,14 @@ export function CostsAndProfitCard({
                           onClick={() => { void openReceipt(deliveryExpense.id, r.file_path, true); }}
                         >
                           Download
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-sm admin-btn-outline admin-btn-danger"
+                          disabled={!canEdit || deliveryReceiptDeletingId === r.id}
+                          onClick={() => { void handleDeleteDeliveryReceipt(r.id); }}
+                        >
+                          {deliveryReceiptDeletingId === r.id ? 'Deleting…' : 'Delete'}
                         </button>
                       </td>
                     </tr>

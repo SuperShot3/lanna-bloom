@@ -10,6 +10,33 @@ import {
 import { mergeBillTracking, resolveBillLinesTarget } from '@/lib/expenses/billTracking';
 import { parseExpenseBillTrackingJson } from '@/types/expenses';
 
+function trimExpenseNotes(n: unknown): string {
+  return typeof n === 'string' ? n.trim() : '';
+}
+
+/**
+ * Pick which linked expense row PATCH /costs should update.
+ * Prefer an existing receipt so proof is not orphaned when removing duplicate rows.
+ */
+function pickCanonicalAmongMergeable(
+  mergeable: { id: unknown; notes?: unknown; receipt_attached?: unknown }[],
+  syncNote: string
+): string | null {
+  if (!mergeable.length) return null;
+  const withReceipt = mergeable.filter((r) => r.receipt_attached === true);
+  const pool = withReceipt.length > 0 ? withReceipt : mergeable;
+  const synced = pool.find((r) => trimExpenseNotes(r.notes) === syncNote);
+  if (synced?.id != null && synced.id !== '') return String(synced.id);
+  const first = pool[0];
+  return first?.id != null && first.id !== '' ? String(first.id) : null;
+}
+
+/** Safe to merge/delete: legacy empty notes or duplicate auto-sync rows — not third-party manual notes. */
+function isAutoMergeExpenseNotes(notes: unknown, syncNote: string): boolean {
+  const t = trimExpenseNotes(notes);
+  return t === '' || t === syncNote;
+}
+
 /** Returns { value, invalid }. invalid=true means reject the request. */
 function parseCost(value: unknown): { value: number | null; invalid: boolean } {
   if (value == null) return { value: null, invalid: false };
@@ -202,32 +229,32 @@ export async function PATCH(
     const cogsExpenseDesc = `COGS (flowers) — order ${order_id.trim()}`;
     const adminEmail = session.user.email ?? 'unknown';
 
-    let { data: existingExpense, error: existingExpenseErr } = await supabase
+    const { data: flowerRows, error: flowerRowsErr } = await supabase
       .from('expenses')
-      .select('id, receipt_attached, receipt_file_path, bill_tracking')
+      .select('id, receipt_attached, receipt_file_path, bill_tracking, notes')
       .eq('linked_order_id', order_id.trim())
       .eq('category', 'flowers')
-      .eq('notes', ORDER_COSTS_FLOWERS_SYNC_NOTE)
-      .maybeSingle();
+      .order('created_at', { ascending: true });
 
-    if (existingExpenseErr) {
-      return NextResponse.json({ error: existingExpenseErr.message }, { status: 500 });
+    if (flowerRowsErr) {
+      return NextResponse.json({ error: flowerRowsErr.message }, { status: 500 });
     }
 
-    if (!existingExpense?.id) {
-      const { data: legacyFlowersExpense, error: legacyErr } = await supabase
-        .from('expenses')
-        .select('id, receipt_attached, receipt_file_path, bill_tracking')
-        .eq('linked_order_id', order_id.trim())
-        .eq('category', 'flowers')
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (legacyErr) {
-        return NextResponse.json({ error: legacyErr.message }, { status: 500 });
-      }
-      existingExpense = legacyFlowersExpense;
+    const mergeableFlowers = (flowerRows ?? []).filter((r) =>
+      isAutoMergeExpenseNotes((r as { notes?: unknown }).notes, ORDER_COSTS_FLOWERS_SYNC_NOTE)
+    );
+    let canonicalFlowerId = pickCanonicalAmongMergeable(
+      mergeableFlowers as { id: unknown; notes?: unknown; receipt_attached?: unknown }[],
+      ORDER_COSTS_FLOWERS_SYNC_NOTE
+    );
+    if (canonicalFlowerId == null && flowerRows?.length) {
+      canonicalFlowerId = String((flowerRows[0] as { id: unknown }).id);
     }
+
+    let existingExpense =
+      canonicalFlowerId != null
+        ? flowerRows?.find((r) => String(r.id) === canonicalFlowerId)
+        : undefined;
 
     let cogsExpense: { id: string; receipt_attached: boolean; receipt_file_path: string | null } | null = null;
     const checklistTemplates = await resolveBillLinesTarget(order_id.trim(), 'flowers');
@@ -288,6 +315,22 @@ export async function PATCH(
       };
     }
 
+    if (cogsExpense?.id) {
+      for (const r of flowerRows ?? []) {
+        const rid = String((r as { id?: unknown }).id ?? '');
+        if (!rid || rid === cogsExpense.id) continue;
+        if (
+          !isAutoMergeExpenseNotes((r as { notes?: unknown }).notes, ORDER_COSTS_FLOWERS_SYNC_NOTE)
+        ) {
+          continue;
+        }
+        const casc = await deleteExpenseByIdCascade(supabase, rid);
+        if (casc.error) {
+          return NextResponse.json({ error: casc.error }, { status: 500 });
+        }
+      }
+    }
+
     let deliveryExpense: {
       id: string;
       receipt_attached: boolean;
@@ -315,16 +358,27 @@ export async function PATCH(
       deliveryExpense = null;
     } else {
       const deliveryExpenseDesc = `Delivery (driver) — order ${order_id.trim()}`;
-      const { data: existingDeliveryExpense, error: existingDeliveryErr } = await supabase
+      const { data: deliveryRows, error: deliveryRowsErr } = await supabase
         .from('expenses')
-        .select('id, receipt_attached, receipt_file_path, bill_tracking')
+        .select('id, receipt_attached, receipt_file_path, bill_tracking, notes')
         .eq('linked_order_id', order_id.trim())
         .eq('category', 'delivery')
-        .eq('notes', ORDER_COSTS_DELIVERY_SYNC_NOTE)
-        .maybeSingle();
-      if (existingDeliveryErr) {
-        return NextResponse.json({ error: existingDeliveryErr.message }, { status: 500 });
+        .order('created_at', { ascending: true });
+      if (deliveryRowsErr) {
+        return NextResponse.json({ error: deliveryRowsErr.message }, { status: 500 });
       }
+      const canonicalDeliveryId =
+        pickCanonicalAmongMergeable(
+          deliveryRows.filter((r) =>
+            isAutoMergeExpenseNotes((r as { notes?: unknown }).notes, ORDER_COSTS_DELIVERY_SYNC_NOTE)
+          ) as { id: unknown; notes?: unknown; receipt_attached?: unknown }[],
+          ORDER_COSTS_DELIVERY_SYNC_NOTE
+        ) ??
+        (deliveryRows?.length ? String((deliveryRows[0] as { id: unknown }).id) : null);
+      const existingDeliveryExpense =
+        canonicalDeliveryId != null
+          ? deliveryRows?.find((r) => String(r.id) === canonicalDeliveryId)
+          : undefined;
       const deliveryTemplates = await resolveBillLinesTarget(order_id.trim(), 'delivery');
       const mergedDeliveryBill = mergeBillTracking(
         parseExpenseBillTrackingJson(existingDeliveryExpense?.bill_tracking),
@@ -381,6 +435,22 @@ export async function PATCH(
           receipt_attached: insertedDel.receipt_attached === true,
           receipt_file_path: (insertedDel.receipt_file_path as string | null) ?? null,
         };
+      }
+
+      if (deliveryExpense?.id) {
+        for (const r of deliveryRows ?? []) {
+          const rid = String((r as { id?: unknown }).id ?? '');
+          if (!rid || rid === deliveryExpense.id) continue;
+          if (
+            !isAutoMergeExpenseNotes((r as { notes?: unknown }).notes, ORDER_COSTS_DELIVERY_SYNC_NOTE)
+          ) {
+            continue;
+          }
+          const casc = await deleteExpenseByIdCascade(supabase, rid);
+          if (casc.error) {
+            return NextResponse.json({ error: casc.error }, { status: 500 });
+          }
+        }
       }
     }
 
