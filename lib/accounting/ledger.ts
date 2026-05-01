@@ -5,9 +5,10 @@ import {
   processingFeeForIncome,
 } from '@/lib/accounting/stripeFee';
 import type { IncomePaymentMethod, IncomeRecord } from '@/types/accounting';
+import { incomeDocumentationComplete } from '@/types/accounting';
 import { INCOME_SOURCE_TYPES, MONEY_LOCATIONS } from '@/types/accounting';
 import type { Expense } from '@/types/expenses';
-import { EXPENSE_CATEGORIES } from '@/types/expenses';
+import { EXPENSE_CATEGORIES, expenseDocumentationComplete } from '@/types/expenses';
 import type { AccountingTransfer } from '@/types/accountingTransfers';
 import { getAccountingTransfers } from '@/lib/accounting/transfers';
 import type {
@@ -136,7 +137,7 @@ function toIncomeLedgerRow(
     status: r.income_status,
     currency: r.currency || 'THB',
     detailHref: `/admin/accounting/income/${r.id}`,
-    receiptAttached: !!r.receipt_attached,
+    receiptAttached: incomeDocumentationComplete(r),
     rawCategory: r.source_type,
     rawPaymentMethod: r.payment_method,
   };
@@ -167,7 +168,7 @@ function toExpenseLedgerRow(
     status: null,
     currency: e.currency || 'THB',
     detailHref: `/admin/expenses/${e.id}`,
-    receiptAttached: !!e.receipt_attached,
+    receiptAttached: expenseDocumentationComplete(e),
     rawCategory: e.category,
     rawPaymentMethod: e.payment_method,
   };

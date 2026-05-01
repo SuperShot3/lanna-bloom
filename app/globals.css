@@ -6322,6 +6322,26 @@ a.admin-summary-key-value {
   align-items: center;
 }
 
+.admin-expenses-bill-checklist {
+  margin-top: 28px;
+  margin-bottom: 8px;
+}
+
+.admin-bill-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.admin-bill-check-label input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--admin-primary, #4f46e5);
+}
+
 /* Mobile adjustments */
 @media (max-width: 600px) {
   .admin-expenses-filters {

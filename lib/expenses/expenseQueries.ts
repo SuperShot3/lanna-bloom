@@ -1,6 +1,12 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import type { Expense, ExpenseFilters } from '@/types/expenses';
+import type { Expense, ExpenseBillLine, ExpenseFilters } from '@/types/expenses';
+import { expenseDocumentationComplete, parseExpenseBillTrackingJson } from '@/types/expenses';
+import {
+  billLinesNeedPersist,
+  mergeBillTracking,
+  resolveBillLinesTarget,
+} from '@/lib/expenses/billTracking';
 
 const TABLE = 'expenses';
 
@@ -8,7 +14,7 @@ export interface ExpensesResult {
   expenses: Expense[];
   total: number;
   totalAmount: number;
-  /** Count of rows in the filtered set whose `receipt_attached = false` (the "paper bill" gap). */
+  /** Count of rows in the filtered set that are not fully documented (receipt + bill checklist when present). */
   missingReceiptCount: number;
   error?: string;
 }
@@ -25,6 +31,50 @@ export async function getExpenses(
   const { page, pageSize } = pagination;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+
+  const doc = filters.documentation;
+  if (doc === 'incomplete' || doc === 'complete') {
+    let q = supabase.from(TABLE).select('*');
+    if (filters.dateFrom) q = q.gte('date', filters.dateFrom);
+    if (filters.dateTo)   q = q.lte('date', filters.dateTo);
+    if (filters.category && filters.category !== 'all') q = q.eq('category', filters.category);
+    if (filters.payment_method && filters.payment_method !== 'all') {
+      q = q.eq('payment_method', filters.payment_method);
+    }
+
+    const { data, error } = await q
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[expenseQueries] getExpenses error:', error.message);
+      return { expenses: [], total: 0, totalAmount: 0, missingReceiptCount: 0, error: error.message };
+    }
+
+    let rows = (data ?? []).map((row) => normalizeExpenseRow(row as Record<string, unknown>));
+    if (doc === 'incomplete') {
+      rows = rows.filter((e) => !expenseDocumentationComplete(e));
+    } else {
+      rows = rows.filter((e) => expenseDocumentationComplete(e));
+    }
+    if (filters.receipt === 'missing') {
+      rows = rows.filter((e) => !e.receipt_attached);
+    } else if (filters.receipt === 'attached') {
+      rows = rows.filter((e) => e.receipt_attached);
+    }
+
+    const missingReceiptCount = rows.filter((e) => !expenseDocumentationComplete(e)).length;
+    const totalAmount = rows.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const total = rows.length;
+    const pageRows = rows.slice(from, to + 1);
+
+    return {
+      expenses: pageRows,
+      total,
+      totalAmount,
+      missingReceiptCount,
+    };
+  }
 
   let query = supabase.from(TABLE).select('*', { count: 'exact' });
 
@@ -47,8 +97,8 @@ export async function getExpenses(
     return { expenses: [], total: 0, totalAmount: 0, missingReceiptCount: 0, error: error.message };
   }
 
-  // Aggregate total amount + missing-receipt count for the full filtered set (not just the page).
-  let aggregateQuery = supabase.from(TABLE).select('amount, receipt_attached');
+  // Aggregate total amount + incomplete-documentation count for the full filtered set (not just the page).
+  let aggregateQuery = supabase.from(TABLE).select('amount, receipt_attached, bill_tracking');
   if (filters.dateFrom) aggregateQuery = aggregateQuery.gte('date', filters.dateFrom);
   if (filters.dateTo)   aggregateQuery = aggregateQuery.lte('date', filters.dateTo);
   if (filters.category && filters.category !== 'all') {
@@ -65,11 +115,16 @@ export async function getExpenses(
   let missingReceiptCount = 0;
   for (const row of amountRows ?? []) {
     totalAmount += parseFloat(String(row.amount)) || 0;
-    if (row.receipt_attached === false) missingReceiptCount++;
+    const lines = parseExpenseBillTrackingJson(row.bill_tracking);
+    const e = {
+      receipt_attached: row.receipt_attached === true,
+      bill_tracking: lines,
+    };
+    if (!expenseDocumentationComplete(e)) missingReceiptCount++;
   }
 
   return {
-    expenses: (data ?? []) as Expense[],
+    expenses: (data ?? []).map((row) => normalizeExpenseRow(row as Record<string, unknown>)),
     total: count ?? 0,
     totalAmount,
     missingReceiptCount,
@@ -90,7 +145,34 @@ export async function getExpenseById(id: string): Promise<Expense | null> {
     console.error('[expenseQueries] getExpenseById error:', error.message);
     return null;
   }
-  return data as Expense;
+  return normalizeExpenseRow(data);
+}
+
+function normalizeExpenseRow(data: Record<string, unknown>): Expense {
+  const e = data as unknown as Expense;
+  const parsed = parseExpenseBillTrackingJson(data.bill_tracking);
+  if (parsed !== undefined) {
+    e.bill_tracking = parsed;
+  }
+  return e;
+}
+
+/**
+ * Sync `bill_tracking` with current order lines (new items, linked order, etc.)
+ * and persist when line structure changed or was empty.
+ */
+export async function ensureBillTrackingUpToDate(expense: Expense): Promise<Expense> {
+  const templates = await resolveBillLinesTarget(expense.linked_order_id);
+  const merged = mergeBillTracking(expense.bill_tracking, templates);
+  if (!billLinesNeedPersist(expense.bill_tracking, merged)) {
+    return { ...expense, bill_tracking: merged };
+  }
+  const { expense: updated, error } = await updateExpense(expense.id, { bill_tracking: merged });
+  if (error || !updated) {
+    console.error('[expenseQueries] ensureBillTrackingUpToDate:', error);
+    return { ...expense, bill_tracking: merged };
+  }
+  return updated;
 }
 
 export async function getCogsExpenseByOrderId(orderId: string): Promise<Expense | null> {
@@ -133,6 +215,9 @@ export async function createExpense(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { expense: null, error: 'Supabase not configured' };
 
+  const templates = await resolveBillLinesTarget(input.linked_order_id ?? null);
+  const bill_tracking = mergeBillTracking([], templates);
+
   const { data, error } = await supabase
     .from(TABLE)
     .insert({
@@ -147,6 +232,7 @@ export async function createExpense(
       created_by:        input.created_by,
       notes:             input.notes ?? null,
       linked_order_id:   input.linked_order_id ?? null,
+      bill_tracking,
     })
     .select()
     .single();
@@ -155,13 +241,14 @@ export async function createExpense(
     console.error('[expenseQueries] createExpense error:', error.message);
     return { expense: null, error: error.message };
   }
-  return { expense: data as Expense };
+  return { expense: normalizeExpenseRow(data as Record<string, unknown>) };
 }
 
 export interface UpdateExpenseInput {
   receipt_file_path?: string | null;
   receipt_attached?: boolean;
   notes?: string | null;
+  bill_tracking?: ExpenseBillLine[];
 }
 
 export async function updateExpense(
@@ -185,5 +272,5 @@ export async function updateExpense(
     console.error('[expenseQueries] updateExpense error:', error.message);
     return { expense: null, error: error.message };
   }
-  return { expense: data as Expense };
+  return { expense: normalizeExpenseRow(data as Record<string, unknown>) };
 }

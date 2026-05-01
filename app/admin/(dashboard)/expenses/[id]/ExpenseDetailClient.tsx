@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
+import type { Expense, ExpenseBillLine, ExpenseReceiptImage } from '@/types/expenses';
+import { billTrackingProgress } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
@@ -64,6 +65,8 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [billLines, setBillLines] = useState<ExpenseBillLine[]>(expense.bill_tracking ?? []);
+  const [billSaving, setBillSaving] = useState(false);
   const receiptCount = receipts.length;
   const currentReceiptName = receiptCount > 0 ? receipts[0].file_name : receiptFileName(expenseState.receipt_file_path);
 
@@ -88,6 +91,10 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     void loadReceipts();
   }, [expenseState.id]);
 
+  useEffect(() => {
+    setBillLines(expenseState.bill_tracking ?? []);
+  }, [expenseState.id, expenseState.updated_at, expenseState.bill_tracking]);
+
   const openReceipt = async (filePath: string, download = false) => {
     if (!filePath) return;
     setReceiptError(null);
@@ -100,7 +107,11 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         setReceiptError(data.error ?? 'Failed to open image');
         return;
       }
-      window.location.assign(data.signedUrl);
+      if (download) {
+        window.location.assign(data.signedUrl);
+      } else {
+        window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      }
     } catch {
       setReceiptError('Unexpected error opening image');
     }
@@ -168,6 +179,44 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     }
   };
 
+  const persistBillLines = async (next: ExpenseBillLine[]) => {
+    setBillSaving(true);
+    setReceiptError(null);
+    try {
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseState.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bill_tracking: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReceiptError(data.error ?? 'Failed to save bill checklist');
+        return;
+      }
+      if (data.expense) {
+        const e = data.expense as Expense;
+        setExpenseState(e);
+        setBillLines(e.bill_tracking ?? next);
+      } else {
+        setBillLines(next);
+      }
+    } catch {
+      setReceiptError('Unexpected error saving bill checklist');
+    } finally {
+      setBillSaving(false);
+    }
+  };
+
+  const toggleBillLine = (lineId: string, key: 'transfer_to_shop' | 'bill_from_shop') => {
+    const next = billLines.map((l) =>
+      l.line_id === lineId ? { ...l, [key]: !l[key] } : l
+    );
+    setBillLines(next);
+    void persistBillLines(next);
+  };
+
+  const billProg = billTrackingProgress(billLines);
+
   return (
     <div className="admin-expenses-detail">
       {/* Header */}
@@ -224,7 +273,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         <DetailRow label="Description" value={expenseState.description} />
         <DetailRow label="Payment Method" value={PM_LABEL[expenseState.payment_method] ?? expenseState.payment_method} />
         <DetailRow
-          label="Receipt"
+          label="Receipt files"
           value={
             expenseState.receipt_attached ? (
               <span className="admin-badge admin-badge-paid">Attached</span>
@@ -233,6 +282,22 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             )
           }
         />
+        {billProg && (
+          <DetailRow
+            label="Bill checklist"
+            value={
+              <span
+                className={
+                  billProg.done === billProg.total
+                    ? 'admin-badge admin-badge-paid'
+                    : 'admin-badge admin-badge-payment-pending'
+                }
+              >
+                {billProg.done}/{billProg.total} checks
+              </span>
+            }
+          />
+        )}
         <DetailRow label="Images added" value={String(receiptCount)} />
         <DetailRow label="Image name" value={currentReceiptName ?? '—'} />
         {expenseState.notes && <DetailRow label="Notes" value={expenseState.notes} />}
@@ -251,6 +316,64 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         <DetailRow label="Updated at" value={formatDateTime(expenseState.updated_at)} />
         <DetailRow label="Expense ID" value={<code className="admin-expenses-id">{expenseState.id}</code>} />
       </div>
+
+      {/* Dual bill checklist — one row per order line (or one default row) */}
+      {billLines.length > 0 && (
+        <section className="admin-expenses-bill-checklist" aria-label="Bill checklist">
+          <h2 className="admin-accounting-section-title">Bill checklist</h2>
+          <p className="admin-hint admin-accounting-section-hint">
+            For each line item: tick when you have <strong>proof you paid / transferred to the shop</strong>, and
+            when you have the <strong>bill from the shop</strong> (vendor receipt). Linked orders show one row per
+            product (e.g. flowers + toys = 4 checkboxes).
+          </p>
+          {billSaving && <p className="admin-hint">Saving checklist…</p>}
+          <div className="admin-expenses-table-wrap">
+            <table className="admin-expenses-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Transfer / payment to shop</th>
+                  <th>Bill from shop</th>
+                </tr>
+              </thead>
+              <tbody>
+                {billLines.map((line) => (
+                  <tr key={line.line_id}>
+                    <td className="admin-expenses-desc">
+                      <span className="admin-expenses-desc-text">{line.label}</span>
+                      <span className="admin-expenses-notes admin-ledger-mono">{line.line_id}</span>
+                    </td>
+                    <td>
+                      <label className="admin-bill-check-label">
+                        <input
+                          type="checkbox"
+                          checked={line.transfer_to_shop}
+                          disabled={billSaving}
+                          onChange={() => toggleBillLine(line.line_id, 'transfer_to_shop')}
+                          aria-label={`Transfer proof received for ${line.label}`}
+                        />
+                        <span>Received</span>
+                      </label>
+                    </td>
+                    <td>
+                      <label className="admin-bill-check-label">
+                        <input
+                          type="checkbox"
+                          checked={line.bill_from_shop}
+                          disabled={billSaving}
+                          onChange={() => toggleBillLine(line.line_id, 'bill_from_shop')}
+                          aria-label={`Shop bill received for ${line.label}`}
+                        />
+                        <span>Received</span>
+                      </label>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Receipt actions */}
       <div className="admin-expenses-detail-actions">

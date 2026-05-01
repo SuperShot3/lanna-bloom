@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getExpenseById } from '@/lib/expenses/expenseQueries';
+import { ensureBillTrackingUpToDate, getExpenseById } from '@/lib/expenses/expenseQueries';
 import { ExpenseDetailClient } from './ExpenseDetailClient';
 
 interface PageProps {
@@ -8,9 +8,11 @@ interface PageProps {
 
 export default async function AdminExpenseDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const expense = await getExpenseById(id);
+  const raw = await getExpenseById(id);
 
-  if (!expense) notFound();
+  if (!raw) notFound();
+
+  const expense = await ensureBillTrackingUpToDate(raw);
 
   return <ExpenseDetailClient expense={expense} />;
 }

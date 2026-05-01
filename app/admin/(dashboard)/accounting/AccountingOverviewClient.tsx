@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { MoneyLocationTotal, IncomeRecord, IncomeFilters } from '@/types/accounting';
-import { INCOME_SOURCE_TYPES, INCOME_STATUSES, MONEY_LOCATIONS } from '@/types/accounting';
+import { INCOME_SOURCE_TYPES, INCOME_STATUSES, MONEY_LOCATIONS, incomeDocumentationComplete } from '@/types/accounting';
 import type { AccountingTransfer } from '@/types/accountingTransfers';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
+import { billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
 import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
 import type { LedgerResult } from '@/types/ledger';
@@ -25,7 +26,7 @@ interface OverviewData {
   incomeByLocation: MoneyLocationTotal[];
   incomeCount: number;
   expenseCount: number;
-  /** Expenses in period missing a paper bill / receipt image. */
+  /** Expenses in period missing full documentation (receipt file and/or bill checklist). */
   expensesMissingReceiptCount: number;
   /** Income records in period missing a proof of payment. */
   incomeMissingProofCount: number;
@@ -254,26 +255,48 @@ export function AccountingOverviewClient({
     router.push(`${pathname}?${next.toString()}`);
   };
 
-  /** From any tab, jump to Expenses with receipt=missing pre-applied (used by KPI card click). */
+  /** From Overview KPI: expenses → incomplete documentation filter; income → missing proof filter. */
   const focusMissingReceipts = (target: 'expenses' | 'income') => {
     const next = new URLSearchParams(sp.toString());
     next.delete('page');
-    next.set('receipt', 'missing');
     next.set('tab', target);
+    if (target === 'expenses') {
+      next.set('documentation', 'incomplete');
+      next.delete('receipt');
+    } else {
+      next.set('receipt', 'missing');
+      next.delete('documentation');
+    }
     router.push(`${pathname}?${next.toString()}`);
   };
 
   /** CSV export — Expenses tab. Uses currently-loaded expensesData (already filtered). */
   const exportExpensesCsv = () => {
-    const headers = ['Date', 'Description', 'Category', 'Payment method', 'Receipt attached', 'Amount', 'Currency', 'Notes', 'Linked order', 'Created by'];
+    const headers = [
+      'Date',
+      'Description',
+      'Category',
+      'Payment method',
+      'Receipt attached',
+      'Bill checks (done/total)',
+      'Documentation complete',
+      'Amount',
+      'Currency',
+      'Notes',
+      'Linked order',
+      'Created by',
+    ];
     const lines = [headers.join(',')];
     for (const exp of expensesData.expenses) {
+      const p = billTrackingProgress(exp.bill_tracking);
       lines.push([
         escapeCsvCell(exp.date.slice(0, 10)),
         escapeCsvCell(exp.description),
         escapeCsvCell(CATEGORY_LABEL[exp.category] ?? exp.category),
         escapeCsvCell(PM_LABEL[exp.payment_method] ?? exp.payment_method),
         exp.receipt_attached ? 'Yes' : 'MISSING',
+        escapeCsvCell(p ? `${p.done}/${p.total}` : '—'),
+        expenseDocumentationComplete(exp) ? 'Yes' : 'No',
         String(exp.amount),
         escapeCsvCell(exp.currency || 'THB'),
         escapeCsvCell(exp.notes ?? ''),
@@ -286,7 +309,7 @@ export function AccountingOverviewClient({
 
   /** CSV export — Income Records tab. */
   const exportIncomeCsv = () => {
-    const headers = ['Created at', 'Description', 'Order ID', 'Source mode', 'Source type', 'Payment method', 'Money location', 'Status', 'Proof attached', 'Gross amount', 'Stripe fee (estimate)', 'External reference', 'Currency', 'Created by'];
+    const headers = ['Created at', 'Description', 'Order ID', 'Source mode', 'Source type', 'Payment method', 'Money location', 'Status', 'Proof OK (non-Stripe needs file)', 'Gross amount', 'Stripe fee (estimate)', 'External reference', 'Currency', 'Created by'];
     const lines = [headers.join(',')];
     for (const rec of incomeData.records) {
       lines.push([
@@ -298,7 +321,7 @@ export function AccountingOverviewClient({
         escapeCsvCell(rec.payment_method),
         escapeCsvCell(rec.money_location),
         escapeCsvCell(rec.income_status),
-        rec.receipt_attached ? 'Yes' : 'MISSING',
+        incomeDocumentationComplete(rec) ? 'Yes' : 'No',
         String(rec.amount),
         rec.processing_fee_amount != null ? String(rec.processing_fee_amount) : '',
         escapeCsvCell(rec.external_reference ?? ''),
@@ -722,7 +745,7 @@ export function AccountingOverviewClient({
                   icon="schedule"
                 />
               )}
-              {/* Receipts compliance — clickable; jumps to filtered Expenses tab. */}
+              {/* Expense documentation KPI — clickable; opens Expenses tab with incomplete filter. */}
               {overview.expenseCount > 0 && (
                 <button
                   type="button"
@@ -730,8 +753,8 @@ export function AccountingOverviewClient({
                     overview.expensesMissingReceiptCount === 0 ? 'green' : 'yellow'
                   } admin-accounting-kpi-clickable`}
                   onClick={() => focusMissingReceipts('expenses')}
-                  aria-label="Show expenses with missing receipts"
-                  title="Click to see which expenses are missing a paper bill"
+                  aria-label="Show expenses with incomplete documentation"
+                  title="Receipt image plus transfer and shop-bill checkboxes per line (when applicable)"
                 >
                   <span
                     className={`material-symbols-outlined admin-accounting-kpi-icon admin-accounting-kpi-icon-${
@@ -741,14 +764,14 @@ export function AccountingOverviewClient({
                     {overview.expensesMissingReceiptCount === 0 ? 'task_alt' : 'receipt_long'}
                   </span>
                   <div>
-                    <p className="admin-accounting-kpi-label">Expense receipts</p>
+                    <p className="admin-accounting-kpi-label">Expense documentation</p>
                     <p className="admin-accounting-kpi-value">
                       {overview.expenseCount - overview.expensesMissingReceiptCount} / {overview.expenseCount}
                     </p>
                     <p className="admin-accounting-kpi-sub">
                       {overview.expensesMissingReceiptCount === 0
-                        ? 'All expenses have a receipt'
-                        : `${overview.expensesMissingReceiptCount} missing — click to fix`}
+                        ? 'Receipts and bill checks complete'
+                        : `${overview.expensesMissingReceiptCount} incomplete — click to list`}
                     </p>
                   </div>
                 </button>
@@ -758,19 +781,19 @@ export function AccountingOverviewClient({
                   type="button"
                   className="admin-accounting-kpi admin-accounting-kpi-yellow admin-accounting-kpi-clickable"
                   onClick={() => focusMissingReceipts('income')}
-                  aria-label="Show income records with missing proof of payment"
-                  title="Click to see which income records are missing proof of payment"
+                  aria-label="Show income records missing uploaded proof"
+                  title="Non-Stripe income should have a proof file; Stripe is satisfied by the Stripe dashboard"
                 >
                   <span className="material-symbols-outlined admin-accounting-kpi-icon admin-accounting-kpi-icon-yellow">
                     request_quote
                   </span>
                   <div>
-                    <p className="admin-accounting-kpi-label">Income proof</p>
+                    <p className="admin-accounting-kpi-label">Income proof (non-Stripe)</p>
                     <p className="admin-accounting-kpi-value">
                       {overview.incomeCount - overview.incomeMissingProofCount} / {overview.incomeCount}
                     </p>
                     <p className="admin-accounting-kpi-sub">
-                      {overview.incomeMissingProofCount} missing proof — click to fix
+                      {overview.incomeMissingProofCount} need upload — click to list
                     </p>
                   </div>
                 </button>
@@ -860,17 +883,38 @@ export function AccountingOverviewClient({
               value={expensesFilters.receipt ?? 'all'}
               onChange={(e) => handleExpenseFilterChange({ receipt: e.target.value })}
               aria-label="Receipt status"
-              title="Filter by paper-bill / receipt status"
+              title="Filter by receipt image on file"
             >
               <option value="all">All receipt status</option>
               <option value="missing">Missing receipt only</option>
               <option value="attached">Has receipt</option>
             </select>
-            {(expensesFilters.category || expensesFilters.payment_method || expensesFilters.receipt) && (
+            <select
+              className="admin-select"
+              value={expensesFilters.documentation ?? 'all'}
+              onChange={(e) => handleExpenseFilterChange({ documentation: e.target.value })}
+              aria-label="Documentation"
+              title="Receipt + bill checklist (transfer + shop bill per line)"
+            >
+              <option value="all">All documentation</option>
+              <option value="incomplete">Incomplete only</option>
+              <option value="complete">Complete only</option>
+            </select>
+            {(expensesFilters.category ||
+              expensesFilters.payment_method ||
+              expensesFilters.receipt ||
+              expensesFilters.documentation) && (
               <button
                 type="button"
                 className="admin-btn admin-btn-outline admin-btn-sm"
-                onClick={() => handleExpenseFilterChange({ category: undefined, payment_method: undefined, receipt: undefined })}
+                onClick={() =>
+                  handleExpenseFilterChange({
+                    category: undefined,
+                    payment_method: undefined,
+                    receipt: undefined,
+                    documentation: undefined,
+                  })
+                }
               >
                 Clear
               </button>
@@ -890,12 +934,13 @@ export function AccountingOverviewClient({
               <div className="admin-expenses-summary">
                 <span className="admin-hint">
                   {expensesData.total} expense{expensesData.total !== 1 ? 's' : ''} found
-                  {expensesData.missingReceiptCount > 0 && (
+                  {expensesData.missingReceiptCount > 0 &&
+                    expensesFilters.documentation !== 'incomplete' && (
                     <>
                       {' · '}
                       <strong style={{ color: '#d97706' }}>
-                        {expensesData.missingReceiptCount} missing receipt
-                        {expensesData.missingReceiptCount !== 1 ? 's' : ''}
+                        {expensesData.missingReceiptCount} expense
+                        {expensesData.missingReceiptCount !== 1 ? 's' : ''} need documentation
                       </strong>
                     </>
                   )}
@@ -927,6 +972,7 @@ export function AccountingOverviewClient({
                           <th>Category</th>
                           <th>Payment</th>
                           <th>Receipt</th>
+                          <th>Bills</th>
                           <th className="admin-expenses-col-amount">Amount</th>
                           <th style={{ width: 1 }} aria-label="Actions" />
                         </tr>
@@ -962,6 +1008,23 @@ export function AccountingOverviewClient({
                               ) : (
                                 <span className="admin-badge admin-badge-payment-pending">Missing</span>
                               )}
+                            </td>
+                            <td>
+                              {(() => {
+                                const p = billTrackingProgress(exp.bill_tracking);
+                                if (!p) {
+                                  return <span className="admin-hint">—</span>;
+                                }
+                                const done = p.done === p.total;
+                                return (
+                                  <span
+                                    className={`admin-badge ${done ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
+                                    title="Transfer + shop bill checks per line"
+                                  >
+                                    {p.done}/{p.total}
+                                  </span>
+                                );
+                              })()}
                             </td>
                             <td className="admin-expenses-amount">
                               {formatAmount(exp.amount, exp.currency)}
@@ -1168,13 +1231,16 @@ export function AccountingOverviewClient({
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <select className="admin-select" value={incomeFilters.receipt ?? 'all'}
+            <select
+              className="admin-select"
+              value={incomeFilters.receipt ?? 'all'}
               onChange={(e) => handleIncomeFilterChange({ receipt: e.target.value })}
               aria-label="Proof status"
-              title="Filter by proof of payment status">
+              title="Missing = non-Stripe without file. Has proof = Stripe or file attached."
+            >
               <option value="all">All proof status</option>
-              <option value="missing">Missing proof only</option>
-              <option value="attached">Has proof</option>
+              <option value="missing">Missing proof only (non-Stripe)</option>
+              <option value="attached">Stripe or file attached</option>
             </select>
             {(incomeFilters.source_mode || incomeFilters.source_type || incomeFilters.income_status || incomeFilters.receipt) && (
               <button type="button" className="admin-btn admin-btn-outline admin-btn-sm"
@@ -1301,9 +1367,11 @@ export function AccountingOverviewClient({
                           </span>
                         </td>
                         <td>
-                          {rec.receipt_attached
-                            ? <span className="admin-badge admin-badge-paid">✓</span>
-                            : <span className="admin-badge admin-badge-payment-pending">—</span>}
+                          {incomeDocumentationComplete(rec) ? (
+                            <span className="admin-badge admin-badge-paid" title="Proof on file or Stripe (no upload required)">✓</span>
+                          ) : (
+                            <span className="admin-badge admin-badge-payment-pending" title="Upload a proof for non-Stripe income">—</span>
+                          )}
                         </td>
                         <td className="admin-expenses-amount">{fmt(rec.amount)}</td>
                       </tr>

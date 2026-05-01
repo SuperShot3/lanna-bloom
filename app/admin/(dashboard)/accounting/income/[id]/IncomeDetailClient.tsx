@@ -171,11 +171,18 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
           } />
         )}
         {record.external_reference && <Row label="External Ref" value={record.external_reference} />}
-        <Row label="Proof File" value={
-          record.receipt_attached
-            ? <span className="admin-badge admin-badge-paid">Attached</span>
-            : <span className="admin-badge admin-badge-payment-pending">None</span>
-        } />
+        <Row
+          label="Proof File"
+          value={
+            isStripe && !record.receipt_attached ? (
+              <span className="admin-hint">Not required — use Stripe dashboard for receipts</span>
+            ) : record.receipt_attached ? (
+              <span className="admin-badge admin-badge-paid">Attached</span>
+            ) : (
+              <span className="admin-badge admin-badge-payment-pending">Missing</span>
+            )
+          }
+        />
         {record.notes && <Row label="Notes" value={record.notes} />}
         <Row label="Created by"  value={record.created_by} />
         <Row label="Created at"  value={fmtDateTime(record.created_at)} />

@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
+import type { ExpenseBillLine } from '@/types/expenses';
+
+function parseBillTrackingBody(raw: unknown): ExpenseBillLine[] | null {
+  if (!Array.isArray(raw)) return null;
+  if (raw.length > 40) return null;
+  const out: ExpenseBillLine[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    if (typeof o.line_id !== 'string' || o.line_id.length > 120) continue;
+    out.push({
+      line_id: o.line_id,
+      label:
+        typeof o.label === 'string' && o.label.length <= 500
+          ? o.label
+          : o.line_id,
+      transfer_to_shop: o.transfer_to_shop === true,
+      bill_from_shop: o.bill_from_shop === true,
+    });
+  }
+  return out.length > 0 ? out : null;
+}
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export async function GET(
@@ -116,6 +138,16 @@ export async function PATCH(
   }
   if ('notes' in b) {
     updateInput.notes = typeof b.notes === 'string' ? b.notes.trim() || null : null;
+  }
+  if ('bill_tracking' in b) {
+    const parsed = parseBillTrackingBody(b.bill_tracking);
+    if (parsed === null) {
+      return NextResponse.json(
+        { error: 'bill_tracking must be a non-empty array of valid line objects' },
+        { status: 400 }
+      );
+    }
+    updateInput.bill_tracking = parsed;
   }
 
   if (Object.keys(updateInput).length === 0) {

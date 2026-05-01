@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getExpenses, createExpense } from '@/lib/expenses/expenseQueries';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS, type DocumentationFilter } from '@/types/expenses';
 
 const VALID_CATEGORIES = EXPENSE_CATEGORIES.map((c) => c.value);
 const VALID_PAYMENT_METHODS = PAYMENT_METHODS.map((m) => m.value);
@@ -16,12 +16,16 @@ export async function GET(request: NextRequest) {
     receiptRaw === 'missing' || receiptRaw === 'attached' || receiptRaw === 'all'
       ? receiptRaw
       : undefined;
+  const docRaw = sp.get('documentation');
+  const documentation: DocumentationFilter | undefined =
+    docRaw === 'incomplete' || docRaw === 'complete' ? docRaw : undefined;
   const filters = {
     dateFrom:       sp.get('dateFrom')       ?? undefined,
     dateTo:         sp.get('dateTo')         ?? undefined,
     category:       sp.get('category')       ?? undefined,
     payment_method: sp.get('payment_method') ?? undefined,
     receipt,
+    documentation,
   };
   const page     = Math.max(1, parseInt(sp.get('page') ?? '1', 10));
   const pageSize = Math.min(100, Math.max(1, parseInt(sp.get('pageSize') ?? '30', 10)));

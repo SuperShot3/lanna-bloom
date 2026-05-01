@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { IncomeRecord, IncomeFilters } from '@/types/accounting';
-import { INCOME_SOURCE_TYPES, INCOME_STATUSES } from '@/types/accounting';
+import { INCOME_SOURCE_TYPES, INCOME_STATUSES, incomeDocumentationComplete } from '@/types/accounting';
 
 interface Props {
   initialRecords: IncomeRecord[];
@@ -130,10 +130,10 @@ export function IncomeListClient({
         <select className="admin-select" value={initialFilters.receipt ?? 'all'}
           onChange={(e) => handleFilterChange({ receipt: e.target.value })}
           aria-label="Proof status"
-          title="Filter by proof of payment status">
+          title="Missing = non-Stripe without file. Has proof = Stripe or file attached.">
           <option value="all">All proof status</option>
-          <option value="missing">Missing proof only</option>
-          <option value="attached">Has proof</option>
+          <option value="missing">Missing proof only (non-Stripe)</option>
+          <option value="attached">Stripe or file attached</option>
         </select>
         {hasFilters && (
           <button type="button" className="admin-btn admin-btn-outline admin-btn-sm"
@@ -235,9 +235,11 @@ export function IncomeListClient({
                     </td>
                     <td><StatusBadge status={rec.income_status} /></td>
                     <td>
-                      {rec.receipt_attached
-                        ? <span className="admin-badge admin-badge-paid">✓</span>
-                        : <span className="admin-badge admin-badge-payment-pending">—</span>}
+                      {incomeDocumentationComplete(rec) ? (
+                        <span className="admin-badge admin-badge-paid" title="Proof on file or Stripe">✓</span>
+                      ) : (
+                        <span className="admin-badge admin-badge-payment-pending" title="Upload proof (non-Stripe)">—</span>
+                      )}
                     </td>
                     <td className="admin-expenses-amount">{fmt(rec.amount)}</td>
                   </tr>

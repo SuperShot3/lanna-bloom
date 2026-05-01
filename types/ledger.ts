@@ -27,9 +27,9 @@ export interface LedgerRow {
   currency: string;
   detailHref: string;
   /**
-   * Whether the row has a paper bill / proof file attached.
-   * - income: `proof_file_path` present
-   * - expense: `receipt_attached`
+   * Whether the row has documentation marked complete.
+   * - income: proof file when required; Stripe counts as complete without upload
+   * - expense: receipt on file and bill checklist complete when checklist rows exist
    * - transfer: `attachment_attached`
    * - null when not applicable (legacy rows without the field).
    */

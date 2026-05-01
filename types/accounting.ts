@@ -58,11 +58,25 @@ export interface IncomeFilters {
   source_type?: string;
   income_status?: string;
   /**
-   * `missing`  → only rows without a proof file attached
-   * `attached` → only rows with a proof file attached
+   * `missing`  → non-Stripe rows still missing an uploaded proof (Stripe uses dashboard receipts)
+   * `attached` → Stripe **or** proof file uploaded
    * `all` / undefined → no filter
    */
   receipt?: 'all' | 'missing' | 'attached';
+}
+
+/**
+ * Whether income is considered fully documented for compliance KPIs and the ledger.
+ * Stripe card/online: no upload required (official record in Stripe).
+ * Other payment methods: require `receipt_attached` / proof file.
+ * Cancelled rows are treated as complete (not counted as gaps).
+ */
+export function incomeDocumentationComplete(
+  r: Pick<IncomeRecord, 'payment_method' | 'receipt_attached' | 'income_status'>
+): boolean {
+  if (r.income_status === 'cancelled') return true;
+  if (r.payment_method === 'stripe') return true;
+  return r.receipt_attached === true;
 }
 
 // ─── UI constants ─────────────────────────────────────────────────────────────

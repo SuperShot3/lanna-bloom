@@ -2,7 +2,7 @@ import { getLedgerEntries } from '@/lib/accounting/ledger';
 import { getAccountingOverview, getIncomeRecords } from '@/lib/accounting/incomeRecords';
 import { getAccountingTransfers } from '@/lib/accounting/transfers';
 import { getExpenses } from '@/lib/expenses/expenseQueries';
-import type { ReceiptFilter } from '@/types/expenses';
+import type { DocumentationFilter, ReceiptFilter } from '@/types/expenses';
 import { AccountingOverviewClient } from './AccountingOverviewClient';
 
 interface PageProps {
@@ -16,6 +16,7 @@ interface PageProps {
     source_type?: string;
     income_status?: string;
     receipt?: string;
+    documentation?: string;
     period?: string;
     page?: string;
   }>;
@@ -35,6 +36,10 @@ function currentMonthRange(): { dateFrom: string; dateTo: string } {
 
 function isReceiptFilter(v: string | undefined): v is ReceiptFilter {
   return v === 'missing' || v === 'attached' || v === 'all';
+}
+
+function documentationFilterFromParam(v: string | undefined): DocumentationFilter | undefined {
+  return v === 'incomplete' || v === 'complete' ? v : undefined;
 }
 
 export default async function AdminAccountingPage({ searchParams }: PageProps) {
@@ -62,6 +67,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
   const receiptFilter: ReceiptFilter | undefined = isReceiptFilter(params.receipt)
     ? params.receipt
     : undefined;
+  const documentationFilter = documentationFilterFromParam(params.documentation);
 
   const expenseFilters = {
     dateFrom:       effectivePeriod.dateFrom,
@@ -69,6 +75,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
     category:       params.category,
     payment_method: params.payment_method,
     receipt:        receiptFilter,
+    documentation:  documentationFilter,
   };
 
   const incomeFilters = {

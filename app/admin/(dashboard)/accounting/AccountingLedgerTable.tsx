@@ -169,7 +169,7 @@ export function AccountingLedgerTable({ ledger, periodLabel }: Props) {
         <SubTabButton
           current={subView}
           value="missing"
-          label="Missing receipts"
+          label="Missing docs"
           count={ledger.counts.missingReceipts}
           onSelect={setSubView}
           warn={ledger.counts.missingReceipts > 0}
@@ -212,7 +212,7 @@ export function AccountingLedgerTable({ ledger, periodLabel }: Props) {
       {allRows.length === 0 ? (
         <p className="admin-empty">
           {subView === 'missing'
-            ? 'No missing receipts in this period — everything has a paper bill or proof attached. 🎉'
+            ? 'No missing documentation in this period — income proof and expense receipts/checklists are complete.'
             : 'No transactions in this period.'}
         </p>
       ) : showMonthly ? (

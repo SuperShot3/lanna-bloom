@@ -219,7 +219,11 @@ export function CostsAndProfitCard({
     if (!res.ok) {
       throw new Error(data.error ?? 'Failed to open receipt image');
     }
-    window.location.assign(data.signedUrl);
+    if (download) {
+      window.location.assign(data.signedUrl);
+    } else {
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleViewReceipt = async () => {
