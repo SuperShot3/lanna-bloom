@@ -68,10 +68,6 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [billLines, setBillLines] = useState<ExpenseBillLine[]>(expense.bill_tracking ?? []);
   const [billSaving, setBillSaving] = useState(false);
   const [paperBillPdfBusy, setPaperBillPdfBusy] = useState(false);
-  const [deliveryCostInput, setDeliveryCostInput] = useState('');
-  const [deliveryCostLoading, setDeliveryCostLoading] = useState(false);
-  const [deliveryCostSaving, setDeliveryCostSaving] = useState(false);
-  const [deliveryCostMessage, setDeliveryCostMessage] = useState<string | null>(null);
   const receiptCount = receipts.length;
   const currentReceiptName = receiptCount > 0 ? receipts[0].file_name : receiptFileName(expenseState.receipt_file_path);
 
@@ -95,43 +91,6 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   useEffect(() => {
     void loadReceipts();
   }, [expenseState.id]);
-
-  useEffect(() => {
-    const linkedOrderId = expenseState.linked_order_id;
-    if (!linkedOrderId) {
-      setDeliveryCostInput('');
-      setDeliveryCostMessage(null);
-      return;
-    }
-    let cancelled = false;
-    const loadOrderCosts = async () => {
-      setDeliveryCostLoading(true);
-      try {
-        const res = await fetch(`/api/admin/orders/${encodeURIComponent(linkedOrderId)}/costs`, {
-          cache: 'no-store',
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          if (!cancelled) setDeliveryCostMessage(data.error ?? 'Failed to load delivery cost');
-          return;
-        }
-        const raw = data?.order?.delivery_cost;
-        const num = typeof raw === 'number' ? raw : Number(raw ?? 0);
-        if (!cancelled) {
-          setDeliveryCostInput(Number.isFinite(num) && num >= 0 ? String(num) : '');
-          setDeliveryCostMessage(null);
-        }
-      } catch {
-        if (!cancelled) setDeliveryCostMessage('Failed to load delivery cost');
-      } finally {
-        if (!cancelled) setDeliveryCostLoading(false);
-      }
-    };
-    void loadOrderCosts();
-    return () => {
-      cancelled = true;
-    };
-  }, [expenseState.linked_order_id]);
 
   useEffect(() => {
     setBillLines(expenseState.bill_tracking ?? []);
@@ -298,52 +257,6 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
       setReceiptError('Network error while generating PDF');
     } finally {
       setPaperBillPdfBusy(false);
-    }
-  };
-
-  const parseDeliveryInput = (value: string): number | null => {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed) || parsed < 0) return null;
-    return Math.round(parsed * 100) / 100;
-  };
-
-  const handleSaveDeliveryCost = async () => {
-    const linkedOrderId = expenseState.linked_order_id;
-    if (!linkedOrderId || deliveryCostSaving) return;
-    const parsed = parseDeliveryInput(deliveryCostInput);
-    if (parsed == null) {
-      setDeliveryCostMessage('Delivery cost must be a number >= 0');
-      return;
-    }
-    setDeliveryCostSaving(true);
-    setDeliveryCostMessage(null);
-    try {
-      const res = await fetch(`/api/admin/orders/${encodeURIComponent(linkedOrderId)}/costs`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delivery_cost: parsed }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setDeliveryCostMessage(data.error ?? 'Failed to save delivery cost');
-        return;
-      }
-      const refreshedRes = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseState.id)}`, {
-        cache: 'no-store',
-      });
-      const refreshed = await refreshedRes.json().catch(() => ({}));
-      if (refreshedRes.ok && refreshed?.expense) {
-        setExpenseState(refreshed.expense as Expense);
-      }
-      setDeliveryCostInput(String(parsed));
-      setDeliveryCostMessage('Delivery cost updated');
-      router.refresh();
-    } catch {
-      setDeliveryCostMessage('Failed to save delivery cost');
-    } finally {
-      setDeliveryCostSaving(false);
     }
   };
 
@@ -527,39 +440,6 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               </tbody>
             </table>
           </div>
-        </section>
-      )}
-
-      {expenseState.linked_order_id && (
-        <section className="admin-expenses-bill-checklist" aria-label="Paper bill request">
-          <h2 className="admin-accounting-section-title">Order-linked delivery cost</h2>
-          <p className="admin-hint admin-accounting-section-hint">
-            Update delivery cost for this order here. It syncs back to order costs and updates this expense total.
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-            <input
-              type="number"
-              min={0}
-              step={0.01}
-              className="admin-input"
-              style={{ maxWidth: 180 }}
-              value={deliveryCostInput}
-              onChange={(e) => setDeliveryCostInput(e.target.value)}
-              disabled={deliveryCostLoading || deliveryCostSaving}
-              placeholder="Delivery THB"
-              aria-label="Delivery cost in THB"
-            />
-            <button
-              type="button"
-              className="admin-btn admin-btn-sm"
-              onClick={() => void handleSaveDeliveryCost()}
-              disabled={deliveryCostLoading || deliveryCostSaving}
-            >
-              {deliveryCostSaving ? 'Saving…' : 'Save delivery'}
-            </button>
-            {deliveryCostLoading ? <span className="admin-hint">Loading…</span> : null}
-          </div>
-          {deliveryCostMessage ? <p className="admin-hint">{deliveryCostMessage}</p> : null}
         </section>
       )}
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { mergeBillTracking, resolveBillLinesTarget } from '@/lib/expenses/billTracking';
+import { parseExpenseBillTrackingJson } from '@/types/expenses';
 
 /** Returns { value, invalid }. invalid=true means reject the request. */
 function parseCost(value: unknown): { value: number | null; invalid: boolean } {
@@ -193,7 +195,7 @@ export async function PATCH(
 
     const { data: existingExpense, error: existingExpenseErr } = await supabase
       .from('expenses')
-      .select('id, receipt_attached, receipt_file_path')
+      .select('id, receipt_attached, receipt_file_path, bill_tracking')
       .eq('linked_order_id', order_id.trim())
       .eq('category', 'flowers')
       .limit(1)
@@ -203,6 +205,11 @@ export async function PATCH(
     }
 
     let cogsExpense: { id: string; receipt_attached: boolean; receipt_file_path: string | null } | null = null;
+    const checklistTemplates = await resolveBillLinesTarget(order_id.trim(), 'flowers');
+    const mergedBillTracking = mergeBillTracking(
+      parseExpenseBillTrackingJson(existingExpense?.bill_tracking),
+      checklistTemplates
+    );
     if (existingExpense?.id) {
       const { data: updatedExpense, error: updateExpenseErr } = await supabase
         .from('expenses')
@@ -213,6 +220,7 @@ export async function PATCH(
           description: cogsExpenseDesc,
           payment_method: 'bank_transfer',
           notes: 'Auto from order COGS',
+          bill_tracking: mergedBillTracking,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingExpense.id)
@@ -241,6 +249,7 @@ export async function PATCH(
           created_by: adminEmail,
           notes: 'Auto from order COGS',
           linked_order_id: order_id.trim(),
+          bill_tracking: mergedBillTracking,
         })
         .select('id, receipt_attached, receipt_file_path')
         .single();
@@ -265,41 +274,4 @@ export async function PATCH(
     console.error('[admin] costs update exception:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
-}
-
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ order_id: string }> }
-) {
-  const authResult = await requireRole(['OWNER', 'MANAGER']);
-  if (!authResult.ok) return authResult.response;
-
-  const { order_id } = await params;
-  if (!order_id?.trim()) {
-    return NextResponse.json({ error: 'order_id required' }, { status: 400 });
-  }
-
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
-  }
-
-  const { data, error } = await supabase
-    .from('orders')
-    .select('order_id, cogs_amount, delivery_cost, payment_fee')
-    .eq('order_id', order_id.trim())
-    .single();
-
-  if (error || !data) {
-    return NextResponse.json({ error: error?.message ?? 'Order not found' }, { status: 404 });
-  }
-
-  return NextResponse.json({
-    order: {
-      order_id: data.order_id,
-      cogs_amount: data.cogs_amount,
-      delivery_cost: data.delivery_cost,
-      payment_fee: data.payment_fee,
-    },
-  });
 }

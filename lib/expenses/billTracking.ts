@@ -175,6 +175,8 @@ export function billLinesNeedPersist(
     const prevV = prev.vendor_bill_applicable !== false;
     const nextV = l.vendor_bill_applicable !== false;
     if (prevV !== nextV) return true;
+    // Keep checklist text in sync (e.g. "Delivery · {amount} THB" after delivery_cost changes).
+    if (prev.label !== l.label) return true;
   }
   return false;
 }
