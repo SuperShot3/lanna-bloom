@@ -100,7 +100,11 @@ export async function POST(
     });
   } catch (e) {
     console.error('[paper-bill-request] PDF build failed:', e);
-    return NextResponse.json({ error: 'Failed to build PDF' }, { status: 500 });
+    const detail = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      { error: 'Failed to build PDF', detail: detail.slice(0, 500) },
+      { status: 500 }
+    );
   }
 
   const nowIso = new Date().toISOString();

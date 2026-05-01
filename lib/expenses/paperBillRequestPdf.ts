@@ -2,11 +2,38 @@ import 'server-only';
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage } from 'pdf-lib';
 import type { Expense } from '@/types/expenses';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
-import { formatThb } from '@/lib/costsUtils';
 
 const PAGE_W = 595;
 const PAGE_H = 842;
 const MARGIN = 48;
+
+/** THB for PDF — avoid `฿` so standard fonts (WinAnsi) never throw. */
+function formatThbPdfAmount(n: number | null | undefined): string {
+  if (n == null || Number.isNaN(n)) return 'THB n/a';
+  const s = Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return `THB ${s}`;
+}
+
+/**
+ * Standard 14 fonts only support WinAnsi; Thai or symbols cause pdf-lib to throw.
+ * When we only have Helvetica, keep printable ASCII only.
+ */
+function winAnsiSafe(s: string): string {
+  return Array.from(s, (ch) => {
+    const c = ch.codePointAt(0)!;
+    return c >= 0x20 && c <= 0x7e ? ch : '?';
+  }).join('');
+}
+
+interface BodyFont {
+  font: PDFFont;
+  /** True when an embedded Unicode font loaded (Thai / full names OK). */
+  unicode: boolean;
+}
+
+function prepareBodyText(s: string, bodyFont: BodyFont): string {
+  return bodyFont.unicode ? s : winAnsiSafe(s);
+}
 
 function siteBaseUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
@@ -25,22 +52,38 @@ function absoluteImageUrl(snapshot: string | null): string | null {
   return t;
 }
 
-async function embedUnicodeFont(pdfDoc: PDFDocument): Promise<PDFFont> {
+async function embedBodyFont(pdfDoc: PDFDocument): Promise<BodyFont> {
   const urls = [
     'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-thai@5.1.0/files/noto-sans-thai-thai-400-normal.ttf',
+    'https://unpkg.com/@fontsource/noto-sans-thai@5.1.0/files/noto-sans-thai-thai-400-normal.ttf',
+    'https://cdn.jsdelivr.net/gh/fontsource/font-files@main/fonts/google/noto-sans-thai/files/noto-sans-thai-thai-400-normal.ttf',
   ];
+  const timeoutMs = 20_000;
+  const signal =
+    typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
+      ? AbortSignal.timeout(timeoutMs)
+      : undefined;
+
   for (const url of urls) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+      const res = await fetch(url, { signal });
       if (!res.ok) continue;
-      const bytes = await res.arrayBuffer();
+      const bytes = new Uint8Array(await res.arrayBuffer());
       if (bytes.byteLength < 5000) continue;
-      return await pdfDoc.embedFont(bytes);
+      let font: PDFFont;
+      try {
+        font = await pdfDoc.embedFont(bytes, { subset: true });
+      } catch {
+        font = await pdfDoc.embedFont(bytes);
+      }
+      return { font, unicode: true };
     } catch {
       continue;
     }
   }
-  return pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  return { font, unicode: false };
 }
 
 async function embedRasterImage(
@@ -66,8 +109,12 @@ async function embedRasterImage(
 
 async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
   try {
+    const imgSignal =
+      typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
+        ? AbortSignal.timeout(12_000)
+        : undefined;
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(12_000),
+      signal: imgSignal,
       headers: { Accept: 'image/*' },
     });
     if (!res.ok) return null;
@@ -80,7 +127,7 @@ async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
 
 function drawWrapped(
   page: { drawText: (t: string, o: Record<string, unknown>) => void },
-  font: PDFFont,
+  bodyFont: BodyFont,
   text: string,
   x: number,
   y: number,
@@ -88,7 +135,9 @@ function drawWrapped(
   size: number,
   lineHeight: number
 ): number {
-  const words = text.split(/\s+/).filter(Boolean);
+  const safe = prepareBodyText(text, bodyFont);
+  const font = bodyFont.font;
+  const words = safe.split(/\s+/).filter(Boolean);
   let line = '';
   let cy = y;
   const flush = () => {
@@ -125,8 +174,9 @@ export interface PaperBillPdfInput {
 export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promise<Uint8Array> {
   const { expense, order, items, receiptFiles } = input;
   const pdfDoc = await PDFDocument.create();
-  const font = await embedUnicodeFont(pdfDoc);
+  const bodyFont = await embedBodyFont(pdfDoc);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const { font } = bodyFont;
 
   let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
   let y = PAGE_H - MARGIN;
@@ -141,31 +191,43 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
   });
   y -= 28;
 
-  page.drawText(`Order: ${order.order_id}`, { x: MARGIN, y, size: 11, font, color: rgb(0.2, 0.2, 0.25) });
+  page.drawText(prepareBodyText(`Order: ${order.order_id}`, bodyFont), {
+    x: MARGIN,
+    y,
+    size: 11,
+    font,
+    color: rgb(0.2, 0.2, 0.25),
+  });
   y -= 16;
-  page.drawText(`Expense: ${expense.id}`, { x: MARGIN, y, size: 10, font, color: rgb(0.35, 0.35, 0.4) });
+  page.drawText(prepareBodyText(`Expense: ${expense.id}`, bodyFont), {
+    x: MARGIN,
+    y,
+    size: 10,
+    font,
+    color: rgb(0.35, 0.35, 0.4),
+  });
   y -= 18;
 
   const cust =
     order.customer_name?.trim() ||
     order.recipient_name?.trim() ||
-    '—';
-  const contactPref = order.contact_preference?.trim() || '—';
-  const phone = order.phone?.trim() || order.recipient_phone?.trim() || '—';
-  const email = order.customer_email?.trim() || '—';
-  const amt = formatThb(expense.amount);
+    'n/a';
+  const contactPref = order.contact_preference?.trim() || 'n/a';
+  const phone = order.phone?.trim() || order.recipient_phone?.trim() || 'n/a';
+  const email = order.customer_email?.trim() || 'n/a';
+  const amt = formatThbPdfAmount(expense.amount);
 
-  y = drawWrapped(page, font, `Customer: ${cust}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
+  y = drawWrapped(page, bodyFont, `Customer: ${cust}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
   y -= 4;
-  y = drawWrapped(page, font, `Preferred contact: ${contactPref}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
+  y = drawWrapped(page, bodyFont, `Preferred contact: ${contactPref}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
   y -= 4;
-  y = drawWrapped(page, font, `Phone: ${phone}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
+  y = drawWrapped(page, bodyFont, `Phone: ${phone}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
   y -= 4;
-  y = drawWrapped(page, font, `Email: ${email}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
+  y = drawWrapped(page, bodyFont, `Email: ${email}`, MARGIN, y, PAGE_W - 2 * MARGIN, 11, 14);
   y -= 12;
   y = drawWrapped(
     page,
-    font,
+    bodyFont,
     `Amount paid to supplier (expense): ${amt} · ${expense.description}`,
     MARGIN,
     y,
@@ -195,7 +257,7 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
     }
     const label =
       `${it.bouquet_title ?? it.bouquet_id ?? 'Item'}${it.size ? ` · ${it.size}` : ''}` +
-      (it.price != null ? ` · ${formatThb(it.price)}` : '');
+      (it.price != null ? ` · ${formatThbPdfAmount(it.price)}` : '');
 
     const url = absoluteImageUrl(it.image_url_snapshot ?? null);
     let img: PDFImage | null = null;
@@ -209,10 +271,10 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
       const w = img.width * scale;
       const h = img.height * scale;
       page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
-      y = drawWrapped(page, font, label, MARGIN + thumbW + 10, y, PAGE_W - 2 * MARGIN - thumbW - 10, 10, 13);
+      y = drawWrapped(page, bodyFont, label, MARGIN + thumbW + 10, y, PAGE_W - 2 * MARGIN - thumbW - 10, 10, 13);
       y -= Math.max(h - 14, 8);
     } else {
-      y = drawWrapped(page, font, `${label} (no product image on file)`, MARGIN, y, PAGE_W - 2 * MARGIN, 10, 13);
+      y = drawWrapped(page, bodyFont, `${label} (no product image on file)`, MARGIN, y, PAGE_W - 2 * MARGIN, 10, 13);
       y -= 8;
     }
     y -= 10;
@@ -236,7 +298,16 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
     for (const { bytes, label } of receiptFiles) {
       const img = await embedRasterImage(pdfDoc, bytes);
       if (!img) {
-        y = drawWrapped(page, font, `${label} (image format not embedded — open in admin)`, MARGIN, y, PAGE_W - 2 * MARGIN, 10, 13);
+        y = drawWrapped(
+          page,
+          bodyFont,
+          `${label} (image format not embedded - open in admin)`,
+          MARGIN,
+          y,
+          PAGE_W - 2 * MARGIN,
+          10,
+          13
+        );
         y -= 16;
         continue;
       }
@@ -249,7 +320,13 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
         page = pdfDoc.addPage([PAGE_W, PAGE_H]);
         y = PAGE_H - MARGIN;
       }
-      page.drawText(label, { x: MARGIN, y, size: 9, font, color: rgb(0.35, 0.35, 0.4) });
+      page.drawText(prepareBodyText(label, bodyFont), {
+        x: MARGIN,
+        y,
+        size: 9,
+        font,
+        color: rgb(0.35, 0.35, 0.4),
+      });
       y -= 12;
       page.drawImage(img, { x: MARGIN, y: y - h, width: w, height: h });
       y -= h + 24;
@@ -262,7 +339,7 @@ export async function buildPaperBillRequestPdf(input: PaperBillPdfInput): Promis
     page = pdfDoc.addPage([PAGE_W, PAGE_H]);
     y = PAGE_H - MARGIN;
   }
-  drawWrapped(page, font, footer, MARGIN, y, PAGE_W - 2 * MARGIN, 10, 13);
+  drawWrapped(page, bodyFont, footer, MARGIN, y, PAGE_W - 2 * MARGIN, 10, 13);
 
   return pdfDoc.save();
 }

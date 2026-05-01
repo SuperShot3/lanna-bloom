@@ -65,7 +65,10 @@ export function ExpensesListClient({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(typeof data.error === 'string' ? data.error : 'Failed to generate PDF');
+        const msg =
+          typeof data.error === 'string' ? data.error : 'Failed to generate PDF';
+        const detail = typeof data.detail === 'string' ? data.detail : '';
+        alert(detail ? `${msg}\n\n${detail}` : msg);
         return;
       }
       const blob = await res.blob();

@@ -231,7 +231,10 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
       );
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setReceiptError(typeof data.error === 'string' ? data.error : 'Failed to generate PDF');
+        const msg =
+          typeof data.error === 'string' ? data.error : 'Failed to generate PDF';
+        const detail = typeof data.detail === 'string' ? data.detail : '';
+        setReceiptError(detail ? `${msg} — ${detail}` : msg);
         return;
       }
       const blob = await res.blob();
