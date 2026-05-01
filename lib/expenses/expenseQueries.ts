@@ -8,6 +8,10 @@ import {
   resolveBillLinesTarget,
 } from '@/lib/expenses/billTracking';
 
+/** Identifies expense rows synced from PATCH `/api/admin/orders/[order_id]/costs`. */
+export const ORDER_COSTS_FLOWERS_SYNC_NOTE = 'Auto from order COGS';
+export const ORDER_COSTS_DELIVERY_SYNC_NOTE = 'Auto from order delivery cost';
+
 const TABLE = 'expenses';
 
 export interface ExpensesResult {
@@ -179,16 +183,55 @@ export async function getCogsExpenseByOrderId(orderId: string): Promise<Expense 
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from(TABLE)
     .select('*')
     .eq('linked_order_id', orderId)
     .eq('category', 'flowers')
-    .limit(1)
+    .eq('notes', ORDER_COSTS_FLOWERS_SYNC_NOTE)
     .maybeSingle();
 
   if (error) {
     console.error('[expenseQueries] getCogsExpenseByOrderId error:', error.message);
+    return null;
+  }
+
+  if ((data as Expense | null)?.id) {
+    return data as Expense;
+  }
+
+  ({ data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('linked_order_id', orderId)
+    .eq('category', 'flowers')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle());
+
+  if (error) {
+    console.error('[expenseQueries] getCogsExpenseByOrderId (fallback) error:', error.message);
+    return null;
+  }
+
+  return (data as Expense | null) ?? null;
+}
+
+/** Auto synced delivery-driver expense from order costs (`notes` distinguishes from manual Delivery rows). */
+export async function getDeliveryExpenseSyncedFromOrderCosts(orderId: string): Promise<Expense | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('linked_order_id', orderId)
+    .eq('category', 'delivery')
+    .eq('notes', ORDER_COSTS_DELIVERY_SYNC_NOTE)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[expenseQueries] getDeliveryExpenseSyncedFromOrderCosts error:', error.message);
     return null;
   }
 

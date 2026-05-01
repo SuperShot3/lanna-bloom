@@ -5,7 +5,7 @@ import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
 import { CostsAndProfitCard } from '@/app/admin/components/CostsAndProfitCard';
 import { canEditCosts } from '@/lib/adminRbac';
-import { getCogsExpenseByOrderId } from '@/lib/expenses/expenseQueries';
+import { getCogsExpenseByOrderId, getDeliveryExpenseSyncedFromOrderCosts } from '@/lib/expenses/expenseQueries';
 
 interface PageProps {
   params: Promise<{ order_id: string }>;
@@ -17,6 +17,7 @@ export default async function AccountingOrderCostsPage({ params }: PageProps) {
   const role = session?.user ? (session.user as { role?: string }).role : undefined;
   const { order, items, error } = await getOrderByOrderId(order_id);
   const cogsExpense = await getCogsExpenseByOrderId(order_id);
+  const deliveryExpense = await getDeliveryExpenseSyncedFromOrderCosts(order_id);
 
   if (error) {
     return (
@@ -76,6 +77,7 @@ export default async function AccountingOrderCostsPage({ params }: PageProps) {
         items={itemsToUse}
         canEdit={canEditCosts(role)}
         initialCogsExpense={cogsExpense}
+        initialDeliveryExpense={deliveryExpense}
       />
     </div>
   );

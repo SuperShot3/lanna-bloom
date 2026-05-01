@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
+import { deleteExpenseByIdCascade } from '@/lib/expenses/deleteExpenseByIdCascade';
 import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
 import type { ExpenseBillLine } from '@/types/expenses';
 
@@ -66,41 +67,15 @@ export async function DELETE(
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
   }
 
-  const existing = await getExpenseById(expenseId);
-  if (!existing) {
+  const result = await deleteExpenseByIdCascade(supabase, expenseId);
+
+  if (result.notFound) {
     return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
   }
 
-  const { data: receiptRows } = await supabase
-    .from('expense_receipt_images')
-    .select('file_path')
-    .eq('expense_id', expenseId);
-
-  const { error } = await supabase
-    .from('expenses')
-    .delete()
-    .eq('id', expenseId);
-
-  if (error) {
-    console.error('[expenses] delete error:', error.message);
+  if (result.error) {
+    console.error('[expenses] delete error:', result.error);
     return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 });
-  }
-
-  // Best-effort cleanup of attached receipt files (legacy + multi-image table).
-  const receiptPaths = new Set<string>();
-  if (existing.receipt_file_path) receiptPaths.add(existing.receipt_file_path);
-  for (const row of receiptRows ?? []) {
-    const p = typeof row.file_path === 'string' ? row.file_path : '';
-    if (p) receiptPaths.add(p);
-  }
-
-  if (receiptPaths.size > 0) {
-    const { error: storageError } = await supabase.storage
-      .from('receipts')
-      .remove(Array.from(receiptPaths));
-    if (storageError) {
-      console.error('[expenses] receipt cleanup error:', storageError.message);
-    }
   }
 
   return NextResponse.json({ ok: true });

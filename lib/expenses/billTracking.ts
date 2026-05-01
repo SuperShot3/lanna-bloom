@@ -60,27 +60,11 @@ function deliveryCostFromRow(row: { delivery_cost?: unknown } | null | undefined
   return Math.round(n * 100) / 100;
 }
 
-/** Append COGS delivery line when order has delivery_cost &gt; 0 (flowers / linked COGS expense). */
-function appendCogsDeliveryLine(
-  base: ExpenseBillLineTemplate[],
-  deliveryCost: number
-): ExpenseBillLineTemplate[] {
-  if (deliveryCost <= 0) return base;
-  return [
-    ...base,
-    {
-      line_id: 'order:delivery',
-      label: `Delivery · ${deliveryCost} THB`,
-      vendor_bill_applicable: false,
-    },
-  ];
-}
-
 /**
- * Resolve checklist rows for an expense: one row per order line when `linked_order_id`
- * is set (from `order_items`, else `order_json.items`), otherwise a single default row.
- * For **flowers** (order COGS) expenses, when the linked order has `delivery_cost` &gt; 0,
- * adds a **delivery** row (payment to driver only — one checklist step).
+ * Resolve checklist rows for an expense:
+ * - **delivery** category + linked order → one payment-to-driver line (linked order expense from costs sync).
+ * - Other categories + linked order → one row per order line (from `order_items`, else `order_json.items`).
+ * - No linked order → a single default row.
  */
 export async function resolveBillLinesTarget(
   linkedOrderId: string | null | undefined,
@@ -96,7 +80,17 @@ export async function resolveBillLinesTarget(
   }
 
   const oid = linkedOrderId.trim();
-  const includeCogsDelivery = expenseCategory === 'flowers';
+
+  if (expenseCategory === 'delivery') {
+    const { data: orderRow } = await supabase
+      .from('orders')
+      .select('delivery_cost')
+      .eq('order_id', oid)
+      .maybeSingle();
+    const d = deliveryCostFromRow(orderRow);
+    const label = d > 0 ? `Payment to driver · ${d} THB` : 'Payment to driver (linked order)';
+    return [{ line_id: 'order:delivery', label, vendor_bill_applicable: false }];
+  }
 
   const { data: rows } = await supabase
     .from('order_items')
@@ -105,42 +99,27 @@ export async function resolveBillLinesTarget(
     .order('id', { ascending: true });
 
   if (rows && rows.length > 0) {
-    const base = rows.map((oi) => ({
+    return rows.map((oi) => ({
       line_id: `oi:${oi.id}`,
       label: formatDbOrderItem(oi),
     }));
-    if (!includeCogsDelivery) return base;
-    const { data: orderRow } = await supabase
-      .from('orders')
-      .select('delivery_cost')
-      .eq('order_id', oid)
-      .maybeSingle();
-    return appendCogsDeliveryLine(base, deliveryCostFromRow(orderRow));
   }
 
   const { data: orderRow } = await supabase
     .from('orders')
-    .select('order_json, delivery_cost')
+    .select('order_json')
     .eq('order_id', oid)
     .maybeSingle();
 
   const jsonItems = extractItemsFromOrderJson(orderRow?.order_json);
   if (jsonItems.length > 0) {
-    const base = jsonItems.map((it, idx) => ({
+    return jsonItems.map((it, idx) => ({
       line_id: `oj:${idx}`,
       label: labelFromJsonItem(it, idx),
     }));
-    return appendCogsDeliveryLine(
-      base,
-      includeCogsDelivery ? deliveryCostFromRow(orderRow) : 0
-    );
   }
 
-  const base = [{ line_id: 'default', label: 'This purchase (linked order)' }];
-  return appendCogsDeliveryLine(
-    base,
-    includeCogsDelivery ? deliveryCostFromRow(orderRow) : 0
-  );
+  return [{ line_id: 'default', label: 'This purchase (linked order)' }];
 }
 
 /** Merge server-resolved line keys/labels with stored checkbox state. */
@@ -175,7 +154,6 @@ export function billLinesNeedPersist(
     const prevV = prev.vendor_bill_applicable !== false;
     const nextV = l.vendor_bill_applicable !== false;
     if (prevV !== nextV) return true;
-    // Keep checklist text in sync (e.g. "Delivery · {amount} THB" after delivery_cost changes).
     if (prev.label !== l.label) return true;
   }
   return false;

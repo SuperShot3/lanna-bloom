@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
+import { deleteExpenseByIdCascade } from '@/lib/expenses/deleteExpenseByIdCascade';
+import {
+  ORDER_COSTS_DELIVERY_SYNC_NOTE,
+  ORDER_COSTS_FLOWERS_SYNC_NOTE,
+} from '@/lib/expenses/expenseQueries';
 import { mergeBillTracking, resolveBillLinesTarget } from '@/lib/expenses/billTracking';
 import { parseExpenseBillTrackingJson } from '@/types/expenses';
 
@@ -157,7 +162,12 @@ export async function PATCH(
       updatePayload.cogs_amount = nextCogs;
     }
     const nextDelivery = hasDelivery ? (delivery_cost ?? null) : (existingOrder.delivery_cost ?? null);
-    const totalExpenseAmount = Math.round(((Number(nextCogs) || 0) + (Number(nextDelivery) || 0)) * 100) / 100;
+    const roundedCogs = Math.round((Number(nextCogs) || 0) * 100) / 100;
+    const rawDelNum = Number(nextDelivery);
+    const roundedDelivery =
+      nextDelivery != null && !Number.isNaN(rawDelNum) && rawDelNum > 0
+        ? Math.round(rawDelNum * 100) / 100
+        : 0;
 
     if (nextCogs == null || Number(nextCogs) <= 0) {
       return NextResponse.json(
@@ -184,8 +194,7 @@ export async function PATCH(
       );
     }
 
-    // Upsert COGS as an expense so it flows into Accounting automatically.
-    // We link by linked_order_id so we can update the same row when COGS changes.
+    // Upsert **flowers COGS** and **delivery (driver)** as separate expenses linked to this order.
     const expenseDateIso =
       (existingOrder.paid_at ? String(existingOrder.paid_at).slice(0, 10) : '') ||
       (existingOrder.created_at ? String(existingOrder.created_at).slice(0, 10) : '') ||
@@ -193,15 +202,31 @@ export async function PATCH(
     const cogsExpenseDesc = `COGS (flowers) — order ${order_id.trim()}`;
     const adminEmail = session.user.email ?? 'unknown';
 
-    const { data: existingExpense, error: existingExpenseErr } = await supabase
+    let { data: existingExpense, error: existingExpenseErr } = await supabase
       .from('expenses')
       .select('id, receipt_attached, receipt_file_path, bill_tracking')
       .eq('linked_order_id', order_id.trim())
       .eq('category', 'flowers')
-      .limit(1)
+      .eq('notes', ORDER_COSTS_FLOWERS_SYNC_NOTE)
       .maybeSingle();
+
     if (existingExpenseErr) {
       return NextResponse.json({ error: existingExpenseErr.message }, { status: 500 });
+    }
+
+    if (!existingExpense?.id) {
+      const { data: legacyFlowersExpense, error: legacyErr } = await supabase
+        .from('expenses')
+        .select('id, receipt_attached, receipt_file_path, bill_tracking')
+        .eq('linked_order_id', order_id.trim())
+        .eq('category', 'flowers')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (legacyErr) {
+        return NextResponse.json({ error: legacyErr.message }, { status: 500 });
+      }
+      existingExpense = legacyFlowersExpense;
     }
 
     let cogsExpense: { id: string; receipt_attached: boolean; receipt_file_path: string | null } | null = null;
@@ -214,12 +239,12 @@ export async function PATCH(
       const { data: updatedExpense, error: updateExpenseErr } = await supabase
         .from('expenses')
         .update({
-          amount: totalExpenseAmount,
+          amount: roundedCogs,
           currency: 'THB',
           date: expenseDateIso,
           description: cogsExpenseDesc,
           payment_method: 'bank_transfer',
-          notes: 'Auto from order COGS',
+          notes: ORDER_COSTS_FLOWERS_SYNC_NOTE,
           bill_tracking: mergedBillTracking,
           updated_at: new Date().toISOString(),
         })
@@ -238,7 +263,7 @@ export async function PATCH(
       const { data: insertedExpense, error: insertExpenseErr } = await supabase
         .from('expenses')
         .insert({
-          amount: totalExpenseAmount,
+          amount: roundedCogs,
           currency: 'THB',
           date: expenseDateIso,
           category: 'flowers',
@@ -247,7 +272,7 @@ export async function PATCH(
           receipt_file_path: null,
           receipt_attached: false,
           created_by: adminEmail,
-          notes: 'Auto from order COGS',
+          notes: ORDER_COSTS_FLOWERS_SYNC_NOTE,
           linked_order_id: order_id.trim(),
           bill_tracking: mergedBillTracking,
         })
@@ -263,12 +288,108 @@ export async function PATCH(
       };
     }
 
+    let deliveryExpense: {
+      id: string;
+      receipt_attached: boolean;
+      receipt_file_path: string | null;
+    } | null = null;
+
+    if (roundedDelivery <= 0) {
+      const { data: toDelete, error: listDelErr } = await supabase
+        .from('expenses')
+        .select('id')
+        .eq('linked_order_id', order_id.trim())
+        .eq('category', 'delivery')
+        .eq('notes', ORDER_COSTS_DELIVERY_SYNC_NOTE);
+      if (listDelErr) {
+        return NextResponse.json({ error: listDelErr.message }, { status: 500 });
+      }
+      for (const row of toDelete ?? []) {
+        const rid = String((row as { id?: unknown }).id ?? '');
+        if (!rid) continue;
+        const casc = await deleteExpenseByIdCascade(supabase, rid);
+        if (casc.error) {
+          return NextResponse.json({ error: casc.error }, { status: 500 });
+        }
+      }
+      deliveryExpense = null;
+    } else {
+      const deliveryExpenseDesc = `Delivery (driver) — order ${order_id.trim()}`;
+      const { data: existingDeliveryExpense, error: existingDeliveryErr } = await supabase
+        .from('expenses')
+        .select('id, receipt_attached, receipt_file_path, bill_tracking')
+        .eq('linked_order_id', order_id.trim())
+        .eq('category', 'delivery')
+        .eq('notes', ORDER_COSTS_DELIVERY_SYNC_NOTE)
+        .maybeSingle();
+      if (existingDeliveryErr) {
+        return NextResponse.json({ error: existingDeliveryErr.message }, { status: 500 });
+      }
+      const deliveryTemplates = await resolveBillLinesTarget(order_id.trim(), 'delivery');
+      const mergedDeliveryBill = mergeBillTracking(
+        parseExpenseBillTrackingJson(existingDeliveryExpense?.bill_tracking),
+        deliveryTemplates
+      );
+      if (existingDeliveryExpense?.id) {
+        const { data: updatedDel, error: updateDelErr } = await supabase
+          .from('expenses')
+          .update({
+            amount: roundedDelivery,
+            currency: 'THB',
+            date: expenseDateIso,
+            description: deliveryExpenseDesc,
+            payment_method: 'cash',
+            notes: ORDER_COSTS_DELIVERY_SYNC_NOTE,
+            bill_tracking: mergedDeliveryBill,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingDeliveryExpense.id)
+          .select('id, receipt_attached, receipt_file_path')
+          .single();
+        if (updateDelErr) {
+          return NextResponse.json({ error: updateDelErr.message }, { status: 500 });
+        }
+        deliveryExpense = {
+          id: String(updatedDel.id),
+          receipt_attached: updatedDel.receipt_attached === true,
+          receipt_file_path: (updatedDel.receipt_file_path as string | null) ?? null,
+        };
+      } else {
+        const { data: insertedDel, error: insertDelErr } = await supabase
+          .from('expenses')
+          .insert({
+            amount: roundedDelivery,
+            currency: 'THB',
+            date: expenseDateIso,
+            category: 'delivery',
+            description: deliveryExpenseDesc,
+            payment_method: 'cash',
+            receipt_file_path: null,
+            receipt_attached: false,
+            created_by: adminEmail,
+            notes: ORDER_COSTS_DELIVERY_SYNC_NOTE,
+            linked_order_id: order_id.trim(),
+            bill_tracking: mergedDeliveryBill,
+          })
+          .select('id, receipt_attached, receipt_file_path')
+          .single();
+        if (insertDelErr) {
+          return NextResponse.json({ error: insertDelErr.message }, { status: 500 });
+        }
+        deliveryExpense = {
+          id: String(insertedDel.id),
+          receipt_attached: insertedDel.receipt_attached === true,
+          receipt_file_path: (insertedDel.receipt_file_path as string | null) ?? null,
+        };
+      }
+    }
+
     await logAudit(adminEmail, 'COSTS_UPDATE', order_id.trim(), {
       before: {},
       after: updatePayload,
     });
 
-    return NextResponse.json({ ok: true, order: data, cogsExpense });
+    return NextResponse.json({ ok: true, order: data, cogsExpense, deliveryExpense });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[admin] costs update exception:', msg);

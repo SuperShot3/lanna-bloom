@@ -9,13 +9,14 @@ import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
 
 const MAX_RECEIPT_BYTES = 500 * 1024;
 
-type CogsExpenseRef = Pick<Expense, 'id' | 'receipt_attached' | 'receipt_file_path'> | null;
+type LinkedExpenseRef = Pick<Expense, 'id' | 'receipt_attached' | 'receipt_file_path'> | null;
 
 interface CostsAndProfitCardProps {
   order: SupabaseOrderRow;
   items?: SupabaseOrderItemRow[];
   canEdit?: boolean;
-  initialCogsExpense?: CogsExpenseRef;
+  initialCogsExpense?: LinkedExpenseRef;
+  initialDeliveryExpense?: LinkedExpenseRef;
 }
 
 function sumPartnerItemsCost(items: SupabaseOrderItemRow[]): number {
@@ -48,9 +49,11 @@ export function CostsAndProfitCard({
   items = [],
   canEdit = true,
   initialCogsExpense = null,
+  initialDeliveryExpense = null,
 }: CostsAndProfitCardProps) {
   const router = useRouter();
-  const receiptFileInputRef = useRef<HTMLInputElement>(null);
+  const receiptFlowerInputRef = useRef<HTMLInputElement>(null);
+  const receiptDeliveryInputRef = useRef<HTMLInputElement>(null);
   const totalAmount = order.total_amount ?? order.grand_total ?? null;
   const partnerItemsCogs = sumPartnerItemsCost(items);
   const effectiveInitialCogs =
@@ -60,15 +63,33 @@ export function CostsAndProfitCard({
   const [paymentFee, setPaymentFee] = useState(toInputValue(order.payment_fee));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [cogsExpense, setCogsExpense] = useState<CogsExpenseRef>(initialCogsExpense);
-  const [receiptBusy, setReceiptBusy] = useState(false);
-  const [loadingReceipt, setLoadingReceipt] = useState(false);
-  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
-  const [receiptMessage, setReceiptMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [receipts, setReceipts] = useState<ExpenseReceiptImage[]>([]);
-  const [loadingReceipts, setLoadingReceipts] = useState(false);
-  const receiptCount = receipts.length;
-  const currentReceiptName = receiptCount > 0 ? receipts[0].file_name : receiptFileName(cogsExpense?.receipt_file_path ?? null);
+  const [cogsExpense, setCogsExpense] = useState<LinkedExpenseRef>(initialCogsExpense);
+  const [deliveryExpense, setDeliveryExpense] = useState<LinkedExpenseRef>(initialDeliveryExpense);
+  const [flowerReceiptBusy, setFlowerReceiptBusy] = useState(false);
+  const [loadingFlowerReceipt, setLoadingFlowerReceipt] = useState(false);
+  const [downloadingFlowerReceipt, setDownloadingFlowerReceipt] = useState(false);
+  const [flowerReceiptMessage, setFlowerReceiptMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(
+    null
+  );
+  const [flowerReceipts, setFlowerReceipts] = useState<ExpenseReceiptImage[]>([]);
+  const [loadingFlowerReceipts, setLoadingFlowerReceipts] = useState(false);
+  const flowerReceiptCount = flowerReceipts.length;
+  const currentFlowerReceiptName =
+    flowerReceiptCount > 0 ? flowerReceipts[0].file_name : receiptFileName(cogsExpense?.receipt_file_path ?? null);
+
+  const [deliveryReceiptBusy, setDeliveryReceiptBusy] = useState(false);
+  const [loadingDeliveryReceipt, setLoadingDeliveryReceipt] = useState(false);
+  const [downloadingDeliveryReceipt, setDownloadingDeliveryReceipt] = useState(false);
+  const [deliveryReceiptMessage, setDeliveryReceiptMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(
+    null
+  );
+  const [deliveryReceipts, setDeliveryReceipts] = useState<ExpenseReceiptImage[]>([]);
+  const [loadingDeliveryReceipts, setLoadingDeliveryReceipts] = useState(false);
+  const deliveryReceiptCount = deliveryReceipts.length;
+  const currentDeliveryReceiptName =
+    deliveryReceiptCount > 0
+      ? deliveryReceipts[0].file_name
+      : receiptFileName(deliveryExpense?.receipt_file_path ?? null);
 
   const itemCostStateInit = useMemo(() => {
     const map: Record<string, string> = {};
@@ -111,6 +132,7 @@ export function CostsAndProfitCard({
   const cogsNum = effectiveCogsNum;
   const deliveryNum = parseInput(deliveryCost);
   const paymentNum = parseInput(paymentFee);
+  const showDeliveryExpenseBlock = deliveryNum != null && deliveryNum > 0;
 
   const profit = computeProfit(totalAmount, cogsNum, deliveryNum, paymentNum);
   const costsSet = order.cogs_amount != null || order.delivery_cost != null || order.payment_fee != null;
@@ -163,6 +185,19 @@ export function CostsAndProfitCard({
               : null,
         });
       }
+      if (data.deliveryExpense && typeof data.deliveryExpense.id === 'string') {
+        setDeliveryExpense({
+          id: data.deliveryExpense.id,
+          receipt_attached: data.deliveryExpense.receipt_attached === true,
+          receipt_file_path:
+            typeof data.deliveryExpense.receipt_file_path === 'string'
+              ? data.deliveryExpense.receipt_file_path
+              : null,
+        });
+      } else {
+        setDeliveryExpense(null);
+        setDeliveryReceipts([]);
+      }
       setTimeout(() => setMessage(null), 3000);
       router.refresh();
     } catch (e) {
@@ -187,30 +222,63 @@ export function CostsAndProfitCard({
     }
   };
 
-  const loadReceipts = async (expenseId: string) => {
-    setLoadingReceipts(true);
+  useEffect(() => {
+    setCogsExpense(initialCogsExpense ?? null);
+  }, [initialCogsExpense]);
+
+  useEffect(() => {
+    setDeliveryExpense(initialDeliveryExpense ?? null);
+  }, [initialDeliveryExpense]);
+
+  const loadFlowerReceipts = async (expenseId: string) => {
+    setLoadingFlowerReceipts(true);
     try {
       const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseId)}/receipts`, { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setReceiptMessage({ type: 'error', text: data.error ?? 'Failed to load receipt images' });
+        setFlowerReceiptMessage({ type: 'error', text: data.error ?? 'Failed to load receipt images' });
         return;
       }
-      setReceipts(Array.isArray(data.receipts) ? (data.receipts as ExpenseReceiptImage[]) : []);
+      setFlowerReceipts(Array.isArray(data.receipts) ? (data.receipts as ExpenseReceiptImage[]) : []);
     } catch {
-      setReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt images' });
+      setFlowerReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt images' });
     } finally {
-      setLoadingReceipts(false);
+      setLoadingFlowerReceipts(false);
+    }
+  };
+
+  const loadDeliveryReceipts = async (expenseId: string) => {
+    setLoadingDeliveryReceipts(true);
+    try {
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseId)}/receipts`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeliveryReceiptMessage({ type: 'error', text: data.error ?? 'Failed to load receipt images' });
+        return;
+      }
+      setDeliveryReceipts(Array.isArray(data.receipts) ? (data.receipts as ExpenseReceiptImage[]) : []);
+    } catch {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt images' });
+    } finally {
+      setLoadingDeliveryReceipts(false);
     }
   };
 
   useEffect(() => {
     if (!cogsExpense?.id) {
-      setReceipts([]);
+      setFlowerReceipts([]);
       return;
     }
-    void loadReceipts(cogsExpense.id);
+    void loadFlowerReceipts(cogsExpense.id);
   }, [cogsExpense?.id]);
+
+  useEffect(() => {
+    if (!deliveryExpense?.id) {
+      setDeliveryReceipts([]);
+      return;
+    }
+    void loadDeliveryReceipts(deliveryExpense.id);
+  }, [deliveryExpense?.id]);
 
   const openReceipt = async (expenseId: string, filePath: string, download = false) => {
     const q = new URLSearchParams({ path: filePath });
@@ -227,42 +295,42 @@ export function CostsAndProfitCard({
     }
   };
 
-  const handleViewReceipt = async () => {
-    if (!cogsExpense?.id || !receipts[0]?.file_path) return;
-    setLoadingReceipt(true);
-    setReceiptMessage(null);
+  const handleViewFlowerReceipt = async () => {
+    if (!cogsExpense?.id || !flowerReceipts[0]?.file_path) return;
+    setLoadingFlowerReceipt(true);
+    setFlowerReceiptMessage(null);
     try {
-      await openReceipt(cogsExpense.id, receipts[0].file_path, false);
+      await openReceipt(cogsExpense.id, flowerReceipts[0].file_path, false);
     } catch {
-      setReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt image' });
+      setFlowerReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt image' });
     } finally {
-      setLoadingReceipt(false);
+      setLoadingFlowerReceipt(false);
     }
   };
 
-  const handleReceiptFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFlowerReceiptFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     if (!file) return;
-    if (receiptFileInputRef.current) receiptFileInputRef.current.value = '';
+    if (receiptFlowerInputRef.current) receiptFlowerInputRef.current.value = '';
 
-    setReceiptMessage(null);
+    setFlowerReceiptMessage(null);
     if (!cogsExpense?.id) {
-      setReceiptMessage({
+      setFlowerReceiptMessage({
         type: 'error',
-        text: 'Save COGS first. The order expense must exist before attaching receipt image.',
+        text: 'Save costs first so the Flowers COGS expense exists before attaching a receipt.',
       });
       return;
     }
     if (!file.type.startsWith('image/')) {
-      setReceiptMessage({ type: 'error', text: 'Only image files are allowed.' });
+      setFlowerReceiptMessage({ type: 'error', text: 'Only image files are allowed.' });
       return;
     }
     if (file.size > MAX_RECEIPT_BYTES) {
-      setReceiptMessage({ type: 'error', text: 'Image is too large. Max size is 500 KB.' });
+      setFlowerReceiptMessage({ type: 'error', text: 'Image is too large. Max size is 500 KB.' });
       return;
     }
 
-    setReceiptBusy(true);
+    setFlowerReceiptBusy(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -272,30 +340,104 @@ export function CostsAndProfitCard({
       });
       const uploadData = await uploadRes.json().catch(() => ({}));
       if (!uploadRes.ok) {
-        setReceiptMessage({ type: 'error', text: uploadData.error ?? 'Receipt upload failed' });
+        setFlowerReceiptMessage({ type: 'error', text: uploadData.error ?? 'Receipt upload failed' });
         return;
       }
-      setCogsExpense((prev) => prev ? ({ ...prev, receipt_attached: true }) : prev);
-      await loadReceipts(cogsExpense.id);
-      setReceiptMessage({ type: 'success', text: 'Receipt image attached' });
+      setCogsExpense((prev) => (prev ? { ...prev, receipt_attached: true } : prev));
+      await loadFlowerReceipts(cogsExpense.id);
+      setFlowerReceiptMessage({ type: 'success', text: 'Receipt attached (flowers / shop)' });
       router.refresh();
     } catch {
-      setReceiptMessage({ type: 'error', text: 'Network error while uploading receipt image' });
+      setFlowerReceiptMessage({ type: 'error', text: 'Network error while uploading receipt image' });
     } finally {
-      setReceiptBusy(false);
+      setFlowerReceiptBusy(false);
     }
   };
 
-  const handleDownloadReceipt = async () => {
-    if (!cogsExpense?.id || !receipts[0]?.file_path) return;
-    setDownloadingReceipt(true);
-    setReceiptMessage(null);
+  const handleDownloadFlowerReceipt = async () => {
+    if (!cogsExpense?.id || !flowerReceipts[0]?.file_path) return;
+    setDownloadingFlowerReceipt(true);
+    setFlowerReceiptMessage(null);
     try {
-      await openReceipt(cogsExpense.id, receipts[0].file_path, true);
+      await openReceipt(cogsExpense.id, flowerReceipts[0].file_path, true);
     } catch {
-      setReceiptMessage({ type: 'error', text: 'Unexpected error preparing download' });
+      setFlowerReceiptMessage({ type: 'error', text: 'Unexpected error preparing download' });
     } finally {
-      setDownloadingReceipt(false);
+      setDownloadingFlowerReceipt(false);
+    }
+  };
+
+  const handleViewDeliveryReceipt = async () => {
+    if (!deliveryExpense?.id || !deliveryReceipts[0]?.file_path) return;
+    setLoadingDeliveryReceipt(true);
+    setDeliveryReceiptMessage(null);
+    try {
+      await openReceipt(deliveryExpense.id, deliveryReceipts[0].file_path, false);
+    } catch {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Unexpected error loading receipt image' });
+    } finally {
+      setLoadingDeliveryReceipt(false);
+    }
+  };
+
+  const handleDeliveryReceiptFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (receiptDeliveryInputRef.current) receiptDeliveryInputRef.current.value = '';
+
+    setDeliveryReceiptMessage(null);
+    if (!deliveryExpense?.id) {
+      setDeliveryReceiptMessage({
+        type: 'error',
+        text: showDeliveryExpenseBlock
+          ? 'Save costs first so the delivery expense exists before attaching proof to the driver.'
+          : 'Delivery cost is zero — there is no driver expense row for receipts.',
+      });
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Only image files are allowed.' });
+      return;
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Image is too large. Max size is 500 KB.' });
+      return;
+    }
+
+    setDeliveryReceiptBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await fetch(`/api/admin/expenses/${encodeURIComponent(deliveryExpense.id)}/receipts`, {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) {
+        setDeliveryReceiptMessage({ type: 'error', text: uploadData.error ?? 'Receipt upload failed' });
+        return;
+      }
+      setDeliveryExpense((prev) => (prev ? { ...prev, receipt_attached: true } : prev));
+      await loadDeliveryReceipts(deliveryExpense.id);
+      setDeliveryReceiptMessage({ type: 'success', text: 'Receipt attached (driver)' });
+      router.refresh();
+    } catch {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Network error while uploading receipt image' });
+    } finally {
+      setDeliveryReceiptBusy(false);
+    }
+  };
+
+  const handleDownloadDeliveryReceipt = async () => {
+    if (!deliveryExpense?.id || !deliveryReceipts[0]?.file_path) return;
+    setDownloadingDeliveryReceipt(true);
+    setDeliveryReceiptMessage(null);
+    try {
+      await openReceipt(deliveryExpense.id, deliveryReceipts[0].file_path, true);
+    } catch {
+      setDeliveryReceiptMessage({ type: 'error', text: 'Unexpected error preparing download' });
+    } finally {
+      setDownloadingDeliveryReceipt(false);
     }
   };
 
@@ -434,6 +576,10 @@ export function CostsAndProfitCard({
           <p>{formatThb(displayCogs)}</p>
         </div>
         <div>
+          <strong>Delivery paid out</strong>
+          <p>{deliveryNum != null && deliveryNum > 0 ? formatThb(deliveryNum) : '—'}</p>
+        </div>
+        <div>
           <strong>Profit</strong>
           <p className="admin-profit">{profit != null ? formatThb(profit) : '—'}</p>
         </div>
@@ -463,106 +609,216 @@ export function CostsAndProfitCard({
         </div>
       )}
 
-      <div className="admin-costs-actions" style={{ marginTop: 10, gap: 10 }}>
-        <input
-          ref={receiptFileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
-          onChange={handleReceiptFileSelected}
-          style={{ display: 'none' }}
-          aria-label="Add COGS receipt image"
-        />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            onClick={() => receiptFileInputRef.current?.click()}
-            disabled={receiptBusy || !canEdit}
-          >
-            {receiptBusy ? 'Uploading image…' : 'Add image'}
-          </button>
-          {receiptCount > 0 && cogsExpense?.id && (
-            <>
-              <button
-                type="button"
-                className="admin-btn admin-btn-sm admin-btn-primary"
-                onClick={handleViewReceipt}
-                disabled={loadingReceipt}
-              >
-                {loadingReceipt ? 'Loading image…' : 'View receipt image'}
-              </button>
+      <div style={{ marginTop: 18 }}>
+        <h3 className="admin-section-title" style={{ fontSize: 16, marginBottom: 8 }}>
+          Receipts · Flowers (shop / COGS)
+        </h3>
+        <p className="admin-hint" style={{ marginBottom: 8 }}>
+          Appears as a <strong>Flowers</strong> expense ({formatThb(displayCogs)}).{' '}
+          {cogsExpense?.id ? (
+            <Link href={`/admin/expenses/${encodeURIComponent(cogsExpense.id)}`} className="admin-link">
+              Open expense
+            </Link>
+          ) : (
+            'Save costs to create this row.'
+          )}
+        </p>
+        <div className="admin-costs-actions" style={{ gap: 10 }}>
+          <input
+            ref={receiptFlowerInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic"
+            onChange={handleFlowerReceiptFileSelected}
+            style={{ display: 'none' }}
+            aria-label="Add flowers COGS receipt image"
+          />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button
+              type="button"
+              className="admin-btn admin-btn-sm admin-btn-outline"
+              onClick={() => receiptFlowerInputRef.current?.click()}
+              disabled={flowerReceiptBusy || !canEdit}
+            >
+              {flowerReceiptBusy ? 'Uploading…' : 'Add image'}
+            </button>
+            {flowerReceiptCount > 0 && cogsExpense?.id && (
+              <>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-primary"
+                  onClick={() => void handleViewFlowerReceipt()}
+                  disabled={loadingFlowerReceipt}
+                >
+                  {loadingFlowerReceipt ? 'Loading…' : 'View receipt'}
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-outline"
+                  onClick={() => void handleDownloadFlowerReceipt()}
+                  disabled={downloadingFlowerReceipt}
+                >
+                  {downloadingFlowerReceipt ? 'Preparing…' : 'Download'}
+                </button>
+              </>
+            )}
+          </div>
+          {!cogsExpense?.id && (
+            <span className="admin-hint">Save costs first to create the linked Flowers expense.</span>
+          )}
+        </div>
+        {loadingFlowerReceipts ? <p className="admin-hint">Loading images…</p> : null}
+        <p className="admin-hint" style={{ marginTop: 4 }}>
+          Images: {flowerReceiptCount}
+          {currentFlowerReceiptName ? ` · ${currentFlowerReceiptName}` : ''}
+        </p>
+        {flowerReceiptCount > 0 && cogsExpense?.id ? (
+          <div className="admin-expenses-table-wrap" style={{ marginTop: 10 }}>
+            <table className="admin-expenses-table">
+              <thead>
+                <tr>
+                  <th>Image name</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {flowerReceipts.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.file_name}</td>
+                    <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-sm admin-btn-outline"
+                        onClick={() => { void openReceipt(cogsExpense.id, r.file_path, false); }}
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-sm admin-btn-outline"
+                        onClick={() => { void openReceipt(cogsExpense.id, r.file_path, true); }}
+                      >
+                        Download
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+        {flowerReceiptMessage && (
+          <p className={flowerReceiptMessage.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
+            {flowerReceiptMessage.text}
+          </p>
+        )}
+      </div>
+
+      {showDeliveryExpenseBlock ? (
+        <div style={{ marginTop: 18 }}>
+          <h3 className="admin-section-title" style={{ fontSize: 16, marginBottom: 8 }}>
+            Receipts · Delivery (driver)
+          </h3>
+          <p className="admin-hint" style={{ marginBottom: 8 }}>
+            Separate <strong>Delivery</strong> expense ({formatThb(deliveryNum ?? 0)} paid to driver).{' '}
+            {deliveryExpense?.id ? (
+              <Link href={`/admin/expenses/${encodeURIComponent(deliveryExpense.id)}`} className="admin-link">
+                Open expense
+              </Link>
+            ) : (
+              'Save costs to create this row.'
+            )}
+          </p>
+          <div className="admin-costs-actions" style={{ gap: 10 }}>
+            <input
+              ref={receiptDeliveryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic"
+              onChange={handleDeliveryReceiptFileSelected}
+              style={{ display: 'none' }}
+              aria-label="Add delivery driver payment receipt image"
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button
                 type="button"
                 className="admin-btn admin-btn-sm admin-btn-outline"
-                onClick={handleDownloadReceipt}
-                disabled={downloadingReceipt}
+                onClick={() => receiptDeliveryInputRef.current?.click()}
+                disabled={deliveryReceiptBusy || !canEdit}
               >
-                {downloadingReceipt ? 'Preparing download…' : 'Download image'}
+                {deliveryReceiptBusy ? 'Uploading…' : 'Add image'}
               </button>
-            </>
+              {deliveryReceiptCount > 0 && deliveryExpense?.id && (
+                <>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-sm admin-btn-primary"
+                    onClick={() => void handleViewDeliveryReceipt()}
+                    disabled={loadingDeliveryReceipt}
+                  >
+                    {loadingDeliveryReceipt ? 'Loading…' : 'View receipt'}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-sm admin-btn-outline"
+                    onClick={() => void handleDownloadDeliveryReceipt()}
+                    disabled={downloadingDeliveryReceipt}
+                  >
+                    {downloadingDeliveryReceipt ? 'Preparing…' : 'Download'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          {loadingDeliveryReceipts ? <p className="admin-hint">Loading images…</p> : null}
+          <p className="admin-hint" style={{ marginTop: 4 }}>
+            Images: {deliveryReceiptCount}
+            {currentDeliveryReceiptName ? ` · ${currentDeliveryReceiptName}` : ''}
+          </p>
+          {deliveryReceiptCount > 0 && deliveryExpense?.id ? (
+            <div className="admin-expenses-table-wrap" style={{ marginTop: 10 }}>
+              <table className="admin-expenses-table">
+                <thead>
+                  <tr>
+                    <th>Image name</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveryReceipts.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.file_name}</td>
+                      <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-sm admin-btn-outline"
+                          onClick={() => { void openReceipt(deliveryExpense.id, r.file_path, false); }}
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-sm admin-btn-outline"
+                          onClick={() => { void openReceipt(deliveryExpense.id, r.file_path, true); }}
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {deliveryReceiptMessage && (
+            <p className={deliveryReceiptMessage.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
+              {deliveryReceiptMessage.text}
+            </p>
           )}
         </div>
-        {!cogsExpense?.id && (
-          <span className="admin-hint">Save costs first to create linked COGS expense.</span>
-        )}
-      </div>
-      <p className="admin-hint" style={{ marginTop: 8 }}>
-        Receipt images only, max size 500 KB.
-      </p>
-      {deliveryNum != null && deliveryNum > 0 && cogsExpense?.id && (
-        <p className="admin-hint" style={{ marginTop: 6, maxWidth: '36rem' }}>
-          Delivery cost is above zero — open the{' '}
-          <Link href={`/admin/expenses/${encodeURIComponent(cogsExpense.id)}`} className="admin-link">
-            linked COGS expense
-          </Link>{' '}
-          and tick the <strong>Delivery</strong> row in the bill checklist (<strong>payment to driver</strong> only —
-          one check).
-        </p>
-      )}
-      {loadingReceipts ? <p className="admin-hint">Loading images…</p> : null}
-      <p className="admin-hint" style={{ marginTop: 4 }}>
-        Images added: {receiptCount} {currentReceiptName ? `| Image name: ${currentReceiptName}` : ''}
-      </p>
-      {receiptCount > 0 && cogsExpense?.id ? (
-        <div className="admin-expenses-table-wrap" style={{ marginTop: 10 }}>
-          <table className="admin-expenses-table">
-            <thead>
-              <tr>
-                <th>Image name</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {receipts.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.file_name}</td>
-                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-sm admin-btn-outline"
-                      onClick={() => { void openReceipt(cogsExpense.id, r.file_path, false); }}
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-sm admin-btn-outline"
-                      onClick={() => { void openReceipt(cogsExpense.id, r.file_path, true); }}
-                    >
-                      Download
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       ) : null}
-      {receiptMessage && (
-        <p className={receiptMessage.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>
-          {receiptMessage.text}
-        </p>
-      )}
+
+      <p className="admin-hint" style={{ marginTop: 14 }}>
+        Receipt images only, max size 500 KB per file.
+      </p>
     </section>
   );
 }
