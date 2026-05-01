@@ -110,7 +110,7 @@ export async function PATCH(
     // Enforce required COGS (> 0). Allow omitting cogs_amount only if the order already has COGS set.
     const { data: existingOrder, error: existingErr } = await supabase
       .from('orders')
-      .select('order_id, cogs_amount, paid_at, created_at')
+      .select('order_id, cogs_amount, delivery_cost, paid_at, created_at')
       .eq('order_id', order_id.trim())
       .single();
     if (existingErr || !existingOrder) {
@@ -154,6 +154,8 @@ export async function PATCH(
       nextCogs = Math.round(sum * 100) / 100;
       updatePayload.cogs_amount = nextCogs;
     }
+    const nextDelivery = hasDelivery ? (delivery_cost ?? null) : (existingOrder.delivery_cost ?? null);
+    const totalExpenseAmount = Math.round(((Number(nextCogs) || 0) + (Number(nextDelivery) || 0)) * 100) / 100;
 
     if (nextCogs == null || Number(nextCogs) <= 0) {
       return NextResponse.json(
@@ -205,7 +207,7 @@ export async function PATCH(
       const { data: updatedExpense, error: updateExpenseErr } = await supabase
         .from('expenses')
         .update({
-          amount: Number(nextCogs),
+          amount: totalExpenseAmount,
           currency: 'THB',
           date: expenseDateIso,
           description: cogsExpenseDesc,
@@ -228,7 +230,7 @@ export async function PATCH(
       const { data: insertedExpense, error: insertExpenseErr } = await supabase
         .from('expenses')
         .insert({
-          amount: Number(nextCogs),
+          amount: totalExpenseAmount,
           currency: 'THB',
           date: expenseDateIso,
           category: 'flowers',
@@ -263,4 +265,41 @@ export async function PATCH(
     console.error('[admin] costs update exception:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ order_id: string }> }
+) {
+  const authResult = await requireRole(['OWNER', 'MANAGER']);
+  if (!authResult.ok) return authResult.response;
+
+  const { order_id } = await params;
+  if (!order_id?.trim()) {
+    return NextResponse.json({ error: 'order_id required' }, { status: 400 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+  }
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('order_id, cogs_amount, delivery_cost, payment_fee')
+    .eq('order_id', order_id.trim())
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message ?? 'Order not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    order: {
+      order_id: data.order_id,
+      cogs_amount: data.cogs_amount,
+      delivery_cost: data.delivery_cost,
+      payment_fee: data.payment_fee,
+    },
+  });
 }
