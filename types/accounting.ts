@@ -41,6 +41,12 @@ export interface IncomeRecord {
   created_at: string;
   updated_at: string;
   confirmed_at: string | null;
+  /**
+   * The business day the money actually arrived (YYYY-MM-DD). Defaults to
+   * insertion day on the database side. Used as the canonical "income date"
+   * for monthly reports so it lines up with expense `date`.
+   */
+  paid_date: string;
 }
 
 // ─── Filter + pagination ──────────────────────────────────────────────────────
@@ -51,6 +57,12 @@ export interface IncomeFilters {
   source_mode?: string;
   source_type?: string;
   income_status?: string;
+  /**
+   * `missing`  → only rows without a proof file attached
+   * `attached` → only rows with a proof file attached
+   * `all` / undefined → no filter
+   */
+  receipt?: 'all' | 'missing' | 'attached';
 }
 
 // ─── UI constants ─────────────────────────────────────────────────────────────

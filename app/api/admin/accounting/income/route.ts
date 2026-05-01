@@ -20,12 +20,18 @@ export async function GET(request: NextRequest) {
   if (!authResult.ok) return authResult.response;
 
   const sp = request.nextUrl.searchParams;
+  const receiptRaw = sp.get('receipt');
+  const receipt: 'all' | 'missing' | 'attached' | undefined =
+    receiptRaw === 'missing' || receiptRaw === 'attached' || receiptRaw === 'all'
+      ? receiptRaw
+      : undefined;
   const filters = {
     dateFrom:      sp.get('dateFrom')      ?? undefined,
     dateTo:        sp.get('dateTo')        ?? undefined,
     source_mode:   sp.get('source_mode')   ?? undefined,
     source_type:   sp.get('source_type')   ?? undefined,
     income_status: sp.get('income_status') ?? undefined,
+    receipt,
   };
   const page     = Math.max(1, parseInt(sp.get('page') ?? '1', 10));
   const pageSize = Math.min(100, Math.max(1, parseInt(sp.get('pageSize') ?? '30', 10)));
@@ -43,6 +49,7 @@ export async function GET(request: NextRequest) {
     totalConfirmedStripeFees:   result.totalConfirmedStripeFees,
     totalConfirmedNetAmount:    result.totalConfirmedNetAmount,
     totalPendingAmount:         result.totalPendingAmount,
+    missingProofCount:          result.missingProofCount,
     page,
     pageSize,
   });
@@ -107,6 +114,16 @@ export async function POST(request: NextRequest) {
   const notes             = typeof b.notes === 'string' ? b.notes.trim() || null : null;
   const currency          = typeof b.currency === 'string' ? b.currency.trim() || 'THB' : 'THB';
 
+  // paid_date: day money actually arrived. Optional (DB defaults to today).
+  let paid_date: string | null = null;
+  if (typeof b.paid_date === 'string' && b.paid_date.trim()) {
+    const v = b.paid_date.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      return NextResponse.json({ error: 'paid_date must be in YYYY-MM-DD format' }, { status: 400 });
+    }
+    paid_date = v;
+  }
+
   // Duplicate check: if order_id provided, ensure no existing record
   if (order_id) {
     const exists = await incomeExistsForOrder(order_id);
@@ -137,6 +154,7 @@ export async function POST(request: NextRequest) {
     proof_file_path,
     receipt_attached: !!proof_file_path,
     notes,
+    paid_date,
     created_by,
   });
 

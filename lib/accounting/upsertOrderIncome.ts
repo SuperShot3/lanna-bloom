@@ -36,6 +36,21 @@ export interface OrderIncomeContext {
   paymentMethod?: string | null;
   stripePaymentIntentId?: string | null;
   createdBy?: string;
+  /**
+   * ISO timestamp of when the order was actually paid (e.g. orders.paid_at).
+   * If provided, the income record's `paid_date` will be set to that calendar
+   * day so monthly accounting totals reflect when the money came in, not when
+   * the income row was inserted.
+   */
+  paidAt?: string | null;
+}
+
+/** Convert an ISO timestamp to a YYYY-MM-DD string. Returns null on invalid input. */
+function isoToYmd(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /**
@@ -66,6 +81,7 @@ export async function upsertOrderIncome(ctx: OrderIncomeContext): Promise<void> 
       money_location:    loc,
       description:       `Order ${ctx.orderId.trim()}`,
       external_reference: ctx.stripePaymentIntentId ?? null,
+      paid_date:         isoToYmd(ctx.paidAt),
       created_by:        ctx.createdBy ?? 'system',
     });
 

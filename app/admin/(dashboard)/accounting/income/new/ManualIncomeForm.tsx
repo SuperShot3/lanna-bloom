@@ -101,6 +101,7 @@ export function ManualIncomeForm() {
           proof_file_path:   proofPath,
           receipt_attached:  !!proofPath,
           notes:             notes.trim() || null,
+          paid_date:         date || null,
         }),
       });
 
@@ -177,7 +178,7 @@ export function ManualIncomeForm() {
             {fieldErrors.amount && <span className="admin-field-error">{fieldErrors.amount}</span>}
           </div>
           <div className="admin-form-group">
-            <label htmlFor="inc-date">Date *</label>
+            <label htmlFor="inc-date">Date money received *</label>
             <input
               id="inc-date"
               type="date"
@@ -186,6 +187,9 @@ export function ManualIncomeForm() {
               onChange={(e) => setDate(e.target.value)}
               required
             />
+            <span className="admin-hint">
+              The day cash arrived / bank transfer cleared. Used for monthly accounting totals.
+            </span>
           </div>
         </div>
 

@@ -25,6 +25,10 @@ interface OverviewData {
   incomeByLocation: MoneyLocationTotal[];
   incomeCount: number;
   expenseCount: number;
+  /** Expenses in period missing a paper bill / receipt image. */
+  expensesMissingReceiptCount: number;
+  /** Income records in period missing a proof of payment. */
+  incomeMissingProofCount: number;
   currency: string;
 }
 
@@ -34,6 +38,8 @@ interface Props {
   periodLabel: string;
   initialDateFrom?: string;
   initialDateTo?: string;
+  /** True when the user has explicitly chosen "All time" (period=all in URL). */
+  isAllTime: boolean;
   activeTab: 'overview' | 'expenses' | 'ledger' | 'income' | 'transfers';
   expensesData: ExpensesResult;
   expensesPage: number;
@@ -92,12 +98,35 @@ function formatDate(iso: string) {
   });
 }
 
+/** RFC-4180 cell escape (commas, quotes, newlines). */
+function escapeCsvCell(s: string) {
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/** Trigger a CSV download in the browser. Adds UTF-8 BOM for Excel compatibility. */
+function downloadCsvLines(filename: string, lines: string[]) {
+  const bom = '\ufeff';
+  const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/** Slug a period label into a filename-safe token. */
+function periodSlug(periodLabel: string) {
+  return periodLabel.replace(/[^0-9a-z-]+/gi, '_');
+}
+
 export function AccountingOverviewClient({
   overview,
   ledger,
   periodLabel,
   initialDateFrom,
   initialDateTo,
+  isAllTime,
   activeTab,
   expensesData,
   expensesPage,
@@ -157,22 +186,60 @@ export function AccountingOverviewClient({
     const next = new URLSearchParams(sp.toString());
     if (dateFrom) next.set('dateFrom', dateFrom); else next.delete('dateFrom');
     if (dateTo)   next.set('dateTo',   dateTo);   else next.delete('dateTo');
+    // Choosing explicit dates implicitly leaves "all time" mode.
+    next.delete('period');
     next.delete('page');
     router.push(`${pathname}?${next.toString()}`);
   };
 
-  const clearFilter = () => {
+  /** Reset to the default "this month" view. */
+  const useThisMonth = () => {
     setDateFrom('');
     setDateTo('');
     const next = new URLSearchParams(sp.toString());
     next.delete('dateFrom');
     next.delete('dateTo');
+    next.delete('period');
     next.delete('page');
-    if (activeTab === 'expenses') next.set('tab', 'expenses');
-    else if (activeTab === 'ledger') next.set('tab', 'ledger');
-    else if (activeTab === 'income') next.set('tab', 'income');
-    else if (activeTab === 'transfers') next.set('tab', 'transfers');
-    else next.delete('tab');
+    router.push(`${pathname}?${next.toString()}`);
+  };
+
+  /** Switch to all-time view (no period bounds). */
+  const useAllTime = () => {
+    setDateFrom('');
+    setDateTo('');
+    const next = new URLSearchParams(sp.toString());
+    next.delete('dateFrom');
+    next.delete('dateTo');
+    next.set('period', 'all');
+    next.delete('page');
+    router.push(`${pathname}?${next.toString()}`);
+  };
+
+  /** Quick range buttons: this month, last month, year-to-date. */
+  const useQuickRange = (kind: 'this_month' | 'last_month' | 'ytd') => {
+    const now = new Date();
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let from = '';
+    let to = '';
+    if (kind === 'this_month') {
+      from = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
+      to   = fmt(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    } else if (kind === 'last_month') {
+      from = fmt(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+      to   = fmt(new Date(now.getFullYear(), now.getMonth(), 0));
+    } else {
+      from = fmt(new Date(now.getFullYear(), 0, 1));
+      to   = fmt(new Date(now.getFullYear(), 11, 31));
+    }
+    setDateFrom(from);
+    setDateTo(to);
+    const next = new URLSearchParams(sp.toString());
+    next.set('dateFrom', from);
+    next.set('dateTo', to);
+    next.delete('period');
+    next.delete('page');
     router.push(`${pathname}?${next.toString()}`);
   };
 
@@ -183,7 +250,85 @@ export function AccountingOverviewClient({
       if (v && v !== 'all') next.set(k, v);
       else next.delete(k);
     });
+    next.set('tab', 'expenses');
     router.push(`${pathname}?${next.toString()}`);
+  };
+
+  /** From any tab, jump to Expenses with receipt=missing pre-applied (used by KPI card click). */
+  const focusMissingReceipts = (target: 'expenses' | 'income') => {
+    const next = new URLSearchParams(sp.toString());
+    next.delete('page');
+    next.set('receipt', 'missing');
+    next.set('tab', target);
+    router.push(`${pathname}?${next.toString()}`);
+  };
+
+  /** CSV export — Expenses tab. Uses currently-loaded expensesData (already filtered). */
+  const exportExpensesCsv = () => {
+    const headers = ['Date', 'Description', 'Category', 'Payment method', 'Receipt attached', 'Amount', 'Currency', 'Notes', 'Linked order', 'Created by'];
+    const lines = [headers.join(',')];
+    for (const exp of expensesData.expenses) {
+      lines.push([
+        escapeCsvCell(exp.date.slice(0, 10)),
+        escapeCsvCell(exp.description),
+        escapeCsvCell(CATEGORY_LABEL[exp.category] ?? exp.category),
+        escapeCsvCell(PM_LABEL[exp.payment_method] ?? exp.payment_method),
+        exp.receipt_attached ? 'Yes' : 'MISSING',
+        String(exp.amount),
+        escapeCsvCell(exp.currency || 'THB'),
+        escapeCsvCell(exp.notes ?? ''),
+        escapeCsvCell(exp.linked_order_id ?? ''),
+        escapeCsvCell(exp.created_by ?? ''),
+      ].join(','));
+    }
+    downloadCsvLines(`expenses-${periodSlug(periodLabel)}.csv`, lines);
+  };
+
+  /** CSV export — Income Records tab. */
+  const exportIncomeCsv = () => {
+    const headers = ['Created at', 'Description', 'Order ID', 'Source mode', 'Source type', 'Payment method', 'Money location', 'Status', 'Proof attached', 'Gross amount', 'Stripe fee (estimate)', 'External reference', 'Currency', 'Created by'];
+    const lines = [headers.join(',')];
+    for (const rec of incomeData.records) {
+      lines.push([
+        escapeCsvCell(rec.created_at),
+        escapeCsvCell(rec.description),
+        escapeCsvCell(rec.order_id ?? ''),
+        escapeCsvCell(rec.source_mode),
+        escapeCsvCell(rec.source_type),
+        escapeCsvCell(rec.payment_method),
+        escapeCsvCell(rec.money_location),
+        escapeCsvCell(rec.income_status),
+        rec.receipt_attached ? 'Yes' : 'MISSING',
+        String(rec.amount),
+        rec.processing_fee_amount != null ? String(rec.processing_fee_amount) : '',
+        escapeCsvCell(rec.external_reference ?? ''),
+        escapeCsvCell(rec.currency || 'THB'),
+        escapeCsvCell(rec.created_by ?? ''),
+      ].join(','));
+    }
+    downloadCsvLines(`income-${periodSlug(periodLabel)}.csv`, lines);
+  };
+
+  /** CSV export — Transfers tab. */
+  const exportTransfersCsv = () => {
+    const headers = ['Transfer date', 'From', 'To', 'Status', 'Stripe ref', 'Bank received', 'Attachment', 'Note', 'Amount', 'Currency', 'Created by'];
+    const lines = [headers.join(',')];
+    for (const t of transfersData.transfers) {
+      lines.push([
+        escapeCsvCell(t.transfer_date.slice(0, 10)),
+        escapeCsvCell(LOCATION_LABELS[t.from_location] ?? t.from_location),
+        escapeCsvCell(LOCATION_LABELS[t.to_location] ?? t.to_location),
+        escapeCsvCell(t.status),
+        escapeCsvCell(t.external_reference ?? ''),
+        escapeCsvCell(t.bank_received_date ?? ''),
+        t.attachment_attached ? 'Yes' : 'No',
+        escapeCsvCell(t.note ?? ''),
+        String(t.amount),
+        escapeCsvCell(t.currency || 'THB'),
+        escapeCsvCell(t.created_by ?? ''),
+      ].join(','));
+    }
+    downloadCsvLines(`transfers-${periodSlug(periodLabel)}.csv`, lines);
   };
 
   const net = overview?.netResult ?? 0;
@@ -484,7 +629,7 @@ export function AccountingOverviewClient({
         </button>
       </div>
 
-      {/* Period filter — shown on both tabs */}
+      {/* Period filter — shown on every tab */}
       <div className="admin-accounting-period-row">
         <input
           type="date"
@@ -503,9 +648,23 @@ export function AccountingOverviewClient({
         <button type="button" className="admin-btn admin-btn-primary admin-btn-sm" onClick={applyFilter}>
           Apply
         </button>
-        {(initialDateFrom || initialDateTo) && (
-          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={clearFilter}>
+        <span className="admin-hint" aria-hidden="true">|</span>
+        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('this_month')}>
+          This month
+        </button>
+        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('last_month')}>
+          Last month
+        </button>
+        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('ytd')}>
+          Year to date
+        </button>
+        {!isAllTime ? (
+          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={useAllTime}>
             All time
+          </button>
+        ) : (
+          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={useThisMonth}>
+            Back to this month
           </button>
         )}
       </div>
@@ -563,6 +722,59 @@ export function AccountingOverviewClient({
                   icon="schedule"
                 />
               )}
+              {/* Receipts compliance — clickable; jumps to filtered Expenses tab. */}
+              {overview.expenseCount > 0 && (
+                <button
+                  type="button"
+                  className={`admin-accounting-kpi admin-accounting-kpi-${
+                    overview.expensesMissingReceiptCount === 0 ? 'green' : 'yellow'
+                  } admin-accounting-kpi-clickable`}
+                  onClick={() => focusMissingReceipts('expenses')}
+                  aria-label="Show expenses with missing receipts"
+                  title="Click to see which expenses are missing a paper bill"
+                >
+                  <span
+                    className={`material-symbols-outlined admin-accounting-kpi-icon admin-accounting-kpi-icon-${
+                      overview.expensesMissingReceiptCount === 0 ? 'green' : 'yellow'
+                    }`}
+                  >
+                    {overview.expensesMissingReceiptCount === 0 ? 'task_alt' : 'receipt_long'}
+                  </span>
+                  <div>
+                    <p className="admin-accounting-kpi-label">Expense receipts</p>
+                    <p className="admin-accounting-kpi-value">
+                      {overview.expenseCount - overview.expensesMissingReceiptCount} / {overview.expenseCount}
+                    </p>
+                    <p className="admin-accounting-kpi-sub">
+                      {overview.expensesMissingReceiptCount === 0
+                        ? 'All expenses have a receipt'
+                        : `${overview.expensesMissingReceiptCount} missing — click to fix`}
+                    </p>
+                  </div>
+                </button>
+              )}
+              {overview.incomeCount > 0 && overview.incomeMissingProofCount > 0 && (
+                <button
+                  type="button"
+                  className="admin-accounting-kpi admin-accounting-kpi-yellow admin-accounting-kpi-clickable"
+                  onClick={() => focusMissingReceipts('income')}
+                  aria-label="Show income records with missing proof of payment"
+                  title="Click to see which income records are missing proof of payment"
+                >
+                  <span className="material-symbols-outlined admin-accounting-kpi-icon admin-accounting-kpi-icon-yellow">
+                    request_quote
+                  </span>
+                  <div>
+                    <p className="admin-accounting-kpi-label">Income proof</p>
+                    <p className="admin-accounting-kpi-value">
+                      {overview.incomeCount - overview.incomeMissingProofCount} / {overview.incomeCount}
+                    </p>
+                    <p className="admin-accounting-kpi-sub">
+                      {overview.incomeMissingProofCount} missing proof — click to fix
+                    </p>
+                  </div>
+                </button>
+              )}
             </div>
 
             {/* Stripe fee breakdown — secondary detail, only shown when relevant */}
@@ -619,7 +831,7 @@ export function AccountingOverviewClient({
       {/* ── EXPENSES TAB ── */}
       {activeTab === 'expenses' && (
         <div className="admin-expenses">
-          {/* Extra expense-specific filters (category, payment method) */}
+          {/* Extra expense-specific filters (category, payment method, receipt status) */}
           <div className="admin-expenses-filters">
             <select
               className="admin-select"
@@ -643,21 +855,50 @@ export function AccountingOverviewClient({
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </select>
-            {(expensesFilters.category || expensesFilters.payment_method) && (
+            <select
+              className="admin-select"
+              value={expensesFilters.receipt ?? 'all'}
+              onChange={(e) => handleExpenseFilterChange({ receipt: e.target.value })}
+              aria-label="Receipt status"
+              title="Filter by paper-bill / receipt status"
+            >
+              <option value="all">All receipt status</option>
+              <option value="missing">Missing receipt only</option>
+              <option value="attached">Has receipt</option>
+            </select>
+            {(expensesFilters.category || expensesFilters.payment_method || expensesFilters.receipt) && (
               <button
                 type="button"
                 className="admin-btn admin-btn-outline admin-btn-sm"
-                onClick={() => handleExpenseFilterChange({ category: undefined, payment_method: undefined })}
+                onClick={() => handleExpenseFilterChange({ category: undefined, payment_method: undefined, receipt: undefined })}
               >
                 Clear
               </button>
             )}
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline admin-btn-sm"
+              onClick={exportExpensesCsv}
+              disabled={expensesData.expenses.length === 0}
+              title="Export the visible page as CSV"
+            >
+              Export CSV
+            </button>
           </div>
 
           {/* Summary */}
               <div className="admin-expenses-summary">
                 <span className="admin-hint">
                   {expensesData.total} expense{expensesData.total !== 1 ? 's' : ''} found
+                  {expensesData.missingReceiptCount > 0 && (
+                    <>
+                      {' · '}
+                      <strong style={{ color: '#d97706' }}>
+                        {expensesData.missingReceiptCount} missing receipt
+                        {expensesData.missingReceiptCount !== 1 ? 's' : ''}
+                      </strong>
+                    </>
+                  )}
                 </span>
                 <span className="admin-expenses-total">
                   Total: <strong>{formatAmount(expensesData.totalAmount)}</strong>
@@ -805,6 +1046,17 @@ export function AccountingOverviewClient({
       {/* ── PAYOUTS & TRANSFERS TAB ── */}
       {activeTab === 'transfers' && (
         <div className="admin-expenses">
+          <div className="admin-expenses-filters">
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline admin-btn-sm"
+              onClick={exportTransfersCsv}
+              disabled={transfersData.transfers.length === 0}
+              title="Export visible transfers as CSV"
+            >
+              Export CSV
+            </button>
+          </div>
           <div className="admin-expenses-summary">
             <span className="admin-hint">
               {transfersData.transfers.length} transfer{transfersData.transfers.length !== 1 ? 's' : ''} found
@@ -916,17 +1168,45 @@ export function AccountingOverviewClient({
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            {(incomeFilters.source_mode || incomeFilters.source_type || incomeFilters.income_status) && (
+            <select className="admin-select" value={incomeFilters.receipt ?? 'all'}
+              onChange={(e) => handleIncomeFilterChange({ receipt: e.target.value })}
+              aria-label="Proof status"
+              title="Filter by proof of payment status">
+              <option value="all">All proof status</option>
+              <option value="missing">Missing proof only</option>
+              <option value="attached">Has proof</option>
+            </select>
+            {(incomeFilters.source_mode || incomeFilters.source_type || incomeFilters.income_status || incomeFilters.receipt) && (
               <button type="button" className="admin-btn admin-btn-outline admin-btn-sm"
-                onClick={() => handleIncomeFilterChange({ source_mode: undefined, source_type: undefined, income_status: undefined })}>
+                onClick={() => handleIncomeFilterChange({ source_mode: undefined, source_type: undefined, income_status: undefined, receipt: undefined })}>
                 Clear
               </button>
             )}
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline admin-btn-sm"
+              onClick={exportIncomeCsv}
+              disabled={incomeData.records.length === 0}
+              title="Export the visible page as CSV"
+            >
+              Export CSV
+            </button>
           </div>
 
           {/* Summary */}
           <div className="admin-expenses-summary">
-            <span className="admin-hint">{incomeData.total} record{incomeData.total !== 1 ? 's' : ''}</span>
+            <span className="admin-hint">
+              {incomeData.total} record{incomeData.total !== 1 ? 's' : ''}
+              {incomeData.missingProofCount > 0 && (
+                <>
+                  {' · '}
+                  <strong style={{ color: '#d97706' }}>
+                    {incomeData.missingProofCount} missing proof
+                    {incomeData.missingProofCount !== 1 ? 's' : ''}
+                  </strong>
+                </>
+              )}
+            </span>
             <div className="admin-income-summary-totals">
               <span className="admin-expenses-total">
                 Confirmed revenue (gross): <strong>{fmt(incomeData.totalConfirmedAmount)}</strong>

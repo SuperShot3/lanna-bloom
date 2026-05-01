@@ -52,6 +52,7 @@ export async function runStripePostPaymentSuccessHooks(params: {
       currency: params.currency ?? 'THB',
       paymentMethod: 'STRIPE',
       stripePaymentIntentId: params.paymentIntentId ?? null,
+      paidAt: params.paidAt,
       createdBy,
     }).catch((e) => console.error('[stripe/postPayment] income upsert error:', e))
   );

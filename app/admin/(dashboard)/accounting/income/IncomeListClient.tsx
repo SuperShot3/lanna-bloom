@@ -11,6 +11,7 @@ interface Props {
   initialConfirmedAmount: number;
   initialConfirmedStripeFees: number;
   initialPendingAmount: number;
+  initialMissingProofCount: number;
   initialError?: string;
   initialFilters: IncomeFilters;
   initialPage: number;
@@ -55,6 +56,7 @@ export function IncomeListClient({
   initialConfirmedAmount,
   initialConfirmedStripeFees,
   initialPendingAmount,
+  initialMissingProofCount,
   initialError,
   initialFilters,
   initialPage,
@@ -76,7 +78,13 @@ export function IncomeListClient({
   };
 
   const totalPages = Math.ceil(initialTotal / pageSize) || 1;
-  const hasFilters = initialFilters.dateFrom || initialFilters.dateTo || initialFilters.source_mode || initialFilters.source_type || initialFilters.income_status;
+  const hasFilters =
+    initialFilters.dateFrom ||
+    initialFilters.dateTo ||
+    initialFilters.source_mode ||
+    initialFilters.source_type ||
+    initialFilters.income_status ||
+    initialFilters.receipt;
 
   return (
     <div className="admin-income">
@@ -119,9 +127,17 @@ export function IncomeListClient({
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
+        <select className="admin-select" value={initialFilters.receipt ?? 'all'}
+          onChange={(e) => handleFilterChange({ receipt: e.target.value })}
+          aria-label="Proof status"
+          title="Filter by proof of payment status">
+          <option value="all">All proof status</option>
+          <option value="missing">Missing proof only</option>
+          <option value="attached">Has proof</option>
+        </select>
         {hasFilters && (
           <button type="button" className="admin-btn admin-btn-outline admin-btn-sm"
-            onClick={() => handleFilterChange({ dateFrom: undefined, dateTo: undefined, source_mode: undefined, source_type: undefined, income_status: undefined })}>
+            onClick={() => handleFilterChange({ dateFrom: undefined, dateTo: undefined, source_mode: undefined, source_type: undefined, income_status: undefined, receipt: undefined })}>
             Clear
           </button>
         )}
@@ -129,7 +145,17 @@ export function IncomeListClient({
 
       {/* Summary */}
       <div className="admin-expenses-summary">
-        <span className="admin-hint">{initialTotal} record{initialTotal !== 1 ? 's' : ''}</span>
+        <span className="admin-hint">
+          {initialTotal} record{initialTotal !== 1 ? 's' : ''}
+          {initialMissingProofCount > 0 && (
+            <>
+              {' · '}
+              <strong style={{ color: '#d97706' }}>
+                {initialMissingProofCount} missing proof{initialMissingProofCount !== 1 ? 's' : ''}
+              </strong>
+            </>
+          )}
+        </span>
         <div className="admin-income-summary-totals">
           <span className="admin-expenses-total">
             Confirmed revenue (gross): <strong>{fmt(initialConfirmedAmount)}</strong>

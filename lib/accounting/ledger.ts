@@ -11,7 +11,10 @@ import { EXPENSE_CATEGORIES } from '@/types/expenses';
 import type { AccountingTransfer } from '@/types/accountingTransfers';
 import { getAccountingTransfers } from '@/lib/accounting/transfers';
 import type {
+  LedgerCategoryBreakdown,
   LedgerLocationBreakdown,
+  LedgerMonthlyGroup,
+  LedgerPaymentMethodBreakdown,
   LedgerPeriodFilter,
   LedgerResult,
   LedgerRow,
@@ -72,10 +75,15 @@ function paymentMethodLabelExpense(pm: string): string {
   return map[pm] ?? pm;
 }
 
+function incomeDate(r: IncomeRecord): string {
+  // Prefer the new paid_date column; fall back to created_at for safety on legacy rows.
+  return (r.paid_date ?? r.created_at).slice(0, 10);
+}
+
 function incomeMatchesPeriod(r: IncomeRecord, f: LedgerPeriodFilter): boolean {
-  const t = new Date(r.created_at).getTime();
-  if (f.dateFrom && t < Date.parse(f.dateFrom + 'T00:00:00.000Z')) return false;
-  if (f.dateTo && t > Date.parse(f.dateTo + 'T23:59:59.999Z')) return false;
+  const d = incomeDate(r);
+  if (f.dateFrom && d < f.dateFrom.slice(0, 10)) return false;
+  if (f.dateTo && d > f.dateTo.slice(0, 10)) return false;
   return true;
 }
 
@@ -88,7 +96,7 @@ function expenseMatchesPeriod(e: Expense, f: LedgerPeriodFilter): boolean {
 
 function incomeBeforePeriod(r: IncomeRecord, f: LedgerPeriodFilter): boolean {
   if (!f.dateFrom) return false;
-  return new Date(r.created_at).getTime() < Date.parse(f.dateFrom + 'T00:00:00.000Z');
+  return incomeDate(r) < f.dateFrom.slice(0, 10);
 }
 
 function expenseBeforePeriod(e: Expense, f: LedgerPeriodFilter): boolean {
@@ -114,7 +122,7 @@ function toIncomeLedgerRow(
     id: r.id,
     kind: 'income',
     sortIso,
-    displayDate: r.created_at.slice(0, 10),
+    displayDate: incomeDate(r),
     transactionType: 'income',
     category: INCOME_CAT_LABEL[r.source_type] ?? r.source_type,
     description: desc,
@@ -128,6 +136,9 @@ function toIncomeLedgerRow(
     status: r.income_status,
     currency: r.currency || 'THB',
     detailHref: `/admin/accounting/income/${r.id}`,
+    receiptAttached: !!r.receipt_attached,
+    rawCategory: r.source_type,
+    rawPaymentMethod: r.payment_method,
   };
 }
 
@@ -156,6 +167,9 @@ function toExpenseLedgerRow(
     status: null,
     currency: e.currency || 'THB',
     detailHref: `/admin/expenses/${e.id}`,
+    receiptAttached: !!e.receipt_attached,
+    rawCategory: e.category,
+    rawPaymentMethod: e.payment_method,
   };
 }
 
@@ -186,6 +200,29 @@ function toTransferLedgerRow(
     status: t.status,
     currency: t.currency || 'THB',
     detailHref: '/admin/accounting', // no detail page yet
+    receiptAttached: !!t.attachment_attached,
+    rawCategory: 'transfer',
+    rawPaymentMethod: null,
+  };
+}
+
+/** Empty `LedgerResult` shell — used for early returns to avoid duplicating the new fields. */
+function emptyLedgerResult(error?: string): LedgerResult {
+  return {
+    openingBalance: 0,
+    rows: [],
+    periodTotals: {
+      totalIncome: 0,
+      totalExpenses: 0,
+      net: 0,
+      endingBalance: 0,
+    },
+    incomeByLocation: [],
+    monthlyGroups: [],
+    expensesByCategory: [],
+    incomeByPaymentMethod: [],
+    counts: { income: 0, expense: 0, transfer: 0, missingReceipts: 0 },
+    error,
   };
 }
 
@@ -194,18 +231,7 @@ export async function getLedgerEntries(
 ): Promise<LedgerResult> {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
-    return {
-      openingBalance: 0,
-      rows: [],
-      periodTotals: {
-        totalIncome: 0,
-        totalExpenses: 0,
-        net: 0,
-        endingBalance: 0,
-      },
-      incomeByLocation: [],
-      error: 'Supabase not configured',
-    };
+    return emptyLedgerResult('Supabase not configured');
   }
 
   const [
@@ -222,18 +248,7 @@ export async function getLedgerEntries(
     const msg =
       incomeErr?.message || expErr?.message || transferResult.error || 'Query failed';
     console.error('[ledger]', msg);
-    return {
-      openingBalance: 0,
-      rows: [],
-      periodTotals: {
-        totalIncome: 0,
-        totalExpenses: 0,
-        net: 0,
-        endingBalance: 0,
-      },
-      incomeByLocation: [],
-      error: msg,
-    };
+    return emptyLedgerResult(msg);
   }
 
   const incomes = (incomeData ?? []) as IncomeRecord[];
@@ -266,10 +281,12 @@ export async function getLedgerEntries(
 
   for (const r of incomes) {
     if (!hasPeriod || incomeMatchesPeriod(r, filter)) {
-      const sortIso = r.created_at;
+      // Sort and bucket by paid_date (or created_at fallback) so income groups
+      // into the same month bucket as expenses with the same date.
+      const sortIso = `${incomeDate(r)}T00:00:00Z`;
       raw.push({
         type: 'income',
-        sortMs: new Date(r.created_at).getTime(),
+        sortMs: Date.parse(`${incomeDate(r)}T00:00:00Z`),
         sortIso,
         income: r,
       });
@@ -348,6 +365,84 @@ export async function getLedgerEntries(
     })
   );
 
+  // ─── Monthly groups (only meaningful when the period spans 2+ months) ───
+  const monthMap = new Map<string, LedgerMonthlyGroup>();
+  const monthLabel = (ym: string) => {
+    const [y, m] = ym.split('-').map((n) => parseInt(n, 10));
+    if (!y || !m) return ym;
+    return new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  };
+  for (const row of rows) {
+    const ym = row.displayDate.slice(0, 7);
+    let g = monthMap.get(ym);
+    if (!g) {
+      g = { ym, label: monthLabel(ym), totalIncome: 0, totalExpenses: 0, net: 0, rowIds: [] };
+      monthMap.set(ym, g);
+    }
+    g.rowIds.push(row.id);
+    if (row.kind === 'income' && row.amountIn != null) g.totalIncome += row.amountIn;
+    if (row.kind === 'expense' && row.amountOut != null) g.totalExpenses += row.amountOut;
+  }
+  for (const g of Array.from(monthMap.values())) g.net = g.totalIncome - g.totalExpenses;
+  const monthlyGroups: LedgerMonthlyGroup[] =
+    monthMap.size > 1
+      ? Array.from(monthMap.values()).sort((a, b) => b.ym.localeCompare(a.ym))
+      : [];
+
+  // ─── Expenses by category (sub-view footer) ───
+  const catAgg = new Map<string, LedgerCategoryBreakdown>();
+  for (const row of rows) {
+    if (row.kind !== 'expense' || row.amountOut == null) continue;
+    const key = row.rawCategory || 'other';
+    let bucket = catAgg.get(key);
+    if (!bucket) {
+      bucket = {
+        category: key,
+        label: EXPENSE_CAT_LABEL[key] ?? key,
+        total: 0,
+        count: 0,
+      };
+      catAgg.set(key, bucket);
+    }
+    bucket.total += row.amountOut;
+    bucket.count++;
+  }
+  const expensesByCategory: LedgerCategoryBreakdown[] = Array.from(catAgg.values()).sort(
+    (a, b) => b.total - a.total
+  );
+
+  // ─── Income by payment method (sub-view footer) ───
+  const pmAgg = new Map<string, LedgerPaymentMethodBreakdown>();
+  for (const row of rows) {
+    if (row.kind !== 'income' || row.amountIn == null) continue;
+    const key = row.rawPaymentMethod || 'other';
+    let bucket = pmAgg.get(key);
+    if (!bucket) {
+      bucket = {
+        paymentMethod: key,
+        label: paymentMethodLabelIncome(key),
+        total: 0,
+        count: 0,
+      };
+      pmAgg.set(key, bucket);
+    }
+    bucket.total += row.amountIn;
+    bucket.count++;
+  }
+  const incomeByPaymentMethod: LedgerPaymentMethodBreakdown[] = Array.from(pmAgg.values()).sort(
+    (a, b) => b.total - a.total
+  );
+
+  // ─── Counts for sub-tab badges + missing-receipt indicator ───
+  const counts = {
+    income: rows.filter((r) => r.kind === 'income').length,
+    expense: rows.filter((r) => r.kind === 'expense').length,
+    transfer: rows.filter((r) => r.kind === 'transfer').length,
+    missingReceipts: rows.filter(
+      (r) => (r.kind === 'income' || r.kind === 'expense') && r.receiptAttached === false
+    ).length,
+  };
+
   return {
     openingBalance,
     rows,
@@ -358,5 +453,9 @@ export async function getLedgerEntries(
       endingBalance,
     },
     incomeByLocation,
+    monthlyGroups,
+    expensesByCategory,
+    incomeByPaymentMethod,
+    counts,
   };
 }

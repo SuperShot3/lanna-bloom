@@ -6452,6 +6452,23 @@ a.admin-summary-key-value {
   margin-top: 2px;
 }
 
+/* Clickable KPI card variant — used for "missing receipts" jump-to-filter cards. */
+.admin-accounting-kpi-clickable {
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+  transition: transform 0.06s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.admin-accounting-kpi-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.admin-accounting-kpi-clickable:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 /* Sections */
 .admin-accounting-section { margin-bottom: 32px; }
 .admin-accounting-section-title {
@@ -6669,6 +6686,151 @@ a.admin-summary-key-value {
   background: rgba(99, 102, 241, 0.07);
   box-shadow: inset 3px 0 0 0 rgba(99, 102, 241, 0.45);
 }
+
+/* Ledger sub-tabs (Income / Expenses / Transfers / Missing receipts) */
+.admin-ledger-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+}
+.admin-ledger-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-card-bg, #f9fafb);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--admin-text, #111827);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.admin-ledger-subtab:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+.admin-ledger-subtab-active {
+  background: #4338ca;
+  border-color: #4338ca;
+  color: #fff;
+}
+.admin-ledger-subtab-active:hover {
+  background: #3730a3;
+  border-color: #3730a3;
+}
+.admin-ledger-subtab-warn:not(.admin-ledger-subtab-active) {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.admin-ledger-subtab-warn.admin-ledger-subtab-active {
+  background: #d97706;
+  border-color: #d97706;
+  color: #fff;
+}
+.admin-ledger-subtab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 0 6px;
+  height: 18px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.admin-ledger-subtab-active .admin-ledger-subtab-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* Monthly group accordions */
+.admin-ledger-monthly { display: flex; flex-direction: column; gap: 12px; }
+.admin-ledger-month {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--admin-card-bg, #fafafa);
+  overflow: hidden;
+}
+.admin-ledger-month[open] { background: #ffffff; }
+.admin-ledger-month-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  background: linear-gradient(0deg, rgba(99, 102, 241, 0.04), rgba(99, 102, 241, 0.04));
+}
+.admin-ledger-month-summary::-webkit-details-marker { display: none; }
+.admin-ledger-month-label {
+  font-size: 1rem;
+  color: var(--admin-text, #111827);
+}
+.admin-ledger-month-stats {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--admin-text-muted, #4b5563);
+}
+.admin-ledger-month-stats strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer subtotal cards */
+.admin-ledger-subtotals {
+  margin-top: 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--admin-card-bg, #f9fafb);
+}
+.admin-ledger-subtotals-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-muted, #4b5563);
+}
+.admin-ledger-subtotals-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-ledger-subtotal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
+  font-size: 0.92rem;
+}
+.admin-ledger-subtotal-row:last-child { border-bottom: none; }
+.admin-ledger-subtotal-grand {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  border-bottom: none;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.admin-ledger-subtotal-amount { font-variant-numeric: tabular-nums; }
 
 /* Notice bar */
 .admin-accounting-notice {

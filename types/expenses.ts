@@ -42,11 +42,19 @@ export interface ExpenseReceiptImage {
   is_legacy: boolean;
 }
 
+export type ReceiptFilter = 'all' | 'missing' | 'attached';
+
 export interface ExpenseFilters {
   dateFrom?: string;
   dateTo?: string;
   category?: string;
   payment_method?: string;
+  /**
+   * `missing`  → only rows with no receipt attached
+   * `attached` → only rows with a receipt attached
+   * `all` / undefined → no filter
+   */
+  receipt?: ReceiptFilter;
 }
 
 export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [

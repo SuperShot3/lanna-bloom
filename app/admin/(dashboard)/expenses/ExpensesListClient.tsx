@@ -9,6 +9,7 @@ interface ExpensesListClientProps {
   initialExpenses: Expense[];
   initialTotal: number;
   initialTotalAmount: number;
+  initialMissingReceiptCount: number;
   initialError?: string;
   initialFilters: ExpenseFilters;
   initialPage: number;
@@ -43,6 +44,7 @@ export function ExpensesListClient({
   initialExpenses,
   initialTotal,
   initialTotalAmount,
+  initialMissingReceiptCount,
   initialError,
   initialFilters,
   initialPage,
@@ -120,11 +122,22 @@ export function ExpensesListClient({
             <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </select>
-        {(initialFilters.dateFrom || initialFilters.dateTo || initialFilters.category || initialFilters.payment_method) && (
+        <select
+          className="admin-select"
+          value={initialFilters.receipt ?? 'all'}
+          onChange={(e) => handleFilterChange({ receipt: e.target.value })}
+          aria-label="Receipt status"
+          title="Filter by paper-bill / receipt status"
+        >
+          <option value="all">All receipt status</option>
+          <option value="missing">Missing receipt only</option>
+          <option value="attached">Has receipt</option>
+        </select>
+        {(initialFilters.dateFrom || initialFilters.dateTo || initialFilters.category || initialFilters.payment_method || initialFilters.receipt) && (
           <button
             type="button"
             className="admin-btn admin-btn-outline admin-btn-sm"
-            onClick={() => handleFilterChange({ dateFrom: undefined, dateTo: undefined, category: undefined, payment_method: undefined })}
+            onClick={() => handleFilterChange({ dateFrom: undefined, dateTo: undefined, category: undefined, payment_method: undefined, receipt: undefined })}
           >
             Clear filters
           </button>
@@ -135,6 +148,14 @@ export function ExpensesListClient({
       <div className="admin-expenses-summary">
         <span className="admin-hint">
           {initialTotal} expense{initialTotal !== 1 ? 's' : ''} found
+          {initialMissingReceiptCount > 0 && (
+            <>
+              {' · '}
+              <strong style={{ color: '#d97706' }}>
+                {initialMissingReceiptCount} missing receipt{initialMissingReceiptCount !== 1 ? 's' : ''}
+              </strong>
+            </>
+          )}
         </span>
         <span className="admin-expenses-total">
           Total: <strong>{formatAmount(initialTotalAmount)}</strong>

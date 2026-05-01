@@ -6,6 +6,8 @@ interface PageProps {
     dateTo?: string;
     category?: string;
     payment_method?: string;
+    receipt?: string;
+    period?: string;
     page?: string;
   }>;
 }
@@ -18,6 +20,8 @@ export default async function AdminExpensesPage({ searchParams }: PageProps) {
   if (params.dateTo)         qs.set('dateTo', params.dateTo);
   if (params.category)       qs.set('category', params.category);
   if (params.payment_method) qs.set('payment_method', params.payment_method);
+  if (params.receipt)        qs.set('receipt', params.receipt);
+  if (params.period)         qs.set('period', params.period);
   if (params.page)           qs.set('page', params.page);
 
   redirect(`/admin/accounting?${qs.toString()}`);

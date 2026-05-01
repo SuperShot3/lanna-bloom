@@ -95,13 +95,16 @@ export async function PATCH(
 
   // GA4 purchase: GTM fires when the customer opens the paid order page (client dataLayer).
 
-  // Create income record (idempotent, fire-and-forget)
+  // Create income record (idempotent, fire-and-forget). paidAt comes from
+  // the order's paid_at column we just wrote so the income row's paid_date
+  // matches the day the money was received.
   void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
     upsertOrderIncome({
       orderId:       order_id.trim(),
       amount:        updated.grand_total ?? updated.items_total ?? 0,
       currency:      'THB',
       paymentMethod: updated.payment_method,
+      paidAt:        updated.paid_at ?? null,
       createdBy:     `admin:${adminEmail}`,
     }).catch((e) => console.error('[admin/mark-paid] income upsert error:', e))
   );

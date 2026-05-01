@@ -11,11 +11,17 @@ export async function GET(request: NextRequest) {
   if (!authResult.ok) return authResult.response;
 
   const sp = request.nextUrl.searchParams;
+  const receiptRaw = sp.get('receipt');
+  const receipt: 'all' | 'missing' | 'attached' | undefined =
+    receiptRaw === 'missing' || receiptRaw === 'attached' || receiptRaw === 'all'
+      ? receiptRaw
+      : undefined;
   const filters = {
     dateFrom:       sp.get('dateFrom')       ?? undefined,
     dateTo:         sp.get('dateTo')         ?? undefined,
     category:       sp.get('category')       ?? undefined,
     payment_method: sp.get('payment_method') ?? undefined,
+    receipt,
   };
   const page     = Math.max(1, parseInt(sp.get('page') ?? '1', 10));
   const pageSize = Math.min(100, Math.max(1, parseInt(sp.get('pageSize') ?? '30', 10)));
@@ -27,9 +33,10 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    expenses:    result.expenses,
-    total:       result.total,
-    totalAmount: result.totalAmount,
+    expenses:            result.expenses,
+    total:               result.total,
+    totalAmount:         result.totalAmount,
+    missingReceiptCount: result.missingReceiptCount,
     page,
     pageSize,
   });

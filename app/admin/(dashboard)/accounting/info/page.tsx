@@ -5,7 +5,7 @@ import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDispla
 /** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
 const ARTICLE_CREATED = '2026-04-06';
 /** ISO date (YYYY-MM-DD) — bump when you change the text below. */
-const ARTICLE_LAST_UPDATED = '2026-04-07';
+const ARTICLE_LAST_UPDATED = '2026-05-02';
 
 function formatArticleDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
@@ -127,24 +127,28 @@ export default function AccountingInfoPage() {
         </section>
 
         <section className="admin-accounting-info-section">
-          <h2 className="admin-accounting-info-heading">Dates &amp; creation time</h2>
+          <h2 className="admin-accounting-info-heading">Dates &amp; the period filter</h2>
           <ul className="admin-accounting-info-list">
             <li>
-              <strong>Income records — created date</strong> — Each row has a <strong>created</strong>{' '}
-              timestamp (when it was saved in the system). The accounting overview and income list filters
-              use this <strong>creation time</strong> for the selected period, not the day the customer paid
-              (unless they happen to match).
+              <strong>Income records — paid date</strong> — Each row has a{' '}
+              <strong>date money received</strong> (paid date). The accounting overview, ledger, and income
+              list use this date for the selected period — so a cash sale entered today but received yesterday
+              is counted in yesterday&rsquo;s month. Auto-created rows from paid orders use the order&rsquo;s
+              payment timestamp; manual rows use the date you enter on the form.
             </li>
             <li>
-              <strong>Expenses — expense date vs created</strong> — You choose an <strong>expense date</strong>{' '}
-              (the business day the cost belongs to). Totals and filters use that date. The row also has a{' '}
+              <strong>Expenses — expense date</strong> — You choose an <strong>expense date</strong> (the
+              business day the cost belongs to). Totals and filters use that date. The row also has a{' '}
               <strong>created</strong> time for when it was first entered; that is mainly for audit, not for
               the main totals.
             </li>
             <li>
-              Comparing income and expenses for one calendar month: income is grouped by <strong>creation
-              date</strong>, expenses by <strong>expense date</strong> — they may not line up exactly; use the
-              same range and interpret with that in mind.
+              Income paid_date and expense date use the same calendar boundaries, so monthly totals line up
+              naturally — &ldquo;How much we made this month&rdquo; reflects what actually happened in the month.
+            </li>
+            <li>
+              Default period is the <strong>current calendar month</strong>. Use the quick buttons (This
+              month / Last month / Year to date / All time) above the tabs to switch ranges fast.
             </li>
           </ul>
         </section>

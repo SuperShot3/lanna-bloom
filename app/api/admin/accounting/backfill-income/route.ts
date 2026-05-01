@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       currency:              'THB',
       paymentMethod:         order.payment_method,
       stripePaymentIntentId: order.stripe_payment_intent_id ?? null,
+      paidAt:                order.paid_at ?? null,
       createdBy,
     }).then(() => ({ created: true, error: undefined }))
       .catch((e) => ({ created: false, error: String(e) }));

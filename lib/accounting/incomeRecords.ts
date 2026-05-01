@@ -25,6 +25,8 @@ export interface IncomeListResult {
   /** Confirmed rows: gross minus processing fees */
   totalConfirmedNetAmount: number;
   totalPendingAmount: number;
+  /** Count of rows in the filtered set whose `receipt_attached = false` (missing proof of payment). */
+  missingProofCount: number;
   error?: string;
 }
 
@@ -41,6 +43,7 @@ export async function getIncomeRecords(
       totalConfirmedStripeFees: 0,
       totalConfirmedNetAmount: 0,
       totalPendingAmount: 0,
+      missingProofCount: 0,
       error: 'Supabase not configured',
     };
   }
@@ -51,13 +54,19 @@ export async function getIncomeRecords(
 
   let query = supabase.from(TABLE).select('*', { count: 'exact' });
 
-  if (filters.dateFrom)     query = query.gte('created_at', filters.dateFrom);
-  if (filters.dateTo)       query = query.lte('created_at', filters.dateTo + 'T23:59:59');
+  // Period filter uses paid_date (the day money actually arrived) so monthly
+  // totals line up with expense `date`. Falls back transparently for legacy
+  // rows because the migration backfills paid_date from created_at.
+  if (filters.dateFrom)     query = query.gte('paid_date', filters.dateFrom.slice(0, 10));
+  if (filters.dateTo)       query = query.lte('paid_date', filters.dateTo.slice(0, 10));
   if (filters.source_mode && filters.source_mode !== 'all')   query = query.eq('source_mode', filters.source_mode);
   if (filters.source_type && filters.source_type !== 'all')   query = query.eq('source_type', filters.source_type);
   if (filters.income_status && filters.income_status !== 'all') query = query.eq('income_status', filters.income_status);
+  if (filters.receipt === 'missing')  query = query.eq('receipt_attached', false);
+  if (filters.receipt === 'attached') query = query.eq('receipt_attached', true);
 
   const { data, count, error } = await query
+    .order('paid_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to);
 
@@ -70,25 +79,29 @@ export async function getIncomeRecords(
       totalConfirmedStripeFees: 0,
       totalConfirmedNetAmount: 0,
       totalPendingAmount: 0,
+      missingProofCount: 0,
       error: error.message,
     };
   }
 
-  // Total amount calculation over full filtered set
+  // Aggregate amount totals + missing-proof count over the full filtered set.
   let amountQuery = supabase
     .from(TABLE)
-    .select('amount, income_status, payment_method, processing_fee_amount')
+    .select('amount, income_status, payment_method, processing_fee_amount, receipt_attached')
     .neq('income_status', 'cancelled');
-  if (filters.dateFrom)   amountQuery = amountQuery.gte('created_at', filters.dateFrom);
-  if (filters.dateTo)     amountQuery = amountQuery.lte('created_at', filters.dateTo + 'T23:59:59');
+  if (filters.dateFrom)   amountQuery = amountQuery.gte('paid_date', filters.dateFrom.slice(0, 10));
+  if (filters.dateTo)     amountQuery = amountQuery.lte('paid_date', filters.dateTo.slice(0, 10));
   if (filters.source_mode && filters.source_mode !== 'all') amountQuery = amountQuery.eq('source_mode', filters.source_mode);
   if (filters.source_type && filters.source_type !== 'all') amountQuery = amountQuery.eq('source_type', filters.source_type);
+  if (filters.receipt === 'missing')  amountQuery = amountQuery.eq('receipt_attached', false);
+  if (filters.receipt === 'attached') amountQuery = amountQuery.eq('receipt_attached', true);
 
   const { data: amountRows } = await amountQuery;
   let totalConfirmedAmount = 0;
   let totalConfirmedStripeFees = 0;
   let totalConfirmedNetAmount = 0;
   let totalPendingAmount = 0;
+  let missingProofCount = 0;
   for (const row of amountRows ?? []) {
     const gross = parseFloat(String(row.amount)) || 0;
     const feeRaw = row.processing_fee_amount;
@@ -103,6 +116,7 @@ export async function getIncomeRecords(
     } else {
       totalPendingAmount += gross;
     }
+    if (row.receipt_attached === false) missingProofCount++;
   }
 
   return {
@@ -112,6 +126,7 @@ export async function getIncomeRecords(
     totalConfirmedStripeFees,
     totalConfirmedNetAmount,
     totalPendingAmount,
+    missingProofCount,
   };
 }
 
@@ -195,6 +210,8 @@ export interface CreateIncomeInput {
   proof_file_path?: string | null;
   receipt_attached?: boolean;
   notes?: string | null;
+  /** YYYY-MM-DD — when the money actually arrived. Defaults to today on the DB side. */
+  paid_date?: string | null;
   created_by: string;
 }
 
@@ -223,6 +240,7 @@ export async function createIncomeRecord(
       proof_file_path:   input.proof_file_path ?? null,
       receipt_attached:  input.receipt_attached ?? false,
       notes:             input.notes ?? null,
+      paid_date:         input.paid_date ?? undefined, // let DB default fire when omitted
       created_by:        input.created_by,
       confirmed_at:      (input.income_status ?? 'confirmed') === 'confirmed' ? new Date().toISOString() : null,
     })
@@ -251,6 +269,8 @@ export interface UpsertOrderIncomeInput {
   description: string;
   external_reference?: string | null;
   created_by?: string;
+  /** YYYY-MM-DD — when the order was paid. Defaults to today if omitted. */
+  paid_date?: string | null;
 }
 
 /**
@@ -282,6 +302,7 @@ export async function upsertOrderIncomeRecord(
       proof_file_path:   null,
       receipt_attached:  false,
       notes:             null,
+      paid_date:         input.paid_date ?? undefined,
       created_by:        input.created_by ?? 'system',
       confirmed_at:      now,
     });
@@ -371,16 +392,17 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     return loc || 'other';
   };
 
-  // Income: all non-cancelled records in period
+  // Income: all non-cancelled records in period (filtered by paid_date so it
+  // matches expense `date` and "real income this month" is accurate).
   let incomeQuery = supabase
     .from(TABLE)
-    .select('amount, income_status, money_location, payment_method, processing_fee_amount');
-  if (filter.dateFrom) incomeQuery = incomeQuery.gte('created_at', filter.dateFrom);
-  if (filter.dateTo)   incomeQuery = incomeQuery.lte('created_at', filter.dateTo + 'T23:59:59');
+    .select('amount, income_status, money_location, payment_method, processing_fee_amount, receipt_attached');
+  if (filter.dateFrom) incomeQuery = incomeQuery.gte('paid_date', filter.dateFrom.slice(0, 10));
+  if (filter.dateTo)   incomeQuery = incomeQuery.lte('paid_date', filter.dateTo.slice(0, 10));
   incomeQuery = incomeQuery.neq('income_status', 'cancelled');
 
-  // Expenses in period — include payment_method so we can allocate to the correct location
-  let expenseQuery = supabase.from('expenses').select('amount, payment_method');
+  // Expenses in period — include payment_method (for location) and receipt_attached (for missing-bill KPI).
+  let expenseQuery = supabase.from('expenses').select('amount, payment_method, receipt_attached');
   if (filter.dateFrom) expenseQuery = expenseQuery.gte('date', filter.dateFrom?.slice(0, 10));
   if (filter.dateTo)   expenseQuery = expenseQuery.lte('date', filter.dateTo?.slice(0, 10));
 
@@ -399,6 +421,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   let stripeProcessingFees = 0;
   let confirmedIncomeNet = 0;
   let pendingIncome = 0;
+  let incomeMissingProofCount = 0;
   const locationGross: Record<string, number> = {};
   const locationNet: Record<string, number> = {};
 
@@ -422,6 +445,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     } else {
       pendingIncome += gross;
     }
+    if (row.receipt_attached === false) incomeMissingProofCount++;
   }
 
   // Map each expense to the money_location it actually came out of.
@@ -432,6 +456,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   //   qr_payment    → bank  (PromptPay settles to bank account)
   //   other / unknown → other
   const expensesByLocation: Record<string, number> = {};
+  let expensesMissingReceiptCount = 0;
   for (const row of expenseRows ?? []) {
     const amount = parseFloat(String(row.amount)) || 0;
     const pm = String(row.payment_method ?? 'other');
@@ -444,6 +469,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
       // Stripe balance is locked and cannot be spent from, so expenses must reduce bank or cash.
       'bank';
     expensesByLocation[loc] = (expensesByLocation[loc] ?? 0) + amount;
+    if (row.receipt_attached === false) expensesMissingReceiptCount++;
   }
 
   const totalExpenses = Object.values(expensesByLocation).reduce((s, v) => s + v, 0);
@@ -494,6 +520,8 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     incomeByLocation,
     incomeCount: (incomeRows ?? []).length,
     expenseCount: (expenseRows ?? []).length,
+    expensesMissingReceiptCount,
+    incomeMissingProofCount,
     currency: 'THB',
   };
 }

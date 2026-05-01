@@ -8,6 +8,8 @@ export interface ExpensesResult {
   expenses: Expense[];
   total: number;
   totalAmount: number;
+  /** Count of rows in the filtered set whose `receipt_attached = false` (the "paper bill" gap). */
+  missingReceiptCount: number;
   error?: string;
 }
 
@@ -17,7 +19,7 @@ export async function getExpenses(
 ): Promise<ExpensesResult> {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
-    return { expenses: [], total: 0, totalAmount: 0, error: 'Supabase not configured' };
+    return { expenses: [], total: 0, totalAmount: 0, missingReceiptCount: 0, error: 'Supabase not configured' };
   }
 
   const { page, pageSize } = pagination;
@@ -32,6 +34,8 @@ export async function getExpenses(
   if (filters.payment_method && filters.payment_method !== 'all') {
     query = query.eq('payment_method', filters.payment_method);
   }
+  if (filters.receipt === 'missing')  query = query.eq('receipt_attached', false);
+  if (filters.receipt === 'attached') query = query.eq('receipt_attached', true);
 
   const { data, count, error } = await query
     .order('date', { ascending: false })
@@ -40,30 +44,35 @@ export async function getExpenses(
 
   if (error) {
     console.error('[expenseQueries] getExpenses error:', error.message);
-    return { expenses: [], total: 0, totalAmount: 0, error: error.message };
+    return { expenses: [], total: 0, totalAmount: 0, missingReceiptCount: 0, error: error.message };
   }
 
-  // Calculate total amount for the full filtered set (not just the page)
-  let totalAmountQuery = supabase.from(TABLE).select('amount');
-  if (filters.dateFrom) totalAmountQuery = totalAmountQuery.gte('date', filters.dateFrom);
-  if (filters.dateTo)   totalAmountQuery = totalAmountQuery.lte('date', filters.dateTo);
+  // Aggregate total amount + missing-receipt count for the full filtered set (not just the page).
+  let aggregateQuery = supabase.from(TABLE).select('amount, receipt_attached');
+  if (filters.dateFrom) aggregateQuery = aggregateQuery.gte('date', filters.dateFrom);
+  if (filters.dateTo)   aggregateQuery = aggregateQuery.lte('date', filters.dateTo);
   if (filters.category && filters.category !== 'all') {
-    totalAmountQuery = totalAmountQuery.eq('category', filters.category);
+    aggregateQuery = aggregateQuery.eq('category', filters.category);
   }
   if (filters.payment_method && filters.payment_method !== 'all') {
-    totalAmountQuery = totalAmountQuery.eq('payment_method', filters.payment_method);
+    aggregateQuery = aggregateQuery.eq('payment_method', filters.payment_method);
   }
+  if (filters.receipt === 'missing')  aggregateQuery = aggregateQuery.eq('receipt_attached', false);
+  if (filters.receipt === 'attached') aggregateQuery = aggregateQuery.eq('receipt_attached', true);
 
-  const { data: amountRows } = await totalAmountQuery;
-  const totalAmount = (amountRows ?? []).reduce(
-    (sum, row) => sum + (parseFloat(String(row.amount)) || 0),
-    0
-  );
+  const { data: amountRows } = await aggregateQuery;
+  let totalAmount = 0;
+  let missingReceiptCount = 0;
+  for (const row of amountRows ?? []) {
+    totalAmount += parseFloat(String(row.amount)) || 0;
+    if (row.receipt_attached === false) missingReceiptCount++;
+  }
 
   return {
     expenses: (data ?? []) as Expense[],
     total: count ?? 0,
     totalAmount,
+    missingReceiptCount,
   };
 }
 
