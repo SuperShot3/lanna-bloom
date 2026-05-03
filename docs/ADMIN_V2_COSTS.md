@@ -4,6 +4,8 @@
 
 The order detail page (`/admin/orders/[order_id]`) includes a **Costs & Profit** card with editable cost fields and calculated profit.
 
+Full accounting behavior (income vs expenses, money buckets): [ACCOUNTING_AND_EXPENSES.md](ACCOUNTING_AND_EXPENSES.md).
+
 ## Columns (Supabase `orders` table)
 
 | Column | Type | Description |
@@ -33,6 +35,19 @@ If columns are missing, run in Supabase SQL Editor:
 ## Env vars
 
 No new env vars. Uses existing `ORDERS_ADMIN_SECRET` and Supabase config.
+
+## Synced expense rows (Accounting)
+
+Saving costs also **creates or updates** linked rows in `public.expenses` for internal bookkeeping:
+
+| Trigger | `category` | `description` | `notes` | `payment_method` |
+|---------|------------|---------------|---------|------------------|
+| COGS saved | `flowers` | `COGS (flowers) — order {order_id}` | `Auto from order COGS` | `bank_transfer` |
+| Positive `delivery_cost` | `delivery` | `Delivery (driver) — order {order_id}` | `Auto from order delivery cost` | `bank_transfer` |
+
+Both rows set `linked_order_id` to the order id and use the order’s paid date (or created date) as expense `date`. Removing delivery cost to zero deletes the auto-synced delivery expense rows that match the delivery sync note.
+
+For money-location behavior (how these hit Bank vs Cash on the overview), see **[ACCOUNTING_AND_EXPENSES.md](ACCOUNTING_AND_EXPENSES.md)**.
 
 ## Testing
 

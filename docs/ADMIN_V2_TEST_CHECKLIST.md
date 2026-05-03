@@ -104,6 +104,7 @@
 - [ ] Save button disabled until a value changes
 - [ ] Loading state ("Saving…") while saving
 - [ ] "Costs last updated" shows updated_at timestamp after save
+- [ ] After save, Accounting → Expenses (or Supabase `expenses`): synced **flowers** / **delivery** rows use **Bank account** (`bank_transfer`), not Cash — see [ACCOUNTING_AND_EXPENSES.md](ACCOUNTING_AND_EXPENSES.md)
 
 ### 14. Validation
 

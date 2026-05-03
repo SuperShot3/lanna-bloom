@@ -47,7 +47,7 @@ Ensure these tables exist with the expected columns:
 
 ## Admin Dashboard v2
 
-The Admin Dashboard v2 at `/admin` reads orders from Supabase. See [ADMIN_V2_TEST_CHECKLIST.md](ADMIN_V2_TEST_CHECKLIST.md) for manual testing.
+The Admin Dashboard v2 at `/admin` reads orders from Supabase. See [ADMIN_V2_TEST_CHECKLIST.md](ADMIN_V2_TEST_CHECKLIST.md) for manual testing. Accounting (income, expenses, costs sync): [ACCOUNTING_AND_EXPENSES.md](ACCOUNTING_AND_EXPENSES.md).
 
 ## Files
 

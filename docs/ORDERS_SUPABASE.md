@@ -38,3 +38,7 @@ Stripe webhook events are recorded in `stripe_events` to prevent double-processi
 - `lib/orders/` — Store abstraction (router, blobStore, supabaseStore)
 - `lib/orders.ts` — Public API re-exports
 - `app/api/stripe/webhook/route.ts` — Idempotent payment updates
+
+## Related
+
+- [ACCOUNTING_AND_EXPENSES.md](ACCOUNTING_AND_EXPENSES.md) — Income vs expenses and synced order costs.

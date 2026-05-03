@@ -1,5 +1,13 @@
 # Admin Runbooks
 
+## Accounting & expenses
+
+Developer / operator reference for income, expenses, synced COGS & delivery rows, and “where the money is” buckets: **[ACCOUNTING_AND_EXPENSES.md](../ACCOUNTING_AND_EXPENSES.md)**.
+
+Order costs API and auto-created expense rows: **[ADMIN_V2_COSTS.md](../ADMIN_V2_COSTS.md)**.
+
+---
+
 ## Add admin user
 
 ### Option 1: Seed script (recommended)

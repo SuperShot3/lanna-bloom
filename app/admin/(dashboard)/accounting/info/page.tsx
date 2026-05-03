@@ -5,7 +5,7 @@ import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDispla
 /** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
 const ARTICLE_CREATED = '2026-04-06';
 /** ISO date (YYYY-MM-DD) — bump when you change the text below. */
-const ARTICLE_LAST_UPDATED = '2026-05-02';
+const ARTICLE_LAST_UPDATED = '2026-05-03';
 
 function formatArticleDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
@@ -32,6 +32,10 @@ export default function AccountingInfoPage() {
             The Accounting section is an internal ledger: it helps you see money coming in from sales,
             money going out as expenses, and a simple profit figure. It is designed for day-to-day
             operations, not for full statutory accounting.
+          </p>
+          <p className="admin-hint" style={{ marginTop: '0.75rem' }}>
+            Developer reference (repo):{' '}
+            <code className="admin-expenses-id">docs/ACCOUNTING_AND_EXPENSES.md</code>
           </p>
         </section>
 
@@ -116,12 +120,14 @@ export default function AccountingInfoPage() {
               does not count toward net result.
             </li>
             <li>
-              <strong>Net by money location</strong> — Shows confirmed income <strong>after Stripe fees</strong>.
-              <strong> All period expenses</strong> are deducted only from the <strong>Stripe balance</strong> row
-              (money that sits in Stripe until it is paid out to your bank). Bank, cash, and other rows show
-              net after fees only. The Stripe row includes that full expense total so the rows still add up to
-              Net Result. Next scheduled bank payout (for UI reference): <strong>{formatStripeNextPayoutShort()}</strong>{' '}
-              — update the date in code when your Stripe schedule changes.
+              <strong>Net by money location (“Where the money is”)</strong> — Each row shows confirmed income{' '}
+              <strong>after Stripe processing fees</strong> for that channel, minus expenses recorded as paid{' '}
+              <strong>from that channel</strong>: <strong>Cash</strong> expenses reduce Cash;{' '}
+              <strong>Bank account</strong> / card / QR expenses reduce Bank account. Stripe income stays under{' '}
+              <strong>Stripe balance</strong> until you record a <strong>transfer</strong> to the bank.{' '}
+              <strong>Total expenses</strong> still roll into the overall <strong>net result</strong>; this grid only splits{' '}
+              where those deductions apply for planning. Next scheduled Stripe payout (reference):{' '}
+              <strong>{formatStripeNextPayoutShort()}</strong> — update in code when your Stripe schedule changes.
             </li>
           </ul>
         </section>

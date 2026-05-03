@@ -67,3 +67,5 @@ To see current orders and remove them (e.g. after delivery):
    - Open the admin URL in the browser.  
    - Sign in with email and password.  
    - View orders, update status, edit costs, and use **Delivered — Remove** on the order detail page after delivery.
+
+4. **Accounting** — Income, expenses, and how synced COGS/delivery rows behave: [ACCOUNTING_AND_EXPENSES.md](ACCOUNTING_AND_EXPENSES.md).
