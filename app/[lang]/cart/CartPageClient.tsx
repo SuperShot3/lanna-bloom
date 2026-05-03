@@ -2736,8 +2736,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             border-color: var(--accent);
           }
           .cart-accordion-body-contact .cart-phone-country-select {
-            padding: 12px 14px;
-            font-size: 1rem;
+            padding: 10px 8px;
+            font-size: 0.875rem;
             border: none;
             border-right: 1px solid var(--border);
             border-radius: 8px 0 0 8px;
@@ -2746,6 +2746,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             font-family: inherit;
             font-weight: 600;
             cursor: pointer;
+            flex: 0 1 7rem;
+            min-width: 0;
+            max-width: 8.75rem;
+            box-sizing: border-box;
           }
           .cart-accordion-body-contact .cart-phone-input {
             flex: 1;
@@ -3203,14 +3207,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             min-height: 48px !important;
           }
           .cart-mobile-contact-fields .cart-phone-country-select {
-            padding: 12px 14px !important;
-            font-size: 1rem !important;
+            padding: 10px 8px !important;
+            font-size: 0.875rem !important;
             border: none !important;
             border-right: 1px solid #ebe6e0 !important;
             border-radius: 8px 0 0 8px !important;
             background: #f9f5f0 !important;
             color: #2d2a26 !important;
             min-height: 48px !important;
+            flex: 0 1 7rem !important;
+            min-width: 0 !important;
+            max-width: 8.75rem !important;
+            box-sizing: border-box !important;
           }
           .cart-mobile-contact-fields .cart-phone-input {
             flex: 1 !important;
