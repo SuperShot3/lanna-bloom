@@ -347,11 +347,8 @@ export async function getLedgerEntries(
       const r = item.income;
       const delta = ledgerIncomeDelta(r);
       totalIncome += delta;
-      if (r.income_status === 'confirmed') {
-        const gross = Number(r.amount) || 0;
-        const loc = String(r.money_location ?? 'other');
-        locMap[loc] = (locMap[loc] ?? 0) + gross;
-      }
+      const loc = String(r.money_location ?? 'other');
+      locMap[loc] = (locMap[loc] ?? 0) + delta;
     } else if (item.type === 'expense' && item.expense) {
       totalExpenses += Number(item.expense.amount) || 0;
     }

@@ -41,6 +41,45 @@ export interface FullPhoneHint {
 }
 
 /** National part pasted with country code again, e.g. +66 selected and "66952572645" in the box → 6669… */
+/** ITU telephone calling codes are 1–3 digits (e.g. 1, 44, 66, 886). */
+const CALLING_CODE_MAX_LEN = 3;
+
+/**
+ * Normalize optional calling-code field from API/UI (digits only).
+ * Returns undefined if missing or invalid length.
+ */
+export function normalizeOptionalCallingCodeDigits(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const d = raw.replace(/\D/g, '');
+  if (!d) return undefined;
+  if (d.length < 1 || d.length > CALLING_CODE_MAX_LEN) return undefined;
+  return d;
+}
+
+/** True when full international digits start with the given calling code. */
+export function fullDigitsStartWithCallingCode(fullDigits: string, callingCode: string): boolean {
+  const cc = callingCode.replace(/\D/g, '');
+  if (!cc) return false;
+  return fullDigits.startsWith(cc);
+}
+
+/**
+ * When a calling code is sent with a full international number, they must agree.
+ * @returns error message or null if valid / no calling code sent.
+ */
+export function callingCodeMismatchError(
+  fullDigits: string,
+  callingCodeRaw: unknown,
+  fieldLabel: string
+): string | null {
+  const cc = normalizeOptionalCallingCodeDigits(callingCodeRaw);
+  if (!cc) return null;
+  if (!fullDigitsStartWithCallingCode(fullDigits, cc)) {
+    return `${fieldLabel} does not match the beginning of the full phone number`;
+  }
+  return null;
+}
+
 export function nationalNumberIncludesCountryCode(countryCode: string, nationalDigits: string): boolean {
   const cc = countryCode.trim();
   if (!cc || !nationalDigits) return false;

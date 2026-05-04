@@ -12,8 +12,11 @@ import {
   type IncomeStatus,
 } from '@/types/accounting';
 import { expenseDocumentationComplete, parseExpenseBillTrackingJson } from '@/types/expenses';
+import { getRefundsTotalInPeriod } from '@/lib/accounting/incomeRefunds';
 
 const TABLE = 'income_records';
+
+const COGS_EXPENSE_CATEGORIES = new Set(['flowers', 'delivery']);
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
@@ -289,6 +292,11 @@ export interface UpsertOrderIncomeInput {
   created_by?: string;
   /** YYYY-MM-DD — when the order was paid. Defaults to today if omitted. */
   paid_date?: string | null;
+  /**
+   * When set (including 0), stored on `processing_fee_amount` instead of the estimated % from {@link processingFeeForIncome}.
+   * Populated from Stripe `balance_transaction.fee` for Stripe checkouts when available.
+   */
+  processing_fee_amount?: number | null;
 }
 
 /**
@@ -304,7 +312,11 @@ export async function upsertOrderIncomeRecord(
 
   try {
     const now = new Date().toISOString();
-    const fee = processingFeeForIncome(input.amount, input.payment_method);
+    const hasFeeOverride =
+      input.processing_fee_amount != null && Number.isFinite(Number(input.processing_fee_amount));
+    const fee = hasFeeOverride
+      ? Math.max(0, Number(input.processing_fee_amount))
+      : processingFeeForIncome(input.amount, input.payment_method);
     const { error } = await supabase.from(TABLE).insert({
       order_id:          input.order_id,
       source_mode:       'auto_order',
@@ -420,11 +432,14 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   incomeQuery = incomeQuery.neq('income_status', 'cancelled');
 
   // Expenses in period — payment_method (location), receipt + bill_tracking (documentation KPI).
-  let expenseQuery = supabase.from('expenses').select('amount, payment_method, receipt_attached, bill_tracking');
+  let expenseQuery = supabase
+    .from('expenses')
+    .select('amount, payment_method, receipt_attached, bill_tracking, category');
   if (filter.dateFrom) expenseQuery = expenseQuery.gte('date', filter.dateFrom?.slice(0, 10));
   if (filter.dateTo)   expenseQuery = expenseQuery.lte('date', filter.dateTo?.slice(0, 10));
 
-  const [{ data: incomeRows }, { data: expenseRows }, { data: transferRows }] = await Promise.all([
+  const [{ data: incomeRows }, { data: expenseRows }, { data: transferRows }, totalRefunds] =
+    await Promise.all([
     incomeQuery,
     expenseQuery,
     supabase
@@ -432,6 +447,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
       .select('amount, from_location, to_location, status')
       .gte('transfer_date', filter.dateFrom?.slice(0, 10) ?? '0001-01-01')
       .lte('transfer_date', filter.dateTo?.slice(0, 10) ?? '9999-12-31'),
+    getRefundsTotalInPeriod(filter),
   ]);
 
   let totalIncome = 0;
@@ -483,8 +499,16 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   //   other / unknown → other
   const expensesByLocation: Record<string, number> = {};
   let expensesMissingReceiptCount = 0;
+  let cogsSubtotal = 0;
+  let operatingExpensesSubtotal = 0;
   for (const row of expenseRows ?? []) {
     const amount = parseFloat(String(row.amount)) || 0;
+    const cat = String((row as { category?: unknown }).category ?? 'other');
+    if (COGS_EXPENSE_CATEGORIES.has(cat)) {
+      cogsSubtotal += amount;
+    } else {
+      operatingExpensesSubtotal += amount;
+    }
     const pm = String(row.payment_method ?? 'other');
     const loc =
       pm === 'cash'          ? 'cash'  :
@@ -507,6 +531,10 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   }
 
   const totalExpenses = Object.values(expensesByLocation).reduce((s, v) => s + v, 0);
+
+  const confirmedIncomeNetAfterRefunds = Math.round((confirmedIncomeNet - totalRefunds) * 100) / 100;
+  const grossProfit = Math.round((confirmedIncomeNetAfterRefunds - cogsSubtotal) * 100) / 100;
+  const netResult = Math.round((confirmedIncomeNetAfterRefunds - totalExpenses) * 100) / 100;
 
   const transferNetByLocation: Record<string, number> = {};
   for (const t of transferRows ?? []) {
@@ -548,9 +576,14 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     confirmedIncome,
     stripeProcessingFees,
     confirmedIncomeNet,
+    totalRefunds,
+    confirmedIncomeNetAfterRefunds,
+    cogsSubtotal,
+    operatingExpensesSubtotal,
+    grossProfit,
     pendingIncome,
     totalExpenses,
-    netResult: confirmedIncomeNet - totalExpenses,
+    netResult,
     incomeByLocation,
     incomeCount: (incomeRows ?? []).length,
     expenseCount: (expenseRows ?? []).length,

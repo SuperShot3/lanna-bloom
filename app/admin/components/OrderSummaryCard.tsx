@@ -3,6 +3,7 @@ import {
   buildDriverMessengerPlainText,
   buildOrderSummaryPlainText,
   checkoutMapsUrl,
+  customerPhoneDisplay,
   formatAmountNa,
   naText,
   preferredContactDisplay,
@@ -82,7 +83,8 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
           <p>{naText(order.customer_name)}</p>
           <p className="admin-muted">Email: {naText(order.customer_email)}</p>
           <p className="admin-muted">
-            Phone: <span className="admin-summary-key-value">{naText(order.phone)}</span>
+            Phone:{' '}
+            <span className="admin-summary-key-value">{naText(customerPhoneDisplay(order))}</span>
           </p>
           <p className="admin-muted">Preferred contact: {preferredContactDisplay(order)}</p>
         </div>

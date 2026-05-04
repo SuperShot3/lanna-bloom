@@ -5,7 +5,12 @@ import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
 import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
-import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
+import {
+  callingCodeMismatchError,
+  normalizeOptionalCallingCodeDigits,
+  stripDuplicateThaiLeading66,
+  thaiFullPhoneHasDuplicateCountryCode,
+} from '@/lib/phoneFieldHints';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 
 function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | { ok: false; message: string } {
@@ -97,6 +102,19 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       message: 'phone must not repeat country code 66 (use one full number, e.g. 66952572645)',
     };
   }
+  const phoneCcRaw = b.phoneCountryCode;
+  if (
+    phoneCcRaw !== undefined &&
+    phoneCcRaw !== null &&
+    String(phoneCcRaw).trim() !== '' &&
+    !normalizeOptionalCallingCodeDigits(phoneCcRaw)
+  ) {
+    return { ok: false, message: 'phoneCountryCode must be 1–3 digits (calling code only)' };
+  }
+  const phoneCcErr = callingCodeMismatchError(phone, phoneCcRaw, 'phoneCountryCode');
+  if (phoneCcErr) {
+    return { ok: false, message: phoneCcErr };
+  }
   if (
     recipientPhone &&
     /^\d+$/.test(recipientPhone) &&
@@ -107,6 +125,30 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       message:
         'recipientPhone must not repeat country code 66 (use one full number, e.g. 66952572645)',
     };
+  }
+  const recipientCcRaw = d.recipientPhoneCountryCode;
+  if (
+    recipientCcRaw !== undefined &&
+    recipientCcRaw !== null &&
+    String(recipientCcRaw).trim() !== '' &&
+    !normalizeOptionalCallingCodeDigits(recipientCcRaw)
+  ) {
+    return {
+      ok: false,
+      message: 'recipientPhoneCountryCode must be 1–3 digits (calling code only)',
+    };
+  }
+  if (recipientPhone) {
+    const recCcErr = callingCodeMismatchError(
+      recipientPhone,
+      recipientCcRaw,
+      'recipientPhoneCountryCode'
+    );
+    if (recCcErr) {
+      return { ok: false, message: recCcErr };
+    }
+  } else if (normalizeOptionalCallingCodeDigits(recipientCcRaw)) {
+    return { ok: false, message: 'recipientPhoneCountryCode requires delivery.recipientPhone' };
   }
 
   const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.trim() : undefined;
@@ -148,7 +190,10 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
 
   const payload: OrderPayload = {
     customerName,
-    phone: typeof b.phone === 'string' ? b.phone.trim() || undefined : undefined,
+    phone,
+    ...(normalizeOptionalCallingCodeDigits(phoneCcRaw) && {
+      phoneCountryCode: normalizeOptionalCallingCodeDigits(phoneCcRaw),
+    }),
     customerEmail: customerEmail || undefined,
     items: items.map((it: unknown) => {
       const i = it as Record<string, unknown>;
@@ -192,6 +237,9 @@ function validatePayload(body: unknown): { ok: true; payload: OrderPayload } | {
       preferredTimeSlot,
       recipientName: recipientName || undefined,
       recipientPhone: recipientPhone || undefined,
+      ...(normalizeOptionalCallingCodeDigits(recipientCcRaw) && {
+        recipientPhoneCountryCode: normalizeOptionalCallingCodeDigits(recipientCcRaw),
+      }),
       ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       notes: typeof d.notes === 'string' ? d.notes : undefined,
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,

@@ -91,6 +91,7 @@ export async function dualWriteOrder(order: Order): Promise<void> {
       customer_name: order.customerName ?? null,
       customer_email: order.customerEmail ?? null,
       phone: order.phone ?? null,
+      phone_country_code: order.phoneCountryCode ?? null,
       address: order.delivery.address ?? null,
       district: order.delivery.deliveryDistrict ?? 'UNKNOWN',
       delivery_window: deliveryWindow,
@@ -106,6 +107,7 @@ export async function dualWriteOrder(order: Order): Promise<void> {
       created_at: order.createdAt,
       recipient_name: order.delivery.recipientName ?? null,
       recipient_phone: order.delivery.recipientPhone ?? null,
+      recipient_phone_country_code: order.delivery.recipientPhoneCountryCode ?? null,
       contact_preference: order.contactPreference
         ? JSON.stringify(order.contactPreference)
         : null,

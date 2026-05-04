@@ -6,7 +6,7 @@ Dual-write keeps legacy Blob/JSON storage as the primary source of truth while p
 
 ## Env Vars (Vercel)
 
-| Variable | Required | Description |
+| Variable | Required | Description |oisd,5re
 |----------|----------|-------------|
 | `SUPABASE_URL` | Yes (for dual-write) | Supabase project URL (e.g. `https://xxx.supabase.co`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (for dual-write) | Service role key. **Never expose to client.** |

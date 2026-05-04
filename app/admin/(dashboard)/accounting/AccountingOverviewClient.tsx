@@ -20,6 +20,15 @@ interface OverviewData {
   confirmedIncome: number;
   stripeProcessingFees: number;
   confirmedIncomeNet: number;
+  /** Sum of refunds in period (`income_refunds`). */
+  totalRefunds: number;
+  /** Net sales after Stripe fees and refunds. */
+  confirmedIncomeNetAfterRefunds: number;
+  /** COGS: expense categories flowers + delivery in period. */
+  cogsSubtotal: number;
+  /** Operating expenses (all other expense categories). */
+  operatingExpensesSubtotal: number;
+  grossProfit: number;
   pendingIncome: number;
   totalExpenses: number;
   netResult: number;
@@ -838,15 +847,59 @@ export function AccountingOverviewClient({
               )}
             </div>
 
-            {/* Stripe fee breakdown — secondary detail, only shown when relevant */}
+            <div className="admin-accounting-section">
+              <h2 className="admin-accounting-section-title">P&amp;L summary</h2>
+              <div className="admin-accounting-kpi-grid admin-accounting-kpi-grid-sm">
+                <KpiCard
+                  label="Net sales (after fees & refunds)"
+                  value={fmt(overview.confirmedIncomeNetAfterRefunds)}
+                  sub="Processing fees deducted; refunds subtracted (see Stripe section)"
+                  color="green"
+                  icon="account_balance"
+                />
+                <KpiCard
+                  label="COGS (flowers + delivery)"
+                  value={fmt(overview.cogsSubtotal)}
+                  sub="Expense categories in period"
+                  color="red"
+                  icon="local_florist"
+                />
+                <KpiCard
+                  label="Gross profit"
+                  value={fmt(overview.grossProfit)}
+                  sub="Net sales − COGS"
+                  color={overview.grossProfit >= 0 ? 'green' : 'red'}
+                  icon="bar_chart"
+                />
+                <KpiCard
+                  label="Operating expenses"
+                  value={fmt(overview.operatingExpensesSubtotal)}
+                  sub="Non-COGS categories"
+                  color="red"
+                  icon="storefront"
+                />
+                <KpiCard
+                  label="Refunds"
+                  value={overview.totalRefunds > 0 ? `−${fmt(overview.totalRefunds)}` : fmt(0)}
+                  sub={
+                    overview.totalRefunds > 0
+                      ? 'From Stripe refund webhooks'
+                      : 'None in this period'
+                  }
+                  color="blue"
+                  icon="undo"
+                />
+              </div>
+            </div>
+
             {overview.stripeProcessingFees > 0 && (
               <div className="admin-accounting-section">
-                <h2 className="admin-accounting-section-title">Stripe Fee Breakdown</h2>
+                <h2 className="admin-accounting-section-title">Stripe fee breakdown</h2>
                 <div className="admin-accounting-kpi-grid admin-accounting-kpi-grid-sm">
                   <KpiCard
-                    label="Processing Fees"
+                    label="Processing fees"
                     value={`−${fmt(overview.stripeProcessingFees)}`}
-                    sub="Fixed 5.3% on card/Stripe payments"
+                    sub="From Stripe balance transactions when available; else 5.3% estimate"
                     color="blue"
                     icon="percent"
                   />

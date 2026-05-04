@@ -19,9 +19,44 @@ const CONTACT_PREF_LABELS: Record<ContactPreferenceStored, string> = {
   telegram: 'Telegram',
 };
 
+function orderJsonPartial(order: SupabaseOrderRow): Partial<Order> | null | undefined {
+  return order.order_json as Partial<Order> | null | undefined;
+}
+
 function orderJsonDelivery(order: SupabaseOrderRow): Order['delivery'] | undefined {
-  const o = order.order_json as Partial<Order> | null | undefined;
-  return o?.delivery;
+  return orderJsonPartial(order)?.delivery;
+}
+
+/** Admin / driver copy: show +calling national when we stored the checkout calling code. */
+export function formatInternationalPhoneAdmin(
+  fullDigits: string | null | undefined,
+  countryCodeDigits: string | null | undefined
+): string {
+  const phone = fullDigits?.trim();
+  if (!phone) return '';
+  const cc = countryCodeDigits?.replace(/\D/g, '').trim();
+  if (!cc || !phone.startsWith(cc)) return phone;
+  const national = phone.slice(cc.length);
+  return national ? `+${cc} ${national}` : `+${cc}`;
+}
+
+function customerPhoneCountryCodeDigits(order: SupabaseOrderRow): string | undefined {
+  const col = order.phone_country_code?.trim();
+  if (col) return col.replace(/\D/g, '');
+  return orderJsonPartial(order)?.phoneCountryCode?.replace(/\D/g, '');
+}
+
+function recipientPhoneCountryCodeDigits(order: SupabaseOrderRow): string | undefined {
+  const col = order.recipient_phone_country_code?.trim();
+  if (col) return col.replace(/\D/g, '');
+  return orderJsonDelivery(order)?.recipientPhoneCountryCode?.replace(/\D/g, '');
+}
+
+/** Customer phone for admin UI and clipboard (includes +country when stored). */
+export function customerPhoneDisplay(order: SupabaseOrderRow): string {
+  const full = order.phone?.trim() || orderJsonPartial(order)?.phone?.trim() || '';
+  if (!full) return '';
+  return formatInternationalPhoneAdmin(full, customerPhoneCountryCodeDigits(order));
 }
 
 export function checkoutMapsUrl(order: SupabaseOrderRow): string | null {
@@ -38,9 +73,10 @@ export function recipientNameDisplay(order: SupabaseOrderRow): string {
 }
 
 export function recipientPhoneDisplay(order: SupabaseOrderRow): string {
-  const col = order.recipient_phone?.trim();
-  if (col) return col;
-  return orderJsonDelivery(order)?.recipientPhone?.trim() ?? '';
+  const full =
+    order.recipient_phone?.trim() || orderJsonDelivery(order)?.recipientPhone?.trim() || '';
+  if (!full) return '';
+  return formatInternationalPhoneAdmin(full, recipientPhoneCountryCodeDigits(order));
 }
 
 /** Admin label for surprise delivery; N/A when recipient name is missing (same as Name: N/A). */
@@ -175,7 +211,7 @@ export function buildDriverMessengerPlainText(
   lines.push(`Phone: ${naText(rPhone)}`);
   lines.push(`Surprise delivery: ${surprise}`);
   lines.push('');
-  lines.push(`Sender / customer phone: ${naText(order.phone)}`);
+  lines.push(`Sender / customer phone: ${naText(customerPhoneDisplay(order))}`);
   lines.push('');
   if (cardBlock.trim()) {
     lines.push('Card message:');
@@ -226,7 +262,7 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push('Customer');
   lines.push(`  Name: ${naText(order.customer_name)}`);
   lines.push(`  Email: ${naText(order.customer_email)}`);
-  lines.push(`  Phone: ${naText(order.phone)}`);
+  lines.push(`  Phone: ${naText(customerPhoneDisplay(order))}`);
   lines.push(`  Preferred contact: ${preferredContactDisplay(order)}`);
   lines.push('');
   lines.push('Items');

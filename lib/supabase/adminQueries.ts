@@ -10,6 +10,8 @@ export interface SupabaseOrderRow {
   customer_name: string | null;
   customer_email: string | null;
   phone: string | null;
+  /** ITU calling code digits for customer phone at checkout (e.g. 66). */
+  phone_country_code?: string | null;
   address: string | null;
   district: string | null;
   delivery_window: string | null;
@@ -30,6 +32,8 @@ export interface SupabaseOrderRow {
   updated_at: string | null;
   recipient_name: string | null;
   recipient_phone: string | null;
+  /** ITU calling code digits for recipient phone when ordering for someone else. */
+  recipient_phone_country_code?: string | null;
   contact_preference: string | null;
   referral_code: string | null;
   referral_discount: number | null;

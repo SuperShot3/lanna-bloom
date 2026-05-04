@@ -104,17 +104,21 @@ export async function PATCH(
 
   // Create income record when transitioning to PAID (idempotent, fire-and-forget).
   // Pass paid_at so the income record's paid_date matches the day money landed.
+  // Optional: defer to manual Income tab (see ACCOUNTING_MANUAL_PAID_INCOME_DEFERRED).
   if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
-    void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
-      upsertOrderIncome({
-        orderId:       order_id.trim(),
-        amount:        updated.grand_total ?? updated.items_total ?? 0,
-        currency:      'THB',
-        paymentMethod: updated.payment_method,
-        paidAt:        updated.paid_at ?? null,
-        createdBy:     `admin:${adminEmail}`,
-      }).catch((e) => console.error('[admin/payment-status] income upsert error:', e))
-    );
+    const defer = (await import('@/lib/accounting/manualIncomePolicy')).shouldDeferManualPaidIncomeUpsert();
+    if (!defer) {
+      void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
+        upsertOrderIncome({
+          orderId:       order_id.trim(),
+          amount:        updated.grand_total ?? updated.items_total ?? 0,
+          currency:      'THB',
+          paymentMethod: updated.payment_method,
+          paidAt:        updated.paid_at ?? null,
+          createdBy:     `admin:${adminEmail}`,
+        }).catch((e) => console.error('[admin/payment-status] income upsert error:', e))
+      );
+    }
   }
 
   // GA4 purchase: GTM fires when the customer opens the paid order page (client dataLayer).

@@ -882,12 +882,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         delivery,
         customerName: customerName.trim(),
         phone: fullPhone,
+        phoneCountryCode: countryCode,
         customerEmail: customerEmail.trim() || undefined,
         contactPreference,
         submissionToken: checkoutSubmissionToken,
         ...(isOrderingForSomeoneElse && {
           recipientName: recipientName.trim(),
           recipientPhone: recipientPhone!,
+          recipientPhoneCountryCode: recipientCountryCode,
           surpriseDelivery,
         }),
       });

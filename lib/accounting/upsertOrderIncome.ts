@@ -37,6 +37,11 @@ export interface OrderIncomeContext {
   stripePaymentIntentId?: string | null;
   createdBy?: string;
   /**
+   * Net Stripe processing fee in major units (from Balance Transaction), if known.
+   * When omitted, Stripe rows use the estimated rate in {@link processingFeeForIncome}.
+   */
+  stripeProcessingFeeMajor?: number | null;
+  /**
    * ISO timestamp of when the order was actually paid (e.g. orders.paid_at).
    * If provided, the income record's `paid_date` will be set to that calendar
    * day so monthly accounting totals reflect when the money came in, not when
@@ -83,6 +88,10 @@ export async function upsertOrderIncome(ctx: OrderIncomeContext): Promise<void> 
       external_reference: ctx.stripePaymentIntentId ?? null,
       paid_date:         isoToYmd(ctx.paidAt),
       created_by:        ctx.createdBy ?? 'system',
+      processing_fee_amount:
+        pm === 'stripe' && ctx.stripeProcessingFeeMajor != null
+          ? Math.max(0, ctx.stripeProcessingFeeMajor)
+          : null,
     });
 
     if (error) {

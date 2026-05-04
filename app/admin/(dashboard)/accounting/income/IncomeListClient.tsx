@@ -162,7 +162,7 @@ export function IncomeListClient({
           </span>
           {initialConfirmedStripeFees > 0 && (
             <span className="admin-expenses-total">
-              Stripe fees (5.3%): <strong>−{fmt(initialConfirmedStripeFees)}</strong>
+              Stripe fees (actual from Stripe when stored, else estimate): <strong>−{fmt(initialConfirmedStripeFees)}</strong>
             </span>
           )}
           {periodNetProfit != null && (

@@ -11,6 +11,7 @@ import {
 } from '@/lib/orders';
 import { resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { runStripePostPaymentSuccessHooks } from '@/lib/stripe/postStripePaymentSuccess';
+import { getPaymentIntentStripeFeeMajor } from '@/lib/stripe/getPaymentIntentStripeFeeMajor';
 import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
 
 export type FulfillStripeCheckoutResult =
@@ -19,6 +20,7 @@ export type FulfillStripeCheckoutResult =
   | { kind: 'error'; message: string };
 
 async function markOrderPaidFromSession(params: {
+  stripe: Stripe;
   orderId: string;
   stripeSessionId: string;
   paymentIntentId: string | null;
@@ -27,6 +29,13 @@ async function markOrderPaidFromSession(params: {
   trigger: 'stripe_webhook' | 'sync_checkout' | 'order_status';
 }): Promise<Order | null> {
   const paidAt = new Date().toISOString();
+
+  let paymentFeeMajor: number | undefined = undefined;
+  if (params.paymentIntentId) {
+    const resolved = await getPaymentIntentStripeFeeMajor(params.stripe, params.paymentIntentId);
+    if (resolved != null) paymentFeeMajor = resolved;
+  }
+
   await updateOrderPaymentStatus(params.orderId, {
     status: 'paid',
     stripeSessionId: params.stripeSessionId,
@@ -37,6 +46,7 @@ async function markOrderPaidFromSession(params: {
         : undefined,
     currency: params.currency?.toUpperCase(),
     paidAt,
+    paymentFeeMajor,
   });
 
   await runStripePostPaymentSuccessHooks({
@@ -50,6 +60,7 @@ async function markOrderPaidFromSession(params: {
     paidAt,
     stripeSessionId: params.stripeSessionId,
     trigger: params.trigger,
+    stripeProcessingFeeMajor: paymentFeeMajor ?? null,
   });
 
   return getOrderById(params.orderId);
@@ -108,6 +119,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
 
   if (existingBySession) {
     const recovered = await markOrderPaidFromSession({
+      stripe: params.stripe,
       orderId: existingBySession.orderId,
       stripeSessionId,
       paymentIntentId,
@@ -144,6 +156,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     }
 
     const updated = await markOrderPaidFromSession({
+      stripe: params.stripe,
       orderId: metaOrderId,
       stripeSessionId,
       paymentIntentId,
@@ -206,6 +219,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   const { order, created } = await createOrder(payload);
 
   const updated = await markOrderPaidFromSession({
+    stripe: params.stripe,
     orderId: order.orderId,
     stripeSessionId,
     paymentIntentId,

@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MissingCogsNotice } from './MissingCogsNotice';
 
 const NAV_ITEMS = [
@@ -17,9 +17,21 @@ const NAV_ITEMS = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: session } = useSession();
   const userEmail = session?.user?.email;
+
+  /** App Router can serve a cached RSC snapshot on soft navigation; refetch after each in-app route change. */
+  const skipRefreshOnce = useRef(true);
+  useEffect(() => {
+    if (skipRefreshOnce.current) {
+      skipRefreshOnce.current = false;
+      return;
+    }
+    router.refresh();
+  }, [pathname, searchParams?.toString() ?? '', router]);
 
   return (
     <div className="admin-shell">
@@ -59,6 +71,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
+                prefetch={false}
                 className={`admin-shell-nav-link ${isActive ? 'active' : ''}`}
                 onClick={() => setSidebarOpen(false)}
               >
@@ -71,6 +84,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="admin-shell-sidebar-footer">
           <Link
             href="/admin/accounting/info"
+            prefetch={false}
             className="admin-shell-nav-link admin-shell-nav-link-info"
           >
             <span className="material-symbols-outlined admin-shell-icon">info</span>
@@ -78,6 +92,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/admin/settings/collections"
+            prefetch={false}
             className="admin-shell-nav-link admin-shell-nav-link-info"
           >
             <span className="material-symbols-outlined admin-shell-icon">settings</span>
@@ -115,6 +130,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="admin-shell-header-spacer" />
           <Link
             href="/admin/settings/collections"
+            prefetch={false}
             className="admin-shell-header-logout"
             aria-label="Collection settings"
             title="Collection settings"

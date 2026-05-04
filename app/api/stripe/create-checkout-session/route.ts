@@ -15,7 +15,12 @@ import { upsertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
-import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
+import {
+  callingCodeMismatchError,
+  normalizeOptionalCallingCodeDigits,
+  stripDuplicateThaiLeading66,
+  thaiFullPhoneHasDuplicateCountryCode,
+} from '@/lib/phoneFieldHints';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 
 function validateStripePayload(
@@ -76,6 +81,20 @@ function validateStripePayload(
       ok: false,
       message: 'phone must not repeat country code 66 (e.g. use 66952572645, not 666952572645)',
     };
+  }
+
+  const phoneCcRaw = b.phoneCountryCode;
+  if (
+    phoneCcRaw !== undefined &&
+    phoneCcRaw !== null &&
+    String(phoneCcRaw).trim() !== '' &&
+    !normalizeOptionalCallingCodeDigits(phoneCcRaw)
+  ) {
+    return { ok: false, message: 'phoneCountryCode must be 1–3 digits (calling code only)' };
+  }
+  const phoneCcErr = callingCodeMismatchError(phone, phoneCcRaw, 'phoneCountryCode');
+  if (phoneCcErr) {
+    return { ok: false, message: phoneCcErr };
   }
 
   const customerEmail = typeof b.customerEmail === 'string' ? b.customerEmail.trim() : undefined;
@@ -158,6 +177,31 @@ function validateStripePayload(
     };
   }
 
+  const recipientCcRaw = d.recipientPhoneCountryCode;
+  if (
+    recipientCcRaw !== undefined &&
+    recipientCcRaw !== null &&
+    String(recipientCcRaw).trim() !== '' &&
+    !normalizeOptionalCallingCodeDigits(recipientCcRaw)
+  ) {
+    return {
+      ok: false,
+      message: 'recipientPhoneCountryCode must be 1–3 digits (calling code only)',
+    };
+  }
+  if (recipientPhone && /^\d+$/.test(recipientPhone)) {
+    const recCcErr = callingCodeMismatchError(
+      recipientPhone,
+      recipientCcRaw,
+      'recipientPhoneCountryCode'
+    );
+    if (recCcErr) {
+      return { ok: false, message: recCcErr };
+    }
+  } else if (normalizeOptionalCallingCodeDigits(recipientCcRaw)) {
+    return { ok: false, message: 'recipientPhoneCountryCode requires delivery.recipientPhone' };
+  }
+
   const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'] as const;
   const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as typeof validDistricts[number])
     ? (d.deliveryDistrict as typeof validDistricts[number])
@@ -191,6 +235,9 @@ function validateStripePayload(
         preferredTimeSlot,
         recipientName,
         recipientPhone,
+        ...(normalizeOptionalCallingCodeDigits(recipientCcRaw) && {
+          recipientPhoneCountryCode: normalizeOptionalCallingCodeDigits(recipientCcRaw),
+        }),
         surpriseDelivery,
         notes: typeof d.notes === 'string' ? d.notes : undefined,
         deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
@@ -199,6 +246,9 @@ function validateStripePayload(
         deliveryDistrict,
         isMueangCentral,
       },
+      ...(normalizeOptionalCallingCodeDigits(phoneCcRaw) && {
+        phoneCountryCode: normalizeOptionalCallingCodeDigits(phoneCcRaw),
+      }),
     },
   };
 }
@@ -207,6 +257,7 @@ interface StripeCheckoutPayload {
   lang: Locale;
   customerName: string;
   phone: string;
+  phoneCountryCode?: string;
   customerEmail?: string;
   contactPreference: ContactPreferenceOption[];
   items: CartItemIdentifier[];
@@ -218,6 +269,7 @@ interface StripeCheckoutPayload {
     preferredTimeSlot: string;
     recipientName?: string;
     recipientPhone?: string;
+    recipientPhoneCountryCode?: string;
     surpriseDelivery?: boolean;
     notes?: string;
     deliveryLat?: number;
@@ -265,6 +317,7 @@ export async function POST(request: NextRequest) {
     const orderPayload: OrderPayload = {
       customerName: data.customerName,
       phone: data.phone,
+      ...(data.phoneCountryCode && { phoneCountryCode: data.phoneCountryCode }),
       customerEmail: data.customerEmail,
       contactPreference: data.contactPreference,
       items: totals.items,
@@ -273,6 +326,9 @@ export async function POST(request: NextRequest) {
         preferredTimeSlot: data.delivery.preferredTimeSlot,
         recipientName: data.delivery.recipientName,
         recipientPhone: data.delivery.recipientPhone,
+        ...(data.delivery.recipientPhoneCountryCode && {
+          recipientPhoneCountryCode: data.delivery.recipientPhoneCountryCode,
+        }),
         ...(data.delivery.surpriseDelivery !== undefined && {
           surpriseDelivery: data.delivery.surpriseDelivery,
         }),

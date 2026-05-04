@@ -43,6 +43,8 @@ export interface OrderDelivery {
   preferredTimeSlot: string;
   recipientName?: string;
   recipientPhone?: string;
+  /** ITU calling code digits selected for recipient phone at checkout (e.g. 66). */
+  recipientPhoneCountryCode?: string;
   /** When ordering for someone else: true = surprise (do not tip off recipient), false = not a surprise. */
   surpriseDelivery?: boolean;
   notes?: string;
@@ -83,6 +85,8 @@ export interface CustomOrderDetails {
 export interface OrderPayload {
   customerName?: string;
   phone?: string;
+  /** ITU calling code digits selected for customer phone at checkout (e.g. 66). */
+  phoneCountryCode?: string;
   customerEmail?: string;
   items: OrderItem[];
   delivery: OrderDelivery;

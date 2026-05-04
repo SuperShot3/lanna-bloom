@@ -5,7 +5,7 @@ import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDispla
 /** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
 const ARTICLE_CREATED = '2026-04-06';
 /** ISO date (YYYY-MM-DD) — bump when you change the text below. */
-const ARTICLE_LAST_UPDATED = '2026-05-03';
+const ARTICLE_LAST_UPDATED = '2026-05-04';
 
 function formatArticleDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
@@ -60,31 +60,39 @@ export default function AccountingInfoPage() {
               <code className="admin-expenses-id">/admin/accounting/orders/[order_id]</code> directly.
             </li>
             <li>
-              <strong>Stripe processing fees (estimate)</strong> — For income recorded as{' '}
-              <strong>Stripe (card/online)</strong>, the system automatically applies a{' '}
-              <strong>fixed {STRIPE_FEE_PERCENT_LABEL}</strong> fee on the <strong>gross</strong> payment
-              amount. This fee is subtracted when we show <strong>confirmed income (net)</strong> and{' '}
-              <strong>net result</strong> (profit after expenses), so profit is closer to what you keep
-              after card fees.
+              <strong>Stripe processing fees</strong> — For Stripe checkouts we store the fee from
+              Stripe&apos;s balance transaction when available; otherwise we use a{' '}
+              <strong>{STRIPE_FEE_PERCENT_LABEL}</strong> on the gross amount. The Overview shows both
+              gross revenue and these fees; net income subtracts them (fees are not duplicated as expense
+              rows).
             </li>
           </ul>
         </section>
 
         <section className="admin-accounting-info-section">
-          <h2 className="admin-accounting-info-heading">What is not tracked yet</h2>
+          <h2 className="admin-accounting-info-heading">Caveats, limits, and options</h2>
           <ul className="admin-accounting-info-list">
             <li>
               <strong>Tax / VAT</strong> — Not calculated. Amounts are not split into tax-inclusive vs
               exclusive; speak to your accountant for tax reporting.
             </li>
             <li>
-              <strong>Exact Stripe fees</strong> — Real Stripe fees can vary by card type and pricing.
-              We use a fixed {STRIPE_FEE_PERCENT_LABEL} for planning only; reconcile with your Stripe
-              dashboard for precise fees.
+              <strong>Exact vs estimated Stripe fees</strong> — New Stripe payments store the real fee from
+              Stripe when the webhook/sync path can read it. Older income rows may still use the fallback
+              rate; reconcile with the Stripe Dashboard if needed.
             </li>
             <li>
-              <strong>Refunds</strong> — If an order is refunded but the income row is not cancelled or
-              adjusted, revenue may still show until someone updates or deletes that record.
+              <strong>Refunds</strong> — Stripe refunds are recorded automatically when Stripe sends a{' '}
+              <code>refund.created</code> webhook (after you run the database migration for{' '}
+              <code>income_refunds</code>). They reduce net sales in the Overview for the refund date. You
+              can still cancel or adjust income rows manually for non-Stripe refunds.
+            </li>
+            <li>
+              <strong>Optional manual income deferral</strong> — Set env{' '}
+              <code className="admin-expenses-id">ACCOUNTING_MANUAL_PAID_INCOME_DEFERRED=true</code> if bank
+              / QR orders should <strong>not</strong> auto-create income when marked paid; staff then adds
+              income from <strong>Accounting → Manual income</strong>. Stripe orders always record income
+              automatically.
             </li>
             <li>
               <strong>Bank reconciliation</strong> — We do not match every payout to the bank statement
@@ -105,8 +113,8 @@ export default function AccountingInfoPage() {
               rows (before Stripe fees).
             </li>
             <li>
-              <strong>Stripe processing fees</strong> — Shown when there are Stripe payments in the
-              selected period; sum of {STRIPE_FEE_PERCENT_LABEL} on those gross amounts.
+              <strong>Stripe processing fees</strong> — Sum of per-row fees (API amount or estimate). Shown
+              when there are Stripe payments in the selected period.
             </li>
             <li>
               <strong>Confirmed income (net)</strong> — Gross minus those Stripe fees. Other payment
@@ -116,8 +124,8 @@ export default function AccountingInfoPage() {
               <strong>Total expenses</strong> — Sum of expense rows in the date range (by expense date).
             </li>
             <li>
-              <strong>Net result</strong> — Confirmed income (net) minus total expenses. Pending income
-              does not count toward net result.
+              <strong>Net result</strong> — Net sales (after fees and Stripe refunds recorded in the period)
+              minus total expenses. Pending income does not count.
             </li>
             <li>
               <strong>Net by money location (“Where the money is”)</strong> — Each row shows confirmed income{' '}

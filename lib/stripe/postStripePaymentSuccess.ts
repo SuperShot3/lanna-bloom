@@ -15,6 +15,8 @@ export async function runStripePostPaymentSuccessHooks(params: {
   paidAt: string;
   stripeSessionId?: string;
   trigger: 'stripe_webhook' | 'sync_checkout' | 'order_status';
+  /** From Stripe Balance Transaction when available; income record uses estimate if omitted. */
+  stripeProcessingFeeMajor?: number | null;
 }): Promise<void> {
   const orderId = params.orderId.trim();
 
@@ -54,6 +56,7 @@ export async function runStripePostPaymentSuccessHooks(params: {
       stripePaymentIntentId: params.paymentIntentId ?? null,
       paidAt: params.paidAt,
       createdBy,
+      stripeProcessingFeeMajor: params.stripeProcessingFeeMajor,
     }).catch((e) => console.error('[stripe/postPayment] income upsert error:', e))
   );
 }

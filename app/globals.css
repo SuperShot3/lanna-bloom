@@ -6953,7 +6953,40 @@ a.admin-summary-key-value {
 @media (max-width: 600px) {
   .admin-accounting-kpi-grid { grid-template-columns: 1fr; }
   .admin-accounting-period-row { flex-direction: column; align-items: stretch; }
+  .admin-accounting-period-row .admin-btn { min-height: 44px; }
   .admin-accounting-backfill-actions { flex-direction: column; }
+  .admin-accounting-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--admin-bg, #fafaf9);
+    padding-top: 8px;
+    margin-left: -8px;
+    margin-right: -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .admin-accounting-tab {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .admin-expenses-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-expenses-filters .admin-select,
+  .admin-expenses-filters .admin-btn {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 /* Email Control Center: delivered preview modal + editor */

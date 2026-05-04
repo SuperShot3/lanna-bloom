@@ -65,11 +65,15 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   delivery: DeliveryFormValues;
   customerName: string;
   phone: string;
+  /** ITU calling code digits for customer phone (must match start of `phone`). */
+  phoneCountryCode: string;
   customerEmail?: string;
   contactPreference: ContactPreferenceOption[];
   submissionToken: string;
   recipientName?: string;
   recipientPhone?: string;
+  /** ITU calling code digits for recipient when ordering for someone else. */
+  recipientPhoneCountryCode?: string;
   surpriseDelivery?: boolean;
 }): Record<string, unknown> {
   const {
@@ -78,11 +82,13 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     delivery,
     customerName,
     phone,
+    phoneCountryCode,
     customerEmail,
     contactPreference,
     submissionToken,
     recipientName,
     recipientPhone,
+    recipientPhoneCountryCode,
     surpriseDelivery,
   } = params;
 
@@ -111,6 +117,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     lang,
     customerName: customerName.trim(),
     phone,
+    phoneCountryCode: phoneCountryCode.replace(/\D/g, ''),
     contactPreference,
     items: cartItemsToStripeCheckoutItems(cartItems),
     submission_token: submissionToken,
@@ -119,6 +126,10 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       preferredTimeSlot,
       recipientName: recipientName?.trim() || undefined,
       recipientPhone: recipientPhone?.trim() || undefined,
+      ...(recipientPhoneCountryCode != null &&
+        recipientPhoneCountryCode.replace(/\D/g, '') && {
+          recipientPhoneCountryCode: recipientPhoneCountryCode.replace(/\D/g, ''),
+        }),
       ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       deliveryDistrict: district,
       isMueangCentral,

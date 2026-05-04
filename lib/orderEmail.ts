@@ -8,6 +8,7 @@
 
 import { Resend } from 'resend';
 import { getBaseUrl, getOrderDetailsUrl, type Order } from '@/lib/orders';
+import { formatInternationalPhoneAdmin } from '@/lib/admin/orderSummaryPlainText';
 import { formatShopDateTime } from '@/lib/shopTime';
 import { buildOrderTemplateVariables } from '@/lib/email/variablesFromOrder';
 
@@ -119,7 +120,16 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   ${(order.delivery.recipientName || order.delivery.recipientPhone) ? `
   <h2 style="font-size: 1rem;">Recipient</h2>
   <p>${order.delivery.recipientName ? escapeHtml(order.delivery.recipientName) : '—'}<br/>
-  Phone: ${order.delivery.recipientPhone ? escapeHtml(order.delivery.recipientPhone) : '—'}<br/>
+  Phone: ${
+    order.delivery.recipientPhone
+      ? escapeHtml(
+          formatInternationalPhoneAdmin(
+            order.delivery.recipientPhone,
+            order.delivery.recipientPhoneCountryCode
+          )
+        )
+      : '—'
+  }<br/>
   Surprise delivery: ${
     order.delivery.surpriseDelivery === true
       ? 'Yes'
@@ -140,7 +150,11 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
 
   <h2 style="font-size: 1rem;">Sender</h2>
   <p>${order.customerName ? escapeHtml(order.customerName) : '—'}<br/>
-  Phone: ${order.phone ? escapeHtml(order.phone) : '—'}<br/>
+  Phone: ${
+    order.phone
+      ? escapeHtml(formatInternationalPhoneAdmin(order.phone, order.phoneCountryCode))
+      : '—'
+  }<br/>
   Preferred contact: ${escapeHtml(contactPref)}</p>
 
   <p style="font-size: 0.9rem; color: #666;">Created: ${escapeHtml(formatShopDateTime(order.createdAt))}</p>

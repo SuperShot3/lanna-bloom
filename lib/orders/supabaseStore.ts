@@ -74,6 +74,7 @@ interface SupabaseOrderRow {
   customer_name?: string | null;
   customer_email?: string | null;
   phone?: string | null;
+  phone_country_code?: string | null;
   address?: string | null;
   district?: string | null;
   delivery_window?: string | null;
@@ -90,6 +91,7 @@ interface SupabaseOrderRow {
   updated_at?: string | null;
   recipient_name?: string | null;
   recipient_phone?: string | null;
+  recipient_phone_country_code?: string | null;
   contact_preference?: string | null;
   referral_code?: string | null;
   referral_discount?: number | null;
@@ -117,9 +119,14 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
   // If order_json exists and has the expected shape, use it (migration/backfill)
   const json = row.order_json as Order | undefined;
   if (json && typeof json.orderId === 'string' && Array.isArray(json.items)) {
+    const phoneCc = row.phone_country_code?.trim() || json.phoneCountryCode;
+    const recipientCc =
+      row.recipient_phone_country_code?.trim() || json.delivery?.recipientPhoneCountryCode;
     return {
       ...json,
       orderId: row.order_id,
+      phone: row.phone ?? json.phone,
+      phoneCountryCode: phoneCc || json.phoneCountryCode,
       createdAt: row.created_at ?? json.createdAt ?? new Date().toISOString(),
       status: mapSupabasePaymentToLegacy(row.payment_status) ?? json.status,
       stripeSessionId: row.stripe_session_id ?? json.stripeSessionId,
@@ -127,6 +134,13 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       paidAt: row.paid_at ?? json.paidAt,
       fulfillmentStatus: fulfillmentDisplayFromSupabaseRow(row, json.fulfillmentStatus),
       fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? json.fulfillmentStatusUpdatedAt,
+      delivery: {
+        ...json.delivery,
+        address: row.address ?? json.delivery?.address ?? '',
+        recipientName: row.recipient_name ?? json.delivery?.recipientName,
+        recipientPhone: row.recipient_phone ?? json.delivery?.recipientPhone,
+        recipientPhoneCountryCode: recipientCc || json.delivery?.recipientPhoneCountryCode,
+      },
       ...(row.order_source && {
         orderSource: row.order_source as 'web' | 'custom_form' | 'legacy_line',
       }),
@@ -161,12 +175,15 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     customerName: row.customer_name ?? undefined,
     customerEmail: row.customer_email ?? undefined,
     phone: row.phone ?? undefined,
+    phoneCountryCode: row.phone_country_code?.trim() || looseJson?.phoneCountryCode,
     items: orderItems,
     delivery: {
       address: row.address ?? '',
       preferredTimeSlot,
       recipientName: row.recipient_name ?? undefined,
       recipientPhone: row.recipient_phone ?? undefined,
+      recipientPhoneCountryCode:
+        row.recipient_phone_country_code?.trim() || looseJson?.delivery?.recipientPhoneCountryCode,
       ...(surpriseFromJson !== undefined && { surpriseDelivery: surpriseFromJson }),
       deliveryDistrict: (row.district as Order['delivery']['deliveryDistrict']) ?? 'UNKNOWN',
     },
@@ -342,6 +359,7 @@ export async function supabaseCreateOrder(
     customer_name: order.customerName ?? null,
     customer_email: order.customerEmail ?? null,
     phone: order.phone ?? null,
+    phone_country_code: order.phoneCountryCode ?? null,
     address: order.delivery.address ?? null,
     district: order.delivery.deliveryDistrict ?? 'UNKNOWN',
     delivery_window: deliveryWindow,
@@ -357,6 +375,7 @@ export async function supabaseCreateOrder(
     created_at: order.createdAt,
     recipient_name: order.delivery.recipientName ?? null,
     recipient_phone: order.delivery.recipientPhone ?? null,
+    recipient_phone_country_code: order.delivery.recipientPhoneCountryCode ?? null,
     contact_preference: order.contactPreference ? JSON.stringify(order.contactPreference) : null,
     referral_code: order.referralCode ?? null,
     referral_discount: order.referralDiscount ?? 0,
@@ -430,6 +449,7 @@ export async function supabaseUpdateOrderPaymentStatus(
     amountTotal?: number;
     currency?: string;
     paidAt?: string;
+    paymentFeeMajor?: number;
   }
 ): Promise<Order | null> {
   const supabase = getSupabaseAdmin();
@@ -462,6 +482,10 @@ export async function supabaseUpdateOrderPaymentStatus(
     stripe_session_id: update.stripeSessionId,
     stripe_payment_intent_id: update.paymentIntentId,
   };
+
+  if (update.status === 'paid' && update.paymentFeeMajor != null && Number.isFinite(update.paymentFeeMajor)) {
+    updatePayload.payment_fee = Math.round(update.paymentFeeMajor * 100) / 100;
+  }
 
   const { error } = await supabase
     .from('orders')
@@ -546,6 +570,7 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     customer_name: order.customerName ?? null,
     customer_email: order.customerEmail ?? null,
     phone: order.phone ?? null,
+    phone_country_code: order.phoneCountryCode ?? null,
     address: order.delivery.address ?? null,
     district: order.delivery.deliveryDistrict ?? 'UNKNOWN',
     delivery_window: deliveryWindow,
@@ -561,6 +586,7 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     created_at: order.createdAt,
     recipient_name: order.delivery.recipientName ?? null,
     recipient_phone: order.delivery.recipientPhone ?? null,
+    recipient_phone_country_code: order.delivery.recipientPhoneCountryCode ?? null,
     contact_preference: order.contactPreference ? JSON.stringify(order.contactPreference) : null,
     referral_code: order.referralCode ?? null,
     referral_discount: order.referralDiscount ?? 0,

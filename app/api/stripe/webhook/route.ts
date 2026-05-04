@@ -165,7 +165,11 @@ export async function POST(request: NextRequest) {
     mode: stripeConfig.mode,
   });
 
-  if (!PAYMENT_SUCCESS_EVENTS.includes(event.type) && !isPaymentFailedEvent(event.type)) {
+  if (
+    !PAYMENT_SUCCESS_EVENTS.includes(event.type) &&
+    !isPaymentFailedEvent(event.type) &&
+    event.type !== 'refund.created'
+  ) {
     return NextResponse.json({ received: true });
   }
 
@@ -175,6 +179,21 @@ export async function POST(request: NextRequest) {
   });
 
   const eventObject = event.data.object;
+
+  if (event.type === 'refund.created') {
+    if (!(await recordStripeEventIfNew(event.id, event.type))) {
+      return NextResponse.json({ received: true });
+    }
+    const refund = eventObject as Stripe.Refund;
+    const { recordStripeRefundEvent } = await import('@/lib/accounting/incomeRefunds');
+    const res = await recordStripeRefundEvent(refund);
+    console.log('[stripe/webhook] refund.created', {
+      refundId: refund.id,
+      recorded: res.recorded,
+      reason: res.reason,
+    });
+    return NextResponse.json({ received: true });
+  }
 
   if (isPaymentFailedEvent(event.type)) {
     const session = eventObject as Stripe.Checkout.Session;
