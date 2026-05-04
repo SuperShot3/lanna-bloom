@@ -82,6 +82,53 @@ export async function recordStripeRefundEvent(refund: Stripe.Refund): Promise<{ 
   return { recorded: true };
 }
 
+/**
+ * Sum of Stripe-originated refunds with `refunded_at` on or before `dateTo` (inclusive).
+ * Used for “where the money is”: refunds reduce cash held in Stripe.
+ */
+export async function getStripeRefundsTotalThroughDate(dateTo: string): Promise<number> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return 0;
+
+  const end = dateTo.slice(0, 10);
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('amount')
+    .eq('source', 'stripe')
+    .lte('refunded_at', end);
+
+  if (error) {
+    console.error('[incomeRefunds] getStripeRefundsTotalThroughDate error:', error.message);
+    return 0;
+  }
+  let sum = 0;
+  for (const row of data ?? []) {
+    sum += parseFloat(String((row as { amount?: unknown }).amount)) || 0;
+  }
+  return Math.round(sum * 100) / 100;
+}
+
+/** Stripe-originated refunds only, for comparing to Stripe Dashboard net volume. */
+export async function getStripeRefundsTotalInPeriod(filter: { dateFrom?: string; dateTo?: string }): Promise<number> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return 0;
+
+  let q = supabase.from(TABLE).select('amount').eq('source', 'stripe');
+  if (filter.dateFrom) q = q.gte('refunded_at', filter.dateFrom.slice(0, 10));
+  if (filter.dateTo) q = q.lte('refunded_at', filter.dateTo.slice(0, 10));
+
+  const { data, error } = await q;
+  if (error) {
+    console.error('[incomeRefunds] getStripeRefundsTotalInPeriod error:', error.message);
+    return 0;
+  }
+  let sum = 0;
+  for (const row of data ?? []) {
+    sum += parseFloat(String((row as { amount?: unknown }).amount)) || 0;
+  }
+  return Math.round(sum * 100) / 100;
+}
+
 export async function getRefundsTotalInPeriod(filter: { dateFrom?: string; dateTo?: string }): Promise<number> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return 0;

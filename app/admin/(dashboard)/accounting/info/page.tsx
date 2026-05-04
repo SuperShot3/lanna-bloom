@@ -17,7 +17,7 @@ export default function AccountingInfoPage() {
     <div className="admin-accounting-info">
       <header className="admin-header admin-page-header">
         <div>
-          <Link href="/admin/accounting" className="admin-back-link">← Accounting</Link>
+          <Link href="/admin/accounting/overview" className="admin-back-link">← Accounting</Link>
           <h1 className="admin-title">How accounting works</h1>
           <p className="admin-hint">
             Quick reference for staff — what the admin numbers mean today (not legal or tax advice).
@@ -84,8 +84,8 @@ export default function AccountingInfoPage() {
             <li>
               <strong>Refunds</strong> — Stripe refunds are recorded automatically when Stripe sends a{' '}
               <code>refund.created</code> webhook (after you run the database migration for{' '}
-              <code>income_refunds</code>). They reduce net sales in the Overview for the refund date. You
-              can still cancel or adjust income rows manually for non-Stripe refunds.
+              <code>income_refunds</code>). Stripe refunds reduce the <strong>Stripe — net volume</strong> line
+              for the refund date. You can still cancel or adjust income rows manually for non-Stripe refunds.
             </li>
             <li>
               <strong>Optional manual income deferral</strong> — Set env{' '}
@@ -109,23 +109,30 @@ export default function AccountingInfoPage() {
           <h2 className="admin-accounting-info-heading">How to read the overview</h2>
           <ul className="admin-accounting-info-list">
             <li>
-              <strong>Confirmed income (gross)</strong> — Total customer payments for confirmed income
-              rows (before Stripe fees).
+              <strong>Stripe — gross volume</strong> — Sum of confirmed income rows paid by card through Stripe only
+              (compare to Stripe Dashboard <em>Gross volume</em>). <strong>Stripe — net volume</strong> subtracts stored
+              or estimated Stripe fees and Stripe refunds in the selected period (<em>Net volume</em> on Stripe when date
+              ranges match).
             </li>
             <li>
-              <strong>Stripe processing fees</strong> — Sum of per-row fees (API amount or estimate). Shown
-              when there are Stripe payments in the selected period.
+              <strong>Non-Stripe income</strong> — Separate bucket: bank transfer, QR, cash, manual entries (e.g. LINE payments
+              you record without an order). Totals exclude Stripe processing fees. Net profit stacks both buckets minus COGS and
+              operating expenses — it is not “Stripe-only”.
             </li>
             <li>
-              <strong>Confirmed income (net)</strong> — Gross minus those Stripe fees. Other payment
-              methods (cash, QR, bank transfer, etc.) have no automatic fee in this system.
+              <strong>Stripe processing fees</strong> — Sum of per-row fees (balance transaction fee when saved, otherwise the
+              estimated rate). Fees are reflected in Stripe net volume, not duplicated as expense rows.
+            </li>
+            <li>
+              <strong>Total confirmed revenue</strong> — Stripe net volume plus non‑Stripe contributions (after refunds
+              attributed to each), before COGS and operating expenses.
             </li>
             <li>
               <strong>Total expenses</strong> — Sum of expense rows in the date range (by expense date).
             </li>
             <li>
-              <strong>Net result</strong> — Net sales (after fees and Stripe refunds recorded in the period)
-              minus total expenses. Pending income does not count.
+              <strong>Net result</strong> — Total confirmed revenue (all buckets after fees/refunds allocated to Stripe vs
+              non-Stripe) minus total expenses.
             </li>
             <li>
               <strong>Net by money location (“Where the money is”)</strong> — Each row shows confirmed income{' '}

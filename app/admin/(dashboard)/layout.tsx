@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { AdminDashboardShell } from './AdminDashboardShell';
 
 // Admin dashboard must always reflect fresh operational data (orders, payments, etc.).
 // Disable static rendering/caching for this segment.
@@ -15,5 +16,5 @@ export default async function AdminDashboardLayout({
   if (!session?.user) {
     redirect('/admin/login');
   }
-  return <>{children}</>;
+  return <AdminDashboardShell>{children}</AdminDashboardShell>;
 }

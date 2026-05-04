@@ -23,7 +23,7 @@ export default async function AccountingOrderCostsPage({ params }: PageProps) {
     return (
       <div className="admin-detail">
         <header className="admin-header admin-page-header">
-          <Link href="/admin/accounting" className="admin-link">← Accounting</Link>
+          <Link href="/admin/accounting/overview" className="admin-link">← Accounting</Link>
         </header>
         <div className="admin-error">
           <p><strong>Error loading order</strong></p>
@@ -57,7 +57,7 @@ export default async function AccountingOrderCostsPage({ params }: PageProps) {
     <div className="admin-detail">
       <header className="admin-header admin-page-header">
         <div>
-          <Link href="/admin/accounting" className="admin-link" style={{ display: 'inline-block', marginBottom: 8 }}>
+          <Link href="/admin/accounting/overview" className="admin-link" style={{ display: 'inline-block', marginBottom: 8 }}>
             ← Accounting
           </Link>
           <h1 className="admin-title">Order costs & profit</h1>

@@ -6,7 +6,7 @@ export default function CollectionSettingsPage() {
     <div className="admin-accounting-info">
       <header className="admin-header admin-page-header">
         <div>
-          <Link href="/admin/accounting" className="admin-back-link">
+          <Link href="/admin/accounting/overview" className="admin-back-link">
             ← Back to dashboard
           </Link>
           <h1 className="admin-title">Collection settings</h1>

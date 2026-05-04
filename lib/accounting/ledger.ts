@@ -200,7 +200,7 @@ function toTransferLedgerRow(
     createdBy: t.created_by,
     status: t.status,
     currency: t.currency || 'THB',
-    detailHref: '/admin/accounting', // no detail page yet
+    detailHref: '/admin/accounting/payouts-transfers',
     receiptAttached: !!t.attachment_attached,
     rawCategory: 'transfer',
     rawPaymentMethod: null,

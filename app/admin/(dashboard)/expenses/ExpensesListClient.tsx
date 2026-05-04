@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState } from 'react';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS, billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
+import {
+  EXPENSE_CATEGORIES,
+  EXPENSE_PAYMENT_FILTER_OPTIONS,
+  PAYMENT_METHOD_LABEL_BY_VALUE,
+  billTrackingProgress,
+  expenseDocumentationComplete,
+} from '@/types/expenses';
 
 interface ExpensesListClientProps {
   initialExpenses: Expense[];
@@ -20,9 +26,7 @@ interface ExpensesListClientProps {
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
 );
-const PM_LABEL: Record<string, string> = Object.fromEntries(
-  PAYMENT_METHODS.map((m) => [m.value, m.label])
-);
+const PM_LABEL = PAYMENT_METHOD_LABEL_BY_VALUE;
 
 function formatAmount(amount: number, currency = 'THB') {
   return new Intl.NumberFormat('th-TH', {
@@ -153,7 +157,7 @@ export function ExpensesListClient({
           aria-label="Payment method"
         >
           <option value="all">All payment methods</option>
-          {PAYMENT_METHODS.map((m) => (
+          {EXPENSE_PAYMENT_FILTER_OPTIONS.map((m) => (
             <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </select>

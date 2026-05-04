@@ -125,6 +125,19 @@ export interface MoneyLocationTotal {
   netAfterFeesAndExpenses: number;
 }
 
+export type LedgerMovementKind = 'income' | 'expense' | 'transfer';
+
+/** Ledger timeline row for overview “recent movements” hints (sorted newest-first elsewhere). */
+export interface LedgerChannelMoneyMovement {
+  /** YYYY-MM-DD — business/booking date of the movement */
+  occurredOn: string;
+  /** Detail line without the kind prefix (kind is separate for layout) */
+  summary: string;
+  /** Effect on this location (+ money in, − out) */
+  delta: number;
+  kind: LedgerMovementKind;
+}
+
 export interface AccountingOverview {
   periodLabel: string;
   totalIncome: number;
@@ -139,6 +152,12 @@ export interface AccountingOverview {
   /** `confirmedIncomeNet - totalExpenses` */
   netResult: number;
   incomeByLocation: MoneyLocationTotal[];
+  /** Cumulative channel breakdown through `ledgerBalanceThrough` (see overview UI). */
+  incomeByLocationLedger: MoneyLocationTotal[];
+  /** Latest ledger cashflow lines per bucket (income · expense legs · transfers; refunds aggregate excluded). */
+  ledgerRecentMovements: Record<string, LedgerChannelMoneyMovement[]>;
+  /** Upper bound (YYYY-MM-DD) for cumulative “where the money is”; capped at today. */
+  ledgerBalanceThrough: string;
   incomeCount: number;
   expenseCount: number;
   currency: string;

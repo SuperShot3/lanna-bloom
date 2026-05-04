@@ -163,6 +163,28 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: '51-roses-chiang-mai',
+    title: '51 Roses Bouquet in Chiang Mai: Statement Rose Gifts',
+    excerpt:
+      'A 51 roses bouquet is a bold, beautiful choice for anniversaries, proposals, and romantic surprises in Chiang Mai. Compare classic red, soft pink, and red-and-white styles—then open any bouquet to see details and order.',
+    titleTh: 'ช่อกุหลาบ 51 ดอกในเชียงใหม่: ของขวัญโรแมนติกที่โดดเด่น',
+    excerptTh:
+      'ช่อกุหลาบ 51 ดอกเป็นตัวเลือกที่สะดุดตาและโรแมนติก ไม่ว่าจะครบรอบ ขอแต่งงาน หรือเซอร์ไพรส์คนพิเศษในเชียงใหม่ เปรียบเทียบโทนแดงคลาสสิก ชมพูนุ่ม และแดง-ขาว—แล้วเปิดหน้าช่อเพื่อดูรายละเอียดและสั่งซื้อ',
+    publishedAt: '2026-05-04T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss:
+        'linear-gradient(135deg, #fff5f5 0%, #fce7f3 40%, #fecdd3 100%)',
+      center: { kind: 'emoji', value: '🌹' },
+    },
+    ctaLinks: [
+      { label: '51 red roses', labelTh: 'กุหลาบแดง 51 ดอก', href: '/catalog/51-red-roses' },
+      { label: 'All rose bouquets', labelTh: 'ช่อกุหลาบทั้งหมด', href: '/info/rose-bouquets-chiang-mai' },
+      { label: 'Browse the catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog?types=rose' },
+    ],
+  },
+  {
     slug: 'same-day-flower-delivery-chiang-mai',
     title: 'Same-day flower delivery in Chiang Mai',
     excerpt:

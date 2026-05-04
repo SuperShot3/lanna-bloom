@@ -8,11 +8,13 @@ export type ExpenseCategory =
   | 'tools_equipment'
   | 'soft_toys'
   | 'greeting_cards'
+  | 'balloons'
   | 'other';
 
 export type PaymentMethod =
   | 'cash'
   | 'bank_transfer'
+  | 'stripe'
   | 'card'
   | 'qr_payment'
   | 'other';
@@ -98,18 +100,49 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'flowers',          label: 'Flowers' },
   { value: 'packaging',        label: 'Packaging' },
   { value: 'delivery',         label: 'Delivery' },
+  { value: 'balloons',         label: 'Balloons' },
+  { value: 'soft_toys',        label: 'Soft toys' },
+  { value: 'greeting_cards',   label: 'Greeting cards' },
   { value: 'advertising',      label: 'Advertising' },
   { value: 'supplier_payment', label: 'Supplier Payment' },
   { value: 'transport',        label: 'Transport' },
   { value: 'tools_equipment',  label: 'Tools & Equipment' },
-  { value: 'soft_toys',        label: 'Soft toys' },
-  { value: 'greeting_cards',   label: 'Greeting cards' },
   { value: 'other',            label: 'Other' },
 ];
 
+/**
+ * P+L overview: included in gross profit via COGS (bouquet adds-on and direct sale materials).
+ * Categories not listed here count as operating (e.g. advertising, transport, tools, Other for AI/Google).
+ */
+export const COGS_EXPENSE_CATEGORIES = new Set<string>([
+  'flowers',
+  'delivery',
+  'packaging',
+  'soft_toys',
+  'greeting_cards',
+  'balloons',
+]);
+
+/** Payment methods admins may choose for new/expense edits. (Stripe balance is not an operating-pay bucket here.) */
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: 'cash',          label: 'Cash' },
+  { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Account' },
+];
+
+/** Display label for any `expenses.payment_method` value possibly in the DB. */
+export const PAYMENT_METHOD_LABEL_BY_VALUE: Record<string, string> = {
+  cash: 'Cash',
+  bank_transfer: 'Bank Account',
+  card: 'Card',
+  qr_payment: 'QR payment',
+  other: 'Other',
+  stripe: 'Stripe balance (legacy)',
+};
+
+/** Filters on expense lists: includes legacy Stripe rows. */
+export const EXPENSE_PAYMENT_FILTER_OPTIONS: { value: string; label: string }[] = [
+  ...PAYMENT_METHODS.map((m) => ({ value: m.value, label: m.label })),
+  { value: 'stripe', label: 'Stripe balance (legacy)' },
 ];
 
 /** Number of checklist boxes for one line (1 = driver payment only, 2 = shop transfer + vendor bill). */

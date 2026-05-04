@@ -5659,11 +5659,6 @@ a.admin-summary-key-value {
   min-width: 0;
   margin-left: 0;
 }
-@media (min-width: 1024px) {
-  .admin-shell-main {
-    margin-left: 256px;
-  }
-}
 
 .admin-shell-header {
   height: 64px;
@@ -6019,6 +6014,11 @@ a.admin-summary-key-value {
 }
 .admin-page-header .admin-hint {
   margin-top: 4px;
+}
+.admin-accounting .admin-page-header .admin-accounting-period-label {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 /* ============================================================
@@ -6489,6 +6489,93 @@ a.admin-summary-key-value {
   outline-offset: 2px;
 }
 
+/* Overview glance + P&L waterfall */
+.admin-accounting-glance-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-card-bg, #f9fafb);
+  font-size: 0.88rem;
+  color: var(--admin-text, #111827);
+}
+.admin-accounting-glance-bar strong {
+  font-weight: 600;
+}
+.admin-accounting-glance-dot {
+  color: var(--admin-text-muted, #9ca3af);
+  user-select: none;
+}
+.admin-accounting-compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+@media (min-width: 720px) {
+  .admin-accounting-compliance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.admin-accounting-pl-table {
+  max-width: 36rem;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--admin-shell-bg, #fff);
+}
+.admin-accounting-pl-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px 20px;
+  padding: 10px 14px;
+  align-items: baseline;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+}
+.admin-accounting-pl-row:last-child {
+  border-bottom: none;
+}
+.admin-accounting-pl-row--subtotal {
+  font-weight: 700;
+  background: var(--admin-card-bg, #f9fafb);
+}
+.admin-accounting-pl-dt {
+  color: var(--admin-text, #111827);
+  line-height: 1.35;
+}
+.admin-accounting-pl-dd {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.admin-accounting-pl-dd--in { color: #15803d; }
+.admin-accounting-pl-dd--out { color: #b91c1c; }
+.admin-accounting-pl-foot {
+  margin-top: 10px;
+  font-size: 0.84rem;
+  color: var(--admin-text-muted, #6b7280);
+  max-width: 36rem;
+  line-height: 1.45;
+}
+
+/* Accounting overview — P&amp;L table (medium weight only, no bold) */
+.admin-accounting-pl-table--overview .admin-accounting-pl-row--subtotal,
+.admin-accounting-pl-table--overview .admin-accounting-pl-row--total {
+  font-weight: 500;
+}
+.admin-accounting-pl-table--overview .admin-accounting-pl-dd {
+  font-weight: 500;
+}
+.admin-accounting-pl-row--total {
+  border-top: 2px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-card-bg, #f9fafb);
+}
+
 /* Sections */
 .admin-accounting-section { margin-bottom: 32px; }
 .admin-accounting-section-title {
@@ -6496,6 +6583,10 @@ a.admin-summary-key-value {
   font-weight: 600;
   margin-bottom: 14px;
   color: var(--admin-text, #111827);
+}
+/* Accounting overview dashboard: headings use medium (500) only per UI spec */
+.admin-accounting-overview-root .admin-accounting-section-title {
+  font-weight: 500;
 }
 .admin-accounting-section-hint {
   margin: -8px 0 14px;
@@ -6948,6 +7039,23 @@ a.admin-summary-key-value {
   background: #fffbeb;
   border-color: #fde68a;
   color: #92400e;
+}
+
+/* Accounting nested routes — hide horizontal tabs on narrow viewports */
+.admin-accounting-switch-desktop .admin-accounting-tabs {
+  margin-bottom: 20px;
+}
+.admin-accounting-switch-mobile {
+  display: none;
+  margin-bottom: 16px;
+}
+@media (max-width: 760px) {
+  .admin-accounting-switch-desktop { display: none; }
+  .admin-accounting-switch-mobile { display: block; }
+  .admin-accounting-switch-mobile .admin-accounting-section-select {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 600px) {

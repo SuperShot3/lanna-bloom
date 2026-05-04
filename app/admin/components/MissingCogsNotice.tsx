@@ -1,14 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 
 type MissingCogsOrder = { order_id: string; paid_at?: string | null; cogs_amount?: number | null };
 
-export function MissingCogsNotice() {
-  const [count, setCount] = useState<number | null>(null);
-  const [orders, setOrders] = useState<MissingCogsOrder[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
+type MissingCogsState = {
+  count: number;
+  orders: MissingCogsOrder[];
+  loaded: boolean;
+};
+
+const MissingCogsContext = createContext<MissingCogsState | null>(null);
+
+export function MissingCogsProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<MissingCogsState>({ count: 0, orders: [], loaded: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -17,15 +23,18 @@ export function MissingCogsNotice() {
         const res = await fetch('/api/admin/orders/missing-cogs', { cache: 'no-store' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          if (!cancelled) setCount(0);
+          if (!cancelled) setState({ count: 0, orders: [], loaded: true });
           return;
         }
         if (!cancelled) {
-          setCount(Number(data.count) || 0);
-          setOrders(Array.isArray(data.orders) ? data.orders : []);
+          setState({
+            count: Number(data.count) || 0,
+            orders: Array.isArray(data.orders) ? data.orders : [],
+            loaded: true,
+          });
         }
       } catch {
-        if (!cancelled) setCount(0);
+        if (!cancelled) setState({ count: 0, orders: [], loaded: true });
       }
     };
     run();
@@ -36,7 +45,18 @@ export function MissingCogsNotice() {
     };
   }, []);
 
-  if (!count) return null;
+  return <MissingCogsContext.Provider value={state}>{children}</MissingCogsContext.Provider>;
+}
+
+export function useMissingCogsSummary(): MissingCogsState {
+  return useContext(MissingCogsContext) ?? { count: 0, orders: [], loaded: false };
+}
+
+export function MissingCogsNotice() {
+  const { count, orders, loaded } = useMissingCogsSummary();
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (!loaded || !count) return null;
 
   const top = orders.slice(0, 3);
 
@@ -151,4 +171,3 @@ export function MissingCogsNotice() {
     </div>
   );
 }
-

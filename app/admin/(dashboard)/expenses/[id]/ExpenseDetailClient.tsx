@@ -5,15 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Expense, ExpenseBillLine, ExpenseReceiptImage } from '@/types/expenses';
 import { billLineCheckpointCount, billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
+import { EXPENSE_CATEGORIES, PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
 );
-const PM_LABEL: Record<string, string> = Object.fromEntries(
-  PAYMENT_METHODS.map((m) => [m.value, m.label])
-);
+const PM_LABEL = PAYMENT_METHOD_LABEL_BY_VALUE;
 
 function formatAmount(amount: number, currency = 'THB') {
   return new Intl.NumberFormat('th-TH', {
