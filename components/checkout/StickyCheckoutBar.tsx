@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import type { PaymentMethodsAvailability } from '@/lib/checkout/paymentAvailability';
 import {
   DELIVERY_TIME_SLOTS,
@@ -202,6 +203,16 @@ export function StickyCheckoutBar({
     }
   }, [hintAnimOpen, hintMessage]);
 
+  // Inline styles ensure link color/underline aren't overridden by other CSS selectors.
+  const deliveryPolicyLinkStyle: React.CSSProperties = {
+    color: 'var(--accent-border)',
+    fontWeight: 700,
+  };
+  const refundPolicyLinkStyle: React.CSSProperties = {
+    color: 'var(--accent)',
+    fontWeight: 700,
+  };
+
   return (
     <div
       className={`sticky-checkout-bar ${isCollapsed ? 'sticky-checkout-bar--collapsed' : ''}`}
@@ -359,6 +370,49 @@ export function StickyCheckoutBar({
             {checkoutLoading ? labels.creating : labels.orderLabel}
           </button>
         </div>
+
+        <p className="sticky-checkout-bar__policy-consent">
+          {lang === 'th' ? (
+            <>
+              การกดสั่งซื้อหมายความว่าคุณยอมรับ{' '}
+              <Link
+                className="sticky-checkout-bar__policy-link sticky-checkout-bar__policy-link--delivery"
+                href={`/${lang}/info/delivery-policy`}
+                style={deliveryPolicyLinkStyle}
+              >
+                นโยบายการจัดส่ง
+              </Link>{' '}
+              และ{' '}
+              <Link
+                className="sticky-checkout-bar__policy-link sticky-checkout-bar__policy-link--refund"
+                href={`/${lang}/refund-replacement`}
+                style={refundPolicyLinkStyle}
+              >
+                นโยบายการคืนเงิน
+              </Link>
+            </>
+          ) : (
+            <>
+              By placing your order, you agree to our{' '}
+              <Link
+                className="sticky-checkout-bar__policy-link sticky-checkout-bar__policy-link--delivery"
+                href={`/${lang}/info/delivery-policy`}
+                style={deliveryPolicyLinkStyle}
+              >
+                delivery policy
+              </Link>{' '}
+              and{' '}
+              <Link
+                className="sticky-checkout-bar__policy-link sticky-checkout-bar__policy-link--refund"
+                href={`/${lang}/refund-replacement`}
+                style={refundPolicyLinkStyle}
+              >
+                refund policy
+              </Link>
+              .
+            </>
+          )}
+        </p>
       </div>
       )}
 
@@ -588,6 +642,31 @@ export function StickyCheckoutBar({
           display: flex;
           align-items: center;
           gap: 8px;
+        }
+        .sticky-checkout-bar__policy-consent {
+          margin: 2px 0 0;
+          padding-left: var(--sticky-bar-content-inset);
+          font-size: 10px;
+          font-weight: 500;
+          color: var(--text-muted);
+          line-height: 1.35;
+        }
+        .sticky-checkout-bar__policy-link {
+          font-weight: 700;
+        }
+        .sticky-checkout-bar__policy-link--delivery {
+          color: #0284c7; /* sky-600 */
+        }
+        .sticky-checkout-bar__policy-link--refund {
+          color: #ea580c; /* orange-600 */
+        }
+        .sticky-checkout-bar__policy-link:hover {
+          filter: brightness(0.9);
+        }
+        .sticky-checkout-bar__policy-link:focus-visible {
+          outline: 2px solid color-mix(in srgb, currentColor 60%, white);
+          outline-offset: 2px;
+          border-radius: 6px;
         }
         .sticky-checkout-bar__price-block {
           flex: 1;

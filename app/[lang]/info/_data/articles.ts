@@ -120,7 +120,7 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy-chiang-mai' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
     ],
   },
   {
@@ -204,13 +204,13 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
-    slug: 'delivery-policy-chiang-mai',
-    title: 'Delivery Policy (All Service Zones)',
+    slug: 'delivery-policy',
+    title: 'Delivery Policy',
     excerpt:
-      'Lanna Bloom delivery policy across all available service zones: service hours 09:00–20:00, zone coverage, required chat confirmation, address requirements, and more. Contact us via LINE or WhatsApp to confirm your order.',
-    titleTh: 'นโยบายการจัดส่ง (ทุกโซนบริการ)',
+      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance (orders after 18:00 usually roll to the next day), zones and fees at checkout, chat confirmation after you order online, and what we need for a smooth delivery. Custom requests or extra questions? Message us on LINE or WhatsApp.',
+    titleTh: 'นโยบายการจัดส่ง',
     excerptTh:
-      'นโยบายการจัดส่งของ Lanna Bloom สำหรับทุกโซนที่เปิดให้บริการ: เวลาบริการ 09:00–20:00 ขอบเขตโซนจัดส่ง การยืนยันผ่านแชท ข้อมูลที่อยู่ และอื่น ๆ ติดต่อเราผ่าน LINE หรือ WhatsApp เพื่อยืนยันออเดอร์',
+      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวัน (ออเดอร์หลัง 18:00 มักนัดวันถัดไป) โซนและค่าจัดส่งตอนเช็กเอาต์ การยืนยันทางแชทหลังสั่งบนเว็บ และข้อมูลที่อยู่ที่ควรเตรียม ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
     publishedAt: '2026-02-20T00:00:00.000Z',
     featured: false,
     cover: {

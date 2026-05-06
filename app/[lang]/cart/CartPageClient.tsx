@@ -98,6 +98,15 @@ const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp']
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 
+const DELIVERY_POLICY_LINK_STYLE: React.CSSProperties = {
+  color: 'var(--accent-border)',
+  fontWeight: 700,
+};
+const REFUND_POLICY_LINK_STYLE: React.CSSProperties = {
+  color: 'var(--accent)',
+  fontWeight: 700,
+};
+
 type StoredCartForm = {
   delivery: DeliveryFormValues;
   customerName: string;
@@ -1501,26 +1510,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     {items.map((item, i) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
                       const qty = item.quantity ?? 1;
-                      const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-                      const unitPrice = item.size.price + addOnsTotal;
-                      const lineTotal = unitPrice * qty;
-                      const itemLabel = isNonBouquetCartLine(item)
-                        ? name
-                        : qty > 1
-                          ? `${name} — ${item.size.label} × ${qty}`
-                          : `${name} — ${item.size.label}`;
-                      const addOnLines = buildAddOnsSummaryLines(item, t);
                       return (
                         <div key={`mob-sum-${item.bouquetId}-${i}`}>
                           <div className="cart-order-summary-row cart-order-summary-item">
-                            <span>{itemLabel}</span>
-                            <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                            <span>{name} × {qty}</span>
                           </div>
-                          {addOnLines.map((line, j) => (
-                            <div key={j} className="cart-order-summary-row cart-order-summary-addon">
-                              <span>{line}</span>
-                            </div>
-                          ))}
                         </div>
                       );
                     })}
@@ -1769,6 +1763,48 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     </div>
                   )}
                 </div>
+                <p className="cart-policy-consent">
+                  {lang === 'th' ? (
+                    <>
+                      การกดสั่งซื้อหมายความว่าคุณยอมรับ{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--delivery"
+                        href={`/${lang}/info/delivery-policy`}
+                        style={DELIVERY_POLICY_LINK_STYLE}
+                      >
+                        นโยบายการจัดส่ง
+                      </Link>{' '}
+                      และ{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--refund"
+                        href={`/${lang}/refund-replacement`}
+                        style={REFUND_POLICY_LINK_STYLE}
+                      >
+                        นโยบายการคืนเงิน
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      By placing your order, you agree to our{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--delivery"
+                        href={`/${lang}/info/delivery-policy`}
+                        style={DELIVERY_POLICY_LINK_STYLE}
+                      >
+                        delivery policy
+                      </Link>{' '}
+                      and{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--refund"
+                        href={`/${lang}/refund-replacement`}
+                        style={REFUND_POLICY_LINK_STYLE}
+                      >
+                        refund policy
+                      </Link>
+                      .
+                    </>
+                  )}
+                </p>
                 </div>
                 </div>
               </div>
@@ -1842,7 +1878,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           })}
         </div>
         {(() => {
-          const itemLineFmt = (t.itemLineWithQty ?? t.itemLine ?? '{name} — {size} x{qty} — ฿{lineTotal}') as string;
           return (
             <div className="cart-summary-section">
               <div className="cart-order-summary">
@@ -1852,31 +1887,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 {items.map((item, i) => {
                   const name = lang === 'th' ? item.nameTh : item.nameEn;
                   const qty = item.quantity ?? 1;
-                  const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-                  const unitPrice = item.size.price + addOnsTotal;
-                  const lineTotal = unitPrice * qty;
-                  const priceStr = lineTotal.toLocaleString();
-                  const sizePart = isNonBouquetCartLine(item)
-                    ? ((item.size.label || '').trim() || '—')
-                    : item.size.label;
-                  const itemLine = itemLineFmt
-                    .replace('{name}', name)
-                    .replace('{size}', sizePart)
-                    .replace('{qty}', String(qty))
-                    .replace('{lineTotal}', priceStr)
-                    .replace('{price}', priceStr);
-                  const addOnLines = buildAddOnsSummaryLines(item, t);
                   return (
                     <div key={`summary-${item.bouquetId}-${i}`}>
                       <div className="cart-order-summary-row cart-order-summary-item">
-                        <span className="cart-order-summary-item-name">{itemLine}</span>
-                        <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                        <span className="cart-order-summary-item-name">{name} × {qty}</span>
                       </div>
-                      {addOnLines.map((line, j) => (
-                        <div key={j} className="cart-order-summary-row cart-order-summary-addon">
-                          <span>{line}</span>
-                        </div>
-                      ))}
                     </div>
                   );
                 })}
@@ -2531,6 +2546,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-place-order-hint--error {
           font-weight: 600;
+        }
+        .cart-policy-consent {
+          margin: 6px 0 0;
+          font-size: 10px;
+          font-weight: 500;
+          color: var(--text-muted);
+          line-height: 1.35;
+        }
+        .cart-policy-link {
+          font-weight: 700;
+        }
+        .cart-policy-link--delivery {
+          color: #0284c7; /* sky-600 */
+        }
+        .cart-policy-link--refund {
+          color: #ea580c; /* orange-600 */
+        }
+        .cart-policy-link:hover {
+          filter: brightness(0.9);
+        }
+        .cart-policy-link:focus-visible {
+          outline: 2px solid color-mix(in srgb, currentColor 60%, white);
+          outline-offset: 2px;
+          border-radius: 6px;
         }
         @media (prefers-reduced-motion: reduce) {
           .cart-place-order-hint-slot {
