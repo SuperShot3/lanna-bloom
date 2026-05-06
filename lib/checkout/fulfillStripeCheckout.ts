@@ -10,6 +10,7 @@ import {
   type Order,
 } from '@/lib/orders';
 import { resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
+import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { runStripePostPaymentSuccessHooks } from '@/lib/stripe/postStripePaymentSuccess';
 import { getPaymentIntentStripeFeeMajor } from '@/lib/stripe/getPaymentIntentStripeFeeMajor';
 import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
@@ -18,6 +19,72 @@ export type FulfillStripeCheckoutResult =
   | { kind: 'order_ready'; orderId: string; order: Order; didCreate: boolean }
   | { kind: 'pending_payment'; reason: string }
   | { kind: 'error'; message: string };
+
+async function tryBackfillStripeOrderId(params: {
+  stripe: Stripe;
+  stripeSessionId: string;
+  paymentIntentId: string | null;
+  existingSessionMetadata: Stripe.Metadata | Record<string, string> | null | undefined;
+  orderId: string;
+}) {
+  const orderIdTrimmed = params.orderId.trim();
+  if (!orderIdTrimmed) return;
+
+  const orderMetadata = buildStripeOrderMetadata({
+    orderId: orderIdTrimmed,
+    source: 'lanna_bloom_post_payment',
+  });
+
+  // Ensure Checkout Session is marked with order id for Stripe reporting/search.
+  // (Session metadata is visible in Dashboard + exports.)
+  try {
+    const mergedSessionMetadata: Record<string, string> = {
+      ...(params.existingSessionMetadata ?? {}),
+      ...orderMetadata,
+    };
+    await params.stripe.checkout.sessions.update(params.stripeSessionId, {
+      metadata: mergedSessionMetadata,
+    });
+  } catch (e) {
+    console.error('[fulfillStripeCheckout] session metadata backfill failed:', e, {
+      stripeSessionId: params.stripeSessionId,
+      orderId: orderIdTrimmed,
+    });
+  }
+
+  // Ensure PaymentIntent is marked too (useful for payment_intent.* events / reports).
+  if (params.paymentIntentId) {
+    try {
+      await params.stripe.paymentIntents.update(params.paymentIntentId, {
+        metadata: orderMetadata,
+      });
+    } catch (e) {
+      console.error('[fulfillStripeCheckout] payment intent metadata backfill failed:', e, {
+        paymentIntentId: params.paymentIntentId,
+        orderId: orderIdTrimmed,
+      });
+    }
+
+    // Payments export is typically charge-centric; make sure the Charge is tagged too.
+    try {
+      const pi = await params.stripe.paymentIntents.retrieve(params.paymentIntentId, {
+        expand: ['latest_charge'],
+      });
+      const latestCharge =
+        typeof pi.latest_charge === 'string'
+          ? null
+          : (pi.latest_charge as Stripe.Charge | null);
+      if (latestCharge?.id) {
+        await params.stripe.charges.update(latestCharge.id, { metadata: orderMetadata });
+      }
+    } catch (e) {
+      console.error('[fulfillStripeCheckout] charge metadata backfill failed:', e, {
+        paymentIntentId: params.paymentIntentId,
+        orderId: orderIdTrimmed,
+      });
+    }
+  }
+}
 
 async function markOrderPaidFromSession(params: {
   stripe: Stripe;
@@ -217,6 +284,16 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   }
 
   const { order, created } = await createOrder(payload);
+
+  // Cart flow creates the order AFTER Stripe payment, so Stripe won't have the order id at payment time.
+  // Back-fill Stripe so Dashboard reports can be filtered by order id.
+  await tryBackfillStripeOrderId({
+    stripe: params.stripe,
+    stripeSessionId,
+    paymentIntentId,
+    existingSessionMetadata: session.metadata,
+    orderId: order.orderId,
+  });
 
   const updated = await markOrderPaidFromSession({
     stripe: params.stripe,
