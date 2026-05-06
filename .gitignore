@@ -31,8 +31,3 @@ yarn-error.log*
 # rendered videos
 *.mp4
 
-# hyperframes — folder itself and everything inside (not versioned)
-hyperframes
-hyperframes/
-
-C:\Users\DELL\cursor_projects\flower shop\hyperframes
