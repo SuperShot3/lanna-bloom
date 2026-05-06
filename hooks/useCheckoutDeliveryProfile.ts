@@ -36,9 +36,24 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
     }
 
     const parts = pathname.split('/').filter(Boolean);
-    const slug = parts[1];
-    if (slug && isMarketPathSlug(slug)) {
-      const m = getMarketByPathSlug(slug);
+    // Pattern A: /{lang}/{market}/...
+    const slugDirect = parts[1];
+    if (slugDirect && isMarketPathSlug(slugDirect)) {
+      const m = getMarketByPathSlug(slugDirect);
+      if (m) {
+        return {
+          destinationId: m.destinationId,
+          variant: 'expansion',
+          labels: { en: m.customerFacingNameEn, th: m.customerFacingNameTh },
+        };
+      }
+    }
+
+    // Pattern B1: /{lang}/catalog/{market}/...
+    const maybeCatalog = parts[1];
+    const slugUnderCatalog = parts[2];
+    if (maybeCatalog === 'catalog' && slugUnderCatalog && isMarketPathSlug(slugUnderCatalog)) {
+      const m = getMarketByPathSlug(slugUnderCatalog);
       if (m) {
         return {
           destinationId: m.destinationId,

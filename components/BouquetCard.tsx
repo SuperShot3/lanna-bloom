@@ -22,6 +22,8 @@ import {
   type FavoriteItem,
 } from '@/lib/favorites';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -67,10 +69,12 @@ export function BouquetCard({
   const pathname = usePathname();
   const router = useRouter();
   const { addItem } = useCart();
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minPrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
     : 0;
+  const displayMinPrice = applyExpansionItemMarkupThb(minPrice, checkoutProfile.destinationId);
   const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
   const images = bouquet.images?.length ? bouquet.images : [];
   const [imageIndex, setImageIndex] = useState(0);
@@ -157,12 +161,12 @@ export function BouquetCard({
       );
       trackAddToCart({
         currency: 'THB',
-        value: selectedSize.price,
+        value: applyExpansionItemMarkupThb(selectedSize.price, checkoutProfile.destinationId),
         items: [
           {
             item_id: bouquet.id,
             item_name: itemName,
-            price: selectedSize.price,
+            price: applyExpansionItemMarkupThb(selectedSize.price, checkoutProfile.destinationId),
             quantity: 1,
             index: 0,
             item_category: getBouquetDisplayCategory(bouquet),
@@ -269,13 +273,13 @@ export function BouquetCard({
         item_name: name,
         item_category: getBouquetDisplayCategory(bouquet),
         item_variant: bouquet.sizes?.[0] ? optionDisplayLabel(bouquet.sizes[0], lang) : undefined,
-        price: minPrice,
+        price: displayMinPrice,
         quantity: 1,
         index: 0,
       };
       trackSelectItem('catalog', item);
     },
-    [bouquet, name, minPrice, persistPreferredSizeOnClick, selectedSize, lang]
+    [bouquet, name, displayMinPrice, persistPreferredSizeOnClick, selectedSize, lang]
   );
 
   const viewTransitionName = `product-${bouquet.id}`;
@@ -346,7 +350,7 @@ export function BouquetCard({
         className="card-link"
         data-ga-select-item="catalog"
         onClick={handleLinkClick}
-        aria-label={`${name} — from ฿${minPrice.toLocaleString()}`}
+        aria-label={`${name} — from ฿${displayMinPrice.toLocaleString()}`}
       >
         <div
           className={`card-image-wrap ${isPopular ? 'card-image-wrap-popular' : ''} ${isCompact ? 'card-image-wrap-compact' : ''}`}
@@ -430,7 +434,7 @@ export function BouquetCard({
             {name}
           </div>
           <div className="card-price">
-            {t.from} ฿{minPrice.toLocaleString()}
+            {t.from} ฿{displayMinPrice.toLocaleString()}
           </div>
         </div>
       </PrefetchLink>
@@ -504,7 +508,9 @@ export function BouquetCard({
                         ) : null}
                       </span>
                     </label>
-                    <span className="card-hover-option-price">฿{s.price.toLocaleString()}</span>
+                    <span className="card-hover-option-price">
+                      ฿{applyExpansionItemMarkupThb(s.price, checkoutProfile.destinationId).toLocaleString()}
+                    </span>
                   </li>
                 );
               })}

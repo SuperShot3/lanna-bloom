@@ -9,6 +9,7 @@ import {
   stripeOrderSuccessUrl,
 } from '@/lib/stripe/checkoutStripeLineItems';
 import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
+import { applyExpansionItemMarkupThb, EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,12 +58,29 @@ export async function POST(request: NextRequest) {
     lang,
   });
 
-  const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+  const dest = order.delivery?.deliveryDestination ?? 'CHIANG_MAI';
+
   const deliveryFee = order.pricing?.deliveryFee ?? 0;
   const referralDiscount = order.referralDiscount ?? 0;
 
+  const repricedItems =
+    EXPANSION_MARKUP_DESTINATIONS.has(dest) && (order.items?.length ?? 0) > 0
+      ? (order.items ?? []).map((it) => ({
+          ...it,
+          price: applyExpansionItemMarkupThb(it.price, dest),
+        }))
+      : (order.items ?? []);
+
+  const itemsTotal = repricedItems.reduce((sum, it) => sum + (it.price ?? 0), 0);
+  const recomputedGrandTotal = itemsTotal + deliveryFee;
+  const effectiveGrandTotal = Math.max(0, recomputedGrandTotal - referralDiscount);
+
+  const grandTotal = EXPANSION_MARKUP_DESTINATIONS.has(dest)
+    ? effectiveGrandTotal
+    : (order.pricing?.grandTotal ?? order.amountTotal ?? 0);
+
   const lineItems = buildStripeCheckoutLineItems({
-    computedItems: order.items ?? [],
+    computedItems: repricedItems,
     deliveryFee,
     effectiveGrandTotal: grandTotal,
     referralCode: order.referralCode,

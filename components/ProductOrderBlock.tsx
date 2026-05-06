@@ -20,6 +20,7 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 export function ProductOrderBlock({
   bouquet,
@@ -51,12 +52,16 @@ export function ProductOrderBlock({
   const tBuyNow = translations[lang].buyNow;
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
-  const totalPrice = (selectedSize.price + addOnsTotal) * Math.max(1, Math.floor(quantity));
+  const qty = Math.max(1, Math.floor(quantity));
+  const unitPrice = applyExpansionItemMarkupThb(
+    selectedSize.price + addOnsTotal,
+    checkoutProfile.destinationId
+  );
+  const totalPrice = unitPrice * qty;
 
   const handleAddToCart = () => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
-    const price = selectedSize.price + addOnsTotal;
-    const qty = Math.max(1, Math.floor(quantity));
+    const price = unitPrice;
     addItem(
       {
         itemType: 'bouquet',
@@ -95,6 +100,7 @@ export function ProductOrderBlock({
         selected={selectedSize}
         onSelect={setSelectedSize}
         lang={lang}
+        destinationId={checkoutProfile.destinationId}
       />
       <AddOnsSection
         lang={lang}
@@ -138,9 +144,7 @@ export function ProductOrderBlock({
                 +
               </button>
             </div>
-            <span className="order-qty-price">
-              ฿{(selectedSize.price * quantity).toLocaleString()}
-            </span>
+            <span className="order-qty-price">฿{totalPrice.toLocaleString()}</span>
           </div>
           {(bouquet.partnerName || bouquet.partnerId) && (
             <div className="mb-6">

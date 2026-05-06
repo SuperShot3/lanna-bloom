@@ -29,6 +29,7 @@ import {
   thaiFullPhoneHasDuplicateCountryCode,
 } from '@/lib/phoneFieldHints';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
+import { EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
 
 function validateStripePayload(
   body: unknown
@@ -348,6 +349,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: computed.message }, { status: 400 });
     }
     const { totals } = computed;
+    if (EXPANSION_MARKUP_DESTINATIONS.has(data.delivery.deliveryDestination)) {
+      for (const it of totals.items) {
+        if (it.price % 10 !== 0) {
+          return NextResponse.json(
+            { error: 'Pricing mismatch. Please refresh the page and try again.' },
+            { status: 400 }
+          );
+        }
+      }
+    }
     const subtotal = totals.itemsTotal + totals.deliveryFee;
     let referralDiscount = data.referralCode
       ? getDiscountForCode(data.referralCode, subtotal, { deliveryFee: totals.deliveryFee })
@@ -458,6 +469,7 @@ export async function POST(request: NextRequest) {
     if (welcomeCodeId) {
       stripeMetadata.welcome_code_id = welcomeCodeId;
     }
+    stripeMetadata.pricing_rules_version = 'expansion_markup_v1';
 
     console.log('[stripe/create-checkout-session] checkout draft saved (order created after payment)', {
       checkoutDraftId,

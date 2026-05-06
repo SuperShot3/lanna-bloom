@@ -142,6 +142,9 @@ export default async function InfoArticlePage({
     },
   };
 
+  const catalogCardVariant =
+    slug === '51-roses-chiang-mai' ? 'article-catalog-button' : 'default';
+
   const mdxComponents = {
     h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
       <h2 className="info-article-h2" {...props} />
@@ -174,7 +177,11 @@ export default async function InfoArticlePage({
       <ArticleListenPlayer src={ORDER_FROM_ABROAD_AUDIO} lang={lang} />
     ),
     CatalogProductCard: ({ slug: productSlug }: { slug: string }) => (
-      <CatalogProductCard slug={productSlug} lang={lang as Locale} />
+      <CatalogProductCard
+        slug={productSlug}
+        lang={lang as Locale}
+        variant={catalogCardVariant}
+      />
     ),
     CatalogProductCardGrid: ({ children }: { children: React.ReactNode }) => (
       <div className={styles.inlineCatalogCardGrid}>{children}</div>

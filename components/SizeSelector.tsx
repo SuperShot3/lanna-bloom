@@ -3,17 +3,21 @@
 import { BouquetSize } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 export function SizeSelector({
   sizes,
   selected,
   onSelect,
   lang,
+  destinationId,
 }: {
   sizes: BouquetSize[];
   selected: BouquetSize;
   onSelect: (size: BouquetSize) => void;
   lang: Locale;
+  destinationId: DeliveryDestinationId;
 }) {
   const selectedSizeLabel = optionDisplayLabel(selected, lang);
   const selectedSizeText = lang === 'th' ? `ขนาดที่เลือก: ${selectedSizeLabel}` : `Selected size: ${selectedSizeLabel}`;
@@ -23,21 +27,24 @@ export function SizeSelector({
       <p className="size-label">Options</p>
       <p className="size-selected">{selectedSizeText}</p>
       <div className="size-options" role="group" aria-label="Bouquet options">
-        {sizes.map((size) => (
-          <button
-            key={size.optionId}
-            type="button"
-            className={`size-btn ${selected.optionId === size.optionId ? 'active' : ''}`}
-            onClick={() => onSelect(size)}
-            aria-pressed={selected.optionId === size.optionId}
-            aria-label={`${optionDisplayLabel(size, lang)} ฿${size.price.toLocaleString()}`}
-          >
-            <span className="size-btn-price">฿{size.price.toLocaleString()}</span>
+        {sizes.map((size) => {
+          const displayPrice = applyExpansionItemMarkupThb(size.price, destinationId);
+          return (
+            <button
+              key={size.optionId}
+              type="button"
+              className={`size-btn ${selected.optionId === size.optionId ? 'active' : ''}`}
+              onClick={() => onSelect(size)}
+              aria-pressed={selected.optionId === size.optionId}
+              aria-label={`${optionDisplayLabel(size, lang)} ฿${displayPrice.toLocaleString()}`}
+            >
+              <span className="size-btn-price">฿{displayPrice.toLocaleString()}</span>
             {size.description ? (
               <span className="size-btn-desc">{size.description}</span>
             ) : null}
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
       <style jsx>{`
         .size-selector {

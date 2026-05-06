@@ -11,9 +11,12 @@ import type { AnalyticsItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang: Locale }) {
   const pathname = usePathname();
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const [emblaRef] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
@@ -35,6 +38,10 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
             const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
             const minPrice =
               bouquet.sizes?.length > 0 ? Math.min(...bouquet.sizes.map((s) => s.price)) : 0;
+            const displayMinPrice = applyExpansionItemMarkupThb(
+              minPrice,
+              checkoutProfile.destinationId
+            );
             const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
 
             const handleClick = () => {
@@ -42,7 +49,7 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
                 item_id: bouquet.id,
                 item_name: name,
                 item_category: getBouquetDisplayCategory(bouquet),
-                price: minPrice,
+                price: displayMinPrice,
                 quantity: 1,
                 index: 0,
               };
@@ -78,7 +85,7 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
                         {name}
                       </p>
                       <p className={interest.price}>
-                        {lang === 'th' ? 'เริ่มต้น ' : 'From '}฿{minPrice.toLocaleString()}
+                        {lang === 'th' ? 'เริ่มต้น ' : 'From '}฿{displayMinPrice.toLocaleString()}
                       </p>
                     </div>
                   </Link>

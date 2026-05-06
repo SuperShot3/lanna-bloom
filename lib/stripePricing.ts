@@ -18,6 +18,7 @@ import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -123,6 +124,7 @@ export async function computeOrderTotals(
     const isProduct = item.itemType === 'product';
     const isPlushyToy = item.itemType === 'plushyToy';
     const isBalloon = item.itemType === 'balloon';
+    const applyMarkup = (v: number) => applyExpansionItemMarkupThb(v, delivery.deliveryDestination);
 
     if (isPlushyToy) {
       const toy = await getPlushyToyById(item.bouquetId);
@@ -135,6 +137,7 @@ export async function computeOrderTotals(
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
       itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
 
       const toyTitle = lang === 'th' && toy.nameTh ? toy.nameTh : toy.nameEn;
       const sizeLabel = (item.size || toy.sizeLabel || '—').trim() || '—';
@@ -166,6 +169,7 @@ export async function computeOrderTotals(
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
       itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
 
       const balloonTitle = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
       const sizeLabel = (item.size || balloon.sizeLabel || '—').trim() || '—';
@@ -206,6 +210,7 @@ export async function computeOrderTotals(
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
       itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
 
       const productTitle = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
       items.push({
@@ -244,6 +249,7 @@ export async function computeOrderTotals(
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
       itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
 
       const bouquetTitle = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
       items.push({

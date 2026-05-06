@@ -38,6 +38,7 @@ import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
 import {
   CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY,
@@ -427,13 +428,21 @@ function renderCountryCodeOptions(lang: Locale): ReactNode {
   );
 }
 
-function cartItemsToAnalytics(items: CartItem[], lang: Locale): AnalyticsItem[] {
+function cartItemsToAnalytics(
+  items: CartItem[],
+  lang: Locale,
+  deliveryDestination: OrderDeliveryDestinationId
+): AnalyticsItem[] {
   return items.flatMap((item, index) => {
     const qty = item.quantity ?? 1;
+    const unitPrice = applyExpansionItemMarkupThb(
+      item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {}),
+      deliveryDestination
+    );
     return Array.from({ length: qty }, (_, i) => ({
       item_id: item.bouquetId,
       item_name: lang === 'th' ? item.nameTh : item.nameEn,
-      price: item.size.price,
+      price: unitPrice,
       quantity: 1,
       index: index + i,
       item_category: undefined,
@@ -442,11 +451,14 @@ function cartItemsToAnalytics(items: CartItem[], lang: Locale): AnalyticsItem[] 
   });
 }
 
-function cartValue(items: CartItem[]): number {
+function cartValue(items: CartItem[], deliveryDestination: OrderDeliveryDestinationId): number {
   return items.reduce(
     (v, item) =>
       v +
-      (item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})) *
+      applyExpansionItemMarkupThb(
+        item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {}),
+        deliveryDestination
+      ) *
         (item.quantity ?? 1),
     0
   );
@@ -465,8 +477,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (items.length === 0) return;
-    const analyticsItems = cartItemsToAnalytics(items, lang);
-    const value = cartValue(items);
+    const analyticsItems = cartItemsToAnalytics(items, lang, checkoutDeliveryProfile.destinationId);
+    const value = cartValue(items, checkoutDeliveryProfile.destinationId);
     if (!viewCartFiredRef.current) {
       viewCartFiredRef.current = true;
       trackViewCart(analyticsItems, value);
@@ -477,7 +489,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       value,
       items: analyticsItems,
     });
-  }, [items, lang]);
+  }, [checkoutDeliveryProfile.destinationId, items, lang]);
 
   const defaultDelivery: DeliveryFormValues = {
     addressLine: '',
@@ -644,15 +656,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
       addShippingInfoFiredRef.current = true;
-      const analyticsItems = cartItemsToAnalytics(items, lang);
+      const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
       trackAddShippingInfo({
         shippingTier: 'standard',
         currency: 'THB',
-        value: cartValue(items),
+        value: cartValue(items, delivery.deliveryDestination),
         items: analyticsItems,
       });
     }
-  }, [delivery.addressLine, items, lang]);
+  }, [delivery.addressLine, delivery.deliveryDestination, items, lang]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -683,7 +695,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
-  const itemsTotalVal = cartValue(items);
+  const itemsTotalVal = cartValue(items, delivery.deliveryDestination);
   const cartExpansionInvalid = cartViolatesExpansionRules(items, delivery.deliveryDestination);
   const hasDeliveryZone =
     !!delivery.deliveryZoneId &&
@@ -970,7 +982,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const fullPhone = countryCode + phoneNational;
     const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
     try {
-      const analyticsItems = cartItemsToAnalytics(items, lang);
+      const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
       trackAddPaymentInfo({
         paymentType: 'card',
         currency: 'THB',
@@ -1474,11 +1486,23 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                           <div className="cart-item-main">
                             <h3 className="cart-item-name">{name}</h3>
                             <p className="cart-item-size">
-                              {isNonBouquetCartLine(item)
-                                ? `${((item.size.label || '').trim() || '—')} — ฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
-                                : (item.quantity ?? 1) > 1
-                                  ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
-                                  : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
+                              {(() => {
+                                const qty = item.quantity ?? 1;
+                                const unitWithAddOns = item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
+                                const unitDisplayPrice = applyExpansionItemMarkupThb(
+                                  unitWithAddOns,
+                                  delivery.deliveryDestination
+                                );
+                                const lineDisplayPrice = unitDisplayPrice * qty;
+                                const label = (item.size.label || '').trim() || '—';
+                                if (isNonBouquetCartLine(item)) {
+                                  return `${label} — ฿${unitDisplayPrice.toLocaleString()}`;
+                                }
+                                if (qty > 1) {
+                                  return `${item.size.label} × ${qty} — ฿${lineDisplayPrice.toLocaleString()}`;
+                                }
+                                return `${item.size.label} — ฿${unitDisplayPrice.toLocaleString()}`;
+                              })()}
                             </p>
                             {addOnsSummary && <p className="cart-item-addons">{addOnsSummary}</p>}
                           </div>
@@ -1837,11 +1861,23 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <div className="cart-item-main">
                   <h3 className="cart-item-name">{name}</h3>
                   <p className="cart-item-size">
-                    {isNonBouquetCartLine(item)
-                      ? `${((item.size.label || '').trim() || '—')} — ฿${(item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {})).toLocaleString()}`
-                      : (item.quantity ?? 1) > 1
-                        ? `${item.size.label} × ${item.quantity ?? 1} — ฿${((item.size.price) * (item.quantity ?? 1)).toLocaleString()}`
-                        : `${item.size.label} — ฿${item.size.price.toLocaleString()}`}
+                    {(() => {
+                      const qty = item.quantity ?? 1;
+                      const unitWithAddOns = item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
+                      const unitDisplayPrice = applyExpansionItemMarkupThb(
+                        unitWithAddOns,
+                        delivery.deliveryDestination
+                      );
+                      const lineDisplayPrice = unitDisplayPrice * qty;
+                      const label = (item.size.label || '').trim() || '—';
+                      if (isNonBouquetCartLine(item)) {
+                        return `${label} — ฿${unitDisplayPrice.toLocaleString()}`;
+                      }
+                      if (qty > 1) {
+                        return `${item.size.label} × ${qty} — ฿${lineDisplayPrice.toLocaleString()}`;
+                      }
+                      return `${item.size.label} — ฿${unitDisplayPrice.toLocaleString()}`;
+                    })()}
                   </p>
                   {addOnsSummary && (
                     <p className="cart-item-addons">{addOnsSummary}</p>

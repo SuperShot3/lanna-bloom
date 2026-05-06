@@ -15,6 +15,8 @@ import type { SizeKey } from '@/lib/bouquets';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -82,9 +84,11 @@ export function ProductCard({
   const pathname = usePathname();
   const router = useRouter();
   const { addItem } = useCart();
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const href = buildCatalogItemHref({ lang, slug: product.slug, pathname });
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+  const displayFromPrice = applyExpansionItemMarkupThb(finalPrice, checkoutProfile.destinationId);
   const isPlushyToys = product.catalogKind === 'plushyToy';
   const isBalloon = product.catalogKind === 'balloon';
   const isStandaloneProduct = isPlushyToys || isBalloon;
@@ -227,7 +231,7 @@ export function ProductCard({
       item_id: product.id,
       item_name: name,
       item_category: getProductDisplayCategory(product),
-      price: finalPrice,
+      price: displayFromPrice,
       quantity: 1,
       index: 0,
     };
@@ -245,6 +249,7 @@ export function ProductCard({
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       if (isStandaloneProduct) {
+        const displayUnitPrice = applyExpansionItemMarkupThb(finalPrice, checkoutProfile.destinationId);
         addItem(
           {
             itemType: isBalloon ? 'balloon' : 'plushyToy',
@@ -266,12 +271,12 @@ export function ProductCard({
         );
         trackAddToCart({
           currency: 'THB',
-          value: finalPrice,
+          value: displayUnitPrice,
           items: [
             {
               item_id: product.id,
               item_name: name,
-              price: finalPrice,
+              price: displayUnitPrice,
               quantity: 1,
               index: 0,
               item_category: getProductDisplayCategory(product),
@@ -288,6 +293,7 @@ export function ProductCard({
         return;
       }
       if (!selected) return;
+      const displaySelectedPrice = applyExpansionItemMarkupThb(selected.price, checkoutProfile.destinationId);
       addItem(
         {
           itemType: 'product',
@@ -309,12 +315,12 @@ export function ProductCard({
       );
       trackAddToCart({
         currency: 'THB',
-        value: selected.price,
+        value: displaySelectedPrice,
         items: [
           {
             item_id: product.id,
             item_name: name,
-            price: selected.price,
+            price: displaySelectedPrice,
             quantity: 1,
             index: 0,
             item_category: getProductDisplayCategory(product),
@@ -329,7 +335,20 @@ export function ProductCard({
         router.push(`/${lang}/cart`);
       }
     },
-    [addItem, finalPrice, imgSrc, isBalloon, isStandaloneProduct, lang, name, product, router, selected, sizeLabel]
+    [
+      addItem,
+      checkoutProfile.destinationId,
+      finalPrice,
+      imgSrc,
+      isBalloon,
+      isStandaloneProduct,
+      lang,
+      name,
+      product,
+      router,
+      selected,
+      sizeLabel,
+    ]
   );
 
   const radioName = `product-opt-${product.id}`;
@@ -350,7 +369,7 @@ export function ProductCard({
         className="pcard-link"
         data-ga-select-item="catalog"
         onClick={handleLinkClickGuarded}
-        aria-label={`${name} — ${t.from} ฿${finalPrice.toLocaleString()}`}
+        aria-label={`${name} — ${t.from} ฿${displayFromPrice.toLocaleString()}`}
       >
         <div
           className="pcard-image-wrap"
@@ -404,7 +423,7 @@ export function ProductCard({
           </div>
           <div className="pcard-price">
             <span className="pcard-price-from">{t.from}</span>{' '}
-            <span className="pcard-price-amount">฿{finalPrice.toLocaleString()}</span>
+            <span className="pcard-price-amount">฿{displayFromPrice.toLocaleString()}</span>
           </div>
           {isStandaloneProduct && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
         </div>
@@ -479,7 +498,9 @@ export function ProductCard({
                           ) : null}
                         </span>
                       </label>
-                      <span className="pcard-option-price">฿{row.price.toLocaleString()}</span>
+                      <span className="pcard-option-price">
+                        ฿{applyExpansionItemMarkupThb(row.price, checkoutProfile.destinationId).toLocaleString()}
+                      </span>
                     </li>
                   );
                 })}

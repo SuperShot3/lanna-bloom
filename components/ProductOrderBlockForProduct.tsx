@@ -18,6 +18,8 @@ import type { CatalogProduct } from '@/lib/sanity';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -39,6 +41,7 @@ export function ProductOrderBlockForProduct({
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const tBalloon = tBuyNow as typeof tBuyNow & {
@@ -51,7 +54,12 @@ export function ProductOrderBlockForProduct({
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
-  const totalPrice = (finalPrice + addOnsTotal) * Math.max(1, Math.floor(quantity));
+  const qty = Math.max(1, Math.floor(quantity));
+  const unitPrice = applyExpansionItemMarkupThb(
+    finalPrice + addOnsTotal,
+    checkoutProfile.destinationId
+  );
+  const totalPrice = unitPrice * qty;
   const itemType =
     product.catalogKind === 'plushyToy' ? 'plushyToy' : product.catalogKind === 'balloon' ? 'balloon' : 'product';
   const isBalloon = itemType === 'balloon';
@@ -59,7 +67,6 @@ export function ProductOrderBlockForProduct({
   const sizeLabel = (product.sizeLabel || '').trim();
 
   const handleAddToCart = () => {
-    const qty = Math.max(1, Math.floor(quantity));
     const syntheticSize = {
       optionId: 'product_default',
       key: 'm' as const,
@@ -91,7 +98,7 @@ export function ProductOrderBlockForProduct({
         {
           item_id: product.id,
           item_name: name,
-          price: finalPrice,
+          price: unitPrice,
           quantity: qty,
           index: 0,
           item_category: getProductDisplayCategory(product),

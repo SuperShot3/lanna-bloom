@@ -86,6 +86,119 @@
   isolation: isolate;
 }
 
+.inlineCatalogMini {
+  max-width: 520px;
+  margin: 1.1em auto 1.6em;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inlineCatalogMiniLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.inlineCatalogMiniThumb {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  flex: 0 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--pastel-cream);
+  border: 1px solid rgba(45, 42, 38, 0.08);
+}
+
+.inlineCatalogMiniThumbImg {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.inlineCatalogMiniThumbPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(197, 160, 89, 0.10), rgba(26, 60, 52, 0.08));
+}
+
+.inlineCatalogMiniTitle {
+  min-width: 0;
+  font-weight: 650;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.inlineCatalogMiniButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  background: rgba(197, 160, 89, 0.15);
+  color: #c5a059;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+
+.inlineCatalogMiniButton {
+  white-space: nowrap;
+}
+
+.inlineCatalogMini {
+  min-height: 176px;
+}
+
+@media (max-width: 420px) {
+  .inlineCatalogMini {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .inlineCatalogMiniLeft {
+    width: 100%;
+  }
+  .inlineCatalogMiniButton {
+    width: 100%;
+  }
+}
+
+.inlineCatalogMiniButton:hover {
+  background: rgba(197, 160, 89, 0.28);
+  border-color: rgba(197, 160, 89, 0.45);
+  transform: translateY(-1px);
+}
+
+.inlineCatalogMiniButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .inlineCatalogCardGrid {
   display: grid;
   grid-template-columns: 1fr;
@@ -155,6 +268,31 @@
   margin: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+}
+
+/* Inline mini promo: undo article-wide img rules so thumbnail stays inside frame */
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb :global(span),
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb :global(span img),
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb img {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb :global(span) {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: top center !important;
 }
 
 .infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-image),
