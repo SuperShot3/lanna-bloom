@@ -76,6 +76,9 @@ interface SupabaseOrderRow {
   phone?: string | null;
   phone_country_code?: string | null;
   address?: string | null;
+  delivery_destination?: string | null;
+  delivery_zone?: string | null;
+  postal_code?: string | null;
   district?: string | null;
   delivery_window?: string | null;
   delivery_date?: string | null;
@@ -361,6 +364,9 @@ export async function supabaseCreateOrder(
     phone: order.phone ?? null,
     phone_country_code: order.phoneCountryCode ?? null,
     address: order.delivery.address ?? null,
+    delivery_destination: order.delivery.deliveryDestination ?? null,
+    delivery_zone: order.delivery.deliveryZoneId ?? null,
+    postal_code: order.delivery.postalCode ?? null,
     district: order.delivery.deliveryDistrict ?? 'UNKNOWN',
     delivery_window: deliveryWindow,
     delivery_date: deliveryDate ?? null,
@@ -572,6 +578,9 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     phone: order.phone ?? null,
     phone_country_code: order.phoneCountryCode ?? null,
     address: order.delivery.address ?? null,
+    delivery_destination: order.delivery.deliveryDestination ?? null,
+    delivery_zone: order.delivery.deliveryZoneId ?? null,
+    postal_code: order.delivery.postalCode ?? null,
     district: order.delivery.deliveryDistrict ?? 'UNKNOWN',
     delivery_window: deliveryWindow,
     delivery_date: deliveryDate ?? null,

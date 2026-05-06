@@ -1,18 +1,58 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
 import { HeroSwipeCards } from '@/components/HeroSwipeCards';
+import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
+import { readMarketSession } from '@/lib/delivery/marketSession';
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
 
-export function Hero({ lang, heroImageUrl, carouselImages }: { lang: Locale; heroImageUrl?: string; carouselImages?: string[] }) {
+export function Hero({
+  lang,
+  heroImageUrl,
+  carouselImages,
+  titleOverride,
+}: {
+  lang: Locale;
+  heroImageUrl?: string;
+  carouselImages?: string[];
+  /** Optional page-specific H1 override (keeps same hero design). */
+  titleOverride?: React.ReactNode;
+}) {
   const t = translations[lang].hero;
-  const catalogHref = `/${lang}/catalog`;
+  const pathname = usePathname();
+  const pathParts = pathname?.split('/').filter(Boolean) ?? [];
+  const maybeMarketSlug = pathParts[1];
+  const activeMarket =
+    maybeMarketSlug && isMarketPathSlug(maybeMarketSlug)
+      ? getMarketByPathSlug(maybeMarketSlug)
+      : null;
+  const [sessionMarketSlug, setSessionMarketSlug] = useState<string | null>(null);
+  const sessionMarket =
+    sessionMarketSlug && isMarketPathSlug(sessionMarketSlug)
+      ? getMarketByPathSlug(sessionMarketSlug)
+      : null;
+  const effectiveMarket = activeMarket ?? sessionMarket;
+  const catalogHref = effectiveMarket
+    ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
+    : `/${lang}/catalog`;
   const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
+
+  useEffect(() => {
+    const load = () => {
+      const s = readMarketSession();
+      setSessionMarketSlug(s?.pathSlug ?? null);
+    };
+    load();
+    window.addEventListener('focus', load);
+    return () => window.removeEventListener('focus', load);
+  }, []);
 
   return (
     <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-10 md:pt-8 md:pb-12 lg:pt-12 lg:pb-20 overflow-hidden">
@@ -23,8 +63,12 @@ export function Hero({ lang, heroImageUrl, carouselImages }: { lang: Locale; her
             {t.badge}
           </div>
           <h1 className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words">
-            {t.headlineNew} <br />
-            <span className="italic text-[#C5A059]">{t.headlineAccent}</span>
+            {titleOverride ?? (
+              <>
+                {t.headlineNew} <br />
+                <span className="italic text-[#C5A059]">{t.headlineAccent}</span>
+              </>
+            )}
           </h1>
           <p className="text-base sm:text-lg text-stone-600 mb-4 sm:mb-6 md:mb-8 max-w-lg leading-relaxed">
             {t.sublineNew}

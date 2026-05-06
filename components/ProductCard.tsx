@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { CatalogProduct } from '@/lib/sanity';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -14,6 +14,7 @@ import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import type { SizeKey } from '@/lib/bouquets';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
+import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -78,10 +79,11 @@ export function ProductCard({
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
+  const pathname = usePathname();
   const router = useRouter();
   const { addItem } = useCart();
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
-  const href = `/${lang}/catalog/${product.slug}`;
+  const href = buildCatalogItemHref({ lang, slug: product.slug, pathname });
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const isPlushyToys = product.catalogKind === 'plushyToy';
   const isBalloon = product.catalogKind === 'balloon';

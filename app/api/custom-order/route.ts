@@ -5,10 +5,20 @@ import type { CustomOrderDetails, DeliveryDistrictKey, OrderPayload, OrderItem }
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { detectDistrictFromAddress } from '@/lib/deliveryFees';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { getZoneFee, isSupportedZone, legacyDistrictFromChiangMaiZone, zoneLabel } from '@/lib/delivery/zones';
 import { uploadCustomOrderReferenceImage } from '@/lib/customOrder/uploadReferenceImage';
 import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
 const CUSTOM_ORDER_ITEM_ID = 'custom-order-request';
+const DELIVERY_DESTINATIONS: DeliveryDestinationId[] = [
+  'CHIANG_MAI',
+  'PATTAYA',
+  'PHUKET',
+  'KRABI',
+  'SAMUI',
+  'HUA_HIN',
+];
 
 function normalizeDigits(s: string): string {
   return s.replace(/\D/g, '');
@@ -129,8 +139,26 @@ export async function POST(request: NextRequest) {
     const langRaw = getString(form, 'lang');
     const locale: 'en' | 'th' = langRaw === 'th' ? 'th' : 'en';
 
-    const district: DeliveryDistrictKey = detectDistrictFromAddress(deliveryAddress) ?? 'UNKNOWN';
-    const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral: false });
+    const destinationRaw = getString(form, 'deliveryDestination').toUpperCase();
+    const deliveryDestination = DELIVERY_DESTINATIONS.includes(destinationRaw as DeliveryDestinationId)
+      ? (destinationRaw as DeliveryDestinationId)
+      : 'CHIANG_MAI';
+    const deliveryZoneId = getString(form, 'deliveryZoneId');
+    if (!deliveryZoneId || !isSupportedZone(deliveryDestination, deliveryZoneId)) {
+      return NextResponse.json({ error: 'Valid delivery zone is required' }, { status: 400 });
+    }
+    const zoneFee = getZoneFee(deliveryDestination, deliveryZoneId);
+    if (zoneFee == null) {
+      return NextResponse.json({ error: 'Failed to resolve delivery fee for selected zone' }, { status: 400 });
+    }
+    const legacyDistrict =
+      deliveryDestination === 'CHIANG_MAI'
+        ? legacyDistrictFromChiangMaiZone(deliveryZoneId)
+        : { deliveryDistrict: detectDistrictFromAddress(deliveryAddress) ?? 'UNKNOWN', isMueangCentral: false };
+    const district: DeliveryDistrictKey = legacyDistrict.deliveryDistrict;
+    const isMueangCentral = legacyDistrict.isMueangCentral;
+    const deliveryFee = zoneFee;
+    const deliveryZoneLabel = zoneLabel(deliveryDestination, deliveryZoneId, locale);
 
     const yourName = getString(form, 'yourName');
     const greetingCard = getString(form, 'greetingCard');
@@ -188,8 +216,11 @@ export async function POST(request: NextRequest) {
         recipientName: recipient,
         recipientPhone,
         notes: comments || undefined,
+        deliveryDestination,
+        deliveryZoneId,
+        deliveryZoneLabel: deliveryZoneLabel ?? undefined,
         deliveryDistrict: district,
-        isMueangCentral: false,
+        isMueangCentral,
       },
       pricing: {
         itemsTotal: 0,

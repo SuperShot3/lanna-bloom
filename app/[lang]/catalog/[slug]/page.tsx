@@ -13,6 +13,8 @@ import {
 } from '@/lib/sanity';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { getMarketByPathSlug } from '@/lib/delivery/markets';
+import MarketCatalogPageViaSlug from './catalog/page';
 
 // Revalidate product pages every 60 seconds so Sanity updates appear without rebuild
 export const revalidate = 60;
@@ -28,11 +30,17 @@ export const dynamicParams = true;
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: { lang: string; slug: string };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
+  const market = getMarketByPathSlug(params.slug);
+  if (market) {
+    return MarketCatalogPageViaSlug({ params, searchParams });
+  }
 
   const bouquet = await getBouquetBySlugFromSanity(params.slug);
   if (bouquet) {

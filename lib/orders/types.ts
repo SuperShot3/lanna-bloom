@@ -37,6 +37,15 @@ export type DeliveryDistrictKey =
   | 'MUEANG' | 'SARAPHI' | 'SAN_SAI' | 'HANG_DONG' | 'SAN_KAMPHAENG'
   | 'MAE_RIM' | 'DOI_SAKET' | 'MAE_ON' | 'SAMOENG' | 'MAE_TAENG' | 'LAMPHUN' | 'UNKNOWN';
 
+/** Canonical delivery market (Chiang Mai + regional expansion). */
+export type OrderDeliveryDestinationId =
+  | 'CHIANG_MAI'
+  | 'PATTAYA'
+  | 'PHUKET'
+  | 'KRABI'
+  | 'SAMUI'
+  | 'HUA_HIN';
+
 export interface OrderDelivery {
   address: string;
   district?: string;
@@ -51,6 +60,14 @@ export interface OrderDelivery {
   deliveryLat?: number;
   deliveryLng?: number;
   deliveryGoogleMapsUrl?: string;
+  /** Primary geography for new orders (with deliveryZoneId). */
+  deliveryDestination?: OrderDeliveryDestinationId;
+  /** Stable zone key from lib/delivery/zones.ts */
+  deliveryZoneId?: string;
+  /** Snapshot for admin / email when helpful */
+  deliveryZoneLabel?: string;
+  /** Inferred from address / Maps URL; does not affect delivery fee */
+  postalCode?: string;
   deliveryDistrict?: DeliveryDistrictKey;
   isMueangCentral?: boolean;
 }

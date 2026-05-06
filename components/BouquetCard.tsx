@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { Bouquet, type BouquetSize } from '@/lib/bouquets';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
@@ -21,6 +21,7 @@ import {
   FAVORITES_STORAGE_KEY,
   type FavoriteItem,
 } from '@/lib/favorites';
+import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -63,13 +64,14 @@ export function BouquetCard({
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
+  const pathname = usePathname();
   const router = useRouter();
   const { addItem } = useCart();
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minPrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
     : 0;
-  const href = `/${lang}/catalog/${bouquet.slug}`;
+  const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
   const images = bouquet.images?.length ? bouquet.images : [];
   const [imageIndex, setImageIndex] = useState(0);
   const imgSrc = images[imageIndex] ?? images[0] ?? '';
@@ -306,7 +308,7 @@ export function BouquetCard({
         price: minPrice,
         image: imgSrc || bouquet.images?.[0] || '',
         slug: bouquet.slug,
-        url: `/${lang}/catalog/${bouquet.slug}`,
+        url: href,
         options: option
           ? {
               optionId: option.optionId,
@@ -325,7 +327,7 @@ export function BouquetCard({
         setFavoriteActive(true);
       }
     },
-    [bouquet, favoriteActive, imgSrc, lang, minPrice, selectedSize]
+    [bouquet, favoriteActive, href, imgSrc, lang, minPrice, selectedSize]
   );
 
   return (

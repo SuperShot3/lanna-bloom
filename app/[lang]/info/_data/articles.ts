@@ -205,12 +205,12 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'delivery-policy-chiang-mai',
-    title: 'Delivery Policy (Chiang Mai)',
+    title: 'Delivery Policy (All Service Zones)',
     excerpt:
-      'Lanna Bloom delivery policy for Chiang Mai: service hours 09:00–20:00, delivery areas, required chat confirmation, address requirements, and more. Contact us via LINE or WhatsApp to confirm your order.',
-    titleTh: 'นโยบายการจัดส่ง (Lanna Bloom)',
+      'Lanna Bloom delivery policy across all available service zones: service hours 09:00–20:00, zone coverage, required chat confirmation, address requirements, and more. Contact us via LINE or WhatsApp to confirm your order.',
+    titleTh: 'นโยบายการจัดส่ง (ทุกโซนบริการ)',
     excerptTh:
-      'นโยบายการจัดส่งของ Lanna Bloom ในเชียงใหม่: เวลาบริการ 09:00–20:00 พื้นที่จัดส่ง การยืนยันผ่านแชท ข้อมูลที่อยู่ และอื่นๆ ติดต่อเราผ่าน LINE หรือ WhatsApp เพื่อยืนยันออเดอร์',
+      'นโยบายการจัดส่งของ Lanna Bloom สำหรับทุกโซนที่เปิดให้บริการ: เวลาบริการ 09:00–20:00 ขอบเขตโซนจัดส่ง การยืนยันผ่านแชท ข้อมูลที่อยู่ และอื่น ๆ ติดต่อเราผ่าน LINE หรือ WhatsApp เพื่อยืนยันออเดอร์',
     publishedAt: '2026-02-20T00:00:00.000Z',
     featured: false,
     cover: {

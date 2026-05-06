@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
@@ -9,8 +10,10 @@ import { trackSelectItem } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
+import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 
 export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang: Locale }) {
+  const pathname = usePathname();
   const [emblaRef] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
@@ -32,7 +35,7 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
             const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
             const minPrice =
               bouquet.sizes?.length > 0 ? Math.min(...bouquet.sizes.map((s) => s.price)) : 0;
-            const href = `/${lang}/catalog/${bouquet.slug}`;
+            const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
 
             const handleClick = () => {
               const item: AnalyticsItem = {

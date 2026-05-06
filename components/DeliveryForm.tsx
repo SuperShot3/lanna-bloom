@@ -3,7 +3,14 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
-import { DISTRICTS, detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
+import { detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
+import type { OrderDeliveryDestinationId } from '@/lib/orders';
+import {
+  getZonesForDestination,
+  getZoneFee,
+  chiangMaiZoneIdFromLegacyDistrict,
+  legacyDistrictFromChiangMaiZone,
+} from '@/lib/delivery/zones';
 import { PinIcon } from '@/components/icons/PinIcon';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 import { getBangkokYmd } from '@/lib/deliveryHours';
@@ -69,10 +76,13 @@ export interface DeliveryFormValues {
   deliveryLat: number | null;
   deliveryLng: number | null;
   deliveryGoogleMapsUrl: string | null;
-  /** District key. Required for fee calculation. */
-  deliveryDistrict: DistrictKey | '';
-  /** Central Chiang Mai (Old City / Nimman / etc). Only applies when district is MUEANG. */
-  isMueangCentral: boolean;
+  /** Canonical market; default Chiang Mai on main site */
+  deliveryDestination: OrderDeliveryDestinationId;
+  /** Zone id from lib/delivery/zones.ts */
+  deliveryZoneId: string;
+  /** Legacy cart storage / migration only */
+  deliveryDistrict?: DistrictKey | '';
+  isMueangCentral?: boolean;
 }
 
 export function DeliveryForm({
@@ -85,6 +95,8 @@ export function DeliveryForm({
   showLocationPicker,
   accordionMode,
   hideDateAndTime,
+  deliveryVariant = 'chiang-mai',
+  expansionLabels,
 }: {
   lang: Locale;
   value: DeliveryFormValues;
@@ -100,30 +112,54 @@ export function DeliveryForm({
   accordionMode?: boolean;
   /** When true, hide date and time slot fields (use values from product page sessionStorage). */
   hideDateAndTime?: boolean;
+  /** Chiang Mai district/zones UI vs expansion read-only destination + zones */
+  deliveryVariant?: 'chiang-mai' | 'expansion';
+  /** Required when deliveryVariant is expansion */
+  expansionLabels?: { en: string; th: string };
 }) {
   const t = translations[lang].buyNow;
-  const districtManuallyChangedRef = useRef(false);
+  const zoneManuallyChangedRef = useRef(false);
+
+  const destinationForZones: OrderDeliveryDestinationId =
+    deliveryVariant === 'expansion'
+      ? value.deliveryDestination
+      : 'CHIANG_MAI';
+  const zones = getZonesForDestination(destinationForZones);
 
   useEffect(() => {
-    if (districtManuallyChangedRef.current) return;
+    if (deliveryVariant !== 'chiang-mai') return;
+    if (zoneManuallyChangedRef.current) return;
     const detected = detectDistrictFromAddress(value.addressLine);
-    if (detected && value.deliveryDistrict !== detected) {
-      onChange({ ...value, deliveryDistrict: detected });
+    if (!detected) return;
+    if (detected === 'MUEANG') return;
+    const suggested = chiangMaiZoneIdFromLegacyDistrict(detected, false);
+    if (suggested && value.deliveryZoneId !== suggested) {
+      onChange({
+        ...value,
+        deliveryDestination: 'CHIANG_MAI',
+        deliveryZoneId: suggested,
+        deliveryDistrict: detected,
+        isMueangCentral: false,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on address change; value/onChange from closure
-  }, [value.addressLine]);
+  }, [value.addressLine, deliveryVariant]);
 
-  const handleDistrictChange = (key: DistrictKey | '') => {
-    districtManuallyChangedRef.current = true;
-    const isMueangCentral = key !== 'MUEANG' ? false : value.isMueangCentral;
-    onChange({ ...value, deliveryDistrict: key, isMueangCentral });
+  const handleZoneChange = (zoneId: string) => {
+    zoneManuallyChangedRef.current = true;
+    const dest = deliveryVariant === 'expansion' ? value.deliveryDestination : 'CHIANG_MAI';
+    const legacy =
+      dest === 'CHIANG_MAI'
+        ? legacyDistrictFromChiangMaiZone(zoneId)
+        : { deliveryDistrict: 'UNKNOWN' as DistrictKey, isMueangCentral: false };
+    onChange({
+      ...value,
+      deliveryDestination: dest,
+      deliveryZoneId: zoneId,
+      deliveryDistrict: legacy.deliveryDistrict,
+      isMueangCentral: legacy.isMueangCentral,
+    });
   };
-
-  const handleCentralToggle = (checked: boolean) => {
-    onChange({ ...value, isMueangCentral: checked });
-  };
-
-  const showCentralToggle = value.deliveryDistrict === 'MUEANG';
 
   const formatDateDisplay = useCallback((dateStr: string): string => {
     if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
@@ -156,22 +192,39 @@ export function DeliveryForm({
         {!accordionMode && <span className="buy-now-num" aria-hidden>1</span>}
         <div className="buy-now-step-content">
           <div className="buy-now-fields">
+            {deliveryVariant === 'expansion' && expansionLabels && (
+              <div className="buy-now-field">
+                <label className="buy-now-label" htmlFor="buy-now-destination-readonly">
+                  {lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery destination'}
+                </label>
+                <input
+                  id="buy-now-destination-readonly"
+                  type="text"
+                  readOnly
+                  className="buy-now-input buy-now-input-readonly"
+                  value={lang === 'th' ? expansionLabels.th : expansionLabels.en}
+                  aria-label={lang === 'th' ? expansionLabels.th : expansionLabels.en}
+                />
+              </div>
+            )}
             <div className="buy-now-field">
-              <label className="buy-now-label" htmlFor="buy-now-district">
-                {((t as { districtLabelForFee?: string }).districtLabelForFee ?? t.districtLabel)} <span className="buy-now-required" aria-hidden>*</span>
+              <label className="buy-now-label" htmlFor="buy-now-zone">
+                {((t as { districtLabelForFee?: string }).districtLabelForFee ?? t.districtLabel)}{' '}
+                <span className="buy-now-required" aria-hidden>*</span>
               </label>
               <select
-                id="buy-now-district"
-                value={value.deliveryDistrict}
-                onChange={(e) => handleDistrictChange((e.target.value || '') as DistrictKey | '')}
+                id="buy-now-zone"
+                value={value.deliveryZoneId}
+                onChange={(e) => handleZoneChange(e.target.value)}
                 className="buy-now-select buy-now-select-full"
                 aria-required
                 aria-label={t.districtLabel}
               >
                 <option value="">{t.selectDistrict}</option>
-                {DISTRICTS.map((d) => (
-                  <option key={d.key} value={d.key}>
-                    {lang === 'th' ? d.labelTh : d.labelEn}
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {lang === 'th' ? z.labelTh : z.labelEn}
+                    {` — ฿${(getZoneFee(destinationForZones, z.id) ?? z.feeThb).toLocaleString()}`}
                   </option>
                 ))}
               </select>
@@ -198,23 +251,6 @@ export function DeliveryForm({
                 )}
               </span>
             </div>
-            {showCentralToggle && (
-              <div className="buy-now-field buy-now-central-toggle-wrap">
-                <label className="buy-now-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={value.isMueangCentral}
-                    onChange={(e) => handleCentralToggle(e.target.checked)}
-                    className="buy-now-checkbox"
-                    aria-describedby="buy-now-central-helper"
-                  />
-                  <span className="buy-now-checkbox-text">{t.centralMueangLabel}</span>
-                </label>
-                <p id="buy-now-central-helper" className="buy-now-central-helper">
-                  {t.centralMueangHelper}
-                </p>
-              </div>
-            )}
             {showLocationPicker && (
               <>
                 <div className="buy-now-field">

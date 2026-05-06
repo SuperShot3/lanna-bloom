@@ -9,10 +9,13 @@ interface FiltersBarProps {
     orderStatus?: string;
     paymentStatus?: string;
     district?: string;
+    deliveryDestination?: string;
     deliveryDateFrom?: string;
     deliveryDateTo?: string;
   };
   districts: string[];
+  /** Distinct delivery_destination values from orders (plus All). */
+  deliveryDestinations: string[];
   onFilterChange: (updates: Record<string, string | undefined>) => void;
 }
 
@@ -20,7 +23,12 @@ import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/orders/statusConstants'
 
 const ORDER_STATUSES = ['all', ...ORDER_STATUS];
 
-export function FiltersBar({ filters, districts, onFilterChange }: FiltersBarProps) {
+export function FiltersBar({
+  filters,
+  districts,
+  deliveryDestinations,
+  onFilterChange,
+}: FiltersBarProps) {
   const [orderId, setOrderId] = useState(filters.orderId ?? '');
   const [recipientPhone, setRecipientPhone] = useState(filters.recipientPhone ?? '');
   const [expanded, setExpanded] = useState(false);
@@ -96,7 +104,22 @@ export function FiltersBar({ filters, districts, onFilterChange }: FiltersBarPro
             </select>
           </div>
           <div className="admin-filter-group">
-            <label>District</label>
+            <label>Destination</label>
+            <select
+              value={filters.deliveryDestination ?? 'all'}
+              onChange={(e) => onFilterChange({ destination: e.target.value })}
+              className="admin-select"
+            >
+              <option value="all">All</option>
+              {deliveryDestinations.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="admin-filter-group">
+            <label>District (legacy)</label>
             <select
               value={filters.district ?? 'all'}
               onChange={(e) => onFilterChange({ district: e.target.value })}

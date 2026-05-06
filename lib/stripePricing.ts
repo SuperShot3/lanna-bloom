@@ -11,8 +11,9 @@ import {
   getProductById,
 } from '@/lib/sanity';
 import { resolveBouquetOptionFromIdentifier } from '@/lib/bouquetOptions';
-import { getDeliveryFeeTHB, type DeliveryInput } from '@/lib/deliveryFees';
-import type { OrderCardType, OrderWrappingOption } from '@/lib/orders';
+import type { OrderCardType, OrderWrappingOption, OrderDeliveryDestinationId } from '@/lib/orders';
+import { isExpansionDestination } from '@/lib/delivery/markets';
+import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
@@ -61,17 +62,58 @@ export interface ComputedOrderTotals {
   grandTotal: number;
 }
 
+/** Delivery fields required for server-side pricing (zone fee + expansion rules). */
+export interface PricingDeliveryInput {
+  deliveryDestination: OrderDeliveryDestinationId;
+  deliveryZoneId: string;
+}
+
 /**
  * Compute order totals from cart identifiers. Fetches prices from Sanity.
  * Never accepts price/total from client.
  */
 export async function computeOrderTotals(
   cartItems: CartItemIdentifier[],
-  delivery: DeliveryInput,
+  delivery: PricingDeliveryInput,
   lang: Locale
 ): Promise<{ ok: true; totals: ComputedOrderTotals } | { ok: false; message: string }> {
   if (!cartItems?.length) {
     return { ok: false, message: 'Cart is empty' };
+  }
+
+  if (!isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) {
+    return { ok: false, message: 'Invalid delivery zone for this destination' };
+  }
+
+  const deliveryFeeResolved = getZoneFee(delivery.deliveryDestination, delivery.deliveryZoneId);
+  if (deliveryFeeResolved == null) {
+    return { ok: false, message: 'Invalid delivery zone for this destination' };
+  }
+
+  if (isExpansionDestination(delivery.deliveryDestination)) {
+    for (const item of cartItems) {
+      const lineType = item.itemType ?? 'bouquet';
+      if (lineType !== 'bouquet') {
+        return {
+          ok: false,
+          message:
+            'This delivery area only supports flower bouquets. Remove other item types from your cart.',
+        };
+      }
+      if (getAddOnsTotal(item.addOns?.productAddOns ?? {}) > 0) {
+        return {
+          ok: false,
+          message:
+            'This delivery area does not support these add-ons. Remove gift add-ons and try again.',
+        };
+      }
+      if (normalizeBalloonText(item.addOns?.balloonText)) {
+        return {
+          ok: false,
+          message: 'This delivery area does not support balloon custom text on this order.',
+        };
+      }
+    }
   }
 
   const items: ComputedOrderItem[] = [];
@@ -222,15 +264,14 @@ export async function computeOrderTotals(
     }
   }
 
-  const deliveryFee = getDeliveryFeeTHB(delivery);
-  const grandTotal = itemsTotal + deliveryFee;
+  const grandTotal = itemsTotal + deliveryFeeResolved;
 
   return {
     ok: true,
     totals: {
       items,
       itemsTotal,
-      deliveryFee,
+      deliveryFee: deliveryFeeResolved,
       grandTotal,
     },
   };

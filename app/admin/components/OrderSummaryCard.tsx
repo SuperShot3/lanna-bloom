@@ -16,6 +16,11 @@ import { ItemsList, type ItemWithCatalog } from '@/app/admin/components/ItemsLis
 import { OrderSummaryCopyAllButton } from '@/app/admin/components/OrderSummaryCopyAllButton';
 import { AdminCopyTextButton } from '@/app/admin/components/AdminCopyTextButton';
 import { formatShopDateTime } from '@/lib/shopTime';
+import {
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import { zoneLabel } from '@/lib/delivery/zones';
 
 interface OrderSummaryCardProps {
   order: SupabaseOrderRow;
@@ -118,6 +123,38 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
               <p className="admin-summary-recipient-line">
                 <span className="admin-summary-inline-label">Window:</span> {naText(order.delivery_window)}
               </p>
+              {order.delivery_destination?.trim() && (
+                <p className="admin-summary-recipient-line">
+                  <span className="admin-summary-inline-label">Destination:</span>{' '}
+                  {destinationDisplayName(
+                    order.delivery_destination.trim() as DeliveryDestinationId,
+                    'en'
+                  )}
+                </p>
+              )}
+              {order.delivery_zone?.trim() && order.delivery_destination?.trim() && (
+                <p className="admin-summary-recipient-line">
+                  <span className="admin-summary-inline-label">Zone:</span>{' '}
+                  {zoneLabel(
+                    order.delivery_destination.trim() as DeliveryDestinationId,
+                    order.delivery_zone.trim(),
+                    'en'
+                  ) ?? order.delivery_zone}
+                  <span className="admin-muted"> ({order.delivery_zone})</span>
+                </p>
+              )}
+              {order.postal_code?.trim() && (
+                <p className="admin-summary-recipient-line">
+                  <span className="admin-summary-inline-label">Postcode:</span>{' '}
+                  {naText(order.postal_code)}
+                </p>
+              )}
+              {!order.delivery_destination?.trim() && order.district?.trim() && (
+                <p className="admin-summary-recipient-line">
+                  <span className="admin-summary-inline-label">District (legacy):</span>{' '}
+                  {naText(order.district)}
+                </p>
+              )}
               <p className="admin-summary-recipient-line">
                 <span className="admin-summary-inline-label">Address:</span>{' '}
                 <span className="admin-summary-key-value admin-summary-key-value--multiline">

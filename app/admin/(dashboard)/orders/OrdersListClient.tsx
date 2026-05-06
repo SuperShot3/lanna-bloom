@@ -15,12 +15,14 @@ interface OrdersListClientProps {
     orderStatus?: string;
     paymentStatus?: string;
     district?: string;
+    deliveryDestination?: string;
     deliveryDateFrom?: string;
     deliveryDateTo?: string;
   };
   initialPage: number;
   pageSize: number;
   districts: string[];
+  deliveryDestinations: string[];
 }
 
 export function OrdersListClient({
@@ -31,6 +33,7 @@ export function OrdersListClient({
   initialPage,
   pageSize,
   districts,
+  deliveryDestinations,
 }: OrdersListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,6 +74,7 @@ export function OrdersListClient({
       <FiltersBar
         filters={initialFilters}
         districts={districts}
+        deliveryDestinations={deliveryDestinations}
         onFilterChange={handleFilterChange}
       />
 

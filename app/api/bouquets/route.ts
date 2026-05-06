@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPopularCatalogItemsFromSanityPaginated } from '@/lib/sanity';
+import {
+  getPopularCatalogItemsFromSanityPaginated,
+  getBouquetsFromSanityPaginated,
+} from '@/lib/sanity';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +17,13 @@ export async function GET(request: NextRequest) {
       MAX_LIMIT,
       Math.max(1, parseInt(searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT)
     );
+
+    const kind = searchParams.get('kind');
+    if (kind === 'bouquets') {
+      const bouquets = await getBouquetsFromSanityPaginated(offset, limit);
+      const hasMore = bouquets.length === limit;
+      return NextResponse.json({ bouquets, hasMore });
+    }
 
     const items = await getPopularCatalogItemsFromSanityPaginated(offset, limit);
     const hasMore = items.length === limit;

@@ -7,9 +7,15 @@ import {
 } from '@/lib/stripe/checkoutStripeLineItems';
 import { getBaseUrl } from '@/lib/orders';
 import { getDiscountForCode } from '@/lib/referral';
-import type { OrderPayload, ContactPreferenceOption } from '@/lib/orders';
+import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
-import type { DistrictKey } from '@/lib/deliveryFees';
+import { inferPostalCodeFromDelivery } from '@/lib/delivery/postalInference';
+import {
+  findZoneDef,
+  isInferredPostcodeAllowedForZone,
+  legacyDistrictFromChiangMaiZone,
+  zoneLabel,
+} from '@/lib/delivery/zones';
 import { buildStripeCheckoutDraftMetadata } from '@/lib/stripe/metadata';
 import { upsertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
@@ -202,11 +208,27 @@ function validateStripePayload(
     return { ok: false, message: 'recipientPhoneCountryCode requires delivery.recipientPhone' };
   }
 
-  const validDistricts = ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'] as const;
-  const deliveryDistrict = typeof d.deliveryDistrict === 'string' && validDistricts.includes(d.deliveryDistrict as typeof validDistricts[number])
-    ? (d.deliveryDistrict as typeof validDistricts[number])
-    : 'UNKNOWN';
-  const isMueangCentral = d.deliveryDistrict === 'MUEANG' && d.isMueangCentral === true;
+  const allowedDest: OrderDeliveryDestinationId[] = [
+    'CHIANG_MAI',
+    'PATTAYA',
+    'PHUKET',
+    'KRABI',
+    'SAMUI',
+    'HUA_HIN',
+  ];
+  const destRaw = d.deliveryDestination;
+  const deliveryDestination =
+    typeof destRaw === 'string' && (allowedDest as string[]).includes(destRaw)
+      ? (destRaw as OrderDeliveryDestinationId)
+      : null;
+  if (!deliveryDestination) {
+    return { ok: false, message: 'delivery.deliveryDestination is required' };
+  }
+  const deliveryZoneId =
+    typeof d.deliveryZoneId === 'string' ? d.deliveryZoneId.trim() : '';
+  if (!deliveryZoneId) {
+    return { ok: false, message: 'delivery.deliveryZoneId is required' };
+  }
   const referralCode = typeof b.referralCode === 'string' ? b.referralCode.trim() : undefined;
   const referralDiscount = typeof b.referralDiscount === 'number' && b.referralDiscount > 0 ? b.referralDiscount : 0;
 
@@ -243,8 +265,8 @@ function validateStripePayload(
         deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
         deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
         deliveryGoogleMapsUrl: deliveryGoogleMapsUrlRaw || undefined,
-        deliveryDistrict,
-        isMueangCentral,
+        deliveryDestination,
+        deliveryZoneId,
       },
       ...(normalizeOptionalCallingCodeDigits(phoneCcRaw) && {
         phoneCountryCode: normalizeOptionalCallingCodeDigits(phoneCcRaw),
@@ -275,8 +297,8 @@ interface StripeCheckoutPayload {
     deliveryLat?: number;
     deliveryLng?: number;
     deliveryGoogleMapsUrl?: string;
-    deliveryDistrict: string;
-    isMueangCentral: boolean;
+    deliveryDestination: OrderDeliveryDestinationId;
+    deliveryZoneId: string;
   };
 }
 
@@ -295,15 +317,32 @@ export async function POST(request: NextRequest) {
     }
     const { data } = validation;
 
-    const deliveryInput = {
+    const inferredPostal = inferPostalCodeFromDelivery({
       address: data.delivery.address,
-      deliveryLat: data.delivery.deliveryLat,
-      deliveryLng: data.delivery.deliveryLng,
-      deliveryDistrict: data.delivery.deliveryDistrict as DistrictKey,
-      isMueangCentral: data.delivery.isMueangCentral,
-    };
+      deliveryGoogleMapsUrl: data.delivery.deliveryGoogleMapsUrl,
+    });
+    const zoneDef = findZoneDef(data.delivery.deliveryDestination, data.delivery.deliveryZoneId);
+    if (
+      inferredPostal &&
+      !isInferredPostcodeAllowedForZone(inferredPostal, zoneDef)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'The address postcode does not match the selected delivery area. Please check the address or choose a different area.',
+        },
+        { status: 400 }
+      );
+    }
 
-    const computed = await computeOrderTotals(data.items, deliveryInput, data.lang);
+    const computed = await computeOrderTotals(
+      data.items,
+      {
+        deliveryDestination: data.delivery.deliveryDestination,
+        deliveryZoneId: data.delivery.deliveryZoneId,
+      },
+      data.lang
+    );
     if (!computed.ok) {
       return NextResponse.json({ error: computed.message }, { status: 400 });
     }
@@ -313,6 +352,18 @@ export async function POST(request: NextRequest) {
       ? getDiscountForCode(data.referralCode, subtotal, { deliveryFee: totals.deliveryFee })
       : 0;
     const effectiveGrandTotal = Math.max(0, totals.grandTotal - referralDiscount);
+
+    const legacyGeo =
+      data.delivery.deliveryDestination === 'CHIANG_MAI'
+        ? legacyDistrictFromChiangMaiZone(data.delivery.deliveryZoneId)
+        : { deliveryDistrict: 'UNKNOWN' as const, isMueangCentral: false };
+
+    const zoneLbl =
+      zoneLabel(
+        data.delivery.deliveryDestination,
+        data.delivery.deliveryZoneId,
+        data.lang === 'th' ? 'th' : 'en'
+      ) ?? undefined;
 
     const orderPayload: OrderPayload = {
       customerName: data.customerName,
@@ -336,8 +387,12 @@ export async function POST(request: NextRequest) {
         deliveryLat: data.delivery.deliveryLat,
         deliveryLng: data.delivery.deliveryLng,
         deliveryGoogleMapsUrl: data.delivery.deliveryGoogleMapsUrl,
-        deliveryDistrict: data.delivery.deliveryDistrict as DistrictKey,
-        isMueangCentral: data.delivery.isMueangCentral,
+        deliveryDestination: data.delivery.deliveryDestination,
+        deliveryZoneId: data.delivery.deliveryZoneId,
+        ...(zoneLbl && { deliveryZoneLabel: zoneLbl }),
+        ...(inferredPostal && { postalCode: inferredPostal }),
+        deliveryDistrict: legacyGeo.deliveryDistrict,
+        isMueangCentral: legacyGeo.isMueangCentral,
       },
       pricing: {
         itemsTotal: totals.itemsTotal,

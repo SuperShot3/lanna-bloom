@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import {
@@ -9,6 +10,17 @@ import {
   getTomorrowBangkokDisplayDate,
   formatBangkokTime,
 } from '@/lib/deliveryHours';
+import {
+  MARKETS,
+  getMarketByPathSlug,
+  isMarketPathSlug,
+  type MarketPathSlug,
+} from '@/lib/delivery/markets';
+import {
+  clearMarketSession,
+  readMarketSession,
+  writeMarketSession,
+} from '@/lib/delivery/marketSession';
 
 export interface CatalogDeliveryBarProps {
   lang: Locale;
@@ -42,21 +54,50 @@ export function CatalogDeliveryBar({
   initialDate,
   onDateChange,
 }: CatalogDeliveryBarProps) {
+  const pathname = usePathname() ?? '';
   const t = translations[lang].catalog;
-  const [now, setNow] = useState(() => new Date());
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const minDate = getBangkokYmd(now);
-  const [date, setDate] = useState(() => initialDate ?? minDate);
+  const minDate = now ? getBangkokYmd(now) : '';
+  const [date, setDate] = useState(() => initialDate ?? '');
+  const [locationValue, setLocationValue] = useState<string>('CHIANG_MAI');
 
   useEffect(() => {
+    setMounted(true);
+    setNow(new Date());
     const id = window.setInterval(() => setNow(new Date()), CLOCK_TICK_MS);
     return () => window.clearInterval(id);
   }, []);
 
   useEffect(() => {
+    if (!minDate) return;
     setDate((d) => (d < minDate ? minDate : d));
   }, [minDate]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (!date && minDate) {
+      setDate(minDate);
+      onDateChange?.(minDate);
+    }
+  }, [mounted, date, minDate, onDateChange]);
+
+  useEffect(() => {
+    const parts = pathname.split('/').filter(Boolean);
+    const maybeMarketFromPath = parts[2];
+    if (parts[1] === 'catalog' && maybeMarketFromPath && isMarketPathSlug(maybeMarketFromPath)) {
+      const m = getMarketByPathSlug(maybeMarketFromPath);
+      if (m) {
+        setLocationValue(m.destinationId);
+        return;
+      }
+    }
+
+    const session = readMarketSession();
+    setLocationValue(session?.destinationId ?? 'CHIANG_MAI');
+  }, [pathname]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
@@ -64,9 +105,32 @@ export function CatalogDeliveryBar({
     onDateChange?.(v);
   };
 
-  const isToday = date === minDate;
-  const phase = getSameDayDeliveryPhaseBangkok(now);
-  const tomorrowDate = getTomorrowBangkokDisplayDate(now, lang);
+  const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextDestination = e.target.value;
+    setLocationValue(nextDestination);
+
+    if (nextDestination === 'CHIANG_MAI') {
+      clearMarketSession();
+      window.location.assign(`/${lang}/catalog`);
+      return;
+    }
+
+    const market = MARKETS.find((m) => m.destinationId === nextDestination);
+    if (!market) {
+      window.location.assign(`/${lang}/catalog`);
+      return;
+    }
+
+    writeMarketSession({
+      destinationId: market.destinationId,
+      pathSlug: market.pathSlug as MarketPathSlug,
+    });
+    window.location.assign(`/${lang}/catalog/${market.pathSlug}`);
+  };
+
+  const isToday = Boolean(minDate) && date === minDate;
+  const phase = now ? getSameDayDeliveryPhaseBangkok(now) : null;
+  const tomorrowDate = now ? getTomorrowBangkokDisplayDate(now, lang) : '';
 
   const sameDayBadgeLine =
     phase === 'before'
@@ -77,7 +141,9 @@ export function CatalogDeliveryBar({
         ) ?? 'Next same-day from 09:00';
 
   const todayStatus =
-    phase === 'before'
+    phase === null
+      ? replaceTime(t.availableFrom ?? 'Available from {time}', DELIVERY_START_TIME)
+      : phase === 'before'
       ? replaceTime(t.availableFrom ?? 'Available from {time}', DELIVERY_START_TIME)
       : phase === 'open'
         ? replaceTime(t.availableUntil ?? 'Available until {time}', DELIVERY_END_TIME)
@@ -85,7 +151,9 @@ export function CatalogDeliveryBar({
   const todayStatusTone = phase === 'open' ? 'open' : phase === 'after' ? 'closed' : 'pending';
   const tomorrowStatus = replaceTime(t.availableFrom ?? 'Available from {time}', DELIVERY_START_TIME);
   const todayLabel = t.todayLabel ?? 'Today';
-  const tomorrowLabel = `${t.tomorrowLabel ?? 'Tomorrow'}, ${tomorrowDate}`;
+  const tomorrowLabel = tomorrowDate
+    ? `${t.tomorrowLabel ?? 'Tomorrow'}, ${tomorrowDate}`
+    : (t.tomorrowLabel ?? 'Tomorrow');
 
   return (
     <section
@@ -97,9 +165,24 @@ export function CatalogDeliveryBar({
           <span className="material-symbols-outlined catalog-delivery-icon catalog-delivery-icon-location" aria-hidden>
             location_on
           </span>
-          <span className="catalog-delivery-location">
-            {t.deliveryLocationShort ?? 'Chiang Mai, Thailand'}
-          </span>
+          <label className="catalog-delivery-location-wrap">
+            <span className="sr-only">
+              {lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery location'}
+            </span>
+            <select
+              className="catalog-delivery-location-select"
+              value={locationValue}
+              onChange={handleLocationChange}
+              aria-label={lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery location'}
+            >
+              <option value="CHIANG_MAI">Chiang Mai</option>
+              {MARKETS.map((m) => (
+                <option key={m.destinationId} value={m.destinationId}>
+                  {lang === 'th' ? m.customerFacingNameTh : m.customerFacingNameEn}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div
           className="catalog-delivery-clock"
@@ -109,8 +192,8 @@ export function CatalogDeliveryBar({
               : 'Local time (Asia/Bangkok)'
           }
         >
-          <time dateTime={now.toISOString()}>
-            {formatBangkokTime(now, lang)}
+          <time dateTime={now?.toISOString()} suppressHydrationWarning>
+            {now ? formatBangkokTime(now, lang) : '--:--'}
           </time>
           <span>{lang === 'th' ? 'เวลาท้องถิ่น' : 'local'}</span>
         </div>
@@ -134,7 +217,9 @@ export function CatalogDeliveryBar({
           </span>
           <span className="catalog-delivery-muted">{t.deliveryDate ?? 'Delivery date'}</span>
         </span>
-        <span className="catalog-delivery-date-value">{formatDeliveryDate(date, lang)}</span>
+        <span className="catalog-delivery-date-value">
+          {date ? formatDeliveryDate(date, lang) : (t.deliveryDate ?? 'Delivery date')}
+        </span>
         <input
           ref={dateInputRef}
           type="date"
@@ -234,6 +319,56 @@ export function CatalogDeliveryBar({
           font-size: 13px;
           font-weight: 700;
           line-height: 1.25;
+        }
+        .catalog-delivery-location-wrap {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          min-width: 0;
+          max-width: 220px;
+          border: 1px solid rgba(26, 60, 52, 0.16);
+          border-radius: 999px;
+          background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+          padding: 3px 12px 3px 10px;
+          box-shadow: 0 1px 4px rgba(26, 60, 52, 0.08);
+          transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+        .catalog-delivery-location-wrap:hover {
+          border-color: rgba(47, 125, 104, 0.38);
+          box-shadow: 0 2px 8px rgba(26, 60, 52, 0.12);
+        }
+        .catalog-delivery-location-wrap:focus-within {
+          border-color: #2f7d68;
+          box-shadow: 0 0 0 3px rgba(47, 125, 104, 0.16);
+        }
+        .catalog-delivery-location-select {
+          border: 0;
+          background: transparent;
+          color: #173a33;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.015em;
+          line-height: 1.2;
+          padding: 0;
+          margin: 0;
+          min-width: 130px;
+          max-width: 190px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          cursor: pointer;
+          outline: none;
+          font-family: inherit;
+          text-transform: none;
+          text-rendering: optimizeLegibility;
+        }
+        .catalog-delivery-location-select:focus-visible {
+          outline: none;
+        }
+        .catalog-delivery-location-select option {
+          font-size: 13px;
+          font-weight: 600;
+          color: #173a33;
         }
 
         .catalog-delivery-clock,
@@ -375,6 +510,15 @@ export function CatalogDeliveryBar({
           .catalog-delivery-location,
           .catalog-delivery-date-value {
             font-size: 12px;
+          }
+          .catalog-delivery-location-select {
+            font-size: 12px;
+            min-width: 112px;
+            max-width: 155px;
+          }
+          .catalog-delivery-location-wrap {
+            max-width: 185px;
+            padding-right: 8px;
           }
 
           .catalog-delivery-clock,

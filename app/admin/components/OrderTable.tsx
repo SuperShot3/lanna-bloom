@@ -2,6 +2,11 @@
 
 import Link from 'next/link';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
+import {
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import { zoneLabel } from '@/lib/delivery/zones';
 import { formatOrderStatus, formatPaymentStatus, normalizeOrderStatus } from '@/lib/orders/statusConstants';
 import { formatShopDateTime } from '@/lib/shopTime';
 
@@ -19,6 +24,24 @@ function formatAmount(n: number | null | undefined): string {
 function isOpenPipelineStatus(status: string | null | undefined): boolean {
   const n = normalizeOrderStatus(status);
   return n !== 'DELIVERED' && n !== 'CANCELLED';
+}
+
+function formatDestinationCell(o: SupabaseOrderRow): string {
+  const id = (o.delivery_destination ?? '').trim() as DeliveryDestinationId;
+  if (!id) return '—';
+  return destinationDisplayName(id, 'en');
+}
+
+function formatZoneCell(o: SupabaseOrderRow): string {
+  const dest = (o.delivery_destination ?? '').trim() as DeliveryDestinationId;
+  const z = (o.delivery_zone ?? '').trim();
+  if (!dest || !z) return '—';
+  return zoneLabel(dest, z, 'en') ?? z;
+}
+
+function formatLegacyDistrict(o: SupabaseOrderRow): string {
+  if (o.delivery_destination || o.delivery_zone) return '—';
+  return o.district ?? '—';
 }
 
 function statusBadgeClass(status: string | null | undefined): string {
@@ -49,7 +72,9 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
               <th>Discount</th>
               <th>Delivery date</th>
               <th>Window</th>
-              <th>District</th>
+              <th>Destination</th>
+              <th>Zone</th>
+              <th>District (legacy)</th>
               <th>Recipient</th>
             </tr>
           </thead>
@@ -83,7 +108,9 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
                 </td>
                 <td>{o.delivery_date ?? '—'}</td>
                 <td>{o.delivery_window ?? '—'}</td>
-                <td>{o.district ?? '—'}</td>
+                <td>{formatDestinationCell(o)}</td>
+                <td>{formatZoneCell(o)}</td>
+                <td>{formatLegacyDistrict(o)}</td>
                 <td>{o.recipient_name ?? o.recipient_phone ?? '—'}</td>
               </tr>
             ))}
@@ -124,8 +151,16 @@ export function OrderTable({ orders, returnTo }: OrderTableProps) {
               <span className="admin-order-card-value">{o.delivery_date ?? '—'} {o.delivery_window ?? ''}</span>
             </div>
             <div className="admin-order-card-row">
-              <span className="admin-order-card-label">District</span>
-              <span className="admin-order-card-value">{o.district ?? '—'}</span>
+              <span className="admin-order-card-label">Destination</span>
+              <span className="admin-order-card-value">{formatDestinationCell(o)}</span>
+            </div>
+            <div className="admin-order-card-row">
+              <span className="admin-order-card-label">Zone</span>
+              <span className="admin-order-card-value">{formatZoneCell(o)}</span>
+            </div>
+            <div className="admin-order-card-row">
+              <span className="admin-order-card-label">District (legacy)</span>
+              <span className="admin-order-card-value">{formatLegacyDistrict(o)}</span>
             </div>
           </Link>
         ))}

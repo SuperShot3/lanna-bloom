@@ -13,6 +13,9 @@ export interface SupabaseOrderRow {
   /** ITU calling code digits for customer phone at checkout (e.g. 66). */
   phone_country_code?: string | null;
   address: string | null;
+  delivery_destination?: string | null;
+  delivery_zone?: string | null;
+  postal_code?: string | null;
   district: string | null;
   delivery_window: string | null;
   delivery_date: string | null;
@@ -101,6 +104,7 @@ export interface OrdersFilters {
   orderStatus?: string;
   paymentStatus?: 'paid' | 'unpaid';
   district?: string;
+  deliveryDestination?: string;
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
 }
@@ -127,7 +131,7 @@ export async function getOrders(
 
   try {
     const listColumns =
-      'order_id, public_token, payment_method, customer_name, customer_email, phone, address, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at';
+      'order_id, public_token, payment_method, customer_name, customer_email, phone, address, delivery_destination, delivery_zone, postal_code, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at';
     let query = supabase
       .from('orders')
       .select(listColumns, { count: 'exact' });
@@ -148,6 +152,9 @@ export async function getOrders(
     }
     if (filters.district && filters.district !== 'all') {
       query = query.eq('district', filters.district);
+    }
+    if (filters.deliveryDestination && filters.deliveryDestination !== 'all') {
+      query = query.eq('delivery_destination', filters.deliveryDestination);
     }
     if (filters.deliveryDateFrom) {
       query = query.gte('delivery_date', filters.deliveryDateFrom);
@@ -258,6 +265,9 @@ export async function getOrdersForExport(
     if (filters.district && filters.district !== 'all') {
       query = query.eq('district', filters.district);
     }
+    if (filters.deliveryDestination && filters.deliveryDestination !== 'all') {
+      query = query.eq('delivery_destination', filters.deliveryDestination);
+    }
     if (filters.deliveryDateFrom) {
       query = query.gte('delivery_date', filters.deliveryDateFrom);
     }
@@ -334,4 +344,19 @@ export async function getDistricts(): Promise<string[]> {
 
   const districts = Array.from(new Set((data ?? []).map((r) => r.district).filter(Boolean))) as string[];
   return districts.sort();
+}
+
+export async function getDeliveryDestinations(): Promise<string[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from('orders')
+    .select('delivery_destination')
+    .not('delivery_destination', 'is', null);
+
+  const ids = Array.from(
+    new Set((data ?? []).map((r) => r.delivery_destination).filter(Boolean))
+  ) as string[];
+  return ids.sort();
 }
