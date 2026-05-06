@@ -118,7 +118,7 @@ export const aboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
       links: [
         { label: 'Shop — flowers & gifts', href: '/catalog' },
         { label: 'Guides & how to order', href: '/info' },
-        { label: 'Delivery policy (Chiang Mai)', href: '/info/delivery-policy-chiang-mai' },
+        { label: 'Delivery policy', href: '/info/delivery-policy' },
         { label: 'Contact us', href: '/contact' },
         { label: 'Become a partner', href: '/partner/how-it-works' },
         { label: 'Partner portal', href: '/partner/login' },
@@ -289,7 +289,7 @@ export const aboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
       links: [
         { label: 'ร้านค้า — ดอกไม้และของขวัญ', href: '/catalog' },
         { label: 'คู่มือและวิธีสั่ง', href: '/info' },
-        { label: 'นโยบายจัดส่ง (เชียงใหม่)', href: '/info/delivery-policy-chiang-mai' },
+        { label: 'นโยบายการจัดส่ง', href: '/info/delivery-policy' },
         { label: 'ติดต่อเรา', href: '/contact' },
         { label: 'สมัครเป็นพาร์ทเนอร์', href: '/partner/how-it-works' },
         { label: 'พอร์ทัลพาร์ทเนอร์ (เข้าสู่ระบบ)', href: '/partner/login' },

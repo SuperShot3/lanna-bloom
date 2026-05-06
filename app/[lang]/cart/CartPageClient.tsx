@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import {
@@ -22,7 +23,10 @@ import {
   trackAddPaymentInfo,
 } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
-import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
+import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
+import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
+import { isExpansionDestination } from '@/lib/delivery/markets';
+import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import {
   getStoredReferral,
   clearReferral,
@@ -54,6 +58,18 @@ function isNonBouquetCartLine(item: CartItem): boolean {
   return item.itemType === 'product' || item.itemType === 'plushyToy' || item.itemType === 'balloon';
 }
 
+function cartViolatesExpansionRules(
+  cartItems: CartItem[],
+  destinationId: OrderDeliveryDestinationId
+): boolean {
+  if (!isExpansionDestination(destinationId)) return false;
+  for (const item of cartItems) {
+    if (isNonBouquetCartLine(item)) return true;
+    if (getAddOnsTotal(item.addOns?.productAddOns ?? {}) > 0) return true;
+  }
+  return false;
+}
+
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
 function formatStickyDate(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
@@ -81,6 +97,15 @@ function buildAddOnsSummaryLines(item: CartItem, t: { balloonTextLabel?: string 
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+
+const DELIVERY_POLICY_LINK_STYLE: React.CSSProperties = {
+  color: 'var(--accent-border)',
+  fontWeight: 700,
+};
+const REFUND_POLICY_LINK_STYLE: React.CSSProperties = {
+  color: 'var(--accent)',
+  fontWeight: 700,
+};
 
 type StoredCartForm = {
   delivery: DeliveryFormValues;
@@ -134,7 +159,12 @@ function isDeliveryValid(
   delivery: DeliveryFormValues,
   _tBuyNow: Record<string, string | number>
 ): boolean {
-  if (!delivery.deliveryDistrict) return false;
+  if (!delivery.deliveryZoneId) return false;
+  if (
+    !isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)
+  ) {
+    return false;
+  }
   const addressTrim = delivery.addressLine?.trim() ?? '';
   if (addressTrim.length < 10 || addressTrim.length > 300) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
@@ -424,9 +454,11 @@ function cartValue(items: CartItem[]): number {
 
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, count: totalItemCount, removeItem, clearCart } = useCart();
+  const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
   const orderSubmitInFlightRef = useRef(false);
+  const prevCheckoutDestinationRef = useRef<OrderDeliveryDestinationId | null>(null);
 
   const [checkoutSubmissionToken, setCheckoutSubmissionToken] = useState<string | null>(null);
   const [alreadySubmittedBlock, setAlreadySubmittedBlock] = useState(false);
@@ -454,6 +486,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     deliveryLat: null,
     deliveryLng: null,
     deliveryGoogleMapsUrl: null,
+    deliveryDestination: 'CHIANG_MAI',
+    deliveryZoneId: '',
     deliveryDistrict: '',
     isMueangCentral: false,
   };
@@ -462,9 +496,46 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const stored = loadCartFormFromStorage();
     const d = stored?.delivery;
     if (!d || typeof d !== 'object') return defaultDelivery;
-    const validDistrict = d.deliveryDistrict && ['MUEANG','SARAPHI','SAN_SAI','HANG_DONG','SAN_KAMPHAENG','MAE_RIM','DOI_SAKET','MAE_ON','SAMOENG','MAE_TAENG','LAMPHUN','UNKNOWN'].includes(d.deliveryDistrict)
-      ? d.deliveryDistrict
-      : '';
+    const validDistrict =
+      d.deliveryDistrict &&
+      [
+        'MUEANG',
+        'SARAPHI',
+        'SAN_SAI',
+        'HANG_DONG',
+        'SAN_KAMPHAENG',
+        'MAE_RIM',
+        'DOI_SAKET',
+        'MAE_ON',
+        'SAMOENG',
+        'MAE_TAENG',
+        'LAMPHUN',
+        'UNKNOWN',
+      ].includes(d.deliveryDistrict)
+        ? d.deliveryDistrict
+        : '';
+    const legacyZone = chiangMaiZoneIdFromLegacyDistrict(
+      validDistrict,
+      d.deliveryDistrict === 'MUEANG' && !!d.isMueangCentral
+    );
+    const storedDest = (d as { deliveryDestination?: string }).deliveryDestination;
+    const allowed: OrderDeliveryDestinationId[] = [
+      'CHIANG_MAI',
+      'PATTAYA',
+      'PHUKET',
+      'KRABI',
+      'SAMUI',
+      'HUA_HIN',
+    ];
+    const deliveryDestination =
+      typeof storedDest === 'string' && (allowed as string[]).includes(storedDest)
+        ? (storedDest as OrderDeliveryDestinationId)
+        : 'CHIANG_MAI';
+    const storedZone = (d as { deliveryZoneId?: string }).deliveryZoneId;
+    const deliveryZoneId =
+      typeof storedZone === 'string' && storedZone.trim()
+        ? storedZone.trim()
+        : legacyZone;
     return {
       addressLine: typeof d.addressLine === 'string' ? d.addressLine : defaultDelivery.addressLine,
       date: typeof d.date === 'string' ? d.date : defaultDelivery.date,
@@ -472,10 +543,32 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : null,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : null,
       deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : null,
+      deliveryDestination,
+      deliveryZoneId,
       deliveryDistrict: validDistrict,
       isMueangCentral: d.deliveryDistrict === 'MUEANG' && !!d.isMueangCentral,
     };
   });
+
+  const [destinationChangeNotice, setDestinationChangeNotice] = useState(false);
+
+  useEffect(() => {
+    const next = checkoutDeliveryProfile.destinationId;
+    const prev = prevCheckoutDestinationRef.current;
+    if (prev === null) {
+      prevCheckoutDestinationRef.current = next;
+      setDelivery((d) => {
+        if (d.deliveryDestination === next) return d;
+        return { ...d, deliveryDestination: next, deliveryZoneId: '' };
+      });
+      return;
+    }
+    if (prev !== next) {
+      prevCheckoutDestinationRef.current = next;
+      setDelivery((d) => ({ ...d, deliveryDestination: next, deliveryZoneId: '' }));
+      if (items.length > 0) setDestinationChangeNotice(true);
+    }
+  }, [checkoutDeliveryProfile.destinationId, items.length]);
 
   useEffect(() => {
     if (!delivery.date || !delivery.timeSlot) return;
@@ -591,10 +684,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const tBuyNow = translations[lang].buyNow;
 
   const itemsTotalVal = cartValue(items);
-  const hasChosenLocation = !!delivery.deliveryDistrict;
-  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
-  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
-  const deliveryFeeVal = hasChosenLocation ? calcDeliveryFeeTHB({ district, isMueangCentral }) : 0;
+  const cartExpansionInvalid = cartViolatesExpansionRules(items, delivery.deliveryDestination);
+  const hasDeliveryZone =
+    !!delivery.deliveryZoneId &&
+    isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId);
+  const deliveryFeeVal = hasDeliveryZone
+    ? (getZoneFee(delivery.deliveryDestination, delivery.deliveryZoneId) ?? 0)
+    : 0;
   const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
   const referralVal = getStoredReferral();
   const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, referralVal, {
@@ -617,7 +713,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     recipientPhoneNational,
     t as Record<string, string | number>
   );
-  const isPaymentUnlocked = isDeliveryValidNow && isContactValidNow;
+  const isPaymentUnlocked =
+    isDeliveryValidNow && isContactValidNow && !cartExpansionInvalid;
 
   /** Returns the first incomplete field's name for the sticky bar lock message. */
   const getFirstIncompleteHint = (): string => {
@@ -625,8 +722,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const tC = t as Record<string, string | number>;
     const isMissing = (tC as { fieldIsMissing?: string }).fieldIsMissing ?? 'is missing';
     const fmt = (label: string) => `${label} ${isMissing}`;
-    if (!delivery.deliveryDistrict) {
+    if (!delivery.deliveryZoneId) {
       return fmt(String(tB.districtLabel ?? 'District'));
+    }
+    if (cartExpansionInvalid) {
+      return lang === 'th'
+        ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบสินค้าอื่นออกจากตะกร้า'
+        : 'This area delivers flower bouquets only — remove other items from your bag';
     }
     const addressTrim = delivery.addressLine?.trim() ?? '';
     if (addressTrim.length < 10) {
@@ -677,7 +779,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const preparingCheckoutMsg =
     lang === 'th' ? 'กำลังเตรียมการชำระเงิน…' : 'Preparing checkout…';
   const paymentAvailabilityDesktopBase = getPaymentAvailability({
-    hasDeliveryDistrict: !!delivery.deliveryDistrict,
+    hasDeliveryDistrict: hasDeliveryZone,
     isFormValid: isPaymentUnlocked,
     isLoading: placing,
     firstIncompleteHint: getFirstIncompleteHint(),
@@ -928,6 +1030,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const hint = getFirstIncompleteHint();
     if (hint) {
       setOrderError(hint);
+      return;
+    }
+    if (cartExpansionInvalid) {
+      setOrderError(
+        lang === 'th'
+          ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบสินค้าอื่นออกจากตะกร้า'
+          : 'This area delivers flower bouquets only — remove other items from your bag'
+      );
       return;
     }
     if (!checkoutSubmissionToken) {
@@ -1315,6 +1425,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             ← {t.backToShop}
           </Link>
         </div>
+        {destinationChangeNotice && (
+          <p className="cart-destination-notice" role="status">
+            {lang === 'th'
+              ? 'คุณเปลี่ยนพื้นที่จัดส่ง — ค่าจัดส่งและสินค้าที่สั่งได้อาจเปลี่ยนแปลง โปรดตรวจสอบตะกร้าและเลือกโซนใหม่'
+              : 'Your delivery area changed — fees and available items may differ. Please review your bag and choose a delivery zone again.'}
+          </p>
+        )}
+        {cartExpansionInvalid && items.length > 0 && (
+          <p className="cart-expansion-block-notice" role="alert">
+            {lang === 'th'
+              ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบของเล่น ลูกโป่ง หรือสินค้าอื่นออกจากตะกร้าก่อนชำระเงิน'
+              : 'This area delivers flower bouquets only — remove toys, balloons, or other non-flower items before checkout.'}
+          </p>
+        )}
         <div className="cart-mobile-view">
           <header className="cart-mobile-header">
             <h1 className="cart-mobile-title">{lang === 'th' ? 'ชำระเงิน' : 'Checkout'}</h1>
@@ -1386,26 +1510,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     {items.map((item, i) => {
                       const name = lang === 'th' ? item.nameTh : item.nameEn;
                       const qty = item.quantity ?? 1;
-                      const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-                      const unitPrice = item.size.price + addOnsTotal;
-                      const lineTotal = unitPrice * qty;
-                      const itemLabel = isNonBouquetCartLine(item)
-                        ? name
-                        : qty > 1
-                          ? `${name} — ${item.size.label} × ${qty}`
-                          : `${name} — ${item.size.label}`;
-                      const addOnLines = buildAddOnsSummaryLines(item, t);
                       return (
                         <div key={`mob-sum-${item.bouquetId}-${i}`}>
                           <div className="cart-order-summary-row cart-order-summary-item">
-                            <span>{itemLabel}</span>
-                            <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                            <span>{name} × {qty}</span>
                           </div>
-                          {addOnLines.map((line, j) => (
-                            <div key={j} className="cart-order-summary-row cart-order-summary-addon">
-                              <span>{line}</span>
-                            </div>
-                          ))}
                         </div>
                       );
                     })}
@@ -1455,6 +1564,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     onChange={setDelivery}
                     showLocationPicker
                     accordionMode
+                    deliveryVariant={checkoutDeliveryProfile.variant}
+                    expansionLabels={
+                      checkoutDeliveryProfile.variant === 'expansion'
+                        ? checkoutDeliveryProfile.labels
+                        : undefined
+                    }
                   />
                   <button
                     type="button"
@@ -1509,7 +1624,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </div>
           {(() => {
             const paymentAvailabilityBase = getPaymentAvailability({
-              hasDeliveryDistrict: !!delivery.deliveryDistrict,
+              hasDeliveryDistrict: hasDeliveryZone,
               isFormValid: isPaymentUnlocked,
               isLoading: placing,
               firstIncompleteHint: getFirstIncompleteHint(),
@@ -1584,6 +1699,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             onChange={setDelivery}
             title={t.payWithStripe}
             showLocationPicker
+            deliveryVariant={checkoutDeliveryProfile.variant}
+            expansionLabels={
+              checkoutDeliveryProfile.variant === 'expansion'
+                ? checkoutDeliveryProfile.labels
+                : undefined
+            }
             step3Heading={t.contactInfoStepHeading}
             step3Content={
               <div className="cart-place-order">
@@ -1642,6 +1763,48 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     </div>
                   )}
                 </div>
+                <p className="cart-policy-consent">
+                  {lang === 'th' ? (
+                    <>
+                      การกดสั่งซื้อหมายความว่าคุณยอมรับ{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--delivery"
+                        href={`/${lang}/info/delivery-policy`}
+                        style={DELIVERY_POLICY_LINK_STYLE}
+                      >
+                        นโยบายการจัดส่ง
+                      </Link>{' '}
+                      และ{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--refund"
+                        href={`/${lang}/refund-replacement`}
+                        style={REFUND_POLICY_LINK_STYLE}
+                      >
+                        นโยบายการคืนเงิน
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      By placing your order, you agree to our{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--delivery"
+                        href={`/${lang}/info/delivery-policy`}
+                        style={DELIVERY_POLICY_LINK_STYLE}
+                      >
+                        delivery policy
+                      </Link>{' '}
+                      and{' '}
+                      <Link
+                        className="cart-policy-link cart-policy-link--refund"
+                        href={`/${lang}/refund-replacement`}
+                        style={REFUND_POLICY_LINK_STYLE}
+                      >
+                        refund policy
+                      </Link>
+                      .
+                    </>
+                  )}
+                </p>
                 </div>
                 </div>
               </div>
@@ -1715,7 +1878,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           })}
         </div>
         {(() => {
-          const itemLineFmt = (t.itemLineWithQty ?? t.itemLine ?? '{name} — {size} x{qty} — ฿{lineTotal}') as string;
           return (
             <div className="cart-summary-section">
               <div className="cart-order-summary">
@@ -1725,31 +1887,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 {items.map((item, i) => {
                   const name = lang === 'th' ? item.nameTh : item.nameEn;
                   const qty = item.quantity ?? 1;
-                  const addOnsTotal = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-                  const unitPrice = item.size.price + addOnsTotal;
-                  const lineTotal = unitPrice * qty;
-                  const priceStr = lineTotal.toLocaleString();
-                  const sizePart = isNonBouquetCartLine(item)
-                    ? ((item.size.label || '').trim() || '—')
-                    : item.size.label;
-                  const itemLine = itemLineFmt
-                    .replace('{name}', name)
-                    .replace('{size}', sizePart)
-                    .replace('{qty}', String(qty))
-                    .replace('{lineTotal}', priceStr)
-                    .replace('{price}', priceStr);
-                  const addOnLines = buildAddOnsSummaryLines(item, t);
                   return (
                     <div key={`summary-${item.bouquetId}-${i}`}>
                       <div className="cart-order-summary-row cart-order-summary-item">
-                        <span className="cart-order-summary-item-name">{itemLine}</span>
-                        <span className="cart-order-summary-amount">฿{lineTotal.toLocaleString()}</span>
+                        <span className="cart-order-summary-item-name">{name} × {qty}</span>
                       </div>
-                      {addOnLines.map((line, j) => (
-                        <div key={j} className="cart-order-summary-row cart-order-summary-addon">
-                          <span>{line}</span>
-                        </div>
-                      ))}
                     </div>
                   );
                 })}
@@ -1951,6 +2093,24 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-back-link:hover {
           text-decoration: underline;
+        }
+        .cart-destination-notice,
+        .cart-expansion-block-notice {
+          font-size: 0.9rem;
+          line-height: 1.45;
+          padding: 12px 14px;
+          border-radius: var(--radius-sm);
+          margin: 0 0 16px;
+        }
+        .cart-destination-notice {
+          background: color-mix(in srgb, var(--accent-soft) 55%, var(--pastel-cream));
+          border: 1px solid var(--border);
+          color: var(--text);
+        }
+        .cart-expansion-block-notice {
+          background: #fff7ed;
+          border: 1px solid #fdba74;
+          color: #9a3412;
         }
         .cart-page-header {
           display: flex;
@@ -2386,6 +2546,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-place-order-hint--error {
           font-weight: 600;
+        }
+        .cart-policy-consent {
+          margin: 6px 0 0;
+          font-size: 10px;
+          font-weight: 500;
+          color: var(--text-muted);
+          line-height: 1.35;
+        }
+        .cart-policy-link {
+          font-weight: 700;
+        }
+        .cart-policy-link--delivery {
+          color: #0284c7; /* sky-600 */
+        }
+        .cart-policy-link--refund {
+          color: #ea580c; /* orange-600 */
+        }
+        .cart-policy-link:hover {
+          filter: brightness(0.9);
+        }
+        .cart-policy-link:focus-visible {
+          outline: 2px solid color-mix(in srgb, currentColor 60%, white);
+          outline-offset: 2px;
+          border-radius: 6px;
         }
         @media (prefers-reduced-motion: reduce) {
           .cart-place-order-hint-slot {

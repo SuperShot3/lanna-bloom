@@ -40,6 +40,7 @@ export function AddOnsSection({
   onChange,
   gifts = [],
   suggestedBouquets = [],
+  hideGiftAddOns = false,
 }: {
   lang: Locale;
   value: AddOnsValues;
@@ -48,6 +49,8 @@ export function AddOnsSection({
   gifts?: CatalogProduct[];
   /** When set (e.g. plushy toy PDP), show bouquet cross-sell instead of gifts */
   suggestedBouquets?: Bouquet[];
+  /** Regional flower-only funnels: hide non-flower gift carousel */
+  hideGiftAddOns?: boolean;
 }) {
   const tRaw = translations[lang].buyNow;
   const t = tRaw as {
@@ -62,14 +65,14 @@ export function AddOnsSection({
 
   return (
     <div className="addons-section">
-      {suggestedBouquets.length > 0 ? (
+      {!hideGiftAddOns && suggestedBouquets.length > 0 ? (
         <>
           <h3 className="addons-gifts-heading">
             {t.flowersSectionTitle ?? t.giftsSectionTitle ?? 'You might be interested as well'}
           </h3>
           <BouquetsCarousel bouquets={suggestedBouquets} lang={lang} />
         </>
-      ) : gifts.length > 0 ? (
+      ) : !hideGiftAddOns && gifts.length > 0 ? (
         <>
           <h3 className="addons-gifts-heading">
             {t.giftsSectionTitle ?? 'You might be interested as well'}

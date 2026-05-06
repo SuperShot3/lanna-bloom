@@ -1,4 +1,5 @@
-import { getOrders, getDistricts } from '@/lib/supabase/adminQueries';
+import { getOrders, getDistricts, getDeliveryDestinations } from '@/lib/supabase/adminQueries';
+import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
 import { OrdersListClient } from './OrdersListClient';
 
 interface PageProps {
@@ -8,6 +9,7 @@ interface PageProps {
     status?: string;
     payment?: string;
     district?: string;
+    destination?: string;
     dateFrom?: string;
     dateTo?: string;
     page?: string;
@@ -25,14 +27,20 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     orderStatus: params.status,
     paymentStatus: params.payment as 'paid' | 'unpaid' | undefined,
     district: params.district,
+    deliveryDestination: params.destination,
     deliveryDateFrom: params.dateFrom,
     deliveryDateTo: params.dateTo,
   };
 
-  const [result, districts] = await Promise.all([
+  const [result, districts, destRows] = await Promise.all([
     getOrders(filters, { page, pageSize }),
     getDistricts(),
+    getDeliveryDestinations(),
   ]);
+
+  const deliveryDestinations = Array.from(
+    new Set([...DELIVERY_DESTINATIONS, ...destRows])
+  ).sort();
 
   return (
     <OrdersListClient
@@ -43,6 +51,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       initialPage={page}
       pageSize={pageSize}
       districts={districts}
+      deliveryDestinations={deliveryDestinations}
     />
   );
 }

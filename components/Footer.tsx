@@ -5,6 +5,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import {
+  MARKETS,
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+
+const FOOTER_DELIVERY_ORDER_LINKS: {
+  destinationId: DeliveryDestinationId;
+  href: (lang: Locale) => string;
+}[] = [
+  { destinationId: 'CHIANG_MAI', href: (l) => `/${l}/catalog` },
+  ...MARKETS.map((m) => ({
+    destinationId: m.destinationId,
+    href: (l: Locale) => `/${l}/catalog/${m.pathSlug}`,
+  })),
+];
 import { MessengerLinks } from './MessengerLinks';
 import { SocialLinks } from './SocialLinks';
 
@@ -117,6 +133,18 @@ export function Footer({ lang }: { lang: Locale }) {
                 </Link>
               </li>
             </ul>
+            <div className="pt-4 mt-4 border-t border-stone-200">
+              <p className="font-semibold text-stone-700 text-sm mb-3">{t.deliveryAreas}</p>
+              <ul className="space-y-2 text-sm text-stone-500">
+                {FOOTER_DELIVERY_ORDER_LINKS.map(({ destinationId, href }) => (
+                  <li key={destinationId}>
+                    <Link href={href(lang)} className="hover:text-[#C5A059] transition-colors">
+                      {destinationDisplayName(destinationId, lang)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
           <div>
             <h4 className="font-bold mb-6">{t.company}</h4>
@@ -133,7 +161,7 @@ export function Footer({ lang }: { lang: Locale }) {
               </li>
               <li>
                 <Link
-                  href={`/${lang}/info/delivery-policy-chiang-mai`}
+                  href={`/${lang}/info/delivery-policy`}
                   className="hover:text-[#C5A059] transition-colors"
                 >
                   {t.deliveryGuide}

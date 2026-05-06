@@ -8,7 +8,8 @@ import type { ContactPreferenceOption } from '@/lib/orders';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import type { CartItem } from '@/contexts/CartContext';
 import { getStoredReferral, computeReferralDiscount } from '@/lib/referral';
-import { calcDeliveryFeeTHB, type DistrictKey } from '@/lib/deliveryFees';
+import type { OrderDeliveryDestinationId } from '@/lib/orders';
+import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
 
@@ -98,8 +99,9 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       ? `${delivery.date} ${delivery.timeSlot}`
       : delivery.date || delivery.timeSlot || '';
 
-  const district = (delivery.deliveryDistrict || 'UNKNOWN') as DistrictKey;
-  const isMueangCentral = delivery.deliveryDistrict === 'MUEANG' && delivery.isMueangCentral;
+  const deliveryDestination = (delivery.deliveryDestination ??
+    'CHIANG_MAI') as OrderDeliveryDestinationId;
+  const deliveryZoneId = delivery.deliveryZoneId?.trim() ?? '';
 
   const itemsTotal = cartItems.reduce(
     (sum, item) =>
@@ -108,7 +110,10 @@ export function buildStripeCheckoutSessionRequestBody(params: {
         (item.quantity ?? 1),
     0
   );
-  const deliveryFee = calcDeliveryFeeTHB({ district, isMueangCentral });
+  const deliveryFee =
+    deliveryZoneId && isSupportedZone(deliveryDestination, deliveryZoneId)
+      ? (getZoneFee(deliveryDestination, deliveryZoneId) ?? 0)
+      : 0;
   const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
   const referralDiscount = computeReferralDiscount(subtotal, referral, { deliveryFee });
@@ -131,8 +136,8 @@ export function buildStripeCheckoutSessionRequestBody(params: {
           recipientPhoneCountryCode: recipientPhoneCountryCode.replace(/\D/g, ''),
         }),
       ...(surpriseDelivery !== undefined && { surpriseDelivery }),
-      deliveryDistrict: district,
-      isMueangCentral,
+      deliveryDestination,
+      deliveryZoneId,
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl?.trim() || undefined,

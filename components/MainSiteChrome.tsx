@@ -7,6 +7,7 @@ import { Footer } from '@/components/Footer';
 import { LineFloatingButton } from '@/components/LineFloatingButton';
 import { PrimeHourPromoBanner } from '@/components/PrimeHourPromoBanner';
 import type { Locale } from '@/lib/i18n';
+import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
 
 export function MainSiteChrome({
   lang,
@@ -28,6 +29,7 @@ export function MainSiteChrome({
 
   return (
     <>
+      <DeliveryDestinationSessionSync lang={lang} />
       <PrimeHourPromoBanner lang={lang} onActiveChange={setPrimeHourBanner} />
       <Header lang={lang} hasPrimeHourBanner={primeHourBanner} />
       <div

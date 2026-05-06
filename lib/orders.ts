@@ -10,6 +10,7 @@ export type {
   OrderItemAddOns,
   OrderItem,
   DeliveryDistrictKey,
+  OrderDeliveryDestinationId,
   OrderDelivery,
   OrderDeliveryCustomerView,
   OrderPricing,

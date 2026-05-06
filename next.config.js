@@ -34,6 +34,11 @@ const nextConfig = {
         destination: '/:lang/info/perfect-bouquet-someone-special',
         permanent: true,
       },
+      {
+        source: '/:lang(en|th)/info/delivery-policy-chiang-mai',
+        destination: '/:lang/info/delivery-policy',
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

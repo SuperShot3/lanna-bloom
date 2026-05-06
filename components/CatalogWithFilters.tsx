@@ -350,7 +350,7 @@ export function CatalogWithFilters({
                       <ProductCard key={product.id} product={product} lang={lang} />
                     ))}
               </div>
-              {filterParams.topCategory !== 'flowers' ? null : (
+                {filterParams.topCategory !== 'flowers' ? null : (
                 <div className="mt-16 py-12 px-6 rounded-2xl bg-stone-100 border border-stone-200 text-center">
                   <p className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] mb-4">
                     {t.catalogReviewsCta ?? 'Love our bouquets?'}

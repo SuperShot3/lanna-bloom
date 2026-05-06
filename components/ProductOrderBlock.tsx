@@ -19,6 +19,7 @@ import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 
 export function ProductOrderBlock({
   bouquet,
@@ -45,6 +46,7 @@ export function ProductOrderBlock({
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
@@ -94,7 +96,13 @@ export function ProductOrderBlock({
         onSelect={setSelectedSize}
         lang={lang}
       />
-      <AddOnsSection lang={lang} value={addOns} onChange={setAddOns} gifts={gifts} />
+      <AddOnsSection
+        lang={lang}
+        value={addOns}
+        onChange={setAddOns}
+        gifts={gifts}
+        hideGiftAddOns={checkoutProfile.variant === 'expansion'}
+      />
       {justAdded ? (
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>

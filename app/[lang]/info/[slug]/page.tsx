@@ -85,7 +85,7 @@ export function generateStaticParams() {
     '51-roses-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
     'flower-delivery-to-hospitals-chiang-mai',
-    'delivery-policy-chiang-mai',
+    'delivery-policy',
   ];
   const params: { lang: string; slug: string }[] = [];
   for (const lang of ['en', 'th']) {

@@ -6,6 +6,11 @@ import type {
   SupabaseOrderRow,
 } from '@/lib/supabase/adminQueries';
 import { formatShopDateTime } from '@/lib/shopTime';
+import {
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import { zoneLabel } from '@/lib/delivery/zones';
 
 export type OrderSummaryItemRow = SupabaseOrderItemRow & {
   catalogHref?: string;
@@ -25,6 +30,30 @@ function orderJsonPartial(order: SupabaseOrderRow): Partial<Order> | null | unde
 
 function orderJsonDelivery(order: SupabaseOrderRow): Order['delivery'] | undefined {
   return orderJsonPartial(order)?.delivery;
+}
+
+function adminDeliveryGeographyLines(order: SupabaseOrderRow): string[] {
+  const dest =
+    order.delivery_destination?.trim() ||
+    orderJsonDelivery(order)?.deliveryDestination?.trim();
+  const zoneId =
+    order.delivery_zone?.trim() || orderJsonDelivery(order)?.deliveryZoneId?.trim();
+  const postal =
+    order.postal_code?.trim() || orderJsonDelivery(order)?.postalCode?.trim();
+  const lines: string[] = [];
+  if (dest) {
+    const id = dest as DeliveryDestinationId;
+    lines.push(`Destination: ${destinationDisplayName(id, 'en')} (${dest})`);
+  }
+  if (dest && zoneId) {
+    const id = dest as DeliveryDestinationId;
+    const lbl = zoneLabel(id, zoneId, 'en');
+    lines.push(`Zone: ${lbl ?? zoneId} (${zoneId})`);
+  }
+  if (postal) lines.push(`Postcode: ${postal}`);
+  const leg = order.district?.trim();
+  if (leg && (!dest || !zoneId)) lines.push(`Legacy district: ${leg}`);
+  return lines;
 }
 
 /** Admin / driver copy: show +calling national when we stored the checkout calling code. */
@@ -194,7 +223,10 @@ export function buildDriverMessengerPlainText(
   lines.push(`Order: ${order.order_id}`);
   lines.push('');
   lines.push(`When: ${when}`);
-  if (order.district?.trim()) {
+  const geo = adminDeliveryGeographyLines(order);
+  if (geo.length) {
+    lines.push(...geo);
+  } else if (order.district?.trim()) {
     lines.push(`Area: ${order.district.trim()}`);
   }
   lines.push('');
@@ -303,6 +335,9 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push('Delivery');
   lines.push(`  Date: ${naText(order.delivery_date)}`);
   lines.push(`  Window: ${naText(order.delivery_window)}`);
+  for (const g of adminDeliveryGeographyLines(order)) {
+    lines.push(`  ${g}`);
+  }
   lines.push(`  Address: ${naText(order.address)}`);
   lines.push(`  Google Maps (checkout): ${mapsUrl ?? 'N/A'}`);
   lines.push('');

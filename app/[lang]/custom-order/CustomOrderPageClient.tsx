@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { DELIVERY_DESTINATIONS, destinationDisplayName, type DeliveryDestinationId } from '@/lib/delivery/markets';
+import { getZoneFee, getZonesForDestination } from '@/lib/delivery/zones';
 import {
   FULL_PHONE_MAX,
   fullPhoneDigitsValid,
@@ -38,6 +40,11 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [recipientPhoneDigits, setRecipientPhoneDigits] = useState('');
   const [yourPhoneDigits, setYourPhoneDigits] = useState('');
+  const [selectedDestination, setSelectedDestination] = useState<DeliveryDestinationId>('CHIANG_MAI');
+  const [selectedZoneId, setSelectedZoneId] = useState(() => {
+    const firstZone = getZonesForDestination('CHIANG_MAI')[0];
+    return firstZone?.id ?? '';
+  });
 
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
@@ -97,6 +104,30 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
       ] as const,
     [t]
   );
+
+  const destinationOptions = useMemo(
+    () =>
+      DELIVERY_DESTINATIONS.map((destinationId) => ({
+        value: destinationId,
+        label: destinationDisplayName(destinationId, lang),
+      })),
+    [lang]
+  );
+
+  const zoneOptions = useMemo(
+    () =>
+      getZonesForDestination(selectedDestination).map((zone) => ({
+        value: zone.id,
+        label: lang === 'th' ? zone.labelTh : zone.labelEn,
+        fee: getZoneFee(selectedDestination, zone.id) ?? zone.feeThb,
+      })),
+    [lang, selectedDestination]
+  );
+
+  useEffect(() => {
+    if (zoneOptions.some((z) => z.value === selectedZoneId)) return;
+    setSelectedZoneId(zoneOptions[0]?.value ?? '');
+  }, [selectedZoneId, zoneOptions]);
 
   useEffect(() => {
     if (!datePopoverOpen) return;
@@ -204,6 +235,8 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         form.reset();
         setRecipientPhoneDigits('');
         setYourPhoneDigits('');
+        setSelectedDestination('CHIANG_MAI');
+        setSelectedZoneId(getZonesForDestination('CHIANG_MAI')[0]?.id ?? '');
         setPickedFileName(null);
         setFileError(null);
         setSelectedDate(null);
@@ -240,11 +273,65 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
 
         <form className="co-form" onSubmit={onSubmit} aria-busy={submitting}>
           <div className="co-row co-row-stack">
-            <div className="co-label-cell">
-              <span className="co-label">{t.deliveryCity}</span>
-            </div>
+            <label className="co-label-cell" htmlFor="deliveryDestination">
+              <span className="co-label">
+                {t.deliveryCity}
+                <span className="co-req" aria-hidden>
+                  {' '}
+                  *
+                </span>
+              </span>
+            </label>
             <div className="co-field-cell">
-              <p className="co-static">{t.currentCity}</p>
+              <select
+                id="deliveryDestination"
+                name="deliveryDestination"
+                className="co-select co-select-full"
+                required
+                value={selectedDestination}
+                onChange={(e) => {
+                  const nextDestination = e.target.value as DeliveryDestinationId;
+                  setSelectedDestination(nextDestination);
+                  setSelectedZoneId(getZonesForDestination(nextDestination)[0]?.id ?? '');
+                }}
+              >
+                {destinationOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="co-row">
+            <label className="co-label-cell" htmlFor="deliveryZoneId">
+              <span className="co-label">
+                {t.deliveryZone}
+                <span className="co-req" aria-hidden>
+                  {' '}
+                  *
+                </span>
+              </span>
+            </label>
+            <div className="co-field-cell">
+              <select
+                id="deliveryZoneId"
+                name="deliveryZoneId"
+                className="co-select co-select-full"
+                required
+                value={selectedZoneId}
+                onChange={(e) => setSelectedZoneId(e.target.value)}
+              >
+                <option value="" disabled>
+                  {t.selectDeliveryZone}
+                </option>
+                {zoneOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} — ฿{option.fee.toLocaleString()}
+                  </option>
+                ))}
+              </select>
               <p className="co-inline-hint">
                 {t.chooseOtherCity}{' '}
                 <Link href={contactHref} className="co-link">

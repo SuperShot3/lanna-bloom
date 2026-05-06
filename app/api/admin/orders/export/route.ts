@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     orderStatus: searchParams.get('orderStatus') || undefined,
     paymentStatus: (searchParams.get('paymentStatus') as 'paid' | 'unpaid') || undefined,
     district: searchParams.get('district') || undefined,
+    deliveryDestination: searchParams.get('destination') || undefined,
     deliveryDateFrom: searchParams.get('deliveryDateFrom') || undefined,
     deliveryDateTo: searchParams.get('deliveryDateTo') || undefined,
   };
@@ -37,6 +38,9 @@ export async function GET(request: NextRequest) {
     'recipient_phone',
     'address',
     'district',
+    'delivery_destination',
+    'delivery_zone',
+    'postal_code',
     'delivery_date',
     'delivery_window',
     'order_status',

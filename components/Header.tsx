@@ -14,11 +14,12 @@ import {
   SearchIcon,
   CatalogIcon,
   GiftIcon,
-  UsersIcon,
   InfoIcon,
   PhoneIcon,
   MapIcon,
 } from './icons';
+import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
+import { readMarketSession } from '@/lib/delivery/marketSession';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
@@ -32,10 +33,27 @@ export function Header({
 }) {
   const pathname = usePathname();
   const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
-  const homeHref = `/${lang}`;
-  const catalogHref = `/${lang}/catalog`;
-  const occasionsHref = `/${lang}/catalog`;
-  const partnerApplyHref = `https://www.lannabloom.shop/${lang}/partner/apply`;
+  const pathParts = pathname?.split('/').filter(Boolean) ?? [];
+  const maybeMarketSlug =
+    pathParts[1] === 'catalog' && pathParts[2] ? pathParts[2] : pathParts[1];
+  const activeMarket =
+    maybeMarketSlug && isMarketPathSlug(maybeMarketSlug)
+      ? getMarketByPathSlug(maybeMarketSlug)
+      : null;
+  const [sessionMarketSlug, setSessionMarketSlug] = useState<string | null>(null);
+  const sessionMarket =
+    sessionMarketSlug && isMarketPathSlug(sessionMarketSlug)
+      ? getMarketByPathSlug(sessionMarketSlug)
+      : null;
+  const effectiveMarket = activeMarket ?? sessionMarket;
+  const marketFlowerDeliveryHref = effectiveMarket
+    ? `/${lang}/${effectiveMarket.pathSlug}/flower-delivery`
+    : null;
+  const homeHref = marketFlowerDeliveryHref ?? `/${lang}`;
+  const catalogHref = effectiveMarket
+    ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
+    : `/${lang}/catalog`;
+  const occasionsHref = catalogHref;
   const cartHref = `/${lang}/cart`;
   const contactHref = `/${lang}/contact`;
   const infoHref = `/${lang}/info`;
@@ -45,7 +63,13 @@ export function Header({
   const { count: cartCount, lastAddEventId } = useCart();
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
-  const isHomePage = pathname === homeHref || pathname === `${homeHref}/`;
+  const isHomePage =
+    pathname === homeHref ||
+    pathname === `${homeHref}/` ||
+    Boolean(
+      marketFlowerDeliveryHref &&
+        (pathname === marketFlowerDeliveryHref || pathname === `${marketFlowerDeliveryHref}/`)
+    );
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -56,6 +80,16 @@ export function Header({
 
   // Pulsation stays on the main (home) page until the user opens the cart.
   const [cartPulseAddId, setCartPulseAddId] = useState(0);
+
+  useEffect(() => {
+    const load = () => {
+      const s = readMarketSession();
+      setSessionMarketSlug(s?.pathSlug ?? null);
+    };
+    load();
+    window.addEventListener('focus', load);
+    return () => window.removeEventListener('focus', load);
+  }, []);
 
   useEffect(() => {
     const checkScroll = () => setIsScrolled(window.scrollY > SCROLL_THRESHOLD);
@@ -154,7 +188,7 @@ export function Header({
                 <NavItem
                   href={catalogHref}
                   label={t.catalog}
-                  active={basePath === '/catalog'}
+                  active={basePath === '/catalog' || basePath.startsWith('/catalog/')}
                   variant="pill"
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
@@ -166,9 +200,9 @@ export function Header({
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
-                  href={partnerApplyHref}
-                  label={t.becomePartner}
-                  active={false}
+                  href={infoHref}
+                  label={t.information}
+                  active={basePath === '/info'}
                   variant="pill"
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
@@ -294,7 +328,7 @@ export function Header({
                 href={catalogHref}
                 label={t.catalog}
                 icon={<CatalogIcon size={22} />}
-                active={basePath === '/catalog'}
+                active={basePath === '/catalog' || basePath.startsWith('/catalog/')}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
@@ -306,9 +340,10 @@ export function Header({
                 onClick={() => setMenuOpen(false)}
               />
               <NavItem
-                href={partnerApplyHref}
-                label={t.becomePartner}
-                icon={<UsersIcon size={22} />}
+                href={infoHref}
+                label={t.information}
+                icon={<InfoIcon size={22} />}
+                active={basePath === '/info'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
@@ -321,14 +356,6 @@ export function Header({
                   </span>
                 }
                 active={basePath === '/custom-order'}
-                variant="mobile"
-                onClick={() => setMenuOpen(false)}
-              />
-              <NavItem
-                href={infoHref}
-                label={t.information}
-                icon={<InfoIcon size={22} />}
-                active={basePath === '/info'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
@@ -448,7 +475,7 @@ function HeaderSearchControl({
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParamsString = searchParams?.toString() ?? '';
-  const isCatalogPage = basePath === '/catalog';
+  const isCatalogPage = basePath === '/catalog' || basePath.startsWith('/catalog/');
   const headerSearchOpen = isCatalogPage && searchParams?.get('openSearch') === '1';
   const headerSearchQuery = searchParams?.get('q') ?? '';
   const [searchDraft, setSearchDraft] = useState(headerSearchQuery);
