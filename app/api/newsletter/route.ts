@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { sendNewsletterNotificationEmail } from '@/lib/orderEmail';
+import { sendNewsletterWelcomeViaOutbox } from '@/lib/email/outbox';
+import { createWelcomeCodeForSubscriber } from '@/lib/promo/welcomeCode';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       // Unique constraint violation = duplicate email
       if (error.code === '23505') {
+        // Do not issue a new code for repeat signups (prevents abuse/spam).
         return NextResponse.json(
           { success: true, message: 'already_subscribed' },
           { status: 200 }
@@ -85,7 +88,20 @@ export async function POST(request: NextRequest) {
     const createdAt = data?.created_at
       ? new Date(data.created_at)
       : new Date();
-    await sendNewsletterNotificationEmail(email, source, createdAt);
+    const created = await createWelcomeCodeForSubscriber(email);
+    if (created.ok) {
+      await Promise.allSettled([
+        sendNewsletterWelcomeViaOutbox({
+          email,
+          welcomeCode: created.code,
+          createdBy: 'system',
+        }),
+        sendNewsletterNotificationEmail(email, source, createdAt),
+      ]);
+    } else {
+      // Welcome code creation failed; still notify business.
+      await sendNewsletterNotificationEmail(email, source, createdAt);
+    }
 
     return NextResponse.json({
       success: true,

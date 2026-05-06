@@ -3,6 +3,7 @@ import { createOrder, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orde
 import type { OrderPayload, ContactPreferenceOption, DeliveryDistrictKey } from '@/lib/orders';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { getDiscountForCode } from '@/lib/referral';
+import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
 import { validateCatalogItemRef } from '@/lib/line-catalog/searchCatalog';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import {
@@ -268,7 +269,57 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: 400 });
     }
-    const { order } = await createOrder(result.payload);
+    const payload = result.payload;
+    let welcomeCodeId: string | null = null;
+
+    // If the referral code is a DB-backed welcome code, validate it server-side.
+    if (payload.referralCode && payload.referralDiscount === 0 && isWelcomeCode(payload.referralCode)) {
+      const customerEmail = payload.customerEmail?.trim().toLowerCase();
+      if (!customerEmail) {
+        return NextResponse.json(
+          { error: 'Welcome code requires an email address' },
+          { status: 400 }
+        );
+      }
+      const db = await lookupDbWelcomeCode(payload.referralCode);
+      if (!db.valid) {
+        const msg =
+          db.reason === 'redeemed'
+            ? 'Welcome code already used'
+            : db.reason === 'expired'
+              ? 'Welcome code expired'
+              : 'Invalid welcome code';
+        return NextResponse.json({ error: msg }, { status: 400 });
+      }
+      if (db.email !== customerEmail) {
+        return NextResponse.json(
+          { error: 'Welcome code does not match this email address' },
+          { status: 400 }
+        );
+      }
+      welcomeCodeId = db.id;
+
+      const subtotal = (payload.pricing?.itemsTotal ?? 0) + (payload.pricing?.deliveryFee ?? 0);
+      const deliveryFee = payload.pricing?.deliveryFee ?? 0;
+      const discount =
+        db.discountType === 'percent'
+          ? Math.min(Math.floor((subtotal * db.discountValue) / 100), subtotal)
+          : db.discountType === 'free_delivery'
+            ? Math.min(Math.max(0, deliveryFee), subtotal)
+            : Math.min(Math.max(0, db.discountValue), subtotal);
+
+      payload.pricing.grandTotal = Math.max(0, subtotal - discount);
+      payload.referralDiscount = discount;
+    }
+
+    const { order } = await createOrder(payload);
+    if (welcomeCodeId) {
+      const { redeemWelcomeCode } = await import('@/lib/promo/welcomeCode');
+      await redeemWelcomeCode({
+        welcomeCodeId,
+        redeemedOrderId: order.orderId,
+      });
+    }
     const orderToken = await getOrderPublicToken(order.orderId);
     const publicOrderUrl = getOrderDetailsUrl(order.orderId, { token: orderToken });
     const shareText = `New order: ${order.orderId}. Details: ${publicOrderUrl}`;

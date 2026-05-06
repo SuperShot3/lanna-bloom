@@ -4,6 +4,7 @@ import { getOrderById, type Order } from '@/lib/orders';
 import { renderTemplate } from './renderTemplate';
 import { buildOrderTemplateVariables } from './variablesFromOrder';
 import { sendOutboxViaResend } from './sendOutboxEmail';
+import { getDefaultSocialLinks, getEmailBrandHeaderHtml, getSocialFooterHtml } from './socialFooter';
 
 export type EmailOutboxRow = {
   id: string;
@@ -43,6 +44,75 @@ async function getTemplate(key: string): Promise<EmailTemplateRow | null> {
     .maybeSingle();
   if (error || !data) return null;
   return data as EmailTemplateRow;
+}
+
+export async function sendNewsletterWelcomeViaOutbox(params: {
+  email: string;
+  welcomeCode: string;
+  createdBy: string;
+}): Promise<
+  | { ok: true; outboxId: string; missingVariables: string[] }
+  | { ok: false; error: string }
+> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const email = params.email.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Invalid email' };
+  }
+
+  const tpl = await getTemplate('newsletter_welcome');
+  if (!tpl || !tpl.is_active) {
+    return { ok: false, error: 'Missing template newsletter_welcome' };
+  }
+
+  const links = getDefaultSocialLinks();
+  const vars: Record<string, string> = {
+    customer_email: email,
+    website_url: links.websiteUrl,
+    instagram_url: links.instagramUrl,
+    facebook_url: links.facebookUrl,
+    tiktok_url: links.tiktokUrl,
+    google_maps_url: links.googleMapsUrl,
+    review_link: links.reviewUrl,
+    brand_header: getEmailBrandHeaderHtml(links),
+    social_footer: getSocialFooterHtml(links),
+    welcome_code: params.welcomeCode.trim().toUpperCase(),
+  };
+
+  const rendered = renderTemplate(tpl.subject_template, tpl.html_template, tpl.text_template, vars);
+  if (!rendered.subject || !rendered.html) {
+    return { ok: false, error: 'Template render failed' };
+  }
+
+  const { data: outbox, error: insE } = await supabase
+    .from('email_outbox')
+    .insert({
+      order_id: null,
+      customer_email: email,
+      customer_name: null,
+      email_type: 'newsletter_welcome',
+      subject: rendered.subject,
+      html_body: rendered.html,
+      text_body: rendered.text || null,
+      status: 'draft',
+      created_by: params.createdBy,
+    })
+    .select('id')
+    .single();
+
+  if (insE || !outbox) {
+    return { ok: false, error: insE?.message ?? 'Outbox insert failed' };
+  }
+
+  const outboxId = (outbox as { id: string }).id;
+  const send = await sendOutboxViaResend(outboxId, params.createdBy);
+  if (!send.ok) {
+    return { ok: false, error: send.error };
+  }
+
+  return { ok: true, outboxId, missingVariables: rendered.missingVariables };
 }
 
 export async function getOrCreateDeliveredOutboxDraft(

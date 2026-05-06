@@ -7,6 +7,7 @@ import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/se
 import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCheckout';
 import { deleteCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
 import { sendPaymentFailedNotificationsOnce } from '@/lib/orderNotification';
+import { redeemWelcomeCode } from '@/lib/promo/welcomeCode';
 
 const PAYMENT_SUCCESS_EVENTS = [
   'checkout.session.completed',
@@ -358,6 +359,25 @@ export async function POST(request: NextRequest) {
       didCreate: result.didCreate,
       sessionId: session.id,
     });
+
+      // Redeem newsletter welcome codes (single-use) when payment is confirmed.
+      const welcomeCodeId =
+        typeof session.metadata?.welcome_code_id === 'string'
+          ? session.metadata.welcome_code_id.trim()
+          : '';
+      if (welcomeCodeId) {
+        const res = await redeemWelcomeCode({
+          welcomeCodeId,
+          redeemedOrderId: result.orderId,
+        });
+        if (!res.ok) {
+          console.error('[stripe/webhook] welcome code redeem failed:', res.error, {
+            eventId: event.id,
+            sessionId: session.id,
+            orderId: result.orderId,
+          });
+        }
+      }
   } catch (e) {
     console.error('[stripe/webhook] payment success handler error:', e);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

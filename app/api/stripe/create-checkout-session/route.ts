@@ -9,6 +9,7 @@ import { getBaseUrl } from '@/lib/orders';
 import { getDiscountForCode } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
+import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
 import { inferPostalCodeFromDelivery } from '@/lib/delivery/postalInference';
 import {
   findZoneDef,
@@ -348,9 +349,44 @@ export async function POST(request: NextRequest) {
     }
     const { totals } = computed;
     const subtotal = totals.itemsTotal + totals.deliveryFee;
-    const referralDiscount = data.referralCode
+    let referralDiscount = data.referralCode
       ? getDiscountForCode(data.referralCode, subtotal, { deliveryFee: totals.deliveryFee })
       : 0;
+    let welcomeCodeId: string | null = null;
+    if (data.referralCode && referralDiscount === 0 && isWelcomeCode(data.referralCode)) {
+      if (!data.customerEmail) {
+        return NextResponse.json(
+          { error: 'Welcome code requires an email address' },
+          { status: 400 }
+        );
+      }
+      const db = await lookupDbWelcomeCode(data.referralCode);
+      if (db.valid) {
+        if (db.email !== data.customerEmail.trim().toLowerCase()) {
+          return NextResponse.json(
+            { error: 'Welcome code does not match this email address' },
+            { status: 400 }
+          );
+        }
+        welcomeCodeId = db.id;
+        if (db.discountType === 'percent') {
+          referralDiscount = Math.min(
+            Math.floor((subtotal * db.discountValue) / 100),
+            subtotal
+          );
+        } else if (db.discountType === 'free_delivery') {
+          referralDiscount = Math.min(Math.max(0, totals.deliveryFee), subtotal);
+        } else {
+          referralDiscount = Math.min(Math.max(0, db.discountValue), subtotal);
+        }
+      } else if (db.reason === 'redeemed') {
+        return NextResponse.json({ error: 'Welcome code already used' }, { status: 400 });
+      } else if (db.reason === 'expired') {
+        return NextResponse.json({ error: 'Welcome code expired' }, { status: 400 });
+      } else {
+        return NextResponse.json({ error: 'Invalid welcome code' }, { status: 400 });
+      }
+    }
     const effectiveGrandTotal = Math.max(0, totals.grandTotal - referralDiscount);
 
     const legacyGeo =
@@ -419,6 +455,9 @@ export async function POST(request: NextRequest) {
       customerEmail: data.customerEmail,
       lang: data.lang,
     });
+    if (welcomeCodeId) {
+      stripeMetadata.welcome_code_id = welcomeCodeId;
+    }
 
     console.log('[stripe/create-checkout-session] checkout draft saved (order created after payment)', {
       checkoutDraftId,

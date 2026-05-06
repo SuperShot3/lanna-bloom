@@ -19,6 +19,7 @@ function buildMock(base: string): Record<string, string> {
   return {
   customer_name: 'Alex',
   customer_email: 'test@example.com',
+  welcome_code: 'WELCOME10-7K4D2P',
   order_id: 'order-demo-001',
   order_number: 'order-demo-001',
   product_name: 'Sample bouquet',

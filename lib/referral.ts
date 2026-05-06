@@ -13,9 +13,8 @@ type DiscountCodeDefinition =
   | { type: 'fixed'; value: number }
   | { type: 'free_delivery' };
 
-/** Newsletter / welcome: 10% off subtotal. Rename the key to match what you email subscribers. */
+/** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
 const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
-  WELCOME10: { type: 'percent', value: 10 },
   'LB-DELIVERY-FREE': { type: 'free_delivery' },
   /** Happy hour promo (banner): 10% off subtotal (items + delivery fee in API). */
   [HAPPY_HOUR_PROMO_CODE]: { type: 'percent', value: 10 },
@@ -89,6 +88,11 @@ export function getDiscountForCode(
 ): number {
   if (!code || subtotal <= 0) return 0;
   const normalized = code.trim().toUpperCase();
+  // Client-side estimate for unique newsletter welcome codes.
+  // Server-side validation is DB-backed (single-use + expiry), so this only drives UI display.
+  if (normalized.startsWith('WELCOME10-') && normalized.length > 'WELCOME10-'.length) {
+    return Math.min(Math.floor((subtotal * 10) / 100), subtotal);
+  }
   const def = DISCOUNT_CODES[normalized];
   if (def) {
     if (def.type === 'percent') {
