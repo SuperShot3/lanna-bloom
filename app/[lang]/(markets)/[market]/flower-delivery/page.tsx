@@ -39,7 +39,7 @@ export default async function MarketFlowerDeliveryPage({
 
   const lang = params.lang as Locale;
   const [initialBouquets, heroImageUrl, carouselImages] = await Promise.all([
-    getBouquetsFromSanityPaginated(0, 12),
+    getBouquetsFromSanityPaginated(0, 12, entry.destinationId),
     getHeroImageFromSanity(),
     getHeroCarouselImagesFromSanity(),
   ]);
@@ -58,7 +58,11 @@ export default async function MarketFlowerDeliveryPage({
         titleOverride={marketH1}
       />
       <div id="bouquets">
-        <MarketBouquetsShowcase lang={lang} initialBouquets={initialBouquets} />
+        <MarketBouquetsShowcase
+          lang={lang}
+          catalogDestination={entry.destinationId}
+          initialBouquets={initialBouquets}
+        />
       </div>
     </div>
   );

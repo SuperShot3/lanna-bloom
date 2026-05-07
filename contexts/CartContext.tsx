@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import type { BouquetSize } from '@/lib/bouquets';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { AddOnsValues } from '@/components/AddOnsSection';
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
@@ -27,6 +28,8 @@ export interface CartItem {
   addOns: AddOnsValues;
   /** Number of units (default 1 for backward compat). */
   quantity?: number;
+  /** When set on bouquet lines, used to validate cart vs selected delivery destination. */
+  excludedDeliveryDestinations?: DeliveryDestinationId[];
 }
 
 interface CartContextValue {

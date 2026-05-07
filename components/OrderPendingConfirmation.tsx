@@ -172,7 +172,13 @@ export function OrderPendingConfirmation({
   useEffect(() => {
     if (!orderId || redirecting) return;
     setRedirecting(true);
-    const url = `/order/${encodeURIComponent(orderId)}?v=${Date.now()}`;
+    const token =
+      typeof window !== 'undefined'
+        ? (window.localStorage.getItem('lanna-bloom-last-order-token') ?? '').trim()
+        : '';
+    const qs = new URLSearchParams({ v: String(Date.now()) });
+    if (token) qs.set('token', token);
+    const url = `/order/${encodeURIComponent(orderId)}?${qs.toString()}`;
     window.location.href = url;
   }, [orderId, redirecting]);
 

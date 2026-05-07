@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getOrderById, getOrderDetailsUrl } from '@/lib/orders';
+import { getOrderById, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 /**
@@ -32,7 +32,8 @@ export async function runStripePostPaymentSuccessHooks(params: {
   const updatedOrder = await getOrderById(orderId);
   if (!updatedOrder) return;
 
-  const publicOrderUrl = getOrderDetailsUrl(orderId);
+  const publicToken = await getOrderPublicToken(orderId);
+  const publicOrderUrl = getOrderDetailsUrl(orderId, { token: publicToken });
   void sendAdminNewOrderNotificationOnce(orderId).catch((e) => {
     console.error('[stripe/postPayment] Admin new-order notification failed:', e);
   });

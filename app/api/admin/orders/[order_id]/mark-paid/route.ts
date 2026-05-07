@@ -115,9 +115,11 @@ export async function PATCH(
 
   // Payment-confirmation only: customer email. No admin email here (admin is notified once at order placement).
   const trimmedId = order_id.trim();
-  getOrderById(trimmedId).then((fullOrder) => {
+  getOrderById(trimmedId).then(async (fullOrder) => {
     if (!fullOrder) return;
-    const detailsUrl = getOrderDetailsUrl(trimmedId);
+    const { getOrderPublicToken } = await import('@/lib/orders');
+    const publicToken = await getOrderPublicToken(trimmedId);
+    const detailsUrl = getOrderDetailsUrl(trimmedId, { token: publicToken });
     sendCustomerConfirmationEmail(fullOrder, detailsUrl).catch((e) =>
       console.error('[admin/mark-paid] Customer confirmation email failed:', e)
     );

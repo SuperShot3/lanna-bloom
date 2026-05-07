@@ -81,7 +81,10 @@ export default async function CatalogPage({
   let products: CatalogProduct[] = [];
 
   if (topCategory === 'flowers') {
-    const data = await getBouquetsCatalogData(filterParams);
+    const data = await getBouquetsCatalogData({
+      ...filterParams,
+      catalogDeliveryDestination: 'CHIANG_MAI',
+    });
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
   } else if (topCategory === 'plushy_toys') {

@@ -50,6 +50,7 @@ export function ConfirmationPendingClient({
   const { clearCart } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
   const [orderId, setOrderId] = useState(initialOrderId);
+  const [publicToken, setPublicToken] = useState<string | null>(null);
   const [stripeStatus, setStripeStatus] = useState<'processing' | 'paid' | 'payment_failed' | null>(
     sessionId ? 'processing' : null
   );
@@ -75,6 +76,9 @@ export function ConfirmationPendingClient({
         if (typeof data.orderId === 'string' && data.orderId.trim()) {
           setOrderId(data.orderId.trim());
         }
+        if (typeof data.token === 'string' && data.token.trim()) {
+          setPublicToken(data.token.trim());
+        }
         if (data.status === 'paid' && data.order) {
           setOrder(data.order);
           setOrderId(data.order.orderId);
@@ -99,8 +103,14 @@ export function ConfirmationPendingClient({
   useEffect(() => {
     if (!sessionId || stripeStatus !== 'paid' || !orderId || redirectingRef.current) return;
     redirectingRef.current = true;
-    window.location.href = `/order/${encodeURIComponent(orderId)}`;
-  }, [sessionId, stripeStatus, orderId]);
+    const token =
+      publicToken?.trim() ||
+      (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+      '';
+    const qs = new URLSearchParams();
+    if (token) qs.set('token', token);
+    window.location.href = `/order/${encodeURIComponent(orderId)}${qs.toString() ? `?${qs.toString()}` : ''}`;
+  }, [sessionId, stripeStatus, orderId, publicToken]);
 
   // Fetch order only when no sessionId (manual path) or when we need it for redirect target
   useEffect(() => {
@@ -127,7 +137,13 @@ export function ConfirmationPendingClient({
         const data = await res.json().catch(() => ({}));
         if (isPaidStatus(data.payment_status)) {
           redirectingRef.current = true;
-          window.location.href = `/order/${encodeURIComponent(orderId)}`;
+          const token =
+            publicToken?.trim() ||
+            (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+            '';
+          const qs = new URLSearchParams();
+          if (token) qs.set('token', token);
+          window.location.href = `/order/${encodeURIComponent(orderId)}${qs.toString() ? `?${qs.toString()}` : ''}`;
         }
       } catch {
         // ignore
@@ -163,6 +179,7 @@ export function ConfirmationPendingClient({
         try {
           window.localStorage.removeItem(CART_FORM_STORAGE_KEY);
           window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
+            if (publicToken) window.localStorage.setItem('lanna-bloom-last-order-token', publicToken);
         } catch {
           // ignore
         }
@@ -176,12 +193,13 @@ export function ConfirmationPendingClient({
         if (typeof window !== 'undefined') {
           window.localStorage.removeItem(CART_FORM_STORAGE_KEY);
           if (orderId) window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
+          if (publicToken) window.localStorage.setItem('lanna-bloom-last-order-token', publicToken);
         }
       } catch {
         // ignore
       }
     }
-  }, [clearCart, orderId, sessionId, stripeStatus]);
+  }, [clearCart, orderId, sessionId, stripeStatus, publicToken]);
 
   if (stripeStatus === 'payment_failed') {
     return (

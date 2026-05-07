@@ -24,6 +24,7 @@ import {
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -66,10 +67,15 @@ export function BouquetCard({
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
+  const tProduct = translations[lang].product;
   const pathname = usePathname();
   const router = useRouter();
   const { addItem } = useCart();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
+  const availableForDestination = bouquetIsAvailableForDestination(
+    bouquet,
+    checkoutProfile.destinationId
+  );
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minPrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
@@ -145,6 +151,7 @@ export function BouquetCard({
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       if (!selectedSize || selectedSize.availability === false) return;
+      if (!bouquetIsAvailableForDestination(bouquet, checkoutProfile.destinationId)) return;
       const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
       addItem(
         {
@@ -156,6 +163,7 @@ export function BouquetCard({
           imageUrl: imgSrc || bouquet.images?.[0],
           size: selectedSize,
           addOns: getDefaultAddOns(),
+          excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
         },
         1
       );
@@ -181,7 +189,7 @@ export function BouquetCard({
         router.push(`/${lang}/cart`);
       }
     },
-    [addItem, bouquet, imgSrc, lang, router, selectedSize]
+    [addItem, bouquet, checkoutProfile.destinationId, imgSrc, lang, router, selectedSize]
   );
 
   const touchStartX = useRef<number | null>(null);
@@ -445,7 +453,13 @@ export function BouquetCard({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <button type="button" className="card-mobile-buy" onClick={() => pushToCart('checkout')}>
+          <button
+            type="button"
+            className="card-mobile-buy"
+            disabled={!availableForDestination}
+            title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+            onClick={() => pushToCart('checkout')}
+          >
             <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
               bolt
             </span>
@@ -454,6 +468,8 @@ export function BouquetCard({
           <button
             type="button"
             className="card-mobile-cart"
+            disabled={!availableForDestination && !justAdded}
+            title={!availableForDestination && !justAdded ? tProduct.unavailableInDeliveryArea : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <span className="material-symbols-outlined" aria-hidden>
@@ -526,10 +542,22 @@ export function BouquetCard({
               </>
             ) : (
               <>
-                <button type="button" className="card-hover-btn-cart" onClick={() => pushToCart('stay')}>
+                <button
+                  type="button"
+                  className="card-hover-btn-cart"
+                  disabled={!availableForDestination}
+                  title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+                  onClick={() => pushToCart('stay')}
+                >
                   {tCart.addToCart}
                 </button>
-                <button type="button" className="card-hover-buy-1" onClick={() => pushToCart('checkout')}>
+                <button
+                  type="button"
+                  className="card-hover-buy-1"
+                  disabled={!availableForDestination}
+                  title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+                  onClick={() => pushToCart('checkout')}
+                >
                   {t.buyInOneClick}
                 </button>
               </>

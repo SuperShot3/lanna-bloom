@@ -21,6 +21,7 @@ import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
 export function ProductOrderBlock({
   bouquet,
@@ -50,6 +51,11 @@ export function ProductOrderBlock({
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
+  const tProduct = translations[lang].product;
+  const availableForDestination = bouquetIsAvailableForDestination(
+    bouquet,
+    checkoutProfile.destinationId
+  );
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
@@ -72,6 +78,7 @@ export function ProductOrderBlock({
         imageUrl: selectedImageUrl ?? bouquet.images?.[0],
         size: selectedSize,
         addOns: { ...addOns },
+        excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
       },
       qty
     );
@@ -161,10 +168,16 @@ export function ProductOrderBlock({
             </div>
           )}
           <TrustBadges lang={lang} />
+          {!availableForDestination && (
+            <p className="order-destination-block-notice" role="alert">
+              {tProduct.unavailableInDeliveryArea}
+            </p>
+          )}
           <button
             type="button"
             className="order-add-to-cart-btn"
             onClick={handleAddToCart}
+            disabled={!availableForDestination}
           >
             {t.addToCart} — ฿{totalPrice.toLocaleString()}
           </button>
@@ -269,6 +282,21 @@ export function ProductOrderBlock({
         .order-add-to-cart-btn:focus-visible {
           outline: 2px solid var(--accent);
           outline-offset: 2px;
+        }
+        .order-add-to-cart-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .order-destination-block-notice {
+          margin: 12px 0 0;
+          padding: 12px 14px;
+          font-size: 0.9rem;
+          line-height: 1.45;
+          color: var(--text);
+          background: #fff5f0;
+          border: 1px solid #e8c4b8;
+          border-radius: var(--radius-sm);
         }
         .order-added-confirm {
           margin-top: 20px;

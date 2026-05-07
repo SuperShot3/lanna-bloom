@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { getOrderById, type Order } from '@/lib/orders';
+import { getOrderById, getOrderDetailsUrl, getOrderPublicToken, type Order } from '@/lib/orders';
 import { renderTemplate } from './renderTemplate';
 import { buildOrderTemplateVariables } from './variablesFromOrder';
 import { sendOutboxViaResend } from './sendOutboxEmail';
@@ -163,7 +163,10 @@ export async function getOrCreateDeliveredOutboxDraft(
     return null;
   }
 
-  const raw = buildOrderTemplateVariables(order);
+  const publicToken = await getOrderPublicToken(order.orderId);
+  const raw = buildOrderTemplateVariables(order, {
+    orderDetailsPath: getOrderDetailsUrl(order.orderId, { token: publicToken }),
+  });
   const rendered = renderTemplate(tpl.subject_template, tpl.html_template, tpl.text_template, raw);
   if (!rendered.subject || !rendered.html) {
     return null;
@@ -208,7 +211,10 @@ export async function renderDeliveredPreviewForOrder(
   if (!order) return null;
   const tpl = await getTemplate('order_delivered');
   if (!tpl) return null;
-  const raw = buildOrderTemplateVariables(order);
+  const publicToken = await getOrderPublicToken(order.orderId);
+  const raw = buildOrderTemplateVariables(order, {
+    orderDetailsPath: getOrderDetailsUrl(order.orderId, { token: publicToken }),
+  });
   const rendered = renderTemplate(tpl.subject_template, tpl.html_template, tpl.text_template, raw);
   return {
     subject: rendered.subject,

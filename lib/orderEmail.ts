@@ -7,7 +7,7 @@
  */
 
 import { Resend } from 'resend';
-import { getBaseUrl, getOrderDetailsUrl, type Order } from '@/lib/orders';
+import { getBaseUrl, getOrderDetailsUrl, getOrderPublicToken, type Order } from '@/lib/orders';
 import { formatInternationalPhoneAdmin } from '@/lib/admin/orderSummaryPlainText';
 import { formatShopDateTime } from '@/lib/shopTime';
 import { buildOrderTemplateVariables } from '@/lib/email/variablesFromOrder';
@@ -57,7 +57,8 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
   const env = getEnv();
   if (!env) return;
 
-  const customerOrderUrl = getOrderDetailsUrl(orderId);
+  const publicToken = await getOrderPublicToken(orderId);
+  const customerOrderUrl = getOrderDetailsUrl(orderId, { token: publicToken });
   const adminOrderUrl = `${getBaseUrl()}/admin/orders/${encodeURIComponent(orderId)}`;
   const subject = `New order placed — ${orderId}`;
   const body = `A new order was created. Order ID: ${orderId}`;
@@ -413,7 +414,8 @@ export async function sendAdminPaymentFailedEmail(
   const env = getEnv();
   if (!env) return true;
 
-  const orderUrl = getOrderDetailsUrl(orderId);
+  const publicToken = await getOrderPublicToken(orderId);
+  const orderUrl = getOrderDetailsUrl(orderId, { token: publicToken });
   const reasonLabel =
     reason === 'async_payment_failed' ? 'async payment failed (e.g. PromptPay)' : 'checkout session expired (likely card decline / abandonment)';
   const subject = `Payment failed — order ${orderId}`;

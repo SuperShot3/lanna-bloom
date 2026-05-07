@@ -1,4 +1,10 @@
 import { defineType, defineArrayMember } from 'sanity';
+import { MARKETS } from '@/lib/delivery/markets';
+
+const DESTINATION_EXCLUSION_LIST = [
+  { title: 'Chiang Mai', value: 'CHIANG_MAI' as const },
+  ...MARKETS.map((m) => ({ title: m.customerFacingNameEn, value: m.destinationId })),
+].filter((entry, i, arr) => arr.findIndex((e) => e.value === entry.value) === i);
 
 const PRODUCT_KINDS = [
   { title: 'Legacy (S/M/L/XL tiers)', value: 'legacy' },
@@ -100,6 +106,18 @@ export const bouquet = defineType({
           { title: 'Next day', value: 'next_day' },
         ],
       },
+    },
+    {
+      name: 'excludedDeliveryDestinations',
+      title: 'Not available in these provinces / markets',
+      type: 'array',
+      of: [{ type: 'string' }],
+      options: {
+        list: [...DESTINATION_EXCLUSION_LIST],
+        layout: 'grid',
+      },
+      description:
+        'Leave empty to sell everywhere. Check a province to block this bouquet there (e.g. Chiang Mai only: check all expansion markets below).',
     },
     {
       name: 'presentationFormats',

@@ -71,11 +71,13 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
         const data = (await res.json().catch(() => ({}))) as {
           status?: string;
           orderId?: string | null;
+          token?: string | null;
           order?: OrderCustomerView;
         };
         if (cancelled) return;
         if (data.status === 'paid' && typeof data.orderId === 'string' && data.orderId.trim()) {
           const oid = data.orderId.trim();
+          const publicToken = typeof data.token === 'string' ? data.token.trim() : '';
           
           setSuccess(true);
 
@@ -108,14 +110,19 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
           }
 
           const token = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
-          let qs = '';
+          const qs = new URLSearchParams();
           if (token && /^[0-9a-fA-F-]+$/.test(token) && token.length >= 8) {
             markCheckoutSubmissionCompleted(token);
-            qs = `?checkout_token=${encodeURIComponent(token)}`;
+            qs.set('checkout_token', token);
+          }
+          if (publicToken) {
+            qs.set('token', publicToken);
           }
           try {
             localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
             localStorage.removeItem(CART_FORM_STORAGE_KEY);
+            localStorage.setItem('lanna-bloom-last-order-id', oid);
+            if (publicToken) localStorage.setItem('lanna-bloom-last-order-token', publicToken);
           } catch {
             // ignore
           }
@@ -124,7 +131,8 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
           await Promise.all([trackingPurchase.catch(() => undefined), redirectDelay]);
           setTimeout(() => {
             if (!cancelled) {
-              window.location.replace(`/order/${encodeURIComponent(oid)}${qs}`);
+              const query = qs.toString();
+              window.location.replace(`/order/${encodeURIComponent(oid)}${query ? `?${query}` : ''}`);
             }
           }, 0);
 

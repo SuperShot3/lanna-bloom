@@ -48,7 +48,10 @@ export default async function MarketCatalogPageViaSlug({
   let products: CatalogProduct[] = [];
 
   if (topCategory === 'flowers') {
-    const data = await getBouquetsCatalogData(filterParams);
+    const data = await getBouquetsCatalogData({
+      ...filterParams,
+      catalogDeliveryDestination: market.destinationId,
+    });
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
   } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {

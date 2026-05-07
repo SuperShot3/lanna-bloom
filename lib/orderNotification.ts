@@ -132,7 +132,9 @@ export async function sendPaymentFailedNotificationsOnce(params: {
     if (!order) {
       customerOk = false;
     } else {
-      const retryUrl = getOrderDetailsUrl(trimmedId);
+      const { getOrderPublicToken } = await import('@/lib/orders');
+      const publicToken = await getOrderPublicToken(trimmedId);
+      const retryUrl = getOrderDetailsUrl(trimmedId, { token: publicToken });
       const lang = params.lang === 'th' ? 'th' : 'en';
       customerOk = await sendCustomerPaymentFailedEmail(order, retryUrl, lang);
       void sendAdminPaymentFailedEmail(trimmedId, params.reason, order.customerEmail).catch(

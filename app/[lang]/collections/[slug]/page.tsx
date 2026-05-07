@@ -138,7 +138,10 @@ export default async function CollectionLandingPage({
   })}`;
 
   const [allBouquets, plushyToys, balloons] = await Promise.all([
-    getBouquetsFilteredFromSanity(page.filters),
+    getBouquetsFilteredFromSanity({
+      ...page.filters,
+      catalogDeliveryDestination: 'CHIANG_MAI',
+    }),
     getPlushyToysFilteredFromSanity({ sort: 'newest' }),
     getBalloonsFilteredFromSanity({ sort: 'newest' }),
   ]);

@@ -3,6 +3,7 @@ import {
   getPopularCatalogItemsFromSanityPaginated,
   getBouquetsFromSanityPaginated,
 } from '@/lib/sanity';
+import { DELIVERY_DESTINATIONS, type DeliveryDestinationId } from '@/lib/delivery/markets';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,13 @@ export async function GET(request: NextRequest) {
 
     const kind = searchParams.get('kind');
     if (kind === 'bouquets') {
-      const bouquets = await getBouquetsFromSanityPaginated(offset, limit);
+      const destRaw = searchParams.get('destination')?.trim() ?? '';
+      const destination: DeliveryDestinationId = (
+        DELIVERY_DESTINATIONS as readonly string[]
+      ).includes(destRaw)
+        ? (destRaw as DeliveryDestinationId)
+        : 'CHIANG_MAI';
+      const bouquets = await getBouquetsFromSanityPaginated(offset, limit, destination);
       const hasMore = bouquets.length === limit;
       return NextResponse.json({ bouquets, hasMore });
     }

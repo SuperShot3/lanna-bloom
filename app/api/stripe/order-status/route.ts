@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getOrderById, getOrderByStripeSessionId } from '@/lib/orders';
+import { getOrderById, getOrderByStripeSessionId, getOrderPublicToken } from '@/lib/orders';
 import { getOrderIdFromStripeMetadata } from '@/lib/stripe/metadata';
 import { resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
@@ -84,6 +84,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const publicToken = await getOrderPublicToken(orderId);
+    const safeOrder = {
+      orderId: order.orderId,
+      status: order.status,
+      items: order.items,
+      pricing: order.pricing,
+      referralDiscount: order.referralDiscount,
+      currency: (order as any).currency,
+    };
+
     const status = order.status ?? 'processing';
     console.log('[stripe/order-status] backend order state', {
       sessionId: session.id,
@@ -95,7 +105,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (status === 'paid' || status === 'payment_failed') {
-      return NextResponse.json({ status, order, orderId });
+      return NextResponse.json({ status, order: safeOrder, orderId, token: publicToken });
     }
 
     if (session.payment_status === 'paid' || paymentIntent?.status === 'succeeded') {
@@ -111,6 +121,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: 'processing',
       orderId,
+      token: publicToken,
       stripePaymentStatus: session.payment_status,
       paymentIntentStatus: paymentIntent?.status ?? null,
     });

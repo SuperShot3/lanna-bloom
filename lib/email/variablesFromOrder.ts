@@ -28,7 +28,7 @@ export function buildOrderTemplateVariables(
   options?: { orderDetailsPath?: string; baseOverride?: string }
 ): Record<string, string> {
   const base = (options?.baseOverride ?? getBaseUrl()).replace(/\/$/, '');
-  const detailsUrl = getOrderDetailsUrl(order.orderId);
+  const detailsUrl = options?.orderDetailsPath?.trim() ? options.orderDetailsPath.trim() : getOrderDetailsUrl(order.orderId);
   const links = getDefaultSocialLinks();
   const brandHeader = getEmailBrandHeaderHtml(links);
   const logoUrl = getEmailBrandLogoUrl();

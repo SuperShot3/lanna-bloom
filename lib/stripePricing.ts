@@ -19,6 +19,7 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -236,6 +237,13 @@ export async function computeOrderTotals(
         (await getBouquetById(item.bouquetId));
       if (!bouquet) {
         return { ok: false, message: `Bouquet not found: ${item.bouquetId}` };
+      }
+
+      if (!bouquetIsAvailableForDestination(bouquet, delivery.deliveryDestination)) {
+        return {
+          ok: false,
+          message: 'This bouquet is not available for delivery to the selected province or market.',
+        };
       }
 
       const size =

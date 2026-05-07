@@ -1,4 +1,5 @@
 import type { BouquetSellableOption, ProductKind, SizeKey } from '@/lib/bouquetOptions';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
 export type { BouquetSellableOption, ProductKind, SizeKey } from '@/lib/bouquetOptions';
 /** @deprecated use BouquetSellableOption */
@@ -22,6 +23,8 @@ export interface Bouquet {
   occasion?: string[];
   /** Catalog facets */
   deliveryOptions?: string[];
+  /** Provinces/markets where this bouquet must not be sold (empty = all destinations). */
+  excludedDeliveryDestinations?: DeliveryDestinationId[];
   presentationFormats?: string[];
   images: string[];
   imageAlts?: string[];

@@ -107,7 +107,17 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <p className="admin-hint">Order details from Supabase</p>
         </div>
         <div className="admin-header-actions">
-          <Link href={`/order/${order.order_id}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-outline">
+          <Link
+            href={(() => {
+              // Public order page now requires ?token=
+              // Keep server-side to avoid exposing admin queries to the client.
+              const base = `/order/${encodeURIComponent(order.order_id)}`;
+              return order.public_token ? `${base}?token=${encodeURIComponent(String(order.public_token))}` : base;
+            })()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-btn admin-btn-outline"
+          >
             View public page
           </Link>
         </div>

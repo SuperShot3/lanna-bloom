@@ -11,6 +11,11 @@ import {
   type StemBucketKey,
 } from './bouquetOptions';
 import { PRODUCT_CATEGORIES } from './catalogCategories';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import {
+  bouquetIsAvailableForDestination,
+  parseExcludedDeliveryDestinations,
+} from '@/lib/bouquetDestinationAvailability';
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
@@ -102,6 +107,7 @@ type SanityBouquet = {
     availability?: boolean;
   }>;
   deliveryOptions?: string[];
+  excludedDeliveryDestinations?: string[];
   presentationFormats?: string[];
   colors?: string[];
   flowerTypes?: string[];
@@ -224,6 +230,7 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     colors: Array.isArray(doc.colors) ? doc.colors : [],
     flowerTypes: Array.isArray(doc.flowerTypes) ? doc.flowerTypes : [],
     deliveryOptions: Array.isArray(doc.deliveryOptions) ? doc.deliveryOptions : undefined,
+    excludedDeliveryDestinations: parseExcludedDeliveryDestinations(doc.excludedDeliveryDestinations),
     presentationFormats: Array.isArray(doc.presentationFormats) ? doc.presentationFormats : undefined,
     occasion: (() => {
       const o = doc.occasion;
@@ -258,6 +265,7 @@ const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "a
   fixedVariants,
   customTiers,
   deliveryOptions,
+  excludedDeliveryDestinations,
   presentationFormats,
   colors,
   flowerTypes,
@@ -281,6 +289,7 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   fixedVariants,
   customTiers,
   deliveryOptions,
+  excludedDeliveryDestinations,
   presentationFormats,
   colors,
   flowerTypes,
@@ -305,7 +314,7 @@ export async function getBouquetsFromSanity(): Promise<Bouquet[]> {
   }
 }
 
-const bouquetsPaginatedQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved")] | order(nameEn asc) [$start...$end] {
+const bouquetsPaginatedProjection = `
   _id,
   slug,
   nameEn,
@@ -319,19 +328,33 @@ const bouquetsPaginatedQuery = `*[_type == "bouquet" && (!defined(status) || sta
   fixedVariants,
   customTiers,
   deliveryOptions,
+  excludedDeliveryDestinations,
   presentationFormats,
   colors,
   flowerTypes,
   occasion,
   images,
   sizes
+`;
+
+/** Paginated list for a storefront destination (excludes bouquets that block this province). */
+const bouquetsPaginatedForDestinationQuery = `*[_type == "bouquet" && (!defined(status) || status == "approved") && (!(defined(excludedDeliveryDestinations) && $dest in excludedDeliveryDestinations))] | order(nameEn asc) [$start...$end] {
+  ${bouquetsPaginatedProjection}
 }`;
 
-/** Full catalog paginated (same order as getBouquetsFromSanity). For home "Show more" and API. */
-export async function getBouquetsFromSanityPaginated(start: number, limit: number): Promise<Bouquet[]> {
+/** Full catalog paginated for home / API / market pages. */
+export async function getBouquetsFromSanityPaginated(
+  start: number,
+  limit: number,
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<Bouquet[]> {
   try {
     const end = start + limit;
-    const docs = await client.fetch<SanityBouquet[]>(bouquetsPaginatedQuery, { start, end });
+    const docs = await client.fetch<SanityBouquet[]>(bouquetsPaginatedForDestinationQuery, {
+      start,
+      end,
+      dest: catalogDestination,
+    });
     return (docs ?? []).map(mapToBouquet);
   } catch (err) {
     console.error('[Sanity] getBouquetsFromSanityPaginated failed:', err);
@@ -365,6 +388,7 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   fixedVariants,
   customTiers,
   deliveryOptions,
+  excludedDeliveryDestinations,
   presentationFormats,
   colors,
   flowerTypes,
@@ -482,7 +506,9 @@ export async function getHeroCarouselImagesFromSanity(): Promise<string[]> {
 async function getOrderedPopularBouquetsFromSanity(): Promise<Bouquet[]> {
   try {
     const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
-    const bouquets = (docs ?? []).map(mapToBouquet);
+    const bouquets = (docs ?? [])
+      .map(mapToBouquet)
+      .filter((b) => bouquetIsAvailableForDestination(b, 'CHIANG_MAI'));
     if (bouquets.length === 0) return [];
 
     const interleaved = buildInterleavedPopularBouquets(bouquets);
@@ -618,6 +644,8 @@ export interface CatalogFilterParams {
   delivery?: string[];
   formats?: string[];
   stemBucket?: StemBucketKey;
+  /** When set, hide bouquets excluded for this province/market (facet counts use the same pool). */
+  catalogDeliveryDestination?: DeliveryDestinationId;
 }
 
 /** Catalog product (non-flower) for display — matches BouquetCard-like shape */
@@ -667,6 +695,7 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   fixedVariants,
   customTiers,
   deliveryOptions,
+  excludedDeliveryDestinations,
   presentationFormats,
   colors,
   flowerTypes,
@@ -720,7 +749,11 @@ async function fetchBouquetsCatalogFiltered(params: CatalogFilterParams): Promis
   allBouquets: Bouquet[];
 }> {
   const docs = await client.fetch<SanityBouquetWithCreated[]>(catalogAllQuery);
-  const allBouquets = dedupeBouquetsById((docs ?? []).map((d) => mapToBouquet(d)));
+  let allBouquets = dedupeBouquetsById((docs ?? []).map((d) => mapToBouquet(d)));
+  const dest = params.catalogDeliveryDestination;
+  if (dest) {
+    allBouquets = allBouquets.filter((b) => bouquetIsAvailableForDestination(b, dest));
+  }
   let filtered = allBouquets.filter((b) => matchesFilters(b, params));
 
   const sort = params.sort || 'newest';
@@ -831,7 +864,7 @@ export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
-        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
+        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
         colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
       { partnerId }
@@ -849,7 +882,7 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
     const doc = await client.fetch<SanityBouquet | null>(
       `*[_type == "bouquet" && _id == $id][0] {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
-        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
+        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
         colors, flowerTypes, occasion, partner, status, images, sizes
       }`,
       { id: bouquetId }
@@ -868,7 +901,7 @@ export async function getPendingBouquets(): Promise<Bouquet[]> {
     const docs = await client.fetch<SanityBouquet[]>(
       `*[_type == "bouquet" && status == "pending_review"] | order(_createdAt desc) {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
-        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, presentationFormats,
+        productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
         colors, flowerTypes, occasion, partner, status, images, sizes
       }`
     );

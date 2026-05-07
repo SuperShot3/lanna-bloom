@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getOrderById, getBaseUrl } from '@/lib/orders';
+import { getOrderById, getBaseUrl, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
@@ -87,8 +87,13 @@ export async function POST(request: NextRequest) {
     referralDiscount,
   });
 
-  const successUrl = stripeOrderSuccessUrl(baseUrl, orderId);
-  const cancelUrl = `${baseUrl}/order/${encodeURIComponent(orderId)}`;
+  const publicToken = await getOrderPublicToken(orderId);
+  const baseSuccessUrl = stripeOrderSuccessUrl(baseUrl, orderId);
+  const successUrl =
+    publicToken && publicToken.trim()
+      ? `${baseSuccessUrl}&token=${encodeURIComponent(publicToken.trim())}`
+      : baseSuccessUrl;
+  const cancelUrl = getOrderDetailsUrl(orderId, { token: publicToken });
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'payment',

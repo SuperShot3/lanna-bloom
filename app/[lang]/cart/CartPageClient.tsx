@@ -38,6 +38,7 @@ import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
+import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
 import {
@@ -67,6 +68,24 @@ function cartViolatesExpansionRules(
   for (const item of cartItems) {
     if (isNonBouquetCartLine(item)) return true;
     if (getAddOnsTotal(item.addOns?.productAddOns ?? {}) > 0) return true;
+  }
+  return false;
+}
+
+function cartViolatesDestinationBouquetRules(
+  cartItems: CartItem[],
+  destinationId: OrderDeliveryDestinationId
+): boolean {
+  for (const item of cartItems) {
+    if (isNonBouquetCartLine(item)) continue;
+    if (
+      !bouquetIsAvailableForDestination(
+        { excludedDeliveryDestinations: item.excludedDeliveryDestinations },
+        destinationId
+      )
+    ) {
+      return true;
+    }
   }
   return false;
 }
@@ -697,6 +716,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const itemsTotalVal = cartValue(items, delivery.deliveryDestination);
   const cartExpansionInvalid = cartViolatesExpansionRules(items, delivery.deliveryDestination);
+  const cartDestinationBouquetInvalid = cartViolatesDestinationBouquetRules(
+    items,
+    delivery.deliveryDestination
+  );
   const hasDeliveryZone =
     !!delivery.deliveryZoneId &&
     isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId);
@@ -726,7 +749,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     t as Record<string, string | number>
   );
   const isPaymentUnlocked =
-    isDeliveryValidNow && isContactValidNow && !cartExpansionInvalid;
+    isDeliveryValidNow &&
+    isContactValidNow &&
+    !cartExpansionInvalid &&
+    !cartDestinationBouquetInvalid;
 
   /** Returns the first incomplete field's name for the sticky bar lock message. */
   const getFirstIncompleteHint = (): string => {
@@ -741,6 +767,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return lang === 'th'
         ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบสินค้าอื่นออกจากตะกร้า'
         : 'This area delivers flower bouquets only — remove other items from your bag';
+    }
+    if (cartDestinationBouquetInvalid) {
+      return String(
+        (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
+          'Some bouquets are not available for this delivery region.'
+      );
     }
     const addressTrim = delivery.addressLine?.trim() ?? '';
     if (addressTrim.length < 10) {
@@ -1052,6 +1084,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       );
       return;
     }
+    if (cartDestinationBouquetInvalid) {
+      setOrderError(
+        String(
+          (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
+            'Some bouquets are not available for this delivery region.'
+        )
+      );
+      return;
+    }
     if (!checkoutSubmissionToken) {
       setOrderError(
         lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
@@ -1117,6 +1158,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   if (alreadySubmittedBlock) {
     const lastOrderId =
       typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-id') : null;
+    const lastOrderToken =
+      typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : null;
     const th = lang === 'th';
     return (
       <div className="cart-page" style={{ padding: '48px 20px' }}>
@@ -1139,7 +1182,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {lastOrderId && (
               <Link
-                href={`/order/${encodeURIComponent(lastOrderId)}`}
+                href={
+                  lastOrderToken?.trim()
+                    ? `/order/${encodeURIComponent(lastOrderId)}?token=${encodeURIComponent(lastOrderToken.trim())}`
+                    : `/order/${encodeURIComponent(lastOrderId)}`
+                }
                 className="btn-primary"
                 style={{ textAlign: 'center', padding: '14px 20px', fontWeight: 600 }}
               >
@@ -1449,6 +1496,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             {lang === 'th'
               ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบของเล่น ลูกโป่ง หรือสินค้าอื่นออกจากตะกร้าก่อนชำระเงิน'
               : 'This area delivers flower bouquets only — remove toys, balloons, or other non-flower items before checkout.'}
+          </p>
+        )}
+        {cartDestinationBouquetInvalid && items.length > 0 && (
+          <p className="cart-expansion-block-notice" role="alert">
+            {String(
+              (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
+                (lang === 'th'
+                  ? 'มีช่อในตะกร้าที่จัดส่งในพื้นที่นี้ไม่ได้'
+                  : 'Some bouquets in your bag are not available for this delivery region.')
+            )}
           </p>
         )}
         <div className="cart-mobile-view">

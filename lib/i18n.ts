@@ -303,6 +303,8 @@ export const translations = {
       shareLink: 'Share or copy product link',
       shareLinkCopied: 'Link copied',
       shareLinkCopyFailed: 'Could not copy link',
+      unavailableInDeliveryArea:
+        'This bouquet is not available for delivery to your selected area. Choose another bouquet or change delivery region.',
     },
     careGuide: {
       title: 'Bouquet Care Guide',
@@ -495,6 +497,8 @@ export const translations = {
       orderLookupRequired: 'Enter your phone number or order ID',
       chooseBouquet: 'Choose bouquet',
       orderStatus: 'Status',
+      destinationBouquetConflict:
+        'Some bouquets in your bag are not available for the delivery region you selected. Remove those lines or change your delivery region.',
     },
     acceptedPayments: 'Accepted payments',
     trustBadges: {
@@ -1355,6 +1359,8 @@ export const translations = {
       shareLink: 'แชร์หรือคัดลอกลิงก์สินค้า',
       shareLinkCopied: 'คัดลอกลิงก์แล้ว',
       shareLinkCopyFailed: 'คัดลอกลิงก์ไม่สำเร็จ',
+      unavailableInDeliveryArea:
+        'ช่อนี้ไม่สามารถจัดส่งในพื้นที่ที่คุณเลือกได้ กรุณาเลือกช่ออื่นหรือเปลี่ยนพื้นที่จัดส่ง',
     },
     careGuide: {
       title: 'คู่มือดูแลช่อดอกไม้',
@@ -1547,6 +1553,8 @@ export const translations = {
       orderLookupRequired: 'กรอกเบอร์โทรศัพท์หรือรหัสออเดอร์',
       chooseBouquet: 'เลือกช่อดอกไม้',
       orderStatus: 'สถานะ',
+      destinationBouquetConflict:
+        'มีช่อในตะกร้าที่จัดส่งในพื้นที่ที่คุณเลือกไม่ได้ กรุณาลบรายการนั้นหรือเปลี่ยนพื้นที่จัดส่ง',
     },
     acceptedPayments: 'รับชำระเงินผ่าน',
     trustBadges: {

@@ -38,6 +38,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [successOrderUrl, setSuccessOrderUrl] = useState<string | null>(null);
   const [recipientPhoneDigits, setRecipientPhoneDigits] = useState('');
   const [yourPhoneDigits, setYourPhoneDigits] = useState('');
   const [selectedDestination, setSelectedDestination] = useState<DeliveryDestinationId>('CHIANG_MAI');
@@ -225,6 +226,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         orderId?: string;
+        publicOrderUrl?: string;
       };
       if (!res.ok) {
         setSubmitError(typeof data.error === 'string' ? data.error : t.submitError);
@@ -232,6 +234,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
       }
       if (data.orderId) {
         setSuccessOrderId(data.orderId);
+        setSuccessOrderUrl(typeof data.publicOrderUrl === 'string' ? data.publicOrderUrl : null);
         form.reset();
         setRecipientPhoneDigits('');
         setYourPhoneDigits('');
@@ -260,7 +263,10 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         {successOrderId && (
           <div className="co-success" role="status">
             <p className="co-success-text">{t.submitSuccess}</p>
-            <Link href={`/order/${encodeURIComponent(successOrderId)}`} className="co-success-link">
+            <Link
+              href={successOrderUrl || `/order/${encodeURIComponent(successOrderId)}`}
+              className="co-success-link"
+            >
               {t.submitSuccessViewOrder} →
             </Link>
           </div>

@@ -1,5 +1,6 @@
 import { unstable_noStore } from 'next/cache';
-import { getOrderById, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
+import { notFound } from 'next/navigation';
+import { getOrderByIdWithPublicToken, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
 import { OrderPageClient } from '@/components/order/OrderPageClient';
@@ -29,26 +30,26 @@ function isPaymentConfirmed(
 
 export default async function OrderDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ orderId: string }>;
+  searchParams?: Promise<{ token?: string | string[] }>;
 }) {
   unstable_noStore();
   const { orderId } = await params;
   const normalized = orderId?.trim() ?? '';
-  const order = await getOrderById(normalized);
+  const sp = (await searchParams) ?? {};
+  const tokenRaw = sp?.token;
+  const token =
+    typeof tokenRaw === 'string' ? tokenRaw.trim() : Array.isArray(tokenRaw) ? tokenRaw[0]?.trim() : '';
+  if (!token) notFound();
+
+  const order = await getOrderByIdWithPublicToken(normalized, token);
   const t = translations[defaultLocale].orderPage;
 
-  if (!order) {
-    return (
-      <div className="order-page">
-        <div className="container">
-          <OrderNotFoundBlock orderId={normalized || orderId} t={t} locale={defaultLocale} />
-        </div>
-      </div>
-    );
-  }
+  if (!order) notFound();
 
-  const detailsUrl = getOrderDetailsUrl(order.orderId);
+  const detailsUrl = getOrderDetailsUrl(order.orderId, { token });
   const baseUrl = getBaseUrl();
 
   const supabasePayment = await getSupabasePaymentStatusByOrderId(order.orderId);

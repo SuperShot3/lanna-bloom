@@ -3,15 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BouquetCard } from '@/components/BouquetCard';
 import type { Bouquet } from '@/lib/bouquets';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { Locale } from '@/lib/i18n';
 
 const PAGE_SIZE = 8;
 
 export function MarketBouquetsShowcase({
   lang,
+  catalogDestination,
   initialBouquets,
 }: {
   lang: Locale;
+  catalogDestination: DeliveryDestinationId;
   initialBouquets: Bouquet[];
 }) {
   const [items, setItems] = useState<Bouquet[]>(initialBouquets);
@@ -25,7 +28,9 @@ export function MarketBouquetsShowcase({
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/bouquets?kind=bouquets&offset=${items.length}&limit=${PAGE_SIZE}`
+        `/api/bouquets?kind=bouquets&destination=${encodeURIComponent(
+          catalogDestination
+        )}&offset=${items.length}&limit=${PAGE_SIZE}`
       );
       if (!res.ok) return;
       const data = (await res.json()) as { bouquets?: Bouquet[]; hasMore?: boolean };
@@ -36,7 +41,7 @@ export function MarketBouquetsShowcase({
       fetchingRef.current = false;
       setLoading(false);
     }
-  }, [items.length, hasMore]);
+  }, [items.length, hasMore, catalogDestination]);
 
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
