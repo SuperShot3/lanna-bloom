@@ -125,11 +125,16 @@ export function OrderPageClient({
     let cancelled = false;
     (async () => {
       try {
+        const url = new URL(window.location.href);
+        const tokenFromUrl = url.searchParams.get('token')?.trim() ?? '';
+        const tokenFromStorage = window.localStorage.getItem('lanna-bloom-last-order-token')?.trim() ?? '';
+        const publicToken = tokenFromUrl || tokenFromStorage;
+
         console.log('[stripe/purchase] calling sync-checkout-session', { orderId, sessionId });
         const res = await fetch('/api/stripe/sync-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, orderId }),
+          body: JSON.stringify({ sessionId, orderId, publicToken }),
         });
         const data = (await res.json().catch(() => ({}))) as { paid?: boolean };
         console.log('[stripe/purchase] sync-checkout-session response', { ok: res.ok, paid: data.paid, orderId });

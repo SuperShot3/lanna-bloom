@@ -977,6 +977,7 @@ export const translations = {
       afterSubmitNote:
         'Submitting creates an order in our system. You will receive the same admin notification as catalog orders. You can track status on the order page.',
       fileTooLarge: 'Please choose an image under 4 MB.',
+      fileTypeNotAllowed: 'Please choose a JPG, PNG, WebP, or GIF image.',
       waSubjectLine: 'Custom bouquet order — Lanna Bloom',
       phoneHintNeutralFull: '',
       phoneHintDuplicateThai66: '66 appears twice — use one full number (e.g. 66952572645).',
@@ -2031,6 +2032,7 @@ export const translations = {
       afterSubmitNote:
         'การส่งแบบฟอร์มจะสร้างออเดอร์ในระบบ ทีมจะได้รับการแจ้งเตือนแบบเดียวกับออเดอร์จากแคตตาล็อก ติดตามสถานะได้ที่หน้าออเดอร์',
       fileTooLarge: 'กรุณาเลือกรูปขนาดไม่เกิน 4 MB',
+      fileTypeNotAllowed: 'กรุณาเลือกรูป JPG, PNG, WebP หรือ GIF',
       waSubjectLine: 'สั่งช่อดอกไม้พิเศษ — Lanna Bloom',
       phoneHintNeutralFull: '',
       phoneHintDuplicateThai66: 'เลข 66 ซ้ำ — ใส่เบอร์เดียวครบ (เช่น 66952572645)',

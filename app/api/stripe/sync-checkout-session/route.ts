@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCheckout';
+import { getOrderByIdWithPublicToken } from '@/lib/orders';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,7 +10,10 @@ export const runtime = 'nodejs';
 /**
  * Called after Stripe Checkout redirect when the webhook has not finished yet.
  * Verifies the session with Stripe and creates + marks paid (cart) or marks paid (order page).
- * Body: { sessionId: string; orderId?: string } — orderId optional; if set, must match the session.
+ * Body: { sessionId: string; orderId: string; publicToken?: string }
+ *
+ * Security: Requires order ownership proof (public token) so that a leaked Stripe session id
+ * cannot be used to trigger fulfillment for someone else’s order.
  */
 export async function POST(request: NextRequest) {
   const stripeConfig = getStripeServerConfig();
@@ -17,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
-  let body: { sessionId?: string; orderId?: string };
+  let body: { sessionId?: string; orderId?: string; publicToken?: string };
   try {
     body = await request.json();
   } catch {
@@ -26,8 +30,22 @@ export async function POST(request: NextRequest) {
 
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
   const expectedOrderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
+  const publicTokenFromBody = typeof body.publicToken === 'string' ? body.publicToken.trim() : '';
+  const publicTokenFromHeader = request.headers.get('x-order-token')?.trim() ?? '';
+  const publicToken = publicTokenFromBody || publicTokenFromHeader;
   if (!sessionId) {
     return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+  }
+  if (!expectedOrderId) {
+    return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
+  }
+  if (!publicToken) {
+    return NextResponse.json({ error: 'publicToken is required' }, { status: 401 });
+  }
+
+  const order = await getOrderByIdWithPublicToken(expectedOrderId, publicToken);
+  if (!order) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
   const stripe = createStripeServerClient(stripeConfig.secretKey);

@@ -53,7 +53,9 @@ type StripePaymentContext = {
  */
 async function recordStripeEventIfNew(eventId: string, type: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return true; // No idempotency table - process
+  if (!supabase) {
+    throw new Error('Supabase admin client unavailable; cannot enforce Stripe webhook idempotency.');
+  }
   try {
     const { error } = await supabase.from('stripe_events').insert({
       event_id: eventId,
@@ -61,13 +63,12 @@ async function recordStripeEventIfNew(eventId: string, type: string): Promise<bo
     });
     if (error) {
       if (error.code === '23505') return false; // Unique violation = already processed
-      console.error('[stripe/webhook] stripe_events insert error:', error.message);
-      return true; // Process anyway on other errors
+      throw new Error(`stripe_events insert error: ${error.message}`);
     }
     return true;
   } catch (e) {
     console.error('[stripe/webhook] Failed to record stripe_events:', e);
-    return true;
+    throw e instanceof Error ? e : new Error('Failed to record stripe event');
   }
 }
 
@@ -75,10 +76,15 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * Stripe only delivers webhooks via POST. Browsers, crawlers, and uptime checks
- * often GET this URL and would otherwise see 405 — not a Stripe delivery failure.
+ * Stripe only delivers webhooks via POST. In production we return 404 for GET/HEAD
+ * to reduce fingerprinting (no informational disclosure that this is a Stripe webhook
+ * route). In non-production we return a small developer hint to make local debugging
+ * easier without leaking anything sensitive.
  */
 export function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 });
+  }
   return NextResponse.json(
     { ok: true, message: 'Stripe webhooks use POST with Signing secret verification.' },
     { status: 200 }
@@ -86,6 +92,9 @@ export function GET() {
 }
 
 export function HEAD() {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 });
+  }
   return new NextResponse(null, { status: 200 });
 }
 
@@ -182,8 +191,12 @@ export async function POST(request: NextRequest) {
   const eventObject = event.data.object;
 
   if (event.type === 'refund.created') {
-    if (!(await recordStripeEventIfNew(event.id, event.type))) {
-      return NextResponse.json({ received: true });
+    try {
+      if (!(await recordStripeEventIfNew(event.id, event.type))) {
+        return NextResponse.json({ received: true });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Temporary error' }, { status: 500 });
     }
     const refund = eventObject as Stripe.Refund;
     const { recordStripeRefundEvent } = await import('@/lib/accounting/incomeRefunds');
@@ -218,8 +231,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    if (!(await recordStripeEventIfNew(event.id, event.type))) {
-      return NextResponse.json({ received: true });
+    try {
+      if (!(await recordStripeEventIfNew(event.id, event.type))) {
+        return NextResponse.json({ received: true });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Temporary error' }, { status: 500 });
     }
     try {
       const order = await getOrderById(orderId);
@@ -322,13 +339,17 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (!(await recordStripeEventIfNew(event.id, event.type))) {
-    console.log('[stripe/webhook] duplicate event skipped', {
-      eventId: event.id,
-      eventType: event.type,
-      orderId,
-    });
-    return NextResponse.json({ received: true });
+  try {
+    if (!(await recordStripeEventIfNew(event.id, event.type))) {
+      console.log('[stripe/webhook] duplicate event skipped', {
+        eventId: event.id,
+        eventType: event.type,
+        orderId,
+      });
+      return NextResponse.json({ received: true });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Temporary error' }, { status: 500 });
   }
 
   try {

@@ -26,38 +26,11 @@ export async function GET(
   const tokenFromHeader = request.headers.get('x-order-token');
   const orderToken = normalizeOrderToken(tokenFromQuery ?? tokenFromHeader);
 
-  const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
-  if (!supabasePayment) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-  }
-
   if (!orderToken) {
-    const orderStatus = supabasePayment.order_status ?? null;
-    const fulfillmentFromOrderStatus =
-      orderStatus != null ? orderStatusToFulfillmentDisplay(orderStatus) : null;
-    const fulfillmentFromLegacyColumn = supabasePayment.fulfillment_status
-      ? orderStatusToFulfillmentDisplay(supabasePayment.fulfillment_status)
-      : null;
-    const fulfillmentStatus =
-      fulfillmentFromOrderStatus
-      ?? fulfillmentFromLegacyColumn
-      ?? 'new';
     return NextResponse.json(
+      { error: 'Order not found' },
       {
-        orderId: normalized,
-        order_status: orderStatus,
-        fulfillmentStatus,
-        fulfillmentStatusUpdatedAt:
-          supabasePayment.fulfillment_status_updated_at ??
-          supabasePayment.updated_at ??
-          null,
-        payment_status: supabasePayment.payment_status,
-        payment_method: supabasePayment.payment_method,
-        paid_at: supabasePayment.paid_at,
-        privacyLimited: true,
-        requiresToken: true,
-      },
-      {
+        status: 404,
         headers: { 'Cache-Control': 'no-store' },
       },
     );
@@ -65,6 +38,11 @@ export async function GET(
 
   const order = await getOrderByIdWithPublicToken(normalized, orderToken);
   if (!order) {
+    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+  }
+
+  const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
+  if (!supabasePayment) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 

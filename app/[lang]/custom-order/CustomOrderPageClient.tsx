@@ -15,6 +15,7 @@ import {
 } from '@/lib/phoneFieldHints';
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
+const ALLOWED_REFERENCE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 function resolveFullPhoneHintMessage(
   hint: FullPhoneHint,
@@ -184,6 +185,12 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
     }
     if (f.size > MAX_FILE_BYTES) {
       setFileError(t.fileTooLarge);
+      setPickedFileName(null);
+      e.target.value = '';
+      return;
+    }
+    if (!ALLOWED_REFERENCE_IMAGE_TYPES.includes(f.type)) {
+      setFileError(t.fileTypeNotAllowed);
       setPickedFileName(null);
       e.target.value = '';
       return;
@@ -606,7 +613,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
                   id="referenceImage"
                   name="referenceImage"
                   type="file"
-                  accept="image/*"
+                  accept={ALLOWED_REFERENCE_IMAGE_TYPES.join(',')}
                   className="co-file-input-native"
                   onChange={onFileChange}
                 />

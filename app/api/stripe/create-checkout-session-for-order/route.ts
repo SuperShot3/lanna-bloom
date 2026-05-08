@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { timingSafeEqual } from 'crypto';
 import { getOrderById, getBaseUrl, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
@@ -13,9 +14,19 @@ import { applyExpansionItemMarkupThb, EXPANSION_MARKUP_DESTINATIONS } from '@/li
 
 export const dynamic = 'force-dynamic';
 
+function tokensEqual(a: string, b: string): boolean {
+  const aa = a.trim();
+  const bb = b.trim();
+  if (!aa || !bb) return false;
+  const aBuf = Buffer.from(aa, 'utf8');
+  const bBuf = Buffer.from(bb, 'utf8');
+  if (aBuf.length !== bBuf.length) return false;
+  return timingSafeEqual(aBuf, bBuf);
+}
+
 /**
  * Create a Stripe Checkout Session for an existing order (e.g. from the order page "Pay with Card").
- * Body: { orderId: string, lang?: 'en' | 'th' }
+ * Body: { orderId: string, publicToken: string, lang?: 'en' | 'th' }
  * Returns: { url: string } to redirect the customer to Stripe Checkout.
  */
 export async function POST(request: NextRequest) {
@@ -24,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
-  let body: { orderId?: string; lang?: string };
+  let body: { orderId?: string; publicToken?: string; lang?: string };
   try {
     body = await request.json();
   } catch {
@@ -36,7 +47,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
   }
 
+  const publicToken = typeof body.publicToken === 'string' ? body.publicToken.trim() : '';
+  if (!publicToken) {
+    return NextResponse.json({ error: 'publicToken is required' }, { status: 400 });
+  }
+
   const lang = body.lang === 'th' || body.lang === 'en' ? body.lang : 'en';
+
+  const expectedPublicToken = await getOrderPublicToken(orderId);
+  if (!expectedPublicToken) {
+    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+  }
+  if (!tokensEqual(expectedPublicToken, publicToken)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const order = await getOrderById(orderId);
   if (!order) {
@@ -87,13 +111,12 @@ export async function POST(request: NextRequest) {
     referralDiscount,
   });
 
-  const publicToken = await getOrderPublicToken(orderId);
   const baseSuccessUrl = stripeOrderSuccessUrl(baseUrl, orderId);
   const successUrl =
-    publicToken && publicToken.trim()
+    expectedPublicToken && expectedPublicToken.trim()
       ? `${baseSuccessUrl}&token=${encodeURIComponent(publicToken.trim())}`
       : baseSuccessUrl;
-  const cancelUrl = getOrderDetailsUrl(orderId, { token: publicToken });
+  const cancelUrl = getOrderDetailsUrl(orderId, { token: expectedPublicToken });
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'payment',

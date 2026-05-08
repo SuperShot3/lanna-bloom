@@ -7,8 +7,6 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
-import { trackCheckoutPurchase, trackPurchase } from '@/lib/analytics';
-import type { OrderCustomerView } from '@/lib/orders';
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -67,12 +65,14 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
         return;
       }
       try {
-        const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`);
+        const submissionToken = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY) ?? '';
+        const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`, {
+          headers: submissionToken ? { 'x-checkout-submission-token': submissionToken } : undefined,
+        });
         const data = (await res.json().catch(() => ({}))) as {
           status?: string;
           orderId?: string | null;
           token?: string | null;
-          order?: OrderCustomerView;
         };
         if (cancelled) return;
         if (data.status === 'paid' && typeof data.orderId === 'string' && data.orderId.trim()) {
@@ -82,32 +82,7 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
           setSuccess(true);
 
           const redirectDelay = wait(REDIRECT_DELAY_MS);
-          let trackingPurchase = Promise.resolve();
-
-          if (data.order) {
-            const rawItems = data.order.items ?? [];
-            if (rawItems.length > 0) {
-              const items = rawItems.map((it: any, i: number) => ({
-                item_id: it.bouquetId,
-                item_name: it.bouquetTitle,
-                price: it.price,
-                quantity: 1,
-                index: i,
-                item_variant: it.size,
-                currency: 'THB' as const,
-              }));
-              const value = data.order.pricing?.grandTotal ?? (data.order as any).amountTotal ?? 0;
-              trackPurchase({ orderId: oid, value, currency: 'THB', items });
-              trackingPurchase = trackCheckoutPurchase({
-                orderId: oid,
-                value,
-                currency: data.order.currency?.toUpperCase() ?? 'THB',
-                email: data.order.customerEmail,
-                phone: data.order.phone,
-                items,
-              });
-            }
-          }
+          const trackingPurchase = Promise.resolve();
 
           const token = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
           const qs = new URLSearchParams();

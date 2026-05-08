@@ -2,13 +2,17 @@ import { auth } from '@/auth';
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
-  if (!pathname.startsWith('/admin')) return;
+  const isAdmin = pathname.startsWith('/admin');
+  const isStudio = pathname.startsWith('/studio');
+  if (!isAdmin && !isStudio) return;
 
-  const isPublic =
-    pathname === '/admin' ||
-    pathname === '/admin/login' ||
-    pathname.startsWith('/admin/login/');
-  if (isPublic) return;
+  if (isAdmin) {
+    const isPublic =
+      pathname === '/admin' ||
+      pathname === '/admin/login' ||
+      pathname.startsWith('/admin/login/');
+    if (isPublic) return;
+  }
 
   if (!req.auth?.user) {
     const login = new URL('/admin/login', req.url);
@@ -17,5 +21,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*'],
+  matcher: ['/admin', '/admin/:path*', '/studio', '/studio/:path*'],
 };

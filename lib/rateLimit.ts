@@ -12,6 +12,14 @@ const orderLookupStore = new Map<string, { count: number; resetAt: number }>();
 const ORDER_LOOKUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const ORDER_LOOKUP_MAX = 6;
 
+const notifyAdminStore = new Map<string, { count: number; resetAt: number }>();
+const NOTIFY_ADMIN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const NOTIFY_ADMIN_MAX = 5;
+
+const stripeOrderStatusStore = new Map<string, { count: number; resetAt: number }>();
+const STRIPE_ORDER_STATUS_WINDOW_MS = 60 * 1000; // 1 minute
+const STRIPE_ORDER_STATUS_MAX = 30;
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -73,6 +81,39 @@ export function checkOrderLookupRateLimit(ip: string, scope = 'default'): boolea
   }
   entry.count++;
   return entry.count <= ORDER_LOOKUP_MAX;
+}
+
+export function checkNotifyAdminRateLimit(ip: string, orderId: string): boolean {
+  const now = Date.now();
+  const key = `${ip}:${orderId}`;
+  const entry = notifyAdminStore.get(key);
+  if (!entry) {
+    notifyAdminStore.set(key, { count: 1, resetAt: now + NOTIFY_ADMIN_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    notifyAdminStore.set(key, { count: 1, resetAt: now + NOTIFY_ADMIN_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= NOTIFY_ADMIN_MAX;
+}
+
+export function checkStripeOrderStatusRateLimit(ip: string, sessionId: string): boolean {
+  const now = Date.now();
+  const sid = sessionId.trim();
+  const key = `${ip}:${sid}`;
+  const entry = stripeOrderStatusStore.get(key);
+  if (!entry) {
+    stripeOrderStatusStore.set(key, { count: 1, resetAt: now + STRIPE_ORDER_STATUS_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    stripeOrderStatusStore.set(key, { count: 1, resetAt: now + STRIPE_ORDER_STATUS_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= STRIPE_ORDER_STATUS_MAX;
 }
 
 export function checkLoginRateLimit(ip: string): { allowed: boolean; remaining: number } {

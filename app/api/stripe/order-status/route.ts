@@ -5,6 +5,7 @@ import { getOrderIdFromStripeMetadata } from '@/lib/stripe/metadata';
 import { resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCheckout';
+import { checkStripeOrderStatusRateLimit } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
   const stripeConfig = getStripeServerConfig();
@@ -16,6 +17,22 @@ export async function GET(request: NextRequest) {
   if (!sessionId?.trim()) {
     return NextResponse.json({ error: 'session_id is required' }, { status: 400 });
   }
+
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    '127.0.0.1';
+  if (!checkStripeOrderStatusRateLimit(ip, sessionId)) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please try again later.' },
+      { status: 429 }
+    );
+  }
+
+  const submissionTokenFromHeader = request.headers.get('x-checkout-submission-token');
+  const submissionTokenFromQuery = request.nextUrl.searchParams.get('submission_token');
+  const submissionToken =
+    (submissionTokenFromHeader ?? submissionTokenFromQuery ?? '').trim();
 
   const stripe = createStripeServerClient(stripeConfig.secretKey);
   try {
@@ -84,16 +101,19 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const publicToken = await getOrderPublicToken(orderId);
-    const safeOrder = {
-      orderId: order.orderId,
-      status: order.status,
-      items: order.items,
-      pricing: order.pricing,
-      referralDiscount: order.referralDiscount,
-      currency: (order as any).currency,
-    };
+    // Proof-of-knowledge requirement:
+    // Do not reveal orderId/public_token unless the caller also proves they initiated this checkout.
+    // The only accepted proof for cart checkout is the checkout submission token, which is also stored in Stripe metadata.
+    const expectedSubmissionToken = String(session.metadata?.submission_token ?? '').trim();
+    const hasProof =
+      Boolean(submissionToken) &&
+      submissionToken.length >= 8 &&
+      submissionToken.length <= 128 &&
+      /^[0-9a-fA-F-]+$/.test(submissionToken) &&
+      Boolean(expectedSubmissionToken) &&
+      submissionToken === expectedSubmissionToken;
 
+    const publicToken = hasProof ? await getOrderPublicToken(orderId) : null;
     const status = order.status ?? 'processing';
     console.log('[stripe/order-status] backend order state', {
       sessionId: session.id,
@@ -105,7 +125,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (status === 'paid' || status === 'payment_failed') {
-      return NextResponse.json({ status, order: safeOrder, orderId, token: publicToken });
+      return NextResponse.json({
+        status,
+        orderId: hasProof ? orderId : null,
+        token: hasProof ? publicToken : null,
+      });
     }
 
     if (session.payment_status === 'paid' || paymentIntent?.status === 'succeeded') {
@@ -120,8 +144,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       status: 'processing',
-      orderId,
-      token: publicToken,
+      orderId: hasProof ? orderId : null,
+      token: hasProof ? publicToken : null,
       stripePaymentStatus: session.payment_status,
       paymentIntentStatus: paymentIntent?.status ?? null,
     });

@@ -679,7 +679,6 @@ export interface OrderLookupSummary {
   fulfillmentStatus: string;
   deliveryDate: string | null;
   createdAt: string;
-  orderToken?: string | null;
 }
 
 export async function supabaseLookupOrdersByPhone(
@@ -698,7 +697,7 @@ export async function supabaseLookupOrdersByPhone(
 
   let query = supabase
     .from('orders')
-    .select('order_id, order_status, delivery_date, created_at, public_token')
+    .select('order_id, order_status, delivery_date, created_at')
     .or(`phone.ilike.${pattern},recipient_phone.ilike.${pattern}`);
 
   if (name?.trim()) {
@@ -721,13 +720,11 @@ export async function supabaseLookupOrdersByPhone(
     order_status: string | null;
     delivery_date: string | null;
     created_at: string | null;
-    public_token: string | null;
   }) => ({
     orderId: r.order_id,
     fulfillmentStatus: orderStatusToFulfillmentDisplay(r.order_status),
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
-    orderToken: r.public_token ?? null,
   }));
 }
 
@@ -745,7 +742,7 @@ export async function supabaseLookupOrdersByOrderId(
 
   const { data: rows, error } = await supabase
     .from('orders')
-    .select('order_id, order_status, delivery_date, created_at, public_token')
+    .select('order_id, order_status, delivery_date, created_at')
     .ilike('order_id', pattern)
     .order('created_at', { ascending: false })
     .limit(5);
@@ -762,13 +759,11 @@ export async function supabaseLookupOrdersByOrderId(
     order_status: string | null;
     delivery_date: string | null;
     created_at: string | null;
-    public_token: string | null;
   }) => ({
     orderId: r.order_id,
     fulfillmentStatus: orderStatusToFulfillmentDisplay(r.order_status),
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
-    orderToken: r.public_token ?? null,
   }));
 }
 

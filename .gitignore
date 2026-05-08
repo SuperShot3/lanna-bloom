@@ -21,6 +21,9 @@ out
 # orders (JSON store; do not commit order data)
 data/orders.json
 
+# security audit (internal-only)
+SECURITY_AUDIT.md
+
 # misc
 .DS_Store
 *.pem

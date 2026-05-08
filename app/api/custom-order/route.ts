@@ -7,7 +7,11 @@ import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { detectDistrictFromAddress } from '@/lib/deliveryFees';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { getZoneFee, isSupportedZone, legacyDistrictFromChiangMaiZone, zoneLabel } from '@/lib/delivery/zones';
-import { uploadCustomOrderReferenceImage } from '@/lib/customOrder/uploadReferenceImage';
+import {
+  CUSTOM_ORDER_REFERENCE_IMAGE_MAX_BYTES,
+  getValidCustomOrderReferenceImageContentType,
+  uploadCustomOrderReferenceImage,
+} from '@/lib/customOrder/uploadReferenceImage';
 import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
 const CUSTOM_ORDER_ITEM_ID = 'custom-order-request';
@@ -180,8 +184,15 @@ export async function POST(request: NextRequest) {
     const file = form.get('referenceImage');
     const uploadKey = randomUUID();
     if (file instanceof File && file.size > 0) {
-      if (file.size > 4 * 1024 * 1024) {
+      if (file.size > CUSTOM_ORDER_REFERENCE_IMAGE_MAX_BYTES) {
         return NextResponse.json({ error: 'Reference image must be 4 MB or smaller' }, { status: 400 });
+      }
+      const validContentType = await getValidCustomOrderReferenceImageContentType(file);
+      if (!validContentType) {
+        return NextResponse.json(
+          { error: 'Reference image must be a JPEG, PNG, WebP, or GIF image' },
+          { status: 400 }
+        );
       }
       const uploaded = await uploadCustomOrderReferenceImage(file, uploadKey);
       if (uploaded) {

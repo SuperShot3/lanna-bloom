@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
 import { useCart } from '@/contexts/CartContext';
 import { trackGenerateLead } from '@/lib/analytics';
+import { CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY } from '@/lib/checkout/submissionToken';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { Order } from '@/lib/orders';
@@ -71,7 +72,13 @@ export function ConfirmationPendingClient({
         return;
       }
       try {
-        const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`);
+        const submissionToken =
+          typeof window !== 'undefined'
+            ? (window.sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY) ?? '')
+            : '';
+        const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`, {
+          headers: submissionToken ? { 'x-checkout-submission-token': submissionToken } : undefined,
+        });
         const data = await res.json().catch(() => ({}));
         if (typeof data.orderId === 'string' && data.orderId.trim()) {
           setOrderId(data.orderId.trim());
@@ -79,9 +86,7 @@ export function ConfirmationPendingClient({
         if (typeof data.token === 'string' && data.token.trim()) {
           setPublicToken(data.token.trim());
         }
-        if (data.status === 'paid' && data.order) {
-          setOrder(data.order);
-          setOrderId(data.order.orderId);
+        if (data.status === 'paid') {
           setStripeStatus('paid');
           return;
         }
@@ -117,7 +122,13 @@ export function ConfirmationPendingClient({
     if (!orderId) return;
     if (sessionId && stripeStatus !== 'paid') return;
 
-    fetch(`/api/orders/${encodeURIComponent(orderId)}`)
+    const token =
+      publicToken?.trim() ||
+      (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+      '';
+    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+
+    fetch(`/api/orders/${encodeURIComponent(orderId)}${qs}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: OrderWithPaymentStatus | null) => {
         setOrder(data);
@@ -125,7 +136,7 @@ export function ConfirmationPendingClient({
       .catch(() => {
         setOrder(null);
       });
-  }, [orderId, sessionId, stripeStatus]);
+  }, [orderId, sessionId, stripeStatus, publicToken]);
 
   // Poll payment status on manual path so that when admin marks paid, user is redirected
   useEffect(() => {
@@ -133,14 +144,19 @@ export function ConfirmationPendingClient({
     const poll = async () => {
       if (redirectingRef.current) return;
       try {
-        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, { cache: 'no-store' });
+        const token =
+          publicToken?.trim() ||
+          (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+          '';
+        if (!token) return;
+
+        const res = await fetch(
+          `/api/orders/${encodeURIComponent(orderId)}?token=${encodeURIComponent(token)}`,
+          { cache: 'no-store' }
+        );
         const data = await res.json().catch(() => ({}));
         if (isPaidStatus(data.payment_status)) {
           redirectingRef.current = true;
-          const token =
-            publicToken?.trim() ||
-            (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
-            '';
           const qs = new URLSearchParams();
           if (token) qs.set('token', token);
           window.location.href = `/order/${encodeURIComponent(orderId)}${qs.toString() ? `?${qs.toString()}` : ''}`;
@@ -151,7 +167,7 @@ export function ConfirmationPendingClient({
     };
     const tId = setInterval(poll, MANUAL_STATUS_POLL_MS);
     return () => clearInterval(tId);
-  }, [orderId, sessionId]);
+  }, [orderId, sessionId, publicToken]);
 
   // generate_lead: non-ecommerce, only when showing pending confirmation (manual or before Stripe paid)
   const generateLeadFiredRef = useRef(false);
