@@ -1,11 +1,13 @@
 import { getOrders, getDistricts, getDeliveryDestinations } from '@/lib/supabase/adminQueries';
 import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
-import { OrdersListClient } from './OrdersListClient';
+import { DeliveryBoardClient } from './DeliveryBoardClient';
+import { shopTodayYmd } from '@/lib/shopTime';
 
 interface PageProps {
   searchParams: Promise<{
     orderId?: string;
     recipientPhone?: string;
+    q?: string;
     status?: string;
     payment?: string;
     district?: string;
@@ -19,17 +21,22 @@ interface PageProps {
 export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? '1', 10));
-  const pageSize = 20;
+  const pageSize = 80;
+  const today = shopTodayYmd();
+  const hasRange = Boolean(params.dateFrom?.trim() || params.dateTo?.trim());
+  const dateFrom = hasRange ? params.dateFrom?.trim() || params.dateTo?.trim() || today : today;
+  const dateTo = hasRange ? params.dateTo?.trim() || params.dateFrom?.trim() || today : today;
 
   const filters = {
     orderId: params.orderId,
     recipientPhone: params.recipientPhone,
+    q: params.q,
     orderStatus: params.status,
     paymentStatus: params.payment as 'paid' | 'unpaid' | undefined,
     district: params.district,
     deliveryDestination: params.destination,
-    deliveryDateFrom: params.dateFrom,
-    deliveryDateTo: params.dateTo,
+    deliveryDateFrom: dateFrom,
+    deliveryDateTo: dateTo,
   };
 
   const [result, districts, destRows] = await Promise.all([
@@ -43,7 +50,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   ).sort();
 
   return (
-    <OrdersListClient
+    <DeliveryBoardClient
       initialOrders={result.orders}
       initialTotal={result.total}
       initialError={result.error}

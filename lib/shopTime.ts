@@ -5,6 +5,28 @@
  */
 export const SHOP_TIMEZONE = 'Asia/Bangkok';
 
+/** Today's calendar date in the shop timezone (YYYY-MM-DD). */
+export function shopTodayYmd(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SHOP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/** Add calendar days in the shop timezone; input/output YYYY-MM-DD. */
+export function shopAddDays(ymd: string, deltaDays: number): string {
+  const d = new Date(`${ymd}T12:00:00+07:00`);
+  d.setDate(d.getDate() + deltaDays);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SHOP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+}
+
 /**
  * Format an ISO / DB timestamp for display in the shop timezone.
  */

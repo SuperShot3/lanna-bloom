@@ -101,6 +101,8 @@ export interface SupabaseStatusHistoryRow {
 export interface OrdersFilters {
   orderId?: string;
   recipientPhone?: string;
+  /** OR-search across order_id, recipient_name, recipient_phone (ilike). */
+  q?: string;
   orderStatus?: string;
   paymentStatus?: 'paid' | 'unpaid';
   district?: string;
@@ -131,16 +133,29 @@ export async function getOrders(
 
   try {
     const listColumns =
-      'order_id, public_token, payment_method, customer_name, customer_email, phone, address, delivery_destination, delivery_zone, postal_code, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at';
+      'order_id, public_token, payment_method, customer_name, customer_email, phone, phone_country_code, address, delivery_destination, delivery_zone, postal_code, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, recipient_phone_country_code, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at, admin_needs_delivery_sort, order_json';
     let query = supabase
       .from('orders')
       .select(listColumns, { count: 'exact' });
 
-    if (filters.orderId?.trim()) {
-      query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
-    }
-    if (filters.recipientPhone?.trim()) {
-      query = query.ilike('recipient_phone', `%${filters.recipientPhone.trim()}%`);
+    const qTrim = filters.q
+      ?.trim()
+      .replace(/[,()"']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (qTrim) {
+      const esc = qTrim.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+      const pat = `%${esc}%`;
+      query = query.or(
+        `order_id.ilike.${pat},recipient_name.ilike.${pat},recipient_phone.ilike.${pat}`
+      );
+    } else {
+      if (filters.orderId?.trim()) {
+        query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
+      }
+      if (filters.recipientPhone?.trim()) {
+        query = query.ilike('recipient_phone', `%${filters.recipientPhone.trim()}%`);
+      }
     }
     if (filters.orderStatus && filters.orderStatus !== 'all') {
       query = query.eq('order_status', filters.orderStatus);
@@ -163,8 +178,12 @@ export async function getOrders(
       query = query.lte('delivery_date', filters.deliveryDateTo);
     }
 
-    // Newest orders first (creation time).
-    query = query.order('created_at', { ascending: false });
+    // Dispatch board: active deliveries first, then by delivery date and window.
+    query = query
+      .order('admin_needs_delivery_sort', { ascending: false, nullsFirst: false })
+      .order('delivery_date', { ascending: true, nullsFirst: false })
+      .order('delivery_window', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false });
 
     const offset = (pagination.page - 1) * pagination.pageSize;
     const { data, count, error } = await query
@@ -248,11 +267,24 @@ export async function getOrdersForExport(
   try {
     let query = supabase.from('orders').select('*');
 
-    if (filters.orderId?.trim()) {
-      query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
-    }
-    if (filters.recipientPhone?.trim()) {
-      query = query.ilike('recipient_phone', `%${filters.recipientPhone.trim()}%`);
+    const qTrimEx = filters.q
+      ?.trim()
+      .replace(/[,()"']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (qTrimEx) {
+      const esc = qTrimEx.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+      const pat = `%${esc}%`;
+      query = query.or(
+        `order_id.ilike.${pat},recipient_name.ilike.${pat},recipient_phone.ilike.${pat}`
+      );
+    } else {
+      if (filters.orderId?.trim()) {
+        query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
+      }
+      if (filters.recipientPhone?.trim()) {
+        query = query.ilike('recipient_phone', `%${filters.recipientPhone.trim()}%`);
+      }
     }
     if (filters.orderStatus && filters.orderStatus !== 'all') {
       query = query.eq('order_status', filters.orderStatus);
@@ -276,6 +308,9 @@ export async function getOrdersForExport(
     }
 
     const { data, error } = await query
+      .order('admin_needs_delivery_sort', { ascending: false, nullsFirst: false })
+      .order('delivery_date', { ascending: true, nullsFirst: false })
+      .order('delivery_window', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(limit);
 

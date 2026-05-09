@@ -32,6 +32,24 @@ function orderJsonDelivery(order: SupabaseOrderRow): Order['delivery'] | undefin
   return orderJsonPartial(order)?.delivery;
 }
 
+function looksLikeHttpUrl(s: string): boolean {
+  const t = s.trim();
+  if (!t) return false;
+  try {
+    const u = new URL(t);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/** Street / directions / pasted link as entered at checkout (column or order_json). */
+export function customerDeliveryAddressRaw(order: SupabaseOrderRow): string {
+  const col = order.address?.trim();
+  if (col) return col;
+  return orderJsonDelivery(order)?.address?.trim() ?? '';
+}
+
 function adminDeliveryGeographyLines(order: SupabaseOrderRow): string[] {
   const dest =
     order.delivery_destination?.trim() ||
@@ -92,7 +110,10 @@ export function checkoutMapsUrl(order: SupabaseOrderRow): string | null {
   const col = order.delivery_google_maps_url?.trim();
   if (col) return col;
   const u = orderJsonDelivery(order)?.deliveryGoogleMapsUrl?.trim();
-  return u || null;
+  if (u) return u;
+  const addr = customerDeliveryAddressRaw(order);
+  if (addr && looksLikeHttpUrl(addr)) return addr.trim();
+  return null;
 }
 
 export function recipientNameDisplay(order: SupabaseOrderRow): string {
@@ -231,7 +252,7 @@ export function buildDriverMessengerPlainText(
   }
   lines.push('');
   lines.push('Address:');
-  lines.push(naText(order.address));
+  lines.push(naText(customerDeliveryAddressRaw(order)));
   lines.push('');
   if (mapsUrl) {
     lines.push('Google Maps pin:');
@@ -338,7 +359,7 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   for (const g of adminDeliveryGeographyLines(order)) {
     lines.push(`  ${g}`);
   }
-  lines.push(`  Address: ${naText(order.address)}`);
+  lines.push(`  Address: ${naText(customerDeliveryAddressRaw(order))}`);
   lines.push(`  Google Maps (checkout): ${mapsUrl ?? 'N/A'}`);
   lines.push('');
   lines.push('Recipient');

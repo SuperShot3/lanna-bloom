@@ -20,12 +20,17 @@ export async function GET(request: NextRequest) {
   const filters: OrdersFilters = {
     orderId: searchParams.get('orderId')?.trim() || undefined,
     recipientPhone: searchParams.get('recipientPhone')?.trim() || undefined,
-    orderStatus: searchParams.get('orderStatus') || undefined,
-    paymentStatus: (searchParams.get('paymentStatus') as 'paid' | 'unpaid') || undefined,
+    q: searchParams.get('q')?.trim() || undefined,
+    orderStatus:
+      searchParams.get('orderStatus') || searchParams.get('status') || undefined,
+    paymentStatus:
+      (searchParams.get('paymentStatus') || searchParams.get('payment')) as 'paid' | 'unpaid' | undefined,
     district: searchParams.get('district') || undefined,
     deliveryDestination: searchParams.get('destination') || undefined,
-    deliveryDateFrom: searchParams.get('deliveryDateFrom') || undefined,
-    deliveryDateTo: searchParams.get('deliveryDateTo') || undefined,
+    deliveryDateFrom:
+      searchParams.get('deliveryDateFrom') || searchParams.get('dateFrom') || undefined,
+    deliveryDateTo:
+      searchParams.get('deliveryDateTo') || searchParams.get('dateTo') || undefined,
   };
 
   const orders = await getOrdersForExport(filters);
