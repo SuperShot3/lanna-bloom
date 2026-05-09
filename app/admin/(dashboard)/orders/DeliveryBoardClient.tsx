@@ -716,7 +716,6 @@ export function DeliveryBoardClient({
                                           </span>
                                         </div>
                                       </div>
-                                      <DeliveryCardContact order={o} />
                                       <DeliveryCardAddress order={o} />
                                     </div>
                                     <div className="admin-delivery-card-badges">
@@ -728,6 +727,7 @@ export function DeliveryBoardClient({
                                       <span className="admin-delivery-badge-flow">{workflowLabel(o.order_status)}</span>
                                     </div>
                                   </div>
+                                  <DeliveryCardContact order={o} />
                                   <div className="admin-delivery-card-bottom">
                                     <span className="admin-delivery-product-pill">
                                       <span className="material-symbols-outlined" style={{ fontSize: 16 }}>

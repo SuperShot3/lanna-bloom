@@ -4466,6 +4466,8 @@ a.filter-pill--active:hover {
   border-radius: 10px;
   background: rgba(45, 71, 62, 0.06);
   border: 1px solid rgba(45, 71, 62, 0.12);
+  width: 100%;
+  box-sizing: border-box;
 }
 .admin-delivery-contact-chip-role {
   flex: 0 0 auto;
@@ -4514,6 +4516,8 @@ a.filter-pill--active:hover {
 .admin-delivery-contact-details {
   margin: 0 0 10px;
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 .admin-delivery-contact-summary {
   list-style: none;
@@ -4565,7 +4569,9 @@ a.filter-pill--active:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
 }
 .admin-delivery-contact-group-label {
   margin: 4px 0 0;
