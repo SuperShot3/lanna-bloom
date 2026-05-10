@@ -7,6 +7,7 @@ import type { Expense, ExpenseBillLine, ExpenseReceiptImage } from '@/types/expe
 import { billLineCheckpointCount, billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
+import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
@@ -61,6 +62,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [compressingReceipt, setCompressingReceipt] = useState(false);
   const [receipts, setReceipts] = useState<ExpenseReceiptImage[]>([]);
   const [loadingReceipts, setLoadingReceipts] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
@@ -141,15 +143,22 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
       setReceiptError('Only image files are allowed.');
       return;
     }
-    if (file.size > MAX_RECEIPT_BYTES) {
-      setReceiptError('Image is too large. Max size is 500 KB.');
+
+    setCompressingReceipt(true);
+    let fileToUpload: File;
+    try {
+      fileToUpload = await compressReceiptImageForUpload(file, MAX_RECEIPT_BYTES);
+    } catch (err) {
+      setReceiptError(err instanceof Error ? err.message : 'Could not prepare image for upload.');
+      setCompressingReceipt(false);
       return;
     }
+    setCompressingReceipt(false);
 
     setUploadingReceipt(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       const uploadRes = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseState.id)}/receipts`, {
         method: 'POST',
         body: formData,
@@ -510,9 +519,13 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             type="button"
             className="admin-btn admin-btn-sm admin-btn-outline"
             onClick={() => receiptFileInputRef.current?.click()}
-            disabled={uploadingReceipt}
+            disabled={compressingReceipt || uploadingReceipt}
           >
-            {uploadingReceipt ? 'Uploading image…' : 'Add image'}
+            {compressingReceipt
+              ? 'Preparing image…'
+              : uploadingReceipt
+                ? 'Uploading image…'
+                : 'Add image'}
           </button>
           {receiptCount > 0 ? (
             <>
@@ -535,7 +548,10 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             </>
           ) : null}
         </div>
-        <p className="admin-hint">Receipt images only, max size 500 KB.</p>
+        <p className="admin-hint">
+          Receipt images only. Large photos are compressed automatically before upload; max 500 KB after
+          compression.
+        </p>
         {loadingReceipts ? <p className="admin-hint">Loading images…</p> : null}
         {receiptCount > 0 ? (
           <div className="admin-expenses-table-wrap" style={{ marginTop: 10 }}>
@@ -568,7 +584,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                       <button
                         type="button"
                         className="admin-btn admin-btn-sm admin-btn-outline admin-btn-danger"
-                        disabled={deletingReceiptId === r.id || uploadingReceipt}
+                        disabled={deletingReceiptId === r.id || compressingReceipt || uploadingReceipt}
                         onClick={() => void handleDeleteReceipt(r.id)}
                       >
                         {deletingReceiptId === r.id ? 'Deleting…' : 'Delete'}

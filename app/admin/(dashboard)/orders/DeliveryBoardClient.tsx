@@ -28,6 +28,7 @@ import {
   formatDeliveryWindowLabel,
   groupOrdersByDayPart,
   itemTypeDisplayLabel,
+  orderHasCustomerCardMessage,
   sortOrdersForBoard,
 } from '@/lib/admin/deliveryBoardPreview';
 import { checkoutMapsUrl, customerDeliveryAddressRaw } from '@/lib/admin/orderSummaryPlainText';
@@ -66,6 +67,10 @@ function isOpenPipelineStatus(status: string | null | undefined): boolean {
   return n !== 'DELIVERED' && n !== 'CANCELLED';
 }
 
+function isDeliveredStatus(status: string | null | undefined): boolean {
+  return normalizeOrderStatus(status) === 'DELIVERED';
+}
+
 function workflowLabel(status: string | null | undefined): string {
   const n = normalizeOrderStatus(status);
   if (n === 'NEW') return 'Scheduled';
@@ -88,6 +93,45 @@ function truncateAddressLine(s: string, max = 90): string {
   const t = s.trim();
   if (t.length <= max) return t;
   return `${t.slice(0, max - 1)}…`;
+}
+
+function DeliveryCardPartyNames({ order }: { order: SupabaseOrderRow }) {
+  const cust = order.customer_name?.trim() ?? '';
+  const rec = order.recipient_name?.trim() ?? '';
+  const samePerson =
+    Boolean(cust && rec && cust.localeCompare(rec, undefined, { sensitivity: 'base' }) === 0);
+
+  if (!cust && !rec) {
+    return <p className="admin-delivery-card-name admin-delivery-card-name--empty">—</p>;
+  }
+
+  if (samePerson) {
+    return (
+      <div className="admin-delivery-card-names">
+        <p className="admin-delivery-card-name-line">
+          <span className="admin-delivery-card-name-role">Customer & recipient</span>
+          <span className="admin-delivery-card-name-value">{cust}</span>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-delivery-card-names">
+      <p className="admin-delivery-card-name-line">
+        <span className="admin-delivery-card-name-role">Customer</span>
+        <span className={`admin-delivery-card-name-value${cust ? '' : ' admin-hint'}`}>
+          {cust || 'N/A'}
+        </span>
+      </p>
+      <p className="admin-delivery-card-name-line">
+        <span className="admin-delivery-card-name-role">Recipient</span>
+        <span className={`admin-delivery-card-name-value${rec ? '' : ' admin-hint'}`}>
+          {rec || 'N/A'}
+        </span>
+      </p>
+    </div>
+  );
 }
 
 function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
@@ -342,15 +386,24 @@ export function DeliveryBoardClient({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [hideDelivered, setHideDelivered] = useState(false);
 
   const sortedOrders = useMemo(
     () => sortOrdersForBoard(initialOrders),
     [initialOrders]
   );
-  const grouped = useMemo(() => groupOrdersByDayPart(sortedOrders), [sortedOrders]);
-  const mapMarkers = useMemo(() => buildMapMarkers(sortedOrders), [sortedOrders]);
+  const visibleOrders = useMemo(() => {
+    if (!hideDelivered) return sortedOrders;
+    return sortedOrders.filter((o) => !isDeliveredStatus(o.order_status));
+  }, [sortedOrders, hideDelivered]);
+  const deliveredHiddenCount = useMemo(
+    () => sortedOrders.filter((o) => isDeliveredStatus(o.order_status)).length,
+    [sortedOrders]
+  );
+  const grouped = useMemo(() => groupOrdersByDayPart(visibleOrders), [visibleOrders]);
+  const mapMarkers = useMemo(() => buildMapMarkers(visibleOrders), [visibleOrders]);
 
-  const statInProgress = sortedOrders.filter((o) => isOpenPipelineStatus(o.order_status)).length;
+  const statInProgress = visibleOrders.filter((o) => isOpenPipelineStatus(o.order_status)).length;
   const statMorning = grouped.morning.length;
   const statAfternoon = grouped.midday.length + grouped.afternoon.length + grouped.evening.length;
 
@@ -521,7 +574,7 @@ export function DeliveryBoardClient({
           <span className="material-symbols-outlined admin-delivery-stat-icon">shopping_bag</span>
           <div>
             <span className="admin-delivery-stat-value">{initialTotal}</span>
-            <span className="admin-delivery-stat-label">In range</span>
+            <span className="admin-delivery-stat-label">Today orders</span>
           </div>
         </div>
         <div className="admin-delivery-stat admin-delivery-stat--progress">
@@ -610,7 +663,22 @@ export function DeliveryBoardClient({
           </span>
           Filters
         </button>
+        <label className="admin-checkbox-row admin-delivery-hide-delivered">
+          <input
+            type="checkbox"
+            className="admin-checkbox"
+            checked={hideDelivered}
+            onChange={(e) => setHideDelivered(e.target.checked)}
+          />
+          <span>Hide delivered</span>
+        </label>
       </form>
+
+      {hideDelivered && deliveredHiddenCount > 0 ? (
+        <p className="admin-hint admin-delivery-hide-delivered-hint">
+          {deliveredHiddenCount} delivered {deliveredHiddenCount === 1 ? 'order' : 'orders'} hidden on this page.
+        </p>
+      ) : null}
 
       {filtersOpen ? (
         <div className="admin-delivery-filters-panel">
@@ -633,8 +701,17 @@ export function DeliveryBoardClient({
         </div>
       ) : (
         <>
-          {sortedOrders.length === 0 ? (
-            <p className="admin-empty">No orders in this range. Try another day or clear filters.</p>
+          {visibleOrders.length === 0 ? (
+            <p className="admin-empty">
+              {sortedOrders.length > 0 && hideDelivered ? (
+                <>
+                  Every order on this page is marked delivered. Uncheck <strong>Hide delivered</strong> to see them,
+                  or adjust filters.
+                </>
+              ) : (
+                <>No orders in this range. Try another day or clear filters.</>
+              )}
+            </p>
           ) : (
             <div className="admin-delivery-sections">
               {sections.map((sec) => {
@@ -663,6 +740,7 @@ export function DeliveryBoardClient({
                           const specLine = firstLineItemSpecSummary(o);
                           const open = isOpenPipelineStatus(o.order_status);
                           const paid = (o.payment_status ?? '').toUpperCase() === 'PAID';
+                          const hasCardMessage = orderHasCustomerCardMessage(o);
                           return (
                             <li key={o.order_id} className="admin-delivery-card-wrap">
                               <div className={`admin-delivery-card ${open ? 'admin-delivery-card--pipeline' : ''}`}>
@@ -692,9 +770,7 @@ export function DeliveryBoardClient({
                                   <div className="admin-delivery-card-top">
                                     <div className="admin-delivery-card-top-text">
                                       <p className="admin-delivery-card-id">{o.order_id}</p>
-                                      <p className="admin-delivery-card-name">
-                                        {o.recipient_name ?? o.customer_name ?? '—'}
-                                      </p>
+                                      <DeliveryCardPartyNames order={o} />
                                       <div
                                         className="admin-delivery-card-datetime"
                                         aria-label="Delivery date and time window"
@@ -729,13 +805,23 @@ export function DeliveryBoardClient({
                                   </div>
                                   <DeliveryCardContact order={o} />
                                   <div className="admin-delivery-card-bottom">
-                                    <span className="admin-delivery-product-pill">
-                                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-                                        inventory_2
+                                    <div className="admin-delivery-card-bottom-pills">
+                                      <span className="admin-delivery-product-pill">
+                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                                          inventory_2
+                                        </span>
+                                        {jsonItemTypePill(o)}
                                       </span>
-                                      {jsonItemTypePill(o)}
-                                    </span>
-                                    <span className="admin-delivery-card-product-line">{productLabel}</span>
+                                      <span
+                                        className={`admin-delivery-gift-card-pill${hasCardMessage ? ' admin-delivery-gift-card-pill--yes' : ' admin-delivery-gift-card-pill--na'}`}
+                                        title={hasCardMessage ? 'Customer provided card / gift message' : undefined}
+                                      >
+                                        <span className="material-symbols-outlined admin-delivery-gift-card-pill-ico">
+                                          card_giftcard
+                                        </span>
+                                        {hasCardMessage ? 'Card message' : 'Gift card N/A'}
+                                      </span>
+                                    </div>
                                     <Link href={detailHref(o.order_id)} className="admin-btn admin-btn-sm admin-btn-primary">
                                       View
                                     </Link>
@@ -753,13 +839,13 @@ export function DeliveryBoardClient({
             </div>
           )}
 
-          {sortedOrders.length > 0 && initialTotal > sortedOrders.length ? (
+          {visibleOrders.length > 0 && initialTotal > sortedOrders.length ? (
             <p className="admin-hint admin-delivery-page-hint">
               Showing {sortedOrders.length} of {initialTotal} orders — use pagination or narrow the date range.
             </p>
           ) : null}
 
-          {sortedOrders.length > 0 ? (
+          {visibleOrders.length > 0 ? (
             <div className="admin-pagination">
               <span>
                 Showing {(initialPage - 1) * pageSize + 1}–{Math.min(initialPage * pageSize, initialTotal)} of{' '}

@@ -57,6 +57,7 @@ interface JsonItem {
   size?: string;
   /** Cart quantity when persisted on the line (optional). */
   quantity?: number;
+  addOns?: { cardMessage?: string };
 }
 
 /** Single-letter / short legacy size codes including N/XL-style variants. */
@@ -118,7 +119,24 @@ interface JsonDelivery {
 interface LooseOrderJson {
   items?: JsonItem[];
   delivery?: JsonDelivery;
-  customOrderDetails?: { referenceImageUrl?: string };
+  customOrderDetails?: { referenceImageUrl?: string; greetingCard?: string };
+}
+
+/** True when the customer provided greeting/card text (checkout card message or custom-order message card). */
+export function orderHasCustomerCardMessage(order: SupabaseOrderRow): boolean {
+  const json = order.order_json as LooseOrderJson | null | undefined;
+  const items = json?.items;
+  if (Array.isArray(items)) {
+    for (const it of items) {
+      const msg = typeof it?.addOns?.cardMessage === 'string' ? it.addOns.cardMessage.trim() : '';
+      if (msg) return true;
+    }
+  }
+  const greeting =
+    typeof json?.customOrderDetails?.greetingCard === 'string'
+      ? json.customOrderDetails.greetingCard.trim()
+      : '';
+  return Boolean(greeting);
 }
 
 export function firstLineImageFromOrder(order: SupabaseOrderRow): string | null {

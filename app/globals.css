@@ -4415,6 +4415,37 @@ a.filter-pill--active:hover {
   font-weight: 600;
   color: #1a2e28;
 }
+.admin-delivery-card-names {
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-delivery-card-name-line {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+.admin-delivery-card-name-role {
+  flex: 0 0 auto;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-muted, #64748b);
+}
+.admin-delivery-card-name-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: #1a2e28;
+  line-height: 1.35;
+}
+.admin-delivery-card-name--empty {
+  font-weight: 600;
+}
 .admin-delivery-card-datetime {
   margin: 0 0 10px;
   padding: 10px 12px;
@@ -4708,6 +4739,65 @@ a.filter-pill--active:hover {
   background: rgba(59, 130, 246, 0.12);
   color: #1d4ed8;
 }
+
+/* Delivery board cards: use full width for date / time / address on small screens */
+@media (max-width: 640px) {
+  .admin-delivery-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-delivery-card-thumb {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    grid-template-rows: auto auto;
+    gap: 6px 12px;
+    align-items: start;
+  }
+  .admin-delivery-card-thumb-visual {
+    grid-row: 1 / -1;
+    align-self: start;
+  }
+  .admin-delivery-card-thumb-caption,
+  .admin-delivery-card-thumb-spec {
+    grid-column: 2;
+    text-align: left;
+  }
+  .admin-delivery-card-thumb-caption {
+    grid-row: 1;
+  }
+  .admin-delivery-card-thumb-spec {
+    grid-row: 2;
+  }
+  .admin-delivery-card-body {
+    width: 100%;
+    min-width: 0;
+  }
+  .admin-delivery-card-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .admin-delivery-card-top-text {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+  }
+  .admin-delivery-card-badges {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: stretch;
+    width: 100%;
+  }
+  .admin-delivery-card-datetime {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
 .admin-delivery-card-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -4717,11 +4807,17 @@ a.filter-pill--active:hover {
   border-top: 1px solid rgba(45, 71, 62, 0.08);
   padding-top: 10px;
 }
+.admin-delivery-card-bottom-pills {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-right: auto;
+}
 .admin-delivery-product-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-right: auto;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 4px 10px;
@@ -4729,14 +4825,33 @@ a.filter-pill--active:hover {
   background: rgba(45, 71, 62, 0.08);
   color: #2d473e;
 }
-.admin-delivery-card-product-line {
-  flex: 1 1 120px;
-  min-width: 0;
-  font-size: 0.8rem;
+.admin-delivery-gift-card-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 71, 62, 0.12);
+  color: #2d473e;
+  background: #fff;
+}
+.admin-delivery-gift-card-pill--yes {
+  border-color: rgba(34, 139, 87, 0.35);
+  background: rgba(34, 139, 87, 0.08);
+  color: #1b5e3a;
+}
+.admin-delivery-gift-card-pill--na {
   color: var(--admin-text-muted, #64748b);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
+  border-style: dashed;
+}
+.admin-delivery-gift-card-pill-ico {
+  font-size: 14px !important;
+  line-height: 1;
+  opacity: 0.9;
 }
 .admin-delivery-page-hint {
   margin-top: var(--space-3);
