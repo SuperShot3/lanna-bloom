@@ -3,9 +3,28 @@
  * Import only from client components.
  */
 
-import { MAX_RECEIPT_UPLOAD_BYTES } from '@/lib/receiptUploadLimits';
+import {
+  MAX_RECEIPT_UPLOAD_BYTES,
+  RECEIPT_IMAGE_MAX_LONG_EDGE,
+} from '@/lib/receiptUploadLimits';
 
 const JPEG_MIME = 'image/jpeg';
+
+/** Helps iPhone camera JPEGs/HEIC (EXIF Orientation) bitmap correctly before canvas resize. */
+const IMAGE_BITMAP_ORIENTATION: ImageBitmapOptions = { imageOrientation: 'from-image' };
+
+async function createOrientedBitmap(source: Blob | HTMLImageElement | ImageBitmap): Promise<ImageBitmap | null> {
+  if (typeof createImageBitmap !== 'function') return null;
+  try {
+    return await createImageBitmap(source, IMAGE_BITMAP_ORIENTATION);
+  } catch {
+    try {
+      return await createImageBitmap(source);
+    } catch {
+      return null;
+    }
+  }
+}
 
 function isHeicLike(file: File): boolean {
   const t = file.type.toLowerCase();
@@ -37,7 +56,7 @@ async function heicFileToJpegBlob(file: File): Promise<Blob> {
     toType: string;
     quality: number;
   }) => Promise<Blob | Blob[]>;
-  const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+  const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.82 });
   const blob = Array.isArray(out) ? out[0] : out;
   if (!(blob instanceof Blob)) {
     throw new Error('HEIC conversion failed.');
@@ -52,29 +71,18 @@ async function decodeToDrawable(file: File): Promise<CanvasImageSource> {
     } catch {
       // continue
     }
-    try {
-      if (typeof createImageBitmap === 'function') {
-        return await createImageBitmap(file);
-      }
-    } catch {
-      // continue
-    }
+    const heicBmp = await createOrientedBitmap(file);
+    if (heicBmp) return heicBmp;
     const jpegBlob = await heicFileToJpegBlob(file);
-    if (typeof createImageBitmap === 'function') {
-      return await createImageBitmap(jpegBlob);
-    }
+    const jpegBmp = await createOrientedBitmap(jpegBlob);
+    if (jpegBmp) return jpegBmp;
     return loadImageFromFile(
       new File([jpegBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: JPEG_MIME })
     );
   }
 
-  try {
-    if (typeof createImageBitmap === 'function') {
-      return await createImageBitmap(file);
-    }
-  } catch {
-    // fall through
-  }
+  const bmp = await createOrientedBitmap(file);
+  if (bmp) return bmp;
   return loadImageFromFile(file);
 }
 
@@ -103,16 +111,42 @@ function canvasToJpegBlob(canvas: HTMLCanvasElement, quality: number): Promise<B
   });
 }
 
-async function encodeUnderBudget(canvas: HTMLCanvasElement, maxBytes: number): Promise<Blob> {
-  const qualities = [0.92, 0.85, 0.78, 0.7, 0.62, 0.55, 0.48, 0.42, 0.36, 0.32, 0.28];
-  for (const q of qualities) {
+const JPEG_Q_MIN = 0.08;
+const JPEG_Q_MAX = 0.92;
+
+/**
+ * Highest JPEG quality (~monotonic size) such that encoded size stays under maxBytes.
+ * Fewer encode steps than a fixed ladder once the budget is tight to a narrow quality band.
+ */
+async function encodeJpegQualityUnderBudget(
+  canvas: HTMLCanvasElement,
+  maxBytes: number
+): Promise<Blob | null> {
+  const first = await canvasToJpegBlob(canvas, JPEG_Q_MAX);
+  if (!first) return null;
+  if (first.size <= maxBytes) return first;
+
+  const floor = await canvasToJpegBlob(canvas, JPEG_Q_MIN);
+  if (!floor || floor.size > maxBytes) return null;
+
+  let lo = JPEG_Q_MIN;
+  let hi = JPEG_Q_MAX;
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) * 0.5;
+    const blob = await canvasToJpegBlob(canvas, mid);
+    if (!blob) return null;
+    if (blob.size <= maxBytes) lo = mid;
+    else hi = mid;
+  }
+
+  let best = await canvasToJpegBlob(canvas, lo);
+  if (best && best.size <= maxBytes) return best;
+
+  for (let q = lo; q >= JPEG_Q_MIN; q -= 0.04) {
     const blob = await canvasToJpegBlob(canvas, q);
     if (blob && blob.size <= maxBytes) return blob;
   }
-  const last = await canvasToJpegBlob(canvas, 0.28);
-  if (last && last.size <= maxBytes) return last;
-  if (last) return last;
-  throw new Error('Could not encode image.');
+  return floor.size <= maxBytes ? floor : null;
 }
 
 function baseNameFromFile(file: File): string {
@@ -120,17 +154,35 @@ function baseNameFromFile(file: File): string {
   return n.replace(/[^\w.-]+/g, '-').slice(0, 80) || 'receipt';
 }
 
+function logReceiptCompressDebug(payload: {
+  originalBytes: number;
+  outBytes: number;
+  w: number;
+  h: number;
+  canvasW: number;
+  canvasH: number;
+  maxEdge: number;
+}) {
+  if (process.env.NODE_ENV !== 'development') return;
+  const pct =
+    payload.originalBytes > 0
+      ? `${(((payload.originalBytes - payload.outBytes) / payload.originalBytes) * 100).toFixed(1)}%`
+      : 'n/a';
+  console.debug(
+    '[receipt compress]',
+    `${payload.originalBytes}B → ${payload.outBytes}B (${pct} vs original); src ${payload.w}×${payload.h}px; canvas ${payload.canvasW}×${payload.canvasH}px; maxEdge ${payload.maxEdge}`
+  );
+}
+
 /**
- * Returns a File suitable for upload: same file if already small enough, else JPEG under maxBytes.
+ * JPEG under byte cap while respecting {@link RECEIPT_IMAGE_MAX_LONG_EDGE} when downscaling matters.
+ * Returns the original File when pixels are already within the long-edge cap **and** size ≤ maxBytes
+ * so we skip lossy round-trips where possible.
  */
 export async function compressReceiptImageForUpload(
   file: File,
   maxBytes: number = MAX_RECEIPT_UPLOAD_BYTES
 ): Promise<File> {
-  if (file.size <= maxBytes) {
-    return file;
-  }
-
   let drawable: CanvasImageSource;
   try {
     drawable = await decodeToDrawable(file);
@@ -139,15 +191,21 @@ export async function compressReceiptImageForUpload(
     throw new Error('Could not decode image.');
   }
 
+  const originalBytes = file.size;
   const { w, h } = dimensions(drawable);
   if (w <= 0 || h <= 0) {
     if (drawable instanceof ImageBitmap) drawable.close();
     throw new Error('Invalid image dimensions.');
   }
 
-  const MIN_EDGE = 400;
-  const SCALE_STEP = 0.82;
-  let maxEdge = 2400;
+  if (Math.max(w, h) <= RECEIPT_IMAGE_MAX_LONG_EDGE && file.size <= maxBytes) {
+    if (drawable instanceof ImageBitmap) drawable.close();
+    return file;
+  }
+
+  const MIN_EDGE = 260;
+  const SCALE_STEP = 0.8;
+  let maxEdge = RECEIPT_IMAGE_MAX_LONG_EDGE;
 
   try {
     while (maxEdge >= MIN_EDGE) {
@@ -159,16 +217,26 @@ export async function compressReceiptImageForUpload(
       if (!ctx) throw new Error('Could not create canvas context.');
       ctx.drawImage(drawable, 0, 0, cw, ch);
 
-      const blob = await encodeUnderBudget(canvas, maxBytes);
-      if (blob.size <= maxBytes) {
+      const blob = await encodeJpegQualityUnderBudget(canvas, maxBytes);
+      if (blob) {
         const name = `${baseNameFromFile(file)}.jpg`;
-        return new File([blob], name, { type: JPEG_MIME, lastModified: Date.now() });
+        const out = new File([blob], name, { type: JPEG_MIME, lastModified: Date.now() });
+        logReceiptCompressDebug({
+          originalBytes,
+          outBytes: out.size,
+          w,
+          h,
+          canvasW: cw,
+          canvasH: ch,
+          maxEdge,
+        });
+        return out;
       }
 
       maxEdge = Math.floor(maxEdge * SCALE_STEP);
     }
 
-    for (const edge of [320, 256, 192]) {
+    for (const edge of [320, 256, 224, 192, 160, 128]) {
       const { cw, ch } = canvasSizeForMaxEdge(w, h, edge);
       const canvas = document.createElement('canvas');
       canvas.width = cw;
@@ -176,10 +244,20 @@ export async function compressReceiptImageForUpload(
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not create canvas context.');
       ctx.drawImage(drawable, 0, 0, cw, ch);
-      const blob = await encodeUnderBudget(canvas, maxBytes);
-      if (blob.size <= maxBytes) {
+      const blob = await encodeJpegQualityUnderBudget(canvas, maxBytes);
+      if (blob) {
         const name = `${baseNameFromFile(file)}.jpg`;
-        return new File([blob], name, { type: JPEG_MIME, lastModified: Date.now() });
+        const out = new File([blob], name, { type: JPEG_MIME, lastModified: Date.now() });
+        logReceiptCompressDebug({
+          originalBytes,
+          outBytes: out.size,
+          w,
+          h,
+          canvasW: cw,
+          canvasH: ch,
+          maxEdge: edge,
+        });
+        return out;
       }
     }
 

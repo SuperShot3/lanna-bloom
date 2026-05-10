@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { MAX_RECEIPT_UPLOAD_BYTES } from '@/lib/receiptUploadLimits';
+import {
+  MAX_RECEIPT_UPLOAD_BYTES,
+  formatMaxFileErrorLabel,
+} from '@/lib/receiptUploadLimits';
 
 const BUCKET = 'receipts';
 const MAX_BYTES = MAX_RECEIPT_UPLOAD_BYTES;
@@ -145,7 +148,7 @@ export async function POST(
   }
   if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { error: `File too large (max ${Math.round(MAX_RECEIPT_UPLOAD_BYTES / (1024 * 1024))} MB)` },
+      { error: `File too large (max ${formatMaxFileErrorLabel(MAX_RECEIPT_UPLOAD_BYTES)})` },
       { status: 413 }
     );
   }

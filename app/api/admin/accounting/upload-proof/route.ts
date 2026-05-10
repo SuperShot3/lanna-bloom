@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import {
+  MAX_PROOF_IMAGE_BYTES,
+  MAX_PROOF_PDF_BYTES,
+  formatMaxFileErrorLabel,
+} from '@/lib/receiptUploadLimits';
 
-const BUCKET    = 'proofs';
-const MAX_BYTES = 10 * 1024 * 1024;
+const BUCKET = 'proofs';
 const ALLOWED_TYPES: readonly string[] = [
   'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf',
 ];
@@ -39,8 +43,15 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'File too large (max 10 MB)' }, { status: 413 });
+  const isPdf =
+    file.type === 'application/pdf' ||
+    (file instanceof File && /\.pdf$/i.test(file.name));
+  const maxBytes = isPdf ? MAX_PROOF_PDF_BYTES : MAX_PROOF_IMAGE_BYTES;
+  if (file.size > maxBytes) {
+    return NextResponse.json(
+      { error: `File too large (max ${formatMaxFileErrorLabel(maxBytes)})` },
+      { status: 413 }
+    );
   }
 
   const supabase = getSupabaseAdmin();

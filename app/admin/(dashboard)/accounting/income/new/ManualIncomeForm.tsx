@@ -8,6 +8,9 @@ import {
   INCOME_PAYMENT_METHODS,
   MONEY_LOCATIONS,
 } from '@/types/accounting';
+import { prepareProofFileForUpload, isProofPdfFile } from '@/lib/prepareProofFileForUpload';
+import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
+import { MAX_PROOF_PDF_LABEL, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -38,8 +41,16 @@ export function ManualIncomeForm() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    setProofPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setProofFile(file);
-    setProofPreview(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+    if (!file) return;
+    if (isProofPdfFile(file)) return;
+    if (file.type.startsWith('image/') || isReceiptImageFile(file)) {
+      setProofPreview(URL.createObjectURL(file));
+    }
   };
 
   const validate = () => {
@@ -66,8 +77,9 @@ export function ManualIncomeForm() {
     if (proofFile) {
       setUploadStatus('uploading');
       try {
+        const fileToUpload = await prepareProofFileForUpload(proofFile);
         const fd = new FormData();
-        fd.append('file', proofFile);
+        fd.append('file', fileToUpload);
         const uploadRes = await fetch('/api/admin/accounting/upload-proof', { method: 'POST', body: fd });
         if (!uploadRes.ok) {
           const d = await uploadRes.json().catch(() => ({}));
@@ -78,9 +90,9 @@ export function ManualIncomeForm() {
         }
         proofPath = (await uploadRes.json()).path;
         setUploadStatus('done');
-      } catch {
+      } catch (err) {
         setUploadStatus('error');
-        setError('Proof upload failed. Please try again.');
+        setError(err instanceof Error ? err.message : 'Proof upload failed. Please try again.');
         setLoading(false);
         return;
       }
@@ -321,7 +333,9 @@ export function ManualIncomeForm() {
               <div className="admin-expenses-upload-placeholder">
                 <span className="material-symbols-outlined">add_photo_alternate</span>
                 <span>Tap to attach proof</span>
-                <span className="admin-hint">JPG, PNG, WebP, HEIC or PDF · max 10 MB</span>
+                <span className="admin-hint">
+                  Images auto-compressed to max {MAX_RECEIPT_UPLOAD_LABEL}; PDF up to {MAX_PROOF_PDF_LABEL}
+                </span>
               </div>
             )}
           </div>
@@ -337,7 +351,15 @@ export function ManualIncomeForm() {
           {uploadStatus === 'error' && <p className="admin-field-error">Upload failed</p>}
           {proofFile && (
             <button type="button" className="admin-btn admin-btn-sm admin-btn-outline" style={{ marginTop: 4 }}
-              onClick={() => { setProofFile(null); setProofPreview(null); setUploadStatus('idle'); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
+              onClick={() => {
+                setProofPreview((prev) => {
+                  if (prev) URL.revokeObjectURL(prev);
+                  return null;
+                });
+                setProofFile(null);
+                setUploadStatus('idle');
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}>
               Remove
             </button>
           )}

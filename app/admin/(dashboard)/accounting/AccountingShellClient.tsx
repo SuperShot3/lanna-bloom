@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { MONEY_LOCATIONS } from '@/types/accounting';
 import type { AccountingSectionCounts } from './AccountingSectionSwitcher';
 import { AccountingSectionSwitcher } from './AccountingSectionSwitcher';
+import { prepareProofFileForUpload } from '@/lib/prepareProofFileForUpload';
 
 interface Props {
   periodLabel: string;
@@ -275,8 +276,15 @@ export function AccountingShellClient({
                   let attachmentPath: string | null = null;
 
                   if (transferAttachment) {
+                    let fileToUpload: File;
+                    try {
+                      fileToUpload = await prepareProofFileForUpload(transferAttachment);
+                    } catch (e) {
+                      setTransferMsg(e instanceof Error ? e.message : 'Could not prepare attachment');
+                      return;
+                    }
                     const fd = new FormData();
-                    fd.append('file', transferAttachment);
+                    fd.append('file', fileToUpload);
                     const uploadRes = await fetch('/api/admin/accounting/upload-proof', {
                       method: 'POST',
                       body: fd,
