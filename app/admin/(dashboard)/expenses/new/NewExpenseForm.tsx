@@ -4,8 +4,9 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expenses';
-
-const MAX_RECEIPT_BYTES = 500 * 1024;
+import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
+import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
+import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -38,15 +39,8 @@ export function NewExpenseForm() {
       setReceiptPreview(null);
       return;
     }
-    if (!file.type.startsWith('image/')) {
+    if (!isReceiptImageFile(file)) {
       setError('Only image files are allowed for receipt.');
-      setReceiptFile(null);
-      setReceiptPreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-    if (file.size > MAX_RECEIPT_BYTES) {
-      setError('Receipt image is too large. Max size is 500 KB.');
       setReceiptFile(null);
       setReceiptPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -54,7 +48,7 @@ export function NewExpenseForm() {
     }
     setError(null);
     setReceiptFile(file);
-    if (file && file.type.startsWith('image/')) {
+    if (file && isReceiptImageFile(file)) {
       const url = URL.createObjectURL(file);
       setReceiptPreview(url);
     } else {
@@ -89,8 +83,12 @@ export function NewExpenseForm() {
     if (receiptFile) {
       setUploadProgress('uploading');
       try {
+        const fileToUpload = await compressReceiptImageForUpload(
+          receiptFile,
+          MAX_RECEIPT_UPLOAD_BYTES
+        );
         const formData = new FormData();
-        formData.append('file', receiptFile);
+        formData.append('file', fileToUpload);
         const uploadRes = await fetch('/api/admin/expenses/upload-receipt', {
           method: 'POST',
           body: formData,
@@ -105,9 +103,11 @@ export function NewExpenseForm() {
         const { path } = await uploadRes.json();
         receiptPath = path;
         setUploadProgress('done');
-      } catch {
+      } catch (err) {
         setUploadProgress('error');
-        setError('Receipt upload failed. Please try again.');
+        setError(
+          err instanceof Error ? err.message : 'Receipt upload failed. Please try again.'
+        );
         setLoading(false);
         return;
       }
@@ -269,14 +269,14 @@ export function NewExpenseForm() {
               <div className="admin-expenses-upload-placeholder">
                 <span className="material-symbols-outlined">add_photo_alternate</span>
                 <span>Tap to attach receipt</span>
-                <span className="admin-hint">JPG, PNG, WebP, HEIC · max 500 KB</span>
+                <span className="admin-hint">Images · auto-compressed to max {MAX_RECEIPT_UPLOAD_LABEL}</span>
               </div>
             )}
           </div>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic"
+            accept="image/*"
             className="admin-expenses-file-input"
             onChange={handleFileChange}
             aria-label="Upload receipt file"

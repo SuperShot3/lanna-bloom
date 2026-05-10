@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['next-mdx-remote'],
+  transpilePackages: ['next-mdx-remote', 'heic2any'],
   async headers() {
     // Baseline security headers (keep CSP in Report-Only initially to reduce break risk).
     const cspReportOnly = [

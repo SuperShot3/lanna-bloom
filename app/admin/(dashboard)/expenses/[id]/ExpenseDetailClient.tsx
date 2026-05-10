@@ -8,6 +8,8 @@ import { billLineCheckpointCount, billTrackingProgress, expenseDocumentationComp
 import { EXPENSE_CATEGORIES, PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
+import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
+import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
@@ -51,7 +53,6 @@ interface ExpenseDetailClientProps {
   expense: Expense;
 }
 
-const MAX_RECEIPT_BYTES = 500 * 1024;
 const DELETE_RECEIPT_CONFIRM =
   'Are you sure you want to delete this receipt? This cannot be undone.';
 
@@ -139,7 +140,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     if (receiptFileInputRef.current) receiptFileInputRef.current.value = '';
 
     setReceiptError(null);
-    if (!file.type.startsWith('image/')) {
+    if (!isReceiptImageFile(file)) {
       setReceiptError('Only image files are allowed.');
       return;
     }
@@ -147,7 +148,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     setCompressingReceipt(true);
     let fileToUpload: File;
     try {
-      fileToUpload = await compressReceiptImageForUpload(file, MAX_RECEIPT_BYTES);
+      fileToUpload = await compressReceiptImageForUpload(file, MAX_RECEIPT_UPLOAD_BYTES);
     } catch (err) {
       setReceiptError(err instanceof Error ? err.message : 'Could not prepare image for upload.');
       setCompressingReceipt(false);
@@ -509,7 +510,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         <input
           ref={receiptFileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
+          accept="image/*"
           onChange={handleAddReceiptImage}
           style={{ display: 'none' }}
           aria-label="Add receipt image"
@@ -549,8 +550,8 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
           ) : null}
         </div>
         <p className="admin-hint">
-          Receipt images only. Large photos are compressed automatically before upload; max 500 KB after
-          compression.
+          Receipt images only. Large photos are compressed automatically before upload (max {MAX_RECEIPT_UPLOAD_LABEL}{' '}
+          per file).
         </p>
         {loadingReceipts ? <p className="admin-hint">Loading images…</p> : null}
         {receiptCount > 0 ? (

@@ -7,8 +7,9 @@ import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
-
-const MAX_RECEIPT_BYTES = 500 * 1024;
+import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
+import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
+import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
 const DELETE_RECEIPT_CONFIRM =
   'Are you sure you want to delete this receipt? This cannot be undone.';
 
@@ -326,19 +327,16 @@ export function CostsAndProfitCard({
       });
       return;
     }
-    if (!file.type.startsWith('image/')) {
+    if (!isReceiptImageFile(file)) {
       setFlowerReceiptMessage({ type: 'error', text: 'Only image files are allowed.' });
-      return;
-    }
-    if (file.size > MAX_RECEIPT_BYTES) {
-      setFlowerReceiptMessage({ type: 'error', text: 'Image is too large. Max size is 500 KB.' });
       return;
     }
 
     setFlowerReceiptBusy(true);
     try {
+      const fileToUpload = await compressReceiptImageForUpload(file, MAX_RECEIPT_UPLOAD_BYTES);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       const uploadRes = await fetch(`/api/admin/expenses/${encodeURIComponent(cogsExpense.id)}/receipts`, {
         method: 'POST',
         body: formData,
@@ -352,8 +350,12 @@ export function CostsAndProfitCard({
       await loadFlowerReceipts(cogsExpense.id);
       setFlowerReceiptMessage({ type: 'success', text: 'Receipt attached (flowers / shop)' });
       router.refresh();
-    } catch {
-      setFlowerReceiptMessage({ type: 'error', text: 'Network error while uploading receipt image' });
+    } catch (err) {
+      setFlowerReceiptMessage({
+        type: 'error',
+        text:
+          err instanceof Error ? err.message : 'Network error while uploading receipt image',
+      });
     } finally {
       setFlowerReceiptBusy(false);
     }
@@ -435,19 +437,16 @@ export function CostsAndProfitCard({
       });
       return;
     }
-    if (!file.type.startsWith('image/')) {
+    if (!isReceiptImageFile(file)) {
       setDeliveryReceiptMessage({ type: 'error', text: 'Only image files are allowed.' });
-      return;
-    }
-    if (file.size > MAX_RECEIPT_BYTES) {
-      setDeliveryReceiptMessage({ type: 'error', text: 'Image is too large. Max size is 500 KB.' });
       return;
     }
 
     setDeliveryReceiptBusy(true);
     try {
+      const fileToUpload = await compressReceiptImageForUpload(file, MAX_RECEIPT_UPLOAD_BYTES);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       const uploadRes = await fetch(`/api/admin/expenses/${encodeURIComponent(deliveryExpense.id)}/receipts`, {
         method: 'POST',
         body: formData,
@@ -461,8 +460,12 @@ export function CostsAndProfitCard({
       await loadDeliveryReceipts(deliveryExpense.id);
       setDeliveryReceiptMessage({ type: 'success', text: 'Receipt attached (driver)' });
       router.refresh();
-    } catch {
-      setDeliveryReceiptMessage({ type: 'error', text: 'Network error while uploading receipt image' });
+    } catch (err) {
+      setDeliveryReceiptMessage({
+        type: 'error',
+        text:
+          err instanceof Error ? err.message : 'Network error while uploading receipt image',
+      });
     } finally {
       setDeliveryReceiptBusy(false);
     }
@@ -702,7 +705,7 @@ export function CostsAndProfitCard({
           <input
             ref={receiptFlowerInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic"
+            accept="image/*"
             onChange={handleFlowerReceiptFileSelected}
             style={{ display: 'none' }}
             aria-label="Add flowers COGS receipt image"
@@ -815,7 +818,7 @@ export function CostsAndProfitCard({
             <input
               ref={receiptDeliveryInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic"
+              accept="image/*"
               onChange={handleDeliveryReceiptFileSelected}
               style={{ display: 'none' }}
               aria-label="Add delivery driver payment receipt image"
@@ -908,7 +911,7 @@ export function CostsAndProfitCard({
       ) : null}
 
       <p className="admin-hint" style={{ marginTop: 14 }}>
-        Receipt images only, max size 500 KB per file.
+        Receipt images only; large photos are compressed automatically (max {MAX_RECEIPT_UPLOAD_LABEL} per file).
       </p>
     </section>
   );

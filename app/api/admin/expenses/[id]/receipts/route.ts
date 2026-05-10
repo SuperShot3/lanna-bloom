@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { MAX_RECEIPT_UPLOAD_BYTES } from '@/lib/receiptUploadLimits';
 
 const BUCKET = 'receipts';
-const MAX_BYTES = 500 * 1024; // 500 KB
+const MAX_BYTES = MAX_RECEIPT_UPLOAD_BYTES;
 const ALLOWED_TYPES: readonly string[] = [
   'image/jpeg',
   'image/png',
@@ -143,7 +144,10 @@ export async function POST(
     );
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'File too large (max 500 KB)' }, { status: 413 });
+    return NextResponse.json(
+      { error: `File too large (max ${Math.round(MAX_RECEIPT_UPLOAD_BYTES / (1024 * 1024))} MB)` },
+      { status: 413 }
+    );
   }
 
   const ext = fileExtension(file.type);
