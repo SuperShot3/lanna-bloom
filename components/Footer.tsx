@@ -18,7 +18,7 @@ const FOOTER_DELIVERY_ORDER_LINKS: {
   { destinationId: 'CHIANG_MAI', href: (l) => `/${l}/catalog` },
   ...MARKETS.map((m) => ({
     destinationId: m.destinationId,
-    href: (l: Locale) => `/${l}/catalog/${m.pathSlug}`,
+    href: (l: Locale) => `/${l}/${m.pathSlug}/flower-delivery`,
   })),
 ];
 import { MessengerLinks } from './MessengerLinks';

@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { OCCASION_OPTIONS } from '@/lib/partnerPortal';
+import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
 
 type ProductImageAnalysis = {
   productFormat: string;
@@ -39,9 +41,10 @@ type ImageVariant = {
   alt?: string;
 };
 
-type PublishedProduct = {
+type SavedProduct = {
   id: string;
   slug: string;
+  reviewUrl: string;
 };
 
 type Hints = {
@@ -53,7 +56,18 @@ type Hints = {
   notes: string;
 };
 
+type TextGenerationHistoryEntry = {
+  id: string;
+  nameEn: string;
+  nameTh: string;
+  generatedAt: string;
+  account: string;
+};
+
 type LoadingStage = 'draft' | 'image' | 'publish';
+
+const TEXT_GENERATION_HISTORY_KEY = 'admin-product-text-generation-history';
+const TEXT_GENERATION_HISTORY_LIMIT = 12;
 
 const emptyDraft: ProductDraftCopy = {
   nameEn: '',
@@ -81,19 +95,19 @@ const emptyHints: Hints = {
 
 const loadingStageCopy: Record<LoadingStage, { title: string; detail: string; steps: string[] }> = {
   draft: {
-    title: 'Generating AI product draft',
-    detail: 'OpenAI is analyzing the photo and writing bilingual product copy. This can take up to a minute.',
+    title: 'Generating product text',
+    detail: 'OpenAI is analyzing the photo and writing bilingual product text. This can take up to a minute.',
     steps: ['Reading product photo', 'Identifying flowers and colors', 'Writing English and Thai copy'],
   },
   image: {
-    title: 'Enhancing product image',
+    title: 'Generating product image',
     detail: 'OpenAI is preparing a clean catalog image, then the site uploads WebP and PNG versions to Sanity.',
     steps: ['Preserving product details', 'Cleaning the background', 'Uploading image variants'],
   },
   publish: {
-    title: 'Adding product to website',
-    detail: 'The approved product details are being saved and connected to the public catalog.',
-    steps: ['Checking required fields', 'Saving product in Sanity', 'Preparing catalog links'],
+    title: 'Saving product for review',
+    detail: 'The product is being saved to Sanity as a private review item. It will not be live until approved.',
+    steps: ['Checking required fields', 'Saving product in Sanity', 'Preparing review link'],
   },
 };
 
@@ -108,6 +122,59 @@ function joinList(value: string[] | undefined): string {
   return (value ?? []).join(', ');
 }
 
+function isTextGenerationHistoryEntry(value: unknown): value is TextGenerationHistoryEntry {
+  const entry = value as Partial<TextGenerationHistoryEntry>;
+  return (
+    typeof entry?.id === 'string' &&
+    typeof entry.nameEn === 'string' &&
+    typeof entry.nameTh === 'string' &&
+    typeof entry.generatedAt === 'string' &&
+    typeof entry.account === 'string'
+  );
+}
+
+function readTextGenerationHistory(): TextGenerationHistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(TEXT_GENERATION_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter(isTextGenerationHistoryEntry).slice(0, TEXT_GENERATION_HISTORY_LIMIT)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveTextGenerationHistory(history: TextGenerationHistoryEntry[]) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(TEXT_GENERATION_HISTORY_KEY, JSON.stringify(history));
+  } catch {
+    // History is helpful, but product creation should continue if browser storage is unavailable.
+  }
+}
+
+function createTextGenerationHistoryId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function formatGeneratedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
 function presentationFormatFromAnalysis(analysis: ProductImageAnalysis | null): string {
   const text = `${analysis?.productFormat ?? ''} ${analysis?.wrappingOrContainer ?? ''}`.toLowerCase();
   if (text.includes('basket')) return 'basket';
@@ -116,6 +183,14 @@ function presentationFormatFromAnalysis(analysis: ProductImageAnalysis | null): 
   if (text.includes('pot') || text.includes('potted')) return 'potted';
   if (text.includes('arrangement')) return 'arrangement';
   return 'bouquet';
+}
+
+function hasPositivePrice(value: string): boolean {
+  const normalized = value.trim();
+  if (!normalized) return false;
+
+  const numericPrice = Number(normalized);
+  return Number.isFinite(numericPrice) && numericPrice > 0;
 }
 
 async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
@@ -144,22 +219,39 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const [featuredPopular, setFeaturedPopular] = useState(false);
   const [loading, setLoading] = useState<LoadingStage | null>(null);
   const [error, setError] = useState('');
-  const [published, setPublished] = useState<PublishedProduct | null>(null);
+  const [savedProduct, setSavedProduct] = useState<SavedProduct | null>(null);
+  const [textGenerationHistory, setTextGenerationHistory] = useState<TextGenerationHistoryEntry[]>([]);
 
-  const canPublish = useMemo(
-    () => Boolean(draft.nameEn.trim() && price && imageVariants.some((variant) => variant.isPrimary)),
+  const canSaveForReview = useMemo(
+    () => Boolean(draft.nameEn.trim() && hasPositivePrice(price) && imageVariants.some((variant) => variant.isPrimary)),
     [draft.nameEn, imageVariants, price]
   );
   const progressSteps = [
     { label: 'Upload', complete: Boolean(file) },
     { label: 'AI draft', complete: Boolean(analysis), loadingStage: 'draft' as const },
     { label: 'Image', complete: imageVariants.some((variant) => variant.isPrimary), loadingStage: 'image' as const },
-    { label: 'Publish', complete: Boolean(published), loadingStage: 'publish' as const },
+    { label: 'Review', complete: Boolean(savedProduct), loadingStage: 'publish' as const },
   ];
   const loadingDetails = loading ? loadingStageCopy[loading] : null;
+  const occasionHintValues = useMemo(() => splitList(hints.occasion), [hints.occasion]);
+
+  useEffect(() => {
+    setTextGenerationHistory(readTextGenerationHistory());
+  }, []);
 
   function updateHint(key: keyof Hints, value: string) {
     setHints((current) => ({ ...current, [key]: value }));
+  }
+
+  function toggleOccasionHint(value: string) {
+    const current = splitList(hints.occasion);
+    const next = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+    updateHint('occasion', next.join(', '));
+  }
+
+  function updateProductType(value: string) {
+    updateHint('productType', value);
+    setPresentationCsv(value);
   }
 
   function updateDraft(key: keyof ProductDraftCopy, value: string) {
@@ -181,12 +273,28 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     });
   }
 
+  function recordTextGeneration(nextDraft: ProductDraftCopy) {
+    const entry: TextGenerationHistoryEntry = {
+      id: createTextGenerationHistoryId(),
+      nameEn: nextDraft.nameEn || 'Untitled product',
+      nameTh: nextDraft.nameTh,
+      generatedAt: new Date().toISOString(),
+      account: adminEmail || 'Unknown account',
+    };
+
+    setTextGenerationHistory((current) => {
+      const next = [entry, ...current].slice(0, TEXT_GENERATION_HISTORY_LIMIT);
+      saveTextGenerationHistory(next);
+      return next;
+    });
+  }
+
   function handleFileChange(nextFile: File | null) {
     setFile(nextFile);
     setFilePreview(nextFile ? URL.createObjectURL(nextFile) : '');
     setEnhancedPreview('');
     setImageVariants([]);
-    setPublished(null);
+    setSavedProduct(null);
   }
 
   function resetWizard() {
@@ -206,7 +314,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setFeaturedPopular(false);
     setLoading(null);
     setError('');
-    setPublished(null);
+    setSavedProduct(null);
   }
 
   async function requestDraft() {
@@ -216,7 +324,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     }
 
     setError('');
-    setPublished(null);
+    setSavedProduct(null);
     setLoading('draft');
     const formData = new FormData();
     formData.append('file', file);
@@ -238,6 +346,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       const nextDraft = payload.draft as ProductDraftCopy;
       setAnalysis(nextAnalysis);
       setDraft(nextDraft);
+      recordTextGeneration(nextDraft);
       setColorsCsv(joinList(nextAnalysis.colors));
       setFlowersCsv(joinList(nextAnalysis.identifiedFlowers));
       setOccasionsCsv(joinList(nextAnalysis.suggestedOccasions));
@@ -286,7 +395,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     }
   }
 
-  async function publishProduct() {
+  async function saveProductForReview() {
+    if (!hasPositivePrice(price)) {
+      setError('Enter a product price greater than 0 before saving for review.');
+      return;
+    }
+
     setError('');
     setLoading('publish');
     try {
@@ -311,13 +425,17 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       const payload = await readJsonResponse(response);
 
       if (!response.ok) {
-        setError(String(payload.error ?? 'Could not add this product to the website.'));
+        setError(String(payload.error ?? 'Could not save this product for review.'));
         return;
       }
 
-      setPublished({ id: String(payload.id), slug: String(payload.slug) });
+      setSavedProduct({
+        id: String(payload.id),
+        slug: String(payload.slug),
+        reviewUrl: String(payload.reviewUrl || `/admin/products/review/${payload.id}`),
+      });
     } catch {
-      setError('Could not add this product to the website. Check your connection and try again.');
+      setError('Could not save this product for review. Check your connection and try again.');
     } finally {
       setLoading(null);
     }
@@ -330,7 +448,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           <span className="admin-product-create-eyebrow">Admin product studio</span>
           <h1 className="admin-title">Create Product With AI</h1>
           <p className="admin-hint">
-            Upload one product photo, review every AI suggestion, then publish an approved bouquet to Sanity.
+            Upload one product photo, review every AI suggestion, then save a private Sanity draft for owner/admin approval.
           </p>
         </div>
         <div className="admin-product-create-user">
@@ -387,33 +505,37 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         </div>
       ) : null}
 
-      {published ? (
+      {savedProduct ? (
         <section className="admin-product-create-success-page" aria-live="polite">
           <span className="material-symbols-outlined admin-product-create-success-icon" aria-hidden="true">
             check_circle
           </span>
-          <span className="admin-product-create-eyebrow">Product added</span>
-          <h2>Product is live on the website</h2>
+          <span className="admin-product-create-eyebrow">Saved for review</span>
+          <h2>Product is in Sanity but not live</h2>
           <p>
-            The approved product was saved successfully. You can review the public product pages now or start another
-            product.
+            This bouquet is hidden from the public catalog until an owner or admin approves it. Share the internal review
+            page with the team when it is ready.
           </p>
           <dl className="admin-product-create-result-meta">
             <div>
               <dt>Sanity ID</dt>
-              <dd>{published.id}</dd>
+              <dd>{savedProduct.id}</dd>
             </div>
             <div>
               <dt>Catalog slug</dt>
-              <dd>{published.slug}</dd>
+              <dd>{savedProduct.slug}</dd>
+            </div>
+            <div>
+              <dt>Review link</dt>
+              <dd>{savedProduct.reviewUrl}</dd>
             </div>
           </dl>
           <div className="admin-product-create-result-actions">
-            <Link className="admin-btn admin-btn-primary" href={`/en/catalog/${published.slug}`} target="_blank">
-              View English page
+            <Link className="admin-btn admin-btn-primary" href={savedProduct.reviewUrl}>
+              Open review page
             </Link>
-            <Link className="admin-btn admin-btn-outline" href={`/th/catalog/${published.slug}`} target="_blank">
-              View Thai page
+            <Link className="admin-btn admin-btn-outline" href="/admin/moderation/products">
+              View moderation queue
             </Link>
             <button className="admin-btn admin-btn-outline" type="button" onClick={resetWizard}>
               Create another product
@@ -447,11 +569,17 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           <div className="admin-product-create-two">
             <label className="admin-form-group">
               <span>Product type</span>
-              <input
+              <select
                 className="admin-input"
                 value={hints.productType}
-                onChange={(event) => updateHint('productType', event.target.value)}
-              />
+                onChange={(event) => updateProductType(event.target.value)}
+              >
+                {BOUQUET_PRESENTATION_FORMAT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="admin-form-group">
               <span>Target price</span>
@@ -461,17 +589,25 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
                 value={hints.price}
                 onChange={(event) => updateHint('price', event.target.value)}
               />
+              <small>Product price only. Exclude delivery.</small>
             </label>
           </div>
           <div className="admin-product-create-two">
-            <label className="admin-form-group">
-              <span>Occasion hint</span>
-              <input
-                className="admin-input"
-                value={hints.occasion}
-                onChange={(event) => updateHint('occasion', event.target.value)}
-              />
-            </label>
+            <fieldset className="admin-form-group admin-product-create-occasion-hints">
+              <legend>Occasion hint</legend>
+              <div className="admin-product-create-choice-grid">
+                {OCCASION_OPTIONS.map((option) => (
+                  <label className="admin-product-create-choice" key={option.value}>
+                    <input
+                      type="checkbox"
+                      checked={occasionHintValues.includes(option.value)}
+                      onChange={() => toggleOccasionHint(option.value)}
+                    />
+                    <span>{option.labelEn}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <label className="admin-form-group">
               <span>Color hint</span>
               <input
@@ -491,7 +627,10 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             />
           </label>
           <button className="admin-btn admin-btn-primary admin-product-create-main-action" type="button" disabled={Boolean(loading)} onClick={requestDraft}>
-            {loading === 'draft' ? 'Generating draft...' : 'Analyze Image And Generate Copy'}
+            <span className="material-symbols-outlined" aria-hidden="true">
+              auto_awesome
+            </span>
+            {loading === 'draft' ? 'Generating text...' : 'Generate text'}
           </button>
         </div>
 
@@ -541,11 +680,26 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
                 disabled={Boolean(loading)}
                 onClick={enhanceImage}
               >
-                {loading === 'image' ? 'Enhancing and uploading...' : 'Enhance Image And Upload Variants'}
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  image
+                </span>
+                {loading === 'image' ? 'Generating image...' : 'Generate image'}
               </button>
             </>
           ) : (
-            <p className="admin-hint">AI analysis will appear here for admin correction before image enhancement.</p>
+            <>
+              <p className="admin-hint">Generate text first. The AI analysis will appear here for review before image generation.</p>
+              <button
+                className="admin-btn admin-btn-primary admin-product-create-main-action"
+                type="button"
+                disabled
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  image
+                </span>
+                Generate image
+              </button>
+            </>
           )}
         </div>
       </section>
@@ -608,8 +762,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
         <div className="admin-product-create-card">
           <div>
-            <div className="admin-product-create-step">4. Publish details and preview</div>
-            <p className="admin-product-create-card-hint">Confirm price, tags, and the approved image before this goes live.</p>
+            <div className="admin-product-create-step">4. Review details and save</div>
+            <p className="admin-product-create-card-hint">Confirm price, tags, and the approved image before saving for review.</p>
           </div>
           {enhancedPreview ? (
             <img className="admin-product-create-image" src={enhancedPreview} alt="Enhanced product preview" />
@@ -652,21 +806,54 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           </label>
           <div className="admin-product-create-preview">
             <strong>{draft.nameEn || 'Product name'}</strong>
-            <span>{price ? `THB ${price}` : 'Set a price before publishing'}</span>
+            <span>{price ? `THB ${price}` : 'Set a price before saving'}</span>
             <p>{draft.descriptionEn || 'Description preview will appear here.'}</p>
           </div>
           <button
             className="admin-btn admin-btn-primary admin-btn-full"
             type="button"
-            disabled={!canPublish || Boolean(loading)}
-            onClick={publishProduct}
+            disabled={!canSaveForReview || Boolean(loading)}
+            onClick={saveProductForReview}
           >
-            {loading === 'publish' ? 'Publishing...' : 'Publish Approved Product'}
+            {loading === 'publish' ? 'Saving...' : 'Save for Review'}
           </button>
         </div>
       </section>
         </>
       )}
+      <section className="admin-product-create-history" aria-labelledby="text-generation-history-title">
+        <div className="admin-product-create-history-head">
+          <div>
+            <span className="admin-product-create-eyebrow">Text history</span>
+            <h2 id="text-generation-history-title">Recent generated text</h2>
+            <p>Product names generated on this browser, with the account that generated them.</p>
+          </div>
+          {textGenerationHistory.length ? (
+            <span className="admin-product-create-history-count">{textGenerationHistory.length}</span>
+          ) : null}
+        </div>
+
+        {textGenerationHistory.length ? (
+          <div className="admin-product-create-history-list">
+            {textGenerationHistory.map((entry) => (
+              <article className="admin-product-create-history-item" key={entry.id}>
+                <span className="material-symbols-outlined admin-product-create-history-icon" aria-hidden="true">
+                  history
+                </span>
+                <div>
+                  <strong>{entry.nameEn || entry.nameTh || 'Untitled product'}</strong>
+                  {entry.nameTh ? <span>{entry.nameTh}</span> : null}
+                  <small>
+                    Generated {formatGeneratedAt(entry.generatedAt)} by {entry.account}
+                  </small>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="admin-product-create-history-empty">Generated product names will appear here after you use Generate text.</p>
+        )}
+      </section>
     </div>
   );
 }

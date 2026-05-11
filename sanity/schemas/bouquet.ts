@@ -1,4 +1,5 @@
 import { defineType, defineArrayMember } from 'sanity';
+import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
 import { MARKETS } from '@/lib/delivery/markets';
 
 const DESTINATION_EXCLUSION_LIST = [
@@ -134,14 +135,7 @@ export const bouquet = defineType({
       type: 'array',
       of: [{ type: 'string' }],
       options: {
-        list: [
-          { title: 'Bouquet', value: 'bouquet' },
-          { title: 'Box', value: 'box' },
-          { title: 'Vase', value: 'vase' },
-          { title: 'Basket', value: 'basket' },
-          { title: 'Arrangement', value: 'arrangement' },
-          { title: 'Potted', value: 'potted' },
-        ],
+        list: [...BOUQUET_PRESENTATION_FORMAT_OPTIONS],
       },
     },
     {
@@ -219,7 +213,38 @@ export const bouquet = defineType({
         ],
       },
       initialValue: 'approved',
-      description: 'Only approved bouquets appear on the public catalog. Partner uploads start as pending_review.',
+      description: 'Only approved bouquets appear on the public catalog. Partner and AI-created review items start as pending_review.',
+    },
+    {
+      name: 'source',
+      title: 'Source',
+      type: 'string',
+      readOnly: true,
+      description: 'Internal source marker, for example admin_ai_product_creation.',
+    },
+    {
+      name: 'createdBy',
+      title: 'Created by',
+      type: 'string',
+      readOnly: true,
+    },
+    {
+      name: 'createdAt',
+      title: 'Created at',
+      type: 'datetime',
+      readOnly: true,
+    },
+    {
+      name: 'approvedBy',
+      title: 'Approved by',
+      type: 'string',
+      readOnly: true,
+    },
+    {
+      name: 'approvedAt',
+      title: 'Approved at',
+      type: 'datetime',
+      readOnly: true,
     },
     {
       name: 'images',

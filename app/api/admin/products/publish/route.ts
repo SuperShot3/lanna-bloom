@@ -1,7 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
-import { createApprovedAdminBouquet, type SanityWriteImageInput } from '@/lib/sanityWrite';
+import { createAdminReviewBouquet, type SanityWriteImageInput } from '@/lib/sanityWrite';
 
 export const runtime = 'nodejs';
 
@@ -62,15 +62,15 @@ export async function POST(request: NextRequest) {
   if (!nameEn) {
     return NextResponse.json({ error: 'English product name is required' }, { status: 400 });
   }
-  if (!Number.isFinite(price) || price < 0) {
-    return NextResponse.json({ error: 'price must be a non-negative number' }, { status: 400 });
+  if (!Number.isFinite(price) || price <= 0) {
+    return NextResponse.json({ error: 'Product price is required and must be greater than 0' }, { status: 400 });
   }
   if (!images.some((image) => image.isPrimary)) {
-    return NextResponse.json({ error: 'A primary WebP image is required before publish' }, { status: 400 });
+    return NextResponse.json({ error: 'A primary WebP image is required before saving for review' }, { status: 400 });
   }
 
   try {
-    const result = await createApprovedAdminBouquet({
+    const result = await createAdminReviewBouquet({
       nameEn,
       nameTh: stringField(b, 'nameTh'),
       slug: stringField(b, 'slug') || undefined,
@@ -86,22 +86,21 @@ export async function POST(request: NextRequest) {
       presentationFormats: stringArrayField(b, 'presentationFormats'),
       deliveryOptions: stringArrayField(b, 'deliveryOptions'),
       featuredPopular: b.featuredPopular === true,
-      approvedBy: session.user.email ?? 'unknown',
-      approvedAt: new Date().toISOString(),
+      createdBy: session.user.email ?? 'unknown',
+      createdAt: new Date().toISOString(),
     });
 
-    revalidatePath('/en/catalog', 'layout');
-    revalidatePath('/th/catalog', 'layout');
-    revalidatePath(`/en/catalog/${result.slug}`);
-    revalidatePath(`/th/catalog/${result.slug}`);
+    revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/products/review/${result.id}`);
 
     return NextResponse.json({
-      status: 'published',
+      status: 'pending_review',
       id: result.id,
       slug: result.slug,
+      reviewUrl: `/admin/products/review/${result.id}`,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to publish product';
+    const message = error instanceof Error ? error.message : 'Failed to save product for review';
     const status = message.includes('SANITY_API_WRITE_TOKEN') ? 503 : 500;
     console.error('[admin-products/publish] error:', error);
     return NextResponse.json({ error: message }, { status });

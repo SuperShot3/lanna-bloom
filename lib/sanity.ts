@@ -247,7 +247,10 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     partnerShopBioEn: doc.partnerShopBioEn ?? undefined,
     partnerShopBioTh: doc.partnerShopBioTh ?? undefined,
     partnerPortraitUrl: doc.partnerPortrait ? urlFor(doc.partnerPortrait) : undefined,
-    status: doc.status === 'pending_review' || doc.status === 'approved' ? doc.status : undefined,
+    status:
+      doc.status === 'pending_review' || doc.status === 'approved' || doc.status === 'rejected'
+        ? doc.status
+        : undefined,
     featuredPopular: doc.featuredPopular === true,
   };
 }

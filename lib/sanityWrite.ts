@@ -155,6 +155,8 @@ export interface CreateAdminBouquetInput {
   deliveryOptions?: string[];
   excludedDeliveryDestinations?: string[];
   featuredPopular?: boolean;
+  createdBy?: string;
+  createdAt?: string;
   approvedBy?: string;
   approvedAt?: string;
 }
@@ -226,10 +228,20 @@ export interface UpdateBouquetInput {
 /** Update bouquet status (admin moderation): approved | pending_review | rejected */
 export async function updateBouquetStatus(
   bouquetId: string,
-  status: 'approved' | 'pending_review' | 'rejected'
+  status: 'approved' | 'pending_review' | 'rejected',
+  metadata?: { approvedBy?: string; approvedAt?: string }
 ): Promise<void> {
   const client = getWriteClient();
-  await client.patch(bouquetId).set({ status }).commit();
+  await client
+    .patch(bouquetId)
+    .set({
+      status,
+      ...(status === 'approved' && {
+        approvedBy: metadata?.approvedBy?.trim() || undefined,
+        approvedAt: metadata?.approvedAt || new Date().toISOString(),
+      }),
+    })
+    .commit();
 }
 
 export interface UpdateProductInput {
@@ -430,8 +442,9 @@ export async function checkSlugAvailability(slug: string): Promise<boolean> {
   return count === 0;
 }
 
-export async function createApprovedAdminBouquet(
-  input: CreateAdminBouquetInput
+async function createAdminBouquetDocument(
+  input: CreateAdminBouquetInput,
+  status: 'approved' | 'pending_review'
 ): Promise<{ id: string; slug: string }> {
   const client = getWriteClient();
   const baseSlug = slugFromName(input.slug || input.nameEn);
@@ -469,10 +482,14 @@ export async function createApprovedAdminBouquet(
       ? { excludedDeliveryDestinations: input.excludedDeliveryDestinations }
       : {}),
     featuredPopular: input.featuredPopular === true,
-    status: 'approved',
+    status,
     source: 'admin_ai_product_creation',
-    approvedBy: input.approvedBy?.trim() || undefined,
-    approvedAt: input.approvedAt || new Date().toISOString(),
+    createdBy: input.createdBy?.trim() || undefined,
+    createdAt: input.createdAt || new Date().toISOString(),
+    ...(status === 'approved' && {
+      approvedBy: input.approvedBy?.trim() || input.createdBy?.trim() || undefined,
+      approvedAt: input.approvedAt || new Date().toISOString(),
+    }),
     images,
     sizes: [
       {
@@ -487,6 +504,18 @@ export async function createApprovedAdminBouquet(
   });
 
   return { id: doc._id, slug };
+}
+
+export async function createAdminReviewBouquet(
+  input: CreateAdminBouquetInput
+): Promise<{ id: string; slug: string }> {
+  return createAdminBouquetDocument(input, 'pending_review');
+}
+
+export async function createApprovedAdminBouquet(
+  input: CreateAdminBouquetInput
+): Promise<{ id: string; slug: string }> {
+  return createAdminBouquetDocument(input, 'approved');
 }
 
 /** Delete a product document. Caller must verify ownership. */

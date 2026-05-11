@@ -114,9 +114,15 @@ export function ProductModerationClient({
                   <p className="admin-moderation-card-meta">฿{b.sizes?.[0]?.price ?? 0}+</p>
                 </div>
                 <div className="admin-moderation-card-actions">
+                  <Link
+                    href={`/admin/products/review/${b.id}`}
+                    className="admin-btn admin-btn-primary admin-btn-sm"
+                  >
+                    Review
+                  </Link>
                   <button
                     type="button"
-                    className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
+                    className="admin-btn admin-btn-outline admin-btn-sm admin-moderation-btn-loading"
                     disabled={!!loading}
                     onClick={() => handleApproveBouquet(b.id)}
                   >
@@ -126,7 +132,7 @@ export function ProductModerationClient({
                         Saving…
                       </>
                     ) : (
-                      'Approve'
+                      'Make live'
                     )}
                   </button>
                   <button

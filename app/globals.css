@@ -8944,6 +8944,43 @@ a.admin-summary-key-value {
   color: #33413c;
   font-weight: 700;
 }
+.admin-product-create .admin-form-group > small {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.admin-product-create-occasion-hints {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.admin-product-create-occasion-hints legend {
+  margin-bottom: 7px;
+  color: #33413c;
+  font-weight: 700;
+}
+.admin-product-create-choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-product-create-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid rgba(26, 60, 52, 0.12);
+  border-radius: 999px;
+  background: #fff;
+  color: #33413c;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin-product-create-choice input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--admin-primary, var(--primary));
+}
 .admin-product-create-textarea {
   min-height: 110px;
   resize: vertical;
@@ -9085,10 +9122,16 @@ a.admin-summary-key-value {
 }
 .admin-product-create-main-action,
 .admin-product-create .admin-btn-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-height: 48px;
   justify-content: center;
   border-radius: 13px;
   font-weight: 800;
+}
+.admin-product-create-main-action .material-symbols-outlined {
+  font-size: 20px;
 }
 @keyframes admin-product-create-loader-spin {
   to {
@@ -9250,6 +9293,100 @@ a.admin-summary-key-value {
   justify-content: center;
   text-decoration: none;
 }
+.admin-product-create-history {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(26, 60, 52, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 42px rgba(26, 60, 52, 0.06);
+}
+.admin-product-create-history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.admin-product-create-history-head h2 {
+  margin: 0;
+  color: var(--admin-primary, var(--primary));
+  font-size: 1.18rem;
+}
+.admin-product-create-history-head p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.admin-product-create-history-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(26, 60, 52, 0.08);
+  color: var(--admin-primary, var(--primary));
+  font-weight: 800;
+}
+.admin-product-create-history-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.admin-product-create-history-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(26, 60, 52, 0.1);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf2, #ffffff);
+}
+.admin-product-create-history-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(197, 160, 89, 0.16);
+  color: #8a5f15;
+  font-size: 20px;
+}
+.admin-product-create-history-item div {
+  min-width: 0;
+}
+.admin-product-create-history-item strong,
+.admin-product-create-history-item div > span,
+.admin-product-create-history-item small {
+  display: block;
+}
+.admin-product-create-history-item strong {
+  overflow-wrap: anywhere;
+  color: var(--admin-primary, var(--primary));
+  font-size: 0.96rem;
+}
+.admin-product-create-history-item div > span {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+.admin-product-create-history-item small,
+.admin-product-create-history-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.admin-product-create-history-item small {
+  margin-top: 6px;
+}
+.admin-product-create-history-empty {
+  margin: 0;
+}
 @media (max-width: 900px) {
   .admin-product-create-two {
     grid-template-columns: 1fr;
@@ -9296,6 +9433,9 @@ a.admin-summary-key-value {
   .admin-product-create-result-actions {
     justify-content: center;
   }
+  .admin-product-create-history-list {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 420px) {
   .admin-product-create {
@@ -9303,7 +9443,8 @@ a.admin-summary-key-value {
     padding-inline: 0;
   }
   .admin-product-create-hero,
-  .admin-product-create-card {
+  .admin-product-create-card,
+  .admin-product-create-history {
     border-radius: 18px;
   }
   .admin-product-create-progress {

@@ -9,6 +9,7 @@ import {
   updateProductByAdmin,
   deleteProduct,
 } from '@/lib/sanityWrite';
+import { getBouquetById } from '@/lib/sanity';
 import { canChangeStatus } from '@/lib/adminRbac';
 
 export async function updateProductByAdminAction(formData: FormData): Promise<{ error?: string }> {
@@ -57,8 +58,19 @@ export async function approveBouquetAction(bouquetId: string): Promise<{ error?:
     return { error: 'Forbidden' };
   }
   try {
-    await updateBouquetStatus(bouquetId, 'approved');
+    const bouquet = await getBouquetById(bouquetId);
+    await updateBouquetStatus(bouquetId, 'approved', {
+      approvedBy: (session.user as { email?: string | null }).email ?? undefined,
+      approvedAt: new Date().toISOString(),
+    });
     revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/products/review/${bouquetId}`);
+    revalidatePath('/en/catalog', 'layout');
+    revalidatePath('/th/catalog', 'layout');
+    if (bouquet?.slug) {
+      revalidatePath(`/en/catalog/${bouquet.slug}`);
+      revalidatePath(`/th/catalog/${bouquet.slug}`);
+    }
     return {};
   } catch (err) {
     console.error('[Moderation] approveBouquet failed:', err);
@@ -77,6 +89,7 @@ export async function rejectBouquetAction(bouquetId: string): Promise<{ error?: 
   try {
     await updateBouquetStatus(bouquetId, 'rejected');
     revalidatePath('/admin/moderation/products');
+    revalidatePath(`/admin/products/review/${bouquetId}`);
     return {};
   } catch (err) {
     console.error('[Moderation] rejectBouquet failed:', err);
