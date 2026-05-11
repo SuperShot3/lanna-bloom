@@ -10,6 +10,7 @@ import {
   getDiscountAllocationForCode,
   getDiscountForCode,
   getReferralCommissionForCode,
+  validateReferralCode,
 } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
@@ -235,7 +236,18 @@ function validateStripePayload(
   if (!deliveryZoneId) {
     return { ok: false, message: 'delivery.deliveryZoneId is required' };
   }
-  const referralCode = typeof b.referralCode === 'string' ? b.referralCode.trim() : undefined;
+  const referralCodeRaw = typeof b.referralCode === 'string' ? b.referralCode.trim() : undefined;
+  let referralCode: string | undefined;
+  if (referralCodeRaw) {
+    const referralCodeValidation = validateReferralCode(referralCodeRaw);
+    if (!referralCodeValidation.valid) {
+      return {
+        ok: false,
+        message: referralCodeValidation.error ?? 'Invalid referral code',
+      };
+    }
+    referralCode = referralCodeValidation.code;
+  }
   const referralDiscount = typeof b.referralDiscount === 'number' && b.referralDiscount > 0 ? b.referralDiscount : 0;
 
   const submissionTokenRaw = typeof b.submission_token === 'string' ? b.submission_token.trim() : '';
@@ -255,7 +267,7 @@ function validateStripePayload(
       customerEmail,
       contactPreference,
       items: cartItems,
-      referralCode: referralCode && referralDiscount > 0 ? referralCode : undefined,
+      referralCode,
       referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
       submissionToken: submissionTokenRaw,
       delivery: {
@@ -405,6 +417,12 @@ export async function POST(request: NextRequest) {
       } else {
         return NextResponse.json({ error: 'Invalid welcome code' }, { status: 400 });
       }
+    }
+    if (data.referralCode && referralDiscount <= 0) {
+      return NextResponse.json(
+        { error: 'Referral code is invalid or not available for this order' },
+        { status: 400 }
+      );
     }
     const referralCommission =
       data.referralCode && referralDiscount > 0

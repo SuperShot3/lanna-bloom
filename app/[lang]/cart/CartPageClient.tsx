@@ -1600,6 +1600,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <ReferralCodeBox
                     lang={lang}
                     subtotal={subtotalWithDelivery}
+                    itemSubtotal={itemsTotalVal}
+                    deliveryFee={deliveryFeeVal}
+                    deliveryDestination={delivery.deliveryDestination}
                     appliedCode={appliedReferralCode}
                     onApply={() => setReferralCleared((c) => c + 1)}
                     onRemove={() => setReferralCleared((c) => c + 1)}
@@ -1969,6 +1972,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <ReferralCodeBox
                   lang={lang}
                   subtotal={subtotalWithDelivery}
+                  itemSubtotal={itemsTotalVal}
+                  deliveryFee={deliveryFeeVal}
+                  deliveryDestination={delivery.deliveryDestination}
                   appliedCode={appliedReferralCode}
                   onApply={() => setReferralCleared((c) => c + 1)}
                   onRemove={() => setReferralCleared((c) => c + 1)}

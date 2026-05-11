@@ -1,13 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { storeReferral, clearReferral, validateReferralCode } from '@/lib/referral';
+import {
+  storeReferral,
+  clearReferral,
+  validateReferralCode,
+  getDiscountForCode,
+} from '@/lib/referral';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import type { OrderDeliveryDestinationId } from '@/lib/orders';
 
 export interface ReferralCodeBoxProps {
   lang: Locale;
   subtotal: number;
+  itemSubtotal: number;
+  deliveryFee: number;
+  deliveryDestination: OrderDeliveryDestinationId;
   appliedCode: string | null;
   onApply: () => void;
   onRemove: () => void;
@@ -18,6 +27,9 @@ export interface ReferralCodeBoxProps {
 export function ReferralCodeBox({
   lang,
   subtotal,
+  itemSubtotal,
+  deliveryFee,
+  deliveryDestination,
   appliedCode,
   onApply,
   onRemove,
@@ -36,6 +48,19 @@ export function ReferralCodeBox({
     const result = validateReferralCode(inputValue);
     if (!result.valid) {
       setError(result.error ?? t.referralInvalid ?? 'Invalid code.');
+      return;
+    }
+    const discount = getDiscountForCode(result.code, subtotal, {
+      deliveryFee,
+      itemSubtotal,
+      deliveryDestination,
+    });
+    if (discount <= 0) {
+      clearReferral();
+      setError(
+        t.referralNotEligible ??
+          'This code is not valid for the current cart or delivery area.'
+      );
       return;
     }
     storeReferral(result.code);
