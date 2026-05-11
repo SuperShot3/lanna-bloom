@@ -1,7 +1,12 @@
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
-import { createAdminReviewBouquet, type SanityWriteImageInput } from '@/lib/sanityWrite';
+import {
+  createAdminReviewBouquet,
+  createAdminReviewProduct,
+  type SanityWriteImageInput,
+} from '@/lib/sanityWrite';
+import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/catalogCategories';
 
 export const runtime = 'nodejs';
 
@@ -37,6 +42,22 @@ function parseImages(value: unknown): SanityWriteImageInput[] {
   }, []);
 }
 
+function parseItemCategory(body: Record<string, unknown>): 'flowers' | ProductCategory | null {
+  const value = stringField(body, 'itemCategory') || 'flowers';
+  if (value === 'flowers') return 'flowers';
+  if (PRODUCT_CATEGORIES.includes(value as ProductCategory)) return value as ProductCategory;
+  return null;
+}
+
+function customAttribute(key: string, value: string): { key: string; value: string } | null {
+  const cleanValue = value.trim();
+  return cleanValue ? { key, value: cleanValue } : null;
+}
+
+function listAttribute(key: string, values: string[]): { key: string; value: string } | null {
+  return customAttribute(key, values.join(', '));
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await requireRole(['OWNER', 'MANAGER']);
   if (!authResult.ok) return authResult.response;
@@ -55,6 +76,7 @@ export async function POST(request: NextRequest) {
 
   const b = body as Record<string, unknown>;
   const nameEn = stringField(b, 'nameEn');
+  const itemCategory = parseItemCategory(b);
   const priceRaw = b.price;
   const price = typeof priceRaw === 'number' ? priceRaw : Number(String(priceRaw ?? ''));
   const images = parseImages(b.images);
@@ -65,11 +87,50 @@ export async function POST(request: NextRequest) {
   if (!Number.isFinite(price) || price <= 0) {
     return NextResponse.json({ error: 'Product price is required and must be greater than 0' }, { status: 400 });
   }
+  if (!itemCategory) {
+    return NextResponse.json({ error: 'Invalid item category' }, { status: 400 });
+  }
   if (!images.some((image) => image.isPrimary)) {
     return NextResponse.json({ error: 'A primary WebP image is required before saving for review' }, { status: 400 });
   }
 
   try {
+    if (itemCategory !== 'flowers') {
+      const colors = stringArrayField(b, 'colors');
+      const visibleItems = stringArrayField(b, 'flowerTypes');
+      const customAttributes = [
+        customAttribute('composition_en', stringField(b, 'compositionEn')),
+        customAttribute('composition_th', stringField(b, 'compositionTh')),
+        listAttribute('color_tags', colors),
+        listAttribute('visible_items', visibleItems),
+      ].filter((attribute): attribute is { key: string; value: string } => Boolean(attribute));
+
+      const result = await createAdminReviewProduct({
+        nameEn,
+        nameTh: stringField(b, 'nameTh'),
+        slug: stringField(b, 'slug') || undefined,
+        descriptionEn: stringField(b, 'descriptionEn'),
+        descriptionTh: stringField(b, 'descriptionTh'),
+        category: itemCategory,
+        price,
+        images,
+        occasion: stringArrayField(b, 'occasion'),
+        customAttributes,
+        createdBy: session.user.email ?? 'unknown',
+        createdAt: new Date().toISOString(),
+      });
+
+      revalidatePath('/admin/moderation/products');
+      revalidatePath(`/admin/moderation/products/${result.id}`);
+
+      return NextResponse.json({
+        status: 'pending_review',
+        id: result.id,
+        slug: result.slug,
+        reviewUrl: `/admin/moderation/products/${result.id}`,
+      });
+    }
+
     const result = await createAdminReviewBouquet({
       nameEn,
       nameTh: stringField(b, 'nameTh'),

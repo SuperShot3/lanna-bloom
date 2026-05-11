@@ -147,6 +147,7 @@ export function OrderPageClient({
   supabasePaymentMethod,
   supabasePaidAt,
   driverAssignmentStatus = 'not_assigned',
+  driverName,
   addressHidden = false,
   locale = 'en',
 }: {
@@ -161,6 +162,7 @@ export function OrderPageClient({
   supabasePaymentMethod?: string;
   supabasePaidAt?: string;
   driverAssignmentStatus?: DriverAssignmentStatus;
+  driverName?: string | null;
   addressHidden?: boolean;
   locale?: Locale;
 }) {
@@ -404,6 +406,7 @@ export function OrderPageClient({
             currentStatus={lifecycleCurrentStatus}
             statusTimestamps={lifecycleStatusTimestamps}
             driverAssignmentStatus={driverAssignmentStatus}
+            driverName={driverName}
             locale={locale}
           />
 

@@ -1,7 +1,7 @@
 import { defineType } from 'sanity';
 
 /**
- * Non-flower partner products: balloons, gifts, money_flowers, handmade_floral.
+ * Non-flower partner/admin products: balloons, gifts, plushy_toys, money_flowers, handmade_floral.
  * Category values must match lib/catalogCategories.ts PRODUCT_CATEGORIES.
  * moderationStatus: submitted (partner submit) → live (admin approve) | needs_changes
  */
@@ -28,6 +28,7 @@ export const product = defineType({
       options: {
         list: [
           { title: 'Balloons', value: 'balloons' },
+          { title: 'Toys & Plush', value: 'plushy_toys' },
           { title: 'Gifts & Sets', value: 'gifts' },
           { title: 'Money Flowers', value: 'money_flowers' },
           { title: 'Handmade Floral', value: 'handmade_floral' },

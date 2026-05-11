@@ -33,6 +33,7 @@ export type ProductDraftCopy = {
 };
 
 export type ProductDraftHints = {
+  itemCategory?: string;
   productType?: string;
   occasion?: string;
   colors?: string;
@@ -42,17 +43,17 @@ export type ProductDraftHints = {
 };
 
 const DESCRIPTION_RULES = `
-Create natural, elegant, searchable English and Thai product copy for a flower shop.
-Include product names, short descriptions, flower composition, SEO fields, and image alt text.
+Create natural, elegant, searchable English and Thai product copy for a flower and gift shop.
+Include product names, short descriptions, visible product contents/composition, SEO fields, and image alt text.
 Use phrases such as flower delivery in Chiang Mai, same-day flower delivery, birthday flowers,
-romantic bouquet, flower basket in Chiang Mai, or orchid plant delivery only when they are accurate.
-Avoid keyword stuffing, unsupported claims, invented flowers, and direct publishing language.
+romantic bouquet, balloon delivery, plush toy gift, or gift delivery only when they are accurate.
+Avoid keyword stuffing, unsupported claims, invented flowers/items, and direct publishing language.
 `;
 
 const IMAGE_ENHANCEMENT_RULES = `
 A professionally enhanced, hyper-realistic e-commerce product photograph based strictly on the provided reference image.
-Retain the exact flower product, core structure, arrangement, wrapping, basket, vase, pot, and all visible contents.
-Do not add, remove, replace, or rearrange flowers. Remove background clutter and place the product on a pure white
+Retain the exact product, core structure, arrangement, wrapping, basket, vase, pot, balloon, toy, and all visible contents.
+Do not add, remove, replace, or rearrange visible items. Remove background clutter and place the product on a pure white
 or premium light neutral background. Center the product in a square 1:1 composition with soft natural shadow,
 fresh brightness, sharp texture, and realistic commercial studio quality.
 No people, hands, text, watermarks, price tags, fake 3D render, plastic look, or artificial styling.
@@ -151,7 +152,7 @@ export async function analyzeProductImage(
       {
         role: 'system',
         content:
-          'You are a careful florist product analyst. Return only valid JSON. Identify only visible items and clearly list uncertainty.',
+          'You are a careful flower and gift shop product analyst. Return only valid JSON. Identify only visible items and clearly list uncertainty.',
       },
       {
         role: 'user',
@@ -160,7 +161,7 @@ export async function analyzeProductImage(
             type: 'text',
             text:
               `Analyze this product image for an admin review workflow.\n\nAdmin hints:\n${stringifyHints(hints)}\n\n` +
-              'Return JSON with keys: productFormat, identifiedFlowers, colors, greenery, wrappingOrContainer, arrangementStyle, suggestedOccasions, confidenceNotes, uncertainItems, rawSummary.',
+              'Return JSON with keys: productFormat, identifiedFlowers, colors, greenery, wrappingOrContainer, arrangementStyle, suggestedOccasions, confidenceNotes, uncertainItems, rawSummary. For non-flower products, use identifiedFlowers for clearly visible product components/items or return an empty array if none apply.',
           },
           {
             type: 'image_url',
@@ -189,7 +190,7 @@ export async function generateProductDescription(
       {
         role: 'system',
         content:
-          'You write concise bilingual flower shop product copy for admin review. Return only valid JSON.',
+          'You write concise bilingual flower and gift shop product copy for admin review. Return only valid JSON.',
       },
       {
         role: 'user',

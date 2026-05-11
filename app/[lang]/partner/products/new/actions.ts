@@ -138,7 +138,7 @@ export async function createProductAction(formData: FormData) {
   const category = formData.get('category') as string;
   const validCategories = [
     'balloons', 'gifts', 'money_flowers', 'handmade_floral',
-    'food_sweets', 'wellness', 'toys_plush', 'home_lifestyle',
+    'food_sweets', 'wellness', 'plushy_toys', 'home_lifestyle',
     'stationery', 'baby_family', 'fashion', 'seasonal', 'other',
   ];
   if (!validCategories.includes(category)) return { error: 'Invalid category' };

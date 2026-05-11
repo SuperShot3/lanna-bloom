@@ -21,10 +21,18 @@ export type CatalogTopCategory = (typeof CATALOG_TOP_CATEGORIES)[number];
 /** Non-flower product categories (must match Sanity product.category options) */
 export const PRODUCT_CATEGORIES = [
   'balloons',
+  'plushy_toys',
   'gifts',
   'money_flowers',
   'handmade_floral',
-  'plushy_toys',
+  'food_sweets',
+  'wellness',
+  'home_lifestyle',
+  'stationery',
+  'baby_family',
+  'fashion',
+  'seasonal',
+  'other',
 ] as const;
 
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];

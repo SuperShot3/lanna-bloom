@@ -79,6 +79,7 @@ export default async function OrderDetailsPage({
     supabasePayment?.driver_name?.trim() || supabasePayment?.driver_phone?.trim()
       ? 'assigned'
       : 'not_assigned';
+  const driverName = supabasePayment?.driver_name?.trim() || null;
   const fulfillmentStatusUpdatedAt =
     supabasePayment?.fulfillment_status_updated_at
     ?? supabasePayment?.updated_at
@@ -110,6 +111,7 @@ export default async function OrderDetailsPage({
             locale={defaultLocale}
             statusTimestamps={deliveredStatusTimestamps}
             driverAssignmentStatus={driverAssignmentStatus}
+            driverName={driverName}
           />
         </div>
       </div>
@@ -136,6 +138,7 @@ export default async function OrderDetailsPage({
           supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
           supabasePaidAt={supabasePayment?.paid_at ?? order.paidAt ?? undefined}
           driverAssignmentStatus={driverAssignmentStatus}
+          driverName={driverName}
           locale={defaultLocale}
         />
       </div>

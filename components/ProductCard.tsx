@@ -89,8 +89,8 @@ export function ProductCard({
   const href = buildCatalogItemHref({ lang, slug: product.slug, pathname });
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const displayFromPrice = applyExpansionItemMarkupThb(finalPrice, checkoutProfile.destinationId);
-  const isPlushyToys = product.catalogKind === 'plushyToy';
-  const isBalloon = product.catalogKind === 'balloon';
+  const isPlushyToys = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
+  const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
   const isStandaloneProduct = isPlushyToys || isBalloon;
   const sizeLabel = (product.sizeLabel || '').trim();
 

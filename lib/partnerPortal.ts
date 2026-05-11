@@ -18,7 +18,7 @@ export const CATEGORY_OPTIONS = [
   { value: 'handmade_floral', labelTh: 'งานประดิษฐ์ดอกไม้', labelEn: 'Handmade Floral', icon: '🌿' },
   { value: 'food_sweets', labelTh: 'อาหาร & ขนม', labelEn: 'Food & Sweets', icon: '🍓' },
   { value: 'wellness', labelTh: 'สุขภาพ & ผ่อนคลาย', labelEn: 'Wellness', icon: '🕯️' },
-  { value: 'toys_plush', labelTh: 'ของเล่น & ตุ๊กตา', labelEn: 'Toys & Plush', icon: '🧸' },
+  { value: 'plushy_toys', labelTh: 'ของเล่น & ตุ๊กตา', labelEn: 'Toys & Plush', icon: '🧸' },
   { value: 'home_lifestyle', labelTh: 'บ้าน & ไลฟ์สไตล์', labelEn: 'Home & Lifestyle', icon: '☕' },
   { value: 'stationery', labelTh: 'เครื่องเขียน', labelEn: 'Stationery', icon: '📖' },
   { value: 'baby_family', labelTh: 'เด็ก & ครอบครัว', labelEn: 'Baby & Family', icon: '👶' },

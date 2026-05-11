@@ -222,11 +222,13 @@ export function OrderLifecycleStatusSection({
   currentStatus,
   statusTimestamps,
   driverAssignmentStatus,
+  driverName,
   locale = 'en',
 }: {
   currentStatus: OrderLifecycleStatus;
   statusTimestamps: OrderStatusTimestamps;
   driverAssignmentStatus: DriverAssignmentStatus;
+  driverName?: string | null;
   locale?: Locale;
 }) {
   const [previewStatus, setPreviewStatus] = useState<OrderLifecycleStatus | null>(null);
@@ -243,6 +245,13 @@ export function OrderLifecycleStatusSection({
   const displayStep = STEP_BY_ID[displayStatus];
   const displayState = getStepState(displayIndex, currentIndex);
   const updatedLabel = getTimestampLabel(statusTimestamps[displayStatus], displayState, locale);
+  const assignedDriverName = driverName?.trim() ?? '';
+  const driverStatusText =
+    driverAssignmentStatus === 'assigned'
+      ? assignedDriverName
+        ? `Assigned to ${assignedDriverName}`
+        : 'Driver assigned'
+      : 'No driver assigned yet';
 
   const progress = useMemo(
     () =>
@@ -307,9 +316,7 @@ export function OrderLifecycleStatusSection({
 
         <div className="order-lifecycle-driver" aria-label="Driver assignment status">
           <span className="order-lifecycle-driver-label">Delivery driver</span>
-          <span className="order-lifecycle-driver-value">
-            {driverAssignmentStatus === 'assigned' ? 'Driver assigned' : 'No driver assigned'}
-          </span>
+          <span className="order-lifecycle-driver-value">{driverStatusText}</span>
         </div>
       </div>
 

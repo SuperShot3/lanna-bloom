@@ -20,6 +20,16 @@ const STEP_LABELS: Record<Locale, Record<CheckoutStep, string>> = {
     2: 'Delivery',
     3: 'Payment',
   },
+  'zh-sg': {
+    1: '详情',
+    2: '配送',
+    3: '付款',
+  },
+  'zh-hk': {
+    1: '詳情',
+    2: '配送',
+    3: '付款',
+  },
 };
 
 export interface CheckoutStepperProps {

@@ -386,6 +386,21 @@ export interface CreateProductInput {
   customAttributes?: Array<{ key: string; value: string }>;
 }
 
+export interface CreateAdminProductInput {
+  nameEn: string;
+  nameTh?: string;
+  slug?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category: string;
+  price: number;
+  images: SanityWriteImageInput[];
+  occasion?: string[];
+  customAttributes?: Array<{ key: string; value: string }>;
+  createdBy?: string;
+  createdAt?: string;
+}
+
 export interface UpdateProductByAdminInput {
   adminOverrides?: {
     nameEn?: string | null;
@@ -455,6 +470,55 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
     }),
   });
   return doc._id;
+}
+
+export async function createAdminReviewProduct(
+  input: CreateAdminProductInput
+): Promise<{ id: string; slug: string }> {
+  const client = getWriteClient();
+  const baseSlug = slugFromName(input.slug || input.nameEn || 'product');
+  const slug = await ensureUniqueCatalogSlug(client, baseSlug);
+  const price = Math.max(0, Number(input.price));
+  const primaryFirst = [...input.images]
+    .filter((image) => image.assetId.trim())
+    .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
+  const images = primaryFirst.slice(0, 5).map((image, i) => ({
+    _type: 'image' as const,
+    _key: `admin_product_image_${i}_${image.format || 'source'}`,
+    asset: { _type: 'reference' as const, _ref: image.assetId },
+    ...(image.alt?.trim() && { alt: image.alt.trim() }),
+  }));
+  const customAttributes = (input.customAttributes ?? [])
+    .filter((attribute) => attribute.key.trim() && attribute.value.trim())
+    .map((attribute, i) => ({
+      _type: 'object' as const,
+      _key: `admin_attr_${i}`,
+      key: attribute.key.trim(),
+      value: attribute.value.trim(),
+    }));
+  const occasion = input.occasion?.find((value) => value.trim());
+
+  const doc = await client.create({
+    _type: 'product',
+    slug: { _type: 'slug', current: slug },
+    nameEn: input.nameEn.trim(),
+    nameTh: (input.nameTh || '').trim(),
+    descriptionEn: (input.descriptionEn || '').trim(),
+    descriptionTh: (input.descriptionTh || '').trim(),
+    category: input.category,
+    price,
+    cost: price,
+    commissionPercent: 0,
+    moderationStatus: 'submitted',
+    source: 'admin_ai_product_creation',
+    createdBy: input.createdBy?.trim() || undefined,
+    createdAt: input.createdAt || new Date().toISOString(),
+    images,
+    ...(occasion && { structuredAttributes: { occasion } }),
+    ...(customAttributes.length ? { customAttributes } : {}),
+  });
+
+  return { id: doc._id, slug };
 }
 
 export async function checkSlugAvailability(slug: string): Promise<boolean> {

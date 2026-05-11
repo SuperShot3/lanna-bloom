@@ -16,9 +16,18 @@ import type { AdminProductDetail } from '@/lib/sanity';
 
 const CATEGORY_LABELS: Record<string, string> = {
   balloons: 'Balloons',
+  plushy_toys: 'Toys & Plush',
   gifts: 'Gifts',
   money_flowers: 'Money Flowers',
   handmade_floral: 'Handmade Floral',
+  food_sweets: 'Food & Sweets',
+  wellness: 'Wellness',
+  home_lifestyle: 'Home & Lifestyle',
+  stationery: 'Stationery',
+  baby_family: 'Baby & Family',
+  fashion: 'Fashion & Accessories',
+  seasonal: 'Seasonal',
+  other: 'Other',
 };
 
 const STATUS_LABELS: Record<string, string> = {

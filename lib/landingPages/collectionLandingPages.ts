@@ -85,8 +85,8 @@ const commonFaq = {
   ],
 } satisfies Record<'en' | 'th', CollectionLandingCopy['faq']>;
 
-function withRussianFallback<T>(copy: Record<'en' | 'th', T>): Record<Locale, T> {
-  return { ...copy, ru: copy.en };
+function withLocaleFallback<T>(copy: Record<'en' | 'th', T>): Record<Locale, T> {
+  return { ...copy, ru: copy.en, 'zh-sg': copy.en, 'zh-hk': copy.en };
 }
 
 export const collectionLandingPages = [
@@ -98,7 +98,7 @@ export const collectionLandingPages = [
     tabImageSrc: '/images_other/roses_colors_landingpage/white_roses.webp',
     canonicalPath: '/collections/white-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['white'] },
-    copy: withRussianFallback({
+    copy: withLocaleFallback({
       en: {
         seoTitle: 'White Roses in Chiang Mai | Lanna Bloom',
         seoDescription:
@@ -159,7 +159,7 @@ export const collectionLandingPages = [
     tabImageSrc: '/images_other/roses_colors_landingpage/pink_roses.webp',
     canonicalPath: '/collections/pink-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['pink'] },
-    copy: withRussianFallback({
+    copy: withLocaleFallback({
       en: {
         seoTitle: 'Pink Roses in Chiang Mai | Lanna Bloom',
         seoDescription:
@@ -220,7 +220,7 @@ export const collectionLandingPages = [
     tabImageSrc: '/images_other/roses_colors_landingpage/red_roses.webp',
     canonicalPath: '/collections/red-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['red'] },
-    copy: withRussianFallback({
+    copy: withLocaleFallback({
       en: {
         seoTitle: 'Red Roses in Chiang Mai | Lanna Bloom',
         seoDescription:

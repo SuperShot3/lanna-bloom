@@ -417,4 +417,6 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
 export const aboutPageCopy: Record<Locale, AboutPageCopy> = {
   ...baseAboutPageCopy,
   ru: baseAboutPageCopy.en,
+  'zh-sg': baseAboutPageCopy.en,
+  'zh-hk': baseAboutPageCopy.en,
 };

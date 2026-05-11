@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { OCCASION_OPTIONS } from '@/lib/partnerPortal';
 import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
+import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABEL, type ProductCategory } from '@/lib/catalogCategories';
 
 type ProductImageAnalysis = {
   productFormat: string;
@@ -48,6 +49,7 @@ type SavedProduct = {
 };
 
 type Hints = {
+  itemCategory: 'flowers' | ProductCategory;
   productType: string;
   occasion: string;
   colors: string;
@@ -85,6 +87,7 @@ const emptyDraft: ProductDraftCopy = {
 };
 
 const emptyHints: Hints = {
+  itemCategory: 'flowers',
   productType: 'bouquet',
   occasion: '',
   colors: '',
@@ -110,6 +113,24 @@ const loadingStageCopy: Record<LoadingStage, { title: string; detail: string; st
     steps: ['Checking required fields', 'Saving product in Sanity', 'Preparing review link'],
   },
 };
+
+const adminItemCategoryOptions: Array<{ value: Hints['itemCategory']; label: string }> = [
+  { value: 'flowers', label: 'Flowers' },
+  ...PRODUCT_CATEGORIES.map((value) => ({
+    value,
+    label: String(PRODUCT_CATEGORY_LABEL[value] ?? value),
+  })),
+];
+
+function normalizeAdminItemCategory(value: string): Hints['itemCategory'] {
+  if (value === 'flowers') return 'flowers';
+  if (PRODUCT_CATEGORIES.includes(value as ProductCategory)) return value as ProductCategory;
+  return 'flowers';
+}
+
+function getAdminItemCategoryLabel(value: Hints['itemCategory']): string {
+  return adminItemCategoryOptions.find((option) => option.value === value)?.label ?? value;
+}
 
 function splitList(value: string): string[] {
   return value
@@ -234,6 +255,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   ];
   const loadingDetails = loading ? loadingStageCopy[loading] : null;
   const occasionHintValues = useMemo(() => splitList(hints.occasion), [hints.occasion]);
+  const isFlowerProduct = hints.itemCategory === 'flowers';
+  const itemCategoryLabel = getAdminItemCategoryLabel(hints.itemCategory);
 
   useEffect(() => {
     setTextGenerationHistory(readTextGenerationHistory());
@@ -252,6 +275,23 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   function updateProductType(value: string) {
     updateHint('productType', value);
     setPresentationCsv(value);
+  }
+
+  function updateItemCategory(value: string) {
+    const nextCategory = normalizeAdminItemCategory(value);
+    setHints((current) => ({
+      ...current,
+      itemCategory: nextCategory,
+      productType: nextCategory === 'flowers' ? current.productType || 'bouquet' : nextCategory,
+    }));
+    if (nextCategory !== 'flowers') {
+      setPresentationCsv('');
+      setFlowersCsv('');
+      setFeaturedPopular(false);
+    } else if (!presentationCsv) {
+      setPresentationCsv('bouquet');
+    }
+    setSavedProduct(null);
   }
 
   function updateDraft(key: keyof ProductDraftCopy, value: string) {
@@ -348,9 +388,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       setDraft(nextDraft);
       recordTextGeneration(nextDraft);
       setColorsCsv(joinList(nextAnalysis.colors));
-      setFlowersCsv(joinList(nextAnalysis.identifiedFlowers));
+      setFlowersCsv(isFlowerProduct ? joinList(nextAnalysis.identifiedFlowers) : '');
       setOccasionsCsv(joinList(nextAnalysis.suggestedOccasions));
-      setPresentationCsv(presentationFormatFromAnalysis(nextAnalysis));
+      setPresentationCsv(isFlowerProduct ? presentationFormatFromAnalysis(nextAnalysis) : '');
       if (!price && hints.price) setPrice(hints.price);
     } catch {
       setError('Could not create the AI draft. Check your connection and try again.');
@@ -409,6 +449,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           ...draft,
+          itemCategory: hints.itemCategory,
           price,
           images: imageVariants.map((variant) => ({
             ...variant,
@@ -513,7 +554,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           <span className="admin-product-create-eyebrow">Saved for review</span>
           <h2>Product is in Sanity but not live</h2>
           <p>
-            This bouquet is hidden from the public catalog until an owner or admin approves it. Share the internal review
+            This item is hidden from the public catalog until an owner or admin approves it. Share the internal review
             page with the team when it is ready.
           </p>
           <dl className="admin-product-create-result-meta">
@@ -568,15 +609,15 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           </label>
           <div className="admin-product-create-two">
             <label className="admin-form-group">
-              <span>Product type</span>
+              <span>Item category</span>
               <select
                 className="admin-input"
-                value={hints.productType}
-                onChange={(event) => updateProductType(event.target.value)}
+                value={hints.itemCategory}
+                onChange={(event) => updateItemCategory(event.target.value)}
               >
-                {BOUQUET_PRESENTATION_FORMAT_OPTIONS.map((option) => (
+                {adminItemCategoryOptions.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.title}
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -592,6 +633,27 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               <small>Product price only. Exclude delivery.</small>
             </label>
           </div>
+          {isFlowerProduct ? (
+            <label className="admin-form-group">
+              <span>Bouquet presentation hint</span>
+              <select
+                className="admin-input"
+                value={hints.productType}
+                onChange={(event) => updateProductType(event.target.value)}
+              >
+                {BOUQUET_PRESENTATION_FORMAT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
+              <small>Used by AI and saved as the flower presentation format.</small>
+            </label>
+          ) : (
+            <p className="admin-hint">
+              AI will write copy for {itemCategoryLabel.toLowerCase()} and save it as a non-flower product.
+            </p>
+          )}
           <div className="admin-product-create-two">
             <fieldset className="admin-form-group admin-product-create-occasion-hints">
               <legend>Occasion hint</legend>
@@ -637,12 +699,14 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         <div className="admin-product-create-card">
           <div>
             <div className="admin-product-create-step">2. Review analysis</div>
-            <p className="admin-product-create-card-hint">Correct flower names or uncertain items before generating the final product image.</p>
+            <p className="admin-product-create-card-hint">
+              Correct {isFlowerProduct ? 'flower names' : 'visible item details'} or uncertain items before generating the final product image.
+            </p>
           </div>
           {analysis ? (
             <>
               <label className="admin-form-group">
-                <span>Visible flowers</span>
+                <span>{isFlowerProduct ? 'Visible flowers' : 'Visible items'}</span>
                 <input
                   className="admin-input"
                   value={joinList(analysis.identifiedFlowers)}
@@ -776,34 +840,56 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               <input className="admin-input" inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} />
             </label>
             <label className="admin-form-group">
-              <span>Presentation formats</span>
-              <input className="admin-input" value={presentationCsv} onChange={(event) => setPresentationCsv(event.target.value)} />
+              <span>{isFlowerProduct ? 'Presentation formats' : 'Item category'}</span>
+              {isFlowerProduct ? (
+                <input className="admin-input" value={presentationCsv} onChange={(event) => setPresentationCsv(event.target.value)} />
+              ) : (
+                <select
+                  className="admin-input"
+                  value={hints.itemCategory}
+                  onChange={(event) => updateItemCategory(event.target.value)}
+                >
+                  {adminItemCategoryOptions
+                    .filter((option) => option.value !== 'flowers')
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </select>
+              )}
             </label>
           </div>
           <label className="admin-form-group">
             <span>Color tags</span>
             <input className="admin-input" value={colorsCsv} onChange={(event) => setColorsCsv(event.target.value)} />
           </label>
-          <label className="admin-form-group">
-            <span>Flower tags</span>
-            <input className="admin-input" value={flowersCsv} onChange={(event) => setFlowersCsv(event.target.value)} />
-          </label>
+          {isFlowerProduct ? (
+            <label className="admin-form-group">
+              <span>Flower tags</span>
+              <input className="admin-input" value={flowersCsv} onChange={(event) => setFlowersCsv(event.target.value)} />
+            </label>
+          ) : null}
           <label className="admin-form-group">
             <span>Occasion tags</span>
             <input className="admin-input" value={occasionsCsv} onChange={(event) => setOccasionsCsv(event.target.value)} />
           </label>
-          <label className="admin-form-group">
-            <span>Delivery options</span>
-            <input className="admin-input" value={deliveryCsv} onChange={(event) => setDeliveryCsv(event.target.value)} />
-          </label>
-          <label className="admin-product-create-checkbox">
-            <input
-              type="checkbox"
-              checked={featuredPopular}
-              onChange={(event) => setFeaturedPopular(event.target.checked)}
-            />
-            Show as popular on homepage
-          </label>
+          {isFlowerProduct ? (
+            <>
+              <label className="admin-form-group">
+                <span>Delivery options</span>
+                <input className="admin-input" value={deliveryCsv} onChange={(event) => setDeliveryCsv(event.target.value)} />
+              </label>
+              <label className="admin-product-create-checkbox">
+                <input
+                  type="checkbox"
+                  checked={featuredPopular}
+                  onChange={(event) => setFeaturedPopular(event.target.checked)}
+                />
+                Show as popular on homepage
+              </label>
+            </>
+          ) : null}
           <div className="admin-product-create-preview">
             <strong>{draft.nameEn || 'Product name'}</strong>
             <span>{price ? `THB ${price}` : 'Set a price before saving'}</span>

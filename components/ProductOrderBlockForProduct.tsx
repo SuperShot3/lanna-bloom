@@ -60,8 +60,10 @@ export function ProductOrderBlockForProduct({
     checkoutProfile.destinationId
   );
   const totalPrice = unitPrice * qty;
+  const isPlushyToy = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
+  const isBalloonProduct = product.catalogKind === 'balloon' || product.category === 'balloons';
   const itemType =
-    product.catalogKind === 'plushyToy' ? 'plushyToy' : product.catalogKind === 'balloon' ? 'balloon' : 'product';
+    isPlushyToy ? 'plushyToy' : isBalloonProduct ? 'balloon' : 'product';
   const isBalloon = itemType === 'balloon';
 
   const sizeLabel = (product.sizeLabel || '').trim();

@@ -31,8 +31,10 @@ export function ProductDetailClient({
   const selectedImageUrl = images[selectedImageIndex] ?? images[0];
   const descDisplay = description?.trim() || (lang === 'th' ? 'ยังไม่มีรายละเอียดสินค้า' : 'No description provided.');
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
-  const isStandaloneAddOn = product.catalogKind === 'plushyToy' || product.catalogKind === 'balloon';
-  const showDescriptionBelowBalloonText = product.catalogKind === 'balloon';
+  const isPlushyToy = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
+  const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
+  const isStandaloneAddOn = isPlushyToy || isBalloon;
+  const showDescriptionBelowBalloonText = isBalloon;
 
   useEffect(() => {
     trackViewItem({

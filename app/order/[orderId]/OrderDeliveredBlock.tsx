@@ -25,12 +25,14 @@ export function OrderDeliveredBlock({
   locale,
   statusTimestamps,
   driverAssignmentStatus = 'not_assigned',
+  driverName,
 }: {
   orderId: string;
   t: OrderPageT;
   locale: Locale;
   statusTimestamps: OrderStatusTimestamps;
   driverAssignmentStatus?: DriverAssignmentStatus;
+  driverName?: string | null;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -52,6 +54,7 @@ export function OrderDeliveredBlock({
         currentStatus="delivered"
         statusTimestamps={statusTimestamps}
         driverAssignmentStatus={driverAssignmentStatus}
+        driverName={driverName}
         locale={locale}
       />
       <div className="order-not-found-id-block">

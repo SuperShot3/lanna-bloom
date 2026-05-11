@@ -8,19 +8,25 @@ const FLAG_CLASS: Record<Locale, string> = {
   en: 'fi fi-gb',
   th: 'fi fi-th',
   ru: 'fi fi-ru',
+  'zh-sg': 'fi fi-sg',
+  'zh-hk': 'fi fi-hk',
 };
 
 const LABELS: Record<Locale, string> = {
   en: 'English',
   th: 'Thai',
   ru: 'Russian',
+  'zh-sg': 'Chinese (Singapore)',
+  'zh-hk': 'Chinese (Hong Kong)',
 };
 
-const SWITCHER_QUEUE: Locale[] = ['th', 'en', 'ru'];
+const SWITCHER_QUEUE: Locale[] = ['th', 'en', 'ru', 'zh-sg', 'zh-hk'];
 const NEXT_LANG: Record<Locale, Locale> = {
   en: 'th',
   th: 'ru',
-  ru: 'en',
+  ru: 'zh-sg',
+  'zh-sg': 'zh-hk',
+  'zh-hk': 'en',
 };
 
 export function LanguageSwitcher({

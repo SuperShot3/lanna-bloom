@@ -565,8 +565,8 @@ export type PopularCatalogItem =
 
 function getPopularCatalogCategory(item: PopularCatalogItem): string {
   if (item.itemType === 'bouquet') return 'flowers';
-  if (item.item.catalogKind === 'plushyToy') return 'plushy_toys';
-  if (item.item.catalogKind === 'balloon') return 'balloons';
+  if (item.item.catalogKind === 'plushyToy' || item.item.category === 'plushy_toys') return 'plushy_toys';
+  if (item.item.catalogKind === 'balloon' || item.item.category === 'balloons') return 'balloons';
   return item.item.category || 'other';
 }
 
