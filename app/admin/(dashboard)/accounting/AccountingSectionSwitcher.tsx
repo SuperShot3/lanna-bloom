@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useState, type ReactNode } from 'react';
 
 const SECTIONS = [
   {
@@ -71,18 +72,25 @@ function navHref(sectionHref: string, sp: URLSearchParams): string {
 
 interface Props {
   counts?: AccountingSectionCounts;
+  mobilePanelChildren?: ReactNode;
+  mode?: 'both' | 'desktop' | 'mobile';
 }
 
-export function AccountingSectionSwitcher({ counts }: Props) {
+export function AccountingSectionSwitcher({ counts, mobilePanelChildren, mode = 'both' }: Props) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const searchParams = useSearchParams();
   const sp = searchParams ?? new URLSearchParams();
   const active = accountingSectionFromPath(pathname);
-  const selectValue = SECTIONS.find((s) => s.id === active)?.href ?? '/admin/accounting/overview';
+  const activeSection = SECTIONS.find((s) => s.id === active) ?? SECTIONS[0];
+  const selectValue = activeSection.href;
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const showDesktop = mode !== 'mobile';
+  const showMobile = mode !== 'desktop';
 
   return (
     <>
+      {showDesktop ? (
       <div className="admin-accounting-switch-desktop" aria-hidden={false}>
         <nav className="admin-accounting-tabs" aria-label="Accounting sections">
           {SECTIONS.map((section) => {
@@ -115,25 +123,47 @@ export function AccountingSectionSwitcher({ counts }: Props) {
           })}
         </nav>
       </div>
+      ) : null}
 
-      <div className="admin-accounting-switch-mobile">
-        <label className="admin-hint" htmlFor="admin-accounting-section-select" style={{ display: 'block', marginBottom: 6 }}>
-          Accounting section
-        </label>
-        <select
-          id="admin-accounting-section-select"
-          className="admin-select admin-accounting-section-select"
-          aria-label="Accounting section"
-          value={selectValue}
-          onChange={(e) => router.push(navHref(e.target.value, sp))}
+      {showMobile ? (
+      <div className={`admin-accounting-switch-mobile${mobileOpen ? ' admin-accounting-switch-mobile-open' : ''}`}>
+        <button
+          type="button"
+          className="admin-accounting-mobile-section-toggle"
+          aria-expanded={mobileOpen}
+          aria-controls="admin-accounting-section-panel"
+          onClick={() => setMobileOpen((open) => !open)}
         >
-          {SECTIONS.map((section) => (
-            <option key={section.id} value={section.href}>
-              {section.label}
-            </option>
-          ))}
-        </select>
+          <span className="admin-accounting-mobile-section-copy">
+            <span className="material-symbols-outlined" aria-hidden>
+              {activeSection.icon}
+            </span>
+            <strong>{activeSection.label}</strong>
+          </span>
+        </button>
+        {mobileOpen ? (
+          <div id="admin-accounting-section-panel" className="admin-accounting-mobile-section-panel">
+            <select
+              id="admin-accounting-section-select"
+              className="admin-select admin-accounting-section-select"
+              aria-label="Accounting section"
+              value={selectValue}
+              onChange={(e) => {
+                setMobileOpen(false);
+                router.push(navHref(e.target.value, sp));
+              }}
+            >
+              {SECTIONS.map((section) => (
+                <option key={section.id} value={section.href}>
+                  {section.label}
+                </option>
+              ))}
+            </select>
+            {mobilePanelChildren}
+          </div>
+        ) : null}
       </div>
+      ) : null}
     </>
   );
 }

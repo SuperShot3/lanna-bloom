@@ -119,6 +119,56 @@ export function AccountingShellClient({
     });
   };
 
+  const renderPeriodControls = (className: string) => (
+    <div className={className}>
+      <div className="admin-accounting-period-dates" aria-label="Custom accounting period">
+        <input
+          type="date"
+          className="admin-input admin-input-date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          aria-label="From date"
+        />
+        <input
+          type="date"
+          className="admin-input admin-input-date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          aria-label="To date"
+        />
+        <button type="button" className="admin-btn admin-btn-primary admin-btn-sm" onClick={applyPeriodFilter}>
+          Apply
+        </button>
+      </div>
+      <div className="admin-accounting-period-quick" aria-label="Quick accounting period">
+        <button
+          type="button"
+          className="admin-btn admin-btn-outline admin-btn-sm"
+          onClick={() => useQuickRange('this_month')}
+        >
+          This month
+        </button>
+        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('last_month')}>
+          Last month
+        </button>
+        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('ytd')}>
+          <span className="admin-action-label-full">Year to date</span>
+          <span className="admin-action-label-short">Year</span>
+        </button>
+        {!isAllTime ? (
+          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={useAllTime}>
+            All time
+          </button>
+        ) : (
+          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={useThisMonth}>
+            <span className="admin-action-label-full">Back to this month</span>
+            <span className="admin-action-label-short">This month</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="admin-accounting">
       <header className="admin-header admin-page-header">
@@ -129,20 +179,43 @@ export function AccountingShellClient({
         <div className="admin-header-actions">
           <button
             type="button"
-            className="admin-btn admin-btn-outline"
+            className="admin-btn admin-btn-outline admin-accounting-header-action admin-accounting-header-action-payout"
             onClick={() => {
               setTransferOpen((v) => !v);
               setTransferMsg(null);
             }}
           >
-            Record Stripe Payout
+            <span className="material-symbols-outlined" aria-hidden>
+              swap_horiz
+            </span>
+            <span className="admin-action-label-full">Payout</span>
+            <span className="admin-action-label-short">Payout</span>
           </button>
-          <Link href="/admin/accounting/income/new" className="admin-btn admin-btn-primary">
-            + Manual Income
+          <Link
+            href="/admin/accounting/income/new"
+            className="admin-btn admin-btn-primary admin-accounting-header-action admin-accounting-header-action-income"
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              add_card
+            </span>
+            <span className="admin-action-label-full">+ Manual Income</span>
+            <span className="admin-action-label-short">Income</span>
           </Link>
-          <Link href="/admin/expenses/new" className="admin-btn admin-btn-outline">
-            + Add Expense
+          <Link
+            href="/admin/expenses/new"
+            className="admin-btn admin-btn-outline admin-accounting-header-action admin-accounting-header-action-expense"
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              receipt_long
+            </span>
+            <span className="admin-action-label-full">+ Add Expense</span>
+            <span className="admin-action-label-short">Expense</span>
           </Link>
+          <AccountingSectionSwitcher
+            counts={navCounts}
+            mode="mobile"
+            mobilePanelChildren={renderPeriodControls('admin-accounting-period-row admin-accounting-period-row-mobile-panel')}
+          />
         </div>
       </header>
 
@@ -344,52 +417,12 @@ export function AccountingShellClient({
         </div>
       )}
 
-      <AccountingSectionSwitcher counts={navCounts} />
+      <AccountingSectionSwitcher
+        counts={navCounts}
+        mode="desktop"
+      />
 
-      <div className="admin-accounting-period-row">
-        <input
-          type="date"
-          className="admin-input admin-input-date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          aria-label="From date"
-        />
-        <input
-          type="date"
-          className="admin-input admin-input-date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          aria-label="To date"
-        />
-        <button type="button" className="admin-btn admin-btn-primary admin-btn-sm" onClick={applyPeriodFilter}>
-          Apply
-        </button>
-        <span className="admin-hint" aria-hidden="true">
-          |
-        </span>
-        <button
-          type="button"
-          className="admin-btn admin-btn-outline admin-btn-sm"
-          onClick={() => useQuickRange('this_month')}
-        >
-          This month
-        </button>
-        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('last_month')}>
-          Last month
-        </button>
-        <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={() => useQuickRange('ytd')}>
-          Year to date
-        </button>
-        {!isAllTime ? (
-          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={useAllTime}>
-            All time
-          </button>
-        ) : (
-          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={useThisMonth}>
-            Back to this month
-          </button>
-        )}
-      </div>
+      {renderPeriodControls('admin-accounting-period-row admin-accounting-period-row-main')}
 
       {children}
     </div>
