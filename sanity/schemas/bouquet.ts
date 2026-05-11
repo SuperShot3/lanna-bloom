@@ -18,6 +18,24 @@ export const bouquet = defineType({
   title: 'Bouquet',
   type: 'document',
   fields: [
+    {
+      name: 'featuredPopular',
+      title: 'Popular on homepage',
+      type: 'boolean',
+      initialValue: false,
+      options: { layout: 'checkbox' },
+      description:
+        'Turn on to show this bouquet near the top of the homepage “Popular picks” list and add a small Popular label on its photo. The main catalog list keeps its usual order.',
+    },
+    {
+      name: 'featuredPopularOrder',
+      title: 'Order on homepage (0 = first)',
+      type: 'number',
+      initialValue: 0,
+      validation: (r) => r.min(0).integer(),
+      hidden: ({ parent }) => !parent?.featuredPopular,
+      description: 'If several bouquets are popular on the homepage, lower numbers appear closer to the top.',
+    },
     { name: 'slug', title: 'Slug', type: 'slug', options: { source: 'nameEn' }, validation: (r) => r.required() },
     { name: 'nameEn', title: 'Name (EN)', type: 'string', validation: (r) => r.required() },
     { name: 'nameTh', title: 'Name (TH)', type: 'string' },
@@ -211,23 +229,6 @@ export const bouquet = defineType({
       },
       initialValue: 'approved',
       description: 'Only approved bouquets appear on the public catalog. Partner uploads start as pending_review.',
-    },
-    {
-      name: 'featuredPopular',
-      title: 'Featured popular (homepage)',
-      type: 'boolean',
-      initialValue: false,
-      description:
-        'When on, this bouquet is pinned to the top of the homepage Popular section (Chiang Mai only), shows a Popular badge on cards, and still appears in the catalog in normal order with the badge.',
-    },
-    {
-      name: 'featuredPopularOrder',
-      title: 'Featured order (lower = first)',
-      type: 'number',
-      initialValue: 0,
-      validation: (r) => r.min(0).integer(),
-      hidden: ({ parent }) => !parent?.featuredPopular,
-      description: 'Among featured bouquets, smaller numbers appear first.',
     },
     {
       name: 'images',
