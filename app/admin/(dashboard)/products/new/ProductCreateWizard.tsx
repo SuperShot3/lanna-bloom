@@ -130,6 +130,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     () => Boolean(draft.nameEn.trim() && price && imageVariants.some((variant) => variant.isPrimary)),
     [draft.nameEn, imageVariants, price]
   );
+  const progressSteps = [
+    { label: 'Upload', complete: Boolean(file) },
+    { label: 'AI draft', complete: Boolean(analysis) },
+    { label: 'Image', complete: imageVariants.some((variant) => variant.isPrimary) },
+    { label: 'Publish', complete: Boolean(published) },
+  ];
 
   function updateHint(key: keyof Hints, value: string) {
     setHints((current) => ({ ...current, [key]: value }));
@@ -263,17 +269,31 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
   return (
     <div className="admin-orders admin-product-create">
-      <header className="admin-header admin-page-header">
+      <header className="admin-product-create-hero">
         <div>
+          <span className="admin-product-create-eyebrow">Admin product studio</span>
           <h1 className="admin-title">Create Product With AI</h1>
           <p className="admin-hint">
-            Upload an image, review AI analysis and copy, approve the enhanced image, then publish to Sanity.
+            Upload one product photo, review every AI suggestion, then publish an approved bouquet to Sanity.
           </p>
         </div>
-        <div className="admin-header-actions">
-          <span className="admin-product-create-user">Publishing as {adminEmail}</span>
+        <div className="admin-product-create-user">
+          <span className="material-symbols-outlined admin-product-create-user-icon">verified_user</span>
+          {adminEmail}
         </div>
       </header>
+
+      <div className="admin-product-create-progress" aria-label="Product creation progress">
+        {progressSteps.map((step, index) => (
+          <div
+            key={step.label}
+            className={`admin-product-create-progress-step ${step.complete ? 'is-complete' : ''}`}
+          >
+            <span>{step.complete ? 'OK' : index + 1}</span>
+            {step.label}
+          </div>
+        ))}
+      </div>
 
       {error ? <div className="admin-product-create-alert">{error}</div> : null}
       {published ? (
@@ -292,19 +312,26 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
       <section className="admin-product-create-grid">
         <div className="admin-product-create-card">
-          <div className="admin-product-create-step">1. Upload and hints</div>
-          <label className="admin-form-group">
-            <span>Product image</span>
+          <div>
+            <div className="admin-product-create-step">1. Upload and hints</div>
+            <p className="admin-product-create-card-hint">Start with the clearest front photo. JPEG, PNG, and WebP are accepted.</p>
+          </div>
+          <label className="admin-product-create-upload">
             <input
-              className="admin-input"
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
             />
+            {filePreview ? (
+              <img className="admin-product-create-image" src={filePreview} alt="Selected product preview" />
+            ) : (
+              <span className="admin-product-create-upload-empty">
+                <span className="material-symbols-outlined">add_photo_alternate</span>
+                <strong>Choose product photo</strong>
+                <small>Tap to open camera roll on iPhone</small>
+              </span>
+            )}
           </label>
-          {filePreview ? (
-            <img className="admin-product-create-image" src={filePreview} alt="Selected product preview" />
-          ) : null}
           <div className="admin-product-create-two">
             <label className="admin-form-group">
               <span>Product type</span>
@@ -351,13 +378,16 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               placeholder="Example: preserve the basket, write for birthday and congratulations shoppers"
             />
           </label>
-          <button className="admin-btn admin-btn-primary" type="button" disabled={loading === 'draft'} onClick={requestDraft}>
+          <button className="admin-btn admin-btn-primary admin-product-create-main-action" type="button" disabled={loading === 'draft'} onClick={requestDraft}>
             {loading === 'draft' ? 'Generating draft...' : 'Analyze Image And Generate Copy'}
           </button>
         </div>
 
         <div className="admin-product-create-card">
-          <div className="admin-product-create-step">2. Review analysis</div>
+          <div>
+            <div className="admin-product-create-step">2. Review analysis</div>
+            <p className="admin-product-create-card-hint">Correct flower names or uncertain items before generating the final product image.</p>
+          </div>
           {analysis ? (
             <>
               <label className="admin-form-group">
@@ -394,7 +424,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               </label>
               <p className="admin-product-create-note">{analysis.rawSummary || analysis.confidenceNotes}</p>
               <button
-                className="admin-btn admin-btn-primary"
+                className="admin-btn admin-btn-primary admin-product-create-main-action"
                 type="button"
                 disabled={loading === 'image'}
                 onClick={enhanceImage}
@@ -410,7 +440,10 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
       <section className="admin-product-create-grid">
         <div className="admin-product-create-card">
-          <div className="admin-product-create-step">3. Review bilingual copy</div>
+          <div>
+            <div className="admin-product-create-step">3. Review bilingual copy</div>
+            <p className="admin-product-create-card-hint">Edit the English and Thai copy exactly as it should appear to customers.</p>
+          </div>
           <div className="admin-product-create-two">
             <label className="admin-form-group">
               <span>Name EN</span>
@@ -462,7 +495,10 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         </div>
 
         <div className="admin-product-create-card">
-          <div className="admin-product-create-step">4. Publish details and preview</div>
+          <div>
+            <div className="admin-product-create-step">4. Publish details and preview</div>
+            <p className="admin-product-create-card-hint">Confirm price, tags, and the approved image before this goes live.</p>
+          </div>
           {enhancedPreview ? (
             <img className="admin-product-create-image" src={enhancedPreview} alt="Enhanced product preview" />
           ) : (
