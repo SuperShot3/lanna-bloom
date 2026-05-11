@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Expense, ExpenseFilters } from '@/types/expenses';
 import { billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
 import {
@@ -11,7 +11,9 @@ import {
   PAYMENT_METHOD_LABEL_BY_VALUE,
 } from '@/types/expenses';
 import type { ExpensesResult } from '@/lib/expenses/expenseQueries';
-import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
+import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
+import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
+import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
@@ -55,6 +57,43 @@ function periodSlug(periodLabel: string) {
   return periodLabel.replace(/[^0-9a-z-]+/gi, '_');
 }
 
+function proofStatusText(exp: Expense) {
+  const p = billTrackingProgress(exp.bill_tracking);
+  if (expenseDocumentationComplete(exp)) return 'Complete';
+  if (!exp.receipt_attached) return 'Need image';
+  if (p && p.done < p.total) return `Bills ${p.done}/${p.total}`;
+  return 'Incomplete';
+}
+
+function ExpenseProofBadges({ expense }: { expense: Expense }) {
+  const p = billTrackingProgress(expense.bill_tracking);
+  const billsDone = p ? p.done === p.total : true;
+
+  return (
+    <div className="admin-expenses-proof-stack">
+      <span className={`admin-badge ${expense.receipt_attached ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}>
+        {expense.receipt_attached ? 'Image' : 'No image'}
+      </span>
+      {p ? (
+        <span
+          className={`admin-badge ${billsDone ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
+          title="Bill checklist progress"
+        >
+          Bills {p.done}/{p.total}
+        </span>
+      ) : null}
+      {expense.paper_bill_requested_at ? (
+        <span
+          className="admin-badge admin-badge-paid"
+          title={new Date(expense.paper_bill_requested_at).toLocaleString('en-GB')}
+        >
+          Req sent
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 interface Props {
   expensesData: ExpensesResult;
   expensesPage: number;
@@ -74,9 +113,14 @@ export function AccountingExpensesPanel({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const sp = searchParams ?? new URLSearchParams();
+  const proofFileInputRef = useRef<HTMLInputElement>(null);
+  const proofExpenseIdRef = useRef<string | null>(null);
 
-  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
-  const [paperBillPdfExpenseId, setPaperBillPdfExpenseId] = useState<string | null>(null);
+  const [proofUploadState, setProofUploadState] = useState<{
+    expenseId: string;
+    stage: 'preparing' | 'uploading';
+  } | null>(null);
+  const [proofUploadError, setProofUploadError] = useState<string | null>(null);
 
   const handleExpenseFilterChange = (updates: Record<string, string | undefined>) => {
     const next = new URLSearchParams(sp.toString());
@@ -88,36 +132,71 @@ export function AccountingExpensesPanel({
     router.push(`${pathname}?${next.toString()}`);
   };
 
-  const downloadPaperBillRequestPdf = async (expenseId: string) => {
-    setPaperBillPdfExpenseId(expenseId);
+  const openProofPicker = (expenseId: string) => {
+    if (proofUploadState) return;
+    proofExpenseIdRef.current = expenseId;
+    setProofUploadError(null);
+    proofFileInputRef.current?.click();
+  };
+
+  const handleProofImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0] ?? null;
+    e.currentTarget.value = '';
+
+    const expenseId = proofExpenseIdRef.current;
+    proofExpenseIdRef.current = null;
+    if (!file) return;
+    if (!expenseId) {
+      setProofUploadError('Choose an expense before selecting an image.');
+      return;
+    }
+
+    setProofUploadError(null);
+    if (!isReceiptImageFile(file)) {
+      setProofUploadError('Only image proof files are allowed.');
+      return;
+    }
+
+    let fileToUpload: File;
+    setProofUploadState({ expenseId, stage: 'preparing' });
     try {
-      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseId)}/paper-bill-request`, {
+      fileToUpload = await compressReceiptImageForUpload(file, MAX_RECEIPT_UPLOAD_BYTES);
+    } catch (err) {
+      setProofUploadError(err instanceof Error ? err.message : 'Could not prepare image for upload.');
+      setProofUploadState(null);
+      return;
+    }
+
+    setProofUploadState({ expenseId, stage: 'uploading' });
+    try {
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      const res = await fetch(`/api/admin/expenses/${encodeURIComponent(expenseId)}/receipts`, {
         method: 'POST',
+        body: formData,
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg = typeof data.error === 'string' ? data.error : 'Failed to generate PDF';
-        const detail = typeof data.detail === 'string' ? data.detail : '';
-        alert(detail ? `${msg}\n\n${detail}` : msg);
+        setProofUploadError(typeof data.error === 'string' ? data.error : 'Proof upload failed');
         return;
       }
-      const blob = await res.blob();
-      const cd = res.headers.get('Content-Disposition');
-      let name = 'paper-bill-request.pdf';
-      const m = cd?.match(/filename="([^"]+)"/);
-      if (m?.[1]) name = m[1];
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(url);
       router.refresh();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Network error');
+    } catch {
+      setProofUploadError('Unexpected error while uploading proof image');
     } finally {
-      setPaperBillPdfExpenseId(null);
+      setProofUploadState(null);
     }
+  };
+
+  const proofButtonLabel = (expenseId: string) => {
+    if (proofUploadState?.expenseId === expenseId) {
+      return proofUploadState.stage === 'preparing' ? 'Preparing…' : 'Uploading…';
+    }
+    return 'Submit proof';
+  };
+
+  const openExpenseDetail = (expenseId: string) => {
+    router.push(`/admin/expenses/${expenseId}`);
   };
 
   const exportExpensesCsv = () => {
@@ -164,9 +243,19 @@ export function AccountingExpensesPanel({
 
   const expensesTotalPages =
     expensesData ? Math.ceil(expensesData.total / expensesPageSize) || 1 : 1;
+  const documentedCount = Math.max(0, expensesData.total - expensesData.missingReceiptCount);
 
   return (
     <div className="admin-expenses">
+      <input
+        ref={proofFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleProofImageChange}
+        style={{ display: 'none' }}
+        aria-label="Submit expense proof image"
+      />
+
       <div className="admin-expenses-filters">
         <select
           className="admin-select"
@@ -245,23 +334,28 @@ export function AccountingExpensesPanel({
           Export CSV
         </button>
       </div>
+      {proofUploadError && <span className="admin-field-error admin-expenses-proof-error">{proofUploadError}</span>}
 
-      <div className="admin-expenses-summary">
-        <span className="admin-hint">
-          {expensesData.total} expense{expensesData.total !== 1 ? 's' : ''} found
-          {expensesData.missingReceiptCount > 0 && expensesFilters.documentation !== 'incomplete' && (
-            <>
-              {' · '}
-              <strong style={{ color: '#d97706' }}>
-                {expensesData.missingReceiptCount} expense
-                {expensesData.missingReceiptCount !== 1 ? 's' : ''} need documentation
-              </strong>
-            </>
-          )}
-        </span>
-        <span className="admin-expenses-total">
-          Total: <strong>{formatAmount(expensesData.totalAmount)}</strong>
-        </span>
+      <div className="admin-expenses-summary admin-expenses-summary-grid">
+        <div className="admin-expenses-summary-card admin-expenses-summary-card-primary">
+          <span className="admin-expenses-summary-label">Total expenses</span>
+          <strong className="admin-expenses-summary-value">{formatAmount(expensesData.totalAmount)}</strong>
+          <span className="admin-hint">{periodLabel}</span>
+        </div>
+        <div className="admin-expenses-summary-card">
+          <span className="admin-expenses-summary-label">Records</span>
+          <strong className="admin-expenses-summary-value">{expensesData.total}</strong>
+          <span className="admin-hint">Showing {expensesData.expenses.length}</span>
+        </div>
+        <div
+          className={`admin-expenses-summary-card${
+            expensesData.missingReceiptCount > 0 ? ' admin-expenses-summary-card-warning' : ''
+          }`}
+        >
+          <span className="admin-expenses-summary-label">Need proof</span>
+          <strong className="admin-expenses-summary-value">{expensesData.missingReceiptCount}</strong>
+          <span className="admin-hint">{documentedCount} complete</span>
+        </div>
       </div>
 
       {expensesData.error ? (
@@ -280,147 +374,154 @@ export function AccountingExpensesPanel({
         </p>
       ) : (
         <>
-          <div className="admin-expenses-table-wrap">
+          <div className="admin-expenses-table-wrap admin-expenses-desktop-table">
             <table className="admin-expenses-table">
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Payment</th>
-                  <th>Receipt</th>
-                  <th>Bills</th>
-                  <th title="Checked when documentation is still incomplete">Incomplete</th>
-                  <th title="Paper bill request PDF was generated">Bill req</th>
+                  <th>Expense</th>
                   <th className="admin-expenses-col-amount">Amount</th>
+                  <th>Proofs</th>
                   <th style={{ width: 1 }} aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
-                {expensesData.expenses.map((exp: Expense) => (
-                  <tr
-                    key={exp.id}
-                    className="admin-expenses-row"
-                    onClick={() => router.push(`/admin/expenses/${exp.id}`)}
-                    role="link"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') router.push(`/admin/expenses/${exp.id}`);
-                    }}
-                  >
-                    <td className="admin-expenses-date">{formatDate(exp.date)}</td>
-                    <td className="admin-expenses-desc">
-                      <span className="admin-expenses-desc-text">{exp.description}</span>
-                      {exp.notes && <span className="admin-expenses-notes">{exp.notes}</span>}
-                    </td>
-                    <td>
-                      <span className="admin-badge admin-badge-category">{CATEGORY_LABEL[exp.category] ?? exp.category}</span>
-                    </td>
-                    <td className="admin-expenses-pm">{PM_LABEL[exp.payment_method] ?? exp.payment_method}</td>
-                    <td>
-                      {exp.receipt_attached ? (
-                        <span className="admin-badge admin-badge-paid">✓ Yes</span>
-                      ) : (
-                        <span className="admin-badge admin-badge-payment-pending">Missing</span>
-                      )}
-                    </td>
-                    <td>
-                      {(() => {
-                        const p = billTrackingProgress(exp.bill_tracking);
-                        if (!p) {
-                          return <span className="admin-hint">—</span>;
-                        }
-                        const done = p.done === p.total;
-                        return (
-                          <span
-                            className={`admin-badge ${done ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
-                            title="Bill checklist progress (delivery = 1 step; products = 2)"
-                          >
-                            {p.done}/{p.total}
+                {expensesData.expenses.map((exp: Expense) => {
+                  const docsComplete = expenseDocumentationComplete(exp);
+
+                  return (
+                    <tr
+                      key={exp.id}
+                      className="admin-expenses-row"
+                      onClick={() => router.push(`/admin/expenses/${exp.id}`)}
+                      role="link"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') router.push(`/admin/expenses/${exp.id}`);
+                      }}
+                    >
+                      <td className="admin-expenses-date">{formatDate(exp.date)}</td>
+                      <td className="admin-expenses-desc">
+                        <span className="admin-expenses-desc-text">{exp.description}</span>
+                        <span className="admin-expenses-meta">
+                          <span className="admin-badge admin-badge-category">
+                            {CATEGORY_LABEL[exp.category] ?? exp.category}
                           </span>
-                        );
-                      })()}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {!expenseDocumentationComplete(exp) ? (
-                        <span
-                          className="admin-badge admin-badge-payment-pending"
-                          title="Receipt and/or bill checklist still incomplete"
-                        >
-                          ✓
+                          <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
                         </span>
-                      ) : (
-                        <span className="admin-hint">—</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {exp.paper_bill_requested_at ? (
-                        <span
-                          className="admin-badge admin-badge-paid"
-                          title={new Date(exp.paper_bill_requested_at).toLocaleString('en-GB')}
-                        >
-                          ✓
-                        </span>
-                      ) : (
-                        <span className="admin-hint">—</span>
-                      )}
-                    </td>
-                    <td className="admin-expenses-amount">{formatAmount(exp.amount, exp.currency)}</td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-outline admin-btn-sm"
-                          disabled={!exp.linked_order_id || paperBillPdfExpenseId === exp.id}
-                          title={
-                            exp.linked_order_id
-                              ? 'Download PDF to request a missing paper bill from the shop'
-                              : 'Link this expense to an order first'
-                          }
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!exp.linked_order_id) return;
-                            void downloadPaperBillRequestPdf(exp.id);
-                          }}
-                        >
-                          {paperBillPdfExpenseId === exp.id ? 'PDF…' : 'Bill PDF'}
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-outline admin-btn-danger admin-btn-sm"
-                          disabled={deletingExpenseId === exp.id}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!confirmDeleteAction('Delete this expense? This cannot be undone.')) return;
-                            setDeletingExpenseId(exp.id);
-                            try {
-                              const res = await fetch(`/api/admin/expenses/${encodeURIComponent(exp.id)}`, {
-                                method: 'DELETE',
-                              });
-                              const data = await res.json().catch(() => ({}));
-                              if (!res.ok) {
-                                alert(data.error ?? 'Failed to delete expense');
-                                return;
-                              }
-                              router.refresh();
-                            } catch (err) {
-                              alert(err instanceof Error ? err.message : 'Network error');
-                            } finally {
-                              setDeletingExpenseId(null);
-                            }
-                          }}
-                          title="Delete expense"
-                        >
-                          {deletingExpenseId === exp.id ? 'Deleting…' : 'Delete'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="admin-expenses-amount">{formatAmount(exp.amount, exp.currency)}</td>
+                      <td>
+                        <ExpenseProofBadges expense={exp} />
+                      </td>
+                      <td className="admin-expenses-actions-cell">
+                        <div className="admin-expenses-actions">
+                          <button
+                            type="button"
+                            className={`admin-btn ${docsComplete ? 'admin-btn-outline' : 'admin-btn-primary'} admin-btn-sm`}
+                            disabled={proofUploadState !== null}
+                            title={`Upload bill or receipt proof image. Photos are compressed before upload (max ${MAX_RECEIPT_UPLOAD_LABEL}).`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openProofPicker(exp.id);
+                            }}
+                          >
+                            {proofButtonLabel(exp.id)}
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-outline admin-btn-sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openExpenseDetail(exp.id);
+                            }}
+                          >
+                            View expense
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+
+          <div className="admin-expenses-mobile-list" aria-label="Expenses">
+            {expensesData.expenses.map((exp: Expense) => {
+              const docsComplete = expenseDocumentationComplete(exp);
+
+              return (
+                <article
+                  key={exp.id}
+                  className="admin-expenses-mobile-card"
+                  onClick={() => router.push(`/admin/expenses/${exp.id}`)}
+                  role="link"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') router.push(`/admin/expenses/${exp.id}`);
+                  }}
+                >
+                  <div className="admin-expenses-mobile-card-top">
+                    <div>
+                      <span className="admin-expenses-date">{formatDate(exp.date)}</span>
+                      <h3 className="admin-expenses-mobile-title">{exp.description}</h3>
+                      <span className="admin-expenses-meta">
+                        <span className="admin-badge admin-badge-category">
+                          {CATEGORY_LABEL[exp.category] ?? exp.category}
+                        </span>
+                        <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
+                      </span>
+                    </div>
+                    <strong className="admin-expenses-mobile-amount">
+                      {formatAmount(exp.amount, exp.currency)}
+                    </strong>
+                  </div>
+
+                  <div className="admin-expenses-mobile-fields">
+                    <div>
+                      <span>Proofs</span>
+                      <strong className={docsComplete ? 'admin-expenses-mobile-ok' : 'admin-expenses-mobile-warn'}>
+                        {proofStatusText(exp)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Request</span>
+                      <strong>{exp.paper_bill_requested_at ? 'Sent' : '—'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="admin-expenses-mobile-actions">
+                    <button
+                      type="button"
+                      className={`admin-btn ${docsComplete ? 'admin-btn-outline' : 'admin-btn-primary'} admin-btn-sm`}
+                      disabled={proofUploadState !== null}
+                      title={`Upload bill or receipt proof image. Photos are compressed before upload (max ${MAX_RECEIPT_UPLOAD_LABEL}).`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openProofPicker(exp.id);
+                      }}
+                    >
+                      {proofButtonLabel(exp.id)}
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-outline admin-btn-sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openExpenseDetail(exp.id);
+                      }}
+                    >
+                      View expense
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
 
           {expensesTotalPages > 1 && (

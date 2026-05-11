@@ -300,6 +300,128 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     }
   };
 
+  const receiptActions = (
+    <section className="admin-expenses-receipt-panel" aria-labelledby="receipt-images-heading">
+      <input
+        ref={receiptFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAddReceiptImage}
+        style={{ display: 'none' }}
+        aria-label="Add receipt image"
+      />
+
+      <div className="admin-expenses-receipt-panel-header">
+        <div>
+          <h2 id="receipt-images-heading" className="admin-accounting-section-title">
+            Receipt images
+          </h2>
+          <p className="admin-hint admin-accounting-section-hint">
+            Add photos from camera or gallery. Large photos are compressed automatically before upload
+            (max {MAX_RECEIPT_UPLOAD_LABEL} per file).
+          </p>
+        </div>
+        <button
+          type="button"
+          className="admin-btn admin-btn-primary admin-btn-sm admin-expenses-add-image-btn"
+          onClick={() => receiptFileInputRef.current?.click()}
+          disabled={compressingReceipt || uploadingReceipt}
+        >
+          {compressingReceipt
+            ? 'Preparing image…'
+            : uploadingReceipt
+              ? 'Uploading image…'
+              : '+ Add image'}
+        </button>
+      </div>
+
+      <div className="admin-expenses-receipt-status-row">
+        <span
+          className={
+            expenseState.receipt_attached
+              ? 'admin-badge admin-badge-paid'
+              : 'admin-badge admin-badge-payment-pending'
+          }
+        >
+          {expenseState.receipt_attached ? `${receiptCount} image${receiptCount === 1 ? '' : 's'} attached` : 'Missing image'}
+        </span>
+        {loadingReceipts ? <span className="admin-hint">Loading images…</span> : null}
+      </div>
+
+      {receiptCount > 0 ? (
+        <div className="admin-expenses-receipt-list">
+          {receipts.map((r) => (
+            <article key={r.id} className="admin-expenses-receipt-card">
+              <div className="admin-expenses-receipt-card-main">
+                <span className="material-symbols-outlined" aria-hidden>
+                  receipt_long
+                </span>
+                <div>
+                  <strong>{r.file_name}</strong>
+                  <span className="admin-hint">Uploaded {formatDateTime(r.created_at)}</span>
+                </div>
+              </div>
+              <div className="admin-expenses-receipt-card-actions">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-outline"
+                  onClick={() => void openReceipt(r.file_path, false)}
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-outline"
+                  onClick={() => void openReceipt(r.file_path, true)}
+                >
+                  Download
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-outline admin-btn-danger"
+                  disabled={deletingReceiptId === r.id || compressingReceipt || uploadingReceipt}
+                  onClick={() => void handleDeleteReceipt(r.id)}
+                >
+                  {deletingReceiptId === r.id ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="admin-expenses-receipt-empty">
+          <span className="material-symbols-outlined" aria-hidden>
+            add_photo_alternate
+          </span>
+          <span>No receipt image yet. Tap Add image to upload one.</span>
+        </div>
+      )}
+
+      {receiptCount > 0 ? (
+        <div className="admin-expenses-receipt-quick-actions">
+          <button
+            type="button"
+            className="admin-btn admin-btn-sm admin-btn-outline"
+            onClick={handleViewReceipt}
+            disabled={loadingReceipt}
+          >
+            {loadingReceipt ? 'Loading…' : 'View first image'}
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn-sm admin-btn-outline"
+            onClick={handleDownloadReceipt}
+            disabled={downloadingReceipt}
+          >
+            {downloadingReceipt ? 'Preparing download…' : 'Download first image'}
+          </button>
+        </div>
+      ) : null}
+
+      {receiptError && <span className="admin-field-error">{receiptError}</span>}
+    </section>
+  );
+
   return (
     <div className="admin-expenses-detail">
       {/* Header */}
@@ -412,6 +534,8 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         <DetailRow label="Expense ID" value={<code className="admin-expenses-id">{expenseState.id}</code>} />
       </div>
 
+      {receiptActions}
+
       {/* Dual bill checklist — one row per order line (or one default row) */}
       {billLines.length > 0 && (
         <section className="admin-expenses-bill-checklist" aria-label="Bill checklist">
@@ -505,100 +629,6 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         </section>
       )}
 
-      {/* Receipt actions */}
-      <div className="admin-expenses-detail-actions">
-        <input
-          ref={receiptFileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleAddReceiptImage}
-          style={{ display: 'none' }}
-          aria-label="Add receipt image"
-        />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            onClick={() => receiptFileInputRef.current?.click()}
-            disabled={compressingReceipt || uploadingReceipt}
-          >
-            {compressingReceipt
-              ? 'Preparing image…'
-              : uploadingReceipt
-                ? 'Uploading image…'
-                : 'Add image'}
-          </button>
-          {receiptCount > 0 ? (
-            <>
-              <button
-                type="button"
-                className="admin-btn admin-btn-sm admin-btn-primary"
-                onClick={handleViewReceipt}
-                disabled={loadingReceipt}
-              >
-                {loadingReceipt ? 'Loading…' : 'View receipt image'}
-              </button>
-              <button
-                type="button"
-                className="admin-btn admin-btn-sm admin-btn-outline"
-                onClick={handleDownloadReceipt}
-                disabled={downloadingReceipt}
-              >
-                {downloadingReceipt ? 'Preparing download…' : 'Download image'}
-              </button>
-            </>
-          ) : null}
-        </div>
-        <p className="admin-hint">
-          Receipt images only. Large photos are compressed automatically before upload (max {MAX_RECEIPT_UPLOAD_LABEL}{' '}
-          per file).
-        </p>
-        {loadingReceipts ? <p className="admin-hint">Loading images…</p> : null}
-        {receiptCount > 0 ? (
-          <div className="admin-expenses-table-wrap" style={{ marginTop: 10 }}>
-            <table className="admin-expenses-table">
-              <thead>
-                <tr>
-                  <th>Image name</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receipts.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.file_name}</td>
-                    <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-sm admin-btn-outline"
-                        onClick={() => void openReceipt(r.file_path, false)}
-                      >
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-sm admin-btn-outline"
-                        onClick={() => void openReceipt(r.file_path, true)}
-                      >
-                        Download
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-sm admin-btn-outline admin-btn-danger"
-                        disabled={deletingReceiptId === r.id || compressingReceipt || uploadingReceipt}
-                        onClick={() => void handleDeleteReceipt(r.id)}
-                      >
-                        {deletingReceiptId === r.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-        {receiptError && <span className="admin-field-error">{receiptError}</span>}
-      </div>
     </div>
   );
 }
