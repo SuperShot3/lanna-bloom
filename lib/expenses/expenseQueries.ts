@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import type { Expense, ExpenseBillLine, ExpenseFilters } from '@/types/expenses';
+import type { Expense, ExpenseBillLine, ExpenseFilters, ExpenseOrderPreview } from '@/types/expenses';
 import { expenseDocumentationComplete, parseExpenseBillTrackingJson } from '@/types/expenses';
 import {
   billLinesNeedPersist,
@@ -13,6 +13,155 @@ export const ORDER_COSTS_FLOWERS_SYNC_NOTE = 'Auto from order COGS';
 export const ORDER_COSTS_DELIVERY_SYNC_NOTE = 'Auto from order delivery cost';
 
 const TABLE = 'expenses';
+
+interface OrderItemPreviewRow {
+  order_id: string | null;
+  bouquet_title: string | null;
+  size: string | null;
+  image_url_snapshot: string | null;
+  item_type: string | null;
+}
+
+interface OrderJsonPreviewItem {
+  bouquetTitle?: string;
+  imageUrl?: string;
+  itemType?: string;
+  size?: string;
+}
+
+function cleanString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function itemTypeLabel(itemType: string | null | undefined): string {
+  const normalized = itemType?.trim();
+  if (!normalized) return 'Item';
+  const labels: Record<string, string> = {
+    bouquet: 'Bouquet',
+    product: 'Product',
+    plushyToy: 'Soft toy',
+    plushytoy: 'Soft toy',
+    balloon: 'Balloon',
+  };
+  return labels[normalized] ?? labels[normalized.toLowerCase()] ?? normalized.replace(/_/g, ' ');
+}
+
+function previewTitle(title: string | null, itemType: string | null | undefined, size?: string | null): string {
+  const base = title || itemTypeLabel(itemType);
+  return size?.trim() ? `${base} · ${size.trim()}` : base;
+}
+
+function extractOrderJsonItems(orderJson: unknown): OrderJsonPreviewItem[] {
+  if (!orderJson || typeof orderJson !== 'object') return [];
+  const items = (orderJson as { items?: unknown }).items;
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((it): OrderJsonPreviewItem | null => {
+      if (!it || typeof it !== 'object') return null;
+      const row = it as Record<string, unknown>;
+      return {
+        bouquetTitle: cleanString(row.bouquetTitle) ?? undefined,
+        imageUrl: cleanString(row.imageUrl) ?? undefined,
+        itemType: cleanString(row.itemType) ?? undefined,
+        size: cleanString(row.size) ?? undefined,
+      };
+    })
+    .filter((it): it is OrderJsonPreviewItem => it !== null);
+}
+
+function previewFromOrderJson(orderId: string, orderJson: unknown): ExpenseOrderPreview | null {
+  const items = extractOrderJsonItems(orderJson);
+  const first = items[0];
+  if (first) {
+    return {
+      order_id: orderId,
+      title: previewTitle(first.bouquetTitle ?? null, first.itemType, first.size),
+      image_url: first.imageUrl ?? null,
+      item_count: items.length || null,
+    };
+  }
+
+  const custom = orderJson && typeof orderJson === 'object'
+    ? (orderJson as { customOrderDetails?: { referenceImageUrl?: unknown } }).customOrderDetails
+    : null;
+  const referenceImageUrl = cleanString(custom?.referenceImageUrl);
+  if (!referenceImageUrl) return null;
+  return {
+    order_id: orderId,
+    title: 'Custom order',
+    image_url: referenceImageUrl,
+    item_count: null,
+  };
+}
+
+async function hydrateExpenseOrderPreviews(expenses: Expense[]): Promise<Expense[]> {
+  const linkedOrderIds = Array.from(
+    new Set(
+      expenses
+        .map((expense) => expense.linked_order_id?.trim())
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  if (linkedOrderIds.length === 0) return expenses;
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return expenses;
+
+  const [{ data: itemRows, error: itemError }, { data: orderRows, error: orderError }] = await Promise.all([
+    supabase
+      .from('order_items')
+      .select('order_id, bouquet_title, size, image_url_snapshot, item_type')
+      .in('order_id', linkedOrderIds)
+      .order('order_id', { ascending: true }),
+    supabase
+      .from('orders')
+      .select('order_id, order_json')
+      .in('order_id', linkedOrderIds),
+  ]);
+
+  if (itemError) console.error('[expenseQueries] hydrate order item previews error:', itemError.message);
+  if (orderError) console.error('[expenseQueries] hydrate order json previews error:', orderError.message);
+
+  const itemCounts = new Map<string, number>();
+  for (const row of (itemRows ?? []) as OrderItemPreviewRow[]) {
+    const orderId = row.order_id?.trim();
+    if (!orderId) continue;
+    itemCounts.set(orderId, (itemCounts.get(orderId) ?? 0) + 1);
+  }
+
+  const previews = new Map<string, ExpenseOrderPreview>();
+  for (const row of (itemRows ?? []) as OrderItemPreviewRow[]) {
+    const orderId = row.order_id?.trim();
+    if (!orderId || previews.has(orderId)) continue;
+    previews.set(orderId, {
+      order_id: orderId,
+      title: previewTitle(cleanString(row.bouquet_title), row.item_type, row.size),
+      image_url: cleanString(row.image_url_snapshot),
+      item_count: itemCounts.get(orderId) ?? null,
+    });
+  }
+
+  for (const row of (orderRows ?? []) as Array<{ order_id: string | null; order_json: unknown }>) {
+    const orderId = row.order_id?.trim();
+    if (!orderId || previews.has(orderId)) continue;
+    const preview = previewFromOrderJson(orderId, row.order_json);
+    if (preview) previews.set(orderId, preview);
+  }
+
+  return expenses.map((expense) => {
+    const orderId = expense.linked_order_id?.trim();
+    if (!orderId) return expense;
+    return {
+      ...expense,
+      order_preview: previews.get(orderId) ?? {
+        order_id: orderId,
+        title: `Order ${orderId}`,
+        image_url: null,
+        item_count: null,
+      },
+    };
+  });
+}
 
 export interface ExpensesResult {
   expenses: Expense[];
@@ -70,7 +219,7 @@ export async function getExpenses(
     const missingReceiptCount = rows.filter((e) => !expenseDocumentationComplete(e)).length;
     const totalAmount = rows.reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const total = rows.length;
-    const pageRows = rows.slice(from, to + 1);
+    const pageRows = await hydrateExpenseOrderPreviews(rows.slice(from, to + 1));
 
     return {
       expenses: pageRows,
@@ -127,8 +276,12 @@ export async function getExpenses(
     if (!expenseDocumentationComplete(e)) missingReceiptCount++;
   }
 
+  const expenses = await hydrateExpenseOrderPreviews(
+    (data ?? []).map((row) => normalizeExpenseRow(row as Record<string, unknown>))
+  );
+
   return {
-    expenses: (data ?? []).map((row) => normalizeExpenseRow(row as Record<string, unknown>)),
+    expenses,
     total: count ?? 0,
     totalAmount,
     missingReceiptCount,

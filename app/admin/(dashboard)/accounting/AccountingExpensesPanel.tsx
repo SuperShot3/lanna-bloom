@@ -85,6 +85,57 @@ function ExpenseStatusIcon({ complete }: { complete: boolean }) {
   );
 }
 
+function ExpenseOrderVisual({ expense }: { expense: Expense }) {
+  const isDelivery = expense.category === 'delivery';
+  const preview = expense.order_preview;
+  if (!preview && !isDelivery) return null;
+
+  const title = preview?.title ?? 'Linked order';
+  const label = isDelivery ? `Delivery money for ${title}` : title;
+
+  return (
+    <span
+      className={`admin-expenses-order-visual${isDelivery ? ' admin-expenses-order-visual-delivery' : ''}`}
+      title={label}
+      aria-label={label}
+    >
+      {preview?.image_url ? (
+        <img src={preview.image_url} alt="" className="admin-expenses-order-thumb" />
+      ) : (
+        <span className="admin-expenses-order-emoji" aria-hidden="true">
+          {isDelivery ? '🚚' : '🌸'}
+        </span>
+      )}
+      {isDelivery && preview?.image_url ? (
+        <span className="admin-expenses-order-delivery-badge" aria-hidden="true">
+          🚚
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function ExpenseOrderMeta({ expense }: { expense: Expense }) {
+  const isDelivery = expense.category === 'delivery';
+  const preview = expense.order_preview;
+
+  if (isDelivery) {
+    return (
+      <span className="admin-badge admin-expenses-delivery-badge">
+        🚚 Delivery money
+      </span>
+    );
+  }
+
+  if (!preview) return null;
+  return (
+    <span className="admin-expenses-order-meta">
+      Order: {preview.title}
+      {preview.item_count && preview.item_count > 1 ? ` +${preview.item_count - 1} more` : ''}
+    </span>
+  );
+}
+
 function ExpenseProofBadges({ expense }: { expense: Expense }) {
   const p = billTrackingProgress(expense.bill_tracking);
   const proofsDone = p ? p.done === p.total : true;
@@ -431,12 +482,18 @@ export function AccountingExpensesPanel({
                         </span>
                       </td>
                       <td className="admin-expenses-desc">
-                        <span className="admin-expenses-desc-text">{exp.description}</span>
-                        <span className="admin-expenses-meta">
-                          <span className="admin-badge admin-badge-category">
-                            {CATEGORY_LABEL[exp.category] ?? exp.category}
+                        <span className="admin-expenses-desc-main">
+                          <ExpenseOrderVisual expense={exp} />
+                          <span className="admin-expenses-desc-copy">
+                            <span className="admin-expenses-desc-text">{exp.description}</span>
+                            <span className="admin-expenses-meta">
+                              <span className="admin-badge admin-badge-category">
+                                {CATEGORY_LABEL[exp.category] ?? exp.category}
+                              </span>
+                              <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
+                              <ExpenseOrderMeta expense={exp} />
+                            </span>
                           </span>
-                          <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
                         </span>
                       </td>
                       <td className="admin-expenses-amount">{formatAmount(exp.amount, exp.currency)}</td>
@@ -496,18 +553,22 @@ export function AccountingExpensesPanel({
                   }}
                 >
                   <div className="admin-expenses-mobile-card-top">
-                    <div>
-                      <span className="admin-expenses-date admin-expenses-date-with-status">
-                        <ExpenseStatusIcon complete={docsComplete} />
-                        {formatDate(exp.date)}
-                      </span>
-                      <h3 className="admin-expenses-mobile-title">{exp.description}</h3>
-                      <span className="admin-expenses-meta">
-                        <span className="admin-badge admin-badge-category">
-                          {CATEGORY_LABEL[exp.category] ?? exp.category}
+                    <div className="admin-expenses-mobile-main">
+                      <ExpenseOrderVisual expense={exp} />
+                      <div className="admin-expenses-mobile-copy">
+                        <span className="admin-expenses-date admin-expenses-date-with-status">
+                          <ExpenseStatusIcon complete={docsComplete} />
+                          {formatDate(exp.date)}
                         </span>
-                        <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
-                      </span>
+                        <h3 className="admin-expenses-mobile-title">{exp.description}</h3>
+                        <span className="admin-expenses-meta">
+                          <span className="admin-badge admin-badge-category">
+                            {CATEGORY_LABEL[exp.category] ?? exp.category}
+                          </span>
+                          <span>{PM_LABEL[exp.payment_method] ?? exp.payment_method}</span>
+                          <ExpenseOrderMeta expense={exp} />
+                        </span>
+                      </div>
                     </div>
                     <strong className="admin-expenses-mobile-amount">
                       {formatAmount(exp.amount, exp.currency)}

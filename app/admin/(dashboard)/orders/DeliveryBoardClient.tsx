@@ -16,9 +16,12 @@ import {
 } from '@/lib/delivery/markets';
 import { zoneLabel } from '@/lib/delivery/zones';
 import {
+  ORDER_STATUS,
+  ORDER_STATUS_LABELS,
   formatOrderStatus,
   formatPaymentStatus,
   normalizeOrderStatus,
+  type OrderStatus,
 } from '@/lib/orders/statusConstants';
 import {
   firstLineImageFromOrder,
@@ -39,6 +42,10 @@ import {
   whatsappHref,
 } from '@/lib/admin/deliveryContactLinks';
 import { AdminCopyTextButton } from '@/app/admin/components/AdminCopyTextButton';
+import {
+  DeliveredEmailPreviewModal,
+  type DeliveredPreviewPayload,
+} from '@/app/admin/components/DeliveredEmailPreviewModal';
 import { shopAddDays, shopTodayYmd } from '@/lib/shopTime';
 
 interface DeliveryBoardClientProps {
@@ -60,6 +67,7 @@ interface DeliveryBoardClientProps {
   pageSize: number;
   districts: string[];
   deliveryDestinations: string[];
+  canEditStatus: boolean;
 }
 
 function isOpenPipelineStatus(status: string | null | undefined): boolean {
@@ -76,6 +84,22 @@ function workflowLabel(status: string | null | undefined): string {
   if (n === 'NEW') return 'Scheduled';
   if (n === 'DELIVERED' || n === 'CANCELLED') return formatOrderStatus(status);
   return 'In progress';
+}
+
+function deliveryCardStatusClass(status: string | null | undefined): string {
+  const n = normalizeOrderStatus(status);
+  if (n === 'DELIVERED') return 'admin-delivery-card--delivered';
+  if (n === 'CANCELLED') return 'admin-delivery-card--cancelled';
+  if (n === 'NEW') return 'admin-delivery-card--scheduled';
+  return 'admin-delivery-card--pipeline';
+}
+
+function deliveryFlowBadgeStatusClass(status: string | null | undefined): string {
+  const n = normalizeOrderStatus(status);
+  if (n === 'DELIVERED') return 'admin-delivery-badge-flow--delivered';
+  if (n === 'CANCELLED') return 'admin-delivery-badge-flow--cancelled';
+  if (n === 'NEW') return 'admin-delivery-badge-flow--scheduled';
+  return 'admin-delivery-badge-flow--pipeline';
 }
 
 function deliveryAreaSubtitle(o: SupabaseOrderRow): string | null {
@@ -370,6 +394,7 @@ export function DeliveryBoardClient({
   pageSize,
   districts,
   deliveryDestinations,
+  canEditStatus,
 }: DeliveryBoardClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -387,24 +412,41 @@ export function DeliveryBoardClient({
   const [mapOpen, setMapOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [hideDelivered, setHideDelivered] = useState(false);
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, OrderStatus>>({});
+  const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
+  const [statusMessages, setStatusMessages] = useState<
+    Record<string, { type: 'success' | 'error'; text: string } | undefined>
+  >({});
+  const [deliveredPreview, setDeliveredPreview] = useState<{
+    orderId: string;
+    preview: DeliveredPreviewPayload;
+  } | null>(null);
 
   const sortedOrders = useMemo(
     () => sortOrdersForBoard(initialOrders),
     [initialOrders]
   );
+  const effectiveOrders = useMemo(
+    () =>
+      sortedOrders.map((o) => {
+        const override = statusOverrides[o.order_id];
+        return override ? { ...o, order_status: override } : o;
+      }),
+    [sortedOrders, statusOverrides]
+  );
   const visibleOrders = useMemo(() => {
-    if (!hideDelivered) return sortedOrders;
-    return sortedOrders.filter((o) => !isDeliveredStatus(o.order_status));
-  }, [sortedOrders, hideDelivered]);
+    if (!hideDelivered) return effectiveOrders;
+    return effectiveOrders.filter((o) => !isDeliveredStatus(o.order_status));
+  }, [effectiveOrders, hideDelivered]);
   const deliveredHiddenCount = useMemo(
-    () => sortedOrders.filter((o) => isDeliveredStatus(o.order_status)).length,
-    [sortedOrders]
+    () => effectiveOrders.filter((o) => isDeliveredStatus(o.order_status)).length,
+    [effectiveOrders]
   );
   const grouped = useMemo(() => groupOrdersByDayPart(visibleOrders), [visibleOrders]);
   const mapMarkers = useMemo(() => buildMapMarkers(visibleOrders), [visibleOrders]);
 
   const statInProgress = visibleOrders.filter((o) => isOpenPipelineStatus(o.order_status)).length;
-  const statDelivered = sortedOrders.filter((o) => isDeliveredStatus(o.order_status)).length;
+  const statDelivered = effectiveOrders.filter((o) => isDeliveredStatus(o.order_status)).length;
   const statMorning = grouped.morning.length;
   const statAfternoon = grouped.midday.length + grouped.afternoon.length + grouped.evening.length;
 
@@ -467,6 +509,60 @@ export function DeliveryBoardClient({
     if (q) next.set('q', q);
     else next.delete('q');
     pushParams(next);
+  };
+
+  const handleDeliveryStatusChange = async (order: SupabaseOrderRow, nextStatus: string) => {
+    if (!canEditStatus) return;
+    const normalized = normalizeOrderStatus(nextStatus);
+    const previousStatus = normalizeOrderStatus(order.order_status);
+    if (normalized === previousStatus || savingStatus[order.order_id]) return;
+
+    setStatusOverrides((current) => ({ ...current, [order.order_id]: normalized }));
+    setSavingStatus((current) => ({ ...current, [order.order_id]: true }));
+    setStatusMessages((current) => ({ ...current, [order.order_id]: undefined }));
+
+    try {
+      const res = await fetch(`/api/admin/orders/${encodeURIComponent(order.order_id)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_status: normalized }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        deliveredEmailPreview?: DeliveredPreviewPayload | null;
+      };
+      if (!res.ok) {
+        setStatusOverrides((current) => ({ ...current, [order.order_id]: previousStatus }));
+        setStatusMessages((current) => ({
+          ...current,
+          [order.order_id]: { type: 'error', text: data.error ?? 'Failed to update' },
+        }));
+        return;
+      }
+
+      setStatusMessages((current) => ({
+        ...current,
+        [order.order_id]: { type: 'success', text: 'Saved' },
+      }));
+      setTimeout(() => {
+        setStatusMessages((current) => ({ ...current, [order.order_id]: undefined }));
+      }, 3000);
+      if (data.deliveredEmailPreview?.outboxId) {
+        setDeliveredPreview({ orderId: order.order_id, preview: data.deliveredEmailPreview });
+      }
+      router.refresh();
+    } catch (e) {
+      setStatusOverrides((current) => ({ ...current, [order.order_id]: previousStatus }));
+      setStatusMessages((current) => ({
+        ...current,
+        [order.order_id]: {
+          type: 'error',
+          text: e instanceof Error ? e.message : 'Network error',
+        },
+      }));
+    } finally {
+      setSavingStatus((current) => ({ ...current, [order.order_id]: false }));
+    }
   };
 
   const detailHref = (orderId: string) => {
@@ -745,12 +841,15 @@ export function DeliveryBoardClient({
                           const img = firstLineImageFromOrder(o);
                           const productLabel = firstLineProductLabel(o);
                           const specLine = firstLineItemSpecSummary(o);
-                          const open = isOpenPipelineStatus(o.order_status);
+                          const cardStatusClass = deliveryCardStatusClass(o.order_status);
+                          const flowBadgeStatusClass = deliveryFlowBadgeStatusClass(o.order_status);
                           const paid = (o.payment_status ?? '').toUpperCase() === 'PAID';
                           const hasCardMessage = orderHasCustomerCardMessage(o);
+                          const isSavingStatus = Boolean(savingStatus[o.order_id]);
+                          const statusMessage = statusMessages[o.order_id];
                           return (
                             <li key={o.order_id} className="admin-delivery-card-wrap">
-                              <div className={`admin-delivery-card ${open ? 'admin-delivery-card--pipeline' : ''}`}>
+                              <div className={`admin-delivery-card ${cardStatusClass}`}>
                                 <div className="admin-delivery-card-thumb">
                                   <div className="admin-delivery-card-thumb-visual">
                                     {img ? (
@@ -807,7 +906,41 @@ export function DeliveryBoardClient({
                                       >
                                         {paid ? 'Paid' : formatPaymentStatus(o.payment_status)}
                                       </span>
-                                      <span className="admin-delivery-badge-flow">{workflowLabel(o.order_status)}</span>
+                                      {canEditStatus ? (
+                                        <div className="admin-delivery-status-control">
+                                          <label className="sr-only" htmlFor={`delivery-status-${o.order_id}`}>
+                                            Order status for {o.order_id}
+                                          </label>
+                                          <select
+                                            id={`delivery-status-${o.order_id}`}
+                                            className={`admin-delivery-status-select ${flowBadgeStatusClass}`}
+                                            value={normalizeOrderStatus(o.order_status)}
+                                            onChange={(e) => handleDeliveryStatusChange(o, e.target.value)}
+                                            disabled={isSavingStatus}
+                                            aria-label={`Order status for ${o.order_id}`}
+                                          >
+                                            {ORDER_STATUS.map((s) => (
+                                              <option key={s} value={s}>
+                                                {ORDER_STATUS_LABELS[s]}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          {isSavingStatus ? (
+                                            <span className="admin-delivery-status-saving">Saving…</span>
+                                          ) : null}
+                                          {statusMessage ? (
+                                            <span
+                                              className={`admin-delivery-status-message admin-delivery-status-message--${statusMessage.type}`}
+                                            >
+                                              {statusMessage.text}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      ) : (
+                                        <span className={`admin-delivery-badge-flow ${flowBadgeStatusClass}`}>
+                                          {workflowLabel(o.order_status)}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                   <DeliveryCardContact order={o} />
@@ -848,7 +981,7 @@ export function DeliveryBoardClient({
 
           {visibleOrders.length > 0 && initialTotal > sortedOrders.length ? (
             <p className="admin-hint admin-delivery-page-hint">
-              Showing {sortedOrders.length} of {initialTotal} orders — use pagination or narrow the date range.
+              Showing {effectiveOrders.length} of {initialTotal} orders — use pagination or narrow the date range.
             </p>
           ) : null}
 
@@ -901,6 +1034,15 @@ export function DeliveryBoardClient({
 
       {mapOpen ? (
         <DeliveryRouteMapModal markers={mapMarkers} onClose={() => setMapOpen(false)} />
+      ) : null}
+      {deliveredPreview ? (
+        <DeliveredEmailPreviewModal
+          key={deliveredPreview.preview.outboxId}
+          open={!!deliveredPreview}
+          orderId={deliveredPreview.orderId}
+          initial={deliveredPreview.preview}
+          onClose={() => setDeliveredPreview(null)}
+        />
       ) : null}
     </div>
   );

@@ -5,9 +5,10 @@
 
 export const ORDER_STATUS = [
   'NEW',
-  'PROCESSING',
-  'READY_TO_DISPATCH',
-  'DISPATCHED',
+  'ACCEPTED',
+  'PREPARING',
+  'READY_FOR_DELIVERY',
+  'OUT_FOR_DELIVERY',
   'DELIVERED',
   'CANCELLED',
 ] as const;
@@ -27,9 +28,10 @@ export type PaymentStatus = (typeof PAYMENT_STATUS)[number];
 /** Display labels for admin (dropdowns, badges, filters). */
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   NEW: 'New',
-  PROCESSING: 'Processing',
-  READY_TO_DISPATCH: 'Ready to dispatch',
-  DISPATCHED: 'Dispatched',
+  ACCEPTED: 'Accepted',
+  PREPARING: 'Preparing',
+  READY_FOR_DELIVERY: 'Ready for delivery',
+  OUT_FOR_DELIVERY: 'Out for delivery',
   DELIVERED: 'Delivered',
   CANCELLED: 'Cancelled',
 };
@@ -48,13 +50,15 @@ export function orderStatusToCustomerLabel(status: string | null | undefined): s
   const s = String(status).toUpperCase();
   const map: Record<string, string> = {
     NEW: 'New',
-    PROCESSING: 'Processing',
-    READY_TO_DISPATCH: 'Ready to dispatch',
-    DISPATCHED: 'Dispatched',
+    ACCEPTED: 'Accepted',
+    PREPARING: 'Preparing',
+    READY_FOR_DELIVERY: 'Ready for delivery',
+    OUT_FOR_DELIVERY: 'Out for delivery',
     DELIVERED: 'Delivered',
     CANCELLED: 'Cancelled',
   };
-  return map[s] ?? status;
+  const normalized = OLD_ORDER_STATUS_TO_NEW[s] ?? (ORDER_STATUS.includes(s as OrderStatus) ? (s as OrderStatus) : undefined);
+  return normalized ? map[normalized] : status;
 }
 
 /**
@@ -64,13 +68,14 @@ export function orderStatusToCustomerLabel(status: string | null | undefined): s
 export function orderStatusToFulfillmentDisplay(status: string | null | undefined): string {
   if (!status) return 'new';
   const upper = String(status).trim().toUpperCase();
-  // Normalize legacy values (e.g. READY_FOR_DISPATCH → READY_TO_DISPATCH)
+  // Normalize legacy values (e.g. READY_TO_DISPATCH -> READY_FOR_DELIVERY)
   const normalized = OLD_ORDER_STATUS_TO_NEW[upper] ?? upper;
   const map: Record<string, string> = {
     NEW: 'new',
-    PROCESSING: 'preparing',
-    READY_TO_DISPATCH: 'ready_to_dispatch',
-    DISPATCHED: 'dispatched',
+    ACCEPTED: 'accepted',
+    PREPARING: 'preparing',
+    READY_FOR_DELIVERY: 'ready_for_delivery',
+    OUT_FOR_DELIVERY: 'out_for_delivery',
     DELIVERED: 'delivered',
     CANCELLED: 'cancelled',
   };
@@ -94,12 +99,16 @@ export function formatPaymentStatus(status: string | null | undefined): string {
 /** Map old order_status values to new enum (for migration and backward compat). */
 export const OLD_ORDER_STATUS_TO_NEW: Record<string, OrderStatus> = {
   NEW: 'NEW',
-  PAID: 'PROCESSING',
-  ACCEPTED: 'PROCESSING',
-  PREPARING: 'PROCESSING',
-  READY_FOR_DISPATCH: 'READY_TO_DISPATCH',
-  OUT_FOR_DELIVERY: 'DISPATCHED',
-  DISPATCHED: 'DISPATCHED',
+  PAID: 'NEW',
+  PROCESSING: 'PREPARING',
+  ACCEPTED: 'ACCEPTED',
+  ORDER_ACCEPTED: 'ACCEPTED',
+  PREPARING: 'PREPARING',
+  READY_TO_DISPATCH: 'READY_FOR_DELIVERY',
+  READY_FOR_DISPATCH: 'READY_FOR_DELIVERY',
+  READY_FOR_DELIVERY: 'READY_FOR_DELIVERY',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+  DISPATCHED: 'OUT_FOR_DELIVERY',
   DELIVERED: 'DELIVERED',
   CANCELED: 'CANCELLED',
   CANCELLED: 'CANCELLED',

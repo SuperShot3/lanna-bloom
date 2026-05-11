@@ -4368,15 +4368,58 @@ a.filter-pill--active:hover {
 .admin-delivery-card {
   display: flex;
   gap: 14px;
+  position: relative;
+  overflow: hidden;
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid rgba(45, 71, 62, 0.12);
-  background: var(--admin-surface, #fff);
-  box-shadow: var(--admin-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+  border: 1px solid var(--delivery-card-border, rgba(45, 71, 62, 0.12));
+  background: var(--delivery-card-bg, var(--admin-surface, #fff));
+  box-shadow: var(--delivery-card-shadow, var(--admin-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05)));
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+.admin-delivery-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: var(--delivery-card-accent, transparent);
+  pointer-events: none;
+}
+.admin-delivery-card--scheduled,
+.admin-delivery-card--pipeline {
+  --delivery-card-accent: linear-gradient(90deg, #dc2626 0%, #f97316 100%);
+  --delivery-card-border: rgba(220, 38, 38, 0.5);
+  --delivery-card-bg: linear-gradient(135deg, rgba(254, 226, 226, 0.95) 0%, rgba(255, 247, 237, 0.88) 52%, #fff 100%);
+  --delivery-card-shadow:
+    0 0 0 1px rgba(220, 38, 38, 0.14),
+    0 12px 26px rgba(127, 29, 29, 0.12);
 }
 .admin-delivery-card--pipeline {
-  border-left: 4px solid #ea580c;
-  background: linear-gradient(90deg, rgba(251, 146, 60, 0.1) 0%, #fff 12%);
+  --delivery-card-accent: linear-gradient(90deg, #b91c1c 0%, #dc2626 55%, #f97316 100%);
+  --delivery-card-border: rgba(185, 28, 28, 0.56);
+}
+.admin-delivery-card--delivered {
+  --delivery-card-accent: linear-gradient(90deg, #16a34a 0%, #86efac 100%);
+  --delivery-card-border: rgba(22, 163, 74, 0.42);
+  --delivery-card-bg: linear-gradient(135deg, rgba(220, 252, 231, 0.94) 0%, rgba(240, 253, 244, 0.88) 56%, #fff 100%);
+  --delivery-card-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.12),
+    0 10px 22px rgba(21, 128, 61, 0.1);
+}
+.admin-delivery-card--cancelled {
+  --delivery-card-accent: linear-gradient(90deg, #94a3b8 0%, #cbd5e1 100%);
+  --delivery-card-border: rgba(100, 116, 139, 0.28);
+  --delivery-card-bg: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, #fff 100%);
+}
+.admin-delivery-card--scheduled .admin-delivery-card-thumb-visual,
+.admin-delivery-card--pipeline .admin-delivery-card-thumb-visual {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+}
+.admin-delivery-card--delivered .admin-delivery-card-thumb-visual {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
 }
 .admin-delivery-card-thumb {
   flex: 0 0 88px;
@@ -4502,6 +4545,25 @@ a.filter-pill--active:hover {
   background: linear-gradient(135deg, rgba(45, 71, 62, 0.12) 0%, rgba(45, 71, 62, 0.05) 100%);
   border: 1px solid rgba(45, 71, 62, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.admin-delivery-card--scheduled .admin-delivery-card-datetime,
+.admin-delivery-card--pipeline .admin-delivery-card-datetime {
+  background: linear-gradient(135deg, rgba(254, 226, 226, 0.9) 0%, rgba(255, 237, 213, 0.82) 100%);
+  border-color: rgba(220, 38, 38, 0.26);
+}
+.admin-delivery-card--scheduled .admin-delivery-datetime-icon,
+.admin-delivery-card--scheduled .admin-delivery-card-time,
+.admin-delivery-card--pipeline .admin-delivery-datetime-icon,
+.admin-delivery-card--pipeline .admin-delivery-card-time {
+  color: #b91c1c;
+}
+.admin-delivery-card--delivered .admin-delivery-card-datetime {
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.92) 0%, rgba(240, 253, 244, 0.9) 100%);
+  border-color: rgba(22, 163, 74, 0.26);
+}
+.admin-delivery-card--delivered .admin-delivery-datetime-icon,
+.admin-delivery-card--delivered .admin-delivery-card-time {
+  color: #15803d;
 }
 .admin-delivery-card-datetime-row,
 .admin-delivery-card-time-window {
@@ -4782,11 +4844,91 @@ a.filter-pill--active:hover {
 }
 .admin-delivery-badge-flow {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.admin-delivery-badge-flow--scheduled,
+.admin-delivery-badge-flow--pipeline {
+  background: rgba(254, 226, 226, 0.95);
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #b91c1c;
+}
+.admin-delivery-badge-flow--pipeline {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(185, 28, 28, 0.34);
+}
+.admin-delivery-badge-flow--delivered {
+  background: rgba(220, 252, 231, 0.95);
+  border-color: rgba(22, 163, 74, 0.3);
+  color: #15803d;
+}
+.admin-delivery-badge-flow--cancelled {
+  background: rgba(226, 232, 240, 0.9);
+  border-color: rgba(100, 116, 139, 0.22);
+  color: #475569;
+}
+.admin-delivery-status-control {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 100%;
+}
+.admin-delivery-status-select {
+  max-width: 180px;
+  min-height: 28px;
+  padding: 4px 30px 4px 10px !important;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.admin-delivery-status-select.admin-delivery-badge-flow--scheduled,
+.admin-delivery-status-select.admin-delivery-badge-flow--pipeline {
+  background: rgba(254, 226, 226, 0.95);
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #b91c1c;
+}
+.admin-delivery-status-select.admin-delivery-badge-flow--pipeline {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(185, 28, 28, 0.34);
+}
+.admin-delivery-status-select.admin-delivery-badge-flow--delivered {
+  background: rgba(220, 252, 231, 0.95);
+  border-color: rgba(22, 163, 74, 0.3);
+  color: #15803d;
+}
+.admin-delivery-status-select.admin-delivery-badge-flow--cancelled {
+  background: rgba(226, 232, 240, 0.9);
+  border-color: rgba(100, 116, 139, 0.22);
+  color: #475569;
+}
+.admin-delivery-status-select:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+.admin-delivery-status-saving,
+.admin-delivery-status-message {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.admin-delivery-status-saving {
+  color: var(--admin-text-muted, #64748b);
+}
+.admin-delivery-status-message--success {
+  color: #15803d;
+}
+.admin-delivery-status-message--error {
+  color: #b91c1c;
 }
 
 /* Delivery board cards: use full width for date / time / address on small screens */
@@ -4845,6 +4987,17 @@ a.filter-pill--active:hover {
   .admin-delivery-card-datetime {
     width: 100%;
     box-sizing: border-box;
+  }
+  .admin-delivery-status-control {
+    align-items: flex-start;
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .admin-delivery-status-select {
+    width: 100%;
+    max-width: 100%;
+    min-height: 36px;
+    font-size: 0.78rem;
   }
 }
 .admin-delivery-card-bottom {
@@ -6812,6 +6965,8 @@ a.admin-summary-key-value {
 .admin-shell .admin-badge-new,
 .admin-shell .admin-badge-accepted,
 .admin-shell .admin-badge-preparing,
+.admin-shell .admin-badge-ready_for_delivery,
+.admin-shell .admin-badge-ready-for-delivery,
 .admin-shell .admin-badge-ready_for_dispatch,
 .admin-shell .admin-badge-ready-to-dispatch,
 .admin-shell .admin-badge-out_for_delivery,
@@ -7188,12 +7343,77 @@ a.admin-summary-key-value {
   color: #fff;
 }
 
-.admin-expenses-desc { max-width: 340px; }
+.admin-expenses-desc { max-width: 390px; }
+.admin-expenses-desc-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.admin-expenses-desc-copy {
+  display: block;
+  min-width: 0;
+}
 .admin-expenses-desc-text {
   display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.admin-expenses-order-visual {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff7ed, #fdf2f8);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+.admin-expenses-order-visual-delivery {
+  border-color: rgba(245, 158, 11, 0.46);
+  background: linear-gradient(135deg, #fff7ed, #fef3c7);
+}
+.admin-expenses-order-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.admin-expenses-order-emoji {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+.admin-expenses-order-delivery-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #f59e0b;
+  font-size: 0.78rem;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(146, 64, 14, 0.22);
+}
+.admin-expenses-order-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-expenses-delivery-badge {
+  background: #fff7ed;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  color: #92400e;
+  font-weight: 700;
 }
 .admin-expenses-meta {
   display: flex;
@@ -7279,6 +7499,17 @@ a.admin-summary-key-value {
   gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
+}
+
+.admin-expenses-mobile-main {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.admin-expenses-mobile-copy {
+  min-width: 0;
 }
 
 .admin-expenses-mobile-title {

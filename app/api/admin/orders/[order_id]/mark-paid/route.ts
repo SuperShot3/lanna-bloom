@@ -27,7 +27,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await supabase
     .from('orders')
-    .select('order_id, payment_method, payment_status, order_status')
+    .select('order_id, payment_method, payment_status')
     .eq('order_id', order_id.trim())
     .single();
 
@@ -51,17 +51,13 @@ export async function PATCH(
   }
 
   const previousPaymentStatus = (existing.payment_status ?? 'NOT_PAID').toUpperCase();
-  const previousOrderStatus = (existing.order_status ?? 'NEW').toUpperCase();
 
   if (previousPaymentStatus === 'PAID') {
     return NextResponse.json({ ok: true, order: existing, message: 'Already paid (idempotent)' });
   }
 
-  const newOrderStatus = previousOrderStatus === 'NEW' ? 'PROCESSING' : previousOrderStatus;
-
   const updatePayload: Record<string, unknown> = {
     payment_status: 'PAID',
-    order_status: newOrderStatus,
     paid_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -78,19 +74,9 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (newOrderStatus !== previousOrderStatus) {
-    await supabase.from('order_status_history').insert({
-      order_id: order_id.trim(),
-      from_status: previousOrderStatus,
-      to_status: newOrderStatus,
-      created_at: new Date().toISOString(),
-    });
-  }
-
   const adminEmail = session.user.email ?? 'unknown';
   await logAudit(adminEmail, 'MANUAL_MARK_PAID', order_id.trim(), {
     payment_status: { from: previousPaymentStatus, to: 'PAID' },
-    order_status: { from: previousOrderStatus, to: newOrderStatus },
   });
 
   // GA4 purchase: GTM fires when the customer opens the paid order page (client dataLayer).

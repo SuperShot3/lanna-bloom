@@ -41,6 +41,13 @@ export interface ExpenseBillLineTemplate {
   vendor_bill_applicable?: boolean;
 }
 
+export interface ExpenseOrderPreview {
+  order_id: string;
+  title: string;
+  image_url: string | null;
+  item_count: number | null;
+}
+
 export interface Expense {
   id: string;
   amount: number;
@@ -60,6 +67,8 @@ export interface Expense {
   bill_tracking?: ExpenseBillLine[] | null;
   /** Set when staff generates the vendor paper-bill request PDF. */
   paper_bill_requested_at?: string | null;
+  /** Lightweight linked-order preview for admin expense lists. */
+  order_preview?: ExpenseOrderPreview | null;
 }
 
 export interface ExpenseReceiptImage {

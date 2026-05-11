@@ -352,7 +352,7 @@ export async function supabaseCreateOrder(
     return 'MORNING_9_12';
   })();
 
-  const orderStatus = status === 'paid' ? 'PROCESSING' : 'NEW';
+  const orderStatus = 'NEW';
   const paymentStatus = status === 'paid' ? 'PAID' : status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
 
   const ordersRow = {
@@ -477,11 +477,8 @@ export async function supabaseUpdateOrderPaymentStatus(
   const prevPaymentUpper = (rowBefore.payment_status ?? 'NOT_PAID').toUpperCase();
 
   const paymentStatus = update.status === 'paid' ? 'PAID' : 'ERROR';
-  const orderStatus = update.status === 'paid' ? 'PROCESSING' : 'NEW';
-
   const updatePayload: Record<string, unknown> = {
     payment_status: paymentStatus,
-    order_status: orderStatus,
     payment_method: 'STRIPE',
     updated_at: new Date().toISOString(),
     paid_at: update.paidAt ?? undefined,
@@ -566,7 +563,7 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     if (s.includes('18:00') && s.includes('20:00')) return 'EVENING_18_20';
     return 'MORNING_9_12';
   })();
-  const orderStatus = order.status === 'paid' ? 'PROCESSING' : 'NEW';
+  const orderStatus = 'NEW';
   const paymentStatus = order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
 
   const ordersRow = {

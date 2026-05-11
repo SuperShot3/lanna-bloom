@@ -133,8 +133,12 @@ export type OrderPaymentStatus = 'pending_payment' | 'paid' | 'payment_failed';
 
 export type FulfillmentStatus =
   | 'new'
+  | 'accepted'
   | 'confirmed'
   | 'preparing'
+  | 'ready_for_delivery'
+  | 'out_for_delivery'
+  | 'ready_to_dispatch'
   | 'dispatched'
   | 'delivered'
   | 'cancelled'

@@ -44,7 +44,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await supabase
     .from('orders')
-    .select('order_id, payment_method, payment_status, order_status')
+    .select('order_id, payment_method, payment_status')
     .eq('order_id', order_id.trim())
     .single();
 
@@ -66,13 +66,9 @@ export async function PATCH(
     payment_status: paymentStatus,
     updated_at: new Date().toISOString(),
   };
-  // When marking PAID, move order along pipeline (NEW -> PROCESSING) if still at NEW
+  // Payment confirmation is shown as its own customer lifecycle step; fulfillment stays admin-controlled.
   if (paymentStatus === 'PAID' && previousStatus !== 'PAID') {
     updatePayload.paid_at = new Date().toISOString();
-    const currentOrderStatus = (existing.order_status ?? 'NEW').toUpperCase();
-    if (currentOrderStatus === 'NEW') {
-      updatePayload.order_status = 'PROCESSING';
-    }
   }
 
   const { data: updated, error } = await supabase

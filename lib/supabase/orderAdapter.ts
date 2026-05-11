@@ -11,9 +11,10 @@ export type DeliveryWindow =
 
 export type SupabaseOrderStatus =
   | 'NEW'
-  | 'PROCESSING'
-  | 'READY_TO_DISPATCH'
-  | 'DISPATCHED'
+  | 'ACCEPTED'
+  | 'PREPARING'
+  | 'READY_FOR_DELIVERY'
+  | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
   | 'CANCELLED';
 
@@ -27,10 +28,7 @@ function mapPreferredTimeSlotToWindow(slot: string): DeliveryWindow {
   return 'MORNING_9_12';
 }
 
-function mapLegacyStatusToOrderStatus(
-  status: Order['status']
-): SupabaseOrderStatus {
-  if (status === 'paid') return 'PROCESSING';
+function mapLegacyStatusToOrderStatus(_status?: Order['status']): SupabaseOrderStatus {
   return 'NEW';
 }
 
@@ -197,7 +195,7 @@ export async function syncSupabasePaymentSuccess(
     // Update by order_id (we have it from webhook metadata)
     const { data: existing, error: fetchError } = await supabase
       .from('orders')
-      .select('order_id, order_status, payment_status')
+      .select('order_id, payment_status')
       .eq('order_id', orderId)
       .single();
 
@@ -214,7 +212,6 @@ export async function syncSupabasePaymentSuccess(
       .from('orders')
       .update({
         payment_status: 'PAID',
-        order_status: existing.order_status === 'NEW' ? 'PROCESSING' : existing.order_status,
         payment_method: 'STRIPE',
         paid_at: paidAt,
         stripe_session_id: stripeSessionId ?? undefined,
@@ -226,13 +223,6 @@ export async function syncSupabasePaymentSuccess(
       console.error('[supabase] payment sync update error', orderId, updateError.message);
       return;
     }
-
-    await supabase.from('order_status_history').insert({
-      order_id: orderId,
-      from_status: existing.order_status ?? 'NEW',
-      to_status: 'PROCESSING',
-      created_at: new Date().toISOString(),
-    });
 
     if (process.env.SUPABASE_LOG_LEVEL === 'debug') {
       console.log('[supabase] payment sync ok', orderId);

@@ -44,8 +44,12 @@ function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
 function getFulfillmentLabel(status: string, t: Record<string, string>): string {
   const map: Record<string, string> = {
     new: t.orderStatusNew ?? 'New',
+    accepted: t.orderStatusAccepted ?? 'Accepted',
+    order_accepted: t.orderStatusAccepted ?? 'Accepted',
     confirmed: t.orderStatusConfirmed ?? 'Confirmed',
     preparing: t.orderStatusPreparing ?? 'Preparing',
+    ready_for_delivery: t.orderStatusReadyForDelivery ?? 'Ready for delivery',
+    out_for_delivery: t.orderStatusOutForDelivery ?? 'Out for delivery',
     ready_to_dispatch: t.orderStatusReadyToDispatch ?? 'Ready to dispatch',
     dispatched: t.orderStatusDispatched ?? 'Dispatched',
     delivered: t.orderStatusDelivered ?? 'Delivered',

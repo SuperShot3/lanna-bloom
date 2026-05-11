@@ -1,7 +1,9 @@
+import { auth } from '@/auth';
 import { getOrders, getDistricts, getDeliveryDestinations } from '@/lib/supabase/adminQueries';
 import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
 import { DeliveryBoardClient } from './DeliveryBoardClient';
 import { shopTodayYmd } from '@/lib/shopTime';
+import { canChangeStatus } from '@/lib/adminRbac';
 
 interface PageProps {
   searchParams: Promise<{
@@ -20,6 +22,8 @@ interface PageProps {
 
 export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const session = await auth();
+  const role = session?.user ? (session.user as { role?: string }).role : undefined;
   const page = Math.max(1, parseInt(params.page ?? '1', 10));
   const pageSize = 80;
   const today = shopTodayYmd();
@@ -59,6 +63,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       pageSize={pageSize}
       districts={districts}
       deliveryDestinations={deliveryDestinations}
+      canEditStatus={canChangeStatus(role)}
     />
   );
 }
