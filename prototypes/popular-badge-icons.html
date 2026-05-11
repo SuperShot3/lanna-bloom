@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Popular badge — fire + burst shapes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f3ef;
+        --ink: #1a3c34;
+        --gold: #c5a059;
+        --amber-border: rgba(146, 64, 14, 0.25);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        padding: 24px 20px 48px;
+        line-height: 1.45;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 8px;
+        letter-spacing: -0.02em;
+      }
+      h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 32px 0 12px;
+      }
+      p.lead {
+        margin: 0 0 20px;
+        font-size: 0.9rem;
+        color: rgba(26, 60, 52, 0.72);
+        max-width: 58ch;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+        gap: 18px;
+        max-width: 960px;
+      }
+      .slot {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .num {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        color: rgba(26, 60, 52, 0.55);
+        text-transform: uppercase;
+      }
+      .shape-hint {
+        font-size: 0.68rem;
+        color: rgba(26, 60, 52, 0.5);
+        line-height: 1.25;
+        min-height: 2.5em;
+      }
+      .photo {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        background: linear-gradient(145deg, #ddd8cf 0%, #c9c2b6 45%, #b8b0a2 100%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 8px 24px rgba(26, 60, 52, 0.1);
+        overflow: hidden;
+      }
+      .ms {
+        font-family: 'Material Symbols Outlined';
+        font-weight: 400;
+        font-style: normal;
+        font-size: 22px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        direction: ltr;
+        -webkit-font-smoothing: antialiased;
+        font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      }
+      .ms.fill {
+        font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      }
+
+      .badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        box-shadow: 0 2px 10px rgba(26, 60, 52, 0.14);
+      }
+
+      /* Fire + SVG backing (all variants) */
+      .fire-burst {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        filter: drop-shadow(0 2px 6px rgba(26, 60, 52, 0.12));
+      }
+      .fire-burst svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .fire-burst .icon-in {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #7c2d12;
+      }
+      .fire-burst .icon-in .ms {
+        font-size: 20px;
+      }
+
+      details {
+        margin-top: 36px;
+        max-width: 960px;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: rgba(26, 60, 52, 0.75);
+        padding: 8px 0;
+      }
+      .archive .photo {
+        max-width: 140px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Fire badge — burst shape options</h1>
+    <p class="lead">
+      Same icon everywhere: <strong>local_fire_department</strong> only (no spark / auto_awesome).
+      Pick an <strong>F##</strong> code; the only difference is the SVG shape behind the flame.
+      Open this file in your browser; needs network once for Google Fonts.
+    </p>
+
+    <div class="grid">
+      <!-- F01: original prototype-02 polygon -->
+      <div class="slot">
+        <span class="num">F01</span>
+        <span class="shape-hint">Original 16-point jagged burst (first “option 2”).</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F01">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf01" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fef3c7" />
+                  <stop offset="100%" style="stop-color: #fcd34d" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,0 29,14 44,10 35,22 48,24 35,26 44,38 29,34 24,48 19,34 4,38 13,26 0,24 13,22 4,10 19,14"
+                fill="url(#gf01)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F02: 8-point star -->
+      <div class="slot">
+        <span class="num">F02</span>
+        <span class="shape-hint">Classic 8-point star (long / short rays).</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F02">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf02" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fff7ed" />
+                  <stop offset="100%" style="stop-color: #fbbf24" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,2 27.44,15.69 39.56,8.44 32.31,20.56 46,24 32.31,27.44 39.56,39.56 27.44,32.31 24,46 20.56,32.31 8.44,39.56 15.69,27.44 2,24 15.69,20.56 8.44,8.44 20.56,15.69"
+                fill="url(#gf02)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F03: 6-point -->
+      <div class="slot">
+        <span class="num">F03</span>
+        <span class="shape-hint">6-point star — bolder, fewer corners.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F03">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf03" x1="20%" y1="0%" x2="80%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fef3c7" />
+                  <stop offset="100%" style="stop-color: #f59e0b" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,2 29,15.34 43.05,13 34,24 43.05,35 29,32.66 24,46 19,32.66 4.95,35 14,24 4.95,13 19,15.34"
+                fill="url(#gf03)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F04: 12-point -->
+      <div class="slot">
+        <span class="num">F04</span>
+        <span class="shape-hint">12-point — tighter “sun” with many slim spikes.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F04">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf04" x1="0%" y1="50%" x2="100%" y2="50%">
+                  <stop offset="0%" style="stop-color: #fef9c3" />
+                  <stop offset="100%" style="stop-color: #fcd34d" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,2 26.85,13.37 35,4.95 31.78,16.22 43.05,13 34.63,21.15 46,24 34.63,26.85 43.05,35 31.78,31.78 35,43.05 26.85,34.63 24,46 21.15,34.63 13,43.05 16.22,31.78 4.95,35 13.37,26.85 2,24 13.37,21.15 4.95,13 16.22,16.22 13,4.95 21.15,13.37"
+                fill="url(#gf04)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F05: 16-point shallow -->
+      <div class="slot">
+        <span class="num">F05</span>
+        <span class="shape-hint">16-point shallow — almost a flower; softer silhouette.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F05">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf05" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fffbeb" />
+                  <stop offset="100%" style="stop-color: #fde68a" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,2 27.12,8.31 32.42,3.67 32.89,10.7 39.56,8.44 37.3,15.11 44.33,15.58 39.69,20.88 46,24 39.69,27.12 44.33,32.42 37.3,32.89 39.56,39.56 32.89,37.3 32.42,44.33 27.12,39.69 24,46 20.88,39.69 15.58,44.33 15.11,37.3 8.44,39.56 10.7,32.89 3.67,32.42 8.31,27.12 2,24 8.31,20.88 3.67,15.58 10.7,15.11 8.44,8.44 15.11,10.7 15.58,3.67 20.88,8.31"
+                fill="url(#gf05)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F06: 4-point compass -->
+      <div class="slot">
+        <span class="num">F06</span>
+        <span class="shape-hint">4-point compass burst — strong N–E–S–W.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F06">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf06" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color: #fef3c7" />
+                  <stop offset="100%" style="stop-color: #fb923c" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,2 31.07,16.93 46,24 31.07,31.07 24,46 16.93,31.07 2,24 16.93,16.93"
+                fill="url(#gf06)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F07: gear 12 -->
+      <div class="slot">
+        <span class="num">F07</span>
+        <span class="shape-hint">Gear 12 teeth — mechanical “seal”.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F07">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf07" x1="50%" y1="0%" x2="50%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fffbeb" />
+                  <stop offset="100%" style="stop-color: #fbbf24" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,3 27.88,9.51 34.5,5.81 34.61,13.39 42.19,13.5 38.49,20.12 45,24 38.49,27.88 42.19,34.5 34.61,34.61 34.5,42.19 27.88,38.49 24,45 20.12,38.49 13.5,42.19 13.39,34.61 5.81,34.5 9.51,27.88 3,24 9.51,20.12 5.81,13.5 13.39,13.39 13.5,5.81 20.12,9.51"
+                fill="url(#gf07)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F08: gear 18 -->
+      <div class="slot">
+        <span class="num">F08</span>
+        <span class="shape-hint">Gear 18 teeth — finer edge, still reads as a badge.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F08">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf08" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fefce8" />
+                  <stop offset="100%" style="stop-color: #f59e0b" />
+                </linearGradient>
+              </defs>
+              <polygon
+                points="24,3 26.78,8.24 31.18,4.27 32,10.14 37.5,7.91 36.26,13.72 42.19,13.5 39.04,18.53 44.68,20.35 40,24 44.68,27.65 39.04,29.47 42.19,34.5 36.26,34.28 37.5,40.09 32,37.86 31.18,43.73 26.78,39.76 24,45 21.22,39.76 16.82,43.73 16,37.86 10.5,40.09 11.74,34.28 5.81,34.5 8.96,29.47 3.32,27.65 8,24 3.32,20.35 8.96,18.53 5.81,13.5 11.74,13.72 10.5,7.91 16,10.14 16.82,4.27 21.22,8.24"
+                fill="url(#gf08)"
+                stroke="var(--amber-border)"
+                stroke-width="0.5"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F09: circle -->
+      <div class="slot">
+        <span class="num">F09</span>
+        <span class="shape-hint">Circle — no spikes; calm “hot dot”.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F09">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <radialGradient id="gf09" cx="35%" cy="30%" r="70%">
+                  <stop offset="0%" style="stop-color: #fffbeb" />
+                  <stop offset="55%" style="stop-color: #fde68a" />
+                  <stop offset="100%" style="stop-color: #fbbf24" />
+                </radialGradient>
+              </defs>
+              <circle cx="24" cy="24" r="20" fill="url(#gf09)" stroke="var(--amber-border)" stroke-width="0.6" />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F10: rounded square -->
+      <div class="slot">
+        <span class="num">F10</span>
+        <span class="shape-hint">Superellipse-ish rounded square — modern app-chip feel.</span>
+        <div class="photo">
+          <div class="badge fire-burst" title="F10">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <defs>
+                <linearGradient id="gf10" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color: #fef3c7" />
+                  <stop offset="100%" style="stop-color: #fcd34d" />
+                </linearGradient>
+              </defs>
+              <rect
+                x="5"
+                y="5"
+                width="38"
+                height="38"
+                rx="14"
+                ry="14"
+                fill="url(#gf10)"
+                stroke="var(--amber-border)"
+                stroke-width="0.6"
+              />
+            </svg>
+            <div class="icon-in">
+              <span class="ms fill" aria-hidden="true">local_fire_department</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <details>
+      <summary>Earlier mixed prototypes (non-fire icons)</summary>
+      <p class="lead" style="margin-top: 12px">
+        Leftover ideas from the first pass — different icons, not the fire + burst direction.
+      </p>
+      <div class="grid archive">
+        <div class="slot">
+          <span class="num">A01</span>
+          <div class="photo">
+            <div
+              class="badge"
+              style="
+                width: 40px;
+                height: 40px;
+                top: 10px;
+                left: 10px;
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
+                border: 1px solid var(--amber-border);
+                color: #92400e;
+                clip-path: polygon(
+                  50% 0%,
+                  61% 9%,
+                  75% 6%,
+                  79% 20%,
+                  94% 25%,
+                  88% 38%,
+                  100% 50%,
+                  88% 62%,
+                  94% 75%,
+                  79% 80%,
+                  75% 94%,
+                  61% 91%,
+                  50% 100%,
+                  39% 91%,
+                  25% 94%,
+                  21% 80%,
+                  6% 75%,
+                  12% 62%,
+                  0% 50%,
+                  12% 38%,
+                  6% 25%,
+                  21% 20%,
+                  25% 6%,
+                  39% 9%
+                );
+              "
+            >
+              <span class="ms fill" style="font-size: 18px">trending_up</span>
+            </div>
+          </div>
+        </div>
+        <div class="slot">
+          <span class="num">A02</span>
+          <div class="photo">
+            <div
+              class="badge"
+              style="
+                width: 36px;
+                height: 36px;
+                top: 10px;
+                left: 10px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
+                border: 1px solid var(--amber-border);
+                color: #b45309;
+              "
+            >
+              <span class="ms fill" style="font-size: 20px">grade</span>
+            </div>
+          </div>
+        </div>
+        <div class="slot">
+          <span class="num">A03</span>
+          <div class="photo">
+            <div
+              class="badge"
+              style="
+                width: 40px;
+                height: 40px;
+                top: 10px;
+                left: 10px;
+                border-radius: 50%;
+                background: rgba(26, 60, 52, 0.88);
+                color: #fde68a;
+              "
+            >
+              <span class="ms fill" style="font-size: 20px">star</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </body>
+</html>

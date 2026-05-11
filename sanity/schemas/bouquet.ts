@@ -25,16 +25,7 @@ export const bouquet = defineType({
       initialValue: false,
       options: { layout: 'checkbox' },
       description:
-        'Turn on to show this bouquet near the top of the homepage “Popular picks” list and add a small Popular label on its photo. The main catalog list keeps its usual order.',
-    },
-    {
-      name: 'featuredPopularOrder',
-      title: 'Order on homepage (0 = first)',
-      type: 'number',
-      initialValue: 0,
-      validation: (r) => r.min(0).integer(),
-      hidden: ({ parent }) => !parent?.featuredPopular,
-      description: 'If several bouquets are popular on the homepage, lower numbers appear closer to the top.',
+        'Turn on to show this bouquet near the top of the homepage “Popular picks” list and add a small Popular label on its photo. The main catalog list keeps its usual order. If several bouquets are on, they sort A–Z by English name.',
     },
     { name: 'slug', title: 'Slug', type: 'slug', options: { source: 'nameEn' }, validation: (r) => r.required() },
     { name: 'nameEn', title: 'Name (EN)', type: 'string', validation: (r) => r.required() },

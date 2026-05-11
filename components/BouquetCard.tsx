@@ -375,9 +375,8 @@ export function BouquetCard({
           {bouquet.featuredPopular ? (
             <span className="card-popular-pick" aria-label={t.popularPickAria}>
               <span className="card-popular-pick__icon material-symbols-outlined" aria-hidden>
-                push_pin
+                local_fire_department
               </span>
-              <span className="card-popular-pick__text">{t.popularPickBadge}</span>
             </span>
           ) : null}
           {showFavorite && (
@@ -634,29 +633,23 @@ export function BouquetCard({
           top: 10px;
           left: 10px;
           z-index: 2;
+          width: 40px;
+          height: 40px;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
-          padding: 5px 10px 5px 8px;
-          border-radius: 999px;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.03em;
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          color: #92400e;
-          border: 1px solid rgba(146, 64, 14, 0.2);
-          box-shadow: 0 2px 8px rgba(26, 60, 52, 0.12);
+          justify-content: center;
+          padding: 0;
+          border-radius: 14px;
+          background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+          color: #7c2d12;
+          border: 1px solid rgba(146, 64, 14, 0.25);
+          box-shadow: 0 2px 10px rgba(26, 60, 52, 0.14);
           pointer-events: none;
-          max-width: calc(100% - 56px);
         }
         .card-popular-pick__icon {
-          font-size: 14px;
+          font-size: 20px;
+          line-height: 1;
           font-variation-settings: 'FILL' 1;
-        }
-        .card-popular-pick__text {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
         .card-favorite {
           position: absolute;
