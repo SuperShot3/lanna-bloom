@@ -2,6 +2,8 @@
  * Same-day delivery window in Chiang Mai (Asia/Bangkok).
  * Matches site copy: 09:00–20:00; orders after 20:00 go to the next day.
  */
+import type { Locale } from '@/lib/i18n';
+
 export const DELIVERY_SHOP_TIMEZONE = 'Asia/Bangkok';
 
 const START_MIN = 9 * 60;
@@ -47,7 +49,7 @@ function addDaysToYmd(ymd: string, days: number): string {
 }
 
 /** Format a YYYY-MM-DD at noon Bangkok for locale display. */
-function formatYmdForLocale(ymd: string, lang: 'en' | 'th'): string {
+function formatYmdForLocale(ymd: string, lang: Locale): string {
   const d = new Date(`${ymd}T12:00:00+07:00`);
   if (lang === 'th') {
     return d.toLocaleDateString('th-TH', {
@@ -74,13 +76,13 @@ export function getSameDayDeliveryPhaseBangkok(now: Date): SameDayDeliveryPhase 
 }
 
 /** Human-readable tomorrow date in Bangkok (for "next from 09:00" line). */
-export function getTomorrowBangkokDisplayDate(now: Date, lang: 'en' | 'th'): string {
+export function getTomorrowBangkokDisplayDate(now: Date, lang: Locale): string {
   const tomorrowYmd = addDaysToYmd(getBangkokYmd(now), 1);
   return formatYmdForLocale(tomorrowYmd, lang);
 }
 
 /** Live clock string HH:mm in Bangkok. */
-export function formatBangkokTime(now: Date, lang: 'en' | 'th'): string {
+export function formatBangkokTime(now: Date, lang: Locale): string {
   return now.toLocaleTimeString(lang === 'th' ? 'th-TH' : 'en-GB', {
     timeZone: DELIVERY_SHOP_TIMEZONE,
     hour: '2-digit',

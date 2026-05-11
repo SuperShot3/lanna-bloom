@@ -2,6 +2,8 @@
  * Order types for Lanna Bloom. Shared across store backends.
  */
 
+import type { Locale } from '@/lib/i18n';
+
 /** Add-on card type for API (free | premium maps to beautiful). */
 export type OrderCardType = 'free' | 'premium' | null;
 
@@ -96,7 +98,7 @@ export interface CustomOrderDetails {
   referenceImageUrl?: string | null;
   referenceImageFilename?: string | null;
   customerComments?: string;
-  locale?: 'en' | 'th';
+  locale?: Locale;
 }
 
 export interface OrderPayload {
@@ -111,6 +113,9 @@ export interface OrderPayload {
   contactPreference?: ContactPreferenceStored[];
   referralCode?: string;
   referralDiscount?: number;
+  referralPartnerName?: string;
+  referralCommissionRate?: number;
+  referralCommissionAmount?: number;
   /** Optional GA4 client_id from frontend for server-side purchase attribution (stored in DB only). */
   ga_client_id?: string;
   /** Channel hint for admin/ops reporting. */

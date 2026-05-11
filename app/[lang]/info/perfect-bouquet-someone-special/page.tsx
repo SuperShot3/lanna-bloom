@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
-import { isValidLocale, type Locale } from '@/lib/i18n';
+import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getBouquetBySlugFromSanity } from '@/lib/sanity';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
@@ -234,6 +234,12 @@ const COPY = {
   },
 } as const;
 
+type CopyLocale = 'en' | 'th';
+
+function getCopyLocale(locale: Locale): CopyLocale {
+  return locale === 'th' ? 'th' : 'en';
+}
+
 export const revalidate = 60;
 
 export async function generateMetadata({
@@ -244,7 +250,8 @@ export async function generateMetadata({
   const { lang } = params;
   if (!isValidLocale(lang)) return { title: 'Lanna Bloom' };
   const locale = lang as Locale;
-  const t = COPY[locale];
+  const copyLocale = getCopyLocale(locale);
+  const t = COPY[copyLocale];
   const base = getBaseUrl();
   const canonical = `${base}/${lang}/info/perfect-bouquet-someone-special`;
 
@@ -268,7 +275,7 @@ export async function generateMetadata({
 }
 
 export function generateStaticParams() {
-  return [{ lang: 'en' }, { lang: 'th' }];
+  return locales.map((lang) => ({ lang }));
 }
 
 function bouquetDisplayName(
@@ -289,8 +296,9 @@ export default async function PerfectBouquetGuidePage({
   const { lang } = params;
   if (!isValidLocale(lang)) notFound();
   const locale = lang as Locale;
-  const t = COPY[locale];
-  const faq = FAQ[locale];
+  const copyLocale = getCopyLocale(locale);
+  const t = COPY[copyLocale];
+  const faq = FAQ[copyLocale];
   const catalogHref = `/${lang}/catalog`;
 
   const bouquets = await Promise.all(
@@ -344,9 +352,9 @@ export default async function PerfectBouquetGuidePage({
                 >
                   <div className="guide-bouquet-detail-copy">
                     <h3 id={`bouquet-section-${section.slug}`} className="guide-detail-title">
-                      {section.heading[locale]}
+                      {section.heading[copyLocale]}
                     </h3>
-                    {section.paragraphs[locale].map((text, idx) => (
+                    {section.paragraphs[copyLocale].map((text, idx) => (
                       <p key={`${section.slug}-p-${idx}`} className="guide-body-text">
                         {text}
                       </p>
@@ -360,7 +368,7 @@ export default async function PerfectBouquetGuidePage({
                         </Link>
                       </p>
                       <p className="guide-inline-callout-why">
-                        {t.whyItFits} {section.whyItFits[locale]}
+                        {t.whyItFits} {section.whyItFits[copyLocale]}
                       </p>
                     </blockquote>
                   </div>
@@ -386,7 +394,7 @@ export default async function PerfectBouquetGuidePage({
                 </div>
 
                 <p className="guide-body-text guide-match-note">
-                  <strong>{t.sectionMatchLabel}</strong> {section.sectionMatch[locale]}
+                  <strong>{t.sectionMatchLabel}</strong> {section.sectionMatch[copyLocale]}
                 </p>
               </div>
             );

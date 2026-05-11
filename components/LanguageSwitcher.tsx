@@ -7,12 +7,16 @@ import { trackLanguageChange } from '@/lib/analytics';
 const FLAG_CLASS: Record<Locale, string> = {
   en: 'fi fi-gb',
   th: 'fi fi-th',
+  ru: 'fi fi-ru',
 };
 
 const LABELS: Record<Locale, string> = {
   en: 'English',
   th: 'Thai',
+  ru: 'Russian',
 };
+
+const SWITCHER_QUEUE: Locale[] = ['th', 'en', 'ru'];
 
 export function LanguageSwitcher({
   currentLang,
@@ -22,25 +26,20 @@ export function LanguageSwitcher({
   pathBase: string;
 }) {
   const path = pathBase === '/' ? '' : pathBase;
-  const enHref = `/en${path}`;
-  const thHref = `/th${path}`;
-
-  const alternativeLang = currentLang === 'en' ? 'th' : 'en';
-  const alternativeHref = alternativeLang === 'en' ? enHref : thHref;
-  const alternativeFlagClass = FLAG_CLASS[alternativeLang];
-  const alternativeLabel = LABELS[alternativeLang];
+  const currentIndex = SWITCHER_QUEUE.indexOf(currentLang);
+  const nextLang = SWITCHER_QUEUE[(currentIndex + 1) % SWITCHER_QUEUE.length] ?? 'th';
 
   return (
     <div className="lang-switcher" role="navigation" aria-label="Language">
       <Link
-        href={alternativeHref}
+        href={`/${nextLang}${path}`}
         scroll={false}
         className="lang-flag"
-        aria-label={alternativeLabel}
-        title={alternativeLabel}
-        onClick={() => trackLanguageChange(alternativeLang)}
+        aria-label={LABELS[nextLang]}
+        title={LABELS[nextLang]}
+        onClick={() => trackLanguageChange(nextLang)}
       >
-        <span className={`lang-flag-icon ${alternativeFlagClass}`} aria-hidden />
+        <span className={`lang-flag-icon ${FLAG_CLASS[nextLang]}`} aria-hidden />
       </Link>
       <style jsx>{`
         .lang-switcher {

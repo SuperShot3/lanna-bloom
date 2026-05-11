@@ -6,6 +6,7 @@
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { isExpansionDestination } from '@/lib/delivery/markets';
 import type { DistrictKey } from '@/lib/deliveryFees';
+import type { Locale } from '@/lib/i18n';
 
 const EXPANSION_FEE_FLOOR_THB = 250;
 
@@ -114,7 +115,7 @@ export function getZoneFee(destinationId: DeliveryDestinationId, zoneId: string)
 export function zoneLabel(
   destinationId: DeliveryDestinationId,
   zoneId: string,
-  lang: 'en' | 'th'
+  lang: Locale
 ): string | null {
   const z = findZoneDef(destinationId, zoneId);
   if (!z) return null;

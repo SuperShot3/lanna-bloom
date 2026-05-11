@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: { lang: string } })
     description: c.metaDescription,
     alternates: {
       canonical: `/${lang}/about`,
-      languages: { en: '/en/about', th: '/th/about' },
+      languages: { en: '/en/about', th: '/th/about', ru: '/ru/about' },
     },
   };
 }

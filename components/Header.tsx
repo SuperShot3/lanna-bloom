@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'rea
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Locale, translations } from '@/lib/i18n';
+import { Locale, locales, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
@@ -18,11 +18,23 @@ import {
   PhoneIcon,
   MapIcon,
 } from './icons';
-import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
-import { readMarketSession } from '@/lib/delivery/marketSession';
+import {
+  MARKETS,
+  destinationDisplayName,
+  getMarketByPathSlug,
+  isMarketPathSlug,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import {
+  clearMarketSession,
+  readMarketSession,
+  writeMarketSession,
+} from '@/lib/delivery/marketSession';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
+const localePathPrefixPattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
+const DEFAULT_DELIVERY_DESTINATION_ID: DeliveryDestinationId = 'CHIANG_MAI';
 
 export function Header({
   lang,
@@ -32,7 +44,8 @@ export function Header({
   hasPrimeHourBanner?: boolean;
 }) {
   const pathname = usePathname();
-  const basePath = pathname?.replace(/^\/(en|th)/, '') || '';
+  const router = useRouter();
+  const basePath = pathname?.replace(localePathPrefixPattern, '') || '';
   const pathParts = pathname?.split('/').filter(Boolean) ?? [];
   const maybeMarketSlug =
     pathParts[1] === 'catalog' && pathParts[2] ? pathParts[2] : pathParts[1];
@@ -46,6 +59,9 @@ export function Header({
       ? getMarketByPathSlug(sessionMarketSlug)
       : null;
   const effectiveMarket = activeMarket ?? sessionMarket;
+  const selectedDeliveryDestination =
+    effectiveMarket?.destinationId ?? DEFAULT_DELIVERY_DESTINATION_ID;
+  const selectedDeliveryName = destinationDisplayName(selectedDeliveryDestination, lang);
   const marketFlowerDeliveryHref = effectiveMarket
     ? `/${lang}/${effectiveMarket.pathSlug}/flower-delivery`
     : null;
@@ -61,6 +77,7 @@ export function Header({
   const customOrderHref = `/${lang}/custom-order`;
   const t = translations[lang].nav;
   const { count: cartCount, lastAddEventId } = useCart();
+  const deliveryPickerCopy = getDeliveryPickerCopy(lang);
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
   const isHomePage =
@@ -146,6 +163,36 @@ export function Header({
     if (cartCount === 0) setCartPulseAddId(0);
   }, [cartCount]);
 
+  const handleDeliveryDestinationChange = useCallback(
+    (nextDestination: DeliveryDestinationId) => {
+      if (nextDestination === DEFAULT_DELIVERY_DESTINATION_ID) {
+        clearMarketSession();
+        setSessionMarketSlug(null);
+        setMenuOpen(false);
+        router.push(`/${lang}/catalog`);
+        return;
+      }
+
+      const market = MARKETS.find((m) => m.destinationId === nextDestination);
+      if (!market) {
+        clearMarketSession();
+        setSessionMarketSlug(null);
+        setMenuOpen(false);
+        router.push(`/${lang}/catalog`);
+        return;
+      }
+
+      writeMarketSession({
+        destinationId: market.destinationId,
+        pathSlug: market.pathSlug,
+      });
+      setSessionMarketSlug(market.pathSlug);
+      setMenuOpen(false);
+      router.push(`/${lang}/${market.pathSlug}/flower-delivery`);
+    },
+    [lang, router]
+  );
+
   const glassNavClass = isScrolled
     ? 'bg-[rgba(253,252,248,0.9)] backdrop-blur-xl border-stone-200'
     : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
@@ -217,6 +264,16 @@ export function Header({
             )}
           </div>
           <div className="flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+            {!isMobile && (
+              <DeliveryProvincePicker
+                lang={lang}
+                value={selectedDeliveryDestination}
+                valueLabel={selectedDeliveryName}
+                copy={deliveryPickerCopy}
+                variant="desktop"
+                onChange={handleDeliveryDestinationChange}
+              />
+            )}
             <Suspense
               fallback={
                 <HeaderSearchLink
@@ -315,6 +372,14 @@ export function Header({
             >
               ×
             </button>
+            <DeliveryProvincePicker
+              lang={lang}
+              value={selectedDeliveryDestination}
+              valueLabel={selectedDeliveryName}
+              copy={deliveryPickerCopy}
+              variant="mobile"
+              onChange={handleDeliveryDestinationChange}
+            />
             <nav className="flex flex-col gap-2" aria-label="Main">
               <NavItem
                 href={homeHref}
@@ -432,6 +497,98 @@ export function Header({
         }
       `}</style>
     </>
+  );
+}
+
+type DeliveryPickerCopy = {
+  eyebrow: string;
+  current: string;
+  selectLabel: string;
+};
+
+function getDeliveryPickerCopy(lang: Locale): DeliveryPickerCopy {
+  if (lang === 'th') {
+    return {
+      eyebrow: 'จัดส่งถึง',
+      current: 'พื้นที่จัดส่งปัจจุบัน',
+      selectLabel: 'เลือกพื้นที่จัดส่ง',
+    };
+  }
+
+  return {
+    eyebrow: 'Deliver to',
+    current: 'Current delivery area',
+    selectLabel: 'Choose delivery area',
+  };
+}
+
+function DeliveryProvincePicker({
+  lang,
+  value,
+  valueLabel,
+  copy,
+  variant,
+  onChange,
+}: {
+  lang: Locale;
+  value: DeliveryDestinationId;
+  valueLabel: string;
+  copy: DeliveryPickerCopy;
+  variant: 'desktop' | 'mobile';
+  onChange: (destination: DeliveryDestinationId) => void;
+}) {
+  const select = (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value as DeliveryDestinationId)}
+      aria-label={copy.selectLabel}
+      className={
+        variant === 'desktop'
+          ? 'min-w-0 max-w-[150px] cursor-pointer bg-transparent pr-1 text-sm font-semibold text-[#1A3C34] outline-none'
+          : 'mt-2 h-11 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
+      }
+    >
+      <option value={DEFAULT_DELIVERY_DESTINATION_ID}>
+        {destinationDisplayName(DEFAULT_DELIVERY_DESTINATION_ID, lang)}
+      </option>
+      {MARKETS.map((market) => (
+        <option key={market.destinationId} value={market.destinationId}>
+          {lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn}
+        </option>
+      ))}
+    </select>
+  );
+
+  if (variant === 'desktop') {
+    return (
+      <label className="hidden h-11 max-w-[230px] shrink-0 cursor-pointer items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-3 text-[#1A3C34] transition-colors hover:bg-stone-50 lg:flex">
+        <MapIcon size={18} className="shrink-0 text-[#C5A059]" />
+        <span className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400 xl:inline">
+          {copy.eyebrow}
+        </span>
+        {select}
+      </label>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-stone-200 bg-[#F9F5F0] p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#C5A059] shadow-sm">
+          <MapIcon size={22} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+            {copy.current}
+          </p>
+          <p className="mt-1 truncate text-base font-semibold text-[#1A3C34]">{valueLabel}</p>
+        </div>
+      </div>
+      <label className="mt-3 block">
+        <span className="text-xs font-medium text-stone-500">{copy.selectLabel}</span>
+        {select}
+      </label>
+    </section>
   );
 }
 

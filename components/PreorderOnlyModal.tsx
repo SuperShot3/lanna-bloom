@@ -12,7 +12,7 @@ function getTodayBangkok(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: SHOP_TIMEZONE });
 }
 
-function getFormattedDateBangkok(lang: 'en' | 'th'): string {
+function getFormattedDateBangkok(lang: Locale): string {
   const d = new Date();
   if (lang === 'th') {
     return d.toLocaleDateString('th-TH', {
@@ -29,13 +29,17 @@ function getFormattedDateBangkok(lang: 'en' | 'th'): string {
 }
 
 export interface PreorderOnlyModalProps {
-  /** Optional; when omitted, derives from pathname (/th → th, else en) */
+  /** Optional; when omitted, derives from pathname locale prefix. */
   lang?: Locale;
 }
 
 export function PreorderOnlyModal({ lang: langProp }: PreorderOnlyModalProps) {
   const pathname = usePathname();
-  const derivedLang: Locale = pathname?.startsWith('/th') ? 'th' : 'en';
+  const derivedLang: Locale = pathname?.startsWith('/th')
+    ? 'th'
+    : pathname?.startsWith('/ru')
+      ? 'ru'
+      : 'en';
   const lang = langProp ?? derivedLang;
 
   const [isOpen, setIsOpen] = useState(false);

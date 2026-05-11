@@ -2,6 +2,8 @@
  * Canonical delivery destinations and URL market slugs (province expansion MVP).
  */
 
+import type { Locale } from '@/lib/i18n';
+
 export const DELIVERY_DESTINATIONS = [
   'CHIANG_MAI',
   'PATTAYA',
@@ -90,7 +92,7 @@ export function isExpansionDestination(id: DeliveryDestinationId): boolean {
 
 export function destinationDisplayName(
   id: DeliveryDestinationId,
-  lang: 'en' | 'th'
+  lang: Locale
 ): string {
   if (id === 'CHIANG_MAI') {
     return lang === 'th' ? 'เชียงใหม่' : 'Chiang Mai';

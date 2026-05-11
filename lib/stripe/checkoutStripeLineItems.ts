@@ -4,6 +4,8 @@
 
 import type Stripe from 'stripe';
 import type { ComputedOrderItem } from '@/lib/stripePricing';
+import type { ReferralDiscountAllocation } from '@/lib/referral';
+import { isValidLocale } from '@/lib/i18n';
 
 export function buildStripeCheckoutLineItems(params: {
   computedItems: ComputedOrderItem[];
@@ -11,15 +13,31 @@ export function buildStripeCheckoutLineItems(params: {
   effectiveGrandTotal: number;
   referralCode?: string;
   referralDiscount: number;
+  discountAllocation?: ReferralDiscountAllocation;
 }): Stripe.Checkout.SessionCreateParams.LineItem[] {
-  const { computedItems, deliveryFee, effectiveGrandTotal, referralCode, referralDiscount } = params;
+  const {
+    computedItems,
+    deliveryFee,
+    effectiveGrandTotal,
+    referralCode,
+    referralDiscount,
+    discountAllocation = 'all',
+  } = params;
 
-  const subtotal = computedItems.reduce((s, it) => s + it.price, 0) + deliveryFee;
-  const discountRatio = subtotal > 0 ? referralDiscount / subtotal : 0;
+  const itemsSubtotal = computedItems.reduce((s, it) => s + it.price, 0);
+  const subtotal = itemsSubtotal + deliveryFee;
+  const discountBase =
+    discountAllocation === 'items'
+      ? itemsSubtotal
+      : discountAllocation === 'delivery'
+        ? deliveryFee
+        : subtotal;
+  const discountRatio = discountBase > 0 ? Math.min(referralDiscount, discountBase) / discountBase : 0;
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = computedItems.map((item) => {
     const originalCents = Math.round(item.price * 100);
-    const discountedCents = Math.max(0, Math.round(originalCents * (1 - discountRatio)));
+    const itemDiscountRatio = discountAllocation === 'delivery' ? 0 : discountRatio;
+    const discountedCents = Math.max(0, Math.round(originalCents * (1 - itemDiscountRatio)));
     const productName =
       item.size === '—' || !item.size ? item.bouquetTitle : `${item.bouquetTitle} — ${item.size}`;
     return {
@@ -38,7 +56,8 @@ export function buildStripeCheckoutLineItems(params: {
 
   if (deliveryFee > 0) {
     const feeCents = Math.round(deliveryFee * 100);
-    const discountedFeeCents = Math.max(0, Math.round(feeCents * (1 - discountRatio)));
+    const deliveryDiscountRatio = discountAllocation === 'items' ? 0 : discountRatio;
+    const discountedFeeCents = Math.max(0, Math.round(feeCents * (1 - deliveryDiscountRatio)));
     lineItems.push({
       price_data: {
         currency: 'thb',
@@ -86,6 +105,6 @@ export function stripeOrderSuccessUrl(
 
 /** Cart checkout: no order id yet — landing page polls until the order exists, then redirects to /order/[id]. */
 export function stripeCheckoutDraftSuccessUrl(baseUrl: string, lang: string): string {
-  const l = lang === 'th' || lang === 'en' ? lang : 'en';
+  const l = isValidLocale(lang) ? lang : 'en';
   return `${baseUrl}/${l}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
 }

@@ -86,6 +86,15 @@ export function CatalogDeliveryBar({
 
   useEffect(() => {
     const parts = pathname.split('/').filter(Boolean);
+    const maybeDirectMarketFromPath = parts[1];
+    if (maybeDirectMarketFromPath && isMarketPathSlug(maybeDirectMarketFromPath)) {
+      const m = getMarketByPathSlug(maybeDirectMarketFromPath);
+      if (m) {
+        setLocationValue(m.destinationId);
+        return;
+      }
+    }
+
     const maybeMarketFromPath = parts[2];
     if (parts[1] === 'catalog' && maybeMarketFromPath && isMarketPathSlug(maybeMarketFromPath)) {
       const m = getMarketByPathSlug(maybeMarketFromPath);
@@ -125,7 +134,7 @@ export function CatalogDeliveryBar({
       destinationId: market.destinationId,
       pathSlug: market.pathSlug as MarketPathSlug,
     });
-    window.location.assign(`/${lang}/catalog/${market.pathSlug}`);
+    window.location.assign(`/${lang}/${market.pathSlug}/flower-delivery`);
   };
 
   const isToday = Boolean(minDate) && date === minDate;

@@ -52,7 +52,7 @@ const trustItems = {
     { title: 'มีการ์ดข้อความ', text: 'เพิ่มข้อความส่วนตัวได้ตอนสั่งซื้อ' },
     { title: 'สั่งซื้อง่าย', text: 'รวดเร็ว พร้อมตะกร้าสินค้าที่ใช้งานได้จริง' },
   ],
-} satisfies Record<Locale, CollectionLandingCopy['trustItems']>;
+} satisfies Record<'en' | 'th', CollectionLandingCopy['trustItems']>;
 
 const commonFaq = {
   en: [
@@ -83,7 +83,11 @@ const commonFaq = {
       a: 'ได้ คุณสามารถเพิ่มข้อความส่วนตัวตอนเช็คเอาต์ และเราจะจัดส่งไปพร้อมช่อดอกไม้',
     },
   ],
-} satisfies Record<Locale, CollectionLandingCopy['faq']>;
+} satisfies Record<'en' | 'th', CollectionLandingCopy['faq']>;
+
+function withRussianFallback<T>(copy: Record<'en' | 'th', T>): Record<Locale, T> {
+  return { ...copy, ru: copy.en };
+}
 
 export const collectionLandingPages = [
   {
@@ -94,7 +98,7 @@ export const collectionLandingPages = [
     tabImageSrc: '/images_other/roses_colors_landingpage/white_roses.webp',
     canonicalPath: '/collections/white-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['white'] },
-    copy: {
+    copy: withRussianFallback({
       en: {
         seoTitle: 'White Roses in Chiang Mai | Lanna Bloom',
         seoDescription:
@@ -145,7 +149,7 @@ export const collectionLandingPages = [
         emptyText:
           'ตอนนี้ยังไม่พบช่อกุหลาบขาวที่อนุมัติแล้วใน Sanity โปรดดูช่อกุหลาบทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
       },
-    },
+    }),
   },
   {
     slug: 'pink-roses-chiang-mai',
@@ -155,7 +159,7 @@ export const collectionLandingPages = [
     tabImageSrc: '/images_other/roses_colors_landingpage/pink_roses.webp',
     canonicalPath: '/collections/pink-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['pink'] },
-    copy: {
+    copy: withRussianFallback({
       en: {
         seoTitle: 'Pink Roses in Chiang Mai | Lanna Bloom',
         seoDescription:
@@ -206,7 +210,7 @@ export const collectionLandingPages = [
         emptyText:
           'ตอนนี้ยังไม่พบช่อกุหลาบชมพูที่อนุมัติแล้วใน Sanity โปรดดูช่อกุหลาบทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
       },
-    },
+    }),
   },
   {
     slug: 'red-roses-chiang-mai',
@@ -216,7 +220,7 @@ export const collectionLandingPages = [
     tabImageSrc: '/images_other/roses_colors_landingpage/red_roses.webp',
     canonicalPath: '/collections/red-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['red'] },
-    copy: {
+    copy: withRussianFallback({
       en: {
         seoTitle: 'Red Roses in Chiang Mai | Lanna Bloom',
         seoDescription:
@@ -267,7 +271,7 @@ export const collectionLandingPages = [
         emptyText:
           'ตอนนี้ยังไม่พบช่อกุหลาบแดงที่อนุมัติแล้วใน Sanity โปรดดูช่อกุหลาบทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
       },
-    },
+    }),
   },
 ] satisfies CollectionLandingPageConfig[];
 

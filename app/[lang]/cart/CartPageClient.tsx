@@ -730,7 +730,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const referralVal = getStoredReferral();
   const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, referralVal, {
     deliveryFee: deliveryFeeVal,
+    itemSubtotal: itemsTotalVal,
+    deliveryDestination: delivery.deliveryDestination,
   });
+  const appliedReferralCode = referralVal && referralDiscountVal > 0 ? referralVal.code : null;
   const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
 
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
@@ -1617,7 +1620,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <ReferralCodeBox
                     lang={lang}
                     subtotal={subtotalWithDelivery}
-                    appliedCode={referralVal?.code ?? null}
+                    appliedCode={appliedReferralCode}
                     onApply={() => setReferralCleared((c) => c + 1)}
                     onRemove={() => setReferralCleared((c) => c + 1)}
                     hasOtherDiscount={false}
@@ -2010,7 +2013,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <ReferralCodeBox
                   lang={lang}
                   subtotal={subtotalWithDelivery}
-                  appliedCode={referralVal?.code ?? null}
+                  appliedCode={appliedReferralCode}
                   onApply={() => setReferralCleared((c) => c + 1)}
                   onRemove={() => setReferralCleared((c) => c + 1)}
                   hasOtherDiscount={false}

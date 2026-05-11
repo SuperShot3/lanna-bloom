@@ -13,6 +13,7 @@ import {
   sendCustomerPaymentFailedEmail,
   sendMinimalAdminNewOrderEmail,
 } from '@/lib/orderEmail';
+import type { Locale } from '@/lib/i18n';
 /**
  * Send exactly one admin "new order" email for this order, then set admin_notified.
  * Safe to call on retries or refresh: if admin_notified is already true, skips send.
@@ -77,7 +78,7 @@ export async function sendAdminNewOrderNotificationOnce(orderId: string): Promis
 export async function sendPaymentFailedNotificationsOnce(params: {
   orderId: string;
   reason: 'async_payment_failed' | 'session_expired';
-  lang?: 'en' | 'th';
+  lang?: Locale;
 }): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) {

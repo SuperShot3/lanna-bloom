@@ -5,7 +5,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getBaseUrl } from '@/lib/orders';
-import { isValidLocale, type Locale } from '@/lib/i18n';
+import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLinks } from '../_data/articles';
 import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
@@ -88,7 +88,7 @@ export function generateStaticParams() {
     'delivery-policy',
   ];
   const params: { lang: string; slug: string }[] = [];
-  for (const lang of ['en', 'th']) {
+  for (const lang of locales) {
     for (const slug of slugs) {
       params.push({ lang, slug });
     }

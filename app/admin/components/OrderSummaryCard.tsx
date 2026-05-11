@@ -30,6 +30,13 @@ interface OrderSummaryCardProps {
 }
 
 export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSummaryCardProps) {
+  const orderJson = order.order_json as Partial<Order> | null | undefined;
+  const referralPartnerName =
+    typeof orderJson?.referralPartnerName === 'string' ? orderJson.referralPartnerName : null;
+  const referralCommissionRate =
+    typeof orderJson?.referralCommissionRate === 'number' ? orderJson.referralCommissionRate : null;
+  const referralCommissionAmount =
+    typeof orderJson?.referralCommissionAmount === 'number' ? orderJson.referralCommissionAmount : null;
   const mapsUrl = checkoutMapsUrl(order);
   const recipientName = recipientNameDisplay(order);
   const recipientPhone = recipientPhoneDisplay(order);
@@ -39,7 +46,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
 
   const deliveryAddressResolved =
     order.address?.trim() ||
-    (order.order_json as Partial<Order> | null | undefined)?.delivery?.address?.trim() ||
+    orderJson?.delivery?.address?.trim() ||
     '';
   const deliveryDateRaw = order.delivery_date?.trim() || '';
   const deliveryWindowRaw = order.delivery_window?.trim() || '';
@@ -106,6 +113,13 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
           <div>
             <strong>Discount</strong>
             <p className="admin-discount">-{formatAmountNa(order.referral_discount)}</p>
+            {referralPartnerName && referralCommissionAmount != null && (
+              <p className="admin-muted">
+                {referralPartnerName} commission
+                {referralCommissionRate != null ? ` (${referralCommissionRate}%)` : ''}:{' '}
+                {formatAmountNa(referralCommissionAmount)}
+              </p>
+            )}
           </div>
         )}
         <div>

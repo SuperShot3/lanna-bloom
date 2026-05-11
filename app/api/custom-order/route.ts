@@ -7,6 +7,7 @@ import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { detectDistrictFromAddress } from '@/lib/deliveryFees';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { getZoneFee, isSupportedZone, legacyDistrictFromChiangMaiZone, zoneLabel } from '@/lib/delivery/zones';
+import { isValidLocale, type Locale } from '@/lib/i18n';
 import {
   CUSTOM_ORDER_REFERENCE_IMAGE_MAX_BYTES,
   getValidCustomOrderReferenceImageContentType,
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
     });
 
     const langRaw = getString(form, 'lang');
-    const locale: 'en' | 'th' = langRaw === 'th' ? 'th' : 'en';
+    const locale: Locale = isValidLocale(langRaw) ? langRaw : 'en';
 
     const destinationRaw = getString(form, 'deliveryDestination').toUpperCase();
     const deliveryDestination = DELIVERY_DESTINATIONS.includes(destinationRaw as DeliveryDestinationId)

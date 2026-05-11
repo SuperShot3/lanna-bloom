@@ -12,6 +12,7 @@ import { formatInternationalPhoneAdmin } from '@/lib/admin/orderSummaryPlainText
 import { formatShopDateTime } from '@/lib/shopTime';
 import { buildOrderTemplateVariables } from '@/lib/email/variablesFromOrder';
 import { getDefaultSocialLinks, getEmailBrandHeaderHtml, getSocialFooterHtml } from '@/lib/email/socialFooter';
+import type { Locale } from '@/lib/i18n';
 
 /** Primary + CC addresses for order admin emails, deduped. */
 function getOrderNotifyRecipientList(): string[] {
@@ -306,7 +307,7 @@ Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.`
 export async function sendCustomerPaymentFailedEmail(
   order: Order,
   retryUrl: string,
-  lang: 'en' | 'th' = 'en'
+  lang: Locale = 'en'
 ): Promise<boolean> {
   const customerEmail = order.customerEmail?.trim();
   if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) return true;

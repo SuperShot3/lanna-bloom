@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import type { PaymentMethodsAvailability } from '@/lib/checkout/paymentAvailability';
+import type { Locale } from '@/lib/i18n';
 import {
   DELIVERY_TIME_SLOTS,
   getSelectableDeliveryTimeSlotsForDate,
@@ -18,7 +19,7 @@ export type StickyBarSummary = {
 };
 
 export type StickyBarProps = {
-  lang: 'en' | 'th';
+  lang: Locale;
   summary: StickyBarSummary;
   availability: PaymentMethodsAvailability;
   /** Shown below bar when form incomplete – small red text. */

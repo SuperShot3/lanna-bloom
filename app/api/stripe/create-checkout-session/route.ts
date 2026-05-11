@@ -6,9 +6,13 @@ import {
   stripeCheckoutDraftSuccessUrl,
 } from '@/lib/stripe/checkoutStripeLineItems';
 import { getBaseUrl } from '@/lib/orders';
-import { getDiscountForCode } from '@/lib/referral';
+import {
+  getDiscountAllocationForCode,
+  getDiscountForCode,
+  getReferralCommissionForCode,
+} from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId } from '@/lib/orders';
-import type { Locale } from '@/lib/i18n';
+import { isValidLocale, type Locale } from '@/lib/i18n';
 import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
 import { inferPostalCodeFromDelivery } from '@/lib/delivery/postalInference';
 import {
@@ -39,7 +43,7 @@ function validateStripePayload(
   }
   const b = body as Record<string, unknown>;
 
-  const lang = (b.lang === 'th' || b.lang === 'en' ? b.lang : 'en') as Locale;
+  const lang = (typeof b.lang === 'string' && isValidLocale(b.lang) ? b.lang : 'en') as Locale;
 
   const items = b.items;
   if (!Array.isArray(items) || items.length === 0) {
@@ -361,7 +365,11 @@ export async function POST(request: NextRequest) {
     }
     const subtotal = totals.itemsTotal + totals.deliveryFee;
     let referralDiscount = data.referralCode
-      ? getDiscountForCode(data.referralCode, subtotal, { deliveryFee: totals.deliveryFee })
+      ? getDiscountForCode(data.referralCode, subtotal, {
+          deliveryFee: totals.deliveryFee,
+          itemSubtotal: totals.itemsTotal,
+          deliveryDestination: data.delivery.deliveryDestination,
+        })
       : 0;
     let welcomeCodeId: string | null = null;
     if (data.referralCode && referralDiscount === 0 && isWelcomeCode(data.referralCode)) {
@@ -398,6 +406,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid welcome code' }, { status: 400 });
       }
     }
+    const referralCommission =
+      data.referralCode && referralDiscount > 0
+        ? getReferralCommissionForCode(data.referralCode, totals.itemsTotal, {
+            deliveryDestination: data.delivery.deliveryDestination,
+          })
+        : null;
     const effectiveGrandTotal = Math.max(0, totals.grandTotal - referralDiscount);
 
     const legacyGeo =
@@ -449,6 +463,11 @@ export async function POST(request: NextRequest) {
       ...(data.referralCode && referralDiscount > 0 && {
         referralCode: data.referralCode,
         referralDiscount,
+        ...(referralCommission && {
+          referralPartnerName: referralCommission.partnerName,
+          referralCommissionRate: referralCommission.commissionPercent,
+          referralCommissionAmount: referralCommission.commissionAmount,
+        }),
       }),
       submissionToken: data.submissionToken,
     };
@@ -483,6 +502,9 @@ export async function POST(request: NextRequest) {
       effectiveGrandTotal,
       referralCode: data.referralCode,
       referralDiscount,
+      discountAllocation: data.referralCode
+        ? getDiscountAllocationForCode(data.referralCode)
+        : 'all',
     });
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {

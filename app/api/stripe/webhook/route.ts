@@ -8,6 +8,7 @@ import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCh
 import { deleteCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
 import { sendPaymentFailedNotificationsOnce } from '@/lib/orderNotification';
 import { redeemWelcomeCode } from '@/lib/promo/welcomeCode';
+import { isValidLocale, type Locale } from '@/lib/i18n';
 
 const PAYMENT_SUCCESS_EVENTS = [
   'checkout.session.completed',
@@ -34,9 +35,9 @@ function isPaymentFailedEvent(type: string): type is PaymentFailedEvent {
 
 function resolveLangFromMetadata(
   metadata: Stripe.Metadata | Record<string, string> | null | undefined
-): 'en' | 'th' {
+): Locale {
   const raw = metadata && typeof metadata.lang === 'string' ? metadata.lang.trim() : '';
-  return raw === 'th' ? 'th' : 'en';
+  return isValidLocale(raw) ? raw : 'en';
 }
 
 type StripePaymentContext = {

@@ -9,15 +9,50 @@ const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 const HAPPY_HOUR_PROMO_CODE = (process.env.NEXT_PUBLIC_HAPPY_HOUR_PROMO_CODE ?? 'B4Y').trim().toUpperCase();
 
 type DiscountCodeDefinition =
-  | { type: 'percent'; value: number }
-  | { type: 'fixed'; value: number }
-  | { type: 'free_delivery' };
+  | {
+      type: 'percent';
+      value: number;
+      discountBase?: 'cart' | 'items';
+      allowedDeliveryDestinations?: string[];
+      affiliate?: {
+        name: string;
+        commissionPercent: number;
+      };
+    }
+  | {
+      type: 'fixed';
+      value: number;
+      allowedDeliveryDestinations?: string[];
+      affiliate?: {
+        name: string;
+        commissionPercent: number;
+      };
+    }
+  | { type: 'free_delivery'; allowedDeliveryDestinations?: string[] };
+
+export type ReferralDiscountAllocation = 'all' | 'items' | 'delivery';
+
+export interface ReferralCommission {
+  partnerName: string;
+  commissionPercent: number;
+  commissionAmount: number;
+}
 
 /** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
 const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   'LB-DELIVERY-FREE': { type: 'free_delivery' },
   /** Happy hour promo (banner): 10% off subtotal (items + delivery fee in API). */
   [HAPPY_HOUR_PROMO_CODE]: { type: 'percent', value: 10 },
+  VASILIY10: {
+    type: 'percent',
+    value: 10,
+    discountBase: 'items',
+    allowedDeliveryDestinations: ['PHUKET'],
+    affiliate: {
+      name: 'Vasiliy',
+      commissionPercent: 5,
+    },
+  },
 };
 
 /** Allowed chars: A-Z, 0-9, hyphen (-). Length 3-20. Returns normalized code or null if invalid. */
@@ -84,7 +119,7 @@ export function storeReferral(code: string): void {
 export function getDiscountForCode(
   code: string,
   subtotal: number,
-  options: { deliveryFee?: number } = {}
+  options: { deliveryFee?: number; itemSubtotal?: number; deliveryDestination?: string } = {}
 ): number {
   if (!code || subtotal <= 0) return 0;
   const normalized = code.trim().toUpperCase();
@@ -95,8 +130,18 @@ export function getDiscountForCode(
   }
   const def = DISCOUNT_CODES[normalized];
   if (def) {
+    if (
+      def.allowedDeliveryDestinations?.length &&
+      !def.allowedDeliveryDestinations.includes((options.deliveryDestination ?? '').toUpperCase())
+    ) {
+      return 0;
+    }
     if (def.type === 'percent') {
-      return Math.min(Math.floor((subtotal * def.value) / 100), subtotal);
+      const base =
+        def.discountBase === 'items'
+          ? Math.max(0, options.itemSubtotal ?? subtotal - (options.deliveryFee ?? 0))
+          : subtotal;
+      return Math.min(Math.floor((base * def.value) / 100), subtotal);
     }
     if (def.type === 'free_delivery') {
       return Math.min(Math.max(0, options.deliveryFee ?? 0), subtotal);
@@ -106,6 +151,39 @@ export function getDiscountForCode(
   return 0;
 }
 
+export function getDiscountAllocationForCode(code: string): ReferralDiscountAllocation {
+  const normalized = code.trim().toUpperCase();
+  const def = DISCOUNT_CODES[normalized];
+  if (!def) return 'all';
+  if (def.type === 'free_delivery') return 'delivery';
+  if (def.type === 'percent' && def.discountBase === 'items') return 'items';
+  return 'all';
+}
+
+export function getReferralCommissionForCode(
+  code: string | null | undefined,
+  itemSubtotal: number,
+  options: { deliveryDestination?: string } = {}
+): ReferralCommission | null {
+  if (!code || itemSubtotal <= 0) return null;
+  const normalized = code.trim().toUpperCase();
+  const def = DISCOUNT_CODES[normalized];
+  if (!def || !('affiliate' in def) || !def.affiliate) return null;
+  if (
+    def.allowedDeliveryDestinations?.length &&
+    !def.allowedDeliveryDestinations.includes((options.deliveryDestination ?? '').toUpperCase())
+  ) {
+    return null;
+  }
+  const commissionAmount = Math.round((itemSubtotal * def.affiliate.commissionPercent) / 100);
+  if (commissionAmount <= 0) return null;
+  return {
+    partnerName: def.affiliate.name,
+    commissionPercent: def.affiliate.commissionPercent,
+    commissionAmount,
+  };
+}
+
 /**
  * Compute referral discount. Does not stack with other discounts.
  * Returns discount amount (positive number) or 0. Capped at subtotal.
@@ -113,7 +191,7 @@ export function getDiscountForCode(
 export function computeReferralDiscount(
   cartTotal: number,
   referral: StoredReferral | null,
-  options: { deliveryFee?: number } = {}
+  options: { deliveryFee?: number; itemSubtotal?: number; deliveryDestination?: string } = {}
 ): number {
   if (!referral || cartTotal <= 0) return 0;
   return getDiscountForCode(referral.code, cartTotal, options);

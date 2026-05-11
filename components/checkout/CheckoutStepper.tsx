@@ -15,6 +15,11 @@ const STEP_LABELS: Record<Locale, Record<CheckoutStep, string>> = {
     2: 'การจัดส่ง',
     3: 'ชำระเงิน',
   },
+  ru: {
+    1: 'Details',
+    2: 'Delivery',
+    3: 'Payment',
+  },
 };
 
 export interface CheckoutStepperProps {

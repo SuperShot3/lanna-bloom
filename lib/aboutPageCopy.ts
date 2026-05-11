@@ -2,6 +2,8 @@
  * Bilingual copy for /[lang]/about
  */
 
+import type { Locale } from '@/lib/i18n';
+
 /** Inline segment: plain text, bold emphasis, or link (href without locale prefix). */
 export type AboutSegment =
   | { type: 'text'; text: string }
@@ -70,7 +72,7 @@ export type AboutPageCopy = {
   };
 };
 
-export const aboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
+const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
   en: {
     metaTitle: 'About Lanna Bloom | Flower & gift delivery Chiang Mai',
     metaDescription:
@@ -410,4 +412,9 @@ export const aboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
       ],
     },
   },
+};
+
+export const aboutPageCopy: Record<Locale, AboutPageCopy> = {
+  ...baseAboutPageCopy,
+  ru: baseAboutPageCopy.en,
 };

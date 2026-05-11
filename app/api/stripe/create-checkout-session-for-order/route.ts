@@ -11,6 +11,8 @@ import {
 } from '@/lib/stripe/checkoutStripeLineItems';
 import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 import { applyExpansionItemMarkupThb, EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
+import { getDiscountAllocationForCode } from '@/lib/referral';
+import { isValidLocale } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +28,7 @@ function tokensEqual(a: string, b: string): boolean {
 
 /**
  * Create a Stripe Checkout Session for an existing order (e.g. from the order page "Pay with Card").
- * Body: { orderId: string, publicToken: string, lang?: 'en' | 'th' }
+ * Body: { orderId: string, publicToken: string, lang?: string }
  * Returns: { url: string } to redirect the customer to Stripe Checkout.
  */
 export async function POST(request: NextRequest) {
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'publicToken is required' }, { status: 400 });
   }
 
-  const lang = body.lang === 'th' || body.lang === 'en' ? body.lang : 'en';
+  const lang = typeof body.lang === 'string' && isValidLocale(body.lang) ? body.lang : 'en';
 
   const expectedPublicToken = await getOrderPublicToken(orderId);
   if (!expectedPublicToken) {
@@ -109,6 +111,7 @@ export async function POST(request: NextRequest) {
     effectiveGrandTotal: grandTotal,
     referralCode: order.referralCode,
     referralDiscount,
+    discountAllocation: order.referralCode ? getDiscountAllocationForCode(order.referralCode) : 'all',
   });
 
   const baseSuccessUrl = stripeOrderSuccessUrl(baseUrl, orderId);

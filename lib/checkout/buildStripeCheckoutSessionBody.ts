@@ -116,7 +116,11 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       : 0;
   const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, referral, { deliveryFee });
+  const referralDiscount = computeReferralDiscount(subtotal, referral, {
+    deliveryFee,
+    itemSubtotal: itemsTotal,
+    deliveryDestination,
+  });
 
   const body: Record<string, unknown> = {
     lang,

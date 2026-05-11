@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import type { Locale } from '@/lib/i18n';
-import { translations } from '@/lib/i18n';
+import { locales, translations, type Locale } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PartnerLogoutButton } from '@/components/partner/PartnerLogoutButton';
 
@@ -16,9 +15,11 @@ type PartnerNavProps = {
   isLoggedIn?: boolean;
 };
 
+const localePathPrefixPattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
+
 export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false }: PartnerNavProps) {
   const pathname = usePathname();
-  const pathBase = pathname?.replace(/^\/(en|th)/, '') || '/partner';
+  const pathBase = pathname?.replace(localePathPrefixPattern, '') || '/partner';
 
   const applyHref = `/${lang}/partner/apply`;
   const howItWorksHref = `/${lang}/partner/how-it-works`;
