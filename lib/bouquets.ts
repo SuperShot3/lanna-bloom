@@ -37,6 +37,10 @@ export interface Bouquet {
   partnerShopBioTh?: string;
   partnerPortraitUrl?: string;
   status?: BouquetStatus;
+  /** CMS: pin to top of homepage Popular feed + show badge (catalog sort unchanged). */
+  featuredPopular?: boolean;
+  /** Sort key among featured bouquets (ascending). */
+  featuredPopularOrder?: number;
 }
 
 export type PartnerStatus = 'pending_review' | 'approved' | 'disabled';

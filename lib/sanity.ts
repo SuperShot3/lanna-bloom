@@ -130,6 +130,8 @@ type SanityBouquet = {
     preparationTime?: number;
     availability?: boolean;
   }>;
+  featuredPopular?: boolean;
+  featuredPopularOrder?: number;
 };
 
 function resolveProductKind(doc: SanityBouquet): ProductKind {
@@ -247,6 +249,9 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
     partnerShopBioTh: doc.partnerShopBioTh ?? undefined,
     partnerPortraitUrl: doc.partnerPortrait ? urlFor(doc.partnerPortrait) : undefined,
     status: doc.status === 'pending_review' || doc.status === 'approved' ? doc.status : undefined,
+    featuredPopular: doc.featuredPopular === true,
+    featuredPopularOrder:
+      typeof doc.featuredPopularOrder === 'number' ? doc.featuredPopularOrder : undefined,
   };
 }
 
@@ -270,6 +275,8 @@ const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "a
   colors,
   flowerTypes,
   occasion,
+  featuredPopular,
+  featuredPopularOrder,
   images,
   sizes
 }`;
@@ -294,6 +301,8 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   colors,
   flowerTypes,
   occasion,
+  featuredPopular,
+  featuredPopularOrder,
   partner,
   "partnerName": partner->shopName,
   "partnerCity": partner->city,
@@ -333,6 +342,8 @@ const bouquetsPaginatedProjection = `
   colors,
   flowerTypes,
   occasion,
+  featuredPopular,
+  featuredPopularOrder,
   images,
   sizes
 `;
@@ -393,6 +404,8 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   colors,
   flowerTypes,
   occasion,
+  featuredPopular,
+  featuredPopularOrder,
   images,
   sizes
 }`;
@@ -468,6 +481,25 @@ function buildInterleavedPopularBouquets(bouquets: Bouquet[]): Bouquet[] {
   return dedupeBouquetsById(interleaved);
 }
 
+/** Featured bouquets first (by CMS order), then daily-shuffled rest; no duplicates. */
+function orderPopularBouquetsWithFeaturedFirst(bouquets: Bouquet[]): Bouquet[] {
+  if (bouquets.length === 0) return [];
+  const pinned = bouquets
+    .filter((b) => b.featuredPopular)
+    .sort((a, b) => {
+      const oa = a.featuredPopularOrder ?? 0;
+      const ob = b.featuredPopularOrder ?? 0;
+      if (oa !== ob) return oa - ob;
+      return (a.nameEn || '').localeCompare(b.nameEn || '', undefined, { sensitivity: 'base' });
+    });
+  const pinnedIds = new Set(pinned.map((p) => p.id));
+  const rest = bouquets.filter((b) => !pinnedIds.has(b.id));
+  const interleaved = buildInterleavedPopularBouquets(rest);
+  const rng = mulberry32(getPopularShuffleSeed());
+  const shuffledRest = shuffleArraySeeded([...interleaved], rng);
+  return [...pinned, ...shuffledRest];
+}
+
 const HERO_IMAGE_FALLBACK = '/HeroImage/heroimage.webp';
 
 /** Hero image URL for homepage. Editable in Sanity Studio → Site Settings. */
@@ -511,9 +543,7 @@ async function getOrderedPopularBouquetsFromSanity(): Promise<Bouquet[]> {
       .filter((b) => bouquetIsAvailableForDestination(b, 'CHIANG_MAI'));
     if (bouquets.length === 0) return [];
 
-    const interleaved = buildInterleavedPopularBouquets(bouquets);
-    const rng = mulberry32(getPopularShuffleSeed());
-    return shuffleArraySeeded([...interleaved], rng);
+    return orderPopularBouquetsWithFeaturedFirst(bouquets);
   } catch (err) {
     console.error('[Sanity] getOrderedPopularBouquetsFromSanity failed:', err);
     return [];
@@ -700,6 +730,8 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   colors,
   flowerTypes,
   occasion,
+  featuredPopular,
+  featuredPopularOrder,
   partner,
   "partnerName": partner->shopName,
   images,
@@ -865,7 +897,7 @@ export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet
       `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
-        colors, flowerTypes, occasion, partner, status, images, sizes
+        colors, flowerTypes, occasion, partner, status, featuredPopular, featuredPopularOrder, images, sizes
       }`,
       { partnerId }
     );
@@ -883,7 +915,7 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
       `*[_type == "bouquet" && _id == $id][0] {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
-        colors, flowerTypes, occasion, partner, status, images, sizes
+        colors, flowerTypes, occasion, partner, status, featuredPopular, featuredPopularOrder, images, sizes
       }`,
       { id: bouquetId }
     );
@@ -902,7 +934,7 @@ export async function getPendingBouquets(): Promise<Bouquet[]> {
       `*[_type == "bouquet" && status == "pending_review"] | order(_createdAt desc) {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
-        colors, flowerTypes, occasion, partner, status, images, sizes
+        colors, flowerTypes, occasion, partner, status, featuredPopular, featuredPopularOrder, images, sizes
       }`
     );
     return (docs ?? []).map(mapToBouquet);

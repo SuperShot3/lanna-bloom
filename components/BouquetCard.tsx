@@ -372,6 +372,14 @@ export function BouquetCard({
           onMouseDown={canSwipe ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
+          {bouquet.featuredPopular ? (
+            <span className="card-popular-pick" aria-label={t.popularPickAria}>
+              <span className="card-popular-pick__icon material-symbols-outlined" aria-hidden>
+                push_pin
+              </span>
+              <span className="card-popular-pick__text">{t.popularPickBadge}</span>
+            </span>
+          ) : null}
           {showFavorite && (
             <button
               type="button"
@@ -620,6 +628,35 @@ export function BouquetCard({
         }
         .card-image-wrap-compact {
           aspect-ratio: 1;
+        }
+        .card-popular-pick {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 2;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 5px 10px 5px 8px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          color: #92400e;
+          border: 1px solid rgba(146, 64, 14, 0.2);
+          box-shadow: 0 2px 8px rgba(26, 60, 52, 0.12);
+          pointer-events: none;
+          max-width: calc(100% - 56px);
+        }
+        .card-popular-pick__icon {
+          font-size: 14px;
+          font-variation-settings: 'FILL' 1;
+        }
+        .card-popular-pick__text {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .card-favorite {
           position: absolute;

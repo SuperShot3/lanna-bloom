@@ -213,6 +213,23 @@ export const bouquet = defineType({
       description: 'Only approved bouquets appear on the public catalog. Partner uploads start as pending_review.',
     },
     {
+      name: 'featuredPopular',
+      title: 'Featured popular (homepage)',
+      type: 'boolean',
+      initialValue: false,
+      description:
+        'When on, this bouquet is pinned to the top of the homepage Popular section (Chiang Mai only), shows a Popular badge on cards, and still appears in the catalog in normal order with the badge.',
+    },
+    {
+      name: 'featuredPopularOrder',
+      title: 'Featured order (lower = first)',
+      type: 'number',
+      initialValue: 0,
+      validation: (r) => r.min(0).integer(),
+      hidden: ({ parent }) => !parent?.featuredPopular,
+      description: 'Among featured bouquets, smaller numbers appear first.',
+    },
+    {
       name: 'images',
       title: 'Images',
       type: 'array',
@@ -246,9 +263,22 @@ export const bouquet = defineType({
     },
   ],
   preview: {
-    select: { title: 'nameEn', status: 'status', partner: 'partner', kind: 'productKind' },
-    prepare({ title, status, partner, kind }) {
-      const sub = [partner ? 'Partner' : 'Lanna Bloom', kind ?? 'legacy', status].filter(Boolean).join(' · ');
+    select: {
+      title: 'nameEn',
+      status: 'status',
+      partner: 'partner',
+      kind: 'productKind',
+      featuredPopular: 'featuredPopular',
+    },
+    prepare({ title, status, partner, kind, featuredPopular }) {
+      const sub = [
+        partner ? 'Partner' : 'Lanna Bloom',
+        kind ?? 'legacy',
+        status,
+        featuredPopular ? 'Popular' : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
       return { title: title || 'Bouquet', subtitle: sub };
     },
   },
