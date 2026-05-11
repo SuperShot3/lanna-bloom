@@ -88,6 +88,24 @@ export async function uploadImageToSanity(file: File): Promise<string> {
   return asset._id;
 }
 
+/** Upload an admin-owned product image variant to Sanity. */
+export async function uploadAdminProductImage(
+  file: File,
+  options?: { alt?: string; filename?: string }
+): Promise<{ assetId: string; url?: string; alt?: string }> {
+  const client = getWriteClient();
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const asset = await client.assets.upload('image', buffer, {
+    filename: options?.filename || file.name || 'admin-product-image',
+    contentType: file.type || undefined,
+  });
+  return {
+    assetId: asset._id,
+    url: asset.url,
+    alt: options?.alt?.trim() || undefined,
+  };
+}
+
 export interface BouquetSizeInput {
   key: SizeKey;
   label: string;
@@ -111,6 +129,34 @@ export interface CreateBouquetInput {
   presentationFormats?: string[];
   imageAssetIds: string[]; // 1–3 asset _ids from uploadImageToSanity
   sizes: BouquetSizeInput[];
+}
+
+export interface SanityWriteImageInput {
+  assetId: string;
+  alt?: string;
+  format?: 'webp' | 'png_master' | 'source';
+  isPrimary?: boolean;
+}
+
+export interface CreateAdminBouquetInput {
+  nameEn: string;
+  nameTh?: string;
+  slug?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  compositionEn?: string;
+  compositionTh?: string;
+  price: number;
+  images: SanityWriteImageInput[];
+  colors?: string[];
+  flowerTypes?: string[];
+  occasion?: string[];
+  presentationFormats?: string[];
+  deliveryOptions?: string[];
+  excludedDeliveryDestinations?: string[];
+  featuredPopular?: boolean;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 /** Generate slug from nameEn. */
@@ -374,6 +420,75 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
   return doc._id;
 }
 
+export async function checkSlugAvailability(slug: string): Promise<boolean> {
+  const client = getWriteClient();
+  const cleanSlug = slugFromName(slug);
+  const count = await client.fetch<number>(
+    `count(*[_type in ["bouquet", "product", "plushyToy", "balloon"] && slug.current == $slug])`,
+    { slug: cleanSlug }
+  );
+  return count === 0;
+}
+
+export async function createApprovedAdminBouquet(
+  input: CreateAdminBouquetInput
+): Promise<{ id: string; slug: string }> {
+  const client = getWriteClient();
+  const baseSlug = slugFromName(input.slug || input.nameEn);
+  const slug = await ensureUniqueCatalogSlug(client, baseSlug);
+  const price = Math.max(0, Number(input.price));
+  const primaryFirst = [...input.images]
+    .filter((image) => image.assetId.trim())
+    .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
+
+  const images = primaryFirst.slice(0, 5).map((image, i) => ({
+    _type: 'image' as const,
+    _key: `admin_image_${i}_${image.format || 'source'}`,
+    asset: { _type: 'reference' as const, _ref: image.assetId },
+    ...(image.alt?.trim() && { alt: image.alt.trim() }),
+    ...(image.format && { format: image.format }),
+    isPrimary: image.isPrimary === true,
+  }));
+
+  const doc = await client.create({
+    _type: 'bouquet',
+    productKind: 'legacy',
+    slug: { _type: 'slug', current: slug },
+    nameEn: input.nameEn.trim(),
+    nameTh: (input.nameTh || '').trim(),
+    descriptionEn: (input.descriptionEn || '').trim(),
+    descriptionTh: (input.descriptionTh || '').trim(),
+    compositionEn: (input.compositionEn || '').trim(),
+    compositionTh: (input.compositionTh || '').trim(),
+    ...(input.colors?.length ? { colors: input.colors } : {}),
+    ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : {}),
+    ...(input.occasion?.length ? { occasion: input.occasion } : {}),
+    ...(input.presentationFormats?.length ? { presentationFormats: input.presentationFormats } : {}),
+    ...(input.deliveryOptions?.length ? { deliveryOptions: input.deliveryOptions } : {}),
+    ...(input.excludedDeliveryDestinations?.length
+      ? { excludedDeliveryDestinations: input.excludedDeliveryDestinations }
+      : {}),
+    featuredPopular: input.featuredPopular === true,
+    status: 'approved',
+    source: 'admin_ai_product_creation',
+    approvedBy: input.approvedBy?.trim() || undefined,
+    approvedAt: input.approvedAt || new Date().toISOString(),
+    images,
+    sizes: [
+      {
+        _key: 'm',
+        key: 'm',
+        label: 'Standard',
+        price,
+        description: 'Standard arrangement',
+        availability: true,
+      },
+    ],
+  });
+
+  return { id: doc._id, slug };
+}
+
 /** Delete a product document. Caller must verify ownership. */
 export async function deleteProduct(productId: string): Promise<void> {
   const client = getWriteClient();
@@ -394,6 +509,25 @@ async function ensureUniqueProductSlug(
     const candidate = `${base}-${n}`;
     const count = await client.fetch<number>(
       `count(*[_type == "product" && slug.current == $slug])`,
+      { slug: candidate }
+    );
+    if (count === 0) return candidate;
+    n++;
+  }
+}
+
+async function ensureUniqueCatalogSlug(client: ReturnType<typeof createClient>, base: string): Promise<string> {
+  const cleanBase = base || 'product';
+  const existing = await client.fetch<number>(
+    `count(*[_type in ["bouquet", "product", "plushyToy", "balloon"] && slug.current == $slug])`,
+    { slug: cleanBase }
+  );
+  if (existing === 0) return cleanBase;
+  let n = 2;
+  while (true) {
+    const candidate = `${cleanBase}-${n}`;
+    const count = await client.fetch<number>(
+      `count(*[_type in ["bouquet", "product", "plushyToy", "balloon"] && slug.current == $slug])`,
       { slug: candidate }
     );
     if (count === 0) return candidate;

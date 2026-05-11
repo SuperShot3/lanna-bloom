@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/admin/emails', label: 'Emails', icon: 'mail' },
   { href: '/admin/accounting/overview', label: 'Accounting', icon: 'account_balance_wallet' },
   { href: '/admin/partners/applications', label: 'Partners', icon: 'group' },
+  { href: '/admin/products/new', label: 'Add Product', icon: 'add_shopping_cart' },
   { href: '/admin/moderation/products', label: 'Product Moderation', icon: 'verified_user' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'reviews' },
 ] as const;
