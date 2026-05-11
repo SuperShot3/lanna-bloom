@@ -36,6 +36,28 @@ const MOBILE_BREAKPOINT = 768;
 const localePathPrefixPattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
 const DEFAULT_DELIVERY_DESTINATION_ID: DeliveryDestinationId = 'CHIANG_MAI';
 
+type DeliveryPickerCopy = {
+  eyebrow: string;
+  current: string;
+  selectLabel: string;
+};
+
+function getDeliveryPickerCopy(lang: Locale): DeliveryPickerCopy {
+  if (lang === 'th') {
+    return {
+      eyebrow: 'จัดส่งถึง',
+      current: 'พื้นที่จัดส่งปัจจุบัน',
+      selectLabel: 'เลือกพื้นที่จัดส่ง',
+    };
+  }
+
+  return {
+    eyebrow: 'Deliver to',
+    current: 'Current delivery area',
+    selectLabel: 'Choose delivery area',
+  };
+}
+
 export function Header({
   lang,
   hasPrimeHourBanner = false,
@@ -511,28 +533,6 @@ export function Header({
       `}</style>
     </>
   );
-}
-
-type DeliveryPickerCopy = {
-  eyebrow: string;
-  current: string;
-  selectLabel: string;
-};
-
-function getDeliveryPickerCopy(lang: Locale): DeliveryPickerCopy {
-  if (lang === 'th') {
-    return {
-      eyebrow: 'จัดส่งถึง',
-      current: 'พื้นที่จัดส่งปัจจุบัน',
-      selectLabel: 'เลือกพื้นที่จัดส่ง',
-    };
-  }
-
-  return {
-    eyebrow: 'Deliver to',
-    current: 'Current delivery area',
-    selectLabel: 'Choose delivery area',
-  };
 }
 
 function DeliveryProvincePicker({
