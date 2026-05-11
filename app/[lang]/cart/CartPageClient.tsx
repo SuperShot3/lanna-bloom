@@ -429,8 +429,14 @@ const ALL_COUNTRY_CODES: CountryCodeEntry[] = [
 ];
 
 function renderCountryCodeOptions(lang: Locale): ReactNode {
-  const popularLabel = lang === 'th' ? 'ประเทศยอดนิยม' : 'Popular';
-  const allLabel = lang === 'th' ? 'ประเทศอื่น ๆ (เรียงตามตัวอักษร)' : 'All countries (A–Z)';
+  const popularLabel =
+    lang === 'th' ? 'ประเทศยอดนิยม' : lang === 'ru' ? 'Популярные' : 'Popular';
+  const allLabel =
+    lang === 'th'
+      ? 'ประเทศอื่น ๆ (เรียงตามตัวอักษร)'
+      : lang === 'ru'
+        ? 'Все страны (A–Z)'
+        : 'All countries (A–Z)';
   return (
     <>
       <optgroup label={popularLabel}>
@@ -767,9 +773,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return fmt(String(tB.districtLabel ?? 'District'));
     }
     if (cartExpansionInvalid) {
-      return lang === 'th'
-        ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบสินค้าอื่นออกจากตะกร้า'
-        : 'This area delivers flower bouquets only — remove other items from your bag';
+      return t.flowerOnlyIncomplete;
     }
     if (cartDestinationBouquetInvalid) {
       return String(
@@ -823,19 +827,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   /** Same copy as StickyCheckoutBar incompleteHint — shown on desktop Place Order hover (native title). */
-  const preparingCheckoutMsg =
-    lang === 'th' ? 'กำลังเตรียมการชำระเงิน…' : 'Preparing checkout…';
+  const preparingCheckoutMsg = t.preparingCheckout;
   const paymentAvailabilityDesktopBase = getPaymentAvailability({
     hasDeliveryDistrict: hasDeliveryZone,
     isFormValid: isPaymentUnlocked,
     isLoading: placing,
     firstIncompleteHint: getFirstIncompleteHint(),
     messages: {
-      selectDeliveryArea:
-        lang === 'th'
-          ? 'กรุณาเลือกพื้นที่จัดส่งเพื่อดูตัวเลือกชำระเงิน'
-          : 'Select a delivery area to see payment options',
-      processing: lang === 'th' ? 'กำลังดำเนินการ...' : 'Processing...',
+      selectDeliveryArea: t.selectDeliveryAreaPayment,
+      processing: t.processing,
     },
   });
   const paymentAvailabilityDesktop =
@@ -998,16 +998,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setAlreadySubmittedBlock(false);
   };
 
-  const mapsUrlInvalidMsg =
-    lang === 'th'
-      ? 'กรุณาวางลิงก์ Google Maps ที่ถูกต้อง (แชร์ → คัดลอกลิงก์จากแอป)'
-      : 'Please paste a valid Google Maps link (Share → Copy link from the Google Maps app).';
+  const mapsUrlInvalidMsg = t.mapsUrlInvalid;
 
   const runStripeCheckoutSubmit = async () => {
     if (!checkoutSubmissionToken) {
-      setOrderError(
-        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
-      );
+      setOrderError(t.refreshAndTryAgain);
       return;
     }
     if (orderSubmitInFlightRef.current || placing) return;
@@ -1080,11 +1075,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return;
     }
     if (cartExpansionInvalid) {
-      setOrderError(
-        lang === 'th'
-          ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบสินค้าอื่นออกจากตะกร้า'
-          : 'This area delivers flower bouquets only — remove other items from your bag'
-      );
+      setOrderError(t.flowerOnlyIncomplete);
       return;
     }
     if (cartDestinationBouquetInvalid) {
@@ -1097,9 +1088,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return;
     }
     if (!checkoutSubmissionToken) {
-      setOrderError(
-        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
-      );
+      setOrderError(t.refreshAndTryAgain);
       return;
     }
     const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
@@ -1128,9 +1117,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return;
     }
     if (!checkoutSubmissionToken) {
-      setOrderError(
-        lang === 'th' ? 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง' : 'Please refresh the page and try again.'
-      );
+      setOrderError(t.refreshAndTryAgain);
       return;
     }
     const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
@@ -1163,7 +1150,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-id') : null;
     const lastOrderToken =
       typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : null;
-    const th = lang === 'th';
     return (
       <div className="cart-page" style={{ padding: '48px 20px' }}>
         <div className="container" style={{ maxWidth: 480 }}>
@@ -1175,12 +1161,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               marginBottom: 12,
             }}
           >
-            {th ? 'ส่งคำสั่งซื้อนี้แล้ว' : 'This order was already submitted'}
+            {t.orderAlreadySubmittedTitle}
           </h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
-            {th
-              ? 'คุณได้ส่งคำสั่งซื้อนี้แล้ว หากต้องการสั่งใหม่ โปรดเริ่มคำสั่งซื้อใหม่'
-              : 'You already submitted this checkout. To place another order, start a new checkout.'}
+            {t.orderAlreadySubmitted}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {lastOrderId && (
@@ -1193,7 +1177,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 className="btn-primary"
                 style={{ textAlign: 'center', padding: '14px 20px', fontWeight: 600 }}
               >
-                {th ? 'ดูคำสั่งซื้อ' : 'View order'}
+                {t.viewOrder}
               </Link>
             )}
             <button
@@ -1208,7 +1192,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 borderRadius: 8,
               }}
             >
-              {th ? 'เริ่มคำสั่งซื้อใหม่' : 'Start a new order'}
+              {t.startNewOrder}
             </button>
           </div>
         </div>
@@ -1489,16 +1473,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </div>
         {destinationChangeNotice && (
           <p className="cart-destination-notice" role="status">
-            {lang === 'th'
-              ? 'คุณเปลี่ยนพื้นที่จัดส่ง — ค่าจัดส่งและสินค้าที่สั่งได้อาจเปลี่ยนแปลง โปรดตรวจสอบตะกร้าและเลือกโซนใหม่'
-              : 'Your delivery area changed — fees and available items may differ. Please review your bag and choose a delivery zone again.'}
+            {t.deliveryAreaChangedNotice}
           </p>
         )}
         {cartExpansionInvalid && items.length > 0 && (
           <p className="cart-expansion-block-notice" role="alert">
-            {lang === 'th'
-              ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบของเล่น ลูกโป่ง หรือสินค้าอื่นออกจากตะกร้าก่อนชำระเงิน'
-              : 'This area delivers flower bouquets only — remove toys, balloons, or other non-flower items before checkout.'}
+            {t.expansionOnlyNotice}
           </p>
         )}
         {cartDestinationBouquetInvalid && items.length > 0 && (
@@ -1513,9 +1493,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         )}
         <div className="cart-mobile-view">
           <header className="cart-mobile-header">
-            <h1 className="cart-mobile-title">{lang === 'th' ? 'ชำระเงิน' : 'Checkout'}</h1>
+            <h1 className="cart-mobile-title">{t.checkoutTitle}</h1>
             <p className="cart-mobile-subtitle">
-              {totalItemCount} {lang === 'th' ? 'รายการ' : 'item(s)'} — ฿{grandTotalVal.toLocaleString()}
+              {t.mobileItemCount.replace('{count}', String(totalItemCount))} — ฿{grandTotalVal.toLocaleString()}
             </p>
           </header>
           <div className="cart-mobile-accordion">
@@ -1524,9 +1504,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               onClick={() => toggleMobileSection('bag')}
             >
               <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{lang === 'th' ? 'สินค้าในตะกร้า' : 'In Your Bag'}</span>
+                <span className="cart-accordion-title">{t.mobileBagTitle}</span>
                 <div className="cart-accordion-header-actions">
-                  {mobileCompleted.has('bag') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('bag'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                  {mobileCompleted.has('bag') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('bag'); }}>{t.edit}</span>}
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
@@ -1634,9 +1614,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               onClick={() => toggleMobileSection('delivery')}
             >
               <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{lang === 'th' ? 'การจัดส่ง' : 'Delivery Options'}</span>
+                <span className="cart-accordion-title">{t.mobileDeliveryOptions}</span>
                 <div className="cart-accordion-header-actions">
-                  {mobileCompleted.has('delivery') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('delivery'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                  {mobileCompleted.has('delivery') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('delivery'); }}>{t.edit}</span>}
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
@@ -1661,7 +1641,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     disabled={!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)}
                     onClick={handleMobileDeliverySave}
                   >
-                    {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
+                    {t.saveContinue}
                   </button>
                 </div>
               </div>
@@ -1672,9 +1652,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               onClick={() => toggleMobileSection('contact')}
             >
               <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{lang === 'th' ? 'ข้อมูลติดต่อ' : 'Contact'}</span>
+                <span className="cart-accordion-title">{t.mobileContactTitle}</span>
                 <div className="cart-accordion-header-actions">
-                  {mobileCompleted.has('contact') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('contact'); }}>{lang === 'th' ? 'แก้ไข' : 'Edit'}</span>}
+                  {mobileCompleted.has('contact') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('contact'); }}>{t.edit}</span>}
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
@@ -1700,7 +1680,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     }
                     onClick={handleMobileContactSave}
                   >
-                    {lang === 'th' ? 'บันทึกและดำเนินการต่อ' : 'Save & Continue'}
+                    {t.saveContinue}
                   </button>
                 </div>
               </div>
@@ -1713,12 +1693,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               isLoading: placing,
               firstIncompleteHint: getFirstIncompleteHint(),
               messages: {
-                selectDeliveryArea: lang === 'th' ? 'กรุณาเลือกพื้นที่จัดส่งเพื่อดูตัวเลือกชำระเงิน' : 'Select a delivery area to see payment options',
-                processing: lang === 'th' ? 'กำลังดำเนินการ...' : 'Processing...',
+                selectDeliveryArea: t.selectDeliveryAreaPayment,
+                processing: t.processing,
               },
             });
-            const preparingCheckout =
-              lang === 'th' ? 'กำลังเตรียมการชำระเงิน…' : 'Preparing checkout…';
+            const preparingCheckout = t.preparingCheckout;
             const paymentAvailability =
               checkoutSubmissionToken || items.length === 0
                 ? paymentAvailabilityBase
@@ -1755,19 +1734,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               deliveryFeeLabel: t.deliveryFeeLabel,
               totalLabel: t.totalLabel,
               placeOrder: t.payWithStripe,
-              orderLabel: (t as { orderLabel?: string }).orderLabel ?? (lang === 'th' ? 'ชำระเงิน' : 'Pay'),
-              redirecting: lang === 'th' ? 'กำลังเตรียมชำระเงิน...' : 'Redirecting...',
-              creating: lang === 'th' ? 'กำลังเปิดหน้าชำระเงิน...' : 'Opening secure checkout...',
-              unavailableRightNow: lang === 'th' ? 'ไม่พร้อมใช้งานในขณะนี้' : 'Unavailable right now',
-              change: lang === 'th' ? 'เปลี่ยน' : 'Change',
-              delivery: lang === 'th' ? 'เวลาจัดส่ง' : 'Delivery time',
-              showCheckout: lang === 'th' ? 'แสดงชำระเงิน' : 'Show checkout',
+              orderLabel: t.orderLabel,
+              redirecting: t.redirecting,
+              creating: t.creatingCheckout,
+              unavailableRightNow: t.unavailableRightNow,
+              change: t.change,
+              delivery: t.deliveryTime,
+              showCheckout: t.showCheckout,
               specifyDeliveryDate: tBuyNow.specifyDeliveryDate,
               todayLabel: tBuyNow.todayLabel,
               tomorrowLabel: tBuyNow.tomorrowLabel,
               selectTimeSlot: tBuyNow.selectTimeSlot,
               preferredTime: (tBuyNow as { preferredTime?: string }).preferredTime,
-              save: lang === 'th' ? 'บันทึก' : 'Save',
+              save: t.save,
             }}
           />
             );
@@ -1820,7 +1799,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                         <line x1="3" y1="6" x2="21" y2="6" />
                         <path d="M16 10a4 4 0 01-8 0" />
                       </svg>
-                      {placing ? (lang === 'th' ? 'กำลังเปิดหน้าชำระเงิน...' : 'Opening secure checkout...') : t.payWithStripe}
+                      {placing ? t.creatingCheckout : t.payWithStripe}
                     </button>
                   </span>
                 </div>
@@ -1848,46 +1827,23 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   )}
                 </div>
                 <p className="cart-policy-consent">
-                  {lang === 'th' ? (
-                    <>
-                      การกดสั่งซื้อหมายความว่าคุณยอมรับ{' '}
-                      <Link
-                        className="cart-policy-link cart-policy-link--delivery"
-                        href={`/${lang}/info/delivery-policy`}
-                        style={DELIVERY_POLICY_LINK_STYLE}
-                      >
-                        นโยบายการจัดส่ง
-                      </Link>{' '}
-                      และ{' '}
-                      <Link
-                        className="cart-policy-link cart-policy-link--refund"
-                        href={`/${lang}/refund-replacement`}
-                        style={REFUND_POLICY_LINK_STYLE}
-                      >
-                        นโยบายการคืนเงิน
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      By placing your order, you agree to our{' '}
-                      <Link
-                        className="cart-policy-link cart-policy-link--delivery"
-                        href={`/${lang}/info/delivery-policy`}
-                        style={DELIVERY_POLICY_LINK_STYLE}
-                      >
-                        delivery policy
-                      </Link>{' '}
-                      and{' '}
-                      <Link
-                        className="cart-policy-link cart-policy-link--refund"
-                        href={`/${lang}/refund-replacement`}
-                        style={REFUND_POLICY_LINK_STYLE}
-                      >
-                        refund policy
-                      </Link>
-                      .
-                    </>
-                  )}
+                  {t.policyConsentBefore}{' '}
+                  <Link
+                    className="cart-policy-link cart-policy-link--delivery"
+                    href={`/${lang}/info/delivery-policy`}
+                    style={DELIVERY_POLICY_LINK_STYLE}
+                  >
+                    {t.policyDeliveryLink}
+                  </Link>{' '}
+                  {t.policyConsentBetween}{' '}
+                  <Link
+                    className="cart-policy-link cart-policy-link--refund"
+                    href={`/${lang}/refund-replacement`}
+                    style={REFUND_POLICY_LINK_STYLE}
+                  >
+                    {t.policyRefundLink}
+                  </Link>
+                  {lang === 'en' ? '.' : ''}
                 </p>
                 </div>
                 </div>
@@ -1898,7 +1854,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </div>
         <div className="cart-desktop-column-right">
         <aside className="cart-sticky-sidebar">
-        <h2 className="cart-sticky-sidebar-title">Order Summary</h2>
+        <h2 className="cart-sticky-sidebar-title">{t.orderSummary}</h2>
         <div className="cart-items-and-summary">
         <div className="cart-list">
           {items.map((item, index) => {
@@ -2039,7 +1995,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           <button
             type="button"
             className="cart-maps-prompt-backdrop"
-            aria-label={lang === 'th' ? 'ปิด' : 'Close'}
+            aria-label={t.mapsPromptClose}
             onClick={() => {
               setMapsLinkPromptOpen(false);
               setShouldFocusMapsLinkOnReturn(false);
@@ -2047,30 +2003,28 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           />
           <div className="cart-maps-prompt-card">
             <h2 id="cart-maps-prompt-title" className="cart-maps-prompt-title">
-              {lang === 'th' ? 'วิธีเพิ่มหมุด Google Maps' : 'How to add Google map pin'}
+              {t.mapsPromptTitle}
             </h2>
             <p className="cart-maps-prompt-text">
-              {lang === 'th'
-                ? 'หมุดบนแผนที่ช่วยให้คนขับหาจุดส่งได้เร็วขึ้น การเพิ่มให้จะช่วยเราได้มาก'
-                : 'Pin on the map helps our drivers find exact spot faster. Adding one would help us very much.'}
+              {t.mapsPromptText}
             </p>
-            <ul className="cart-maps-prompt-steps" aria-label={lang === 'th' ? 'วิธีเพิ่มลิงก์' : 'How to add the link'}>
-              <li>{lang === 'th' ? 'เปิด Google Maps แล้ววางหมุด/เลือกสถานที่' : 'Open Google Maps and drop a pin / choose the place'}</li>
-              <li>{lang === 'th' ? 'กด “แชร์” (Share)' : 'Tap “Share”'}</li>
-              <li>{lang === 'th' ? 'กด “คัดลอกลิงก์” (Copy link)' : 'Tap “Copy link”'}</li>
-              <li>{lang === 'th' ? 'กลับมาวางลิงก์ลงในช่อง “Google Maps link”' : 'Come back and paste into the “Google Maps link” field'}</li>
+            <ul className="cart-maps-prompt-steps" aria-label={t.mapsPromptStepsLabel}>
+              <li>{t.mapsPromptStep1}</li>
+              <li>{t.mapsPromptStep2}</li>
+              <li>{t.mapsPromptStep3}</li>
+              <li>{t.mapsPromptStep4}</li>
             </ul>
             <div className="cart-maps-prompt-actions">
               <button type="button" className="cart-maps-prompt-btn cart-maps-prompt-btn-primary" onClick={handleMapsPromptAddPin}>
                 <PinIcon className="cart-maps-prompt-btn-icon" size={18} />
-                {lang === 'th' ? 'เปิด Google Maps เพื่อวางหมุด' : 'Open Google Maps & add pin'}
+                {t.mapsPromptAddPin}
               </button>
               <button
                 type="button"
                 className="cart-maps-prompt-btn cart-maps-prompt-btn-secondary"
                 onClick={() => void handleMapsPromptContinueWithoutLink()}
               >
-                {lang === 'th' ? 'ดำเนินการต่อโดยไม่มีลิงก์' : 'Continue without link'}
+                {t.mapsPromptContinueWithoutLink}
               </button>
             </div>
           </div>

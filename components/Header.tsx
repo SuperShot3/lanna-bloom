@@ -289,7 +289,9 @@ export function Header({
                 catalogHref={catalogHref}
               />
             </Suspense>
-            <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
+            <div className="hidden md:block">
+              <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
+            </div>
             <Link
               href={cartHref}
               className="relative flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34]"
@@ -380,6 +382,17 @@ export function Header({
               variant="mobile"
               onChange={handleDeliveryDestinationChange}
             />
+            <section className="rounded-2xl border border-stone-200 bg-white p-4">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+                {lang === 'th' ? 'ภาษา' : 'Language'}
+              </p>
+              <LanguageSwitcher
+                currentLang={lang}
+                pathBase={basePath || '/'}
+                variant="flags"
+                onNavigate={() => setMenuOpen(false)}
+              />
+            </section>
             <nav className="flex flex-col gap-2" aria-label="Main">
               <NavItem
                 href={homeHref}
@@ -537,14 +550,20 @@ function DeliveryProvincePicker({
   variant: 'desktop' | 'mobile';
   onChange: (destination: DeliveryDestinationId) => void;
 }) {
+  const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const select = (
     <select
       value={value}
       onChange={(event) => onChange(event.target.value as DeliveryDestinationId)}
       aria-label={copy.selectLabel}
+      style={
+        variant === 'desktop'
+          ? { width: `${Math.min(Math.max(valueLabel.length + 6, 14), 19)}ch` }
+          : undefined
+      }
       className={
         variant === 'desktop'
-          ? 'min-w-0 max-w-[150px] cursor-pointer bg-transparent pr-1 text-sm font-semibold text-[#1A3C34] outline-none'
+          ? 'min-w-0 max-w-[132px] cursor-pointer bg-transparent pr-0 text-xs font-semibold text-[#1A3C34] outline-none'
           : 'mt-2 h-11 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
       }
     >
@@ -561,9 +580,25 @@ function DeliveryProvincePicker({
 
   if (variant === 'desktop') {
     return (
-      <label className="hidden h-11 max-w-[230px] shrink-0 cursor-pointer items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-3 text-[#1A3C34] transition-colors hover:bg-stone-50 lg:flex">
-        <MapIcon size={18} className="shrink-0 text-[#C5A059]" />
-        <span className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400 xl:inline">
+      <label
+        onClick={() => setIsDesktopExpanded(true)}
+        onFocus={() => setIsDesktopExpanded(true)}
+        onBlur={(event) => {
+          const nextTarget = event.relatedTarget;
+          if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+            setIsDesktopExpanded(false);
+          }
+        }}
+        className={`hidden h-10 shrink-0 cursor-pointer items-center gap-1.5 overflow-hidden rounded-full border border-stone-200 bg-white/70 px-2.5 text-[#1A3C34] transition-[max-width,background-color] duration-300 hover:bg-stone-50 lg:flex whitespace-nowrap ${
+          isDesktopExpanded ? 'max-w-[240px]' : 'max-w-[180px]'
+        }`}
+      >
+        <MapIcon size={16} className="shrink-0 text-[#C5A059]" />
+        <span
+          className={`shrink-0 overflow-hidden whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.14em] text-stone-400 transition-[max-width,opacity] duration-300 ${
+            isDesktopExpanded ? 'max-w-[64px] opacity-100' : 'max-w-0 opacity-0'
+          }`}
+        >
           {copy.eyebrow}
         </span>
         {select}
