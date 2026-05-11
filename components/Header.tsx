@@ -46,15 +46,15 @@ function getDeliveryPickerCopy(lang: Locale): DeliveryPickerCopy {
   if (lang === 'th') {
     return {
       eyebrow: 'จัดส่งถึง',
-      current: 'พื้นที่จัดส่งปัจจุบัน',
-      selectLabel: 'เลือกพื้นที่จัดส่ง',
+      current: 'เขตปัจจุบัน',
+      selectLabel: 'เลือกเขตจัดส่ง',
     };
   }
 
   return {
     eyebrow: 'Deliver to',
-    current: 'Current delivery area',
-    selectLabel: 'Choose delivery area',
+    current: 'Current district',
+    selectLabel: 'Choose delivery district',
   };
 }
 
@@ -612,17 +612,13 @@ function DeliveryProvincePicker({
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#C5A059] shadow-sm">
           <MapIcon size={22} />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
             {copy.current}
           </p>
-          <p className="mt-1 truncate text-base font-semibold text-[#1A3C34]">{valueLabel}</p>
+          {select}
         </div>
       </div>
-      <label className="mt-3 block">
-        <span className="text-xs font-medium text-stone-500">{copy.selectLabel}</span>
-        {select}
-      </label>
     </section>
   );
 }
