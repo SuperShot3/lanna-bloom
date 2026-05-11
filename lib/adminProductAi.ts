@@ -1,6 +1,7 @@
 import 'server-only';
 
 import OpenAI, { toFile } from 'openai';
+import sharp from 'sharp';
 import { fileToDataUrl } from './adminProductImages';
 
 export type ProductImageAnalysis = {
@@ -120,6 +121,22 @@ function normalizeDraft(value: Partial<ProductDraftCopy>): ProductDraftCopy {
   };
 }
 
+async function normalizeImageForOpenAiEdit(file: File): Promise<Buffer> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  return sharp(buffer, { limitInputPixels: 40_000_000 })
+    .rotate()
+    .resize(1024, 1024, {
+      fit: 'contain',
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+      withoutEnlargement: false,
+    })
+    .flatten({ background: { r: 255, g: 255, b: 255 } })
+    .toColorspace('srgb')
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
 export async function analyzeProductImage(
   file: File,
   hints?: ProductDraftHints
@@ -195,9 +212,9 @@ export async function enhanceProductImage(
   imageRules = IMAGE_ENHANCEMENT_RULES
 ): Promise<File> {
   const client = getClient();
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const uploadable = await toFile(buffer, file.name || 'product-source.png', {
-    type: file.type || 'image/png',
+  const normalizedPng = await normalizeImageForOpenAiEdit(file);
+  const uploadable = await toFile(normalizedPng, 'product-source.png', {
+    type: 'image/png',
   });
 
   const response = await client.images.edit({
