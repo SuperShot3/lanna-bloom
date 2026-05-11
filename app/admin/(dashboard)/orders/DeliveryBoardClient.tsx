@@ -404,6 +404,7 @@ export function DeliveryBoardClient({
   const mapMarkers = useMemo(() => buildMapMarkers(visibleOrders), [visibleOrders]);
 
   const statInProgress = visibleOrders.filter((o) => isOpenPipelineStatus(o.order_status)).length;
+  const statDelivered = sortedOrders.filter((o) => isDeliveredStatus(o.order_status)).length;
   const statMorning = grouped.morning.length;
   const statAfternoon = grouped.midday.length + grouped.afternoon.length + grouped.evening.length;
 
@@ -515,21 +516,6 @@ export function DeliveryBoardClient({
       <header className="admin-header admin-page-header admin-delivery-board-header">
         <div>
           <h1 className="admin-title admin-delivery-board-title">Delivery Board</h1>
-          <p className="admin-hint admin-delivery-board-sub">
-            See what needs attention today and upcoming deliveries. Pick a day or range, then open orders by time slot.
-          </p>
-        </div>
-        <div className="admin-header-actions">
-          <a
-            href={`/api/admin/orders/export?${sp.toString()}`}
-            className="admin-btn admin-btn-outline admin-delivery-board-export"
-            download
-          >
-            <span className="material-symbols-outlined admin-shell-icon" style={{ fontSize: 18 }}>
-              download
-            </span>
-            Export CSV
-          </a>
         </div>
       </header>
 
@@ -554,19 +540,33 @@ export function DeliveryBoardClient({
             </button>
           ))}
         </div>
-        <label className="admin-delivery-board-calendar-btn">
-          <span className="material-symbols-outlined">calendar_month</span>
-          <input
-            type="date"
-            className="admin-delivery-board-date-input"
-            value={rangeSingleDay ? dateFrom : ''}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v) setDateRange(v, v);
-            }}
-            aria-label="Pick a single day"
-          />
-        </label>
+        <div className="admin-delivery-board-date-actions">
+          <label className="admin-delivery-board-calendar-btn">
+            <span className="material-symbols-outlined">calendar_month</span>
+            <input
+              type="date"
+              className="admin-delivery-board-date-input"
+              value={rangeSingleDay ? dateFrom : ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) setDateRange(v, v);
+              }}
+              aria-label="Pick a single day"
+            />
+          </label>
+          <a
+            href={`/api/admin/orders/export?${sp.toString()}`}
+            className="admin-btn admin-btn-outline admin-delivery-board-export"
+            download
+            aria-label="Export CSV"
+            title="Export CSV"
+          >
+            <span className="material-symbols-outlined admin-shell-icon" style={{ fontSize: 18 }}>
+              download
+            </span>
+            <span className="sr-only">Export CSV</span>
+          </a>
+        </div>
       </div>
 
       <div className="admin-delivery-board-stats">
@@ -582,6 +582,13 @@ export function DeliveryBoardClient({
           <div>
             <span className="admin-delivery-stat-value">{statInProgress}</span>
             <span className="admin-delivery-stat-label">In progress</span>
+          </div>
+        </div>
+        <div className="admin-delivery-stat admin-delivery-stat--delivered">
+          <span className="material-symbols-outlined admin-delivery-stat-icon">check_circle</span>
+          <div>
+            <span className="admin-delivery-stat-value">{statDelivered}</span>
+            <span className="admin-delivery-stat-label">Delivered</span>
           </div>
         </div>
         <div className="admin-delivery-stat admin-delivery-stat--morning">

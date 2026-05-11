@@ -53,6 +53,8 @@ type Hints = {
   notes: string;
 };
 
+type LoadingStage = 'draft' | 'image' | 'publish';
+
 const emptyDraft: ProductDraftCopy = {
   nameEn: '',
   nameTh: '',
@@ -75,6 +77,24 @@ const emptyHints: Hints = {
   price: '',
   size: '',
   notes: '',
+};
+
+const loadingStageCopy: Record<LoadingStage, { title: string; detail: string; steps: string[] }> = {
+  draft: {
+    title: 'Generating AI product draft',
+    detail: 'OpenAI is analyzing the photo and writing bilingual product copy. This can take up to a minute.',
+    steps: ['Reading product photo', 'Identifying flowers and colors', 'Writing English and Thai copy'],
+  },
+  image: {
+    title: 'Enhancing product image',
+    detail: 'OpenAI is preparing a clean catalog image, then the site uploads WebP and PNG versions to Sanity.',
+    steps: ['Preserving product details', 'Cleaning the background', 'Uploading image variants'],
+  },
+  publish: {
+    title: 'Adding product to website',
+    detail: 'The approved product details are being saved and connected to the public catalog.',
+    steps: ['Checking required fields', 'Saving product in Sanity', 'Preparing catalog links'],
+  },
 };
 
 function splitList(value: string): string[] {
@@ -122,7 +142,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const [presentationCsv, setPresentationCsv] = useState('bouquet');
   const [deliveryCsv, setDeliveryCsv] = useState('same_day, next_day');
   const [featuredPopular, setFeaturedPopular] = useState(false);
-  const [loading, setLoading] = useState<'draft' | 'image' | 'publish' | null>(null);
+  const [loading, setLoading] = useState<LoadingStage | null>(null);
   const [error, setError] = useState('');
   const [published, setPublished] = useState<PublishedProduct | null>(null);
 
@@ -132,10 +152,11 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   );
   const progressSteps = [
     { label: 'Upload', complete: Boolean(file) },
-    { label: 'AI draft', complete: Boolean(analysis) },
-    { label: 'Image', complete: imageVariants.some((variant) => variant.isPrimary) },
-    { label: 'Publish', complete: Boolean(published) },
+    { label: 'AI draft', complete: Boolean(analysis), loadingStage: 'draft' as const },
+    { label: 'Image', complete: imageVariants.some((variant) => variant.isPrimary), loadingStage: 'image' as const },
+    { label: 'Publish', complete: Boolean(published), loadingStage: 'publish' as const },
   ];
+  const loadingDetails = loading ? loadingStageCopy[loading] : null;
 
   function updateHint(key: keyof Hints, value: string) {
     setHints((current) => ({ ...current, [key]: value }));
@@ -168,6 +189,26 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setPublished(null);
   }
 
+  function resetWizard() {
+    setFile(null);
+    setFilePreview('');
+    setEnhancedPreview('');
+    setHints(emptyHints);
+    setAnalysis(null);
+    setDraft(emptyDraft);
+    setImageVariants([]);
+    setPrice('');
+    setColorsCsv('');
+    setFlowersCsv('');
+    setOccasionsCsv('');
+    setPresentationCsv('bouquet');
+    setDeliveryCsv('same_day, next_day');
+    setFeaturedPopular(false);
+    setLoading(null);
+    setError('');
+    setPublished(null);
+  }
+
   async function requestDraft() {
     if (!file) {
       setError('Choose a product image first.');
@@ -181,27 +222,32 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     formData.append('file', file);
     formData.append('hints', JSON.stringify(hints));
 
-    const response = await fetch('/api/admin/products/ai-draft', {
-      method: 'POST',
-      body: formData,
-    });
-    const payload = await readJsonResponse(response);
-    setLoading(null);
+    try {
+      const response = await fetch('/api/admin/products/ai-draft', {
+        method: 'POST',
+        body: formData,
+      });
+      const payload = await readJsonResponse(response);
 
-    if (!response.ok) {
-      setError(String(payload.error ?? 'Failed to create AI draft.'));
-      return;
+      if (!response.ok) {
+        setError(String(payload.error ?? 'Failed to create AI draft.'));
+        return;
+      }
+
+      const nextAnalysis = payload.analysis as ProductImageAnalysis;
+      const nextDraft = payload.draft as ProductDraftCopy;
+      setAnalysis(nextAnalysis);
+      setDraft(nextDraft);
+      setColorsCsv(joinList(nextAnalysis.colors));
+      setFlowersCsv(joinList(nextAnalysis.identifiedFlowers));
+      setOccasionsCsv(joinList(nextAnalysis.suggestedOccasions));
+      setPresentationCsv(presentationFormatFromAnalysis(nextAnalysis));
+      if (!price && hints.price) setPrice(hints.price);
+    } catch {
+      setError('Could not create the AI draft. Check your connection and try again.');
+    } finally {
+      setLoading(null);
     }
-
-    const nextAnalysis = payload.analysis as ProductImageAnalysis;
-    const nextDraft = payload.draft as ProductDraftCopy;
-    setAnalysis(nextAnalysis);
-    setDraft(nextDraft);
-    setColorsCsv(joinList(nextAnalysis.colors));
-    setFlowersCsv(joinList(nextAnalysis.identifiedFlowers));
-    setOccasionsCsv(joinList(nextAnalysis.suggestedOccasions));
-    setPresentationCsv(presentationFormatFromAnalysis(nextAnalysis));
-    if (!price && hints.price) setPrice(hints.price);
   }
 
   async function enhanceImage() {
@@ -217,54 +263,64 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     formData.append('approvedAnalysis', JSON.stringify(analysis));
     formData.append('alt', draft.altEn || draft.nameEn);
 
-    const response = await fetch('/api/admin/products/enhance-image', {
-      method: 'POST',
-      body: formData,
-    });
-    const payload = await readJsonResponse(response);
-    setLoading(null);
+    try {
+      const response = await fetch('/api/admin/products/enhance-image', {
+        method: 'POST',
+        body: formData,
+      });
+      const payload = await readJsonResponse(response);
 
-    if (!response.ok) {
-      setError(String(payload.error ?? 'Failed to enhance product image.'));
-      return;
+      if (!response.ok) {
+        setError(String(payload.error ?? 'Failed to enhance product image.'));
+        return;
+      }
+
+      const variants = Array.isArray(payload.variants) ? (payload.variants as ImageVariant[]) : [];
+      const previews = payload.previews as { webp?: string } | undefined;
+      setImageVariants(variants);
+      setEnhancedPreview(previews?.webp || variants.find((variant) => variant.isPrimary)?.url || '');
+    } catch {
+      setError('Could not enhance and upload the product image. Check your connection and try again.');
+    } finally {
+      setLoading(null);
     }
-
-    const variants = Array.isArray(payload.variants) ? (payload.variants as ImageVariant[]) : [];
-    const previews = payload.previews as { webp?: string } | undefined;
-    setImageVariants(variants);
-    setEnhancedPreview(previews?.webp || variants.find((variant) => variant.isPrimary)?.url || '');
   }
 
   async function publishProduct() {
     setError('');
     setLoading('publish');
-    const response = await fetch('/api/admin/products/publish', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        ...draft,
-        price,
-        images: imageVariants.map((variant) => ({
-          ...variant,
-          alt: variant.alt || draft.altEn || draft.nameEn,
-        })),
-        colors: splitList(colorsCsv),
-        flowerTypes: splitList(flowersCsv),
-        occasion: splitList(occasionsCsv),
-        presentationFormats: splitList(presentationCsv),
-        deliveryOptions: splitList(deliveryCsv),
-        featuredPopular,
-      }),
-    });
-    const payload = await readJsonResponse(response);
-    setLoading(null);
+    try {
+      const response = await fetch('/api/admin/products/publish', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...draft,
+          price,
+          images: imageVariants.map((variant) => ({
+            ...variant,
+            alt: variant.alt || draft.altEn || draft.nameEn,
+          })),
+          colors: splitList(colorsCsv),
+          flowerTypes: splitList(flowersCsv),
+          occasion: splitList(occasionsCsv),
+          presentationFormats: splitList(presentationCsv),
+          deliveryOptions: splitList(deliveryCsv),
+          featuredPopular,
+        }),
+      });
+      const payload = await readJsonResponse(response);
 
-    if (!response.ok) {
-      setError(String(payload.error ?? 'Failed to publish product.'));
-      return;
+      if (!response.ok) {
+        setError(String(payload.error ?? 'Could not add this product to the website.'));
+        return;
+      }
+
+      setPublished({ id: String(payload.id), slug: String(payload.slug) });
+    } catch {
+      setError('Could not add this product to the website. Check your connection and try again.');
+    } finally {
+      setLoading(null);
     }
-
-    setPublished({ id: String(payload.id), slug: String(payload.slug) });
   }
 
   return (
@@ -287,29 +343,85 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         {progressSteps.map((step, index) => (
           <div
             key={step.label}
-            className={`admin-product-create-progress-step ${step.complete ? 'is-complete' : ''}`}
+            className={`admin-product-create-progress-step ${step.complete ? 'is-complete' : ''} ${
+              loading && step.loadingStage === loading ? 'is-active' : ''
+            }`}
           >
-            <span>{step.complete ? 'OK' : index + 1}</span>
+            <span>{loading && step.loadingStage === loading ? '...' : step.complete ? 'OK' : index + 1}</span>
             {step.label}
           </div>
         ))}
       </div>
 
-      {error ? <div className="admin-product-create-alert">{error}</div> : null}
-      {published ? (
-        <div className="admin-product-create-success">
-          Product published. View it in{' '}
-          <Link href={`/en/catalog/${published.slug}`} target="_blank">
-            English catalog
-          </Link>{' '}
-          or{' '}
-          <Link href={`/th/catalog/${published.slug}`} target="_blank">
-            Thai catalog
-          </Link>
-          .
+      {loadingDetails ? (
+        <div className="admin-product-create-loading" role="status" aria-live="polite">
+          <div className="admin-product-create-loader" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <div>
+            <strong>{loadingDetails.title}</strong>
+            <p>{loadingDetails.detail}</p>
+            <div className="admin-product-create-loading-steps">
+              {loadingDetails.steps.map((step) => (
+                <span key={step}>{step}</span>
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
 
+      {error ? (
+        <div className="admin-product-create-alert" role="alert">
+          <span className="material-symbols-outlined" aria-hidden="true">
+            error
+          </span>
+          <div>
+            <strong>Could not complete this step</strong>
+            <p>{error}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {published ? (
+        <section className="admin-product-create-success-page" aria-live="polite">
+          <span className="material-symbols-outlined admin-product-create-success-icon" aria-hidden="true">
+            check_circle
+          </span>
+          <span className="admin-product-create-eyebrow">Product added</span>
+          <h2>Product is live on the website</h2>
+          <p>
+            The approved product was saved successfully. You can review the public product pages now or start another
+            product.
+          </p>
+          <dl className="admin-product-create-result-meta">
+            <div>
+              <dt>Sanity ID</dt>
+              <dd>{published.id}</dd>
+            </div>
+            <div>
+              <dt>Catalog slug</dt>
+              <dd>{published.slug}</dd>
+            </div>
+          </dl>
+          <div className="admin-product-create-result-actions">
+            <Link className="admin-btn admin-btn-primary" href={`/en/catalog/${published.slug}`} target="_blank">
+              View English page
+            </Link>
+            <Link className="admin-btn admin-btn-outline" href={`/th/catalog/${published.slug}`} target="_blank">
+              View Thai page
+            </Link>
+            <button className="admin-btn admin-btn-outline" type="button" onClick={resetWizard}>
+              Create another product
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
       <section className="admin-product-create-grid">
         <div className="admin-product-create-card">
           <div>
@@ -378,7 +490,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               placeholder="Example: preserve the basket, write for birthday and congratulations shoppers"
             />
           </label>
-          <button className="admin-btn admin-btn-primary admin-product-create-main-action" type="button" disabled={loading === 'draft'} onClick={requestDraft}>
+          <button className="admin-btn admin-btn-primary admin-product-create-main-action" type="button" disabled={Boolean(loading)} onClick={requestDraft}>
             {loading === 'draft' ? 'Generating draft...' : 'Analyze Image And Generate Copy'}
           </button>
         </div>
@@ -426,7 +538,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               <button
                 className="admin-btn admin-btn-primary admin-product-create-main-action"
                 type="button"
-                disabled={loading === 'image'}
+                disabled={Boolean(loading)}
                 onClick={enhanceImage}
               >
                 {loading === 'image' ? 'Enhancing and uploading...' : 'Enhance Image And Upload Variants'}
@@ -546,13 +658,15 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           <button
             className="admin-btn admin-btn-primary admin-btn-full"
             type="button"
-            disabled={!canPublish || loading === 'publish'}
+            disabled={!canPublish || Boolean(loading)}
             onClick={publishProduct}
           >
             {loading === 'publish' ? 'Publishing...' : 'Publish Approved Product'}
           </button>
         </div>
       </section>
+        </>
+      )}
     </div>
   );
 }
