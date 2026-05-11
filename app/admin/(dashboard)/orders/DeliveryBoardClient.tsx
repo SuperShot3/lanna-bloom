@@ -68,7 +68,10 @@ interface DeliveryBoardClientProps {
   districts: string[];
   deliveryDestinations: string[];
   canEditStatus: boolean;
+  canAssignDriver: boolean;
 }
+
+const QUICK_DRIVER_NAMES = ['Pee Khai', 'Pee Vinai'] as const;
 
 function isOpenPipelineStatus(status: string | null | undefined): boolean {
   const n = normalizeOrderStatus(status);
@@ -374,6 +377,105 @@ function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
   );
 }
 
+function DeliveryDriverAssignment({
+  orderId,
+  driverName,
+  draftName,
+  canAssignDriver,
+  isSaving,
+  message,
+  onDraftChange,
+  onAssign,
+  onClear,
+}: {
+  orderId: string;
+  driverName: string;
+  draftName: string;
+  canAssignDriver: boolean;
+  isSaving: boolean;
+  message?: { type: 'success' | 'error'; text: string };
+  onDraftChange: (value: string) => void;
+  onAssign: (value: string) => void;
+  onClear: () => void;
+}) {
+  const assignedName = driverName.trim();
+  const customName = draftName.trim();
+  const canSaveCustom = Boolean(customName) && customName !== assignedName && !isSaving;
+
+  if (!canAssignDriver) {
+    return assignedName ? (
+      <span className="admin-delivery-driver-readonly">
+        <span className="material-symbols-outlined">local_shipping</span>
+        {assignedName}
+      </span>
+    ) : null;
+  }
+
+  return (
+    <div className="admin-delivery-driver-control" aria-label={`Driver assignment for ${orderId}`}>
+      <div className="admin-delivery-driver-control-head">
+        <span className="admin-delivery-driver-label">Driver</span>
+        {assignedName ? <span className="admin-delivery-driver-current">{assignedName}</span> : null}
+      </div>
+      <div className="admin-delivery-driver-choices">
+        {QUICK_DRIVER_NAMES.map((name) => {
+          const selected = assignedName.localeCompare(name, undefined, { sensitivity: 'base' }) === 0;
+          return (
+            <button
+              key={name}
+              type="button"
+              className={`admin-delivery-driver-choice${selected ? ' selected' : ''}`}
+              onClick={() => onAssign(name)}
+              disabled={isSaving || selected}
+              aria-pressed={selected}
+            >
+              <span className="material-symbols-outlined">
+                {selected ? 'check_circle' : 'radio_button_unchecked'}
+              </span>
+              {name}
+            </button>
+          );
+        })}
+      </div>
+      <div className="admin-delivery-driver-custom">
+        <input
+          type="text"
+          className="admin-input admin-delivery-driver-input"
+          value={draftName}
+          onChange={(e) => onDraftChange(e.target.value)}
+          placeholder="Other driver name"
+          aria-label={`Custom driver name for ${orderId}`}
+          disabled={isSaving}
+        />
+        <button
+          type="button"
+          className="admin-btn admin-btn-sm admin-delivery-driver-save"
+          onClick={() => onAssign(customName)}
+          disabled={!canSaveCustom}
+        >
+          Save
+        </button>
+        {assignedName ? (
+          <button
+            type="button"
+            className="admin-btn admin-btn-sm admin-btn-outline admin-delivery-driver-clear"
+            onClick={onClear}
+            disabled={isSaving}
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+      {isSaving ? <span className="admin-delivery-driver-message">Saving…</span> : null}
+      {message ? (
+        <span className={`admin-delivery-driver-message admin-delivery-driver-message--${message.type}`}>
+          {message.text}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function e164Same(
   a: string | null | undefined,
   acc: string | null | undefined,
@@ -395,6 +497,7 @@ export function DeliveryBoardClient({
   districts,
   deliveryDestinations,
   canEditStatus,
+  canAssignDriver,
 }: DeliveryBoardClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -415,6 +518,12 @@ export function DeliveryBoardClient({
   const [statusOverrides, setStatusOverrides] = useState<Record<string, OrderStatus>>({});
   const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
   const [statusMessages, setStatusMessages] = useState<
+    Record<string, { type: 'success' | 'error'; text: string } | undefined>
+  >({});
+  const [driverNameOverrides, setDriverNameOverrides] = useState<Record<string, string | null | undefined>>({});
+  const [driverDrafts, setDriverDrafts] = useState<Record<string, string | undefined>>({});
+  const [savingDriver, setSavingDriver] = useState<Record<string, boolean>>({});
+  const [driverMessages, setDriverMessages] = useState<
     Record<string, { type: 'success' | 'error'; text: string } | undefined>
   >({});
   const [deliveredPreview, setDeliveredPreview] = useState<{
@@ -562,6 +671,67 @@ export function DeliveryBoardClient({
       }));
     } finally {
       setSavingStatus((current) => ({ ...current, [order.order_id]: false }));
+    }
+  };
+
+  const handleDriverAssignmentChange = async (order: SupabaseOrderRow, nextDriverName: string) => {
+    if (!canAssignDriver || savingDriver[order.order_id]) return;
+    const trimmedName = nextDriverName.trim();
+    const currentOverride = driverNameOverrides[order.order_id];
+    const previousName =
+      currentOverride === undefined ? order.driver_name?.trim() ?? '' : currentOverride?.trim() ?? '';
+
+    if (trimmedName === previousName) return;
+
+    setDriverNameOverrides((current) => ({ ...current, [order.order_id]: trimmedName || null }));
+    setDriverDrafts((current) => ({ ...current, [order.order_id]: trimmedName }));
+    setSavingDriver((current) => ({ ...current, [order.order_id]: true }));
+    setDriverMessages((current) => ({ ...current, [order.order_id]: undefined }));
+
+    try {
+      const res = await fetch(`/api/admin/orders/${encodeURIComponent(order.order_id)}/driver-assignment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_name: trimmedName || null }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        order?: { driver_name?: string | null };
+      };
+
+      if (!res.ok) {
+        setDriverNameOverrides((current) => ({ ...current, [order.order_id]: previousName || null }));
+        setDriverDrafts((current) => ({ ...current, [order.order_id]: previousName }));
+        setDriverMessages((current) => ({
+          ...current,
+          [order.order_id]: { type: 'error', text: data.error ?? 'Failed to update driver' },
+        }));
+        return;
+      }
+
+      const savedName = data.order?.driver_name?.trim() ?? '';
+      setDriverNameOverrides((current) => ({ ...current, [order.order_id]: savedName || null }));
+      setDriverDrafts((current) => ({ ...current, [order.order_id]: savedName }));
+      setDriverMessages((current) => ({
+        ...current,
+        [order.order_id]: { type: 'success', text: savedName ? 'Driver saved' : 'Driver cleared' },
+      }));
+      setTimeout(() => {
+        setDriverMessages((current) => ({ ...current, [order.order_id]: undefined }));
+      }, 3000);
+      router.refresh();
+    } catch (e) {
+      setDriverNameOverrides((current) => ({ ...current, [order.order_id]: previousName || null }));
+      setDriverDrafts((current) => ({ ...current, [order.order_id]: previousName }));
+      setDriverMessages((current) => ({
+        ...current,
+        [order.order_id]: {
+          type: 'error',
+          text: e instanceof Error ? e.message : 'Network error',
+        },
+      }));
+    } finally {
+      setSavingDriver((current) => ({ ...current, [order.order_id]: false }));
     }
   };
 
@@ -847,6 +1017,12 @@ export function DeliveryBoardClient({
                           const hasCardMessage = orderHasCustomerCardMessage(o);
                           const isSavingStatus = Boolean(savingStatus[o.order_id]);
                           const statusMessage = statusMessages[o.order_id];
+                          const driverNameOverride = driverNameOverrides[o.order_id];
+                          const driverName =
+                            driverNameOverride === undefined ? o.driver_name?.trim() ?? '' : driverNameOverride?.trim() ?? '';
+                          const driverDraft = driverDrafts[o.order_id] ?? driverName;
+                          const isSavingDriver = Boolean(savingDriver[o.order_id]);
+                          const driverMessage = driverMessages[o.order_id];
                           return (
                             <li key={o.order_id} className="admin-delivery-card-wrap">
                               <div className={`admin-delivery-card ${cardStatusClass}`}>
@@ -941,6 +1117,19 @@ export function DeliveryBoardClient({
                                           {workflowLabel(o.order_status)}
                                         </span>
                                       )}
+                                      <DeliveryDriverAssignment
+                                        orderId={o.order_id}
+                                        driverName={driverName}
+                                        draftName={driverDraft}
+                                        canAssignDriver={canAssignDriver}
+                                        isSaving={isSavingDriver}
+                                        message={driverMessage}
+                                        onDraftChange={(value) =>
+                                          setDriverDrafts((current) => ({ ...current, [o.order_id]: value }))
+                                        }
+                                        onAssign={(value) => handleDriverAssignmentChange(o, value)}
+                                        onClear={() => handleDriverAssignmentChange(o, '')}
+                                      />
                                     </div>
                                   </div>
                                   <DeliveryCardContact order={o} />

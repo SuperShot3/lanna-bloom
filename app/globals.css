@@ -4930,6 +4930,112 @@ a.filter-pill--active:hover {
 .admin-delivery-status-message--error {
   color: #b91c1c;
 }
+.admin-delivery-driver-control {
+  width: min(260px, 100%);
+  padding: 8px;
+  border: 1px solid rgba(45, 71, 62, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.admin-delivery-driver-control-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.admin-delivery-driver-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--admin-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-delivery-driver-current {
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #2d473e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-delivery-driver-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.admin-delivery-driver-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid rgba(45, 71, 62, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #2d473e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin-delivery-driver-choice.selected {
+  border-color: rgba(22, 163, 74, 0.32);
+  background: rgba(220, 252, 231, 0.9);
+  color: #15803d;
+}
+.admin-delivery-driver-choice:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+.admin-delivery-driver-choice .material-symbols-outlined {
+  font-size: 16px !important;
+}
+.admin-delivery-driver-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-delivery-driver-input {
+  min-width: 0;
+  height: 32px;
+  padding: 5px 8px !important;
+  font-size: 0.78rem !important;
+}
+.admin-delivery-driver-save,
+.admin-delivery-driver-clear {
+  min-height: 32px;
+  padding-inline: 9px !important;
+}
+.admin-delivery-driver-message {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--admin-text-muted, #64748b);
+}
+.admin-delivery-driver-message--success {
+  color: #15803d;
+}
+.admin-delivery-driver-message--error {
+  color: #b91c1c;
+}
+.admin-delivery-driver-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 190px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(45, 71, 62, 0.08);
+  color: #2d473e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.admin-delivery-driver-readonly .material-symbols-outlined {
+  font-size: 16px !important;
+}
 
 /* Delivery board cards: use full width for date / time / address on small screens */
 @media (max-width: 640px) {
@@ -4998,6 +5104,15 @@ a.filter-pill--active:hover {
     max-width: 100%;
     min-height: 36px;
     font-size: 0.78rem;
+  }
+  .admin-delivery-driver-control {
+    width: 100%;
+  }
+  .admin-delivery-driver-custom {
+    flex-wrap: wrap;
+  }
+  .admin-delivery-driver-input {
+    flex: 1 1 160px;
   }
 }
 .admin-delivery-card-bottom {

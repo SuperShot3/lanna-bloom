@@ -3,7 +3,7 @@ import { getOrders, getDistricts, getDeliveryDestinations } from '@/lib/supabase
 import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
 import { DeliveryBoardClient } from './DeliveryBoardClient';
 import { shopTodayYmd } from '@/lib/shopTime';
-import { canChangeStatus } from '@/lib/adminRbac';
+import { canAssignDriver, canChangeStatus } from '@/lib/adminRbac';
 
 interface PageProps {
   searchParams: Promise<{
@@ -64,6 +64,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       districts={districts}
       deliveryDestinations={deliveryDestinations}
       canEditStatus={canChangeStatus(role)}
+      canAssignDriver={canAssignDriver(role)}
     />
   );
 }
