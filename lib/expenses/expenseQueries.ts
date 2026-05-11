@@ -18,7 +18,7 @@ export interface ExpensesResult {
   expenses: Expense[];
   total: number;
   totalAmount: number;
-  /** Count of rows in the filtered set that are not fully documented (receipt + bill checklist when present). */
+  /** Count of rows in the filtered set that are not fully documented (receipt + proof checklist when present). */
   missingReceiptCount: number;
   error?: string;
 }

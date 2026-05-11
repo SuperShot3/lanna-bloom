@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { setBillLineProofReceived } from '@/types/expenses';
 
 const BUCKET = 'receipts';
 
@@ -14,20 +15,27 @@ function isLegacyReceiptId(receiptId: string, expenseId: string): boolean {
 async function reconcileExpenseReceiptPointers(expenseId: string): Promise<string | undefined> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return 'Storage not configured';
+  const expense = await getExpenseById(expenseId);
 
   const { data: rows, error } = await supabase
     .from('expense_receipt_images')
     .select('file_path')
     .eq('expense_id', expenseId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (error) return error.message;
 
   const nextPath = rows?.[0]?.file_path != null ? String(rows[0].file_path) : null;
-  const updated = await updateExpense(expenseId, {
+  const updateInput: Parameters<typeof updateExpense>[1] = {
     receipt_file_path: nextPath,
     receipt_attached: !!nextPath,
-  });
+  };
+  if (!nextPath && expense?.bill_tracking && expense.bill_tracking.length > 0) {
+    updateInput.bill_tracking = expense.bill_tracking.map((line) =>
+      setBillLineProofReceived(line, false)
+    );
+  }
+  const updated = await updateExpense(expenseId, updateInput);
   return updated.error;
 }
 
@@ -74,6 +82,7 @@ export async function DELETE(
       ok: true,
       receipt_attached: next?.receipt_attached ?? false,
       receipt_file_path: next?.receipt_file_path ?? null,
+      expense: next,
     });
   }
 
@@ -118,5 +127,6 @@ export async function DELETE(
     ok: true,
     receipt_attached: next?.receipt_attached ?? false,
     receipt_file_path: next?.receipt_file_path ?? null,
+    expense: next,
   });
 }

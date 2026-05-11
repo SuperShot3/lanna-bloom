@@ -7121,9 +7121,27 @@ a.admin-summary-key-value {
 }
 .admin-expenses-row {
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.12s, box-shadow 0.12s;
 }
 .admin-expenses-row:hover { background: var(--admin-row-hover, #f0f4ff); }
+.admin-expenses-row-paid {
+  background: rgba(16, 185, 129, 0.07);
+}
+.admin-expenses-row-paid:hover {
+  background: rgba(16, 185, 129, 0.12);
+}
+.admin-expenses-row-paid td:first-child {
+  box-shadow: inset 3px 0 0 rgba(16, 185, 129, 0.55);
+}
+.admin-expenses-row-unpaid {
+  background: rgba(239, 68, 68, 0.055);
+}
+.admin-expenses-row-unpaid:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+.admin-expenses-row-unpaid td:first-child {
+  box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.45);
+}
 .admin-expenses-row:last-child td { border-bottom: none; }
 
 .admin-expenses-col-amount { text-align: right; }
@@ -7135,6 +7153,40 @@ a.admin-summary-key-value {
 }
 
 .admin-expenses-date { white-space: nowrap; }
+
+.admin-expenses-date-with-status {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-expenses-status-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+}
+
+.admin-expenses-status-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.admin-expenses-status-icon-paid {
+  background: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+  color: #fff;
+}
+
+.admin-expenses-status-icon-unpaid {
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
+  color: #fff;
+}
 
 .admin-expenses-desc { max-width: 340px; }
 .admin-expenses-desc-text {
@@ -7201,6 +7253,25 @@ a.admin-summary-key-value {
   background: #fff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+
+.admin-expenses-mobile-card-paid {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(255, 255, 255, 0.96));
+}
+
+.admin-expenses-mobile-card-unpaid {
+  border-color: rgba(239, 68, 68, 0.24);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.085), rgba(255, 255, 255, 0.96));
+}
+
+.admin-expenses-mobile-card-paid .admin-expenses-mobile-amount {
+  color: #047857;
+}
+
+.admin-expenses-mobile-card-unpaid .admin-expenses-mobile-amount {
+  color: #b91c1c;
 }
 
 .admin-expenses-mobile-card-top {
@@ -7246,6 +7317,10 @@ a.admin-summary-key-value {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.admin-expenses-mobile-fields-single {
+  grid-template-columns: 1fr;
 }
 
 .admin-expenses-mobile-fields div {

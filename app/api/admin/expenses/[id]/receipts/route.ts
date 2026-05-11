@@ -3,9 +3,11 @@ import { requireRole } from '@/lib/adminRbac';
 import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import {
+  MAX_RECEIPT_IMAGES_PER_EXPENSE,
   MAX_RECEIPT_UPLOAD_BYTES,
   formatMaxFileErrorLabel,
 } from '@/lib/receiptUploadLimits';
+import { setBillLineProofReceived } from '@/types/expenses';
 
 const BUCKET = 'receipts';
 const MAX_BYTES = MAX_RECEIPT_UPLOAD_BYTES;
@@ -41,6 +43,18 @@ function parseDisplayName(path: string): string {
   return decodeURIComponent(raw);
 }
 
+function countShownReceiptImages(
+  rows: Array<{ file_path: unknown }> | null,
+  legacyPath: string | null
+): number {
+  const paths = new Set<string>();
+  for (const row of rows ?? []) {
+    if (typeof row.file_path === 'string' && row.file_path) paths.add(row.file_path);
+  }
+  if (legacyPath) paths.add(legacyPath);
+  return paths.size;
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -68,7 +82,7 @@ export async function GET(
     .from('expense_receipt_images')
     .select('id, file_path, file_name, created_at')
     .eq('expense_id', expenseId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -85,7 +99,7 @@ export async function GET(
   if (expense.receipt_file_path) {
     const hasLegacy = receipts.some((r) => r.file_path === expense.receipt_file_path);
     if (!hasLegacy) {
-      receipts.push({
+      receipts.unshift({
         id: `legacy-${expense.id}`,
         file_path: expense.receipt_file_path,
         file_name: parseDisplayName(expense.receipt_file_path),
@@ -122,6 +136,23 @@ export async function POST(
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return NextResponse.json({ error: 'Storage not configured' }, { status: 503 });
+  }
+
+  const { data: existingRows, error: existingRowsError } = await supabase
+    .from('expense_receipt_images')
+    .select('file_path')
+    .eq('expense_id', expenseId);
+
+  if (existingRowsError) {
+    return NextResponse.json({ error: existingRowsError.message }, { status: 500 });
+  }
+
+  const existingReceiptCount = countShownReceiptImages(existingRows ?? [], expense.receipt_file_path);
+  if (existingReceiptCount >= MAX_RECEIPT_IMAGES_PER_EXPENSE) {
+    return NextResponse.json(
+      { error: `Maximum ${MAX_RECEIPT_IMAGES_PER_EXPENSE} receipt images per expense row.` },
+      { status: 400 }
+    );
   }
 
   const contentType = request.headers.get('content-type') ?? '';
@@ -185,10 +216,16 @@ export async function POST(
   }
 
   const nextMainPath = expense.receipt_file_path ?? storagePath;
-  const updated = await updateExpense(expenseId, {
+  const updateInput: Parameters<typeof updateExpense>[1] = {
     receipt_attached: true,
     receipt_file_path: nextMainPath,
-  });
+  };
+  if (expense.bill_tracking && expense.bill_tracking.length > 0) {
+    updateInput.bill_tracking = expense.bill_tracking.map((line) =>
+      setBillLineProofReceived(line, true)
+    );
+  }
+  const updated = await updateExpense(expenseId, updateInput);
   if (updated.error) {
     return NextResponse.json({ error: updated.error }, { status: 500 });
   }
@@ -201,5 +238,6 @@ export async function POST(
       created_at: String(receiptRow.created_at),
       is_legacy: false,
     },
+    expense: updated.expense,
   }, { status: 201 });
 }

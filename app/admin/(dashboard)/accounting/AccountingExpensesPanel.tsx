@@ -61,13 +61,33 @@ function proofStatusText(exp: Expense) {
   const p = billTrackingProgress(exp.bill_tracking);
   if (expenseDocumentationComplete(exp)) return 'Complete';
   if (!exp.receipt_attached) return 'Need image';
-  if (p && p.done < p.total) return `Bills ${p.done}/${p.total}`;
+  if (p && p.done < p.total) return `Proofs ${p.done}/${p.total}`;
   return 'Incomplete';
+}
+
+function paidLastSort(a: Expense, b: Expense) {
+  const aComplete = expenseDocumentationComplete(a);
+  const bComplete = expenseDocumentationComplete(b);
+  if (aComplete === bComplete) return 0;
+  return aComplete ? 1 : -1;
+}
+
+function ExpenseStatusIcon({ complete }: { complete: boolean }) {
+  return (
+    <span
+      className={`admin-expenses-status-icon ${
+        complete ? 'admin-expenses-status-icon-paid' : 'admin-expenses-status-icon-unpaid'
+      }`}
+      title={complete ? 'Paid / complete' : 'Needs proof'}
+      aria-label={complete ? 'Paid / complete' : 'Needs proof'}
+    >
+    </span>
+  );
 }
 
 function ExpenseProofBadges({ expense }: { expense: Expense }) {
   const p = billTrackingProgress(expense.bill_tracking);
-  const billsDone = p ? p.done === p.total : true;
+  const proofsDone = p ? p.done === p.total : true;
 
   return (
     <div className="admin-expenses-proof-stack">
@@ -76,10 +96,10 @@ function ExpenseProofBadges({ expense }: { expense: Expense }) {
       </span>
       {p ? (
         <span
-          className={`admin-badge ${billsDone ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
-          title="Bill checklist progress"
+          className={`admin-badge ${proofsDone ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
+          title="Proof checklist progress"
         >
-          Bills {p.done}/{p.total}
+          Proofs {p.done}/{p.total}
         </span>
       ) : null}
       {expense.paper_bill_requested_at ? (
@@ -199,6 +219,8 @@ export function AccountingExpensesPanel({
     router.push(`/admin/expenses/${expenseId}`);
   };
 
+  const sortedExpenses = [...expensesData.expenses].sort(paidLastSort);
+
   const exportExpensesCsv = () => {
     const headers = [
       'Date',
@@ -206,7 +228,7 @@ export function AccountingExpensesPanel({
       'Category',
       'Payment method',
       'Receipt attached',
-      'Bill checks (done/total)',
+      'Proof checks (done/total)',
       'Documentation complete',
       'Incomplete (flag)',
       'Paper bill request sent',
@@ -217,7 +239,7 @@ export function AccountingExpensesPanel({
       'Created by',
     ];
     const lines = [headers.join(',')];
-    for (const exp of expensesData.expenses) {
+    for (const exp of sortedExpenses) {
       const p = billTrackingProgress(exp.bill_tracking);
       lines.push(
         [
@@ -299,7 +321,7 @@ export function AccountingExpensesPanel({
           value={expensesFilters.documentation ?? 'all'}
           onChange={(e) => handleExpenseFilterChange({ documentation: e.target.value })}
           aria-label="Documentation"
-          title="Receipt + bill checklist (transfer + shop bill per line)"
+          title="Receipt image + one proof check per line"
         >
           <option value="all">All documentation</option>
           <option value="incomplete">Incomplete only</option>
@@ -365,7 +387,7 @@ export function AccountingExpensesPanel({
           </p>
           <p>{expensesData.error}</p>
         </div>
-      ) : expensesData.expenses.length === 0 ? (
+      ) : sortedExpenses.length === 0 ? (
         <p className="admin-empty">
           No expenses found.{' '}
           <Link href="/admin/expenses/new" className="admin-link">
@@ -386,13 +408,15 @@ export function AccountingExpensesPanel({
                 </tr>
               </thead>
               <tbody>
-                {expensesData.expenses.map((exp: Expense) => {
+                {sortedExpenses.map((exp: Expense) => {
                   const docsComplete = expenseDocumentationComplete(exp);
 
                   return (
                     <tr
                       key={exp.id}
-                      className="admin-expenses-row"
+                      className={`admin-expenses-row ${
+                        docsComplete ? 'admin-expenses-row-paid' : 'admin-expenses-row-unpaid'
+                      }`}
                       onClick={() => router.push(`/admin/expenses/${exp.id}`)}
                       role="link"
                       tabIndex={0}
@@ -400,7 +424,12 @@ export function AccountingExpensesPanel({
                         if (e.key === 'Enter') router.push(`/admin/expenses/${exp.id}`);
                       }}
                     >
-                      <td className="admin-expenses-date">{formatDate(exp.date)}</td>
+                      <td className="admin-expenses-date">
+                        <span className="admin-expenses-date-with-status">
+                          <ExpenseStatusIcon complete={docsComplete} />
+                          {formatDate(exp.date)}
+                        </span>
+                      </td>
                       <td className="admin-expenses-desc">
                         <span className="admin-expenses-desc-text">{exp.description}</span>
                         <span className="admin-expenses-meta">
@@ -450,13 +479,15 @@ export function AccountingExpensesPanel({
           </div>
 
           <div className="admin-expenses-mobile-list" aria-label="Expenses">
-            {expensesData.expenses.map((exp: Expense) => {
+            {sortedExpenses.map((exp: Expense) => {
               const docsComplete = expenseDocumentationComplete(exp);
 
               return (
                 <article
                   key={exp.id}
-                  className="admin-expenses-mobile-card"
+                  className={`admin-expenses-mobile-card ${
+                    docsComplete ? 'admin-expenses-mobile-card-paid' : 'admin-expenses-mobile-card-unpaid'
+                  }`}
                   onClick={() => router.push(`/admin/expenses/${exp.id}`)}
                   role="link"
                   tabIndex={0}
@@ -466,7 +497,10 @@ export function AccountingExpensesPanel({
                 >
                   <div className="admin-expenses-mobile-card-top">
                     <div>
-                      <span className="admin-expenses-date">{formatDate(exp.date)}</span>
+                      <span className="admin-expenses-date admin-expenses-date-with-status">
+                        <ExpenseStatusIcon complete={docsComplete} />
+                        {formatDate(exp.date)}
+                      </span>
                       <h3 className="admin-expenses-mobile-title">{exp.description}</h3>
                       <span className="admin-expenses-meta">
                         <span className="admin-badge admin-badge-category">
@@ -480,17 +514,23 @@ export function AccountingExpensesPanel({
                     </strong>
                   </div>
 
-                  <div className="admin-expenses-mobile-fields">
+                  <div
+                    className={`admin-expenses-mobile-fields${
+                      exp.paper_bill_requested_at ? '' : ' admin-expenses-mobile-fields-single'
+                    }`}
+                  >
                     <div>
                       <span>Proofs</span>
                       <strong className={docsComplete ? 'admin-expenses-mobile-ok' : 'admin-expenses-mobile-warn'}>
                         {proofStatusText(exp)}
                       </strong>
                     </div>
-                    <div>
-                      <span>Request</span>
-                      <strong>{exp.paper_bill_requested_at ? 'Sent' : '—'}</strong>
-                    </div>
+                    {exp.paper_bill_requested_at ? (
+                      <div>
+                        <span>Request</span>
+                        <strong>Sent</strong>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="admin-expenses-mobile-actions">

@@ -13,6 +13,9 @@ export const RECEIPT_IMAGE_MAX_LONG_EDGE = 1280;
 
 export const MAX_RECEIPT_UPLOAD_LABEL = '150 KB';
 
+/** Admin expense rows keep up to three supporting receipt/proof images. */
+export const MAX_RECEIPT_IMAGES_PER_EXPENSE = 3;
+
 /** Same as receipts: accounting proof photos (JPEG/PNG/WebP/HEIC). */
 export const MAX_PROOF_IMAGE_BYTES = MAX_RECEIPT_UPLOAD_BYTES;
 

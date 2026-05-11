@@ -19,18 +19,18 @@ export type PaymentMethod =
   | 'qr_payment'
   | 'other';
 
-/** One row in the bill checklist (usually shop transfer + vendor bill; delivery is payment-only). */
+/** One row in the bill/proof checklist. Stored fields keep the original two-checkbox shape. */
 export interface ExpenseBillLine {
   line_id: string;
   label: string;
   /**
-   * When `false`, only `transfer_to_shop` counts (e.g. delivery paid to driver — no shop vendor bill).
-   * When `true` or omitted, both transfer and vendor bill are required. Default true.
+   * Kept for historical data. The UI now tracks one proof check per row, whether this is a
+   * shop purchase paper bill/payment proof or driver payment proof.
    */
   vendor_bill_applicable?: boolean;
-  /** We have documentation for money transferred / paid (shop or driver). */
+  /** Single proof state used by the current UI. */
   transfer_to_shop: boolean;
-  /** We have the vendor bill from the shop (ignored when `vendor_bill_applicable === false`). */
+  /** Historical second checkbox; treated as proof too when parsing older completed rows. */
   bill_from_shop: boolean;
 }
 
@@ -56,10 +56,7 @@ export interface Expense {
   linked_order_id: string | null;
   created_at: string;
   updated_at: string;
-  /**
-   * Checklist: per order line (or one default row), two booleans each.
-   * Persisted as JSONB; empty until first resolve (detail page or create).
-   */
+  /** Checklist: per order line (or one default row), one proof check each. */
   bill_tracking?: ExpenseBillLine[] | null;
   /** Set when staff generates the vendor paper-bill request PDF. */
   paper_bill_requested_at?: string | null;
@@ -75,7 +72,7 @@ export interface ExpenseReceiptImage {
 
 export type ReceiptFilter = 'all' | 'missing' | 'attached';
 
-/** Full documentation = receipt file + bill checklist (when checklist rows exist). */
+/** Full documentation = receipt image + proof checklist (when checklist rows exist). */
 export type DocumentationFilter = 'all' | 'incomplete' | 'complete';
 
 export interface ExpenseFilters {
@@ -145,9 +142,26 @@ export const EXPENSE_PAYMENT_FILTER_OPTIONS: { value: string; label: string }[] 
   { value: 'stripe', label: 'Stripe balance (legacy)' },
 ];
 
-/** Number of checklist boxes for one line (1 = driver payment only, 2 = shop transfer + vendor bill). */
-export function billLineCheckpointCount(line: ExpenseBillLine): number {
-  return line.vendor_bill_applicable === false ? 1 : 2;
+/** Number of checklist boxes for one line. All expense lines now use one proof check. */
+export function billLineCheckpointCount(_line: ExpenseBillLine): number {
+  return 1;
+}
+
+/** One received proof completes the row; `bill_from_shop` preserves old completed data. */
+export function billLineProofReceived(line: ExpenseBillLine): boolean {
+  return line.transfer_to_shop || line.bill_from_shop;
+}
+
+/** Set the single proof state while keeping legacy JSON fields internally consistent. */
+export function setBillLineProofReceived(
+  line: ExpenseBillLine,
+  received: boolean
+): ExpenseBillLine {
+  return {
+    ...line,
+    transfer_to_shop: received,
+    bill_from_shop: line.vendor_bill_applicable === false ? false : received,
+  };
 }
 
 /** Progress for list UI. Safe for client components. */
@@ -160,11 +174,7 @@ export function billTrackingProgress(
   for (const l of lines) {
     const n = billLineCheckpointCount(l);
     total += n;
-    if (n === 1) {
-      if (l.transfer_to_shop) done += 1;
-    } else {
-      done += (l.transfer_to_shop ? 1 : 0) + (l.bill_from_shop ? 1 : 0);
-    }
+    if (billLineProofReceived(l)) done += 1;
   }
   return { done, total };
 }
@@ -192,8 +202,8 @@ export function parseExpenseBillTrackingJson(bt: unknown): ExpenseBillLine[] | u
 }
 
 /**
- * True when the expense has a receipt image on file and every bill-checklist box is ticked
- * (when the checklist has rows; otherwise only the receipt file matters).
+ * True when the expense has a receipt image on file and every bill/proof checklist row is
+ * complete (when checklist rows exist; otherwise only the receipt file matters).
  */
 export function expenseDocumentationComplete(
   e: Pick<Expense, 'receipt_attached'> & { bill_tracking?: ExpenseBillLine[] | null }

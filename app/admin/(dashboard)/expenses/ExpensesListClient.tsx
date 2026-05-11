@@ -222,7 +222,7 @@ export function ExpensesListClient({
                   <th>Category</th>
                   <th>Payment</th>
                   <th>Receipt</th>
-                  <th>Bills</th>
+                  <th>Proofs</th>
                   <th title="Checked when documentation is still incomplete">Incomplete</th>
                   <th title="Paper bill request PDF was generated">Bill req</th>
                   <th className="admin-expenses-col-amount">Amount</th>
@@ -269,7 +269,7 @@ export function ExpensesListClient({
                         return (
                           <span
                             className={`admin-badge ${done ? 'admin-badge-paid' : 'admin-badge-payment-pending'}`}
-                            title="Bill checklist progress"
+                            title="Proof checklist progress"
                           >
                             {p.done}/{p.total}
                           </span>
@@ -280,7 +280,7 @@ export function ExpensesListClient({
                       {!expenseDocumentationComplete(exp) ? (
                         <span
                           className="admin-badge admin-badge-payment-pending"
-                          title="Receipt and/or bill checklist still incomplete"
+                          title="Receipt and/or proof checklist still incomplete"
                         >
                           ✓
                         </span>

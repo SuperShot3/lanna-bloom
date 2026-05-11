@@ -4,12 +4,21 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Expense, ExpenseBillLine, ExpenseReceiptImage } from '@/types/expenses';
-import { billLineCheckpointCount, billTrackingProgress, expenseDocumentationComplete } from '@/types/expenses';
+import {
+  billLineProofReceived,
+  billTrackingProgress,
+  expenseDocumentationComplete,
+  setBillLineProofReceived,
+} from '@/types/expenses';
 import { EXPENSE_CATEGORIES, PAYMENT_METHOD_LABEL_BY_VALUE } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
-import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
+import {
+  MAX_RECEIPT_IMAGES_PER_EXPENSE,
+  MAX_RECEIPT_UPLOAD_BYTES,
+  MAX_RECEIPT_UPLOAD_LABEL,
+} from '@/lib/receiptUploadLimits';
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   EXPENSE_CATEGORIES.map((c) => [c.value, c.label])
@@ -74,6 +83,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
   const [paperBillPdfBusy, setPaperBillPdfBusy] = useState(false);
   const receiptCount = receipts.length;
   const currentReceiptName = receiptCount > 0 ? receipts[0].file_name : receiptFileName(expenseState.receipt_file_path);
+  const receiptLimitReached = receiptCount >= MAX_RECEIPT_IMAGES_PER_EXPENSE;
 
   const loadReceipts = async () => {
     setLoadingReceipts(true);
@@ -140,6 +150,10 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     if (receiptFileInputRef.current) receiptFileInputRef.current.value = '';
 
     setReceiptError(null);
+    if (receiptCount >= MAX_RECEIPT_IMAGES_PER_EXPENSE) {
+      setReceiptError(`Maximum ${MAX_RECEIPT_IMAGES_PER_EXPENSE} receipt images per expense row.`);
+      return;
+    }
     if (!isReceiptImageFile(file)) {
       setReceiptError('Only image files are allowed.');
       return;
@@ -169,7 +183,19 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         setReceiptError(uploadData.error ?? 'Receipt upload failed');
         return;
       }
-      setExpenseState((prev) => ({ ...prev, receipt_attached: true }));
+      if (uploadData.expense) {
+        const updatedExpense = uploadData.expense as Expense;
+        setExpenseState(updatedExpense);
+        setBillLines(updatedExpense.bill_tracking ?? []);
+      } else {
+        const nextBillLines = billLines.map((line) => setBillLineProofReceived(line, true));
+        setExpenseState((prev) => ({
+          ...prev,
+          receipt_attached: true,
+          bill_tracking: nextBillLines,
+        }));
+        setBillLines(nextBillLines);
+      }
       await loadReceipts();
       setReceiptError(null);
     } catch {
@@ -205,12 +231,18 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         setReceiptError(typeof data.error === 'string' ? data.error : 'Delete failed');
         return;
       }
-      setExpenseState((prev) => ({
-        ...prev,
-        receipt_attached: data.receipt_attached === true,
-        receipt_file_path:
-          typeof data.receipt_file_path === 'string' ? data.receipt_file_path : null,
-      }));
+      if (data.expense) {
+        const updatedExpense = data.expense as Expense;
+        setExpenseState(updatedExpense);
+        setBillLines(updatedExpense.bill_tracking ?? []);
+      } else {
+        setExpenseState((prev) => ({
+          ...prev,
+          receipt_attached: data.receipt_attached === true,
+          receipt_file_path:
+            typeof data.receipt_file_path === 'string' ? data.receipt_file_path : null,
+        }));
+      }
       await loadReceipts();
       router.refresh();
     } catch {
@@ -231,7 +263,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setReceiptError(data.error ?? 'Failed to save bill checklist');
+        setReceiptError(data.error ?? 'Failed to save proof checklist');
         return;
       }
       if (data.expense) {
@@ -242,18 +274,18 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         setBillLines(next);
       }
     } catch {
-      setReceiptError('Unexpected error saving bill checklist');
+      setReceiptError('Unexpected error saving proof checklist');
     } finally {
       setBillSaving(false);
     }
   };
 
-  const toggleBillLine = (lineId: string, key: 'transfer_to_shop' | 'bill_from_shop') => {
+  const toggleBillLine = (lineId: string) => {
     const target = billLines.find((l) => l.line_id === lineId);
     if (!target) return;
-    if (key === 'bill_from_shop' && billLineCheckpointCount(target) === 1) return;
+    const nextReceived = !billLineProofReceived(target);
     const next = billLines.map((l) =>
-      l.line_id === lineId ? { ...l, [key]: !l[key] } : l
+      l.line_id === lineId ? setBillLineProofReceived(l, nextReceived) : l
     );
     setBillLines(next);
     void persistBillLines(next);
@@ -317,21 +349,24 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             Receipt images
           </h2>
           <p className="admin-hint admin-accounting-section-hint">
-            Add photos from camera or gallery. Large photos are compressed automatically before upload
-            (max {MAX_RECEIPT_UPLOAD_LABEL} per file).
+            Upload the paper bill / payment proof first; it marks the proof checklist received
+            automatically. You can add up to {MAX_RECEIPT_IMAGES_PER_EXPENSE - 1} extra images;
+            max {MAX_RECEIPT_UPLOAD_LABEL} each.
           </p>
         </div>
         <button
           type="button"
           className="admin-btn admin-btn-primary admin-btn-sm admin-expenses-add-image-btn"
           onClick={() => receiptFileInputRef.current?.click()}
-          disabled={compressingReceipt || uploadingReceipt}
+          disabled={compressingReceipt || uploadingReceipt || receiptLimitReached}
         >
-          {compressingReceipt
-            ? 'Preparing image…'
-            : uploadingReceipt
-              ? 'Uploading image…'
-              : '+ Add image'}
+          {receiptLimitReached
+            ? 'Image limit reached'
+            : compressingReceipt
+              ? 'Preparing image…'
+              : uploadingReceipt
+                ? 'Uploading image…'
+                : '+ Add image'}
         </button>
       </div>
 
@@ -343,7 +378,9 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               : 'admin-badge admin-badge-payment-pending'
           }
         >
-          {expenseState.receipt_attached ? `${receiptCount} image${receiptCount === 1 ? '' : 's'} attached` : 'Missing image'}
+          {expenseState.receipt_attached
+            ? `${receiptCount}/${MAX_RECEIPT_IMAGES_PER_EXPENSE} image${receiptCount === 1 ? '' : 's'} attached`
+            : 'Missing image'}
         </span>
         {loadingReceipts ? <span className="admin-hint">Loading images…</span> : null}
       </div>
@@ -489,7 +526,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         />
         {billProg && (
           <DetailRow
-            label="Bill checklist"
+            label="Proof checklist"
             value={
               <span
                 className={
@@ -498,7 +535,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                     : 'admin-badge admin-badge-payment-pending'
                 }
               >
-                {billProg.done}/{billProg.total} checks
+                {billProg.done}/{billProg.total} proofs
               </span>
             }
           />
@@ -536,14 +573,14 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
 
       {receiptActions}
 
-      {/* Dual bill checklist — one row per order line (or one default row) */}
+      {/* Proof checklist — one row per order line (or one default row) */}
       {billLines.length > 0 && (
-        <section className="admin-expenses-bill-checklist" aria-label="Bill checklist">
-          <h2 className="admin-accounting-section-title">Bill checklist</h2>
+        <section className="admin-expenses-bill-checklist" aria-label="Proof checklist">
+          <h2 className="admin-accounting-section-title">Proof checklist</h2>
           <p className="admin-hint admin-accounting-section-hint">
-            For each product line: tick <strong>payment to the shop</strong> and <strong>bill from the shop</strong>.
-            Linked orders show one row per product (two checks each). <strong>Delivery</strong> is only{' '}
-            <strong>payment to the driver</strong> (one check — no shop bill).
+            Each row needs one <strong>paper bill / payment proof</strong>. Uploading an image marks
+            the proof received automatically. Linked orders show one row per product; delivery uses
+            the same single proof check.
           </p>
           {billSaving && <p className="admin-hint">Saving checklist…</p>}
           <div className="admin-expenses-table-wrap">
@@ -551,14 +588,11 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>Payment proof (shop or driver)</th>
-                  <th>Bill from shop</th>
+                  <th>Paper bill / payment proof</th>
                 </tr>
               </thead>
               <tbody>
-                {billLines.map((line) => {
-                  const singleCheck = billLineCheckpointCount(line) === 1;
-                  return (
+                {billLines.map((line) => (
                   <tr key={line.line_id}>
                     <td className="admin-expenses-desc">
                       <span className="admin-expenses-desc-text">{line.label}</span>
@@ -568,39 +602,16 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                       <label className="admin-bill-check-label">
                         <input
                           type="checkbox"
-                          checked={line.transfer_to_shop}
+                          checked={billLineProofReceived(line)}
                           disabled={billSaving}
-                          onChange={() => toggleBillLine(line.line_id, 'transfer_to_shop')}
-                          aria-label={
-                            singleCheck
-                              ? `Proof of payment to driver for ${line.label}`
-                              : `Payment / transfer to shop for ${line.label}`
-                          }
+                          onChange={() => toggleBillLine(line.line_id)}
+                          aria-label={`Paper bill or payment proof received for ${line.label}`}
                         />
-                        <span>{singleCheck ? 'Paid driver (proof)' : 'Received'}</span>
+                        <span>Received</span>
                       </label>
                     </td>
-                    <td>
-                      {singleCheck ? (
-                        <span className="admin-hint" title="Delivery is paid to the driver; no shop vendor bill.">
-                          —
-                        </span>
-                      ) : (
-                        <label className="admin-bill-check-label">
-                          <input
-                            type="checkbox"
-                            checked={line.bill_from_shop}
-                            disabled={billSaving}
-                            onChange={() => toggleBillLine(line.line_id, 'bill_from_shop')}
-                            aria-label={`Shop bill received for ${line.label}`}
-                          />
-                          <span>Received</span>
-                        </label>
-                      )}
-                    </td>
                   </tr>
-                  );
-                })}
+                ))}
               </tbody>
             </table>
           </div>

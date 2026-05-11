@@ -29,7 +29,7 @@ export interface LedgerRow {
   /**
    * Whether the row has documentation marked complete.
    * - income: proof file when required; Stripe counts as complete without upload
-   * - expense: receipt on file and bill checklist complete when checklist rows exist
+   * - expense: receipt on file and proof checklist complete when checklist rows exist
    * - transfer: `attachment_attached`
    * - null when not applicable (legacy rows without the field).
    */
