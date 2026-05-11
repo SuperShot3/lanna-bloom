@@ -78,6 +78,8 @@ export function ProductPageClient({
           bouquet={bouquet}
           lang={lang}
           selectedImageUrl={selectedImageUrl}
+          selectedImageIndex={selectedImageIndex}
+          onSelectedImageIndexChange={setSelectedImageIndex}
           gifts={gifts}
         />
         <div className="product-details-below">

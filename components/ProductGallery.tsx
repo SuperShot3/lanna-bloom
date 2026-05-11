@@ -129,9 +129,10 @@ export function ProductGallery({
 
   const scrollTo = useCallback(
     (index: number) => {
+      setActive(index);
       emblaApi?.scrollTo(index);
     },
-    [emblaApi]
+    [emblaApi, setActive]
   );
 
   const resetLightboxTransform = useCallback(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
@@ -23,15 +23,24 @@ import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
+function sizeIndexForImageIndex(imageIndex: number | undefined, sizeCount: number): number | null {
+  if (imageIndex == null || sizeCount <= 0) return null;
+  return Math.min(Math.max(0, Math.floor(imageIndex)), sizeCount - 1);
+}
+
 export function ProductOrderBlock({
   bouquet,
   lang,
   selectedImageUrl,
+  selectedImageIndex,
+  onSelectedImageIndexChange,
   gifts = [],
 }: {
   bouquet: Bouquet;
   lang: Locale;
   selectedImageUrl?: string | null;
+  selectedImageIndex?: number;
+  onSelectedImageIndexChange?: (index: number) => void;
   gifts?: CatalogProduct[];
 }) {
   const [selectedSize, setSelectedSize] = useState<BouquetSize>(() => {
@@ -64,6 +73,38 @@ export function ProductOrderBlock({
     checkoutProfile.destinationId
   );
   const totalPrice = unitPrice * qty;
+
+  const hasSyncedInitialSizeToImageRef = useRef(false);
+  const previousImageIndexRef = useRef<number | undefined>(selectedImageIndex);
+
+  useEffect(() => {
+    if (!onSelectedImageIndexChange || hasSyncedInitialSizeToImageRef.current) return;
+    hasSyncedInitialSizeToImageRef.current = true;
+
+    const selectedIndex = bouquet.sizes.findIndex((size) => size.optionId === selectedSize.optionId);
+    if (selectedIndex > 0 && selectedImageIndex !== selectedIndex) {
+      onSelectedImageIndexChange(selectedIndex);
+    }
+  }, [bouquet.sizes, onSelectedImageIndexChange, selectedImageIndex, selectedSize.optionId]);
+
+  useEffect(() => {
+    if (selectedImageIndex == null || previousImageIndexRef.current === selectedImageIndex) return;
+    previousImageIndexRef.current = selectedImageIndex;
+
+    const sizeIndex = sizeIndexForImageIndex(selectedImageIndex, bouquet.sizes.length);
+    const nextSize = sizeIndex == null ? undefined : bouquet.sizes[sizeIndex];
+    if (nextSize && nextSize.optionId !== selectedSize.optionId) {
+      setSelectedSize(nextSize);
+    }
+  }, [bouquet.sizes, selectedImageIndex, selectedSize.optionId]);
+
+  const handleSizeSelect = (size: BouquetSize) => {
+    setSelectedSize(size);
+    const sizeIndex = bouquet.sizes.findIndex((candidate) => candidate.optionId === size.optionId);
+    if (sizeIndex >= 0) {
+      onSelectedImageIndexChange?.(sizeIndex);
+    }
+  };
 
   const handleAddToCart = () => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
@@ -105,7 +146,7 @@ export function ProductOrderBlock({
       <SizeSelector
         sizes={bouquet.sizes}
         selected={selectedSize}
-        onSelect={setSelectedSize}
+        onSelect={handleSizeSelect}
         lang={lang}
         destinationId={checkoutProfile.destinationId}
       />
