@@ -17,12 +17,15 @@ export function Hero({
   heroImageUrl,
   carouselImages,
   titleOverride,
+  browseCollectionHref,
 }: {
   lang: Locale;
   heroImageUrl?: string;
   carouselImages?: string[];
   /** Optional page-specific H1 override (keeps same hero design). */
   titleOverride?: React.ReactNode;
+  /** Optional primary CTA target for pages that show a collection section inline. */
+  browseCollectionHref?: string;
 }) {
   const t = translations[lang].hero;
   const pathname = usePathname();
@@ -41,6 +44,7 @@ export function Hero({
   const catalogHref = effectiveMarket
     ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
     : `/${lang}/catalog`;
+  const primaryCtaHref = browseCollectionHref ?? catalogHref;
   const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
 
@@ -75,7 +79,7 @@ export function Hero({
           </p>
           <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8 md:mb-10">
             <Link
-              href={catalogHref}
+              href={primaryCtaHref}
               onClick={() => trackCtaClick('cta_home_top')}
               className="hero-cta px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 text-sm sm:text-base"
             >

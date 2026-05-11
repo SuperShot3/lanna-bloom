@@ -56,6 +56,7 @@ export default async function MarketFlowerDeliveryPage({
         heroImageUrl={heroImageUrl}
         carouselImages={carouselImages}
         titleOverride={marketH1}
+        browseCollectionHref="#bouquets"
       />
       <div id="bouquets">
         <MarketBouquetsShowcase
