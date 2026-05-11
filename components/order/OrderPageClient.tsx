@@ -10,6 +10,12 @@ import type { OrderCustomerView } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import { SUPPORT_EMAIL } from '@/lib/siteContact';
 import {
+  OrderLifecycleStatusSection,
+  type DriverAssignmentStatus,
+  type OrderLifecycleStatus,
+  type OrderStatusTimestamps,
+} from './OrderLifecycleStatus';
+import {
   markCheckoutSubmissionCompleted,
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
@@ -49,6 +55,82 @@ function getFulfillmentLabel(status: string, t: Record<string, string>): string 
   return map[status] ?? status;
 }
 
+function normalizeStatusKey(status: string | null | undefined): string {
+  return String(status ?? '').trim().toLowerCase();
+}
+
+function getCurrentLifecycleStatus(
+  fulfillmentStatus: string | undefined,
+  paid: boolean
+): OrderLifecycleStatus {
+  const status = normalizeStatusKey(fulfillmentStatus);
+  if (status === 'delivered') return 'delivered';
+  if (status === 'dispatched' || status === 'out_for_delivery') return 'out_for_delivery';
+  if (
+    status === 'ready_to_dispatch' ||
+    status === 'ready_for_dispatch' ||
+    status === 'ready_for_delivery'
+  ) {
+    return 'ready_for_delivery';
+  }
+  if (status === 'preparing' || status === 'processing') return 'preparing';
+  if (status === 'confirmed' || status === 'accepted' || status === 'order_accepted') {
+    return 'order_accepted';
+  }
+  return paid ? 'payment_confirmed' : 'order_received';
+}
+
+function buildLifecycleTimestamps({
+  orderCreatedAt,
+  paidAt,
+  fulfillmentStatus,
+  fulfillmentStatusUpdatedAt,
+  currentStatus,
+}: {
+  orderCreatedAt?: string;
+  paidAt?: string;
+  fulfillmentStatus?: string;
+  fulfillmentStatusUpdatedAt?: string;
+  currentStatus: OrderLifecycleStatus;
+}): OrderStatusTimestamps {
+  const timestamps: OrderStatusTimestamps = {
+    order_received: orderCreatedAt ?? null,
+    payment_confirmed: paidAt ?? null,
+    order_accepted: null,
+    preparing: null,
+    ready_for_delivery: null,
+    out_for_delivery: null,
+    delivered: null,
+  };
+
+  const status = normalizeStatusKey(fulfillmentStatus);
+  const updatedAt = fulfillmentStatusUpdatedAt ?? null;
+  if (!updatedAt) return timestamps;
+
+  if (status === 'confirmed' || status === 'accepted' || currentStatus === 'order_accepted') {
+    timestamps.order_accepted = updatedAt;
+  }
+  if (status === 'preparing' || status === 'processing' || currentStatus === 'preparing') {
+    timestamps.preparing = updatedAt;
+  }
+  if (
+    status === 'ready_to_dispatch' ||
+    status === 'ready_for_dispatch' ||
+    status === 'ready_for_delivery' ||
+    currentStatus === 'ready_for_delivery'
+  ) {
+    timestamps.ready_for_delivery = updatedAt;
+  }
+  if (status === 'dispatched' || status === 'out_for_delivery' || currentStatus === 'out_for_delivery') {
+    timestamps.out_for_delivery = updatedAt;
+  }
+  if (status === 'delivered' || currentStatus === 'delivered') {
+    timestamps.delivered = updatedAt;
+  }
+
+  return timestamps;
+}
+
 export function OrderPageClient({
   order,
   orderId,
@@ -60,6 +142,7 @@ export function OrderPageClient({
   fulfillmentStatusUpdatedAt,
   supabasePaymentMethod,
   supabasePaidAt,
+  driverAssignmentStatus = 'not_assigned',
   addressHidden = false,
   locale = 'en',
 }: {
@@ -73,6 +156,7 @@ export function OrderPageClient({
   fulfillmentStatusUpdatedAt?: string;
   supabasePaymentMethod?: string;
   supabasePaidAt?: string;
+  driverAssignmentStatus?: DriverAssignmentStatus;
   addressHidden?: boolean;
   locale?: Locale;
 }) {
@@ -179,6 +263,14 @@ export function OrderPageClient({
     String(fulfillmentStatus ?? 'new'),
     t as unknown as Record<string, string>
   );
+  const lifecycleCurrentStatus = getCurrentLifecycleStatus(fulfillmentStatus, paid);
+  const lifecycleStatusTimestamps = buildLifecycleTimestamps({
+    orderCreatedAt: order.createdAt,
+    paidAt: supabasePaidAt ?? order.paidAt,
+    fulfillmentStatus,
+    fulfillmentStatusUpdatedAt,
+    currentStatus: lifecycleCurrentStatus,
+  });
 
   const copyOrderId = useCallback(async () => {
     try {
@@ -303,6 +395,13 @@ export function OrderPageClient({
                 </div>
               </>
             )}
+
+          <OrderLifecycleStatusSection
+            currentStatus={lifecycleCurrentStatus}
+            statusTimestamps={lifecycleStatusTimestamps}
+            driverAssignmentStatus={driverAssignmentStatus}
+            locale={locale}
+          />
 
           {paid && (
             <div className="order-redesign-paid-view order-redesign-paid-inline">

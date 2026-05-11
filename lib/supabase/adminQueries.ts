@@ -338,6 +338,8 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   payment_method: string | null;
   fulfillment_status: string | null;
   fulfillment_status_updated_at: string | null;
+  driver_name: string | null;
+  driver_phone: string | null;
   updated_at: string | null;
 } | null> {
   const supabase = getSupabaseAdmin();
@@ -349,7 +351,7 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('payment_status, order_status, paid_at, payment_method, fulfillment_status, fulfillment_status_updated_at, updated_at')
+      .select('payment_status, order_status, paid_at, payment_method, fulfillment_status, fulfillment_status_updated_at, driver_name, driver_phone, updated_at')
       .eq('order_id', normalized)
       .single();
 
@@ -361,6 +363,8 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
       payment_method: string | null;
       fulfillment_status: string | null;
       fulfillment_status_updated_at: string | null;
+      driver_name: string | null;
+      driver_phone: string | null;
       updated_at: string | null;
     };
   } catch {

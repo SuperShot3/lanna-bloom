@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import type { Bouquet, BouquetStatus } from '@/lib/bouquets';
 import { approveBouquetAction, rejectBouquetAction } from '@/app/admin/(dashboard)/moderation/products/actions';
@@ -17,15 +17,73 @@ type BouquetReviewClientProps = {
   bouquet: Bouquet;
 };
 
+async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
+  try {
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
   const router = useRouter();
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState<BouquetStatus>(bouquet.status ?? 'pending_review');
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [galleryImages, setGalleryImages] = useState<string[]>(bouquet.images);
+  const [galleryImageAlts, setGalleryImageAlts] = useState<string[]>(bouquet.imageAlts ?? []);
 
   const price = bouquet.sizes[0]?.price ?? 0;
   const catalogHref = `/en/catalog/${bouquet.slug}`;
+
+  useEffect(() => {
+    setGalleryImages(bouquet.images);
+    setGalleryImageAlts(bouquet.imageAlts ?? []);
+  }, [bouquet.id, bouquet.images, bouquet.imageAlts]);
+
+  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+
+    setError('');
+    setSuccess('');
+    setLoading('uploadImage');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('alt', bouquet.nameEn);
+
+    try {
+      const response = await fetch(`/api/admin/products/review/${encodeURIComponent(bouquet.id)}/images`, {
+        method: 'POST',
+        body: formData,
+      });
+      const payload = await readJsonResponse(response);
+
+      if (!response.ok) {
+        setError(String(payload.error ?? 'Could not upload product image.'));
+        return;
+      }
+
+      const image = payload.image && typeof payload.image === 'object'
+        ? (payload.image as { url?: unknown; alt?: unknown })
+        : null;
+      if (typeof image?.url === 'string' && image.url) {
+        setGalleryImages((current) => [...current, image.url as string]);
+        setGalleryImageAlts((current) => [...current, typeof image.alt === 'string' ? image.alt : bouquet.nameEn]);
+      }
+
+      setSuccess('Uploaded a WebP image and added it to this bouquet.');
+      router.refresh();
+    } catch {
+      setError('Could not upload product image. Check your connection and try again.');
+    } finally {
+      setLoading(null);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  }
 
   async function handleApprove() {
     setError('');
@@ -69,8 +127,8 @@ export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
       <div className="admin-product-detail-layout">
         <div className="admin-product-detail-gallery">
           <ProductGallery
-            images={bouquet.images}
-            imageAlts={bouquet.imageAlts}
+            images={galleryImages}
+            imageAlts={galleryImageAlts}
             name={bouquet.nameEn}
             productId={bouquet.id}
           />
@@ -84,7 +142,30 @@ export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
                 Only owner/admin roles can approve this bouquet. Approval changes its Sanity status to approved and makes it
                 available to catalog queries.
               </p>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
               <div className="admin-product-detail-action-buttons">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-outline admin-moderation-btn-loading admin-product-detail-btn-full"
+                  disabled={!!loading}
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  {loading === 'uploadImage' ? (
+                    <>
+                      <span className="admin-moderation-spinner" aria-hidden />
+                      Uploading WebP...
+                    </>
+                  ) : (
+                    'Upload image as WebP'
+                  )}
+                </button>
+
                 {status !== 'approved' ? (
                   <button
                     type="button"

@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import {
+  OrderLifecycleStatusSection,
+  type DriverAssignmentStatus,
+  type OrderStatusTimestamps,
+} from '@/components/order/OrderLifecycleStatus';
+import type { Locale } from '@/lib/i18n';
 
 type OrderPageT = {
   deliveredTitle: string;
@@ -17,10 +23,14 @@ export function OrderDeliveredBlock({
   orderId,
   t,
   locale,
+  statusTimestamps,
+  driverAssignmentStatus = 'not_assigned',
 }: {
   orderId: string;
   t: OrderPageT;
-  locale: string;
+  locale: Locale;
+  statusTimestamps: OrderStatusTimestamps;
+  driverAssignmentStatus?: DriverAssignmentStatus;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -38,6 +48,12 @@ export function OrderDeliveredBlock({
     <div className="not-found">
       <h1 className="not-found-title">{t.deliveredTitle}</h1>
       <p className="not-found-text">{t.deliveredSubtext}</p>
+      <OrderLifecycleStatusSection
+        currentStatus="delivered"
+        statusTimestamps={statusTimestamps}
+        driverAssignmentStatus={driverAssignmentStatus}
+        locale={locale}
+      />
       <div className="order-not-found-id-block">
         <span className="order-not-found-id-label">{t.orderIdLabel}</span>
         <code className="order-not-found-id">{orderId}</code>

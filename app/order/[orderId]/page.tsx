@@ -75,6 +75,14 @@ export default async function OrderDetailsPage({
     ?? order.fulfillmentStatus
     ?? fulfillmentFromLegacyColumn
     ?? 'new';
+  const driverAssignmentStatus =
+    supabasePayment?.driver_name?.trim() || supabasePayment?.driver_phone?.trim()
+      ? 'assigned'
+      : 'not_assigned';
+  const fulfillmentStatusUpdatedAt =
+    supabasePayment?.fulfillment_status_updated_at
+    ?? supabasePayment?.updated_at
+    ?? order.fulfillmentStatusUpdatedAt;
 
   // Delivered must match the resolved badge — not only supabasePayment.order_status,
   // which can be null if the second query fails while getOrderById still has DELIVERED.
@@ -83,19 +91,30 @@ export default async function OrderDetailsPage({
     normalizeOrderStatus(supabasePayment?.order_status) === 'DELIVERED';
 
   if (isDelivered) {
+    const deliveredStatusTimestamps = {
+      order_received: order.createdAt ?? null,
+      payment_confirmed: supabasePayment?.paid_at ?? order.paidAt ?? null,
+      order_accepted: null,
+      preparing: null,
+      ready_for_delivery: null,
+      out_for_delivery: null,
+      delivered: fulfillmentStatusUpdatedAt ?? null,
+    };
+
     return (
       <div className="order-page">
         <div className="container">
-          <OrderDeliveredBlock orderId={order.orderId} t={t} locale={defaultLocale} />
+          <OrderDeliveredBlock
+            orderId={order.orderId}
+            t={t}
+            locale={defaultLocale}
+            statusTimestamps={deliveredStatusTimestamps}
+            driverAssignmentStatus={driverAssignmentStatus}
+          />
         </div>
       </div>
     );
   }
-
-  const fulfillmentStatusUpdatedAt =
-    supabasePayment?.fulfillment_status_updated_at
-    ?? supabasePayment?.updated_at
-    ?? order.fulfillmentStatusUpdatedAt;
 
   /** Website checkout is Stripe-only; unpaid here means not yet paid or legacy unpaid rows. */
   const paymentStatusUpper = (supabasePayment?.payment_status ?? 'NOT_PAID').toUpperCase();
@@ -116,6 +135,7 @@ export default async function OrderDetailsPage({
           fulfillmentStatusUpdatedAt={fulfillmentStatusUpdatedAt ?? undefined}
           supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
           supabasePaidAt={supabasePayment?.paid_at ?? order.paidAt ?? undefined}
+          driverAssignmentStatus={driverAssignmentStatus}
           locale={defaultLocale}
         />
       </div>

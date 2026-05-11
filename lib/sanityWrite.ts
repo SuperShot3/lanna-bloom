@@ -2,6 +2,7 @@
  * Sanity write client and mutations. Use only on server (Server Actions / API routes).
  * Requires SANITY_API_WRITE_TOKEN in .env.local with create/update permissions.
  */
+import { randomUUID } from 'crypto';
 import { createClient } from 'next-sanity';
 import type { BouquetSize, SizeKey } from './bouquets';
 
@@ -104,6 +105,30 @@ export async function uploadAdminProductImage(
     url: asset.url,
     alt: options?.alt?.trim() || undefined,
   };
+}
+
+/** Append one admin-uploaded image to an existing bouquet review document. */
+export async function appendBouquetImage(
+  bouquetId: string,
+  image: SanityWriteImageInput
+): Promise<void> {
+  const client = getWriteClient();
+  const key = `admin_review_image_${randomUUID().replace(/-/g, '')}`;
+
+  await client
+    .patch(bouquetId)
+    .setIfMissing({ images: [] })
+    .append('images', [
+      {
+        _type: 'image' as const,
+        _key: key,
+        asset: { _type: 'reference' as const, _ref: image.assetId },
+        ...(image.alt?.trim() && { alt: image.alt.trim() }),
+        ...(image.format && { format: image.format }),
+        isPrimary: image.isPrimary === true,
+      },
+    ])
+    .commit();
 }
 
 export interface BouquetSizeInput {
