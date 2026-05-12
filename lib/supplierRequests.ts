@@ -12,9 +12,21 @@ import {
 } from '@/lib/delivery/markets';
 import { zoneLabel } from '@/lib/delivery/zones';
 
-export const SUPPLIER_REQUEST_BASE_URL =
-  process.env.SUPPLIER_REQUEST_BASE_URL?.replace(/\/+$/, '') ||
-  'https://flower-task-cm.vercel.app';
+function resolveSupplierRequestBaseUrl(): string {
+  const configuredSupplierUrl = process.env.SUPPLIER_REQUEST_BASE_URL?.trim();
+  if (configuredSupplierUrl) return configuredSupplierUrl.replace(/\/+$/, '');
+
+  const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (publicAppUrl) return publicAppUrl.replace(/\/+$/, '');
+
+  if (process.env.VERCEL_URL?.trim()) {
+    return `https://${process.env.VERCEL_URL.trim().replace(/\/+$/, '')}`;
+  }
+
+  return 'http://localhost:3000';
+}
+
+export const SUPPLIER_REQUEST_BASE_URL = resolveSupplierRequestBaseUrl();
 
 export const SUPPLIER_SHOPS = [
   { id: 'mod_dam', name: 'Mod Dam' },
