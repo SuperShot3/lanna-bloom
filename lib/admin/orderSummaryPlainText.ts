@@ -50,7 +50,7 @@ export function customerDeliveryAddressRaw(order: SupabaseOrderRow): string {
   return orderJsonDelivery(order)?.address?.trim() ?? '';
 }
 
-function adminDeliveryGeographyLines(order: SupabaseOrderRow): string[] {
+function adminDeliveryGeographyLines(order: SupabaseOrderRow, lang: 'en' | 'th' = 'en'): string[] {
   const dest =
     order.delivery_destination?.trim() ||
     orderJsonDelivery(order)?.deliveryDestination?.trim();
@@ -58,19 +58,26 @@ function adminDeliveryGeographyLines(order: SupabaseOrderRow): string[] {
     order.delivery_zone?.trim() || orderJsonDelivery(order)?.deliveryZoneId?.trim();
   const postal =
     order.postal_code?.trim() || orderJsonDelivery(order)?.postalCode?.trim();
+  const isThai = lang === 'th';
   const lines: string[] = [];
   if (dest) {
     const id = dest as DeliveryDestinationId;
-    lines.push(`Destination: ${destinationDisplayName(id, 'en')} (${dest})`);
+    lines.push(
+      isThai
+        ? `พื้นที่จัดส่ง: ${destinationDisplayName(id, 'th')} (${dest})`
+        : `Destination: ${destinationDisplayName(id, 'en')} (${dest})`
+    );
   }
   if (dest && zoneId) {
     const id = dest as DeliveryDestinationId;
-    const lbl = zoneLabel(id, zoneId, 'en');
-    lines.push(`Zone: ${lbl ?? zoneId} (${zoneId})`);
+    const lbl = zoneLabel(id, zoneId, lang);
+    lines.push(isThai ? `โซน: ${lbl ?? zoneId} (${zoneId})` : `Zone: ${lbl ?? zoneId} (${zoneId})`);
   }
-  if (postal) lines.push(`Postcode: ${postal}`);
+  if (postal) lines.push(isThai ? `รหัสไปรษณีย์: ${postal}` : `Postcode: ${postal}`);
   const leg = order.district?.trim();
-  if (leg && (!dest || !zoneId)) lines.push(`Legacy district: ${leg}`);
+  if (leg && (!dest || !zoneId)) {
+    lines.push(isThai ? `เขต/อำเภอเดิม: ${leg}` : `Legacy district: ${leg}`);
+  }
   return lines;
 }
 
@@ -205,6 +212,33 @@ export function buildClipboardCardText(
   return blocks.join('\n\n---\n\n');
 }
 
+function buildDriverClipboardCardTextThai(
+  items: OrderSummaryItemRow[],
+  customGreetingCard?: string | null
+): string {
+  const withMsg = items.filter((i) => i.addOns?.cardMessage?.trim());
+  const fromItems: string[] = [];
+  items.forEach((item, i) => {
+    const msg = item.addOns?.cardMessage?.trim();
+    if (!msg) return;
+    if (withMsg.length > 1) {
+      const title = item.bouquet_title?.trim() || `รายการที่ ${i + 1}`;
+      fromItems.push(`${title}: ${msg}`);
+    } else {
+      fromItems.push(msg);
+    }
+  });
+  const g = customGreetingCard?.trim();
+  const blocks: string[] = [];
+  if (fromItems.length) {
+    blocks.push(fromItems.join('\n\n'));
+  }
+  if (g) {
+    blocks.push(fromItems.length > 0 ? `ออเดอร์พิเศษ (ข้อความในการ์ด):\n${g}` : g);
+  }
+  return blocks.join('\n\n---\n\n');
+}
+
 function buildClipboardBalloonText(items: OrderSummaryItemRow[]): string {
   const withText = items.filter((i) => i.addOns?.balloonText?.trim());
   const lines: string[] = [];
@@ -221,8 +255,17 @@ function buildClipboardBalloonText(items: OrderSummaryItemRow[]): string {
   return lines.join('\n\n');
 }
 
+function surpriseDeliveryDriverThaiLabel(order: SupabaseOrderRow): string {
+  const rName = recipientNameDisplay(order);
+  if (!rName.trim()) return 'ไม่ระบุ';
+  const v = orderJsonDelivery(order)?.surpriseDelivery;
+  if (v === true) return 'ใช่';
+  if (v === false) return 'ไม่ใช่';
+  return 'ไม่ระบุ';
+}
+
 /**
- * One block to paste to a driver on LINE/Messenger: time, place, pin, recipient, card text, order ref.
+ * One Thai block to paste to a driver on LINE/Messenger: time, place, pin, recipient, card text, order ref.
  */
 export function buildDriverMessengerPlainText(
   order: SupabaseOrderRow,
@@ -232,49 +275,49 @@ export function buildDriverMessengerPlainText(
   const mapsUrl = checkoutMapsUrl(order);
   const rName = recipientNameDisplay(order);
   const rPhone = recipientPhoneDisplay(order);
-  const surprise = surpriseDeliveryAdminLabel(order);
-  const cardBlock = buildClipboardCardText(items, customGreetingCard);
+  const surprise = surpriseDeliveryDriverThaiLabel(order);
+  const cardBlock = buildDriverClipboardCardTextThai(items, customGreetingCard);
   const balloonBlock = buildClipboardBalloonText(items);
 
   const datePart = order.delivery_date?.trim() ?? '';
   const windowPart = order.delivery_window?.trim() ?? '';
-  const when = [datePart, windowPart].filter(Boolean).join(' · ') || 'N/A';
+  const when = [datePart, windowPart].filter(Boolean).join(' · ') || 'ไม่ระบุ';
 
   const lines: string[] = [];
-  lines.push(`Order: ${order.order_id}`);
+  lines.push(`ออเดอร์: ${order.order_id}`);
   lines.push('');
-  lines.push(`When: ${when}`);
-  const geo = adminDeliveryGeographyLines(order);
+  lines.push(`เวลา: ${when}`);
+  const geo = adminDeliveryGeographyLines(order, 'th');
   if (geo.length) {
     lines.push(...geo);
   } else if (order.district?.trim()) {
-    lines.push(`Area: ${order.district.trim()}`);
+    lines.push(`พื้นที่: ${order.district.trim()}`);
   }
   lines.push('');
-  lines.push('Address:');
-  lines.push(naText(customerDeliveryAddressRaw(order)));
+  lines.push('ที่อยู่:');
+  lines.push(customerDeliveryAddressRaw(order).trim() || 'ไม่ระบุ');
   lines.push('');
   if (mapsUrl) {
-    lines.push('Google Maps pin:');
+    lines.push('พิน Google Maps:');
     lines.push(mapsUrl);
     lines.push('');
   }
-  lines.push('Recipient:');
-  lines.push(`Name: ${naText(rName)}`);
-  lines.push(`Phone: ${naText(rPhone)}`);
-  lines.push(`Surprise delivery: ${surprise}`);
+  lines.push('ผู้รับ:');
+  lines.push(`ชื่อ: ${rName.trim() || 'ไม่ระบุ'}`);
+  lines.push(`โทร: ${rPhone.trim() || 'ไม่ระบุ'}`);
+  lines.push(`เซอร์ไพรส์: ${surprise}`);
   lines.push('');
-  lines.push(`Sender / customer phone: ${naText(customerPhoneDisplay(order))}`);
+  lines.push(`เบอร์ผู้สั่ง/ลูกค้า: ${customerPhoneDisplay(order).trim() || 'ไม่ระบุ'}`);
   lines.push('');
   if (cardBlock.trim()) {
-    lines.push('Card message:');
+    lines.push('ข้อความในการ์ด:');
     lines.push(cardBlock);
   } else {
-    lines.push('Card message: —');
+    lines.push('ข้อความในการ์ด: ไม่มี');
   }
   if (balloonBlock.trim()) {
     lines.push('');
-    lines.push('Balloon text:');
+    lines.push('ข้อความบนบอลลูน:');
     lines.push(balloonBlock);
   }
 

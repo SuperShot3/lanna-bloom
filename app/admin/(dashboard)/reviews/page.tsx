@@ -1,6 +1,7 @@
 import { getAllReviewsAsync } from '@/lib/reviews';
 import { GOOGLE_REVIEW_URL } from '@/lib/reviewsConfig';
 import { AddReviewForm } from './AddReviewForm';
+import { CustomerReviewInvite } from './CustomerReviewInvite';
 import { ReviewList } from './ReviewList';
 
 export default async function AdminReviewsPage() {
@@ -12,21 +13,18 @@ export default async function AdminReviewsPage() {
         <div>
           <h1 className="admin-title">Reviews</h1>
           <p className="admin-hint">
-            Add reviews pasted from Google Maps. &quot;Leave a review&quot; links to your Google
-            Business.
+            Send customers your Google review link, then add pasted reviews from Google Maps.
           </p>
         </div>
-        <div className="admin-header-actions">
-          <a
-            href={GOOGLE_REVIEW_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="admin-btn admin-btn-primary"
-          >
-            Leave a review
-          </a>
-        </div>
       </header>
+
+      <section className="admin-section">
+        <h2 className="admin-section-title">Send customer review link 🌸</h2>
+        <p className="admin-muted" style={{ margin: '6px 0 12px' }}>
+          Copy this short message after delivery and send it to the customer.
+        </p>
+        <CustomerReviewInvite reviewUrl={GOOGLE_REVIEW_URL} />
+      </section>
 
       <section className="admin-section">
         <h2 className="admin-section-title">Add review from Google Maps</h2>

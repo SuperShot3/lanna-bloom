@@ -65,6 +65,12 @@ export interface SupabaseOrderRow {
   last_line_push_at?: string | null;
   /** 1 = pending delivery pipeline; 0 = DELIVERED/CANCELLED — for admin list sort (generated column). */
   admin_needs_delivery_sort?: number | null;
+  confirmed_supplier_request_id?: string | null;
+  confirmed_shop_id?: string | null;
+  confirmed_supplier_shop_name?: string | null;
+  confirmed_supplier_price?: number | null;
+  confirmed_supplier_ready_time?: string | null;
+  confirmed_supplier_confirmed_at?: string | null;
 }
 
 export interface SupabaseOrderItemRow {
@@ -95,6 +101,42 @@ export interface SupabaseStatusHistoryRow {
   order_id: string;
   from_status: string | null;
   to_status: string | null;
+  created_at: string | null;
+}
+
+export interface SupplierOrderRequestRow {
+  id: string;
+  order_id: string;
+  shop_id: string;
+  shop_name_snapshot: string;
+  public_token: string;
+  status: string;
+  product_snapshot: Record<string, unknown>;
+  preparation_snapshot: Record<string, unknown>;
+  pickup_snapshot: Record<string, unknown>;
+  message_card_snapshot: Record<string, unknown>;
+  supplier_response_type: string | null;
+  supplier_price: number | null;
+  supplier_ready_time: string | null;
+  supplier_reason: string | null;
+  supplier_notes: string | null;
+  opened_at: string | null;
+  responded_at: string | null;
+  approved_at: string | null;
+  disabled_at: string | null;
+  expires_at: string | null;
+  created_by_admin_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface SupplierOrderRequestEventRow {
+  id: string;
+  request_id: string;
+  order_id: string;
+  event_type: string;
+  event_message: string;
+  created_by: string | null;
   created_at: string | null;
 }
 
@@ -421,4 +463,81 @@ export async function getDeliveryDestinations(): Promise<string[]> {
     new Set((data ?? []).map((r) => r.delivery_destination).filter(Boolean))
   ) as string[];
   return ids.sort();
+}
+
+export async function getSupplierRequestsForOrder(orderId: string): Promise<SupplierOrderRequestRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const normalized = String(orderId ?? '').trim();
+  if (!normalized) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('supplier_order_requests')
+      .select('*')
+      .eq('order_id', normalized)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      if (error) console.error('[admin] getSupplierRequestsForOrder error:', error);
+      return [];
+    }
+    return data as SupplierOrderRequestRow[];
+  } catch (e) {
+    console.error('[admin] getSupplierRequestsForOrder exception:', e);
+    return [];
+  }
+}
+
+export async function getLatestSupplierRequestForOrder(
+  orderId: string
+): Promise<SupplierOrderRequestRow | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const normalized = String(orderId ?? '').trim();
+  if (!normalized) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('supplier_order_requests')
+      .select('*')
+      .eq('order_id', normalized)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data as SupplierOrderRequestRow;
+  } catch {
+    return null;
+  }
+}
+
+export async function getSupplierRequestEventsForOrder(
+  orderId: string
+): Promise<SupplierOrderRequestEventRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const normalized = String(orderId ?? '').trim();
+  if (!normalized) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('supplier_order_request_events')
+      .select('*')
+      .eq('order_id', normalized)
+      .order('created_at', { ascending: true });
+
+    if (error || !data) {
+      if (error) console.error('[admin] getSupplierRequestEventsForOrder error:', error);
+      return [];
+    }
+    return data as SupplierOrderRequestEventRow[];
+  } catch (e) {
+    console.error('[admin] getSupplierRequestEventsForOrder exception:', e);
+    return [];
+  }
 }

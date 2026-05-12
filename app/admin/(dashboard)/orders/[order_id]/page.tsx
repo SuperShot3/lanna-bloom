@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
+import { getLatestSupplierRequestForOrder, getOrderByOrderId } from '@/lib/supabase/adminQueries';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
 import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
@@ -9,6 +9,7 @@ import { StatusUpdateCard } from '@/app/admin/components/StatusUpdateCard';
 import { PaymentCard } from '@/app/admin/components/PaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
+import { SupplierRequestSummaryCard } from '@/app/admin/components/SupplierRequestSummaryCard';
 import type { CustomOrderDetails } from '@/lib/orders';
 import { canChangeStatus, canRefund, canRemoveOrder } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
@@ -67,6 +68,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
 
   const customOrderDetails = (order.order_json as { customOrderDetails?: CustomOrderDetails } | null | undefined)
     ?.customOrderDetails;
+  const latestSupplierRequest = await getLatestSupplierRequestForOrder(order.order_id);
 
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
     itemsToUse.map(async (item, index) => {
@@ -133,6 +135,11 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         order={order}
         items={itemsWithCatalog}
         customGreetingCard={customOrderDetails?.greetingCard}
+      />
+      <SupplierRequestSummaryCard
+        order={order}
+        latestRequest={latestSupplierRequest}
+        canManage={canChangeStatus(role)}
       />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
       <section className="admin-section">
