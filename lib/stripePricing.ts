@@ -202,6 +202,12 @@ export async function computeOrderTotals(
       if (product.moderationStatus !== 'live') {
         return { ok: false, message: `Product is not available: ${product.nameEn}` };
       }
+      if (!bouquetIsAvailableForDestination(product, delivery.deliveryDestination)) {
+        return {
+          ok: false,
+          message: 'This product is not available for delivery to the selected province or market.',
+        };
+      }
 
       const partnerCost = product.cost ?? product.price ?? 0;
       const finalPrice = computeFinalPrice(partnerCost, product.commissionPercent);

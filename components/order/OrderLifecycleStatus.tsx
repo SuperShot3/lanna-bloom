@@ -2,19 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import type { Locale } from '@/lib/i18n';
+import { ORDER_LIFECYCLE_STATUSES } from '@/lib/orders/lifecycle';
+import type { OrderLifecycleStatus, OrderStatusTimestamps } from '@/lib/orders/lifecycle';
 
-export const ORDER_LIFECYCLE_STATUSES = [
-  'order_received',
-  'payment_confirmed',
-  'order_accepted',
-  'preparing',
-  'ready_for_delivery',
-  'out_for_delivery',
-  'delivered',
-] as const;
-
-export type OrderLifecycleStatus = (typeof ORDER_LIFECYCLE_STATUSES)[number];
-export type OrderStatusTimestamps = Partial<Record<OrderLifecycleStatus, string | null | undefined>>;
+export { ORDER_LIFECYCLE_STATUSES };
+export type { OrderLifecycleStatus, OrderStatusTimestamps };
 export type DriverAssignmentStatus = 'not_assigned' | 'assigned';
 
 type StepState = 'completed' | 'current' | 'future';

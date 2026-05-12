@@ -1,8 +1,16 @@
 import { unstable_noStore } from 'next/cache';
 import { notFound } from 'next/navigation';
 import { getOrderByIdWithPublicToken, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
-import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
+import {
+  getSupabaseOrderStatusHistoryByOrderId,
+  getSupabasePaymentStatusByOrderId,
+} from '@/lib/supabase/adminQueries';
 import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
+import {
+  buildOrderLifecycleTimestamps,
+  getCurrentOrderLifecycleStatus,
+  getLifecycleTimestampForStatus,
+} from '@/lib/orders/lifecycle';
 import { OrderPageClient } from '@/components/order/OrderPageClient';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
@@ -52,7 +60,10 @@ export default async function OrderDetailsPage({
   const detailsUrl = getOrderDetailsUrl(order.orderId, { token });
   const baseUrl = getBaseUrl();
 
-  const supabasePayment = await getSupabasePaymentStatusByOrderId(order.orderId);
+  const [supabasePayment, statusHistory] = await Promise.all([
+    getSupabasePaymentStatusByOrderId(order.orderId),
+    getSupabaseOrderStatusHistoryByOrderId(order.orderId),
+  ]);
   const paid = isPaymentConfirmed(
     supabasePayment?.payment_status,
     order.status,
@@ -80,10 +91,22 @@ export default async function OrderDetailsPage({
       ? 'assigned'
       : 'not_assigned';
   const driverName = supabasePayment?.driver_name?.trim() || null;
-  const fulfillmentStatusUpdatedAt =
-    supabasePayment?.fulfillment_status_updated_at
-    ?? supabasePayment?.updated_at
+  const statusUpdatedAtFallback =
+    supabasePayment?.updated_at
+    ?? supabasePayment?.fulfillment_status_updated_at
     ?? order.fulfillmentStatusUpdatedAt;
+  const lifecycleCurrentStatus = getCurrentOrderLifecycleStatus(fulfillmentStatus, paid);
+  const lifecycleStatusTimestamps = buildOrderLifecycleTimestamps({
+    orderCreatedAt: order.createdAt,
+    paidAt: supabasePayment?.paid_at ?? order.paidAt,
+    statusHistory,
+    fulfillmentStatus: supabasePayment?.order_status ?? fulfillmentStatus,
+    currentStatus: lifecycleCurrentStatus,
+    fallbackUpdatedAt: statusUpdatedAtFallback,
+  });
+  const fulfillmentStatusUpdatedAt =
+    getLifecycleTimestampForStatus(lifecycleStatusTimestamps, lifecycleCurrentStatus)
+    ?? statusUpdatedAtFallback;
 
   // Delivered must match the resolved badge — not only supabasePayment.order_status,
   // which can be null if the second query fails while getOrderById still has DELIVERED.
@@ -92,16 +115,6 @@ export default async function OrderDetailsPage({
     normalizeOrderStatus(supabasePayment?.order_status) === 'DELIVERED';
 
   if (isDelivered) {
-    const deliveredStatusTimestamps = {
-      order_received: order.createdAt ?? null,
-      payment_confirmed: supabasePayment?.paid_at ?? order.paidAt ?? null,
-      order_accepted: null,
-      preparing: null,
-      ready_for_delivery: null,
-      out_for_delivery: null,
-      delivered: fulfillmentStatusUpdatedAt ?? null,
-    };
-
     return (
       <div className="order-page">
         <div className="container">
@@ -109,7 +122,7 @@ export default async function OrderDetailsPage({
             orderId={order.orderId}
             t={t}
             locale={defaultLocale}
-            statusTimestamps={deliveredStatusTimestamps}
+            statusTimestamps={lifecycleStatusTimestamps}
             driverAssignmentStatus={driverAssignmentStatus}
             driverName={driverName}
           />
@@ -135,6 +148,7 @@ export default async function OrderDetailsPage({
           canPay={canPay}
           fulfillmentStatus={fulfillmentStatus}
           fulfillmentStatusUpdatedAt={fulfillmentStatusUpdatedAt ?? undefined}
+          statusTimestamps={lifecycleStatusTimestamps}
           supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
           supabasePaidAt={supabasePayment?.paid_at ?? order.paidAt ?? undefined}
           driverAssignmentStatus={driverAssignmentStatus}

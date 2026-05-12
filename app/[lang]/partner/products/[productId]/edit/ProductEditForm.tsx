@@ -10,6 +10,11 @@ import { Card } from '@/components/partner/Card';
 import { translations } from '@/lib/i18n';
 import { PREP_TIME_OPTIONS } from '@/lib/partnerPortal';
 import type { Locale } from '@/lib/i18n';
+import {
+  DELIVERY_DESTINATIONS,
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
 
 const OCCASION_OPTIONS = [
   { value: '', labelEn: '—', labelTh: '—' },
@@ -34,6 +39,7 @@ type ProductEditFormProps = {
     price: number;
     preparationTime?: number;
     occasion?: string;
+    excludedDeliveryDestinations?: string[];
   };
   backHref: string;
 };
@@ -48,6 +54,10 @@ export function ProductEditForm({ lang, productId, initial, backHref }: ProductE
     initial.preparationTime != null ? String(initial.preparationTime) : ''
   );
   const [occasion, setOccasion] = useState(initial.occasion ?? '');
+  const [availableDeliveryDestinations, setAvailableDeliveryDestinations] = useState<DeliveryDestinationId[]>(() => {
+    const excluded = new Set(initial.excludedDeliveryDestinations ?? []);
+    return DELIVERY_DESTINATIONS.filter((destination) => !excluded.has(destination));
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -70,6 +80,10 @@ export function ProductEditForm({ lang, productId, initial, backHref }: ProductE
     formData.set('price', price.trim());
     formData.set('preparationTime', preparationTime);
     formData.set('occasion', occasion);
+    formData.set(
+      'excludedDeliveryDestinations',
+      DELIVERY_DESTINATIONS.filter((destination) => !availableDeliveryDestinations.includes(destination)).join(',')
+    );
 
     const images = (e.target as HTMLFormElement).querySelectorAll('input[type="file"]');
     images.forEach((input, i) => {
@@ -155,6 +169,34 @@ export function ProductEditForm({ lang, productId, initial, backHref }: ProductE
           value={occasion}
           onChange={setOccasion}
         />
+        <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+          <legend style={{ fontWeight: 600, marginBottom: 8 }}>
+            {lang === 'th' ? 'พื้นที่ที่ขายได้' : 'Available provinces / markets'}
+          </legend>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+            {DELIVERY_DESTINATIONS.map((destination) => (
+              <label key={destination} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={availableDeliveryDestinations.includes(destination)}
+                  onChange={() =>
+                    setAvailableDeliveryDestinations((current) =>
+                      current.includes(destination)
+                        ? current.filter((item) => item !== destination)
+                        : [...current, destination]
+                    )
+                  }
+                />
+                <span>{destinationDisplayName(destination, lang)}</span>
+              </label>
+            ))}
+          </div>
+          <p className="partner-file-hint" style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
+            {lang === 'th'
+              ? 'ยกเลิกเลือกพื้นที่ที่ไม่สามารถขายสินค้านี้ได้'
+              : 'Uncheck destinations where this product should not be sold.'}
+          </p>
+        </fieldset>
       </Card>
       <div className="partner-add-product-actions" style={{ marginTop: 16 }}>
         <Link href={backHref}>

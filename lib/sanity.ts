@@ -610,7 +610,8 @@ function interleavePopularCatalogItems(items: PopularCatalogItem[]): PopularCata
  */
 export async function getPopularCatalogItemsFromSanityPaginated(
   start: number,
-  limit: number
+  limit: number,
+  catalogDeliveryDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<PopularCatalogItem[]> {
   try {
     const productCategoryKeys = PRODUCT_CATEGORIES.filter(
@@ -626,7 +627,11 @@ export async function getPopularCatalogItemsFromSanityPaginated(
       getPlushyToysFilteredFromSanity({ sort: 'newest' }),
       getBalloonsFilteredFromSanity({ sort: 'newest' }),
       ...productCategoryKeys.map((categoryKey) =>
-        getProductsFilteredFromSanity({ categoryKey, sort: 'newest' })
+        getProductsFilteredFromSanity({
+          categoryKey,
+          sort: 'newest',
+          catalogDeliveryDestination,
+        })
       ),
     ]);
     const rng = mulberry32(getPopularShuffleSeed() + 17);
@@ -690,6 +695,8 @@ export interface CatalogProduct {
   commissionPercent?: number;
   images: string[];
   imageAlts?: string[];
+  /** Provinces/markets where this product must not be sold (empty = all destinations). */
+  excludedDeliveryDestinations?: DeliveryDestinationId[];
   /** Prep time in minutes (from structuredAttributes) */
   preparationTime?: number;
   /** Occasion (from structuredAttributes) */
@@ -1107,8 +1114,9 @@ export async function getAllProducts(): Promise<
 export async function getProductsFilteredFromSanity(params: {
   categoryKey: string;
   sort?: 'newest' | 'price_asc' | 'price_desc';
+  catalogDeliveryDestination?: DeliveryDestinationId;
 }): Promise<CatalogProduct[]> {
-  const { categoryKey, sort = 'newest' } = params;
+  const { categoryKey, sort = 'newest', catalogDeliveryDestination } = params;
   try {
     const docs = await clientNoCdn.fetch<
       Array<{
@@ -1123,6 +1131,7 @@ export async function getProductsFilteredFromSanity(params: {
         price?: number;
         cost?: number;
         commissionPercent?: number;
+        excludedDeliveryDestinations?: string[];
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
       }>
     >(
@@ -1132,11 +1141,19 @@ export async function getProductsFilteredFromSanity(params: {
         "nameTh": coalesce(adminOverrides.nameTh, nameTh),
         "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
         "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
-        category, price, cost, commissionPercent, images
+        category, price, cost, commissionPercent, excludedDeliveryDestinations, images
       }`,
       { categoryKey }
     );
-    const mapped = (docs ?? []).map((d) => {
+    const mapped = (docs ?? [])
+      .filter((d) => {
+        if (!catalogDeliveryDestination) return true;
+        return bouquetIsAvailableForDestination(
+          { excludedDeliveryDestinations: d.excludedDeliveryDestinations },
+          catalogDeliveryDestination
+        );
+      })
+      .map((d) => {
       const slug = d.slug?.current ?? d._id;
       const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
       const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
@@ -1160,6 +1177,7 @@ export async function getProductsFilteredFromSanity(params: {
         commissionPercent: d.commissionPercent,
         images: imageUrls.length ? imageUrls : [placeholder],
         imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+        excludedDeliveryDestinations: parseExcludedDeliveryDestinations(d.excludedDeliveryDestinations),
         _createdAt: d._createdAt,
         _partnerCost: partnerCost,
       };
@@ -1194,6 +1212,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
           cost?: number;
           commissionPercent?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+          excludedDeliveryDestinations?: string[];
           structuredAttributes?: { preparationTime?: number; occasion?: string };
         }
       | null
@@ -1204,7 +1223,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
         "nameTh": coalesce(adminOverrides.nameTh, nameTh),
         "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
         "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
-        category, price, cost, commissionPercent, images,
+        category, price, cost, commissionPercent, images, excludedDeliveryDestinations,
         "structuredAttributes": structuredAttributes
       }`,
       { slug }
@@ -1233,6 +1252,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       commissionPercent: doc.commissionPercent,
       images: imageUrls.length ? imageUrls : [placeholder],
       imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+      excludedDeliveryDestinations: parseExcludedDeliveryDestinations(doc.excludedDeliveryDestinations),
       preparationTime: attrs?.preparationTime,
       occasion: attrs?.occasion,
     };
@@ -1574,6 +1594,7 @@ export async function getProductById(productId: string): Promise<{
   imageRefs: string[];
   preparationTime?: number;
   occasion?: string;
+  excludedDeliveryDestinations?: DeliveryDestinationId[];
   partnerId?: string;
   adminOverrides?: {
     nameEn?: string;
@@ -1598,6 +1619,7 @@ export async function getProductById(productId: string): Promise<{
           commissionPercent?: number;
           moderationStatus?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+          excludedDeliveryDestinations?: string[];
           structuredAttributes?: { preparationTime?: number; occasion?: string };
           partner?: { _ref?: string };
           adminOverrides?: {
@@ -1612,7 +1634,8 @@ export async function getProductById(productId: string): Promise<{
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
-        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, moderationStatus, images, structuredAttributes, partner,
+        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, moderationStatus, images,
+        excludedDeliveryDestinations, structuredAttributes, partner,
         adminOverrides, adminChangeSummary, adminLastEditedAt
       }`,
       { id: productId }
@@ -1636,6 +1659,7 @@ export async function getProductById(productId: string): Promise<{
       imageRefs,
       preparationTime: doc.structuredAttributes?.preparationTime,
       occasion: doc.structuredAttributes?.occasion,
+      excludedDeliveryDestinations: parseExcludedDeliveryDestinations(doc.excludedDeliveryDestinations),
       partnerId: doc.partner?._ref,
       adminOverrides: doc.adminOverrides,
       adminChangeSummary: doc.adminChangeSummary,
@@ -1664,6 +1688,7 @@ export interface AdminProductDetail {
   imageAlts?: string[];
   preparationTime?: number;
   occasion?: string;
+  excludedDeliveryDestinations?: DeliveryDestinationId[];
   customAttributes: Array<{ key: string; value: string }>;
   partnerId?: string;
   adminOverrides?: {
@@ -1693,6 +1718,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
           moderationStatus?: string;
           commissionPercent?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+          excludedDeliveryDestinations?: string[];
           structuredAttributes?: { preparationTime?: number; occasion?: string };
           customAttributes?: Array<{ key?: string; value?: string }>;
           partner?: { _ref?: string };
@@ -1710,7 +1736,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
     >(
       `*[_type == "product" && _id == $id][0] {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, moderationStatus, commissionPercent,
-        images, structuredAttributes, customAttributes, partner,
+        images, excludedDeliveryDestinations, structuredAttributes, customAttributes, partner,
         adminOverrides, adminChangeSummary, adminLastEditedAt, adminLastEditedBy
       }`,
       { id: productId }
@@ -1739,6 +1765,7 @@ export async function getProductByIdForAdmin(productId: string): Promise<AdminPr
       imageAlts: imageUrls.length ? fallbackImageAlts : [''],
       preparationTime: doc.structuredAttributes?.preparationTime,
       occasion: doc.structuredAttributes?.occasion,
+      excludedDeliveryDestinations: parseExcludedDeliveryDestinations(doc.excludedDeliveryDestinations),
       customAttributes: (doc.customAttributes ?? []).map((a) => ({
         key: a.key ?? '',
         value: a.value ?? '',

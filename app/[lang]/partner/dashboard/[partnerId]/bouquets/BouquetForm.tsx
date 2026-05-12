@@ -6,6 +6,11 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import type { BouquetSize } from '@/lib/bouquets';
 import type { SizeKey } from '@/lib/bouquets';
+import {
+  DELIVERY_DESTINATIONS,
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
 
 const COLOR_OPTIONS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
 const FLOWER_TYPE_OPTIONS = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'chrysanthemums', 'lisianthus', 'daisy', 'mixed'] as const;
@@ -50,6 +55,7 @@ export interface BouquetFormProps {
     flowerTypes?: string[];
     occasion?: string[];
     presentationFormats?: string[];
+    excludedDeliveryDestinations?: string[];
     sizes: Array<BouquetSize & { preparationTime?: number; availability?: boolean }>;
   };
   action: (formData: FormData) => Promise<{ error?: string } | void>;
@@ -72,6 +78,10 @@ export function BouquetForm({
   const [sizes, setSizes] = useState<Array<BouquetSize & { preparationTime?: number; availability?: boolean }>>(
     initial?.sizes?.length ? initial.sizes : defaultSizes
   );
+  const [availableDeliveryDestinations, setAvailableDeliveryDestinations] = useState<DeliveryDestinationId[]>(() => {
+    const excluded = new Set(initial?.excludedDeliveryDestinations ?? []);
+    return DELIVERY_DESTINATIONS.filter((destination) => !excluded.has(destination));
+  });
   const [error, setError] = useState<string | null>(null);
 
   const sizesJson = JSON.stringify(
@@ -116,6 +126,10 @@ export function BouquetForm({
     if (colors.length) formData.set('colors', colors.join(','));
     if (flowerTypes.length) formData.set('flowerTypes', flowerTypes.join(','));
     if (presentationFormats.length) formData.set('presentationFormats', presentationFormats.join(','));
+    formData.set(
+      'excludedDeliveryDestinations',
+      DELIVERY_DESTINATIONS.filter((destination) => !availableDeliveryDestinations.includes(destination)).join(',')
+    );
     const result = await action(formData);
     if (result?.error) setError(result.error);
   }
@@ -216,6 +230,32 @@ export function BouquetForm({
             </label>
           ))}
         </div>
+      </fieldset>
+      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+        <legend>{lang === 'th' ? 'พื้นที่ที่ขายได้' : 'Available provinces / markets'}</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+          {DELIVERY_DESTINATIONS.map((destination) => (
+            <label key={destination} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <input
+                type="checkbox"
+                checked={availableDeliveryDestinations.includes(destination)}
+                onChange={() =>
+                  setAvailableDeliveryDestinations((current) =>
+                    current.includes(destination)
+                      ? current.filter((item) => item !== destination)
+                      : [...current, destination]
+                  )
+                }
+              />
+              <span>{destinationDisplayName(destination, lang)}</span>
+            </label>
+          ))}
+        </div>
+        <span className="partner-file-hint">
+          {lang === 'th'
+            ? 'ยกเลิกเลือกพื้นที่ที่ไม่สามารถขายสินค้านี้ได้'
+            : 'Uncheck destinations where this bouquet should not be sold.'}
+        </span>
       </fieldset>
       <label>
         {t.images} <span aria-hidden="true">*</span>

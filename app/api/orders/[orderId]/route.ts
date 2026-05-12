@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByIdWithPublicToken } from '@/lib/orders';
-import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
+import {
+  getSupabaseOrderStatusHistoryByOrderId,
+  getSupabasePaymentStatusByOrderId,
+} from '@/lib/supabase/adminQueries';
 import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from '@/lib/orders/statusConstants';
+import {
+  buildOrderLifecycleTimestamps,
+  getCurrentOrderLifecycleStatus,
+  getLifecycleTimestampForStatus,
+} from '@/lib/orders/lifecycle';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +49,10 @@ export async function GET(
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  const supabasePayment = await getSupabasePaymentStatusByOrderId(normalized);
+  const [supabasePayment, statusHistory] = await Promise.all([
+    getSupabasePaymentStatusByOrderId(normalized),
+    getSupabaseOrderStatusHistoryByOrderId(normalized),
+  ]);
   if (!supabasePayment) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
@@ -57,22 +68,39 @@ export async function GET(
     ?? order.fulfillmentStatus
     ?? fulfillmentFromLegacyColumn
     ?? 'new';
+  const paid =
+    (supabasePayment?.payment_status ?? '').toUpperCase() === 'PAID' ||
+    order.status === 'paid' ||
+    Boolean(supabasePayment?.paid_at ?? order.paidAt);
+  const statusUpdatedAtFallback =
+    supabasePayment?.updated_at ??
+    supabasePayment?.fulfillment_status_updated_at ??
+    order.fulfillmentStatusUpdatedAt;
+  const lifecycleCurrentStatus = getCurrentOrderLifecycleStatus(fulfillmentStatus, paid);
+  const statusTimestamps = buildOrderLifecycleTimestamps({
+    orderCreatedAt: order.createdAt,
+    paidAt: supabasePayment?.paid_at ?? order.paidAt,
+    statusHistory,
+    fulfillmentStatus: orderStatus ?? fulfillmentStatus,
+    currentStatus: lifecycleCurrentStatus,
+    fallbackUpdatedAt: statusUpdatedAtFallback,
+  });
+  const fulfillmentStatusUpdatedAt =
+    getLifecycleTimestampForStatus(statusTimestamps, lifecycleCurrentStatus) ??
+    statusUpdatedAtFallback;
 
   const isDelivered =
     fulfillmentStatus === 'delivered' ||
     normalizeOrderStatus(supabasePayment?.order_status) === 'DELIVERED';
 
   if (isDelivered) {
-    const fulfillmentStatusUpdatedAt =
-      supabasePayment?.fulfillment_status_updated_at
-      ?? supabasePayment?.updated_at
-      ?? order.fulfillmentStatusUpdatedAt;
     return NextResponse.json(
       {
         orderId: order.orderId,
         order_status: orderStatus,
         fulfillmentStatus: 'delivered',
         fulfillmentStatusUpdatedAt,
+        statusTimestamps,
         payment_status: supabasePayment?.payment_status ?? order.status,
         payment_method: supabasePayment?.payment_method,
         paid_at: supabasePayment?.paid_at ?? order.paidAt,
@@ -88,10 +116,8 @@ export async function GET(
     ...order,
     order_status: orderStatus,
     fulfillmentStatus,
-    fulfillmentStatusUpdatedAt:
-      supabasePayment?.fulfillment_status_updated_at ??
-      supabasePayment?.updated_at ??
-      order.fulfillmentStatusUpdatedAt,
+    fulfillmentStatusUpdatedAt,
+    statusTimestamps,
     payment_status: supabasePayment?.payment_status ?? order.status,
     payment_method: supabasePayment?.payment_method,
     paid_at: supabasePayment?.paid_at ?? order.paidAt,

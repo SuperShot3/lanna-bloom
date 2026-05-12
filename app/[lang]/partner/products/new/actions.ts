@@ -11,6 +11,7 @@ import { getPartnerBySupabaseUserId } from '@/lib/sanity';
 import { getPartnerSession } from '@/lib/supabase/partnerAuthServer';
 import { isValidLocale } from '@/lib/i18n';
 import type { SizeKey } from '@/lib/bouquets';
+import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
 
 function isRedirectError(err: unknown): boolean {
   return (
@@ -66,6 +67,11 @@ async function getImageAssetIds(formData: FormData, maxImages = 5): Promise<stri
   return ids;
 }
 
+function parseExcludedDestinations(formData: FormData): string[] | undefined {
+  const raw = (formData.get('excludedDeliveryDestinations') as string | null)?.trim();
+  return parseExcludedDeliveryDestinations(raw ? raw.split(',') : undefined);
+}
+
 export async function createBouquetAction(formData: FormData) {
   const lang = formData.get('lang') as string;
   if (!isValidLocale(lang)) return { error: 'Invalid locale' };
@@ -97,6 +103,7 @@ export async function createBouquetAction(formData: FormData) {
   const presentationFormats = presentationFormatsRaw
     ? presentationFormatsRaw.split(',').map((s) => s.trim()).filter(Boolean)
     : undefined;
+  const excludedDeliveryDestinations = parseExcludedDestinations(formData);
 
   try {
     await createBouquet({
@@ -111,6 +118,7 @@ export async function createBouquetAction(formData: FormData) {
       flowerTypes,
       occasion,
       presentationFormats,
+      excludedDeliveryDestinations,
       imageAssetIds,
       sizes,
     });
@@ -152,6 +160,7 @@ export async function createProductAction(formData: FormData) {
   const preparationTime = formData.get('preparationTime') as string | null;
   const occasions = (formData.get('occasions') as string)?.trim();
   const customTag = (formData.get('customTag') as string)?.trim();
+  const excludedDeliveryDestinations = parseExcludedDestinations(formData);
 
   try {
     await createProduct({
@@ -167,6 +176,7 @@ export async function createProductAction(formData: FormData) {
         ? Number(preparationTime)
         : undefined,
       occasion: occasions || undefined,
+      excludedDeliveryDestinations,
       ...(customTag && {
         customAttributes: [{ key: 'customTag', value: customTag }],
       }),

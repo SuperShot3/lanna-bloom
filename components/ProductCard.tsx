@@ -266,6 +266,7 @@ export function ProductCard({
               description: '',
             },
             addOns: getDefaultAddOns(),
+            excludedDeliveryDestinations: product.excludedDeliveryDestinations,
           },
           1
         );
@@ -310,6 +311,7 @@ export function ProductCard({
             description: '',
           },
           addOns: getDefaultAddOns(),
+          excludedDeliveryDestinations: product.excludedDeliveryDestinations,
         },
         1
       );

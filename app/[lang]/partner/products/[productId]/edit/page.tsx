@@ -90,6 +90,7 @@ export default async function PartnerProductEditPage({
             price: product.price,
             preparationTime: product.preparationTime,
             occasion: product.occasion,
+            excludedDeliveryDestinations: product.excludedDeliveryDestinations,
           }}
           backHref={productsHref}
         />

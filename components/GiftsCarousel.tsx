@@ -88,6 +88,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           imageUrl: imgSrc,
           size: syntheticSize,
           addOns: defaultAddOns,
+          excludedDeliveryDestinations: product.excludedDeliveryDestinations,
         },
         1
       );

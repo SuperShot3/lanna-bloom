@@ -17,6 +17,11 @@ import {
   OCCASION_OPTIONS,
 } from '@/lib/partnerPortal';
 import type { Locale } from '@/lib/i18n';
+import {
+  DELIVERY_DESTINATIONS,
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
 
 const MAX_IMAGES = 5;
 
@@ -36,6 +41,9 @@ export function AddProductWizard({ lang, partnerId }: Props) {
   const [prepTime, setPrepTime] = useState('');
   const [occasions, setOccasions] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [availableDeliveryDestinations, setAvailableDeliveryDestinations] = useState<DeliveryDestinationId[]>([
+    ...DELIVERY_DESTINATIONS,
+  ]);
   const [descriptionEn, setDescriptionEn] = useState('');
   const [descriptionTh, setDescriptionTh] = useState('');
   const [showDescription, setShowDescription] = useState(false);
@@ -80,6 +88,10 @@ export function AddProductWizard({ lang, partnerId }: Props) {
   const occasionOptions = OCCASION_OPTIONS.map((o) => ({
     value: o.value,
     label: lang === 'th' ? o.labelTh : o.labelEn,
+  }));
+  const deliveryDestinationOptions = DELIVERY_DESTINATIONS.map((value) => ({
+    value,
+    label: destinationDisplayName(value, lang),
   }));
 
   // ── Bouquet form redirect ──
@@ -228,6 +240,10 @@ export function AddProductWizard({ lang, partnerId }: Props) {
     formData.set('preparationTime', prepTime);
     formData.set('occasions', occasions.join(','));
     formData.set('customTag', customTag.trim());
+    formData.set(
+      'excludedDeliveryDestinations',
+      DELIVERY_DESTINATIONS.filter((destination) => !availableDeliveryDestinations.includes(destination)).join(',')
+    );
 
     let fileIdx = 1;
     for (const file of imageFiles) {
@@ -257,6 +273,7 @@ export function AddProductWizard({ lang, partnerId }: Props) {
     setPrepTime('');
     setOccasions([]);
     setCustomTag('');
+    setAvailableDeliveryDestinations([...DELIVERY_DESTINATIONS]);
     setDescriptionEn('');
     setDescriptionTh('');
     setShowDescription(false);
@@ -269,6 +286,12 @@ export function AddProductWizard({ lang, partnerId }: Props) {
 
   function toggleOccasion(value: string) {
     setOccasions((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  }
+
+  function toggleAvailableDeliveryDestination(value: DeliveryDestinationId) {
+    setAvailableDeliveryDestinations((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   }
@@ -597,6 +620,21 @@ export function AddProductWizard({ lang, partnerId }: Props) {
             />
           </Card>
 
+          <Card>
+            <div className="partner-card-title">
+              {lang === 'th' ? 'พื้นที่ที่ขายได้' : 'Available provinces / markets'}
+              <span className="partner-card-title-hint">
+                {lang === 'th' ? 'ยกเลิกเลือกพื้นที่ที่ไม่ขาย' : 'uncheck where unavailable'}
+              </span>
+            </div>
+            <Chips
+              options={deliveryDestinationOptions}
+              selected={availableDeliveryDestinations}
+              onToggle={(value) => toggleAvailableDeliveryDestination(value as DeliveryDestinationId)}
+              multi
+            />
+          </Card>
+
           {/* Custom label */}
           <Card>
             <div className="partner-card-title">
@@ -741,6 +779,13 @@ export function AddProductWizard({ lang, partnerId }: Props) {
                   value={customTag}
                 />
               )}
+              <ReviewRow
+                label={lang === 'th' ? 'พื้นที่ที่ขายได้' : 'Available in'}
+                value={deliveryDestinationOptions
+                  .filter((option) => availableDeliveryDestinations.includes(option.value))
+                  .map((option) => option.label)
+                  .join(', ')}
+              />
             </div>
           </Card>
           <p className="partner-field-hint" style={{ marginTop: 8, paddingLeft: 4 }}>

@@ -5,6 +5,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { OCCASION_OPTIONS } from '@/lib/partnerPortal';
 import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
 import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABEL, type ProductCategory } from '@/lib/catalogCategories';
+import {
+  DELIVERY_DESTINATIONS,
+  destinationDisplayName,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
 
 type ProductImageAnalysis = {
   productFormat: string;
@@ -122,6 +127,12 @@ const adminItemCategoryOptions: Array<{ value: Hints['itemCategory']; label: str
   })),
 ];
 
+const deliveryDestinationOptions: Array<{ value: DeliveryDestinationId; label: string }> =
+  DELIVERY_DESTINATIONS.map((value) => ({
+    value,
+    label: destinationDisplayName(value, 'en'),
+  }));
+
 function normalizeAdminItemCategory(value: string): Hints['itemCategory'] {
   if (value === 'flowers') return 'flowers';
   if (PRODUCT_CATEGORIES.includes(value as ProductCategory)) return value as ProductCategory;
@@ -237,6 +248,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const [occasionsCsv, setOccasionsCsv] = useState('');
   const [presentationCsv, setPresentationCsv] = useState('bouquet');
   const [deliveryCsv, setDeliveryCsv] = useState('same_day, next_day');
+  const [availableDeliveryDestinations, setAvailableDeliveryDestinations] = useState<DeliveryDestinationId[]>([
+    ...DELIVERY_DESTINATIONS,
+  ]);
   const [featuredPopular, setFeaturedPopular] = useState(false);
   const [loading, setLoading] = useState<LoadingStage | null>(null);
   const [error, setError] = useState('');
@@ -270,6 +284,13 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     const current = splitList(hints.occasion);
     const next = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
     updateHint('occasion', next.join(', '));
+  }
+
+  function toggleAvailableDeliveryDestination(value: DeliveryDestinationId) {
+    setAvailableDeliveryDestinations((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+    );
+    setSavedProduct(null);
   }
 
   function updateProductType(value: string) {
@@ -351,6 +372,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setOccasionsCsv('');
     setPresentationCsv('bouquet');
     setDeliveryCsv('same_day, next_day');
+    setAvailableDeliveryDestinations([...DELIVERY_DESTINATIONS]);
     setFeaturedPopular(false);
     setLoading(null);
     setError('');
@@ -460,6 +482,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           occasion: splitList(occasionsCsv),
           presentationFormats: splitList(presentationCsv),
           deliveryOptions: splitList(deliveryCsv),
+          excludedDeliveryDestinations: DELIVERY_DESTINATIONS.filter(
+            (destination) => !availableDeliveryDestinations.includes(destination)
+          ),
           featuredPopular,
         }),
       });
@@ -874,6 +899,22 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             <span>Occasion tags</span>
             <input className="admin-input" value={occasionsCsv} onChange={(event) => setOccasionsCsv(event.target.value)} />
           </label>
+          <fieldset className="admin-form-group admin-product-create-occasion-hints">
+            <legend>Available provinces / markets</legend>
+            <div className="admin-product-create-choice-grid">
+              {deliveryDestinationOptions.map((option) => (
+                <label className="admin-product-create-choice" key={option.value}>
+                  <input
+                    type="checkbox"
+                    checked={availableDeliveryDestinations.includes(option.value)}
+                    onChange={() => toggleAvailableDeliveryDestination(option.value)}
+                  />
+                  <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
+            <small>Uncheck destinations where this product should not be sold.</small>
+          </fieldset>
           {isFlowerProduct ? (
             <>
               <label className="admin-form-group">

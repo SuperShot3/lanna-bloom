@@ -28,7 +28,7 @@ export interface CartItem {
   addOns: AddOnsValues;
   /** Number of units (default 1 for backward compat). */
   quantity?: number;
-  /** When set on bouquet lines, used to validate cart vs selected delivery destination. */
+  /** When set on catalog lines, used to validate cart vs selected delivery destination. */
   excludedDeliveryDestinations?: DeliveryDestinationId[];
 }
 

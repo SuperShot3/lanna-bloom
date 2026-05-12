@@ -18,6 +18,7 @@ import { getPartnerBySupabaseUserId } from '@/lib/sanity';
 import { getPartnerSession } from '@/lib/supabase/partnerAuthServer';
 import { isValidLocale } from '@/lib/i18n';
 import type { SizeKey } from '@/lib/bouquets';
+import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
 
 function isRedirectError(err: unknown): boolean {
   return (
@@ -85,6 +86,11 @@ async function getProductImageAssetIds(formData: FormData): Promise<string[]> {
   return ids;
 }
 
+function parseExcludedDestinations(formData: FormData): string[] | undefined {
+  const raw = (formData.get('excludedDeliveryDestinations') as string | null)?.trim();
+  return parseExcludedDeliveryDestinations(raw ? raw.split(',') : undefined);
+}
+
 /** Auth-based: update bouquet; sets status to pending_review for approval. */
 export async function updateBouquetAction(formData: FormData) {
   const lang = formData.get('lang') as string;
@@ -128,6 +134,7 @@ export async function updateBouquetAction(formData: FormData) {
   const presentationFormats = presentationFormatsRaw
     ? presentationFormatsRaw.split(',').map((s) => s.trim()).filter(Boolean)
     : undefined;
+  const excludedDeliveryDestinations = parseExcludedDestinations(formData);
 
   try {
     await updateBouquet(bouquetId, {
@@ -141,6 +148,7 @@ export async function updateBouquetAction(formData: FormData) {
       flowerTypes,
       occasion,
       presentationFormats,
+      excludedDeliveryDestinations,
       imageAssetIds,
       sizes,
     });
@@ -189,6 +197,7 @@ export async function updateProductAction(formData: FormData) {
 
   const preparationTime = formData.get('preparationTime') as string | null;
   const occasion = (formData.get('occasion') as string)?.trim();
+  const excludedDeliveryDestinations = parseExcludedDestinations(formData);
 
   try {
     await updateProduct(productId, {
@@ -201,6 +210,7 @@ export async function updateProductAction(formData: FormData) {
       imageAssetIds,
       preparationTime: preparationTime ? Number(preparationTime) : undefined,
       occasion: occasion || undefined,
+      excludedDeliveryDestinations,
     });
     redirect(`/${lang}/partner/products`);
   } catch (err) {

@@ -7,6 +7,7 @@ import {
   type SanityWriteImageInput,
 } from '@/lib/sanityWrite';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/catalogCategories';
+import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
 
 export const runtime = 'nodejs';
 
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
   const priceRaw = b.price;
   const price = typeof priceRaw === 'number' ? priceRaw : Number(String(priceRaw ?? ''));
   const images = parseImages(b.images);
+  const excludedDeliveryDestinations = parseExcludedDeliveryDestinations(b.excludedDeliveryDestinations);
 
   if (!nameEn) {
     return NextResponse.json({ error: 'English product name is required' }, { status: 400 });
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest) {
         price,
         images,
         occasion: stringArrayField(b, 'occasion'),
+        excludedDeliveryDestinations,
         customAttributes,
         createdBy: session.user.email ?? 'unknown',
         createdAt: new Date().toISOString(),
@@ -146,6 +149,7 @@ export async function POST(request: NextRequest) {
       occasion: stringArrayField(b, 'occasion'),
       presentationFormats: stringArrayField(b, 'presentationFormats'),
       deliveryOptions: stringArrayField(b, 'deliveryOptions'),
+      excludedDeliveryDestinations,
       featuredPopular: b.featuredPopular === true,
       createdBy: session.user.email ?? 'unknown',
       createdAt: new Date().toISOString(),

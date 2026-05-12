@@ -152,6 +152,7 @@ export interface CreateBouquetInput {
   flowerTypes?: string[];
   occasion?: string[];
   presentationFormats?: string[];
+  excludedDeliveryDestinations?: string[];
   imageAssetIds: string[]; // 1–3 asset _ids from uploadImageToSanity
   sizes: BouquetSizeInput[];
 }
@@ -219,6 +220,9 @@ export async function createBouquet(input: CreateBouquetInput): Promise<string> 
     ...(input.flowerTypes?.length ? { flowerTypes: input.flowerTypes } : {}),
     ...(input.occasion?.length ? { occasion: input.occasion } : {}),
     ...(input.presentationFormats?.length ? { presentationFormats: input.presentationFormats } : {}),
+    ...(input.excludedDeliveryDestinations?.length
+      ? { excludedDeliveryDestinations: input.excludedDeliveryDestinations }
+      : {}),
     partner: { _type: 'reference', _ref: input.partnerId },
     status: 'pending_review',
     images,
@@ -246,6 +250,7 @@ export interface UpdateBouquetInput {
   flowerTypes?: string[];
   occasion?: string[];
   presentationFormats?: string[];
+  excludedDeliveryDestinations?: string[];
   imageAssetIds: string[];
   sizes: BouquetSizeInput[];
 }
@@ -279,6 +284,7 @@ export interface UpdateProductInput {
   imageAssetIds: string[];
   preparationTime?: number;
   occasion?: string;
+  excludedDeliveryDestinations?: string[];
 }
 
 /** Update a product (partner only); sets moderationStatus to submitted for re-approval. */
@@ -300,6 +306,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
       price: Number(input.price),
       moderationStatus: 'submitted',
       images,
+      excludedDeliveryDestinations: input.excludedDeliveryDestinations ?? [],
       ...((input.preparationTime != null || input.occasion) && {
         structuredAttributes: {
           ...(input.preparationTime != null && { preparationTime: input.preparationTime }),
@@ -357,6 +364,7 @@ export async function updateBouquet(bouquetId: string, input: UpdateBouquetInput
       ...(input.presentationFormats?.length
         ? { presentationFormats: input.presentationFormats }
         : { presentationFormats: [] }),
+      excludedDeliveryDestinations: input.excludedDeliveryDestinations ?? [],
       status: 'pending_review',
       images,
       sizes: input.sizes.map((s) => ({
@@ -383,6 +391,7 @@ export interface CreateProductInput {
   imageAssetIds: string[];
   preparationTime?: number;
   occasion?: string;
+  excludedDeliveryDestinations?: string[];
   customAttributes?: Array<{ key: string; value: string }>;
 }
 
@@ -396,6 +405,7 @@ export interface CreateAdminProductInput {
   price: number;
   images: SanityWriteImageInput[];
   occasion?: string[];
+  excludedDeliveryDestinations?: string[];
   customAttributes?: Array<{ key: string; value: string }>;
   createdBy?: string;
   createdAt?: string;
@@ -455,6 +465,9 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
     partner: { _type: 'reference', _ref: input.partnerId },
     moderationStatus: 'submitted',
     images,
+    ...(input.excludedDeliveryDestinations?.length
+      ? { excludedDeliveryDestinations: input.excludedDeliveryDestinations }
+      : {}),
     ...((input.preparationTime != null || input.occasion) && {
       structuredAttributes: {
         ...(input.preparationTime != null && { preparationTime: input.preparationTime }),
@@ -510,6 +523,9 @@ export async function createAdminReviewProduct(
     cost: price,
     commissionPercent: 0,
     moderationStatus: 'submitted',
+    ...(input.excludedDeliveryDestinations?.length
+      ? { excludedDeliveryDestinations: input.excludedDeliveryDestinations }
+      : {}),
     source: 'admin_ai_product_creation',
     createdBy: input.createdBy?.trim() || undefined,
     createdAt: input.createdAt || new Date().toISOString(),

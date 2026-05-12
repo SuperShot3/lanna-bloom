@@ -1,4 +1,10 @@
 import { defineType } from 'sanity';
+import { MARKETS } from '@/lib/delivery/markets';
+
+const DESTINATION_EXCLUSION_LIST = [
+  { title: 'Chiang Mai', value: 'CHIANG_MAI' as const },
+  ...MARKETS.map((m) => ({ title: m.customerFacingNameEn, value: m.destinationId })),
+].filter((entry, i, arr) => arr.findIndex((e) => e.value === entry.value) === i);
 
 /**
  * Non-flower partner/admin products: balloons, gifts, plushy_toys, money_flowers, handmade_floral.
@@ -43,6 +49,18 @@ export const product = defineType({
         ],
       },
       validation: (r) => r.required(),
+    },
+    {
+      name: 'excludedDeliveryDestinations',
+      title: 'Not available in these provinces / markets',
+      type: 'array',
+      of: [{ type: 'string' }],
+      options: {
+        list: [...DESTINATION_EXCLUSION_LIST],
+        layout: 'grid',
+      },
+      description:
+        'Leave empty to sell everywhere. Check a province to block this product there.',
     },
     { name: 'price', title: 'Price (THB)', type: 'number', validation: (r) => r.required().min(0) },
     {

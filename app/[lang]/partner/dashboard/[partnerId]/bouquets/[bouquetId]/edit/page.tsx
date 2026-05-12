@@ -40,6 +40,7 @@ export default async function PartnerBouquetEditPage({
             flowerTypes: bouquet.flowerTypes,
             occasion: bouquet.occasion,
             presentationFormats: bouquet.presentationFormats,
+            excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
             sizes: bouquet.sizes.map((s) => ({
               ...s,
               preparationTime: s.preparationTime,

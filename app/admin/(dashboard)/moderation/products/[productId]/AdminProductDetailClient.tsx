@@ -13,6 +13,7 @@ import {
   updateCommissionAction,
 } from '../actions';
 import type { AdminProductDetail } from '@/lib/sanity';
+import { destinationDisplayName } from '@/lib/delivery/markets';
 
 const CATEGORY_LABELS: Record<string, string> = {
   balloons: 'Balloons',
@@ -208,6 +209,9 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
 
   const descEn = product.descriptionEn?.trim() || '—';
   const descTh = product.descriptionTh?.trim() || '—';
+  const unavailableDestinations = (product.excludedDeliveryDestinations ?? []).map((destination) =>
+    destinationDisplayName(destination, 'en')
+  );
 
   const actionCard = (
     <div className="admin-product-detail-action-card">
@@ -593,6 +597,15 @@ export function AdminProductDetailClient({ product }: AdminProductDetailClientPr
                 </ul>
               </div>
             )}
+
+            <div className="admin-product-detail-section">
+              <h3>Province availability</h3>
+              <p>
+                {unavailableDestinations.length
+                  ? `Not available in: ${unavailableDestinations.join(', ')}`
+                  : 'Available in all configured provinces / markets.'}
+              </p>
+            </div>
 
             {product.slug && product.moderationStatus === 'live' && (
               <Link

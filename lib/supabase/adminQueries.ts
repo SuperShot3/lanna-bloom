@@ -372,6 +372,29 @@ export async function getSupabasePaymentStatusByOrderId(orderId: string): Promis
   }
 }
 
+export async function getSupabaseOrderStatusHistoryByOrderId(
+  orderId: string
+): Promise<SupabaseStatusHistoryRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const normalized = String(orderId ?? '').trim();
+  if (!normalized) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('order_status_history')
+      .select('order_id, from_status, to_status, created_at')
+      .eq('order_id', normalized)
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    return data as SupabaseStatusHistoryRow[];
+  } catch {
+    return [];
+  }
+}
+
 export async function getDistricts(): Promise<string[]> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return [];
