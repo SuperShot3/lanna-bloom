@@ -35,6 +35,7 @@ import {
 } from '@/lib/phoneFieldHints';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 import { EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
+import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 
 function validateStripePayload(
   body: unknown
@@ -124,6 +125,22 @@ function validateStripePayload(
     : [];
   if (contactPreference.length === 0) {
     return { ok: false, message: 'At least one contactPreference is required' };
+  }
+
+  const lineIdNormalized =
+    typeof b.lineId === 'string' ? normalizeLineUserId(b.lineId) : '';
+  const wantsLineContact = contactPreference.includes('line');
+  if (wantsLineContact) {
+    if (!lineIdNormalized) {
+      return { ok: false, message: 'lineId is required when LINE is selected as a contact method' };
+    }
+    if (!isValidLineUserId(lineIdNormalized)) {
+      return {
+        ok: false,
+        message:
+          'lineId must be plain LINE profile text (letters, numbers, . _ -), 4–64 characters — no links or @',
+      };
+    }
   }
 
   const cartItems: CartItemIdentifier[] = items.map((it: unknown) => {
@@ -266,6 +283,7 @@ function validateStripePayload(
       phone,
       customerEmail,
       contactPreference,
+      ...(wantsLineContact && lineIdNormalized ? { lineId: lineIdNormalized } : {}),
       items: cartItems,
       referralCode,
       referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
@@ -300,6 +318,7 @@ interface StripeCheckoutPayload {
   phoneCountryCode?: string;
   customerEmail?: string;
   contactPreference: ContactPreferenceOption[];
+  lineId?: string;
   items: CartItemIdentifier[];
   referralCode?: string;
   referralDiscount?: number;
@@ -450,6 +469,7 @@ export async function POST(request: NextRequest) {
       ...(data.phoneCountryCode && { phoneCountryCode: data.phoneCountryCode }),
       customerEmail: data.customerEmail,
       contactPreference: data.contactPreference,
+      ...(data.lineId ? { lineId: data.lineId } : {}),
       items: totals.items,
       delivery: {
         address: data.delivery.address,

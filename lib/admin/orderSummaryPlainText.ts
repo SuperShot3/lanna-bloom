@@ -153,6 +153,12 @@ export function preferredContactDisplay(order: SupabaseOrderRow): string {
     : 'N/A';
 }
 
+/** LINE handle / ID from checkout when customer chose LINE as a contact channel (stored in `order_json`). */
+export function customerLineIdDisplay(order: SupabaseOrderRow): string {
+  const raw = orderJsonPartial(order)?.lineId;
+  return typeof raw === 'string' ? raw.trim() : '';
+}
+
 function parseContactPreference(raw: string | null | undefined): ContactPreferenceStored[] {
   if (!raw) return [];
   try {
@@ -360,6 +366,10 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push(`  Email: ${naText(order.customer_email)}`);
   lines.push(`  Phone: ${naText(customerPhoneDisplay(order))}`);
   lines.push(`  Preferred contact: ${preferredContactDisplay(order)}`);
+  const lineIdRow = customerLineIdDisplay(order);
+  if (lineIdRow) {
+    lines.push(`  LINE ID: ${lineIdRow}`);
+  }
   lines.push('');
   lines.push('Items');
   if (items.length === 0) {

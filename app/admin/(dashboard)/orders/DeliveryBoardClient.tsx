@@ -9,7 +9,14 @@ import {
   DeliveryRouteMapModal,
   buildMapMarkers,
 } from '@/app/admin/components/DeliveryRouteMapModal';
-import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
+import type {
+  DeliveryBoardSupplierRequestSummary,
+  SupabaseOrderRow,
+} from '@/lib/supabase/adminQueries';
+import {
+  supplierResponseLabelEnglish,
+  supplierStatusLabelEnglish,
+} from '@/lib/supplierRequests';
 import {
   destinationDisplayName,
   type DeliveryDestinationId,
@@ -34,7 +41,13 @@ import {
   orderHasCustomerCardMessage,
   sortOrdersForBoard,
 } from '@/lib/admin/deliveryBoardPreview';
-import { checkoutMapsUrl, customerDeliveryAddressRaw } from '@/lib/admin/orderSummaryPlainText';
+import {
+  checkoutMapsUrl,
+  customerDeliveryAddressRaw,
+  customerLineIdDisplay,
+} from '@/lib/admin/orderSummaryPlainText';
+import { getLineUserContactUrl } from '@/lib/messenger';
+import { LineIcon } from '@/components/icons';
 import {
   e164Digits,
   phoneInternational,
@@ -46,7 +59,7 @@ import {
   DeliveredEmailPreviewModal,
   type DeliveredPreviewPayload,
 } from '@/app/admin/components/DeliveredEmailPreviewModal';
-import { shopAddDays, shopTodayYmd } from '@/lib/shopTime';
+import { formatShopDateTime, shopAddDays, shopTodayYmd } from '@/lib/shopTime';
 
 interface DeliveryBoardClientProps {
   initialOrders: SupabaseOrderRow[];
@@ -69,6 +82,8 @@ interface DeliveryBoardClientProps {
   deliveryDestinations: string[];
   canEditStatus: boolean;
   canAssignDriver: boolean;
+  /** Latest supplier_order_requests row per order (for reviewing supplier task replies). */
+  supplierSummariesByOrderId: Record<string, DeliveryBoardSupplierRequestSummary>;
 }
 
 const QUICK_DRIVER_NAMES = ['Pee Khai', 'Pee Vinai'] as const;
@@ -276,6 +291,8 @@ function ContactNumberChip({
 function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
   const custTel = telHref(order.phone, order.phone_country_code);
   const custWa = whatsappHref(order.phone, order.phone_country_code);
+  const customerLineId = customerLineIdDisplay(order);
+  const custLineHref = getLineUserContactUrl(customerLineId);
   const recTel = telHref(order.recipient_phone, order.recipient_phone_country_code);
   const recWa = whatsappHref(order.recipient_phone, order.recipient_phone_country_code);
   const samePhone = e164Same(
@@ -286,8 +303,9 @@ function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
   );
   const hasCustPhone = Boolean(order.phone?.trim());
   const hasRecPhone = Boolean(order.recipient_phone?.trim()) && !samePhone;
-  const hasNumbers = hasCustPhone || hasRecPhone;
-  const showCustomer = Boolean(custTel || custWa);
+  const hasCustLineId = Boolean(customerLineId);
+  const hasNumbers = hasCustPhone || hasRecPhone || hasCustLineId;
+  const showCustomer = Boolean(custTel || custWa || custLineHref);
   const showRecipient = Boolean((recTel || recWa) && !samePhone);
   const email = order.customer_email?.trim();
   const hasAny = hasNumbers || showCustomer || showRecipient || Boolean(email);
@@ -308,6 +326,23 @@ function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
           <div className="admin-delivery-contact-numbers">
             {hasCustPhone ? (
               <ContactNumberChip label="Customer" phone={order.phone} countryCode={order.phone_country_code} />
+            ) : null}
+            {hasCustLineId ? (
+              <div className="admin-delivery-contact-chip">
+                <span className="admin-delivery-contact-chip-role">Customer LINE</span>
+                <span className="admin-delivery-contact-chip-num" title={customerLineId}>
+                  {customerLineId}
+                </span>
+                <AdminCopyTextButton
+                  text={customerLineId}
+                  ariaLabel="Copy customer LINE ID"
+                  className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-contact-chip-copy"
+                >
+                  <span className="material-symbols-outlined admin-delivery-contact-chip-copy-ico">
+                    content_copy
+                  </span>
+                </AdminCopyTextButton>
+              </div>
             ) : null}
             {hasRecPhone ? (
               <ContactNumberChip
@@ -336,6 +371,17 @@ function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
               >
                 <span className="material-symbols-outlined">chat</span>
                 WhatsApp
+              </a>
+            ) : null}
+            {custLineHref ? (
+              <a
+                href={custLineHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="admin-delivery-contact-link admin-delivery-contact-link--compact"
+              >
+                <LineIcon size={20} className="admin-delivery-contact-line-ico" />
+                LINE
               </a>
             ) : null}
           </div>
@@ -402,77 +448,204 @@ function DeliveryDriverAssignment({
   const customName = draftName.trim();
   const canSaveCustom = Boolean(customName) && customName !== assignedName && !isSaving;
 
+  const summaryAssignee = assignedName ? (
+    <span className="admin-delivery-driver-summary-assignee" title={assignedName}>
+      {assignedName}
+    </span>
+  ) : (
+    <span className="admin-delivery-driver-summary-assignee admin-delivery-driver-summary-assignee--muted">Unassigned</span>
+  );
+
   if (!canAssignDriver) {
     return assignedName ? (
-      <span className="admin-delivery-driver-readonly">
-        <span className="material-symbols-outlined">local_shipping</span>
-        {assignedName}
-      </span>
+      <details className="admin-delivery-contact-details admin-delivery-driver-control">
+        <summary className="admin-delivery-contact-summary" aria-label={`Driver for ${orderId}`}>
+          <span className="material-symbols-outlined admin-delivery-contact-summary-icon">local_shipping</span>
+          Driver
+          {summaryAssignee}
+          <span className="material-symbols-outlined admin-delivery-contact-chevron">expand_more</span>
+        </summary>
+        <div className="admin-delivery-contact-panel">
+          <p className="admin-delivery-contact-group-label">Assigned driver</p>
+          <p className="admin-delivery-driver-panel-value">{assignedName}</p>
+        </div>
+      </details>
     ) : null;
   }
 
   return (
-    <div className="admin-delivery-driver-control" aria-label={`Driver assignment for ${orderId}`}>
-      <div className="admin-delivery-driver-control-head">
-        <span className="admin-delivery-driver-label">Driver</span>
-        {assignedName ? <span className="admin-delivery-driver-current">{assignedName}</span> : null}
-      </div>
-      <div className="admin-delivery-driver-choices">
-        {QUICK_DRIVER_NAMES.map((name) => {
-          const selected = assignedName.localeCompare(name, undefined, { sensitivity: 'base' }) === 0;
-          return (
-            <button
-              key={name}
-              type="button"
-              className={`admin-delivery-driver-choice${selected ? ' selected' : ''}`}
-              onClick={() => onAssign(name)}
-              disabled={isSaving || selected}
-              aria-pressed={selected}
-            >
-              <span className="material-symbols-outlined">
-                {selected ? 'check_circle' : 'radio_button_unchecked'}
-              </span>
-              {name}
-            </button>
-          );
-        })}
-      </div>
-      <div className="admin-delivery-driver-custom">
-        <input
-          type="text"
-          className="admin-input admin-delivery-driver-input"
-          value={draftName}
-          onChange={(e) => onDraftChange(e.target.value)}
-          placeholder="Other driver name"
-          aria-label={`Custom driver name for ${orderId}`}
-          disabled={isSaving}
-        />
-        <button
-          type="button"
-          className="admin-btn admin-btn-sm admin-delivery-driver-save"
-          onClick={() => onAssign(customName)}
-          disabled={!canSaveCustom}
-        >
-          Save
-        </button>
+    <details className="admin-delivery-contact-details admin-delivery-driver-control" aria-label={`Driver assignment for ${orderId}`}>
+      <summary className="admin-delivery-contact-summary">
+        <span className="material-symbols-outlined admin-delivery-contact-summary-icon">local_shipping</span>
+        Driver
+        {summaryAssignee}
+        <span className="material-symbols-outlined admin-delivery-contact-chevron">expand_more</span>
+      </summary>
+      <div className="admin-delivery-contact-panel admin-delivery-driver-panel">
         {assignedName ? (
+          <>
+            <p className="admin-delivery-contact-group-label">Current assignment</p>
+            <p className="admin-delivery-driver-panel-value">{assignedName}</p>
+          </>
+        ) : null}
+        <p className="admin-delivery-contact-group-label">{assignedName ? 'Change driver' : 'Assign driver'}</p>
+        <div className="admin-delivery-driver-choices">
+          {QUICK_DRIVER_NAMES.map((name) => {
+            const selected = assignedName.localeCompare(name, undefined, { sensitivity: 'base' }) === 0;
+            return (
+              <button
+                key={name}
+                type="button"
+                className={`admin-delivery-driver-choice${selected ? ' selected' : ''}`}
+                onClick={() => onAssign(name)}
+                disabled={isSaving || selected}
+                aria-pressed={selected}
+              >
+                <span className="material-symbols-outlined">
+                  {selected ? 'check_circle' : 'radio_button_unchecked'}
+                </span>
+                {name}
+              </button>
+            );
+          })}
+        </div>
+        <div className="admin-delivery-driver-custom">
+          <input
+            type="text"
+            className="admin-input admin-delivery-driver-input"
+            value={draftName}
+            onChange={(e) => onDraftChange(e.target.value)}
+            placeholder="Other driver name"
+            aria-label={`Custom driver name for ${orderId}`}
+            disabled={isSaving}
+          />
           <button
             type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline admin-delivery-driver-clear"
-            onClick={onClear}
-            disabled={isSaving}
+            className="admin-btn admin-btn-sm admin-delivery-driver-save"
+            onClick={() => onAssign(customName)}
+            disabled={!canSaveCustom}
           >
-            Clear
+            Save
           </button>
+          {assignedName ? (
+            <button
+              type="button"
+              className="admin-btn admin-btn-sm admin-btn-outline admin-delivery-driver-clear"
+              onClick={onClear}
+              disabled={isSaving}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+        {isSaving ? <span className="admin-delivery-driver-message">Saving…</span> : null}
+        {message ? (
+          <span className={`admin-delivery-driver-message admin-delivery-driver-message--${message.type}`}>
+            {message.text}
+          </span>
         ) : null}
       </div>
-      {isSaving ? <span className="admin-delivery-driver-message">Saving…</span> : null}
-      {message ? (
-        <span className={`admin-delivery-driver-message admin-delivery-driver-message--${message.type}`}>
-          {message.text}
+    </details>
+  );
+}
+
+function formatSupplierBoardAmount(value: number | null | undefined): string {
+  if (value == null) return '—';
+  return `฿${Number(value).toLocaleString()}`;
+}
+
+function DeliveryCardSupplierReply({
+  orderId,
+  order,
+  summary,
+}: {
+  orderId: string;
+  order: SupabaseOrderRow;
+  summary: DeliveryBoardSupplierRequestSummary | undefined;
+}) {
+  if (!summary) return null;
+
+  const statusLabel = supplierStatusLabelEnglish(summary.status);
+  const responseLabel = supplierResponseLabelEnglish(summary.supplier_response_type);
+  const summarySnippet =
+    summary.supplier_response_type === 'PREPARE' ||
+    summary.supplier_response_type === 'PREPARE_WITH_CHANGES' ||
+    summary.supplier_response_type === 'DECLINE'
+      ? responseLabel
+      : statusLabel;
+
+  const manageHref = `/admin/orders/${encodeURIComponent(orderId)}/supplier-requests`;
+  const confirmedName = order.confirmed_supplier_shop_name?.trim();
+
+  return (
+    <details className="admin-delivery-contact-details admin-delivery-supplier-details">
+      <summary className="admin-delivery-contact-summary" aria-label={`Supplier request for ${orderId}`}>
+        <span className="material-symbols-outlined admin-delivery-contact-summary-icon">storefront</span>
+        Supplier
+        <span className="admin-delivery-supplier-summary-snippet" title={summary.shop_name_snapshot}>
+          {summarySnippet}
         </span>
-      ) : null}
-    </div>
+        <span className="material-symbols-outlined admin-delivery-contact-chevron">expand_more</span>
+      </summary>
+      <div className="admin-delivery-contact-panel admin-delivery-supplier-panel">
+        <p className="admin-delivery-contact-group-label">Shop</p>
+        <p className="admin-delivery-driver-panel-value">{summary.shop_name_snapshot}</p>
+
+        <p className="admin-delivery-contact-group-label">Link status</p>
+        <p className="admin-delivery-driver-panel-value">{statusLabel}</p>
+
+        <p className="admin-delivery-contact-group-label">Supplier reply</p>
+        <p className="admin-delivery-driver-panel-value">{responseLabel}</p>
+
+        <p className="admin-delivery-contact-group-label">Price offered</p>
+        <p className="admin-delivery-driver-panel-value">{formatSupplierBoardAmount(summary.supplier_price)}</p>
+
+        <p className="admin-delivery-contact-group-label">Ready time</p>
+        <p className="admin-delivery-driver-panel-value">
+          {summary.supplier_ready_time?.trim() ? summary.supplier_ready_time.trim() : '—'}
+        </p>
+
+        {summary.supplier_reason?.trim() ? (
+          <>
+            <p className="admin-delivery-contact-group-label">Reason / conditions</p>
+            <p className="admin-delivery-supplier-text-block">{summary.supplier_reason.trim()}</p>
+          </>
+        ) : null}
+
+        {summary.supplier_notes?.trim() ? (
+          <>
+            <p className="admin-delivery-contact-group-label">Notes</p>
+            <p className="admin-delivery-supplier-text-block">{summary.supplier_notes.trim()}</p>
+          </>
+        ) : null}
+
+        <p className="admin-delivery-contact-group-label">Responded at</p>
+        <p className="admin-delivery-driver-panel-value">{formatShopDateTime(summary.responded_at)}</p>
+
+        {confirmedName ? (
+          <>
+            <p className="admin-delivery-contact-group-label">Approved on order</p>
+            <p className="admin-delivery-driver-panel-value">
+              {confirmedName}
+              {order.confirmed_supplier_price != null
+                ? ` · ${formatSupplierBoardAmount(order.confirmed_supplier_price)}`
+                : ''}
+              {order.confirmed_supplier_ready_time?.trim()
+                ? ` · Ready ${order.confirmed_supplier_ready_time.trim()}`
+                : ''}
+            </p>
+          </>
+        ) : null}
+
+        <Link
+          href={manageHref}
+          className="admin-delivery-contact-link admin-delivery-contact-link--compact"
+        >
+          <span className="material-symbols-outlined">assignment</span>
+          Supplier requests
+        </Link>
+      </div>
+    </details>
   );
 }
 
@@ -498,6 +671,7 @@ export function DeliveryBoardClient({
   deliveryDestinations,
   canEditStatus,
   canAssignDriver,
+  supplierSummariesByOrderId = {},
 }: DeliveryBoardClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1133,6 +1307,11 @@ export function DeliveryBoardClient({
                                     </div>
                                   </div>
                                   <DeliveryCardContact order={o} />
+                                  <DeliveryCardSupplierReply
+                                    orderId={o.order_id}
+                                    order={o}
+                                    summary={supplierSummariesByOrderId[o.order_id]}
+                                  />
                                   <div className="admin-delivery-card-bottom">
                                     <div className="admin-delivery-card-bottom-pills">
                                       <span className="admin-delivery-product-pill">

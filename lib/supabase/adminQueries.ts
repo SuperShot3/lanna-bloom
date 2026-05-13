@@ -130,6 +130,20 @@ export interface SupplierOrderRequestRow {
   updated_at: string | null;
 }
 
+/** Latest supplier request snapshot for dispatch board (serializable to the client). */
+export interface DeliveryBoardSupplierRequestSummary {
+  order_id: string;
+  shop_name_snapshot: string;
+  status: string;
+  supplier_response_type: string | null;
+  supplier_price: number | null;
+  supplier_ready_time: string | null;
+  supplier_reason: string | null;
+  supplier_notes: string | null;
+  responded_at: string | null;
+  created_at: string | null;
+}
+
 export interface SupplierOrderRequestEventRow {
   id: string;
   request_id: string;
@@ -175,7 +189,7 @@ export async function getOrders(
 
   try {
     const listColumns =
-      'order_id, public_token, payment_method, customer_name, customer_email, phone, phone_country_code, address, delivery_destination, delivery_zone, postal_code, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, recipient_phone_country_code, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at, admin_needs_delivery_sort, order_json';
+      'order_id, public_token, payment_method, customer_name, customer_email, phone, phone_country_code, address, delivery_destination, delivery_zone, postal_code, district, delivery_window, delivery_date, order_status, payment_status, stripe_session_id, stripe_payment_intent_id, paid_at, items_total, delivery_fee, grand_total, total_amount, cogs_amount, delivery_cost, payment_fee, created_at, updated_at, recipient_name, recipient_phone, recipient_phone_country_code, contact_preference, referral_code, referral_discount, internal_notes, driver_name, driver_phone, delivery_google_maps_url, fulfillment_status, fulfillment_status_updated_at, admin_needs_delivery_sort, order_json, confirmed_supplier_shop_name, confirmed_supplier_price, confirmed_supplier_ready_time, confirmed_supplier_confirmed_at';
     let query = supabase
       .from('orders')
       .select(listColumns, { count: 'exact' });
@@ -244,6 +258,61 @@ export async function getOrders(
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[admin] getOrders exception:', msg);
     return { orders: [], total: 0, error: msg };
+  }
+}
+
+/**
+ * One row per order_id: the supplier_order_requests row with the latest created_at.
+ * Used on the delivery board to review supplier task replies without N+1 queries.
+ */
+export async function getLatestSupplierRequestSummariesForOrders(
+  orderIds: string[]
+): Promise<Record<string, DeliveryBoardSupplierRequestSummary>> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase || orderIds.length === 0) return {};
+
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const id of orderIds) {
+    const t = String(id ?? '').trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    unique.push(t);
+  }
+  if (unique.length === 0) return {};
+
+  try {
+    const { data, error } = await supabase
+      .from('supplier_order_requests')
+      .select(
+        'order_id, shop_name_snapshot, status, supplier_response_type, supplier_price, supplier_ready_time, supplier_reason, supplier_notes, responded_at, created_at'
+      )
+      .in('order_id', unique);
+
+    if (error) {
+      console.error('[admin] getLatestSupplierRequestSummariesForOrders:', error);
+      return {};
+    }
+
+    const rows = (data ?? []) as DeliveryBoardSupplierRequestSummary[];
+    const best = new Map<string, DeliveryBoardSupplierRequestSummary>();
+    for (const row of rows) {
+      const oid = row.order_id;
+      const prev = best.get(oid);
+      if (!prev) {
+        best.set(oid, row);
+        continue;
+      }
+      const prevT = prev.created_at ?? '';
+      const nextT = row.created_at ?? '';
+      if (nextT > prevT) best.set(oid, row);
+    }
+
+    return Object.fromEntries(best);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[admin] getLatestSupplierRequestSummariesForOrders exception:', msg);
+    return {};
   }
 }
 

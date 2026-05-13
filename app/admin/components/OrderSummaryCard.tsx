@@ -3,6 +3,7 @@ import {
   buildDriverMessengerPlainText,
   buildOrderSummaryPlainText,
   checkoutMapsUrl,
+  customerLineIdDisplay,
   customerPhoneDisplay,
   formatAmountNa,
   naText,
@@ -43,6 +44,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
   const surpriseDelivery = surpriseDeliveryAdminLabel(order);
   const copyText = buildOrderSummaryPlainText(order, items);
   const driverMessengerText = buildDriverMessengerPlainText(order, items, customGreetingCard);
+  const customerLineId = customerLineIdDisplay(order);
 
   const deliveryAddressResolved =
     order.address?.trim() ||
@@ -99,6 +101,12 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
             <span className="admin-summary-key-value">{naText(customerPhoneDisplay(order))}</span>
           </p>
           <p className="admin-muted">Preferred contact: {preferredContactDisplay(order)}</p>
+          {customerLineId ? (
+            <p className="admin-muted">
+              LINE ID:{' '}
+              <span className="admin-summary-key-value">{customerLineId}</span>
+            </p>
+          ) : null}
         </div>
         <ItemsList items={items} embedded summary={null} />
         <div>

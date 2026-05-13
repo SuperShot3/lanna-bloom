@@ -205,6 +205,9 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     paidAt: row.paid_at ?? undefined,
     fulfillmentStatus: fulfillmentDisplayFromSupabaseRow(row),
     fulfillmentStatusUpdatedAt: row.fulfillment_status_updated_at ?? row.updated_at ?? undefined,
+    ...(typeof looseJson?.lineId === 'string' && looseJson.lineId.trim()
+      ? { lineId: looseJson.lineId.trim() }
+      : {}),
     ...(row.order_source && {
       orderSource: row.order_source as 'web' | 'custom_form' | 'legacy_line',
     }),

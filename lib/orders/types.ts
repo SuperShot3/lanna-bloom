@@ -111,6 +111,8 @@ export interface OrderPayload {
   delivery: OrderDelivery;
   pricing: OrderPricing;
   contactPreference?: ContactPreferenceStored[];
+  /** Customer LINE profile ID (plain text, no @ / no URL) when LINE is among preferred contact channels. */
+  lineId?: string;
   referralCode?: string;
   referralDiscount?: number;
   referralPartnerName?: string;

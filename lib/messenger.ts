@@ -8,6 +8,7 @@
  */
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 
 /** E.164 format, no + (used for WhatsApp). */
 const CONTACT_PHONE = '66803313431';
@@ -34,6 +35,16 @@ export function getLineOrderUrl(_message: string): string {
 export function getLineContactUrl(): string {
   if (LINE_ADD_FRIEND_LINK) return LINE_ADD_FRIEND_LINK;
   return 'https://line.me/ti/p/4sZ7z5fYAB';
+}
+
+/**
+ * Opens LINE for a customer-supplied LINE profile ID (plain text; leading @ stripped).
+ * Returns null if the value is empty or not a safe plain ID (e.g. pasted URL).
+ */
+export function getLineUserContactUrl(lineIdRaw: string): string | null {
+  const id = normalizeLineUserId(lineIdRaw);
+  if (!isValidLineUserId(id)) return null;
+  return `https://line.me/ti/p/~${encodeURIComponent(id)}`;
 }
 
 export function getFacebookOrderUrl(message: string): string {

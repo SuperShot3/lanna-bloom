@@ -54,6 +54,11 @@ import {
   normalizeNationalPhoneOnBlur,
   nationalDigitsValidForCheckout,
 } from '@/lib/phoneFieldHints';
+import {
+  isValidLineUserId,
+  normalizeLineUserId,
+  sanitizeLineUserIdInput,
+} from '@/lib/lineUserId';
 
 /** Non-flower catalog lines (partner products or standalone add-ons). */
 function isNonBouquetCartLine(item: CartItem): boolean {
@@ -137,6 +142,7 @@ type StoredCartForm = {
   recipientCountryCode: string;
   recipientPhoneNational: string;
   contactPreference: ContactPreferenceOption[];
+  lineId?: string;
   isOrderingForSomeoneElse?: boolean;
   surpriseDelivery?: boolean;
 };
@@ -197,6 +203,7 @@ function isContactValid(
   countryCode: string,
   phoneNational: string,
   contactPreference: ContactPreferenceOption[],
+  lineId: string,
   customerEmail: string,
   isOrderingForSomeoneElse: boolean,
   recipientName: string,
@@ -207,6 +214,10 @@ function isContactValid(
   if (!customerName.trim()) return false;
   if (!nationalDigitsValidForCheckout(countryCode, phoneNational)) return false;
   if (contactPreference.length === 0) return false;
+  if (contactPreference.includes('line')) {
+    const norm = normalizeLineUserId(lineId);
+    if (!isValidLineUserId(norm)) return false;
+  }
   if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return false;
   if (isOrderingForSomeoneElse) {
     if (!recipientName.trim() || !recipientPhoneNational) return false;
@@ -634,6 +645,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       CONTACT_OPTIONS.includes(o)
     );
   });
+  const [lineId, setLineId] = useState(() =>
+    sanitizeLineUserIdInput(loadCartFormFromStorage()?.lineId ?? '')
+  );
 
   type AccordionSection = 'bag' | 'delivery' | 'contact';
   const [mobileOpenSection, setMobileOpenSection] = useState<AccordionSection | null>('delivery');
@@ -673,10 +687,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       recipientCountryCode,
       recipientPhoneNational,
       contactPreference,
+      lineId,
       isOrderingForSomeoneElse,
       surpriseDelivery,
     });
-  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, isOrderingForSomeoneElse, surpriseDelivery]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery]);
+
+  useEffect(() => {
+    if (!contactPreference.includes('line') && lineId) {
+      setLineId('');
+    }
+  }, [contactPreference, lineId]);
 
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
@@ -750,6 +771,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     countryCode,
     phoneNational,
     contactPreference,
+    lineId,
     customerEmail,
     isOrderingForSomeoneElse,
     recipientName,
@@ -808,6 +830,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     if (contactPreference.length === 0) {
       return fmt(String(tC.preferredContact ?? 'Contact method'));
+    }
+    if (contactPreference.includes('line')) {
+      const norm = normalizeLineUserId(lineId);
+      if (!norm) {
+        return fmt(String((tC as { lineIdLabel?: string }).lineIdLabel ?? 'LINE ID'));
+      }
+      if (!isValidLineUserId(norm)) {
+        return String((tC as { lineIdInvalid?: string }).lineIdInvalid ?? 'Enter a valid LINE ID (plain text only).');
+      }
     }
     if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
       return fmt(String(tC.emailLabel ?? 'Email'));
@@ -956,6 +987,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         countryCode,
         phoneNational,
         contactPreference,
+        lineId,
         customerEmail,
         isOrderingForSomeoneElse,
         recipientName,
@@ -1029,6 +1061,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         phoneCountryCode: countryCode,
         customerEmail: customerEmail.trim() || undefined,
         contactPreference,
+        lineId: lineId.trim(),
         submissionToken: checkoutSubmissionToken,
         ...(isOrderingForSomeoneElse && {
           recipientName: recipientName.trim(),
@@ -1257,6 +1290,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const recipientPhoneHint = getNationalPhoneHint(recipientCountryCode, recipientPhoneNational);
     const senderHintText = tc[senderPhoneHint.messageKey] ?? senderPhoneHint.messageKey;
     const recipientHintText = tc[recipientPhoneHint.messageKey] ?? recipientPhoneHint.messageKey;
+    const lineNorm = normalizeLineUserId(lineId);
+    const lineIdFormatError =
+      contactPreference.includes('line') && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
 
     return (
     <div className={`cart-contact-info ${idPrefix ? 'cart-mobile-contact-fields' : ''}`}>
@@ -1354,6 +1390,37 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </div>
         </fieldset>
       </div>
+      {contactPreference.includes('line') && (
+        <div className="cart-contact-field">
+          <label className="cart-contact-label" htmlFor={`${idPrefix}cart-line-id`}>
+            {(t as { lineIdLabel?: string }).lineIdLabel ?? 'LINE ID'}{' '}
+            <span className="cart-required" aria-hidden>*</span>
+          </label>
+          <input
+            id={`${idPrefix}cart-line-id`}
+            type="text"
+            value={lineId}
+            onChange={(e) => setLineId(sanitizeLineUserIdInput(e.target.value))}
+            placeholder={(t as { lineIdPlaceholder?: string }).lineIdPlaceholder ?? 'e.g. LannaBloom'}
+            className="cart-contact-input"
+            autoComplete="username"
+            maxLength={64}
+            aria-required
+            aria-invalid={contactPreference.includes('line') && !isValidLineUserId(lineNorm)}
+            aria-describedby={`${idPrefix}cart-line-id-hint${lineIdFormatError ? ` ${idPrefix}cart-line-id-error` : ''}`}
+          />
+          <p id={`${idPrefix}cart-line-id-hint`} className="cart-field-hint">
+            {(t as { lineIdHint?: string }).lineIdHint ??
+              'Use your LINE profile ID: letters, numbers, dot, underscore, or hyphen (4–64 characters). Do not type @ or paste links—we build the LINE link for you.'}
+          </p>
+          {lineIdFormatError && (
+            <p id={`${idPrefix}cart-line-id-error`} className="cart-field-hint cart-line-id-error" role="alert">
+              {(t as { lineIdInvalid?: string }).lineIdInvalid ??
+                'Enter plain LINE ID text only (no links, no @). Example: LannaBloom.'}
+            </p>
+          )}
+        </div>
+      )}
       <div className="cart-contact-field">
         <label className="cart-contact-label" htmlFor={`${idPrefix}cart-email`}>
           {t.emailLabel ?? 'Email'}
@@ -1366,7 +1433,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           placeholder={t.emailPlaceholder ?? 'e.g. you@example.com'}
           className="cart-contact-input"
           autoComplete="email"
+          aria-describedby={`${idPrefix}cart-email-hint`}
         />
+        <p id={`${idPrefix}cart-email-hint`} className="cart-field-hint">
+          {(t as { emailHint?: string }).emailHint ??
+            'Optional — we send your order confirmation here. Leave blank if you do not need it.'}
+        </p>
       </div>
       <label className="cart-contact-checkbox-label cart-ordering-for-else">
         <input
@@ -1673,6 +1745,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                         countryCode,
                         phoneNational,
                         contactPreference,
+                        lineId,
                         customerEmail,
                         isOrderingForSomeoneElse,
                         recipientName,
@@ -3547,6 +3620,40 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
           .cart-mobile-contact-fields .cart-ordering-for-else .cart-ordering-for-else-text {
             margin-left: 5px !important;
+          }
+        }
+
+        /* Small field hints (LINE ID, optional email): global for mobile accordion + desktop. */
+        .cart-page p.cart-field-hint {
+          display: block;
+          font-size: 10px !important;
+          line-height: 1.28 !important;
+          font-weight: 400 !important;
+          margin: 3px 0 0 !important;
+          padding: 0 !important;
+          max-width: 100%;
+          box-sizing: border-box;
+          color: var(--text-muted);
+          background: none !important;
+          border: none !important;
+          border-radius: 0 !important;
+          letter-spacing: 0.01em;
+        }
+        .cart-page p.cart-line-id-error {
+          color: #b91c1c !important;
+          margin-top: 6px !important;
+        }
+        @media (max-width: 1200px) {
+          .cart-page .cart-accordion-body-contact p.cart-field-hint {
+            font-size: 10px !important;
+            line-height: 1.3 !important;
+            padding: 0 !important;
+            margin-top: 2px !important;
+          }
+        }
+        @media (min-width: 1201px) {
+          .cart-page .cart-delivery p.cart-field-hint {
+            max-width: min(100%, 22rem);
           }
         }
       `}</style>

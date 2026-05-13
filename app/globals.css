@@ -4750,6 +4750,11 @@ a.filter-pill--active:hover {
   font-size: 20px !important;
   opacity: 0.85;
 }
+.admin-delivery-contact-link .admin-delivery-contact-line-ico {
+  flex-shrink: 0;
+  opacity: 0.9;
+  color: #00b900;
+}
 .admin-delivery-contact-empty {
   margin: 0 0 10px;
   font-size: 0.8rem;
@@ -4932,33 +4937,54 @@ a.filter-pill--active:hover {
 }
 .admin-delivery-driver-control {
   width: min(260px, 100%);
-  padding: 8px;
-  border: 1px solid rgba(45, 71, 62, 0.1);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
 }
-.admin-delivery-driver-control-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.admin-delivery-driver-label {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--admin-text-muted, #64748b);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.admin-delivery-driver-current {
+.admin-delivery-driver-summary-assignee {
   min-width: 0;
-  font-size: 0.72rem;
-  font-weight: 800;
+  max-width: 120px;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #2d473e;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.admin-delivery-driver-summary-assignee--muted {
+  max-width: none;
+  font-weight: 600;
+  color: var(--admin-text-muted, #64748b);
+}
+.admin-delivery-driver-panel-value {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #2d473e;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.admin-delivery-driver-panel .admin-delivery-contact-group-label:first-child {
+  margin-top: 0;
+}
+.admin-delivery-supplier-details {
+  width: 100%;
+  box-sizing: border-box;
+}
+.admin-delivery-supplier-summary-snippet {
+  min-width: 0;
+  max-width: 140px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2d473e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-delivery-supplier-text-block {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .admin-delivery-driver-choices {
   display: flex;
@@ -5020,21 +5046,6 @@ a.filter-pill--active:hover {
 }
 .admin-delivery-driver-message--error {
   color: #b91c1c;
-}
-.admin-delivery-driver-readonly {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 190px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(45, 71, 62, 0.08);
-  color: #2d473e;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-.admin-delivery-driver-readonly .material-symbols-outlined {
-  font-size: 16px !important;
 }
 
 /* Delivery board cards: use full width for date / time / address on small screens */

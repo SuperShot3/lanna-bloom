@@ -106,6 +106,10 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
   const contactPref = order.contactPreference?.length
     ? order.contactPreference.join(', ')
     : '—';
+  const lineIdLine =
+    typeof order.lineId === 'string' && order.lineId.trim()
+      ? `<br/>LINE ID: ${escapeHtml(order.lineId.trim())}`
+      : '';
 
   const html = `
 <!DOCTYPE html>
@@ -158,7 +162,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
       ? escapeHtml(formatInternationalPhoneAdmin(order.phone, order.phoneCountryCode))
       : '—'
   }<br/>
-  Preferred contact: ${escapeHtml(contactPref)}</p>
+  Preferred contact: ${escapeHtml(contactPref)}${lineIdLine}</p>
 
   <p style="font-size: 0.9rem; color: #666;">Created: ${escapeHtml(formatShopDateTime(order.createdAt))}</p>
 </body>

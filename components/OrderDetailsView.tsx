@@ -283,12 +283,27 @@ export function OrderDetailsView({
       lines.push(`${t.discount ?? 'Discount'}: -฿${order.referralDiscount.toLocaleString()}`);
     }
     lines.push(`${t.total}: ฿${order.pricing.grandTotal.toLocaleString()}`);
-    if (order.customerName || order.phone || order.customerEmail) {
+    if (
+      order.customerName ||
+      order.phone ||
+      order.customerEmail ||
+      (order.contactPreference && order.contactPreference.length > 0) ||
+      order.lineId?.trim()
+    ) {
       lines.push('');
       lines.push(t.sender + ':');
       if (order.customerName) lines.push(order.customerName);
       if (order.customerEmail) lines.push(order.customerEmail);
       if (order.phone) lines.push(order.phone);
+      if (order.contactPreference && order.contactPreference.length > 0) {
+        lines.push(
+          `${t.contactPreferenceHeading}: ${order.contactPreference.map((opt) => contactPreferenceLabels[opt]).join(' / ')}`
+        );
+      }
+      const lid = order.lineId?.trim();
+      if (lid) {
+        lines.push(`${t.lineIdLabel ?? 'LINE ID'}: ${lid}`);
+      }
     }
     lines.push('');
     lines.push(`Created: ${formatShopDateTime(order.createdAt)}`);
@@ -595,7 +610,11 @@ export function OrderDetailsView({
       </div>
 
       {/* Sender */}
-      {(order.customerName || order.phone || order.customerEmail) && (
+      {(order.customerName ||
+        order.phone ||
+        order.customerEmail ||
+        (order.contactPreference && order.contactPreference.length > 0) ||
+        order.lineId?.trim()) && (
         <div className="order-details-section">
           <h2 className="order-details-heading">{t.sender}</h2>
           <p className="order-details-value">{order.customerName || '—'}</p>
@@ -604,6 +623,11 @@ export function OrderDetailsView({
           {order.contactPreference && order.contactPreference.length > 0 && (
             <p className="order-details-value">
               {t.contactPreferenceHeading}: {order.contactPreference.map((opt) => contactPreferenceLabels[opt]).join(' / ')}
+            </p>
+          )}
+          {order.lineId?.trim() && (
+            <p className="order-details-value">
+              {t.lineIdLabel}: {order.lineId.trim()}
             </p>
           )}
         </div>

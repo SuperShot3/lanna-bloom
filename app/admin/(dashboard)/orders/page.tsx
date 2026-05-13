@@ -1,5 +1,10 @@
 import { auth } from '@/auth';
-import { getOrders, getDistricts, getDeliveryDestinations } from '@/lib/supabase/adminQueries';
+import {
+  getDeliveryDestinations,
+  getDistricts,
+  getLatestSupplierRequestSummariesForOrders,
+  getOrders,
+} from '@/lib/supabase/adminQueries';
 import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
 import { DeliveryBoardClient } from './DeliveryBoardClient';
 import { shopTodayYmd } from '@/lib/shopTime';
@@ -49,6 +54,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     getDeliveryDestinations(),
   ]);
 
+  const supplierSummariesByOrderId = await getLatestSupplierRequestSummariesForOrders(
+    result.orders.map((o) => o.order_id)
+  );
+
   const deliveryDestinations = Array.from(
     new Set([...DELIVERY_DESTINATIONS, ...destRows])
   ).sort();
@@ -63,6 +72,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       pageSize={pageSize}
       districts={districts}
       deliveryDestinations={deliveryDestinations}
+      supplierSummariesByOrderId={supplierSummariesByOrderId}
       canEditStatus={canChangeStatus(role)}
       canAssignDriver={canAssignDriver(role)}
     />

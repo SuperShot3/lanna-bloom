@@ -313,7 +313,7 @@ export function DeliveryForm({
                     aria-label={t.specifyDeliveryDate}
                   />
                   <span className="buy-now-date-display">
-                    {value.date ? formatDateDisplay(value.date) : (lang === 'th' ? 'เลือกวันที่' : 'Select date')}
+                    {value.date ? formatDateDisplay(value.date) : t.selectDeliveryDate}
                   </span>
                 </div>
                 <div className="buy-now-date-quick-btns">
