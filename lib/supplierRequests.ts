@@ -140,6 +140,16 @@ export interface SupplierProductSnapshot {
   } | null;
 }
 
+/** Parses JSONB `product_snapshot` from `supplier_order_requests` (server or client). */
+export function parseSupplierProductSnapshot(value: unknown): SupplierProductSnapshot {
+  if (!value || typeof value !== 'object') return { items: [], customOrder: null };
+  const raw = value as Partial<SupplierProductSnapshot>;
+  return {
+    items: Array.isArray(raw.items) ? raw.items : [],
+    customOrder: raw.customOrder ?? null,
+  };
+}
+
 export interface SupplierPreparationSnapshot {
   deliveryDate?: string | null;
   deliveryWindow?: string | null;

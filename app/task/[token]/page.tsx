@@ -1,12 +1,14 @@
+import type { Metadata } from 'next';
 import { unstable_noStore } from 'next/cache';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import {
   isActiveSupplierRequestStatus,
   isSupplierRequestExpired,
+  parseSupplierProductSnapshot,
   type SupplierMessageCardSnapshot,
   type SupplierPreparationSnapshot,
-  type SupplierProductSnapshot,
 } from '@/lib/supplierRequests';
+import { buildSupplierTaskMetadata } from '@/lib/supplierTaskMetadata';
 import { SupplierResponseForm } from './SupplierResponseForm';
 import { SupplierTaskUnavailable } from './SupplierTaskUnavailable';
 
@@ -21,13 +23,51 @@ function unavailableBlock() {
   return <SupplierTaskUnavailable />;
 }
 
-function asProductSnapshot(value: unknown): SupplierProductSnapshot {
-  if (!value || typeof value !== 'object') return { items: [], customOrder: null };
-  const raw = value as Partial<SupplierProductSnapshot>;
-  return {
-    items: Array.isArray(raw.items) ? raw.items : [],
-    customOrder: raw.customOrder ?? null,
-  };
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  unstable_noStore();
+  const { token } = await params;
+  const publicToken = token?.trim() ?? '';
+
+  if (!publicToken) {
+    return buildSupplierTaskMetadata({
+      token: '',
+      status: null,
+      expiresAt: null,
+      productSnapshot: null,
+    });
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return buildSupplierTaskMetadata({
+      token: publicToken,
+      status: null,
+      expiresAt: null,
+      productSnapshot: null,
+    });
+  }
+
+  const { data, error } = await supabase
+    .from('supplier_order_requests')
+    .select('status, expires_at, product_snapshot')
+    .eq('public_token', publicToken)
+    .maybeSingle();
+
+  if (error || !data) {
+    return buildSupplierTaskMetadata({
+      token: publicToken,
+      status: null,
+      expiresAt: null,
+      productSnapshot: null,
+    });
+  }
+
+  return buildSupplierTaskMetadata({
+    token: publicToken,
+    status: data.status,
+    expiresAt: data.expires_at,
+    productSnapshot: data.product_snapshot,
+  });
 }
 
 function asPreparationSnapshot(value: unknown): SupplierPreparationSnapshot {
@@ -103,7 +143,7 @@ export default async function SupplierTaskPage({ params }: PageProps) {
   return (
     <SupplierResponseForm
       token={publicToken}
-      product={asProductSnapshot(requestRow.product_snapshot)}
+      product={parseSupplierProductSnapshot(requestRow.product_snapshot)}
       preparation={asPreparationSnapshot(requestRow.preparation_snapshot)}
       messageCard={asMessageCardSnapshot(requestRow.message_card_snapshot)}
     />
