@@ -8,6 +8,7 @@ import {
   type SupplierProductSnapshot,
 } from '@/lib/supplierRequests';
 import { SupplierResponseForm } from './SupplierResponseForm';
+import { SupplierTaskUnavailable } from './SupplierTaskUnavailable';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,14 +18,7 @@ interface PageProps {
 }
 
 function unavailableBlock() {
-  return (
-    <div className="supplier-task-shell">
-      <main className="supplier-task-card supplier-task-unavailable">
-        <h1>คำขอนี้ไม่พร้อมใช้งานแล้ว</h1>
-        <p>กรุณาติดต่อผู้ประสานงานเพื่อรับรายละเอียดล่าสุด</p>
-      </main>
-    </div>
-  );
+  return <SupplierTaskUnavailable />;
 }
 
 function asProductSnapshot(value: unknown): SupplierProductSnapshot {

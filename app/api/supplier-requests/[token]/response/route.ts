@@ -27,7 +27,13 @@ function parseResponseType(value: unknown): SupplierResponseType | null {
 
 function parsePrice(value: unknown): { value: number | null; ok: boolean } {
   if (value == null || value === '') return { value: null, ok: true };
-  const n = typeof value === 'number' ? value : Number(String(value).trim());
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || value < 0) return { value: null, ok: false };
+    return { value: Math.round(value * 100) / 100, ok: true };
+  }
+  const s = String(value).trim();
+  if (s === '') return { value: null, ok: true };
+  const n = Number(s.replace(/,/g, ''));
   if (!Number.isFinite(n) || n < 0) return { value: null, ok: false };
   return { value: Math.round(n * 100) / 100, ok: true };
 }
@@ -65,6 +71,14 @@ export async function POST(
   const price = parsePrice(b.supplier_price);
   if (!price.ok) {
     return jsonNoStore({ error: 'กรุณาระบุราคาเป็นตัวเลขที่ถูกต้อง' }, { status: 400 });
+  }
+
+  const readyTime = trimText(b.supplier_ready_time, 120);
+  if (price.value == null) {
+    return jsonNoStore({ error: 'กรุณาระบุราคา' }, { status: 400 });
+  }
+  if (!readyTime) {
+    return jsonNoStore({ error: 'กรุณาระบุเวลาที่พร้อม' }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();
@@ -111,7 +125,7 @@ export async function POST(
       status: nextStatus,
       supplier_response_type: responseType,
       supplier_price: price.value,
-      supplier_ready_time: trimText(b.supplier_ready_time, 120),
+      supplier_ready_time: readyTime,
       supplier_reason: trimText(b.supplier_reason, 1000),
       supplier_notes: trimText(b.supplier_notes, 1000),
       responded_at: nowIso,
