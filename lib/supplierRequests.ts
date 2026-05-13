@@ -12,16 +12,34 @@ import {
 } from '@/lib/delivery/markets';
 import { zoneLabel } from '@/lib/delivery/zones';
 
+function normalizeHttpsBase(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const host = trimmed.split('/')[0]?.replace(/\/+$/, '') ?? '';
+  return host ? `https://${host}` : trimmed;
+}
+
 function resolveSupplierRequestBaseUrl(): string {
   const configuredSupplierUrl = process.env.SUPPLIER_REQUEST_BASE_URL?.trim();
-  if (configuredSupplierUrl) return configuredSupplierUrl.replace(/\/+$/, '');
+  if (configuredSupplierUrl) return normalizeHttpsBase(configuredSupplierUrl);
+
+  // On Vercel, prefer VERCEL_URL (this deployment's *.vercel.app host). Vercel documents
+  // VERCEL_PROJECT_PRODUCTION_URL as the shortest *production custom domain* when one exists,
+  // which would leak the shop brand in supplier links. Same deployment still serves /task/[token].
+  if (process.env.VERCEL) {
+    const vercelUrl = process.env.VERCEL_URL?.trim();
+    if (vercelUrl) {
+      const host = vercelUrl.replace(/^https?:\/\//i, '').split('/')[0]?.replace(/\/+$/, '') ?? '';
+      if (host) return `https://${host}`;
+    }
+    const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+    if (productionHost) {
+      return normalizeHttpsBase(productionHost);
+    }
+  }
 
   const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (publicAppUrl) return publicAppUrl.replace(/\/+$/, '');
-
-  if (process.env.VERCEL_URL?.trim()) {
-    return `https://${process.env.VERCEL_URL.trim().replace(/\/+$/, '')}`;
-  }
+  if (publicAppUrl) return normalizeHttpsBase(publicAppUrl);
 
   return 'http://localhost:3000';
 }
