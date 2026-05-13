@@ -8,13 +8,13 @@ import {
   type SupplierProductSnapshot,
 } from '@/lib/supplierRequests';
 
-const SITE_NAME = 'Lanna Bloom';
 const FALLBACK_OG_PATH = '/og/supplier-request.jpg';
-const GENERIC_BRAND_TITLE = 'Lanna Bloom Supplier Request';
-const UNAVAILABLE_DESCRIPTION = 'This supplier request is no longer available.';
-const GENERIC_ACTIVE_DESCRIPTION =
-  'Please review this flower order request and confirm availability.';
-const IMAGE_ALT_FALLBACK = 'Lanna Bloom supplier request';
+/** Thai-only social preview (no brand); matches supplier task UI kicker tone. */
+const OG_SITE_NAME = 'คำขอจัดเตรียมสินค้า';
+const GENERIC_TITLE = 'คำขอจัดเตรียมสินค้า';
+const UNAVAILABLE_DESCRIPTION = 'คำขอนี้ไม่พร้อมใช้งานแล้ว';
+const GENERIC_ACTIVE_DESCRIPTION = 'กรุณาตรวจสอบคำขอจัดดอกไม้และยืนยันความพร้อม';
+const IMAGE_ALT_FALLBACK = 'คำขอจัดเตรียมสินค้า';
 
 function truncateOg(text: string, maxLen: number): string {
   const s = text.trim();
@@ -37,13 +37,13 @@ export function supplierTaskAbsoluteAssetUrl(url: string): string {
 }
 
 /**
- * Product line for OG text only: catalog item titles (English title preferred), never custom-order
+ * Product line for OG text only: catalog labels (`displayTitle` first for Thai), never custom-order
  * notes, gift text, or customer comments (may contain private content).
  */
 export function safeSupplierCatalogProductLine(product: SupplierProductSnapshot): string | null {
   const parts: string[] = [];
   for (const item of product.items) {
-    const label = (item.title?.trim() || item.displayTitle?.trim()) ?? '';
+    const label = (item.displayTitle?.trim() || item.title?.trim()) ?? '';
     if (label) parts.push(label);
   }
   if (!parts.length) return null;
@@ -73,14 +73,14 @@ export function buildSupplierTaskMetadata(opts: {
 
   if (!isPubliclyActiveTask(status, expiresAt)) {
     return {
-      title: GENERIC_BRAND_TITLE,
+      title: GENERIC_TITLE,
       description: UNAVAILABLE_DESCRIPTION,
       robots,
       openGraph: {
-        title: GENERIC_BRAND_TITLE,
+        title: GENERIC_TITLE,
         description: UNAVAILABLE_DESCRIPTION,
         url: pageUrl,
-        siteName: SITE_NAME,
+        siteName: OG_SITE_NAME,
         type: 'website',
         images: [
           {
@@ -93,7 +93,7 @@ export function buildSupplierTaskMetadata(opts: {
       },
       twitter: {
         card: 'summary_large_image',
-        title: GENERIC_BRAND_TITLE,
+        title: GENERIC_TITLE,
         description: UNAVAILABLE_DESCRIPTION,
         images: [fallbackImageUrl],
       },
@@ -106,10 +106,10 @@ export function buildSupplierTaskMetadata(opts: {
   const ogImageUrl = rawImage ? supplierTaskAbsoluteAssetUrl(rawImage) : fallbackImageUrl;
 
   const title = safeProductLine
-    ? `Supplier Request: ${truncateOg(safeProductLine, 56)}`
-    : GENERIC_BRAND_TITLE;
+    ? `คำขอจัดเตรียม: ${truncateOg(safeProductLine, 56)}`
+    : GENERIC_TITLE;
   const description = safeProductLine
-    ? `${truncateOg(safeProductLine, 88)} · Please confirm if your shop can prepare this order.`
+    ? `${truncateOg(safeProductLine, 88)} · กรุณายืนยันว่าร้านสามารถเตรียมคำขอนี้ได้`
     : GENERIC_ACTIVE_DESCRIPTION;
   const imageAlt = safeProductLine ? truncateOg(safeProductLine, 100) : IMAGE_ALT_FALLBACK;
 
@@ -121,7 +121,7 @@ export function buildSupplierTaskMetadata(opts: {
       title,
       description,
       url: pageUrl,
-      siteName: SITE_NAME,
+      siteName: OG_SITE_NAME,
       type: 'website',
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: imageAlt }],
     },
