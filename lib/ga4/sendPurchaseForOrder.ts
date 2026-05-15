@@ -1,6 +1,7 @@
 /**
  * @deprecated Legacy GA4 Measurement Protocol sender. Not called by app routes anymore —
- * ecommerce **purchase** is pushed to the GTM dataLayer from the paid order page (`trackPurchase`).
+ * GA4 **purchase** is sent here via Measurement Protocol when the order becomes paid (idempotent).
+ * Browser **`google_ads_purchase`** is pushed from the paid order page (`trackCheckoutPurchase`), not from this module.
  * Kept for reference or one-off scripts; requires GA4_MEASUREMENT_ID + GA4_MEASUREMENT_API_SECRET.
  */
 

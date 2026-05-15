@@ -117,7 +117,7 @@ export async function PATCH(
     }
   }
 
-  // GA4 purchase: GTM fires when the customer opens the paid order page (client dataLayer).
+  // GA4 purchase: Measurement Protocol from sendPurchaseForOrder. Browser: google_ads_purchase when customer opens paid order page.
 
   return NextResponse.json({ ok: true, order: updated });
 }

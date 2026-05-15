@@ -103,7 +103,8 @@ GA4 ecommerce events are pushed from `lib/analytics.ts` into `dataLayer`, and GT
 
 | Event | Where it fires |
 |-------|----------------|
-| **purchase** | Confirmed paid order |
+| **purchase** | GA4: mainly **server** (Measurement Protocol) when payment is confirmed; not required from the browser |
+| **google_ads_purchase** | Browser dataLayer on **paid** order page (`/order/...`) → your GTM trigger for Ads / optional GA4 mapping |
 | **generate_lead** | Success page after Place Order when the order is still unpaid |
 
 Do **not** mark `contact_click` or `messenger_click` as primary key events. See `docs/ANALYTICS_GA4.md` for the full event inventory, GTM setup, and validation checklist.

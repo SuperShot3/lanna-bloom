@@ -4,8 +4,9 @@
  * Architecture: App → window.dataLayer.push(...) → GTM → GA4 / Ads.
  * The app NEVER calls gtag('event', ...) or loads gtag.js directly.
  *
- * **Purchase (ecommerce revenue):** `trackPurchase` pushes `purchase` to the dataLayer when the
- * customer views a **paid** order — GTM forwards to GA4. Deduped per orderId (localStorage + sessionStorage).
+ * **Paid order (browser):** `trackCheckoutPurchase` pushes **`google_ads_purchase`** only (GTM → Google Ads
+ * and/or GA4 tags you configure). There is **no** dataLayer event named `purchase` from this module.
+ * Dedupe: `google_ads_purchase_sent:*` per orderId (localStorage + sessionStorage).
  */
 
 declare global {
@@ -48,51 +49,6 @@ function hasStorageSentFlag(storage: Storage | undefined, key: string): boolean 
   }
 }
 
-/** GA4 purchase dedupe: storage key per orderId. */
-const PURCHASE_SENT_PREFIX = 'purchase_sent:';
-
-function getPurchaseStorageKey(orderId: string): string {
-  return `${PURCHASE_SENT_PREFIX}${normalizeOrderId(orderId)}`;
-}
-
-export function getPurchaseGuardDebug(orderId: string): {
-  storageKey: string;
-  localStorageSent: boolean;
-  sessionStorageSent: boolean;
-} {
-  const key = getPurchaseStorageKey(orderId);
-  if (typeof window === 'undefined') {
-    return {
-      storageKey: key,
-      localStorageSent: false,
-      sessionStorageSent: false,
-    };
-  }
-
-  return {
-    storageKey: key,
-    localStorageSent: hasStorageSentFlag(window.localStorage, key),
-    sessionStorageSent: hasStorageSentFlag(window.sessionStorage, key),
-  };
-}
-
-export function wasPurchaseSent(orderId: string): boolean {
-  if (typeof window === 'undefined') return true;
-  const debug = getPurchaseGuardDebug(orderId);
-  return debug.localStorageSent || debug.sessionStorageSent;
-}
-
-function markPurchaseSent(orderId: string): void {
-  if (typeof window === 'undefined') return;
-  const key = getPurchaseStorageKey(orderId);
-  try {
-    window.localStorage.setItem(key, '1');
-    window.sessionStorage.setItem(key, '1');
-  } catch {
-    // ignore
-  }
-}
-
 export interface PurchaseItem {
   item_id: string;
   item_name: string;
@@ -104,59 +60,7 @@ export interface PurchaseItem {
   currency?: string;
 }
 
-/**
- * Fire purchase event at most once per orderId. GTM should forward to GA4.
- */
-export function trackPurchase(params: {
-  orderId: string;
-  value: number;
-  currency?: string;
-  items: PurchaseItem[];
-  transactionId?: string;
-}): void {
-  if (typeof window === 'undefined') return;
-
-  const normalizedOrderId = normalizeOrderId(params.orderId);
-  if (!normalizedOrderId) return;
-
-  if (wasPurchaseSent(normalizedOrderId)) {
-    if (isDev) {
-      console.log('[gtag] trackPurchase skipped (already sent)', {
-        orderId: normalizedOrderId,
-        ...getPurchaseGuardDebug(normalizedOrderId),
-      });
-    }
-    return;
-  }
-  markPurchaseSent(normalizedOrderId);
-
-  const { value, currency = 'THB', items } = params;
-  const transactionId = params.transactionId ? normalizeOrderId(params.transactionId) : normalizedOrderId;
-
-  const ensuredItems = items.map((it, i) => ({
-    ...it,
-    quantity: it.quantity ?? 1,
-    index: it.index ?? i,
-    currency: it.currency ?? currency,
-  }));
-
-  pushToDataLayer('purchase', {
-    transaction_id: transactionId,
-    value,
-    currency,
-    items: ensuredItems,
-  });
-  if (isDev) {
-    console.log('[gtag] purchase pushed to dataLayer', {
-      orderId: normalizedOrderId,
-      transaction_id: transactionId,
-      value,
-      itemCount: ensuredItems.length,
-    });
-  }
-}
-
-/** Google Ads conversion dedupe (separate key from GA4 purchase). */
+/** Google Ads conversion dedupe (separate from server GA4 Measurement Protocol purchase). */
 const GOOGLE_ADS_CONVERSION_SENT_PREFIX = 'google_ads_purchase_sent:';
 const GTM_CALLBACK_TIMEOUT_MS = 3000;
 
@@ -254,6 +158,8 @@ export function trackCheckoutPurchase(params: {
 
   const pushed = pushToDataLayerWithCallback('google_ads_purchase', {
     order_id: normalizedOrderId,
+    /** Same as `order_id`; use in GTM for Google Ads / GA4 tags that expect `transaction_id`. */
+    transaction_id: normalizedOrderId,
     value,
     currency,
     user_data: {

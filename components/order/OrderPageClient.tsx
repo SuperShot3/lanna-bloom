@@ -23,6 +23,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
+import { trackCheckoutPurchase, type AnalyticsItem } from '@/lib/analytics';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -42,6 +43,32 @@ function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
     return { date: parts[0], time: '' };
   }
   return { date: slot, time: '' };
+}
+
+function orderViewToAnalyticsItems(order: OrderCustomerView, orderId: string): AnalyticsItem[] {
+  const rows = order.items ?? [];
+  const mapped = rows.map((item, index) => ({
+    item_id: (item.bouquetId || item.bouquetSlug || `line_${index}`).trim() || `line_${index}`,
+    item_name: item.bouquetTitle,
+    price: item.price,
+    quantity: 1 as const,
+    index,
+    item_variant: item.size,
+    ...(item.itemType ? { item_category: item.itemType } : {}),
+  }));
+  const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+  if (mapped.length === 0 && grandTotal > 0) {
+    return [
+      {
+        item_id: orderId,
+        item_name: 'Purchase',
+        price: grandTotal,
+        quantity: 1,
+        index: 0,
+      },
+    ];
+  }
+  return mapped;
 }
 
 function getFulfillmentLabel(status: string, t: Record<string, string>): string {
@@ -185,7 +212,28 @@ export function OrderPageClient({
     };
   }, [paid, orderId, router, order]);
 
+  // GTM dataLayer: `google_ads_purchase` only (deduped per orderId in lib/analytics/gtag.ts). GA4 `purchase`
+  // is expected from Measurement Protocol and/or a GTM GA4 tag on this same trigger — see docs/ANALYTICS_GA4.md.
+  useEffect(() => {
+    if (!paid) return;
+    const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+    const analyticsItems = orderViewToAnalyticsItems(order, orderId);
+    if (analyticsItems.length === 0) return;
 
+    void trackCheckoutPurchase({
+      orderId,
+      value: grandTotal,
+      currency: order.currency ?? 'THB',
+      email: order.customerEmail ?? null,
+      phone: order.phone ?? null,
+      items: analyticsItems.map((it) => ({
+        item_id: it.item_id,
+        item_name: it.item_name,
+        price: it.price,
+        quantity: it.quantity ?? 1,
+      })),
+    });
+  }, [paid, orderId, order]);
 
   const [copied, setCopied] = useState(false);
 
