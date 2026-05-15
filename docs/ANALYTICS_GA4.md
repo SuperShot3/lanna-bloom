@@ -269,7 +269,7 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 4. **Dedupe:** keys `google_ads_purchase_sent:<orderId>` in localStorage and sessionStorage prevent a second push for the same order on the same browser. For QA, use a **new order**, incognito, or clear those keys.
 5. **Empty push:** If the order has **no line items** and no fallback synthetic item, the effect exits early and **nothing** is pushed. Check `order.items` in the API response.
 6. **GTM not loaded:** `components/GoogleAnalytics.tsx` loads GTM only when `NODE_ENV === 'production'` and `NEXT_PUBLIC_GTM_ID` is set; `/admin` skips the component.
-7. **GA4 `purchase` missing:** Verify server env `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET`; check Stripe webhook / mark-paid actually runs `sendPurchaseForOrder`.
+8. **GTM race (Tag Assistant):** If `manual_test_event` from the console appears but **`google_ads_purchase` does not**, the push may have run before `gtm.js` wired the container. The app **defers** `google_ads_purchase` until `window.google_tag_manager['GTM-…']` exists (or ~4s fallback) — see `runWhenGtmLikelyReady` in `lib/analytics/gtag.ts`. Ensure **`NEXT_PUBLIC_GTM_ID`** matches your container id (including `GTM-` prefix).
 
 ## Audit: Purchase transport (client + server)
 

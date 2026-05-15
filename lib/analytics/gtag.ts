@@ -7,15 +7,60 @@
  * **Paid order (browser):** `trackCheckoutPurchase` pushes **`google_ads_purchase`** only (GTM → Google Ads
  * and/or GA4 tags you configure). There is **no** dataLayer event named `purchase` from this module.
  * Dedupe: `google_ads_purchase_sent:*` per orderId (localStorage + sessionStorage).
+ * Pushes are **deferred** until the GTM container is present (avoids Tag Assistant missing events that fire
+ * before `gtm.js` finishes wiring the dataLayer).
  */
 
 declare global {
   interface Window {
     dataLayer?: Record<string, unknown>[];
+    /** Set by `googletagmanager.com/gtm.js` after the container loads. */
+    google_tag_manager?: Record<string, unknown>;
   }
 }
 
 const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+
+/** Same ID as `components/GoogleAnalytics.tsx` (inlined at build time for client bundles). */
+const GTM_CONTAINER_ID = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GTM_ID?.trim() ?? '' : '';
+const GTM_READY_POLL_MS = 50;
+const GTM_READY_MAX_MS = 4000;
+
+function isGtmContainerPresent(): boolean {
+  if (typeof window === 'undefined' || !GTM_CONTAINER_ID) return false;
+  const gtm = window.google_tag_manager;
+  return Boolean(gtm && gtm[GTM_CONTAINER_ID] != null);
+}
+
+/**
+ * Run after paint and once `window.google_tag_manager[GTM-…]` exists, or after a short timeout fallback.
+ * Prevents conversion pushes from firing before GTM hooks the dataLayer (race with `afterInteractive` gtm.js).
+ */
+function runWhenGtmLikelyReady(run: () => void): void {
+  if (typeof window === 'undefined') return;
+  if (!GTM_CONTAINER_ID) {
+    window.setTimeout(run, 0);
+    return;
+  }
+  const start = Date.now();
+  const raf =
+    typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame.bind(window)
+      : (cb: FrameRequestCallback) => window.setTimeout(() => cb(0), 0);
+
+  raf(() =>
+    raf(() => {
+      const tick = () => {
+        if (isGtmContainerPresent() || Date.now() - start > GTM_READY_MAX_MS) {
+          run();
+          return;
+        }
+        window.setTimeout(tick, GTM_READY_POLL_MS);
+      };
+      window.setTimeout(tick, 0);
+    }),
+  );
+}
 
 /**
  * Safe helper for pushing events to the GTM dataLayer.
@@ -147,39 +192,52 @@ export function trackCheckoutPurchase(params: {
     }
     return Promise.resolve();
   }
-  markGoogleAdsConversionSent(normalizedOrderId);
 
-  const items = params.items.map((item) => ({
-    item_id: item.item_id,
-    item_name: item.item_name,
-    price: item.price,
-    quantity: item.quantity ?? 1,
-  }));
+  return new Promise((resolve) => {
+    runWhenGtmLikelyReady(() => {
+      if (wasGoogleAdsConversionSent(normalizedOrderId)) {
+        if (isDev) {
+          console.debug('[analytics] google_ads_purchase duplicate prevented (post-wait)', {
+            orderId: normalizedOrderId,
+          });
+        }
+        resolve();
+        return;
+      }
+      markGoogleAdsConversionSent(normalizedOrderId);
 
-  const pushed = pushToDataLayerWithCallback('google_ads_purchase', {
-    order_id: normalizedOrderId,
-    /** Same as `order_id`; use in GTM for Google Ads / GA4 tags that expect `transaction_id`. */
-    transaction_id: normalizedOrderId,
-    value,
-    currency,
-    user_data: {
-      email_address: normalizeEmail(params.email),
-      phone_number: normalizeThaiPhoneNumber(params.phone),
-    },
-    ecommerce: {
-      items,
-    },
-  });
+      const items = params.items.map((item) => ({
+        item_id: item.item_id,
+        item_name: item.item_name,
+        price: item.price,
+        quantity: item.quantity ?? 1,
+      }));
 
-  if (isDev) {
-    console.info('[analytics] google_ads_purchase pushed to dataLayer', {
-      orderId: normalizedOrderId,
-      value,
-      itemCount: items.length,
+      void pushToDataLayerWithCallback('google_ads_purchase', {
+        order_id: normalizedOrderId,
+        /** Same as `order_id`; use in GTM for Google Ads / GA4 tags that expect `transaction_id`. */
+        transaction_id: normalizedOrderId,
+        value,
+        currency,
+        user_data: {
+          email_address: normalizeEmail(params.email),
+          phone_number: normalizeThaiPhoneNumber(params.phone),
+        },
+        ecommerce: {
+          items,
+        },
+      }).then(() => {
+        if (isDev) {
+          console.info('[analytics] google_ads_purchase pushed to dataLayer', {
+            orderId: normalizedOrderId,
+            value,
+            itemCount: items.length,
+          });
+        }
+        resolve();
+      });
     });
-  }
-
-  return pushed;
+  });
 }
 
 /**
@@ -203,21 +261,32 @@ export function trackGoogleAdsPurchase(params: {
     }
     return;
   }
-  markGoogleAdsConversionSent(normalizedOrderId);
 
-  const transactionId = params.transactionId ? normalizeOrderId(params.transactionId) : normalizedOrderId;
-  const currency = params.currency ?? 'THB';
+  runWhenGtmLikelyReady(() => {
+    if (wasGoogleAdsConversionSent(normalizedOrderId)) {
+      if (isDev) {
+        console.debug('[analytics] google_ads_purchase duplicate prevented (post-wait)', {
+          orderId: normalizedOrderId,
+        });
+      }
+      return;
+    }
+    markGoogleAdsConversionSent(normalizedOrderId);
 
-  pushToDataLayer('google_ads_purchase', {
-    transaction_id: transactionId,
-    value: params.value,
-    currency,
-  });
-  if (isDev) {
-    console.info('[analytics] google_ads_purchase pushed to dataLayer', {
-      orderId: normalizedOrderId,
+    const transactionId = params.transactionId ? normalizeOrderId(params.transactionId) : normalizedOrderId;
+    const currency = params.currency ?? 'THB';
+
+    pushToDataLayer('google_ads_purchase', {
+      transaction_id: transactionId,
       value: params.value,
-      transactionId,
+      currency,
     });
-  }
+    if (isDev) {
+      console.info('[analytics] google_ads_purchase pushed to dataLayer', {
+        orderId: normalizedOrderId,
+        value: params.value,
+        transactionId,
+      });
+    }
+  });
 }
