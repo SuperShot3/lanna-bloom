@@ -7,28 +7,14 @@
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
-- **Server-side GA4 `purchase`**: When an order is marked paid (admin “Mark as paid” or Stripe webhook), the backend sends a `purchase` event to GA4 via the Measurement Protocol. This does not require the user to revisit the order page. See [Mark as paid → GA4 purchase](#mark-as-paid--ga4-purchase) below.
-- **Browser-side conversion event**: The app pushes **`google_ads_purchase`** only on the paid order page (not a separate dataLayer event named `purchase`). GTM should use a **Custom Event** trigger for `google_ads_purchase`. For GA4 revenue in the browser session, either rely on Measurement Protocol or add a **GA4 Event** tag in GTM on that same trigger (see [GA4 and `google_ads_purchase`](#ga4-and-google_ads_purchase) below).
+- **GA4 `purchase` (authoritative):** Sent by **Measurement Protocol** when the order is marked paid (Stripe webhook, admin mark paid, etc.). Idempotent in DB. See [Mark as paid → GA4 purchase](#mark-as-paid--ga4-purchase).
+- **Browser `purchase` (dataLayer):** Pushed once per order on the paid order page (`trackCheckoutPurchase`). Use in GTM for **Google Ads** (and similar) only — **do not** attach a GA4 Event tag for `purchase` here if MP already sends GA4 `purchase`, or revenue doubles. Dedupe: `sent_purchase_<orderId>` in localStorage.
 
-## Paid order: `google_ads_purchase` dataLayer contract (canonical)
+## Paid order: browser `purchase` (canonical)
 
 **Source code:** `components/order/OrderPageClient.tsx` (when `paid === true` and there is at least one line item) → `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
 
-**Exact `event` name:** `google_ads_purchase` (lowercase, underscores).
-
-**One pushed object includes** (plus `eventCallback` / `eventTimeout` used by GTM for tag sequencing):
-
-| Key | Level | Description |
-|-----|--------|-------------|
-| `event` | root | Always `google_ads_purchase` |
-| `order_id` | root | Trimmed order id |
-| `transaction_id` | root | Same value as `order_id` (for tags that only read `transaction_id`) |
-| `value` | root | Grand total (number) |
-| `currency` | root | e.g. `THB` |
-| `user_data` | root | `{ email_address?, phone_number? }` (normalized; may omit keys if empty) |
-| `ecommerce` | root | `{ items: [...] }` — each item: `item_id`, `item_name`, `price`, `quantity` |
-
-**Not used from the browser dataLayer:** an event named **`purchase`**. GA4 uses the event name **`purchase`** only on the **server** (Measurement Protocol). GTM triggers for the order page must listen for **`google_ads_purchase`**, not `purchase`.
+**Event `purchase`** — at most once per order id (`sent_purchase_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `pushToDataLayer('purchase', { ecommerce })` where **`ecommerce`** contains **only** `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). No root `order_id` or other purchase fields. **No** `eventCallback` / `eventTimeout` (immediate push; GTM drains the queue after load).
 
 ## Mark as paid → GA4 purchase
 
@@ -52,7 +38,7 @@ If either is missing, the app still works; the backend logs a warning and does n
 
 ## Runtime Configuration
 
-- Required client env var (for GTM): `NEXT_PUBLIC_GTM_ID`
+- Required client env var (for GTM): `NEXT_PUBLIC_GTM_ID` — must match the container id in GTM UI, including the **`GTM-`** prefix (same string passed to `googletagmanager.com/gtm.js?id=…` in `components/GoogleAnalytics.tsx`).
 - GTM loader lives in `components/GoogleAnalytics.tsx`
 - Structured event helpers live in `lib/analytics.ts`
 - dataLayer transport and purchase dedupe live in `lib/analytics/gtag.ts`
@@ -99,25 +85,19 @@ Create GTM custom event triggers for:
 - `begin_checkout`
 - `add_shipping_info`
 - `add_payment_info`
-- **`google_ads_purchase`** (paid order page — **primary** browser conversion payload for this site)
+- **`purchase`** — **Custom Event** trigger for **Google Ads Conversion** (and optional non-GA4 tags). **Do not** add a GA4 Event tag for `purchase` here while MP sends GA4 `purchase` (double revenue).
 - `generate_lead`
 - `contact_click`
 - `messenger_click`
 - `language_change`
 - home CTA event names such as `cta_home_top`
 
-Do **not** assume the app pushes a browser **`purchase`** event on the order page. GA4 `purchase` is normally from [Measurement Protocol](#mark-as-paid--ga4-purchase). Optionally add a GTM tag that maps `google_ads_purchase` → GA4 (below).
-
 ### Recommended Data Layer Variables
 
 - `event`
-- `order_id` (on `google_ads_purchase`)
-- `items` (funnel events; not the same path as `ecommerce.items` on `google_ads_purchase`)
-- `value`
-- `currency`
-- `transaction_id`
-- `ecommerce` (object; use a **DL variable** version 2 / custom JS for `ecommerce.items` if needed)
-- `user_data` (object; child keys `email_address`, `phone_number`)
+- `ecommerce` (object; on **`purchase`**: only `ecommerce.transaction_id`, `ecommerce.value`, `ecommerce.currency`, `ecommerce.items`)
+- `items` (funnel events; root-level — not the same path as `ecommerce.items` on **`purchase`**)
+- `value` / `currency` / `transaction_id` (some funnel events expose these at root)
 - `payment_type`
 - `shipping_tier`
 - `channel`
@@ -139,8 +119,7 @@ Do **not** assume the app pushes a browser **`purchase`** event on the order pag
 | `begin_checkout` | User starts order/payment flow | Fires on cart page load (deduped per session) |
 | `add_shipping_info` | Delivery info added | Triggered once shipping info is meaningfully present |
 | `add_payment_info` | User continues to Stripe Checkout | Includes `payment_type: 'card'` (cart pay CTA) |
-| `google_ads_purchase` | Paid order page `/order/[orderId]` | **`trackCheckoutPurchase`**: root `order_id`, `transaction_id`, `value`, `currency`, `user_data`, `ecommerce.items`. Dedupe: `google_ads_purchase_sent:<orderId>`. |
-| `purchase` | GA4 **server** event name | **Measurement Protocol** when payment becomes paid (`sendPurchaseForOrder`). Not pushed from the default order page dataLayer (avoids double-counting if you also map `google_ads_purchase` → GA4). |
+| `purchase` | Paid order page **(browser)** + GA4 **server** | **Browser:** `trackCheckoutPurchase` — Ads attribution only in GTM; dedupe `sent_purchase_<orderId>`. **Server:** MP `sendPurchaseForOrder` — **GA4 revenue source of truth**. |
 | `generate_lead` | Legacy / confirmation-pending manual flows | Separate from revenue; website checkout is Stripe-first |
 | `contact_click` | LINE / WhatsApp / Telegram click | Canonical contact event |
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
@@ -161,16 +140,18 @@ Removed legacy messenger events:
 ### Manual Payment Methods
 
 - `generate_lead` fires when the order is created but still unpaid.
-- When the order later becomes **paid**, GA4 `purchase` is sent via **Measurement Protocol** (same Stripe/admin paths as above), not via a second browser event name you must add in code.
-- Browser **`google_ads_purchase`** fires when the customer opens the **paid** order page (same payload rules as Stripe).
+- When the order later becomes **paid**, GA4 `purchase` is sent via **Measurement Protocol** only (same admin/Stripe paths as above).
 
-## GA4 and `google_ads_purchase`
+## Purchase: server vs browser (GTM)
 
-**Default (recommended):** GA4 **`purchase`** is sent by **Measurement Protocol** when the backend confirms payment (`sendPurchaseForOrder`). Configure `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET` on the server.
+| Layer | Role | How |
+|-------|------|-----|
+| **Server (MP)** | GA4 `purchase` + revenue reporting | `sendPurchaseForOrder` when payment is confirmed; idempotent via `ga4_purchase_sent` |
+| **Browser (dataLayer)** | Google Ads ROAS / click attribution | `trackCheckoutPurchase` → `purchase` + `ecommerce.*`; dedupe `sent_purchase_<orderId>` |
 
-**Browser:** The app pushes **`google_ads_purchase`** only (not `purchase`) on the paid order page. Your **Google Ads** conversion tag should use a Custom Event trigger on **`google_ads_purchase`**.
+**GTM rule:** Fire **Google Ads Conversion** on Custom Event `purchase` using DL variables `ecommerce.value`, `ecommerce.transaction_id`, `ecommerce.currency`. **Disable** any GA4 Event tag that sends `purchase` from the browser while MP is enabled — that combination typically **doubles** GA4 revenue. Keep GA4 `purchase` **server-only** unless you have a documented exception.
 
-**Optional — map the same push to GA4 in GTM:** Add a **Google Analytics: GA4 Event** tag, trigger **Custom Event** = `google_ads_purchase`, event name **`purchase`**, and map parameters from the data layer (`transaction_id`, `value`, `currency`, `ecommerce.items`). **Warning:** If Measurement Protocol already sends `purchase` for the same order, sending another `purchase` from the browser can **double-count** in GA4 unless you use a single reporting path or identical `transaction_id` and a documented dedupe approach. Prefer **one** primary source for GA4 purchase revenue unless you know what you are doing.
+Configure MP with `GA4_MEASUREMENT_ID` and `GA4_MEASUREMENT_API_SECRET` on the server.
 
 ## Messenger Conversion Rules
 
@@ -210,8 +191,8 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 - Confirm GTM loads only in production
 - Confirm `window.gtag` is not used
 - Confirm `window.dataLayer` receives expected event objects
-- On a **paid** order page, confirm **`google_ads_purchase`** appears (not necessarily `purchase`)
-- If retesting the **same** order id, clear or use new storage keys: `google_ads_purchase_sent:<orderId>`
+- On a **paid** order page, confirm **`purchase`** appears (after `{ ecommerce: null }` immediately before it)
+- If retesting the **same** order id, clear or use new storage key: `sent_purchase_<orderId>`
 - Confirm `traffic_type: 'internal'` appears when using `?internal_user=true`
 
 ### GTM Preview
@@ -228,7 +209,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
   - `begin_checkout`
   - `add_shipping_info`
   - `add_payment_info`
-  - **`google_ads_purchase`** (paid order page)
+  - **`purchase`** (paid order page)
   - `generate_lead`
   - `contact_click`
 
@@ -236,10 +217,10 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 
 - Confirm one initial `page_view`
 - Confirm one `page_view` per SPA route change
-- Confirm funnel ecommerce events use the expected `items`, `value`, `currency` (shape differs from `google_ads_purchase`, which uses `ecommerce.items`)
+- Confirm funnel ecommerce events use the expected `items`, `value`, `currency` (shape differs from paid-order **`purchase`**, which uses `ecommerce.items`)
 - Confirm `begin_checkout` no longer fires on cart view
-- Confirm GA4 **`purchase`** appears **at most once** per paid order (usually **Measurement Protocol**; may not appear in DebugView tied to the browser device_id the same way as on-site events)
-- Confirm **`google_ads_purchase`** appears in GTM Preview when loading a **paid** order URL with token
+- Confirm GA4 **`purchase`** from **Measurement Protocol** for paid orders (DebugView / Admin; may not mirror the browser device if MP uses a different client id strategy).
+- Confirm dataLayer **`purchase`** appears in **GTM Preview** at most once per order id when loading a **paid** order URL (refresh should not duplicate; `sent_purchase_<orderId>`).
 - Confirm `generate_lead` appears only for unpaid manual-order creation
 
 ## Manual Test Flow
@@ -254,28 +235,27 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 8. Start checkout and confirm `begin_checkout`
 9. Add shipping details and confirm `add_shipping_info`
 10. Click Stripe payment CTA and confirm `add_payment_info`
-10. Click Stripe payment CTA and confirm `add_payment_info`
-11. Complete Stripe checkout; on the **paid** order page confirm **`google_ads_purchase`** in GTM Preview / dataLayer. Confirm GA4 **`purchase`** via MP (DebugView timing may lag; check `ga4_purchase_sent` / admin logs if needed).
+11. Complete Stripe checkout; on the **paid** order page confirm **`purchase`** in GTM Preview / dataLayer. Confirm GA4 **`purchase`** via MP if configured (DebugView timing may lag; check `ga4_purchase_sent` / admin logs if needed).
 12. Create a manual-payment order and confirm `generate_lead`
-13. After the order is marked paid, open the paid order page again and confirm **`google_ads_purchase`** does **not** duplicate (dedupe) unless you cleared storage
+13. After the order is marked paid, open the paid order page again and confirm **`purchase`** does **not** duplicate (dedupe) unless you cleared storage
 
 ## Troubleshooting (naming & GTM)
 
 Use this list when “nothing fires” or “wrong variable is empty”:
 
-1. **Trigger event name** must match **exactly** `google_ads_purchase` (case-sensitive, underscores). Do not use `Google_Ads_Purchase` or `google-ads-purchase`. Do **not** use a GTM trigger on **`purchase`** for the order page — that name is the **GA4 server** event from Measurement Protocol, not a browser dataLayer event from this app.
-2. **Data Layer variable names** on this event are **root-level** `order_id`, `transaction_id`, `value`, `currency`; line items are under **`ecommerce.items`**, not root `items`. Funnel events use root `items` — do not reuse the same GTM variable for both.
-3. **`user_data`**: nested keys are `email_address` and `phone_number` (may be undefined if the customer did not provide them).
-4. **Dedupe:** keys `google_ads_purchase_sent:<orderId>` in localStorage and sessionStorage prevent a second push for the same order on the same browser. For QA, use a **new order**, incognito, or clear those keys.
+1. **Trigger event name** for the paid order page must match **exactly** **`purchase`** (lowercase).
+2. **Data Layer variables:** On **`purchase`**, use only `ecommerce.transaction_id`, `ecommerce.value`, `ecommerce.currency`, and `ecommerce.items`. Funnel events often use root `items` — do not reuse the same GTM variable for every event shape.
+3. **No root `order_id`:** The app does not put `order_id` on the purchase object; use **`ecommerce.transaction_id`** for conversion deduplication in Google Ads.
+4. **Dedupe:** `sent_purchase_<orderId>` in **localStorage** prevents a second browser **`purchase`** for the same order (refresh-safe). For QA, use a **new order**, incognito, or clear that key.
 5. **Empty push:** If the order has **no line items** and no fallback synthetic item, the effect exits early and **nothing** is pushed. Check `order.items` in the API response.
 6. **GTM not loaded:** `components/GoogleAnalytics.tsx` loads GTM only when `NODE_ENV === 'production'` and `NEXT_PUBLIC_GTM_ID` is set; `/admin` skips the component.
-8. **GTM race (Tag Assistant):** If `manual_test_event` from the console appears but **`google_ads_purchase` does not**, the push may have run before `gtm.js` wired the container. The app **defers** `google_ads_purchase` until `window.google_tag_manager['GTM-…']` exists (or ~4s fallback) — see `runWhenGtmLikelyReady` in `lib/analytics/gtag.ts`. Ensure **`NEXT_PUBLIC_GTM_ID`** matches your container id (including `GTM-` prefix).
+7. **Tag Assistant / “missing” `purchase`:** Pushes may run before `gtm.js` loads; GTM still processes prior `dataLayer` entries once the container boots. If nothing fires, confirm **`NEXT_PUBLIC_GTM_ID`** matches the container (including `GTM-` prefix) and GTM loads in production (`components/GoogleAnalytics.tsx`).
 
 ## Audit: Purchase transport (client + server)
 
-- **Browser (dataLayer → GTM):** On the **paid** order page, `components/order/OrderPageClient.tsx` calls **`trackCheckoutPurchase`** → `lib/analytics/gtag.ts` → `dataLayer.push` with **`event: 'google_ads_purchase'`** and the root-level keys documented in **Paid order: `google_ads_purchase` dataLayer contract** above. Used for Google Ads (and optionally a GTM-authored GA4 tag). **Not** `OrderPaidPurchaseTracker.tsx` (that file does not exist — use `OrderPageClient` only).
+- **Browser (dataLayer → GTM):** Paid order page → **`trackCheckoutPurchase`** → **`purchase`** with **`ecommerce`** only (`transaction_id`, `value`, `currency`, `items`). **No** deferred GTM polling — the queue is processed when `gtm.js` loads.
 - **Server (Measurement Protocol):** When an order becomes paid (Stripe webhook, admin “Mark as paid”, or admin payment-status → PAID), the backend sends GA4 **`purchase`** via **`lib/ga4/measurementProtocol.ts`** / **`sendPurchaseForOrder.ts`** (`app/api/stripe/webhook/route.ts`, mark-paid, payment-status routes).
-- **Duplicate guard:** (1) **Browser:** `google_ads_purchase_sent:<orderId>` in localStorage + sessionStorage. (2) **Server:** `ga4_purchase_sent` in the database for MP idempotency.
+- **Duplicate guard:** (1) **Browser `purchase`:** `sent_purchase_<orderId>` in localStorage. (2) **Server:** `ga4_purchase_sent` in the database for MP idempotency.
 - **`generate_lead`:** `trackGenerateLead` only pushes `generate_lead`; it does not call purchase helpers.
 
 ## Files Controlling Analytics Logic
@@ -297,7 +277,7 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 - `components/ProductOrderBlockForProduct.tsx`
 - `components/GiftsCarousel.tsx`
 - `app/[lang]/cart/CartPageClient.tsx`
-- `components/order/OrderPageClient.tsx` (paid order: `trackCheckoutPurchase` → `google_ads_purchase`)
+- `components/order/OrderPageClient.tsx` (paid order: `trackCheckoutPurchase` → `purchase`)
 - `app/order/[orderId]/page.tsx`
 - `components/MessengerOrderButtons.tsx`
 - `components/MessengerLinks.tsx`

@@ -117,7 +117,7 @@ export async function PATCH(
     }
   }
 
-  // GA4 purchase: Measurement Protocol from sendPurchaseForOrder. Browser: google_ads_purchase when customer opens paid order page.
+  // GA4 purchase: browser/GTM only when customer opens the paid order page — no sendPurchaseForOrder (MP disabled).
 
   return NextResponse.json({ ok: true, order: updated });
 }

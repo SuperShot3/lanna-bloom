@@ -1,8 +1,11 @@
 /**
- * @deprecated Legacy GA4 Measurement Protocol sender. Not called by app routes anymore —
- * GA4 **purchase** is sent here via Measurement Protocol when the order becomes paid (idempotent).
- * Browser **`google_ads_purchase`** is pushed from the paid order page (`trackCheckoutPurchase`), not from this module.
- * Kept for reference or one-off scripts; requires GA4_MEASUREMENT_ID + GA4_MEASUREMENT_API_SECRET.
+ * Sends GA4 **purchase** via Measurement Protocol when an order becomes paid (idempotent per order in DB).
+ *
+ * **Current product setup:** GA4 **`purchase`** is fired from the **browser** (paid order page → dataLayer → GTM).
+ * This module is **not** called from webhooks or admin routes; keep it only if you intentionally re-enable MP.
+ *
+ * If you call this again, avoid also sending `purchase` from GTM to the same GA4 property without a dedupe strategy,
+ * or revenue can double-count.
  */
 
 import 'server-only';

@@ -2,14 +2,13 @@
  * Analytics helpers for GTM-owned Google Analytics 4 tracking.
  * The app only pushes structured events to dataLayer; GTM owns transport and pageviews.
  * All events fire only on client; per-event dedupe where noted.
- * **Paid order (browser):** `trackCheckoutPurchase` → dataLayer **`google_ads_purchase`** → GTM (see
- * `docs/ANALYTICS_GA4.md`). GA4 **`purchase`** is normally server Measurement Protocol; optional GTM
- * mapping from `google_ads_purchase` → GA4.
+ * **Paid order (browser):** `OrderPageClient` pushes dataLayer **`purchase`** (GA4 ecommerce shape). GTM should
+ * forward to GA4 / Ads. Optional helper: `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (same shape + dedupe).
  */
 
 import { pushToDataLayer } from './analytics/gtag';
 
-export { trackCheckoutPurchase, trackGoogleAdsPurchase } from './analytics/gtag';
+export { trackCheckoutPurchase } from './analytics/gtag';
 
 const CURRENCY = 'THB';
 

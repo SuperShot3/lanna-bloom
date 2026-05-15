@@ -382,6 +382,8 @@ export async function POST(request: NextRequest) {
       sessionId: session.id,
     });
 
+    // GA4 `purchase` is not sent from the server — customer device fires dataLayer on the paid order page (GTM).
+
       // Redeem newsletter welcome codes (single-use) when payment is confirmed.
       const welcomeCodeId =
         typeof session.metadata?.welcome_code_id === 'string'

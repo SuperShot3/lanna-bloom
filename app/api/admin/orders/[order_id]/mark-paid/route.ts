@@ -79,7 +79,7 @@ export async function PATCH(
     payment_status: { from: previousPaymentStatus, to: 'PAID' },
   });
 
-  // GA4 purchase: Measurement Protocol from sendPurchaseForOrder. Browser: google_ads_purchase when customer opens paid order page.
+  // GA4 purchase: browser/GTM only when customer opens the paid order page — no sendPurchaseForOrder (MP disabled).
 
   // Create income record (idempotent, fire-and-forget). paidAt comes from
   // the order's paid_at column we just wrote so the income row's paid_date

@@ -23,7 +23,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { trackCheckoutPurchase, type AnalyticsItem } from '@/lib/analytics';
+import type { AnalyticsItem } from '@/lib/analytics';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -212,26 +212,45 @@ export function OrderPageClient({
     };
   }, [paid, orderId, router, order]);
 
-  // GTM dataLayer: `google_ads_purchase` only (deduped per orderId in lib/analytics/gtag.ts). GA4 `purchase`
-  // is expected from Measurement Protocol and/or a GTM GA4 tag on this same trigger — see docs/ANALYTICS_GA4.md.
+  // GA4 standard `purchase` → GTM (single source for purchase revenue). Dedupe: localStorage `sent_purchase_<orderId>`.
   useEffect(() => {
-    if (!paid) return;
-    const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-    const analyticsItems = orderViewToAnalyticsItems(order, orderId);
-    if (analyticsItems.length === 0) return;
+    if (!paid || typeof window === 'undefined') return;
 
-    void trackCheckoutPurchase({
-      orderId,
-      value: grandTotal,
-      currency: order.currency ?? 'THB',
-      email: order.customerEmail ?? null,
-      phone: order.phone ?? null,
-      items: analyticsItems.map((it) => ({
-        item_id: it.item_id,
-        item_name: it.item_name,
-        price: it.price,
-        quantity: it.quantity ?? 1,
-      })),
+    const normalizedOrderId = orderId.trim();
+    if (!normalizedOrderId) return;
+
+    const dedupeKey = `sent_purchase_${normalizedOrderId}`;
+    try {
+      if (window.localStorage.getItem(dedupeKey) === '1') return;
+    } catch {
+      // ignore read errors
+    }
+
+    const totalAmount = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+    const cartItems = orderViewToAnalyticsItems(order, orderId);
+    if (cartItems.length === 0 || !Number.isFinite(totalAmount) || totalAmount <= 0) return;
+
+    try {
+      window.localStorage.setItem(dedupeKey, '1');
+    } catch {
+      // still push once this session; refresh may repeat if storage blocked
+    }
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ ecommerce: null });
+    window.dataLayer.push({
+      event: 'purchase',
+      ecommerce: {
+        transaction_id: normalizedOrderId,
+        value: totalAmount,
+        currency: order.currency ?? 'THB',
+        items: cartItems.map((item) => ({
+          item_id: item.item_id,
+          item_name: item.item_name,
+          price: item.price,
+          quantity: item.quantity ?? 1,
+        })),
+      },
     });
   }, [paid, orderId, order]);
 

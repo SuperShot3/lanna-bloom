@@ -5,8 +5,8 @@ import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or polling).
- * GA4 **purchase** is sent via Measurement Protocol (`sendPurchaseForOrder`). Browser **google_ads_purchase**
- * is pushed when the customer opens the paid order page (`trackCheckoutPurchase`).
+ * GA4 **purchase** is **not** sent from the server — revenue/conversions use the browser dataLayer on the
+ * paid order page (`OrderPageClient`) → GTM. (Do not call `sendPurchaseForOrder` here unless you re-enable MP.)
  */
 export async function runStripePostPaymentSuccessHooks(params: {
   orderId: string;
