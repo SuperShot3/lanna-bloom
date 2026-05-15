@@ -103,7 +103,7 @@ GA4 ecommerce events are pushed from `lib/analytics.ts` into `dataLayer`, and GT
 
 | Event | Where it fires |
 |-------|----------------|
-| **purchase** | **GA4 revenue (default):** paid order page → `dataLayer` → GTM. Optional server MP documented in `docs/ANALYTICS_GA4.md` |
+| **purchase** | **GA4 revenue (default):** `/{lang}/checkout/complete` (post-Stripe) → `dataLayer` → GTM. Optional server MP documented in `docs/ANALYTICS_GA4.md` |
 | **generate_lead** | Success page after Place Order when the order is still unpaid |
 
 Do **not** mark `contact_click` or `messenger_click` as primary key events. See `docs/ANALYTICS_GA4.md` for the full event inventory, GTM setup, and validation checklist.

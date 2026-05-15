@@ -1,7 +1,7 @@
 /**
  * Sends GA4 **purchase** via Measurement Protocol when an order becomes paid (idempotent per order in DB).
  *
- * **Current product setup:** GA4 **`purchase`** is fired from the **browser** (paid order page → dataLayer → GTM).
+ * **Current product setup:** GA4 **`purchase`** is fired from the **browser** (`checkout/complete` → dataLayer → GTM).
  * This module is **not** called from webhooks or admin routes; keep it only if you intentionally re-enable MP.
  *
  * If you call this again, avoid also sending `purchase` from GTM to the same GA4 property without a dedupe strategy,

@@ -1,20 +1,20 @@
 # Google Ads purchase conversion (browser)
 
-Goal: Record **purchase** in GA4 and (optionally) a **purchase** conversion in Google Ads when a customer lands on the paid order page, with good session attribution.
+Goal: Record **purchase** in GA4 and (optionally) a **purchase** conversion in Google Ads when the customer returns from Stripe to **`/{lang}/checkout/complete`**, with good session attribution.
 
 ## What the app pushes (source of truth)
 
-On the **paid** order page (`/order/[orderId]` with valid token), **`OrderPageClient`** pushes to **`window.dataLayer`**:
+On **`/{lang}/checkout/complete?session_id=...`**, after **`GET /api/stripe/order-status`** returns **`paid`** with **`purchaseAnalytics`**, **`CheckoutCompleteClient`** pushes to **`window.dataLayer`** via **`trackCheckoutPurchase`**:
 
 - **`event`:** `purchase` (lowercase — standard GA4 name).
 - **`ecommerce`:** `transaction_id`, `value`, `currency`, `items` (each item: `item_id`, `item_name`, `price`, `quantity`) — **only** these keys under `ecommerce`; no root `order_id`.
 - Immediately before: `dataLayer.push({ ecommerce: null })`.
 - **Dedupe:** localStorage `sent_purchase_<orderId>` so a refresh does not fire again.
-- **Timing:** Push is **immediate** (no wait for `gtm.js`); GTM processes the `dataLayer` queue when the container loads.
+- **Timing:** Push runs after a short GTM/consent wait (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
 **GA4 revenue:** Configure GTM to send this same **`purchase`** event to GA4 (e.g. GA4 Event tag on Custom Event `purchase` with ecommerce mapping). This project does **not** send GA4 `purchase` from the server by default.
 
-**Optional helper:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` matches the same payload and dedupe key if you need the same push from another client surface.
+**Optional helper:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` is the single entry point for the browser `purchase` shape and dedupe.
 
 **Enhanced Conversions:** Configure user data in GTM separately (this push does not include `user_data`).
 
@@ -23,13 +23,13 @@ On the **paid** order page (`/order/[orderId]` with valid token), **`OrderPageCl
 ### Option 1: Browser only (current setup)
 
 - **How:** GTM **Custom Event** trigger **`purchase`** → GA4 Event tag + optional **Google Ads Conversion** tag. Read value and transaction id from **`ecommerce.*`** (Data Layer Variables).
-- **Pros:** Simple, one pipeline, strong same-session attribution.
-- **Cons:** No GA4 `purchase` if the customer never opens the paid order page after paying.
+- **Pros:** Simple, one pipeline, strong same-session attribution; fires on the first post-Stripe page.
+- **Cons:** No GA4 `purchase` if `order-status` never returns `paid` + `purchaseAnalytics` on that page (e.g. user leaves before poll succeeds, or response shape mismatch).
 
 ### Option 2: Add Measurement Protocol later (server)
 
 - **How:** Wire `sendPurchaseForOrder` from payment success paths and set `GA4_MEASUREMENT_ID` / `GA4_MEASUREMENT_API_SECRET`. See `docs/ANALYTICS_GA4.md` → *Optional: Measurement Protocol*.
-- **Pros:** Can count every paid order even without a return visit.
+- **Pros:** Can count every paid order even without a successful client push.
 - **Cons:** Must dedupe against browser `purchase` (same `transaction_id`) or disable one path to avoid double revenue in GA4.
 
 ### Option 3: Both browser + MP (advanced)
@@ -41,6 +41,7 @@ On the **paid** order page (`/order/[orderId]` with valid token), **`OrderPageCl
 1. **Trigger**
    - Type: Custom Event.
    - Event name: **`purchase`**.
+   - Optional (QA): add **Page Path** contains **`checkout/complete`** if you want a narrow test trigger.
 
 2. **Variables (examples)**
    - Data Layer Variable: `ecommerce.value` (conversion value / revenue).
@@ -55,9 +56,9 @@ On the **paid** order page (`/order/[orderId]` with valid token), **`OrderPageCl
 
 ## Summary
 
-| Approach            | Trigger        | Where it fires        | Best for                                      |
-|---------------------|----------------|------------------------|-----------------------------------------------|
-| Browser (dataLayer) | `purchase`     | Paid order page → GTM | Default: GA4 + Ads attribution              |
-| Measurement Protocol| Server (if wired) | Webhook / admin     | Optional: every paid order without pageview |
+| Approach             | Trigger         | Where it fires                    | Best for                                      |
+|----------------------|-----------------|-----------------------------------|-----------------------------------------------|
+| Browser (dataLayer)  | `purchase`      | `/{lang}/checkout/complete` → GTM | Default: GA4 + Ads attribution              |
+| Measurement Protocol | Server (if wired) | Webhook / admin                | Optional: every paid order without pageview |
 
 Recommendation: GTM **Custom Event** `purchase` → **GA4** + optional **Google Ads Conversion** using DL vars under `ecommerce.*`. Read **Troubleshooting** in `docs/ANALYTICS_GA4.md` if tags do not fire.

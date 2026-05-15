@@ -7,16 +7,16 @@
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
-- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** when the customer loads the **paid** order page. `components/order/OrderPageClient.tsx` pushes to `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `sent_purchase_<orderId>` in **localStorage**.
+- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/{lang}/checkout/complete`** after Stripe returns and `GET /api/stripe/order-status` reports `paid` with `purchaseAnalytics`. `CheckoutCompleteClient` calls `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `sent_purchase_<orderId>` in **localStorage**. The **paid** `/order/...` page does **not** push `purchase` (Stripe web checkout always hits `checkout/complete` first).
 - **Measurement Protocol (optional / disabled by default):** `lib/ga4/sendPurchaseForOrder.ts` is **not** wired from Stripe webhooks or admin routes in the current codebase. Use it only if you intentionally re-enable server-side `purchase` and adjust GTM so GA4 does not count the same sale twice.
 
 ## Paid order: browser `purchase` (canonical)
 
-**Source code:** `components/order/OrderPageClient.tsx` — when `paid === true`, `stripePollResolved`, valid totals, and line items (or the synthetic single-line fallback when items are empty but total > 0). Calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
+**Source code:** `app/[lang]/checkout/complete/CheckoutCompleteClient.tsx` — when `order-status` returns `status: 'paid'`, `orderId`, and `purchaseAnalytics` (`value`, `currency`, `items` from the server; same line-item rules as the order view). Calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
 
-**Event `purchase`** — at most once per order id (`sent_purchase_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **No** `eventCallback` / `eventTimeout` (immediate push; GTM drains the queue after `gtm.js` loads).
+**Event `purchase`** — at most once per order id (`sent_purchase_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **`purchase`** is deferred briefly so GTM/consent can settle (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
-**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `OrderPageClient` on the paid order URL).
+**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `CheckoutCompleteClient` only for web Stripe checkout).
 
 ## Optional: Measurement Protocol `purchase` (server)
 
@@ -116,7 +116,7 @@ Create GTM custom event triggers for:
 | `begin_checkout` | User starts order/payment flow | Fires on cart page load (deduped per session) |
 | `add_shipping_info` | Delivery info added | Triggered once shipping info is meaningfully present |
 | `add_payment_info` | User continues to Stripe Checkout | Includes `payment_type: 'card'` (cart pay CTA) |
-| `purchase` | Paid order page **(browser)** | `OrderPageClient` → dataLayer → GTM → GA4 / Ads; dedupe `sent_purchase_<orderId>`. Server MP not active unless you wire it. |
+| `purchase` | **`/{lang}/checkout/complete`** **(browser)** | `CheckoutCompleteClient` → `trackCheckoutPurchase` → dataLayer → GTM → GA4 / Ads; dedupe `sent_purchase_<orderId>`. Server MP not active unless you wire it. |
 | `generate_lead` | Legacy / confirmation-pending manual flows | Separate from revenue; website checkout is Stripe-first |
 | `contact_click` | LINE / WhatsApp / Telegram click | Canonical contact event |
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
@@ -132,8 +132,8 @@ Removed legacy messenger events:
 
 ### Stripe (and all paid orders)
 
-- GA4 **`purchase`** (revenue) is recorded when the customer opens the **paid** order page and the browser pushes `purchase` to the dataLayer; GTM sends it to GA4.
-- **Coverage gap:** If a customer pays but **never** loads the paid order URL in that browser, no browser `purchase` fires. To count every paid order server-side, you would need to re-enable Measurement Protocol (and then align GTM/GA4 deduplication).
+- GA4 **`purchase`** (revenue) is recorded when the customer reaches **`checkout/complete`** after Stripe and the browser pushes `purchase` to the dataLayer; GTM sends it to GA4.
+- **Coverage gap:** If `purchaseAnalytics` is missing or validation fails, nothing is pushed on that screen; there is **no** fallback push from `/order/...` today. To count every paid order server-side, use Measurement Protocol (and align deduplication).
 
 ### Manual Payment Methods
 
@@ -144,7 +144,7 @@ Removed legacy messenger events:
 
 | Layer | Role | How |
 |-------|------|-----|
-| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `OrderPageClient` → `purchase` + `ecommerce.*`; dedupe `sent_purchase_<orderId>` |
+| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `CheckoutCompleteClient` → `purchase` + `ecommerce.*`; dedupe `sent_purchase_<orderId>` |
 | **Server (MP)** | Optional extra coverage | Not called in current app routes; `sendPurchaseForOrder` + `ga4_purchase_sent` if you wire it |
 
 **GTM rule:** Use a **GA4 Event** tag (or equivalent) on Custom Event **`purchase`**, reading `ecommerce.*`. For **Google Ads**, fire a conversion tag on the same event using DL variables `ecommerce.value`, `ecommerce.transaction_id`, `ecommerce.currency`.
@@ -207,7 +207,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
   - `begin_checkout`
   - `add_shipping_info`
   - `add_payment_info`
-  - **`purchase`** (paid order page)
+  - **`purchase`** (`/{lang}/checkout/complete` after paid `order-status`)
   - `generate_lead`
   - `contact_click`
 
@@ -217,8 +217,8 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 - Confirm one `page_view` per SPA route change
 - Confirm funnel ecommerce events use the expected `items`, `value`, `currency` (shape differs from paid-order **`purchase`**, which uses `ecommerce.items`)
 - Confirm `begin_checkout` no longer fires on cart view
-- Confirm GA4 **`purchase`** in **DebugView** when you load the **paid** order page (same device/session as GTM). If you later enable MP, you may also see server-originated hits with different timing/device.
-- Confirm dataLayer **`purchase`** appears in **GTM Preview** at most once per order id when loading a **paid** order URL (refresh should not duplicate; `sent_purchase_<orderId>`).
+- Confirm GA4 **`purchase`** in **DebugView** when you complete checkout and land on **`checkout/complete`** (same device/session as GTM). If you later enable MP, you may also see server-originated hits with different timing/device.
+- Confirm dataLayer **`purchase`** appears in **GTM Preview** at most once per order id on **`checkout/complete`** (refresh should not duplicate; `sent_purchase_<orderId>`). Reloading **`/order/...`** does not emit `purchase`.
 - Confirm `generate_lead` appears only for unpaid manual-order creation
 
 ## Manual Test Flow
@@ -233,25 +233,25 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 8. Start checkout and confirm `begin_checkout`
 9. Add shipping details and confirm `add_shipping_info`
 10. Click Stripe payment CTA and confirm `add_payment_info`
-11. Complete Stripe checkout; on the **paid** order page confirm **`purchase`** in GTM Preview / dataLayer and **GA4 DebugView** (GTM → GA4 tag). If you re-enable MP, also verify server sends without double-counting revenue.
+11. Complete Stripe checkout; on **`/{lang}/checkout/complete`** (success view) confirm **`purchase`** in GTM Preview / dataLayer and **GA4 DebugView** (GTM → GA4 tag). If you re-enable MP, also verify server sends without double-counting revenue.
 12. Create a manual-payment order and confirm `generate_lead`
-13. After the order is marked paid, open the paid order page again and confirm **`purchase`** does **not** duplicate (dedupe) unless you cleared storage
+13. After `purchase` fired, open **`/order/...`** and confirm **`purchase`** does **not** fire again (dedupe); or reload `checkout/complete` and confirm no duplicate unless you cleared storage
 
 ## Troubleshooting (naming & GTM)
 
 Use this list when “nothing fires” or “wrong variable is empty”:
 
-1. **Trigger event name** for the paid order page must match **exactly** **`purchase`** (lowercase).
+1. **Trigger event name** for **`purchase`** must match **exactly** **`purchase`** (lowercase).
 2. **Data Layer variables:** On **`purchase`**, use only `ecommerce.transaction_id`, `ecommerce.value`, `ecommerce.currency`, and `ecommerce.items`. Funnel events often use root `items` — do not reuse the same GTM variable for every event shape.
 3. **No root `order_id`:** The app does not put `order_id` on the purchase object; use **`ecommerce.transaction_id`** for conversion deduplication in Google Ads.
 4. **Dedupe:** `sent_purchase_<orderId>` in **localStorage** prevents a second browser **`purchase`** for the same order (refresh-safe). For QA, use a **new order**, incognito, or clear that key.
-5. **Empty push:** If the order has **no line items** and no fallback synthetic item, the effect exits early and **nothing** is pushed. Check `order.items` in the API response.
+5. **Empty push:** If `purchaseAnalytics.items` is empty or `value` is invalid, `trackCheckoutPurchase` exits early and **nothing** is pushed. Check `GET /api/stripe/order-status` JSON when `status` is `paid`.
 6. **GTM not loaded:** `components/GoogleAnalytics.tsx` loads GTM only when `NODE_ENV === 'production'` and `NEXT_PUBLIC_GTM_ID` is set; `/admin` skips the component.
 7. **Tag Assistant / “missing” `purchase`:** Pushes may run before `gtm.js` loads; GTM still processes prior `dataLayer` entries once the container boots. If nothing fires, confirm **`NEXT_PUBLIC_GTM_ID`** matches the container (including `GTM-` prefix) and GTM loads in production (`components/GoogleAnalytics.tsx`).
 
 ## Audit: Purchase transport (browser-first)
 
-- **Browser (dataLayer → GTM):** Paid order page → **`OrderPageClient`** pushes **`purchase`** with **`ecommerce`** only (`transaction_id`, `value`, `currency`, `items`), after `{ ecommerce: null }`. **No** deferred GTM polling — the queue is processed when `gtm.js` loads.
+- **Browser (dataLayer → GTM):** **`/{lang}/checkout/complete`** → **`CheckoutCompleteClient`** → **`trackCheckoutPurchase`** pushes **`purchase`** with **`ecommerce`** (`transaction_id`, `value`, `currency`, `items`), after `{ ecommerce: null }`, after a short GTM/consent wait (`waitForGtmConsentThen`).
 - **Server (Measurement Protocol):** **Not** invoked from Stripe webhook or admin mark-paid / payment-status routes in the current codebase. Optional: `sendPurchaseForOrder` + `ga4_purchase_sent` if you wire it later.
 - **Duplicate guard (browser):** `sent_purchase_<orderId>` in localStorage.
 - **`generate_lead`:** `trackGenerateLead` only pushes `generate_lead`; it does not call purchase helpers.
@@ -275,7 +275,9 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 - `components/ProductOrderBlockForProduct.tsx`
 - `components/GiftsCarousel.tsx`
 - `app/[lang]/cart/CartPageClient.tsx`
-- `components/order/OrderPageClient.tsx` (paid order: dataLayer `purchase` + `sent_purchase_*` dedupe)
+- `app/[lang]/checkout/complete/CheckoutCompleteClient.tsx` (Stripe return: dataLayer `purchase` + `sent_purchase_*` dedupe)
+- `app/api/stripe/order-status/route.ts` (`purchaseAnalytics` payload when paid + proof)
+- `components/order/OrderPageClient.tsx` (Stripe sync UI only; **no** `purchase` push)
 - `app/order/[orderId]/page.tsx`
 - `components/MessengerOrderButtons.tsx`
 - `components/MessengerLinks.tsx`

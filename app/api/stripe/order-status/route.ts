@@ -6,6 +6,11 @@ import { resolveStripeCheckoutSessionIds } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { fulfillPaidStripeCheckoutSession } from '@/lib/checkout/fulfillStripeCheckout';
 import { checkStripeOrderStatusRateLimit } from '@/lib/rateLimit';
+import type { AnalyticsItem } from '@/lib/analytics';
+import {
+  buildPurchaseAnalyticsItemsFromOrder,
+  purchaseValueAndCurrencyFromOrder,
+} from '@/lib/analytics/buildPurchaseItemsFromOrder';
 
 export async function GET(request: NextRequest) {
   const stripeConfig = getStripeServerConfig();
@@ -125,11 +130,32 @@ export async function GET(request: NextRequest) {
     });
 
     if (status === 'paid' || status === 'payment_failed') {
-      return NextResponse.json({
+      const payload: {
+        status: string;
+        orderId: string | null;
+        token: string | null;
+        purchase?: {
+          transaction_id: string;
+          value: number;
+          currency: string;
+          items: AnalyticsItem[];
+        };
+      } = {
         status,
         orderId: hasProof ? orderId : null,
         token: hasProof ? publicToken : null,
-      });
+      };
+      if (status === 'paid' && hasProof) {
+        const { value, currency } = purchaseValueAndCurrencyFromOrder(order);
+        const items = buildPurchaseAnalyticsItemsFromOrder(order, orderId);
+        payload.purchase = {
+          transaction_id: orderId,
+          value,
+          currency,
+          items,
+        };
+      }
+      return NextResponse.json(payload);
     }
 
     if (session.payment_status === 'paid' || paymentIntent?.status === 'succeeded') {

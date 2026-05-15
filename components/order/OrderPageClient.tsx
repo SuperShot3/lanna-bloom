@@ -23,7 +23,11 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { trackCheckoutPurchase, type AnalyticsItem } from '@/lib/analytics';
+import { trackCheckoutPurchase, wasCheckoutPurchaseSent } from '@/lib/analytics';
+import {
+  buildPurchaseAnalyticsItemsFromOrder,
+  purchaseValueAndCurrencyFromOrder,
+} from '@/lib/analytics/buildPurchaseItemsFromOrder';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -43,33 +47,6 @@ function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
     return { date: parts[0], time: '' };
   }
   return { date: slot, time: '' };
-}
-
-/** GA4 `purchase` items for a paid order; single fallback line when `items` is empty but total > 0. */
-function buildPurchaseAnalyticsItems(order: OrderCustomerView, orderId: string): AnalyticsItem[] {
-  const rows = order.items ?? [];
-  const mapped = rows.map((item, index) => ({
-    item_id: (item.bouquetId || item.bouquetSlug || `line_${index}`).trim() || `line_${index}`,
-    item_name: item.bouquetTitle,
-    price: item.price,
-    quantity: 1 as const,
-    index,
-    item_variant: item.size,
-    ...(item.itemType ? { item_category: item.itemType } : {}),
-  }));
-  const grandTotal = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-  if (mapped.length === 0 && grandTotal > 0) {
-    return [
-      {
-        item_id: orderId.trim() || 'order',
-        item_name: 'Purchase',
-        price: grandTotal,
-        quantity: 1,
-        index: 0,
-      },
-    ];
-  }
-  return mapped;
 }
 
 function getFulfillmentLabel(status: string, t: Record<string, string>): string {
@@ -144,7 +121,7 @@ export function OrderPageClient({
   }, []);
 
   const [stripeSyncing, setStripeSyncing] = useState(false);
-  /** When false, browser `purchase` waits for Stripe sync/poll to finish (or paid from server). */
+  /** When false, Stripe paid sync is still polling (unpaid order with Stripe session / intent context). */
   const [stripePollResolved, setStripePollResolved] = useState(true);
 
   useEffect(() => {
@@ -153,6 +130,60 @@ export function OrderPageClient({
       setStripeSyncing(false);
     }
   }, [paid]);
+
+  // Fallback purchase: only when checkout/complete did not successfully track.
+  useEffect(() => {
+    if (!paid || !stripePollResolved || typeof window === 'undefined') return;
+
+    const normalizedOrderId = orderId.trim();
+    if (!normalizedOrderId) return;
+
+    const { value, currency } = purchaseValueAndCurrencyFromOrder(order);
+    if (!(value > 0)) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const purchaseTrackedParam = params.get('purchase_tracked');
+
+    const stripPurchaseTrackedParam = () => {
+      if (!params.has('purchase_tracked')) return;
+      params.delete('purchase_tracked');
+      const qs = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
+    };
+
+    if (purchaseTrackedParam === '1') {
+      stripPurchaseTrackedParam();
+      return;
+    }
+
+    const shouldFallbackPurchase =
+      purchaseTrackedParam === '0' ||
+      (purchaseTrackedParam == null && !wasCheckoutPurchaseSent(normalizedOrderId));
+
+    if (!shouldFallbackPurchase) {
+      stripPurchaseTrackedParam();
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      await trackCheckoutPurchase({
+        orderId: normalizedOrderId,
+        value,
+        currency,
+        items: buildPurchaseAnalyticsItemsFromOrder(order, normalizedOrderId),
+      }).catch(() => false);
+
+      if (!cancelled) {
+        stripPurchaseTrackedParam();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [paid, stripePollResolved, orderId, order]);
 
   useEffect(() => {
     if (!paid || typeof window === 'undefined') return;
@@ -284,23 +315,6 @@ export function OrderPageClient({
       cancelled = true;
     };
   }, [paid, orderId, router, order.stripeSessionId, order.paymentIntentId]);
-
-  useEffect(() => {
-    if (!paid || !stripePollResolved || typeof window === 'undefined') return;
-
-    const normalizedOrderId = orderId.trim();
-    if (!normalizedOrderId) return;
-
-    const totalAmount = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-    const items = buildPurchaseAnalyticsItems(order, orderId);
-
-    trackCheckoutPurchase({
-      orderId: normalizedOrderId,
-      value: totalAmount,
-      currency: order.currency ?? 'THB',
-      items,
-    });
-  }, [paid, stripePollResolved, orderId, order]);
 
   const [copied, setCopied] = useState(false);
 

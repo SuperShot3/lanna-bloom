@@ -3,15 +3,9 @@
  *
  * Architecture: App → `window.dataLayer.push(...)` → GTM. No `gtag('event', …)` in app code.
  *
- * **Paid order (browser):** `trackCheckoutPurchase` pushes **`purchase`** with GA4 **`ecommerce`**
+ * **Paid order (browser):** `CheckoutCompleteClient` calls `trackCheckoutPurchase`, which pushes **`purchase`** with GA4 **`ecommerce`**
  * (`transaction_id`, `value`, `currency`, `items`) and the **same** fields mirrored at the **root**
  * of the pushed object so GTM DL variables aligned with funnel events (`add_to_cart`, etc.) still work.
- *
- * Pushes run **synchronously**; GTM replays the `dataLayer` queue after `gtm.js` loads.
- *
- * **`purchase`:** Deferred until GTM runtime is available (or a short poll timeout) plus an extra
- * `NEXT_PUBLIC_ANALYTICS_PURCHASE_DEFER_MS` delay so Consent Mode defaults (`beforeInteractive`) and
- * `gtm.js` can register `granted` before tags evaluate the transaction push.
  */
 
 declare global {
@@ -62,7 +56,7 @@ function toAnalyticsNumber(raw: unknown): number {
   return Number.isFinite(n) ? n : NaN;
 }
 
-/** Same-tab guard so a re-running effect (e.g. `order` identity churn) cannot double-push before localStorage updates. */
+/** Same-tab guard so a re-running effect cannot double-push before localStorage updates. */
 const purchaseSentThisDocument = new Set<string>();
 
 function hasStorageSentFlag(storage: Storage | undefined, key: string): boolean {
@@ -104,6 +98,21 @@ function markStandardPurchaseSent(orderId: string): void {
   } catch {
     // ignore
   }
+}
+
+/** Whether checkout purchase was already sent for this order (localStorage + same-document guard). */
+export function wasCheckoutPurchaseSent(orderId: string): boolean {
+  const normalizedOrderId = normalizeOrderId(orderId);
+  if (!normalizedOrderId) return false;
+  return wasStandardPurchaseSent(normalizedOrderId) || purchaseSentThisDocument.has(normalizedOrderId);
+}
+
+/** Mark checkout purchase as sent without pushing (rare; prefer successful push via trackCheckoutPurchase). */
+export function markCheckoutPurchaseSent(orderId: string): void {
+  const normalizedOrderId = normalizeOrderId(orderId);
+  if (!normalizedOrderId) return;
+  purchaseSentThisDocument.add(normalizedOrderId);
+  markStandardPurchaseSent(normalizedOrderId);
 }
 
 function readNonNegativeIntEnv(name: string, fallback: number): number {
@@ -148,7 +157,6 @@ function waitForGtmConsentThen(onReady: () => void): void {
     window.setTimeout(poll, pollEveryMs);
   };
 
-  // One frame after the current task so consent inline script + early GTM queue settle.
   if (typeof window.requestAnimationFrame === 'function') {
     window.requestAnimationFrame(() => poll());
   } else {
@@ -157,20 +165,21 @@ function waitForGtmConsentThen(onReady: () => void): void {
 }
 
 /**
- * Standard `purchase` on the paid order page — **once per order id** (localStorage).
- * Same shape as `OrderPageClient`; use via GTM for **GA4** and **Google Ads** (and similar).
+ * Standard `purchase` after successful web checkout — **once per order id** (localStorage).
+ * Resolves `true` after GTM `eventCallback`, `false` on invalid input, duplicate, or push failure.
  */
 export function trackCheckoutPurchase(params: {
   orderId: string;
   value: number;
   currency?: string;
   items: PurchaseItem[];
-}): void {
-  if (typeof window === 'undefined') return;
+}): Promise<boolean> {
+  if (typeof window === 'undefined') return Promise.resolve(false);
 
   const normalizedOrderId = normalizeOrderId(params.orderId);
   const value = toAnalyticsNumber(params.value);
   const currency = (params.currency ?? 'THB').trim() || 'THB';
+
   if (!normalizedOrderId || !Number.isFinite(value) || value <= 0) {
     if (isDev) {
       console.warn('[analytics] purchase skipped — invalid order id or value', {
@@ -179,7 +188,7 @@ export function trackCheckoutPurchase(params: {
         value,
       });
     }
-    return;
+    return Promise.resolve(false);
   }
 
   let itemsInput = params.items;
@@ -190,18 +199,19 @@ export function trackCheckoutPurchase(params: {
         item_name: 'Purchase',
         price: value,
         quantity: 1,
+        index: 0,
       },
     ];
   }
   if (itemsInput.length === 0) {
-    return;
+    return Promise.resolve(false);
   }
 
-  if (wasStandardPurchaseSent(normalizedOrderId) || purchaseSentThisDocument.has(normalizedOrderId)) {
+  if (wasCheckoutPurchaseSent(normalizedOrderId)) {
     if (isDev) {
       console.debug('[analytics] purchase duplicate prevented', { orderId: normalizedOrderId });
     }
-    return;
+    return Promise.resolve(false);
   }
 
   const items = itemsInput.map((item, idx) => {
@@ -224,11 +234,8 @@ export function trackCheckoutPurchase(params: {
     if (isDev) {
       console.warn('[analytics] purchase skipped — invalid item price', { orderId: normalizedOrderId, invalidLine });
     }
-    return;
+    return Promise.resolve(false);
   }
-
-  // Reserve before scheduling so Strict Mode / effect re-runs cannot queue two purchase timers.
-  purchaseSentThisDocument.add(normalizedOrderId);
 
   const ecommerce = {
     transaction_id: normalizedOrderId,
@@ -237,42 +244,60 @@ export function trackCheckoutPurchase(params: {
     items,
   };
 
-  waitForGtmConsentThen(() => {
-    if (wasStandardPurchaseSent(normalizedOrderId)) {
-      purchaseSentThisDocument.delete(normalizedOrderId);
-      return;
-    }
-
-    try {
-      window.dataLayer = window.dataLayer || [];
-      // Clear prior ecommerce object (GA4 / GTM) before a new purchase payload.
-      window.dataLayer.push({ ecommerce: null });
-
-      // Top-level `event` must be `purchase` (not nested under `ecommerce`) for GTM Custom Event triggers.
-      // GA4 reads `ecommerce.*`; mirror root `transaction_id` / `value` / `currency` / `items` for GTM variables
-      // aligned with funnel events (`lib/analytics.ts`).
-      window.dataLayer.push({
-        event: 'purchase',
-        ecommerce,
-        transaction_id: normalizedOrderId,
-        value,
-        currency,
-        items,
-      });
-
-      markStandardPurchaseSent(normalizedOrderId);
-
-      if (isDev) {
-        console.info('[analytics] purchase pushed to dataLayer', {
-          orderId: normalizedOrderId,
-          value,
-          itemCount: items.length,
-          consentDefaultsApplied: window.__lannaConsentDefaultsApplied === true,
-        });
+  return new Promise<boolean>((resolve) => {
+    waitForGtmConsentThen(() => {
+      if (wasCheckoutPurchaseSent(normalizedOrderId)) {
+        resolve(false);
+        return;
       }
-    } catch (e) {
-      purchaseSentThisDocument.delete(normalizedOrderId);
-      if (isDev) console.error('[analytics] purchase push failed', e);
-    }
+
+      let settled = false;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(ok);
+      };
+
+      try {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ ecommerce: null });
+
+        window.dataLayer.push({
+          event: 'purchase',
+          ecommerce,
+          transaction_id: normalizedOrderId,
+          value,
+          currency,
+          items,
+          eventCallback: () => {
+            markCheckoutPurchaseSent(normalizedOrderId);
+            if (isDev) {
+              console.info('[analytics] purchase pushed to dataLayer (eventCallback)', {
+                orderId: normalizedOrderId,
+                value,
+                itemCount: items.length,
+              });
+            }
+            finish(true);
+          },
+          eventTimeout: 5000,
+        });
+
+        window.setTimeout(() => {
+          if (!settled) {
+            if (isDev) {
+              console.warn('[analytics] purchase settled via eventTimeout (no eventCallback)', {
+                orderId: normalizedOrderId,
+              });
+            }
+            markCheckoutPurchaseSent(normalizedOrderId);
+            finish(true);
+          }
+        }, 5000);
+      } catch (e) {
+        if (isDev) console.error('[analytics] purchase push failed', e);
+        finish(false);
+      }
+    });
   });
 }

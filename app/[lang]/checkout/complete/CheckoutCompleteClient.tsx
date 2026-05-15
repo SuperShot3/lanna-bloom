@@ -7,6 +7,15 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
+import { trackCheckoutPurchase } from '@/lib/analytics';
+import type { PurchaseItem } from '@/lib/analytics/gtag';
+
+type OrderStatusPurchase = {
+  transaction_id: string;
+  value: number;
+  currency: string;
+  items: PurchaseItem[];
+};
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -73,16 +82,36 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
           status?: string;
           orderId?: string | null;
           token?: string | null;
+          purchase?: OrderStatusPurchase;
         };
         if (cancelled) return;
         if (data.status === 'paid' && typeof data.orderId === 'string' && data.orderId.trim()) {
           const oid = data.orderId.trim();
           const publicToken = typeof data.token === 'string' ? data.token.trim() : '';
-          
+          const purchase = data.purchase;
+
           setSuccess(true);
 
           const redirectDelay = wait(REDIRECT_DELAY_MS);
-          const trackingPurchase = Promise.resolve();
+
+          let purchaseSent = false;
+          if (
+            purchase &&
+            typeof purchase.transaction_id === 'string' &&
+            purchase.transaction_id.trim() &&
+            typeof purchase.value === 'number' &&
+            Number.isFinite(purchase.value) &&
+            purchase.value > 0 &&
+            typeof purchase.currency === 'string' &&
+            Array.isArray(purchase.items)
+          ) {
+            purchaseSent = await trackCheckoutPurchase({
+              orderId: purchase.transaction_id,
+              value: purchase.value,
+              currency: purchase.currency,
+              items: purchase.items,
+            }).catch(() => false);
+          }
 
           const token = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
           const qs = new URLSearchParams();
@@ -93,6 +122,7 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
           if (publicToken) {
             qs.set('token', publicToken);
           }
+          qs.set('purchase_tracked', purchaseSent ? '1' : '0');
           try {
             localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
             localStorage.removeItem(CART_FORM_STORAGE_KEY);
@@ -102,14 +132,11 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
             // ignore
           }
 
-          // Keep the thank-you screen visible while GTM gets the purchase event.
-          await Promise.all([trackingPurchase.catch(() => undefined), redirectDelay]);
-          setTimeout(() => {
-            if (!cancelled) {
-              const query = qs.toString();
-              window.location.replace(`/order/${encodeURIComponent(oid)}${query ? `?${query}` : ''}`);
-            }
-          }, 0);
+          await redirectDelay;
+          if (!cancelled) {
+            const query = qs.toString();
+            window.location.replace(`/order/${encodeURIComponent(oid)}${query ? `?${query}` : ''}`);
+          }
 
           return;
         }
