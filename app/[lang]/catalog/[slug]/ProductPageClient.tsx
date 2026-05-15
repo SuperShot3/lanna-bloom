@@ -10,6 +10,7 @@ import type { CatalogProduct } from '@/lib/sanity';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
+import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 
 export function ProductPageClient({
   bouquet,
@@ -59,7 +60,11 @@ export function ProductPageClient({
 
   return (
     <>
-      <div className="product-gallery-wrap pb-8 md:pb-0">
+      <div className="product-gallery-wrap pb-8 md:pb-0" style={{ position: 'relative' }}>
+        <CatalogDiscountBadge
+          discountPercent={bouquet.discountPercent}
+          ariaLabel={translations[lang].catalog.discountAria ?? 'On sale — {percent}% off'}
+        />
         <ProductGallery
           images={images}
           imageAlts={bouquet.imageAlts}

@@ -1,0 +1,28 @@
+---
+description: Rules for Sanity catalog, bouquets, and partner portal products
+globs:
+  - "sanity/**"
+  - "lib/sanity*.ts"
+  - "lib/bouquets.ts"
+  - "lib/sanityWrite.ts"
+  - "lib/partner/**"
+  - "lib/bouquet*.ts"
+  - "app/**/partner/**"
+  - "app/**/catalog/**"
+  - "app/studio/**"
+alwaysApply: false
+---
+
+Before editing catalog, Sanity schemas, or partner product flows, read:
+
+- `/ai_context/01_PROJECT_HANDOVER.md` (partner flow)
+- `/ai_context/02_ARCHITECTURE_MAP.md` (Sanity vs Supabase split)
+
+Critical rules:
+
+- Only **approved** bouquets/products appear on the public catalog.
+- Partner products may require admin moderation before going live.
+- Partner auth uses Supabase session (`lib/partner/`); catalog documents live in Sanity.
+- Do not invent prices, stock, or delivery times in copy — use content skills for wording.
+
+For **product or blog copy**, use `.cursor/skills/flower-content-writer/` or `.cursor/skills/blog-content-writer/` — not new rules here.

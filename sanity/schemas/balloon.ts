@@ -1,4 +1,5 @@
 import { defineType } from 'sanity';
+import { catalogDiscountFields } from './catalogDiscountFields';
 
 export const balloon = defineType({
   name: 'balloon',
@@ -17,6 +18,7 @@ export const balloon = defineType({
     { name: 'descriptionEn', title: 'Description (EN)', type: 'text' },
     { name: 'descriptionTh', title: 'Description (TH)', type: 'text' },
     { name: 'price', title: 'Price (THB)', type: 'number', validation: (r) => r.required().min(0) },
+    ...catalogDiscountFields,
     {
       name: 'sizeLabel',
       title: 'Size (e.g. 18 inch, bouquet set)',

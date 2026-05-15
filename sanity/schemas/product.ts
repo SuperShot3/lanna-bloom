@@ -1,5 +1,6 @@
 import { defineType } from 'sanity';
 import { MARKETS } from '@/lib/delivery/markets';
+import { catalogDiscountFields } from './catalogDiscountFields';
 
 const DESTINATION_EXCLUSION_LIST = [
   { title: 'Chiang Mai', value: 'CHIANG_MAI' as const },
@@ -25,6 +26,7 @@ export const product = defineType({
     },
     { name: 'nameEn', title: 'Name (EN)', type: 'string', validation: (r) => r.required() },
     { name: 'nameTh', title: 'Name (TH)', type: 'string' },
+    ...catalogDiscountFields,
     { name: 'descriptionEn', title: 'Description (EN)', type: 'text' },
     { name: 'descriptionTh', title: 'Description (TH)', type: 'text' },
     {

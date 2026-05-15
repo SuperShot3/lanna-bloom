@@ -20,6 +20,7 @@ import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -53,10 +54,11 @@ export function ProductOrderBlockForProduct({
   };
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+  const discountedBase = applyCatalogDiscountThb(finalPrice, product.discountPercent);
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
   const unitPrice = applyExpansionItemMarkupThb(
-    finalPrice + addOnsTotal,
+    discountedBase + addOnsTotal,
     checkoutProfile.destinationId
   );
   const totalPrice = unitPrice * qty;
@@ -74,7 +76,7 @@ export function ProductOrderBlockForProduct({
       key: 'm' as const,
       label: sizeLabel || '—',
       // IMPORTANT: Cart totals add add-ons separately, so keep base price here.
-      price: finalPrice,
+      price: discountedBase,
       description: '',
       preparationTime: undefined as number | undefined,
       availability: true,

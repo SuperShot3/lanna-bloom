@@ -17,6 +17,12 @@ import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import {
+  applyCatalogDiscountThb,
+  effectiveCatalogUnitPriceWithExpansion,
+} from '@/lib/catalogDiscount';
+import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -88,7 +94,12 @@ export function ProductCard({
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
   const href = buildCatalogItemHref({ lang, slug: product.slug, pathname });
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
-  const displayFromPrice = applyExpansionItemMarkupThb(finalPrice, checkoutProfile.destinationId);
+  const discountedBase = applyCatalogDiscountThb(finalPrice, product.discountPercent);
+  const displayFromPrice = effectiveCatalogUnitPriceWithExpansion(
+    finalPrice,
+    product.discountPercent,
+    checkoutProfile.destinationId
+  );
   const isPlushyToys = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
   const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
   const isStandaloneProduct = isPlushyToys || isBalloon;
@@ -187,13 +198,13 @@ export function ProductCard({
 
   const options = useMemo(
     () =>
-      buildSyntheticOptions(finalPrice, {
+      buildSyntheticOptions(discountedBase, {
         elegant: t.productCardOptionElegant,
         compact: t.productCardOptionCompact,
         standard: t.productCardOptionStandard,
         business: t.productCardOptionBusiness,
       }),
-    [finalPrice, t]
+    [discountedBase, t]
   );
 
   const [hovered, setHovered] = useState(false);
@@ -249,7 +260,11 @@ export function ProductCard({
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       if (isStandaloneProduct) {
-        const displayUnitPrice = applyExpansionItemMarkupThb(finalPrice, checkoutProfile.destinationId);
+        const displayUnitPrice = effectiveCatalogUnitPriceWithExpansion(
+          finalPrice,
+          product.discountPercent,
+          checkoutProfile.destinationId
+        );
         addItem(
           {
             itemType: isBalloon ? 'balloon' : 'plushyToy',
@@ -262,7 +277,7 @@ export function ProductCard({
               optionId: 'product_default',
               key: 'm',
               label: sizeLabel || '—',
-              price: finalPrice,
+              price: discountedBase,
               description: '',
             },
             addOns: getDefaultAddOns(),
@@ -294,7 +309,11 @@ export function ProductCard({
         return;
       }
       if (!selected) return;
-      const displaySelectedPrice = applyExpansionItemMarkupThb(selected.price, checkoutProfile.destinationId);
+      const displaySelectedPrice = effectiveCatalogUnitPriceWithExpansion(
+        selected.price,
+        product.discountPercent,
+        checkoutProfile.destinationId
+      );
       addItem(
         {
           itemType: 'product',
@@ -340,6 +359,7 @@ export function ProductCard({
     [
       addItem,
       checkoutProfile.destinationId,
+      discountedBase,
       finalPrice,
       imgSrc,
       isBalloon,
@@ -382,6 +402,10 @@ export function ProductCard({
           aria-label={canSwipeStandaloneImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
         >
           {product.isHit ? <span className="pcard-hit">{t.hitBadge}</span> : null}
+          <CatalogDiscountBadge
+            discountPercent={product.discountPercent}
+            ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
+          />
           {isPlushyToys ? (
             <span className="pcard-toy-icon" aria-hidden>
               <Image
@@ -424,8 +448,13 @@ export function ProductCard({
             {name}
           </div>
           <div className="pcard-price">
-            <span className="pcard-price-from">{t.from}</span>{' '}
-            <span className="pcard-price-amount">฿{displayFromPrice.toLocaleString()}</span>
+            <CatalogDiscountPrice
+              basePriceThb={finalPrice}
+              discountPercent={product.discountPercent}
+              destinationId={checkoutProfile.destinationId}
+              fromLabel={t.from}
+              amountClassName="pcard-price-amount"
+            />
           </div>
           {isStandaloneProduct && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
         </div>
@@ -501,7 +530,11 @@ export function ProductCard({
                         </span>
                       </label>
                       <span className="pcard-option-price">
-                        ฿{applyExpansionItemMarkupThb(row.price, checkoutProfile.destinationId).toLocaleString()}
+                        ฿{effectiveCatalogUnitPriceWithExpansion(
+                          row.price,
+                          product.discountPercent,
+                          checkoutProfile.destinationId
+                        ).toLocaleString()}
                       </span>
                     </li>
                   );

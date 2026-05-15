@@ -21,6 +21,7 @@ import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
 function sizeIndexForImageIndex(imageIndex: number | undefined, sizeCount: number): number | null {
@@ -68,8 +69,9 @@ export function ProductOrderBlock({
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
+  const discountedSizePrice = applyCatalogDiscountThb(selectedSize.price, bouquet.discountPercent);
   const unitPrice = applyExpansionItemMarkupThb(
-    selectedSize.price + addOnsTotal,
+    discountedSizePrice + addOnsTotal,
     checkoutProfile.destinationId
   );
   const totalPrice = unitPrice * qty;
@@ -117,7 +119,7 @@ export function ProductOrderBlock({
         nameEn: bouquet.nameEn,
         nameTh: bouquet.nameTh,
         imageUrl: selectedImageUrl ?? bouquet.images?.[0],
-        size: selectedSize,
+        size: { ...selectedSize, price: discountedSizePrice },
         addOns: { ...addOns },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
       },
@@ -149,6 +151,7 @@ export function ProductOrderBlock({
         onSelect={handleSizeSelect}
         lang={lang}
         destinationId={checkoutProfile.destinationId}
+        discountPercent={bouquet.discountPercent}
       />
       <AddOnsSection
         lang={lang}

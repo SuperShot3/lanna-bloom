@@ -82,7 +82,7 @@ Create GTM custom event triggers for:
 - `begin_checkout`
 - `add_shipping_info`
 - `add_payment_info`
-- **`purchase`** — **Custom Event** trigger for **GA4** (ecommerce / GA4 Event tag) and **Google Ads Conversion** as needed. Map fields from `ecommerce.*` (see **Purchase: browser → GTM** later in this doc).
+- **`purchase`** — **Custom Event** trigger for **GA4** (ecommerce / GA4 Event tag) and **Google Ads Conversion** as needed. Map fields from `ecommerce.*` (see **Purchase: browser → GTM** later in this doc). - when visit page complite
 - `generate_lead`
 - `contact_click`
 - `messenger_click`
@@ -137,8 +137,8 @@ Removed legacy messenger events:
 
 ### Manual Payment Methods
 
-- `generate_lead` fires when the order is created but still unpaid.
-- When the order later becomes **paid**, **`purchase`** still fires only when the customer (or staff testing) loads the **paid** order page in the browser.
+we do not have any 
+
 
 ## Purchase: browser → GTM
 
@@ -151,16 +151,11 @@ Removed legacy messenger events:
 
 **If you add MP later:** send GA4 `purchase` from only one place, or use the same `transaction_id` and GA4 deduplication so revenue is not doubled.
 
-## Messenger Conversion Rules
-
-- Primary contact event: `contact_click`
-- Legacy reporting event: `messenger_click`
-- Do not mark both as primary conversions in GA4 or Google Ads.
 
 Recommended GA4 key event setup:
 
 - Primary: `purchase`
-- Secondary / observation only: `generate_lead`, `contact_click`
+- Secondary / observation only: 'add_to_cart', "begin_checkout"
 
 ## Internal Traffic Exclusion
 
@@ -207,7 +202,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
   - `begin_checkout`
   - `add_shipping_info`
   - `add_payment_info`
-  - **`purchase`** (`/{lang}/checkout/complete` after paid `order-status`)
+  - **`purchase`** (`/checkout/complete` after paid `order-status` if contain in url we set it up in gtm for both ga4 and gtm)
   - `generate_lead`
   - `contact_click`
 

@@ -16,6 +16,7 @@ import {
   bouquetIsAvailableForDestination,
   parseExcludedDeliveryDestinations,
 } from '@/lib/bouquetDestinationAvailability';
+import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
@@ -131,6 +132,7 @@ type SanityBouquet = {
     availability?: boolean;
   }>;
   featuredPopular?: boolean;
+  discountPercent?: number;
 };
 
 function resolveProductKind(doc: SanityBouquet): ProductKind {
@@ -252,6 +254,7 @@ function mapToBouquet(doc: SanityBouquet): Bouquet {
         ? doc.status
         : undefined,
     featuredPopular: doc.featuredPopular === true,
+    discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
   };
 }
 
@@ -276,6 +279,7 @@ const bouquetsQuery = `*[_type == "bouquet" && (!defined(status) || status == "a
   flowerTypes,
   occasion,
   featuredPopular,
+  discountPercent,
   images,
   sizes
 }`;
@@ -301,6 +305,7 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
   flowerTypes,
   occasion,
   featuredPopular,
+  discountPercent,
   partner,
   "partnerName": partner->shopName,
   "partnerCity": partner->city,
@@ -341,6 +346,7 @@ const bouquetsPaginatedProjection = `
   flowerTypes,
   occasion,
   featuredPopular,
+  discountPercent,
   images,
   sizes
 `;
@@ -402,6 +408,7 @@ const popularBouquetsQuery = `*[_type == "bouquet" && (!defined(status) || statu
   flowerTypes,
   occasion,
   featuredPopular,
+  discountPercent,
   images,
   sizes
 }`;
@@ -703,6 +710,8 @@ export interface CatalogProduct {
   occasion?: string;
   /** When true, show a “HIT” badge on the catalog card (optional CMS field later). */
   isHit?: boolean;
+  /** CMS sale discount (1–90%). */
+  discountPercent?: number;
 }
 
 type SanityBouquetWithCreated = SanityBouquet & { _createdAt?: string };
@@ -729,6 +738,7 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   flowerTypes,
   occasion,
   featuredPopular,
+  discountPercent,
   partner,
   "partnerName": partner->shopName,
   images,
@@ -894,7 +904,7 @@ export async function getBouquetsByPartnerId(partnerId: string): Promise<Bouquet
       `*[_type == "bouquet" && references($partnerId)] | order(nameEn asc) {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
-        colors, flowerTypes, occasion, partner, status, featuredPopular, images, sizes
+        colors, flowerTypes, occasion, partner, status, featuredPopular, discountPercent, images, sizes
       }`,
       { partnerId }
     );
@@ -912,7 +922,7 @@ export async function getBouquetById(bouquetId: string): Promise<Bouquet | null>
       `*[_type == "bouquet" && _id == $id][0] {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
-        colors, flowerTypes, occasion, partner, status, featuredPopular, images, sizes
+        colors, flowerTypes, occasion, partner, status, featuredPopular, discountPercent, images, sizes
       }`,
       { id: bouquetId }
     );
@@ -931,7 +941,7 @@ export async function getPendingBouquets(): Promise<Bouquet[]> {
       `*[_type == "bouquet" && status == "pending_review"] | order(_createdAt desc) {
         _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, compositionEn, compositionTh,
         productKind, singleStemOptions, fixedVariants, customTiers, deliveryOptions, excludedDeliveryDestinations, presentationFormats,
-        colors, flowerTypes, occasion, partner, status, featuredPopular, images, sizes
+        colors, flowerTypes, occasion, partner, status, featuredPopular, discountPercent, images, sizes
       }`
     );
     return (docs ?? []).map(mapToBouquet);
@@ -1131,6 +1141,7 @@ export async function getProductsFilteredFromSanity(params: {
         price?: number;
         cost?: number;
         commissionPercent?: number;
+        discountPercent?: number;
         excludedDeliveryDestinations?: string[];
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
       }>
@@ -1141,7 +1152,7 @@ export async function getProductsFilteredFromSanity(params: {
         "nameTh": coalesce(adminOverrides.nameTh, nameTh),
         "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
         "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
-        category, price, cost, commissionPercent, excludedDeliveryDestinations, images
+        category, price, cost, commissionPercent, discountPercent, excludedDeliveryDestinations, images
       }`,
       { categoryKey }
     );
@@ -1178,6 +1189,7 @@ export async function getProductsFilteredFromSanity(params: {
         images: imageUrls.length ? imageUrls : [placeholder],
         imageAlts: imageUrls.length ? fallbackImageAlts : [''],
         excludedDeliveryDestinations: parseExcludedDeliveryDestinations(d.excludedDeliveryDestinations),
+        discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
         _createdAt: d._createdAt,
         _partnerCost: partnerCost,
       };
@@ -1211,6 +1223,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
           price?: number;
           cost?: number;
           commissionPercent?: number;
+          discountPercent?: number;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
           excludedDeliveryDestinations?: string[];
           structuredAttributes?: { preparationTime?: number; occasion?: string };
@@ -1223,7 +1236,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
         "nameTh": coalesce(adminOverrides.nameTh, nameTh),
         "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
         "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
-        category, price, cost, commissionPercent, images, excludedDeliveryDestinations,
+        category, price, cost, commissionPercent, discountPercent, images, excludedDeliveryDestinations,
         "structuredAttributes": structuredAttributes
       }`,
       { slug }
@@ -1255,6 +1268,7 @@ export async function getProductBySlugFromSanity(slug: string): Promise<CatalogP
       excludedDeliveryDestinations: parseExcludedDeliveryDestinations(doc.excludedDeliveryDestinations),
       preparationTime: attrs?.preparationTime,
       occasion: attrs?.occasion,
+      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
     };
   } catch (err) {
     console.error('[Sanity] getProductBySlugFromSanity failed:', err);
@@ -1281,12 +1295,13 @@ export async function getPlushyToysFilteredFromSanity(params: {
         descriptionEn?: string;
         descriptionTh?: string;
         price?: number;
+        discountPercent?: number;
         sizeLabel?: string;
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
       }>
     >(
       `*[_type == "plushyToy"] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, sizeLabel, images
+        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
       }`
     );
     const mapped = (docs ?? []).map((d) => {
@@ -1311,6 +1326,7 @@ export async function getPlushyToysFilteredFromSanity(params: {
         price,
         images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
         imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+        discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
         _createdAt: d._createdAt,
         _partnerCost: price,
       };
@@ -1341,13 +1357,14 @@ export async function getPlushyToyBySlugFromSanity(slug: string): Promise<Catalo
           descriptionEn?: string;
           descriptionTh?: string;
           price?: number;
+          discountPercent?: number;
           sizeLabel?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
         }
       | null
     >(
       `*[_type == "plushyToy" && slug.current == $slug][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, sizeLabel, images
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
       }`,
       { slug }
     );
@@ -1372,6 +1389,7 @@ export async function getPlushyToyBySlugFromSanity(slug: string): Promise<Catalo
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
       imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
     };
   } catch (err) {
     console.error('[Sanity] getPlushyToyBySlugFromSanity failed:', err);
@@ -1385,6 +1403,7 @@ export async function getPlushyToyById(id: string): Promise<{
   nameEn: string;
   nameTh?: string;
   price: number;
+  discountPercent?: number;
   sizeLabel?: string;
   imageUrl?: string;
 } | null> {
@@ -1395,17 +1414,19 @@ export async function getPlushyToyById(id: string): Promise<{
           nameEn?: string;
           nameTh?: string;
           price?: number;
+          discountPercent?: number;
           sizeLabel?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
         }
       | null
-    >(`*[_type == "plushyToy" && _id == $id][0] { _id, nameEn, nameTh, price, sizeLabel, images }`, { id });
+    >(`*[_type == "plushyToy" && _id == $id][0] { _id, nameEn, nameTh, price, discountPercent, sizeLabel, images }`, { id });
     if (!doc) return null;
     return {
       id: doc._id,
       nameEn: doc.nameEn ?? '',
       nameTh: doc.nameTh,
       price: doc.price ?? 0,
+      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
       sizeLabel: doc.sizeLabel,
       imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
     };
@@ -1431,12 +1452,13 @@ export async function getBalloonsFilteredFromSanity(params: {
         descriptionEn?: string;
         descriptionTh?: string;
         price?: number;
+        discountPercent?: number;
         sizeLabel?: string;
         images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
       }>
     >(
       `*[_type == "balloon"] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, sizeLabel, images
+        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
       }`
     );
     const mapped = (docs ?? []).map((d) => {
@@ -1461,6 +1483,7 @@ export async function getBalloonsFilteredFromSanity(params: {
         price,
         images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
         imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+        discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
         _createdAt: d._createdAt,
         _partnerCost: price,
       };
@@ -1491,13 +1514,14 @@ export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogP
           descriptionEn?: string;
           descriptionTh?: string;
           price?: number;
+          discountPercent?: number;
           sizeLabel?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
         }
       | null
     >(
       `*[_type == "balloon" && slug.current == $slug][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, sizeLabel, images
+        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
       }`,
       { slug }
     );
@@ -1522,6 +1546,7 @@ export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogP
       price: doc.price ?? 0,
       images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
       imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
     };
   } catch (err) {
     console.error('[Sanity] getBalloonBySlugFromSanity failed:', err);
@@ -1535,6 +1560,7 @@ export async function getBalloonById(id: string): Promise<{
   nameEn: string;
   nameTh?: string;
   price: number;
+  discountPercent?: number;
   sizeLabel?: string;
   imageUrl?: string;
 } | null> {
@@ -1545,17 +1571,19 @@ export async function getBalloonById(id: string): Promise<{
           nameEn?: string;
           nameTh?: string;
           price?: number;
+          discountPercent?: number;
           sizeLabel?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
         }
       | null
-    >(`*[_type == "balloon" && _id == $id][0] { _id, nameEn, nameTh, price, sizeLabel, images }`, { id });
+    >(`*[_type == "balloon" && _id == $id][0] { _id, nameEn, nameTh, price, discountPercent, sizeLabel, images }`, { id });
     if (!doc) return null;
     return {
       id: doc._id,
       nameEn: doc.nameEn ?? '',
       nameTh: doc.nameTh,
       price: doc.price ?? 0,
+      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
       sizeLabel: doc.sizeLabel,
       imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
     };
@@ -1589,6 +1617,7 @@ export async function getProductById(productId: string): Promise<{
   price: number;
   cost?: number;
   commissionPercent?: number;
+  discountPercent?: number;
   moderationStatus: string;
   imageUrl?: string;
   imageRefs: string[];
@@ -1617,6 +1646,7 @@ export async function getProductById(productId: string): Promise<{
           price?: number;
           cost?: number;
           commissionPercent?: number;
+          discountPercent?: number;
           moderationStatus?: string;
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
           excludedDeliveryDestinations?: string[];
@@ -1634,7 +1664,7 @@ export async function getProductById(productId: string): Promise<{
       | null
     >(
       `*[_type == "product" && _id == $id][0] {
-        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, moderationStatus, images,
+        _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, discountPercent, moderationStatus, images,
         excludedDeliveryDestinations, structuredAttributes, partner,
         adminOverrides, adminChangeSummary, adminLastEditedAt
       }`,
@@ -1654,6 +1684,7 @@ export async function getProductById(productId: string): Promise<{
       price: doc.price ?? 0,
       cost: doc.cost,
       commissionPercent: doc.commissionPercent,
+      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
       moderationStatus: doc.moderationStatus ?? 'submitted',
       imageUrl: doc.images?.[0] ? urlFor(doc.images[0]) : undefined,
       imageRefs,

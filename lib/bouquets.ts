@@ -39,6 +39,8 @@ export interface Bouquet {
   status?: BouquetStatus;
   /** CMS: pin to top of homepage Popular feed + show badge (catalog sort unchanged). */
   featuredPopular?: boolean;
+  /** CMS sale discount (1–90%). Applied at checkout; shows badge when set. */
+  discountPercent?: number;
 }
 
 export type PartnerStatus = 'pending_review' | 'approved' | 'disabled';

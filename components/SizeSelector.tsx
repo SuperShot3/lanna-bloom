@@ -4,7 +4,7 @@ import { BouquetSize } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 
 export function SizeSelector({
   sizes,
@@ -12,12 +12,14 @@ export function SizeSelector({
   onSelect,
   lang,
   destinationId,
+  discountPercent,
 }: {
   sizes: BouquetSize[];
   selected: BouquetSize;
   onSelect: (size: BouquetSize) => void;
   lang: Locale;
   destinationId: DeliveryDestinationId;
+  discountPercent?: number;
 }) {
   const selectedSizeLabel = optionDisplayLabel(selected, lang);
   const selectedSizeText = lang === 'th' ? `ขนาดที่เลือก: ${selectedSizeLabel}` : `Selected size: ${selectedSizeLabel}`;
@@ -28,7 +30,11 @@ export function SizeSelector({
       <p className="size-selected">{selectedSizeText}</p>
       <div className="size-options" role="group" aria-label="Bouquet options">
         {sizes.map((size) => {
-          const displayPrice = applyExpansionItemMarkupThb(size.price, destinationId);
+          const displayPrice = effectiveCatalogUnitPriceWithExpansion(
+            size.price,
+            discountPercent,
+            destinationId
+          );
           return (
             <button
               key={size.optionId}

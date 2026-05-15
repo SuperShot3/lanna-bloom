@@ -1,6 +1,7 @@
 import { defineType, defineArrayMember } from 'sanity';
 import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
 import { MARKETS } from '@/lib/delivery/markets';
+import { catalogDiscountFields } from './catalogDiscountFields';
 
 const DESTINATION_EXCLUSION_LIST = [
   { title: 'Chiang Mai', value: 'CHIANG_MAI' as const },
@@ -28,6 +29,7 @@ export const bouquet = defineType({
       description:
         'Turn on to show this bouquet near the top of the homepage “Popular picks” list and add a small Popular label on its photo. The main catalog list keeps its usual order. If several bouquets are on, they sort A–Z by English name.',
     },
+    ...catalogDiscountFields,
     { name: 'slug', title: 'Slug', type: 'slug', options: { source: 'nameEn' }, validation: (r) => r.required() },
     { name: 'nameEn', title: 'Name (EN)', type: 'string', validation: (r) => r.required() },
     { name: 'nameTh', title: 'Name (TH)', type: 'string' },

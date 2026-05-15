@@ -1,11 +1,22 @@
+---
+description: Email Control Center (templates + outbox)
+globs:
+  - "lib/email/**"
+  - "app/api/admin/emails/**"
+  - "app/admin/**/emails/**"
+alwaysApply: false
+---
+
+Before editing automated email, read `/ai_context/06_ADMIN_ACCOUNTING_EMAIL.md` (Email Control Center section).
+
 When implementing any email that is sent automatically (newsletter, reminders, order lifecycle, marketing automations), always use the Email Control Center system:
 
 - Add/maintain a template in Supabase `public.email_templates` (via a migration) with a stable `template_key`.
 - Render it via `lib/email/renderTemplate.ts` and include `{{brand_header}}` + `{{social_footer}}` from `lib/email/socialFooter.ts`.
 - Persist every outgoing message in Supabase `public.email_outbox` (insert draft/scheduled) and send via `lib/email/sendOutboxEmail.ts` (`sendOutboxViaResend`) so status + provider id are recorded.
-- Avoid sending “one-off” hardcoded HTML emails directly via Resend unless it is an admin-only operational alert.
+- Avoid sending "one-off" hardcoded HTML emails directly via Resend unless it is an admin-only operational alert.
 
 If a new template needs new variables, ensure admin preview mocks include them:
+
 - `app/api/admin/emails/preview/route.ts`
 - `app/api/admin/emails/test-send/route.ts`
-

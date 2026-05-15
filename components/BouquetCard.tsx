@@ -25,6 +25,12 @@ import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
+import {
+  applyCatalogDiscountThb,
+  effectiveCatalogUnitPriceWithExpansion,
+} from '@/lib/catalogDiscount';
+import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -77,10 +83,15 @@ export function BouquetCard({
     checkoutProfile.destinationId
   );
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
-  const minPrice = bouquet.sizes?.length
+  const minBasePrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
     : 0;
-  const displayMinPrice = applyExpansionItemMarkupThb(minPrice, checkoutProfile.destinationId);
+  const minPrice = applyCatalogDiscountThb(minBasePrice, bouquet.discountPercent);
+  const displayMinPrice = effectiveCatalogUnitPriceWithExpansion(
+    minBasePrice,
+    bouquet.discountPercent,
+    checkoutProfile.destinationId
+  );
   const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
   const images = bouquet.images?.length ? bouquet.images : [];
   const [imageIndex, setImageIndex] = useState(0);
@@ -153,6 +164,10 @@ export function BouquetCard({
       if (!selectedSize || selectedSize.availability === false) return;
       if (!bouquetIsAvailableForDestination(bouquet, checkoutProfile.destinationId)) return;
       const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
+      const discountedSize = {
+        ...selectedSize,
+        price: applyCatalogDiscountThb(selectedSize.price, bouquet.discountPercent),
+      };
       addItem(
         {
           itemType: 'bouquet',
@@ -161,7 +176,7 @@ export function BouquetCard({
           nameEn: bouquet.nameEn,
           nameTh: bouquet.nameTh,
           imageUrl: imgSrc || bouquet.images?.[0],
-          size: selectedSize,
+          size: discountedSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
         },
@@ -169,12 +184,20 @@ export function BouquetCard({
       );
       trackAddToCart({
         currency: 'THB',
-        value: applyExpansionItemMarkupThb(selectedSize.price, checkoutProfile.destinationId),
+        value: effectiveCatalogUnitPriceWithExpansion(
+          selectedSize.price,
+          bouquet.discountPercent,
+          checkoutProfile.destinationId
+        ),
         items: [
           {
             item_id: bouquet.id,
             item_name: itemName,
-            price: applyExpansionItemMarkupThb(selectedSize.price, checkoutProfile.destinationId),
+            price: effectiveCatalogUnitPriceWithExpansion(
+              selectedSize.price,
+              bouquet.discountPercent,
+              checkoutProfile.destinationId
+            ),
             quantity: 1,
             index: 0,
             item_category: getBouquetDisplayCategory(bouquet),
@@ -379,6 +402,10 @@ export function BouquetCard({
               </span>
             </span>
           ) : null}
+          <CatalogDiscountBadge
+            discountPercent={bouquet.discountPercent}
+            ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
+          />
           {showFavorite && (
             <button
               type="button"
@@ -449,7 +476,14 @@ export function BouquetCard({
             {name}
           </div>
           <div className="card-price">
-            {t.from} ฿{displayMinPrice.toLocaleString()}
+            <CatalogDiscountPrice
+              basePriceThb={
+                bouquet.sizes?.length ? Math.min(...bouquet.sizes.map((s) => s.price)) : 0
+              }
+              discountPercent={bouquet.discountPercent}
+              destinationId={checkoutProfile.destinationId}
+              fromLabel={t.from}
+            />
           </div>
         </div>
       </PrefetchLink>
@@ -532,7 +566,11 @@ export function BouquetCard({
                       </span>
                     </label>
                     <span className="card-hover-option-price">
-                      ฿{applyExpansionItemMarkupThb(s.price, checkoutProfile.destinationId).toLocaleString()}
+                      ฿{effectiveCatalogUnitPriceWithExpansion(
+                        s.price,
+                        bouquet.discountPercent,
+                        checkoutProfile.destinationId
+                      ).toLocaleString()}
                     </span>
                   </li>
                 );

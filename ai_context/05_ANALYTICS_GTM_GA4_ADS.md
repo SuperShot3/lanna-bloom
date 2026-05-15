@@ -1,0 +1,88 @@
+# Analytics — GTM, GA4, Google Ads
+
+Client-side analytics architecture. **Do not add direct `gtag` calls** — the app pushes to `window.dataLayer`; GTM owns transport.
+
+## Architecture
+
+| Rule | Detail |
+|------|--------|
+| Transport | GTM only (`NEXT_PUBLIC_GTM_ID`) |
+| Production only | GTM loads when `NODE_ENV === 'production'` and GTM id is set |
+| No fallback IDs | No hardcoded GA/GTM ids in source |
+| Pageviews | Owned by GTM (History Change / config tag), not pushed from app code |
+| Loader | `components/GoogleAnalytics.tsx` |
+| Event helpers | `lib/analytics.ts` → `lib/analytics/gtag.ts` (`pushToDataLayer`) |
+
+## Canonical `purchase` (paid web checkout)
+
+**Where:** `app/[lang]/checkout/complete/CheckoutCompleteClient.tsx`
+
+**When:**
+
+1. Customer returns from Stripe with `?session_id=...`
+2. Client polls `GET /api/stripe/order-status`
+3. Response has `status: 'paid'`, `orderId`, and `purchase` (server-built analytics payload)
+4. Client calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`
+
+**Shape:** `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { transaction_id, value, currency, items }, ... })` with root-level mirror of `transaction_id`, `value`, `currency`, `items` for GTM variables.
+
+**Dedupe:** `localStorage` key `sent_purchase_<orderId>` + in-memory guard — refresh must not double-fire.
+
+**Timing:** `waitForGtmConsentThen` defers push briefly for GTM/consent ordering.
+
+**Not on paid `/order/...` page:** Stripe web checkout always hits `checkout/complete` first; do not add a second `purchase` there.
+
+## Server-side Measurement Protocol (optional)
+
+- Code exists: `lib/ga4/sendPurchaseForOrder.ts`, `lib/ga4/measurementProtocol.ts`
+- **Not wired from webhooks by default** in current setup
+- If re-enabled: set `GA4_MEASUREMENT_ID` + `GA4_MEASUREMENT_API_SECRET` and implement dedupe vs browser `purchase` (same `transaction_id`) or disable one path
+
+## Funnel events (secondary)
+
+Pushed via `lib/analytics.ts`:
+
+| Event | Typical use |
+|-------|-------------|
+| `view_item_list` | Catalog / list views (deduped per session) |
+| `select_item` | Item selected from list |
+| `view_item` | Product detail — **usually GA4 only** in GTM |
+| `add_to_cart` | Add to cart |
+| `remove_from_cart` | Remove from cart |
+| `view_cart` | Cart page |
+| `begin_checkout` | Checkout started |
+| Messenger clicks | LINE / WhatsApp with `page_location` |
+
+Configure matching **Custom Event** triggers in GTM.
+
+## Google Ads
+
+- Purchase conversion should listen to the same browser `purchase` dataLayer event (GTM tag).
+- See [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md) for GTM variable mapping (`ecommerce.*`).
+
+## Consent
+
+- Consent Mode defaults bootstrapped before GTM in `GoogleAnalytics.tsx` (currently granted for analytics/ads storage).
+- If adding a consent banner, update that script to match policy.
+
+## Do not
+
+- Fire `purchase` before server confirms paid order + valid `purchaseAnalytics` payload.
+- Duplicate GA4 `purchase` from webhook **and** browser without dedupe design.
+- Add duplicate Google Ads + GA4 purchase tags that both count revenue without GTM coordination.
+- Push `page_view` from app code (conflicts with GTM SPA handling).
+
+## Key files
+
+| File | Role |
+|------|------|
+| `components/GoogleAnalytics.tsx` | GTM + consent bootstrap |
+| `lib/analytics.ts` | Funnel event API |
+| `lib/analytics/gtag.ts` | dataLayer transport, `trackCheckoutPurchase`, dedupe |
+| `lib/analytics/buildPurchaseItemsFromOrder.ts` | Server line items for `order-status` |
+| `app/api/stripe/order-status/route.ts` | Returns `purchase` when paid |
+
+## Deep dive
+
+- [docs/ANALYTICS_GA4.md](../docs/ANALYTICS_GA4.md)
+- [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md)

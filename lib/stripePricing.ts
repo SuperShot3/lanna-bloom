@@ -20,6 +20,7 @@ import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
+import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -132,7 +133,7 @@ export async function computeOrderTotals(
       if (!toy) {
         return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
       }
-      const finalPrice = toy.price;
+      const finalPrice = applyCatalogDiscountThb(toy.price, toy.discountPercent);
       let itemPrice = finalPrice;
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
@@ -164,7 +165,7 @@ export async function computeOrderTotals(
       if (!balloon) {
         return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
       }
-      const finalPrice = balloon.price;
+      const finalPrice = applyCatalogDiscountThb(balloon.price, balloon.discountPercent);
       let itemPrice = finalPrice;
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
@@ -210,7 +211,8 @@ export async function computeOrderTotals(
       }
 
       const partnerCost = product.cost ?? product.price ?? 0;
-      const finalPrice = computeFinalPrice(partnerCost, product.commissionPercent);
+      const listedPrice = computeFinalPrice(partnerCost, product.commissionPercent);
+      const finalPrice = applyCatalogDiscountThb(listedPrice, product.discountPercent);
       const commissionAmount = finalPrice - partnerCost;
       let itemPrice = finalPrice;
       if (item.addOns?.cardType === 'premium') {
@@ -258,7 +260,7 @@ export async function computeOrderTotals(
         return { ok: false, message: `Bouquet ${bouquet.slug} has no sizes` };
       }
 
-      let itemPrice = size.price ?? 0;
+      let itemPrice = applyCatalogDiscountThb(size.price ?? 0, bouquet.discountPercent);
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }

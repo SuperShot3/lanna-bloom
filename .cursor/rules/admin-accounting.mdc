@@ -1,0 +1,25 @@
+---
+description: Rules for admin dashboard, accounting, expenses, and receipts
+globs:
+  - "app/admin/**"
+  - "app/api/admin/**"
+  - "lib/admin/**"
+  - "lib/accounting/**"
+  - "lib/expenses/**"
+  - "lib/receipt*.ts"
+  - "lib/prepareProofFileForUpload.ts"
+  - "lib/isReceiptImageFile.ts"
+alwaysApply: false
+---
+
+Before editing admin UI, accounting, expenses, or receipt/proof uploads, read:
+
+- `/ai_context/06_ADMIN_ACCOUNTING_EMAIL.md`
+- `/ai_context/03_SECURITY_RULES.md`
+
+Critical rules:
+
+- Admin routes and APIs require authenticated session; verify RBAC on mutations.
+- Receipt/proof upload caps in `lib/receiptUploadLimits.ts` must match client compression and API route enforcement.
+- Synced order expenses (`flowers`, `delivery`) come from Costs & Profit — do not break `order_id` linkage.
+- Automated emails must use Email Control Center (templates + outbox), not ad-hoc Resend HTML.
