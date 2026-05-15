@@ -3,10 +3,9 @@
  *
  * Architecture: App → `window.dataLayer.push(...)` → GTM. No `gtag('event', …)` in app code.
  *
- * **Paid order (browser):** `trackCheckoutPurchase` pushes **`purchase`** with **only** the GA4
- * `ecommerce` keys `transaction_id`, `value`, `currency`, and `items` (no root `order_id` or other
- * siblings). **GA4 revenue** is intended to come from this event via **GTM → GA4** (same as
- * `OrderPageClient`). **Dedupe:** localStorage `sent_purchase_*` per order id (refresh-safe).
+ * **Paid order (browser):** `trackCheckoutPurchase` pushes **`purchase`** with GA4 **`ecommerce`**
+ * (`transaction_id`, `value`, `currency`, `items`) and the **same** fields mirrored at the **root**
+ * of the pushed object so GTM DL variables aligned with funnel events (`add_to_cart`, etc.) still work.
  *
  * Pushes run **synchronously**; GTM replays the `dataLayer` queue after `gtm.js` loads.
  */
@@ -135,13 +134,22 @@ export function trackCheckoutPurchase(params: {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ ecommerce: null });
 
+  const ecommerce = {
+    transaction_id: normalizedOrderId,
+    value,
+    currency,
+    items,
+  };
+
+  // GA4 expects `ecommerce.*` on `purchase`. Funnel events in this app use root `items` / `currency` /
+  // `value` (see `lib/analytics.ts`). Mirror those keys here so GTM tags that reuse the same DL
+  // variables as `add_to_cart` still resolve on `purchase` — no separate API; GTM only reads dataLayer.
   pushToDataLayer('purchase', {
-    ecommerce: {
-      transaction_id: normalizedOrderId,
-      value,
-      currency,
-      items,
-    },
+    ecommerce,
+    transaction_id: normalizedOrderId,
+    value,
+    currency,
+    items,
   });
 
   if (isDev) {

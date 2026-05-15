@@ -12,11 +12,11 @@
 
 ## Paid order: browser `purchase` (canonical)
 
-**Source code:** `components/order/OrderPageClient.tsx` — when `paid === true`, valid totals, and line items (or the synthetic single-line fallback when items are empty but `grandTotal > 0`).
+**Source code:** `components/order/OrderPageClient.tsx` — when `paid === true`, `stripePollResolved`, valid totals, and line items (or the synthetic single-line fallback when items are empty but total > 0). Calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
 
-**Event `purchase`** — at most once per order id (`sent_purchase_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... } })` where **`ecommerce`** contains **only** `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). No root `order_id` or other purchase fields. **No** `eventCallback` / `eventTimeout` (immediate push; GTM drains the queue after load).
+**Event `purchase`** — at most once per order id (`sent_purchase_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **No** `eventCallback` / `eventTimeout` (immediate push; GTM drains the queue after `gtm.js` loads).
 
-**Optional helper (same shape + same dedupe key):** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` — not used by `OrderPageClient` today; keep if you add another client entry point.
+**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `OrderPageClient` on the paid order URL).
 
 ## Optional: Measurement Protocol `purchase` (server)
 
@@ -92,8 +92,8 @@ Create GTM custom event triggers for:
 ### Recommended Data Layer Variables
 
 - `event`
-- `ecommerce` (object; on **`purchase`**: only `ecommerce.transaction_id`, `ecommerce.value`, `ecommerce.currency`, `ecommerce.items`)
-- `items` (funnel events; root-level — not the same path as `ecommerce.items` on **`purchase`**)
+- `ecommerce` (object; on **`purchase`**: `ecommerce.transaction_id`, `ecommerce.value`, `ecommerce.currency`, `ecommerce.items` — same values also at **root** `transaction_id`, `value`, `currency`, `items` for GTM parity with funnel events)
+- `items` (funnel events: root-level; **`purchase`**: also at root as a mirror of `ecommerce.items`)
 - `value` / `currency` / `transaction_id` (some funnel events expose these at root)
 - `payment_type`
 - `shipping_tier`
