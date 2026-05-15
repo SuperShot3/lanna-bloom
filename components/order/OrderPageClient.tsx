@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getContactPhoneDisplay, getContactPhoneTelUrl, getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
@@ -23,7 +23,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import type { AnalyticsItem } from '@/lib/analytics';
+import { trackCheckoutPurchase, type AnalyticsItem } from '@/lib/analytics';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -45,7 +45,8 @@ function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
   return { date: slot, time: '' };
 }
 
-function orderViewToAnalyticsItems(order: OrderCustomerView, orderId: string): AnalyticsItem[] {
+/** GA4 `purchase` items for a paid order; single fallback line when `items` is empty but total > 0. */
+function buildPurchaseAnalyticsItems(order: OrderCustomerView, orderId: string): AnalyticsItem[] {
   const rows = order.items ?? [];
   const mapped = rows.map((item, index) => ({
     item_id: (item.bouquetId || item.bouquetSlug || `line_${index}`).trim() || `line_${index}`,
@@ -60,7 +61,7 @@ function orderViewToAnalyticsItems(order: OrderCustomerView, orderId: string): A
   if (mapped.length === 0 && grandTotal > 0) {
     return [
       {
-        item_id: orderId,
+        item_id: orderId.trim() || 'order',
         item_name: 'Purchase',
         price: grandTotal,
         quantity: 1,
@@ -123,6 +124,8 @@ export function OrderPageClient({
   locale?: Locale;
 }) {
   const router = useRouter();
+  const paidRef = useRef(paid);
+  paidRef.current = paid;
   const t = translations[locale].orderPage;
   const tCustom = translations[locale].customOrder;
 
@@ -141,118 +144,163 @@ export function OrderPageClient({
   }, []);
 
   const [stripeSyncing, setStripeSyncing] = useState(false);
+  /** When false, browser `purchase` waits for Stripe sync/poll to finish (or paid from server). */
+  const [stripePollResolved, setStripePollResolved] = useState(true);
 
-  // After Stripe Checkout redirect, the webhook may lag; verify the session server-side and refresh.
+  useEffect(() => {
+    if (paid) {
+      setStripePollResolved(true);
+      setStripeSyncing(false);
+    }
+  }, [paid]);
+
+  useEffect(() => {
+    if (!paid || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('session_id') && !url.searchParams.has('stripe')) return;
+    url.searchParams.delete('session_id');
+    url.searchParams.delete('stripe');
+    const qs = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
+  }, [paid]);
+
+  // After Stripe Checkout redirect (or when the order row has Stripe refs), verify with Stripe and refresh.
   useEffect(() => {
     if (paid) return;
     if (typeof window === 'undefined') return;
+
     const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id')?.trim();
-    if (!sessionId) return;
+    const urlSessionId = params.get('session_id')?.trim() ?? '';
+    const hasStripeContext =
+      Boolean(urlSessionId) ||
+      Boolean(order.stripeSessionId?.trim()) ||
+      Boolean(order.paymentIntentId?.trim());
 
-    const doneKey = `stripe_sync_ok_${orderId}_${sessionId}`;
-    try {
-      if (sessionStorage.getItem(doneKey) === '1') {
-        if (params.has('session_id') || params.has('stripe')) {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('session_id');
-          url.searchParams.delete('stripe');
-          const qs = url.searchParams.toString();
-          window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
-        }
-        router.refresh();
-        return;
-      }
-    } catch {
-      // ignore
-    }
+    if (!hasStripeContext) return;
 
-    setStripeSyncing(true);
+    const doneKeyBase =
+      urlSessionId || order.stripeSessionId?.trim() || order.paymentIntentId?.trim() || 'stripe';
+    const doneKey = `stripe_sync_ok_${orderId}_${doneKeyBase}`;
+
     let cancelled = false;
+    setStripePollResolved(false);
+    setStripeSyncing(true);
+
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
     (async () => {
       try {
-        const url = new URL(window.location.href);
-        const tokenFromUrl = url.searchParams.get('token')?.trim() ?? '';
-        const tokenFromStorage = window.localStorage.getItem('lanna-bloom-last-order-token')?.trim() ?? '';
-        const publicToken = tokenFromUrl || tokenFromStorage;
+        if (sessionStorage.getItem(doneKey) === '1') {
+          if (params.has('session_id') || params.has('stripe')) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('session_id');
+            url.searchParams.delete('stripe');
+            const qs = url.searchParams.toString();
+            window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
+          }
+          router.refresh();
+          if (!cancelled) {
+            setStripePollResolved(true);
+            setStripeSyncing(false);
+          }
+          return;
+        }
+      } catch {
+        // ignore
+      }
 
-        console.log('[stripe/purchase] calling sync-checkout-session', { orderId, sessionId });
+      const pageUrl = new URL(window.location.href);
+      const tokenFromUrl = pageUrl.searchParams.get('token')?.trim() ?? '';
+      const tokenFromStorage =
+        window.localStorage.getItem('lanna-bloom-last-order-token')?.trim() ?? '';
+      const publicToken = tokenFromUrl || tokenFromStorage;
+      if (!publicToken) {
+        console.warn('[stripe/purchase] missing public token for sync-checkout-session', { orderId });
+        if (!cancelled) {
+          setStripePollResolved(true);
+          setStripeSyncing(false);
+        }
+        return;
+      }
+
+      const deadline = Date.now() + 20_000;
+      let gotPaidFromStripe = false;
+
+      while (!cancelled && Date.now() < deadline) {
+        if (paidRef.current) break;
+
+        console.log('[stripe/purchase] calling sync-checkout-session', {
+          orderId,
+          sessionId: urlSessionId || '(from order)',
+        });
         const res = await fetch('/api/stripe/sync-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, orderId, publicToken }),
+          body: JSON.stringify({
+            sessionId: urlSessionId || undefined,
+            orderId,
+            publicToken,
+          }),
         });
         const data = (await res.json().catch(() => ({}))) as { paid?: boolean };
-        console.log('[stripe/purchase] sync-checkout-session response', { ok: res.ok, paid: data.paid, orderId });
+        console.log('[stripe/purchase] sync-checkout-session response', {
+          ok: res.ok,
+          paid: data.paid,
+          orderId,
+        });
+
         if (cancelled) return;
+
         if (res.ok && data.paid) {
+          gotPaidFromStripe = true;
           try {
             sessionStorage.setItem(doneKey, '1');
           } catch {
             // ignore
           }
-
           router.refresh();
           const url = new URL(window.location.href);
           url.searchParams.delete('session_id');
           url.searchParams.delete('stripe');
           const qs = url.searchParams.toString();
           window.history.replaceState({}, '', `${url.pathname}${qs ? `?${qs}` : ''}`);
-        } else {
-          // Webhook may have already updated the order. Refresh for catch-up.
-          console.log('[stripe/purchase] sync returned not-paid, refreshing for webhook catch-up', { orderId });
-          router.refresh();
+          break;
         }
-      } finally {
-        if (!cancelled) setStripeSyncing(false);
+
+        router.refresh();
+        await sleep(1600);
+      }
+
+      if (!cancelled) {
+        setStripePollResolved(true);
+        setStripeSyncing(false);
+        if (!gotPaidFromStripe) {
+          console.log('[stripe/purchase] stripe poll window finished', { orderId });
+        }
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [paid, orderId, router, order]);
+  }, [paid, orderId, router, order.stripeSessionId, order.paymentIntentId]);
 
-  // GA4 standard `purchase` → GTM (single source for purchase revenue). Dedupe: localStorage `sent_purchase_<orderId>`.
   useEffect(() => {
-    if (!paid || typeof window === 'undefined') return;
+    if (!paid || !stripePollResolved || typeof window === 'undefined') return;
 
     const normalizedOrderId = orderId.trim();
     if (!normalizedOrderId) return;
 
-    const dedupeKey = `sent_purchase_${normalizedOrderId}`;
-    try {
-      if (window.localStorage.getItem(dedupeKey) === '1') return;
-    } catch {
-      // ignore read errors
-    }
-
     const totalAmount = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-    const cartItems = orderViewToAnalyticsItems(order, orderId);
-    if (cartItems.length === 0 || !Number.isFinite(totalAmount) || totalAmount <= 0) return;
+    const items = buildPurchaseAnalyticsItems(order, orderId);
 
-    try {
-      window.localStorage.setItem(dedupeKey, '1');
-    } catch {
-      // still push once this session; refresh may repeat if storage blocked
-    }
-
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ ecommerce: null });
-    window.dataLayer.push({
-      event: 'purchase',
-      ecommerce: {
-        transaction_id: normalizedOrderId,
-        value: totalAmount,
-        currency: order.currency ?? 'THB',
-        items: cartItems.map((item) => ({
-          item_id: item.item_id,
-          item_name: item.item_name,
-          price: item.price,
-          quantity: item.quantity ?? 1,
-        })),
-      },
+    trackCheckoutPurchase({
+      orderId: normalizedOrderId,
+      value: totalAmount,
+      currency: order.currency ?? 'THB',
+      items,
     });
-  }, [paid, orderId, order]);
+  }, [paid, stripePollResolved, orderId, order]);
 
   const [copied, setCopied] = useState(false);
 

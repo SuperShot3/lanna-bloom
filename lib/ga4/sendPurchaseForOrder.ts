@@ -130,8 +130,8 @@ async function sendOne(
   gaClientId: string | null
 ): Promise<SendPurchaseResult> {
   if (!order) return { sent: false, reason: 'order_not_found' };
-  const value = order.pricing?.grandTotal ?? 0;
-  const items = (order.items ?? []).map((it, i) => ({
+  const value = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
+  let items = (order.items ?? []).map((it, i) => ({
     item_id: it.bouquetId,
     item_name: it.bouquetTitle ?? '',
     price: it.price ?? 0,
@@ -141,8 +141,21 @@ async function sendOne(
     currency: 'THB' as const,
   }));
 
+  if (items.length === 0 && value > 0) {
+    items = [
+      {
+        item_id: orderId,
+        item_name: 'Purchase',
+        price: value,
+        quantity: 1,
+        index: 0,
+        currency: 'THB' as const,
+      },
+    ];
+  }
+
   if (items.length === 0) {
-    console.warn('[ga4/sendPurchaseForOrder] order has no items, skipping send', orderId);
+    console.warn('[ga4/sendPurchaseForOrder] order has no items and no payable total, skipping send', orderId);
     return { sent: false, reason: 'send_failed', error: 'No items' };
   }
 

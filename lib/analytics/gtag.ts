@@ -98,7 +98,22 @@ export function trackCheckoutPurchase(params: {
   const normalizedOrderId = normalizeOrderId(params.orderId);
   const value = Number(params.value);
   const currency = params.currency ?? 'THB';
-  if (!normalizedOrderId || !Number.isFinite(value) || value <= 0 || params.items.length === 0) {
+  if (!normalizedOrderId || !Number.isFinite(value) || value <= 0) {
+    return;
+  }
+
+  let itemsInput = params.items;
+  if (itemsInput.length === 0 && value > 0) {
+    itemsInput = [
+      {
+        item_id: normalizedOrderId,
+        item_name: 'Purchase',
+        price: value,
+        quantity: 1,
+      },
+    ];
+  }
+  if (itemsInput.length === 0) {
     return;
   }
 
@@ -109,7 +124,7 @@ export function trackCheckoutPurchase(params: {
     return;
   }
 
-  const items = params.items.map((item) => ({
+  const items = itemsInput.map((item) => ({
     item_id: item.item_id,
     item_name: item.item_name,
     price: item.price,

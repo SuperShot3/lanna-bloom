@@ -8,9 +8,12 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
- * Called after Stripe Checkout redirect when the webhook has not finished yet.
+ * Called after Stripe Checkout redirect when the webhook has not finished yet, or while polling
+ * from the order page when the order row already has Stripe references.
  * Verifies the session with Stripe and creates + marks paid (cart) or marks paid (order page).
- * Body: { sessionId: string; orderId: string; publicToken?: string }
+ * Body: { sessionId?: string; orderId: string; publicToken?: string }
+ * If `sessionId` is omitted, resolves from the order’s `stripeSessionId`, or from Checkout
+ * sessions linked to `paymentIntentId`.
  *
  * Security: Requires order ownership proof (public token) so that a leaked Stripe session id
  * cannot be used to trigger fulfillment for someone else’s order.
@@ -28,14 +31,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
+  const sessionIdFromBody = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
   const expectedOrderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
   const publicTokenFromBody = typeof body.publicToken === 'string' ? body.publicToken.trim() : '';
   const publicTokenFromHeader = request.headers.get('x-order-token')?.trim() ?? '';
   const publicToken = publicTokenFromBody || publicTokenFromHeader;
-  if (!sessionId) {
-    return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
-  }
   if (!expectedOrderId) {
     return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
   }
@@ -49,6 +49,31 @@ export async function POST(request: NextRequest) {
   }
 
   const stripe = createStripeServerClient(stripeConfig.secretKey);
+
+  let sessionId = sessionIdFromBody;
+  if (!sessionId) {
+    sessionId = order.stripeSessionId?.trim() ?? '';
+  }
+  if (!sessionId && order.paymentIntentId?.trim()) {
+    try {
+      const list = await stripe.checkout.sessions.list({
+        payment_intent: order.paymentIntentId.trim(),
+        limit: 1,
+      });
+      sessionId = list.data[0]?.id ?? '';
+    } catch (e) {
+      console.error('[stripe/sync-checkout-session] list sessions by payment_intent failed:', e);
+    }
+  }
+
+  if (!sessionId) {
+    return NextResponse.json({
+      ok: true,
+      paid: false,
+      reason: 'no_checkout_session',
+    });
+  }
+
   let session: Stripe.Checkout.Session;
   try {
     session = await stripe.checkout.sessions.retrieve(sessionId, {
