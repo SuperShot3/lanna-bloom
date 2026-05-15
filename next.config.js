@@ -3,6 +3,9 @@ const nextConfig = {
   transpilePackages: ['next-mdx-remote', 'heic2any'],
   async headers() {
     // Baseline security headers (keep CSP in Report-Only initially to reduce break risk).
+    // Report-Only: does not block, but surfaces violations in DevTools / Tag Assistant.
+    // default-src 'self' applies to frames unless frame-src is set — without frame-src,
+    // GTM noscript iframe + Google Maps embed would violate CSP when this is enforced elsewhere.
     const cspReportOnly = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -13,6 +16,8 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline' https:",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
       "connect-src 'self' https: wss:",
+      "frame-src 'self' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://tagassistant.google.com",
+      "worker-src 'self' blob: https://www.googletagmanager.com",
       "form-action 'self' https:",
       'upgrade-insecure-requests',
     ].join('; ');
