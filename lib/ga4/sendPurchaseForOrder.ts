@@ -11,7 +11,7 @@
 import 'server-only';
 import { getOrderById } from '@/lib/orders';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { sendPurchaseToGA4 } from './measurementProtocol';
+import { sendPurchaseToGA4, type PurchaseItemPayload } from './measurementProtocol';
 
 export type SendPurchaseResult =
   | { sent: true }
@@ -131,13 +131,13 @@ async function sendOne(
 ): Promise<SendPurchaseResult> {
   if (!order) return { sent: false, reason: 'order_not_found' };
   const value = order.pricing?.grandTotal ?? order.amountTotal ?? 0;
-  let items = (order.items ?? []).map((it, i) => ({
+  let items: PurchaseItemPayload[] = (order.items ?? []).map((it, i) => ({
     item_id: it.bouquetId,
     item_name: it.bouquetTitle ?? '',
     price: it.price ?? 0,
     quantity: 1,
     index: i,
-    item_variant: it.size ?? undefined,
+    ...(it.size ? { item_variant: it.size } : {}),
     currency: 'THB' as const,
   }));
 
