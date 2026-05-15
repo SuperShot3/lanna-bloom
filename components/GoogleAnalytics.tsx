@@ -28,6 +28,7 @@ gtag('consent', 'default', {
   ad_user_data: 'granted',
   ad_personalization: 'granted'
 });
+window.__lannaConsentDefaultsApplied = true;
         `}
       </Script>
       <Script id="google-tag-manager" strategy="afterInteractive">
