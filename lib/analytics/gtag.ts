@@ -3,7 +3,7 @@
  *
  * Architecture: App → `window.dataLayer.push(...)` → GTM. No `gtag('event', …)` in app code.
  *
- * **Paid order (browser):** `CheckoutCompleteClient` calls `trackCheckoutPurchase`, which pushes **`purchase`** with GA4 **`ecommerce`**
+ * **Paid order (browser):** `OrderThankYouClient` calls `trackCheckoutPurchase`, which pushes **`purchase`** with GA4 **`ecommerce`**
  * (`transaction_id`, `value`, `currency`, `items`) and the **same** fields mirrored at the **root**
  * of the pushed object so GTM DL variables aligned with funnel events (`add_to_cart`, etc.) still work.
  */
@@ -80,31 +80,46 @@ export interface PurchaseItem {
 }
 
 /** Browser `purchase` dedupe (refresh-safe). */
-const SENT_PURCHASE_PREFIX = 'sent_purchase_';
+const LANA_PURCHASE_FIRED_PREFIX = 'lanna_purchase_fired_';
+/** Legacy key — still read so deploy does not double-fire on refresh. */
+const LEGACY_SENT_PURCHASE_PREFIX = 'sent_purchase_';
 
-function getStandardPurchaseStorageKey(orderId: string): string {
-  return `${SENT_PURCHASE_PREFIX}${normalizeOrderId(orderId)}`;
+function getPurchaseStorageKey(orderId: string): string {
+  return `${LANA_PURCHASE_FIRED_PREFIX}${normalizeOrderId(orderId)}`;
 }
 
-function wasStandardPurchaseSent(orderId: string): boolean {
+function getLegacyPurchaseStorageKey(orderId: string): string {
+  return `${LEGACY_SENT_PURCHASE_PREFIX}${normalizeOrderId(orderId)}`;
+}
+
+function wasPurchaseSentInStorage(orderId: string): boolean {
   if (typeof window === 'undefined') return true;
-  return hasStorageSentFlag(window.localStorage, getStandardPurchaseStorageKey(orderId));
+  const storage = window.localStorage;
+  return (
+    hasStorageSentFlag(storage, getPurchaseStorageKey(orderId)) ||
+    hasStorageSentFlag(storage, getLegacyPurchaseStorageKey(orderId))
+  );
 }
 
-function markStandardPurchaseSent(orderId: string): void {
+function markPurchaseSentInStorage(orderId: string): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(getStandardPurchaseStorageKey(orderId), '1');
+    window.localStorage.setItem(getPurchaseStorageKey(orderId), '1');
   } catch {
     // ignore
   }
+}
+
+export interface PurchaseUserData {
+  email_address?: string;
+  phone_number?: string;
 }
 
 /** Whether checkout purchase was already sent for this order (localStorage + same-document guard). */
 export function wasCheckoutPurchaseSent(orderId: string): boolean {
   const normalizedOrderId = normalizeOrderId(orderId);
   if (!normalizedOrderId) return false;
-  return wasStandardPurchaseSent(normalizedOrderId) || purchaseSentThisDocument.has(normalizedOrderId);
+  return wasPurchaseSentInStorage(normalizedOrderId) || purchaseSentThisDocument.has(normalizedOrderId);
 }
 
 /** Mark checkout purchase as sent without pushing (rare; prefer successful push via trackCheckoutPurchase). */
@@ -112,7 +127,7 @@ export function markCheckoutPurchaseSent(orderId: string): void {
   const normalizedOrderId = normalizeOrderId(orderId);
   if (!normalizedOrderId) return;
   purchaseSentThisDocument.add(normalizedOrderId);
-  markStandardPurchaseSent(normalizedOrderId);
+  markPurchaseSentInStorage(normalizedOrderId);
 }
 
 function readNonNegativeIntEnv(name: string, fallback: number): number {
@@ -173,6 +188,7 @@ export function trackCheckoutPurchase(params: {
   value: number;
   currency?: string;
   items: PurchaseItem[];
+  userData?: PurchaseUserData;
 }): Promise<boolean> {
   if (typeof window === 'undefined') return Promise.resolve(false);
 
@@ -244,6 +260,13 @@ export function trackCheckoutPurchase(params: {
     items,
   };
 
+  const userData: PurchaseUserData = {};
+  const email = params.userData?.email_address?.trim();
+  const phone = params.userData?.phone_number?.trim();
+  if (email) userData.email_address = email;
+  if (phone) userData.phone_number = phone;
+  const hasUserData = Boolean(userData.email_address || userData.phone_number);
+
   return new Promise<boolean>((resolve) => {
     waitForGtmConsentThen(() => {
       if (wasCheckoutPurchaseSent(normalizedOrderId)) {
@@ -269,6 +292,7 @@ export function trackCheckoutPurchase(params: {
           value,
           currency,
           items,
+          ...(hasUserData ? { user_data: userData } : {}),
           eventCallback: () => {
             markCheckoutPurchaseSent(normalizedOrderId);
             if (isDev) {

@@ -25,7 +25,7 @@ sequenceDiagram
   API->>Stripe: Create Checkout Session
   Stripe-->>Browser: Redirect to pay
   Browser->>Stripe: Pay
-  Stripe-->>Browser: success_url checkout/complete
+  Stripe-->>Browser: success_url /lanna-order-thank-you
   Browser->>API: GET order-status session_id
   API->>Fulfill: If paid in Stripe
   Fulfill->>DB: createOrder from draft
@@ -41,7 +41,7 @@ Key files:
 | Line items for Stripe | `lib/checkout/buildStripeCheckoutSessionBody.ts`, `lib/stripe/checkoutStripeLineItems.ts` |
 | After payment | `lib/checkout/fulfillStripeCheckout.ts` — `fulfillPaidStripeCheckoutSession` |
 | Webhook | `app/api/stripe/webhook/route.ts` |
-| Poll / complete page | `app/api/stripe/order-status/route.ts`, `app/[lang]/checkout/complete/CheckoutCompleteClient.tsx` |
+| Poll / thank-you page | `app/api/stripe/order-status/route.ts`, `app/lanna-order-thank-you/`, `components/checkout/OrderThankYouClient.tsx` |
 | Sync fallback | `app/api/stripe/sync-checkout-session/route.ts` |
 
 **Invariant:** Cart flow logs *"checkout draft saved (order created after payment)"* — do **not** re-enable creating unpaid public orders from cart unless explicitly redesigned.

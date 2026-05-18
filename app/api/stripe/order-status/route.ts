@@ -11,6 +11,7 @@ import {
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
+import { phoneInternational } from '@/lib/admin/deliveryContactLinks';
 
 export async function GET(request: NextRequest) {
   const stripeConfig = getStripeServerConfig();
@@ -139,6 +140,10 @@ export async function GET(request: NextRequest) {
           value: number;
           currency: string;
           items: AnalyticsItem[];
+          user_data?: {
+            email_address?: string;
+            phone_number?: string;
+          };
         };
       } = {
         status,
@@ -148,11 +153,17 @@ export async function GET(request: NextRequest) {
       if (status === 'paid' && hasProof) {
         const { value, currency } = purchaseValueAndCurrencyFromOrder(order);
         const items = buildPurchaseAnalyticsItemsFromOrder(order, orderId);
+        const userData: { email_address?: string; phone_number?: string } = {};
+        const email = order.customerEmail?.trim();
+        if (email) userData.email_address = email;
+        const phone = phoneInternational(order.phone, order.phoneCountryCode);
+        if (phone) userData.phone_number = phone;
         payload.purchase = {
           transaction_id: orderId,
           value,
           currency,
           items,
+          ...(userData.email_address || userData.phone_number ? { user_data: userData } : {}),
         };
       }
       return NextResponse.json(payload);

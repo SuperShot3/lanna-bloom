@@ -15,7 +15,7 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 ## Canonical `purchase` (paid web checkout)
 
-**Where:** `app/[lang]/checkout/complete/CheckoutCompleteClient.tsx`
+**Where:** `components/checkout/OrderThankYouClient.tsx` on `/lanna-order-thank-you`
 
 **When:**
 
@@ -26,11 +26,15 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 **Shape:** `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { transaction_id, value, currency, items }, ... })` with root-level mirror of `transaction_id`, `value`, `currency`, `items` for GTM variables.
 
-**Dedupe:** `localStorage` key `sent_purchase_<orderId>` + in-memory guard — refresh must not double-fire.
+**Dedupe:** `localStorage` key `lanna_purchase_fired_<orderId>` (also reads legacy `sent_purchase_<orderId>`) + in-memory guard — refresh must not double-fire.
 
 **Timing:** `waitForGtmConsentThen` defers push briefly for GTM/consent ordering.
 
-**Not on paid `/order/...` page:** Stripe web checkout always hits `checkout/complete` first; do not add a second `purchase` there.
+**Not on paid `/order/...` page:** Cart Stripe checkout hits `/lanna-order-thank-you` first; do not add a second `purchase` on `/order/...` unless fallback path applies.
+
+**GTM triggers:** Use Custom Event `purchase` only — do not use Page URL contains `checkout` / `complete` / `success` (matches `checkout.stripe.com`). Optional AND: Page Path equals `/lanna-order-thank-you`.
+
+**Legacy:** `/{lang}/checkout/complete` redirects to `/lanna-order-thank-you` — no purchase on legacy page.
 
 ## Server-side Measurement Protocol (optional)
 
@@ -80,7 +84,8 @@ Configure matching **Custom Event** triggers in GTM.
 | `lib/analytics.ts` | Funnel event API |
 | `lib/analytics/gtag.ts` | dataLayer transport, `trackCheckoutPurchase`, dedupe |
 | `lib/analytics/buildPurchaseItemsFromOrder.ts` | Server line items for `order-status` |
-| `app/api/stripe/order-status/route.ts` | Returns `purchase` when paid |
+| `app/lanna-order-thank-you/page.tsx` | Universal post-Stripe thank-you (lang via `?lang=`) |
+| `app/api/stripe/order-status/route.ts` | Returns `purchase` (+ optional `user_data`) when paid + proof |
 
 ## Deep dive
 

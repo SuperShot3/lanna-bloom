@@ -103,8 +103,8 @@ export function stripeOrderSuccessUrl(
   return `${baseUrl}/order/${id}?${tokenQs}stripe=success&session_id={CHECKOUT_SESSION_ID}`;
 }
 
-/** Cart checkout: no order id yet — landing page polls until the order exists, then redirects to /order/[id]. */
+/** Cart checkout: universal thank-you page (no checkout/complete in path — avoids GTM URL false positives). */
 export function stripeCheckoutDraftSuccessUrl(baseUrl: string, lang: string): string {
   const l = isValidLocale(lang) ? lang : 'en';
-  return `${baseUrl}/${l}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`;
+  return `${baseUrl}/lanna-order-thank-you?session_id={CHECKOUT_SESSION_ID}&lang=${l}`;
 }

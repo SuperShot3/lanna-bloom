@@ -8,13 +8,14 @@ import {
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
 import { trackCheckoutPurchase } from '@/lib/analytics';
-import type { PurchaseItem } from '@/lib/analytics/gtag';
+import type { PurchaseItem, PurchaseUserData } from '@/lib/analytics/gtag';
 
 type OrderStatusPurchase = {
   transaction_id: string;
   value: number;
   currency: string;
   items: PurchaseItem[];
+  user_data?: PurchaseUserData;
 };
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
@@ -31,7 +32,7 @@ function wait(ms: number): Promise<void> {
   });
 }
 
-export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
+export function OrderThankYouClient({ lang }: { lang: Locale }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams?.get('session_id')?.trim() ?? '';
@@ -57,7 +58,11 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (!sessionId) {
-      setError(lang === 'th' ? 'ไม่พบการชำระเงิน' : 'Missing payment session');
+      setError(
+        lang === 'th'
+          ? 'เราไม่สามารถยืนยันคำสั่งซื้อนี้ได้ในขณะนี้'
+          : 'We could not confirm this order yet.'
+      );
       return;
     }
     let cancelled = false;
@@ -110,6 +115,7 @@ export function CheckoutCompleteClient({ lang }: { lang: Locale }) {
               value: purchase.value,
               currency: purchase.currency,
               items: purchase.items,
+              userData: purchase.user_data,
             }).catch(() => false);
           }
 

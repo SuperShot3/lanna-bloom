@@ -70,7 +70,7 @@ Read this file before substantive work. Use topic files below for depth; use `do
 1. **Inspect code** — README may be outdated for payments/storage; trust `lib/checkout/`, `lib/orders/`, and `docs/`.
 2. **Server recomputes money** — never trust client prices, discounts, or payment status.
 3. **Stripe confirms payment** — cart orders are created after paid checkout session.
-4. **Analytics `purchase`** — browser on `checkout/complete` after server confirms paid + `purchaseAnalytics`.
+4. **Analytics `purchase`** — browser on `/lanna-order-thank-you` after server confirms paid + `purchase` payload.
 5. **Content copy** — use `.cursor/skills/` writers, not new giant prompts here.
 
 ## Deep dive (`docs/`)

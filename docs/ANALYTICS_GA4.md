@@ -7,16 +7,16 @@
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
-- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/{lang}/checkout/complete`** after Stripe returns and `GET /api/stripe/order-status` reports `paid` with `purchaseAnalytics`. `CheckoutCompleteClient` calls `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `sent_purchase_<orderId>` in **localStorage**. The **paid** `/order/...` page does **not** push `purchase` (Stripe web checkout always hits `checkout/complete` first).
+- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/lanna-order-thank-you`** after Stripe returns and `GET /api/stripe/order-status` reports `paid` with `purchase`. `OrderThankYouClient` calls `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read). The **paid** `/order/...` page does **not** push `purchase` for cart checkout (thank-you page fires first). GTM must use Custom Event `purchase`, not URL contains `checkout`.
 - **Measurement Protocol (optional / disabled by default):** `lib/ga4/sendPurchaseForOrder.ts` is **not** wired from Stripe webhooks or admin routes in the current codebase. Use it only if you intentionally re-enable server-side `purchase` and adjust GTM so GA4 does not count the same sale twice.
 
 ## Paid order: browser `purchase` (canonical)
 
-**Source code:** `app/[lang]/checkout/complete/CheckoutCompleteClient.tsx` — when `order-status` returns `status: 'paid'`, `orderId`, and `purchaseAnalytics` (`value`, `currency`, `items` from the server; same line-item rules as the order view). Calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
+**Source code:** `components/checkout/OrderThankYouClient.tsx` on `/lanna-order-thank-you` — when `order-status` returns `status: 'paid'`, `orderId`, and `purchase` (`value`, `currency`, `items`, optional `user_data` from the server). Calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
 
-**Event `purchase`** — at most once per order id (`sent_purchase_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **`purchase`** is deferred briefly so GTM/consent can settle (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
+**Event `purchase`** — at most once per order id (`lanna_purchase_fired_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **`purchase`** is deferred briefly so GTM/consent can settle (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
-**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `CheckoutCompleteClient` only for web Stripe checkout).
+**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `OrderThankYouClient` for cart Stripe checkout).
 
 ## Optional: Measurement Protocol `purchase` (server)
 

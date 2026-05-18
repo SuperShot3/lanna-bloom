@@ -10,8 +10,8 @@
  * - DO NOT fire GA4 `purchase` event from this component
  * - DO NOT fire any ecommerce completion tracking
  * - DO NOT treat this as a Stripe success page or final paid confirmation
- * - The real `purchase` event for **Stripe web checkout** is sent from **`/{lang}/checkout/complete`**
- *   after Stripe returns and the order is paid (see `CheckoutCompleteClient`), not from this page.
+ * - The real `purchase` event for **Stripe web checkout** is sent from **`/lanna-order-thank-you`**
+ *   after Stripe returns and the order is paid (see `OrderThankYouClient`), not from this page.
  *   (This pending page is not the Stripe success URL.)
  *
  * This page exists specifically to prevent premature GA4 purchase tracking.

@@ -15,7 +15,7 @@ function triggerToPurchaseSource(
 
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or order-status poll).
- * Browser **`purchase`** is sent from `checkout/complete` → GTM (not from `/order/...`). Optionally, GA4 **Measurement
+ * Browser **`purchase`** is sent from `/lanna-order-thank-you` → GTM (not from `/order/...`). Optionally, GA4 **Measurement
  * Protocol** runs here when configured (`sendPurchaseForOrder`); it is idempotent per order in the DB.
  */
 export async function runStripePostPaymentSuccessHooks(params: {

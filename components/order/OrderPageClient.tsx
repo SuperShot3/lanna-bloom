@@ -131,7 +131,7 @@ export function OrderPageClient({
     }
   }, [paid]);
 
-  // Fallback purchase: only when checkout/complete did not successfully track.
+  // Fallback purchase: only when /lanna-order-thank-you did not successfully track.
   useEffect(() => {
     if (!paid || !stripePollResolved || typeof window === 'undefined') return;
 
