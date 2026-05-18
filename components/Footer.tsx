@@ -126,6 +126,14 @@ export function Footer({ lang }: { lang: Locale }) {
                 </Link>
               </li>
               <li>
+                <Link
+                  href={`/${lang}/collections/orchids-chiang-mai`}
+                  className="hover:text-[#C5A059] transition-colors"
+                >
+                  {t.orchidBouquets}
+                </Link>
+              </li>
+              <li>
                 <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
                   {t.occasions}
                 </Link>

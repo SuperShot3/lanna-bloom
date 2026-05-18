@@ -8,14 +8,13 @@ import { GuideFaq } from '@/app/[lang]/info/_components/GuideFaq';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import {
+  getCollectionHub,
   getCollectionLandingPages,
   getCollectionLandingTabs,
+  getHubCatalogView,
   getRoseColorFromLegacySlug,
-  getRoseColorLanding,
-  isRosesHubSlug,
-  parseRoseColorParam,
-  rosesHub,
   ROSES_HUB_PATH,
+  type HubFlowerType,
 } from '@/lib/landingPages/collectionLandingPages';
 import { getBaseUrl } from '@/lib/orders';
 import {
@@ -68,6 +67,33 @@ function selectRandomAddOns(products: CatalogProduct[], limit = MAX_ADD_ONS_PER_
     .slice(0, limit);
 }
 
+function flowerTypeUi(flowerType: HubFlowerType, locale: Locale) {
+  if (flowerType === 'orchid') {
+    return locale === 'th'
+      ? {
+          tabsAria: 'คอลเลกชันกล้วยไม้',
+          browseAll: 'ดูกล้วยไม้ทั้งหมด',
+          allInCatalog: 'กล้วยไม้ทั้งหมด',
+        }
+      : {
+          tabsAria: 'Orchid collections',
+          browseAll: 'Browse all orchids',
+          allInCatalog: 'All orchids',
+        };
+  }
+  return locale === 'th'
+    ? {
+        tabsAria: 'คอลเลกชันกุหลาบ',
+        browseAll: 'ดูช่อกุหลาบทั้งหมด',
+        allInCatalog: 'กุหลาบทั้งหมด',
+      }
+    : {
+        tabsAria: 'Rose collections',
+        browseAll: 'Browse all roses',
+        allInCatalog: 'All rose bouquets',
+      };
+}
+
 function interleaveAddOns(groups: CatalogProduct[][]): CatalogProduct[] {
   const maxLength = Math.max(...groups.map((group) => group.length), 0);
   const result: CatalogProduct[] = [];
@@ -97,11 +123,12 @@ export async function generateMetadata({
   params: { lang: string; slug: string };
 }): Promise<Metadata> {
   const { lang, slug } = params;
-  if (!isValidLocale(lang) || !isRosesHubSlug(slug)) return { title: 'Lanna Bloom' };
+  const hub = getCollectionHub(slug);
+  if (!isValidLocale(lang) || !hub) return { title: 'Lanna Bloom' };
 
   const locale = lang as Locale;
-  const copy = rosesHub.copy[locale];
-  const canonical = `${getBaseUrl()}/${locale}${ROSES_HUB_PATH}`;
+  const copy = hub.copy[locale];
+  const canonical = `${getBaseUrl()}/${locale}${hub.canonicalPath}`;
 
   return {
     title: copy.seoTitle,
@@ -135,35 +162,41 @@ export default async function CollectionLandingPage({
   if (legacyColor) {
     redirect(`/${locale}${ROSES_HUB_PATH}?color=${legacyColor}`);
   }
-  if (!isRosesHubSlug(slug)) notFound();
 
-  const color = parseRoseColorParam(searchParams.color);
-  const colorPage = getRoseColorLanding(color);
-  const hubCopy = rosesHub.copy[locale];
-  const colorCopy = colorPage.copy[locale];
-  const catalogHref = `/${locale}/catalog${buildCatalogSearchString(colorPage.filters)}`;
+  const hub = getCollectionHub(slug);
+  if (!hub) notFound();
+
+  if (!hub.colorTabs && searchParams.color) {
+    redirect(`/${locale}${hub.canonicalPath}`);
+  }
+
+  const catalogView = getHubCatalogView(hub, locale, searchParams.color);
+  const hubCopy = hub.copy[locale];
+  const catalogHref = `/${locale}/catalog${buildCatalogSearchString(catalogView.filters)}`;
   const addOnsHref = `/${locale}/catalog${buildCatalogSearchString({ topCategory: 'balloons' })}`;
-  const allRosesHref = `/${locale}/catalog${buildCatalogSearchString({
+  const allFlowerTypeHref = `/${locale}/catalog${buildCatalogSearchString({
     topCategory: 'flowers',
-    types: ['rose'],
+    types: [hub.flowerType],
   })}`;
+  const flowerTypeLabels = flowerTypeUi(hub.flowerType, locale);
 
   const [allBouquets, plushyToys, balloons] = await Promise.all([
     getBouquetsFilteredFromSanity({
-      ...colorPage.filters,
+      ...catalogView.filters,
       catalogDeliveryDestination: 'CHIANG_MAI',
     }),
     getPlushyToysFilteredFromSanity({ sort: 'newest' }),
     getBalloonsFilteredFromSanity({ sort: 'newest' }),
   ]);
 
-  const bouquets = allBouquets.slice(0, MAX_BOUQUETS);
+  const bouquets = hub.colorTabs ? allBouquets.slice(0, MAX_BOUQUETS) : allBouquets;
   const addOns = interleaveAddOns([
     selectRandomAddOns(plushyToys),
     selectRandomAddOns(balloons),
   ]);
   const heroImage = bouquets[0]?.images?.[0];
-  const tabs = getCollectionLandingTabs(locale);
+  const tabs = getCollectionLandingTabs(hub, locale);
+  const activeColor = catalogView.activeColor;
 
   return (
     <main className={styles.page}>
@@ -204,14 +237,15 @@ export default async function CollectionLandingPage({
           </div>
         </section>
 
-        <nav className={styles.tabs} aria-label={locale === 'th' ? 'คอลเลกชันกุหลาบ' : 'Rose collections'}>
-          {tabs.map((tab) => (
-            <Link
-              key={tab.colorFilter}
-              href={tab.href}
-              className={`${styles.tab} ${tab.colorFilter === color ? styles.tabActive : ''}`}
-              aria-current={tab.colorFilter === color ? 'page' : undefined}
-            >
+        {tabs.length > 0 ? (
+          <nav className={styles.tabs} aria-label={flowerTypeLabels.tabsAria}>
+            {tabs.map((tab) => (
+              <Link
+                key={tab.colorFilter}
+                href={tab.href}
+                className={`${styles.tab} ${tab.colorFilter === activeColor ? styles.tabActive : ''}`}
+                aria-current={tab.colorFilter === activeColor ? 'page' : undefined}
+              >
               <span className={styles.tabImageWrap} aria-hidden>
                 <Image
                   src={tab.imageSrc}
@@ -232,17 +266,38 @@ export default async function CollectionLandingPage({
               <span className={styles.tabArrow} aria-hidden>
                 →
               </span>
-            </Link>
-          ))}
-        </nav>
+              </Link>
+            ))}
+          </nav>
+        ) : null}
+
+        {hub.flowerType === 'orchid' && hubCopy.orchidTypes && hubCopy.orchidTypes.length > 0 ? (
+          <section className={styles.section} aria-labelledby="orchid-types-title">
+            <div className={styles.typesSection}>
+              <h2 id="orchid-types-title" className={styles.typesTitle}>
+                {hubCopy.typesTitle}
+              </h2>
+              <p className={styles.typesIntro}>{hubCopy.typesIntro}</p>
+              <ul className={styles.typesList}>
+                {hubCopy.orchidTypes.map((type) => (
+                  <li key={type.name} className={styles.typeCard}>
+                    <h3 className={styles.typeName}>{type.name}</h3>
+                    <p className={styles.typeAliases}>{type.aliases}</p>
+                    <p className={styles.typeDescription}>{type.description}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        ) : null}
 
         <section id="collection-products" className={styles.section} aria-labelledby="collection-products-title">
           <div className={styles.sectionHeader}>
             <div>
               <h2 id="collection-products-title" className={styles.sectionTitle}>
-                {colorCopy.collectionTitle}
+                {catalogView.collectionTitle}
               </h2>
-              <p className={styles.sectionIntro}>{colorCopy.collectionIntro}</p>
+              <p className={styles.sectionIntro}>{catalogView.collectionIntro}</p>
             </div>
             <Link href={catalogHref} className={styles.sectionLink}>
               {locale === 'th' ? 'ดูทั้งหมด' : 'View all'}
@@ -265,10 +320,10 @@ export default async function CollectionLandingPage({
             </div>
           ) : (
             <div className={styles.emptyState}>
-              <strong>{colorCopy.emptyTitle}</strong>
-              <p>{colorCopy.emptyText}</p>
-              <Link href={allRosesHref} className={styles.sectionLink}>
-                {locale === 'th' ? 'ดูช่อกุหลาบทั้งหมด' : 'Browse all roses'}
+              <strong>{catalogView.emptyTitle}</strong>
+              <p>{catalogView.emptyText}</p>
+              <Link href={allFlowerTypeHref} className={styles.sectionLink}>
+                {flowerTypeLabels.browseAll}
               </Link>
             </div>
           )}
@@ -319,11 +374,13 @@ export default async function CollectionLandingPage({
           <div className={styles.linksCard}>
             <h2>{locale === 'th' ? 'เลือกซื้อเพิ่มเติม' : 'Helpful links'}</h2>
             <div className={styles.internalLinks}>
-              <Link href={catalogHref}>{colorCopy.collectionTitle}</Link>
-              <Link href={allRosesHref}>{locale === 'th' ? 'กุหลาบทั้งหมด' : 'All rose bouquets'}</Link>
-              <Link href={`/${locale}/info/rose-bouquets-chiang-mai`}>
-                {locale === 'th' ? 'คู่มือช่อกุหลาบ' : 'Rose bouquet guide'}
-              </Link>
+              <Link href={catalogHref}>{catalogView.collectionTitle}</Link>
+              <Link href={allFlowerTypeHref}>{flowerTypeLabels.allInCatalog}</Link>
+              {hub.flowerType === 'rose' ? (
+                <Link href={`/${locale}/info/rose-bouquets-chiang-mai`}>
+                  {locale === 'th' ? 'คู่มือช่อกุหลาบ' : 'Rose bouquet guide'}
+                </Link>
+              ) : null}
               <Link href={`/${locale}/contact`}>{locale === 'th' ? 'ติดต่อเรา' : 'Contact us'}</Link>
             </div>
           </div>

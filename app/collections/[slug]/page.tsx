@@ -1,9 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
 import { defaultLocale } from '@/lib/i18n';
 import {
+  getCollectionHub,
   getCollectionLandingPages,
   getRoseColorFromLegacySlug,
-  isRosesHubSlug,
+  isCollectionHubSlug,
   ROSES_HUB_PATH,
 } from '@/lib/landingPages/collectionLandingPages';
 
@@ -24,7 +25,13 @@ export default function RootCollectionRedirectPage({
     redirect(`/${defaultLocale}${ROSES_HUB_PATH}${colorQuery}`);
   }
 
-  if (!isRosesHubSlug(params.slug)) notFound();
+  if (!isCollectionHubSlug(params.slug)) notFound();
+
+  const hub = getCollectionHub(params.slug)!;
+
+  if (!hub.colorTabs) {
+    redirect(`/${defaultLocale}${hub.canonicalPath}`);
+  }
 
   const color = searchParams.color;
   const colorQuery =
@@ -32,5 +39,5 @@ export default function RootCollectionRedirectPage({
       ? ''
       : `?color=${Array.isArray(color) ? color[0] : color}`;
 
-  redirect(`/${defaultLocale}${ROSES_HUB_PATH}${colorQuery}`);
+  redirect(`/${defaultLocale}${hub.canonicalPath}${colorQuery}`);
 }

@@ -4,10 +4,7 @@ import { getBaseUrl } from '@/lib/orders';
 import { getBouquetsFromSanity } from '@/lib/sanity';
 import { locales } from '@/lib/i18n';
 import { articles } from '@/app/[lang]/info/_data/articles';
-import {
-  getCollectionLandingPages,
-  ROSES_HUB_PATH,
-} from '@/lib/landingPages/collectionLandingPages';
+import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
 
 type BouquetForSitemap = { slug: string; updatedAt?: string };
 
@@ -98,8 +95,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6 as const,
         lastModified: now,
       },
-      ...getCollectionLandingPages().map(() => ({
-        url: `${base}/${lang}${ROSES_HUB_PATH}`,
+      ...getCollectionLandingPages().map((page) => ({
+        url: `${base}/${lang}${page.path}`,
         changeFrequency: 'weekly' as const,
         priority: 0.75 as const,
         lastModified: now,

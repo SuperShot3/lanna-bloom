@@ -4,6 +4,11 @@ import type { Locale } from '@/lib/i18n';
 export const ROSES_HUB_SLUG = 'roses-chiang-mai' as const;
 export const ROSES_HUB_PATH = `/collections/${ROSES_HUB_SLUG}` as const;
 
+export const ORCHIDS_HUB_SLUG = 'orchids-chiang-mai' as const;
+export const ORCHIDS_HUB_PATH = `/collections/${ORCHIDS_HUB_SLUG}` as const;
+
+export type HubFlowerType = 'rose' | 'orchid';
+
 export type RoseColorFilter = 'white' | 'pink' | 'red';
 
 /** @deprecated Color-specific paths redirect to the roses hub with ?color= */
@@ -12,7 +17,7 @@ export type LegacyRoseCollectionSlug =
   | 'pink-roses-chiang-mai'
   | 'red-roses-chiang-mai';
 
-export type CollectionLandingSlug = typeof ROSES_HUB_SLUG;
+export type CollectionLandingSlug = typeof ROSES_HUB_SLUG | typeof ORCHIDS_HUB_SLUG;
 
 export type CollectionLandingCopy = {
   seoTitle: string;
@@ -35,16 +40,22 @@ export type CollectionLandingCopy = {
   emptyText: string;
 };
 
-export type RoseColorLandingConfig = {
-  colorFilter: RoseColorFilter;
+export type ColorLandingConfig = {
+  colorFilter: string;
   accentLabel: string;
-  tabImageSrc: `/images_other/roses_colors_landingpage/${string}`;
-  legacySlug: LegacyRoseCollectionSlug;
+  tabImageSrc: string;
+  legacySlug?: LegacyRoseCollectionSlug;
   filters: CatalogFilterParams;
   copy: Record<Locale, CollectionLandingCopy>;
 };
 
-export type RosesHubCopy = Pick<
+export type RoseColorLandingConfig = ColorLandingConfig & {
+  colorFilter: RoseColorFilter;
+  tabImageSrc: `/images_other/roses_colors_landingpage/${string}`;
+  legacySlug: LegacyRoseCollectionSlug;
+};
+
+export type CollectionHubCopy = Pick<
   CollectionLandingCopy,
   | 'seoTitle'
   | 'seoDescription'
@@ -60,13 +71,42 @@ export type RosesHubCopy = Pick<
   | 'faq'
   | 'addOnsTitle'
   | 'addOnsIntro'
->;
+> &
+  Partial<
+    Pick<CollectionLandingCopy, 'collectionTitle' | 'collectionIntro' | 'emptyTitle' | 'emptyText'> & {
+      typesTitle: string;
+      typesIntro: string;
+      orchidTypes: Array<{ name: string; aliases: string; description: string }>;
+    }
+  >;
 
-export type RosesHubConfig = {
+export type RosesHubCopy = CollectionHubCopy;
+
+export type CollectionHubConfig = {
   slug: CollectionLandingSlug;
+  canonicalPath: string;
+  flowerType: HubFlowerType;
+  colorTabs: boolean;
+  catalogFilters: CatalogFilterParams;
+  copy: Record<Locale, CollectionHubCopy>;
+  defaultColor?: string;
+  colorLandings?: ColorLandingConfig[];
+};
+
+export type RosesHubConfig = CollectionHubConfig & {
+  slug: typeof ROSES_HUB_SLUG;
   canonicalPath: typeof ROSES_HUB_PATH;
+  flowerType: 'rose';
+  colorTabs: true;
   defaultColor: RoseColorFilter;
-  copy: Record<Locale, RosesHubCopy>;
+  colorLandings: RoseColorLandingConfig[];
+};
+
+export type OrchidsHubConfig = CollectionHubConfig & {
+  slug: typeof ORCHIDS_HUB_SLUG;
+  canonicalPath: typeof ORCHIDS_HUB_PATH;
+  flowerType: 'orchid';
+  colorTabs: false;
 };
 
 export const DEFAULT_ROSE_COLOR: RoseColorFilter = 'white';
@@ -161,13 +201,6 @@ const rosesHubCopy = withLocaleFallback({
     faq: commonFaq.th,
   },
 }) satisfies Record<'en' | 'th', RosesHubCopy>;
-
-export const rosesHub: RosesHubConfig = {
-  slug: ROSES_HUB_SLUG,
-  canonicalPath: ROSES_HUB_PATH,
-  defaultColor: DEFAULT_ROSE_COLOR,
-  copy: rosesHubCopy,
-};
 
 export const roseColorLandings = [
   {
@@ -349,16 +382,276 @@ export const roseColorLandings = [
   },
 ] satisfies RoseColorLandingConfig[];
 
+export const rosesHub: RosesHubConfig = {
+  slug: ROSES_HUB_SLUG,
+  canonicalPath: ROSES_HUB_PATH,
+  flowerType: 'rose',
+  colorTabs: true,
+  catalogFilters: { topCategory: 'flowers', types: ['rose'] },
+  defaultColor: DEFAULT_ROSE_COLOR,
+  copy: rosesHubCopy,
+  colorLandings: roseColorLandings,
+};
+
 const legacySlugToColor = Object.fromEntries(
   roseColorLandings.map((page) => [page.legacySlug, page.colorFilter])
 ) as Record<LegacyRoseCollectionSlug, RoseColorFilter>;
 
-export function parseRoseColorParam(value: string | string[] | undefined): RoseColorFilter {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (raw && roseColorLandings.some((page) => page.colorFilter === raw)) {
-    return raw as RoseColorFilter;
+const orchidFaq = {
+  en: [
+    {
+      q: 'Do you offer same-day orchid delivery in Chiang Mai?',
+      a: 'Yes. Same-day delivery is available in Chiang Mai during working hours when the selected orchid arrangement is available.',
+    },
+    {
+      q: 'Can I add a teddy bear, balloons, or a gift set?',
+      a: 'Yes. Available add-ons come from our Sanity product catalog and can be added to your cart with the bouquet.',
+    },
+    {
+      q: 'Can I include a message card?',
+      a: 'Yes. You can add a personal message during checkout, and we include it with the delivery.',
+    },
+  ],
+  th: [
+    {
+      q: 'มีบริการส่งกล้วยไม้วันเดียวในเชียงใหม่ไหม?',
+      a: 'มีบริการจัดส่งวันเดียวในเชียงใหม่ในเวลาทำการ เมื่อช่อกล้วยไม้ที่เลือกพร้อมจำหน่าย',
+    },
+    {
+      q: 'เพิ่มตุ๊กตา ลูกโป่ง หรือชุดของขวัญได้ไหม?',
+      a: 'ได้ สินค้าเสริมที่มีอยู่จะดึงจาก Sanity product catalog และสามารถเพิ่มลงตะกร้าพร้อมช่อดอกไม้ได้',
+    },
+    {
+      q: 'ใส่การ์ดข้อความได้ไหม?',
+      a: 'ได้ คุณสามารถเพิ่มข้อความส่วนตัวตอนเช็คเอาต์ และเราจะจัดส่งไปพร้อมช่อดอกไม้',
+    },
+  ],
+} satisfies Record<'en' | 'th', CollectionLandingCopy['faq']>;
+
+const orchidsHubCopy = withLocaleFallback({
+  en: {
+    seoTitle: 'Orchid in Chiang Mai | Lanna Bloom',
+    seoDescription:
+      'Order orchids in Chiang Mai with same-day delivery. Phalaenopsis (moth orchids), Dendrobium, Cymbidium, and more—for celebrations, respect, and elegant gifts.',
+    h1: 'Orchid in Chiang Mai',
+    eyebrow: 'Elegant orchids. Handcrafted with care.',
+    intro:
+      'Fresh orchid arrangements for celebrations, respect, and thoughtful gifts—delivered across Chiang Mai. Our catalog includes popular types such as Phalaenopsis (moth orchids), Dendrobium, Cymbidium, and other varieties partners arrange by season.',
+    primaryCta: 'Shop Orchids',
+    deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+    addOnsTitle: 'Also perfect with your bouquet',
+    addOnsIntro: 'Complete the gift with available teddy bears, balloons, or gift sets from our product catalog.',
+    trustItems: trustItems.en,
+    deliveryTitle: 'Delivery in Chiang Mai',
+    deliveryText:
+      'We deliver to Chiang Mai city and nearby districts. Delivery timing depends on bouquet availability, route, and checkout details.',
+    faqTitle: 'Frequently Asked Questions',
+    faq: orchidFaq.en,
+    typesTitle: 'Orchid types you may see',
+    typesIntro:
+      'Florists and product names often use botanical or common English names. These are among the orchids commonly used in Chiang Mai bouquets and gift arrangements:',
+    orchidTypes: [
+      {
+        name: 'Phalaenopsis',
+        aliases: 'Moth orchid, butterfly orchid',
+        description:
+          'The most popular gift orchid in Thailand—graceful arching sprays, long-lasting blooms, and a refined look for home or office.',
+      },
+      {
+        name: 'Dendrobium',
+        aliases: 'Singapore orchid (common trade name)',
+        description:
+          'Slender stems with clusters of blooms; widely used in modern bouquets, congratulatory gifts, and tropical arrangements.',
+      },
+      {
+        name: 'Cymbidium',
+        aliases: 'Boat orchid',
+        description:
+          'Larger, waxy flowers on sturdy stems—often chosen for premium bouquets and formal celebrations.',
+      },
+      {
+        name: 'Vanda',
+        aliases: 'Singapore orchid (regional usage varies)',
+        description:
+          'Bold tropical orchids with open, vivid flowers—popular for striking color in contemporary designs.',
+      },
+      {
+        name: 'Oncidium',
+        aliases: 'Dancing Lady orchid',
+        description:
+          'Many small blooms on branched sprays—adds texture and movement to mixed orchid arrangements.',
+      },
+      {
+        name: 'Cattleya',
+        aliases: 'Corsage orchid',
+        description:
+          'Classic showy blooms with a luxurious feel—sometimes featured as focal flowers in special-occasion work.',
+      },
+      {
+        name: 'Paphiopedilum',
+        aliases: "Lady's Slipper orchid",
+        description:
+          'Distinctive pouch-shaped flowers—valued for unique shape in curated, high-end orchid gifts.',
+      },
+    ],
+    collectionTitle: 'Orchids in Chiang Mai',
+    collectionIntro:
+      'All orchid arrangements available for Chiang Mai delivery from our catalog—browse styles below and order online.',
+    emptyTitle: 'Orchids are being updated',
+    emptyText:
+      'We could not find approved orchid products in Sanity right now. Please browse the full catalog while the collection is updated.',
+  },
+  th: {
+    seoTitle: 'กล้วยไม้ในเชียงใหม่ | Lanna Bloom',
+    seoDescription:
+      'สั่งกล้วยไม้ในเชียงใหม่ พร้อมจัดส่งวันเดียว ฟาเลนออปซิส (แมลงปอ) เดนโดรเบียม ซิมบิเดียม และอื่น ๆ สำหรับงานฉลองและของขวัญสุภาพ',
+    h1: 'กล้วยไม้ในเชียงใหม่',
+    eyebrow: 'กล้วยไม้สง่างาม จัดช่อด้วยความใส่ใจ',
+    intro:
+      'กล้วยไม้สดสำหรับงานฉลอง แสดงความเคาระ และของขวัญพิเศษ พร้อมจัดส่งทั่วเชียงใหม่ ในคอลเลกชันมีทั้งฟาเลนออปซิส (กล้วยไม้แมลงปอ) เดนโดรเบียม ซิมบิเดียม และสายพันธุ์อื่นตามฤดูกาลจากพาร์ทเนอร์',
+    primaryCta: 'เลือกกล้วยไม้',
+    deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+    addOnsTitle: 'ของเสริมที่เข้ากับช่อดอกไม้',
+    addOnsIntro: 'เติมเต็มของขวัญด้วยตุ๊กตา ลูกโป่ง หรือชุดของขวัญจาก product catalog',
+    trustItems: trustItems.th,
+    deliveryTitle: 'จัดส่งในเชียงใหม่',
+    deliveryText:
+      'เราจัดส่งในตัวเมืองเชียงใหม่และอำเภอใกล้เคียง เวลาจัดส่งขึ้นอยู่กับสินค้า เส้นทาง และรายละเอียดตอนเช็คเอาต์',
+    faqTitle: 'คำถามที่พบบ่อย',
+    faq: orchidFaq.th,
+    typesTitle: 'สายพันธุ์กล้วยไม้ที่พบบ่อย',
+    typesIntro:
+      'ชื่อทางพฤกษศาสตร์หรือชื่อสามัญมักปรากฏบนช่อหรือในรายละเอียดสินค้า ตัวอย่างสายพันธุ์ที่นิยมใช้ในช่อกล้วยไม้เชียงใหม่:',
+    orchidTypes: [
+      {
+        name: 'ฟาเลนออปซิส (Phalaenopsis)',
+        aliases: 'กล้วยไม้แมลงปอ, Moth orchid',
+        description:
+          'ของขวัญยอดนิยม—ช่อโค้งสง่า ดอกคงทนนาน เหมาะบ้านและที่ทำงาน',
+      },
+      {
+        name: 'เดนโดรเบียม (Dendrobium)',
+        aliases: 'Singapore orchid (ชื่อเรียกในตลาด)',
+        description:
+          'ก้านเรียวดอกเป็นช่อ—ใช้บ่อยในช่อโมเดิร์น งานแสดงความยินดี และจัดดอกไม้โทนเขตร้อน',
+      },
+      {
+        name: 'ซิมบิเดียม (Cymbidium)',
+        aliases: 'Boat orchid',
+        description:
+          'ดอกใหญ่กลีบหนา ก้านแข็ง—มักเลือกสำหรับช่อพรีเมียมและงานพิธีการ',
+      },
+      {
+        name: 'แวนด้า (Vanda)',
+        aliases: 'กล้วยไม้โทนสด',
+        description:
+          'ดอกเปิดกว้างสีจัด—นิยมในดีไซน์ร่วมสมัยที่ต้องการจุดเด่น',
+      },
+      {
+        name: 'ออนซิเดียม (Oncidium)',
+        aliases: 'Dancing Lady orchid',
+        description:
+          'ดอกเล็กจำนวนมากบนช่อแตกแขนง—เพิ่มมิติในช่อกล้วยไม้ผสม',
+      },
+      {
+        name: 'แคตตลียา (Cattleya)',
+        aliases: 'Corsage orchid',
+        description:
+          'ดอกโชว์คลาสสิกหรูหรา—บางครั้งใช้เป็นดอกเด่นในงานพิเศษ',
+      },
+      {
+        name: 'ปาฟิโอเพดิลัม (Paphiopedilum)',
+        aliases: "Lady's Slipper orchid",
+        description:
+          'ดอกทรงถุงเฉพาะตัว—เหมาะของขวัญกล้วยไม้ที่ต้องการความแตกต่าง',
+      },
+    ],
+    collectionTitle: 'กล้วยไม้ในเชียงใหม่',
+    collectionIntro:
+      'กล้วยไม้ทั้งหมดที่จัดส่งได้ในเชียงใหม่จากคอลเลกชันของเรา—เลือกสไตล์ด้านล่างและสั่งออนไลน์',
+    emptyTitle: 'กำลังอัปเดตกล้วยไม้',
+    emptyText:
+      'ตอนนี้ยังไม่พบกล้วยไม้ที่อนุมัติแล้วใน Sanity โปรดดูแคตตาล็อกทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
+  },
+}) satisfies Record<'en' | 'th', CollectionHubCopy>;
+
+export const orchidsHub: OrchidsHubConfig = {
+  slug: ORCHIDS_HUB_SLUG,
+  canonicalPath: ORCHIDS_HUB_PATH,
+  flowerType: 'orchid',
+  colorTabs: false,
+  catalogFilters: { topCategory: 'flowers', types: ['orchid'] },
+  copy: orchidsHubCopy,
+};
+
+const COLLECTION_HUBS: CollectionHubConfig[] = [rosesHub, orchidsHub];
+
+export function getCollectionHub(slug: string): CollectionHubConfig | undefined {
+  return COLLECTION_HUBS.find((hub) => hub.slug === slug);
+}
+
+export function parseHubColorParam(
+  hub: CollectionHubConfig,
+  value: string | string[] | undefined
+): string {
+  if (!hub.colorTabs || !hub.colorLandings?.length || !hub.defaultColor) {
+    throw new Error(`Hub ${hub.slug} does not use color tabs`);
   }
-  return DEFAULT_ROSE_COLOR;
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw && hub.colorLandings.some((page) => page.colorFilter === raw)) {
+    return raw;
+  }
+  return hub.defaultColor;
+}
+
+export function getHubColorLanding(hub: CollectionHubConfig, color: string): ColorLandingConfig {
+  if (!hub.colorLandings?.length) {
+    throw new Error(`Hub ${hub.slug} does not use color landings`);
+  }
+  const page = hub.colorLandings.find((entry) => entry.colorFilter === color);
+  if (!page) throw new Error(`Unknown color "${color}" for hub ${hub.slug}`);
+  return page;
+}
+
+export type HubCatalogView = {
+  filters: CatalogFilterParams;
+  collectionTitle: string;
+  collectionIntro: string;
+  emptyTitle: string;
+  emptyText: string;
+  activeColor?: string;
+};
+
+export function getHubCatalogView(
+  hub: CollectionHubConfig,
+  locale: Locale,
+  colorParam?: string | string[]
+): HubCatalogView {
+  if (hub.colorTabs) {
+    const color = parseHubColorParam(hub, colorParam);
+    const colorPage = getHubColorLanding(hub, color);
+    const copy = colorPage.copy[locale];
+    return {
+      filters: colorPage.filters,
+      collectionTitle: copy.collectionTitle,
+      collectionIntro: copy.collectionIntro,
+      emptyTitle: copy.emptyTitle,
+      emptyText: copy.emptyText,
+      activeColor: color,
+    };
+  }
+  const copy = hub.copy[locale];
+  return {
+    filters: hub.catalogFilters,
+    collectionTitle: copy.collectionTitle ?? '',
+    collectionIntro: copy.collectionIntro ?? '',
+    emptyTitle: copy.emptyTitle ?? '',
+    emptyText: copy.emptyText ?? '',
+  };
+}
+
+export function parseRoseColorParam(value: string | string[] | undefined): RoseColorFilter {
+  return parseHubColorParam(rosesHub, value) as RoseColorFilter;
 }
 
 export function getRoseColorFromLegacySlug(slug: string): RoseColorFilter | undefined {
@@ -366,23 +659,26 @@ export function getRoseColorFromLegacySlug(slug: string): RoseColorFilter | unde
 }
 
 export function getRoseColorLanding(color: RoseColorFilter): RoseColorLandingConfig {
-  const page = roseColorLandings.find((entry) => entry.colorFilter === color);
-  if (!page) throw new Error(`Unknown rose color: ${color}`);
-  return page;
+  return getHubColorLanding(rosesHub, color) as RoseColorLandingConfig;
 }
 
-export function getCollectionLandingPages(): { slug: CollectionLandingSlug }[] {
-  return [{ slug: ROSES_HUB_SLUG }];
+export function getCollectionLandingPages(): { slug: CollectionLandingSlug; path: string }[] {
+  return COLLECTION_HUBS.map((hub) => ({ slug: hub.slug as CollectionLandingSlug, path: hub.canonicalPath }));
 }
 
-export function isRosesHubSlug(slug: string): slug is CollectionLandingSlug {
+export function isCollectionHubSlug(slug: string): slug is CollectionLandingSlug {
+  return COLLECTION_HUBS.some((hub) => hub.slug === slug);
+}
+
+export function isRosesHubSlug(slug: string): slug is typeof ROSES_HUB_SLUG {
   return slug === ROSES_HUB_SLUG;
 }
 
-export function getCollectionLandingTabs(lang: Locale) {
-  return roseColorLandings.map((page) => ({
+export function getCollectionLandingTabs(hub: CollectionHubConfig, lang: Locale) {
+  if (!hub.colorTabs || !hub.colorLandings?.length) return [];
+  return hub.colorLandings.map((page) => ({
     colorFilter: page.colorFilter,
-    href: `/${lang}${ROSES_HUB_PATH}?color=${page.colorFilter}`,
+    href: `/${lang}${hub.canonicalPath}?color=${page.colorFilter}`,
     label: page.accentLabel,
     imageSrc: page.tabImageSrc,
   }));
