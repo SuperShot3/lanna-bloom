@@ -311,7 +311,7 @@ export default async function CollectionLandingPage({
                   key={bouquet.id}
                   bouquet={bouquet}
                   lang={locale}
-                  alwaysShowActions
+                  simpleActions
                   showFavoriteButton={false}
                   showPartnerBadge={false}
                   persistPreferredSizeOnClick
@@ -344,7 +344,7 @@ export default async function CollectionLandingPage({
             </div>
             <div className={styles.addOnGrid}>
               {addOns.map((product) => (
-                <ProductCard key={`${product.catalogKind}-${product.id}`} product={product} lang={locale} alwaysShowActions />
+                <ProductCard key={`${product.catalogKind}-${product.id}`} product={product} lang={locale} simpleActions />
               ))}
             </div>
           </section>

@@ -49,6 +49,7 @@ export function BouquetCard({
   lang,
   variant = 'default',
   alwaysShowActions = false,
+  simpleActions = false,
   showFavoriteButton,
   showHoverPanel = true,
   showPartnerBadge = true,
@@ -62,6 +63,8 @@ export function BouquetCard({
    * Useful for the `/favorites` grid.
    */
   alwaysShowActions?: boolean;
+  /** Inline Buy 1-Click + Add to cart only (no expandable size/options panel). */
+  simpleActions?: boolean;
   /** If omitted, defaults to showing the heart button only for `popular*` variants. */
   showFavoriteButton?: boolean;
   /** When false, hide the CTA/quick-add panel entirely (simple “catalog card” mode). */
@@ -100,7 +103,8 @@ export function BouquetCard({
   const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
   const isPopular = variant === 'popular' || variant === 'popular-compact';
   const canSwipe = images.length > 1 && !isPopular;
-  const showPanel = showHoverPanel;
+  const expandablePanel = showHoverPanel && !simpleActions;
+  const showPanel = expandablePanel;
 
   const defaultOid = useMemo(() => defaultOptionIdForBouquet(bouquet), [bouquet]);
   const [hovered, setHovered] = useState(false);
@@ -116,7 +120,7 @@ export function BouquetCard({
   }, [defaultOid]);
 
   useEffect(() => {
-    if (!showPanel) return;
+    if (!expandablePanel) return;
     const media = window.matchMedia('(hover: hover) and (pointer: fine)');
     const sync = () => {
       const shouldPin = alwaysShowActions && !media.matches;
@@ -127,17 +131,17 @@ export function BouquetCard({
     sync();
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
-  }, [alwaysShowActions, showPanel]);
+  }, [alwaysShowActions, expandablePanel]);
 
   useEffect(() => {
-    if (!showPanel) return;
+    if (!expandablePanel) return;
     const media = window.matchMedia('(max-width: 639px)');
     const sync = () => setShowMobileActions(media.matches);
 
     sync();
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
-  }, [showPanel]);
+  }, [expandablePanel]);
 
   useEffect(() => {
     const sync = () => {
@@ -367,13 +371,13 @@ export function BouquetCard({
 
   return (
     <article
-      className={`${isPopular ? 'card card-popular' : 'card'} ${alwaysShowActions ? 'card--always-actions' : ''}`}
-      data-expanded={showPanel && hovered ? 'true' : 'false'}
+      className={`${isPopular ? 'card card-popular' : 'card'} ${alwaysShowActions ? 'card--always-actions' : ''} ${simpleActions ? 'card--simple-actions' : ''}`}
+      data-expanded={expandablePanel && hovered ? 'true' : 'false'}
       onMouseEnter={() => {
-        if (showPanel && !actionsPinned) setHovered(true);
+        if (expandablePanel && !actionsPinned) setHovered(true);
       }}
       onMouseLeave={() => {
-        if (showPanel && !actionsPinned) setHovered(false);
+        if (expandablePanel && !actionsPinned) setHovered(false);
       }}
     >
       <PrefetchLink
@@ -488,7 +492,40 @@ export function BouquetCard({
         </div>
       </PrefetchLink>
 
-      {showPanel && showMobileActions && (
+      {simpleActions ? (
+        <div
+          className="card-simple-actions"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="card-simple-buy"
+            disabled={!availableForDestination}
+            title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+            onClick={() => pushToCart('checkout')}
+          >
+            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
+              bolt
+            </span>
+            <span>{t.buyInOneClick}</span>
+          </button>
+          <button
+            type="button"
+            className="card-simple-cart"
+            disabled={!availableForDestination && !justAdded}
+            title={!availableForDestination && !justAdded ? tProduct.unavailableInDeliveryArea : undefined}
+            onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              {justAdded ? 'shopping_bag' : 'shopping_cart'}
+            </span>
+            <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
+          </button>
+        </div>
+      ) : null}
+
+      {expandablePanel && showMobileActions && (
         <div
           className="card-mobile-actions"
           onClick={(e) => e.stopPropagation()}
@@ -521,7 +558,7 @@ export function BouquetCard({
         </div>
       )}
 
-      {showPanel && (
+      {expandablePanel && (
         <div
           className="card-hover-panel"
           aria-hidden={!hovered}
@@ -841,6 +878,62 @@ export function BouquetCard({
         }
         .card-mobile-actions {
           display: none;
+        }
+        .card-simple-actions {
+          display: grid;
+          grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+          gap: 8px;
+          padding: 0 12px 12px;
+        }
+        .card--simple-actions {
+          overflow: hidden;
+          z-index: 1;
+        }
+        .card--simple-actions[data-expanded='true'] {
+          z-index: 1;
+          border-bottom: 1px solid var(--border);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow);
+        }
+        .card-simple-actions button {
+          min-width: 0;
+          min-height: 40px;
+          box-sizing: border-box;
+          padding: 0 10px;
+          border-radius: 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.15;
+          cursor: pointer;
+          touch-action: manipulation;
+        }
+        .card-simple-actions .material-symbols-outlined {
+          font-size: 18px;
+          line-height: 1;
+          flex: 0 0 auto;
+        }
+        .card-simple-actions button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+        .card-simple-buy {
+          border: 1px solid rgba(26, 60, 52, 0.18);
+          background: var(--primary);
+          color: #fff;
+        }
+        .card-simple-cart {
+          border: 1px solid rgba(197, 160, 89, 0.5);
+          background: #fff;
+          color: var(--text);
+        }
+        .card-simple-actions button:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
         .card-hover-options-title {
           font-size: 12px;

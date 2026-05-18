@@ -80,10 +80,13 @@ export function ProductCard({
   product,
   lang,
   alwaysShowActions = false,
+  simpleActions = false,
 }: {
   product: CatalogProduct;
   lang: Locale;
   alwaysShowActions?: boolean;
+  /** Inline Buy 1-Click + Add to cart only (no expandable options panel). */
+  simpleActions?: boolean;
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
@@ -213,7 +216,10 @@ export function ProductCard({
   const [actionsPinned, setActionsPinned] = useState(false);
   const [showMobileActions, setShowMobileActions] = useState(false);
 
+  const expandablePanel = !simpleActions;
+
   useEffect(() => {
+    if (!expandablePanel) return;
     const media = window.matchMedia('(hover: hover) and (pointer: fine)');
     const sync = () => {
       const shouldPin = alwaysShowActions && !media.matches;
@@ -224,16 +230,17 @@ export function ProductCard({
     sync();
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
-  }, [alwaysShowActions]);
+  }, [alwaysShowActions, expandablePanel]);
 
   useEffect(() => {
+    if (!expandablePanel) return;
     const media = window.matchMedia('(max-width: 639px)');
     const sync = () => setShowMobileActions(media.matches);
 
     sync();
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
-  }, []);
+  }, [expandablePanel]);
 
   const selected = options.find((o) => o.id === selectedId && o.available) ?? options.filter((o) => o.available).pop();
 
@@ -377,13 +384,13 @@ export function ProductCard({
 
   return (
     <article
-      className={`pcard ${alwaysShowActions ? 'pcard--always-actions' : ''}`}
-      data-expanded={hovered ? 'true' : 'false'}
+      className={`pcard ${alwaysShowActions ? 'pcard--always-actions' : ''} ${simpleActions ? 'pcard--simple-actions' : ''}`}
+      data-expanded={expandablePanel && hovered ? 'true' : 'false'}
       onMouseEnter={() => {
-        if (!actionsPinned) setHovered(true);
+        if (expandablePanel && !actionsPinned) setHovered(true);
       }}
       onMouseLeave={() => {
-        if (!actionsPinned) setHovered(false);
+        if (expandablePanel && !actionsPinned) setHovered(false);
       }}
     >
       <Link
@@ -460,7 +467,32 @@ export function ProductCard({
         </div>
       </Link>
 
-      {showMobileActions && (
+      {simpleActions ? (
+        <div
+          className="pcard-simple-actions"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button type="button" className="pcard-simple-buy" onClick={() => pushToCart('checkout')}>
+            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
+              bolt
+            </span>
+            <span>{t.buyInOneClick}</span>
+          </button>
+          <button
+            type="button"
+            className="pcard-simple-cart"
+            onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              {justAdded ? 'shopping_bag' : 'shopping_cart'}
+            </span>
+            <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
+          </button>
+        </div>
+      ) : null}
+
+      {expandablePanel && showMobileActions && (
         <div
           className="pcard-mobile-actions"
           onClick={(e) => e.stopPropagation()}
@@ -485,12 +517,13 @@ export function ProductCard({
         </div>
       )}
 
-      <div
-        className="pcard-panel"
-        aria-hidden={!hovered}
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+      {expandablePanel ? (
+        <div
+          className="pcard-panel"
+          aria-hidden={!hovered}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
         <div className="pcard-panel-inner">
           {isStandaloneProduct ? null : (
             <>
@@ -572,6 +605,7 @@ export function ProductCard({
           )}
         </div>
       </div>
+      ) : null}
 
       <style jsx>{`
         .pcard {
@@ -763,6 +797,58 @@ export function ProductCard({
         }
         .pcard-mobile-actions {
           display: none;
+        }
+        .pcard-simple-actions {
+          display: grid;
+          grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+          gap: 8px;
+          padding: 0 12px 12px;
+        }
+        .pcard--simple-actions {
+          overflow: hidden;
+          z-index: 1;
+        }
+        .pcard--simple-actions[data-expanded='true'] {
+          z-index: 1;
+          border-bottom: 1px solid var(--border);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow);
+        }
+        .pcard-simple-actions button {
+          min-width: 0;
+          min-height: 40px;
+          box-sizing: border-box;
+          padding: 0 10px;
+          border-radius: 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.15;
+          cursor: pointer;
+          touch-action: manipulation;
+        }
+        .pcard-simple-actions .material-symbols-outlined {
+          font-size: 18px;
+          line-height: 1;
+          flex: 0 0 auto;
+        }
+        .pcard-simple-buy {
+          border: 1px solid rgba(26, 60, 52, 0.18);
+          background: var(--primary);
+          color: #fff;
+        }
+        .pcard-simple-cart {
+          border: 1px solid rgba(197, 160, 89, 0.5);
+          background: #fff;
+          color: var(--text);
+        }
+        .pcard-simple-actions button:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
         .pcard-options-title {
           font-size: 12px;
