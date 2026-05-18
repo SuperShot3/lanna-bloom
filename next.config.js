@@ -86,6 +86,66 @@ const nextConfig = {
         destination: '/:lang/info/delivery-policy',
         permanent: true,
       },
+      {
+        source: '/collections/white-roses-chiang-mai',
+        destination: '/en/collections/roses-chiang-mai?color=white',
+        permanent: true,
+      },
+      {
+        source: '/collections/pink-roses-chiang-mai',
+        destination: '/en/collections/roses-chiang-mai?color=pink',
+        permanent: true,
+      },
+      {
+        source: '/collections/red-roses-chiang-mai',
+        destination: '/en/collections/roses-chiang-mai?color=red',
+        permanent: true,
+      },
+      {
+        source: '/:lang(en|th|ru)/collections/white-roses-chiang-mai',
+        destination: '/:lang/collections/roses-chiang-mai?color=white',
+        permanent: true,
+      },
+      {
+        source: '/:lang(en|th|ru)/collections/pink-roses-chiang-mai',
+        destination: '/:lang/collections/roses-chiang-mai?color=pink',
+        permanent: true,
+      },
+      {
+        source: '/:lang(en|th|ru)/collections/red-roses-chiang-mai',
+        destination: '/:lang/collections/roses-chiang-mai?color=red',
+        permanent: true,
+      },
+      {
+        source: '/zh-sg/collections/white-roses-chiang-mai',
+        destination: '/zh-sg/collections/roses-chiang-mai?color=white',
+        permanent: true,
+      },
+      {
+        source: '/zh-sg/collections/pink-roses-chiang-mai',
+        destination: '/zh-sg/collections/roses-chiang-mai?color=pink',
+        permanent: true,
+      },
+      {
+        source: '/zh-sg/collections/red-roses-chiang-mai',
+        destination: '/zh-sg/collections/roses-chiang-mai?color=red',
+        permanent: true,
+      },
+      {
+        source: '/zh-hk/collections/white-roses-chiang-mai',
+        destination: '/zh-hk/collections/roses-chiang-mai?color=white',
+        permanent: true,
+      },
+      {
+        source: '/zh-hk/collections/pink-roses-chiang-mai',
+        destination: '/zh-hk/collections/roses-chiang-mai?color=pink',
+        permanent: true,
+      },
+      {
+        source: '/zh-hk/collections/red-roses-chiang-mai',
+        destination: '/zh-hk/collections/roses-chiang-mai?color=red',
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

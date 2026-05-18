@@ -1,10 +1,18 @@
 import type { CatalogFilterParams } from '@/lib/sanity';
 import type { Locale } from '@/lib/i18n';
 
-export type CollectionLandingSlug =
+export const ROSES_HUB_SLUG = 'roses-chiang-mai' as const;
+export const ROSES_HUB_PATH = `/collections/${ROSES_HUB_SLUG}` as const;
+
+export type RoseColorFilter = 'white' | 'pink' | 'red';
+
+/** @deprecated Color-specific paths redirect to the roses hub with ?color= */
+export type LegacyRoseCollectionSlug =
   | 'white-roses-chiang-mai'
   | 'pink-roses-chiang-mai'
   | 'red-roses-chiang-mai';
+
+export type CollectionLandingSlug = typeof ROSES_HUB_SLUG;
 
 export type CollectionLandingCopy = {
   seoTitle: string;
@@ -27,17 +35,41 @@ export type CollectionLandingCopy = {
   emptyText: string;
 };
 
-export type CollectionLandingPageConfig = {
-  slug: CollectionLandingSlug;
-  targetKeyword: string;
-  colorFilter: 'white' | 'pink' | 'red';
+export type RoseColorLandingConfig = {
+  colorFilter: RoseColorFilter;
   accentLabel: string;
   tabImageSrc: `/images_other/roses_colors_landingpage/${string}`;
-  canonicalPath: `/collections/${CollectionLandingSlug}`;
-  noindex?: boolean;
+  legacySlug: LegacyRoseCollectionSlug;
   filters: CatalogFilterParams;
   copy: Record<Locale, CollectionLandingCopy>;
 };
+
+export type RosesHubCopy = Pick<
+  CollectionLandingCopy,
+  | 'seoTitle'
+  | 'seoDescription'
+  | 'h1'
+  | 'eyebrow'
+  | 'intro'
+  | 'primaryCta'
+  | 'deliveryNote'
+  | 'trustItems'
+  | 'deliveryTitle'
+  | 'deliveryText'
+  | 'faqTitle'
+  | 'faq'
+  | 'addOnsTitle'
+  | 'addOnsIntro'
+>;
+
+export type RosesHubConfig = {
+  slug: CollectionLandingSlug;
+  canonicalPath: typeof ROSES_HUB_PATH;
+  defaultColor: RoseColorFilter;
+  copy: Record<Locale, RosesHubCopy>;
+};
+
+export const DEFAULT_ROSE_COLOR: RoseColorFilter = 'white';
 
 const trustItems = {
   en: [
@@ -89,14 +121,60 @@ function withLocaleFallback<T>(copy: Record<'en' | 'th', T>): Record<Locale, T> 
   return { ...copy, ru: copy.en, 'zh-sg': copy.en, 'zh-hk': copy.en };
 }
 
-export const collectionLandingPages = [
+const rosesHubCopy = withLocaleFallback({
+  en: {
+    seoTitle: 'Rose Bouquets in Chiang Mai | Lanna Bloom',
+    seoDescription:
+      'Order rose bouquets in Chiang Mai with same-day delivery. Choose white, pink, or red roses, add teddy bears or balloons, and checkout securely.',
+    h1: 'Rose Bouquets in Chiang Mai',
+    eyebrow: 'Fresh roses. Handcrafted with love.',
+    intro:
+      'Choose white, pink, or red rose bouquets for anniversaries, birthdays, romance, and thoughtful gifts—delivered across Chiang Mai.',
+    primaryCta: 'Shop Roses',
+    deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+    addOnsTitle: 'Also perfect with your bouquet',
+    addOnsIntro: 'Complete the gift with available teddy bears, balloons, or gift sets from our product catalog.',
+    trustItems: trustItems.en,
+    deliveryTitle: 'Delivery in Chiang Mai',
+    deliveryText:
+      'We deliver to Chiang Mai city and nearby districts. Delivery timing depends on bouquet availability, route, and checkout details.',
+    faqTitle: 'Frequently Asked Questions',
+    faq: commonFaq.en,
+  },
+  th: {
+    seoTitle: 'ช่อกุหลาบในเชียงใหม่ | Lanna Bloom',
+    seoDescription:
+      'สั่งช่อกุหลาบในเชียงใหม่ พร้อมจัดส่งวันเดียว เลือกกุหลาบขาว ชมพู หรือแดง เพิ่มตุ๊กตา ลูกโป่ง และชำระเงินอย่างปลอดภัย',
+    h1: 'ช่อกุหลาบในเชียงใหม่',
+    eyebrow: 'กุหลาบสด จัดช่อด้วยความใส่ใจ',
+    intro:
+      'เลือกช่อกุหลาบขาว ชมพู หรือแดง สำหรับวันครบรอบ วันเกิด ความรัก และของขวัญพิเศษ พร้อมจัดส่งทั่วเชียงใหม่',
+    primaryCta: 'เลือกช่อกุหลาบ',
+    deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+    addOnsTitle: 'ของเสริมที่เข้ากับช่อดอกไม้',
+    addOnsIntro: 'เติมเต็มของขวัญด้วยตุ๊กตา ลูกโป่ง หรือชุดของขวัญจาก product catalog',
+    trustItems: trustItems.th,
+    deliveryTitle: 'จัดส่งในเชียงใหม่',
+    deliveryText:
+      'เราจัดส่งในตัวเมืองเชียงใหม่และอำเภอใกล้เคียง เวลาจัดส่งขึ้นอยู่กับสินค้า เส้นทาง และรายละเอียดตอนเช็คเอาต์',
+    faqTitle: 'คำถามที่พบบ่อย',
+    faq: commonFaq.th,
+  },
+}) satisfies Record<'en' | 'th', RosesHubCopy>;
+
+export const rosesHub: RosesHubConfig = {
+  slug: ROSES_HUB_SLUG,
+  canonicalPath: ROSES_HUB_PATH,
+  defaultColor: DEFAULT_ROSE_COLOR,
+  copy: rosesHubCopy,
+};
+
+export const roseColorLandings = [
   {
-    slug: 'white-roses-chiang-mai',
-    targetKeyword: 'white roses chiang mai',
     colorFilter: 'white',
     accentLabel: 'White Roses',
     tabImageSrc: '/images_other/roses_colors_landingpage/white_roses.webp',
-    canonicalPath: '/collections/white-roses-chiang-mai',
+    legacySlug: 'white-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['white'] },
     copy: withLocaleFallback({
       en: {
@@ -152,12 +230,10 @@ export const collectionLandingPages = [
     }),
   },
   {
-    slug: 'pink-roses-chiang-mai',
-    targetKeyword: 'pink roses chiang mai',
     colorFilter: 'pink',
     accentLabel: 'Pink Roses',
     tabImageSrc: '/images_other/roses_colors_landingpage/pink_roses.webp',
-    canonicalPath: '/collections/pink-roses-chiang-mai',
+    legacySlug: 'pink-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['pink'] },
     copy: withLocaleFallback({
       en: {
@@ -213,12 +289,10 @@ export const collectionLandingPages = [
     }),
   },
   {
-    slug: 'red-roses-chiang-mai',
-    targetKeyword: 'red roses chiang mai',
     colorFilter: 'red',
     accentLabel: 'Red Roses',
     tabImageSrc: '/images_other/roses_colors_landingpage/red_roses.webp',
-    canonicalPath: '/collections/red-roses-chiang-mai',
+    legacySlug: 'red-roses-chiang-mai',
     filters: { topCategory: 'flowers', types: ['rose'], colors: ['red'] },
     copy: withLocaleFallback({
       en: {
@@ -273,22 +347,43 @@ export const collectionLandingPages = [
       },
     }),
   },
-] satisfies CollectionLandingPageConfig[];
+] satisfies RoseColorLandingConfig[];
 
-export function getCollectionLandingPages(): CollectionLandingPageConfig[] {
-  return [...collectionLandingPages];
+const legacySlugToColor = Object.fromEntries(
+  roseColorLandings.map((page) => [page.legacySlug, page.colorFilter])
+) as Record<LegacyRoseCollectionSlug, RoseColorFilter>;
+
+export function parseRoseColorParam(value: string | string[] | undefined): RoseColorFilter {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw && roseColorLandings.some((page) => page.colorFilter === raw)) {
+    return raw as RoseColorFilter;
+  }
+  return DEFAULT_ROSE_COLOR;
 }
 
-export function getCollectionLandingPage(slug: string): CollectionLandingPageConfig | undefined {
-  return collectionLandingPages.find((page) => page.slug === slug);
+export function getRoseColorFromLegacySlug(slug: string): RoseColorFilter | undefined {
+  return legacySlugToColor[slug as LegacyRoseCollectionSlug];
+}
+
+export function getRoseColorLanding(color: RoseColorFilter): RoseColorLandingConfig {
+  const page = roseColorLandings.find((entry) => entry.colorFilter === color);
+  if (!page) throw new Error(`Unknown rose color: ${color}`);
+  return page;
+}
+
+export function getCollectionLandingPages(): { slug: CollectionLandingSlug }[] {
+  return [{ slug: ROSES_HUB_SLUG }];
+}
+
+export function isRosesHubSlug(slug: string): slug is CollectionLandingSlug {
+  return slug === ROSES_HUB_SLUG;
 }
 
 export function getCollectionLandingTabs(lang: Locale) {
-  return collectionLandingPages.map((page) => ({
-    slug: page.slug,
-    href: `/${lang}${page.canonicalPath}`,
-    label: page.accentLabel,
+  return roseColorLandings.map((page) => ({
     colorFilter: page.colorFilter,
+    href: `/${lang}${ROSES_HUB_PATH}?color=${page.colorFilter}`,
+    label: page.accentLabel,
     imageSrc: page.tabImageSrc,
   }));
 }

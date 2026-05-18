@@ -1,12 +1,22 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
 import { GuideFaq } from '@/app/[lang]/info/_components/GuideFaq';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
+import {
+  getCollectionLandingPages,
+  getCollectionLandingTabs,
+  getRoseColorFromLegacySlug,
+  getRoseColorLanding,
+  isRosesHubSlug,
+  parseRoseColorParam,
+  rosesHub,
+  ROSES_HUB_PATH,
+} from '@/lib/landingPages/collectionLandingPages';
 import { getBaseUrl } from '@/lib/orders';
 import {
   getBalloonsFilteredFromSanity,
@@ -14,11 +24,6 @@ import {
   getPlushyToysFilteredFromSanity,
   type CatalogProduct,
 } from '@/lib/sanity';
-import {
-  getCollectionLandingPage,
-  getCollectionLandingPages,
-  getCollectionLandingTabs,
-} from '@/lib/landingPages/collectionLandingPages';
 import styles from './CollectionLandingPage.module.css';
 
 export const revalidate = 60;
@@ -92,12 +97,11 @@ export async function generateMetadata({
   params: { lang: string; slug: string };
 }): Promise<Metadata> {
   const { lang, slug } = params;
-  const page = getCollectionLandingPage(slug);
-  if (!page || !isValidLocale(lang)) return { title: 'Lanna Bloom' };
+  if (!isValidLocale(lang) || !isRosesHubSlug(slug)) return { title: 'Lanna Bloom' };
 
   const locale = lang as Locale;
-  const copy = page.copy[locale];
-  const canonical = `${getBaseUrl()}/${locale}${page.canonicalPath}`;
+  const copy = rosesHub.copy[locale];
+  const canonical = `${getBaseUrl()}/${locale}${ROSES_HUB_PATH}`;
 
   return {
     title: copy.seoTitle,
@@ -113,24 +117,31 @@ export async function generateMetadata({
       locale: locale === 'th' ? 'th_TH' : 'en_US',
       type: 'website',
     },
-    robots: page.noindex ? { index: false, follow: false } : undefined,
   };
 }
 
 export default async function CollectionLandingPage({
   params,
+  searchParams,
 }: {
   params: { lang: string; slug: string };
+  searchParams: { color?: string | string[] };
 }) {
   const { lang, slug } = params;
   if (!isValidLocale(lang)) notFound();
 
-  const page = getCollectionLandingPage(slug);
-  if (!page) notFound();
-
   const locale = lang as Locale;
-  const copy = page.copy[locale];
-  const catalogHref = `/${locale}/catalog${buildCatalogSearchString(page.filters)}`;
+  const legacyColor = getRoseColorFromLegacySlug(slug);
+  if (legacyColor) {
+    redirect(`/${locale}${ROSES_HUB_PATH}?color=${legacyColor}`);
+  }
+  if (!isRosesHubSlug(slug)) notFound();
+
+  const color = parseRoseColorParam(searchParams.color);
+  const colorPage = getRoseColorLanding(color);
+  const hubCopy = rosesHub.copy[locale];
+  const colorCopy = colorPage.copy[locale];
+  const catalogHref = `/${locale}/catalog${buildCatalogSearchString(colorPage.filters)}`;
   const addOnsHref = `/${locale}/catalog${buildCatalogSearchString({ topCategory: 'balloons' })}`;
   const allRosesHref = `/${locale}/catalog${buildCatalogSearchString({
     topCategory: 'flowers',
@@ -139,7 +150,7 @@ export default async function CollectionLandingPage({
 
   const [allBouquets, plushyToys, balloons] = await Promise.all([
     getBouquetsFilteredFromSanity({
-      ...page.filters,
+      ...colorPage.filters,
       catalogDeliveryDestination: 'CHIANG_MAI',
     }),
     getPlushyToysFilteredFromSanity({ sort: 'newest' }),
@@ -159,16 +170,16 @@ export default async function CollectionLandingPage({
       <div className={styles.container}>
         <section className={styles.hero} aria-labelledby="collection-landing-h1">
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>{copy.eyebrow}</p>
+            <p className={styles.eyebrow}>{hubCopy.eyebrow}</p>
             <h1 id="collection-landing-h1" className={styles.h1}>
-              {copy.h1}
+              {hubCopy.h1}
             </h1>
-            <p className={styles.intro}>{copy.intro}</p>
+            <p className={styles.intro}>{hubCopy.intro}</p>
             <div className={styles.heroActions}>
               <Link href="#collection-products" className={styles.primaryCta}>
-                {copy.primaryCta}
+                {hubCopy.primaryCta}
               </Link>
-              <p className={styles.deliveryNote}>{copy.deliveryNote}</p>
+              <p className={styles.deliveryNote}>{hubCopy.deliveryNote}</p>
             </div>
           </div>
 
@@ -196,10 +207,10 @@ export default async function CollectionLandingPage({
         <nav className={styles.tabs} aria-label={locale === 'th' ? 'คอลเลกชันกุหลาบ' : 'Rose collections'}>
           {tabs.map((tab) => (
             <Link
-              key={tab.slug}
+              key={tab.colorFilter}
               href={tab.href}
-              className={`${styles.tab} ${tab.slug === page.slug ? styles.tabActive : ''}`}
-              aria-current={tab.slug === page.slug ? 'page' : undefined}
+              className={`${styles.tab} ${tab.colorFilter === color ? styles.tabActive : ''}`}
+              aria-current={tab.colorFilter === color ? 'page' : undefined}
             >
               <span className={styles.tabImageWrap} aria-hidden>
                 <Image
@@ -229,9 +240,9 @@ export default async function CollectionLandingPage({
           <div className={styles.sectionHeader}>
             <div>
               <h2 id="collection-products-title" className={styles.sectionTitle}>
-                {copy.collectionTitle}
+                {colorCopy.collectionTitle}
               </h2>
-              <p className={styles.sectionIntro}>{copy.collectionIntro}</p>
+              <p className={styles.sectionIntro}>{colorCopy.collectionIntro}</p>
             </div>
             <Link href={catalogHref} className={styles.sectionLink}>
               {locale === 'th' ? 'ดูทั้งหมด' : 'View all'}
@@ -254,8 +265,8 @@ export default async function CollectionLandingPage({
             </div>
           ) : (
             <div className={styles.emptyState}>
-              <strong>{copy.emptyTitle}</strong>
-              <p>{copy.emptyText}</p>
+              <strong>{colorCopy.emptyTitle}</strong>
+              <p>{colorCopy.emptyText}</p>
               <Link href={allRosesHref} className={styles.sectionLink}>
                 {locale === 'th' ? 'ดูช่อกุหลาบทั้งหมด' : 'Browse all roses'}
               </Link>
@@ -268,9 +279,9 @@ export default async function CollectionLandingPage({
             <div className={styles.sectionHeader}>
               <div>
                 <h2 id="collection-add-ons-title" className={styles.sectionTitle}>
-                  {copy.addOnsTitle}
+                  {hubCopy.addOnsTitle}
                 </h2>
-                <p className={styles.sectionIntro}>{copy.addOnsIntro}</p>
+                <p className={styles.sectionIntro}>{hubCopy.addOnsIntro}</p>
               </div>
               <Link href={addOnsHref} className={styles.sectionLink}>
                 {locale === 'th' ? 'ดูของเสริมทั้งหมด' : 'View all add-ons'}
@@ -286,7 +297,7 @@ export default async function CollectionLandingPage({
 
         <section className={styles.section} aria-label={locale === 'th' ? 'จุดเด่นบริการ' : 'Service highlights'}>
           <div className={styles.trustBand}>
-            {copy.trustItems.map((item, index) => (
+            {hubCopy.trustItems.map((item, index) => (
               <div key={item.title} className={styles.trustItem}>
                 <span className={styles.trustIcon} aria-hidden>
                   {TRUST_ICONS[index % TRUST_ICONS.length]}
@@ -302,13 +313,13 @@ export default async function CollectionLandingPage({
 
         <section className={`${styles.section} ${styles.infoGrid}`} aria-label={locale === 'th' ? 'ข้อมูลเพิ่มเติม' : 'Additional information'}>
           <div className={styles.deliveryCard}>
-            <h2>{copy.deliveryTitle}</h2>
-            <p>{copy.deliveryText}</p>
+            <h2>{hubCopy.deliveryTitle}</h2>
+            <p>{hubCopy.deliveryText}</p>
           </div>
           <div className={styles.linksCard}>
             <h2>{locale === 'th' ? 'เลือกซื้อเพิ่มเติม' : 'Helpful links'}</h2>
             <div className={styles.internalLinks}>
-              <Link href={catalogHref}>{copy.collectionTitle}</Link>
+              <Link href={catalogHref}>{colorCopy.collectionTitle}</Link>
               <Link href={allRosesHref}>{locale === 'th' ? 'กุหลาบทั้งหมด' : 'All rose bouquets'}</Link>
               <Link href={`/${locale}/info/rose-bouquets-chiang-mai`}>
                 {locale === 'th' ? 'คู่มือช่อกุหลาบ' : 'Rose bouquet guide'}
@@ -318,7 +329,7 @@ export default async function CollectionLandingPage({
           </div>
         </section>
 
-        <GuideFaq faq={copy.faq} title={copy.faqTitle} />
+        <GuideFaq faq={hubCopy.faq} title={hubCopy.faqTitle} />
       </div>
     </main>
   );
