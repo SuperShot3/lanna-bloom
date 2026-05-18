@@ -58,8 +58,6 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
   const env = getEnv();
   if (!env) return;
 
-  const publicToken = await getOrderPublicToken(orderId);
-  const customerOrderUrl = getOrderDetailsUrl(orderId, { token: publicToken });
   const adminOrderUrl = `${getBaseUrl()}/admin/orders/${encodeURIComponent(orderId)}`;
   const subject = `New order placed — ${orderId}`;
   const body = `A new order was created. Order ID: ${orderId}`;
@@ -70,11 +68,10 @@ export async function sendMinimalAdminNewOrderEmail(orderId: string): Promise<vo
 <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
   <p>${body}</p>
   <p><a href="${escapeHtml(adminOrderUrl)}" style="color: #967a4d; font-weight: 600;">Admin dashboard order page</a></p>
-  <p><a href="${escapeHtml(customerOrderUrl)}" style="color: #967a4d; font-weight: 600;">Customer order page</a></p>
 </body>
 </html>
 `.trim();
-  const text = `${body}\n\nCustomer order page: ${customerOrderUrl}\nAdmin dashboard order page: ${adminOrderUrl}`;
+  const text = `${body}\n\nAdmin dashboard order page: ${adminOrderUrl}`;
 
   const resend = new Resend(env.apiKey);
   const { error } = await resend.emails.send({
