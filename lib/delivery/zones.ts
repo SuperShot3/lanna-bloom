@@ -24,6 +24,8 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
   CHIANG_MAI: [
     { id: 'cm-mueang-central', labelEn: 'Mueang Chiang Mai — central', labelTh: 'เมืองเชียงใหม่ — ใจกลาง', feeThb: 250 },
     { id: 'cm-mueang-non-central', labelEn: 'Mueang Chiang Mai — other areas', labelTh: 'เมืองเชียงใหม่ — พื้นที่อื่น', feeThb: 350 },
+    { id: 'cm-nong-pa-khrang', labelEn: 'Nong Pa Khrang', labelTh: 'หนองป่าคร้าง', feeThb: 300 },
+    { id: 'cm-chang-phueak', labelEn: 'Chang Phueak', labelTh: 'ช้างเผือก', feeThb: 350 },
     { id: 'cm-saraphi', labelEn: 'Saraphi', labelTh: 'สารภี', feeThb: 350 },
     { id: 'cm-san-sai', labelEn: 'San Sai', labelTh: 'สันทราย', feeThb: 350 },
     { id: 'cm-hang-dong', labelEn: 'Hang Dong', labelTh: 'หางดง', feeThb: 450 },
@@ -130,6 +132,8 @@ export function legacyDistrictFromChiangMaiZone(zoneId: string): {
   const map: Record<string, { deliveryDistrict: DistrictKey; isMueangCentral: boolean }> = {
     'cm-mueang-central': { deliveryDistrict: 'MUEANG', isMueangCentral: true },
     'cm-mueang-non-central': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
+    'cm-nong-pa-khrang': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
+    'cm-chang-phueak': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
     'cm-saraphi': { deliveryDistrict: 'SARAPHI', isMueangCentral: false },
     'cm-san-sai': { deliveryDistrict: 'SAN_SAI', isMueangCentral: false },
     'cm-hang-dong': { deliveryDistrict: 'HANG_DONG', isMueangCentral: false },
