@@ -90,6 +90,7 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      { source: '/feeds/google.txt', destination: '/feeds/google-merchant-feed' },
       { source: '/feeds/google-merchant-feed.tsv', destination: '/feeds/google-merchant-feed' },
     ];
   },
