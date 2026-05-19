@@ -39,9 +39,9 @@ const baseTranslations = {
     },
     mayFreeDeliveryPromo: {
       bannerMessage:
-        'Free delivery 19–31 May on flower orders ฿2,500+ — applied automatically at checkout',
-      bannerMessageShort: 'Free delivery 19–31 May · ฿2,500+ on flowers',
-      bannerAlt: 'Free delivery 19–31 May — spend ฿2,500+ on flowers',
+        'Free delivery 19–26 May on flower orders ฿2,500+ — applied automatically at checkout',
+      bannerMessageShort: 'Free delivery 19–26 May · ฿2,500+ on flowers',
+      bannerAlt: 'Free delivery 19–26 May — spend ฿2,500+ on flowers',
     },
     delivery: {
       title: 'Delivery in Chiang Mai',
@@ -1171,9 +1171,9 @@ const baseTranslations = {
     },
     mayFreeDeliveryPromo: {
       bannerMessage:
-        'ส่งฟรี 19–31 พ.ค. เมื่อซื้อดอกไม้ครบ ฿2,500 — ระบบหักให้อัตโนมัติเมื่อชำระเงิน',
-      bannerMessageShort: 'ส่งฟรี 19–31 พ.ค. · ดอกไม้ครบ ฿2,500',
-      bannerAlt: 'ส่งฟรี 19–31 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
+        'ส่งฟรี 19–26 พ.ค. เมื่อซื้อดอกไม้ครบ ฿2,500 — ระบบหักให้อัตโนมัติเมื่อชำระเงิน',
+      bannerMessageShort: 'ส่งฟรี 19–26 พ.ค. · ดอกไม้ครบ ฿2,500',
+      bannerAlt: 'ส่งฟรี 19–26 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
     },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',

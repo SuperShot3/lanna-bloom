@@ -27,11 +27,13 @@ import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
 import { isExpansionDestination } from '@/lib/delivery/markets';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
+import { getStoredReferral, clearReferral } from '@/lib/referral';
+import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
 import {
-  getStoredReferral,
-  clearReferral,
-  computeReferralDiscount,
-} from '@/lib/referral';
+  isMay2026FreeDeliveryActive,
+  MAY_FREE_DELIVERY_MIN_ITEMS_THB,
+  qualifiesForMay2026FreeDelivery,
+} from '@/lib/promo/campaigns';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
 import { TrustBadges } from '@/components/TrustBadges';
@@ -773,13 +775,30 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     : 0;
   const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
   const referralVal = getStoredReferral();
-  const referralDiscountVal = computeReferralDiscount(subtotalWithDelivery, referralVal, {
+  const resolvedDiscount = resolveOrderDiscount({
+    itemsTotal: itemsTotalVal,
     deliveryFee: deliveryFeeVal,
-    itemSubtotal: itemsTotalVal,
+    referralCode: referralVal?.code,
     deliveryDestination: delivery.deliveryDestination,
   });
-  const appliedReferralCode = referralVal && referralDiscountVal > 0 ? referralVal.code : null;
-  const grandTotalVal = subtotalWithDelivery - referralDiscountVal;
+  const orderDiscountVal = resolvedDiscount?.discount ?? 0;
+  const isCampaignDiscount = resolvedDiscount?.source === 'campaign';
+  const appliedReferralCode =
+    resolvedDiscount?.source === 'manual' && orderDiscountVal > 0
+      ? resolvedDiscount.code
+      : null;
+  const grandTotalVal = subtotalWithDelivery - orderDiscountVal;
+  const mayCampaignActive = isMay2026FreeDeliveryActive();
+  const mayCampaignQualifies = qualifiesForMay2026FreeDelivery(itemsTotalVal);
+  const mayCampaignEligible =
+    mayCampaignActive && !appliedReferralCode && mayCampaignQualifies;
+  const mayCampaignProgressRemaining =
+    mayCampaignActive && !mayCampaignQualifies
+      ? Math.max(0, MAY_FREE_DELIVERY_MIN_ITEMS_THB - itemsTotalVal)
+      : 0;
+  const stickyDeliveryFeeNet = isCampaignDiscount && deliveryFeeVal > 0 ? 0 : deliveryFeeVal;
+  const stickyDeliveryFeeGross =
+    isCampaignDiscount && deliveryFeeVal > 0 ? deliveryFeeVal : undefined;
 
   const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
 
@@ -1655,10 +1674,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       <span>{t.deliveryFeeLabel}</span>
                       <span className="cart-order-summary-amount">฿{deliveryFeeVal.toLocaleString()}</span>
                     </div>
-                    {referralVal && referralDiscountVal > 0 && (
+                    {orderDiscountVal > 0 && (
                       <div className="cart-order-summary-row cart-order-summary-referral">
-                        <span>{(t.referralDiscountLabel ?? 'Referral discount ({code})').replace('{code}', referralVal.code)}</span>
-                        <span className="cart-order-summary-amount cart-order-summary-discount">-฿{referralDiscountVal.toLocaleString()}</span>
+                        <span>
+                          {isCampaignDiscount
+                            ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
+                            : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
+                                '{code}',
+                                resolvedDiscount?.code ?? ''
+                              )}
+                        </span>
+                        <span className="cart-order-summary-amount cart-order-summary-discount">
+                          -฿{orderDiscountVal.toLocaleString()}
+                        </span>
                       </div>
                     )}
                     <div className="cart-order-summary-row cart-order-summary-total">
@@ -1666,6 +1694,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                       <span className="cart-order-summary-amount">฿{grandTotalVal.toLocaleString()}</span>
                     </div>
                   </div>
+                  {mayCampaignProgressRemaining > 0 && !appliedReferralCode && (
+                    <p className="cart-may-promo-hint" role="status">
+                      {(t.mayFreeDeliveryProgressHint ?? 'Add ฿{amount} more on flowers for free delivery this May').replace(
+                        '{amount}',
+                        mayCampaignProgressRemaining.toLocaleString()
+                      )}
+                    </p>
+                  )}
                   <ReferralCodeBox
                     lang={lang}
                     subtotal={subtotalWithDelivery}
@@ -1675,7 +1711,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                     appliedCode={appliedReferralCode}
                     onApply={() => setReferralCleared((c) => c + 1)}
                     onRemove={() => setReferralCleared((c) => c + 1)}
-                    hasOtherDiscount={false}
+                    mayCampaignEligible={mayCampaignEligible}
                   />
                 </div>
               </div>
@@ -1792,7 +1828,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             summary={{
               date: delivery.date,
               timeSlot: delivery.timeSlot,
-              deliveryFee: deliveryFeeVal,
+              deliveryFee: stickyDeliveryFeeNet,
+              deliveryFeeGross: stickyDeliveryFeeGross,
+              deliveryFeeKnown: hasDeliveryZone,
               total: grandTotalVal,
             }}
             availability={paymentAvailability}
@@ -1805,6 +1843,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             labels={{
               dateLabel: t.dateLabel ?? 'Date',
               deliveryFeeLabel: t.deliveryFeeLabel,
+              deliveryFree: t.stickyDeliveryFree ?? 'Free',
+              deliveryFeePending: t.stickyDeliverySelectArea ?? 'Select area',
               totalLabel: t.totalLabel,
               placeOrder: t.payWithStripe,
               orderLabel: t.orderLabel,
@@ -2024,12 +2064,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <span>{t.deliveryFeeLabel}</span>
                   <span className="cart-order-summary-amount">฿{deliveryFeeVal.toLocaleString()}</span>
                 </div>
-                {referralVal && referralDiscountVal > 0 && (
+                {orderDiscountVal > 0 && (
                   <div className="cart-order-summary-row cart-order-summary-referral">
                     <span>
-                      {(t.referralDiscountLabel ?? 'Referral discount ({code})').replace('{code}', referralVal.code)}
+                      {isCampaignDiscount
+                        ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
+                        : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
+                            '{code}',
+                            resolvedDiscount?.code ?? ''
+                          )}
                     </span>
-                    <span className="cart-order-summary-amount cart-order-summary-discount">-฿{referralDiscountVal.toLocaleString()}</span>
+                    <span className="cart-order-summary-amount cart-order-summary-discount">
+                      -฿{orderDiscountVal.toLocaleString()}
+                    </span>
                   </div>
                 )}
                 <div className="cart-order-summary-row cart-order-summary-total">
@@ -2039,6 +2086,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 <p className="cart-order-summary-note">{t.deliveryTimeApproxNote ?? 'Delivery time is approximate (±30 min).'}</p>
               </div>
               <div className="referral-code-column">
+                {mayCampaignProgressRemaining > 0 && !appliedReferralCode && (
+                  <p className="cart-may-promo-hint" role="status">
+                    {(t.mayFreeDeliveryProgressHint ?? 'Add ฿{amount} more on flowers for free delivery this May').replace(
+                      '{amount}',
+                      mayCampaignProgressRemaining.toLocaleString()
+                    )}
+                  </p>
+                )}
                 <ReferralCodeBox
                   lang={lang}
                   subtotal={subtotalWithDelivery}
@@ -2048,7 +2103,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   appliedCode={appliedReferralCode}
                   onApply={() => setReferralCleared((c) => c + 1)}
                   onRemove={() => setReferralCleared((c) => c + 1)}
-                  hasOtherDiscount={false}
+                  mayCampaignEligible={mayCampaignEligible}
                 />
               </div>
               <TrustBadges lang={lang} />
@@ -2462,6 +2517,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           flex: 1;
           min-width: 0;
           max-width: 320px;
+        }
+        .cart-may-promo-hint {
+          margin: 0 0 8px;
+          font-size: 0.85rem;
+          line-height: 1.4;
+          color: var(--accent);
         }
         @media (max-width: 640px) {
           .cart-summary-section {

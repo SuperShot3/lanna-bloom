@@ -3,7 +3,7 @@ import { SHOP_TIMEZONE } from '@/lib/shopTime';
 export const MAY_FREE_DELIVERY_CODE = 'MAY26-FREEDEL';
 export const MAY_FREE_DELIVERY_MIN_ITEMS_THB = 2500;
 const MAY_FREE_DELIVERY_START_YMD = '2026-05-19';
-const MAY_FREE_DELIVERY_END_YMD = '2026-05-31';
+const MAY_FREE_DELIVERY_END_YMD = '2026-05-26';
 
 function shopYmdForDate(date: Date): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -14,7 +14,7 @@ function shopYmdForDate(date: Date): string {
   }).format(date);
 }
 
-/** True on 19–31 May 2026 inclusive (Asia/Bangkok calendar). */
+/** True on 19–26 May 2026 inclusive (Asia/Bangkok calendar). */
 export function isMay2026FreeDeliveryActive(now: Date = new Date()): boolean {
   const ymd = shopYmdForDate(now);
   return ymd >= MAY_FREE_DELIVERY_START_YMD && ymd <= MAY_FREE_DELIVERY_END_YMD;
