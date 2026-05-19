@@ -1,9 +1,10 @@
 'use client';
 
-import { FacebookIcon, InstagramIcon } from './icons';
+import { FacebookIcon, InstagramIcon, TikTokIcon } from './icons';
 
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61587782069439';
 const INSTAGRAM_PAGE_URL = 'https://www.instagram.com/lannabloomchiangmai/';
+const TIKTOK_PAGE_URL = 'https://www.tiktok.com/@lannabloom_th';
 
 export function SocialLinks() {
   return (
@@ -28,6 +29,16 @@ export function SocialLinks() {
       >
         <InstagramIcon size={24} className="social-icon" />
       </a>
+      <a
+        href={TIKTOK_PAGE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="social-link social-link-tiktok"
+        aria-label="Visit our TikTok"
+        title="TikTok"
+      >
+        <TikTokIcon size={24} className="social-icon" />
+      </a>
       <style jsx>{`
         .social-links {
           display: flex;
@@ -47,6 +58,9 @@ export function SocialLinks() {
         }
         .social-link-instagram {
           color: #e4405f;
+        }
+        .social-link-tiktok {
+          color: #010101;
         }
         .social-link:hover {
           background: var(--accent-soft);
