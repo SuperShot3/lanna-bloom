@@ -6,15 +6,11 @@ import {
   stripeCheckoutDraftSuccessUrl,
 } from '@/lib/stripe/checkoutStripeLineItems';
 import { getBaseUrl } from '@/lib/orders';
-import {
-  getDiscountAllocationForCode,
-  getDiscountForCode,
-  getReferralCommissionForCode,
-  validateReferralCode,
-} from '@/lib/referral';
+import { getReferralCommissionForCode, validateReferralCode } from '@/lib/referral';
 import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
+import { resolveOrderDiscountServer } from '@/lib/promo/resolveOrderDiscountServer';
 import { inferPostalCodeFromDelivery } from '@/lib/delivery/postalInference';
 import {
   findZoneDef,
@@ -394,58 +390,58 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    const subtotal = totals.itemsTotal + totals.deliveryFee;
-    let referralDiscount = data.referralCode
-      ? getDiscountForCode(data.referralCode, subtotal, {
-          deliveryFee: totals.deliveryFee,
-          itemSubtotal: totals.itemsTotal,
-          deliveryDestination: data.delivery.deliveryDestination,
-        })
-      : 0;
     let welcomeCodeId: string | null = null;
-    if (data.referralCode && referralDiscount === 0 && isWelcomeCode(data.referralCode)) {
-      if (!data.customerEmail) {
-        return NextResponse.json(
-          { error: 'Welcome code requires an email address' },
-          { status: 400 }
-        );
-      }
-      const db = await lookupDbWelcomeCode(data.referralCode);
-      if (db.valid) {
-        if (db.email !== data.customerEmail.trim().toLowerCase()) {
+    const resolvedDiscount = await resolveOrderDiscountServer({
+      itemsTotal: totals.itemsTotal,
+      deliveryFee: totals.deliveryFee,
+      referralCode: data.referralCode,
+      deliveryDestination: data.delivery.deliveryDestination,
+      customerEmail: data.customerEmail,
+    });
+
+    if (data.referralCode) {
+      if (!resolvedDiscount) {
+        if (isWelcomeCode(data.referralCode) && !data.customerEmail) {
           return NextResponse.json(
-            { error: 'Welcome code does not match this email address' },
+            { error: 'Welcome code requires an email address' },
             { status: 400 }
           );
         }
-        welcomeCodeId = db.id;
-        if (db.discountType === 'percent') {
-          referralDiscount = Math.min(
-            Math.floor((subtotal * db.discountValue) / 100),
-            subtotal
-          );
-        } else if (db.discountType === 'free_delivery') {
-          referralDiscount = Math.min(Math.max(0, totals.deliveryFee), subtotal);
-        } else {
-          referralDiscount = Math.min(Math.max(0, db.discountValue), subtotal);
+        if (isWelcomeCode(data.referralCode)) {
+          const db = await lookupDbWelcomeCode(data.referralCode);
+          if (!db.valid) {
+            if (db.reason === 'redeemed') {
+              return NextResponse.json({ error: 'Welcome code already used' }, { status: 400 });
+            }
+            if (db.reason === 'expired') {
+              return NextResponse.json({ error: 'Welcome code expired' }, { status: 400 });
+            }
+          } else if (db.email !== data.customerEmail!.trim().toLowerCase()) {
+            return NextResponse.json(
+              { error: 'Welcome code does not match this email address' },
+              { status: 400 }
+            );
+          }
         }
-      } else if (db.reason === 'redeemed') {
-        return NextResponse.json({ error: 'Welcome code already used' }, { status: 400 });
-      } else if (db.reason === 'expired') {
-        return NextResponse.json({ error: 'Welcome code expired' }, { status: 400 });
-      } else {
-        return NextResponse.json({ error: 'Invalid welcome code' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Referral code is invalid or not available for this order' },
+          { status: 400 }
+        );
+      }
+      if (isWelcomeCode(resolvedDiscount.code)) {
+        const db = await lookupDbWelcomeCode(resolvedDiscount.code);
+        if (db.valid) {
+          welcomeCodeId = db.id;
+        }
       }
     }
-    if (data.referralCode && referralDiscount <= 0) {
-      return NextResponse.json(
-        { error: 'Referral code is invalid or not available for this order' },
-        { status: 400 }
-      );
-    }
+
+    const referralCode = resolvedDiscount?.code;
+    const referralDiscount = resolvedDiscount?.discount ?? 0;
+    const discountAllocation = resolvedDiscount?.allocation ?? 'all';
     const referralCommission =
-      data.referralCode && referralDiscount > 0
-        ? getReferralCommissionForCode(data.referralCode, totals.itemsTotal, {
+      referralCode && referralDiscount > 0 && resolvedDiscount?.source === 'manual'
+        ? getReferralCommissionForCode(referralCode, totals.itemsTotal, {
             deliveryDestination: data.delivery.deliveryDestination,
           })
         : null;
@@ -498,8 +494,8 @@ export async function POST(request: NextRequest) {
         deliveryFee: totals.deliveryFee,
         grandTotal: effectiveGrandTotal,
       },
-      ...(data.referralCode && referralDiscount > 0 && {
-        referralCode: data.referralCode,
+      ...(referralCode && referralDiscount > 0 && {
+        referralCode,
         referralDiscount,
         ...(referralCommission && {
           referralPartnerName: referralCommission.partnerName,
@@ -538,11 +534,9 @@ export async function POST(request: NextRequest) {
       computedItems: totals.items,
       deliveryFee: totals.deliveryFee,
       effectiveGrandTotal,
-      referralCode: data.referralCode,
+      referralCode,
       referralDiscount,
-      discountAllocation: data.referralCode
-        ? getDiscountAllocationForCode(data.referralCode)
-        : 'all',
+      discountAllocation,
     });
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {

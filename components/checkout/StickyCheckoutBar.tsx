@@ -14,7 +14,12 @@ import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 export type StickyBarSummary = {
   date?: string;
   timeSlot?: string;
+  /** Net delivery fee charged (after free-delivery promos). */
   deliveryFee: number;
+  /** Pre-discount zone fee when delivery is waived (shown struck through). */
+  deliveryFeeGross?: number;
+  /** False when district/zone not selected yet. */
+  deliveryFeeKnown?: boolean;
   total: number;
 };
 
@@ -39,6 +44,8 @@ export type StickyBarProps = {
   labels: {
     dateLabel: string;
     deliveryFeeLabel: string;
+    deliveryFree?: string;
+    deliveryFeePending?: string;
     totalLabel: string;
     payWithStripe?: string;
     completeDetailsToPay?: string;
@@ -312,7 +319,20 @@ export function StickyCheckoutBar({
           <div className="sticky-checkout-bar__price-block">
             <div className="sticky-checkout-bar__price-meta">
               {labels.totalLabel} · {labels.deliveryFeeLabel}{' '}
-              <span>฿{summary.deliveryFee.toLocaleString()}</span>
+              {summary.deliveryFeeKnown === false ? (
+                <span>{labels.deliveryFeePending ?? '—'}</span>
+              ) : summary.deliveryFeeGross != null && summary.deliveryFeeGross > summary.deliveryFee ? (
+                <>
+                  <span className="sticky-checkout-bar__price-meta-was">
+                    ฿{summary.deliveryFeeGross.toLocaleString()}
+                  </span>{' '}
+                  <span className="sticky-checkout-bar__price-meta-free">
+                    {labels.deliveryFree ?? 'Free'}
+                  </span>
+                </>
+              ) : (
+                <span>฿{summary.deliveryFee.toLocaleString()}</span>
+              )}
             </div>
             <div className="sticky-checkout-bar__total-amount">
               ฿{summary.total.toLocaleString()}
@@ -684,6 +704,15 @@ export function StickyCheckoutBar({
         .sticky-checkout-bar__price-meta span {
           color: var(--text-muted);
           font-weight: 600;
+        }
+        .sticky-checkout-bar__price-meta-was {
+          text-decoration: line-through;
+          opacity: 0.65;
+          font-weight: 500;
+        }
+        .sticky-checkout-bar__price-meta-free {
+          color: var(--primary);
+          font-weight: 700;
         }
         .sticky-checkout-bar__total-amount {
           font-size: 22px;

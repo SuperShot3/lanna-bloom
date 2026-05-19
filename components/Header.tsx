@@ -60,10 +60,10 @@ function getDeliveryPickerCopy(lang: Locale): DeliveryPickerCopy {
 
 export function Header({
   lang,
-  hasPrimeHourBanner = false,
+  hasMayPromoBanner = false,
 }: {
   lang: Locale;
-  hasPrimeHourBanner?: boolean;
+  hasMayPromoBanner?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -222,7 +222,7 @@ export function Header({
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b transition-[top,colors] duration-300 overflow-x-clip ${hasPrimeHourBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b transition-[top,colors] duration-300 overflow-x-clip ${hasMayPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled}
       >
         <div

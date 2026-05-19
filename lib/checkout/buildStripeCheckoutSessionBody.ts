@@ -8,7 +8,8 @@ import type { Locale } from '@/lib/i18n';
 import type { ContactPreferenceOption } from '@/lib/orders';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import type { CartItem } from '@/contexts/CartContext';
-import { getStoredReferral, computeReferralDiscount } from '@/lib/referral';
+import { getStoredReferral } from '@/lib/referral';
+import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
@@ -119,13 +120,14 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     deliveryZoneId && isSupportedZone(deliveryDestination, deliveryZoneId)
       ? (getZoneFee(deliveryDestination, deliveryZoneId) ?? 0)
       : 0;
-  const subtotal = itemsTotal + deliveryFee;
   const referral = getStoredReferral();
-  const referralDiscount = computeReferralDiscount(subtotal, referral, {
+  const resolvedDiscount = resolveOrderDiscount({
+    itemsTotal,
     deliveryFee,
-    itemSubtotal: itemsTotal,
+    referralCode: referral?.code,
     deliveryDestination,
   });
+  const referralDiscount = resolvedDiscount?.discount ?? 0;
 
   const body: Record<string, unknown> = {
     lang,
@@ -161,8 +163,8 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     body.lineId = normalizeLineUserId(lineId ?? '');
   }
 
-  if (referral && referralDiscount > 0) {
-    body.referralCode = referral.code;
+  if (resolvedDiscount && referralDiscount > 0) {
+    body.referralCode = resolvedDiscount.code;
     body.referralDiscount = referralDiscount;
   }
 

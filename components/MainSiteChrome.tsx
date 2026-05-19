@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { LineFloatingButton } from '@/components/LineFloatingButton';
-import { PrimeHourPromoBanner } from '@/components/PrimeHourPromoBanner';
+import { MayFreeDeliveryPromoBanner } from '@/components/MayFreeDeliveryPromoBanner';
 import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
 
@@ -17,7 +17,7 @@ export function MainSiteChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [primeHourBanner, setPrimeHourBanner] = useState(false);
+  const [mayPromoBanner, setMayPromoBanner] = useState(false);
   const isPartnerRoute = pathname?.includes('/partner');
   const isConfirmationPending = pathname?.includes('/checkout/confirmation-pending');
   const isCheckoutComplete = pathname?.includes('/checkout/complete');
@@ -30,10 +30,10 @@ export function MainSiteChrome({
   return (
     <>
       <DeliveryDestinationSessionSync lang={lang} />
-      <PrimeHourPromoBanner lang={lang} onActiveChange={setPrimeHourBanner} />
-      <Header lang={lang} hasPrimeHourBanner={primeHourBanner} />
+      <MayFreeDeliveryPromoBanner lang={lang} onActiveChange={setMayPromoBanner} />
+      <Header lang={lang} hasMayPromoBanner={mayPromoBanner} />
       <div
-        className={`main-content-wrap ${primeHourBanner ? 'pt-[calc(5rem+2.25rem+env(safe-area-inset-top,0px))]' : 'pt-[calc(5rem+1px+0.5rem)]'}`}
+        className={`main-content-wrap ${mayPromoBanner ? `pt-[calc(5rem+2.25rem+env(safe-area-inset-top,0px))]` : 'pt-[calc(5rem+1px+0.5rem)]'}`}
         style={{ viewTransitionName: 'main-content' } as React.CSSProperties}
       >
         <main>{children}</main>

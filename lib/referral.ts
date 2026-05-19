@@ -5,9 +5,6 @@
 
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
-/** Same default as `PrimeHourPromoBanner` / `NEXT_PUBLIC_HAPPY_HOUR_PROMO_CODE`. */
-const HAPPY_HOUR_PROMO_CODE = (process.env.NEXT_PUBLIC_HAPPY_HOUR_PROMO_CODE ?? 'B4Y').trim().toUpperCase();
-
 type DiscountCodeDefinition =
   | {
       type: 'percent';
@@ -41,8 +38,8 @@ export interface ReferralCommission {
 /** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
 const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   'LB-DELIVERY-FREE': { type: 'free_delivery' },
-  /** Happy hour promo (banner): 10% off subtotal (items + delivery fee in API). */
-  [HAPPY_HOUR_PROMO_CODE]: { type: 'percent', value: 10 },
+  /** May 2026 auto free-delivery campaign (applied server-side when eligible; not entered by customer). */
+  'MAY26-FREEDEL': { type: 'free_delivery' },
   VASILIY10: {
     type: 'percent',
     value: 10,

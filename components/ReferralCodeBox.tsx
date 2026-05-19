@@ -22,6 +22,8 @@ export interface ReferralCodeBoxProps {
   onRemove: () => void;
   /** If true, show "can't combine with other discounts" and block apply */
   hasOtherDiscount?: boolean;
+  /** May 2026 auto free delivery would apply if no manual code is used */
+  mayCampaignEligible?: boolean;
 }
 
 export function ReferralCodeBox({
@@ -34,9 +36,11 @@ export function ReferralCodeBox({
   onApply,
   onRemove,
   hasOtherDiscount = false,
+  mayCampaignEligible = false,
 }: ReferralCodeBoxProps) {
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [combineNotice, setCombineNotice] = useState<string | null>(null);
   const t = translations[lang].cart as Record<string, string>;
 
   const handleApply = () => {
@@ -66,6 +70,14 @@ export function ReferralCodeBox({
     storeReferral(result.code);
     setInputValue('');
     setError(null);
+    if (mayCampaignEligible) {
+      setCombineNotice(
+        t.promoCannotCombineMay ??
+          'This offer cannot be combined with other promotions. Remove your code to use free delivery, or keep your code instead.'
+      );
+    } else {
+      setCombineNotice(null);
+    }
     onApply();
   };
 
@@ -73,6 +85,7 @@ export function ReferralCodeBox({
     clearReferral();
     setInputValue('');
     setError(null);
+    setCombineNotice(null);
     onRemove();
   };
 
@@ -158,6 +171,11 @@ export function ReferralCodeBox({
           {error}
         </p>
       )}
+      {combineNotice && !error && (
+        <p className="referral-code-box-notice" role="status">
+          {combineNotice}
+        </p>
+      )}
       <style jsx>{`
         .referral-code-box {
           padding: 12px 0;
@@ -225,6 +243,12 @@ export function ReferralCodeBox({
           margin: 8px 0 0;
           font-size: 0.85rem;
           color: var(--text-muted);
+        }
+        .referral-code-box-notice {
+          margin: 8px 0 0;
+          font-size: 0.85rem;
+          color: var(--accent);
+          line-height: 1.4;
         }
       `}</style>
     </div>

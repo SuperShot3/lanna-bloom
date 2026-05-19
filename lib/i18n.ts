@@ -37,9 +37,11 @@ const baseTranslations = {
       themeSwitchToLight: 'Switch to light mode',
       themeSwitchToDark: 'Switch to dark mode',
     },
-    primeHourBanner: {
-      message:
-        "It's happy hour! Enter promo code {code} when you place your order ;)",
+    mayFreeDeliveryPromo: {
+      bannerMessage:
+        'Free delivery 19–31 May on flower orders ฿2,500+ — applied automatically at checkout',
+      bannerMessageShort: 'Free delivery 19–31 May · ฿2,500+ on flowers',
+      bannerAlt: 'Free delivery 19–31 May — spend ฿2,500+ on flowers',
     },
     delivery: {
       title: 'Delivery in Chiang Mai',
@@ -519,6 +521,12 @@ const baseTranslations = {
       referralInvalid: 'Invalid code. Use 3-20 letters, numbers, or hyphens.',
       referralNotEligible: 'This code is not valid for the current cart or delivery area.',
       referralCannotStack: "Referral code can't be combined with other discounts.",
+      mayFreeDeliveryDiscountLabel: 'May free delivery',
+      stickyDeliveryFree: 'Free',
+      stickyDeliverySelectArea: 'Select area',
+      mayFreeDeliveryProgressHint: 'Add ฿{amount} more on flowers for free delivery this May',
+      promoCannotCombineMay:
+        'This offer cannot be combined with other promotions. Remove your code to use free delivery, or keep your code instead.',
       trackOrder: 'Track my order',
       searchMyOrder: 'Search my order',
       trackOrderSubline: 'Enter the phone number used at checkout',
@@ -1161,8 +1169,11 @@ const baseTranslations = {
       themeSwitchToLight: 'สลับเป็นโหมดสว่าง',
       themeSwitchToDark: 'สลับเป็นโหมดมืด',
     },
-    primeHourBanner: {
-      message: 'ช่วง Happy Hour! ใส่รหัสโปร {code} ตอนสั่งซื้อนะคะ ;)',
+    mayFreeDeliveryPromo: {
+      bannerMessage:
+        'ส่งฟรี 19–31 พ.ค. เมื่อซื้อดอกไม้ครบ ฿2,500 — ระบบหักให้อัตโนมัติเมื่อชำระเงิน',
+      bannerMessageShort: 'ส่งฟรี 19–31 พ.ค. · ดอกไม้ครบ ฿2,500',
+      bannerAlt: 'ส่งฟรี 19–31 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
     },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',
@@ -1639,6 +1650,12 @@ const baseTranslations = {
       referralInvalid: 'รหัสไม่ถูกต้อง ใช้ตัวอักษร ตัวเลข หรือขีด 3-20 ตัว',
       referralNotEligible: 'รหัสนี้ใช้ไม่ได้กับตะกร้าหรือพื้นที่จัดส่งที่เลือก',
       referralCannotStack: 'รหัสแนะนำใช้ร่วมกับส่วนลดอื่นไม่ได้',
+      mayFreeDeliveryDiscountLabel: 'ส่งฟรีเดือนพฤษภาคม',
+      stickyDeliveryFree: 'ฟรี',
+      stickyDeliverySelectArea: 'เลือกพื้นที่',
+      mayFreeDeliveryProgressHint: 'ซื้อดอกไม้เพิ่มอีก ฿{amount} เพื่อรับส่งฟรีในเดือนพฤษภาคม',
+      promoCannotCombineMay:
+        'โปรนี้ใช้ร่วมกับส่วนลดอื่นไม่ได้ ลบรหัสเพื่อใช้ส่งฟรี หรือเก็บรหัสส่วนลดของคุณไว้',
       trackOrder: 'ค้นหาออเดอร์ของฉัน',
       searchMyOrder: 'ค้นหาออเดอร์ของฉัน',
       trackOrderSubline: 'กรอกเบอร์โทรศัพท์ที่ใช้เมื่อสั่งซื้อ',
@@ -2281,10 +2298,6 @@ const russianTranslations = {
     birthdayFlowerGiftGuide: 'Цветы на день рождения',
     themeSwitchToLight: 'Переключить на светлую тему',
     themeSwitchToDark: 'Переключить на тёмную тему',
-  },
-  primeHourBanner: {
-    ...baseTranslations.en.primeHourBanner,
-    message: 'Счастливый час! Введите промокод {code} при оформлении заказа ;)',
   },
   delivery: {
     ...baseTranslations.en.delivery,
@@ -3131,10 +3144,6 @@ const chineseSingaporeTranslations = {
     birthdayFlowerGiftGuide: '生日鲜花礼物',
     themeSwitchToLight: '切换到浅色模式',
     themeSwitchToDark: '切换到深色模式',
-  },
-  primeHourBanner: {
-    ...baseTranslations.en.primeHourBanner,
-    message: 'Happy Hour 优惠中！下单时输入优惠码 {code} ;)',
   },
   delivery: {
     ...baseTranslations.en.delivery,

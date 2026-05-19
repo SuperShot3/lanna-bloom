@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -112,6 +112,24 @@ function balloonTextLabel(t: { balloonTextLabel?: string }): string {
 function buildAddOnsSummaryForDisplay(item: CartItem, t: { balloonTextLabel?: string }): string {
   const balloonText = item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
   return balloonText ? `${balloonTextLabel(t)}: "${balloonText}"` : '';
+}
+
+function formatCartItemSizePriceLine(
+  item: CartItem,
+  deliveryDestination: OrderDeliveryDestinationId
+): string {
+  const qty = item.quantity ?? 1;
+  const unitWithAddOns = item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
+  const unitDisplayPrice = applyExpansionItemMarkupThb(unitWithAddOns, deliveryDestination);
+  const lineDisplayPrice = unitDisplayPrice * qty;
+  const label = (item.size.label || '').trim() || '—';
+  if (isNonBouquetCartLine(item)) {
+    return `${label} — ฿${unitDisplayPrice.toLocaleString()}`;
+  }
+  if (qty > 1) {
+    return `${item.size.label} × ${qty} — ฿${lineDisplayPrice.toLocaleString()}`;
+  }
+  return `${item.size.label} — ฿${unitDisplayPrice.toLocaleString()}`;
 }
 
 function buildAddOnsSummaryLines(item: CartItem, t: { balloonTextLabel?: string }): string[] {
@@ -1572,7 +1590,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </header>
           <div className="cart-mobile-accordion">
             <div
-              className={`cart-accordion-section ${mobileOpenSection === 'bag' ? 'cart-accordion-open' : ''}`}
+              className={`cart-accordion-section cart-accordion-bag ${mobileOpenSection === 'bag' ? 'cart-accordion-open' : ''}`}
               onClick={() => toggleMobileSection('bag')}
             >
               <div className="cart-accordion-header">
@@ -1582,63 +1600,42 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                   <span className="cart-accordion-chevron" aria-hidden>▼</span>
                 </div>
               </div>
+              {items.length > 0 && (
+                <div
+                  className="cart-bag-items-preview"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {items.map((item, index) => {
+                    const name = lang === 'th' ? item.nameTh : item.nameEn;
+                    return (
+                      <div key={`preview-${item.bouquetId}-${index}`} className="cart-bag-preview-item">
+                        {item.imageUrl ? (
+                          <div className="cart-bag-preview-image-wrap">
+                            <Image
+                              src={item.imageUrl}
+                              alt=""
+                              width={48}
+                              height={48}
+                              className="cart-bag-preview-image"
+                              sizes="48px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="cart-bag-preview-image-wrap cart-bag-preview-image-placeholder" aria-hidden />
+                        )}
+                        <div className="cart-bag-preview-main">
+                          <span className="cart-bag-preview-name">{name}</span>
+                          <span className="cart-bag-preview-meta">
+                            {formatCartItemSizePriceLine(item, delivery.deliveryDestination)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'bag'}>
                 <div className="cart-accordion-body cart-accordion-body-bag" onClick={(e) => e.stopPropagation()}>
-                  <div className="cart-list cart-mobile-list">
-                    {items.map((item, index) => {
-                      const name = lang === 'th' ? item.nameTh : item.nameEn;
-                      const addOnsSummary = buildAddOnsSummaryForDisplay(item, t);
-                      return (
-                        <div key={`${item.bouquetId}-${index}`} className="cart-item">
-                          {item.imageUrl && (
-                            <div className="cart-item-image-wrap">
-                              <Image src={item.imageUrl} alt="" width={80} height={80} className="cart-item-image" sizes="80px" />
-                            </div>
-                          )}
-                          <div className="cart-item-main">
-                            <h3 className="cart-item-name">{name}</h3>
-                            <p className="cart-item-size">
-                              {(() => {
-                                const qty = item.quantity ?? 1;
-                                const unitWithAddOns = item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
-                                const unitDisplayPrice = applyExpansionItemMarkupThb(
-                                  unitWithAddOns,
-                                  delivery.deliveryDestination
-                                );
-                                const lineDisplayPrice = unitDisplayPrice * qty;
-                                const label = (item.size.label || '').trim() || '—';
-                                if (isNonBouquetCartLine(item)) {
-                                  return `${label} — ฿${unitDisplayPrice.toLocaleString()}`;
-                                }
-                                if (qty > 1) {
-                                  return `${item.size.label} × ${qty} — ฿${lineDisplayPrice.toLocaleString()}`;
-                                }
-                                return `${item.size.label} — ฿${unitDisplayPrice.toLocaleString()}`;
-                              })()}
-                            </p>
-                            {addOnsSummary && <p className="cart-item-addons">{addOnsSummary}</p>}
-                          </div>
-                          <button
-                            type="button"
-                            className="cart-item-remove"
-                            onClick={() => {
-                              const removed = items[index];
-                              const lineVal = removed.size.price * (removed.quantity ?? 1);
-                              trackRemoveFromCart({
-                                currency: 'THB',
-                                value: lineVal,
-                                items: [{ item_id: removed.bouquetId, item_name: lang === 'th' ? removed.nameTh : removed.nameEn, price: removed.size.price, quantity: removed.quantity ?? 1, index: 0, item_variant: removed.size.label }],
-                              });
-                              removeItem(index);
-                            }}
-                            aria-label={t.remove}
-                          >
-                            {t.remove}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
                   <div className="cart-order-summary cart-mobile-summary">
                     <h3 className="cart-order-summary-title">
                       {t.orderComposition ?? 'Order composition'}
@@ -2941,6 +2938,68 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           }
           .cart-accordion-section.cart-accordion-open {
             grid-template-rows: auto 1fr;
+          }
+          .cart-accordion-bag {
+            grid-template-rows: auto auto 0fr;
+          }
+          .cart-accordion-bag.cart-accordion-open {
+            grid-template-rows: auto auto 1fr;
+          }
+          .cart-bag-items-preview {
+            padding: 0 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+          .cart-bag-preview-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+          }
+          .cart-bag-preview-image-wrap {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg);
+          }
+          .cart-bag-preview-image-placeholder {
+            background: var(--border);
+          }
+          .cart-bag-preview-image {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            display: block;
+          }
+          .cart-bag-preview-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+          .cart-bag-preview-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .cart-bag-preview-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.35;
+          }
+          .cart-accordion-body-bag .cart-order-summary {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
           }
           .cart-accordion-body-wrapper {
             overflow: hidden;
