@@ -62,8 +62,7 @@ Shared UI: `app/admin/components/`.
 | `lib/orders/` | Order router, Supabase store, types, lifecycle |
 | `lib/checkout/` | Drafts, fulfill Stripe, submission token |
 | `lib/stripe/` | Server client, metadata, post-payment hooks |
-| `lib/analytics/`, `lib/analytics.ts` | dataLayer events |
-| `lib/ga4/` | Measurement Protocol (optional) |
+| `lib/analytics/`, `lib/analytics.ts` | dataLayer events (GA4/Ads via GTM only) |
 | `lib/email/` | Templates, render, outbox, Resend send |
 | `lib/accounting/` | Income, expenses sync, transfers, ledger |
 | `lib/expenses/` | Expense queries, bills |

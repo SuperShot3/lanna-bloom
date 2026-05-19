@@ -13,27 +13,14 @@ On **`/lanna-order-thank-you?session_id=...&lang=en|th`**, after **`GET /api/str
 - **Dedupe:** localStorage `lanna_purchase_fired_<orderId>` (also reads legacy `sent_purchase_<orderId>`) so a refresh does not fire again.
 - **Timing:** Push runs after a short GTM/consent wait (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
-**GA4 revenue:** Configure GTM to send this same **`purchase`** event to GA4 (e.g. GA4 Event tag on Custom Event `purchase` with ecommerce mapping). This project does **not** send GA4 `purchase` from the server by default.
+**GA4 revenue:** Configure GTM to send this same **`purchase`** event to GA4 (e.g. GA4 Event tag on Custom Event `purchase` with ecommerce mapping). This project does **not** send GA4 `purchase` from the server.
 
 **Optional helper:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` is the single entry point for the browser `purchase` shape and dedupe.
 
-## Options
+## Setup (browser only)
 
-### Option 1: Browser only (current setup)
-
-- **How:** GTM **Custom Event** trigger **`purchase`** → GA4 Event tag + optional **Google Ads Conversion** tag. Read value and transaction id from **`ecommerce.*`** (Data Layer Variables).
-- **Pros:** Simple, one pipeline, strong same-session attribution; fires only after server confirms paid order.
-- **Cons:** No GA4 `purchase` if `order-status` never returns `paid` + `purchase` on that page (e.g. user leaves before poll succeeds).
-
-### Option 2: Add Measurement Protocol later (server)
-
-- **How:** Wire `sendPurchaseForOrder` from payment success paths and set `GA4_MEASUREMENT_ID` / `GA4_MEASUREMENT_API_SECRET`. See `docs/ANALYTICS_GA4.md` → *Optional: Measurement Protocol*.
-- **Pros:** Can count every paid order even without a successful client push.
-- **Cons:** Must dedupe against browser `purchase` (same `transaction_id`) or disable one path to avoid double revenue in GA4.
-
-### Option 3: Both browser + MP (advanced)
-
-- Use **Option 1** for attribution and **Option 2** for coverage only if you implement **explicit** GA4 deduplication (same transaction id) or send **only one** of the two to GA4 for revenue.
+- GTM **Custom Event** trigger **`purchase`** → GA4 Event tag + optional **Google Ads Conversion** tag. Read value and transaction id from **`ecommerce.*`** (Data Layer Variables).
+- Fires only after server confirms paid order on `/lanna-order-thank-you`. If the customer leaves before `order-status` returns `paid` + `purchase`, that session may not record GA4/Ads revenue.
 
 ## GTM setup (browser `purchase`)
 
@@ -54,13 +41,6 @@ On **`/lanna-order-thank-you?session_id=...&lang=en|th`**, after **`GET /api/str
    - **Google Ads:** Conversion Tracking tag on **`purchase`**; map conversion value and transaction id from the variables above.
 
 4. In Google Ads, create the conversion action (Website → Use Google Tag Manager) and copy the Conversion ID and Label into the tag.
-
-## Summary
-
-| Approach             | Trigger         | Where it fires                         | Best for                                      |
-|----------------------|-----------------|----------------------------------------|-----------------------------------------------|
-| Browser (dataLayer)  | `purchase`      | `/lanna-order-thank-you` → GTM         | Default: GA4 + Ads attribution              |
-| Measurement Protocol | Server (if wired) | Webhook / admin                      | Optional: every paid order without pageview |
 
 **Legacy:** `/{lang}/checkout/complete` redirects to `/lanna-order-thank-you` — no purchase on the legacy page.
 

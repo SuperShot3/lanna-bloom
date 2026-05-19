@@ -36,11 +36,7 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 **Legacy:** `/{lang}/checkout/complete` redirects to `/lanna-order-thank-you` — no purchase on legacy page.
 
-## Server-side Measurement Protocol (optional)
-
-- Code exists: `lib/ga4/sendPurchaseForOrder.ts`, `lib/ga4/measurementProtocol.ts`
-- **Not wired from webhooks by default** in current setup
-- If re-enabled: set `GA4_MEASUREMENT_ID` + `GA4_MEASUREMENT_API_SECRET` and implement dedupe vs browser `purchase` (same `transaction_id`) or disable one path
+**No server-side GA4 purchase:** Revenue `purchase` is browser → dataLayer → GTM only (no Measurement Protocol from webhooks).
 
 ## Funnel events (secondary)
 
@@ -72,7 +68,7 @@ Configure matching **Custom Event** triggers in GTM.
 ## Do not
 
 - Fire `purchase` before server confirms paid order + valid `purchaseAnalytics` payload.
-- Duplicate GA4 `purchase` from webhook **and** browser without dedupe design.
+- Add server-side GA4 `purchase` (Measurement Protocol) alongside browser `purchase` without a dedupe design.
 - Add duplicate Google Ads + GA4 purchase tags that both count revenue without GTM coordination.
 - Push `page_view` from app code (conflicts with GTM SPA handling).
 

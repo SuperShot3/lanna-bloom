@@ -79,7 +79,7 @@ export async function PATCH(
     payment_status: { from: previousPaymentStatus, to: 'PAID' },
   });
 
-  // GA4 purchase: browser/GTM on checkout/complete for Stripe web flow — no sendPurchaseForOrder (MP disabled).
+  // GA4 purchase: browser/GTM on /lanna-order-thank-you for Stripe web flow only.
 
   // Create income record (idempotent, fire-and-forget). paidAt comes from
   // the order's paid_at column we just wrote so the income row's paid_date

@@ -63,7 +63,7 @@ After mark paid, `runStripePostPaymentSuccessHooks` (`lib/stripe/postStripePayme
 - Supabase payment sync
 - Customer confirmation email
 - Admin new-order notification
-- Optional GA4 Measurement Protocol (not default for web purchase — see analytics context)
+- GA4 `purchase` is browser-only via GTM (see analytics context)
 - Income / accounting side effects
 
 ## Idempotency

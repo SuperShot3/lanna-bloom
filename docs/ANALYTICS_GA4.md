@@ -7,8 +7,7 @@
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
-- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/lanna-order-thank-you`** after Stripe returns and `GET /api/stripe/order-status` reports `paid` with `purchase`. `OrderThankYouClient` calls `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read). The **paid** `/order/...` page does **not** push `purchase` for cart checkout (thank-you page fires first). GTM must use Custom Event `purchase`, not URL contains `checkout`.
-- **Measurement Protocol (optional / disabled by default):** `lib/ga4/sendPurchaseForOrder.ts` is **not** wired from Stripe webhooks or admin routes in the current codebase. Use it only if you intentionally re-enable server-side `purchase` and adjust GTM so GA4 does not count the same sale twice.
+- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/lanna-order-thank-you`** after Stripe returns and `GET /api/stripe/order-status` reports `paid` with `purchase`. `OrderThankYouClient` calls `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read). The **paid** `/order/...` page does **not** push `purchase` for cart checkout (thank-you page fires first). GTM must use Custom Event `purchase`, not URL contains `checkout`. **No server-side GA4 purchase** (Measurement Protocol removed).
 
 ## Paid order: browser `purchase` (canonical)
 
@@ -17,21 +16,6 @@
 **Event `purchase`** — at most once per order id (`lanna_purchase_fired_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **`purchase`** is deferred briefly so GTM/consent can settle (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
 **Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `OrderThankYouClient` for cart Stripe checkout).
-
-## Optional: Measurement Protocol `purchase` (server)
-
-If you **re-enable** server-side GA4 `purchase`, configure:
-
-| Variable | Where to get it |
-|----------|------------------|
-| `GA4_MEASUREMENT_ID` | GA4 Admin → Data Streams → your web stream → Measurement ID (e.g. `G-XXXXXXXXXX`) |
-| `GA4_MEASUREMENT_API_SECRET` | Same stream → “Measurement Protocol API secrets” → Create and copy the secret |
-
-**Idempotency (when MP is used):** `orders.ga4_purchase_sent` / `ga4_purchase_sent_at` in Supabase.
-
-**Relevant code (not called from webhooks/admin in current setup):** `lib/ga4/sendPurchaseForOrder.ts`, `lib/ga4/measurementProtocol.ts`.
-
-**If both browser and MP send GA4 `purchase`:** deduplicate in GA4 (same `transaction_id`) or disable one path — otherwise revenue can double-count.
 
 ## Runtime Configuration
 
@@ -116,7 +100,7 @@ Create GTM custom event triggers for:
 | `begin_checkout` | User starts order/payment flow | Fires on cart page load (deduped per session) |
 | `add_shipping_info` | Delivery info added | Triggered once shipping info is meaningfully present |
 | `add_payment_info` | User continues to Stripe Checkout | Includes `payment_type: 'card'` (cart pay CTA) |
-| `purchase` | **`/{lang}/checkout/complete`** **(browser)** | `CheckoutCompleteClient` → `trackCheckoutPurchase` → dataLayer → GTM → GA4 / Ads; dedupe `sent_purchase_<orderId>`. Server MP not active unless you wire it. |
+| `purchase` | **`/lanna-order-thank-you`** **(browser)** | `OrderThankYouClient` → `trackCheckoutPurchase` → dataLayer → GTM → GA4 / Ads; dedupe `lanna_purchase_fired_<orderId>`. |
 | `generate_lead` | Legacy / confirmation-pending manual flows | Separate from revenue; website checkout is Stripe-first |
 | `contact_click` | LINE / WhatsApp / Telegram click | Canonical contact event |
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
@@ -133,7 +117,7 @@ Removed legacy messenger events:
 ### Stripe (and all paid orders)
 
 - GA4 **`purchase`** (revenue) is recorded when the customer reaches **`checkout/complete`** after Stripe and the browser pushes `purchase` to the dataLayer; GTM sends it to GA4.
-- **Coverage gap:** If `purchaseAnalytics` is missing or validation fails, nothing is pushed on that screen; there is **no** fallback push from `/order/...` today. To count every paid order server-side, use Measurement Protocol (and align deduplication).
+- **Coverage gap:** If `purchaseAnalytics` is missing or validation fails, nothing is pushed on that screen; there is **no** server-side fallback.
 
 ### Manual Payment Methods
 
@@ -144,12 +128,9 @@ we do not have any
 
 | Layer | Role | How |
 |-------|------|-----|
-| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `CheckoutCompleteClient` → `purchase` + `ecommerce.*`; dedupe `sent_purchase_<orderId>` |
-| **Server (MP)** | Optional extra coverage | Not called in current app routes; `sendPurchaseForOrder` + `ga4_purchase_sent` if you wire it |
+| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `OrderThankYouClient` on `/lanna-order-thank-you` → `purchase` + `ecommerce.*`; dedupe `lanna_purchase_fired_<orderId>` |
 
 **GTM rule:** Use a **GA4 Event** tag (or equivalent) on Custom Event **`purchase`**, reading `ecommerce.*`. For **Google Ads**, fire a conversion tag on the same event using DL variables `ecommerce.value`, `ecommerce.transaction_id`, `ecommerce.currency`.
-
-**If you add MP later:** send GA4 `purchase` from only one place, or use the same `transaction_id` and GA4 deduplication so revenue is not doubled.
 
 
 Recommended GA4 key event setup:
@@ -212,7 +193,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 - Confirm one `page_view` per SPA route change
 - Confirm funnel ecommerce events use the expected `items`, `value`, `currency` (shape differs from paid-order **`purchase`**, which uses `ecommerce.items`)
 - Confirm `begin_checkout` no longer fires on cart view
-- Confirm GA4 **`purchase`** in **DebugView** when you complete checkout and land on **`checkout/complete`** (same device/session as GTM). If you later enable MP, you may also see server-originated hits with different timing/device.
+- Confirm GA4 **`purchase`** in **DebugView** when you complete checkout and land on **`/lanna-order-thank-you`** (same device/session as GTM).
 - Confirm dataLayer **`purchase`** appears in **GTM Preview** at most once per order id on **`checkout/complete`** (refresh should not duplicate; `sent_purchase_<orderId>`). Reloading **`/order/...`** does not emit `purchase`.
 - Confirm `generate_lead` appears only for unpaid manual-order creation
 
@@ -228,7 +209,7 @@ The head inline script sets the internal staff cookie and pushes `traffic_type` 
 8. Start checkout and confirm `begin_checkout`
 9. Add shipping details and confirm `add_shipping_info`
 10. Click Stripe payment CTA and confirm `add_payment_info`
-11. Complete Stripe checkout; on **`/{lang}/checkout/complete`** (success view) confirm **`purchase`** in GTM Preview / dataLayer and **GA4 DebugView** (GTM → GA4 tag). If you re-enable MP, also verify server sends without double-counting revenue.
+11. Complete Stripe checkout; on **`/lanna-order-thank-you`** confirm **`purchase`** in GTM Preview / dataLayer and **GA4 DebugView** (GTM → GA4 tag).
 12. Create a manual-payment order and confirm `generate_lead`
 13. After `purchase` fired, open **`/order/...`** and confirm **`purchase`** does **not** fire again (dedupe); or reload `checkout/complete` and confirm no duplicate unless you cleared storage
 
@@ -246,9 +227,8 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 
 ## Audit: Purchase transport (browser-first)
 
-- **Browser (dataLayer → GTM):** **`/{lang}/checkout/complete`** → **`CheckoutCompleteClient`** → **`trackCheckoutPurchase`** pushes **`purchase`** with **`ecommerce`** (`transaction_id`, `value`, `currency`, `items`), after `{ ecommerce: null }`, after a short GTM/consent wait (`waitForGtmConsentThen`).
-- **Server (Measurement Protocol):** **Not** invoked from Stripe webhook or admin mark-paid / payment-status routes in the current codebase. Optional: `sendPurchaseForOrder` + `ga4_purchase_sent` if you wire it later.
-- **Duplicate guard (browser):** `sent_purchase_<orderId>` in localStorage.
+- **Browser (dataLayer → GTM):** **`/lanna-order-thank-you`** → **`OrderThankYouClient`** → **`trackCheckoutPurchase`** pushes **`purchase`** with **`ecommerce`** (`transaction_id`, `value`, `currency`, `items`), after `{ ecommerce: null }`, after a short GTM/consent wait (`waitForGtmConsentThen`). No server-side GA4 purchase.
+- **Duplicate guard (browser):** `lanna_purchase_fired_<orderId>` in localStorage (legacy `sent_purchase_*` read).
 - **`generate_lead`:** `trackGenerateLead` only pushes `generate_lead`; it does not call purchase helpers.
 
 ## Files Controlling Analytics Logic
@@ -258,11 +238,9 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 - `components/InternalTrafficBootstrap.tsx`
 - `lib/analytics.ts`
 - `lib/analytics/gtag.ts`
-- `lib/ga4/measurementProtocol.ts` (optional server: GA4 Measurement Protocol)
-- `lib/ga4/sendPurchaseForOrder.ts` (optional server: idempotent purchase send — not wired from routes today)
-- `app/api/stripe/webhook/route.ts` (Stripe fulfillment; GA4 purchase is browser-only — see comments in file)
-- `app/api/admin/orders/[order_id]/mark-paid/route.ts` (manual mark paid; no `sendPurchaseForOrder` call)
-- `app/api/admin/orders/[order_id]/payment-status/route.ts` (admin payment status; no `sendPurchaseForOrder` call)
+- `lib/stripe/postStripePaymentSuccess.ts` (post-payment hooks; no GA4 purchase)
+- `app/api/stripe/webhook/route.ts` (Stripe fulfillment; GA4 purchase is browser-only)
+- `components/checkout/OrderThankYouClient.tsx` (browser `purchase` + dedupe)
 - `components/CatalogWithFilters.tsx`
 - `app/[lang]/catalog/[slug]/ProductPageClient.tsx`
 - `app/[lang]/catalog/[slug]/ProductDetailClient.tsx`

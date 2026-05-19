@@ -3,20 +3,10 @@ import 'server-only';
 import { getOrderById, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
-import type { PurchaseSource } from '@/lib/ga4/sendPurchaseForOrder';
-
-function triggerToPurchaseSource(
-  trigger: 'stripe_webhook' | 'sync_checkout' | 'order_status'
-): PurchaseSource {
-  if (trigger === 'stripe_webhook') return 'stripe_webhook';
-  if (trigger === 'sync_checkout') return 'stripe_sync_checkout';
-  return 'stripe_order_status';
-}
 
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or order-status poll).
- * Browser **`purchase`** is sent from `/lanna-order-thank-you` → GTM (not from `/order/...`). Optionally, GA4 **Measurement
- * Protocol** runs here when configured (`sendPurchaseForOrder`); it is idempotent per order in the DB.
+ * Browser **`purchase`** is sent from `/lanna-order-thank-you` → GTM (not from `/order/...`). No server-side GA4 purchase.
  */
 export async function runStripePostPaymentSuccessHooks(params: {
   orderId: string;
@@ -30,13 +20,6 @@ export async function runStripePostPaymentSuccessHooks(params: {
   stripeProcessingFeeMajor?: number | null;
 }): Promise<void> {
   const orderId = params.orderId.trim();
-
-  const mpSource = triggerToPurchaseSource(params.trigger);
-  void import('@/lib/ga4/sendPurchaseForOrder').then(({ sendPurchaseForOrder }) =>
-    sendPurchaseForOrder(orderId, mpSource).catch((e) =>
-      console.error('[stripe/postPayment] GA4 Measurement Protocol purchase error:', e)
-    )
-  );
 
   void import('@/lib/supabase/orderAdapter').then(({ syncSupabasePaymentSuccess }) =>
     syncSupabasePaymentSuccess(

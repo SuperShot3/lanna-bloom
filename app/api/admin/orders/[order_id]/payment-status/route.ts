@@ -117,7 +117,7 @@ export async function PATCH(
     }
   }
 
-  // GA4 purchase: browser/GTM on checkout/complete for Stripe web flow — no sendPurchaseForOrder (MP disabled).
+  // GA4 purchase: browser/GTM on /lanna-order-thank-you for Stripe web flow only.
 
   return NextResponse.json({ ok: true, order: updated });
 }

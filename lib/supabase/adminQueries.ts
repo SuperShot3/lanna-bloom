@@ -46,7 +46,7 @@ export interface SupabaseOrderRow {
   delivery_google_maps_url: string | null;
   fulfillment_status: string | null;
   fulfillment_status_updated_at: string | null;
-  /** GA4: true after backend sent purchase via Measurement Protocol (prevents duplicate). */
+  /** Legacy: unused after Measurement Protocol removal; column may remain in DB. */
   ga4_purchase_sent?: boolean | null;
   ga4_purchase_sent_at?: string | null;
   /** Optional GA client_id from frontend for server-side purchase attribution. */
