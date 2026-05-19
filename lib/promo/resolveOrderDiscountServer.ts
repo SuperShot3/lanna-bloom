@@ -1,7 +1,6 @@
 import 'server-only';
 
 import {
-  getDiscountAllocationForCode,
   type ResolvedOrderDiscount,
   type ResolveOrderDiscountInput,
 } from '@/lib/promo/resolveOrderDiscount';
@@ -10,7 +9,7 @@ import {
   MAY_FREE_DELIVERY_CODE,
   may2026FreeDeliveryDiscount,
 } from '@/lib/promo/campaigns';
-import { getDiscountForCode } from '@/lib/referral';
+import { getDiscountAllocationForCode, getDiscountForCode } from '@/lib/referral';
 
 /** Server checkout: includes DB-backed welcome codes. Manual promo always beats campaign. */
 export async function resolveOrderDiscountServer(
