@@ -90,3 +90,13 @@ export function formatBangkokTime(now: Date, lang: Locale): string {
     hour12: false,
   });
 }
+
+/** Short calendar date in Bangkok for live clocks (e.g. checkout header). */
+export function formatBangkokDate(now: Date, lang: Locale): string {
+  return now.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
+    timeZone: DELIVERY_SHOP_TIMEZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}

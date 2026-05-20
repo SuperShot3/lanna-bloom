@@ -279,7 +279,6 @@ export function CartCheckoutView({
         inlineError={orderError}
         paymentSection={
           <div className="co-payment-block">
-            <h2 className="co-payment-title">{tPremium.paymentTitle}</h2>
             <button
               type="button"
               className="co-payment-btn"
@@ -295,11 +294,6 @@ export function CartCheckoutView({
                 flex-direction: column;
                 gap: 12px;
                 padding: 4px 0 8px;
-              }
-              .co-payment-title {
-                font-size: 17px;
-                font-weight: 600;
-                margin: 0;
               }
               .co-payment-btn {
                 width: 100%;

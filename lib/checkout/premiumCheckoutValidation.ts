@@ -1,5 +1,6 @@
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import { isDeliveryTimeSlotSelectableForDate } from '@/components/DeliveryForm';
+import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { isSupportedZone } from '@/lib/delivery/zones';
 import type { ContactPreferenceOption } from '@/lib/orders';
 import {
@@ -7,6 +8,10 @@ import {
 } from '@/lib/phoneFieldHints';
 import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+
+function exceedsLimit(value: string, max: number): boolean {
+  return value.trim().length > max;
+}
 
 export type CheckoutSectionId =
   | 'product'
@@ -37,10 +42,16 @@ export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
   if (!delivery.deliveryZoneId) return false;
   if (!isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) return false;
   if (!hasDeliveryAddressInput(delivery)) return false;
-  const address = delivery.addressLine?.trim() ?? '';
-  if (address.length > 500) return false;
+  const address =
+    delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
+  if (exceedsLimit(address, CHECKOUT_FIELD_LIMITS.deliveryAddress)) return false;
   const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-  if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) return false;
+  if (mapsUrl) {
+    if (exceedsLimit(mapsUrl, CHECKOUT_FIELD_LIMITS.googleMapsUrl)) return false;
+    if (!isValidGoogleMapsUrl(mapsUrl)) return false;
+  }
+  const note = delivery.deliveryNote?.trim() ?? '';
+  if (exceedsLimit(note, CHECKOUT_FIELD_LIMITS.deliveryNote)) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
   if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
@@ -57,14 +68,20 @@ export function isPremiumSenderValid(params: {
   const { customerName, countryCode, phoneNational, contactPreference, lineId, customerEmail } =
     params;
   if (!customerName.trim()) return false;
+  if (exceedsLimit(customerName, CHECKOUT_FIELD_LIMITS.customerName)) return false;
+  if (exceedsLimit(phoneNational.replace(/\D/g, ''), CHECKOUT_FIELD_LIMITS.phoneNational)) {
+    return false;
+  }
   if (!nationalDigitsValidForCheckout(countryCode, phoneNational)) return false;
   if (contactPreference.length === 0) return false;
   if (contactPreference.includes('line')) {
     const norm = normalizeLineUserId(lineId);
     if (!isValidLineUserId(norm)) return false;
   }
-  if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
-    return false;
+  const emailTrim = customerEmail.trim();
+  if (emailTrim) {
+    if (exceedsLimit(emailTrim, CHECKOUT_FIELD_LIMITS.customerEmail)) return false;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) return false;
   }
   return true;
 }
@@ -75,6 +92,15 @@ export function isPremiumRecipientValid(
   recipientPhoneNational: string
 ): boolean {
   if (!recipientName.trim()) return false;
+  if (exceedsLimit(recipientName, CHECKOUT_FIELD_LIMITS.recipientName)) return false;
+  if (
+    exceedsLimit(
+      recipientPhoneNational.replace(/\D/g, ''),
+      CHECKOUT_FIELD_LIMITS.recipientPhoneNational
+    )
+  ) {
+    return false;
+  }
   if (!nationalDigitsValidForCheckout(recipientCountryCode, recipientPhoneNational)) return false;
   return true;
 }
@@ -132,7 +158,11 @@ export function getFirstCheckoutFieldIssue(
   }
 
   const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-  if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) {
+  if (
+    mapsUrl &&
+    (exceedsLimit(mapsUrl, CHECKOUT_FIELD_LIMITS.googleMapsUrl) ||
+      !isValidGoogleMapsUrl(mapsUrl))
+  ) {
     return { sectionId: 'delivery', message: copy.invalidMapsLink };
   }
 

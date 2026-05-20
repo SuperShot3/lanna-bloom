@@ -10,6 +10,10 @@ import {
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  clipCheckoutField,
+} from '@/lib/checkout/checkoutFieldLimits';
 
 export interface ReferralCodeBoxProps {
   lang: Locale;
@@ -146,13 +150,14 @@ export function ReferralCodeBox({
           type="text"
           value={inputValue}
           onChange={(e) => {
-            setInputValue(e.target.value);
+            setInputValue(clipCheckoutField(e.target.value, 'referralCode'));
             setError(null);
           }}
           onKeyDown={(e) => e.key === 'Enter' && handleApply()}
           placeholder={t.referralPlaceholder ?? 'Enter code'}
           className="referral-code-box-input"
           autoComplete="off"
+          maxLength={CHECKOUT_FIELD_LIMITS.referralCode}
           disabled={hasOtherDiscount}
           aria-invalid={!!error}
           aria-describedby={error ? 'referral-code-error' : undefined}

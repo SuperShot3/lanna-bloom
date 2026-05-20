@@ -34,6 +34,8 @@ import {
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 import { EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
 import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
+import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
+import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckoutFieldLimits';
 
 function validateStripePayload(
   body: unknown
@@ -49,6 +51,7 @@ function validateStripePayload(
   if (!Array.isArray(items) || items.length === 0) {
     return { ok: false, message: 'items must be a non-empty array' };
   }
+  const cardMessages: string[] = [];
   for (const it of items) {
     const i = it as Record<string, unknown>;
     const addOns = (i.addOns as Record<string, unknown>) ?? {};
@@ -61,6 +64,9 @@ function validateStripePayload(
         ok: false,
         message: `balloonText must be ${BALLOON_TEXT_MAX_LENGTH} characters or fewer`,
       };
+    }
+    if (typeof addOns.cardMessage === 'string') {
+      cardMessages.push(addOns.cardMessage.trim());
     }
   }
 
@@ -78,8 +84,15 @@ function validateStripePayload(
     Boolean(deliveryPlaceId) &&
     typeof deliveryLat === 'number' &&
     typeof deliveryLng === 'number';
-  if (!address || address.length < 10 || address.length > 500) {
-    return { ok: false, message: 'delivery.address is required (10–500 characters)' };
+  if (
+    !address ||
+    address.length < 10 ||
+    address.length > CHECKOUT_FIELD_LIMITS.deliveryAddress
+  ) {
+    return {
+      ok: false,
+      message: `delivery.address is required (10–${CHECKOUT_FIELD_LIMITS.deliveryAddress} characters)`,
+    };
   }
   if (deliveryPlaceId && !hasGooglePlace) {
     return {
@@ -92,12 +105,22 @@ function validateStripePayload(
   if (hasGooglePlace && !deliveryGoogleMapsUrlRaw) {
     deliveryGoogleMapsUrlRaw = buildDriverMapsSearchUrl(deliveryLat!, deliveryLng!);
   }
-  if (deliveryGoogleMapsUrlRaw && !isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
-    return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
+  if (deliveryGoogleMapsUrlRaw) {
+    if (deliveryGoogleMapsUrlRaw.length > CHECKOUT_FIELD_LIMITS.googleMapsUrl) {
+      return { ok: false, message: 'delivery.deliveryGoogleMapsUrl exceeds maximum length' };
+    }
+    if (!isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
+      return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
+    }
   }
+
+  const deliveryNotesRaw = typeof d.notes === 'string' ? d.notes.trim() : '';
 
   const customerName = typeof b.customerName === 'string' ? b.customerName.trim() : '';
   if (!customerName) return { ok: false, message: 'customerName is required' };
+  if (customerName.length > CHECKOUT_FIELD_LIMITS.customerName) {
+    return { ok: false, message: 'customerName exceeds maximum length' };
+  }
 
   const phone = stripDuplicateThaiLeading66(typeof b.phone === 'string' ? b.phone.trim() : '');
   if (!phone) return { ok: false, message: 'phone is required' };
@@ -292,6 +315,23 @@ function validateStripePayload(
     return { ok: false, message: 'submission_token has invalid format' };
   }
 
+  const fieldLimitCheck = validateCheckoutFieldMaxLengths({
+    deliveryAddress: address,
+    deliveryGoogleMapsUrl: deliveryGoogleMapsUrlRaw || undefined,
+    deliveryNotes: deliveryNotesRaw || undefined,
+    customerName,
+    phone,
+    phoneCountryCode: phoneCcRaw,
+    recipientName,
+    recipientPhone,
+    recipientPhoneCountryCode: recipientCcRaw,
+    referralCode,
+    cardMessages,
+  });
+  if (!fieldLimitCheck.ok) {
+    return fieldLimitCheck;
+  }
+
   return {
     ok: true,
     data: {
@@ -315,7 +355,7 @@ function validateStripePayload(
           recipientPhoneCountryCode: normalizeOptionalCallingCodeDigits(recipientCcRaw),
         }),
         surpriseDelivery,
-        notes: typeof d.notes === 'string' ? d.notes : undefined,
+        notes: deliveryNotesRaw || undefined,
         deliveryLat,
         deliveryLng,
         deliveryGoogleMapsUrl: deliveryGoogleMapsUrlRaw || undefined,

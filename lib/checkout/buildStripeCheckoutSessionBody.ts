@@ -14,6 +14,7 @@ import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
+import { clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import { normalizeLineUserId } from '@/lib/lineUserId';
 
 function mapWrappingForStripe(
@@ -51,7 +52,10 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
         size: item.size.optionId,
         addOns: {
           cardType,
-          cardMessage: item.addOns.cardMessage?.trim() ?? '',
+          cardMessage: clipCheckoutField(
+            item.addOns.cardMessage?.trim() ?? '',
+            'giftCardMessage'
+          ),
           wrappingOption,
           ...(balloonText && { balloonText }),
           productAddOns: item.addOns.productAddOns,
@@ -104,10 +108,12 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     deliveryNotes,
   } = params;
 
-  const addressLineTrim =
+  const addressLineTrim = clipCheckoutField(
     delivery.deliveryFormattedAddress?.trim() ||
-    delivery.addressLine?.trim() ||
-    '';
+      delivery.addressLine?.trim() ||
+      '',
+    'deliveryAddress'
+  );
   const preferredTimeSlot =
     delivery.date && delivery.timeSlot
       ? `${delivery.date} ${delivery.timeSlot}`
@@ -139,7 +145,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
 
   const body: Record<string, unknown> = {
     lang,
-    customerName: customerName.trim(),
+    customerName: clipCheckoutField(customerName.trim(), 'customerName'),
     phone,
     phoneCountryCode: phoneCountryCode.replace(/\D/g, ''),
     contactPreference,
@@ -148,7 +154,9 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     delivery: {
       address: addressLineTrim,
       preferredTimeSlot,
-      recipientName: recipientName?.trim() || undefined,
+      recipientName: recipientName
+        ? clipCheckoutField(recipientName.trim(), 'recipientName')
+        : undefined,
       recipientPhone: recipientPhone?.trim() || undefined,
       ...(recipientPhoneCountryCode != null &&
         recipientPhoneCountryCode.replace(/\D/g, '') && {
@@ -157,16 +165,19 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       deliveryDestination,
       deliveryZoneId,
-      deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl?.trim() || undefined,
-      notes:
-        delivery.deliveryNote?.trim() ||
-        deliveryNotes?.trim() ||
-        undefined,
+      deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl
+        ? clipCheckoutField(delivery.deliveryGoogleMapsUrl.trim(), 'googleMapsUrl')
+        : undefined,
+      notes: (() => {
+        const raw =
+          delivery.deliveryNote?.trim() || deliveryNotes?.trim() || '';
+        return raw ? clipCheckoutField(raw, 'deliveryNote') : undefined;
+      })(),
     },
   };
 
   const email = customerEmail?.trim();
-  if (email) body.customerEmail = email;
+  if (email) body.customerEmail = clipCheckoutField(email, 'customerEmail');
 
   if (marketingEmailConsent === true) {
     body.marketingEmailConsent = true;

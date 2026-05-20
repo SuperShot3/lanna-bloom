@@ -14,6 +14,10 @@ import {
 import { PinIcon } from '@/components/icons/PinIcon';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 import { getBangkokYmd } from '@/lib/deliveryHours';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  clipCheckoutField,
+} from '@/lib/checkout/checkoutFieldLimits';
 
 /** 4 delivery windows from 09:00 to 20:00. */
 export const DELIVERY_TIME_SLOTS = [
@@ -247,17 +251,23 @@ export function DeliveryForm({
               <textarea
                 id="buy-now-address"
                 value={value.addressLine}
-                onChange={(e) => onChange({ ...value, addressLine: e.target.value })}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    addressLine: clipCheckoutField(e.target.value, 'deliveryAddress'),
+                  })
+                }
                 placeholder={t.addressPlaceholder}
                 minLength={10}
-                maxLength={300}
+                maxLength={CHECKOUT_FIELD_LIMITS.deliveryAddress}
                 rows={2}
                 className="buy-now-input buy-now-textarea"
                 aria-label={t.addressLabel}
                 aria-describedby="buy-now-address-hint"
               />
               <span id="buy-now-address-hint" className="buy-now-address-hint">
-                {value.addressLine.length}/300 {value.addressLine.length > 0 && value.addressLine.length < 10 && (
+                {value.addressLine.length}/{CHECKOUT_FIELD_LIMITS.deliveryAddress}{' '}
+                {value.addressLine.length > 0 && value.addressLine.length < 10 && (
                   <span className="buy-now-address-error"> — {t.addressTooShort}</span>
                 )}
               </span>
@@ -272,9 +282,16 @@ export function DeliveryForm({
                     id="buy-now-google-maps-link"
                     type="url"
                     value={value.deliveryGoogleMapsUrl ?? ''}
-                    onChange={(e) => onChange({ ...value, deliveryGoogleMapsUrl: e.target.value.trim() || null })}
+                    onChange={(e) =>
+                      onChange({
+                        ...value,
+                        deliveryGoogleMapsUrl:
+                          clipCheckoutField(e.target.value, 'googleMapsUrl').trim() || null,
+                      })
+                    }
                     placeholder={(t as { googleMapsLinkPlaceholder?: string }).googleMapsLinkPlaceholder ?? 'Paste link from Google Maps'}
                     className="buy-now-input"
+                    maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
                     aria-describedby="buy-now-google-maps-hint"
                   />
                   <p id="buy-now-google-maps-hint" className="buy-now-hint">

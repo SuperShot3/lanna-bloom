@@ -50,6 +50,11 @@ import {
 import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  clipCheckoutField,
+  sanitizeDeliveryFormValues,
+} from '@/lib/checkout/checkoutFieldLimits';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
@@ -185,7 +190,21 @@ function loadCartFormFromStorage(): StoredCartForm | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredCartForm;
     if (!parsed || typeof parsed !== 'object') return null;
-    return parsed;
+    return {
+      ...parsed,
+      customerName: clipCheckoutField(parsed.customerName ?? '', 'customerName'),
+      customerEmail: clipCheckoutField(parsed.customerEmail ?? '', 'customerEmail'),
+      phoneNational: clipCheckoutField(
+        (parsed.phoneNational ?? '').replace(/\D/g, ''),
+        'phoneNational'
+      ),
+      recipientName: clipCheckoutField(parsed.recipientName ?? '', 'recipientName'),
+      recipientPhoneNational: clipCheckoutField(
+        (parsed.recipientPhoneNational ?? '').replace(/\D/g, ''),
+        'recipientPhoneNational'
+      ),
+      delivery: sanitizeDeliveryFormValues(parsed.delivery),
+    };
   } catch {
     return null;
   }
@@ -209,7 +228,7 @@ function clearCartFormStorage() {
   }
 }
 
-const PHONE_MAX_DIGITS = CHECKOUT_NATIONAL_MAX;
+const PHONE_MAX_DIGITS = CHECKOUT_FIELD_LIMITS.phoneNational;
 
 /** Validation helpers for accordion Save & Continue (same rules as handlePlaceOrder). */
 function isDeliveryValid(
@@ -225,7 +244,7 @@ function isDeliveryValid(
   if (!isPremiumDeliveryValid(delivery)) return false;
   const addressTrim =
     delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
-  if (addressTrim.length > 500) return false;
+  if (addressTrim.length > CHECKOUT_FIELD_LIMITS.deliveryAddress) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
   if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
@@ -245,15 +264,28 @@ function isContactValid(
   _t: Record<string, string | number>
 ): boolean {
   if (!customerName.trim()) return false;
+  if (customerName.trim().length > CHECKOUT_FIELD_LIMITS.customerName) return false;
+  if (phoneNational.replace(/\D/g, '').length > CHECKOUT_FIELD_LIMITS.phoneNational) return false;
   if (!nationalDigitsValidForCheckout(countryCode, phoneNational)) return false;
   if (contactPreference.length === 0) return false;
   if (contactPreference.includes('line')) {
     const norm = normalizeLineUserId(lineId);
     if (!isValidLineUserId(norm)) return false;
   }
-  if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return false;
+  const emailTrim = customerEmail.trim();
+  if (emailTrim) {
+    if (emailTrim.length > CHECKOUT_FIELD_LIMITS.customerEmail) return false;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) return false;
+  }
   if (isOrderingForSomeoneElse) {
     if (!recipientName.trim() || !recipientPhoneNational) return false;
+    if (recipientName.trim().length > CHECKOUT_FIELD_LIMITS.recipientName) return false;
+    if (
+      recipientPhoneNational.replace(/\D/g, '').length >
+      CHECKOUT_FIELD_LIMITS.recipientPhoneNational
+    ) {
+      return false;
+    }
     if (!nationalDigitsValidForCheckout(recipientCountryCode, recipientPhoneNational)) return false;
   }
   return true;
@@ -1316,11 +1348,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           id={`${idPrefix}cart-customer-name`}
           type="text"
           value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
+          onChange={(e) =>
+            setCustomerName(clipCheckoutField(e.target.value, 'customerName'))
+          }
           placeholder={t.yourNamePlaceholder}
           className={inputClass}
           aria-required
           autoComplete="name"
+          maxLength={CHECKOUT_FIELD_LIMITS.customerName}
         />
       </div>
       <div className={phoneWrapClass}>
@@ -1446,10 +1481,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           id={`${idPrefix}cart-email`}
           type="email"
           value={customerEmail}
-          onChange={(e) => setCustomerEmail(e.target.value)}
+          onChange={(e) =>
+            setCustomerEmail(clipCheckoutField(e.target.value, 'customerEmail'))
+          }
           placeholder={t.emailPlaceholder ?? 'e.g. you@example.com'}
           className={inputClass}
           autoComplete="email"
+          maxLength={CHECKOUT_FIELD_LIMITS.customerEmail}
           aria-describedby={`${idPrefix}cart-email-hint`}
         />
         <p id={`${idPrefix}cart-email-hint`} className="cart-field-hint">
@@ -1488,11 +1526,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               id={`${idPrefix}cart-recipient-name`}
               type="text"
               value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
+              onChange={(e) =>
+                setRecipientName(clipCheckoutField(e.target.value, 'recipientName'))
+              }
               placeholder={t.recipientNamePlaceholder}
               className="cart-contact-input"
               aria-required
               autoComplete="name"
+              maxLength={CHECKOUT_FIELD_LIMITS.recipientName}
             />
           </div>
           <div className="cart-contact-field cart-phone-field-group">
@@ -1569,7 +1610,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       <div className="container">
         <div className="cart-checkout-header">
           <Link href={`/${lang}/catalog`} className="cart-back-link">
-            ← {t.backToShop}
+            <span className="cart-back-link__arrow" aria-hidden="true">
+              ←
+            </span>
+            <span className="cart-back-link__label">{t.backToShop}</span>
           </Link>
         </div>
         {destinationChangeNotice && (
@@ -1612,7 +1656,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onCardMessageChange={(v) => {
             if (primaryBouquetIdx < 0) return;
             const item = items[primaryBouquetIdx];
-            updateItem(primaryBouquetIdx, { ...item, addOns: { ...item.addOns, cardMessage: v } });
+            updateItem(primaryBouquetIdx, {
+              ...item,
+              addOns: {
+                ...item.addOns,
+                cardMessage: clipCheckoutField(v, 'giftCardMessage'),
+              },
+            });
           }}
           noCardMessage={noCardMessage}
           onNoCardMessageChange={setNoCardMessage}
@@ -1720,14 +1770,68 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           margin-bottom: 20px;
         }
         .cart-back-link {
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
           font-size: 0.875rem;
+          font-weight: 500;
           color: var(--accent);
           text-decoration: none;
           margin-bottom: 12px;
+          transition: color 0.25s ease;
+          animation: cart-back-link-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .cart-back-link:hover {
-          text-decoration: underline;
+        @keyframes cart-back-link-in {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .cart-back-link__arrow {
+          display: inline-block;
+          line-height: 1;
+          transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .cart-back-link__label {
+          position: relative;
+          line-height: 1.25;
+        }
+        .cart-back-link__label::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: -1px;
+          width: 100%;
+          height: 1.5px;
+          background: currentColor;
+          border-radius: 1px;
+          transform: scaleX(0);
+          transform-origin: left center;
+          transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .cart-back-link:hover,
+        .cart-back-link:focus-visible {
+          color: var(--accent-border);
+        }
+        .cart-back-link:hover .cart-back-link__arrow,
+        .cart-back-link:focus-visible .cart-back-link__arrow {
+          transform: translateX(-5px);
+        }
+        .cart-back-link:hover .cart-back-link__label::after,
+        .cart-back-link:focus-visible .cart-back-link__label::after {
+          transform: scaleX(1);
+        }
+        .cart-back-link:active {
+          transform: scale(0.98);
+        }
+        .cart-back-link:focus-visible {
+          outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+          outline-offset: 4px;
+          border-radius: 6px;
         }
         .cart-destination-notice,
         .cart-expansion-block-notice {
@@ -2213,6 +2317,21 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-radius: 6px;
         }
         @media (prefers-reduced-motion: reduce) {
+          .cart-back-link {
+            animation: none;
+          }
+          .cart-back-link,
+          .cart-back-link__arrow,
+          .cart-back-link__label::after {
+            transition-duration: 0.01ms;
+          }
+          .cart-back-link:hover .cart-back-link__arrow,
+          .cart-back-link:focus-visible .cart-back-link__arrow {
+            transform: none;
+          }
+          .cart-back-link:active {
+            transform: none;
+          }
           .cart-place-order-hint-slot {
             transition-duration: 0.01ms;
           }

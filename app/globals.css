@@ -341,15 +341,59 @@ main {
   .checkout-compact-header__inner {
     overflow: hidden;
     min-height: 0;
-    display: grid;
-    gap: 4px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
     padding:
       calc(6px + env(safe-area-inset-top, 0px)) max(0.9rem, env(safe-area-inset-right))
       6px max(0.9rem, env(safe-area-inset-left));
   }
 
+  .checkout-compact-header__main {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .checkout-compact-header__local-time {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    text-align: right;
+    line-height: 1.2;
+    padding-top: 1px;
+  }
+
+  .checkout-compact-header__local-time-clock {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #1a3c34;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .checkout-compact-header__local-time-date {
+    font-size: 9px;
+    font-weight: 600;
+    color: #6b6560;
+    white-space: nowrap;
+  }
+
+  .checkout-compact-header__local-time-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #9d9792;
+  }
+
   .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__summary,
-  .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__trust {
+  .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__trust,
+  .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__local-time {
     animation: checkout-compact-summary-in 520ms var(--cart-header-ease) var(--cart-header-reveal-delay) both;
   }
 
@@ -511,7 +555,8 @@ main {
   }
 
   .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__summary,
-  .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__trust {
+  .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__trust,
+  .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__local-time {
     animation: none;
   }
 }

@@ -113,6 +113,31 @@ export function SelectionTile({
         .co-tile--compact .co-tile__sub {
           font-size: 12px;
         }
+        /* Delivery date row — single short label, slim pill-like tiles */
+        .co-tile--date {
+          align-items: center;
+          justify-content: center;
+          gap: 0;
+          padding: 8px 6px;
+          min-height: 40px;
+          border-radius: 11px;
+          width: 100%;
+        }
+        .co-tile--date.co-tile--selected {
+          padding: 7px 5px;
+        }
+        .co-tile--date .co-tile__check {
+          top: 5px;
+          right: 5px;
+        }
+        .co-tile--date .co-tile__title {
+          font-size: 14px;
+          font-weight: 600;
+          padding-right: 0;
+          text-align: center;
+          width: 100%;
+          line-height: 1.25;
+        }
       `}</style>
     </button>
   );

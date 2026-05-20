@@ -6,6 +6,10 @@ import { BouquetsCarousel } from '@/components/BouquetsCarousel';
 import { GiftsCarousel } from '@/components/GiftsCarousel';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  clipCheckoutField,
+} from '@/lib/checkout/checkoutFieldLimits';
 
 export type CardType = 'free' | 'beautiful' | null;
 export type WrappingPreference = 'none' | 'classic' | 'premium' | null;
@@ -21,7 +25,6 @@ export interface AddOnsValues {
 }
 
 export const CARD_BEAUTIFUL_PRICE_THB = 20;
-const CARD_MESSAGE_MAX = 250;
 
 const defaultAddOns: AddOnsValues = {
   cardType: null,
@@ -61,7 +64,10 @@ export function AddOnsSection({
     giftsSectionTitle?: string;
     flowersSectionTitle?: string;
   };
-  const cardMessageMax = typeof t.cardMessageMax === 'number' ? t.cardMessageMax : CARD_MESSAGE_MAX;
+  const cardMessageMax =
+    typeof t.cardMessageMax === 'number'
+      ? Math.min(t.cardMessageMax, CHECKOUT_FIELD_LIMITS.giftCardMessage)
+      : CHECKOUT_FIELD_LIMITS.giftCardMessage;
 
   return (
     <div className="addons-section">
@@ -91,7 +97,7 @@ export function AddOnsSection({
           onChange={(e) =>
             onChange({
               ...value,
-              cardMessage: e.target.value.slice(0, cardMessageMax),
+              cardMessage: clipCheckoutField(e.target.value, 'giftCardMessage'),
             })
           }
           placeholder={t.cardMessagePlaceholder}

@@ -1,11 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type { CheckoutStickyHeaderPayload } from '@/contexts/CheckoutStickyHeaderContext';
+import { type Locale, translations } from '@/lib/i18n';
+import { formatBangkokDate, formatBangkokTime } from '@/lib/deliveryHours';
+
+const CLOCK_TICK_MS = 1_000;
 
 export function CheckoutCompactHeaderBar({
   payload,
+  lang,
 }: {
   payload: CheckoutStickyHeaderPayload;
+  lang: Locale;
 }) {
   const thb = '\u0E3F';
   const deliveryFeeDisplay = !payload.deliveryFeeKnown
@@ -14,9 +21,14 @@ export function CheckoutCompactHeaderBar({
       ? payload.deliveryFreeLabel
       : `${thb}${payload.deliveryFee.toLocaleString()}`;
 
+  const locationLabel = translations[lang].catalog.localTimeBangkok ?? 'Chiang Mai';
+  const clockTitle =
+    lang === 'th' ? 'เวลาท้องถิ่น (เชียงใหม่)' : 'Local time in Chiang Mai (Asia/Bangkok)';
+
   return (
     <div className="checkout-compact-header" role="region" aria-label="Order summary">
       <div className="checkout-compact-header__inner">
+        <div className="checkout-compact-header__main">
         <div className="checkout-compact-header__summary" aria-live="polite">
           <div className="checkout-compact-header__total-row">
             <span className="checkout-compact-header__currency">{thb}</span>
@@ -54,7 +66,43 @@ export function CheckoutCompactHeaderBar({
             <span className="checkout-compact-header__policy-note">{payload.policyHint}</span>
           </span>
         </div>
+        </div>
+        <CheckoutChiangMaiClock lang={lang} locationLabel={locationLabel} title={clockTitle} />
       </div>
+    </div>
+  );
+}
+
+function CheckoutChiangMaiClock({
+  lang,
+  locationLabel,
+  title,
+}: {
+  lang: Locale;
+  locationLabel: string;
+  title: string;
+}) {
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), CLOCK_TICK_MS);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <div
+      className="checkout-compact-header__local-time"
+      title={title}
+      aria-label={title}
+    >
+      <time className="checkout-compact-header__local-time-clock" dateTime={now?.toISOString()} suppressHydrationWarning>
+        {now ? formatBangkokTime(now, lang) : '--:--'}
+      </time>
+      <span className="checkout-compact-header__local-time-date" suppressHydrationWarning>
+        {now ? formatBangkokDate(now, lang) : '—'}
+      </span>
+      <span className="checkout-compact-header__local-time-label">{locationLabel}</span>
     </div>
   );
 }

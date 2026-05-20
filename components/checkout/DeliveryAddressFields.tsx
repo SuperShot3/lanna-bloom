@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
+import { CHECKOUT_FIELD_LIMITS, clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import type { Locale } from '@/lib/i18n';
 
 const GOOGLE_MAPS_OPEN_URL = 'https://www.google.com/maps';
-const MAPS_LINK_MAX_LEN = 2000;
 
 export function DeliveryAddressFields({
   lang: _lang,
@@ -58,7 +58,7 @@ export function DeliveryAddressFields({
   }, [value.deliveryNote]);
 
   const onAddressChange = (text: string) => {
-    const clipped = text.slice(0, 500);
+    const clipped = clipCheckoutField(text, 'deliveryAddress');
     setAddressDraft(clipped);
     onChange({
       ...value,
@@ -77,7 +77,7 @@ export function DeliveryAddressFields({
   };
 
   const onMapsLinkChange = (url: string) => {
-    const clipped = url.slice(0, MAPS_LINK_MAX_LEN);
+    const clipped = clipCheckoutField(url, 'googleMapsUrl');
     setMapsLinkDraft(clipped);
     onChange({
       ...value,
@@ -86,7 +86,7 @@ export function DeliveryAddressFields({
   };
 
   const onNoteChange = (note: string) => {
-    const clipped = note.slice(0, 300);
+    const clipped = clipCheckoutField(note, 'deliveryNote');
     setNoteDraft(clipped);
     onChange({ ...value, deliveryNote: clipped });
     if (clipped.trim()) setShowNoteHint(false);
@@ -111,7 +111,7 @@ export function DeliveryAddressFields({
           }}
           placeholder={labels.addressPlaceholder}
           rows={3}
-          maxLength={500}
+          maxLength={CHECKOUT_FIELD_LIMITS.deliveryAddress}
         />
       </div>
 
@@ -143,6 +143,7 @@ export function DeliveryAddressFields({
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
+            maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
             aria-describedby={`${inputId}-maps-link-hint`}
           />
           <a
@@ -186,7 +187,7 @@ export function DeliveryAddressFields({
             if (!noteDraft.trim()) setShowNoteHint(true);
           }}
           placeholder={labels.deliveryNotePlaceholder}
-          maxLength={300}
+            maxLength={CHECKOUT_FIELD_LIMITS.deliveryNote}
           autoComplete="off"
         />
         {showNoteHint && !value.deliveryNote?.trim() && (

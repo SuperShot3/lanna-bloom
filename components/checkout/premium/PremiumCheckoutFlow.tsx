@@ -24,7 +24,10 @@ import { isNonBouquetCartLine } from '@/lib/cart/cartPriceBreakdown';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { formatThb } from '@/lib/costsUtils';
-const CARD_MESSAGE_MAX = 250;
+import {
+  CHECKOUT_FIELD_LIMITS,
+  clipCheckoutField,
+} from '@/lib/checkout/checkoutFieldLimits';
 
 const MORNING_SLOT = DELIVERY_TIME_SLOTS[0];
 const MID_AFTERNOON_SLOT = DELIVERY_TIME_SLOTS[1];
@@ -164,7 +167,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
 
   const applyGiftChip = (text: string) => {
     onNoCardMessageChange(false);
-    syncGiftMessageDraft(text);
+    syncGiftMessageDraft(clipCheckoutField(text, 'giftCardMessage'));
     setGiftMessageChipsOpen(false);
   };
 
@@ -355,27 +358,30 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         <h2 className="co-section-title">{t.deliveryDateTitle}</h2>
         <div className="co-tile-grid co-tile-grid--3">
           <SelectionTile
+            compact
+            className="co-tile--date"
             selected={delivery.date === todayStr && dateMode !== 'custom'}
             title={t.todayTile}
-            subtitle={t.todaySub}
             onClick={() => {
               setDateMode('today');
               onDeliveryChange({ ...delivery, date: todayStr });
             }}
           />
           <SelectionTile
+            compact
+            className="co-tile--date"
             selected={delivery.date === tomorrowStr && dateMode !== 'custom'}
             title={t.tomorrowTile}
-            subtitle={t.tomorrowSub}
             onClick={() => {
               setDateMode('tomorrow');
               onDeliveryChange({ ...delivery, date: tomorrowStr });
             }}
           />
           <SelectionTile
+            compact
+            className="co-tile--date"
             selected={dateMode === 'custom'}
             title={t.chooseDateTile}
-            subtitle={t.chooseDateSub}
             onClick={() => {
               setDateMode('custom');
               dateInputRef.current?.showPicker?.();
@@ -465,8 +471,13 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                 id="co-recipient-name"
                 className="co-input"
                 value={recipientName}
-                onChange={(e) => onRecipientNameChange(e.target.value)}
+                onChange={(e) =>
+                  onRecipientNameChange(
+                    clipCheckoutField(e.target.value, 'recipientName')
+                  )
+                }
                 autoComplete="name"
+                maxLength={CHECKOUT_FIELD_LIMITS.recipientName}
               />
             </div>
             <div className="co-field">
@@ -487,9 +498,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                   className="co-input co-phone-num"
                   value={recipientPhoneNational}
                   onChange={(e) =>
-                    onRecipientPhoneNationalChange(e.target.value.replace(/\D/g, '').slice(0, 15))
+                    onRecipientPhoneNationalChange(
+                      e.target.value
+                        .replace(/\D/g, '')
+                        .slice(0, CHECKOUT_FIELD_LIMITS.recipientPhoneNational)
+                    )
                   }
                   autoComplete="tel-national"
+                  maxLength={CHECKOUT_FIELD_LIMITS.recipientPhoneNational}
                 />
               </div>
             </div>
@@ -528,8 +544,11 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                 disabled={noCardMessage}
                 onChange={(e) => {
                   onNoCardMessageChange(false);
-                  syncGiftMessageDraft(e.target.value.slice(0, CARD_MESSAGE_MAX));
+                  syncGiftMessageDraft(
+                    clipCheckoutField(e.target.value, 'giftCardMessage')
+                  );
                 }}
+                maxLength={CHECKOUT_FIELD_LIMITS.giftCardMessage}
                 onBlur={() => {
                   giftMessageFocusedRef.current = false;
                   hideGiftChipsIfHasText();
@@ -1159,7 +1178,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           gap: 8px;
         }
         .co-tile-grid--3 {
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          align-items: stretch;
         }
         @media (max-width: 400px) {
           .co-tile-grid--3 {

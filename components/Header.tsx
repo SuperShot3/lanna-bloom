@@ -244,7 +244,7 @@ export function Header({
         data-header-mode={mobileCartCheckoutHeader ? headerCollapseMode : undefined}
       >
         {mobileCartCheckoutHeader && checkoutStickyPayload ? (
-          <CheckoutCompactHeaderBar payload={checkoutStickyPayload} />
+          <CheckoutCompactHeaderBar payload={checkoutStickyPayload} lang={lang} />
         ) : null}
         <div className="site-header__full max-w-7xl mx-auto h-20 flex items-center justify-between gap-2 sm:gap-4"
           style={{
