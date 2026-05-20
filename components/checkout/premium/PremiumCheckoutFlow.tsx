@@ -1,7 +1,6 @@
 ﻿'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -216,9 +215,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                   </div>
                 </div>
                 <div className="co-product-row__actions">
-                  <Link href={`/${lang}/catalog`} className="co-product-row__edit">
-                    {t.changeLink}
-                  </Link>
                   <button
                     type="button"
                     className="co-product-row__remove"
@@ -923,12 +919,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           align-items: flex-end;
           gap: 8px;
           flex-shrink: 0;
-        }
-        .co-product-row__edit {
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--primary);
-          text-decoration: none;
         }
         .co-product-row__remove {
           padding: 6px 12px;
