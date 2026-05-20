@@ -27,6 +27,24 @@ type GoogleMapsPlaces = {
   ) => AutocompleteInstance;
 };
 
+function GoogleMapsPinIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      <path
+        fill="#EA4335"
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+      />
+      <circle cx="12" cy="9" r="2.25" fill="#fff" />
+    </svg>
+  );
+}
+
 export function DeliveryAddressAutocomplete({
   lang: _lang,
   value,
@@ -47,10 +65,10 @@ export function DeliveryAddressAutocomplete({
   labels: {
     searchPlaceholder: string;
     confirmedChange: string;
-    manualFallbackLabel: string;
-    manualFallbackPlaceholder: string;
+    mapsLinkLabel: string;
+    mapsLinkHint: string;
     mapsLinkPlaceholder: string;
-    addressUncertain: string;
+    openGoogleMapsButton: string;
   };
 }) {
   const { ready, hasKey } = useGooglePlacesScript();
@@ -59,8 +77,6 @@ export function DeliveryAddressAutocomplete({
   const [query, setQuery] = useState(
     () => value.deliveryPlaceName?.trim() || value.addressLine?.trim() || ''
   );
-  const [showManual, setShowManual] = useState(false);
-
   useEffect(() => {
     const next = value.deliveryPlaceName?.trim() || value.addressLine?.trim() || '';
     setQuery((prev) => (prev === next ? prev : next));
@@ -92,7 +108,6 @@ export function DeliveryAddressAutocomplete({
         deliveryDistrict: detected ?? value.deliveryDistrict,
       });
       setQuery(name || formatted || addressLine);
-      setShowManual(false);
     },
     [onChange, value]
   );
@@ -194,44 +209,39 @@ export function DeliveryAddressAutocomplete({
       )}
 
       <div className="co-address-extras">
-        <button
-          type="button"
-          className="co-text-btn co-text-btn--subtle"
-          onClick={() => setShowManual((s) => !s)}
-        >
-          {labels.manualFallbackLabel}
-        </button>
-        {showManual && (
-          <div className="co-address-manual">
-            <textarea
-              className="co-input co-textarea"
-              rows={2}
-              value={value.addressLine}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  addressLine: e.target.value.slice(0, 300),
-                  deliveryPlaceId: null,
-                  deliveryPlaceName: null,
-                  deliveryFormattedAddress: null,
-                })
-              }
-              placeholder={labels.manualFallbackPlaceholder}
-              aria-label={labels.manualFallbackPlaceholder}
-            />
-            <input
-              type="url"
-              className="co-input"
-              value={value.deliveryGoogleMapsUrl ?? ''}
-              onChange={(e) => handleMapsPaste(e.target.value)}
-              placeholder={labels.mapsLinkPlaceholder}
-              aria-label={labels.mapsLinkPlaceholder}
-            />
-            {!confirmed && value.addressLine.trim().length >= 10 && !value.deliveryPlaceId && (
-              <p className="co-inline-hint">{labels.addressUncertain}</p>
-            )}
+        <div className="co-maps-block">
+          <div className="co-maps-row">
+            <div className="co-maps-field">
+              <label className="co-maps-visually-hidden" htmlFor={`${inputId}-maps`}>
+                {labels.mapsLinkLabel}
+              </label>
+              <input
+                id={`${inputId}-maps`}
+                type="url"
+                className="co-input co-input-maps-inline"
+                value={value.deliveryGoogleMapsUrl ?? ''}
+                onChange={(e) => handleMapsPaste(e.target.value)}
+                placeholder={labels.mapsLinkPlaceholder}
+                aria-label={labels.mapsLinkLabel}
+                aria-describedby={`${inputId}-maps-hint`}
+                inputMode="url"
+                autoComplete="off"
+              />
+            </div>
+            <a
+              href="https://www.google.com/maps"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="co-maps-open-btn"
+            >
+              <GoogleMapsPinIcon className="co-maps-open-btn-icon" />
+              <span className="co-maps-open-btn-text">{labels.openGoogleMapsButton}</span>
+            </a>
           </div>
-        )}
+          <p className="co-maps-hint" id={`${inputId}-maps-hint`}>
+            {labels.mapsLinkHint}
+          </p>
+        </div>
       </div>
 
       <style jsx>{`
@@ -309,21 +319,91 @@ export function DeliveryAddressAutocomplete({
           font-weight: 500;
         }
         .co-address-extras {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          align-items: flex-start;
+          width: 100%;
         }
-        .co-address-manual {
+        .co-maps-block {
           width: 100%;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 6px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: color-mix(in srgb, var(--pastel-mint) 35%, #fff);
+          border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--border));
+          box-sizing: border-box;
         }
-        .co-inline-hint {
-          margin: 0;
+        .co-maps-row {
+          display: flex;
+          flex-wrap: nowrap;
+          align-items: stretch;
+          gap: 8px;
+        }
+        .co-maps-field {
+          flex: 1 1 0;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        .co-input-maps-inline {
+          min-height: 44px;
+          padding: 10px 12px;
+          font-size: 15px;
+          border-radius: 10px;
+          width: 100%;
+          flex: 1;
+        }
+        .co-maps-open-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+          min-height: 44px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+          background: #fff;
+          color: var(--text);
           font-size: 13px;
-          line-height: 1.45;
+          font-weight: 600;
+          font-family: inherit;
+          text-decoration: none;
+          cursor: pointer;
+          transition:
+            border-color 0.15s,
+            box-shadow 0.15s;
+          line-height: 1.25;
+          box-sizing: border-box;
+        }
+        .co-maps-open-btn:hover {
+          border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+          box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+        }
+        .co-maps-open-btn:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 70%, transparent);
+        }
+        .co-maps-open-btn-icon {
+          flex-shrink: 0;
+        }
+        .co-maps-open-btn-text {
+          text-align: left;
+        }
+        .co-maps-visually-hidden {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          clip-path: inset(50%);
+          white-space: nowrap;
+          border: 0;
+        }
+        .co-maps-hint {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.4;
           color: var(--text-muted);
         }
       `}</style>

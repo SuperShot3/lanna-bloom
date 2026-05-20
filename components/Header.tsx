@@ -30,6 +30,9 @@ import {
   readMarketSession,
   writeMarketSession,
 } from '@/lib/delivery/marketSession';
+import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
+import { useMobileCartHeaderCollapse } from '@/hooks/useMobileCartHeaderCollapse';
+import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
@@ -113,6 +116,7 @@ export function Header({
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { payload: checkoutStickyPayload, setCollapseMode } = useCheckoutStickyHeader();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -136,6 +140,19 @@ export function Header({
     window.addEventListener('scroll', checkScroll, { passive: true });
     return () => window.removeEventListener('scroll', checkScroll);
   }, []);
+
+  const mobileCartCheckoutHeader = isMobile && isCartPage && checkoutStickyPayload != null;
+  const headerCollapseMode = useMobileCartHeaderCollapse({
+    enabled: mobileCartCheckoutHeader,
+    menuOpen,
+    onModeChange: setCollapseMode,
+  });
+
+  useEffect(() => {
+    const hideBottomSticky = mobileCartCheckoutHeader && headerCollapseMode === 'compact';
+    document.body.classList.toggle('cart-checkout-header-compact', hideBottomSticky);
+    return () => document.body.classList.remove('cart-checkout-header-compact');
+  }, [mobileCartCheckoutHeader, headerCollapseMode]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
@@ -222,11 +239,14 @@ export function Header({
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b transition-[top,colors] duration-300 overflow-x-clip ${hasMayPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,colors] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${hasMayPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled}
+        data-header-mode={mobileCartCheckoutHeader ? headerCollapseMode : undefined}
       >
-        <div
-          className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-2 sm:gap-4"
+        {mobileCartCheckoutHeader && checkoutStickyPayload ? (
+          <CheckoutCompactHeaderBar payload={checkoutStickyPayload} />
+        ) : null}
+        <div className="site-header__full max-w-7xl mx-auto h-20 flex items-center justify-between gap-2 sm:gap-4"
           style={{
             paddingLeft: 'max(1rem, env(safe-area-inset-left))',
             paddingRight: 'max(1rem, env(safe-area-inset-right))',

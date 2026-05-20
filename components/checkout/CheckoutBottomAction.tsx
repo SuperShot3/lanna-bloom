@@ -5,6 +5,8 @@ import type { Locale } from '@/lib/i18n';
 
 export type CheckoutBottomActionProps = {
   lang: Locale;
+  /** When set, shows date and time window (e.g. "Today · 09:00–12:00") under the total. */
+  deliveryScheduleLine?: string | null;
   total: number;
   deliveryFee: number;
   deliveryFeeGross?: number;
@@ -28,6 +30,7 @@ export type CheckoutBottomActionProps = {
 
 export function CheckoutBottomAction({
   lang,
+  deliveryScheduleLine,
   total,
   deliveryFee,
   deliveryFeeGross,
@@ -40,9 +43,13 @@ export function CheckoutBottomAction({
 }: CheckoutBottomActionProps) {
   const cta = readyToPay ? labels.payNow : labels.continue;
   const thb = '\u0E3F';
+  const regionLabel =
+    deliveryScheduleLine && deliveryScheduleLine.trim().length > 0
+      ? `${cta}. ${deliveryScheduleLine}`
+      : cta;
 
   return (
-    <div className="checkout-bottom-action" role="region" aria-label={cta}>
+    <div className="checkout-bottom-action" role="region" aria-label={regionLabel}>
       <div className="checkout-bottom-action__inner">
         <div className="checkout-bottom-action__price" aria-live="polite">
           <div className="checkout-bottom-action__total-row">
@@ -51,6 +58,9 @@ export function CheckoutBottomAction({
               {total.toLocaleString()}
             </span>
           </div>
+          {deliveryScheduleLine && deliveryScheduleLine.trim().length > 0 ? (
+            <p className="checkout-bottom-action__schedule">{deliveryScheduleLine}</p>
+          ) : null}
           <p className="checkout-bottom-action__delivery-meta">
             {labels.deliveryFeeLabel}{' '}
             {!deliveryFeeKnown ? (
@@ -133,6 +143,13 @@ export function CheckoutBottomAction({
           letter-spacing: -0.03em;
           color: var(--text);
           line-height: 1.15;
+        }
+        .checkout-bottom-action__schedule {
+          margin: 4px 0 0;
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+          line-height: 1.25;
         }
         .checkout-bottom-action__delivery-meta {
           margin: 2px 0 0;

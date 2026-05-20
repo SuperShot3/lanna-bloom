@@ -28,11 +28,11 @@ export function PhoneCountrySelect({
       {options}
       <style jsx global>{`
         select.co-phone-cc--flag-only {
-          width: 58px;
-          min-width: 58px;
-          max-width: 58px;
+          width: 76px;
+          min-width: 76px;
+          max-width: 76px;
           max-height: 48px;
-          padding: 12px 6px;
+          padding: 12px 8px;
           font-size: 22px;
           line-height: 1;
           text-align: center;

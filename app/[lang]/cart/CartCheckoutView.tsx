@@ -1,15 +1,60 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { Locale } from '@/lib/i18n';
+import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
 import { translations } from '@/lib/i18n';
 import type { CartItem } from '@/contexts/CartContext';
-import type { DeliveryFormValues } from '@/components/DeliveryForm';
+import {
+  isDeliveryTimeSlotSelectableForDate,
+  type DeliveryFormValues,
+} from '@/components/DeliveryForm';
 import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumCheckoutFlow';
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
+import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
+
+function formatCheckoutStickySchedule(
+  delivery: DeliveryFormValues,
+  lang: Locale,
+  todayLabel: string,
+  tomorrowLabel: string
+): string | null {
+  const { date, timeSlot } = delivery;
+  if (!date || !timeSlot) return null;
+  if (!isDeliveryTimeSlotSelectableForDate(date, timeSlot)) return null;
+
+  const todayStr = getLocalTodayYmd();
+  const tomorrowStr = getLocalTomorrowYmd();
+  let dateLabel: string;
+  if (date === todayStr) dateLabel = todayLabel;
+  else if (date === tomorrowStr) dateLabel = tomorrowLabel;
+  else {
+    const d = new Date(`${date}T12:00:00+07:00`);
+    dateLabel = d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
+      timeZone: 'Asia/Bangkok',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+  }
+  return `${dateLabel} · ${timeSlot}`;
+}
+
+function buildStickyItemSummary(items: CartItem[], lang: Locale): string | null {
+  if (items.length === 0) return null;
+  const totalQty = items.reduce((sum, item) => sum + (item.quantity ?? 1), 0);
+  const primary = items[0];
+  const primaryName = lang === 'th' ? primary.nameTh : primary.nameEn;
+  if (totalQty <= 1) return primaryName;
+  return `${primaryName} +${totalQty - 1}`;
+}
+
+function hasToyItemInCart(items: CartItem[]): boolean {
+  return items.some((item) => (item.itemType ?? 'bouquet') === 'plushyToy');
+}
 
 export function CartCheckoutView({
   lang,
@@ -27,6 +72,8 @@ export function CartCheckoutView({
   onRecipientPhoneNationalChange,
   surpriseDelivery,
   onSurpriseDeliveryChange,
+  orderingForSomeoneElse,
+  onOrderingForSomeoneElseChange,
   cardMessage,
   onCardMessageChange,
   noCardMessage,
@@ -71,6 +118,8 @@ export function CartCheckoutView({
   onRecipientPhoneNationalChange: (v: string) => void;
   surpriseDelivery: boolean;
   onSurpriseDeliveryChange: (v: boolean) => void;
+  orderingForSomeoneElse: boolean;
+  onOrderingForSomeoneElseChange: (v: boolean) => void;
   cardMessage: string;
   onCardMessageChange: (v: string) => void;
   noCardMessage: boolean;
@@ -121,6 +170,71 @@ export function CartCheckoutView({
 
   const checkoutDisabled = !paymentAvailability.stripe.enabled || placing;
 
+  const deliveryScheduleLine = formatCheckoutStickySchedule(
+    delivery,
+    lang,
+    tPremium.todayTile,
+    tPremium.tomorrowTile
+  );
+  const stickyItemSummary = buildStickyItemSummary(items, lang);
+  const stickyHasToyItem = hasToyItemInCart(items);
+
+  const { setPayload: setCheckoutStickyHeader } = useCheckoutStickyHeader();
+  const onBottomActionRef = useRef(onBottomAction);
+  onBottomActionRef.current = onBottomAction;
+
+  useEffect(() => {
+    setCheckoutStickyHeader({
+      total: grandTotal,
+      itemSummary: stickyItemSummary,
+      hasToyItem: stickyHasToyItem,
+      deliveryScheduleLine,
+      deliveryFee,
+      deliveryFeeGross,
+      deliveryFeeKnown: hasDeliveryZone,
+      deliveryFeeLabel: t.deliveryFeeLabel,
+      deliveryFreeLabel: tPremium.freeDelivery,
+      deliveryPendingLabel: t.stickyDeliverySelectArea ?? 'Select area',
+      policyHint: t.stickyPolicyApplies,
+      policyDeliveryLabel: t.policyDeliveryLink,
+      policyRefundLabel: t.policyRefundLink,
+      giftMessageLabel: t.stickyGiftMessageOptional,
+      securePaymentLabel: translations[lang].trustBadges.securePayments,
+      deliveryPolicyHref: `/${lang}/info/delivery-policy`,
+      refundPolicyHref: `/${lang}/refund-replacement`,
+      readyToPay: isPaymentUnlocked,
+      loading: placing,
+      disabled: !checkoutSubmissionToken,
+      onAction: () => onBottomActionRef.current(),
+      continueLabel: tPremium.continueBtn,
+      payNowLabel: tPremium.payNowBtn,
+    });
+    return () => setCheckoutStickyHeader(null);
+  }, [
+    grandTotal,
+    isPaymentUnlocked,
+    placing,
+    checkoutSubmissionToken,
+    stickyItemSummary,
+    stickyHasToyItem,
+    deliveryScheduleLine,
+    deliveryFee,
+    deliveryFeeGross,
+    hasDeliveryZone,
+    t.deliveryFeeLabel,
+    t.stickyDeliverySelectArea,
+    t.stickyPolicyApplies,
+    t.stickyGiftMessageOptional,
+    t.policyDeliveryLink,
+    t.policyRefundLink,
+    translations,
+    lang,
+    tPremium.continueBtn,
+    tPremium.payNowBtn,
+    tPremium.freeDelivery,
+    setCheckoutStickyHeader,
+  ]);
+
   return (
     <>
       <PremiumCheckoutFlow
@@ -139,6 +253,8 @@ export function CartCheckoutView({
         onRecipientPhoneNationalChange={onRecipientPhoneNationalChange}
         surpriseDelivery={surpriseDelivery}
         onSurpriseDeliveryChange={onSurpriseDeliveryChange}
+        orderingForSomeoneElse={orderingForSomeoneElse}
+        onOrderingForSomeoneElseChange={onOrderingForSomeoneElseChange}
         cardMessage={cardMessage}
         onCardMessageChange={onCardMessageChange}
         noCardMessage={noCardMessage}
@@ -207,6 +323,7 @@ export function CartCheckoutView({
       />
       <CheckoutBottomAction
         lang={lang}
+        deliveryScheduleLine={deliveryScheduleLine}
         total={grandTotal}
         deliveryFee={deliveryFee}
         deliveryFeeGross={deliveryFeeGross}

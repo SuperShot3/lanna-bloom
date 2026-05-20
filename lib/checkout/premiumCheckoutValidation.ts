@@ -29,6 +29,26 @@ export function hasDeliveryAddressInput(delivery: DeliveryFormValues): boolean {
   return Boolean(place || (maps && isValidGoogleMapsUrl(maps)) || address.length >= 10);
 }
 
+/** Autocomplete resolved to a definite place (place id or name + formatted address from Places). */
+export function hasConfirmedGooglePlacesSelection(delivery: DeliveryFormValues): boolean {
+  if (delivery.deliveryPlaceId?.trim()) return true;
+  const formatted = delivery.deliveryFormattedAddress?.trim() ?? '';
+  const placeName = delivery.deliveryPlaceName?.trim() ?? '';
+  return Boolean(formatted && placeName);
+}
+
+export function hasValidGoogleMapsCheckoutLink(delivery: DeliveryFormValues): boolean {
+  const maps = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
+  return Boolean(maps && isValidGoogleMapsUrl(maps));
+}
+
+/** Nudge at pay time: typed address only — no Places pin and no valid Maps URL yet. */
+export function shouldPromptForGoogleMapsPin(delivery: DeliveryFormValues): boolean {
+  if (hasValidGoogleMapsCheckoutLink(delivery)) return false;
+  if (hasConfirmedGooglePlacesSelection(delivery)) return false;
+  return hasDeliveryAddressInput(delivery);
+}
+
 export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
   if (!delivery.deliveryZoneId) return false;
   if (!isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) return false;
@@ -101,6 +121,8 @@ export function getFirstCheckoutFieldIssue(
     recipientName: string;
     recipientCountryCode: string;
     recipientPhoneNational: string;
+    /** When false, recipient name/phone are not required. */
+    isOrderingForSomeoneElse: boolean;
   }
 ): CheckoutFieldIssue | null {
   const {
@@ -114,6 +136,7 @@ export function getFirstCheckoutFieldIssue(
     recipientName,
     recipientCountryCode,
     recipientPhoneNational,
+    isOrderingForSomeoneElse,
   } = params;
 
   if (!delivery.deliveryZoneId || !isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) {
@@ -137,14 +160,6 @@ export function getFirstCheckoutFieldIssue(
     return { sectionId: 'deliveryTime', message: copy.pleaseChooseDeliveryTime };
   }
 
-  if (!recipientName.trim()) {
-    return { sectionId: 'recipient', message: copy.pleaseAddRecipientName };
-  }
-
-  if (!nationalDigitsValidForCheckout(recipientCountryCode, recipientPhoneNational)) {
-    return { sectionId: 'recipient', message: copy.pleaseAddRecipientPhone };
-  }
-
   if (!customerName.trim()) {
     return { sectionId: 'sender', message: copy.pleaseAddYourName };
   }
@@ -166,6 +181,16 @@ export function getFirstCheckoutFieldIssue(
 
   if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
     return { sectionId: 'sender', message: copy.pleaseAddYourEmail };
+  }
+
+  if (isOrderingForSomeoneElse) {
+    if (!recipientName.trim()) {
+      return { sectionId: 'recipient', message: copy.pleaseAddRecipientName };
+    }
+
+    if (!nationalDigitsValidForCheckout(recipientCountryCode, recipientPhoneNational)) {
+      return { sectionId: 'recipient', message: copy.pleaseAddRecipientPhone };
+    }
   }
 
   return null;

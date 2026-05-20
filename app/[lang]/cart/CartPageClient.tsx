@@ -34,15 +34,17 @@ import {
   qualifiesForMay2026FreeDelivery,
 } from '@/lib/promo/campaigns';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
-import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
 import { CartCheckoutView } from '@/app/[lang]/cart/CartCheckoutView';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
+import { LineIdFieldReveal } from '@/components/checkout/LineIdFieldReveal';
+import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { renderFlagCountryCodeOptions } from '@/lib/checkout/phoneCountryDial';
 import {
   getFirstCheckoutFieldIssue,
   isPremiumDeliveryValid,
   isPremiumRecipientValid,
   isPremiumSenderValid,
+  shouldPromptForGoogleMapsPin,
   type CheckoutSectionId,
 } from '@/lib/checkout/premiumCheckoutValidation';
 import { TrustBadges } from '@/components/TrustBadges';
@@ -52,6 +54,7 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
+import { PinIcon } from '@/components/icons/PinIcon';
 import {
   CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY,
   CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY,
@@ -656,6 +659,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [mapsPinPromptOpen, setMapsPinPromptOpen] = useState(false);
+  const skipNextMapsPromptRef = useRef(false);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
@@ -839,7 +844,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   });
   const isPaymentUnlocked =
     isDeliveryValidNow &&
-    isRecipientValidNow &&
+    (!isOrderingForSomeoneElse || isRecipientValidNow) &&
     isContactValidNow &&
     !cartExpansionInvalid &&
     !cartDestinationBouquetInvalid;
@@ -1037,7 +1042,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setOrderError(null);
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
-    const recipientPhone = recipientCountryCode + recipientPhoneNational;
+    const recipientPhoneDigits =
+      recipientCountryCode.replace(/\D/g, '') + recipientPhoneNational.replace(/\D/g, '');
     try {
       const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
       trackAddPaymentInfo({
@@ -1059,10 +1065,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         contactPreference,
         lineId: lineId.trim(),
         submissionToken: checkoutSubmissionToken,
-        recipientName: recipientName.trim(),
-        recipientPhone,
-        recipientPhoneCountryCode: recipientCountryCode,
-        surpriseDelivery,
+        recipientName: isOrderingForSomeoneElse ? recipientName.trim() : undefined,
+        recipientPhone: isOrderingForSomeoneElse ? recipientPhoneDigits : undefined,
+        recipientPhoneCountryCode: isOrderingForSomeoneElse ? recipientCountryCode : undefined,
+        surpriseDelivery: isOrderingForSomeoneElse ? surpriseDelivery : false,
         deliveryNotes: deliveryNotes.trim() || undefined,
       });
 
@@ -1117,6 +1123,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       recipientName,
       recipientCountryCode,
       recipientPhoneNational,
+      isOrderingForSomeoneElse,
     });
 
   const handleCheckoutBottomAction = async () => {
@@ -1158,8 +1165,27 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(mapsUrlInvalidMsg);
       return;
     }
+    if (!skipNextMapsPromptRef.current && shouldPromptForGoogleMapsPin(delivery)) {
+      setMapsPinPromptOpen(true);
+      return;
+    }
+    skipNextMapsPromptRef.current = false;
     await runStripeCheckoutSubmit();
   };
+
+  useEffect(() => {
+    if (!mapsPinPromptOpen || typeof window === 'undefined') return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMapsPinPromptOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [mapsPinPromptOpen]);
 
   if (alreadySubmittedBlock) {
     const lastOrderId =
@@ -1287,8 +1313,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const senderHintText = tc[senderPhoneHint.messageKey] ?? senderPhoneHint.messageKey;
     const recipientHintText = tc[recipientPhoneHint.messageKey] ?? recipientPhoneHint.messageKey;
     const lineNorm = normalizeLineUserId(lineId);
+    const linePreferenceSelected = contactPreference.includes('line');
     const lineIdFormatError =
-      contactPreference.includes('line') && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
+      linePreferenceSelected && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
 
     return (
     <div className={rootClass}>
@@ -1385,7 +1412,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           </div>
         </fieldset>
       </div>
-      {contactPreference.includes('line') && (
+      <LineIdFieldReveal open={linePreferenceSelected}>
         <div className={fieldClass}>
           <label className={labelClass} htmlFor={`${idPrefix}cart-line-id`}>
             {(t as { lineIdLabel?: string }).lineIdLabel ?? 'LINE ID'}{' '}
@@ -1400,8 +1427,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             className={inputClass}
             autoComplete="username"
             maxLength={64}
+            disabled={!linePreferenceSelected}
+            tabIndex={linePreferenceSelected ? undefined : -1}
             aria-required
-            aria-invalid={contactPreference.includes('line') && !isValidLineUserId(lineNorm)}
+            aria-invalid={linePreferenceSelected && !isValidLineUserId(lineNorm)}
             aria-describedby={`${idPrefix}cart-line-id-hint${lineIdFormatError ? ` ${idPrefix}cart-line-id-error` : ''}`}
           />
           <p id={`${idPrefix}cart-line-id-hint`} className="cart-field-hint">
@@ -1409,13 +1438,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               'Use your LINE profile ID: letters, numbers, dot, underscore, or hyphen (4–64 characters). Do not type @ or paste links—we build the LINE link for you.'}
           </p>
           {lineIdFormatError && (
-            <p id={`${idPrefix}cart-line-id-error`} className="cart-field-hint cart-line-id-error" role="alert">
+            <p
+              id={`${idPrefix}cart-line-id-error`}
+              className="cart-field-hint cart-line-id-error"
+              role="alert"
+            >
               {(t as { lineIdInvalid?: string }).lineIdInvalid ??
                 'Enter plain LINE ID text only (no links, no @). Example: LannaBloom.'}
             </p>
           )}
         </div>
-      )}
+      </LineIdFieldReveal>
       <div className={fieldClass}>
         <label className={labelClass} htmlFor={`${idPrefix}cart-email`}>
           {t.emailLabel ?? 'Email'}
@@ -1449,18 +1482,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </span>
       </label>
       {!premium && (
-      <label className="cart-contact-checkbox-label cart-ordering-for-else">
-        <input
-          type="checkbox"
-          checked={isOrderingForSomeoneElse}
-          onChange={(e) => setIsOrderingForSomeoneElse(e.target.checked)}
-          className="cart-contact-checkbox"
-        />
-        <span className="cart-ordering-for-else-text">{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
-      </label>
-      )}
-      {!premium && isOrderingForSomeoneElse && (
-        <>
+        <RecipientOptInToggle
+          variant="cart"
+          selected={isOrderingForSomeoneElse}
+          onSelectedChange={(next) => {
+            setIsOrderingForSomeoneElse(next);
+            if (!next) setSurpriseDelivery(false);
+          }}
+          toggleLabel={tPremium.recipientDetailsToggle}
+          hintText={tPremium.recipientDetailsHint}
+        >
           <div className="cart-contact-field">
             <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-name`}>
               {t.recipientName} <span className="cart-required" aria-hidden>*</span>
@@ -1539,7 +1570,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 'Surprise delivery (do not contact the recipient in advance about the delivery)'}
             </span>
           </label>
-        </>
+        </RecipientOptInToggle>
       )}
     </div>
     );
@@ -1589,6 +1620,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onRecipientPhoneNationalChange={setRecipientPhoneNational}
           surpriseDelivery={surpriseDelivery}
           onSurpriseDeliveryChange={setSurpriseDelivery}
+          orderingForSomeoneElse={isOrderingForSomeoneElse}
+          onOrderingForSomeoneElseChange={setIsOrderingForSomeoneElse}
           cardMessage={cardMessageValue}
           onCardMessageChange={(v) => {
             if (primaryBouquetIdx < 0) return;
@@ -1677,6 +1710,63 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onPay={handlePlaceOrder}
         />
       </div>
+      {mapsPinPromptOpen ? (
+          <div className="cart-maps-prompt-overlay">
+            <button
+              type="button"
+              className="cart-maps-prompt-backdrop"
+              aria-label={t.mapsPromptClose}
+              onClick={() => setMapsPinPromptOpen(false)}
+            />
+            <div
+              className="cart-maps-prompt-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="premium-maps-prompt-title"
+            >
+              <h2 id="premium-maps-prompt-title" className="cart-maps-prompt-title">
+                {t.mapsPromptTitle}
+              </h2>
+              <p className="cart-maps-prompt-text">{t.mapsPromptText}</p>
+              <p className="cart-maps-prompt-steps-title">{t.mapsPromptStepsLabel}</p>
+              <ol className="cart-maps-prompt-steps">
+                <li>{t.mapsPromptStep1}</li>
+                <li>{t.mapsPromptStep2}</li>
+                <li>{t.mapsPromptStep3}</li>
+                <li>{t.mapsPromptStep4}</li>
+              </ol>
+              <div className="cart-maps-prompt-actions">
+                <a
+                  href="https://www.google.com/maps"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cart-maps-prompt-btn cart-maps-prompt-btn-primary"
+                >
+                  <PinIcon className="cart-maps-prompt-btn-icon" size={20} />
+                  {t.mapsPromptAddPin}
+                </a>
+                <button
+                  type="button"
+                  className="cart-maps-prompt-btn cart-maps-prompt-btn-secondary"
+                  onClick={() => {
+                    skipNextMapsPromptRef.current = true;
+                    setMapsPinPromptOpen(false);
+                    void handlePlaceOrder();
+                  }}
+                >
+                  {t.mapsPromptContinueWithoutLink}
+                </button>
+                <button
+                  type="button"
+                  className="cart-maps-prompt-btn-text"
+                  onClick={() => setMapsPinPromptOpen(false)}
+                >
+                  {t.mapsPromptClose}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       <style jsx>{`
         .cart-maps-prompt-overlay {
           position: fixed;
@@ -1722,13 +1812,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           color: var(--text-muted);
           margin: 0 0 18px;
         }
+        .cart-maps-prompt-steps-title {
+          margin: -6px 0 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--text);
+        }
         .cart-maps-prompt-steps {
-          margin: -8px 0 18px;
-          padding-left: 1.15em;
+          margin: 0 0 18px;
+          padding-left: 1.35em;
           color: var(--text);
           font-size: 0.9rem;
           line-height: 1.5;
-          list-style: disc;
+          list-style: decimal;
           list-style-position: outside;
         }
         .cart-maps-prompt-steps li {
@@ -1755,6 +1851,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-radius: var(--radius-sm);
           cursor: pointer;
           transition: background 0.15s, border-color 0.15s;
+          text-decoration: none;
+          box-sizing: border-box;
         }
         .cart-maps-prompt-btn-icon {
           flex-shrink: 0;
@@ -1775,12 +1873,27 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         .cart-maps-prompt-btn-secondary:hover {
           background: var(--pastel-cream);
         }
+        .cart-maps-prompt-btn-text {
+          border: none;
+          background: none;
+          padding: 8px 4px;
+          margin: 0 auto;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--text-muted);
+          cursor: pointer;
+          font-family: inherit;
+        }
+        .cart-maps-prompt-btn-text:hover {
+          color: var(--text);
+        }
         .cart-page {
           padding: 12px 0 48px;
         }
         .cart-page--premium {
           background: color-mix(in srgb, var(--pastel-cream) 50%, #fffdf9);
           min-height: 100vh;
+          padding-bottom: 16px;
         }
         .cart-page--premium .container {
           max-width: 100%;

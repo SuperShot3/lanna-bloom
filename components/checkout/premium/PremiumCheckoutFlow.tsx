@@ -13,6 +13,7 @@ import {
 import { DeliveryAddressAutocomplete } from '@/components/checkout/DeliveryAddressAutocomplete';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/SelectionTile';
+import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { TrustBadges } from '@/components/TrustBadges';
 import { getZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
@@ -25,7 +26,8 @@ import { formatThb } from '@/lib/costsUtils';
 const CARD_MESSAGE_MAX = 250;
 
 const MORNING_SLOT = DELIVERY_TIME_SLOTS[0];
-const AFTERNOON_SLOT = DELIVERY_TIME_SLOTS[2];
+const MID_AFTERNOON_SLOT = DELIVERY_TIME_SLOTS[1];
+const EVENING_SLOT = DELIVERY_TIME_SLOTS[2];
 
 function formatDestinationLabel(
   profile: CheckoutDeliveryProfile,
@@ -54,6 +56,9 @@ export type PremiumCheckoutFlowProps = {
   onRecipientPhoneNationalChange: (v: string) => void;
   surpriseDelivery: boolean;
   onSurpriseDeliveryChange: (v: boolean) => void;
+  /** When true, recipient name/phone fields are shown and required. */
+  orderingForSomeoneElse: boolean;
+  onOrderingForSomeoneElseChange: (v: boolean) => void;
   cardMessage: string;
   onCardMessageChange: (v: string) => void;
   noCardMessage: boolean;
@@ -96,6 +101,8 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     onRecipientPhoneNationalChange,
     surpriseDelivery,
     onSurpriseDeliveryChange,
+    orderingForSomeoneElse,
+    onOrderingForSomeoneElseChange,
     cardMessage,
     onCardMessageChange,
     noCardMessage,
@@ -134,8 +141,11 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
 
   const morningOk =
     !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, MORNING_SLOT);
-  const afternoonOk =
-    !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, AFTERNOON_SLOT);
+  const middayOk =
+    !delivery.date ||
+    isDeliveryTimeSlotSelectableForDate(delivery.date, MID_AFTERNOON_SLOT);
+  const eveningOk =
+    !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, EVENING_SLOT);
 
   const appendNote = (text: string) => {
     const cur = deliveryNotes.trim();
@@ -239,7 +249,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         <div className="co-card co-card--pad">
           {deliveryProfile.variant === 'expansion' && (
             <div className="co-field">
-              <label className="co-label">{lang === 'th' ? 'à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆà¸ˆà¸±à¸”à¸ªà¹ˆà¸‡' : 'Delivery area'}</label>
+              <label className="co-label">{lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery area'}</label>
               <input type="text" readOnly className="co-input" value={destLabel} />
             </div>
           )}
@@ -273,10 +283,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             labels={{
               searchPlaceholder: t.addressSearchPlaceholder,
               confirmedChange: t.addressChange,
-              manualFallbackLabel: t.addressManualToggle,
-              manualFallbackPlaceholder: t.addressManualPlaceholder,
+              mapsLinkLabel: t.mapsLinkLabel,
+              mapsLinkHint: t.mapsLinkHint,
               mapsLinkPlaceholder: t.addressMapsPlaceholder,
-              addressUncertain: t.addressUncertain,
+              openGoogleMapsButton: t.openGoogleMapsButton,
             }}
           />
         </div>
@@ -336,8 +346,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         className={sectionClass('deliveryTime')}
       >
         <h2 className="co-section-title">{t.deliveryTimeTitle}</h2>
-        <div className="co-tile-grid co-tile-grid--2">
+        <div className="co-tile-grid co-tile-grid--time">
           <SelectionTile
+            compact
             selected={delivery.timeSlot === MORNING_SLOT}
             title={t.morningTile}
             subtitle={t.morningSub}
@@ -345,15 +356,35 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             className={!morningOk ? 'co-tile--disabled' : ''}
           />
           <SelectionTile
-            selected={delivery.timeSlot === AFTERNOON_SLOT}
+            compact
+            selected={delivery.timeSlot === MID_AFTERNOON_SLOT}
             title={t.afternoonTile}
             subtitle={t.afternoonSub}
             onClick={() =>
-              afternoonOk && onDeliveryChange({ ...delivery, timeSlot: AFTERNOON_SLOT })
+              middayOk && onDeliveryChange({ ...delivery, timeSlot: MID_AFTERNOON_SLOT })
             }
-            className={!afternoonOk ? 'co-tile--disabled' : ''}
+            className={!middayOk ? 'co-tile--disabled' : ''}
+          />
+          <SelectionTile
+            compact
+            selected={delivery.timeSlot === EVENING_SLOT}
+            title={t.eveningTile}
+            subtitle={t.eveningSub}
+            onClick={() =>
+              eveningOk && onDeliveryChange({ ...delivery, timeSlot: EVENING_SLOT })
+            }
+            className={!eveningOk ? 'co-tile--disabled' : ''}
           />
         </div>
+      </section>
+
+      <section
+        ref={sectionRef('sender')}
+        data-checkout-section="sender"
+        className={sectionClass('sender')}
+      >
+        <h2 className="co-section-title">{t.senderTitle}</h2>
+        <div className="co-card co-sender">{senderFields}</div>
       </section>
 
       <section
@@ -361,54 +392,64 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         data-checkout-section="recipient"
         className={sectionClass('recipient')}
       >
-        <h2 className="co-section-title">{t.recipientTitle}</h2>
-        <div className="co-card co-card--pad">
-          <div className="co-field">
-            <label className="co-label" htmlFor="co-recipient-name">
-              {tCart.recipientName} <span className="co-req">*</span>
-            </label>
-            <input
-              id="co-recipient-name"
-              className="co-input"
-              value={recipientName}
-              onChange={(e) => onRecipientNameChange(e.target.value)}
-              autoComplete="name"
-            />
-          </div>
-          <div className="co-field">
-            <label className="co-label" htmlFor="co-recipient-phone">
-              {tCart.recipientPhone} <span className="co-req">*</span>
-            </label>
-            <div className="co-phone-row">
-              <PhoneCountrySelect
-                value={recipientCountryCode}
-                onChange={onRecipientCountryCodeChange}
-                options={props.countryCodeOptions}
-                ariaLabel={tCart.countryCode}
-              />
+        <RecipientOptInToggle
+          selected={orderingForSomeoneElse}
+          onSelectedChange={(next) => {
+            onOrderingForSomeoneElseChange(next);
+            if (!next) onSurpriseDeliveryChange(false);
+          }}
+          toggleLabel={t.recipientDetailsToggle}
+          hintText={t.recipientDetailsHint}
+        >
+          <div className="co-card co-card--pad co-recipient-fields">
+            <h3 className="co-subsection-title">{t.recipientDetailsSectionTitle}</h3>
+            <div className="co-field">
+              <label className="co-label" htmlFor="co-recipient-name">
+                {tCart.recipientName} <span className="co-req">*</span>
+              </label>
               <input
-                id="co-recipient-phone"
-                type="tel"
-                inputMode="numeric"
-                className="co-input co-phone-num"
-                value={recipientPhoneNational}
-                onChange={(e) =>
-                  onRecipientPhoneNationalChange(e.target.value.replace(/\D/g, '').slice(0, 15))
-                }
-                autoComplete="tel-national"
+                id="co-recipient-name"
+                className="co-input"
+                value={recipientName}
+                onChange={(e) => onRecipientNameChange(e.target.value)}
+                autoComplete="name"
               />
             </div>
+            <div className="co-field">
+              <label className="co-label" htmlFor="co-recipient-phone">
+                {tCart.recipientPhone} <span className="co-req">*</span>
+              </label>
+              <div className="co-phone-row">
+                <PhoneCountrySelect
+                  value={recipientCountryCode}
+                  onChange={onRecipientCountryCodeChange}
+                  options={props.countryCodeOptions}
+                  ariaLabel={tCart.countryCode}
+                />
+                <input
+                  id="co-recipient-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  className="co-input co-phone-num"
+                  value={recipientPhoneNational}
+                  onChange={(e) =>
+                    onRecipientPhoneNationalChange(e.target.value.replace(/\D/g, '').slice(0, 15))
+                  }
+                  autoComplete="tel-national"
+                />
+              </div>
+            </div>
+            <label className="co-surprise">
+              <input
+                type="checkbox"
+                checked={surpriseDelivery}
+                onChange={(e) => onSurpriseDeliveryChange(e.target.checked)}
+              />
+              <span>{t.surpriseToggle}</span>
+            </label>
+            <p className="co-hint">{t.surpriseHelper}</p>
           </div>
-          <label className="co-surprise">
-            <input
-              type="checkbox"
-              checked={surpriseDelivery}
-              onChange={(e) => onSurpriseDeliveryChange(e.target.checked)}
-            />
-            <span>{t.surpriseToggle}</span>
-          </label>
-          <p className="co-hint">{t.surpriseHelper}</p>
-        </div>
+        </RecipientOptInToggle>
       </section>
 
       {primaryBouquetIndex(items) >= 0 && (
@@ -476,16 +517,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           </div>
         </div>
       </section>
-
-      <section
-        ref={sectionRef('sender')}
-        data-checkout-section="sender"
-        className={sectionClass('sender')}
-      >
-        <h2 className="co-section-title">{t.senderTitle}</h2>
-        <div className="co-card co-sender">{senderFields}</div>
-      </section>
-
 
       <section className="co-section co-price-section">
         <div className="co-card co-card--pad">
@@ -645,21 +676,23 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           gap: 4px;
           padding: 8px 14px;
           border-radius: 999px;
-          border: 1px solid var(--border);
+          border: 2px solid var(--border);
           background: color-mix(in srgb, var(--pastel-cream) 80%, #fff);
           font-size: 13px;
           font-weight: 500;
           color: var(--text);
           cursor: pointer;
-          transition: border-color 0.15s, background 0.15s;
+          box-sizing: border-box;
+          transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s;
         }
         .premium-checkout .co-sender-fields .cart-contact-chip:hover {
           border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
           background: var(--pastel-cream);
         }
         .premium-checkout .co-sender-fields .cart-contact-chip-selected {
-          border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-          background: color-mix(in srgb, var(--pastel-mint) 35%, #fff);
+          border-color: var(--checkout-option-selected-border);
+          background: var(--checkout-option-selected-bg);
+          box-shadow: var(--checkout-option-selected-ring);
           color: var(--primary);
         }
         .premium-checkout .co-sender-fields .cart-contact-chip-input {
@@ -753,10 +786,15 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         .premium-checkout {
           max-width: 560px;
           margin: 0 auto;
-          padding: 8px 16px 120px;
+          padding: 8px 16px calc(92px + env(safe-area-inset-bottom, 0px));
           display: flex;
           flex-direction: column;
           gap: 28px;
+        }
+        @media (min-width: 900px) {
+          .premium-checkout {
+            padding-bottom: 24px;
+          }
         }
         .co-hero__title {
           font-family: var(--font-serif);
@@ -970,11 +1008,18 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         .co-tile-grid--2 {
           grid-template-columns: 1fr 1fr;
         }
+        .co-tile-grid--time {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
         .co-tile-grid--3 {
           grid-template-columns: repeat(3, 1fr);
         }
         @media (max-width: 400px) {
           .co-tile-grid--3 {
+            grid-template-columns: 1fr;
+          }
+          .co-tile-grid--time {
             grid-template-columns: 1fr;
           }
         }
@@ -1000,10 +1045,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           max-width: 38%;
         }
         :global(.co-phone-cc--flag-only) {
-          width: 58px;
-          min-width: 58px;
-          max-width: 58px;
-          padding: 12px 6px;
+          width: 76px;
+          min-width: 76px;
+          max-width: 76px;
+          padding: 12px 8px;
           font-size: 22px;
           line-height: 1;
           text-align: center;
@@ -1030,6 +1075,15 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-size: 13px;
           color: var(--text-muted);
           line-height: 1.4;
+        }
+        .co-subsection-title {
+          font-size: 15px;
+          font-weight: 600;
+          margin: 0 0 4px;
+          color: var(--text);
+        }
+        .co-recipient-fields {
+          margin-top: 0;
         }
         .co-chips {
           display: flex;
