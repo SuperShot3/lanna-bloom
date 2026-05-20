@@ -6,6 +6,7 @@ import {
   nationalDigitsValidForCheckout,
 } from '@/lib/phoneFieldHints';
 import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
+import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 
 export type CheckoutSectionId =
   | 'product'
@@ -21,31 +22,15 @@ export type CheckoutFieldIssue = {
   message: string;
 };
 
-/** Google Places selection with coordinates (authoritative for drivers). */
-export function hasGooglePlaceDelivery(delivery: DeliveryFormValues): boolean {
-  return Boolean(
-    delivery.deliveryPlaceId?.trim() &&
-      delivery.deliveryFormattedAddress?.trim() &&
-      typeof delivery.deliveryLat === 'number' &&
-      typeof delivery.deliveryLng === 'number'
-  );
-}
-
-/** Manual fallback when Maps script unavailable or customer typed full address. */
-export function hasManualDeliveryFallback(delivery: DeliveryFormValues): boolean {
-  if (delivery.deliveryPlaceId?.trim()) return false;
+export function hasDeliveryAddressInput(delivery: DeliveryFormValues): boolean {
   const manual =
     delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
   return manual.length >= 10;
 }
 
-export function hasDeliveryAddressInput(delivery: DeliveryFormValues): boolean {
-  return hasGooglePlaceDelivery(delivery) || hasManualDeliveryFallback(delivery);
-}
-
-/** Soft hint: place selected but no room/floor note for driver. */
+/** Soft hint: address entered but no room/floor note for driver. */
 export function shouldShowDeliveryNoteHint(delivery: DeliveryFormValues): boolean {
-  return hasGooglePlaceDelivery(delivery) && !delivery.deliveryNote?.trim();
+  return hasDeliveryAddressInput(delivery) && !delivery.deliveryNote?.trim();
 }
 
 export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
@@ -54,6 +39,8 @@ export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
   if (!hasDeliveryAddressInput(delivery)) return false;
   const address = delivery.addressLine?.trim() ?? '';
   if (address.length > 500) return false;
+  const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
+  if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
   if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
@@ -105,6 +92,7 @@ export function getFirstCheckoutFieldIssue(
     pleaseAddYourEmail: string;
     pleaseChooseContact: string;
     pleaseAddLineId: string;
+    invalidMapsLink: string;
   },
   params: {
     delivery: DeliveryFormValues;
@@ -141,6 +129,11 @@ export function getFirstCheckoutFieldIssue(
 
   if (!hasDeliveryAddressInput(delivery)) {
     return { sectionId: 'delivery', message: copy.pleaseAddDeliveryAddress };
+  }
+
+  const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
+  if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) {
+    return { sectionId: 'delivery', message: copy.invalidMapsLink };
   }
 
   if (!delivery.date) {

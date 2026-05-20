@@ -6,27 +6,29 @@ export function RecipientOptInToggle({
   selected,
   onSelectedChange,
   toggleLabel,
-  hintText,
+  chipActive,
   children,
   variant = 'premium',
 }: {
   selected: boolean;
   onSelectedChange: (next: boolean) => void;
   toggleLabel: string;
-  hintText: string;
+  /** Chip highlight when collapsed but a choice is saved (defaults to `selected`). */
+  chipActive?: boolean;
   children: ReactNode;
   variant?: 'premium' | 'cart';
 }) {
   const rootClass =
     variant === 'cart' ? 'cart-recipient-opt-in' : 'co-recipient-opt-in';
+  const chipOn = chipActive ?? selected;
 
   return (
     <div className={rootClass}>
       <button
         type="button"
-        className={`${rootClass}__chip${selected ? ` ${rootClass}__chip--on` : ''}`}
+        className={`${rootClass}__chip${chipOn ? ` ${rootClass}__chip--on` : ''}`}
         onClick={() => onSelectedChange(!selected)}
-        aria-pressed={selected}
+        aria-pressed={chipOn}
         aria-expanded={selected}
       >
         {toggleLabel}
@@ -35,10 +37,7 @@ export function RecipientOptInToggle({
         className={`${rootClass}__reveal${selected ? ` ${rootClass}__reveal--open` : ''}`}
         aria-hidden={!selected}
       >
-        <div className={`${rootClass}__reveal-inner`}>
-          <p className={`${rootClass}__hint`}>{hintText}</p>
-          {children}
-        </div>
+        <div className={`${rootClass}__reveal-inner`}>{children}</div>
       </div>
       <style jsx>{`
         .co-recipient-opt-in,
@@ -122,15 +121,6 @@ export function RecipientOptInToggle({
           display: flex;
           flex-direction: column;
           gap: 12px;
-        }
-
-        .co-recipient-opt-in__hint,
-        .cart-recipient-opt-in__hint {
-          margin: 0;
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--text-muted);
-          line-height: 1.45;
         }
 
         @media (prefers-reduced-motion: reduce) {

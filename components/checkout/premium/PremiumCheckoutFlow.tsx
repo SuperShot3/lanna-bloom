@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import Image from 'next/image';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -10,7 +10,7 @@ import {
   DELIVERY_TIME_SLOTS,
   isDeliveryTimeSlotSelectableForDate,
 } from '@/components/DeliveryForm';
-import { DeliveryAddressAutocomplete } from '@/components/checkout/DeliveryAddressAutocomplete';
+import { DeliveryAddressFields } from '@/components/checkout/DeliveryAddressFields';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/SelectionTile';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
@@ -131,13 +131,17 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const tCart = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const [dateMode, setDateMode] = useState<'today' | 'tomorrow' | 'custom'>('today');
+  const [cardMessageOpen, setCardMessageOpen] = useState(false);
+  const [giftMessageChipsOpen, setGiftMessageChipsOpen] = useState(true);
+  const [giftMessageDraft, setGiftMessageDraft] = useState(cardMessage);
+  const giftMessageFocusedRef = useRef(false);
+  const giftMessageTouchStartY = useRef<number | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const todayStr = getLocalTodayYmd();
   const tomorrowStr = getLocalTomorrowYmd();
   const zones = getZonesForDestination(delivery.deliveryDestination);
   const destLabel = formatDestinationLabel(deliveryProfile, lang);
-  const biasChiangMai = deliveryProfile.variant === 'chiang-mai';
 
   const morningOk =
     !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, MORNING_SLOT);
@@ -147,9 +151,67 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const eveningOk =
     !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, EVENING_SLOT);
 
+  const hideGiftChipsIfHasText = () => {
+    if (!noCardMessage && giftMessageDraft.trim()) {
+      setGiftMessageChipsOpen(false);
+    }
+  };
+
+  const syncGiftMessageDraft = (value: string) => {
+    setGiftMessageDraft(value);
+    onCardMessageChange(value);
+  };
+
   const applyGiftChip = (text: string) => {
     onNoCardMessageChange(false);
-    onCardMessageChange(text);
+    syncGiftMessageDraft(text);
+    setGiftMessageChipsOpen(false);
+  };
+
+  const clearGiftMessage = () => {
+    onNoCardMessageChange(false);
+    syncGiftMessageDraft('');
+    setGiftMessageChipsOpen(true);
+  };
+
+  useEffect(() => {
+    if (!giftMessageFocusedRef.current) {
+      setGiftMessageDraft(cardMessage);
+    }
+  }, [cardMessage]);
+
+  useEffect(() => {
+    if (cardMessageOpen) {
+      setGiftMessageChipsOpen(true);
+      if (!giftMessageFocusedRef.current) {
+        setGiftMessageDraft(cardMessage);
+      }
+    }
+  }, [cardMessageOpen, cardMessage]);
+
+  const handleGiftMessageTouchStart = (e: TouchEvent) => {
+    if (giftMessageFocusedRef.current) return;
+    giftMessageTouchStartY.current = e.touches[0]?.clientY ?? null;
+  };
+
+  const handleGiftMessageTouchMove = (e: TouchEvent) => {
+    if (giftMessageFocusedRef.current || giftMessageTouchStartY.current == null) return;
+    const y = e.touches[0]?.clientY;
+    if (y == null) return;
+    if (y - giftMessageTouchStartY.current > 36) {
+      hideGiftChipsIfHasText();
+      giftMessageTouchStartY.current = null;
+    }
+  };
+
+  const handleGiftMessageTouchEnd = () => {
+    giftMessageTouchStartY.current = null;
+  };
+
+  const selectNoCardMessage = () => {
+    onNoCardMessageChange(true);
+    syncGiftMessageDraft('');
+    setCardMessageOpen(false);
   };
 
   const sectionClass = (id: CheckoutSectionId) =>
@@ -266,22 +328,17 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               ))}
             </select>
           </div>
-          <DeliveryAddressAutocomplete
+          <DeliveryAddressFields
             lang={lang}
             value={delivery}
             onChange={onDeliveryChange}
-            biasChiangMai={biasChiangMai}
             highlight={highlightSection === 'delivery'}
             labels={{
               addressLabel: tBuyNow.addressLabel,
-              searchPlaceholder: t.addressSearchPlaceholder,
-              helperText: t.addressSearchHelper,
-              confirmedChange: t.addressChange,
+              addressPlaceholder: t.addressPlaceholder,
               deliveryNoteLabel: t.deliveryNoteForDriverLabel,
               deliveryNotePlaceholder: t.deliveryNoteForDriverPlaceholder,
               deliveryNoteHint: t.deliveryNoteForDriverHint,
-              manualLabel: tBuyNow.addressLabel,
-              manualPlaceholder: t.manualAddressPlaceholder,
               googleMapsLinkPlaceholder: tBuyNow.googleMapsLinkPlaceholder,
               googleMapsLinkHint: tBuyNow.googleMapsLinkHint,
               openGoogleMapsAriaLabel: tBuyNow.openGoogleMapsButton,
@@ -397,7 +454,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             if (!next) onSurpriseDeliveryChange(false);
           }}
           toggleLabel={t.recipientDetailsToggle}
-          hintText={t.recipientDetailsHint}
         >
           <div className="co-card co-card--pad co-recipient-fields">
             <h3 className="co-subsection-title">{t.recipientDetailsSectionTitle}</h3>
@@ -452,35 +508,76 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
 
       {primaryBouquetIndex(items) >= 0 && (
         <section className="co-section">
-          <h2 className="co-section-title">{t.giftMessageTitle}</h2>
-          <div className="co-card co-card--pad">
-            <textarea
-              className="co-input co-textarea"
-              rows={3}
-              value={noCardMessage ? '' : cardMessage}
-              disabled={noCardMessage}
-              onChange={(e) => onCardMessageChange(e.target.value.slice(0, CARD_MESSAGE_MAX))}
-              placeholder={t.giftMessagePlaceholder}
-            />
-            <div className="co-chips">
-              {[
-                t.giftChipBirthday,
-                t.giftChipLove,
-                t.giftChipThanks,
-                t.giftChipCongrats,
-                t.giftChipThinking,
-              ].map((chip) => (
-                <SuggestionChip key={chip} label={chip} onClick={() => applyGiftChip(chip)} />
-              ))}
-              <SuggestionChip
-                label={t.noCardMessage}
-                onClick={() => {
-                  onNoCardMessageChange(true);
-                  onCardMessageChange('');
+          <RecipientOptInToggle
+            selected={cardMessageOpen}
+            onSelectedChange={setCardMessageOpen}
+            toggleLabel={noCardMessage ? t.noCardMessage : t.giftMessageTitle}
+            chipActive={cardMessageOpen || noCardMessage || cardMessage.trim().length > 0}
+          >
+            <div
+              className="co-card co-card--pad co-gift-message-card"
+              onTouchStart={handleGiftMessageTouchStart}
+              onTouchMove={handleGiftMessageTouchMove}
+              onTouchEnd={handleGiftMessageTouchEnd}
+              onTouchCancel={handleGiftMessageTouchEnd}
+            >
+              <textarea
+                className="co-input co-textarea"
+                rows={3}
+                value={noCardMessage ? '' : giftMessageDraft}
+                disabled={noCardMessage}
+                onChange={(e) => {
+                  onNoCardMessageChange(false);
+                  syncGiftMessageDraft(e.target.value.slice(0, CARD_MESSAGE_MAX));
                 }}
+                onBlur={() => {
+                  giftMessageFocusedRef.current = false;
+                  hideGiftChipsIfHasText();
+                }}
+                onFocus={() => {
+                  giftMessageFocusedRef.current = true;
+                  if (!giftMessageChipsOpen) {
+                    setGiftMessageChipsOpen(true);
+                  }
+                }}
+                placeholder={t.giftMessagePlaceholder}
+                aria-label={t.giftMessageTitle}
               />
+              <div
+                className={`co-gift-chips-reveal${
+                  giftMessageChipsOpen ? ' co-gift-chips-reveal--open' : ''
+                }`}
+                aria-hidden={!giftMessageChipsOpen}
+              >
+                <div className="co-gift-chips-reveal-inner">
+                  <div className="co-chips co-chips--gift-message">
+                    {[
+                      t.giftChipBirthday,
+                      t.giftChipLove,
+                      t.giftChipThanks,
+                      t.giftChipCongrats,
+                      t.giftChipThinking,
+                    ].map((chip) => (
+                      <SuggestionChip
+                        key={chip}
+                        label={chip}
+                        onClick={() => applyGiftChip(chip)}
+                      />
+                    ))}
+                    <SuggestionChip label={t.noCardMessage} onClick={selectNoCardMessage} />
+                    <button
+                      type="button"
+                      className="co-clear-btn co-clear-btn--chip"
+                      onClick={clearGiftMessage}
+                      disabled={!noCardMessage && !giftMessageDraft.trim()}
+                    >
+                      {t.clearGiftMessage}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </RecipientOptInToggle>
         </section>
       )}
 
@@ -824,8 +921,66 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-family: inherit;
           border-radius: 8px;
         }
-        .co-clear-btn:hover {
+        .co-clear-btn:hover:not(:disabled) {
           background: color-mix(in srgb, var(--pastel-mint) 50%, transparent);
+        }
+        .co-clear-btn:disabled {
+          opacity: 0.45;
+          cursor: default;
+        }
+        .co-gift-chips-reveal {
+          display: grid;
+          grid-template-rows: 0fr;
+          width: 100%;
+          opacity: 0;
+          margin-top: 0;
+          transition:
+            grid-template-rows 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            opacity 0.36s ease-out,
+            margin-top 0.36s ease-out;
+        }
+        .co-gift-chips-reveal--open {
+          grid-template-rows: 1fr;
+          opacity: 1;
+          margin-top: 12px;
+        }
+        .co-gift-chips-reveal-inner {
+          overflow: hidden;
+          min-height: 0;
+        }
+        .co-chips--gift-message {
+          margin-top: 0;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .co-gift-chips-reveal {
+            transition: none;
+          }
+          .co-gift-chips-reveal--open {
+            margin-top: 12px;
+          }
+        }
+        .co-clear-btn--chip {
+          padding: 8px 14px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: color-mix(in srgb, var(--pastel-cream) 80%, #fff);
+          color: var(--text-muted);
+          font-weight: 500;
+          transition:
+            border-color 0.2s ease-out,
+            background 0.2s ease-out,
+            color 0.2s ease-out;
+        }
+        .co-clear-btn--chip:not(:disabled) {
+          color: var(--primary);
+          font-weight: 600;
+          border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+          background: color-mix(in srgb, var(--pastel-mint) 50%, #fff);
+        }
+        .co-clear-btn--chip:hover:not(:disabled) {
+          border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+          background: var(--pastel-mint);
+          color: var(--primary);
         }
         .co-section--highlight {
           animation: co-highlight 1.2s ease;

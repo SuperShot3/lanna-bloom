@@ -222,7 +222,7 @@ function isDeliveryValid(
   ) {
     return false;
   }
-  if (!hasDeliveryAddressInput(delivery)) return false;
+  if (!isPremiumDeliveryValid(delivery)) return false;
   const addressTrim =
     delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
   if (addressTrim.length > 500) return false;
@@ -1479,7 +1479,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             if (!next) setSurpriseDelivery(false);
           }}
           toggleLabel={tPremium.recipientDetailsToggle}
-          hintText={tPremium.recipientDetailsHint}
         >
           <div className="cart-contact-field">
             <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-name`}>

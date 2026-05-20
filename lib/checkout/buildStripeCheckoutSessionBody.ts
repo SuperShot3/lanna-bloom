@@ -157,16 +157,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       deliveryDestination,
       deliveryZoneId,
-      deliveryLat: delivery.deliveryLat ?? undefined,
-      deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl?.trim() || undefined,
-      deliveryPlaceId: delivery.deliveryPlaceId?.trim() || undefined,
-      deliveryPlaceName: delivery.deliveryPlaceName?.trim() || undefined,
-      deliveryFormattedAddress: delivery.deliveryFormattedAddress?.trim() || undefined,
-      deliveryPostalCode: delivery.deliveryPostalCode?.trim() || undefined,
-      deliveryProvince: delivery.deliveryProvince?.trim() || undefined,
-      deliveryDistrictLabel: delivery.deliveryDistrictLabel?.trim() || undefined,
-      deliverySubdistrict: delivery.deliverySubdistrict?.trim() || undefined,
       notes:
         delivery.deliveryNote?.trim() ||
         deliveryNotes?.trim() ||

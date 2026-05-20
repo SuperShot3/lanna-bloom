@@ -10676,26 +10676,3 @@ a.admin-summary-key-value {
 .premium-checkout .co-field {
   overflow: visible;
 }
-
-/* Places API (New) autocomplete dropdown — keep above checkout cards */
-gmp-place-autocomplete {
-  z-index: 20;
-}
-.co-address-search-wrap gmp-place-autocomplete::part(prediction-list) {
-  z-index: 10060;
-}
-
-/* Legacy Google Maps .pac-container (if any widget still injects it) */
-.pac-container {
-  z-index: 10060 !important;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  font-family: var(--font-sans);
-  touch-action: manipulation;
-}
-.pac-item {
-  padding: 10px 12px;
-  font-size: 15px;
-  line-height: 1.35;
-  cursor: pointer;
-}
