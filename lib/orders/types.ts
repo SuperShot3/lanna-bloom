@@ -107,6 +107,8 @@ export interface OrderPayload {
   /** ITU calling code digits selected for customer phone at checkout (e.g. 66). */
   phoneCountryCode?: string;
   customerEmail?: string;
+  /** Checkout opt-in for offers and review-invitation email (Trustpilot BCC when delivered email is sent). */
+  marketingEmailConsent?: boolean;
   items: OrderItem[];
   delivery: OrderDelivery;
   pricing: OrderPricing;

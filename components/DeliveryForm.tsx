@@ -72,10 +72,13 @@ export interface DeliveryFormValues {
   addressLine: string;
   date: string;
   timeSlot: string;
-  /** Legacy: no longer collected. Kept for type compatibility. */
   deliveryLat: number | null;
   deliveryLng: number | null;
   deliveryGoogleMapsUrl: string | null;
+  /** Google Places (checkout autocomplete) */
+  deliveryPlaceId?: string | null;
+  deliveryPlaceName?: string | null;
+  deliveryFormattedAddress?: string | null;
   /** Canonical market; default Chiang Mai on main site */
   deliveryDestination: OrderDeliveryDestinationId;
   /** Zone id from lib/delivery/zones.ts */

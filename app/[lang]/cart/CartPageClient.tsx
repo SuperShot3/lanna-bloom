@@ -6,7 +6,6 @@ import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import {
-  DeliveryForm,
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
   type DeliveryFormValues,
@@ -35,7 +34,17 @@ import {
   qualifiesForMay2026FreeDelivery,
 } from '@/lib/promo/campaigns';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
-import { StickyCheckoutBar } from '@/components/checkout/StickyCheckoutBar';
+import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
+import { CartCheckoutView } from '@/app/[lang]/cart/CartCheckoutView';
+import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
+import { renderFlagCountryCodeOptions } from '@/lib/checkout/phoneCountryDial';
+import {
+  getFirstCheckoutFieldIssue,
+  isPremiumDeliveryValid,
+  isPremiumRecipientValid,
+  isPremiumSenderValid,
+  type CheckoutSectionId,
+} from '@/lib/checkout/premiumCheckoutValidation';
 import { TrustBadges } from '@/components/TrustBadges';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
@@ -49,7 +58,6 @@ import {
   validateSubmissionTokenFormat,
 } from '@/lib/checkout/submissionToken';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
-import { PinIcon } from '@/components/icons/PinIcon';
 import {
   CHECKOUT_NATIONAL_MAX,
   getNationalPhoneHint,
@@ -165,6 +173,8 @@ type StoredCartForm = {
   lineId?: string;
   isOrderingForSomeoneElse?: boolean;
   surpriseDelivery?: boolean;
+  marketingEmailConsent?: boolean;
+  deliveryNotes?: string;
 };
 
 function loadCartFormFromStorage(): StoredCartForm | null {
@@ -521,7 +531,7 @@ function cartValue(items: CartItem[], deliveryDestination: OrderDeliveryDestinat
 }
 
 export function CartPageClient({ lang }: { lang: Locale }) {
-  const { items, count: totalItemCount, removeItem, clearCart } = useCart();
+  const { items, count: totalItemCount, removeItem, updateItem, clearCart } = useCart();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
@@ -646,11 +656,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
-  const [mapsLinkPromptOpen, setMapsLinkPromptOpen] = useState(false);
-  const [shouldFocusMapsLinkOnReturn, setShouldFocusMapsLinkOnReturn] = useState(false);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
+  const [marketingEmailConsent, setMarketingEmailConsent] = useState(
+    () => loadCartFormFromStorage()?.marketingEmailConsent === true
+  );
   const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
   const [phoneNational, setPhoneNational] = useState(() => loadCartFormFromStorage()?.phoneNational ?? '');
   const [recipientName, setRecipientName] = useState(() => loadCartFormFromStorage()?.recipientName ?? '');
@@ -668,11 +679,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [lineId, setLineId] = useState(() =>
     sanitizeLineUserIdInput(loadCartFormFromStorage()?.lineId ?? '')
   );
-
-  type AccordionSection = 'bag' | 'delivery' | 'contact';
-  const [mobileOpenSection, setMobileOpenSection] = useState<AccordionSection | null>('delivery');
-  const deliverySectionRef = useRef<HTMLDivElement>(null);
-  const contactSectionRef = useRef<HTMLDivElement>(null);
+  const [deliveryNotes, setDeliveryNotes] = useState(
+    () => loadCartFormFromStorage()?.deliveryNotes ?? ''
+  );
+  const [noCardMessage, setNoCardMessage] = useState(false);
+  const [highlightSection, setHighlightSection] = useState<CheckoutSectionId | null>(null);
+  const sectionRefs = {
+    product: useRef<HTMLElement>(null),
+    delivery: useRef<HTMLElement>(null),
+    deliveryDate: useRef<HTMLElement>(null),
+    deliveryTime: useRef<HTMLElement>(null),
+    recipient: useRef<HTMLElement>(null),
+    sender: useRef<HTMLElement>(null),
+    payment: useRef<HTMLElement>(null),
+  } satisfies Record<CheckoutSectionId, React.RefObject<HTMLElement | null>>;
 
   // Hide the site footer on desktop cart, and on mobile whenever the cart has items (checkout flow).
   useEffect(() => {
@@ -710,8 +730,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       lineId,
       isOrderingForSomeoneElse,
       surpriseDelivery,
+      marketingEmailConsent,
+      deliveryNotes,
     });
-  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent, deliveryNotes]);
 
   useEffect(() => {
     if (!contactPreference.includes('line') && lineId) {
@@ -800,27 +822,35 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const stickyDeliveryFeeGross =
     isCampaignDiscount && deliveryFeeVal > 0 ? deliveryFeeVal : undefined;
 
-  const [mobileCompleted, setMobileCompleted] = useState<Set<AccordionSection>>(new Set());
-
-  const isDeliveryValidNow = isDeliveryValid(delivery, tBuyNow as Record<string, string | number>);
-  const isContactValidNow = isContactValid(
+  const tPremium = translations[lang].premiumCheckout;
+  const isDeliveryValidNow = isPremiumDeliveryValid(delivery);
+  const isRecipientValidNow = isPremiumRecipientValid(
+    recipientName,
+    recipientCountryCode,
+    recipientPhoneNational
+  );
+  const isContactValidNow = isPremiumSenderValid({
     customerName,
     countryCode,
     phoneNational,
     contactPreference,
     lineId,
     customerEmail,
-    isOrderingForSomeoneElse,
-    recipientName,
-    recipientCountryCode,
-    recipientPhoneNational,
-    t as Record<string, string | number>
-  );
+  });
   const isPaymentUnlocked =
     isDeliveryValidNow &&
+    isRecipientValidNow &&
     isContactValidNow &&
     !cartExpansionInvalid &&
     !cartDestinationBouquetInvalid;
+
+  const primaryBouquetIdx = items.findIndex((i) => (i.itemType ?? 'bouquet') === 'bouquet');
+  const cardMessageValue =
+    primaryBouquetIdx >= 0 ? (items[primaryBouquetIdx].addOns.cardMessage ?? '') : '';
+  const addOnsCartTotal = items.reduce(
+    (sum, item) => sum + getAddOnsTotal(item.addOns?.productAddOns ?? {}) * (item.quantity ?? 1),
+    0
+  );
 
   /** Returns the first incomplete field's name for the sticky bar lock message. */
   const getFirstIncompleteHint = (): string => {
@@ -966,78 +996,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     return () => clearTimeout(t);
   }, [orderError]);
 
-  useEffect(() => {
-    if (!mapsLinkPromptOpen) return;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMapsLinkPromptOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [mapsLinkPromptOpen]);
-
-  useEffect(() => {
-    if (!shouldFocusMapsLinkOnReturn) return;
-    if (!mapsLinkPromptOpen) return;
-    if (typeof window === 'undefined') return;
-
-    const focusMapsInput = () => {
-      const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-      if (mapsUrl) {
-        setShouldFocusMapsLinkOnReturn(false);
-        return;
-      }
-      setMobileOpenSection('delivery');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    // While the prompt is open, keep user at top.
-    focusMapsInput();
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') focusMapsInput();
-    }, 800);
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [shouldFocusMapsLinkOnReturn, mapsLinkPromptOpen, delivery.deliveryGoogleMapsUrl]);
-
-  const toggleMobileSection = (section: AccordionSection) => {
-    setMobileOpenSection((prev) => (prev === section ? null : section));
-  };
-
-  const handleMobileDeliverySave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)) return;
-    setMobileCompleted((prev) => new Set(prev).add('delivery'));
-    setMobileOpenSection('contact');
-    setTimeout(() => contactSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  };
-
-  const handleMobileContactSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (
-      !isContactValid(
-        customerName,
-        countryCode,
-        phoneNational,
-        contactPreference,
-        lineId,
-        customerEmail,
-        isOrderingForSomeoneElse,
-        recipientName,
-        recipientCountryCode,
-        recipientPhoneNational,
-        t as Record<string, string | number>
-      )
-    )
-      return;
-    setMobileCompleted((prev) => new Set(prev).add('contact'));
-    setMobileOpenSection(null);
-  };
-
   const toggleContactPreference = (option: ContactPreferenceOption) => {
     setContactPreference((prev) =>
       prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
@@ -1079,7 +1037,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setOrderError(null);
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
-    const recipientPhone = isOrderingForSomeoneElse ? recipientCountryCode + recipientPhoneNational : undefined;
+    const recipientPhone = recipientCountryCode + recipientPhoneNational;
     try {
       const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
       trackAddPaymentInfo({
@@ -1097,15 +1055,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         phone: fullPhone,
         phoneCountryCode: countryCode,
         customerEmail: customerEmail.trim() || undefined,
+        ...(marketingEmailConsent ? { marketingEmailConsent: true } : {}),
         contactPreference,
         lineId: lineId.trim(),
         submissionToken: checkoutSubmissionToken,
-        ...(isOrderingForSomeoneElse && {
-          recipientName: recipientName.trim(),
-          recipientPhone: recipientPhone!,
-          recipientPhoneCountryCode: recipientCountryCode,
-          surpriseDelivery,
-        }),
+        recipientName: recipientName.trim(),
+        recipientPhone,
+        recipientPhoneCountryCode: recipientCountryCode,
+        surpriseDelivery,
+        deliveryNotes: deliveryNotes.trim() || undefined,
       });
 
       const res = await fetch('/api/stripe/create-checkout-session', {
@@ -1138,10 +1096,44 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
   };
 
+  const scrollToCheckoutSection = (sectionId: CheckoutSectionId) => {
+    setHighlightSection(sectionId);
+    const el = sectionRefs[sectionId].current;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.setTimeout(() => setHighlightSection(null), 1600);
+  };
+
+  const getPremiumFieldIssue = () =>
+    getFirstCheckoutFieldIssue(tPremium, {
+      delivery,
+      customerName,
+      countryCode,
+      phoneNational,
+      contactPreference,
+      lineId,
+      customerEmail,
+      recipientName,
+      recipientCountryCode,
+      recipientPhoneNational,
+    });
+
+  const handleCheckoutBottomAction = async () => {
+    const issue = getPremiumFieldIssue();
+    if (issue) {
+      setOrderError(issue.message);
+      scrollToCheckoutSection(issue.sectionId);
+      return;
+    }
+    await handlePlaceOrder();
+  };
+
   const handlePlaceOrder = async () => {
-    const hint = getFirstIncompleteHint();
-    if (hint) {
-      setOrderError(hint);
+    const issue = getPremiumFieldIssue();
+    if (issue) {
+      setOrderError(issue.message);
+      scrollToCheckoutSection(issue.sectionId);
       return;
     }
     if (cartExpansionInvalid) {
@@ -1166,53 +1158,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(mapsUrlInvalidMsg);
       return;
     }
-    if (!mapsUrl) {
-      // Scroll to top first, then show the nudge modal.
-      setMobileOpenSection('delivery');
-      setShouldFocusMapsLinkOnReturn(true);
-      if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      requestAnimationFrame(() => setMapsLinkPromptOpen(true));
-      return;
-    }
     await runStripeCheckoutSubmit();
-  };
-
-  const handleMapsPromptContinueWithoutLink = async () => {
-    setMapsLinkPromptOpen(false);
-    const hint = getFirstIncompleteHint();
-    if (hint) {
-      setOrderError(hint);
-      return;
-    }
-    if (!checkoutSubmissionToken) {
-      setOrderError(t.refreshAndTryAgain);
-      return;
-    }
-    const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-    if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) {
-      setOrderError(mapsUrlInvalidMsg);
-      return;
-    }
-    await runStripeCheckoutSubmit();
-  };
-
-  const handleMapsPromptAddPin = () => {
-    setMapsLinkPromptOpen(false);
-    setMobileOpenSection('delivery');
-    setShouldFocusMapsLinkOnReturn(true);
-    const focusMapsInput = () => {
-      if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    };
-    focusMapsInput();
-    if (typeof window !== 'undefined') {
-      window.open('https://www.google.com/maps', '_blank', 'noopener,noreferrer');
-    }
-    // Ensure the user lands back on the correct input even if layout shifts.
-    setTimeout(focusMapsInput, 250);
   };
 
   if (alreadySubmittedBlock) {
@@ -1321,7 +1267,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     );
   }
 
-  const contactFormContent = (idPrefix: string) => {
+  const contactFormContent = (idPrefix: string, options?: { premium?: boolean }) => {
+    const premium = options?.premium ?? false;
+    const fieldClass = premium ? 'co-field' : 'cart-contact-field';
+    const labelClass = premium ? 'co-label' : 'cart-contact-label';
+    const inputClass = premium ? 'co-input' : 'cart-contact-input';
+    const reqClass = premium ? 'co-req' : 'cart-required';
+    const phoneRowClass = premium ? 'co-phone-row' : 'cart-phone-row';
+    const phoneInputClass = premium ? 'co-input co-phone-num' : 'cart-contact-input cart-phone-input';
+    const rootClass = premium
+      ? 'co-sender-fields'
+      : `cart-contact-info ${idPrefix ? 'cart-mobile-contact-fields' : ''}`;
+    const phoneWrapClass = premium ? 'co-sender-phone-wrap' : 'cart-phone-and-contact-wrap';
+    const prefsClass = premium ? 'co-field co-contact-prefs' : 'cart-contact-preferences';
+
     const tc = t as Record<string, string>;
     const senderPhoneHint = getNationalPhoneHint(countryCode, phoneNational);
     const recipientPhoneHint = getNationalPhoneHint(recipientCountryCode, recipientPhoneNational);
@@ -1332,10 +1291,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       contactPreference.includes('line') && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
 
     return (
-    <div className={`cart-contact-info ${idPrefix ? 'cart-mobile-contact-fields' : ''}`}>
-      <div className="cart-contact-field">
-        <label className="cart-contact-label" htmlFor={`${idPrefix}cart-customer-name`}>
-          {t.senderName} <span className="cart-required" aria-hidden>*</span>
+    <div className={rootClass}>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor={`${idPrefix}cart-customer-name`}>
+          {t.senderName} <span className={reqClass} aria-hidden>*</span>
         </label>
         <input
           id={`${idPrefix}cart-customer-name`}
@@ -1343,26 +1302,25 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder={t.yourNamePlaceholder}
-          className="cart-contact-input"
+          className={inputClass}
           aria-required
           autoComplete="name"
         />
       </div>
-      <div className="cart-phone-and-contact-wrap">
-        <div className="cart-contact-field cart-phone-field-group">
-          <label className="cart-contact-label" htmlFor={`${idPrefix}cart-phone`}>
-            {t.phoneNumber} <span className="cart-required" aria-hidden>*</span>
+      <div className={phoneWrapClass}>
+        <div className={`${fieldClass}${premium ? '' : ' cart-phone-field-group'}`}>
+          <label className={labelClass} htmlFor={`${idPrefix}cart-phone`}>
+            {t.phoneNumber} <span className={reqClass} aria-hidden>*</span>
           </label>
-          <div className="cart-phone-row">
-            <select
+          <div className={phoneRowClass}>
+            <PhoneCountrySelect
               id={`${idPrefix}cart-country-code`}
               value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="cart-phone-country-select"
-              aria-label={t.countryCode}
-            >
-              {renderCountryCodeOptions(lang)}
-            </select>
+              onChange={setCountryCode}
+              options={renderFlagCountryCodeOptions(POPULAR_COUNTRY_CODES, ALL_COUNTRY_CODES, lang)}
+              ariaLabel={t.countryCode}
+              className={premium ? 'co-phone-cc' : 'cart-phone-country-select'}
+            />
             <input
               id={`${idPrefix}cart-phone`}
               type="tel"
@@ -1374,7 +1332,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
                 setPhoneNational((p) => normalizeNationalPhoneOnBlur(p, countryCode))
               }
               placeholder={t.phoneNumberPlaceholder}
-              className="cart-contact-input cart-phone-input"
+              className={phoneInputClass}
               autoComplete="tel-national"
               maxLength={PHONE_MAX_DIGITS}
               aria-describedby={
@@ -1396,11 +1354,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             </p>
           )}
         </div>
-        <fieldset className="cart-contact-preferences" aria-label={t.preferredContact}>
-          <legend className="cart-contact-legend">
-            {t.preferredContact} <span className="cart-required" aria-hidden>*</span>
+        <fieldset className={prefsClass} aria-label={t.preferredContact}>
+          <legend className={premium ? 'co-label' : 'cart-contact-legend'}>
+            {t.preferredContact} <span className={reqClass} aria-hidden>*</span>
           </legend>
-          <div className="cart-contact-chips">
+          <div className={premium ? 'co-chips' : 'cart-contact-chips'}>
             {CONTACT_OPTIONS.map((option) => {
               const isSelected = contactPreference.includes(option);
               const label =
@@ -1428,10 +1386,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         </fieldset>
       </div>
       {contactPreference.includes('line') && (
-        <div className="cart-contact-field">
-          <label className="cart-contact-label" htmlFor={`${idPrefix}cart-line-id`}>
+        <div className={fieldClass}>
+          <label className={labelClass} htmlFor={`${idPrefix}cart-line-id`}>
             {(t as { lineIdLabel?: string }).lineIdLabel ?? 'LINE ID'}{' '}
-            <span className="cart-required" aria-hidden>*</span>
+            <span className={reqClass} aria-hidden>*</span>
           </label>
           <input
             id={`${idPrefix}cart-line-id`}
@@ -1439,7 +1397,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             value={lineId}
             onChange={(e) => setLineId(sanitizeLineUserIdInput(e.target.value))}
             placeholder={(t as { lineIdPlaceholder?: string }).lineIdPlaceholder ?? 'e.g. LannaBloom'}
-            className="cart-contact-input"
+            className={inputClass}
             autoComplete="username"
             maxLength={64}
             aria-required
@@ -1458,8 +1416,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           )}
         </div>
       )}
-      <div className="cart-contact-field">
-        <label className="cart-contact-label" htmlFor={`${idPrefix}cart-email`}>
+      <div className={fieldClass}>
+        <label className={labelClass} htmlFor={`${idPrefix}cart-email`}>
           {t.emailLabel ?? 'Email'}
         </label>
         <input
@@ -1468,7 +1426,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           value={customerEmail}
           onChange={(e) => setCustomerEmail(e.target.value)}
           placeholder={t.emailPlaceholder ?? 'e.g. you@example.com'}
-          className="cart-contact-input"
+          className={inputClass}
           autoComplete="email"
           aria-describedby={`${idPrefix}cart-email-hint`}
         />
@@ -1477,6 +1435,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             'Optional — we send your order confirmation here. Leave blank if you do not need it.'}
         </p>
       </div>
+      <label className="cart-marketing-consent" htmlFor={`${idPrefix}cart-marketing-consent`}>
+        <input
+          id={`${idPrefix}cart-marketing-consent`}
+          type="checkbox"
+          checked={marketingEmailConsent}
+          onChange={(e) => setMarketingEmailConsent(e.target.checked)}
+          className="cart-marketing-consent-input"
+        />
+        <span>
+          {(t as { marketingEmailConsentLabel?: string }).marketingEmailConsentLabel ??
+            'Email me occasional offers and a review invitation (optional)'}
+        </span>
+      </label>
+      {!premium && (
       <label className="cart-contact-checkbox-label cart-ordering-for-else">
         <input
           type="checkbox"
@@ -1486,7 +1458,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         />
         <span className="cart-ordering-for-else-text">{t.orderingForSomeoneElse ?? "I'm ordering flowers for someone else"}</span>
       </label>
-      {isOrderingForSomeoneElse && (
+      )}
+      {!premium && isOrderingForSomeoneElse && (
         <>
           <div className="cart-contact-field">
             <label className="cart-contact-label" htmlFor={`${idPrefix}cart-recipient-name`}>
@@ -1573,7 +1546,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   return (
-    <div className="cart-page">
+    <div className="cart-page cart-page--premium">
       <div className="container">
         <div className="cart-checkout-header">
           <Link href={`/${lang}/catalog`} className="cart-back-link">
@@ -1600,567 +1573,85 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             )}
           </p>
         )}
-        <div className="cart-mobile-view">
-          <header className="cart-mobile-header">
-            <h1 className="cart-mobile-title">{t.checkoutTitle}</h1>
-            <p className="cart-mobile-subtitle">
-              {t.mobileItemCount.replace('{count}', String(totalItemCount))} — ฿{grandTotalVal.toLocaleString()}
-            </p>
-          </header>
-          <div className="cart-mobile-accordion">
-            <div
-              className={`cart-accordion-section cart-accordion-bag ${mobileOpenSection === 'bag' ? 'cart-accordion-open' : ''}`}
-              onClick={() => toggleMobileSection('bag')}
-            >
-              <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{t.mobileBagTitle}</span>
-                <div className="cart-accordion-header-actions">
-                  {mobileCompleted.has('bag') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('bag'); }}>{t.edit}</span>}
-                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
-                </div>
-              </div>
-              {items.length > 0 && (
-                <div
-                  className="cart-bag-items-preview"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {items.map((item, index) => {
-                    const name = lang === 'th' ? item.nameTh : item.nameEn;
-                    return (
-                      <div key={`preview-${item.bouquetId}-${index}`} className="cart-bag-preview-item">
-                        {item.imageUrl ? (
-                          <div className="cart-bag-preview-image-wrap">
-                            <Image
-                              src={item.imageUrl}
-                              alt=""
-                              width={48}
-                              height={48}
-                              className="cart-bag-preview-image"
-                              sizes="48px"
-                            />
-                          </div>
-                        ) : (
-                          <div className="cart-bag-preview-image-wrap cart-bag-preview-image-placeholder" aria-hidden />
-                        )}
-                        <div className="cart-bag-preview-main">
-                          <span className="cart-bag-preview-name">{name}</span>
-                          <span className="cart-bag-preview-meta">
-                            {formatCartItemSizePriceLine(item, delivery.deliveryDestination)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'bag'}>
-                <div className="cart-accordion-body cart-accordion-body-bag" onClick={(e) => e.stopPropagation()}>
-                  <div className="cart-order-summary cart-mobile-summary">
-                    <h3 className="cart-order-summary-title">
-                      {t.orderComposition ?? 'Order composition'}
-                    </h3>
-                    {items.map((item, i) => {
-                      const name = lang === 'th' ? item.nameTh : item.nameEn;
-                      const qty = item.quantity ?? 1;
-                      return (
-                        <div key={`mob-sum-${item.bouquetId}-${i}`}>
-                          <div className="cart-order-summary-row cart-order-summary-item">
-                            <span>{name} × {qty}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <div className="cart-order-summary-row">
-                      <span>{t.deliveryFeeLabel}</span>
-                      <span className="cart-order-summary-amount">฿{deliveryFeeVal.toLocaleString()}</span>
-                    </div>
-                    {orderDiscountVal > 0 && (
-                      <div className="cart-order-summary-row cart-order-summary-referral">
-                        <span>
-                          {isCampaignDiscount
-                            ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
-                            : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
-                                '{code}',
-                                resolvedDiscount?.code ?? ''
-                              )}
-                        </span>
-                        <span className="cart-order-summary-amount cart-order-summary-discount">
-                          -฿{orderDiscountVal.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="cart-order-summary-row cart-order-summary-total">
-                      <span>{t.totalLabel}</span>
-                      <span className="cart-order-summary-amount">฿{grandTotalVal.toLocaleString()}</span>
-                    </div>
-                  </div>
-                  {mayCampaignProgressRemaining > 0 && !appliedReferralCode && (
-                    <p className="cart-may-promo-hint" role="status">
-                      {(t.mayFreeDeliveryProgressHint ?? 'Add ฿{amount} more on flowers for free delivery this May').replace(
-                        '{amount}',
-                        mayCampaignProgressRemaining.toLocaleString()
-                      )}
-                    </p>
-                  )}
-                  <ReferralCodeBox
-                    lang={lang}
-                    subtotal={subtotalWithDelivery}
-                    itemSubtotal={itemsTotalVal}
-                    deliveryFee={deliveryFeeVal}
-                    deliveryDestination={delivery.deliveryDestination}
-                    appliedCode={appliedReferralCode}
-                    onApply={() => setReferralCleared((c) => c + 1)}
-                    onRemove={() => setReferralCleared((c) => c + 1)}
-                    mayCampaignEligible={mayCampaignEligible}
-                  />
-                </div>
-              </div>
-            </div>
-            <div
-              ref={deliverySectionRef}
-              className={`cart-accordion-section ${mobileOpenSection === 'delivery' ? 'cart-accordion-open' : ''}`}
-              onClick={() => toggleMobileSection('delivery')}
-            >
-              <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{t.mobileDeliveryOptions}</span>
-                <div className="cart-accordion-header-actions">
-                  {mobileCompleted.has('delivery') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('delivery'); }}>{t.edit}</span>}
-                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
-                </div>
-              </div>
-              <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'delivery'}>
-                <div className="cart-accordion-body" onClick={(e) => e.stopPropagation()}>
-                  <DeliveryForm
-                    lang={lang}
-                    value={delivery}
-                    onChange={setDelivery}
-                    showLocationPicker
-                    accordionMode
-                    deliveryVariant={checkoutDeliveryProfile.variant}
-                    expansionLabels={
-                      checkoutDeliveryProfile.variant === 'expansion'
-                        ? checkoutDeliveryProfile.labels
-                        : undefined
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="cart-accordion-save-btn"
-                    disabled={!isDeliveryValid(delivery, tBuyNow as Record<string, string | number>)}
-                    onClick={handleMobileDeliverySave}
-                  >
-                    {t.saveContinue}
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div
-              ref={contactSectionRef}
-              className={`cart-accordion-section ${mobileOpenSection === 'contact' ? 'cart-accordion-open' : ''}`}
-              onClick={() => toggleMobileSection('contact')}
-            >
-              <div className="cart-accordion-header">
-                <span className="cart-accordion-title">{t.mobileContactTitle}</span>
-                <div className="cart-accordion-header-actions">
-                  {mobileCompleted.has('contact') && <span className="cart-accordion-edit" onClick={(e) => { e.stopPropagation(); setMobileOpenSection('contact'); }}>{t.edit}</span>}
-                  <span className="cart-accordion-chevron" aria-hidden>▼</span>
-                </div>
-              </div>
-              <div className="cart-accordion-body-wrapper" aria-hidden={mobileOpenSection !== 'contact'}>
-                <div className="cart-accordion-body cart-accordion-body-contact" onClick={(e) => e.stopPropagation()}>
-                  {contactFormContent('mobile-')}
-                  <button
-                    type="button"
-                    className="cart-accordion-save-btn"
-                    disabled={
-                      !isContactValid(
-                        customerName,
-                        countryCode,
-                        phoneNational,
-                        contactPreference,
-                        lineId,
-                        customerEmail,
-                        isOrderingForSomeoneElse,
-                        recipientName,
-                        recipientCountryCode,
-                        recipientPhoneNational,
-                        t as Record<string, string | number>
-                      )
-                    }
-                    onClick={handleMobileContactSave}
-                  >
-                    {t.saveContinue}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          {(() => {
-            const paymentAvailabilityBase = getPaymentAvailability({
-              hasDeliveryDistrict: hasDeliveryZone,
-              isFormValid: isPaymentUnlocked,
-              isLoading: placing,
-              firstIncompleteHint: getFirstIncompleteHint(),
-              messages: {
-                selectDeliveryArea: t.selectDeliveryAreaPayment,
-                processing: t.processing,
-              },
+        <CartCheckoutView
+          lang={lang}
+          items={items}
+          delivery={delivery}
+          onDeliveryChange={setDelivery}
+          deliveryNotes={deliveryNotes}
+          onDeliveryNotesChange={setDeliveryNotes}
+          checkoutDeliveryProfile={checkoutDeliveryProfile}
+          recipientName={recipientName}
+          onRecipientNameChange={setRecipientName}
+          recipientCountryCode={recipientCountryCode}
+          onRecipientCountryCodeChange={setRecipientCountryCode}
+          recipientPhoneNational={recipientPhoneNational}
+          onRecipientPhoneNationalChange={setRecipientPhoneNational}
+          surpriseDelivery={surpriseDelivery}
+          onSurpriseDeliveryChange={setSurpriseDelivery}
+          cardMessage={cardMessageValue}
+          onCardMessageChange={(v) => {
+            if (primaryBouquetIdx < 0) return;
+            const item = items[primaryBouquetIdx];
+            updateItem(primaryBouquetIdx, { ...item, addOns: { ...item.addOns, cardMessage: v } });
+          }}
+          noCardMessage={noCardMessage}
+          onNoCardMessageChange={setNoCardMessage}
+          senderFields={contactFormContent('', { premium: true })}
+          countryCodeOptions={renderFlagCountryCodeOptions(
+            POPULAR_COUNTRY_CODES,
+            ALL_COUNTRY_CODES,
+            lang
+          )}
+          itemsTotal={itemsTotalVal}
+          addOnsTotal={addOnsCartTotal}
+          deliveryFee={stickyDeliveryFeeNet}
+          deliveryFeeGross={stickyDeliveryFeeGross}
+          discount={orderDiscountVal}
+          discountLabel={
+            isCampaignDiscount
+              ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
+              : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
+                  '{code}',
+                  resolvedDiscount?.code ?? ''
+                )
+          }
+          grandTotal={grandTotalVal}
+          mayCampaignProgressRemaining={mayCampaignProgressRemaining}
+          appliedReferralCode={appliedReferralCode}
+          onReferralChange={() => setReferralCleared((c) => c + 1)}
+          mayCampaignEligible={mayCampaignEligible}
+          highlightSection={highlightSection}
+          sectionRefs={sectionRefs}
+          onRemoveItem={(index) => {
+            const removed = items[index];
+            if (!removed) return;
+            const lineVal = removed.size.price * (removed.quantity ?? 1);
+            trackRemoveFromCart({
+              currency: 'THB',
+              value: lineVal,
+              items: [
+                {
+                  item_id: removed.bouquetId,
+                  item_name: lang === 'th' ? removed.nameTh : removed.nameEn,
+                  price: removed.size.price,
+                  quantity: removed.quantity ?? 1,
+                  index: 0,
+                  item_variant: removed.size.label,
+                },
+              ],
             });
-            const preparingCheckout = t.preparingCheckout;
-            const paymentAvailability =
-              checkoutSubmissionToken || items.length === 0
-                ? paymentAvailabilityBase
-                : {
-                    stripe: { enabled: false, reason: preparingCheckout },
-                  };
-            const incompleteHint = !paymentAvailability.stripe.enabled
-              ? paymentAvailability.stripe.reason
-              : undefined;
-            const handleDeliveryDateTimeChange = (date: string, timeSlot: string) => {
-              const nextTimeSlot = isDeliveryTimeSlotSelectableForDate(date, timeSlot)
-                ? timeSlot
-                : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
-              setDelivery((prev) => ({ ...prev, date, timeSlot: nextTimeSlot }));
-            };
-            return (
-          <StickyCheckoutBar
-            lang={lang}
-            summary={{
-              date: delivery.date,
-              timeSlot: delivery.timeSlot,
-              deliveryFee: stickyDeliveryFeeNet,
-              deliveryFeeGross: stickyDeliveryFeeGross,
-              deliveryFeeKnown: hasDeliveryZone,
-              total: grandTotalVal,
-            }}
-            availability={paymentAvailability}
-            incompleteHint={incompleteHint}
-            orderError={orderError}
-            placing={placing}
-            onPlaceOrder={handlePlaceOrder}
-            onDeliveryDateTimeChange={handleDeliveryDateTimeChange}
-            formatDate={formatStickyDate}
-            labels={{
-              dateLabel: t.dateLabel ?? 'Date',
-              deliveryFeeLabel: t.deliveryFeeLabel,
-              deliveryFree: t.stickyDeliveryFree ?? 'Free',
-              deliveryFeePending: t.stickyDeliverySelectArea ?? 'Select area',
-              totalLabel: t.totalLabel,
-              placeOrder: t.payWithStripe,
-              orderLabel: t.orderLabel,
-              redirecting: t.redirecting,
-              creating: t.creatingCheckout,
-              unavailableRightNow: t.unavailableRightNow,
-              change: t.change,
-              delivery: t.deliveryTime,
-              showCheckout: t.showCheckout,
-              specifyDeliveryDate: tBuyNow.specifyDeliveryDate,
-              todayLabel: tBuyNow.todayLabel,
-              tomorrowLabel: tBuyNow.tomorrowLabel,
-              selectTimeSlot: tBuyNow.selectTimeSlot,
-              preferredTime: (tBuyNow as { preferredTime?: string }).preferredTime,
-              save: t.save,
-            }}
-          />
-            );
-          })()}
-        </div>
-        <div className="cart-desktop-view">
-        <div className="cart-desktop-layout">
-        <div className="cart-desktop-column-left">
-        <section className="cart-delivery cart-desktop-delivery">
-          <DeliveryForm
-            lang={lang}
-            value={delivery}
-            onChange={setDelivery}
-            title={t.payWithStripe}
-            showLocationPicker
-            deliveryVariant={checkoutDeliveryProfile.variant}
-            expansionLabels={
-              checkoutDeliveryProfile.variant === 'expansion'
-                ? checkoutDeliveryProfile.labels
-                : undefined
-            }
-            step3Heading={t.contactInfoStepHeading}
-            step3Content={
-              <div className="cart-place-order">
-                {contactFormContent('')}
-                <div className="cart-place-order-actions">
-                <div className="cart-place-order-pc-stack">
-                <div className="cart-place-order-buttons">
-                  <span className="cart-place-order-pc-tooltip-wrap">
-                    <button
-                      type="button"
-                      className={`cart-place-order-btn cart-place-order-bank-btn ${isPaymentUnlocked ? 'cart-place-order-ready' : ''}`}
-                      onClick={handlePlaceOrder}
-                      disabled={placing || !isPaymentUnlocked}
-                      aria-busy={placing}
-                    >
-                      <svg
-                        className="cart-place-order-btn__icon"
-                        width={18}
-                        height={18}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2.25}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <path d="M16 10a4 4 0 01-8 0" />
-                      </svg>
-                      {placing ? t.creatingCheckout : t.payWithStripe}
-                    </button>
-                  </span>
-                </div>
-                <div
-                  className={`cart-place-order-hint-slot ${desktopHintAnimOpen ? 'cart-place-order-hint-slot--visible' : ''}`}
-                  onTransitionEnd={handleDesktopCheckoutHintTransitionEnd}
-                >
-                  {desktopHintDisplay && (
-                    <div className="cart-place-order-hint-inner">
-                      <span className="cart-place-order-hint-icon" aria-hidden>
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="8" x2="12" y2="13" />
-                          <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none" />
-                        </svg>
-                      </span>
-                      <p
-                        className={`cart-place-order-hint ${desktopHintDisplay.isError ? 'cart-place-order-hint--error' : ''}`}
-                        role={desktopHintDisplay.isError ? 'alert' : undefined}
-                        aria-live="polite"
-                      >
-                        {desktopHintDisplay.text}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <p className="cart-policy-consent">
-                  {t.policyConsentBefore}{' '}
-                  <Link
-                    className="cart-policy-link cart-policy-link--delivery"
-                    href={`/${lang}/info/delivery-policy`}
-                    style={DELIVERY_POLICY_LINK_STYLE}
-                  >
-                    {t.policyDeliveryLink}
-                  </Link>{' '}
-                  {t.policyConsentBetween}{' '}
-                  <Link
-                    className="cart-policy-link cart-policy-link--refund"
-                    href={`/${lang}/refund-replacement`}
-                    style={REFUND_POLICY_LINK_STYLE}
-                  >
-                    {t.policyRefundLink}
-                  </Link>
-                  {lang === 'en' ? '.' : ''}
-                </p>
-                </div>
-                </div>
-              </div>
-            }
-          />
-        </section>
-        </div>
-        <div className="cart-desktop-column-right">
-        <aside className="cart-sticky-sidebar">
-        <h2 className="cart-sticky-sidebar-title">{t.orderSummary}</h2>
-        <div className="cart-items-and-summary">
-        <div className="cart-list">
-          {items.map((item, index) => {
-            const name = lang === 'th' ? item.nameTh : item.nameEn;
-            const addOnsSummary = buildAddOnsSummaryForDisplay(item, t);
-            return (
-              <div key={`${item.bouquetId}-${index}`} className="cart-item">
-                {item.imageUrl && (
-                  <div className="cart-item-image-wrap">
-                    <Image
-                      src={item.imageUrl}
-                      alt=""
-                      width={80}
-                      height={80}
-                      className="cart-item-image"
-                      sizes="80px"
-                    />
-                  </div>
-                )}
-                <div className="cart-item-main">
-                  <h3 className="cart-item-name">{name}</h3>
-                  <p className="cart-item-size">
-                    {(() => {
-                      const qty = item.quantity ?? 1;
-                      const unitWithAddOns = item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
-                      const unitDisplayPrice = applyExpansionItemMarkupThb(
-                        unitWithAddOns,
-                        delivery.deliveryDestination
-                      );
-                      const lineDisplayPrice = unitDisplayPrice * qty;
-                      const label = (item.size.label || '').trim() || '—';
-                      if (isNonBouquetCartLine(item)) {
-                        return `${label} — ฿${unitDisplayPrice.toLocaleString()}`;
-                      }
-                      if (qty > 1) {
-                        return `${item.size.label} × ${qty} — ฿${lineDisplayPrice.toLocaleString()}`;
-                      }
-                      return `${item.size.label} — ฿${unitDisplayPrice.toLocaleString()}`;
-                    })()}
-                  </p>
-                  {addOnsSummary && (
-                    <p className="cart-item-addons">{addOnsSummary}</p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="cart-item-remove"
-                  onClick={() => {
-                    const removed = items[index];
-                    const lineVal = removed.size.price * (removed.quantity ?? 1);
-                    trackRemoveFromCart({
-                      currency: 'THB',
-                      value: lineVal,
-                      items: [
-                        {
-                          item_id: removed.bouquetId,
-                          item_name: lang === 'th' ? removed.nameTh : removed.nameEn,
-                          price: removed.size.price,
-                          quantity: removed.quantity ?? 1,
-                          index: 0,
-                          item_variant: removed.size.label,
-                        },
-                      ],
-                    });
-                    removeItem(index);
-                  }}
-                  aria-label={t.remove}
-                >
-                  {t.remove}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        {(() => {
-          return (
-            <div className="cart-summary-section">
-              <div className="cart-order-summary">
-                <h3 className="cart-order-summary-title">
-                  {t.orderComposition ?? 'Order composition'}
-                </h3>
-                {items.map((item, i) => {
-                  const name = lang === 'th' ? item.nameTh : item.nameEn;
-                  const qty = item.quantity ?? 1;
-                  return (
-                    <div key={`summary-${item.bouquetId}-${i}`}>
-                      <div className="cart-order-summary-row cart-order-summary-item">
-                        <span className="cart-order-summary-item-name">{name} × {qty}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="cart-order-summary-row">
-                  <span>{t.deliveryFeeLabel}</span>
-                  <span className="cart-order-summary-amount">฿{deliveryFeeVal.toLocaleString()}</span>
-                </div>
-                {orderDiscountVal > 0 && (
-                  <div className="cart-order-summary-row cart-order-summary-referral">
-                    <span>
-                      {isCampaignDiscount
-                        ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
-                        : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
-                            '{code}',
-                            resolvedDiscount?.code ?? ''
-                          )}
-                    </span>
-                    <span className="cart-order-summary-amount cart-order-summary-discount">
-                      -฿{orderDiscountVal.toLocaleString()}
-                    </span>
-                  </div>
-                )}
-                <div className="cart-order-summary-row cart-order-summary-total">
-                  <span>{t.totalLabel}</span>
-                  <span className="cart-order-summary-amount">฿{grandTotalVal.toLocaleString()}</span>
-                </div>
-                <p className="cart-order-summary-note">{t.deliveryTimeApproxNote ?? 'Delivery time is approximate (±30 min).'}</p>
-              </div>
-              <div className="referral-code-column">
-                {mayCampaignProgressRemaining > 0 && !appliedReferralCode && (
-                  <p className="cart-may-promo-hint" role="status">
-                    {(t.mayFreeDeliveryProgressHint ?? 'Add ฿{amount} more on flowers for free delivery this May').replace(
-                      '{amount}',
-                      mayCampaignProgressRemaining.toLocaleString()
-                    )}
-                  </p>
-                )}
-                <ReferralCodeBox
-                  lang={lang}
-                  subtotal={subtotalWithDelivery}
-                  itemSubtotal={itemsTotalVal}
-                  deliveryFee={deliveryFeeVal}
-                  deliveryDestination={delivery.deliveryDestination}
-                  appliedCode={appliedReferralCode}
-                  onApply={() => setReferralCleared((c) => c + 1)}
-                  onRemove={() => setReferralCleared((c) => c + 1)}
-                  mayCampaignEligible={mayCampaignEligible}
-                />
-              </div>
-              <TrustBadges lang={lang} />
-            </div>
-          );
-        })()}
-        </div>
-        </aside>
-        </div>
-        </div>
-        </div>
+            removeItem(index);
+          }}
+          orderError={orderError}
+          isPaymentUnlocked={isPaymentUnlocked}
+          hasDeliveryZone={hasDeliveryZone}
+          placing={placing}
+          checkoutSubmissionToken={checkoutSubmissionToken}
+          onBottomAction={handleCheckoutBottomAction}
+          onPay={handlePlaceOrder}
+        />
       </div>
-      {mapsLinkPromptOpen && (
-        <div
-          className="cart-maps-prompt-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cart-maps-prompt-title"
-        >
-          <button
-            type="button"
-            className="cart-maps-prompt-backdrop"
-            aria-label={t.mapsPromptClose}
-            onClick={() => {
-              setMapsLinkPromptOpen(false);
-              setShouldFocusMapsLinkOnReturn(false);
-            }}
-          />
-          <div className="cart-maps-prompt-card">
-            <h2 id="cart-maps-prompt-title" className="cart-maps-prompt-title">
-              {t.mapsPromptTitle}
-            </h2>
-            <p className="cart-maps-prompt-text">
-              {t.mapsPromptText}
-            </p>
-            <ul className="cart-maps-prompt-steps" aria-label={t.mapsPromptStepsLabel}>
-              <li>{t.mapsPromptStep1}</li>
-              <li>{t.mapsPromptStep2}</li>
-              <li>{t.mapsPromptStep3}</li>
-              <li>{t.mapsPromptStep4}</li>
-            </ul>
-            <div className="cart-maps-prompt-actions">
-              <button type="button" className="cart-maps-prompt-btn cart-maps-prompt-btn-primary" onClick={handleMapsPromptAddPin}>
-                <PinIcon className="cart-maps-prompt-btn-icon" size={18} />
-                {t.mapsPromptAddPin}
-              </button>
-              <button
-                type="button"
-                className="cart-maps-prompt-btn cart-maps-prompt-btn-secondary"
-                onClick={() => void handleMapsPromptContinueWithoutLink()}
-              >
-                {t.mapsPromptContinueWithoutLink}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <style jsx>{`
         .cart-maps-prompt-overlay {
           position: fixed;
@@ -2261,6 +1752,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-page {
           padding: 12px 0 48px;
+        }
+        .cart-page--premium {
+          background: color-mix(in srgb, var(--pastel-cream) 50%, #fffdf9);
+          min-height: 100vh;
+        }
+        .cart-page--premium .container {
+          max-width: 100%;
+          padding-left: 0;
+          padding-right: 0;
+        }
+        .cart-mobile-view,
+        .cart-desktop-view {
+          display: none !important;
         }
         .cart-checkout-header {
           margin-bottom: 20px;
@@ -3775,6 +3279,25 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-page .cart-delivery p.cart-field-hint {
             max-width: min(100%, 22rem);
           }
+        }
+        .cart-page label.cart-marketing-consent {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin: 6px 0 0;
+          font-size: 11px;
+          line-height: 1.35;
+          font-weight: 400;
+          color: var(--text-muted);
+          cursor: pointer;
+          max-width: min(100%, 26rem);
+        }
+        .cart-page .cart-marketing-consent-input {
+          margin: 2px 0 0;
+          width: 14px;
+          height: 14px;
+          flex-shrink: 0;
+          accent-color: var(--accent);
         }
       `}</style>
     </div>

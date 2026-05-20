@@ -108,6 +108,7 @@ interface SupabaseOrderRow {
   last_line_push_status?: string | null;
   last_line_push_at?: string | null;
   submission_token?: string | null;
+  marketing_email_consent?: boolean | null;
 }
 
 interface SupabaseOrderItemRow {
@@ -128,6 +129,8 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     return {
       ...json,
       orderId: row.order_id,
+      marketingEmailConsent:
+        row.marketing_email_consent === true || json.marketingEmailConsent === true,
       phone: row.phone ?? json.phone,
       phoneCountryCode: phoneCc || json.phoneCountryCode,
       createdAt: row.created_at ?? json.createdAt ?? new Date().toISOString(),
@@ -177,6 +180,7 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     orderId: row.order_id,
     customerName: row.customer_name ?? undefined,
     customerEmail: row.customer_email ?? undefined,
+    marketingEmailConsent: row.marketing_email_consent === true,
     phone: row.phone ?? undefined,
     phoneCountryCode: row.phone_country_code?.trim() || looseJson?.phoneCountryCode,
     items: orderItems,
@@ -395,6 +399,7 @@ export async function supabaseCreateOrder(
       ga_client_id: (order as { ga_client_id: string }).ga_client_id,
     }),
     ...(submissionToken ? { submission_token: submissionToken } : {}),
+    marketing_email_consent: order.marketingEmailConsent === true,
   };
 
   const { error: upsertError } = await supabase
@@ -602,6 +607,7 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     fulfillment_status: order.fulfillmentStatus ?? 'new',
     fulfillment_status_updated_at: order.fulfillmentStatusUpdatedAt ?? new Date().toISOString(),
     order_json: order as unknown as Record<string, unknown>,
+    marketing_email_consent: order.marketingEmailConsent === true,
   };
 
   await supabase

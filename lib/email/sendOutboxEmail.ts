@@ -6,6 +6,28 @@ function getFromEmail(): string | null {
   return process.env.ORDERS_FROM_EMAIL?.trim() || null;
 }
 
+/** Trustpilot BCC on delivered email when customer opted in at checkout and env is set. */
+async function getTrustpilotInviteBcc(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  emailType: string,
+  orderId: string | null
+): Promise<string[] | undefined> {
+  if (emailType !== 'order_delivered' || !orderId) return undefined;
+  const bcc = process.env.TRUSTPILOT_INVITE_BCC?.trim();
+  if (!bcc || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bcc)) return undefined;
+
+  const { data: orderRow } = await supabase
+    .from('orders')
+    .select('marketing_email_consent')
+    .eq('order_id', orderId)
+    .maybeSingle();
+
+  if (!(orderRow as { marketing_email_consent?: boolean } | null)?.marketing_email_consent) {
+    return undefined;
+  }
+  return [bcc];
+}
+
 /**
  * Sends a single outbox message via Resend, updates outbox + optional order delivered flag.
  */
@@ -32,14 +54,18 @@ export async function sendOutboxViaResend(
   }
 
   const resend = new Resend(apiKey);
+  const emailType = (row as { email_type: string }).email_type;
   const to = (row as { customer_email: string }).customer_email;
   const subject = (row as { subject: string }).subject;
   const html = (row as { html_body: string }).html_body;
   const text = (row as { text_body: string | null }).text_body ?? undefined;
+  const orderId = (row as { order_id: string | null }).order_id;
+  const bcc = await getTrustpilotInviteBcc(supabase, emailType, orderId);
 
   const { data, error } = await resend.emails.send({
     from,
     to: [to],
+    ...(bcc ? { bcc } : {}),
     subject,
     html,
     text: text || undefined,
@@ -76,9 +102,7 @@ export async function sendOutboxViaResend(
     })
     .eq('id', outboxId);
 
-  const type = (row as { email_type: string; order_id: string | null }).email_type;
-  const orderId = (row as { order_id: string | null }).order_id;
-  if (type === 'order_delivered' && orderId) {
+  if (emailType === 'order_delivered' && orderId) {
     await supabase
       .from('orders')
       .update({ delivered_email_sent_at: now, updated_at: now })

@@ -72,6 +72,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   /** ITU calling code digits for customer phone (must match start of `phone`). */
   phoneCountryCode: string;
   customerEmail?: string;
+  marketingEmailConsent?: boolean;
   contactPreference: ContactPreferenceOption[];
   /** Required in API when `contactPreference` includes `line`. */
   lineId?: string;
@@ -81,6 +82,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   /** ITU calling code digits for recipient when ordering for someone else. */
   recipientPhoneCountryCode?: string;
   surpriseDelivery?: boolean;
+  deliveryNotes?: string;
 }): Record<string, unknown> {
   const {
     lang,
@@ -90,6 +92,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     phone,
     phoneCountryCode,
     customerEmail,
+    marketingEmailConsent,
     contactPreference,
     lineId,
     submissionToken,
@@ -97,6 +100,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     recipientPhone,
     recipientPhoneCountryCode,
     surpriseDelivery,
+    deliveryNotes,
   } = params;
 
   const addressLineTrim = delivery.addressLine?.trim() ?? '';
@@ -152,12 +156,16 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       deliveryLat: delivery.deliveryLat ?? undefined,
       deliveryLng: delivery.deliveryLng ?? undefined,
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl?.trim() || undefined,
-      notes: undefined,
+      notes: deliveryNotes?.trim() || undefined,
     },
   };
 
   const email = customerEmail?.trim();
   if (email) body.customerEmail = email;
+
+  if (marketingEmailConsent === true) {
+    body.marketingEmailConsent = true;
+  }
 
   if (contactPreference.includes('line')) {
     body.lineId = normalizeLineUserId(lineId ?? '');

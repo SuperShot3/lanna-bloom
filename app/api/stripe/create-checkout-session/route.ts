@@ -112,6 +112,8 @@ function validateStripePayload(
     return { ok: false, message: 'customerEmail must be a valid email address' };
   }
 
+  const marketingEmailConsent = b.marketingEmailConsent === true;
+
   const contactPreferenceRaw = b.contactPreference;
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
@@ -278,6 +280,7 @@ function validateStripePayload(
       customerName,
       phone,
       customerEmail,
+      ...(marketingEmailConsent ? { marketingEmailConsent: true } : {}),
       contactPreference,
       ...(wantsLineContact && lineIdNormalized ? { lineId: lineIdNormalized } : {}),
       items: cartItems,
@@ -313,6 +316,7 @@ interface StripeCheckoutPayload {
   phone: string;
   phoneCountryCode?: string;
   customerEmail?: string;
+  marketingEmailConsent?: boolean;
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
   items: CartItemIdentifier[];
@@ -464,6 +468,7 @@ export async function POST(request: NextRequest) {
       phone: data.phone,
       ...(data.phoneCountryCode && { phoneCountryCode: data.phoneCountryCode }),
       customerEmail: data.customerEmail,
+      ...(data.marketingEmailConsent ? { marketingEmailConsent: true } : {}),
       contactPreference: data.contactPreference,
       ...(data.lineId ? { lineId: data.lineId } : {}),
       items: totals.items,
