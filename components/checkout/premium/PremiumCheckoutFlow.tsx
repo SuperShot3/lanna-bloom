@@ -633,16 +633,20 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         .premium-checkout .co-contact-prefs legend {
           margin-bottom: 6px;
           padding: 0;
-          float: left;
+          display: block;
           width: 100%;
         }
         .premium-checkout .co-sender-fields .co-chips {
-          clear: both;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 0;
         }
         .premium-checkout .co-sender-fields .cart-contact-chip {
+          position: relative;
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          gap: 4px;
           padding: 8px 14px;
           border-radius: 999px;
           border: 1px solid var(--border);
@@ -662,10 +666,49 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           background: color-mix(in srgb, var(--pastel-mint) 35%, #fff);
           color: var(--primary);
         }
+        .premium-checkout .co-sender-fields .cart-contact-chip-input {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          margin: -1px;
+          padding: 0;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+          opacity: 0;
+          pointer-events: none;
+        }
         .premium-checkout .co-sender-fields .cart-contact-chip-box {
+          flex-shrink: 0;
+          position: relative;
+          display: block;
           width: 16px;
           height: 16px;
+          border: 1.5px solid var(--border);
           border-radius: 4px;
+          background: #fff;
+          box-sizing: border-box;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .premium-checkout .co-sender-fields .cart-contact-chip-selected .cart-contact-chip-box {
+          border-color: var(--accent);
+          background: var(--accent);
+        }
+        .premium-checkout .co-sender-fields .cart-contact-chip-selected .cart-contact-chip-box::after {
+          content: '✓';
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          color: #fff;
+          line-height: 1;
+        }
+        .premium-checkout .co-sender-fields .cart-contact-chip-label {
+          line-height: 1.2;
         }
         .premium-checkout .co-sender-fields .cart-phone-hint {
           font-size: 13px;

@@ -2425,9 +2425,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           gap: 6px;
         }
         .cart-contact-chip {
+          position: relative;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
           padding: 6px 10px;
           background: var(--pastel-cream);
           border: 1px solid var(--border);
@@ -2448,9 +2449,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-contact-chip-input {
           position: absolute;
+          width: 1px;
+          height: 1px;
+          margin: -1px;
+          padding: 0;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
           opacity: 0;
-          width: 0;
-          height: 0;
           pointer-events: none;
         }
         .cart-contact-chip-box {

@@ -173,7 +173,6 @@ export function CartCheckoutView({
             >
               {placing ? t.creatingCheckout : tPremium.paySecurely}
             </button>
-            <p className="co-payment-helper">{tPremium.paymentHelper}</p>
             <style jsx>{`
               .co-payment-block {
                 display: flex;
@@ -201,12 +200,6 @@ export function CartCheckoutView({
               .co-payment-btn:disabled {
                 opacity: 0.55;
                 cursor: not-allowed;
-              }
-              .co-payment-helper {
-                margin: 0;
-                font-size: 14px;
-                color: var(--text-muted);
-                line-height: 1.4;
               }
             `}</style>
           </div>
