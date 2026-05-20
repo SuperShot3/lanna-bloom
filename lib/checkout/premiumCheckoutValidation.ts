@@ -1,7 +1,6 @@
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import { isDeliveryTimeSlotSelectableForDate } from '@/components/DeliveryForm';
 import { isSupportedZone } from '@/lib/delivery/zones';
-import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import type { ContactPreferenceOption } from '@/lib/orders';
 import {
   nationalDigitsValidForCheckout,
@@ -22,31 +21,31 @@ export type CheckoutFieldIssue = {
   message: string;
 };
 
+/** Google Places selection with coordinates (authoritative for drivers). */
+export function hasGooglePlaceDelivery(delivery: DeliveryFormValues): boolean {
+  return Boolean(
+    delivery.deliveryPlaceId?.trim() &&
+      delivery.deliveryFormattedAddress?.trim() &&
+      typeof delivery.deliveryLat === 'number' &&
+      typeof delivery.deliveryLng === 'number'
+  );
+}
+
+/** Manual fallback when Maps script unavailable or customer typed full address. */
+export function hasManualDeliveryFallback(delivery: DeliveryFormValues): boolean {
+  if (delivery.deliveryPlaceId?.trim()) return false;
+  const manual =
+    delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
+  return manual.length >= 10;
+}
+
 export function hasDeliveryAddressInput(delivery: DeliveryFormValues): boolean {
-  const address = delivery.addressLine?.trim() ?? '';
-  const maps = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-  const place = delivery.deliveryPlaceId?.trim() ?? '';
-  return Boolean(place || (maps && isValidGoogleMapsUrl(maps)) || address.length >= 10);
+  return hasGooglePlaceDelivery(delivery) || hasManualDeliveryFallback(delivery);
 }
 
-/** Autocomplete resolved to a definite place (place id or name + formatted address from Places). */
-export function hasConfirmedGooglePlacesSelection(delivery: DeliveryFormValues): boolean {
-  if (delivery.deliveryPlaceId?.trim()) return true;
-  const formatted = delivery.deliveryFormattedAddress?.trim() ?? '';
-  const placeName = delivery.deliveryPlaceName?.trim() ?? '';
-  return Boolean(formatted && placeName);
-}
-
-export function hasValidGoogleMapsCheckoutLink(delivery: DeliveryFormValues): boolean {
-  const maps = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-  return Boolean(maps && isValidGoogleMapsUrl(maps));
-}
-
-/** Nudge at pay time: typed address only — no Places pin and no valid Maps URL yet. */
-export function shouldPromptForGoogleMapsPin(delivery: DeliveryFormValues): boolean {
-  if (hasValidGoogleMapsCheckoutLink(delivery)) return false;
-  if (hasConfirmedGooglePlacesSelection(delivery)) return false;
-  return hasDeliveryAddressInput(delivery);
+/** Soft hint: place selected but no room/floor note for driver. */
+export function shouldShowDeliveryNoteHint(delivery: DeliveryFormValues): boolean {
+  return hasGooglePlaceDelivery(delivery) && !delivery.deliveryNote?.trim();
 }
 
 export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
@@ -54,9 +53,7 @@ export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
   if (!isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) return false;
   if (!hasDeliveryAddressInput(delivery)) return false;
   const address = delivery.addressLine?.trim() ?? '';
-  if (address.length > 300) return false;
-  const maps = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-  if (maps && !isValidGoogleMapsUrl(maps)) return false;
+  if (address.length > 500) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
   if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
@@ -108,7 +105,6 @@ export function getFirstCheckoutFieldIssue(
     pleaseAddYourEmail: string;
     pleaseChooseContact: string;
     pleaseAddLineId: string;
-    invalidMapsLink: string;
   },
   params: {
     delivery: DeliveryFormValues;
@@ -141,11 +137,6 @@ export function getFirstCheckoutFieldIssue(
 
   if (!delivery.deliveryZoneId || !isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) {
     return { sectionId: 'delivery', message: copy.pleaseSelectDeliveryArea };
-  }
-
-  const maps = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-  if (maps && !isValidGoogleMapsUrl(maps)) {
-    return { sectionId: 'delivery', message: copy.invalidMapsLink };
   }
 
   if (!hasDeliveryAddressInput(delivery)) {

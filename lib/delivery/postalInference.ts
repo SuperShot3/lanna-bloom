@@ -45,8 +45,11 @@ function extractFromGoogleMapsUrl(url: string): string | null {
 
 export function inferPostalCodeFromDelivery(input: {
   address: string;
+  deliveryPostalCode?: string | null;
   deliveryGoogleMapsUrl?: string | null;
 }): string | null {
+  const explicit = input.deliveryPostalCode?.trim();
+  if (explicit && /^\d{5}$/.test(explicit)) return explicit;
   const fromAddress = extractPreferredPostcodeFromText(input.address ?? '');
   const fromUrl = input.deliveryGoogleMapsUrl
     ? extractFromGoogleMapsUrl(input.deliveryGoogleMapsUrl)

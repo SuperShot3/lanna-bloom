@@ -62,6 +62,13 @@ export interface OrderDelivery {
   deliveryLat?: number;
   deliveryLng?: number;
   deliveryGoogleMapsUrl?: string;
+  deliveryPlaceId?: string;
+  deliveryPlaceName?: string;
+  deliveryFormattedAddress?: string;
+  deliveryPostalCode?: string;
+  deliveryProvince?: string;
+  deliveryDistrictLabel?: string;
+  deliverySubdistrict?: string;
   /** Primary geography for new orders (with deliveryZoneId). */
   deliveryDestination?: OrderDeliveryDestinationId;
   /** Stable zone key from lib/delivery/zones.ts */

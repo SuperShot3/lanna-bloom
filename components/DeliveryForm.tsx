@@ -79,6 +79,14 @@ export interface DeliveryFormValues {
   deliveryPlaceId?: string | null;
   deliveryPlaceName?: string | null;
   deliveryFormattedAddress?: string | null;
+  deliveryAddressComponents?: import('@/lib/google/placesAddressComponents').GoogleAddressComponent[] | null;
+  deliveryPostalCode?: string | null;
+  deliveryProvince?: string | null;
+  /** Amphoe / district label from Places (not legacy DistrictKey). */
+  deliveryDistrictLabel?: string | null;
+  deliverySubdistrict?: string | null;
+  /** Room, floor, gate code — driver instructions (checkout). */
+  deliveryNote?: string;
   /** Canonical market; default Chiang Mai on main site */
   deliveryDestination: OrderDeliveryDestinationId;
   /** Zone id from lib/delivery/zones.ts */

@@ -41,10 +41,10 @@ import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOpt
 import { renderFlagCountryCodeOptions } from '@/lib/checkout/phoneCountryDial';
 import {
   getFirstCheckoutFieldIssue,
+  hasDeliveryAddressInput,
   isPremiumDeliveryValid,
   isPremiumRecipientValid,
   isPremiumSenderValid,
-  shouldPromptForGoogleMapsPin,
   type CheckoutSectionId,
 } from '@/lib/checkout/premiumCheckoutValidation';
 import { TrustBadges } from '@/components/TrustBadges';
@@ -53,14 +53,17 @@ import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStrip
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import {
+  cartPriceBreakdown,
+  cartValue,
+  isNonBouquetCartLine,
+} from '@/lib/cart/cartPriceBreakdown';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
-import { PinIcon } from '@/components/icons/PinIcon';
 import {
   CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY,
   CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY,
   validateSubmissionTokenFormat,
 } from '@/lib/checkout/submissionToken';
-import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import {
   CHECKOUT_NATIONAL_MAX,
   getNationalPhoneHint,
@@ -72,11 +75,6 @@ import {
   normalizeLineUserId,
   sanitizeLineUserIdInput,
 } from '@/lib/lineUserId';
-
-/** Non-flower catalog lines (partner products or standalone add-ons). */
-function isNonBouquetCartLine(item: CartItem): boolean {
-  return item.itemType === 'product' || item.itemType === 'plushyToy' || item.itemType === 'balloon';
-}
 
 function cartViolatesExpansionRules(
   cartItems: CartItem[],
@@ -224,8 +222,10 @@ function isDeliveryValid(
   ) {
     return false;
   }
-  const addressTrim = delivery.addressLine?.trim() ?? '';
-  if (addressTrim.length < 10 || addressTrim.length > 300) return false;
+  if (!hasDeliveryAddressInput(delivery)) return false;
+  const addressTrim =
+    delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
+  if (addressTrim.length > 500) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
   if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
@@ -520,19 +520,6 @@ function cartItemsToAnalytics(
   });
 }
 
-function cartValue(items: CartItem[], deliveryDestination: OrderDeliveryDestinationId): number {
-  return items.reduce(
-    (v, item) =>
-      v +
-      applyExpansionItemMarkupThb(
-        item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {}),
-        deliveryDestination
-      ) *
-        (item.quantity ?? 1),
-    0
-  );
-}
-
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, count: totalItemCount, removeItem, updateItem, clearCart } = useCart();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
@@ -617,6 +604,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       typeof storedZone === 'string' && storedZone.trim()
         ? storedZone.trim()
         : legacyZone;
+    const storedNote =
+      typeof (d as { deliveryNote?: string }).deliveryNote === 'string'
+        ? (d as { deliveryNote?: string }).deliveryNote
+        : typeof stored?.deliveryNotes === 'string'
+          ? stored.deliveryNotes
+          : '';
     return {
       addressLine: typeof d.addressLine === 'string' ? d.addressLine : defaultDelivery.addressLine,
       date: typeof d.date === 'string' ? d.date : defaultDelivery.date,
@@ -624,6 +617,35 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : null,
       deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : null,
       deliveryGoogleMapsUrl: typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl : null,
+      deliveryPlaceId:
+        typeof (d as { deliveryPlaceId?: string }).deliveryPlaceId === 'string'
+          ? (d as { deliveryPlaceId?: string }).deliveryPlaceId
+          : null,
+      deliveryPlaceName:
+        typeof (d as { deliveryPlaceName?: string }).deliveryPlaceName === 'string'
+          ? (d as { deliveryPlaceName?: string }).deliveryPlaceName
+          : null,
+      deliveryFormattedAddress:
+        typeof (d as { deliveryFormattedAddress?: string }).deliveryFormattedAddress === 'string'
+          ? (d as { deliveryFormattedAddress?: string }).deliveryFormattedAddress
+          : null,
+      deliveryPostalCode:
+        typeof (d as { deliveryPostalCode?: string }).deliveryPostalCode === 'string'
+          ? (d as { deliveryPostalCode?: string }).deliveryPostalCode
+          : null,
+      deliveryProvince:
+        typeof (d as { deliveryProvince?: string }).deliveryProvince === 'string'
+          ? (d as { deliveryProvince?: string }).deliveryProvince
+          : null,
+      deliveryDistrictLabel:
+        typeof (d as { deliveryDistrictLabel?: string }).deliveryDistrictLabel === 'string'
+          ? (d as { deliveryDistrictLabel?: string }).deliveryDistrictLabel
+          : null,
+      deliverySubdistrict:
+        typeof (d as { deliverySubdistrict?: string }).deliverySubdistrict === 'string'
+          ? (d as { deliverySubdistrict?: string }).deliverySubdistrict
+          : null,
+      deliveryNote: storedNote,
       deliveryDestination,
       deliveryZoneId,
       deliveryDistrict: validDistrict,
@@ -659,8 +681,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
-  const [mapsPinPromptOpen, setMapsPinPromptOpen] = useState(false);
-  const skipNextMapsPromptRef = useRef(false);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
@@ -683,9 +703,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   });
   const [lineId, setLineId] = useState(() =>
     sanitizeLineUserIdInput(loadCartFormFromStorage()?.lineId ?? '')
-  );
-  const [deliveryNotes, setDeliveryNotes] = useState(
-    () => loadCartFormFromStorage()?.deliveryNotes ?? ''
   );
   const [noCardMessage, setNoCardMessage] = useState(false);
   const [highlightSection, setHighlightSection] = useState<CheckoutSectionId | null>(null);
@@ -736,9 +753,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       isOrderingForSomeoneElse,
       surpriseDelivery,
       marketingEmailConsent,
-      deliveryNotes,
     });
-  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent, deliveryNotes]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent]);
 
   useEffect(() => {
     if (!contactPreference.includes('line') && lineId) {
@@ -788,7 +804,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
-  const itemsTotalVal = cartValue(items, delivery.deliveryDestination);
+  const cartPricing = cartPriceBreakdown(items, delivery.deliveryDestination);
+  const itemsTotalVal = cartPricing.itemsTotal;
   const cartExpansionInvalid = cartViolatesExpansionRules(items, delivery.deliveryDestination);
   const cartDestinationBouquetInvalid = cartViolatesDestinationBouquetRules(
     items,
@@ -852,10 +869,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const primaryBouquetIdx = items.findIndex((i) => (i.itemType ?? 'bouquet') === 'bouquet');
   const cardMessageValue =
     primaryBouquetIdx >= 0 ? (items[primaryBouquetIdx].addOns.cardMessage ?? '') : '';
-  const addOnsCartTotal = items.reduce(
-    (sum, item) => sum + getAddOnsTotal(item.addOns?.productAddOns ?? {}) * (item.quantity ?? 1),
-    0
-  );
+  const { bouquetSubtotal: bouquetCartSubtotal, addOnsSubtotal: addOnsCartTotal, otherItemsSubtotal: otherItemsCartSubtotal } =
+    cartPricing;
 
   /** Returns the first incomplete field's name for the sticky bar lock message. */
   const getFirstIncompleteHint = (): string => {
@@ -1030,7 +1045,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setAlreadySubmittedBlock(false);
   };
 
-  const mapsUrlInvalidMsg = t.mapsUrlInvalid;
 
   const runStripeCheckoutSubmit = async () => {
     if (!checkoutSubmissionToken) {
@@ -1069,7 +1083,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         recipientPhone: isOrderingForSomeoneElse ? recipientPhoneDigits : undefined,
         recipientPhoneCountryCode: isOrderingForSomeoneElse ? recipientCountryCode : undefined,
         surpriseDelivery: isOrderingForSomeoneElse ? surpriseDelivery : false,
-        deliveryNotes: deliveryNotes.trim() || undefined,
       });
 
       const res = await fetch('/api/stripe/create-checkout-session', {
@@ -1160,32 +1173,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       setOrderError(t.refreshAndTryAgain);
       return;
     }
-    const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
-    if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) {
-      setOrderError(mapsUrlInvalidMsg);
-      return;
-    }
-    if (!skipNextMapsPromptRef.current && shouldPromptForGoogleMapsPin(delivery)) {
-      setMapsPinPromptOpen(true);
-      return;
-    }
-    skipNextMapsPromptRef.current = false;
     await runStripeCheckoutSubmit();
   };
-
-  useEffect(() => {
-    if (!mapsPinPromptOpen || typeof window === 'undefined') return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMapsPinPromptOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [mapsPinPromptOpen]);
 
   if (alreadySubmittedBlock) {
     const lastOrderId =
@@ -1609,8 +1598,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           items={items}
           delivery={delivery}
           onDeliveryChange={setDelivery}
-          deliveryNotes={deliveryNotes}
-          onDeliveryNotesChange={setDeliveryNotes}
           checkoutDeliveryProfile={checkoutDeliveryProfile}
           recipientName={recipientName}
           onRecipientNameChange={setRecipientName}
@@ -1637,7 +1624,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             lang
           )}
           itemsTotal={itemsTotalVal}
+          bouquetSubtotal={bouquetCartSubtotal}
           addOnsTotal={addOnsCartTotal}
+          otherItemsSubtotal={otherItemsCartSubtotal}
           deliveryFee={stickyDeliveryFeeNet}
           deliveryFeeGross={stickyDeliveryFeeGross}
           discount={orderDiscountVal}
@@ -1710,183 +1699,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onPay={handlePlaceOrder}
         />
       </div>
-      {mapsPinPromptOpen ? (
-          <div className="cart-maps-prompt-overlay">
-            <button
-              type="button"
-              className="cart-maps-prompt-backdrop"
-              aria-label={t.mapsPromptClose}
-              onClick={() => setMapsPinPromptOpen(false)}
-            />
-            <div
-              className="cart-maps-prompt-card"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="premium-maps-prompt-title"
-            >
-              <h2 id="premium-maps-prompt-title" className="cart-maps-prompt-title">
-                {t.mapsPromptTitle}
-              </h2>
-              <p className="cart-maps-prompt-text">{t.mapsPromptText}</p>
-              <p className="cart-maps-prompt-steps-title">{t.mapsPromptStepsLabel}</p>
-              <ol className="cart-maps-prompt-steps">
-                <li>{t.mapsPromptStep1}</li>
-                <li>{t.mapsPromptStep2}</li>
-                <li>{t.mapsPromptStep3}</li>
-                <li>{t.mapsPromptStep4}</li>
-              </ol>
-              <div className="cart-maps-prompt-actions">
-                <a
-                  href="https://www.google.com/maps"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cart-maps-prompt-btn cart-maps-prompt-btn-primary"
-                >
-                  <PinIcon className="cart-maps-prompt-btn-icon" size={20} />
-                  {t.mapsPromptAddPin}
-                </a>
-                <button
-                  type="button"
-                  className="cart-maps-prompt-btn cart-maps-prompt-btn-secondary"
-                  onClick={() => {
-                    skipNextMapsPromptRef.current = true;
-                    setMapsPinPromptOpen(false);
-                    void handlePlaceOrder();
-                  }}
-                >
-                  {t.mapsPromptContinueWithoutLink}
-                </button>
-                <button
-                  type="button"
-                  className="cart-maps-prompt-btn-text"
-                  onClick={() => setMapsPinPromptOpen(false)}
-                >
-                  {t.mapsPromptClose}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
       <style jsx>{`
-        .cart-maps-prompt-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 200;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          box-sizing: border-box;
-        }
-        .cart-maps-prompt-backdrop {
-          position: absolute;
-          inset: 0;
-          border: none;
-          margin: 0;
-          padding: 0;
-          background: rgba(0, 0, 0, 0.45);
-          cursor: pointer;
-        }
-        .cart-maps-prompt-card {
-          position: relative;
-          z-index: 1;
-          max-width: 400px;
-          width: 100%;
-          padding: 22px 20px 20px;
-          background: var(--surface);
-          border-radius: var(--radius);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-          border: 1px solid var(--border);
-        }
-        .cart-maps-prompt-title {
-          font-family: var(--font-serif);
-          font-size: 1.2rem;
-          font-weight: 600;
-          color: var(--text);
-          margin: 0 0 12px;
-          line-height: 1.3;
-        }
-        .cart-maps-prompt-text {
-          font-size: 0.92rem;
-          line-height: 1.55;
-          color: var(--text-muted);
-          margin: 0 0 18px;
-        }
-        .cart-maps-prompt-steps-title {
-          margin: -6px 0 8px;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: var(--text);
-        }
-        .cart-maps-prompt-steps {
-          margin: 0 0 18px;
-          padding-left: 1.35em;
-          color: var(--text);
-          font-size: 0.9rem;
-          line-height: 1.5;
-          list-style: decimal;
-          list-style-position: outside;
-        }
-        .cart-maps-prompt-steps li {
-          margin: 6px 0;
-        }
-        .cart-maps-prompt-steps li::marker {
-          color: var(--text-muted);
-        }
-        .cart-maps-prompt-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .cart-maps-prompt-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          width: 100%;
-          padding: 12px 16px;
-          font-size: 0.95rem;
-          font-weight: 600;
-          font-family: inherit;
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          transition: background 0.15s, border-color 0.15s;
-          text-decoration: none;
-          box-sizing: border-box;
-        }
-        .cart-maps-prompt-btn-icon {
-          flex-shrink: 0;
-        }
-        .cart-maps-prompt-btn-primary {
-          background: var(--accent);
-          color: #fff;
-          border: none;
-        }
-        .cart-maps-prompt-btn-primary:hover {
-          filter: brightness(0.95);
-        }
-        .cart-maps-prompt-btn-secondary {
-          background: transparent;
-          color: var(--text);
-          border: 1px solid var(--border);
-        }
-        .cart-maps-prompt-btn-secondary:hover {
-          background: var(--pastel-cream);
-        }
-        .cart-maps-prompt-btn-text {
-          border: none;
-          background: none;
-          padding: 8px 4px;
-          margin: 0 auto;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--text-muted);
-          cursor: pointer;
-          font-family: inherit;
-        }
-        .cart-maps-prompt-btn-text:hover {
-          color: var(--text);
-        }
         .cart-page {
           padding: 12px 0 48px;
         }

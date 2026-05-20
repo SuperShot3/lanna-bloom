@@ -61,8 +61,6 @@ export function CartCheckoutView({
   items,
   delivery,
   onDeliveryChange,
-  deliveryNotes,
-  onDeliveryNotesChange,
   checkoutDeliveryProfile,
   recipientName,
   onRecipientNameChange,
@@ -81,7 +79,9 @@ export function CartCheckoutView({
   senderFields,
   countryCodeOptions,
   itemsTotal,
+  bouquetSubtotal,
   addOnsTotal,
+  otherItemsSubtotal,
   deliveryFee,
   deliveryFeeGross,
   discount,
@@ -107,8 +107,6 @@ export function CartCheckoutView({
   items: CartItem[];
   delivery: DeliveryFormValues;
   onDeliveryChange: (v: DeliveryFormValues) => void;
-  deliveryNotes: string;
-  onDeliveryNotesChange: (v: string) => void;
   checkoutDeliveryProfile: CheckoutDeliveryProfile;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
@@ -127,7 +125,9 @@ export function CartCheckoutView({
   senderFields: ReactNode;
   countryCodeOptions: ReactNode;
   itemsTotal: number;
+  bouquetSubtotal: number;
   addOnsTotal: number;
+  otherItemsSubtotal: number;
   deliveryFee: number;
   deliveryFeeGross?: number;
   discount: number;
@@ -242,8 +242,6 @@ export function CartCheckoutView({
         items={items}
         delivery={delivery}
         onDeliveryChange={onDeliveryChange}
-        deliveryNotes={deliveryNotes}
-        onDeliveryNotesChange={onDeliveryNotesChange}
         deliveryProfile={checkoutDeliveryProfile}
         recipientName={recipientName}
         onRecipientNameChange={onRecipientNameChange}
@@ -262,7 +260,9 @@ export function CartCheckoutView({
         senderFields={senderFields}
         countryCodeOptions={countryCodeOptions}
         itemsTotal={itemsTotal}
+        bouquetSubtotal={bouquetSubtotal}
         addOnsTotal={addOnsTotal}
+        otherItemsSubtotal={otherItemsSubtotal}
         deliveryFee={deliveryFee}
         deliveryFeeGross={deliveryFeeGross}
         discount={discount}

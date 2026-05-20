@@ -12,6 +12,8 @@ import { isValidLocale, type Locale } from '@/lib/i18n';
 import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
 import { resolveOrderDiscountServer } from '@/lib/promo/resolveOrderDiscountServer';
 import { inferPostalCodeFromDelivery } from '@/lib/delivery/postalInference';
+import { resolveDeliveryZoneFromPlace } from '@/lib/delivery/resolveDeliveryZoneFromPlace';
+import { buildDriverMapsSearchUrl } from '@/lib/google/buildDriverMapsUrl';
 import {
   findZoneDef,
   isInferredPostcodeAllowedForZone,
@@ -68,11 +70,28 @@ function validateStripePayload(
   }
   const d = delivery as Record<string, unknown>;
   const address = typeof d.address === 'string' ? d.address.trim() : '';
+  const deliveryPlaceId =
+    typeof d.deliveryPlaceId === 'string' ? d.deliveryPlaceId.trim() : '';
+  const deliveryLat = typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined;
+  const deliveryLng = typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined;
+  const hasGooglePlace =
+    Boolean(deliveryPlaceId) &&
+    typeof deliveryLat === 'number' &&
+    typeof deliveryLng === 'number';
   if (!address || address.length < 10 || address.length > 500) {
     return { ok: false, message: 'delivery.address is required (10–500 characters)' };
   }
-  const deliveryGoogleMapsUrlRaw =
+  if (deliveryPlaceId && !hasGooglePlace) {
+    return {
+      ok: false,
+      message: 'delivery coordinates are required when deliveryPlaceId is set',
+    };
+  }
+  let deliveryGoogleMapsUrlRaw =
     typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl.trim() : '';
+  if (hasGooglePlace && !deliveryGoogleMapsUrlRaw) {
+    deliveryGoogleMapsUrlRaw = buildDriverMapsSearchUrl(deliveryLat!, deliveryLng!);
+  }
   if (deliveryGoogleMapsUrlRaw && !isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
     return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
   }
@@ -297,9 +316,28 @@ function validateStripePayload(
         }),
         surpriseDelivery,
         notes: typeof d.notes === 'string' ? d.notes : undefined,
-        deliveryLat: typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined,
-        deliveryLng: typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined,
+        deliveryLat,
+        deliveryLng,
         deliveryGoogleMapsUrl: deliveryGoogleMapsUrlRaw || undefined,
+        deliveryPlaceId: deliveryPlaceId || undefined,
+        deliveryPlaceName:
+          typeof d.deliveryPlaceName === 'string' ? d.deliveryPlaceName.trim() : undefined,
+        deliveryFormattedAddress:
+          typeof d.deliveryFormattedAddress === 'string'
+            ? d.deliveryFormattedAddress.trim()
+            : undefined,
+        deliveryPostalCode:
+          typeof d.deliveryPostalCode === 'string' ? d.deliveryPostalCode.trim() : undefined,
+        deliveryProvince:
+          typeof d.deliveryProvince === 'string' ? d.deliveryProvince.trim() : undefined,
+        deliveryDistrictLabel:
+          typeof d.deliveryDistrictLabel === 'string'
+            ? d.deliveryDistrictLabel.trim()
+            : undefined,
+        deliverySubdistrict:
+          typeof d.deliverySubdistrict === 'string'
+            ? d.deliverySubdistrict.trim()
+            : undefined,
         deliveryDestination,
         deliveryZoneId,
       },
@@ -334,6 +372,13 @@ interface StripeCheckoutPayload {
     deliveryLat?: number;
     deliveryLng?: number;
     deliveryGoogleMapsUrl?: string;
+    deliveryPlaceId?: string;
+    deliveryPlaceName?: string;
+    deliveryFormattedAddress?: string;
+    deliveryPostalCode?: string;
+    deliveryProvince?: string;
+    deliveryDistrictLabel?: string;
+    deliverySubdistrict?: string;
     deliveryDestination: OrderDeliveryDestinationId;
     deliveryZoneId: string;
   };
@@ -354,11 +399,29 @@ export async function POST(request: NextRequest) {
     }
     const { data } = validation;
 
+    const serverZoneId = resolveDeliveryZoneFromPlace({
+      deliveryDestination: data.delivery.deliveryDestination,
+      clientZoneId: data.delivery.deliveryZoneId,
+      address: data.delivery.address,
+      formattedAddress: data.delivery.deliveryFormattedAddress,
+      lat: data.delivery.deliveryLat,
+      lng: data.delivery.deliveryLng,
+      postalCode: data.delivery.deliveryPostalCode,
+      province: data.delivery.deliveryProvince,
+    });
+    if (!serverZoneId || !findZoneDef(data.delivery.deliveryDestination, serverZoneId)) {
+      return NextResponse.json(
+        { error: 'Could not determine delivery area for this address. Please try again.' },
+        { status: 400 }
+      );
+    }
+
     const inferredPostal = inferPostalCodeFromDelivery({
       address: data.delivery.address,
+      deliveryPostalCode: data.delivery.deliveryPostalCode,
       deliveryGoogleMapsUrl: data.delivery.deliveryGoogleMapsUrl,
     });
-    const zoneDef = findZoneDef(data.delivery.deliveryDestination, data.delivery.deliveryZoneId);
+    const zoneDef = findZoneDef(data.delivery.deliveryDestination, serverZoneId);
     if (
       inferredPostal &&
       !isInferredPostcodeAllowedForZone(inferredPostal, zoneDef)
@@ -376,7 +439,7 @@ export async function POST(request: NextRequest) {
       data.items,
       {
         deliveryDestination: data.delivery.deliveryDestination,
-        deliveryZoneId: data.delivery.deliveryZoneId,
+        deliveryZoneId: serverZoneId,
       },
       data.lang
     );
@@ -453,13 +516,13 @@ export async function POST(request: NextRequest) {
 
     const legacyGeo =
       data.delivery.deliveryDestination === 'CHIANG_MAI'
-        ? legacyDistrictFromChiangMaiZone(data.delivery.deliveryZoneId)
+        ? legacyDistrictFromChiangMaiZone(serverZoneId)
         : { deliveryDistrict: 'UNKNOWN' as const, isMueangCentral: false };
 
     const zoneLbl =
       zoneLabel(
         data.delivery.deliveryDestination,
-        data.delivery.deliveryZoneId,
+        serverZoneId,
         data.lang === 'th' ? 'th' : 'en'
       ) ?? undefined;
 
@@ -487,8 +550,15 @@ export async function POST(request: NextRequest) {
         deliveryLat: data.delivery.deliveryLat,
         deliveryLng: data.delivery.deliveryLng,
         deliveryGoogleMapsUrl: data.delivery.deliveryGoogleMapsUrl,
+        deliveryPlaceId: data.delivery.deliveryPlaceId,
+        deliveryPlaceName: data.delivery.deliveryPlaceName,
+        deliveryFormattedAddress: data.delivery.deliveryFormattedAddress,
+        deliveryPostalCode: data.delivery.deliveryPostalCode ?? inferredPostal ?? undefined,
+        deliveryProvince: data.delivery.deliveryProvince,
+        deliveryDistrictLabel: data.delivery.deliveryDistrictLabel,
+        deliverySubdistrict: data.delivery.deliverySubdistrict,
         deliveryDestination: data.delivery.deliveryDestination,
-        deliveryZoneId: data.delivery.deliveryZoneId,
+        deliveryZoneId: serverZoneId,
         ...(zoneLbl && { deliveryZoneLabel: zoneLbl }),
         ...(inferredPostal && { postalCode: inferredPostal }),
         deliveryDistrict: legacyGeo.deliveryDistrict,

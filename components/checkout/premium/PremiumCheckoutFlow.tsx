@@ -20,6 +20,7 @@ import { getZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
+import { isNonBouquetCartLine } from '@/lib/cart/cartPriceBreakdown';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { formatThb } from '@/lib/costsUtils';
@@ -45,8 +46,6 @@ export type PremiumCheckoutFlowProps = {
   items: CartItem[];
   delivery: DeliveryFormValues;
   onDeliveryChange: (v: DeliveryFormValues) => void;
-  deliveryNotes: string;
-  onDeliveryNotesChange: (v: string) => void;
   deliveryProfile: CheckoutDeliveryProfile;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
@@ -66,7 +65,9 @@ export type PremiumCheckoutFlowProps = {
   senderFields: ReactNode;
   countryCodeOptions: ReactNode;
   itemsTotal: number;
+  bouquetSubtotal: number;
   addOnsTotal: number;
+  otherItemsSubtotal: number;
   deliveryFee: number;
   deliveryFeeGross?: number;
   discount: number;
@@ -90,8 +91,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     items,
     delivery,
     onDeliveryChange,
-    deliveryNotes,
-    onDeliveryNotesChange,
     deliveryProfile,
     recipientName,
     onRecipientNameChange,
@@ -109,6 +108,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     onNoCardMessageChange,
     senderFields,
     itemsTotal,
+    bouquetSubtotal,
     addOnsTotal,
     deliveryFee,
     deliveryFeeGross,
@@ -146,14 +146,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     isDeliveryTimeSlotSelectableForDate(delivery.date, MID_AFTERNOON_SLOT);
   const eveningOk =
     !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, EVENING_SLOT);
-
-  const appendNote = (text: string) => {
-    const cur = deliveryNotes.trim();
-    if (!cur) onDeliveryNotesChange(text);
-    else if (!cur.toLowerCase().includes(text.toLowerCase())) {
-      onDeliveryNotesChange(`${cur}. ${text}`);
-    }
-  };
 
   const applyGiftChip = (text: string) => {
     onNoCardMessageChange(false);
@@ -281,12 +273,15 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             biasChiangMai={biasChiangMai}
             highlight={highlightSection === 'delivery'}
             labels={{
+              addressLabel: tBuyNow.addressLabel,
               searchPlaceholder: t.addressSearchPlaceholder,
+              helperText: t.addressSearchHelper,
               confirmedChange: t.addressChange,
-              mapsLinkLabel: t.mapsLinkLabel,
-              mapsLinkHint: t.mapsLinkHint,
-              mapsLinkPlaceholder: t.addressMapsPlaceholder,
-              openGoogleMapsButton: t.openGoogleMapsButton,
+              deliveryNoteLabel: t.deliveryNoteForDriverLabel,
+              deliveryNotePlaceholder: t.deliveryNoteForDriverPlaceholder,
+              deliveryNoteHint: t.deliveryNoteForDriverHint,
+              manualLabel: tBuyNow.addressLabel,
+              manualPlaceholder: t.manualAddressPlaceholder,
             }}
           />
         </div>
@@ -486,50 +481,39 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         </section>
       )}
 
-      <section className="co-section">
-        <div className="co-section-heading-row">
-          <h2 className="co-section-title co-section-title--inline">{t.deliveryNotesTitle}</h2>
-          {deliveryNotes.trim().length > 0 && (
-            <button
-              type="button"
-              className="co-clear-btn"
-              onClick={() => onDeliveryNotesChange('')}
-            >
-              {t.clearDeliveryNotes}
-            </button>
-          )}
-        </div>
-        <div className="co-card co-card--pad">
-          <input
-            className="co-input"
-            value={deliveryNotes}
-            onChange={(e) => onDeliveryNotesChange(e.target.value.slice(0, 300))}
-            placeholder={t.deliveryNotesPlaceholder}
-          />
-          <div className="co-chips">
-            <SuggestionChip label={t.noteChipReception} onClick={() => appendNote(t.noteChipReception)} />
-            <SuggestionChip label={t.noteChipCallBefore} onClick={() => appendNote(t.noteChipCallBefore)} />
-            <SuggestionChip
-              label={t.noteChipNoCallRecipient}
-              onClick={() => appendNote(t.noteChipNoCallRecipient)}
-            />
-            <SuggestionChip label={t.noteChipSurprise} onClick={() => appendNote(t.noteChipSurprise)} />
-          </div>
-        </div>
-      </section>
-
       <section className="co-section co-price-section">
         <div className="co-card co-card--pad">
-          <div className="co-price-row">
-            <span>{t.bouquetSubtotal}</span>
-            <span>{formatThb(itemsTotal)}</span>
-          </div>
+          {bouquetSubtotal > 0 && (
+            <div className="co-price-row">
+              <span>{t.bouquetSubtotal}</span>
+              <span>{formatThb(bouquetSubtotal)}</span>
+            </div>
+          )}
           {addOnsTotal > 0 && (
             <div className="co-price-row">
               <span>{t.addonsSubtotal}</span>
               <span>{formatThb(addOnsTotal)}</span>
             </div>
           )}
+          {items.map((item, index) => {
+            if (!isNonBouquetCartLine(item)) return null;
+            const name = lang === 'th' ? item.nameTh : item.nameEn;
+            const qty = item.quantity ?? 1;
+            const unit =
+              item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
+            const lineTotal =
+              applyExpansionItemMarkupThb(unit, delivery.deliveryDestination) * qty;
+            if (lineTotal <= 0) return null;
+            return (
+              <div key={`other-item-${index}`} className="co-price-row">
+                <span>
+                  {name}
+                  {qty > 1 ? ` × ${qty}` : ''}
+                </span>
+                <span>{formatThb(lineTotal)}</span>
+              </div>
+            );
+          })}
           <div className="co-price-row">
             <span>{t.deliveryLine}</span>
             <span>
@@ -864,6 +848,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           display: flex;
           flex-direction: column;
           gap: 14px;
+          overflow: visible;
+        }
+        .co-section {
+          overflow: visible;
         }
         .co-product-row {
           display: flex;

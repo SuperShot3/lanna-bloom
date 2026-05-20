@@ -10668,3 +10668,26 @@ a.admin-summary-key-value {
     justify-content: center;
   }
 }
+
+/* Checkout: Google Places suggestions must not be clipped on mobile */
+.premium-checkout .co-section,
+.premium-checkout .co-card,
+.premium-checkout .co-card--pad,
+.premium-checkout .co-field {
+  overflow: visible;
+}
+
+/* Legacy Google Maps .pac-container (if any widget still injects it) */
+.pac-container {
+  z-index: 10060 !important;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  font-family: var(--font-sans);
+  touch-action: manipulation;
+}
+.pac-item {
+  padding: 10px 12px;
+  font-size: 15px;
+  line-height: 1.35;
+  cursor: pointer;
+}

@@ -38,6 +38,23 @@ export function trackEvent(eventName: string, eventParams: Record<string, unknow
   pushToDataLayer(eventName, eventParams);
 }
 
+/** Checkout: customer confirmed a Google Places delivery location. */
+export function trackDeliveryAddressSelected(params: {
+  placeId: string;
+  lat?: number;
+  lng?: number;
+  province?: string | null;
+}): void {
+  const lat = params.lat;
+  const lng = params.lng;
+  pushToDataLayer('delivery_address_selected', {
+    place_id: params.placeId,
+    has_lat_lng: typeof lat === 'number' && typeof lng === 'number',
+    province: params.province ?? undefined,
+    source: 'checkout',
+  });
+}
+
 function normalizeOrderId(orderId: string): string {
   return typeof orderId === 'string' ? orderId.trim() : '';
 }

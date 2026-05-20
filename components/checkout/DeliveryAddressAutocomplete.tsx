@@ -1,47 +1,42 @@
 ﻿'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import type { Locale } from '@/lib/i18n';
 import { detectDistrictFromAddress } from '@/lib/deliveryFees';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
-import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+import {
+  buildDriverMapsSearchUrl,
+  buildStaticMapPreviewUrl,
+} from '@/lib/google/buildDriverMapsUrl';
+import {
+  parsePlacesAddressComponents,
+  type GoogleAddressComponent,
+} from '@/lib/google/placesAddressComponents';
+import { trackDeliveryAddressSelected } from '@/lib/analytics/gtag';
 import { useGooglePlacesScript } from '@/hooks/useGooglePlacesScript';
 
-type PlaceResult = {
-  place_id?: string;
-  name?: string;
-  formatted_address?: string;
-  geometry?: { location?: { lat: () => number; lng: () => number } };
+const PLACE_DETAIL_FIELDS = [
+  'place_id',
+  'name',
+  'formatted_address',
+  'geometry',
+  'address_components',
+] as const;
+
+const CHIANG_MAI_BOUNDS: google.maps.LatLngBoundsLiteral = {
+  north: 18.95,
+  south: 18.65,
+  east: 99.05,
+  west: 98.85,
 };
 
-type AutocompleteInstance = {
-  getPlace: () => PlaceResult;
-  addListener: (event: string, handler: () => void) => void;
-};
-
-type GoogleMapsPlaces = {
-  Autocomplete: new (
-    input: HTMLInputElement,
-    opts: Record<string, unknown>
-  ) => AutocompleteInstance;
-};
-
-function GoogleMapsPinIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width={18}
-      height={18}
-      viewBox="0 0 24 24"
-      aria-hidden
-    >
-      <path
-        fill="#EA4335"
-        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-      />
-      <circle cx="12" cy="9" r="2.25" fill="#fff" />
-    </svg>
+function hasConfirmedPlace(value: DeliveryFormValues): boolean {
+  return Boolean(
+    value.deliveryPlaceId?.trim() &&
+      value.deliveryFormattedAddress?.trim() &&
+      typeof value.deliveryLat === 'number' &&
+      typeof value.deliveryLng === 'number'
   );
 }
 
@@ -63,192 +58,374 @@ export function DeliveryAddressAutocomplete({
   inputId?: string;
   highlight?: boolean;
   labels: {
+    addressLabel: string;
     searchPlaceholder: string;
+    helperText: string;
     confirmedChange: string;
-    mapsLinkLabel: string;
-    mapsLinkHint: string;
-    mapsLinkPlaceholder: string;
-    openGoogleMapsButton: string;
+    deliveryNoteLabel: string;
+    deliveryNotePlaceholder: string;
+    deliveryNoteHint: string;
+    manualLabel: string;
+    manualPlaceholder: string;
   };
 }) {
-  const { ready, hasKey } = useGooglePlacesScript();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<AutocompleteInstance | null>(null);
-  const [query, setQuery] = useState(
-    () => value.deliveryPlaceName?.trim() || value.addressLine?.trim() || ''
-  );
-  useEffect(() => {
-    const next = value.deliveryPlaceName?.trim() || value.addressLine?.trim() || '';
-    setQuery((prev) => (prev === next ? prev : next));
-  }, [value.deliveryPlaceName, value.addressLine]);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? '';
+  const { ready, hasKey, loadError } = useGooglePlacesScript();
+  const useGoogle = hasKey && ready && !loadError;
 
-  const applyPlace = useCallback(
-    (place: PlaceResult) => {
-      const lat = place.geometry?.location?.lat?.();
-      const lng = place.geometry?.location?.lng?.();
+  const helperId = `${inputId}-helper`;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+
+  const confirmed = hasConfirmedPlace(value);
+  const [searchInputKey, setSearchInputKey] = useState(0);
+  const [manualDraft, setManualDraft] = useState(
+    () =>
+      (!value.deliveryPlaceId && (value.deliveryFormattedAddress || value.addressLine)) || ''
+  );
+  const [showNoteHint, setShowNoteHint] = useState(false);
+  const mapsLoading = hasKey && !ready && !loadError;
+
+  useEffect(() => {
+    if (confirmed || useGoogle) return;
+    const manual =
+      value.deliveryFormattedAddress?.trim() || value.addressLine?.trim() || '';
+    setManualDraft(manual);
+  }, [
+    confirmed,
+    useGoogle,
+    value.deliveryFormattedAddress,
+    value.addressLine,
+    value.deliveryPlaceId,
+  ]);
+
+  const applyPlaceDetails = useCallback(
+    (place: google.maps.places.PlaceResult) => {
+      const lat = place.geometry?.location?.lat();
+      const lng = place.geometry?.location?.lng();
       const formatted = place.formatted_address?.trim() ?? '';
       const name = place.name?.trim() ?? '';
       const placeId = place.place_id?.trim() ?? '';
-      const addressLine = formatted || name || value.addressLine;
-      const detected = detectDistrictFromAddress(addressLine);
+      if (!placeId || !formatted || typeof lat !== 'number' || typeof lng !== 'number') {
+        return;
+      }
+
+      const components = (place.address_components ?? []) as GoogleAddressComponent[];
+      const parsed = parsePlacesAddressComponents(components);
+      const addressLine = formatted;
+      const detected = detectDistrictFromAddress(
+        [formatted, parsed.province, parsed.district].filter(Boolean).join(' ')
+      );
       let deliveryZoneId = value.deliveryZoneId;
-      if (detected && detected !== 'MUEANG') {
-        const suggested = chiangMaiZoneIdFromLegacyDistrict(detected, false);
+      if (detected) {
+        const suggested = chiangMaiZoneIdFromLegacyDistrict(
+          detected,
+          detected === 'MUEANG' &&
+            typeof lat === 'number' &&
+            typeof lng === 'number' &&
+            lat >= 18.76 &&
+            lat <= 18.82 &&
+            lng >= 98.95 &&
+            lng <= 99.02
+        );
         if (suggested) deliveryZoneId = suggested;
       }
+
       onChange({
         ...value,
         addressLine,
-        deliveryPlaceId: placeId || null,
+        deliveryPlaceId: placeId,
         deliveryPlaceName: name || null,
-        deliveryFormattedAddress: formatted || null,
-        deliveryLat: typeof lat === 'number' ? lat : value.deliveryLat,
-        deliveryLng: typeof lng === 'number' ? lng : value.deliveryLng,
+        deliveryFormattedAddress: formatted,
+        deliveryLat: lat,
+        deliveryLng: lng,
+        deliveryGoogleMapsUrl: buildDriverMapsSearchUrl(lat, lng),
+        deliveryAddressComponents: components.length ? components : null,
+        deliveryPostalCode: parsed.postalCode,
+        deliveryProvince: parsed.province,
+        deliveryDistrictLabel: parsed.district,
+        deliverySubdistrict: parsed.subdistrict,
         deliveryZoneId,
         deliveryDistrict: detected ?? value.deliveryDistrict,
       });
-      setQuery(name || formatted || addressLine);
+
+      trackDeliveryAddressSelected({
+        placeId,
+        lat,
+        lng,
+        province: parsed.province,
+      });
     },
     [onChange, value]
   );
 
-  useEffect(() => {
-    if (!ready || !hasKey || !inputRef.current || autocompleteRef.current) return;
-    const places = (window as unknown as { google: { maps: { places: GoogleMapsPlaces } } })
-      .google?.maps?.places;
-    if (!places?.Autocomplete) return;
+  const fetchPlaceDetails = useCallback(
+    (placeId: string) => {
+      if (!placesServiceRef.current) {
+        placesServiceRef.current = new google.maps.places.PlacesService(
+          document.createElement('div')
+        );
+      }
+      placesServiceRef.current.getDetails(
+        {
+          placeId,
+          fields: [...PLACE_DETAIL_FIELDS],
+        },
+        (result, status) => {
+          if (status === 'OK' && result) {
+            applyPlaceDetails(result);
+          }
+        }
+      );
+    },
+    [applyPlaceDetails]
+  );
 
-    const opts: Record<string, unknown> = {
-      fields: ['place_id', 'name', 'formatted_address', 'geometry'],
+  const onPlaceChosen = useCallback(
+    (place: google.maps.places.PlaceResult) => {
+      const placeId = place.place_id?.trim();
+      if (!placeId) return;
+
+      const lat = place.geometry?.location?.lat();
+      const lng = place.geometry?.location?.lng();
+      const formatted = place.formatted_address?.trim();
+      if (
+        typeof lat === 'number' &&
+        typeof lng === 'number' &&
+        formatted
+      ) {
+        applyPlaceDetails(place);
+        return;
+      }
+      fetchPlaceDetails(placeId);
+    },
+    [applyPlaceDetails, fetchPlaceDetails]
+  );
+
+  useEffect(() => {
+    if (!useGoogle || confirmed || !inputRef.current) return;
+
+    const Autocomplete = google.maps.places.Autocomplete;
+    if (typeof Autocomplete !== 'function') return;
+
+    const options: google.maps.places.AutocompleteOptions = {
+      fields: [...PLACE_DETAIL_FIELDS],
     };
     if (restrictToThailand) {
-      opts.componentRestrictions = { country: 'th' };
+      options.componentRestrictions = { country: 'th' };
     }
     if (biasChiangMai) {
-      opts.bounds = {
-        north: 18.95,
-        south: 18.65,
-        east: 99.05,
-        west: 98.85,
-      };
-      opts.strictBounds = false;
+      options.bounds = CHIANG_MAI_BOUNDS;
+      options.strictBounds = false;
     }
 
-    const ac = new places.Autocomplete(inputRef.current, opts);
-    ac.addListener('place_changed', () => {
-      const place = ac.getPlace();
-      if (place?.place_id || place?.formatted_address) {
-        applyPlace(place);
-      }
+    const autocomplete = new Autocomplete(inputRef.current, options);
+    autocompleteRef.current = autocomplete;
+
+    const listener = autocomplete.addListener('place_changed', () => {
+      onPlaceChosen(autocomplete.getPlace());
     });
-    autocompleteRef.current = ac;
-  }, [ready, hasKey, restrictToThailand, biasChiangMai, applyPlace]);
 
-  const confirmed =
-    Boolean(value.deliveryPlaceId) ||
-    Boolean(value.deliveryFormattedAddress && value.deliveryPlaceName);
-
-  const handleMapsPaste = (raw: string) => {
-    const trimmed = raw.trim();
-    const next: DeliveryFormValues = {
-      ...value,
-      deliveryGoogleMapsUrl: trimmed || null,
+    return () => {
+      listener.remove();
+      autocompleteRef.current = null;
     };
-    if (trimmed && isValidGoogleMapsUrl(trimmed) && !value.addressLine.trim()) {
-      next.addressLine = trimmed.length <= 300 ? trimmed : trimmed.slice(0, 300);
-    }
-    onChange(next);
-  };
+  }, [
+    useGoogle,
+    confirmed,
+    restrictToThailand,
+    biasChiangMai,
+    searchInputKey,
+    onPlaceChosen,
+  ]);
 
   const clearPlace = () => {
     onChange({
       ...value,
+      addressLine: '',
       deliveryPlaceId: null,
       deliveryPlaceName: null,
       deliveryFormattedAddress: null,
-      addressLine: '',
+      deliveryLat: null,
+      deliveryLng: null,
+      deliveryGoogleMapsUrl: null,
+      deliveryAddressComponents: null,
+      deliveryPostalCode: null,
+      deliveryProvince: null,
+      deliveryDistrictLabel: null,
+      deliverySubdistrict: null,
     });
-    setQuery('');
-    inputRef.current?.focus();
+    setManualDraft('');
+    setSearchInputKey((k) => k + 1);
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
+
+  const onManualChange = (text: string) => {
+    const trimmed = text.slice(0, 500);
+    setManualDraft(trimmed);
+    onChange({
+      ...value,
+      addressLine: trimmed,
+      deliveryFormattedAddress: trimmed || null,
+      deliveryPlaceId: null,
+      deliveryPlaceName: null,
+      deliveryLat: null,
+      deliveryLng: null,
+      deliveryGoogleMapsUrl: null,
+      deliveryAddressComponents: null,
+      deliveryPostalCode: null,
+      deliveryProvince: null,
+      deliveryDistrictLabel: null,
+      deliverySubdistrict: null,
+    });
+  };
+
+  const onNoteChange = (note: string) => {
+    onChange({ ...value, deliveryNote: note.slice(0, 300) });
+    if (note.trim()) setShowNoteHint(false);
+  };
+
+  const mapPreviewUrl =
+    confirmed &&
+    typeof value.deliveryLat === 'number' &&
+    typeof value.deliveryLng === 'number' &&
+    apiKey
+      ? buildStaticMapPreviewUrl(value.deliveryLat, value.deliveryLng, apiKey)
+      : null;
+
+  const showGoogleSearch = hasKey && !loadError;
 
   return (
     <div className={`co-address${highlight ? ' co-address--highlight' : ''}`}>
-      <input
-        ref={inputRef}
-        id={inputId}
-        type="text"
-        className="co-input co-input--large"
-        value={query}
-        onChange={(e) => {
-          const v = e.target.value;
-          setQuery(v);
-          if (!confirmed) {
-            onChange({ ...value, addressLine: v });
-          }
-        }}
-        placeholder={labels.searchPlaceholder}
-        autoComplete="off"
-        aria-label={labels.searchPlaceholder}
-      />
-
-      {confirmed && (
-        <div className="co-address-card">
-          <div className="co-address-card-body">
-            {value.deliveryPlaceName && (
-              <strong className="co-address-card-name">{value.deliveryPlaceName}</strong>
-            )}
-            <span className="co-address-card-line">
-              {value.deliveryFormattedAddress || value.addressLine}
-            </span>
-          </div>
-          <button type="button" className="co-text-btn" onClick={clearPlace}>
-            {labels.confirmedChange}
-          </button>
+      {!confirmed && (
+        <div className="co-field co-field--tight">
+          <label className="co-label" htmlFor={showGoogleSearch ? inputId : `${inputId}-manual`}>
+            {labels.addressLabel}
+          </label>
+          {showGoogleSearch ? (
+            <>
+              <div className="co-address-search-wrap">
+                <input
+                  key={searchInputKey}
+                  ref={inputRef}
+                  id={inputId}
+                  type="text"
+                  className="co-input co-input--large"
+                  placeholder={labels.searchPlaceholder}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  aria-label={labels.addressLabel}
+                  aria-describedby={helperId}
+                  aria-busy={mapsLoading || undefined}
+                />
+              </div>
+              <p id={helperId} className="co-address-helper">
+                {mapsLoading ? 'Loading address search… ' : null}
+                {labels.helperText}
+              </p>
+            </>
+          ) : (
+            <>
+              {!hasKey && (
+                <p className="co-address-helper co-address-status co-address-status--warn">
+                  Add <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to <code>.env.local</code>{' '}
+                  and restart the dev server for address search. You can still type your address
+                  below.
+                </p>
+              )}
+              {loadError && hasKey && (
+                <p className="co-address-helper co-address-status co-address-status--warn">
+                  Google Maps could not load — enter your full address below.
+                </p>
+              )}
+              <textarea
+                id={`${inputId}-manual`}
+                className="co-input co-textarea"
+                value={manualDraft}
+                onChange={(e) => onManualChange(e.target.value)}
+                placeholder={labels.manualPlaceholder}
+                rows={3}
+                maxLength={500}
+                aria-label={labels.manualLabel}
+              />
+            </>
+          )}
         </div>
       )}
 
-      <div className="co-address-extras">
-        <div className="co-maps-block">
-          <div className="co-maps-row">
-            <div className="co-maps-field">
-              <label className="co-maps-visually-hidden" htmlFor={`${inputId}-maps`}>
-                {labels.mapsLinkLabel}
-              </label>
-              <input
-                id={`${inputId}-maps`}
-                type="url"
-                className="co-input co-input-maps-inline"
-                value={value.deliveryGoogleMapsUrl ?? ''}
-                onChange={(e) => handleMapsPaste(e.target.value)}
-                placeholder={labels.mapsLinkPlaceholder}
-                aria-label={labels.mapsLinkLabel}
-                aria-describedby={`${inputId}-maps-hint`}
-                inputMode="url"
-                autoComplete="off"
+      {confirmed && (
+        <div className="co-address-confirmed">
+          <div className="co-address-card">
+            <div className="co-address-card-body">
+              {value.deliveryPlaceName && (
+                <strong className="co-address-card-name">{value.deliveryPlaceName}</strong>
+              )}
+              <span className="co-address-card-line">{value.deliveryFormattedAddress}</span>
+            </div>
+            <button type="button" className="co-text-btn" onClick={clearPlace}>
+              {labels.confirmedChange}
+            </button>
+          </div>
+
+          {mapPreviewUrl && (
+            <div className="co-address-map-wrap">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={mapPreviewUrl}
+                alt=""
+                className="co-address-map"
+                width={600}
+                height={160}
+                loading="lazy"
+                decoding="async"
               />
             </div>
-            <a
-              href="https://www.google.com/maps"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="co-maps-open-btn"
-            >
-              <GoogleMapsPinIcon className="co-maps-open-btn-icon" />
-              <span className="co-maps-open-btn-text">{labels.openGoogleMapsButton}</span>
-            </a>
+          )}
+
+          <div className="co-field co-field--tight">
+            <label className="co-label" htmlFor={`${inputId}-note`}>
+              {labels.deliveryNoteLabel}
+            </label>
+            <input
+              id={`${inputId}-note`}
+              type="text"
+              className="co-input"
+              value={value.deliveryNote ?? ''}
+              onChange={(e) => onNoteChange(e.target.value)}
+              onBlur={() => {
+                if (!value.deliveryNote?.trim()) setShowNoteHint(true);
+              }}
+              placeholder={labels.deliveryNotePlaceholder}
+              maxLength={300}
+              autoComplete="off"
+            />
+            {showNoteHint && !value.deliveryNote?.trim() && (
+              <p className="co-address-note-hint">{labels.deliveryNoteHint}</p>
+            )}
           </div>
-          <p className="co-maps-hint" id={`${inputId}-maps-hint`}>
-            {labels.mapsLinkHint}
-          </p>
         </div>
-      </div>
+      )}
 
       <style jsx>{`
         .co-address {
           display: flex;
           flex-direction: column;
           gap: 12px;
+          overflow: visible;
+        }
+        .co-field--tight {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          overflow: visible;
+        }
+        .co-address-search-wrap {
+          position: relative;
+          overflow: visible;
+          z-index: 20;
         }
         .co-address--highlight .co-input--large {
           border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
@@ -264,6 +441,11 @@ export function DeliveryAddressAutocomplete({
           color: var(--text);
           background: #fff;
           box-sizing: border-box;
+          transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+          -webkit-appearance: none;
+          appearance: none;
         }
         .co-input--large {
           min-height: 52px;
@@ -274,8 +456,44 @@ export function DeliveryAddressAutocomplete({
         }
         .co-textarea {
           resize: vertical;
-          min-height: 72px;
-          font-size: 15px;
+          min-height: 88px;
+          font-size: 16px;
+          line-height: 1.45;
+        }
+        .co-address-helper,
+        .co-address-note-hint {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.45;
+          color: var(--text-muted);
+        }
+        .co-address-note-hint {
+          color: color-mix(in srgb, var(--accent) 70%, var(--text-muted));
+        }
+        .co-address-status {
+          font-size: 12px;
+        }
+        .co-address-status--warn {
+          color: color-mix(in srgb, var(--accent) 55%, var(--text-muted));
+        }
+        .co-address-status code {
+          font-size: 11px;
+        }
+        .co-address-confirmed {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          animation: co-address-in 0.28s ease-out;
+        }
+        @keyframes co-address-in {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         .co-address-card {
           display: flex;
@@ -303,6 +521,19 @@ export function DeliveryAddressAutocomplete({
           color: var(--text-muted);
           line-height: 1.4;
         }
+        .co-address-map-wrap {
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--border));
+          line-height: 0;
+        }
+        .co-address-map {
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: cover;
+          max-height: 140px;
+        }
         .co-text-btn {
           border: none;
           background: none;
@@ -313,98 +544,7 @@ export function DeliveryAddressAutocomplete({
           cursor: pointer;
           font-family: inherit;
           white-space: nowrap;
-        }
-        .co-text-btn--subtle {
-          color: var(--text-muted);
-          font-weight: 500;
-        }
-        .co-address-extras {
-          width: 100%;
-        }
-        .co-maps-block {
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          padding: 10px 12px;
-          border-radius: 12px;
-          background: color-mix(in srgb, var(--pastel-mint) 35%, #fff);
-          border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--border));
-          box-sizing: border-box;
-        }
-        .co-maps-row {
-          display: flex;
-          flex-wrap: nowrap;
-          align-items: stretch;
-          gap: 8px;
-        }
-        .co-maps-field {
-          flex: 1 1 0;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-        }
-        .co-input-maps-inline {
-          min-height: 44px;
-          padding: 10px 12px;
-          font-size: 15px;
-          border-radius: 10px;
-          width: 100%;
-          flex: 1;
-        }
-        .co-maps-open-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          flex-shrink: 0;
-          min-height: 44px;
-          padding: 10px 12px;
-          border-radius: 10px;
-          border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
-          background: #fff;
-          color: var(--text);
-          font-size: 13px;
-          font-weight: 600;
-          font-family: inherit;
-          text-decoration: none;
-          cursor: pointer;
-          transition:
-            border-color 0.15s,
-            box-shadow 0.15s;
-          line-height: 1.25;
-          box-sizing: border-box;
-        }
-        .co-maps-open-btn:hover {
-          border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-          box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
-        }
-        .co-maps-open-btn:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 70%, transparent);
-        }
-        .co-maps-open-btn-icon {
-          flex-shrink: 0;
-        }
-        .co-maps-open-btn-text {
-          text-align: left;
-        }
-        .co-maps-visually-hidden {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          clip-path: inset(50%);
-          white-space: nowrap;
-          border: 0;
-        }
-        .co-maps-hint {
-          margin: 0;
-          font-size: 12px;
-          line-height: 1.4;
-          color: var(--text-muted);
+          touch-action: manipulation;
         }
       `}</style>
     </div>
