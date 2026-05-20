@@ -75,6 +75,7 @@ export type PremiumCheckoutFlowProps = {
   highlightSection: CheckoutSectionId | null;
   sectionRefs: Record<CheckoutSectionId, React.RefObject<HTMLElement | null>>;
   onRemoveItem: (index: number) => void;
+  onChangeItemQuantity: (index: number, quantity: number) => void;
   inlineError?: string | null;
   paymentSection: ReactNode;
 };
@@ -115,6 +116,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     highlightSection,
     sectionRefs,
     onRemoveItem,
+    onChangeItemQuantity,
     inlineError,
     paymentSection,
   } = props;
@@ -185,13 +187,33 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                 <div className="co-product-row__main">
                   <span className="co-product-row__name">{name}</span>
                   <span className="co-product-row__meta">
-                    {item.size.label}
-                    {qty > 1 ? ` × ${qty}` : ''} · {'\u0E3F'}
+                    {item.size.label} · {'\u0E3F'}
                     {display.toLocaleString()}
                   </span>
                   <span className="co-product-row__dest">
                     {destLabel} {t.deliveryRegionLabel}
                   </span>
+                  <div className="co-qty-stepper" role="group" aria-label={tCart.quantity}>
+                    <button
+                      type="button"
+                      className="co-qty-stepper__btn"
+                      onClick={() => onChangeItemQuantity(index, qty - 1)}
+                      aria-label={tCart.decreaseQuantity}
+                    >
+                      −
+                    </button>
+                    <span className="co-qty-stepper__value" aria-live="polite">
+                      {qty}
+                    </span>
+                    <button
+                      type="button"
+                      className="co-qty-stepper__btn"
+                      onClick={() => onChangeItemQuantity(index, qty + 1)}
+                      aria-label={tCart.increaseQuantity}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <div className="co-product-row__actions">
                   <Link href={`/${lang}/catalog`} className="co-product-row__edit">
@@ -806,6 +828,51 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         .co-product-row__dest {
           font-size: 13px;
           color: var(--text-muted);
+        }
+        .co-qty-stepper {
+          display: inline-flex;
+          align-items: center;
+          gap: 0;
+          margin-top: 8px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          overflow: hidden;
+          background: #fff;
+          width: fit-content;
+        }
+        .co-qty-stepper__btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 34px;
+          padding: 0;
+          border: none;
+          background: var(--pastel-cream);
+          color: var(--text);
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 1;
+          cursor: pointer;
+          font-family: inherit;
+          transition: background 0.15s;
+        }
+        .co-qty-stepper__btn:hover {
+          background: color-mix(in srgb, var(--pastel-mint) 50%, var(--pastel-cream));
+        }
+        .co-qty-stepper__btn:active {
+          background: color-mix(in srgb, var(--pastel-mint) 70%, var(--pastel-cream));
+        }
+        .co-qty-stepper__value {
+          min-width: 32px;
+          padding: 0 6px;
+          text-align: center;
+          font-size: 15px;
+          font-weight: 600;
+          color: var(--text);
+          border-left: 1px solid var(--border);
+          border-right: 1px solid var(--border);
+          line-height: 34px;
         }
         .co-product-row__actions {
           display: flex;

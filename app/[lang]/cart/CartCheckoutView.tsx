@@ -47,6 +47,7 @@ export function CartCheckoutView({
   highlightSection,
   sectionRefs,
   onRemoveItem,
+  onChangeItemQuantity,
   orderError,
   isPaymentUnlocked,
   hasDeliveryZone,
@@ -90,6 +91,7 @@ export function CartCheckoutView({
   highlightSection: CheckoutSectionId | null;
   sectionRefs: Record<CheckoutSectionId, React.RefObject<HTMLElement | null>>;
   onRemoveItem: (index: number) => void;
+  onChangeItemQuantity: (index: number, quantity: number) => void;
   orderError: string | null;
   isPaymentUnlocked: boolean;
   hasDeliveryZone: boolean;
@@ -157,6 +159,7 @@ export function CartCheckoutView({
         highlightSection={highlightSection}
         sectionRefs={sectionRefs}
         onRemoveItem={onRemoveItem}
+        onChangeItemQuantity={onChangeItemQuantity}
         inlineError={orderError}
         paymentSection={
           <div className="co-payment-block">

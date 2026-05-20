@@ -1643,6 +1643,31 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             });
             removeItem(index);
           }}
+          onChangeItemQuantity={(index, quantity) => {
+            const item = items[index];
+            if (!item) return;
+            const nextQty = Math.max(0, Math.floor(quantity));
+            if (nextQty < 1) {
+              const lineVal = item.size.price * (item.quantity ?? 1);
+              trackRemoveFromCart({
+                currency: 'THB',
+                value: lineVal,
+                items: [
+                  {
+                    item_id: item.bouquetId,
+                    item_name: lang === 'th' ? item.nameTh : item.nameEn,
+                    price: item.size.price,
+                    quantity: item.quantity ?? 1,
+                    index: 0,
+                    item_variant: item.size.label,
+                  },
+                ],
+              });
+              removeItem(index);
+              return;
+            }
+            updateItem(index, { ...item, quantity: nextQty });
+          }}
           orderError={orderError}
           isPaymentUnlocked={isPaymentUnlocked}
           hasDeliveryZone={hasDeliveryZone}
