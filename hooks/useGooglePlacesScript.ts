@@ -20,17 +20,16 @@ declare global {
 
 function placesReady(): boolean {
   const places = window.google?.maps?.places as
-    | { Autocomplete?: unknown; AutocompleteService?: unknown }
+    | { PlaceAutocompleteElement?: unknown }
     | undefined;
   return Boolean(
     typeof window !== 'undefined' &&
       places &&
-      (typeof places.Autocomplete === 'function' ||
-        typeof places.AutocompleteService === 'function')
+      typeof places.PlaceAutocompleteElement === 'function'
   );
 }
 
-/** Loads Google Maps JavaScript API with Places library when API key is configured. */
+/** Loads Maps JS API + Places library (New) for PlaceAutocompleteElement. */
 export function useGooglePlacesScript(): {
   ready: boolean;
   hasKey: boolean;

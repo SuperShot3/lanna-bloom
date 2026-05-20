@@ -282,6 +282,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               deliveryNoteHint: t.deliveryNoteForDriverHint,
               manualLabel: tBuyNow.addressLabel,
               manualPlaceholder: t.manualAddressPlaceholder,
+              googleMapsLinkPlaceholder: tBuyNow.googleMapsLinkPlaceholder,
+              googleMapsLinkHint: tBuyNow.googleMapsLinkHint,
+              openGoogleMapsAriaLabel: tBuyNow.openGoogleMapsButton,
             }}
           />
         </div>
