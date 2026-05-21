@@ -15,7 +15,7 @@ export const CHECKOUT_FIELD_LIMITS = {
   customerEmail: 80,
   recipientName: 50,
   recipientPhoneNational: 24,
-  referralCode: 20,
+  referralCode: 24,
   giftCardMessage: 160,
 } as const;
 

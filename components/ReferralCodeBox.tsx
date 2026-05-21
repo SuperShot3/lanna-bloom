@@ -6,6 +6,7 @@ import {
   clearReferral,
   validateReferralCode,
   getDiscountForCode,
+  getDiscountAllocationForCode,
 } from '@/lib/referral';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -74,7 +75,10 @@ export function ReferralCodeBox({
     storeReferral(result.code);
     setInputValue('');
     setError(null);
-    if (mayCampaignEligible) {
+    if (
+      mayCampaignEligible &&
+      getDiscountAllocationForCode(result.code) !== 'delivery'
+    ) {
       setCombineNotice(
         t.promoCannotCombineMay ??
           'This offer cannot be combined with other promotions. Remove your code to use free delivery, or keep your code instead.'

@@ -38,6 +38,8 @@ export interface ReferralCommission {
 /** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
 const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   'LB-DELIVERY-FREE': { type: 'free_delivery' },
+  /** Standalone free delivery (any date; not tied to May campaign rules). */
+  'LB-DELIVERY-FREE-2026': { type: 'free_delivery' },
   /** May 2026 auto free-delivery campaign (applied server-side when eligible; not entered by customer). */
   'MAY26-FREEDEL': { type: 'free_delivery' },
   VASILIY10: {
@@ -52,12 +54,14 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   },
 };
 
-/** Allowed chars: A-Z, 0-9, hyphen (-). Length 3-20. Returns normalized code or null if invalid. */
+const REFERRAL_CODE_MAX_LENGTH = 24;
+
+/** Allowed chars: A-Z, 0-9, hyphen (-). Length 3–24. Returns normalized code or null if invalid. */
 export function validateReferralCode(code: string | null | undefined): { valid: true; code: string } | { valid: false; error?: string } {
   if (!code || typeof code !== 'string') return { valid: false, error: 'Please enter a code' };
   const trimmed = code.trim().toUpperCase();
-  if (trimmed.length < 3 || trimmed.length > 20) {
-    return { valid: false, error: 'Code must be 3-20 characters' };
+  if (trimmed.length < 3 || trimmed.length > REFERRAL_CODE_MAX_LENGTH) {
+    return { valid: false, error: `Code must be 3-${REFERRAL_CODE_MAX_LENGTH} characters` };
   }
   if (!/^[A-Z0-9-]+$/.test(trimmed)) {
     return { valid: false, error: 'Code can only contain letters, numbers, and hyphens' };

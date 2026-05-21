@@ -59,6 +59,10 @@ export default function RootLayout({
         />
         <link
           rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.23.0/dist/tabler-icons.min.css"
+        />
+        <link
+          rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.2/css/flag-icons.min.css"
         />
         <script

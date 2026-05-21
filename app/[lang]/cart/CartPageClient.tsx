@@ -859,6 +859,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   });
   const orderDiscountVal = resolvedDiscount?.discount ?? 0;
   const isCampaignDiscount = resolvedDiscount?.source === 'campaign';
+  const isManualFreeDelivery =
+    resolvedDiscount?.source === 'manual' &&
+    resolvedDiscount.allocation === 'delivery' &&
+    orderDiscountVal > 0;
   const appliedReferralCode =
     resolvedDiscount?.source === 'manual' && orderDiscountVal > 0
       ? resolvedDiscount.code
@@ -872,9 +876,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     mayCampaignActive && !mayCampaignQualifies
       ? Math.max(0, MAY_FREE_DELIVERY_MIN_ITEMS_THB - itemsTotalVal)
       : 0;
-  const stickyDeliveryFeeNet = isCampaignDiscount && deliveryFeeVal > 0 ? 0 : deliveryFeeVal;
-  const stickyDeliveryFeeGross =
-    isCampaignDiscount && deliveryFeeVal > 0 ? deliveryFeeVal : undefined;
+  const waivesDeliveryFee =
+    deliveryFeeVal > 0 && (isCampaignDiscount || isManualFreeDelivery);
+  const stickyDeliveryFeeNet = waivesDeliveryFee ? 0 : deliveryFeeVal;
+  const stickyDeliveryFeeGross = waivesDeliveryFee ? deliveryFeeVal : undefined;
 
   const tPremium = translations[lang].premiumCheckout;
   const isDeliveryValidNow = isPremiumDeliveryValid(delivery);
@@ -1609,11 +1614,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     <div className="cart-page cart-page--premium">
       <div className="container">
         <div className="cart-checkout-header">
-          <Link href={`/${lang}/catalog`} className="cart-back-link">
-            <span className="cart-back-link__arrow" aria-hidden="true">
-              ←
-            </span>
-            <span className="cart-back-link__label">{t.backToShop}</span>
+          <Link href={`/${lang}/catalog`} className="btn-pill">
+            <i className="ti ti-arrow-left" aria-hidden="true" />
+            {t.backToShop}
           </Link>
         </div>
         {destinationChangeNotice && (
@@ -1768,70 +1771,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-checkout-header {
           margin-bottom: 20px;
-        }
-        .cart-back-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--accent);
-          text-decoration: none;
-          margin-bottom: 12px;
-          transition: color 0.25s ease;
-          animation: cart-back-link-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-        @keyframes cart-back-link-in {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .cart-back-link__arrow {
-          display: inline-block;
-          line-height: 1;
-          transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .cart-back-link__label {
-          position: relative;
-          line-height: 1.25;
-        }
-        .cart-back-link__label::after {
-          content: '';
-          position: absolute;
-          left: 0;
-          bottom: -1px;
-          width: 100%;
-          height: 1.5px;
-          background: currentColor;
-          border-radius: 1px;
-          transform: scaleX(0);
-          transform-origin: left center;
-          transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .cart-back-link:hover,
-        .cart-back-link:focus-visible {
-          color: var(--accent-border);
-        }
-        .cart-back-link:hover .cart-back-link__arrow,
-        .cart-back-link:focus-visible .cart-back-link__arrow {
-          transform: translateX(-5px);
-        }
-        .cart-back-link:hover .cart-back-link__label::after,
-        .cart-back-link:focus-visible .cart-back-link__label::after {
-          transform: scaleX(1);
-        }
-        .cart-back-link:active {
-          transform: scale(0.98);
-        }
-        .cart-back-link:focus-visible {
-          outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
-          outline-offset: 4px;
-          border-radius: 6px;
         }
         .cart-destination-notice,
         .cart-expansion-block-notice {
@@ -2317,19 +2256,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-radius: 6px;
         }
         @media (prefers-reduced-motion: reduce) {
-          .cart-back-link {
-            animation: none;
-          }
-          .cart-back-link,
-          .cart-back-link__arrow,
-          .cart-back-link__label::after {
-            transition-duration: 0.01ms;
-          }
-          .cart-back-link:hover .cart-back-link__arrow,
-          .cart-back-link:focus-visible .cart-back-link__arrow {
+          a.btn-pill:hover .ti {
             transform: none;
           }
-          .cart-back-link:active {
+          a.btn-pill:active {
             transform: none;
           }
           .cart-place-order-hint-slot {
