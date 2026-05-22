@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { translations, type Locale } from '@/lib/i18n';
 import { GiftMessageField } from './GiftMessageField';
 import styles from './product-pdp.module.css';
@@ -17,6 +17,10 @@ export function ProductGiftMessageRow({
   const [open, setOpen] = useState(value.length > 0);
   const panelId = useId();
   const t = translations[lang].product;
+
+  useEffect(() => {
+    if (value.length > 0) setOpen(true);
+  }, [value]);
 
   return (
     <div className={styles.giftRow}>

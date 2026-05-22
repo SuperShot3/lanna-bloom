@@ -18,6 +18,7 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import type { CatalogProduct } from '@/lib/sanity';
 import { getPreferredBouquetSize } from '@/lib/favorites';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
@@ -69,6 +70,7 @@ export function ProductOrderBlock({
   const [justAdded, setJustAdded] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const { addItem } = useCart();
+  const { giftCardMessage, setGiftCardMessage } = useOrderGiftCardMessage();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const tProduct = translations[lang].product;
   const availableForDestination = bouquetIsAvailableForDestination(
@@ -157,7 +159,7 @@ export function ProductOrderBlock({
         nameTh: bouquet.nameTh,
         imageUrl: selectedImageUrl ?? bouquet.images?.[0],
         size: { ...selectedSize, price: discountedSizePrice },
-        addOns: { ...addOns },
+        addOns: { ...addOns, cardMessage: giftCardMessage },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
       },
       qty
@@ -247,8 +249,8 @@ export function ProductOrderBlock({
 
       <ProductGiftMessageRow
         lang={lang}
-        value={addOns.cardMessage}
-        onChange={(cardMessage) => setAddOns({ ...addOns, cardMessage })}
+        value={giftCardMessage}
+        onChange={setGiftCardMessage}
       />
 
       <div className={pdpStyles.qtyRow}>

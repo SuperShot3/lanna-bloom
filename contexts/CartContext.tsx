@@ -11,8 +11,13 @@ import {
 import type { BouquetSize } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { AddOnsValues } from '@/components/AddOnsSection';
+import {
+  applyOrderGiftCardMessageToItems,
+  clipOrderGiftCardMessage,
+} from '@/lib/cart/orderGiftCardMessage';
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
+const ORDER_GIFT_MESSAGE_KEY = 'lanna-bloom-order-gift-message';
 
 export interface CartItem {
   /** 'bouquet' | 'product' | 'plushyToy' | 'balloon' — default 'bouquet' for backward compat */
@@ -45,6 +50,10 @@ interface CartContextValue {
   updateItem: (index: number, item: CartItem) => void;
   removeItem: (index: number) => void;
   clearCart: () => void;
+  /** Persisted draft when cart has no bouquet line yet (synced with PDP + checkout). */
+  orderGiftCardMessageDraft: string;
+  /** Set order-level gift card message on draft and all bouquet cart lines. */
+  setOrderGiftCardMessage: (message: string) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -70,13 +79,34 @@ function saveToStorage(items: CartItem[]) {
   }
 }
 
+function loadGiftMessageDraft(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const raw = localStorage.getItem(ORDER_GIFT_MESSAGE_KEY);
+    return typeof raw === 'string' ? clipOrderGiftCardMessage(raw) : '';
+  } catch {
+    return '';
+  }
+}
+
+function saveGiftMessageDraft(message: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ORDER_GIFT_MESSAGE_KEY, clipOrderGiftCardMessage(message));
+  } catch {
+    // ignore
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [orderGiftCardMessageDraft, setOrderGiftCardMessageDraft] = useState('');
   const [hydrated, setHydrated] = useState(false);
   const [lastAddEventId, setLastAddEventId] = useState(0);
 
   useEffect(() => {
     setItems(loadFromStorage());
+    setOrderGiftCardMessageDraft(loadGiftMessageDraft());
     setHydrated(true);
   }, []);
 
@@ -84,6 +114,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     saveToStorage(items);
   }, [items, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveGiftMessageDraft(orderGiftCardMessageDraft);
+  }, [orderGiftCardMessageDraft, hydrated]);
 
   const addItem = useCallback((item: CartItem, quantity: number = 1) => {
     const qty = Math.max(1, Math.floor(quantity));
@@ -131,6 +166,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
+    setOrderGiftCardMessageDraft('');
+  }, []);
+
+  const setOrderGiftCardMessage = useCallback((message: string) => {
+    const clipped = clipOrderGiftCardMessage(message);
+    setOrderGiftCardMessageDraft(clipped);
+    setItems((prev) => applyOrderGiftCardMessageToItems(prev, clipped));
   }, []);
 
   const value = useMemo<CartContextValue>(
@@ -142,8 +184,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updateItem,
       removeItem,
       clearCart,
+      orderGiftCardMessageDraft,
+      setOrderGiftCardMessage,
     }),
-    [items, lastAddEventId, addItem, updateItem, removeItem, clearCart]
+    [
+      items,
+      lastAddEventId,
+      addItem,
+      updateItem,
+      removeItem,
+      clearCart,
+      orderGiftCardMessageDraft,
+      setOrderGiftCardMessage,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

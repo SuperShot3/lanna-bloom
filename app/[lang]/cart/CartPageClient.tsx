@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import {
@@ -554,6 +555,7 @@ function cartItemsToAnalytics(
 
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, count: totalItemCount, removeItem, updateItem, clearCart } = useCart();
+  const { giftCardMessage, setGiftCardMessage } = useOrderGiftCardMessage();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
@@ -903,9 +905,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     !cartExpansionInvalid &&
     !cartDestinationBouquetInvalid;
 
-  const primaryBouquetIdx = items.findIndex((i) => (i.itemType ?? 'bouquet') === 'bouquet');
-  const cardMessageValue =
-    primaryBouquetIdx >= 0 ? (items[primaryBouquetIdx].addOns.cardMessage ?? '') : '';
   const { bouquetSubtotal: bouquetCartSubtotal, addOnsSubtotal: addOnsCartTotal, otherItemsSubtotal: otherItemsCartSubtotal } =
     cartPricing;
 
@@ -1655,18 +1654,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onSurpriseDeliveryChange={setSurpriseDelivery}
           orderingForSomeoneElse={isOrderingForSomeoneElse}
           onOrderingForSomeoneElseChange={setIsOrderingForSomeoneElse}
-          cardMessage={cardMessageValue}
-          onCardMessageChange={(v) => {
-            if (primaryBouquetIdx < 0) return;
-            const item = items[primaryBouquetIdx];
-            updateItem(primaryBouquetIdx, {
-              ...item,
-              addOns: {
-                ...item.addOns,
-                cardMessage: clipCheckoutField(v, 'giftCardMessage'),
-              },
-            });
-          }}
+          cardMessage={giftCardMessage}
+          onCardMessageChange={setGiftCardMessage}
           noCardMessage={noCardMessage}
           onNoCardMessageChange={setNoCardMessage}
           senderFields={contactFormContent('', { premium: true })}
