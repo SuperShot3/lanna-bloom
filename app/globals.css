@@ -535,6 +535,41 @@ main {
     text-underline-offset: 2px;
   }
 
+  /* Mobile PDP: slide the full site header away while browsing product details */
+  .site-header--pdp-scroll {
+    --pdp-header-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --pdp-header-collapse-ms: 380ms;
+    --pdp-header-reveal-ms: 520ms;
+    --pdp-header-reveal-delay: 90ms;
+    will-change: transform, opacity;
+    transform-origin: top center;
+  }
+
+  .site-header--pdp-scroll[data-header-mode='expanded'] {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+    pointer-events: auto;
+    transition:
+      transform var(--pdp-header-reveal-ms) var(--pdp-header-ease) var(--pdp-header-reveal-delay),
+      opacity calc(var(--pdp-header-reveal-ms) - 40ms) ease-out var(--pdp-header-reveal-delay),
+      top 300ms ease,
+      background-color 300ms ease,
+      border-color 300ms ease;
+  }
+
+  .site-header--pdp-scroll[data-header-mode='compact'] {
+    transform: translate3d(0, calc(-100% - 1px), 0);
+    opacity: 0;
+    pointer-events: none;
+    border-bottom-color: transparent;
+    transition:
+      transform var(--pdp-header-collapse-ms) var(--pdp-header-ease),
+      opacity calc(var(--pdp-header-collapse-ms) - 60ms) ease-out,
+      border-color var(--pdp-header-collapse-ms) ease-out,
+      top 300ms ease,
+      background-color 300ms ease;
+  }
+
   /* Avoid double sticky CTAs when compact top summary is visible */
   body.cart-checkout-header-compact .checkout-bottom-action {
     visibility: hidden;
@@ -550,8 +585,15 @@ main {
 
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
   .site-header--cart-checkout .site-header__full,
-  .site-header--cart-checkout .checkout-compact-header {
+  .site-header--cart-checkout .checkout-compact-header,
+  .site-header--pdp-scroll {
     transition: none !important;
+  }
+
+  .site-header--pdp-scroll[data-header-mode='compact'] {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .site-header--cart-checkout[data-header-mode='compact'] .checkout-compact-header__summary,
@@ -1678,6 +1720,11 @@ a.btn-pill:focus-visible {
   overflow-x: hidden;
   box-sizing: border-box;
 }
+@media (max-width: 767px) {
+  .product-page:has(.order-block--sticky-pad) {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}
 @media (min-width: 768px) {
   .product-page {
     padding: var(--space-8) 0 var(--space-16);
@@ -1756,7 +1803,8 @@ a.btn-pill:focus-visible {
 }
 .product-share-link.share-button-wrap {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 4px;
+  align-self: flex-start;
 }
 .product-title {
   font-family: var(--font-serif);

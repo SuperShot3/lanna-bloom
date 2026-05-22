@@ -6,10 +6,7 @@ import { BouquetsCarousel } from '@/components/BouquetsCarousel';
 import { GiftsCarousel } from '@/components/GiftsCarousel';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
-import {
-  CHECKOUT_FIELD_LIMITS,
-  clipCheckoutField,
-} from '@/lib/checkout/checkoutFieldLimits';
+import { GiftMessageField } from '@/components/pdp/GiftMessageField';
 
 export type CardType = 'free' | 'beautiful' | null;
 export type WrappingPreference = 'none' | 'classic' | 'premium' | null;
@@ -57,17 +54,9 @@ export function AddOnsSection({
 }) {
   const tRaw = translations[lang].buyNow;
   const t = tRaw as {
-    giftMessageLabel?: string;
-    cardMessageLabel?: string;
-    cardMessagePlaceholder?: string;
-    cardMessageMax?: number;
     giftsSectionTitle?: string;
     flowersSectionTitle?: string;
   };
-  const cardMessageMax =
-    typeof t.cardMessageMax === 'number'
-      ? Math.min(t.cardMessageMax, CHECKOUT_FIELD_LIMITS.giftCardMessage)
-      : CHECKOUT_FIELD_LIMITS.giftCardMessage;
 
   return (
     <div className="addons-section">
@@ -87,27 +76,12 @@ export function AddOnsSection({
         </>
       ) : null}
       <div className="addons-field">
-        <label className="addons-label" htmlFor="addons-card-message">
-          {t.giftMessageLabel ?? t.cardMessageLabel ?? 'Gift Message'}
-        </label>
-        <textarea
-          id="addons-card-message"
-          className="addons-textarea"
+        <GiftMessageField
+          lang={lang}
           value={value.cardMessage}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              cardMessage: clipCheckoutField(e.target.value, 'giftCardMessage'),
-            })
-          }
-          placeholder={t.cardMessagePlaceholder}
-          maxLength={cardMessageMax}
-          rows={3}
-          aria-label={t.cardMessageLabel}
+          onChange={(cardMessage) => onChange({ ...value, cardMessage })}
+          embedded
         />
-        <span className="addons-char-count" aria-live="polite">
-          {value.cardMessage.length}/{cardMessageMax}
-        </span>
       </div>
       <style jsx>{`
         .addons-section {

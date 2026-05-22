@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Image from 'next/image';
 import './ProductGallery.css';
+import { clampGalleryIndex } from '@/lib/pdpVariantMedia';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
 
@@ -27,6 +28,7 @@ export function ProductGallery({
   productId,
   activeIndex,
   onActiveChange,
+  sizeCaption,
 }: {
   images: string[];
   imageAlts?: string[];
@@ -35,11 +37,29 @@ export function ProductGallery({
   productId?: string;
   activeIndex?: number;
   onActiveChange?: (index: number) => void;
+  /** e.g. "Photos show: Medium bouquet" — updates when variant changes */
+  sizeCaption?: string;
 }) {
   const [internalActive, setInternalActive] = useState(0);
   const isControlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = isControlled ? activeIndex : internalActive;
-  const setActive = isControlled ? onActiveChange! : setInternalActive;
+  const onActiveChangeRef = useRef(onActiveChange);
+  onActiveChangeRef.current = onActiveChange;
+  /** Ignore settle events caused by parent-driven scrollTo (not user swipe/button). */
+  const programmaticScrollRef = useRef(false);
+  /** Prev/next chevrons should update parent index in controlled mode. */
+  const chevronNavRef = useRef(false);
+
+  const reportActiveIndex = useCallback(
+    (index: number) => {
+      if (isControlled) {
+        onActiveChangeRef.current?.(index);
+      } else {
+        setInternalActive(index);
+      }
+    },
+    [isControlled]
+  );
 
   const imagesKey = images?.join?.(',') ?? '';
   const list = useMemo(
@@ -120,19 +140,23 @@ export function ProductGallery({
   }, []);
 
   const goPrev = useCallback(() => {
+    chevronNavRef.current = true;
     emblaApi?.scrollPrev();
   }, [emblaApi]);
 
   const goNext = useCallback(() => {
+    chevronNavRef.current = true;
     emblaApi?.scrollNext();
   }, [emblaApi]);
 
   const scrollTo = useCallback(
     (index: number) => {
-      setActive(index);
-      emblaApi?.scrollTo(index);
+      const safeIndex = clampGalleryIndex(index, list.length);
+      programmaticScrollRef.current = true;
+      reportActiveIndex(safeIndex);
+      emblaApi?.scrollTo(safeIndex);
     },
-    [emblaApi, setActive]
+    [emblaApi, list.length, reportActiveIndex]
   );
 
   const resetLightboxTransform = useCallback(() => {
@@ -146,10 +170,12 @@ export function ProductGallery({
 
   const setGalleryIndex = useCallback(
     (index: number) => {
-      setActive(index);
-      emblaApi?.scrollTo(index);
+      const safeIndex = clampGalleryIndex(index, list.length);
+      programmaticScrollRef.current = true;
+      reportActiveIndex(safeIndex);
+      emblaApi?.scrollTo(safeIndex);
     },
-    [emblaApi, setActive]
+    [emblaApi, list.length, reportActiveIndex]
   );
 
   const closeLightbox = useCallback(() => {
@@ -289,14 +315,28 @@ export function ProductGallery({
     if (!emblaApi) return;
     const onSettle = () => {
       const idx = emblaApi.selectedScrollSnap();
-      setActive(idx);
+      const fromProgrammatic = programmaticScrollRef.current;
+      const fromChevron = chevronNavRef.current;
+      const fromUserDrag = emblaDragDuringPointerRef.current;
+      if (fromProgrammatic) {
+        programmaticScrollRef.current = false;
+      }
+      if (fromChevron) {
+        chevronNavRef.current = false;
+      }
+      const shouldReport = !isControlled ? true : fromUserDrag || fromChevron;
+      if (!shouldReport) return;
+      if (isControlled && idx === activeIndex) return;
+      reportActiveIndex(idx);
     };
     emblaApi.on('settle', onSettle);
-    onSettle();
+    if (!isControlled) {
+      onSettle();
+    }
     return () => {
       emblaApi.off('settle', onSettle);
     };
-  }, [emblaApi, setActive]);
+  }, [emblaApi, isControlled, activeIndex, reportActiveIndex]);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -322,11 +362,13 @@ export function ProductGallery({
 
   useEffect(() => {
     if (emblaApi && isControlled && activeIndex !== undefined) {
-      if (emblaApi.selectedScrollSnap() !== activeIndex) {
-        emblaApi.scrollTo(activeIndex);
+      const safeIndex = clampGalleryIndex(activeIndex, list.length);
+      if (emblaApi.selectedScrollSnap() !== safeIndex) {
+        programmaticScrollRef.current = true;
+        emblaApi.scrollTo(safeIndex);
       }
     }
-  }, [emblaApi, isControlled, activeIndex]);
+  }, [emblaApi, isControlled, activeIndex, list.length]);
 
   return (
     <div className="gallery">
@@ -359,6 +401,11 @@ export function ProductGallery({
             ))}
           </div>
         </div>
+        {list.length > 1 ? (
+          <span className="gallery-count-pill" aria-live="polite">
+            {active + 1} / {list.length}
+          </span>
+        ) : null}
         {list.length > 1 && (
           <span className="gallery-swipe-hint" aria-hidden>
             Swipe to change
@@ -409,6 +456,10 @@ export function ProductGallery({
           </>
         )}
       </div>
+
+      {sizeCaption ? (
+        <p className="gallery-size-caption">{sizeCaption}</p>
+      ) : null}
 
       {list.length > 1 && (
         <div className="gallery-thumbs">

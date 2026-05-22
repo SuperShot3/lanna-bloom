@@ -49,7 +49,15 @@ export function MayFreeDeliveryPromoBanner({
       role="status"
       aria-label={ariaLabel}
     >
-      <p className="text-balance text-center text-[10px] font-medium leading-snug tracking-wide sm:text-xs md:font-semibold">
+      <p className="flex items-center justify-center gap-2 text-balance text-center text-[10px] font-medium leading-snug tracking-wide sm:text-xs md:font-semibold">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 opacity-90" aria-hidden>
+          <path
+            d="M3 6h11v9H3V6zm11 2h4l3 4v3h-7V8zm-9 11a2 2 0 100-4 2 2 0 000 4zm12 0a2 2 0 100-4 2 2 0 000 4z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
         <span className="md:hidden">{messageMobile}</span>
         <span className="hidden md:inline">{messageDesktop}</span>
       </p>

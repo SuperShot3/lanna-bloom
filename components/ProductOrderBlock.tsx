@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
 import {
-  AddOnsSection,
   getDefaultAddOns,
   type AddOnsValues,
 } from './AddOnsSection';
@@ -14,7 +13,6 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
-import { TrustBadges } from '@/components/TrustBadges';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import type { CatalogProduct } from '@/lib/sanity';
@@ -23,27 +21,39 @@ import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
-
-function sizeIndexForImageIndex(imageIndex: number | undefined, sizeCount: number): number | null {
-  if (imageIndex == null || sizeCount <= 0) return null;
-  return Math.min(Math.max(0, Math.floor(imageIndex)), sizeCount - 1);
-}
+import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
+import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
+import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
+import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
+import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
+import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
+import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
+import pdpStyles from '@/components/pdp/product-pdp.module.css';
+import {
+  imageIndexForSizeIndex,
+  sizeIndexForImageIndex,
+} from '@/lib/pdpVariantMedia';
 
 export function ProductOrderBlock({
   bouquet,
   lang,
+  productTitle,
   selectedImageUrl,
   selectedImageIndex,
   onSelectedImageIndexChange,
+  onSelectedSizeChange,
   gifts = [],
 }: {
   bouquet: Bouquet;
   lang: Locale;
+  productTitle: string;
   selectedImageUrl?: string | null;
   selectedImageIndex?: number;
   onSelectedImageIndexChange?: (index: number) => void;
+  onSelectedSizeChange?: (size: BouquetSize) => void;
   gifts?: CatalogProduct[];
 }) {
+  const router = useRouter();
   const [selectedSize, setSelectedSize] = useState<BouquetSize>(() => {
     const preferredId = getPreferredBouquetSize(bouquet.id);
     if (preferredId) {
@@ -57,15 +67,16 @@ export function ProductOrderBlock({
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const { addItem } = useCart();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
-  const t = translations[lang].cart;
-  const tBuyNow = translations[lang].buyNow;
   const tProduct = translations[lang].product;
   const availableForDestination = bouquetIsAvailableForDestination(
     bouquet,
     checkoutProfile.destinationId
   );
+  const hideGiftAddOns = checkoutProfile.variant === 'expansion';
+  const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
@@ -75,27 +86,52 @@ export function ProductOrderBlock({
     checkoutProfile.destinationId
   );
   const totalPrice = unitPrice * qty;
+  const lineTotalForPromo = discountedSizePrice * qty;
 
   const hasSyncedInitialSizeToImageRef = useRef(false);
   const previousImageIndexRef = useRef<number | undefined>(selectedImageIndex);
+  const skipImageToSizeSyncRef = useRef(false);
+  const imageCount = bouquet.images?.length ?? 0;
+
+  useEffect(() => {
+    onSelectedSizeChange?.(selectedSize);
+  }, [onSelectedSizeChange, selectedSize]);
 
   useEffect(() => {
     if (!onSelectedImageIndexChange || hasSyncedInitialSizeToImageRef.current) return;
     hasSyncedInitialSizeToImageRef.current = true;
 
     const selectedIndex = bouquet.sizes.findIndex((size) => size.optionId === selectedSize.optionId);
-    if (selectedIndex > 0 && selectedImageIndex !== selectedIndex) {
-      onSelectedImageIndexChange(selectedIndex);
+    if (selectedIndex <= 0) return;
+    const targetImageIndex = imageIndexForSizeIndex(selectedIndex, imageCount);
+    if (selectedImageIndex !== targetImageIndex) {
+      skipImageToSizeSyncRef.current = true;
+      onSelectedImageIndexChange(targetImageIndex);
     }
-  }, [bouquet.sizes, onSelectedImageIndexChange, selectedImageIndex, selectedSize.optionId]);
+  }, [
+    bouquet.sizes,
+    imageCount,
+    onSelectedImageIndexChange,
+    selectedImageIndex,
+    selectedSize.optionId,
+  ]);
 
   useEffect(() => {
     if (selectedImageIndex == null || previousImageIndexRef.current === selectedImageIndex) return;
     previousImageIndexRef.current = selectedImageIndex;
 
+    if (skipImageToSizeSyncRef.current) {
+      skipImageToSizeSyncRef.current = false;
+      return;
+    }
+
     const sizeIndex = sizeIndexForImageIndex(selectedImageIndex, bouquet.sizes.length);
     const nextSize = sizeIndex == null ? undefined : bouquet.sizes[sizeIndex];
-    if (nextSize && nextSize.optionId !== selectedSize.optionId) {
+    if (
+      nextSize &&
+      nextSize.optionId !== selectedSize.optionId &&
+      imageCount === bouquet.sizes.length
+    ) {
       setSelectedSize(nextSize);
     }
   }, [bouquet.sizes, selectedImageIndex, selectedSize.optionId]);
@@ -103,12 +139,13 @@ export function ProductOrderBlock({
   const handleSizeSelect = (size: BouquetSize) => {
     setSelectedSize(size);
     const sizeIndex = bouquet.sizes.findIndex((candidate) => candidate.optionId === size.optionId);
-    if (sizeIndex >= 0) {
-      onSelectedImageIndexChange?.(sizeIndex);
+    if (sizeIndex >= 0 && onSelectedImageIndexChange) {
+      skipImageToSizeSyncRef.current = true;
+      onSelectedImageIndexChange(imageIndexForSizeIndex(sizeIndex, imageCount));
     }
   };
 
-  const handleAddToCart = () => {
+  const addToCartCore = () => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const price = unitPrice;
     addItem(
@@ -140,12 +177,34 @@ export function ProductOrderBlock({
         },
       ],
     });
+  };
+
+  const handleAddToCart = () => {
+    addToCartCore();
     setJustAdded(true);
   };
 
+  const handleBuyNow = () => {
+    addToCartCore();
+    router.push(`/${lang}/cart`);
+  };
+
+  useEffect(() => {
+    if (justAdded) setJustAdded(false);
+  }, [selectedSize.optionId, quantity]);
+
   return (
-    <div className="order-block">
-      <SizeSelector
+    <div className={`order-block ${stickyBarVisible ? 'order-block--sticky-pad' : ''}`}>
+      <div className={pdpStyles.pdpPriceRow}>
+        <span className={pdpStyles.pdpUnitPrice}>฿{unitPrice.toLocaleString()}</span>
+        <ProductDeliveryBenefitBadge
+          lang={lang}
+          lineTotalThb={lineTotalForPromo}
+          destinationLabel={destinationLabel}
+        />
+      </div>
+
+      <ProductSizeCard
         sizes={bouquet.sizes}
         selected={selectedSize}
         onSelect={handleSizeSelect}
@@ -153,187 +212,101 @@ export function ProductOrderBlock({
         destinationId={checkoutProfile.destinationId}
         discountPercent={bouquet.discountPercent}
       />
-      <AddOnsSection
+
+      <div className={pdpStyles.desktopOnly}>
+        <SizeSelector
+          sizes={bouquet.sizes}
+          selected={selectedSize}
+          onSelect={handleSizeSelect}
+          lang={lang}
+          destinationId={checkoutProfile.destinationId}
+          discountPercent={bouquet.discountPercent}
+        />
+      </div>
+
+      {!availableForDestination && (
+        <p className="order-destination-block-notice" role="alert">
+          {tProduct.unavailableInDeliveryArea}
+        </p>
+      )}
+
+      <ProductPurchaseActions
         lang={lang}
-        value={addOns}
-        onChange={setAddOns}
-        gifts={gifts}
-        hideGiftAddOns={checkoutProfile.variant === 'expansion'}
+        totalPrice={totalPrice}
+        onAddToCart={handleAddToCart}
+        onBuyNow={handleBuyNow}
+        disabled={!availableForDestination}
+        justAdded={justAdded}
       />
-      {justAdded ? (
-        <div className="order-added-confirm" role="status">
-          <p className="order-added-text">{t.addedToCart}</p>
-          <div className="order-added-links">
-            <Link href={`/${lang}/catalog`} className="order-added-link">
-              {t.continueShopping}
-            </Link>
-            <Link href={`/${lang}/cart`} className="order-added-link order-added-link-primary">
-              {t.goToCart}
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="order-qty-row">
-            <span className="order-qty-label">{tBuyNow.quantity ?? 'Quantity'}</span>
-            <div className="order-qty-control">
-              <button
-                type="button"
-                className="order-qty-btn"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                aria-label="Decrease quantity"
-              >
-                −
-              </button>
-              <span className="order-qty-value">{quantity}</span>
-              <button
-                type="button"
-                className="order-qty-btn"
-                onClick={() => setQuantity((q) => q + 1)}
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
-            <span className="order-qty-price">฿{totalPrice.toLocaleString()}</span>
-          </div>
-          {(bouquet.partnerName || bouquet.partnerId) && (
-            <div className="mb-6">
-              <FloristCard
-                lang={lang}
-                partnerName={bouquet.partnerName}
-                partnerImage={bouquet.partnerPortraitUrl ?? null}
-                studioName={bouquet.partnerCity || 'Chiang Mai'}
-                quote={
-                  (lang === 'th' ? bouquet.partnerShopBioTh : bouquet.partnerShopBioEn) ||
-                  "We source our flowers daily from local markets to ensure maximum freshness and fragrance in every arrangement."
-                }
-              />
-            </div>
-          )}
-          <TrustBadges lang={lang} />
-          {!availableForDestination && (
-            <p className="order-destination-block-notice" role="alert">
-              {tProduct.unavailableInDeliveryArea}
-            </p>
-          )}
+
+      <ProductTrustStrip
+        lang={lang}
+        showSameDay={checkoutProfile.variant === 'chiang-mai'}
+        destinationSub={destinationLabel}
+      />
+
+      <ProductGiftMessageRow
+        lang={lang}
+        value={addOns.cardMessage}
+        onChange={(cardMessage) => setAddOns({ ...addOns, cardMessage })}
+      />
+
+      <div className={pdpStyles.qtyRow}>
+        <span className={pdpStyles.qtyLabel}>{translations[lang].buyNow.quantity ?? 'Quantity'}</span>
+        <div className={pdpStyles.qtyControl}>
           <button
             type="button"
-            className="order-add-to-cart-btn"
-            onClick={handleAddToCart}
-            disabled={!availableForDestination}
+            className={pdpStyles.qtyBtn}
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            aria-label="Decrease quantity"
           >
-            {t.addToCart} — ฿{totalPrice.toLocaleString()}
+            −
           </button>
-        </>
+          <span className={pdpStyles.qtyValue}>{quantity}</span>
+          <button
+            type="button"
+            className={pdpStyles.qtyBtn}
+            onClick={() => setQuantity((q) => q + 1)}
+            aria-label="Increase quantity"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      {!hideGiftAddOns && gifts.length > 0 ? (
+        <ProductAddOnsCarousel lang={lang} gifts={gifts} />
+      ) : null}
+
+      {(bouquet.partnerName || bouquet.partnerId) && (
+        <div className="mb-6">
+          <FloristCard
+            lang={lang}
+            partnerName={bouquet.partnerName}
+            partnerImage={bouquet.partnerPortraitUrl ?? null}
+            studioName={bouquet.partnerCity || 'Chiang Mai'}
+            quote={
+              (lang === 'th' ? bouquet.partnerShopBioTh : bouquet.partnerShopBioEn) ||
+              "We source our flowers daily from local markets to ensure maximum freshness and fragrance in every arrangement."
+            }
+          />
+        </div>
       )}
+
+      <ProductStickyPurchaseBar
+        lang={lang}
+        productTitle={productTitle}
+        thumbUrl={selectedImageUrl}
+        totalPrice={totalPrice}
+        onAddToCart={handleAddToCart}
+        disabled={!availableForDestination}
+        justAdded={justAdded}
+        onVisibilityChange={setStickyBarVisible}
+      />
+
       <style jsx>{`
-        @media (max-width: 480px) {
-          .order-add-to-cart-btn {
-            font-size: 0.95rem;
-            padding: 12px 16px;
-          }
-          .order-added-links {
-            flex-direction: column;
-          }
-          .order-added-links :global(a.order-added-link) {
-            width: 100%;
-          }
-        }
-        @media (max-width: 360px) {
-          .order-add-to-cart-btn {
-            font-size: 0.9rem;
-            padding: 10px 14px;
-          }
-        }
-        @media (max-width: 350px) {
-          .order-add-to-cart-btn {
-            font-size: 0.85rem;
-            padding: 10px 12px;
-          }
-          .order-added-confirm {
-            padding: 12px;
-          }
-          .order-added-text {
-            font-size: 0.9rem;
-          }
-          .order-added-links :global(a.order-added-link) {
-            font-size: 0.9rem;
-            padding: 12px 16px;
-          }
-        }
-        .order-qty-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-top: 16px;
-          flex-wrap: wrap;
-        }
-        .order-qty-label {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: var(--text-muted);
-        }
-        .order-qty-control {
-          display: flex;
-          align-items: center;
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-          overflow: hidden;
-        }
-        .order-qty-btn {
-          width: 40px;
-          height: 40px;
-          padding: 0;
-          border: none;
-          background: var(--surface);
-          color: var(--text);
-          font-size: 1.2rem;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .order-qty-btn:hover {
-          background: var(--pastel-cream);
-        }
-        .order-qty-value {
-          width: 44px;
-          text-align: center;
-          font-weight: 600;
-          font-size: 0.95rem;
-        }
-        .order-qty-price {
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: var(--accent);
-        }
-        .order-add-to-cart-btn {
-          margin-top: 16px;
-          width: 100%;
-          padding: 14px 20px;
-          background: var(--accent);
-          border: none;
-          border-radius: var(--radius-sm);
-          font-size: 1rem;
-          font-weight: 700;
-          color: #fff;
-          cursor: pointer;
-          transition: background 0.2s, transform 0.15s;
-        }
-        .order-add-to-cart-btn:hover {
-          background: #b39868;
-          transform: translateY(-1px);
-        }
-        .order-add-to-cart-btn:focus-visible {
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
-        }
-        .order-add-to-cart-btn:disabled {
-          opacity: 0.55;
-          cursor: not-allowed;
-          transform: none;
-        }
         .order-destination-block-notice {
-          margin: 12px 0 0;
+          margin: 0 0 12px;
           padding: 12px 14px;
           font-size: 0.9rem;
           line-height: 1.45;
@@ -341,67 +314,6 @@ export function ProductOrderBlock({
           background: #fff5f0;
           border: 1px solid #e8c4b8;
           border-radius: var(--radius-sm);
-        }
-        .order-added-confirm {
-          margin-top: 20px;
-          padding: 16px;
-          background: var(--pastel-cream, #fdf8f3);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-        }
-        .order-added-text {
-          margin: 0 0 12px;
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--text);
-        }
-        .order-added-links {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-        }
-        .order-added-links :global(a.order-added-link) {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 14px 20px;
-          border-radius: var(--radius-sm);
-          font-size: 1rem;
-          font-weight: 700;
-          color: #fff;
-          background: var(--accent);
-          border: none;
-          text-decoration: none;
-          cursor: pointer;
-          transition: background 0.2s, transform 0.15s;
-        }
-        .order-added-links :global(a.order-added-link:hover) {
-          background: #b39868;
-          color: #fff;
-          transform: translateY(-1px);
-        }
-        .order-added-links :global(a.order-added-link:focus-visible) {
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
-        }
-        .order-added-links :global(a.order-added-link:not(.order-added-link-primary)) {
-          background: var(--pastel-cream, #e8e2da);
-          color: var(--text);
-          border: 2px solid var(--border);
-        }
-        .order-added-links :global(a.order-added-link:not(.order-added-link-primary):hover) {
-          background: #ddd6cc;
-          border-color: var(--text-muted);
-          color: var(--text);
-        }
-        .order-added-links :global(a.order-added-link-primary) {
-          background: var(--accent);
-          color: #fff;
-          border: none;
-        }
-        .order-added-links :global(a.order-added-link-primary:hover) {
-          background: #b39868;
-          color: #fff;
         }
       `}</style>
     </div>

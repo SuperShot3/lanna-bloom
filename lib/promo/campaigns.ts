@@ -2,8 +2,8 @@ import { SHOP_TIMEZONE } from '@/lib/shopTime';
 
 export const MAY_FREE_DELIVERY_CODE = 'MAY26-FREEDEL';
 export const MAY_FREE_DELIVERY_MIN_ITEMS_THB = 2500;
-const MAY_FREE_DELIVERY_START_YMD = '2026-05-19';
-const MAY_FREE_DELIVERY_END_YMD = '2026-05-26';
+export const MAY_FREE_DELIVERY_START_YMD = '2026-05-19';
+export const MAY_FREE_DELIVERY_END_YMD = '2026-05-26';
 
 function shopYmdForDate(date: Date): string {
   return new Intl.DateTimeFormat('en-CA', {

@@ -10,7 +10,6 @@ export function ProductShareLink({ lang, productTitle }: { lang: Locale; product
     setUrl(typeof window !== 'undefined' ? window.location.href : '');
   }, []);
   const p = translations[lang].product;
-  const compactButtonText = lang === 'th' ? 'แชร์' : 'Share';
 
   return (
     <ShareButton
@@ -18,10 +17,9 @@ export function ProductShareLink({ lang, productTitle }: { lang: Locale; product
       title={productTitle}
       text={productTitle}
       ariaLabel={p.shareLink}
-      buttonText={compactButtonText}
       copySuccessMessage={p.shareLinkCopied}
       copyErrorMessage={p.shareLinkCopyFailed}
-      variant="compact"
+      variant="iconOnly"
       className="product-share-link"
     />
   );

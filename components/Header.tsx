@@ -33,6 +33,7 @@ import {
 import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
 import { useMobileCartHeaderCollapse } from '@/hooks/useMobileCartHeaderCollapse';
 import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
+import { isCatalogProductDetailPath } from '@/lib/catalogProductPath';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
@@ -105,6 +106,7 @@ export function Header({
   const deliveryPickerCopy = getDeliveryPickerCopy(lang);
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
+  const isProductDetailPage = isCatalogProductDetailPath(basePath);
   const isHomePage =
     pathname === homeHref ||
     pathname === `${homeHref}/` ||
@@ -142,10 +144,12 @@ export function Header({
   }, []);
 
   const mobileCartCheckoutHeader = isMobile && isCartPage && checkoutStickyPayload != null;
+  const mobilePdpScrollHeader = isMobile && isProductDetailPage;
+  const mobileScrollHeaderCollapse = mobileCartCheckoutHeader || mobilePdpScrollHeader;
   const headerCollapseMode = useMobileCartHeaderCollapse({
-    enabled: mobileCartCheckoutHeader,
+    enabled: mobileScrollHeaderCollapse,
     menuOpen,
-    onModeChange: setCollapseMode,
+    onModeChange: mobileCartCheckoutHeader ? setCollapseMode : undefined,
   });
 
   useEffect(() => {
@@ -239,9 +243,9 @@ export function Header({
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,colors] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${hasMayPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,colors] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${mobilePdpScrollHeader ? 'site-header--pdp-scroll' : ''} ${hasMayPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled}
-        data-header-mode={mobileCartCheckoutHeader ? headerCollapseMode : undefined}
+        data-header-mode={mobileScrollHeaderCollapse ? headerCollapseMode : undefined}
       >
         {mobileCartCheckoutHeader && checkoutStickyPayload ? (
           <CheckoutCompactHeaderBar payload={checkoutStickyPayload} lang={lang} />

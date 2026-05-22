@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
-import { CareGuideSection } from '@/components/CareGuideSection';
+import { ProductAboutSection } from '@/components/pdp/ProductAboutSection';
 import { ProductShareLink } from '@/components/ProductShareLink';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
@@ -11,6 +11,10 @@ import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { optionDisplayLabel } from '@/lib/bouquetOptions';
+import { getCompositionSingleLine } from '@/lib/compositionDisplay';
+import { ProductIdentityMeta } from '@/components/pdp/ProductIdentityMeta';
+import pdpStyles from '@/components/pdp/product-pdp.module.css';
 
 export function ProductPageClient({
   bouquet,
@@ -19,6 +23,8 @@ export function ProductPageClient({
   description,
   compositionHeading,
   compositionText,
+  reviewAverage,
+  reviewCount,
   gifts = [],
 }: {
   bouquet: Bouquet;
@@ -27,15 +33,31 @@ export function ProductPageClient({
   description: string;
   compositionHeading: string;
   compositionText: string;
+  reviewAverage: number;
+  reviewCount: number;
   gifts?: CatalogProduct[];
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedSize, setSelectedSize] = useState<Bouquet['sizes'][number]>(
+    () => bouquet.sizes[0]
+  );
   const images = useMemo(
     () => bouquet.images ?? [],
     [bouquet.id, bouquet.images?.join?.() ?? '']
   );
   const selectedImageUrl =
     images[selectedImageIndex] ?? images[0] ?? undefined;
+  const sizeCaptionLabel = selectedSize
+    ? optionDisplayLabel(selectedSize, lang)
+    : '';
+  const sizeCaption = sizeCaptionLabel
+    ? (translations[lang].product.sizeShownInPhotos ?? 'Photos show: {size}').replace(
+        '{size}',
+        sizeCaptionLabel
+      )
+    : undefined;
+
+  const compositionLine = getCompositionSingleLine(compositionText);
 
   useEffect(() => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
@@ -58,9 +80,13 @@ export function ProductPageClient({
     });
   }, [bouquet, lang]);
 
+  const handleImageIndexChange = useCallback((index: number) => {
+    setSelectedImageIndex(index);
+  }, []);
+
   return (
     <>
-      <div className="product-gallery-wrap pb-8 md:pb-0" style={{ position: 'relative' }}>
+      <div className="product-gallery-wrap" style={{ position: 'relative' }}>
         <CatalogDiscountBadge
           discountPercent={bouquet.discountPercent}
           ariaLabel={translations[lang].catalog.discountAria ?? 'On sale — {percent}% off'}
@@ -71,34 +97,46 @@ export function ProductPageClient({
           name={name}
           productId={bouquet.id}
           activeIndex={selectedImageIndex}
-          onActiveChange={setSelectedImageIndex}
+          onActiveChange={handleImageIndexChange}
+          sizeCaption={sizeCaption}
         />
       </div>
       <div className="product-info">
-        <div className="product-title-row">
-          <h1 className="product-title">{name}</h1>
-          <ProductShareLink lang={lang} productTitle={name} />
+        <div className={pdpStyles.productIdentity}>
+          <div className={pdpStyles.identityHeader}>
+            <h1 className="product-title">{name}</h1>
+            <div className={pdpStyles.shareAction}>
+              <ProductShareLink lang={lang} productTitle={name} />
+            </div>
+          </div>
+          {compositionLine ? (
+            <p className={pdpStyles.compositionSubtitle} title={compositionLine}>
+              {compositionLine}
+            </p>
+          ) : null}
+          <ProductIdentityMeta
+            lang={lang}
+            featuredPopular={bouquet.featuredPopular}
+            reviewAverage={reviewAverage}
+            reviewCount={reviewCount}
+          />
         </div>
         <ProductOrderBlock
           bouquet={bouquet}
           lang={lang}
+          productTitle={name}
           selectedImageUrl={selectedImageUrl}
           selectedImageIndex={selectedImageIndex}
-          onSelectedImageIndexChange={setSelectedImageIndex}
+          onSelectedImageIndexChange={handleImageIndexChange}
+          onSelectedSizeChange={setSelectedSize}
           gifts={gifts}
         />
-        <div className="product-details-below">
-          <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>
-          <p className="product-desc">{description}</p>
-          <div className="product-composition">
-            <h2 className="composition-heading">{compositionHeading}</h2>
-            <p className="composition-text">{compositionText}</p>
-          </div>
-          <p className="product-seasonal-disclaimer">
-            {translations[lang].product.seasonalDisclaimer}
-          </p>
-          <CareGuideSection lang={lang} />
-        </div>
+        <ProductAboutSection
+          lang={lang}
+          description={description}
+          compositionHeading={compositionHeading}
+          compositionText={compositionText}
+        />
       </div>
     </>
   );
