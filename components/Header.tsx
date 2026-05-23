@@ -335,9 +335,11 @@ export function Header({
                 catalogHref={catalogHref}
               />
             </Suspense>
-            <div className="hidden md:block">
-              <LanguageSwitcher currentLang={lang} pathBase={basePath || '/'} />
-            </div>
+            <LanguageSwitcher
+              currentLang={lang}
+              pathBase={basePath || '/'}
+              variant="dropdown"
+            />
             <Link
               href={cartHref}
               className="relative flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34]"
@@ -428,17 +430,6 @@ export function Header({
               variant="mobile"
               onChange={handleDeliveryDestinationChange}
             />
-            <section className="rounded-2xl border border-stone-200 bg-white p-4">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
-                {lang === 'th' ? 'ภาษา' : 'Language'}
-              </p>
-              <LanguageSwitcher
-                currentLang={lang}
-                pathBase={basePath || '/'}
-                variant="flags"
-                onNavigate={() => setMenuOpen(false)}
-              />
-            </section>
             <nav className="flex flex-col gap-2" aria-label="Main">
               <NavItem
                 href={homeHref}

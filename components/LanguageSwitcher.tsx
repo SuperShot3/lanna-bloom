@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Locale } from '@/lib/i18n';
 import { trackLanguageChange } from '@/lib/analytics';
@@ -20,6 +21,14 @@ const LABELS: Record<Locale, string> = {
   'zh-hk': 'Chinese (Hong Kong)',
 };
 
+const LANGUAGE_OPTIONS: { locale: Locale; label: string; region?: string }[] = [
+  { locale: 'en', label: 'English' },
+  { locale: 'th', label: 'ภาษาไทย' },
+  { locale: 'ru', label: 'Русский' },
+  { locale: 'zh-hk', label: '繁體中文', region: 'HK' },
+  { locale: 'zh-sg', label: '繁體中文', region: 'SG' },
+];
+
 const SWITCHER_QUEUE: Locale[] = ['th', 'en', 'ru', 'zh-sg', 'zh-hk'];
 const NEXT_LANG: Record<Locale, Locale> = {
   en: 'th',
@@ -29,6 +38,12 @@ const NEXT_LANG: Record<Locale, Locale> = {
   'zh-hk': 'en',
 };
 
+function activeDisplayLabel(locale: Locale): string {
+  const opt = LANGUAGE_OPTIONS.find((o) => o.locale === locale);
+  if (!opt) return LABELS[locale];
+  return opt.region ? `${opt.label} (${opt.region})` : opt.label;
+}
+
 export function LanguageSwitcher({
   currentLang,
   pathBase,
@@ -37,11 +52,91 @@ export function LanguageSwitcher({
 }: {
   currentLang: Locale;
   pathBase: string;
-  variant?: 'cycle' | 'flags';
+  variant?: 'cycle' | 'flags' | 'dropdown';
   onNavigate?: () => void;
 }) {
   const path = pathBase === '/' ? '' : pathBase;
   const nextLang = NEXT_LANG[currentLang];
+  const [open, setOpen] = useState(false);
+
+  const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open, close]);
+
+  if (variant === 'dropdown') {
+    return (
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          className="flex items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label="Language"
+        >
+          <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
+            language
+          </span>
+          <span className="hidden sm:inline text-[11px] text-stone-500 max-w-[88px] truncate">
+            {activeDisplayLabel(currentLang)}
+          </span>
+        </button>
+
+        {open && (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-[55] cursor-default"
+              aria-label="Close language menu"
+              onClick={close}
+            />
+            <ul
+              role="listbox"
+              aria-label="Language"
+              className="absolute right-0 top-full mt-1 z-[60] min-w-[170px] overflow-hidden rounded-[10px] border border-[#ede8e2] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
+            >
+              {LANGUAGE_OPTIONS.map((opt) => {
+                const isActive = opt.locale === currentLang;
+                return (
+                  <li key={opt.locale} role="option" aria-selected={isActive}>
+                    <Link
+                      href={`/${opt.locale}${path}`}
+                      scroll={false}
+                      className={`flex w-full items-center justify-between gap-2.5 px-4 py-[11px] text-left text-[13px] transition-colors ${
+                        isActive
+                          ? 'border-l-2 border-[#1A3C34] bg-[#f0f5f2] text-[#1A3C34]'
+                          : 'border-l-2 border-transparent text-stone-500 hover:bg-[#f5f1ec]'
+                      }`}
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => {
+                        if (!isActive) trackLanguageChange(opt.locale);
+                        close();
+                        onNavigate?.();
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      {opt.region && (
+                        <span className="rounded-[3px] bg-[#ede8e2] px-[5px] py-px text-[10px] text-stone-400">
+                          {opt.region}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </div>
+    );
+  }
 
   if (variant === 'flags') {
     return (
