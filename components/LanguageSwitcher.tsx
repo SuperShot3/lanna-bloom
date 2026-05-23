@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Locale } from '@/lib/i18n';
@@ -61,7 +61,9 @@ export function LanguageSwitcher({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const [backdropReady, setBackdropReady] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
+  const suppressBackdropCloseRef = useRef(false);
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -79,19 +81,40 @@ export function LanguageSwitcher({
     });
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       setMenuPosition(null);
       return;
     }
     updateMenuPosition();
+  }, [open, updateMenuPosition]);
+
+  useEffect(() => {
+    if (!open) {
+      setBackdropReady(false);
+      return;
+    }
+    suppressBackdropCloseRef.current = true;
+    const unlockTimer = window.setTimeout(() => {
+      suppressBackdropCloseRef.current = false;
+    }, 400);
+    const readyFrame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setBackdropReady(true));
+    });
     window.addEventListener('resize', updateMenuPosition);
     window.addEventListener('scroll', updateMenuPosition, { passive: true });
     return () => {
+      window.clearTimeout(unlockTimer);
+      cancelAnimationFrame(readyFrame);
       window.removeEventListener('resize', updateMenuPosition);
       window.removeEventListener('scroll', updateMenuPosition);
     };
   }, [open, updateMenuPosition]);
+
+  const handleBackdropClose = useCallback(() => {
+    if (suppressBackdropCloseRef.current) return;
+    close();
+  }, [close]);
 
   useEffect(() => {
     if (!open) return;
@@ -107,12 +130,17 @@ export function LanguageSwitcher({
       open && mounted && menuPosition
         ? createPortal(
             <>
-              <button
-                type="button"
-                className="fixed inset-0 z-[115] cursor-default touch-manipulation"
-                aria-label="Close language menu"
-                onClick={close}
-              />
+              {backdropReady ? (
+                <button
+                  type="button"
+                  className="fixed inset-0 z-[115] cursor-default touch-manipulation"
+                  aria-label="Close language menu"
+                  onPointerDown={(e) => {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    handleBackdropClose();
+                  }}
+                />
+              ) : null}
               <ul
                 role="listbox"
                 aria-label="Language"
@@ -155,12 +183,16 @@ export function LanguageSwitcher({
         : null;
 
     return (
-      <div ref={anchorRef} className="relative shrink-0">
+      <div ref={anchorRef} className={`relative shrink-0 ${open ? 'z-[130]' : ''}`}>
         <button
           type="button"
           className="relative z-[1] flex touch-manipulation cursor-pointer items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11 min-w-11 [-webkit-tap-highlight-color:transparent]"
-          onClick={() => {
-            if (!open) updateMenuPosition();
+          onPointerDown={(e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            e.stopPropagation();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
             setOpen((o) => !o);
           }}
           aria-expanded={open}

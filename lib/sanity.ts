@@ -46,7 +46,7 @@ const clientNoCdn = createClient({
 async function cdnFetch<T>(
   label: string,
   query: string,
-  params?: Record<string, unknown>
+  params: Record<string, string | number | boolean | string[]> = {}
 ): Promise<T> {
   logSanityFetch(label, true, query);
   return client.fetch<T>(query, params);
@@ -55,7 +55,7 @@ async function cdnFetch<T>(
 async function apiFetch<T>(
   label: string,
   query: string,
-  params?: Record<string, unknown>
+  params: Record<string, string | number | boolean | string[]> = {}
 ): Promise<T> {
   logSanityFetch(label, false, query);
   return clientNoCdn.fetch<T>(query, params);
@@ -1409,49 +1409,18 @@ export async function getPlushyToysFilteredFromSanity(params: {
 /** Plushy toy by slug (detail page). */
 export async function getPlushyToyBySlugFromSanity(slug: string): Promise<CatalogProduct | null> {
   try {
-    const doc = await clientNoCdn.fetch<
-      | {
-          _id: string;
-          slug?: { current?: string };
-          nameEn?: string;
-          nameTh?: string;
-          descriptionEn?: string;
-          descriptionTh?: string;
-          price?: number;
-          discountPercent?: number;
-          sizeLabel?: string;
-          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-        }
-      | null
-    >(
-      `*[_type == "plushyToy" && slug.current == $slug][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
-      }`,
-      { slug }
-    );
+    const docs = await getAllPlushyToyDocsFromSanity();
+    const doc = docs.find((d) => (d.slug?.current ?? d._id) === slug);
     if (!doc) return null;
-    const slugVal = doc.slug?.current ?? doc._id;
-    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
-    const fallbackImageAlts = withFallbackImageAlts(
-      imageUrls,
-      imageAlts,
-      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+    const { _createdAt, _partnerCost, ...product } = mapPlushyOrBalloonDoc(
+      doc,
+      'plushy_toys',
+      'plushyToy',
+      plushyToyPlaceholder
     );
-    return {
-      id: doc._id,
-      slug: slugVal,
-      nameEn: doc.nameEn ?? '',
-      nameTh: doc.nameTh,
-      descriptionEn: doc.descriptionEn,
-      descriptionTh: doc.descriptionTh,
-      category: 'plushy_toys',
-      catalogKind: 'plushyToy',
-      sizeLabel: doc.sizeLabel,
-      price: doc.price ?? 0,
-      images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
-      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
-    };
+    void _createdAt;
+    void _partnerCost;
+    return product;
   } catch (err) {
     console.error('[Sanity] getPlushyToyBySlugFromSanity failed:', err);
     return null;
@@ -1469,7 +1438,7 @@ export async function getPlushyToyById(id: string): Promise<{
   imageUrl?: string;
 } | null> {
   try {
-    const doc = await clientNoCdn.fetch<
+    const doc = await apiFetch<
       | {
           _id: string;
           nameEn?: string;
@@ -1480,7 +1449,7 @@ export async function getPlushyToyById(id: string): Promise<{
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
         }
       | null
-    >(`*[_type == "plushyToy" && _id == $id][0] { _id, nameEn, nameTh, price, discountPercent, sizeLabel, images }`, { id });
+    >('plushy-toy-by-id', `*[_type == "plushyToy" && _id == $id][0] { _id, nameEn, nameTh, price, discountPercent, sizeLabel, images }`, { id });
     if (!doc) return null;
     return {
       id: doc._id,
@@ -1517,49 +1486,18 @@ export async function getBalloonsFilteredFromSanity(params: {
 /** Balloon by slug (detail page). */
 export async function getBalloonBySlugFromSanity(slug: string): Promise<CatalogProduct | null> {
   try {
-    const doc = await clientNoCdn.fetch<
-      | {
-          _id: string;
-          slug?: { current?: string };
-          nameEn?: string;
-          nameTh?: string;
-          descriptionEn?: string;
-          descriptionTh?: string;
-          price?: number;
-          discountPercent?: number;
-          sizeLabel?: string;
-          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-        }
-      | null
-    >(
-      `*[_type == "balloon" && slug.current == $slug][0] {
-        _id, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
-      }`,
-      { slug }
-    );
+    const docs = await getAllBalloonDocsFromSanity();
+    const doc = docs.find((d) => (d.slug?.current ?? d._id) === slug);
     if (!doc) return null;
-    const slugVal = doc.slug?.current ?? doc._id;
-    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
-    const fallbackImageAlts = withFallbackImageAlts(
-      imageUrls,
-      imageAlts,
-      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
+    const { _createdAt, _partnerCost, ...product } = mapPlushyOrBalloonDoc(
+      doc,
+      'balloons',
+      'balloon',
+      plushyToyPlaceholder
     );
-    return {
-      id: doc._id,
-      slug: slugVal,
-      nameEn: doc.nameEn ?? '',
-      nameTh: doc.nameTh,
-      descriptionEn: doc.descriptionEn,
-      descriptionTh: doc.descriptionTh,
-      category: 'balloons',
-      catalogKind: 'balloon',
-      sizeLabel: doc.sizeLabel,
-      price: doc.price ?? 0,
-      images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
-      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
-    };
+    void _createdAt;
+    void _partnerCost;
+    return product;
   } catch (err) {
     console.error('[Sanity] getBalloonBySlugFromSanity failed:', err);
     return null;
@@ -1577,7 +1515,7 @@ export async function getBalloonById(id: string): Promise<{
   imageUrl?: string;
 } | null> {
   try {
-    const doc = await clientNoCdn.fetch<
+    const doc = await apiFetch<
       | {
           _id: string;
           nameEn?: string;
@@ -1588,7 +1526,7 @@ export async function getBalloonById(id: string): Promise<{
           images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
         }
       | null
-    >(`*[_type == "balloon" && _id == $id][0] { _id, nameEn, nameTh, price, discountPercent, sizeLabel, images }`, { id });
+    >('balloon-by-id', `*[_type == "balloon" && _id == $id][0] { _id, nameEn, nameTh, price, discountPercent, sizeLabel, images }`, { id });
     if (!doc) return null;
     return {
       id: doc._id,
@@ -1647,7 +1585,7 @@ export async function getProductById(productId: string): Promise<{
   adminLastEditedAt?: string;
 } | null> {
   try {
-    const doc = await clientNoCdn.fetch<
+    const doc = await apiFetch<
       | {
           _id: string;
           nameEn?: string;
@@ -1675,6 +1613,7 @@ export async function getProductById(productId: string): Promise<{
         }
       | null
     >(
+      'product-by-id',
       `*[_type == "product" && _id == $id][0] {
         _id, nameEn, nameTh, descriptionEn, descriptionTh, category, price, cost, commissionPercent, discountPercent, moderationStatus, images,
         excludedDeliveryDestinations, structuredAttributes, partner,

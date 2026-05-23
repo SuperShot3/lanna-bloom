@@ -8,7 +8,8 @@ import {
   getPlushyToysFilteredFromSanity,
 } from '@/lib/sanity';
 
-export const dynamic = 'force-dynamic';
+/** Cache feed generation — catalog data is already CDN-cached in lib/sanity. */
+export const revalidate = 3600;
 
 export async function GET() {
   try {

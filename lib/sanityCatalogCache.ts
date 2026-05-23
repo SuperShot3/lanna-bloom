@@ -35,21 +35,3 @@ export function logSanityFetch(label: string, useCdn: boolean, query: string): v
   }).catch(() => {});
   // #endregion
 }
-
-/** Debug: log when a cached catalog path is hit (no Sanity round-trip). */
-export function logSanityCacheHit(label: string): void {
-  // #region agent log
-  fetch('http://127.0.0.1:7533/ingest/05e5fe92-ace3-44b7-a004-178e8286df2f', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '86b7c7' },
-    body: JSON.stringify({
-      sessionId: '86b7c7',
-      location: 'lib/sanityCatalogCache.ts:logSanityCacheHit',
-      message: 'Sanity cache hit (no fetch)',
-      data: { label },
-      timestamp: Date.now(),
-      hypothesisId: 'C-unstable-cache',
-    }),
-  }).catch(() => {});
-  // #endregion
-}
