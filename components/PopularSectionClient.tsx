@@ -114,11 +114,11 @@ export function PopularSectionClient({
   return (
     <>
       <div className="popular-scroll-wrap">
-        <div className="popular-scroll">
+        <div className="popular-scroll home-reveal-stagger">
           {items.map((entry) => (
             <div
               key={`${entry.itemType}-${entry.item.id}`}
-              className={`popular-card-slot ${
+              className={`popular-card-slot home-reveal-item ${
                 newIdSet.has(entry.item.id) ? 'popular-card-slot--new' : ''
               }`}
             >

@@ -29,14 +29,18 @@ export async function PartnersCarousel({ lang }: { lang: Locale }) {
         }));
 
   return (
-    <section id="partners" className="py-16 sm:py-20 lg:py-24 bg-[#1A3C34] text-stone-50 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
+    <section
+      id="partners"
+      className="py-16 sm:py-20 lg:py-24 bg-[#1A3C34] text-stone-50 overflow-hidden"
+      data-home-reveal
+    >
+      <div className="home-reveal-item max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
         <h2 className="font-[family-name:var(--font-family-display)] text-4xl mb-4">
           {t.title}
         </h2>
         <p className="text-stone-400">{t.subtitle}</p>
       </div>
-      <div className="flex gap-8 px-6 overflow-hidden">
+      <div className="home-reveal-item flex gap-8 px-6 overflow-hidden">
         <div className="flex gap-8 animate-partners-scroll shrink-0">
           {[...items, ...items].map((partner, i) => (
             <div

@@ -30,9 +30,10 @@ export async function ReviewsSection({
     <section
       className="py-16 sm:py-20 lg:py-24 bg-white"
       aria-labelledby="reviews-section-title"
+      data-home-reveal
     >
       <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="flex flex-col items-center gap-2 mb-8">
+        <div className="home-reveal-item flex flex-col items-center gap-2 mb-8">
           <img
             src="/icons/google-icon-logo-svgrepo-com.svg"
             alt=""
@@ -53,29 +54,31 @@ export async function ReviewsSection({
             ))}
           </div>
         </div>
-        <h2
-          id="reviews-section-title"
-          className="font-[family-name:var(--font-family-display)] text-4xl text-[#1A3C34] mb-6"
-        >
-          {stats.count > 0 ? quoteTitle : displayTitle}
-        </h2>
-        <p className="text-xl italic text-stone-500 mb-12">{featuredQuote}</p>
-        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-12 border-t border-stone-100">
-          <div className="flex items-center gap-3">
+        <div className="home-reveal-item">
+          <h2
+            id="reviews-section-title"
+            className="font-[family-name:var(--font-family-display)] text-4xl text-[#1A3C34] mb-6"
+          >
+            {stats.count > 0 ? quoteTitle : displayTitle}
+          </h2>
+          <p className="text-xl italic text-stone-500 mb-12">{featuredQuote}</p>
+        </div>
+        <div className="home-reveal-stagger flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-12 border-t border-stone-100">
+          <div className="home-reveal-item flex items-center gap-3">
             <span className="material-symbols-outlined text-[#C5A059] text-3xl">verified</span>
             <div className="text-left">
               <p className="font-bold text-sm">Verified Florists</p>
               <p className="text-xs text-stone-400">Strict Quality Control</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="home-reveal-item flex items-center gap-3">
             <span className="material-symbols-outlined text-[#C5A059] text-3xl">bolt</span>
             <div className="text-left">
               <p className="font-bold text-sm">Fast Delivery</p>
               <p className="text-xs text-stone-400">Chiang Mai Inner City</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="home-reveal-item flex items-center gap-3">
             <span className="material-symbols-outlined text-[#C5A059] text-3xl">
               support_agent
             </span>
@@ -85,7 +88,7 @@ export async function ReviewsSection({
             </div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+        <div className="home-reveal-item flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
           <a
             href={GOOGLE_REVIEW_URL}
             target="_blank"

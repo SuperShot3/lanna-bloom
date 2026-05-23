@@ -1,4 +1,5 @@
 import { Hero } from '@/components/Hero';
+import { HomeRevealInit } from '@/components/home/HomeRevealInit';
 import { PopularSection } from '@/components/PopularSection';
 import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
 import { ExperienceSection } from '@/components/ExperienceSection';
@@ -24,6 +25,7 @@ export default async function HomePage({
   return (
     <>
       <Hero lang={lang as Locale} heroImageUrl={heroImageUrl} carouselImages={carouselImages} />
+      <HomeRevealInit />
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang as Locale} />
       </Suspense>

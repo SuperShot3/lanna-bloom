@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Locale } from '@/lib/i18n';
-import { translations } from '@/lib/i18n';
+import { Locale, locales, translations } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
 import { HeroSwipeCards } from '@/components/HeroSwipeCards';
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
@@ -47,6 +46,12 @@ export function Hero({
   const primaryCtaHref = browseCollectionHref ?? catalogHref;
   const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
+  const isHomeLanding =
+    !titleOverride &&
+    (pathname === '/' ||
+      (pathParts.length === 1 && locales.includes(pathParts[0] as Locale)));
+  const introClass = isHomeLanding ? 'home-hero-intro' : '';
+  const introItemClass = isHomeLanding ? 'home-hero-intro__item' : '';
 
   useEffect(() => {
     const load = () => {
@@ -61,12 +66,16 @@ export function Hero({
   return (
     <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-10 md:pt-8 md:pb-12 lg:pt-12 lg:pb-20 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-center min-w-0">
-        <div className="relative z-10 min-w-0">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4">
+        <div className={`relative z-10 min-w-0 ${introClass}`}>
+          <div
+            className={`${introItemClass} inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4`.trim()}
+          >
             <span className="material-symbols-outlined text-lg">verified</span>
             {t.badge}
           </div>
-          <h1 className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words">
+          <h1
+            className={`${introItemClass} font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words`.trim()}
+          >
             {titleOverride ?? (
               <>
                 {t.headlineNew} <br />
@@ -74,10 +83,14 @@ export function Hero({
               </>
             )}
           </h1>
-          <p className="text-base sm:text-lg text-stone-600 mb-4 sm:mb-6 md:mb-8 max-w-lg leading-relaxed">
+          <p
+            className={`${introItemClass} text-base sm:text-lg text-stone-600 mb-4 sm:mb-6 md:mb-8 max-w-lg leading-relaxed`.trim()}
+          >
             {t.sublineNew}
           </p>
-          <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8 md:mb-10">
+          <div
+            className={`${introItemClass} flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8 md:mb-10`.trim()}
+          >
             <Link
               href={primaryCtaHref}
               onClick={() => trackCtaClick('cta_home_top')}
@@ -151,6 +164,13 @@ export function Hero({
           </div>
         </div>
       </div>
+      {isHomeLanding ? (
+        <div
+          id="hero-sentinel"
+          className="pointer-events-none absolute bottom-0 left-0 h-px w-full"
+          aria-hidden
+        />
+      ) : null}
     </section>
   );
 }
