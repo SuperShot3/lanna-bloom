@@ -79,13 +79,21 @@ export function LanguageSwitcher({
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-haspopup="listbox"
-          aria-label="Language"
+          aria-label={`Language: ${activeDisplayLabel(currentLang)}`}
         >
-          <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
-            language
+          <span className="md:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white/70 hover:bg-stone-50">
+            <span
+              className={`text-[1.22rem] leading-none rounded-sm ${FLAG_CLASS[currentLang]}`}
+              aria-hidden
+            />
           </span>
-          <span className="hidden sm:inline text-[11px] text-stone-500 max-w-[88px] truncate">
-            {activeDisplayLabel(currentLang)}
+          <span className="hidden md:flex items-center gap-1">
+            <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
+              language
+            </span>
+            <span className="text-[11px] text-stone-500 max-w-[88px] truncate">
+              {activeDisplayLabel(currentLang)}
+            </span>
           </span>
         </button>
 

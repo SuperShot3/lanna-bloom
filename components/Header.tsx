@@ -320,21 +320,23 @@ export function Header({
                 onChange={handleDeliveryDestinationChange}
               />
             )}
-            <Suspense
-              fallback={
-                <HeaderSearchLink
-                  href={`${catalogHref}?openSearch=1`}
-                  label={t.search}
-                  title={t.search}
+            <div className="hidden md:block">
+              <Suspense
+                fallback={
+                  <HeaderSearchLink
+                    href={`${catalogHref}?openSearch=1`}
+                    label={t.search}
+                    title={t.search}
+                  />
+                }
+              >
+                <HeaderSearchControl
+                  lang={lang}
+                  basePath={basePath}
+                  catalogHref={catalogHref}
                 />
-              }
-            >
-              <HeaderSearchControl
-                lang={lang}
-                basePath={basePath}
-                catalogHref={catalogHref}
-              />
-            </Suspense>
+              </Suspense>
+            </div>
             <LanguageSwitcher
               currentLang={lang}
               pathBase={basePath || '/'}
