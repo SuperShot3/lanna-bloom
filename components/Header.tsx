@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Locale, locales, translations } from '@/lib/i18n';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -310,7 +310,7 @@ export function Header({
             )}
           </div>
           <div className="flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
-            {!isMobile && (
+            <div className="hidden md:block">
               <DeliveryProvincePicker
                 lang={lang}
                 value={selectedDeliveryDestination}
@@ -319,32 +319,10 @@ export function Header({
                 variant="desktop"
                 onChange={handleDeliveryDestinationChange}
               />
-            )}
-            <div className="hidden md:block">
-              <Suspense
-                fallback={
-                  <HeaderSearchLink
-                    href={`${catalogHref}?openSearch=1`}
-                    label={t.search}
-                    title={t.search}
-                  />
-                }
-              >
-                <HeaderSearchControl
-                  lang={lang}
-                  basePath={basePath}
-                  catalogHref={catalogHref}
-                />
-              </Suspense>
             </div>
-            <LanguageSwitcher
-              currentLang={lang}
-              pathBase={basePath || '/'}
-              variant="dropdown"
-            />
             <Link
               href={cartHref}
-              className="relative flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34]"
+              className="relative order-1 flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34] md:order-3"
               aria-label={t.cart}
               title={t.cart}
             >
@@ -362,31 +340,35 @@ export function Header({
                 />
               )}
             </Link>
-            {isMobile && (
-              <button
-                type="button"
-                className="flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34]"
-                onClick={() => setMenuOpen((o) => !o)}
-                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-                aria-expanded={menuOpen}
-                aria-controls="mobile-menu"
-              >
-                <span className="material-symbols-outlined text-2xl leading-none">menu</span>
-              </button>
-            )}
+            <div className="order-2 md:order-2">
+              <LanguageSwitcher
+                currentLang={lang}
+                pathBase={basePath || '/'}
+                variant="dropdown"
+              />
+            </div>
+            <button
+              type="button"
+              className="order-3 flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34] md:hidden"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+            >
+              <span className="material-symbols-outlined text-2xl leading-none">menu</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {isMobile && (
-        <div
-          id="mobile-menu"
-          ref={menuRef}
-          className={`fixed inset-0 z-[110] transition-[visibility] duration-250 ${
-            menuOpen ? 'visible' : 'invisible pointer-events-none'
-          }`}
-          aria-hidden={!menuOpen}
-        >
+      <div
+        id="mobile-menu"
+        ref={menuRef}
+        className={`fixed inset-0 z-[110] transition-[visibility] duration-250 md:hidden ${
+          menuOpen ? 'visible' : 'invisible pointer-events-none'
+        }`}
+        aria-hidden={!menuOpen}
+      >
           <div
             className="absolute inset-0 bg-[#1A3C34]/25 opacity-0 transition-opacity duration-250"
             style={{ opacity: menuOpen ? 1 : 0 }}
@@ -495,59 +477,6 @@ export function Header({
             </nav>
           </div>
         </div>
-      )}
-      <style jsx global>{`
-        .header-search-trigger,
-        .header-search-panel {
-          will-change: transform, opacity;
-          transition:
-            width 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            opacity 220ms ease,
-            transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            box-shadow 220ms ease;
-        }
-        .header-search-panel {
-          animation: headerSearchExpand 220ms cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .header-search-trigger-label {
-          display: none;
-        }
-        /* Hide browser-native search clear icon so only our custom clear button is shown. */
-        :global(.header-search-panel input[type='search']::-webkit-search-cancel-button),
-        :global(.header-search-panel input[type='search']::-webkit-search-decoration),
-        :global(.header-search-panel input[type='search']::-webkit-search-results-button),
-        :global(.header-search-panel input[type='search']::-webkit-search-results-decoration) {
-          -webkit-appearance: none;
-          appearance: none;
-          display: none;
-        }
-        .header-search-trigger-label--query {
-          display: inline-block;
-          max-width: 16ch;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        @media (min-width: 768px) {
-          .header-search-trigger-label {
-            display: inline-block;
-            max-width: 18ch;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-        }
-        @keyframes headerSearchExpand {
-          from {
-            opacity: 0;
-            transform: translateX(8px) scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
-        }
-      `}</style>
     </>
   );
 }
@@ -637,168 +566,5 @@ function DeliveryProvincePicker({
         </div>
       </div>
     </section>
-  );
-}
-
-function HeaderSearchLink({
-  href,
-  label,
-  title,
-  query,
-}: {
-  href: string;
-  label: string;
-  title: string;
-  query?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="header-search-trigger flex h-11 min-w-[44px] shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 px-0 text-sm font-medium text-[#1A3C34] transition-all hover:bg-stone-50 md:min-w-0 md:px-4"
-      aria-label={label}
-      title={title}
-    >
-      <span className="material-symbols-outlined text-2xl leading-none md:text-xl">
-        search
-      </span>
-      <span className={`header-search-trigger-label ${query ? 'header-search-trigger-label--query' : ''}`}>
-        {query || label}
-      </span>
-    </Link>
-  );
-}
-
-function HeaderSearchControl({
-  lang,
-  basePath,
-  catalogHref,
-}: {
-  lang: Locale;
-  basePath: string;
-  catalogHref: string;
-}) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const searchParamsString = searchParams?.toString() ?? '';
-  const isCatalogPage = basePath === '/catalog' || basePath.startsWith('/catalog/');
-  const headerSearchOpen = isCatalogPage && searchParams?.get('openSearch') === '1';
-  const headerSearchQuery = searchParams?.get('q') ?? '';
-  const [searchDraft, setSearchDraft] = useState(headerSearchQuery);
-  const searchPanelRef = useRef<HTMLDivElement>(null);
-  const tNav = translations[lang].nav;
-  const tCatalog = translations[lang].catalog;
-
-  const searchHref = useMemo(() => {
-    if (isCatalogPage) {
-      const qs = new URLSearchParams(searchParamsString);
-      qs.set('openSearch', '1');
-      const query = qs.toString();
-      return query ? `${catalogHref}?${query}` : catalogHref;
-    }
-    return `${catalogHref}?openSearch=1`;
-  }, [catalogHref, isCatalogPage, searchParamsString]);
-
-  useEffect(() => {
-    setSearchDraft(headerSearchQuery);
-  }, [headerSearchQuery]);
-
-  const updateHeaderSearch = useCallback(
-    (value: string) => {
-      const qs = new URLSearchParams(searchParamsString);
-      qs.set('openSearch', '1');
-      const normalized = value.trim();
-      if (normalized.length > 0) qs.set('q', value);
-      else qs.delete('q');
-      const next = qs.toString();
-      router.replace(next ? `${catalogHref}?${next}` : catalogHref);
-    },
-    [catalogHref, router, searchParamsString]
-  );
-
-  const closeHeaderSearch = useCallback(
-    (keepQuery = true) => {
-      const qs = new URLSearchParams(searchParamsString);
-      qs.delete('openSearch');
-      if (keepQuery) {
-        if (searchDraft.length > 0) qs.set('q', searchDraft);
-        else qs.delete('q');
-      } else {
-        qs.delete('q');
-      }
-      const next = qs.toString();
-      router.replace(next ? `${catalogHref}?${next}` : catalogHref);
-    },
-    [catalogHref, router, searchDraft, searchParamsString]
-  );
-
-  useEffect(() => {
-    if (!headerSearchOpen) return;
-    const onPointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (searchPanelRef.current?.contains(target)) return;
-      closeHeaderSearch(true);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('touchstart', onPointerDown, { passive: true });
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('touchstart', onPointerDown);
-    };
-  }, [headerSearchOpen, closeHeaderSearch]);
-
-  if (!headerSearchOpen) {
-    return (
-      <HeaderSearchLink
-        href={searchHref}
-        label={tNav.search}
-        title={tNav.search}
-        query={headerSearchQuery}
-      />
-    );
-  }
-
-  return (
-    <div
-      ref={searchPanelRef}
-      className="header-search-panel flex h-11 items-center gap-1 rounded-full border border-stone-200 bg-white pl-2 pr-1 min-w-[210px] sm:min-w-[260px] md:min-w-[320px]"
-    >
-      <span className="material-symbols-outlined text-xl leading-none text-stone-500" aria-hidden>
-        search
-      </span>
-      <input
-        type="search"
-        value={searchDraft}
-        onChange={(e) => {
-          const next = e.target.value;
-          setSearchDraft(next);
-          updateHeaderSearch(next);
-        }}
-        placeholder={tCatalog.searchPlaceholder}
-        aria-label={tCatalog.searchPlaceholder}
-        className="h-9 flex-1 min-w-0 border-0 bg-transparent text-sm text-[#1A3C34] outline-none"
-        autoFocus
-      />
-      {searchDraft.length > 0 && (
-        <button
-          type="button"
-          onClick={() => {
-            setSearchDraft('');
-            updateHeaderSearch('');
-          }}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100"
-          aria-label={tCatalog.clearFilters}
-        >
-          <span className="material-symbols-outlined text-lg leading-none">close</span>
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => closeHeaderSearch(true)}
-        className="flex h-9 items-center justify-center rounded-full px-2 text-xs font-semibold text-[#1A3C34] hover:bg-stone-100"
-      >
-        {tCatalog.close}
-      </button>
-    </div>
   );
 }

@@ -72,18 +72,18 @@ export function LanguageSwitcher({
 
   if (variant === 'dropdown') {
     return (
-      <div className="relative shrink-0">
+      <div className="relative shrink-0 overflow-visible">
         <button
           type="button"
-          className="flex items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11"
+          className="flex items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11 min-w-11"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-haspopup="listbox"
           aria-label={`Language: ${activeDisplayLabel(currentLang)}`}
         >
-          <span className="md:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white/70 hover:bg-stone-50">
+          <span className="flex max-md:h-11 max-md:w-11 max-md:shrink-0 max-md:items-center max-md:justify-center md:hidden">
             <span
-              className={`text-[1.22rem] leading-none rounded-sm ${FLAG_CLASS[currentLang]}`}
+              className={`inline-block h-6 w-6 shrink-0 rounded-none bg-cover bg-center ${FLAG_CLASS[currentLang]}`}
               aria-hidden
             />
           </span>
@@ -108,7 +108,7 @@ export function LanguageSwitcher({
             <ul
               role="listbox"
               aria-label="Language"
-              className="absolute right-0 top-full mt-1 z-[60] min-w-[170px] overflow-hidden rounded-[10px] border border-[#ede8e2] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)]"
+              className="fixed right-[max(1rem,env(safe-area-inset-right))] top-[calc(5rem+env(safe-area-inset-top,0px))] z-[60] min-w-[170px] overflow-hidden rounded-[10px] border border-[#ede8e2] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)] max-md:max-h-[min(70vh,420px)] max-md:overflow-y-auto md:absolute md:right-0 md:top-full md:mt-1 md:max-h-none"
             >
               {LANGUAGE_OPTIONS.map((opt) => {
                 const isActive = opt.locale === currentLang;
