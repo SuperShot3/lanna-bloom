@@ -17,6 +17,7 @@ import {
   parseExcludedDeliveryDestinations,
 } from '@/lib/bouquetDestinationAvailability';
 import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
+import { cacheSanityCatalog, logSanityFetch } from '@/lib/sanityCatalogCache';
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
@@ -34,13 +35,31 @@ export const client = createClient({
   useCdn: true,
 });
 
-/** Bypasses CDN for fresh data (e.g. commission after admin approval). Use for product catalog. */
+/** Bypasses CDN — use only for checkout/pricing/admin where commission must be fresh. */
 const clientNoCdn = createClient({
   projectId,
   dataset,
   apiVersion: '2024-01-01',
   useCdn: false,
 });
+
+async function cdnFetch<T>(
+  label: string,
+  query: string,
+  params?: Record<string, unknown>
+): Promise<T> {
+  logSanityFetch(label, true, query);
+  return client.fetch<T>(query, params);
+}
+
+async function apiFetch<T>(
+  label: string,
+  query: string,
+  params?: Record<string, unknown>
+): Promise<T> {
+  logSanityFetch(label, false, query);
+  return clientNoCdn.fetch<T>(query, params);
+}
 
 const builder = imageUrlBuilder(client);
 
@@ -318,8 +337,10 @@ const bouquetBySlugQuery = `*[_type == "bouquet" && slug.current == $slug && (!d
 
 export async function getBouquetsFromSanity(): Promise<Bouquet[]> {
   try {
-    const docs = await client.fetch<SanityBouquet[]>(bouquetsQuery);
-    return (docs ?? []).map(mapToBouquet);
+    const docs = await getCatalogBouquetDocs();
+    return dedupeBouquetsById((docs ?? []).map((d) => mapToBouquet(d))).sort((a, b) =>
+      (a.nameEn || '').localeCompare(b.nameEn || '', undefined, { sensitivity: 'base' })
+    );
   } catch (err) {
     console.error('[Sanity] getBouquetsFromSanity failed:', err);
     return [];
@@ -363,13 +384,14 @@ export async function getBouquetsFromSanityPaginated(
   catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<Bouquet[]> {
   try {
-    const end = start + limit;
-    const docs = await client.fetch<SanityBouquet[]>(bouquetsPaginatedForDestinationQuery, {
-      start,
-      end,
-      dest: catalogDestination,
-    });
-    return (docs ?? []).map(mapToBouquet);
+    const docs = await getCatalogBouquetDocs();
+    const bouquets = dedupeBouquetsById((docs ?? []).map((d) => mapToBouquet(d)))
+      .filter((b) => bouquetIsAvailableForDestination(b, catalogDestination))
+      .sort((a, b) =>
+        (a.nameEn || '').localeCompare(b.nameEn || '', undefined, { sensitivity: 'base' })
+      );
+    const safeStart = Math.max(0, start);
+    return bouquets.slice(safeStart, safeStart + limit);
   } catch (err) {
     console.error('[Sanity] getBouquetsFromSanityPaginated failed:', err);
     return [];
@@ -378,7 +400,7 @@ export async function getBouquetsFromSanityPaginated(
 
 export async function getBouquetBySlugFromSanity(slug: string): Promise<Bouquet | null> {
   try {
-    const doc = await client.fetch<SanityBouquet | null>(bouquetBySlugQuery, { slug });
+    const doc = await cdnFetch<SanityBouquet | null>('bouquet-by-slug', bouquetBySlugQuery, { slug });
     if (!doc) return null;
     return mapToBouquet(doc);
   } catch (err) {
@@ -500,12 +522,21 @@ function orderPopularBouquetsWithFeaturedFirst(bouquets: Bouquet[]): Bouquet[] {
 
 const HERO_IMAGE_FALLBACK = '/HeroImage/heroimage.webp';
 
+const SITE_SETTINGS_QUERY = `*[_type == "siteSettings"][0] { heroImage, heroCarouselImages }`;
+
+async function fetchSiteSettingsImpl(): Promise<{
+  heroImage?: { _type?: string; asset?: { _ref?: string } };
+  heroCarouselImages?: Array<{ _type?: string; asset?: { _ref?: string } }>;
+} | null> {
+  return cdnFetch('site-settings', SITE_SETTINGS_QUERY);
+}
+
+const loadSiteSettings = cacheSanityCatalog('site-settings', fetchSiteSettingsImpl);
+
 /** Hero image URL for homepage. Editable in Sanity Studio → Site Settings. */
 export async function getHeroImageFromSanity(): Promise<string> {
   try {
-    const doc = await client.fetch<{ heroImage?: { _type?: string; asset?: { _ref?: string } } } | null>(
-      `*[_type == "siteSettings"][0] { heroImage }`
-    );
+    const doc = await loadSiteSettings();
     const url = doc?.heroImage ? urlForHeroImage(doc.heroImage) : '';
     return url || HERO_IMAGE_FALLBACK;
   } catch (err) {
@@ -517,11 +548,7 @@ export async function getHeroImageFromSanity(): Promise<string> {
 /** Hero carousel image URLs for homepage swipe carousel. Editable in Sanity Studio → Site Settings → Hero Carousel Images. */
 export async function getHeroCarouselImagesFromSanity(): Promise<string[]> {
   try {
-    const doc = await client.fetch<{
-      heroCarouselImages?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-    } | null>(
-      `*[_type == "siteSettings"][0] { heroCarouselImages }`
-    );
+    const doc = await loadSiteSettings();
     if (!doc?.heroCarouselImages?.length) return [];
     return doc.heroCarouselImages
       .map((img) => (img?.asset?._ref ? builder.image(img).width(800).height(1000).fit('crop').url() : ''))
@@ -535,7 +562,7 @@ export async function getHeroCarouselImagesFromSanity(): Promise<string[]> {
 
 async function getOrderedPopularBouquetsFromSanity(): Promise<Bouquet[]> {
   try {
-    const docs = await client.fetch<SanityBouquet[]>(popularBouquetsQuery);
+    const docs = await getCatalogBouquetDocs();
     const bouquets = (docs ?? [])
       .map(mapToBouquet)
       .filter((b) => bouquetIsAvailableForDestination(b, 'CHIANG_MAI'));
@@ -614,47 +641,50 @@ function interleavePopularCatalogItems(items: PopularCatalogItem[]): PopularCata
 
 /**
  * Home Popular catalog: bouquets plus all live non-flower categories, including plushy toys and balloons.
+ * Full list is cached so pagination (SSR + /api/bouquets) does not re-query Sanity.
  */
+async function buildPopularCatalogItemsFull(): Promise<PopularCatalogItem[]> {
+  const productCategoryKeys = PRODUCT_CATEGORIES.filter(
+    (category) => category !== 'plushy_toys' && category !== 'balloons'
+  );
+  const [bouquets, plushyToys, balloons, allLiveProducts] = await Promise.all([
+    getOrderedPopularBouquetsFromSanity(),
+    getPlushyToysFilteredFromSanity({ sort: 'newest' }),
+    getBalloonsFilteredFromSanity({ sort: 'newest' }),
+    getAllLiveProductsFromSanity(),
+  ]);
+  const productGroups = productCategoryKeys.map((categoryKey) =>
+    filterLiveProductsByCategory(allLiveProducts, categoryKey, 'CHIANG_MAI', 'newest')
+  );
+  const rng = mulberry32(getPopularShuffleSeed() + 17);
+  const flowerItems: PopularCatalogItem[] = bouquets.map((item) => ({
+    itemType: 'bouquet' as const,
+    item,
+  }));
+  const productItems: PopularCatalogItem[] = [
+    ...plushyToys.map((item) => ({ itemType: 'product' as const, item })),
+    ...balloons.map((item) => ({ itemType: 'product' as const, item })),
+    ...productGroups.flat().map((item) => ({ itemType: 'product' as const, item })),
+  ];
+  return [
+    ...flowerItems,
+    ...interleavePopularCatalogItems(shuffleArraySeeded(productItems, rng)),
+  ];
+}
+
+const loadPopularCatalogItemsFull = cacheSanityCatalog(
+  'popular-catalog-items-full',
+  buildPopularCatalogItemsFull
+);
+
 export async function getPopularCatalogItemsFromSanityPaginated(
   start: number,
   limit: number,
   catalogDeliveryDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<PopularCatalogItem[]> {
   try {
-    const productCategoryKeys = PRODUCT_CATEGORIES.filter(
-      (category) => category !== 'plushy_toys' && category !== 'balloons'
-    );
-    const [
-      bouquets,
-      plushyToys,
-      balloons,
-      ...productGroups
-    ] = await Promise.all([
-      getOrderedPopularBouquetsFromSanity(),
-      getPlushyToysFilteredFromSanity({ sort: 'newest' }),
-      getBalloonsFilteredFromSanity({ sort: 'newest' }),
-      ...productCategoryKeys.map((categoryKey) =>
-        getProductsFilteredFromSanity({
-          categoryKey,
-          sort: 'newest',
-          catalogDeliveryDestination,
-        })
-      ),
-    ]);
-    const rng = mulberry32(getPopularShuffleSeed() + 17);
-    const flowerItems: PopularCatalogItem[] = bouquets.map((item) => ({
-      itemType: 'bouquet' as const,
-      item,
-    }));
-    const productItems: PopularCatalogItem[] = [
-      ...plushyToys.map((item) => ({ itemType: 'product' as const, item })),
-      ...balloons.map((item) => ({ itemType: 'product' as const, item })),
-      ...productGroups.flat().map((item) => ({ itemType: 'product' as const, item })),
-    ];
-    const mixed = [
-      ...flowerItems,
-      ...interleavePopularCatalogItems(shuffleArraySeeded(productItems, rng)),
-    ];
+    void catalogDeliveryDestination;
+    const mixed = await loadPopularCatalogItemsFull();
     const safeStart = Math.max(0, start);
     return mixed.slice(safeStart, safeStart + limit);
   } catch (err) {
@@ -745,6 +775,208 @@ const catalogAllQuery = `*[_type == "bouquet" && (!defined(status) || status == 
   sizes
 }`;
 
+async function fetchCatalogBouquetDocsImpl(): Promise<SanityBouquetWithCreated[]> {
+  return cdnFetch('catalog-bouquets', catalogAllQuery);
+}
+
+const loadCatalogBouquetDocs = cacheSanityCatalog('catalog-bouquets', fetchCatalogBouquetDocsImpl);
+
+async function getCatalogBouquetDocs(): Promise<SanityBouquetWithCreated[]> {
+  return loadCatalogBouquetDocs();
+}
+
+type SanityLiveProductDoc = {
+  _id: string;
+  _createdAt?: string;
+  slug?: { current?: string };
+  nameEn?: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  category?: string;
+  price?: number;
+  cost?: number;
+  commissionPercent?: number;
+  discountPercent?: number;
+  excludedDeliveryDestinations?: string[];
+  images?: SanityImageAsset[];
+  structuredAttributes?: { preparationTime?: number; occasion?: string };
+};
+
+const ALL_LIVE_PRODUCTS_QUERY = `*[_type == "product" && moderationStatus == "live"] | order(_createdAt desc) {
+  _id, _createdAt, slug,
+  "nameEn": coalesce(adminOverrides.nameEn, nameEn),
+  "nameTh": coalesce(adminOverrides.nameTh, nameTh),
+  "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
+  "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
+  category, price, cost, commissionPercent, discountPercent, excludedDeliveryDestinations, images,
+  "structuredAttributes": structuredAttributes
+}`;
+
+async function fetchAllLiveProductsImpl(): Promise<SanityLiveProductDoc[]> {
+  return cdnFetch('all-live-products', ALL_LIVE_PRODUCTS_QUERY);
+}
+
+const loadAllLiveProducts = cacheSanityCatalog('all-live-products', fetchAllLiveProductsImpl);
+
+async function getAllLiveProductsFromSanity(): Promise<SanityLiveProductDoc[]> {
+  return loadAllLiveProducts();
+}
+
+function mapLiveProductDoc(
+  d: SanityLiveProductDoc,
+  catalogDeliveryDestination?: DeliveryDestinationId
+): (CatalogProduct & { _createdAt?: string; _partnerCost?: number }) | null {
+  if (
+    catalogDeliveryDestination &&
+    !bouquetIsAvailableForDestination(
+      { excludedDeliveryDestinations: d.excludedDeliveryDestinations },
+      catalogDeliveryDestination
+    )
+  ) {
+    return null;
+  }
+  const slug = d.slug?.current ?? d._id;
+  const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
+  const placeholder =
+    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
+  const partnerCost = d.cost ?? d.price ?? 0;
+  const fallbackImageAlts = withFallbackImageAlts(
+    imageUrls,
+    imageAlts,
+    d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
+  );
+  return {
+    id: d._id,
+    slug,
+    nameEn: d.nameEn ?? '',
+    nameTh: d.nameTh,
+    descriptionEn: d.descriptionEn,
+    descriptionTh: d.descriptionTh,
+    category: d.category ?? '',
+    catalogKind: 'product' as const,
+    price: d.price ?? 0,
+    cost: d.cost,
+    commissionPercent: d.commissionPercent,
+    images: imageUrls.length ? imageUrls : [placeholder],
+    imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+    excludedDeliveryDestinations: parseExcludedDeliveryDestinations(d.excludedDeliveryDestinations),
+    discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
+    preparationTime: d.structuredAttributes?.preparationTime,
+    occasion: d.structuredAttributes?.occasion,
+    _createdAt: d._createdAt,
+    _partnerCost: partnerCost,
+  };
+}
+
+function filterLiveProductsByCategory(
+  docs: SanityLiveProductDoc[],
+  categoryKey: string,
+  catalogDeliveryDestination: DeliveryDestinationId | undefined,
+  sort: 'newest' | 'price_asc' | 'price_desc'
+): CatalogProduct[] {
+  const mapped = docs
+    .filter((d) => d.category === categoryKey)
+    .map((d) => mapLiveProductDoc(d, catalogDeliveryDestination))
+    .filter((p): p is CatalogProduct & { _createdAt?: string; _partnerCost?: number } => p != null);
+  if (sort === 'price_asc') {
+    mapped.sort((a, b) => (a._partnerCost ?? a.price) - (b._partnerCost ?? b.price));
+  } else if (sort === 'price_desc') {
+    mapped.sort((a, b) => (b._partnerCost ?? b.price) - (a._partnerCost ?? a.price));
+  } else {
+    mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
+  }
+  return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
+}
+
+type SanityPlushyBalloonDoc = {
+  _id: string;
+  _createdAt?: string;
+  slug?: { current?: string };
+  nameEn?: string;
+  nameTh?: string;
+  descriptionEn?: string;
+  descriptionTh?: string;
+  price?: number;
+  discountPercent?: number;
+  sizeLabel?: string;
+  images?: SanityImageAsset[];
+};
+
+const ALL_PLUSHY_TOYS_QUERY = `*[_type == "plushyToy"] | order(_createdAt desc) {
+  _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
+}`;
+
+const ALL_BALLOONS_QUERY = `*[_type == "balloon"] | order(_createdAt desc) {
+  _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
+}`;
+
+async function fetchAllPlushyToysImpl(): Promise<SanityPlushyBalloonDoc[]> {
+  return cdnFetch('all-plushy-toys', ALL_PLUSHY_TOYS_QUERY);
+}
+
+async function fetchAllBalloonsImpl(): Promise<SanityPlushyBalloonDoc[]> {
+  return cdnFetch('all-balloons', ALL_BALLOONS_QUERY);
+}
+
+const loadAllPlushyToys = cacheSanityCatalog('all-plushy-toys', fetchAllPlushyToysImpl);
+const loadAllBalloons = cacheSanityCatalog('all-balloons', fetchAllBalloonsImpl);
+
+async function getAllPlushyToyDocsFromSanity(): Promise<SanityPlushyBalloonDoc[]> {
+  return loadAllPlushyToys();
+}
+
+async function getAllBalloonDocsFromSanity(): Promise<SanityPlushyBalloonDoc[]> {
+  return loadAllBalloons();
+}
+
+function mapPlushyOrBalloonDoc(
+  d: SanityPlushyBalloonDoc,
+  category: 'plushy_toys' | 'balloons',
+  catalogKind: 'plushyToy' | 'balloon',
+  placeholder: string
+): CatalogProduct & { _createdAt?: string; _partnerCost?: number } {
+  const slug = d.slug?.current ?? d._id;
+  const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
+  const price = d.price ?? 0;
+  const fallbackImageAlts = withFallbackImageAlts(
+    imageUrls,
+    imageAlts,
+    d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
+  );
+  return {
+    id: d._id,
+    slug,
+    nameEn: d.nameEn ?? '',
+    nameTh: d.nameTh,
+    descriptionEn: d.descriptionEn,
+    descriptionTh: d.descriptionTh,
+    category,
+    catalogKind,
+    sizeLabel: d.sizeLabel,
+    price,
+    images: imageUrls.length ? imageUrls : [placeholder],
+    imageAlts: imageUrls.length ? fallbackImageAlts : [''],
+    discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
+    _createdAt: d._createdAt,
+    _partnerCost: price,
+  };
+}
+
+function sortCatalogProductsWithMeta(
+  mapped: Array<CatalogProduct & { _createdAt?: string; _partnerCost?: number }>,
+  sort: 'newest' | 'price_asc' | 'price_desc'
+): CatalogProduct[] {
+  if (sort === 'price_asc') {
+    mapped.sort((a, b) => (a._partnerCost ?? a.price) - (b._partnerCost ?? b.price));
+  } else if (sort === 'price_desc') {
+    mapped.sort((a, b) => (b._partnerCost ?? b.price) - (a._partnerCost ?? a.price));
+  } else {
+    mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
+  }
+  return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
+}
+
 function matchesFilters(bouquet: Bouquet, params: CatalogFilterParams): boolean {
   if (params.colors?.length) {
     const bColors = bouquet.colors ?? [];
@@ -787,7 +1019,7 @@ async function fetchBouquetsCatalogFiltered(params: CatalogFilterParams): Promis
   bouquets: Bouquet[];
   allBouquets: Bouquet[];
 }> {
-  const docs = await client.fetch<SanityBouquetWithCreated[]>(catalogAllQuery);
+  const docs = await getCatalogBouquetDocs();
   let allBouquets = dedupeBouquetsById((docs ?? []).map((d) => mapToBouquet(d)));
   const dest = params.catalogDeliveryDestination;
   if (dest) {
@@ -1128,80 +1360,8 @@ export async function getProductsFilteredFromSanity(params: {
 }): Promise<CatalogProduct[]> {
   const { categoryKey, sort = 'newest', catalogDeliveryDestination } = params;
   try {
-    const docs = await clientNoCdn.fetch<
-      Array<{
-        _id: string;
-        _createdAt?: string;
-        slug?: { current?: string };
-        nameEn?: string;
-        nameTh?: string;
-        descriptionEn?: string;
-        descriptionTh?: string;
-        category?: string;
-        price?: number;
-        cost?: number;
-        commissionPercent?: number;
-        discountPercent?: number;
-        excludedDeliveryDestinations?: string[];
-        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-      }>
-    >(
-      `*[_type == "product" && moderationStatus == "live" && category == $categoryKey] | order(_createdAt desc) {
-        _id, _createdAt, slug,
-        "nameEn": coalesce(adminOverrides.nameEn, nameEn),
-        "nameTh": coalesce(adminOverrides.nameTh, nameTh),
-        "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
-        "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
-        category, price, cost, commissionPercent, discountPercent, excludedDeliveryDestinations, images
-      }`,
-      { categoryKey }
-    );
-    const mapped = (docs ?? [])
-      .filter((d) => {
-        if (!catalogDeliveryDestination) return true;
-        return bouquetIsAvailableForDestination(
-          { excludedDeliveryDestinations: d.excludedDeliveryDestinations },
-          catalogDeliveryDestination
-        );
-      })
-      .map((d) => {
-      const slug = d.slug?.current ?? d._id;
-      const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
-      const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
-      const partnerCost = d.cost ?? d.price ?? 0;
-      const fallbackImageAlts = withFallbackImageAlts(
-        imageUrls,
-        imageAlts,
-        d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
-      );
-      return {
-        id: d._id,
-        slug,
-        nameEn: d.nameEn ?? '',
-        nameTh: d.nameTh,
-        descriptionEn: d.descriptionEn,
-        descriptionTh: d.descriptionTh,
-        category: d.category ?? '',
-        catalogKind: 'product' as const,
-        price: d.price ?? 0,
-        cost: d.cost,
-        commissionPercent: d.commissionPercent,
-        images: imageUrls.length ? imageUrls : [placeholder],
-        imageAlts: imageUrls.length ? fallbackImageAlts : [''],
-        excludedDeliveryDestinations: parseExcludedDeliveryDestinations(d.excludedDeliveryDestinations),
-        discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
-        _createdAt: d._createdAt,
-        _partnerCost: partnerCost,
-      };
-    });
-    if (sort === 'price_asc') {
-      mapped.sort((a, b) => (a._partnerCost ?? a.price) - (b._partnerCost ?? b.price));
-    } else if (sort === 'price_desc') {
-      mapped.sort((a, b) => (b._partnerCost ?? b.price) - (a._partnerCost ?? a.price));
-    } else {
-      mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
-    }
-    return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
+    const docs = await getAllLiveProductsFromSanity();
+    return filterLiveProductsByCategory(docs, categoryKey, catalogDeliveryDestination, sort);
   } catch (err) {
     console.error('[Sanity] getProductsFilteredFromSanity failed:', err);
     return [];
@@ -1211,65 +1371,15 @@ export async function getProductsFilteredFromSanity(params: {
 /** Get product by slug (for product detail page) */
 export async function getProductBySlugFromSanity(slug: string): Promise<CatalogProduct | null> {
   try {
-    const doc = await clientNoCdn.fetch<
-      | {
-          _id: string;
-          slug?: { current?: string };
-          nameEn?: string;
-          nameTh?: string;
-          descriptionEn?: string;
-          descriptionTh?: string;
-          category?: string;
-          price?: number;
-          cost?: number;
-          commissionPercent?: number;
-          discountPercent?: number;
-          images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-          excludedDeliveryDestinations?: string[];
-          structuredAttributes?: { preparationTime?: number; occasion?: string };
-        }
-      | null
-    >(
-      `*[_type == "product" && slug.current == $slug && moderationStatus == "live"][0] {
-        _id, slug,
-        "nameEn": coalesce(adminOverrides.nameEn, nameEn),
-        "nameTh": coalesce(adminOverrides.nameTh, nameTh),
-        "descriptionEn": coalesce(adminOverrides.descriptionEn, descriptionEn),
-        "descriptionTh": coalesce(adminOverrides.descriptionTh, descriptionTh),
-        category, price, cost, commissionPercent, discountPercent, images, excludedDeliveryDestinations,
-        "structuredAttributes": structuredAttributes
-      }`,
-      { slug }
-    );
+    const docs = await getAllLiveProductsFromSanity();
+    const doc = docs.find((d) => (d.slug?.current ?? d._id) === slug);
     if (!doc) return null;
-    const slugVal = doc.slug?.current ?? doc._id;
-    const { imageUrls, imageAlts } = mapImagesWithAlt(doc.images);
-    const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3Ctext fill="%236b6560" font-family="sans-serif" font-size="24" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3ENo image%3C/text%3E%3C/svg%3E';
-    const attrs = doc.structuredAttributes;
-    const fallbackImageAlts = withFallbackImageAlts(
-      imageUrls,
-      imageAlts,
-      doc.descriptionEn ?? doc.descriptionTh ?? doc.nameEn ?? doc.nameTh ?? ''
-    );
-    return {
-      id: doc._id,
-      slug: slugVal,
-      nameEn: doc.nameEn ?? '',
-      nameTh: doc.nameTh,
-      descriptionEn: doc.descriptionEn,
-      descriptionTh: doc.descriptionTh,
-      category: doc.category ?? '',
-      catalogKind: 'product',
-      price: doc.price ?? 0,
-      cost: doc.cost,
-      commissionPercent: doc.commissionPercent,
-      images: imageUrls.length ? imageUrls : [placeholder],
-      imageAlts: imageUrls.length ? fallbackImageAlts : [''],
-      excludedDeliveryDestinations: parseExcludedDeliveryDestinations(doc.excludedDeliveryDestinations),
-      preparationTime: attrs?.preparationTime,
-      occasion: attrs?.occasion,
-      discountPercent: normalizeCatalogDiscountPercent(doc.discountPercent),
-    };
+    const mapped = mapLiveProductDoc(doc);
+    if (!mapped) return null;
+    const { _createdAt, _partnerCost, ...product } = mapped;
+    void _createdAt;
+    void _partnerCost;
+    return product;
   } catch (err) {
     console.error('[Sanity] getProductBySlugFromSanity failed:', err);
     return null;
@@ -1285,60 +1395,11 @@ export async function getPlushyToysFilteredFromSanity(params: {
 }): Promise<CatalogProduct[]> {
   const { sort = 'newest' } = params;
   try {
-    const docs = await clientNoCdn.fetch<
-      Array<{
-        _id: string;
-        _createdAt?: string;
-        slug?: { current?: string };
-        nameEn?: string;
-        nameTh?: string;
-        descriptionEn?: string;
-        descriptionTh?: string;
-        price?: number;
-        discountPercent?: number;
-        sizeLabel?: string;
-        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-      }>
-    >(
-      `*[_type == "plushyToy"] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
-      }`
+    const docs = await getAllPlushyToyDocsFromSanity();
+    const mapped = docs.map((d) =>
+      mapPlushyOrBalloonDoc(d, 'plushy_toys', 'plushyToy', plushyToyPlaceholder)
     );
-    const mapped = (docs ?? []).map((d) => {
-      const slug = d.slug?.current ?? d._id;
-      const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
-      const price = d.price ?? 0;
-      const fallbackImageAlts = withFallbackImageAlts(
-        imageUrls,
-        imageAlts,
-        d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
-      );
-      return {
-        id: d._id,
-        slug,
-        nameEn: d.nameEn ?? '',
-        nameTh: d.nameTh,
-        descriptionEn: d.descriptionEn,
-        descriptionTh: d.descriptionTh,
-        category: 'plushy_toys',
-        catalogKind: 'plushyToy' as const,
-        sizeLabel: d.sizeLabel,
-        price,
-        images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-        imageAlts: imageUrls.length ? fallbackImageAlts : [''],
-        discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
-        _createdAt: d._createdAt,
-        _partnerCost: price,
-      };
-    });
-    if (sort === 'price_asc') {
-      mapped.sort((a, b) => a._partnerCost! - b._partnerCost!);
-    } else if (sort === 'price_desc') {
-      mapped.sort((a, b) => b._partnerCost! - a._partnerCost!);
-    } else {
-      mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
-    }
-    return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
+    return sortCatalogProductsWithMeta(mapped, sort);
   } catch (err) {
     console.error('[Sanity] getPlushyToysFilteredFromSanity failed:', err);
     return [];
@@ -1442,60 +1503,11 @@ export async function getBalloonsFilteredFromSanity(params: {
 }): Promise<CatalogProduct[]> {
   const { sort = 'newest' } = params;
   try {
-    const docs = await clientNoCdn.fetch<
-      Array<{
-        _id: string;
-        _createdAt?: string;
-        slug?: { current?: string };
-        nameEn?: string;
-        nameTh?: string;
-        descriptionEn?: string;
-        descriptionTh?: string;
-        price?: number;
-        discountPercent?: number;
-        sizeLabel?: string;
-        images?: Array<{ _type?: string; asset?: { _ref?: string } }>;
-      }>
-    >(
-      `*[_type == "balloon"] | order(_createdAt desc) {
-        _id, _createdAt, slug, nameEn, nameTh, descriptionEn, descriptionTh, price, discountPercent, sizeLabel, images
-      }`
+    const docs = await getAllBalloonDocsFromSanity();
+    const mapped = docs.map((d) =>
+      mapPlushyOrBalloonDoc(d, 'balloons', 'balloon', plushyToyPlaceholder)
     );
-    const mapped = (docs ?? []).map((d) => {
-      const slug = d.slug?.current ?? d._id;
-      const { imageUrls, imageAlts } = mapImagesWithAlt(d.images);
-      const price = d.price ?? 0;
-      const fallbackImageAlts = withFallbackImageAlts(
-        imageUrls,
-        imageAlts,
-        d.descriptionEn ?? d.descriptionTh ?? d.nameEn ?? d.nameTh ?? ''
-      );
-      return {
-        id: d._id,
-        slug,
-        nameEn: d.nameEn ?? '',
-        nameTh: d.nameTh,
-        descriptionEn: d.descriptionEn,
-        descriptionTh: d.descriptionTh,
-        category: 'balloons',
-        catalogKind: 'balloon' as const,
-        sizeLabel: d.sizeLabel,
-        price,
-        images: imageUrls.length ? imageUrls : [plushyToyPlaceholder],
-        imageAlts: imageUrls.length ? fallbackImageAlts : [''],
-        discountPercent: normalizeCatalogDiscountPercent(d.discountPercent),
-        _createdAt: d._createdAt,
-        _partnerCost: price,
-      };
-    });
-    if (sort === 'price_asc') {
-      mapped.sort((a, b) => a._partnerCost! - b._partnerCost!);
-    } else if (sort === 'price_desc') {
-      mapped.sort((a, b) => b._partnerCost! - a._partnerCost!);
-    } else {
-      mapped.sort((a, b) => (b._createdAt || '').localeCompare(a._createdAt || ''));
-    }
-    return mapped.map(({ _createdAt, _partnerCost, ...p }) => p);
+    return sortCatalogProductsWithMeta(mapped, sort);
   } catch (err) {
     console.error('[Sanity] getBalloonsFilteredFromSanity failed:', err);
     return [];

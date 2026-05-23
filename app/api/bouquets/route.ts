@@ -5,7 +5,8 @@ import {
 } from '@/lib/sanity';
 import { DELIVERY_DESTINATIONS, type DeliveryDestinationId } from '@/lib/delivery/markets';
 
-export const dynamic = 'force-dynamic';
+/** Match home/catalog ISR — avoid re-fetching Sanity on every pagination request. */
+export const revalidate = 60;
 
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 24;

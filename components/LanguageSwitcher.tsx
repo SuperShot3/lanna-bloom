@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Locale } from '@/lib/i18n';
 import { trackLanguageChange } from '@/lib/analytics';
@@ -58,8 +59,39 @@ export function LanguageSwitcher({
   const path = pathBase === '/' ? '' : pathBase;
   const nextLang = NEXT_LANG[currentLang];
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateMenuPosition = useCallback(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + 4,
+      right: Math.max(16, window.innerWidth - rect.right),
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, { passive: true });
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition);
+    };
+  }, [open, updateMenuPosition]);
 
   useEffect(() => {
     if (!open) return;
@@ -71,23 +103,77 @@ export function LanguageSwitcher({
   }, [open, close]);
 
   if (variant === 'dropdown') {
+    const dropdownMenu =
+      open && mounted && menuPosition
+        ? createPortal(
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-[115] cursor-default touch-manipulation"
+                aria-label="Close language menu"
+                onClick={close}
+              />
+              <ul
+                role="listbox"
+                aria-label="Language"
+                className="fixed z-[120] min-w-[170px] overflow-hidden rounded-[10px] border border-[#ede8e2] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)] max-h-[min(70vh,420px)] overflow-y-auto touch-pan-y"
+                style={{ top: menuPosition.top, right: menuPosition.right }}
+              >
+                {LANGUAGE_OPTIONS.map((opt) => {
+                  const isActive = opt.locale === currentLang;
+                  return (
+                    <li key={opt.locale} role="option" aria-selected={isActive}>
+                      <Link
+                        href={`/${opt.locale}${path}`}
+                        scroll={false}
+                        className={`flex w-full items-center justify-between gap-2.5 px-4 py-[11px] text-left text-[13px] transition-colors ${
+                          isActive
+                            ? 'border-l-2 border-[#1A3C34] bg-[#f0f5f2] text-[#1A3C34]'
+                            : 'border-l-2 border-transparent text-stone-500 hover:bg-[#f5f1ec] active:bg-[#f5f1ec]'
+                        }`}
+                        aria-current={isActive ? 'page' : undefined}
+                        onClick={() => {
+                          if (!isActive) trackLanguageChange(opt.locale);
+                          close();
+                          onNavigate?.();
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                        {opt.region && (
+                          <span className="rounded-[3px] bg-[#ede8e2] px-[5px] py-px text-[10px] text-stone-400">
+                            {opt.region}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>,
+            document.body
+          )
+        : null;
+
     return (
-      <div className="relative shrink-0 overflow-visible">
+      <div ref={anchorRef} className="relative shrink-0">
         <button
           type="button"
-          className="flex items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11 min-w-11"
-          onClick={() => setOpen((o) => !o)}
+          className="relative z-[1] flex touch-manipulation cursor-pointer items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11 min-w-11 [-webkit-tap-highlight-color:transparent]"
+          onClick={() => {
+            if (!open) updateMenuPosition();
+            setOpen((o) => !o);
+          }}
           aria-expanded={open}
           aria-haspopup="listbox"
           aria-label={`Language: ${activeDisplayLabel(currentLang)}`}
         >
-          <span className="flex max-md:h-11 max-md:w-11 max-md:shrink-0 max-md:items-center max-md:justify-center md:hidden">
+          <span className="pointer-events-none flex max-md:h-11 max-md:w-11 max-md:shrink-0 max-md:items-center max-md:justify-center md:hidden">
             <span
               className={`inline-block h-6 w-6 shrink-0 rounded-none bg-cover bg-center ${FLAG_CLASS[currentLang]}`}
               aria-hidden
             />
           </span>
-          <span className="hidden md:flex items-center gap-1">
+          <span className="pointer-events-none hidden md:flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px] leading-none" aria-hidden>
               language
             </span>
@@ -96,52 +182,7 @@ export function LanguageSwitcher({
             </span>
           </span>
         </button>
-
-        {open && (
-          <>
-            <button
-              type="button"
-              className="fixed inset-0 z-[55] cursor-default"
-              aria-label="Close language menu"
-              onClick={close}
-            />
-            <ul
-              role="listbox"
-              aria-label="Language"
-              className="fixed right-[max(1rem,env(safe-area-inset-right))] top-[calc(5rem+env(safe-area-inset-top,0px))] z-[60] min-w-[170px] overflow-hidden rounded-[10px] border border-[#ede8e2] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)] max-md:max-h-[min(70vh,420px)] max-md:overflow-y-auto md:absolute md:right-0 md:top-full md:mt-1 md:max-h-none"
-            >
-              {LANGUAGE_OPTIONS.map((opt) => {
-                const isActive = opt.locale === currentLang;
-                return (
-                  <li key={opt.locale} role="option" aria-selected={isActive}>
-                    <Link
-                      href={`/${opt.locale}${path}`}
-                      scroll={false}
-                      className={`flex w-full items-center justify-between gap-2.5 px-4 py-[11px] text-left text-[13px] transition-colors ${
-                        isActive
-                          ? 'border-l-2 border-[#1A3C34] bg-[#f0f5f2] text-[#1A3C34]'
-                          : 'border-l-2 border-transparent text-stone-500 hover:bg-[#f5f1ec]'
-                      }`}
-                      aria-current={isActive ? 'page' : undefined}
-                      onClick={() => {
-                        if (!isActive) trackLanguageChange(opt.locale);
-                        close();
-                        onNavigate?.();
-                      }}
-                    >
-                      <span>{opt.label}</span>
-                      {opt.region && (
-                        <span className="rounded-[3px] bg-[#ede8e2] px-[5px] py-px text-[10px] text-stone-400">
-                          {opt.region}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
+        {dropdownMenu}
       </div>
     );
   }

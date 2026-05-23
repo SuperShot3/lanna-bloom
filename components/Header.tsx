@@ -309,7 +309,7 @@ export function Header({
               </nav>
             )}
           </div>
-          <div className="flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+          <div className="relative z-[2] flex h-11 items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
             <div className="hidden md:block">
               <DeliveryProvincePicker
                 lang={lang}
@@ -365,12 +365,12 @@ export function Header({
         id="mobile-menu"
         ref={menuRef}
         className={`fixed inset-0 z-[110] transition-[visibility] duration-250 md:hidden ${
-          menuOpen ? 'visible' : 'invisible pointer-events-none'
+          menuOpen ? 'visible pointer-events-auto' : 'hidden pointer-events-none'
         }`}
         aria-hidden={!menuOpen}
       >
           <div
-            className="absolute inset-0 bg-[#1A3C34]/25 opacity-0 transition-opacity duration-250"
+            className="absolute inset-0 bg-[#1A3C34]/25 transition-opacity duration-250"
             style={{ opacity: menuOpen ? 1 : 0 }}
             onClick={() => setMenuOpen(false)}
             onKeyDown={(e) => e.key === 'Enter' && setMenuOpen(false)}
