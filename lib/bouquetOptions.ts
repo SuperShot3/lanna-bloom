@@ -9,10 +9,13 @@ import type { Locale } from '@/lib/i18n';
 export type SizeKey = 's' | 'm' | 'l' | 'xl';
 
 export interface BouquetSellableOption {
-  /** Stable id for cart merge, Stripe resolution, favorites (e.g. legacy_s, stem_19, fixed_std) */
+  /** Stable id for cart merge, Stripe resolution, favorites (e.g. size_s, legacy_s, stem_19) */
   optionId: string;
-  /** Set only for legacy rows — enables old cart JSON and partner forms */
+  /** Set for size_based rows — enables old cart JSON and partner forms */
   key?: SizeKey;
+  /** Optional per-option gallery; falls back to bouquet.images when empty */
+  imageUrls?: string[];
+  imageAlts?: string[];
   price: number;
   /** Shopper-facing label (default EN or shared) */
   label: string;
@@ -29,7 +32,10 @@ export interface BouquetSellableOption {
 /** @deprecated alias — use BouquetSellableOption */
 export type BouquetSize = BouquetSellableOption;
 
+/** @deprecated Use PricingType from lib/catalog/pricing */
 export type ProductKind = 'legacy' | 'single_stem_count' | 'fixed_bouquet' | 'customizable_bouquet';
+
+export type { PricingType } from '@/lib/catalog/pricing';
 
 const LEGACY_LETTER = /^(S|M|L|XL|X|L)$/i;
 
@@ -115,18 +121,49 @@ export function resolveBouquetOptionFromIdentifier(
   if (!r) return sizes[0];
   const byId = sizes.find((s) => s.optionId === r);
   if (byId) return byId;
+
   const lower = r.toLowerCase();
+  if (lower.startsWith('legacy_') || lower.startsWith('size_') || lower.startsWith('fixed_')) {
+    const suffix = lower.replace(/^(legacy_|size_|fixed_)/, '');
+    const byKey = sizes.find(
+      (s) =>
+        s.optionId === r ||
+        s.optionId === `legacy_${suffix}` ||
+        s.optionId === `size_${suffix}` ||
+        s.optionId === `fixed_${suffix}` ||
+        s.key === suffix
+    );
+    if (byKey) return byKey;
+  }
+
   const byLabel = sizes.find(
     (s) => s.label.toLowerCase() === lower || s.labelTh?.toLowerCase() === lower
   );
   if (byLabel) return byLabel;
+
+  if (lower === 'single_default' || lower === 'default') {
+    return sizes.find((s) => s.optionId === 'single_default') ?? sizes[0];
+  }
+
   if (lower === 's' || lower === 'm' || lower === 'l' || lower === 'xl') {
     return (
       sizes.find((s) => s.key === lower) ??
       sizes.find((s) => s.optionId === `legacy_${lower}`) ??
+      sizes.find((s) => s.optionId === `size_${lower}`) ??
       sizes[0]
     );
   }
+
+  if (lower.startsWith('stem_')) {
+    const byStem = sizes.find((s) => s.optionId === r || s.optionId.startsWith(lower.split('_').slice(0, 2).join('_')));
+    if (byStem) return byStem;
+  }
+
+  if (lower.startsWith('custom_')) {
+    const byCustom = sizes.find((s) => s.optionId === r);
+    if (byCustom) return byCustom;
+  }
+
   return sizes[0];
 }
 

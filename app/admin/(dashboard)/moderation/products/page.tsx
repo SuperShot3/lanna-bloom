@@ -1,27 +1,6 @@
-import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { getPendingBouquets, getPendingProducts, getAllProducts } from '@/lib/sanity';
-import { canChangeStatus } from '@/lib/adminRbac';
-import { ProductModerationClient } from './ProductModerationClient';
 
-export default async function AdminModerationProductsPage() {
-  const session = await auth();
-  if (!session?.user) redirect('/admin/login');
-
-  const role = (session.user as { role?: string }).role;
-  if (!canChangeStatus(role)) redirect('/admin');
-
-  const [bouquets, pendingProducts, allProducts] = await Promise.all([
-    getPendingBouquets(),
-    getPendingProducts(),
-    getAllProducts(),
-  ]);
-
-  return (
-    <ProductModerationClient
-      initialBouquets={bouquets}
-      initialProducts={pendingProducts}
-      allProducts={allProducts}
-    />
-  );
+/** Legacy route — products live under /admin/products. */
+export default function AdminModerationProductsRedirect() {
+  redirect('/admin/products?group=pending');
 }

@@ -3,32 +3,21 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { locales, translations, type Locale } from '@/lib/i18n';
+import { locales, type Locale } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { PartnerLogoutButton } from '@/components/partner/PartnerLogoutButton';
 
 type PartnerNavProps = {
   lang: Locale;
-  current?: 'apply' | 'dashboard' | 'products' | 'shop' | 'productsAdd' | 'login' | 'howItWorks';
-  pendingCount?: number;
-  /** When true, show Dashboard/My products/Add Product/Log out. When false, show Apply/Login only. */
-  isLoggedIn?: boolean;
+  current?: 'apply';
 };
 
 const localePathPrefixPattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
 
-export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false }: PartnerNavProps) {
+/** Minimal nav for the partner application flow (self-service portal retired). */
+export function PartnerNav({ lang, current }: PartnerNavProps) {
   const pathname = usePathname();
-  const pathBase = pathname?.replace(localePathPrefixPattern, '') || '/partner';
-
+  const pathBase = pathname?.replace(localePathPrefixPattern, '') || '/partner/apply';
   const applyHref = `/${lang}/partner/apply`;
-  const howItWorksHref = `/${lang}/partner/how-it-works`;
-  const howLabel = translations[lang].partnerPortal.howItWorks.navLabel;
-  const dashboardHref = `/${lang}/partner`;
-  const productsHref = `/${lang}/partner/products`;
-  const shopHref = `/${lang}/partner/shop`;
-  const productsAddHref = `/${lang}/partner/products/new`;
-  const loginHref = `/${lang}/partner/login`;
 
   return (
     <nav className="partner-nav">
@@ -44,68 +33,19 @@ export function PartnerNav({ lang, current, pendingCount = 0, isLoggedIn = false
           />
           <div>
             <div className="partner-nav-title">Lanna Bloom</div>
-            <div className="partner-nav-sub">PARTNER PORTAL</div>
+            <div className="partner-nav-sub">PARTNER APPLICATION</div>
           </div>
         </Link>
         <div className="partner-nav-links">
           <div className="partner-nav-lang">
-            <LanguageSwitcher currentLang={lang} pathBase={pathBase || '/partner'} />
+            <LanguageSwitcher currentLang={lang} pathBase={pathBase || '/partner/apply'} />
           </div>
-          {isLoggedIn ? (
-            <>
-              <Link
-                href={dashboardHref}
-                className={`partner-nav-link ${current === 'dashboard' ? 'active' : ''}`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href={productsHref}
-                className={`partner-nav-link ${current === 'products' ? 'active' : ''}`}
-              >
-                {lang === 'th' ? 'สินค้าของฉัน' : 'My products'}
-                {pendingCount > 0 && (
-                  <span className="partner-nav-pending-badge" title={lang === 'th' ? `${pendingCount} รอตรวจสอบ` : `${pendingCount} pending`}>
-                    {pendingCount}
-                  </span>
-                )}
-              </Link>
-              <Link
-                href={shopHref}
-                className={`partner-nav-link ${current === 'shop' ? 'active' : ''}`}
-              >
-                {lang === 'th' ? 'ข้อมูลร้าน' : 'Shop info'}
-              </Link>
-              <Link
-                href={productsAddHref}
-                className={`partner-nav-link ${current === 'productsAdd' ? 'active' : ''}`}
-              >
-                {lang === 'th' ? 'เพิ่มสินค้า' : 'Add Product'}
-              </Link>
-              <PartnerLogoutButton lang={lang} />
-            </>
-          ) : (
-            <>
-              <Link
-                href={howItWorksHref}
-                className={`partner-nav-link ${current === 'howItWorks' ? 'active' : ''}`}
-              >
-                {howLabel}
-              </Link>
-              <Link
-                href={applyHref}
-                className={`partner-nav-link ${current === 'apply' ? 'active' : ''}`}
-              >
-                {lang === 'th' ? 'สมัคร Partner' : 'Apply'}
-              </Link>
-              <Link
-                href={loginHref}
-                className={`partner-nav-link ${current === 'login' ? 'active' : ''}`}
-              >
-                {lang === 'th' ? 'เข้าสู่ระบบ' : 'Login'}
-              </Link>
-            </>
-          )}
+          <Link
+            href={applyHref}
+            className={`partner-nav-link ${current === 'apply' ? 'active' : ''}`}
+          >
+            {lang === 'th' ? 'สมัคร Partner' : 'Apply'}
+          </Link>
         </div>
       </div>
     </nav>

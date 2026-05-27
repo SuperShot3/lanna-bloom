@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import type { Bouquet, BouquetStatus } from '@/lib/bouquets';
-import { approveBouquetAction, rejectBouquetAction } from '@/app/admin/(dashboard)/moderation/products/actions';
+import { confirmCatalogDeleteAction } from '@/app/admin/components/confirmDelete';
+import { approveBouquetAction, deleteBouquetAction } from '@/app/admin/(dashboard)/moderation/products/actions';
 
 const STATUS_LABELS: Record<BouquetStatus, string> = {
   pending_review: 'Pending review',
@@ -102,11 +103,12 @@ export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
     router.refresh();
   }
 
-  async function handleReject() {
+  async function handleDelete() {
+    if (!confirmCatalogDeleteAction(bouquet.nameEn)) return;
     setError('');
     setSuccess('');
-    setLoading('reject');
-    const result = await rejectBouquetAction(bouquet.id);
+    setLoading('delete');
+    const result = await deleteBouquetAction(bouquet.id);
     setLoading(null);
 
     if (result.error) {
@@ -114,8 +116,7 @@ export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
       return;
     }
 
-    setStatus('rejected');
-    setSuccess('Rejected. This bouquet remains hidden from the public catalog.');
+    router.push('/admin/products');
     router.refresh();
   }
 
@@ -188,23 +189,21 @@ export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
                   </Link>
                 )}
 
-                {status !== 'rejected' ? (
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-outline admin-moderation-btn-loading admin-product-detail-btn-full"
-                    disabled={!!loading}
-                    onClick={handleReject}
-                  >
-                    {loading === 'reject' ? (
-                      <>
-                        <span className="admin-moderation-spinner" aria-hidden />
-                        Saving...
-                      </>
-                    ) : (
-                      'Reject'
-                    )}
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-outline admin-btn-danger admin-moderation-btn-loading admin-product-detail-btn-full"
+                  disabled={!!loading}
+                  onClick={handleDelete}
+                >
+                  {loading === 'delete' ? (
+                    <>
+                      <span className="admin-moderation-spinner" aria-hidden />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
               </div>
             </div>
           </div>

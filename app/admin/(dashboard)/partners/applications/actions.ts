@@ -2,9 +2,9 @@
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
+import { createCatalogPartner } from '@/lib/catalogWrite';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getPartnerApplicationById, updatePartnerApplication, deletePartnerApplication } from '@/lib/supabase/partnerQueries';
-import { createPartner } from '@/lib/sanityWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
 import { randomBytes } from 'crypto';
 
@@ -46,9 +46,9 @@ export async function approvePartnerApplicationAction(
   const supabaseUserId = userData?.user?.id;
   if (!supabaseUserId) return { error: 'Failed to create user' };
 
-  let sanityPartnerId: string;
+  let catalogPartnerId: string;
   try {
-    sanityPartnerId = await createPartner({
+    catalogPartnerId = await createCatalogPartner({
       shopName: app.shop_name ?? '',
       contactName: app.contact_name ?? '',
       phoneNumber: app.phone ?? '',
@@ -58,14 +58,14 @@ export async function approvePartnerApplicationAction(
       supabaseUserId,
     });
   } catch (err) {
-    console.error('[Partner] createPartner failed:', err);
+    console.error('[Partner] createCatalogPartner failed:', err);
     return { error: err instanceof Error ? err.message : 'Failed to create partner' };
   }
 
   const ok = await updatePartnerApplication(applicationId, {
     status: 'approved',
     user_id: supabaseUserId,
-    sanity_partner_id: sanityPartnerId,
+    sanity_partner_id: catalogPartnerId,
     temp_password: tempPassword,
   });
   if (!ok) return { error: 'Failed to update application' };
@@ -147,18 +147,15 @@ export async function deletePartnerApplicationAction(
 
   const userId = app.status === 'approved' ? app.user_id : null;
 
-  // Delete application first (it has FK to auth.users; must remove reference before deleting user)
   const ok = await deletePartnerApplication(applicationId);
   if (!ok) return { error: 'Failed to delete application' };
 
-  // For approved partners, delete the Supabase Auth user so they can no longer log in
   if (userId) {
     const supabase = getSupabaseAdmin();
     if (supabase) {
       const { error: deleteUserError } = await supabase.auth.admin.deleteUser(userId);
       if (deleteUserError) {
         console.error('[Partner] deleteUser failed (application already deleted):', deleteUserError);
-        // Don't fail - application is already deleted; user may have other references
         return { error: `Partner removed, but could not revoke login: ${deleteUserError.message}` };
       }
     }

@@ -1,4 +1,4 @@
-import type { CatalogFilterParams } from '@/lib/sanity';
+import type { CatalogFilterParams } from '@/lib/catalogListLogic';
 import type { StemBucketKey } from '@/lib/bouquetOptions';
 import { PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
 

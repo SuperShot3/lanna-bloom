@@ -1,19 +1,35 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ProductGallery } from '@/components/ProductGallery';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  AdminCmsEditor,
+  AdminCmsSection,
+  AdminCheckboxGrid,
+  ProductImageListEditor,
+} from '@/app/admin/components/cms-editor';
+import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogShelfDirtyContext';
+import { useCatalogUnsavedLeaveGuard } from '@/app/admin/(dashboard)/products/useCatalogUnsavedLeaveGuard';
+import type { AdminCatalogProductImage, AdminProductDetail } from '@/lib/catalog/types';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import {
+  ADMIN_MARKET_OPTIONS,
+  ADMIN_OCCASION_OPTIONS,
+  availableMarketsFromExcluded,
+  excludedMarketsFromAvailable,
+} from '@/lib/catalogAdminFieldOptions';
+import { confirmCatalogDeleteAction } from '@/app/admin/components/confirmDelete';
 import {
   approveProductAction,
-  rejectProductAction,
-  needsChangesProductAction,
-  updateProductByAdminAction,
   deleteProductAction,
-  updateCommissionAction,
+  deleteProductImageAction,
+  reorderProductImagesAction,
+  publishProductDraftAction,
+  updateProductByAdminAction,
+  updateProductImageAltAction,
+  uploadProductImageAction,
 } from '../actions';
-import type { AdminProductDetail } from '@/lib/sanity';
-import { destinationDisplayName } from '@/lib/delivery/markets';
 
 const CATEGORY_LABELS: Record<string, string> = {
   balloons: 'Balloons',
@@ -38,588 +54,424 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Rejected',
 };
 
-type AdminProductDetailClientProps = { product: AdminProductDetail };
+type Props = { product: AdminProductDetail };
 
-function formatDateTimeUtc(iso: string): string {
-  // Deterministic formatting to avoid server/client locale & timezone hydration mismatches.
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  // "YYYY-MM-DD HH:mm UTC"
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')} ${String(
-    d.getUTCHours()
-  ).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
+function parseOccasion(value: string | undefined): string[] {
+  if (!value?.trim()) return [];
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
-export function AdminProductDetailClient({ product }: AdminProductDetailClientProps) {
-  const [commissionPercent, setCommissionPercent] = useState<string>(
-    product.commissionPercent != null ? String(product.commissionPercent) : ''
+export function AdminProductDetailClient({ product }: Props) {
+  const router = useRouter();
+  const { getProductPending, setProductPending } = useCatalogShelfDirty();
+
+  const pending = getProductPending(product.id);
+
+  const [nameEn, setNameEn] = useState(() => pending?.nameEn ?? product.nameEn);
+  const [nameTh, setNameTh] = useState(() => pending?.nameTh ?? product.nameTh ?? '');
+  const [descriptionEn, setDescriptionEn] = useState(
+    () => pending?.descriptionEn ?? product.descriptionEn ?? ''
   );
-  const [adminNameEn, setAdminNameEn] = useState(product.adminOverrides?.nameEn ?? product.nameEn);
-  const [adminNameTh, setAdminNameTh] = useState(product.adminOverrides?.nameTh ?? product.nameTh ?? '');
-  const [adminDescEn, setAdminDescEn] = useState(product.adminOverrides?.descriptionEn ?? product.descriptionEn ?? '');
-  const [adminDescTh, setAdminDescTh] = useState(product.adminOverrides?.descriptionTh ?? product.descriptionTh ?? '');
-  const [adminChangeSummary, setAdminChangeSummary] = useState(product.adminChangeSummary ?? '');
-  const [needsChangesNote, setNeedsChangesNote] = useState('');
-  const [showNeedsChanges, setShowNeedsChanges] = useState(false);
+  const [descriptionTh, setDescriptionTh] = useState(
+    () => pending?.descriptionTh ?? product.descriptionTh ?? ''
+  );
+  const [price, setPrice] = useState(() => pending?.price ?? String(product.price));
+  const [occasion, setOccasion] = useState<string[]>(
+    () => pending?.occasion ?? parseOccasion(product.occasion)
+  );
+  const [availableMarkets, setAvailableMarkets] = useState<DeliveryDestinationId[]>(
+    () =>
+      pending?.availableMarkets ??
+      availableMarketsFromExcluded(product.excludedDeliveryDestinations)
+  );
+  const [editableImages, setEditableImages] = useState<AdminCatalogProductImage[]>(
+    product.editableImages ?? []
+  );
+  const [copyOpen, setCopyOpen] = useState(true);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const canApprove =
-    (product.moderationStatus === 'submitted' || product.moderationStatus === 'needs_changes' || product.moderationStatus === 'rejected') &&
-    commissionPercent.trim() !== '' &&
-    !Number.isNaN(Number(commissionPercent)) &&
-    Number(commissionPercent) >= 0 &&
-    Number(commissionPercent) <= 500;
+  useEffect(() => {
+    if (getProductPending(product.id)) return;
+    setNameEn(product.nameEn);
+    setNameTh(product.nameTh ?? '');
+    setDescriptionEn(product.descriptionEn ?? '');
+    setDescriptionTh(product.descriptionTh ?? '');
+    setPrice(String(product.price));
+    setOccasion(parseOccasion(product.occasion));
+    setAvailableMarkets(availableMarketsFromExcluded(product.excludedDeliveryDestinations));
+    setEditableImages(product.editableImages ?? []);
+  }, [product, getProductPending]);
 
-  async function handleApprove() {
-    if (!canApprove) return;
-    setError(null);
-    setSuccess(null);
-    setLoading('approve');
-    const result = await approveProductAction(product.id, Number(commissionPercent));
-    setLoading(null);
-    if (result.error) {
-      setError(result.error);
-      if (result.error.toLowerCase().includes('unauthorized')) {
-        router.push('/admin/login');
-      }
-    } else {
-      setSuccess('Approved & deployed');
-      router.refresh();
-    }
-  }
+  const catalogHref = product.slug ? `/en/catalog/${product.slug}` : null;
+  const isLiveOnSite = product.moderationStatus === 'live';
+  const usesDraftWorkflow = isLiveOnSite;
 
-  async function handleReject() {
-    setError(null);
-    setSuccess(null);
-    setLoading('reject');
-    const result = await rejectProductAction(product.id);
-    setLoading(null);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      router.refresh();
-    }
-  }
+  const savedSnapshot = useMemo(
+    () => ({
+      nameEn: product.nameEn,
+      nameTh: product.nameTh ?? '',
+      descriptionEn: product.descriptionEn ?? '',
+      descriptionTh: product.descriptionTh ?? '',
+      price: String(product.price),
+      occasion: parseOccasion(product.occasion).join('|'),
+      markets: availableMarketsFromExcluded(product.excludedDeliveryDestinations).join('|'),
+    }),
+    [product]
+  );
 
-  async function handleNeedsChanges() {
-    if (!needsChangesNote.trim()) {
-      setError('Please enter a note for the partner');
+  const hasUnsavedChanges = useMemo(() => {
+    return (
+      nameEn !== savedSnapshot.nameEn ||
+      nameTh !== savedSnapshot.nameTh ||
+      descriptionEn !== savedSnapshot.descriptionEn ||
+      descriptionTh !== savedSnapshot.descriptionTh ||
+      price !== savedSnapshot.price ||
+      occasion.join('|') !== savedSnapshot.occasion ||
+      availableMarkets.join('|') !== savedSnapshot.markets
+    );
+  }, [
+    nameEn,
+    nameTh,
+    descriptionEn,
+    descriptionTh,
+    price,
+    occasion,
+    availableMarkets,
+    savedSnapshot,
+  ]);
+
+  const statusClass =
+    product.moderationStatus === 'live'
+      ? 'is-live'
+      : product.moderationStatus === 'rejected'
+        ? 'is-rejected'
+        : 'is-pending';
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      setProductPending(product.id, null);
       return;
     }
-    setError(null);
-    setSuccess(null);
-    setLoading('needsChanges');
-    const result = await needsChangesProductAction(product.id, needsChangesNote);
-    setLoading(null);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setShowNeedsChanges(false);
-      setNeedsChangesNote('');
-      router.refresh();
-    }
-  }
+    setProductPending(product.id, {
+      nameEn,
+      nameTh,
+      descriptionEn,
+      descriptionTh,
+      price,
+      occasion,
+      availableMarkets,
+    });
+  }, [
+    hasUnsavedChanges,
+    product.id,
+    setProductPending,
+    nameEn,
+    nameTh,
+    descriptionEn,
+    descriptionTh,
+    price,
+    occasion,
+    availableMarkets,
+  ]);
 
-  async function handleSaveAdminEdits() {
+  useCatalogUnsavedLeaveGuard(hasUnsavedChanges);
+
+  async function handleSave() {
     setError(null);
     setSuccess(null);
-    setLoading('saveAdminEdits');
+    setLoading('save');
+
     const formData = new FormData();
     formData.set('productId', product.id);
-    formData.set('nameEn', adminNameEn);
-    formData.set('nameTh', adminNameTh);
-    formData.set('descriptionEn', adminDescEn);
-    formData.set('descriptionTh', adminDescTh);
-    formData.set('adminChangeSummary', adminChangeSummary);
+    formData.set('nameEn', nameEn);
+    formData.set('nameTh', nameTh);
+    formData.set('descriptionEn', descriptionEn);
+    formData.set('descriptionTh', descriptionTh);
+    formData.set('price', price);
+    formData.set('occasion', JSON.stringify(occasion));
+    formData.set(
+      'excludedDeliveryDestinations',
+      JSON.stringify(excludedMarketsFromAvailable(availableMarkets))
+    );
+
     const result = await updateProductByAdminAction(formData);
+    setLoading(null);
     if (result.error) {
-      setLoading(null);
       setError(result.error);
       return;
     }
-
-    // Persist commission early (optional) so it doesn't disappear before approval.
-    const pctRaw = commissionPercent.trim();
-    if (pctRaw !== '') {
-      const pct = Number(pctRaw);
-      if (!Number.isNaN(pct) && pct >= 0 && pct <= 500) {
-        const commissionResult = await updateCommissionAction(product.id, pct);
-        if (commissionResult.error) {
-          setLoading(null);
-          setError(commissionResult.error);
-          return;
-        }
-      }
-    }
-
-    setLoading(null);
-    setSuccess('Saved');
+    setProductPending(product.id, null);
+    setSuccess(usesDraftWorkflow ? 'Draft saved on server' : 'Saved');
     router.refresh();
   }
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showEditCommission, setShowEditCommission] = useState<boolean>(
-    (product.commissionPercent == null || String(product.commissionPercent).trim() === '') &&
-      (product.moderationStatus === 'submitted' ||
-        product.moderationStatus === 'needs_changes' ||
-        product.moderationStatus === 'rejected')
-  );
-  const [editCommissionValue, setEditCommissionValue] = useState<string>(
-    product.commissionPercent != null ? String(product.commissionPercent) : ''
-  );
-  const router = useRouter();
-
-  async function handleUpdateCommission() {
-    const pct = Number(editCommissionValue);
-    if (Number.isNaN(pct) || pct < 0 || pct > 500) {
-      setError('Commission must be 0–500%');
-      return;
-    }
+  async function handlePublish() {
+    if (!product.draftRevisionId) return;
     setError(null);
     setSuccess(null);
-    setLoading('updateCommission');
-    const result = await updateCommissionAction(product.id, pct);
+    setLoading('publish');
+    const result = await publishProductDraftAction(product.id, product.draftRevisionId);
     setLoading(null);
     if (result.error) {
       setError(result.error);
-    } else {
-      setShowEditCommission(false);
-      setCommissionPercent(String(pct));
-      setSuccess('Saved');
+      return;
+    }
+    setProductPending(product.id, null);
+    setSuccess('Published to website');
+    router.refresh();
+  }
+
+  async function handleApprove() {
+    setError(null);
+    setSuccess(null);
+    setLoading('approve');
+    const commission = product.commissionPercent ?? 0;
+    const result = await approveProductAction(product.id, commission);
+    setLoading(null);
+    if (result.error) setError(result.error);
+    else {
+      setSuccess('Approved');
       router.refresh();
     }
   }
 
   async function handleDelete() {
+    const label = nameEn.trim() || product.nameEn;
+    if (!confirmCatalogDeleteAction(label)) return;
     setError(null);
     setSuccess(null);
     setLoading('delete');
     const result = await deleteProductAction(product.id);
     setLoading(null);
-    setShowDeleteConfirm(false);
     if (result.error) {
       setError(result.error);
-    } else {
-      router.push('/admin/moderation/products');
-      router.refresh();
+      return;
     }
+    router.push('/admin/products');
+    router.refresh();
   }
 
-  const descEn = product.descriptionEn?.trim() || '—';
-  const descTh = product.descriptionTh?.trim() || '—';
-  const unavailableDestinations = (product.excludedDeliveryDestinations ?? []).map((destination) =>
-    destinationDisplayName(destination, 'en')
-  );
-
-  const actionCard = (
-    <div className="admin-product-detail-action-card">
-      <h3 className="admin-product-detail-action-card-title">Actions</h3>
-      <div className="admin-product-detail-commission">
-        {showEditCommission ? (
-          <>
-            <label htmlFor="commission">Commission (%)</label>
-            <input
-              id="commission"
-              type="number"
-              min={0}
-              max={500}
-              step={0.5}
-              value={editCommissionValue}
-              onChange={(e) => setEditCommissionValue(e.target.value)}
-              placeholder="0–500"
-              className="admin-input"
-            />
-            <div className="admin-product-detail-commission-edit-btns">
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
-                disabled={!!loading || editCommissionValue.trim() === ''}
-                onClick={handleUpdateCommission}
-              >
-                {loading === 'updateCommission' ? (
-                  <>
-                    <span className="admin-moderation-spinner" aria-hidden />
-                    Saving…
-                  </>
-                ) : (
-                  'Save'
-                )}
-              </button>
-              <button
-                type="button"
-                className="admin-btn admin-btn-outline admin-btn-sm"
-                disabled={!!loading}
-                onClick={() => {
-                  setShowEditCommission(false);
-                  const current = product.commissionPercent != null ? String(product.commissionPercent) : '';
-                  setEditCommissionValue(current);
-                  setCommissionPercent(current);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-            {(product.moderationStatus === 'submitted' ||
-              product.moderationStatus === 'needs_changes' ||
-              product.moderationStatus === 'rejected') && (
-              <span className="admin-product-detail-commission-hint">
-                Required before approving. Platform commission per sale.
-              </span>
-            )}
-          </>
-        ) : (
-          <p className="admin-product-detail-commission-set">
-            Commission:{' '}
-            {commissionPercent.trim() !== '' ? `${commissionPercent}%` : product.commissionPercent != null ? `${product.commissionPercent}%` : '—'}
+  return (
+    <AdminCmsEditor>
+      <div className="admin-cms-toolbar">
+        <div className="admin-cms-toolbar-meta">
+          <span className={`admin-cms-status ${statusClass}`}>
+            {STATUS_LABELS[product.moderationStatus] ?? product.moderationStatus}
+          </span>
+          <span className="admin-cms-slug-hint">
+            {CATEGORY_LABELS[product.category] ?? product.category}
+            {product.slug ? ` · ${product.slug}` : ''}
+          </span>
+        </div>
+        <div className="admin-cms-toolbar-actions">
+          <button
+            type="button"
+            className="admin-cms-btn admin-cms-btn-primary"
+            disabled={!!loading}
+            onClick={handleSave}
+          >
+            {loading === 'save'
+              ? 'Saving…'
+              : usesDraftWorkflow
+                ? 'Save draft'
+                : 'Save changes'}
+          </button>
+          {usesDraftWorkflow && product.hasDraft ? (
             <button
               type="button"
-              className="admin-product-detail-commission-edit-btn"
-              onClick={() => {
-                setShowEditCommission(true);
-                const current = commissionPercent.trim() !== '' ? commissionPercent : product.commissionPercent != null ? String(product.commissionPercent) : '';
-                setEditCommissionValue(current);
-              }}
+              className="admin-cms-btn admin-cms-btn-outline admin-cms-btn-publish"
+              disabled={!!loading || hasUnsavedChanges}
+              title={
+                hasUnsavedChanges
+                  ? 'Save draft first, then publish'
+                  : 'Push draft to the public catalog'
+              }
+              onClick={handlePublish}
             >
-              Edit
+              {loading === 'publish' ? 'Publishing…' : 'Publish to website'}
             </button>
-          </p>
-        )}
-      </div>
-      <div className="admin-product-detail-action-buttons">
-        <button
-          type="button"
-          className="admin-btn admin-btn-primary admin-moderation-btn-loading admin-product-detail-btn-full"
-          disabled={!!loading}
-          onClick={handleSaveAdminEdits}
-        >
-          {loading === 'saveAdminEdits' ? (
-            <>
-              <span className="admin-moderation-spinner" aria-hidden />
-              Saving…
-            </>
-          ) : (
-            'Save admin edits'
-          )}
-        </button>
-
-        {(product.moderationStatus === 'submitted' ||
-          product.moderationStatus === 'needs_changes' ||
-          product.moderationStatus === 'rejected') && (
+          ) : null}
+          {product.moderationStatus !== 'live' ? (
+            <button
+              type="button"
+              className="admin-cms-btn admin-cms-btn-outline"
+              disabled={!!loading}
+              onClick={handleApprove}
+            >
+              Approve & live
+            </button>
+          ) : catalogHref ? (
+            <Link className="admin-cms-btn admin-cms-btn-outline" href={catalogHref} target="_blank">
+              View catalog
+            </Link>
+          ) : null}
           <button
             type="button"
-            className="admin-btn admin-btn-primary admin-moderation-btn-loading admin-product-detail-btn-full"
-            disabled={!canApprove || !!loading}
-            onClick={handleApprove}
-          >
-            {loading === 'approve' ? (
-              <>
-                <span className="admin-moderation-spinner" aria-hidden />
-                Saving…
-              </>
-            ) : (
-              'Approve & deploy'
-            )}
-          </button>
-        )}
-
-        {(product.moderationStatus === 'submitted' ||
-          product.moderationStatus === 'live' ||
-          product.moderationStatus === 'rejected') && (
-          <button
-            type="button"
-            className="admin-btn admin-btn-outline admin-product-detail-btn-full"
+            className="admin-cms-btn admin-cms-btn-danger"
             disabled={!!loading}
-            onClick={() => setShowNeedsChanges(!showNeedsChanges)}
+            onClick={handleDelete}
           >
-            Needs changes
+            {loading === 'delete' ? 'Deleting…' : 'Delete'}
           </button>
-        )}
-
-        {(product.moderationStatus === 'submitted' ||
-          product.moderationStatus === 'live' ||
-          product.moderationStatus === 'needs_changes') && (
-          <button
-            type="button"
-            className="admin-btn admin-btn-outline admin-moderation-btn-loading admin-product-detail-btn-full"
-            disabled={!!loading}
-            onClick={handleReject}
-          >
-            {loading === 'reject' ? (
-              <>
-                <span className="admin-moderation-spinner" aria-hidden />
-                Saving…
-              </>
-            ) : (
-              'Reject'
-            )}
-          </button>
-        )}
-
-        <button
-          type="button"
-          className="admin-btn admin-btn-danger admin-product-detail-btn-full"
-          disabled={!!loading}
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          Delete product
-        </button>
+        </div>
       </div>
 
-      {showNeedsChanges && (
-        <div className="admin-product-detail-needs-changes">
-          <input
-            type="text"
-            placeholder="Note for partner (required)"
-            value={needsChangesNote}
-            onChange={(e) => setNeedsChangesNote(e.target.value)}
-            className="admin-input"
-          />
-          <button
-            type="button"
-            className="admin-btn admin-btn-primary admin-btn-sm admin-moderation-btn-loading"
-            disabled={!!loading || !needsChangesNote.trim()}
-            onClick={handleNeedsChanges}
-          >
-            {loading === 'needsChanges' ? (
-              <>
-                <span className="admin-moderation-spinner" aria-hidden />
-                Sending…
-              </>
-            ) : (
-              'Send'
-            )}
-          </button>
-        </div>
-      )}
+      {error ? <div className="admin-cms-alert is-error">{error}</div> : null}
+      {success ? <div className="admin-cms-alert is-success">{success}</div> : null}
 
-      {showDeleteConfirm && (
-        <div className="admin-product-detail-delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
-          <div className="admin-product-detail-delete-modal-backdrop" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="admin-product-detail-delete-modal-content">
-            <h3 id="delete-modal-title">Delete product</h3>
-            <p>Are you sure you want to delete this product? This cannot be undone.</p>
-            <div className="admin-product-detail-delete-modal-actions">
-              <button
-                type="button"
-                className="admin-btn admin-btn-outline"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="admin-btn admin-btn-danger admin-moderation-btn-loading"
-                disabled={!!loading}
-                onClick={handleDelete}
-              >
-                {loading === 'delete' ? (
-                  <>
-                    <span className="admin-moderation-spinner" aria-hidden />
-                    Deleting…
-                  </>
-                ) : (
-                  'Delete'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="admin-product-detail-content">
-      {error && (
-        <div className="admin-product-detail-error">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="admin-product-detail-success">
-          {success}
-        </div>
-      )}
-
-      <div className="admin-product-detail-layout">
-        <div className="admin-product-detail-gallery">
-          <ProductGallery
-            images={product.images}
-            imageAlts={product.imageAlts}
-            name={product.nameEn}
-            productId={product.id}
+      <AdminCmsSection label="Product images">
+        <div className="admin-cms-bordered-list">
+          <ProductImageListEditor
+            images={editableImages}
+            disabled={!!loading}
+            loadingKey={loading}
+            enableCrop
+            onReorder={async (orderedIds) => {
+              setLoading('reorder');
+              const result = await reorderProductImagesAction(product.id, orderedIds);
+              setLoading(null);
+              if (result.error) setError(result.error);
+              else router.refresh();
+            }}
+            onUpload={async (file) => {
+              setLoading('upload');
+              const formData = new FormData();
+              formData.set('productId', product.id);
+              formData.set('file', file);
+              formData.set('altEn', nameEn);
+              formData.set('altTh', nameTh);
+              const result = await uploadProductImageAction(formData);
+              setLoading(null);
+              if (result.error) setError(result.error);
+              else router.refresh();
+            }}
+            onSaveAlt={async (image) => {
+              setLoading(`alt-${image.id}`);
+              const formData = new FormData();
+              formData.set('productId', product.id);
+              formData.set('imageId', image.id);
+              formData.set('altEn', image.altEn);
+              formData.set('altTh', image.altTh);
+              const result = await updateProductImageAltAction(formData);
+              setLoading(null);
+              if (result.error) setError(result.error);
+              else router.refresh();
+            }}
+            onReplace={async (imageId, file) => {
+              const image = editableImages.find((i) => i.id === imageId);
+              if (!image) return;
+              setLoading('replace');
+              const formData = new FormData();
+              formData.set('productId', product.id);
+              formData.set('file', file);
+              formData.set('altEn', image.altEn || nameEn);
+              formData.set('altTh', image.altTh || nameTh);
+              const upload = await uploadProductImageAction(formData);
+              if (upload.error) {
+                setLoading(null);
+                setError(upload.error);
+                return;
+              }
+              const del = await deleteProductImageAction(product.id, imageId);
+              setLoading(null);
+              if (del.error) setError(del.error);
+              else router.refresh();
+            }}
+            onRemove={async (imageId) => {
+              if (!window.confirm('Remove this image?')) return;
+              setLoading(`delete-${imageId}`);
+              const result = await deleteProductImageAction(product.id, imageId);
+              setLoading(null);
+              if (result.error) setError(result.error);
+              else router.refresh();
+            }}
           />
         </div>
+      </AdminCmsSection>
 
-        <div className="admin-product-detail-right">
-          <div className="admin-product-detail-action-card-wrapper">
-            {actionCard}
+      <AdminCmsSection
+        label="Available in these delivery markets"
+        helper="Select the markets where this product can be delivered. Leave empty only if the product should not be shown anywhere."
+      >
+        <AdminCheckboxGrid
+          idPrefix="product-markets"
+          options={ADMIN_MARKET_OPTIONS}
+          selected={availableMarkets}
+          onChange={(v) => setAvailableMarkets(v as DeliveryDestinationId[])}
+          showBulkActions
+        />
+      </AdminCmsSection>
+
+      <AdminCmsSection
+        label="Occasions"
+        helper="Leave empty if the product can be shown for any occasion."
+      >
+        <AdminCheckboxGrid
+          idPrefix="product-occasion"
+          options={[...ADMIN_OCCASION_OPTIONS]}
+          selected={occasion}
+          onChange={setOccasion}
+        />
+      </AdminCmsSection>
+
+      <div className="admin-cms-collapsible">
+        <button
+          type="button"
+          className="admin-cms-collapsible-trigger"
+          aria-expanded={copyOpen}
+          onClick={() => setCopyOpen((v) => !v)}
+        >
+          Copy & pricing
+          <span className={`material-symbols-outlined admin-cms-sortable-chevron${copyOpen ? ' is-open' : ''}`}>
+            chevron_right
+          </span>
+        </button>
+        {copyOpen ? (
+          <div className="admin-cms-collapsible-body">
+            <label className="admin-cms-field">
+              <span className="admin-cms-field-label">Name (EN)</span>
+              <input className="admin-cms-input" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+            </label>
+            <label className="admin-cms-field">
+              <span className="admin-cms-field-label">Name (TH)</span>
+              <input className="admin-cms-input" value={nameTh} onChange={(e) => setNameTh(e.target.value)} />
+            </label>
+            <label className="admin-cms-field">
+              <span className="admin-cms-field-label">Description (EN)</span>
+              <textarea
+                className="admin-cms-input"
+                rows={3}
+                value={descriptionEn}
+                onChange={(e) => setDescriptionEn(e.target.value)}
+              />
+            </label>
+            <label className="admin-cms-field">
+              <span className="admin-cms-field-label">Description (TH)</span>
+              <textarea
+                className="admin-cms-input"
+                rows={3}
+                value={descriptionTh}
+                onChange={(e) => setDescriptionTh(e.target.value)}
+              />
+            </label>
+            <label className="admin-cms-field">
+              <span className="admin-cms-field-label">Price (฿)</span>
+              <input
+                type="number"
+                min={0}
+                className="admin-cms-input"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </label>
           </div>
-
-          <div className="admin-product-detail-info">
-            <div className="admin-product-detail-meta">
-              <span className={`admin-product-detail-status status-${product.moderationStatus}`}>
-                {STATUS_LABELS[product.moderationStatus] ?? product.moderationStatus}
-              </span>
-              <span className="admin-product-detail-category">
-                {CATEGORY_LABELS[product.category] ?? product.category}
-              </span>
-            </div>
-
-            <h2 className="admin-product-detail-title">{product.nameEn}</h2>
-            {product.nameTh && (
-              <p className="admin-product-detail-subtitle">{product.nameTh}</p>
-            )}
-
-            <div className="admin-product-detail-price">฿{product.price.toLocaleString()}</div>
-
-            <div className="admin-product-detail-section admin-product-detail-admin-form">
-              <div className="admin-product-detail-admin-form-header">
-                <h3>Admin content adjustments</h3>
-                {(product.adminLastEditedAt || product.adminLastEditedBy) && (
-                  <p className="admin-product-detail-commission-hint">
-                    Last edited{product.adminLastEditedBy ? ` by ${product.adminLastEditedBy}` : ''}{' '}
-                    {product.adminLastEditedAt ? `(${formatDateTimeUtc(product.adminLastEditedAt)})` : ''}
-                  </p>
-                )}
-              </div>
-
-              <div className="admin-product-detail-admin-grid">
-                <div className="admin-product-detail-admin-field">
-                  <label className="admin-label" htmlFor="admin-name-en">Name (EN)</label>
-                  <input
-                    id="admin-name-en"
-                    type="text"
-                    className="admin-input"
-                    value={adminNameEn}
-                    onChange={(e) => setAdminNameEn(e.target.value)}
-                    placeholder={product.nameEn}
-                  />
-                  <p className="admin-product-detail-admin-helper">
-                    Original: <span className="admin-product-detail-admin-original">{product.nameEn}</span>
-                  </p>
-                </div>
-
-                <div className="admin-product-detail-admin-field">
-                  <label className="admin-label" htmlFor="admin-name-th">Name (TH)</label>
-                  <input
-                    id="admin-name-th"
-                    type="text"
-                    className="admin-input"
-                    value={adminNameTh}
-                    onChange={(e) => setAdminNameTh(e.target.value)}
-                    placeholder={product.nameTh || 'Thai product name (optional)'}
-                  />
-                  {product.nameTh && (
-                    <p className="admin-product-detail-admin-helper">
-                      Original: <span className="admin-product-detail-admin-original">{product.nameTh}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="admin-product-detail-admin-grid">
-                <div className="admin-product-detail-admin-field admin-product-detail-admin-field-full">
-                  <label className="admin-label" htmlFor="admin-desc-en">Description (EN)</label>
-                  <textarea
-                    id="admin-desc-en"
-                    className="admin-input"
-                    value={adminDescEn}
-                    onChange={(e) => setAdminDescEn(e.target.value)}
-                    placeholder={descEn}
-                    rows={4}
-                  />
-                  {descEn && (
-                    <p className="admin-product-detail-admin-helper">
-                      Original: <span className="admin-product-detail-admin-original">{descEn}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="admin-product-detail-admin-grid">
-                <div className="admin-product-detail-admin-field admin-product-detail-admin-field-full">
-                  <label className="admin-label" htmlFor="admin-desc-th">Description (TH)</label>
-                  <textarea
-                    id="admin-desc-th"
-                    className="admin-input"
-                    value={adminDescTh}
-                    onChange={(e) => setAdminDescTh(e.target.value)}
-                    placeholder={descTh}
-                    rows={4}
-                  />
-                  {descTh && (
-                    <p className="admin-product-detail-admin-helper">
-                      Original: <span className="admin-product-detail-admin-original">{descTh}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="admin-product-detail-admin-grid">
-                <div className="admin-product-detail-admin-field admin-product-detail-admin-field-full">
-                  <label className="admin-label" htmlFor="admin-change-summary">Summary for partner</label>
-                  <textarea
-                    id="admin-change-summary"
-                    className="admin-input"
-                    value={adminChangeSummary}
-                    onChange={(e) => setAdminChangeSummary(e.target.value)}
-                    placeholder="Explain what was changed and why (shown to partner)"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {(product.preparationTime != null || product.occasion) && (
-              <div className="admin-product-detail-section">
-                <h3>Attributes</h3>
-                <ul className="admin-product-detail-attrs">
-                  {product.preparationTime != null && (
-                    <li>Prep time: ~{product.preparationTime} min</li>
-                  )}
-                  {product.occasion && <li>Occasion: {product.occasion}</li>}
-                </ul>
-              </div>
-            )}
-
-            {product.customAttributes.length > 0 && (
-              <div className="admin-product-detail-section">
-                <h3>Custom attributes</h3>
-                <ul className="admin-product-detail-attrs">
-                  {product.customAttributes.map((a, i) => (
-                    <li key={i}>
-                      <strong>{a.key}:</strong> {a.value}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="admin-product-detail-section">
-              <h3>Province availability</h3>
-              <p>
-                {unavailableDestinations.length
-                  ? `Not available in: ${unavailableDestinations.join(', ')}`
-                  : 'Available in all configured provinces / markets.'}
-              </p>
-            </div>
-
-            {product.slug && product.moderationStatus === 'live' && (
-              <Link
-                href={`/en/catalog/${product.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="admin-product-detail-catalog-link"
-              >
-                View in catalog →
-              </Link>
-            )}
-          </div>
-        </div>
+        ) : null}
       </div>
-    </div>
+    </AdminCmsEditor>
   );
 }

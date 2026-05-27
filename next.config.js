@@ -146,6 +146,53 @@ const nextConfig = {
         destination: '/zh-hk/collections/roses-chiang-mai?color=red',
         permanent: true,
       },
+      {
+        source: '/:lang(en|th|ru)/partner',
+        destination: '/:lang',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/login',
+        destination: '/:lang/partner/apply',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/login/:path*',
+        destination: '/:lang/partner/apply',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/register',
+        destination: '/:lang/partner/apply',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/register/:path*',
+        destination: '/:lang/partner/apply',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/dashboard/:path*',
+        destination: '/:lang',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/products/:path*',
+        destination: '/:lang',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/shop/:path*',
+        destination: '/:lang',
+        permanent: false,
+      },
+      {
+        source: '/:lang(en|th|ru)/partner/how-it-works',
+        destination: '/:lang/partner/apply',
+        permanent: false,
+      },
+      { source: '/studio', destination: '/admin', permanent: false },
+      { source: '/studio/:path*', destination: '/admin', permanent: false },
     ];
   },
   async rewrites() {
@@ -155,11 +202,25 @@ const nextConfig = {
     ];
   },
   experimental: {
-    serverComponentsExternalPackages: ['@sanity/client', 'next-sanity', '@sanity/image-url'],
+    serverComponentsExternalPackages: [],
   },
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'cdn.sanity.io', pathname: '/images/**' },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      ...(function supabaseStorageRemotePatterns() {
+        const raw = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        try {
+          const host = new URL(raw).hostname;
+          if (!host) return [];
+          return [{ protocol: 'https', hostname: host, pathname: '/storage/v1/object/public/**' }];
+        } catch {
+          return [];
+        }
+      })(),
     ],
   },
 };

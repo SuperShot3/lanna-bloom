@@ -85,9 +85,12 @@ function getCardLayout(index: number) {
 }
 
 export function HeroSwipeCards({ initialHeroImage, carouselImages }: { initialHeroImage?: string; carouselImages?: string[] }) {
-  const sourceImages = carouselImages && carouselImages.length > 0
-    ? carouselImages
-    : FALLBACK_CARDS.map((card) => card.src);
+  const sourceImages =
+    carouselImages && carouselImages.length > 0
+      ? carouselImages
+      : initialHeroImage
+        ? [initialHeroImage]
+        : FALLBACK_CARDS.map((card) => card.src);
 
   const [cards, setCards] = useState(() => sourceImages.map((src, index) => ({ id: index, src })));
   const [outgoingCards, setOutgoingCards] = useState<OutgoingCard[]>([]);

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import sharp from 'sharp';
-import { uploadAdminProductImage } from './sanityWrite';
+import { uploadCatalogProductImages } from '@/lib/catalogWrite';
 
 export const PRODUCT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const PRODUCT_IMAGE_SIZE = 1200;
@@ -138,30 +138,22 @@ export async function fileToDataUrl(file: File): Promise<string> {
   return `data:${file.type};base64,${buffer.toString('base64')}`;
 }
 
-export async function uploadProductImagesToSanity(input: {
+/** Upload WebP + PNG master to Supabase Storage `catalog` bucket. */
+export async function uploadProductImageVariants(input: {
   webp: File;
   pngMaster: File;
   alt?: string;
 }): Promise<ProductImageVariantUpload[]> {
-  const [primary, master] = await Promise.all([
-    uploadAdminProductImage(input.webp, { alt: input.alt, filename: 'admin-product-primary.webp' }),
-    uploadAdminProductImage(input.pngMaster, { alt: input.alt, filename: 'admin-product-master.png' }),
-  ]);
-
-  return [
-    {
-      assetId: primary.assetId,
-      url: primary.url,
-      format: 'webp',
-      isPrimary: true,
-      alt: input.alt,
-    },
-    {
-      assetId: master.assetId,
-      url: master.url,
-      format: 'png_master',
-      isPrimary: false,
-      alt: input.alt,
-    },
-  ];
+  const stored = await uploadCatalogProductImages({
+    webp: input.webp,
+    pngMaster: input.pngMaster,
+    alt: input.alt,
+  });
+  return stored.map((image) => ({
+    assetId: image.storage_path,
+    url: image.public_url,
+    format: image.format === 'png_master' ? 'png_master' : 'webp',
+    isPrimary: image.is_primary === true,
+    alt: image.alt,
+  }));
 }

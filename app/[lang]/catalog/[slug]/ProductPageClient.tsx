@@ -41,12 +41,22 @@ export function ProductPageClient({
   const [selectedSize, setSelectedSize] = useState<Bouquet['sizes'][number]>(
     () => bouquet.sizes[0]
   );
-  const images = useMemo(
-    () => bouquet.images ?? [],
-    [bouquet.id, bouquet.images?.join?.() ?? '']
-  );
+  const galleryImages = useMemo(() => {
+    if (selectedSize.imageUrls?.length) return selectedSize.imageUrls;
+    return bouquet.images ?? [];
+  }, [selectedSize.optionId, selectedSize.imageUrls, bouquet.images]);
+
+  const galleryAlts = useMemo(() => {
+    if (selectedSize.imageAlts?.length) return selectedSize.imageAlts;
+    return bouquet.imageAlts;
+  }, [selectedSize.optionId, selectedSize.imageAlts, bouquet.imageAlts]);
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [selectedSize.optionId]);
+
   const selectedImageUrl =
-    images[selectedImageIndex] ?? images[0] ?? undefined;
+    galleryImages[selectedImageIndex] ?? galleryImages[0] ?? undefined;
   const sizeCaptionLabel = selectedSize
     ? optionDisplayLabel(selectedSize, lang)
     : '';
@@ -92,8 +102,8 @@ export function ProductPageClient({
           ariaLabel={translations[lang].catalog.discountAria ?? 'On sale — {percent}% off'}
         />
         <ProductGallery
-          images={images}
-          imageAlts={bouquet.imageAlts}
+          images={galleryImages}
+          imageAlts={galleryAlts}
           name={name}
           productId={bouquet.id}
           activeIndex={selectedImageIndex}

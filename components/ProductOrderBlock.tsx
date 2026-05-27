@@ -30,10 +30,7 @@ import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
 import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
-import {
-  imageIndexForSizeIndex,
-  sizeIndexForImageIndex,
-} from '@/lib/pdpVariantMedia';
+import { imageIndexForSizeIndex } from '@/lib/pdpVariantMedia';
 
 export function ProductOrderBlock({
   bouquet,
@@ -90,59 +87,16 @@ export function ProductOrderBlock({
   const totalPrice = unitPrice * qty;
   const lineTotalForPromo = discountedSizePrice * qty;
 
-  const hasSyncedInitialSizeToImageRef = useRef(false);
-  const previousImageIndexRef = useRef<number | undefined>(selectedImageIndex);
-  const skipImageToSizeSyncRef = useRef(false);
-  const imageCount = bouquet.images?.length ?? 0;
-
   useEffect(() => {
     onSelectedSizeChange?.(selectedSize);
   }, [onSelectedSizeChange, selectedSize]);
 
-  useEffect(() => {
-    if (!onSelectedImageIndexChange || hasSyncedInitialSizeToImageRef.current) return;
-    hasSyncedInitialSizeToImageRef.current = true;
-
-    const selectedIndex = bouquet.sizes.findIndex((size) => size.optionId === selectedSize.optionId);
-    if (selectedIndex <= 0) return;
-    const targetImageIndex = imageIndexForSizeIndex(selectedIndex, imageCount);
-    if (selectedImageIndex !== targetImageIndex) {
-      skipImageToSizeSyncRef.current = true;
-      onSelectedImageIndexChange(targetImageIndex);
-    }
-  }, [
-    bouquet.sizes,
-    imageCount,
-    onSelectedImageIndexChange,
-    selectedImageIndex,
-    selectedSize.optionId,
-  ]);
-
-  useEffect(() => {
-    if (selectedImageIndex == null || previousImageIndexRef.current === selectedImageIndex) return;
-    previousImageIndexRef.current = selectedImageIndex;
-
-    if (skipImageToSizeSyncRef.current) {
-      skipImageToSizeSyncRef.current = false;
-      return;
-    }
-
-    const sizeIndex = sizeIndexForImageIndex(selectedImageIndex, bouquet.sizes.length);
-    const nextSize = sizeIndex == null ? undefined : bouquet.sizes[sizeIndex];
-    if (
-      nextSize &&
-      nextSize.optionId !== selectedSize.optionId &&
-      imageCount === bouquet.sizes.length
-    ) {
-      setSelectedSize(nextSize);
-    }
-  }, [bouquet.sizes, selectedImageIndex, selectedSize.optionId]);
-
   const handleSizeSelect = (size: BouquetSize) => {
     setSelectedSize(size);
+    if (size.imageUrls?.length) return;
+    const imageCount = bouquet.images?.length ?? 0;
     const sizeIndex = bouquet.sizes.findIndex((candidate) => candidate.optionId === size.optionId);
-    if (sizeIndex >= 0 && onSelectedImageIndexChange) {
-      skipImageToSizeSyncRef.current = true;
+    if (sizeIndex >= 0 && onSelectedImageIndexChange && imageCount > 0) {
       onSelectedImageIndexChange(imageIndexForSizeIndex(sizeIndex, imageCount));
     }
   };
@@ -157,7 +111,10 @@ export function ProductOrderBlock({
         slug: bouquet.slug,
         nameEn: bouquet.nameEn,
         nameTh: bouquet.nameTh,
-        imageUrl: selectedImageUrl ?? bouquet.images?.[0],
+        imageUrl:
+          selectedImageUrl ??
+          selectedSize.imageUrls?.[0] ??
+          bouquet.images?.[0],
         size: { ...selectedSize, price: discountedSizePrice },
         addOns: { ...addOns, cardMessage: giftCardMessage },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,

@@ -1,4 +1,4 @@
-import type { CatalogFilterParams } from '@/lib/sanity';
+import type { CatalogFilterParams } from '@/lib/catalogListLogic';
 import type { Locale } from '@/lib/i18n';
 
 export const ROSES_HUB_SLUG = 'roses-chiang-mai' as const;

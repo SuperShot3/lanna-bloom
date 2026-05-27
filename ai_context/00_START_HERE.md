@@ -4,7 +4,7 @@ Read this file before substantive work. Use topic files below for depth; use `do
 
 ## What this is
 
-**Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Bilingual storefront (`/en`, `/th`), Stripe web checkout, Supabase orders, Sanity catalog, admin ops, partner portal.
+**Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Bilingual storefront (`/en`, `/th`), Stripe web checkout, Supabase orders and **catalog**, admin ops. Partner **application** form only (dashboard and Sanity Studio retired).
 
 ## Stack
 
@@ -12,7 +12,7 @@ Read this file before substantive work. Use topic files below for depth; use `do
 |-------|------------|
 | App | Next.js 14 App Router, React 18, TypeScript |
 | Hosting | Vercel |
-| Catalog CMS | Sanity (`/studio`) |
+| Catalog | Supabase (`catalog_*` tables + `catalog` Storage bucket) |
 | Orders / admin data | Supabase (service role server-side only) |
 | Payments | Stripe Checkout |
 | Email | Resend + Email Control Center (templates + outbox) |
@@ -45,8 +45,8 @@ Read this file before substantive work. Use topic files below for depth; use `do
 | Admin dashboard | `app/admin/(dashboard)/` |
 | Admin APIs | `app/api/admin/` |
 | Email templates / outbox | `lib/email/`, Supabase `email_templates` / `email_outbox` |
-| Catalog (Sanity) | `lib/bouquets.ts`, `lib/sanity.ts`, `app/[lang]/catalog/` |
-| Partner portal | `app/[lang]/partner/`, `lib/partner/` |
+| Catalog (Supabase) | `lib/catalogReads.ts`, `lib/catalogWrite.ts`, `lib/sanity.ts` (facade), `app/[lang]/catalog/` |
+| Partner apply | `app/[lang]/partner/apply/` |
 
 ## Env vars (names only — see `.env.example`)
 
@@ -55,10 +55,9 @@ Read this file before substantive work. Use topic files below for depth; use `do
 | Variable | Purpose |
 |----------|---------|
 | `NEXT_PUBLIC_APP_URL` | Canonical site URL (order links, emails) |
-| `NEXT_PUBLIC_SANITY_*` | Sanity project/dataset |
-| `SANITY_API_WRITE_TOKEN` | Server writes to Sanity |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Orders, admin DB (server only) |
-| `NEXT_PUBLIC_SUPABASE_*` | Partner portal client auth |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Orders, catalog, admin DB (server only) |
+| `NEXT_PUBLIC_SUPABASE_*` | Optional; legacy partner auth (portal retired) |
+| `NEXT_PUBLIC_SANITY_*`, `SANITY_API_WRITE_TOKEN` | **Import only** — one-time `npm run import-catalog` |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Payments |
 | `AUTH_SECRET` | Admin NextAuth |
 | `RESEND_API_KEY`, `ORDERS_*_EMAIL` | Transactional email |
@@ -73,8 +72,13 @@ Read this file before substantive work. Use topic files below for depth; use `do
 4. **Analytics `purchase`** — browser on `/lanna-order-thank-you` after server confirms paid + `purchase` payload.
 5. **Content copy** — use `.cursor/skills/` writers, not new giant prompts here.
 
+## Catalog cutover
+
+Product catalog (bouquets, add-ons, partners, homepage hero) lives in **Supabase**, not Sanity. One-time migration: [docs/CATALOG_MIGRATION_RUNBOOK.md](../docs/CATALOG_MIGRATION_RUNBOOK.md).
+
 ## Deep dive (`docs/`)
 
+- [docs/CATALOG_MIGRATION_RUNBOOK.md](../docs/CATALOG_MIGRATION_RUNBOOK.md)
 - [docs/ORDERS_SUPABASE.md](../docs/ORDERS_SUPABASE.md)
 - [docs/ANALYTICS_GA4.md](../docs/ANALYTICS_GA4.md)
 - [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md)

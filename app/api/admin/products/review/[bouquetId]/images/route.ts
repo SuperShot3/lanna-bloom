@@ -2,18 +2,22 @@ import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import { convertToWebp, validateProductImage } from '@/lib/adminProductImages';
-import { getBouquetById } from '@/lib/sanity';
-import { appendBouquetImage, uploadAdminProductImage } from '@/lib/sanityWrite';
+import {
+  getCatalogBouquetByIdForAdmin,
+  resolveCatalogBouquetId,
+} from '@/lib/catalogAdmin';
+import {
+  isSupabaseCatalogConfigError,
+  revalidateCatalogCacheAfterSupabaseWrite,
+} from '@/lib/catalogRouting';
+import { buildCatalogImageRecord, uploadBufferToCatalog } from '@/lib/catalog/storage';
+import { appendCatalogBouquetImage } from '@/lib/catalogWrite';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
-function filenameForBouquet(bouquetId: string): string {
-  const safeId = bouquetId.replace(/[^a-z0-9_-]+/gi, '-').slice(0, 60) || 'bouquet';
-  return `admin-review-${safeId}-${Date.now()}.webp`;
-}
-
 function isConfigurationError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes('SANITY_API_WRITE_TOKEN');
+  return error instanceof Error && isSupabaseCatalogConfigError(error.message);
 }
 
 export async function POST(
@@ -29,8 +33,12 @@ export async function POST(
     return NextResponse.json({ error: 'bouquetId required' }, { status: 400 });
   }
 
-  const bouquet = await getBouquetById(bouquetId);
-  if (!bouquet) {
+  const resolvedCatalogId = await resolveCatalogBouquetId(bouquetId);
+  const bouquet = resolvedCatalogId
+    ? await getCatalogBouquetByIdForAdmin(resolvedCatalogId)
+    : null;
+
+  if (!bouquet || !resolvedCatalogId) {
     return NextResponse.json({ error: 'Bouquet not found' }, { status: 404 });
   }
 
@@ -57,32 +65,45 @@ export async function POST(
   try {
     await validateProductImage(file);
     const webp = await convertToWebp(file);
-    const uploaded = await uploadAdminProductImage(webp, {
+
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Catalog writes are not configured' }, { status: 503 });
+    }
+    const storagePath = `bouquets/${resolvedCatalogId}/gallery-${Date.now()}.webp`;
+    const buffer = Buffer.from(await webp.arrayBuffer());
+    await uploadBufferToCatalog(supabase, storagePath, buffer, 'image/webp');
+    const record = buildCatalogImageRecord(supabase, storagePath, {
+      format: 'webp',
+      is_primary: false,
       alt,
-      filename: filenameForBouquet(bouquetId),
+      sort_order: 999,
     });
 
-    await appendBouquetImage(bouquetId, {
-      assetId: uploaded.assetId,
+    await appendCatalogBouquetImage(resolvedCatalogId, {
+      assetId: record.storage_path,
       alt,
       format: 'webp',
       isPrimary: false,
     });
 
-    revalidatePath('/admin/moderation/products');
+    revalidatePath('/admin/products');
+    revalidatePath('/admin/products/moderation');
     revalidatePath(`/admin/products/review/${bouquetId}`);
+    revalidatePath(`/admin/products/bouquet/${bouquetId}`);
     if (bouquet.status === 'approved') {
       revalidatePath('/en/catalog', 'layout');
       revalidatePath('/th/catalog', 'layout');
       revalidatePath(`/en/catalog/${bouquet.slug}`);
       revalidatePath(`/th/catalog/${bouquet.slug}`);
+      revalidateCatalogCacheAfterSupabaseWrite();
     }
 
     return NextResponse.json(
       {
         image: {
-          assetId: uploaded.assetId,
-          url: uploaded.url,
+          assetId: record.storage_path,
+          url: record.public_url,
           alt,
           format: 'webp',
         },
@@ -91,7 +112,7 @@ export async function POST(
     );
   } catch (error) {
     if (isConfigurationError(error)) {
-      return NextResponse.json({ error: 'Sanity writes are not configured' }, { status: 503 });
+      return NextResponse.json({ error: 'Catalog writes are not configured' }, { status: 503 });
     }
 
     const message = error instanceof Error ? error.message : 'Failed to upload image';

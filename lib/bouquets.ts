@@ -1,7 +1,7 @@
-import type { BouquetSellableOption, ProductKind, SizeKey } from '@/lib/bouquetOptions';
+import type { BouquetSellableOption, PricingType, SizeKey } from '@/lib/bouquetOptions';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
-export type { BouquetSellableOption, ProductKind, SizeKey } from '@/lib/bouquetOptions';
+export type { BouquetSellableOption, PricingType, SizeKey } from '@/lib/bouquetOptions';
 /** @deprecated use BouquetSellableOption */
 export type BouquetSize = BouquetSellableOption;
 
@@ -16,8 +16,8 @@ export interface Bouquet {
   descriptionTh: string;
   compositionEn: string;
   compositionTh: string;
-  /** Hybrid model; default legacy when unset in CMS */
-  productKind?: ProductKind;
+  /** single_price | size_based | stem_count */
+  pricingType?: PricingType;
   colors?: string[];
   flowerTypes?: string[];
   occasion?: string[];
@@ -90,7 +90,7 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'ความสง่างามเหนือกาลเวลาด้วยกุหลาบแดงพรีเมียม',
     compositionEn: 'Red roses, eucalyptus, ribbon',
     compositionTh: 'กุหลาบแดง ยูคาลิปตัส ริบบิ้น',
-    productKind: 'legacy',
+    pricingType: 'single_price',
     images: [
       img('1518895949257-762e860e6f5b'),
       img('1490757867850-704c4c2d6aac'),
@@ -112,7 +112,7 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'ช่อผสมพาสเทลนุ่มสำหรับความประทับใจอันอ่อนโยน',
     compositionEn: 'Pink roses, white hydrangea, baby\'s breath',
     compositionTh: 'กุหลาบชมพู ไฮเดรนเยียขาว เบบี้เบรธ',
-    productKind: 'legacy',
+    pricingType: 'single_price',
     images: [
       img('1490757867850-704c4c2d6aac'),
       img('1518895949257-762e860e6f5b'),
@@ -134,7 +134,7 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'ดอกไม้ตามฤดูกาลสดใสในกล่องสวยงาม',
     compositionEn: 'Sunflowers, chrysanthemums, greens',
     compositionTh: 'ดอกทานตะวัน เบญจมาศ ใบไม้เขียว',
-    productKind: 'legacy',
+    pricingType: 'single_price',
     images: [
       img('1455659817273-f96807779a8a'),
       img('1490757867850-704c4c2d6aac'),
@@ -156,7 +156,7 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'เหมาะสำหรับแสดงความรักและความซาบซึ้ง',
     compositionEn: 'Pink roses, peonies, eucalyptus',
     compositionTh: 'กุหลาบชมพู ดอกโบตั๋น ยูคาลิปตัส',
-    productKind: 'legacy',
+    pricingType: 'single_price',
     images: [
       img('1490757867850-704c4c2d6aac'),
       img('1455659817273-f96807779a8a'),
@@ -178,7 +178,7 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'สดใสและรื่นเริงสำหรับงานฉลอง',
     compositionEn: 'Mixed seasonal flowers, ribbon',
     compositionTh: 'ดอกไม้ตามฤดูกาลผสม ริบบิ้น',
-    productKind: 'legacy',
+    pricingType: 'single_price',
     images: [
       img('1518895949257-762e860e6f5b'),
       img('1490757867850-704c4c2d6aac'),
@@ -200,7 +200,7 @@ export const bouquets: Bouquet[] = [
     descriptionTh: 'จัดดอกไม้สีขาวสง่างามเพื่อระลึกถึง',
     compositionEn: 'White lilies, roses, chrysanthemums',
     compositionTh: 'ดอกลิลลี่ขาว กุหลาบขาว เบญจมาศขาว',
-    productKind: 'legacy',
+    pricingType: 'single_price',
     images: [
       img('1455659817273-f96807779a8a'),
       img('1518895949257-762e860e6f5b'),

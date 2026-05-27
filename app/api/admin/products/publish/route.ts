@@ -2,10 +2,14 @@ import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/adminRbac';
 import {
-  createAdminReviewBouquet,
-  createAdminReviewProduct,
-  type SanityWriteImageInput,
-} from '@/lib/sanityWrite';
+  isSupabaseCatalogConfigError,
+  revalidateCatalogCacheAfterSupabaseWrite,
+} from '@/lib/catalogRouting';
+import {
+  createAdminReviewBouquetInCatalog,
+  createAdminReviewProductInCatalog,
+  type CatalogWriteImageInput,
+} from '@/lib/catalogWrite';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/catalogCategories';
 import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
 
@@ -22,9 +26,9 @@ function stringArrayField(body: Record<string, unknown>, key: string): string[] 
   return value.map((item) => String(item ?? '').trim()).filter(Boolean);
 }
 
-function parseImages(value: unknown): SanityWriteImageInput[] {
+function parseImages(value: unknown): CatalogWriteImageInput[] {
   if (!Array.isArray(value)) return [];
-  return value.reduce<SanityWriteImageInput[]>((images, item) => {
+  return value.reduce<CatalogWriteImageInput[]>((images, item) => {
     if (!item || typeof item !== 'object') return images;
     const row = item as Record<string, unknown>;
     const assetId = typeof row.assetId === 'string' ? row.assetId.trim() : '';
@@ -92,11 +96,14 @@ export async function POST(request: NextRequest) {
   if (!itemCategory) {
     return NextResponse.json({ error: 'Invalid item category' }, { status: 400 });
   }
-  if (!images.some((image) => image.isPrimary)) {
+  if (!images.some((image) => image.isPrimary && image.format === 'webp')) {
     return NextResponse.json({ error: 'A primary WebP image is required before saving for review' }, { status: 400 });
   }
 
   try {
+    const createdBy = session.user.email ?? 'unknown';
+    const createdAt = new Date().toISOString();
+
     if (itemCategory !== 'flowers') {
       const colors = stringArrayField(b, 'colors');
       const visibleItems = stringArrayField(b, 'flowerTypes');
@@ -107,7 +114,7 @@ export async function POST(request: NextRequest) {
         listAttribute('visible_items', visibleItems),
       ].filter((attribute): attribute is { key: string; value: string } => Boolean(attribute));
 
-      const result = await createAdminReviewProduct({
+      const result = await createAdminReviewProductInCatalog({
         nameEn,
         nameTh: stringField(b, 'nameTh'),
         slug: stringField(b, 'slug') || undefined,
@@ -119,22 +126,25 @@ export async function POST(request: NextRequest) {
         occasion: stringArrayField(b, 'occasion'),
         excludedDeliveryDestinations,
         customAttributes,
-        createdBy: session.user.email ?? 'unknown',
-        createdAt: new Date().toISOString(),
+        createdBy,
+        createdAt,
       });
 
-      revalidatePath('/admin/moderation/products');
-      revalidatePath(`/admin/moderation/products/${result.id}`);
+      revalidatePath('/admin/products');
+      revalidatePath('/admin/products/moderation');
+      revalidatePath(`/admin/products/edit/${result.id}`);
+      revalidatePath(`/admin/products/product/${result.id}`);
+      revalidateCatalogCacheAfterSupabaseWrite();
 
       return NextResponse.json({
         status: 'pending_review',
         id: result.id,
         slug: result.slug,
-        reviewUrl: `/admin/moderation/products/${result.id}`,
+        reviewUrl: `/admin/products/product/${result.id}`,
       });
     }
 
-    const result = await createAdminReviewBouquet({
+    const result = await createAdminReviewBouquetInCatalog({
       nameEn,
       nameTh: stringField(b, 'nameTh'),
       slug: stringField(b, 'slug') || undefined,
@@ -151,22 +161,25 @@ export async function POST(request: NextRequest) {
       deliveryOptions: stringArrayField(b, 'deliveryOptions'),
       excludedDeliveryDestinations,
       featuredPopular: b.featuredPopular === true,
-      createdBy: session.user.email ?? 'unknown',
-      createdAt: new Date().toISOString(),
+      createdBy,
+      createdAt,
     });
 
-    revalidatePath('/admin/moderation/products');
+    revalidatePath('/admin/products');
+    revalidatePath('/admin/products/moderation');
     revalidatePath(`/admin/products/review/${result.id}`);
+    revalidatePath(`/admin/products/bouquet/${result.id}`);
+    revalidateCatalogCacheAfterSupabaseWrite();
 
     return NextResponse.json({
       status: 'pending_review',
       id: result.id,
       slug: result.slug,
-      reviewUrl: `/admin/products/review/${result.id}`,
+      reviewUrl: `/admin/products/bouquet/${result.id}`,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to save product for review';
-    const status = message.includes('SANITY_API_WRITE_TOKEN') ? 503 : 500;
+    const status = isSupabaseCatalogConfigError(message) ? 503 : 500;
     console.error('[admin-products/publish] error:', error);
     return NextResponse.json({ error: message }, { status });
   }

@@ -3,6 +3,11 @@ import 'server-only';
 import OpenAI, { toFile } from 'openai';
 import sharp from 'sharp';
 import { fileToDataUrl } from './adminProductImages';
+import {
+  BASE_PRODUCT_PRESERVATION_PROMPT,
+  SAFE_PRESENTATION_PRESETS,
+  DEFAULT_PRODUCT_IMAGE_ENHANCEMENT_RULES,
+} from './adminProductAiRules';
 
 export type ProductImageAnalysis = {
   productFormat: string;
@@ -50,14 +55,7 @@ romantic bouquet, balloon delivery, plush toy gift, or gift delivery only when t
 Avoid keyword stuffing, unsupported claims, invented flowers/items, and direct publishing language.
 `;
 
-const IMAGE_ENHANCEMENT_RULES = `
-A professionally enhanced, hyper-realistic e-commerce product photograph based strictly on the provided reference image.
-Retain the exact product, core structure, arrangement, wrapping, basket, vase, pot, balloon, toy, and all visible contents.
-Do not add, remove, replace, or rearrange visible items. Remove background clutter and place the product on a pure white
-or premium light neutral background. Center the product in a square 1:1 composition with soft natural shadow,
-fresh brightness, sharp texture, and realistic commercial studio quality.
-No people, hands, text, watermarks, price tags, fake 3D render, plastic look, or artificial styling.
-`;
+const IMAGE_ENHANCEMENT_RULES = DEFAULT_PRODUCT_IMAGE_ENHANCEMENT_RULES;
 
 function getClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -210,8 +208,18 @@ export async function generateProductDescription(
 export async function enhanceProductImage(
   file: File,
   approvedAnalysis: ProductImageAnalysis,
-  imageRules = IMAGE_ENHANCEMENT_RULES
+  input?: {
+    basePrompt?: string;
+    presentationPreset?: string;
+    /** Deprecated: legacy single prompt used before base+preset prompts existed. */
+    imageRules?: string;
+  }
 ): Promise<File> {
+  const legacyRules = input?.imageRules?.trim() ? input.imageRules.trim() : '';
+  const basePrompt = (input?.basePrompt ?? '').trim() || legacyRules || BASE_PRODUCT_PRESERVATION_PROMPT;
+  const presentationPreset =
+    (input?.presentationPreset ?? '').trim() || SAFE_PRESENTATION_PRESETS[2];
+  const effectiveRules = `${basePrompt}\n\n${presentationPreset}`.trim() || IMAGE_ENHANCEMENT_RULES;
   const client = getClient();
   const normalizedPng = await normalizeImageForOpenAiEdit(file);
   const uploadable = await toFile(normalizedPng, 'product-source.png', {
@@ -222,7 +230,7 @@ export async function enhanceProductImage(
     model: process.env.OPENAI_PRODUCT_IMAGE_MODEL?.trim() || 'gpt-image-1',
     image: uploadable,
     prompt:
-      `${imageRules}\n\nVisible product analysis to preserve:\n${JSON.stringify(approvedAnalysis, null, 2)}`,
+      `${effectiveRules}\n\nVisible product analysis to preserve:\n${JSON.stringify(approvedAnalysis, null, 2)}`,
     size: '1024x1024',
   });
 

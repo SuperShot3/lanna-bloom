@@ -10,10 +10,8 @@ Where code lives in the Next.js App Router monorepo.
 | `app/order/[orderId]/` | Customer order status (token in query) |
 | `app/admin/` | Staff dashboard + login |
 | `app/api/` | Route handlers (Stripe, orders, admin, cron) |
-| `app/studio/` | Sanity Studio embed |
 | `app/task/[token]/` | Supplier task (neutral links) |
 | `content/` | MDX info articles, guides |
-| `sanity/` | Sanity schema/config |
 
 ## Storefront (`app/[lang]/`)
 
@@ -25,7 +23,7 @@ Where code lives in the Next.js App Router monorepo.
 | Cart | `cart/` |
 | Checkout | `checkout/complete`, `checkout/success`, `checkout/confirmation-pending` |
 | Info / SEO | `info/[slug]/`, guides |
-| Partner | `partner/apply`, `partner/dashboard`, `partner/products/` |
+| Partner apply (portal retired) | `partner/apply` |
 | Static pages | `refund-replacement`, etc. |
 
 Layouts: `app/[lang]/layout.tsx`, market layouts under `(markets)/`.
@@ -67,10 +65,9 @@ Shared UI: `app/admin/components/`.
 | `lib/accounting/` | Income, expenses sync, transfers, ledger |
 | `lib/expenses/` | Expense queries, bills |
 | `lib/supabase/` | Server client, admin/partner queries, order adapter |
-| `lib/bouquets.ts`, `lib/sanity.ts` | Catalog reads |
-| `lib/sanityWrite.ts` | Server writes (partners, products) |
+| `lib/bouquets.ts`, `lib/catalog.ts`, `lib/catalogReads.ts` | Catalog reads (Supabase) |
+| `lib/catalogWrite.ts`, `lib/catalogAdmin.ts` | Catalog writes + admin moderation |
 | `lib/delivery/` | Zones, markets, fees, hours |
-| `lib/partner/` | Partner session helpers |
 | `lib/adminRbac.ts` | Admin permissions |
 | `lib/i18n.ts` | Locale types/helpers |
 
@@ -79,15 +76,13 @@ Shared UI: `app/admin/components/`.
 | File | Role |
 |------|------|
 | `auth.ts` | NextAuth config (admin) |
-| `middleware.ts` | Protects `/admin`, `/studio` |
-| `lib/partner/requirePartnerSession.ts` | Partner routes |
+| `middleware.ts` | Protects `/admin` |
 
 ## Data stores
 
 | Store | Used for |
 |-------|----------|
-| Supabase | Orders, admin, email outbox, partner auth, expenses, accounting |
-| Sanity | Bouquets, products, partners (CMS) |
+| Supabase | Orders, admin, catalog (`catalog_*` tables + `catalog` storage bucket), email outbox, partner applications, expenses, accounting |
 | Stripe | Payments |
 | Supabase Storage | Receipts, proofs buckets |
 | Vercel Blob | Optional legacy orders; custom order reference images |
