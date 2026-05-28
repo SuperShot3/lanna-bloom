@@ -32,6 +32,9 @@ import {
   uploadProductImageAction,
 } from '../actions';
 
+const GPT_ITEM_CARD_URL =
+  'https://chatgpt.com/g/g-6a1819eb5c9081919d025d2329c63bdb-kartochka-tovara';
+
 const CATEGORY_LABELS: Record<string, string> = {
   balloons: 'Balloons',
   plushy_toys: 'Toys & Plush',
@@ -336,6 +339,14 @@ export function AdminProductDetailClient({ product }: Props) {
               View catalog
             </Link>
           ) : null}
+          <a
+            className="admin-cms-btn admin-cms-btn-outline"
+            href={GPT_ITEM_CARD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Create item card (GPT)
+          </a>
           <button
             type="button"
             className="admin-cms-btn admin-cms-btn-danger"

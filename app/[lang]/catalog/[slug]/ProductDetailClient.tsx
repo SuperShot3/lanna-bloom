@@ -15,9 +15,6 @@ import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 
-const AI_IMAGE_GPT_URL =
-  'https://chatgpt.com/g/g-6a1819eb5c9081919d025d2329c63bdb-kartochka-tovara';
-
 export function ProductDetailClient({
   product,
   lang,
@@ -83,14 +80,6 @@ export function ProductDetailClient({
           <h1 className="product-title">{name}</h1>
           <ProductShareLink lang={lang} productTitle={name} />
         </div>
-        <a
-          className="btn-pill"
-          href={AI_IMAGE_GPT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {lang === 'th' ? 'สร้างรูปด้วย AI' : 'Create image with AI'}
-        </a>
         {!showDescriptionBelowBalloonText && (
           <>
             <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>

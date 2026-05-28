@@ -48,6 +48,9 @@ import {
   uploadBouquetImageAction,
 } from '../actions';
 
+const GPT_ITEM_CARD_URL =
+  'https://chatgpt.com/g/g-6a1819eb5c9081919d025d2329c63bdb-kartochka-tovara';
+
 const STATUS_LABELS: Record<BouquetStatus, string> = {
   pending_review: 'Pending review',
   approved: 'Live',
@@ -538,6 +541,14 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
               View catalog
             </Link>
           ) : null}
+          <a
+            className="admin-cms-btn admin-cms-btn-outline"
+            href={GPT_ITEM_CARD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Create item card (GPT)
+          </a>
           <button
             type="button"
             className="admin-cms-btn admin-cms-btn-danger"
