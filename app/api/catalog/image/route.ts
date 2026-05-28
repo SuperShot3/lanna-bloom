@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCatalogBouquetById, getCatalogProductById } from '@/lib/catalogReads';
 
+export const dynamic = 'force-dynamic';
+
 const ALLOWED_TYPES = ['bouquet', 'product', 'plushyToy', 'balloon'] as const;
 type AllowedType = (typeof ALLOWED_TYPES)[number];
 
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     const product = await getCatalogProductById(id);
-    const imageUrl = product?.images?.[0] ?? null;
+    const imageUrl = product?.imageUrl?.trim() || null;
     return NextResponse.json({ imageUrl });
   } catch (err) {
     console.error('[API] GET /api/catalog/image failed:', err);
