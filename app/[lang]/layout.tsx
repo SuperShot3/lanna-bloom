@@ -8,10 +8,6 @@ import { locales, isValidLocale, type Locale } from '@/lib/i18n';
 import { MainSiteChrome } from '@/components/MainSiteChrome';
 import { FloatingFavoritesBadge } from '@/components/FloatingFavoritesBadge';
 
-export function generateStaticParams() {
-  return locales.map((lang) => ({ lang }));
-}
-
 /**
  * Lang layout: Header → main (page content) → Footer.
  * Partner pages hide main Header/Footer via MainSiteChrome (path-based).

@@ -19,6 +19,12 @@ import {
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const ORDER_GIFT_MESSAGE_KEY = 'lanna-bloom-order-gift-message';
 
+function isLegacySanityImageUrl(url: string | undefined): boolean {
+  const raw = (url ?? '').trim();
+  if (!raw) return false;
+  return raw.includes('cdn.sanity.io') || raw.includes('sanity.io');
+}
+
 export interface CartItem {
   /** 'bouquet' | 'product' | 'plushyToy' | 'balloon' — default 'bouquet' for backward compat */
   itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
@@ -64,7 +70,13 @@ function loadFromStorage(): CartItem[] {
     const raw = localStorage.getItem(CART_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartItem[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // Post-migration hardening: if a persisted cart line still points at Sanity CDN,
+    // drop the URL rather than rendering broken legacy images after cutover.
+    return parsed.map((item) => ({
+      ...item,
+      imageUrl: isLegacySanityImageUrl(item.imageUrl) ? undefined : item.imageUrl,
+    }));
   } catch {
     return [];
   }

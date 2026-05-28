@@ -561,6 +561,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const addShippingInfoFiredRef = useRef(false);
   const orderSubmitInFlightRef = useRef(false);
   const prevCheckoutDestinationRef = useRef<OrderDeliveryDestinationId | null>(null);
+  const imageBackfillInFlightRef = useRef(false);
 
   const [checkoutSubmissionToken, setCheckoutSubmissionToken] = useState<string | null>(null);
   const [alreadySubmittedBlock, setAlreadySubmittedBlock] = useState(false);
@@ -580,6 +581,62 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       items: analyticsItems,
     });
   }, [checkoutDeliveryProfile.destinationId, items, lang]);
+
+  // Backfill missing cart thumbnails after Sanity → Supabase cutover (or older persisted carts).
+  useEffect(() => {
+    if (items.length === 0) return;
+    if (imageBackfillInFlightRef.current) return;
+
+    const missing = items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => !item.imageUrl);
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    imageBackfillInFlightRef.current = true;
+
+    void (async () => {
+      try {
+        const uniqueIds = Array.from(
+          new Map(
+            missing.map(({ item }) => [
+              `${item.itemType ?? 'bouquet'}:${item.bouquetId}`,
+              { type: item.itemType ?? 'bouquet', id: item.bouquetId },
+            ])
+          ).values()
+        );
+
+        const resolved = await Promise.all(
+          uniqueIds.map(async ({ type, id }) => {
+            const url = `/api/catalog/image?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+            const res = await fetch(url);
+            if (!res.ok) return { type, id, imageUrl: null as string | null };
+            const data = (await res.json().catch(() => ({}))) as { imageUrl?: string | null };
+            const imageUrl = typeof data.imageUrl === 'string' && data.imageUrl.trim() ? data.imageUrl.trim() : null;
+            return { type, id, imageUrl };
+          })
+        );
+
+        if (cancelled) return;
+
+        const byKey = new Map(resolved.map((r) => [`${r.type}:${r.id}`, r.imageUrl]));
+
+        for (const { item, index } of missing) {
+          const key = `${item.itemType ?? 'bouquet'}:${item.bouquetId}`;
+          const imageUrl = byKey.get(key);
+          if (!imageUrl) continue;
+          updateItem(index, { ...item, imageUrl });
+        }
+      } finally {
+        imageBackfillInFlightRef.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      imageBackfillInFlightRef.current = false;
+    };
+  }, [items, updateItem]);
 
   const defaultDelivery: DeliveryFormValues = {
     addressLine: '',

@@ -32,6 +32,12 @@ import {
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 
+function isLegacySanityImageUrl(url: string | undefined): boolean {
+  const raw = (url ?? '').trim();
+  if (!raw) return false;
+  return raw.includes('cdn.sanity.io') || raw.includes('sanity.io');
+}
+
 function formatDisplayDate(dateStr: string): string {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const d = new Date(dateStr + 'T12:00:00');
@@ -566,8 +572,15 @@ export function OrderPageClient({
           {(order.items ?? []).map((item, i) => (
             <div key={i} className="order-redesign-item-row">
               <div className="order-redesign-item-img">
-                {item.imageUrl ? (
-                  <Image src={item.imageUrl} alt="" width={44} height={44} className="order-redesign-item-img-inner" unoptimized={item.imageUrl.startsWith('data:')} />
+                {item.imageUrl && !isLegacySanityImageUrl(item.imageUrl) ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="order-redesign-item-img-inner"
+                    unoptimized={item.imageUrl.startsWith('data:')}
+                  />
                 ) : (
                   <span aria-hidden>🌸</span>
                 )}

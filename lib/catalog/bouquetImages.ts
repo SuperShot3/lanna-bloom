@@ -12,6 +12,17 @@ import type { CatalogProductImageRow } from '@/lib/catalog/types';
 
 export type VariantImageSet = { urls: string[]; alts: string[] };
 
+function isSanityCdnUrl(url: string): boolean {
+  const raw = url.trim();
+  if (!raw) return false;
+  try {
+    const u = new URL(raw);
+    return u.hostname.includes('cdn.sanity.io') || u.hostname.includes('sanity.io');
+  } catch {
+    return raw.includes('cdn.sanity.io') || raw.includes('sanity.io');
+  }
+}
+
 function rowsToUrls(
   supabase: CatalogSupabaseClient,
   rows: CatalogProductImageRow[]
@@ -25,7 +36,8 @@ function rowsToUrls(
     if (!row.storage_path || !isStorefrontCatalogImage({ storage_path: row.storage_path, metadata: row.metadata })) {
       continue;
     }
-    urls.push(row.public_url?.trim() || catalogPublicUrl(supabase, row.storage_path));
+    const publicUrl = row.public_url?.trim();
+    urls.push(publicUrl && !isSanityCdnUrl(publicUrl) ? publicUrl : catalogPublicUrl(supabase, row.storage_path));
     alts.push(row.alt_en?.trim() || row.alt_th?.trim() || '');
   }
   return { urls, alts };
