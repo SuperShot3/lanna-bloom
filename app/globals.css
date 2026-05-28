@@ -13033,7 +13033,8 @@ a.admin-summary-key-value {
   border: 1px solid var(--cms-border);
   border-radius: var(--cms-radius);
   background: var(--cms-surface);
-  overflow: hidden;
+  /* Allow row action menus to escape the list without clipping. */
+  overflow: visible;
 }
 
 .admin-cms-sortable-list {
@@ -13245,7 +13246,8 @@ a.admin-summary-key-value {
   position: absolute;
   right: 0;
   top: 100%;
-  z-index: 20;
+  /* Must sit above adjacent rows/cards in admin panels. */
+  z-index: 1000;
   min-width: 180px;
   margin-top: 4px;
   padding: 4px 0;
