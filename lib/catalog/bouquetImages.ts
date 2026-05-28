@@ -5,6 +5,7 @@ import {
   getCatalogImageVariantKey,
   getCatalogProductImagesForEntity,
 } from '@/lib/catalogCms';
+import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import { catalogPublicUrl, type CatalogSupabaseClient } from '@/lib/catalog/storage';
 import { stemVariantKey, type PricingType } from '@/lib/catalog/pricing';
 import type { CatalogProductImageRow } from '@/lib/catalog/types';
@@ -21,7 +22,9 @@ function rowsToUrls(
   const urls: string[] = [];
   const alts: string[] = [];
   for (const row of sorted) {
-    if (!row.storage_path) continue;
+    if (!row.storage_path || !isStorefrontCatalogImage({ storage_path: row.storage_path, metadata: row.metadata })) {
+      continue;
+    }
     urls.push(row.public_url?.trim() || catalogPublicUrl(supabase, row.storage_path));
     alts.push(row.alt_en?.trim() || row.alt_th?.trim() || '');
   }

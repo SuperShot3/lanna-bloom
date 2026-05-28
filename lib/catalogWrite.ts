@@ -10,6 +10,7 @@ import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
 import type { CatalogBouquetPricing, CatalogStoredImage } from '@/lib/catalog/types';
 import { CATALOG_SYSTEM_PARTNER_LEGACY_ID } from '@/lib/catalog/types';
 import { slugFromName } from '@/lib/catalog/mappers';
+import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import {
   buildCatalogImageRecord,
   CATALOG_BUCKET,
@@ -359,7 +360,7 @@ export async function updateCatalogBouquetStatus(
 
 export async function updateCatalogProductModerationStatus(
   productId: string,
-  moderationStatus: 'live' | 'needs_changes' | 'rejected',
+  moderationStatus: 'submitted' | 'live' | 'needs_changes' | 'rejected',
   adminNote?: string
 ): Promise<void> {
   const supabase = requireSupabase();
@@ -501,6 +502,12 @@ function writeImagesToStored(
 ): CatalogStoredImage[] {
   const primaryFirst = [...images]
     .filter((image) => image.assetId.trim())
+    .filter((image) =>
+      isStorefrontCatalogImage({
+        storage_path: image.assetId,
+        format: image.format,
+      })
+    )
     .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
 
   return primaryFirst.slice(0, 20).map((image, index) =>

@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { convertToWebp, validateProductImage } from '@/lib/adminProductImages';
+import { prepareCatalogImageUpload, validateProductImage } from '@/lib/adminProductImages';
 import {
   getCatalogBouquetByIdForAdmin,
   getCatalogProductByIdForAdmin,
@@ -28,7 +28,6 @@ import {
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
-import { buildCatalogImageRecord, uploadBufferToCatalog } from '@/lib/catalog/storage';
 import { revalidateCatalogCacheAfterSupabaseWrite } from '@/lib/catalogRouting';
 import {
   deleteCatalogBouquet,
@@ -39,7 +38,6 @@ import {
   updateCatalogProductModerationStatus,
 } from '@/lib/catalogWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 async function resolveBouquetIdForWrite(bouquetId: string): Promise<string> {
   const resolved = await resolveCatalogBouquetId(bouquetId);
@@ -294,32 +292,25 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
       ? await getCatalogProductImagesForRevision(revisionId)
       : await ensureCatalogProductImagesFromInline('product', writeId);
     await validateProductImage(file);
-    const webp = await convertToWebp(file);
-    const supabase = getSupabaseAdmin();
-    if (!supabase) return { error: 'Catalog writes are not configured' };
-
-    const storagePath = `products/${writeId}/cms-${Date.now()}.webp`;
-    const buffer = Buffer.from(await webp.arrayBuffer());
-    await uploadBufferToCatalog(supabase, storagePath, buffer, 'image/webp');
-    const record = buildCatalogImageRecord(supabase, storagePath, {
-      format: 'webp',
-      is_primary: existingImages.length === 0,
+    const prefix = `products/${writeId}/cms-${Date.now()}`;
+    const { webp, pngMaster } = await prepareCatalogImageUpload({
+      file,
       alt: altEn || undefined,
-      sort_order: existingImages.length,
+      prefix,
     });
 
     await createCatalogProductImage({
       entityType: 'product',
       entityId: revisionId ? null : writeId,
       revisionId,
-      storagePath: record.storage_path,
-      publicUrl: record.public_url,
+      storagePath: webp.storage_path,
+      publicUrl: webp.public_url,
       sourceType: 'uploaded',
       altEn: altEn || 'Product image',
       altTh,
       isPrimary: existingImages.length === 0,
       sortOrder: existingImages.length,
-      metadata: { format: 'webp' },
+      metadata: { format: 'webp', master_path: pngMaster.storage_path },
       actor,
     });
     if (revisionId) {
@@ -558,6 +549,29 @@ export async function approveProductAction(
   } catch (err) {
     console.error('[Moderation] approveProduct failed:', err);
     return { error: err instanceof Error ? err.message : 'Failed' };
+  }
+}
+
+export async function unpublishProductAction(productId: string): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+  try {
+    const writeId = await resolveProductIdForWrite(productId);
+    const product = await getCatalogProductByIdForAdmin(writeId);
+    if (!product) return { error: 'Product not found' };
+    if (product.moderationStatus !== 'live') return { error: 'Only live products can be unpublished' };
+
+    await updateCatalogProductModerationStatus(writeId, 'submitted', 'Unpublished by admin');
+    await revalidateProductAdminAndCatalogPaths(productId, writeId);
+    return {};
+  } catch (err) {
+    console.error('[Moderation] unpublishProduct failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to unpublish' };
   }
 }
 

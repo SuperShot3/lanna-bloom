@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import type { AdminCatalogProductImage } from '@/lib/catalog/types';
-import { imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
+import { catalogImageFormatLabel, imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
 import { AdminRowMenu, type AdminRowMenuItem } from './AdminRowMenu';
 import { AdminSortableList } from './AdminSortableList';
 import { AdminSortableRow } from './AdminSortableRow';
@@ -150,7 +150,17 @@ export function ProductImageListEditor({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={image.url} alt="" className="admin-cms-image-thumb" />
               }
-              badge={index === 0 ? <span className="admin-cms-badge-main">Main image</span> : null}
+              badge={
+                <span className="admin-cms-image-badges">
+                  <span
+                    className="admin-cms-badge-format"
+                    title={`Format: ${catalogImageFormatLabel(image)}`}
+                  >
+                    {catalogImageFormatLabel(image)}
+                  </span>
+                  {index === 0 ? <span className="admin-cms-badge-main">Main image</span> : null}
+                </span>
+              }
               menu={<AdminRowMenu items={menuItems(image, index)} ariaLabel="Image actions" />}
             />
           ))}

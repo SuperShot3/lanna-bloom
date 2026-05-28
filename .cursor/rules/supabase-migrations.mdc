@@ -1,0 +1,12 @@
+---
+description: Supabase SQL migrations (grants + RLS)
+globs:
+  - "supabase/migrations/**"
+alwaysApply: false
+---
+
+Before adding or editing `supabase/migrations/`:
+
+- Read `/ai_context/03_SECURITY_RULES.md` (Supabase section).
+- Every new `public` table: `GRANT` to `service_role` in the same file as RLS; `REVOKE` from `anon` / `authenticated` when the table is backend-only.
+- Grant `anon` / `authenticated` only when RLS policies intentionally expose rows via the Data API (e.g. token-scoped order reads).

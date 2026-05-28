@@ -19,6 +19,7 @@ import {
   getCatalogImageVariantKey,
   getCatalogProductImagesForRevision,
 } from '@/lib/catalogCms';
+import { catalogImageFormat, isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
 import type {
   AdminCatalogProductImage,
@@ -95,7 +96,7 @@ function indexImageUrl(
   supabase: ReturnType<typeof requireSupabase>,
   images: CatalogProductRow['images'] | CatalogBouquetRow['images']
 ): string | undefined {
-  const list = images ?? [];
+  const list = (images ?? []).filter((image) => isStorefrontCatalogImage(image));
   const primary = list.find((i) => i.is_primary) ?? list[0];
   if (!primary?.storage_path) return undefined;
   return storedImagePublicUrl(supabase, primary);
@@ -188,7 +189,9 @@ export async function getCatalogBouquetDetailForAdmin(
     const imageRows = draft
       ? await getCatalogProductImagesForRevision(draft.id)
       : await ensureCatalogProductImagesFromInline('bouquet', row.id);
-    editableImages = imageRows.map((imageRow) => mapAdminImageRow(supabase, imageRow));
+    editableImages = imageRows
+      .filter(isGalleryCatalogImageRow)
+      .map((imageRow) => mapAdminImageRow(supabase, imageRow));
   } catch (err) {
     console.error('[catalogAdmin] Failed to load editable bouquet images:', err);
   }
@@ -295,10 +298,20 @@ export async function getAllBouquetsFromCatalog(): Promise<Bouquet[]> {
 }
 
 function primaryImageUrl(supabase: ReturnType<typeof requireSupabase>, row: CatalogProductRow): string | undefined {
-  const images = row.images ?? [];
+  const images = (row.images ?? []).filter((image) => isStorefrontCatalogImage(image));
   const primary = images.find((i) => i.is_primary) ?? images[0];
   if (!primary?.storage_path) return undefined;
   return storedImagePublicUrl(supabase, primary);
+}
+
+function imageFormatFromRow(
+  row: CatalogProductImageRow
+): AdminCatalogProductImage['format'] {
+  return catalogImageFormat({ storage_path: row.storage_path, metadata: row.metadata });
+}
+
+function isGalleryCatalogImageRow(row: CatalogProductImageRow): boolean {
+  return isStorefrontCatalogImage({ storage_path: row.storage_path, metadata: row.metadata });
 }
 
 function mapAdminImageRow(
@@ -314,6 +327,7 @@ function mapAdminImageRow(
     altTh: row.alt_th ?? '',
     isPrimary: row.is_primary,
     sortOrder: row.sort_order,
+    format: imageFormatFromRow(row),
     variantKey: getCatalogImageVariantKey(row),
   };
 }
@@ -407,7 +421,9 @@ export async function getCatalogProductByIdForAdmin(
     const imageRows = draft
       ? await getCatalogProductImagesForRevision(draft.id)
       : await ensureCatalogProductImagesFromInline('product', row.id);
-    editableImages = imageRows.map((imageRow) => mapAdminImageRow(supabase, imageRow));
+    editableImages = imageRows
+      .filter(isGalleryCatalogImageRow)
+      .map((imageRow) => mapAdminImageRow(supabase, imageRow));
   } catch (error) {
     console.error('[catalogAdmin] Failed to load editable product images:', error);
   }

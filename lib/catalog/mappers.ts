@@ -9,6 +9,7 @@ import {
 } from '@/lib/catalog/bouquetImages';
 import { buildSellableOptions, resolvePricingType } from '@/lib/catalog/pricing';
 import type { CatalogProduct } from '@/lib/catalog/types';
+import { filterStorefrontCatalogStoredImages } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
 import type {
   CatalogBouquetPricing,
@@ -27,7 +28,7 @@ function imageUrlsFromStored(
   supabase: CatalogSupabaseClient,
   images: CatalogStoredImage[] | null | undefined
 ): { urls: string[]; alts: string[] } {
-  const sorted = [...(images ?? [])].sort(
+  const sorted = filterStorefrontCatalogStoredImages(images).sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || Number(b.is_primary) - Number(a.is_primary)
   );
   const urls: string[] = [];

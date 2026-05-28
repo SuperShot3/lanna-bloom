@@ -50,6 +50,7 @@ import {
 
 } from '@/lib/catalog/mappers';
 
+import { filterStorefrontCatalogStoredImages, isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
 
 import type {
@@ -1083,7 +1084,9 @@ async function fetchHeroImageUncached(): Promise<string> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   const hero = data?.hero_image as CatalogStoredImage | null;
-  if (hero?.storage_path) return storedImagePublicUrl(supabase, hero);
+  if (hero?.storage_path && isStorefrontCatalogImage(hero)) {
+    return storedImagePublicUrl(supabase, hero);
+  }
   return HERO_IMAGE_FALLBACK;
 }
 
@@ -1111,14 +1114,12 @@ const loadHeroCarousel = cacheSupabaseCatalog('hero-carousel', async () => {
 
   if (error) throw new Error(error.message);
 
-  const images = (data?.hero_carousel_images ?? []) as CatalogStoredImage[];
+  const images = filterStorefrontCatalogStoredImages(
+    (data?.hero_carousel_images ?? []) as CatalogStoredImage[]
+  );
 
   return images
-
-    .filter((img) => img.storage_path)
-
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-
     .map((img) => storedImagePublicUrl(supabase, img));
 
 });

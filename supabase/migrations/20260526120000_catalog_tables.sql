@@ -199,3 +199,9 @@ REVOKE ALL ON TABLE public.catalog_bouquets FROM anon, authenticated;
 REVOKE ALL ON TABLE public.catalog_products FROM anon, authenticated;
 REVOKE ALL ON TABLE public.catalog_site_settings FROM anon, authenticated;
 REVOKE ALL ON TABLE public.catalog_slug_registry FROM anon, authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.catalog_partners TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.catalog_bouquets TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.catalog_products TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.catalog_site_settings TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.catalog_slug_registry TO service_role;

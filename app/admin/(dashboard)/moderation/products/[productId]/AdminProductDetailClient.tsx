@@ -26,6 +26,7 @@ import {
   deleteProductImageAction,
   reorderProductImagesAction,
   publishProductDraftAction,
+  unpublishProductAction,
   updateProductByAdminAction,
   updateProductImageAltAction,
   uploadProductImageAction,
@@ -240,6 +241,20 @@ export function AdminProductDetailClient({ product }: Props) {
     }
   }
 
+  async function handleUnpublish() {
+    if (!window.confirm('Unpublish this product from the website?')) return;
+    setError(null);
+    setSuccess(null);
+    setLoading('unpublish');
+    const result = await unpublishProductAction(product.id);
+    setLoading(null);
+    if (result.error) setError(result.error);
+    else {
+      setSuccess('Unpublished (not live)');
+      router.refresh();
+    }
+  }
+
   async function handleDelete() {
     const label = nameEn.trim() || product.nameEn;
     if (!confirmCatalogDeleteAction(label)) return;
@@ -305,7 +320,18 @@ export function AdminProductDetailClient({ product }: Props) {
             >
               Approve & live
             </button>
-          ) : catalogHref ? (
+          ) : null}
+          {product.moderationStatus === 'live' ? (
+            <button
+              type="button"
+              className="admin-cms-btn admin-cms-btn-outline"
+              disabled={!!loading}
+              onClick={handleUnpublish}
+            >
+              {loading === 'unpublish' ? 'Unpublishing…' : 'Unpublish'}
+            </button>
+          ) : null}
+          {product.moderationStatus === 'live' && catalogHref ? (
             <Link className="admin-cms-btn admin-cms-btn-outline" href={catalogHref} target="_blank">
               View catalog
             </Link>

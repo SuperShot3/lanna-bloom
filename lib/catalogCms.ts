@@ -7,6 +7,7 @@
 import 'server-only';
 
 import { slugFromName } from '@/lib/catalog/mappers';
+import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import { catalogPublicUrl } from '@/lib/catalog/storage';
 import type {
   CatalogStoredImage,
@@ -393,6 +394,9 @@ function mergeBouquetImagesForInlineSync(
   const bouquetLevel: CatalogProductImageRow[] = [];
 
   for (const row of rows) {
+    if (!isStorefrontCatalogImage({ storage_path: row.storage_path, metadata: row.metadata })) {
+      continue;
+    }
     const vk = getCatalogImageVariantKey(row);
     if (!vk) {
       bouquetLevel.push(row);
@@ -428,15 +432,19 @@ export async function syncCatalogProductInlineImagesFromNormalized(
   const rows = await getCatalogProductImagesForEntity(entityType, entityId);
   let inlineImages: CatalogStoredImage[];
 
+  const storefrontRows = rows.filter((row) =>
+    isStorefrontCatalogImage({ storage_path: row.storage_path, metadata: row.metadata })
+  );
+
   if (entityType === 'bouquet') {
-    const mainRows = rows.filter((row) => !getCatalogImageVariantKey(row));
+    const mainRows = storefrontRows.filter((row) => !getCatalogImageVariantKey(row));
     inlineImages = mainRows.map((row, index) => ({
       ...imageRowToStoredImage(supabase, row),
       is_primary: index === 0,
       sort_order: index,
     }));
   } else {
-    inlineImages = rows.map((row, index) => ({
+    inlineImages = storefrontRows.map((row, index) => ({
       ...imageRowToStoredImage(supabase, row),
       is_primary: index === 0,
       sort_order: index,

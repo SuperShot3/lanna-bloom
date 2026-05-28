@@ -5,6 +5,7 @@ import {
   isSupabaseCatalogConfigError,
   revalidateCatalogCacheAfterSupabaseWrite,
 } from '@/lib/catalogRouting';
+import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import {
   createAdminReviewBouquetInCatalog,
   createAdminReviewProductInCatalog,
@@ -37,12 +38,14 @@ function parseImages(value: unknown): CatalogWriteImageInput[] {
       row.format === 'webp' || row.format === 'png_master' || row.format === 'source'
         ? row.format
         : undefined;
-    images.push({
+    const candidate: CatalogWriteImageInput = {
       assetId,
       alt: typeof row.alt === 'string' ? row.alt.trim() : undefined,
       format,
       isPrimary: row.isPrimary === true,
-    });
+    };
+    if (!isStorefrontCatalogImage({ storage_path: assetId, format })) return images;
+    images.push(candidate);
     return images;
   }, []);
 }

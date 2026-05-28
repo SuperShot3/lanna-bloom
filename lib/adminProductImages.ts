@@ -1,6 +1,7 @@
 import 'server-only';
 
 import sharp from 'sharp';
+import type { CatalogStoredImage } from '@/lib/catalog/types';
 import { uploadCatalogProductImages } from '@/lib/catalogWrite';
 
 export const PRODUCT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
@@ -156,4 +157,35 @@ export async function uploadProductImageVariants(input: {
     isPrimary: image.is_primary === true,
     alt: image.alt,
   }));
+}
+
+export type PreparedCatalogImageUpload = {
+  webp: CatalogStoredImage;
+  pngMaster: CatalogStoredImage;
+};
+
+/**
+ * Validate, convert, and upload WebP + PNG master variants (same pipeline as
+ * `/api/admin/products/prepare-image`). Returns both storage records; callers
+ * attach only the WebP row to the product gallery.
+ */
+export async function prepareCatalogImageUpload(input: {
+  file: File;
+  alt?: string;
+  prefix: string;
+}): Promise<PreparedCatalogImageUpload> {
+  await validateProductImage(input.file);
+  const [webp, pngMaster] = await Promise.all([convertToWebp(input.file), createPngMaster(input.file)]);
+  const variants = await uploadCatalogProductImages({
+    webp,
+    pngMaster,
+    alt: input.alt,
+    prefix: input.prefix,
+  });
+  const webpRecord = variants.find((variant) => variant.format === 'webp');
+  const pngRecord = variants.find((variant) => variant.format === 'png_master');
+  if (!webpRecord || !pngRecord) {
+    throw new Error('Failed to prepare image variants');
+  }
+  return { webp: webpRecord, pngMaster: pngRecord };
 }

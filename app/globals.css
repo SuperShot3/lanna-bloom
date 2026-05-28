@@ -13120,6 +13120,25 @@ a.admin-summary-key-value {
   flex-shrink: 0;
 }
 
+.admin-cms-image-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admin-cms-badge-format {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--cms-text-muted);
+  flex-shrink: 0;
+}
+
 .admin-cms-row-menu {
   position: relative;
   flex-shrink: 0;

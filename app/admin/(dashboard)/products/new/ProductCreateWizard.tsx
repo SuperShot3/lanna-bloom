@@ -949,13 +949,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
     readyDrafts.forEach((d) => {
       (d.variants ?? []).forEach((variant) => {
-        const isWebp = variant.format === 'webp';
-        const isPrimary = isWebp && d.id === primaryId;
+        if (variant.format !== 'webp') return;
         imagesPayload.push({
           assetId: variant.assetId,
           alt: variant.alt || altFallback,
-          format: variant.format,
-          isPrimary,
+          format: 'webp',
+          isPrimary: d.id === primaryId,
         });
       });
     });

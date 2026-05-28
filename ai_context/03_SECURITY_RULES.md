@@ -49,6 +49,7 @@ Non-negotiable trust boundaries for APIs, orders, and admin.
 
 - Customer-facing order reads use token-aware patterns where applicable (`lib/supabase/server.ts` — `x-order-token` for RLS).
 - Admin queries use service role via server modules — never from browser.
+- **Migrations:** For every new `public` table, add explicit `GRANT` in the same migration (usually `SELECT, INSERT, UPDATE, DELETE` to `service_role` for server/admin). Grant `anon` / `authenticated` only where RLS policies need Data API access. Pair with `REVOKE` for private tables. Supabase stops auto-exposing new tables (enforced on existing projects Oct 30, 2026).
 
 ## When changing security-sensitive code
 

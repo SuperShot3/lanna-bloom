@@ -134,6 +134,8 @@ export type AdminCatalogProductImage = {
   altTh: string;
   isPrimary: boolean;
   sortOrder: number;
+  /** Stored image format from catalog_product_images.metadata.format or storage path. */
+  format?: 'webp' | 'png_master' | 'source';
   /** Fixed-bouquet variant scope from catalog_product_images.metadata.variant_key */
   variantKey?: string | null;
 };

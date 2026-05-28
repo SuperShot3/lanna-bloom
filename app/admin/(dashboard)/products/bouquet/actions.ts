@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { convertToWebp, validateProductImage } from '@/lib/adminProductImages';
+import { prepareCatalogImageUpload, validateProductImage } from '@/lib/adminProductImages';
 import {
   getCatalogBouquetByIdForAdmin,
   getCatalogBouquetDetailForAdmin,
@@ -34,7 +34,6 @@ import {
   type CatalogStemPricingRow,
   type PricingType,
 } from '@/lib/catalog/pricing';
-import { buildCatalogImageRecord, uploadBufferToCatalog } from '@/lib/catalog/storage';
 import { revalidateCatalogCacheAfterSupabaseWrite } from '@/lib/catalogRouting';
 import {
   deleteCatalogBouquet,
@@ -43,7 +42,6 @@ import {
   type UpdateCatalogBouquetByAdminInput,
 } from '@/lib/catalogWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
-import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 async function resolveBouquetIdForWrite(bouquetId: string): Promise<string> {
   const resolved = await resolveCatalogBouquetId(bouquetId);
@@ -299,26 +297,19 @@ export async function uploadBouquetImageAction(formData: FormData): Promise<{ er
       : await ensureCatalogProductImagesFromInline('bouquet', writeId);
     const existingImages = filterCatalogImagesByVariant(allImages, variantKey);
     await validateProductImage(file);
-    const webp = await convertToWebp(file);
-    const supabase = getSupabaseAdmin();
-    if (!supabase) return { error: 'Catalog writes are not configured' };
-
-    const storagePath = `bouquets/${writeId}/cms-${Date.now()}.webp`;
-    const buffer = Buffer.from(await webp.arrayBuffer());
-    await uploadBufferToCatalog(supabase, storagePath, buffer, 'image/webp');
-    const record = buildCatalogImageRecord(supabase, storagePath, {
-      format: 'webp',
-      is_primary: existingImages.length === 0,
+    const prefix = `bouquets/${writeId}/cms-${Date.now()}`;
+    const { webp, pngMaster } = await prepareCatalogImageUpload({
+      file,
       alt: altEn || undefined,
-      sort_order: existingImages.length,
+      prefix,
     });
 
     await createCatalogProductImage({
       entityType: 'bouquet',
       entityId: revisionId ? null : writeId,
       revisionId,
-      storagePath: record.storage_path,
-      publicUrl: record.public_url,
+      storagePath: webp.storage_path,
+      publicUrl: webp.public_url,
       sourceType: 'uploaded',
       altEn: altEn || 'Bouquet image',
       altTh,
@@ -326,6 +317,7 @@ export async function uploadBouquetImageAction(formData: FormData): Promise<{ er
       sortOrder: existingImages.length,
       metadata: {
         format: 'webp',
+        master_path: pngMaster.storage_path,
         ...(variantKey ? { variant_key: variantKey } : {}),
       },
       actor,

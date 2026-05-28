@@ -8,6 +8,7 @@ import {
   destinationDisplayName,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
+import { catalogImageFormat } from '@/lib/catalog/storefrontImages';
 
 export const ADMIN_DELIVERY_SPEED_OPTIONS = [
   { value: 'same_day', label: 'Same day' },
@@ -94,4 +95,31 @@ export function excludedMarketsFromAvailable(
 export function imageLabelFromPath(storagePath: string): string {
   const parts = storagePath.split('/').filter(Boolean);
   return parts[parts.length - 1] ?? storagePath;
+}
+
+/** Human-readable format badge for admin image rows. */
+export function catalogImageFormatLabel(input: {
+  format?: string | null;
+  storagePath?: string;
+}): string {
+  const resolved = catalogImageFormat({
+    storage_path: input.storagePath,
+    format: input.format,
+  });
+  if (resolved === 'webp') return 'WEBP';
+  if (resolved === 'png_master') return 'PNG';
+  if (resolved === 'source') {
+    const path = (input.storagePath ?? '').toLowerCase();
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'JPEG';
+    if (path.endsWith('.png')) return 'PNG';
+    return 'SRC';
+  }
+
+  const path = (input.storagePath ?? '').toLowerCase();
+  if (path.endsWith('.webp')) return 'WEBP';
+  if (path.endsWith('.png')) return 'PNG';
+  if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'JPEG';
+
+  const ext = path.split('.').pop();
+  return ext ? ext.toUpperCase() : 'IMG';
 }
