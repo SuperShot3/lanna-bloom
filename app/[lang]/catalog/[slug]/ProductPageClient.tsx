@@ -16,6 +16,9 @@ import { getCompositionSingleLine } from '@/lib/compositionDisplay';
 import { ProductIdentityMeta } from '@/components/pdp/ProductIdentityMeta';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
 
+const AI_IMAGE_GPT_URL =
+  'https://chatgpt.com/g/g-6a1819eb5c9081919d025d2329c63bdb-kartochka-tovara';
+
 export function ProductPageClient({
   bouquet,
   lang,
@@ -119,6 +122,14 @@ export function ProductPageClient({
               <ProductShareLink lang={lang} productTitle={name} />
             </div>
           </div>
+          <a
+            className="btn-pill"
+            href={AI_IMAGE_GPT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {lang === 'th' ? 'สร้างรูปด้วย AI' : 'Create image with AI'}
+          </a>
           {compositionLine ? (
             <p className={pdpStyles.compositionSubtitle} title={compositionLine}>
               {compositionLine}
