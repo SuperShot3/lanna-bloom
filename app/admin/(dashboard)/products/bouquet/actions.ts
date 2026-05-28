@@ -528,6 +528,30 @@ export async function approveBouquetFromStudioAction(
   }
 }
 
+export async function unpublishBouquetFromStudioAction(bouquetId: string): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: 'Unauthorized - Session not found' };
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  try {
+    const writeId = await resolveBouquetIdForWrite(bouquetId);
+    const bouquet = await getCatalogBouquetByIdForAdmin(writeId);
+    if (!bouquet) return { error: 'Bouquet not found' };
+    if ((bouquet.status ?? 'pending_review') !== 'approved') {
+      return { error: 'Only live (approved) bouquets can be unpublished' };
+    }
+
+    await updateCatalogBouquetStatus(writeId, 'pending_review');
+    await revalidateBouquetAdminAndCatalogPaths(bouquetId, writeId);
+    return {};
+  } catch (err) {
+    console.error('[Products] unpublishBouquet failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to unpublish bouquet' };
+  }
+}
+
 export async function deleteBouquetFromStudioAction(
   bouquetId: string
 ): Promise<{ error?: string }> {

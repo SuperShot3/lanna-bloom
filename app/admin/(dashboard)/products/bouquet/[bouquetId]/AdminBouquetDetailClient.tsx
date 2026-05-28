@@ -42,6 +42,7 @@ import {
   deleteBouquetImageAction,
   publishBouquetDraftAction,
   reorderBouquetImagesAction,
+  unpublishBouquetFromStudioAction,
   updateBouquetByAdminAction,
   updateBouquetImageAltAction,
   uploadBouquetImageAction,
@@ -325,6 +326,22 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     router.refresh();
   }
 
+  async function handleUnpublish() {
+    if (!window.confirm('Unpublish this bouquet from the website?')) return;
+    setError(null);
+    setSuccess(null);
+    setLoading('unpublish');
+    const result = await unpublishBouquetFromStudioAction(bouquet.id);
+    setLoading(null);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    setStatus('pending_review');
+    setSuccess('Unpublished (not live)');
+    router.refresh();
+  }
+
   async function handleDelete() {
     const label = nameEn.trim() || bouquet.nameEn;
     if (!confirmCatalogDeleteAction(label)) return;
@@ -505,7 +522,18 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
             >
               Approve & live
             </button>
-          ) : !bouquet.hasDraft ? (
+          ) : null}
+          {status === 'approved' ? (
+            <button
+              type="button"
+              className="admin-cms-btn admin-cms-btn-outline"
+              disabled={!!loading}
+              onClick={handleUnpublish}
+            >
+              {loading === 'unpublish' ? 'Unpublishing…' : 'Unpublish'}
+            </button>
+          ) : null}
+          {status === 'approved' && !bouquet.hasDraft ? (
             <Link className="admin-cms-btn admin-cms-btn-outline" href={catalogHref} target="_blank">
               View catalog
             </Link>
