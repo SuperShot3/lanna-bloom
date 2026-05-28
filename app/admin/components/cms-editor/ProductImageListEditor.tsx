@@ -73,6 +73,21 @@ export function ProductImageListEditor({
     });
   }
 
+  async function downloadImage(image: AdminCatalogProductImage) {
+    const storagePath = image.storagePath?.trim();
+    if (!storagePath) return;
+    const response = await fetch(
+      `/api/admin/products/catalog-image-url?path=${encodeURIComponent(storagePath)}&download=1`,
+      { method: 'GET' }
+    );
+    const payload = (await response.json().catch(() => ({}))) as { signedUrl?: string; error?: string };
+    if (!response.ok || !payload.signedUrl) {
+      console.error('[ProductImageListEditor] download failed:', payload.error || response.statusText);
+      return;
+    }
+    window.location.href = payload.signedUrl;
+  }
+
   function handleUploadFile(file: File) {
     if (enableCrop) {
       setPendingCrop({ mode: 'upload', file });
@@ -95,6 +110,11 @@ export function ProductImageListEditor({
         id: 'preview',
         label: 'Preview image',
         onClick: () => openPreview(image),
+      },
+      {
+        id: 'download',
+        label: 'Download image',
+        onClick: () => void downloadImage(image),
       },
       {
         id: 'edit',

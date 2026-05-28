@@ -1,10 +1,12 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import {
   DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT,
   DEFAULT_SAFE_PRESENTATION_PRESETS,
   type SafePresentationPresetKey,
 } from '@/lib/adminProductAiRules';
+import { AdminImagePreviewModal } from '@/app/admin/components/cms-editor/AdminImagePreviewModal';
 import type {
   AiOptionCount,
   GenerationSession,
@@ -370,9 +372,13 @@ function CandidateSelectionGrid({
   onSetMain: (candidateId: string) => void;
   onRetry: (candidateId: string) => void;
 }) {
+  const [preview, setPreview] = useState<{ src: string; title: string } | null>(null);
+
   const original = session.candidates.find((candidate) => candidate.kind === 'original');
   const aiCandidates = session.candidates.filter((candidate) => candidate.kind === 'ai');
   const aiSlots = session.aiOptionCount;
+
+  const previewAlt = useMemo(() => preview?.title ?? 'Image preview', [preview?.title]);
 
   return (
     <section className="admin-product-create-selection" aria-label="Choose images for the product gallery">
@@ -382,7 +388,9 @@ function CandidateSelectionGrid({
           {selectedCount} image{selectedCount === 1 ? '' : 's'} selected
         </span>
       </div>
-      <p className="admin-hint">Click an image to include it in the product. The first one you select becomes Main.</p>
+      <p className="admin-hint">
+        Tap an image to include it in the product. The first one you select becomes Main. Use the magnifier to zoom.
+      </p>
 
       <div className="admin-product-create-image-grid admin-product-create-selection-grid">
         {original ? (
@@ -393,6 +401,7 @@ function CandidateSelectionGrid({
             onToggle={() => onToggle(original.id)}
             onSetMain={() => onSetMain(original.id)}
             onRetry={() => onRetry(original.id)}
+            onZoom={() => setPreview({ src: getWebpPreview(original), title: 'Original' })}
           />
         ) : null}
 
@@ -409,6 +418,9 @@ function CandidateSelectionGrid({
                 onToggle={() => onToggle(candidate.id)}
                 onSetMain={() => onSetMain(candidate.id)}
                 onRetry={() => onRetry(candidate.id)}
+                onZoom={() =>
+                  setPreview({ src: getWebpPreview(candidate), title: `AI option ${slot}` })
+                }
               />
             );
           }
@@ -417,6 +429,16 @@ function CandidateSelectionGrid({
           );
         })}
       </div>
+
+      {preview ? (
+        <AdminImagePreviewModal
+          open={Boolean(preview)}
+          src={preview.src}
+          title={preview.title}
+          alt={previewAlt}
+          onClose={() => setPreview(null)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -428,6 +450,7 @@ function CandidateCard({
   onToggle,
   onSetMain,
   onRetry,
+  onZoom,
 }: {
   candidate: ImageCandidate;
   label: string;
@@ -435,6 +458,7 @@ function CandidateCard({
   onToggle: () => void;
   onSetMain: () => void;
   onRetry: () => void;
+  onZoom: () => void;
 }) {
   const isLoading =
     candidate.status === 'preparing' || candidate.status === 'generating' || candidate.status === 'queued';
@@ -447,29 +471,48 @@ function CandidateCard({
         candidate.selected ? ' is-selected' : ''
       }${candidate.isMain ? ' is-primary' : ''}`}
     >
-      <button
-        type="button"
-        className="admin-product-create-image-card-preview"
-        disabled={isBusy || !canSelect}
-        onClick={onToggle}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={getWebpPreview(candidate)} alt="" />
-        {isLoading ? (
-          <div className="admin-product-create-image-card-overlay">
-            <span className="admin-product-create-shimmer" aria-hidden="true" />
-            <span>{candidate.kind === 'original' ? 'Preparing…' : 'Creating…'}</span>
-          </div>
-        ) : null}
-        {candidate.kind === 'original' ? (
-          <span className="admin-product-create-image-badge">Original</span>
-        ) : (
-          <span className="admin-product-create-image-badge admin-product-create-image-badge-ai">AI</span>
-        )}
-        {candidate.isMain && candidate.selected ? (
-          <span className="admin-product-create-image-badge admin-product-create-image-badge-main">Main</span>
-        ) : null}
-      </button>
+      <div className="admin-product-create-image-card-preview-wrap">
+        <button
+          type="button"
+          className="admin-product-create-image-card-preview"
+          disabled={isBusy || !canSelect}
+          onClick={onToggle}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={getWebpPreview(candidate)} alt="" />
+          {isLoading ? (
+            <div className="admin-product-create-image-card-overlay">
+              <span className="admin-product-create-shimmer" aria-hidden="true" />
+              <span>{candidate.kind === 'original' ? 'Preparing…' : 'Creating…'}</span>
+            </div>
+          ) : null}
+          {candidate.kind === 'original' ? (
+            <span className="admin-product-create-image-badge">Original</span>
+          ) : (
+            <span className="admin-product-create-image-badge admin-product-create-image-badge-ai">AI</span>
+          )}
+          {candidate.selected ? <span className="admin-product-create-selected-indicator">✓</span> : null}
+          {candidate.isMain && candidate.selected ? (
+            <span className="admin-product-create-image-badge admin-product-create-image-badge-main">Main</span>
+          ) : null}
+        </button>
+
+        <button
+          type="button"
+          className="admin-product-create-image-zoom"
+          disabled={isBusy}
+          aria-label={`Zoom ${label}`}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onZoom();
+          }}
+        >
+          <span className="material-symbols-outlined" aria-hidden>
+            zoom_in
+          </span>
+        </button>
+      </div>
 
       <div className="admin-product-create-image-card-meta">
         <span>{label}</span>
@@ -524,6 +567,23 @@ function CommittedImageCard({
   onSetPrimary: () => void;
   onRemove: () => void;
 }) {
+  const webpVariant = image.variants.find((variant) => variant.format === 'webp');
+  const pngVariant = image.variants.find((variant) => variant.format === 'png_master');
+
+  async function downloadVariant(storagePath: string) {
+    if (!storagePath) return;
+    const response = await fetch(
+      `/api/admin/products/catalog-image-url?path=${encodeURIComponent(storagePath)}&download=1`,
+      { method: 'GET' }
+    );
+    const payload = (await response.json().catch(() => ({}))) as { signedUrl?: string; error?: string };
+    if (!response.ok || !payload.signedUrl) {
+      console.error('[product-create] download failed:', payload.error || response.statusText);
+      return;
+    }
+    window.location.href = payload.signedUrl;
+  }
+
   return (
     <article className={`admin-product-create-image-card${image.isPrimary ? ' is-primary' : ''}`}>
       <div className="admin-product-create-image-card-preview">
@@ -541,6 +601,26 @@ function CommittedImageCard({
         {!image.isPrimary && canSetPrimary ? (
           <button type="button" className="admin-btn admin-btn-outline" disabled={isBusy} onClick={onSetPrimary}>
             Set as Main
+          </button>
+        ) : null}
+        {webpVariant?.assetId ? (
+          <button
+            type="button"
+            className="admin-btn admin-btn-outline"
+            disabled={isBusy}
+            onClick={() => void downloadVariant(webpVariant.assetId)}
+          >
+            Download WebP
+          </button>
+        ) : null}
+        {pngVariant?.assetId ? (
+          <button
+            type="button"
+            className="admin-btn admin-btn-outline"
+            disabled={isBusy}
+            onClick={() => void downloadVariant(pngVariant.assetId)}
+          >
+            Download PNG
           </button>
         ) : null}
         <button
