@@ -5,11 +5,38 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Locale, locales, translations } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
-import { HeroSwipeCards } from '@/components/HeroSwipeCards';
+import {
+  HeroFeatureCarousel,
+  type HeroCarouselImage,
+} from '@/components/ui/feature-carousel';
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
+
+const FALLBACK_HERO_IMAGES = [
+  'https://images.unsplash.com/photo-1563241527-3004b7becc23?auto=format&fit=crop&q=80&w=800&h=1000',
+  'https://images.unsplash.com/photo-1561181286-d3fee7d55ef6?auto=format&fit=crop&q=80&w=800&h=1000',
+  'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=800&h=1000',
+  'https://images.unsplash.com/photo-1562690868-60bbe7293e94?auto=format&fit=crop&q=80&w=800&h=1000',
+  'https://images.unsplash.com/photo-1490750967868-88cb4ec0f07c?auto=format&fit=crop&q=80&w=800&h=1000',
+];
+
+const HERO_IMAGE_ALT = 'Beautiful boutique floral arrangement';
+
+function buildHeroCarouselImages(
+  heroImageUrl?: string,
+  carouselImages?: string[]
+): HeroCarouselImage[] {
+  const sourceImages =
+    carouselImages && carouselImages.length > 0
+      ? carouselImages
+      : heroImageUrl
+        ? [heroImageUrl]
+        : FALLBACK_HERO_IMAGES;
+
+  return sourceImages.map((src) => ({ src, alt: HERO_IMAGE_ALT }));
+}
 
 export function Hero({
   lang,
@@ -46,6 +73,7 @@ export function Hero({
   const primaryCtaHref = browseCollectionHref ?? catalogHref;
   const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
+  const heroCarouselImages = buildHeroCarouselImages(imageSrc, carouselImages);
   const isHomeLanding =
     !titleOverride &&
     (pathname === '/' ||
@@ -63,8 +91,12 @@ export function Hero({
     return () => window.removeEventListener('focus', load);
   }, []);
 
+  const sectionPad = isHomeLanding
+    ? 'pt-4 pb-2 sm:pt-6 sm:pb-3 md:pt-8 md:pb-4 lg:pt-10 lg:pb-5'
+    : 'pt-4 pb-6 sm:pt-6 sm:pb-8 md:pt-8 md:pb-10 lg:pt-12 lg:pb-12';
+
   return (
-    <section className="relative pt-4 pb-8 sm:pt-6 sm:pb-10 md:pt-8 md:pb-12 lg:pt-12 lg:pb-20 overflow-hidden">
+    <section className={`relative overflow-hidden ${sectionPad}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-center min-w-0">
         <div className={`relative z-10 min-w-0 ${introClass}`}>
           <div
@@ -143,7 +175,7 @@ export function Hero({
           </div>
         </div>
         <div className="relative min-w-0 w-full">
-          <HeroSwipeCards initialHeroImage={imageSrc} carouselImages={carouselImages} />
+          <HeroFeatureCarousel images={heroCarouselImages} />
           
           <div className="absolute bottom-20 left-4 lg:bottom-12 lg:-left-10 bg-white p-4 lg:p-6 rounded-2xl shadow-xl md:shadow-2xl border border-stone-100 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite] pointer-events-none z-30">
             <div className="flex items-center gap-2 lg:gap-3 mb-2 lg:mb-3">

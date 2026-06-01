@@ -4,10 +4,23 @@
 @theme {
   /* New design palette */
   --color-primary: #1A3C34;
+  --color-primary-foreground: #ffffff;
   --color-accent: #C5A059;
+  --color-accent-foreground: #1A3C34;
   --color-accent-dark: #D4AF37;
+  --color-background: #fdfcf8;
   --color-background-light: #FDFCF8;
   --color-background-dark: #0D1F1A;
+  --color-foreground: #1a3c34;
+  --color-secondary: #f5f0e8;
+  --color-secondary-foreground: #1a3c34;
+  --color-muted: #f5f0e8;
+  --color-muted-foreground: #57534e;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #ebe6e0;
+  --color-input: #ebe6e0;
+  --color-ring: #c5a059;
   /* Font families */
   --font-family-display: 'Arima Madurai', ui-serif, Georgia, serif;
   --font-family-sans: 'Mulish', ui-sans-serif, system-ui, sans-serif;
@@ -88,6 +101,20 @@ html {
   /* New Lanna Bloom design (for gradual migration) */
   --primary: #1A3C34;
   --accent-new: #C5A059;
+
+  /* shadcn/ui semantic tokens (hero carousel Button) */
+  --background: #fdfcf8;
+  --foreground: #1a3c34;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f0e8;
+  --secondary-foreground: #1a3c34;
+  --muted: #f5f0e8;
+  --muted-foreground: #57534e;
+  --accent-foreground: #1a3c34;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --input: #ebe6e0;
+  --ring: #c5a059;
 }
 
 /* Material Symbols icons */

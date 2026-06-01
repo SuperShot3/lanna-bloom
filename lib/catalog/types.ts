@@ -377,7 +377,10 @@ export type CatalogBouquetRow = {
   approved_at: string | null;
   created_at: string;
   updated_at: string;
-};
+} & Pick<
+  CatalogSeoFields,
+  'seo_title_en' | 'seo_title_th' | 'seo_description_en' | 'seo_description_th'
+>;
 
 export type CatalogProductRow = {
   id: string;
