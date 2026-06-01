@@ -1,0 +1,108 @@
+.widget {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid #e7e5e4;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgb(26 60 52 / 0.06);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.widget:hover {
+  background: rgb(255 255 255 / 0.92);
+  border-color: #d6d3d1;
+  box-shadow: 0 4px 14px rgb(26 60 52 / 0.1);
+  transform: translateY(-1px);
+}
+
+.widget:focus-visible {
+  outline: 2px solid #c5a059;
+  outline-offset: 2px;
+}
+
+.logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.logo svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.score {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1a3c34;
+  font-variant-numeric: tabular-nums;
+}
+
+.stars {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.stars svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.count {
+  font-size: 0.6875rem;
+  color: #78716c;
+}
+
+@media (min-width: 640px) {
+  .widget {
+    gap: 0.625rem;
+    padding: 0.625rem 1rem;
+  }
+
+  .logo {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .score {
+    font-size: 1.125rem;
+  }
+}

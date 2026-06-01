@@ -709,6 +709,9 @@ main {
   .home-hero-intro__item:nth-child(4) {
     animation-delay: 210ms;
   }
+  .home-hero-intro__item:nth-child(5) {
+    animation-delay: 280ms;
+  }
 
   html.home-reveal-ready [data-home-reveal]:not(.is-revealed) .home-reveal-item {
     opacity: 0;

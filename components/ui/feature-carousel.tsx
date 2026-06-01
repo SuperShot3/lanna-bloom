@@ -88,7 +88,7 @@ export function HeroFeatureCarousel({
         <div className="absolute bottom-0 right-[-20%] top-[-10%] h-[280px] w-[280px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(26,60,52,0.25),rgba(255,255,255,0))] md:h-[400px] md:w-[400px]" />
       </div>
 
-      <div className="relative z-10 w-full h-[300px] sm:h-[350px] lg:aspect-[4/5] lg:h-auto flex items-center justify-center overflow-hidden">
+      <div className="relative z-10 w-full px-1 py-5 sm:py-6 md:py-7 lg:py-8 min-h-[340px] sm:min-h-[390px] lg:aspect-[4/5] lg:min-h-0 lg:h-auto flex items-center justify-center overflow-x-hidden overflow-y-visible">
         <div className="relative w-full h-full flex items-center justify-center [perspective:1000px]">
           {images.map((image, index) => {
             const offset = index - currentIndex;

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/feature-carousel';
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
+import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
 
@@ -96,7 +97,7 @@ export function Hero({
     : 'pt-4 pb-6 sm:pt-6 sm:pb-8 md:pt-8 md:pb-10 lg:pt-12 lg:pb-12';
 
   return (
-    <section className={`relative overflow-hidden ${sectionPad}`}>
+    <section className={`relative overflow-x-hidden ${sectionPad}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-center min-w-0">
         <div className={`relative z-10 min-w-0 ${introClass}`}>
           <div
@@ -138,43 +139,9 @@ export function Hero({
               {t.ctaHowItWorks}
             </Link>
           </div>
-          <div className="bg-white/50 backdrop-blur p-4 rounded-2xl border border-stone-200 inline-flex flex-col gap-3">
-            <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">
-              {t.shopByOccasion}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`${catalogHref}?occasion=birthday`}
-                className="px-4 py-2 text-sm bg-white rounded-lg shadow-sm hover:ring-1 ring-[#C5A059] transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-lg text-[#C5A059]">cake</span>
-                {t.occasionBirthday}
-              </Link>
-              <Link
-                href={`${catalogHref}?occasion=anniversary`}
-                className="px-4 py-2 text-sm bg-white rounded-lg shadow-sm hover:ring-1 ring-[#C5A059] transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-lg text-[#C5A059]">favorite</span>
-                {t.occasionAnniversary}
-              </Link>
-              <Link
-                href={`${catalogHref}?occasion=get_well`}
-                className="px-4 py-2 text-sm bg-white rounded-lg shadow-sm hover:ring-1 ring-[#C5A059] transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-lg text-[#C5A059]">local_hospital</span>
-                {t.occasionGetWell}
-              </Link>
-              <Link
-                href={`${catalogHref}?occasion=congrats`}
-                className="px-4 py-2 text-sm bg-white rounded-lg shadow-sm hover:ring-1 ring-[#C5A059] transition-all flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-lg text-[#C5A059]">child_care</span>
-                {t.occasionNewBaby}
-              </Link>
-            </div>
-          </div>
+          <GoogleReviewsBadge lang={lang} className={introItemClass} />
         </div>
-        <div className="relative min-w-0 w-full">
+        <div className="relative min-w-0 w-full pt-1 pb-2 sm:pt-2 sm:pb-3 lg:pt-3 lg:pb-4">
           <HeroFeatureCarousel images={heroCarouselImages} />
           
           <div className="absolute bottom-20 left-4 lg:bottom-12 lg:-left-10 bg-white p-4 lg:p-6 rounded-2xl shadow-xl md:shadow-2xl border border-stone-100 max-w-[calc(100%-2rem)] lg:max-w-xs animate-[bounce_3s_ease-in-out_infinite] pointer-events-none z-30">
