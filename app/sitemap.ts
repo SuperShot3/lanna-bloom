@@ -5,6 +5,7 @@ import { getBouquetsFromSanity } from '@/lib/sanity';
 import { locales } from '@/lib/i18n';
 import { articles } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
+import { MARKETS } from '@/lib/delivery/markets';
 
 type BouquetForSitemap = { slug: string; updatedAt?: string };
 
@@ -89,6 +90,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6 as const,
         lastModified: now,
       },
+      {
+        url: `${base}/${lang}/flower-delivery-thailand`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.72 as const,
+        lastModified: now,
+      },
+      ...MARKETS.map((market) => ({
+        url: `${base}/${lang}/${market.pathSlug}/flower-delivery`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.68 as const,
+        lastModified: now,
+      })),
       {
         url: `${base}/${lang}/info/perfect-bouquet-someone-special`,
         changeFrequency: 'monthly' as const,

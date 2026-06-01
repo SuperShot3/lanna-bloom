@@ -131,6 +131,10 @@ export function mapBouquetRowToBouquet(
     status: row.status,
     featuredPopular: row.featured_popular,
     discountPercent: normalizeCatalogDiscountPercent(row.discount_percent ?? undefined),
+    seoTitleEn: row.seo_title_en,
+    seoTitleTh: row.seo_title_th,
+    seoDescriptionEn: row.seo_description_en,
+    seoDescriptionTh: row.seo_description_th,
   };
 }
 

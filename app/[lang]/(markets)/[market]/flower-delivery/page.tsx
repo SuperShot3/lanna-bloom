@@ -22,9 +22,10 @@ export async function generateMetadata({
   const isTh = params.lang === 'th';
   const place = isTh ? m.customerFacingNameTh : m.customerFacingNameEn;
   const title = isTh ? `ส่งดอกไม้ ${place} | Lanna Bloom` : `Flower delivery ${place} | Lanna Bloom`;
+  const bouquetOnly = isTh ? ' (ช่อดอกไม้เท่านั้น)' : ' (bouquet delivery only)';
   const description = isTh
-    ? `ช่อดอกไม้สด จัดส่ง${place} เลือกช่อออนไลน์ บริการจัดส่ง`
-    : `Fresh flower bouquets delivered in ${place}. Order online for local delivery.`;
+    ? `ช่อดอกไม้สด จัดส่ง${place}${bouquetOnly} เลือกช่อออนไลน์ ชำระเงินปลอดภัย`
+    : `Fresh flower bouquets delivered in ${place}${bouquetOnly}. Order online with secure checkout.`;
   return { title, description };
 }
 

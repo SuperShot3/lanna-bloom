@@ -41,6 +41,10 @@ export interface Bouquet {
   featuredPopular?: boolean;
   /** CMS sale discount (1–90%). Applied at checkout; shows badge when set. */
   discountPercent?: number;
+  seoTitleEn?: string | null;
+  seoTitleTh?: string | null;
+  seoDescriptionEn?: string | null;
+  seoDescriptionTh?: string | null;
 }
 
 export type PartnerStatus = 'pending_review' | 'approved' | 'disabled';

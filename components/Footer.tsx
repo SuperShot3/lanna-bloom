@@ -152,6 +152,14 @@ export function Footer({ lang }: { lang: Locale }) {
             <div className="pt-4 mt-4 border-t border-stone-200">
               <p className="font-semibold text-stone-700 text-sm mb-3">{t.deliveryAreas}</p>
               <ul className="space-y-2 text-sm text-stone-500">
+                <li>
+                  <Link
+                    href={`/${lang}/flower-delivery-thailand`}
+                    className="hover:text-[#C5A059] transition-colors font-medium text-stone-600"
+                  >
+                    {t.flowerDeliveryThailand}
+                  </Link>
+                </li>
                 {FOOTER_DELIVERY_ORDER_LINKS.map(({ destinationId, href }) => (
                   <li key={destinationId}>
                     <Link href={href(lang)} className="hover:text-[#C5A059] transition-colors">

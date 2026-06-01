@@ -16,9 +16,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Lanna Bloom | Fresh flowers delivered',
+  title: 'Lanna Bloom | Flower & gift delivery Chiang Mai',
   description:
-    'Order beautiful flowers online and get same-day delivery in Chiang Mai.',
+    'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available. Bouquet delivery in selected Thailand destinations.',
   icons: {
     icon: [
       { url: '/favicon_io/favicon.ico', sizes: 'any' },
@@ -29,9 +29,9 @@ export const metadata: Metadata = {
   },
   manifest: '/favicon_io/site.webmanifest',
   openGraph: {
-    title: 'Lanna Bloom | Fresh flowers delivered',
+    title: 'Lanna Bloom | Flower & gift delivery Chiang Mai',
     description:
-      'Order beautiful flowers online and get same-day delivery in Chiang Mai.',
+      'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available.',
   },
 };
 

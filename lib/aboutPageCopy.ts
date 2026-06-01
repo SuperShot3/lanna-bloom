@@ -76,7 +76,7 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
   en: {
     metaTitle: 'About Lanna Bloom | Flower & gift delivery Chiang Mai',
     metaDescription:
-      'Lanna Bloom is a Chiang Mai startup making flower and gift delivery easier to discover — supporting local florists, sellers, and makers.',
+      'Lanna Bloom delivers flowers and gifts in Chiang Mai and selected areas of Thailand — order online with secure checkout and reliable local delivery.',
     h1: 'About Lanna Bloom',
     tagline: 'Flowers, gifts, and local creativity — made easier to discover in Chiang Mai',
     intro: [
@@ -147,7 +147,7 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
       paragraphs: [
         'Lanna Bloom is not just about selling bouquets.',
         'We are building a platform that can support local florists, small sellers, and craftsmen by giving them access to a bigger market than only Facebook. We want to create more opportunities for talented local businesses to be seen by customers who are actively searching for quality gifts and flower delivery in Chiang Mai.',
-        'Our long-term vision is to grow into a trusted local marketplace where customers can find not only flowers, but also carefully selected gifts and handcrafted products from local creators.',
+        'Our long-term vision is to grow a trusted flower and gift delivery service where customers can find not only bouquets, but also carefully selected gifts and handcrafted products from local creators across more of Thailand.',
         'We grow step by step, and we are building this carefully with real local needs in mind.',
       ],
     },
@@ -244,7 +244,7 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
   th: {
     metaTitle: 'เกี่ยวกับ Lanna Bloom | ส่งดอกไม้และของขวัญ เชียงใหม่',
     metaDescription:
-      'Lanna Bloom เป็นสตาร์ทอัพในเชียงใหม่ที่ต้องการให้การค้นหาและสั่งดอกไม้/ของขวัญง่ายและน่าเชื่อถือขึ้น — สนับสนุนช่างดอกไม้ ผู้ขาย และช่างฝีมือท้องถิ่น',
+      'Lanna Bloom ส่งดอกไม้และของขวัญในเชียงใหม่และพื้นที่ที่เลือกทั่วประเทศไทย — สั่งออนไลน์ชำระเงินปลอดภัย จัดส่งในพื้นที่อย่างน่าเชื่อถือ',
     h1: 'เกี่ยวกับ Lanna Bloom',
     tagline: 'ดอกไม้ ของขวัญ และความคิดสร้างสรรค์จากท้องถิ่น — ค้นหาและเลือกในเชียงใหม่ง่ายขึ้น',
     intro: [
@@ -318,7 +318,7 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
       paragraphs: [
         'Lanna Bloom ไม่ได้มีเพียงการขายช่อดอกไม้',
         'เรากำลังสร้างแพลตฟอร์มที่สนับสนุนช่างดอกไม้ท้องถิ่น ผู้ขายรายย่อย และช่างฝีมือ โดยเปิดตลาดที่กว้างกว่าการขายผ่าน Facebook เพียงอย่างเดียว เราต้องการสร้างโอกาสให้ธุรกิจท้องถิ่นที่มีความสามารถสูงได้ถูกมองเห็นโดยลูกค้าที่กำลังมองหาของขวัญคุณภาพและบริการส่งดอกไม้ในเชียงใหม่อย่างจริงจัง',
-        'วิสัยทัศน์ระยะยาวของเราคือการเติบโตเป็นแหล่งรวมท้องถิ่นที่เชื่อถือได้ ที่ลูกค้าทั้งได้พบดอกไม้และของขวัญงานประดิษฐ์ที่คัดสรรจากผู้สร้างท้องถิ่น',
+        'วิสัยทัศน์ระยะยาวของเราคือการเติบโตเป็นบริการส่งดอกไม้และของขวัญที่เชื่อถือได้ ที่ลูกค้าทั้งได้พบช่อดอกไม้และของขวัญงานประดิษฐ์ที่คัดสรรจากผู้สร้างท้องถิ่นในพื้นที่มากขึ้น',
         'เราเติบโตทีละขั้นและพัฒนาอย่างรอบคอบด้วยความต้องการในท้องถิ่นจริง',
       ],
     },

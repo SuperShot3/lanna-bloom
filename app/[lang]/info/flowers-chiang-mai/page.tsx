@@ -25,8 +25,8 @@ export async function generateMetadata({
       : 'ส่งดอกไม้ในเชียงใหม่ | Lanna Bloom';
   const description =
     locale === 'en'
-      ? 'Order fresh bouquets online with delivery across Chiang Mai. Easy ordering via LINE or WhatsApp.'
-      : 'สั่งช่อดอกไม้ออนไลน์ พร้อมบริการจัดส่งในเชียงใหม่ สั่งง่ายผ่าน LINE หรือ WhatsApp';
+      ? 'Order fresh bouquets and gifts online with delivery across Chiang Mai. Secure Stripe checkout — same-day delivery during working hours when you order in time.'
+      : 'สั่งช่อดอกไม้และของขวัญออนไลน์ พร้อมจัดส่งในเชียงใหม่ ชำระเงินปลอดภัยผ่าน Stripe จัดส่งวันเดียวได้ในช่วงเวลาทำการ';
   const base = getBaseUrl();
   return {
     title,
@@ -62,6 +62,11 @@ export default async function FlowersChiangMaiGuidePage({
             {t.h1}
           </h1>
           <p className="guide-intro">{t.intro}</p>
+          <p className="guide-browse">
+            <Link href={catalogHref} className="guide-browse-link">
+              {t.shopNow}
+            </Link>
+          </p>
           <MessengerOrderButtons
             lang={locale}
             contactOnly

@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { getBaseUrl } from '@/lib/orders';
+import { buildBouquetProductJsonLd } from '@/lib/seo/productJsonLd';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
 import {
@@ -29,6 +32,38 @@ export async function generateStaticParams() {
 
 export const dynamicParams = true;
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { lang: string; slug: string };
+}): Promise<Metadata> {
+  if (!isValidLocale(params.lang)) return {};
+  if (getMarketByPathSlug(params.slug)) return {};
+
+  const bouquet = await getBouquetBySlugFromSanity(params.slug);
+  if (!bouquet) return {};
+
+  const isTh = params.lang === 'th';
+  const name = isTh ? bouquet.nameTh : bouquet.nameEn;
+  const title =
+    (isTh ? bouquet.seoTitleTh : bouquet.seoTitleEn)?.trim() ||
+    `${name} | Flower delivery Chiang Mai | Lanna Bloom`;
+  const description =
+    (isTh ? bouquet.seoDescriptionTh : bouquet.seoDescriptionEn)?.trim() ||
+    (isTh ? bouquet.descriptionTh : bouquet.descriptionEn).trim().slice(0, 160) ||
+    (isTh
+      ? `สั่ง${name} พร้อมจัดส่งในเชียงใหม่`
+      : `Order ${name} with flower delivery in Chiang Mai.`);
+
+  const canonical = `${getBaseUrl()}/${params.lang}/catalog/${bouquet.slug}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical },
+  };
+}
+
 export default async function ProductPage({
   params,
   searchParams,
@@ -53,9 +88,19 @@ export default async function ProductPage({
     const t = translations[lang as Locale].product;
     const nav = translations[lang as Locale].nav;
     const catalogHref = `/${lang}/catalog`;
+    const pageUrl = `${getBaseUrl()}/${lang}/catalog/${bouquet.slug}`;
+    const productJsonLd = buildBouquetProductJsonLd(
+      bouquet,
+      lang === 'th' ? 'th' : 'en',
+      pageUrl
+    );
 
     return (
       <div className="product-page">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        />
         <div className="container product-layout">
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link href={`/${lang}`}>{nav.home}</Link>

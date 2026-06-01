@@ -245,7 +245,7 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
     </div>
 
     <p style="font-size: 15px; margin: 20px 0 0 0;">If you have any questions, please reply to this email or contact us via LINE, WhatsApp, or the contact details on our website.</p>
-    <p style="font-size: 15px; margin: 12px 0 0 0;">Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.</p>
+    <p style="font-size: 15px; margin: 12px 0 0 0;">Thank you for choosing Lanna Bloom — we appreciate your order and will deliver your gift with care.</p>
   </div>
 
   <div style="margin-top: 24px;">
@@ -278,7 +278,7 @@ Total: ฿${order.pricing.grandTotal.toLocaleString()}
 
 If you have any questions, please reply to this email or contact us via LINE, WhatsApp, or the contact details on our website.
 
-Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.`;
+Thank you for choosing Lanna Bloom — we appreciate your order and will deliver your gift with care.`;
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
@@ -615,7 +615,7 @@ export async function sendOrderDeliveredCustomerEmail(order: Order): Promise<boo
     </div>
 
     <p style="font-size: 15px; margin: 24px 0 0 0;">
-      Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.
+      Thank you for choosing Lanna Bloom — we appreciate your order and will deliver your gift with care.
     </p>
 
   </div>
@@ -647,7 +647,7 @@ Save important days once. We will remind you before they arrive. We can also sug
 Save my important dates: ${vars.important_dates_link}
 Takes less than 1 minute. You can unsubscribe anytime.
 
-Thank you for choosing Lanna Bloom and supporting local florists in Chiang Mai.`;
+Thank you for choosing Lanna Bloom — we appreciate your order and will deliver your gift with care.`;
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
