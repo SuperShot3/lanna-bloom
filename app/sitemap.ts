@@ -1,0 +1,137 @@
+// app/sitemap.ts
+import type { MetadataRoute } from 'next';
+import { getBaseUrl } from '@/lib/orders';
+import { getBouquetsFromSanity } from '@/lib/sanity';
+import { locales } from '@/lib/i18n';
+import { articles } from '@/app/[lang]/info/_data/articles';
+import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
+import { MARKETS } from '@/lib/delivery/markets';
+
+type BouquetForSitemap = { slug: string; updatedAt?: string };
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const base = getBaseUrl();
+  const now = new Date().toISOString();
+
+  const staticPaths = [
+    {
+      url: base,
+      changeFrequency: 'daily' as const,
+      priority: 1 as const,
+      lastModified: now,
+    },
+
+    ...locales.flatMap((lang) => [
+      {
+        url: `${base}/${lang}`,
+        changeFrequency: 'daily' as const,
+        priority: 1 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/catalog`,
+        changeFrequency: 'daily' as const,
+        priority: 0.9 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/refund-replacement`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/contact`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/partner/how-it-works`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.55 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/partner/apply`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.55 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/custom-order`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.65 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/info`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7 as const,
+        lastModified: now,
+      },
+      ...articles
+        .filter((a) => !a.externalPath)
+        .map((a) => ({
+          url: `${base}/${lang}/info/${a.slug}`,
+          changeFrequency: 'monthly' as const,
+          priority: 0.6 as const,
+          lastModified: now,
+        })),
+      {
+        url: `${base}/${lang}/info/birthday-flower-gift`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.62 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/info/flowers-chiang-mai`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      {
+        url: `${base}/${lang}/flower-delivery-thailand`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.72 as const,
+        lastModified: now,
+      },
+      ...MARKETS.map((market) => ({
+        url: `${base}/${lang}/${market.pathSlug}/flower-delivery`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.68 as const,
+        lastModified: now,
+      })),
+      {
+        url: `${base}/${lang}/info/perfect-bouquet-someone-special`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6 as const,
+        lastModified: now,
+      },
+      ...getCollectionLandingPages().map((page) => ({
+        url: `${base}/${lang}${page.path}`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.75 as const,
+        lastModified: now,
+      })),
+    ]),
+  ] satisfies MetadataRoute.Sitemap;
+
+  let bouquets: BouquetForSitemap[] = [];
+  try {
+    bouquets = (await getBouquetsFromSanity()) as BouquetForSitemap[];
+  } catch {
+    bouquets = [];
+  }
+
+  const productPaths = locales.flatMap((lang) =>
+    bouquets.map((b) => ({
+      url: `${base}/${lang}/catalog/${b.slug}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8 as const,
+      lastModified: b.updatedAt ? new Date(b.updatedAt).toISOString() : now,
+    }))
+  ) satisfies MetadataRoute.Sitemap;
+
+  return [...staticPaths, ...productPaths];
+}

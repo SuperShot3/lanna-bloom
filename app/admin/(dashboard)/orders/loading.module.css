@@ -1,0 +1,50 @@
+.skeletonTitle {
+  height: 24px;
+  width: 120px;
+  background: var(--pastel-cream);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonHint {
+  height: 14px;
+  width: 80px;
+  margin-top: 6px;
+  background: var(--pastel-cream);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonInput {
+  height: 38px;
+  min-width: 140px;
+  flex: 1;
+  background: var(--pastel-cream);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonBtn {
+  height: 38px;
+  width: 80px;
+  background: var(--pastel-cream);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonCell {
+  height: 16px;
+  width: 80%;
+  max-width: 100px;
+  background: var(--pastel-cream);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonPagination {
+  height: 24px;
+  width: 200px;
+  background: var(--pastel-cream);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}

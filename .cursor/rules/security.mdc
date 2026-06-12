@@ -1,0 +1,26 @@
+---
+description: Security and trust boundaries
+globs:
+  - "app/api/**"
+  - "middleware.ts"
+  - "auth.ts"
+  - "lib/orders/**"
+  - "lib/checkout/**"
+  - "lib/supabase/**"
+alwaysApply: false
+---
+
+Before editing APIs, auth, orders, checkout, or Supabase access, read:
+
+- `/ai_context/03_SECURITY_RULES.md`
+- `/ai_context/04_CHECKOUT_ORDERS_STRIPE.md` (if payment or order related)
+
+Critical rules:
+
+- Never trust client-side prices, totals, delivery fees, discounts, payment status, order status, user role, or ownership.
+- `SUPABASE_SERVICE_ROLE_KEY` and Stripe secrets are server-only — never `NEXT_PUBLIC_*`.
+- Customer order APIs require a valid `public_token`; invalid token → 404.
+- Admin routes require NextAuth; verify RBAC on admin mutations.
+- Stripe webhooks must verify signature and stay idempotent (`stripe_events`).
+
+Inspect actual route handlers before changing trust boundaries.

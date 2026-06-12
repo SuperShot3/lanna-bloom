@@ -1,0 +1,141 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/adminRbac';
+import { deleteExpenseByIdCascade } from '@/lib/expenses/deleteExpenseByIdCascade';
+import { getExpenseById, updateExpense } from '@/lib/expenses/expenseQueries';
+import type { ExpenseBillLine } from '@/types/expenses';
+
+function parseBillTrackingBody(raw: unknown): ExpenseBillLine[] | null {
+  if (!Array.isArray(raw)) return null;
+  if (raw.length > 40) return null;
+  const out: ExpenseBillLine[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== 'object') continue;
+    const o = x as Record<string, unknown>;
+    if (typeof o.line_id !== 'string' || o.line_id.length > 120) continue;
+    const vendorBillApplicable =
+      o.line_id === 'order:delivery' ? false : o.vendor_bill_applicable !== false;
+    out.push({
+      line_id: o.line_id,
+      label:
+        typeof o.label === 'string' && o.label.length <= 500
+          ? o.label
+          : o.line_id,
+      vendor_bill_applicable: vendorBillApplicable,
+      transfer_to_shop: o.transfer_to_shop === true,
+      bill_from_shop: vendorBillApplicable ? o.bill_from_shop === true : false,
+    });
+  }
+  return out.length > 0 ? out : null;
+}
+import { getSupabaseAdmin } from '@/lib/supabase/server';
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireRole(['OWNER', 'MANAGER']);
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await params;
+  if (!id?.trim()) {
+    return NextResponse.json({ error: 'id required' }, { status: 400 });
+  }
+
+  const expense = await getExpenseById(id.trim());
+  if (!expense) {
+    return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ expense });
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireRole(['OWNER', 'MANAGER']);
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await params;
+  const expenseId = id?.trim();
+  if (!expenseId) {
+    return NextResponse.json({ error: 'id required' }, { status: 400 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+  }
+
+  const result = await deleteExpenseByIdCascade(supabase, expenseId);
+
+  if (result.notFound) {
+    return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
+  }
+
+  if (result.error) {
+    console.error('[expenses] delete error:', result.error);
+    return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const authResult = await requireRole(['OWNER', 'MANAGER']);
+  if (!authResult.ok) return authResult.response;
+
+  const { id } = await params;
+  if (!id?.trim()) {
+    return NextResponse.json({ error: 'id required' }, { status: 400 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Body must be an object' }, { status: 400 });
+  }
+
+  const b = body as Record<string, unknown>;
+  const updateInput: Parameters<typeof updateExpense>[1] = {};
+
+  if ('receipt_file_path' in b) {
+    updateInput.receipt_file_path =
+      typeof b.receipt_file_path === 'string' ? b.receipt_file_path.trim() || null : null;
+  }
+  if ('receipt_attached' in b) {
+    updateInput.receipt_attached = b.receipt_attached === true;
+  }
+  if ('notes' in b) {
+    updateInput.notes = typeof b.notes === 'string' ? b.notes.trim() || null : null;
+  }
+  if ('bill_tracking' in b) {
+    const parsed = parseBillTrackingBody(b.bill_tracking);
+    if (parsed === null) {
+      return NextResponse.json(
+        { error: 'bill_tracking must be a non-empty array of valid line objects' },
+        { status: 400 }
+      );
+    }
+    updateInput.bill_tracking = parsed;
+  }
+
+  if (Object.keys(updateInput).length === 0) {
+    return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 });
+  }
+
+  const { expense, error } = await updateExpense(id.trim(), updateInput);
+  if (error || !expense) {
+    return NextResponse.json({ error: error ?? 'Update failed' }, { status: 500 });
+  }
+
+  return NextResponse.json({ expense });
+}

@@ -1,0 +1,809 @@
+'use client';
+
+import { useRef, useEffect, useCallback } from 'react';
+import { translations } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
+import { detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
+import type { OrderDeliveryDestinationId } from '@/lib/orders';
+import {
+  getZonesForDestination,
+  getZoneFee,
+  chiangMaiZoneIdFromLegacyDistrict,
+  legacyDistrictFromChiangMaiZone,
+} from '@/lib/delivery/zones';
+import { PinIcon } from '@/components/icons/PinIcon';
+import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
+import { getBangkokYmd } from '@/lib/deliveryHours';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  clipCheckoutField,
+} from '@/lib/checkout/checkoutFieldLimits';
+
+/** 4 delivery windows from 09:00 to 20:00. */
+export const DELIVERY_TIME_SLOTS = [
+  '09:00–12:00',  // Morning
+  '12:00–15:00',  // Midday
+  '15:00–18:00',  // Afternoon
+  '18:00–20:00',  // Evening
+] as const;
+
+type DeliveryTimeSlot = typeof DELIVERY_TIME_SLOTS[number];
+
+function minutesSinceMidnightBangkok(date: Date): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Bangkok',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
+}
+
+function slotEndMinutes(slot: string): number | null {
+  const end = slot.split('–')[1]?.trim();
+  const match = end?.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+export function isDeliveryTimeSlotSelectableForDate(
+  deliveryDate: string,
+  slot: string,
+  now: Date = new Date()
+): boolean {
+  if (!deliveryDate || !slot) return true;
+  if (!DELIVERY_TIME_SLOTS.includes(slot as DeliveryTimeSlot)) return false;
+  if (deliveryDate !== getBangkokYmd(now)) return true;
+
+  const endMinutes = slotEndMinutes(slot);
+  if (endMinutes === null) return false;
+  return endMinutes > minutesSinceMidnightBangkok(now);
+}
+
+export function getSelectableDeliveryTimeSlotsForDate(
+  deliveryDate: string,
+  now: Date = new Date()
+): DeliveryTimeSlot[] {
+  return DELIVERY_TIME_SLOTS.filter((slot) =>
+    isDeliveryTimeSlotSelectableForDate(deliveryDate, slot, now)
+  );
+}
+
+export interface DeliveryFormValues {
+  addressLine: string;
+  date: string;
+  timeSlot: string;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  deliveryGoogleMapsUrl: string | null;
+  /** Google Places (checkout autocomplete) */
+  deliveryPlaceId?: string | null;
+  deliveryPlaceName?: string | null;
+  deliveryFormattedAddress?: string | null;
+  deliveryAddressComponents?: import('@/lib/google/placesAddressComponents').GoogleAddressComponent[] | null;
+  deliveryPostalCode?: string | null;
+  deliveryProvince?: string | null;
+  /** Amphoe / district label from Places (not legacy DistrictKey). */
+  deliveryDistrictLabel?: string | null;
+  deliverySubdistrict?: string | null;
+  /** Room, floor, gate code — driver instructions (checkout). */
+  deliveryNote?: string;
+  /** Canonical market; default Chiang Mai on main site */
+  deliveryDestination: OrderDeliveryDestinationId;
+  /** Zone id from lib/delivery/zones.ts */
+  deliveryZoneId: string;
+  /** Legacy cart storage / migration only */
+  deliveryDistrict?: DistrictKey | '';
+  isMueangCentral?: boolean;
+}
+
+export function DeliveryForm({
+  lang,
+  value,
+  onChange,
+  step3Heading,
+  step3Content,
+  title,
+  showLocationPicker,
+  accordionMode,
+  hideDateAndTime,
+  deliveryVariant = 'chiang-mai',
+  expansionLabels,
+}: {
+  lang: Locale;
+  value: DeliveryFormValues;
+  onChange: (v: DeliveryFormValues) => void;
+  /** When provided (e.g. on cart page), Step 3 shows this heading and content instead of "ADD TO CART". */
+  step3Heading?: string;
+  step3Content?: React.ReactNode;
+  /** When provided (e.g. on cart page), use this as the main form heading instead of buyNow.title. */
+  title?: string;
+  /** When true, show optional Google Maps link input and Open Google Maps button (no embedded map). */
+  showLocationPicker?: boolean;
+  /** When true, render only steps 1 and 2 (no title, no step 3). For mobile accordion. */
+  accordionMode?: boolean;
+  /** When true, hide date and time slot fields (use values from product page sessionStorage). */
+  hideDateAndTime?: boolean;
+  /** Chiang Mai district/zones UI vs expansion read-only destination + zones */
+  deliveryVariant?: 'chiang-mai' | 'expansion';
+  /** Required when deliveryVariant is expansion */
+  expansionLabels?: { en: string; th: string };
+}) {
+  const t = translations[lang].buyNow;
+  const zoneManuallyChangedRef = useRef(false);
+
+  const destinationForZones: OrderDeliveryDestinationId =
+    deliveryVariant === 'expansion'
+      ? value.deliveryDestination
+      : 'CHIANG_MAI';
+  const zones = getZonesForDestination(destinationForZones);
+
+  useEffect(() => {
+    if (deliveryVariant !== 'chiang-mai') return;
+    if (zoneManuallyChangedRef.current) return;
+    const detected = detectDistrictFromAddress(value.addressLine);
+    if (!detected) return;
+    if (detected === 'MUEANG') return;
+    const suggested = chiangMaiZoneIdFromLegacyDistrict(detected, false);
+    if (suggested && value.deliveryZoneId !== suggested) {
+      onChange({
+        ...value,
+        deliveryDestination: 'CHIANG_MAI',
+        deliveryZoneId: suggested,
+        deliveryDistrict: detected,
+        isMueangCentral: false,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on address change; value/onChange from closure
+  }, [value.addressLine, deliveryVariant]);
+
+  const handleZoneChange = (zoneId: string) => {
+    zoneManuallyChangedRef.current = true;
+    const dest = deliveryVariant === 'expansion' ? value.deliveryDestination : 'CHIANG_MAI';
+    const legacy =
+      dest === 'CHIANG_MAI'
+        ? legacyDistrictFromChiangMaiZone(zoneId)
+        : { deliveryDistrict: 'UNKNOWN' as DistrictKey, isMueangCentral: false };
+    onChange({
+      ...value,
+      deliveryDestination: dest,
+      deliveryZoneId: zoneId,
+      deliveryDistrict: legacy.deliveryDistrict,
+      isMueangCentral: legacy.isMueangCentral,
+    });
+  };
+
+  const formatDateDisplay = useCallback((dateStr: string): string => {
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en', { month: 'short' });
+    return `${day} ${month}`;
+  }, [lang]);
+
+  const todayStr = getLocalTodayYmd();
+  const tomorrowStr = getLocalTomorrowYmd();
+  const minDate = todayStr;
+  const selectableTimeSlots = getSelectableDeliveryTimeSlotsForDate(value.date);
+
+  const updateDate = (date: string) => {
+    const nextTimeSlot = isDeliveryTimeSlotSelectableForDate(date, value.timeSlot)
+      ? value.timeSlot
+      : '';
+    onChange({ ...value, date, timeSlot: nextTimeSlot });
+  };
+
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className={`buy-now-form ${accordionMode ? 'buy-now-form-accordion' : ''}`}>
+      {!accordionMode && <h2 className="buy-now-title">{title ?? t.title}</h2>}
+
+      {/* Step 1: District + Address + map pin */}
+      <div className="buy-now-step">
+        {!accordionMode && <span className="buy-now-num" aria-hidden>1</span>}
+        <div className="buy-now-step-content">
+          <div className="buy-now-fields">
+            {deliveryVariant === 'expansion' && expansionLabels && (
+              <div className="buy-now-field">
+                <label className="buy-now-label" htmlFor="buy-now-destination-readonly">
+                  {lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery destination'}
+                </label>
+                <input
+                  id="buy-now-destination-readonly"
+                  type="text"
+                  readOnly
+                  className="buy-now-input buy-now-input-readonly"
+                  value={lang === 'th' ? expansionLabels.th : expansionLabels.en}
+                  aria-label={lang === 'th' ? expansionLabels.th : expansionLabels.en}
+                />
+              </div>
+            )}
+            <div className="buy-now-field">
+              <label className="buy-now-label" htmlFor="buy-now-zone">
+                {((t as { districtLabelForFee?: string }).districtLabelForFee ?? t.districtLabel)}{' '}
+                <span className="buy-now-required" aria-hidden>*</span>
+              </label>
+              <select
+                id="buy-now-zone"
+                value={value.deliveryZoneId}
+                onChange={(e) => handleZoneChange(e.target.value)}
+                className="buy-now-select buy-now-select-full"
+                aria-required
+                aria-label={t.districtLabel}
+              >
+                <option value="">{t.selectDistrict}</option>
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {lang === 'th' ? z.labelTh : z.labelEn}
+                    {` — ฿${(getZoneFee(destinationForZones, z.id) ?? z.feeThb).toLocaleString()}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="buy-now-field">
+              <label className="buy-now-label" htmlFor="buy-now-address">
+                {t.addressLabel} <span className="buy-now-required" aria-hidden>*</span>
+              </label>
+              <textarea
+                id="buy-now-address"
+                value={value.addressLine}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    addressLine: clipCheckoutField(e.target.value, 'deliveryAddress'),
+                  })
+                }
+                placeholder={t.addressPlaceholder}
+                minLength={10}
+                maxLength={CHECKOUT_FIELD_LIMITS.deliveryAddress}
+                rows={2}
+                className="buy-now-input buy-now-textarea"
+                aria-label={t.addressLabel}
+                aria-describedby="buy-now-address-hint"
+              />
+              <span id="buy-now-address-hint" className="buy-now-address-hint">
+                {value.addressLine.length}/{CHECKOUT_FIELD_LIMITS.deliveryAddress}{' '}
+                {value.addressLine.length > 0 && value.addressLine.length < 10 && (
+                  <span className="buy-now-address-error"> — {t.addressTooShort}</span>
+                )}
+              </span>
+            </div>
+            {showLocationPicker && (
+              <>
+                <div className="buy-now-field">
+                  <label className="buy-now-label" htmlFor="buy-now-google-maps-link">
+                    {(t as { googleMapsLinkLabel?: string }).googleMapsLinkLabel ?? 'Google Maps link (optional)'}
+                  </label>
+                  <input
+                    id="buy-now-google-maps-link"
+                    type="url"
+                    value={value.deliveryGoogleMapsUrl ?? ''}
+                    onChange={(e) =>
+                      onChange({
+                        ...value,
+                        deliveryGoogleMapsUrl:
+                          clipCheckoutField(e.target.value, 'googleMapsUrl').trim() || null,
+                      })
+                    }
+                    placeholder={(t as { googleMapsLinkPlaceholder?: string }).googleMapsLinkPlaceholder ?? 'Paste link from Google Maps'}
+                    className="buy-now-input"
+                    maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
+                    aria-describedby="buy-now-google-maps-hint"
+                  />
+                  <p id="buy-now-google-maps-hint" className="buy-now-hint">
+                    {(t as { googleMapsLinkHint?: string }).googleMapsLinkHint ?? 'Open Google Maps → drop a pin / choose location → Share → Copy link → paste here.'}
+                  </p>
+                </div>
+                <div className="buy-now-field">
+                  <a
+                    href="https://www.google.com/maps"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="buy-now-open-gmaps-btn"
+                  >
+                    <PinIcon className="buy-now-open-gmaps-btn-icon" size={18} />
+                    {(t as { openGoogleMapsButton?: string }).openGoogleMapsButton ?? 'Open Google Maps'}
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Step 2: Delivery date + preferred time slot (hidden when hideDateAndTime) */}
+      {!hideDateAndTime && (
+        <div className="buy-now-step">
+          {!accordionMode && <span className="buy-now-num" aria-hidden>2</span>}
+          <div className="buy-now-step-content">
+            <div className="buy-now-fields buy-now-date-time-row">
+              <div className="buy-now-field buy-now-date-field">
+                <div
+                  className="buy-now-date-display-wrap"
+                  onClick={() => dateInputRef.current?.showPicker?.()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dateInputRef.current?.showPicker?.(); } }}
+                  aria-label={t.specifyDeliveryDate}
+                >
+                  <input
+                    ref={dateInputRef}
+                    id="buy-now-date"
+                    type="date"
+                    value={value.date}
+                    onChange={(e) => updateDate(e.target.value)}
+                    min={minDate}
+                    className="buy-now-input buy-now-date-input"
+                    aria-label={t.specifyDeliveryDate}
+                  />
+                  <span className="buy-now-date-display">
+                    {value.date ? formatDateDisplay(value.date) : t.selectDeliveryDate}
+                  </span>
+                </div>
+                <div className="buy-now-date-quick-btns">
+                  <button
+                    type="button"
+                    className={`buy-now-date-quick-btn${value.date === todayStr ? ' buy-now-date-quick-btn--active' : ''}`}
+                    onClick={() => updateDate(todayStr)}
+                    aria-label={t.todayLabel}
+                    aria-pressed={value.date === todayStr}
+                  >
+                    {t.todayLabel}
+                  </button>
+                  <button
+                    type="button"
+                    className={`buy-now-date-quick-btn${value.date === tomorrowStr ? ' buy-now-date-quick-btn--active' : ''}`}
+                    onClick={() => updateDate(tomorrowStr)}
+                    aria-label={t.tomorrowLabel}
+                    aria-pressed={value.date === tomorrowStr}
+                  >
+                    {t.tomorrowLabel}
+                  </button>
+                </div>
+              </div>
+              <div className="buy-now-field">
+                <select
+                  id="buy-now-time-slot"
+                  value={value.timeSlot}
+                  onChange={(e) => onChange({ ...value, timeSlot: e.target.value })}
+                  className="buy-now-select"
+                  aria-label={t.preferredTime}
+                >
+                  <option value="">{t.selectTimeSlot}</option>
+                  {DELIVERY_TIME_SLOTS.map((slot) => (
+                    <option
+                      key={slot}
+                      value={slot}
+                      disabled={value.date ? !selectableTimeSlots.includes(slot) : false}
+                    >
+                      {slot}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Custom content (e.g. Send order via) or default "ADD TO CART" */}
+      {!accordionMode && (
+        <div className="buy-now-step buy-now-step-4">
+          <span className="buy-now-num" aria-hidden>{hideDateAndTime ? '2' : '3'}</span>
+          <div className="buy-now-step-content">
+            <h3 className="buy-now-step-heading">{step3Heading ?? t.step4}</h3>
+            {step3Content}
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .buy-now-form {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 20px;
+          margin-top: 24px;
+          box-shadow: var(--shadow);
+        }
+        .buy-now-form-accordion {
+          margin-top: 0;
+          border: none;
+          box-shadow: none;
+          padding: 0;
+          background: transparent;
+        }
+        .buy-now-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 20px;
+          text-align: center;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+        @media (max-width: 480px) {
+          .buy-now-form {
+            padding: 16px;
+            margin-top: 20px;
+          }
+          .buy-now-title {
+            font-size: 1rem;
+            margin-bottom: 16px;
+          }
+          .buy-now-step {
+            margin-bottom: 16px;
+          }
+        }
+        @media (max-width: 360px) {
+          .buy-now-form {
+            padding: 12px;
+          }
+          .buy-now-title {
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+          }
+          .buy-now-step-heading {
+            font-size: 0.85rem;
+          }
+        }
+        @media (max-width: 350px) {
+          .buy-now-form {
+            padding: 10px;
+          }
+          .buy-now-title {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+          }
+          .buy-now-step {
+            margin-bottom: 14px;
+            gap: 8px;
+          }
+          .buy-now-step-heading {
+            font-size: 0.8rem;
+          }
+          .buy-now-num {
+            width: 24px;
+            height: 24px;
+            font-size: 0.8rem;
+          }
+          .buy-now-input,
+          .buy-now-select {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+          }
+          .buy-now-radio-pill {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+          }
+        }
+        .buy-now-step {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+        .buy-now-step:last-child {
+          margin-bottom: 0;
+        }
+        .buy-now-num {
+          flex-shrink: 0;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--accent);
+          color: #fff;
+          font-size: 0.9rem;
+          font-weight: 700;
+          border-radius: 50%;
+        }
+        .buy-now-step-content {
+          flex: 1;
+        }
+        .buy-now-step-heading {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0 0 6px;
+        }
+        .buy-now-hint {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          margin: 0 0 10px;
+        }
+        .buy-now-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .buy-now-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .buy-now-label {
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: var(--text-muted);
+        }
+        .buy-now-input,
+        .buy-now-select {
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-size: 0.95rem;
+          font-family: inherit;
+          background: var(--surface);
+          color: var(--text);
+        }
+        .buy-now-select {
+          padding-right: 36px;
+          background-position: right 10px center;
+        }
+        .buy-now-input:focus,
+        .buy-now-select:focus {
+          outline: none;
+          border-color: var(--accent);
+        }
+        .buy-now-input-readonly {
+          background: var(--pastel-cream);
+          cursor: default;
+        }
+        .buy-now-select:disabled,
+        .buy-now-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .buy-now-step-4 .buy-now-step-content {
+          margin-bottom: 0;
+        }
+        .buy-now-radio-pills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .buy-now-radio-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-size: 0.85rem;
+          color: var(--text);
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .buy-now-radio-pill:hover {
+          border-color: var(--accent);
+        }
+        .buy-now-radio-input {
+          margin: 0;
+          accent-color: var(--accent);
+        }
+        .buy-now-radio-pill:has(.buy-now-radio-input:checked) {
+          border-color: var(--accent);
+          background: var(--accent-soft, #e8dfd0);
+        }
+        .buy-now-delivery-info {
+          margin-top: 12px;
+          margin-bottom: 20px;
+          margin-left: 40px;
+          padding: 12px 14px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .buy-now-delivery-info-title {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0 0 8px;
+        }
+        .buy-now-delivery-info-line {
+          font-size: 11px;
+          line-height: 1.4;
+          color: var(--text-muted);
+          margin: 0 0 4px;
+        }
+        .buy-now-delivery-info-line:last-child {
+          margin-bottom: 0;
+        }
+        .buy-now-delivery-info-note {
+          font-size: 11px;
+          margin-top: 6px;
+        }
+        .buy-now-textarea {
+          resize: vertical;
+          min-height: 60px;
+        }
+        .buy-now-address-tip {
+          font-size: 0.85rem;
+          color: var(--text-muted);
+          margin: 0 0 6px;
+          line-height: 1.4;
+        }
+        .buy-now-address-hint {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+        }
+        .buy-now-address-error {
+          color: var(--accent);
+        }
+        .buy-now-delivery-instructions {
+          margin-top: 16px;
+          margin-bottom: 12px;
+          padding: 14px 16px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-left: 4px solid var(--accent);
+          border-radius: var(--radius-sm);
+        }
+        .buy-now-delivery-instructions-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 10px;
+        }
+        .buy-now-delivery-instructions-list {
+          margin: 0;
+          padding-left: 20px;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          color: var(--text);
+        }
+        .buy-now-delivery-instructions-list li {
+          margin-bottom: 6px;
+        }
+        .buy-now-delivery-instructions-list li:last-child {
+          margin-bottom: 0;
+        }
+        .buy-now-required {
+          color: #b91c1c;
+        }
+        .buy-now-select-full {
+          width: 100%;
+        }
+        .buy-now-central-toggle-wrap {
+          margin-top: 8px;
+          padding: 12px 14px;
+          background: var(--pastel-cream, #fdf8f3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .buy-now-checkbox-label {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          font-size: 0.9rem;
+          line-height: 1.4;
+          color: var(--text);
+          cursor: pointer;
+        }
+        .buy-now-checkbox {
+          flex-shrink: 0;
+          margin-top: 2px;
+          accent-color: var(--accent);
+        }
+        .buy-now-checkbox-text {
+          flex: 1;
+          min-width: 0;
+        }
+        .buy-now-central-helper {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          margin: 8px 0 0 28px;
+        }
+        .buy-now-open-gmaps-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #fff;
+          background: var(--accent);
+          border-radius: var(--radius-sm);
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s;
+        }
+        .buy-now-open-gmaps-btn-icon {
+          flex-shrink: 0;
+          width: 18px;
+          height: 18px;
+        }
+        @media (max-width: 480px) {
+          .buy-now-open-gmaps-btn-icon {
+            width: 16px;
+            height: 16px;
+          }
+        }
+        .buy-now-open-gmaps-btn:hover {
+          background: #a88b5c;
+          transform: translateY(-1px);
+        }
+        .buy-now-date-field {
+          text-align: left;
+        }
+        .buy-now-date-display-wrap {
+          position: relative;
+          display: block;
+          cursor: pointer;
+          text-align: left;
+        }
+        .buy-now-date-input {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+        }
+        .buy-now-date-display {
+          display: block;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-size: 0.95rem;
+          font-family: inherit;
+          background: var(--surface);
+          color: var(--text);
+          min-height: 42px;
+          line-height: 1.4;
+        }
+        .buy-now-date-display-wrap:focus-within .buy-now-date-display,
+        .buy-now-date-display-wrap:hover .buy-now-date-display {
+          border-color: var(--accent);
+        }
+        .buy-now-date-quick-btns {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .buy-now-date-quick-btn {
+          padding: 6px 12px;
+          font-size: 0.8rem;
+          font-family: inherit;
+          font-weight: 600;
+          color: var(--text);
+          background: color-mix(in srgb, var(--accent-soft) 58%, var(--pastel-cream));
+          border: 1px solid color-mix(in srgb, var(--accent-secondary) 52%, var(--border));
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .buy-now-date-quick-btn:hover {
+          background: color-mix(in srgb, var(--accent-soft) 78%, var(--pastel-cream));
+          border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+        }
+        .buy-now-date-quick-btn--active {
+          background: color-mix(in srgb, var(--pastel-pink) 88%, var(--pastel-cream));
+          color: var(--text);
+          border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+          font-weight: 600;
+        }
+        .buy-now-date-quick-btn--active:hover {
+          background: color-mix(in srgb, var(--pastel-pink) 92%, white);
+          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+        }
+        @media (max-width: 640px) {
+          .buy-now-form-accordion .buy-now-date-time-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            align-items: start;
+            gap: 10px;
+          }
+          .buy-now-form-accordion .buy-now-date-time-row .buy-now-field {
+            min-width: 0;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

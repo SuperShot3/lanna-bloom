@@ -1,0 +1,214 @@
+import Link from 'next/link';
+import { STRIPE_FEE_PERCENT_LABEL } from '@/lib/accounting/stripeFee';
+import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDisplay';
+
+/** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
+const ARTICLE_CREATED = '2026-04-06';
+/** ISO date (YYYY-MM-DD) — bump when you change the text below. */
+const ARTICLE_LAST_UPDATED = '2026-05-04';
+
+function formatArticleDate(iso: string) {
+  const d = new Date(`${iso}T12:00:00`);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export default function AccountingInfoPage() {
+  return (
+    <div className="admin-accounting-info">
+      <header className="admin-header admin-page-header">
+        <div>
+          <Link href="/admin/accounting/overview" className="admin-back-link">← Accounting</Link>
+          <h1 className="admin-title">How accounting works</h1>
+          <p className="admin-hint">
+            Quick reference for staff — what the admin numbers mean today (not legal or tax advice).
+          </p>
+        </div>
+      </header>
+
+      <div className="admin-accounting-info-body">
+        <section className="admin-accounting-info-section">
+          <h2 className="admin-accounting-info-heading">Purpose</h2>
+          <p>
+            The Accounting section is an internal ledger: it helps you see money coming in from sales,
+            money going out as expenses, and a simple profit figure. It is designed for day-to-day
+            operations, not for full statutory accounting.
+          </p>
+          <p className="admin-hint" style={{ marginTop: '0.75rem' }}>
+            Developer reference (repo):{' '}
+            <code className="admin-expenses-id">docs/ACCOUNTING_AND_EXPENSES.md</code>
+          </p>
+        </section>
+
+        <section className="admin-accounting-info-section">
+          <h2 className="admin-accounting-info-heading">What is tracked</h2>
+          <ul className="admin-accounting-info-list">
+            <li>
+              <strong>Income records</strong> — Gross amounts from paid orders (created automatically when
+              a payment is confirmed) and manual entries (cash sales, adjustments, legacy orders, etc.).
+              Each row can link to an order, show payment method, and where the money sits (bank, cash,
+              Stripe balance, other).
+            </li>
+            <li>
+              <strong>Expenses</strong> — Business spending with date, category, payment method, and
+              optional receipt file. Used for the expense total and net profit.
+            </li>
+            <li>
+              <strong>Per-order costs &amp; profit</strong> — For each order, you can enter COGS, delivery
+              cost, and payment fee; the system shows estimated profit for that order. From the{' '}
+              <strong>Orders</strong> list open an order, then use <strong>Edit costs &amp; profit in
+              Accounting</strong>, or open{' '}
+              <code className="admin-expenses-id">/admin/accounting/orders/[order_id]</code> directly.
+            </li>
+            <li>
+              <strong>Stripe processing fees</strong> — For Stripe checkouts we store the fee from
+              Stripe&apos;s balance transaction when available; otherwise we use a{' '}
+              <strong>{STRIPE_FEE_PERCENT_LABEL}</strong> on the gross amount. The Overview shows both
+              gross revenue and these fees; net income subtracts them (fees are not duplicated as expense
+              rows).
+            </li>
+          </ul>
+        </section>
+
+        <section className="admin-accounting-info-section">
+          <h2 className="admin-accounting-info-heading">Caveats, limits, and options</h2>
+          <ul className="admin-accounting-info-list">
+            <li>
+              <strong>Tax / VAT</strong> — Not calculated. Amounts are not split into tax-inclusive vs
+              exclusive; speak to your accountant for tax reporting.
+            </li>
+            <li>
+              <strong>Exact vs estimated Stripe fees</strong> — New Stripe payments store the real fee from
+              Stripe when the webhook/sync path can read it. Older income rows may still use the fallback
+              rate; reconcile with the Stripe Dashboard if needed.
+            </li>
+            <li>
+              <strong>Refunds</strong> — Stripe refunds are recorded automatically when Stripe sends a{' '}
+              <code>refund.created</code> webhook (after you run the database migration for{' '}
+              <code>income_refunds</code>). Stripe refunds reduce the <strong>Stripe — net volume</strong> line
+              for the refund date. You can still cancel or adjust income rows manually for non-Stripe refunds.
+            </li>
+            <li>
+              <strong>Optional manual income deferral</strong> — Set env{' '}
+              <code className="admin-expenses-id">ACCOUNTING_MANUAL_PAID_INCOME_DEFERRED=true</code> if bank
+              / QR orders should <strong>not</strong> auto-create income when marked paid; staff then adds
+              income from <strong>Accounting → Manual income</strong>. Stripe orders always record income
+              automatically.
+            </li>
+            <li>
+              <strong>Bank reconciliation</strong> — We do not match every payout to the bank statement
+              automatically.
+            </li>
+            <li>
+              <strong>Payroll, loans, inventory, fixed assets</strong> — Only what you enter as expenses
+              or income appears here.
+            </li>
+          </ul>
+        </section>
+
+        <section className="admin-accounting-info-section">
+          <h2 className="admin-accounting-info-heading">Personal withdrawals vs expenses vs transfers</h2>
+          <ul className="admin-accounting-info-list">
+            <li>
+              <strong>Business expense</strong> — Money spent on the shop (flowers, ads, tools). Reduces net profit and
+              the bucket you paid from (bank or cash).
+            </li>
+            <li>
+              <strong>Transfer (payout)</strong> — Money moving between business buckets (e.g. Stripe → bank). Net profit
+              unchanged; total business money unchanged.
+            </li>
+            <li>
+              <strong>Personal withdrawal</strong> — Money leaving the business for your personal use. Requires{' '}
+              <strong>when</strong> (date), <strong>amount</strong>, and <strong>where it went</strong> (purpose). Reduces
+              the bank balance on the overview but does <strong>not</strong> reduce revenue or net profit. Appears in the
+              ledger for history only.
+            </li>
+          </ul>
+        </section>
+
+        <section className="admin-accounting-info-section">
+          <h2 className="admin-accounting-info-heading">How to read the overview</h2>
+          <ul className="admin-accounting-info-list">
+            <li>
+              <strong>Stripe — gross volume</strong> — Sum of confirmed income rows paid by card through Stripe only
+              (compare to Stripe Dashboard <em>Gross volume</em>). <strong>Stripe — net volume</strong> subtracts stored
+              or estimated Stripe fees and Stripe refunds in the selected period (<em>Net volume</em> on Stripe when date
+              ranges match).
+            </li>
+            <li>
+              <strong>Non-Stripe income</strong> — Separate bucket: bank transfer, QR, cash, manual entries (e.g. LINE payments
+              you record without an order). Totals exclude Stripe processing fees. Net profit stacks both buckets minus COGS and
+              operating expenses — it is not “Stripe-only”.
+            </li>
+            <li>
+              <strong>Stripe processing fees</strong> — Sum of per-row fees (balance transaction fee when saved, otherwise the
+              estimated rate). Fees are reflected in Stripe net volume, not duplicated as expense rows.
+            </li>
+            <li>
+              <strong>Total confirmed revenue</strong> — Stripe net volume plus non‑Stripe contributions (after refunds
+              attributed to each), before COGS and operating expenses.
+            </li>
+            <li>
+              <strong>Total expenses</strong> — Sum of expense rows in the date range (by expense date).
+            </li>
+            <li>
+              <strong>Net result</strong> — Total confirmed revenue (all buckets after fees/refunds allocated to Stripe vs
+              non-Stripe) minus total expenses.
+            </li>
+            <li>
+              <strong>Net by money location (“Where the money is”)</strong> — Each row shows confirmed income{' '}
+              <strong>after Stripe processing fees</strong> for that channel, minus expenses recorded as paid{' '}
+              <strong>from that channel</strong>: <strong>Cash</strong> expenses reduce Cash;{' '}
+              <strong>Bank account</strong> / card / QR expenses reduce Bank account. Stripe income stays under{' '}
+              <strong>Stripe balance</strong> until you record a <strong>transfer</strong> to the bank.{' '}
+              <strong>Personal withdrawals</strong> also reduce the bank row when you take money out for personal use — they
+              do not reduce net profit.{' '}
+              <strong>Total expenses</strong> still roll into the overall <strong>net result</strong>; this grid only splits{' '}
+              where those deductions apply for planning. Next scheduled Stripe payout (reference):{' '}
+              <strong>{formatStripeNextPayoutShort()}</strong> — update in code when your Stripe schedule changes.
+            </li>
+          </ul>
+        </section>
+
+        <section className="admin-accounting-info-section">
+          <h2 className="admin-accounting-info-heading">Dates &amp; the period filter</h2>
+          <ul className="admin-accounting-info-list">
+            <li>
+              <strong>Income records — paid date</strong> — Each row has a{' '}
+              <strong>date money received</strong> (paid date). The accounting overview, ledger, and income
+              list use this date for the selected period — so a cash sale entered today but received yesterday
+              is counted in yesterday&rsquo;s month. Auto-created rows from paid orders use the order&rsquo;s
+              payment timestamp; manual rows use the date you enter on the form.
+            </li>
+            <li>
+              <strong>Expenses — expense date</strong> — You choose an <strong>expense date</strong> (the
+              business day the cost belongs to). Totals and filters use that date. The row also has a{' '}
+              <strong>created</strong> time for when it was first entered; that is mainly for audit, not for
+              the main totals.
+            </li>
+            <li>
+              Income paid_date and expense date use the same calendar boundaries, so monthly totals line up
+              naturally — &ldquo;How much we made this month&rdquo; reflects what actually happened in the month.
+            </li>
+            <li>
+              Default period is the <strong>current calendar month</strong>. Use the quick buttons (This
+              month / Last month / Year to date / All time) above the tabs to switch ranges fast.
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <footer className="admin-accounting-info-meta" aria-label="Article dates">
+        <p>
+          <span className="admin-accounting-info-meta-label">Article created:</span>{' '}
+          <time dateTime={ARTICLE_CREATED}>{formatArticleDate(ARTICLE_CREATED)}</time>
+          <span className="admin-accounting-info-meta-sep" aria-hidden="true">
+            {' '}
+            ·{' '}
+          </span>
+          <span className="admin-accounting-info-meta-label">Last updated:</span>{' '}
+          <time dateTime={ARTICLE_LAST_UPDATED}>{formatArticleDate(ARTICLE_LAST_UPDATED)}</time>
+        </p>
+      </footer>
+    </div>
+  );
+}

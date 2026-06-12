@@ -1,0 +1,32 @@
+source,ga4_resolution,active_users,new_users,width_bucket,cumulative_rank,notes
+GA4_export_sample,360x800,40,40,360-389,1,Highest active users (narrow Android)
+GA4_export_sample,360x820,35,35,360-389,2,
+GA4_export_sample,412x915,26,26,390-414,3,
+GA4_export_sample,360x780,20,19,360-389,4,
+GA4_export_sample,430x932,20,18,415-767,5,Large phone; strong revenue in sample
+GA4_export_sample,1024x768,17,17,768-1023,6,Tablet landscape; validate separately
+GA4_export_sample,390x844,17,17,390-414,7,iPhone-class
+GA4_export_sample,2000x2000,13,13,1024+,8,Unusual; sanity-check only
+GA4_export_sample,800x600,13,11,768-1023,9,Legacy desktop
+GA4_export_sample,393x852,11,11,390-414,10,
+GA4_export_sample,440x956,9,9,415-767,11,
+GA4_export_sample,385x854,8,8,384-389,12,
+GA4_export_sample,402x874,8,8,390-414,13,
+GA4_export_sample,1920x1080,7,5,1024+,14,Desktop; long sessions in sample
+
+bucket,width_range_px,share_guidance
+B1,320-359,Test on 360 with DevTools zoom or 320 if issues appear
+B2,360-389,Primary mobile bucket (~40%+ of sample top rows)
+B3,390-414,Large iPhone / Android
+B4,415-767,Phablet / small tablet portrait
+B5,768-1023,Tablet
+B6,1024+,Desktop
+
+mandatory_test_width_css,heights_to_spot_check,landscape_priority
+360,800;780,Top bucket 360x800 + 360x780
+390,844,Second tier iPhone
+412,915,Large Android
+430,932,Phablet
+393,852,Pixel-class
+1920,1080,Desktop checkout
+1366,768,Common laptop (if time)

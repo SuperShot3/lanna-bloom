@@ -1,0 +1,43 @@
+---
+description: Default open/close animations for popovers, dropdowns, and inline checkout reveals
+globs:
+  - components/ui/**
+  - components/checkout/**
+  - app/**/cart/**
+  - app/**/checkout/**
+---
+
+# UI overlay animations
+
+Use the project defaults below instead of instant show/hide or one-off keyframes.
+
+## Floating popovers (Radix / shadcn)
+
+Add class **`ui-popover-content`** to menu, dialog, or popover content roots.
+
+- Styles live in `app/globals.css` (`ui-popover-in` / `ui-popover-out`).
+- Already applied on `components/ui/dropdown-menu.tsx` (`DropdownMenuContent`, `DropdownMenuSubContent`).
+- Respects `prefers-reduced-motion: reduce`.
+
+## Inline expand (checkout panels)
+
+Use **`OverlayReveal`** from `@/components/ui/overlay-reveal` for content that opens below a control (delivery date calendar, optional fields).
+
+```tsx
+<OverlayReveal open={isOpen} className="my-panel">
+  {children}
+</OverlayReveal>
+```
+
+- Global classes: `.ui-overlay-reveal` / `.ui-overlay-reveal--open` (grid `0fr` → `1fr`, fade, slight slide).
+- Match spacing with a modifier when open, e.g. `margin-top` on `.my-panel.ui-overlay-reveal--open` (see `DeliveryDateSelector`).
+- Do **not** conditionally mount with `{open && …}` only — that skips the close animation.
+
+## Existing patterns
+
+- Gift message chips: `co-gift-chips-reveal` in `PremiumCheckoutFlow` (same motion idea).
+- LINE ID field: `LineIdFieldReveal` → wraps `OverlayReveal`.
+
+## Tokens
+
+`--ui-overlay-ease`, `--ui-overlay-expand-duration`, `--ui-popover-duration` in `:root` (`app/globals.css`).

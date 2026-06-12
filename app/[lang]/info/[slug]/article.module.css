@@ -1,0 +1,668 @@
+/* Info article page */
+.infoArticlePage {
+  padding: 32px 0 64px;
+  background: var(--bg);
+}
+
+.infoArticle {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .infoArticlePage {
+    padding: 24px 0 48px;
+  }
+  .infoArticle {
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 400px) {
+  .infoArticle {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+.infoArticleHeader {
+  margin-bottom: 40px;
+}
+
+.infoArticleBack {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+
+.infoArticleBack:hover {
+  color: var(--accent);
+}
+
+.infoArticleDate {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.infoArticleTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 12px;
+  line-height: 1.25;
+}
+
+.infoArticleSubtitle {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin: 0 0 20px;
+}
+
+.infoArticleShare {
+  margin-top: 0;
+}
+
+.infoArticleBody {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* Inline catalog product cards embedded in MDX */
+.inlineCatalogCard {
+  /* 50% smaller than the catalog-style card width, but only inside articles */
+  max-width: 220px;
+  margin: 1.25em auto 1.75em;
+  min-width: 0;
+  /* Isolate from article typography / img rules */
+  isolation: isolate;
+}
+
+.inlineCatalogMini {
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.inlineCatalogMiniLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.inlineCatalogMiniThumb {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--pastel-cream);
+  border: 1px solid rgba(45, 42, 38, 0.08);
+}
+
+.inlineCatalogMiniThumbImg {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.inlineCatalogMiniThumbPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(197, 160, 89, 0.10), rgba(26, 60, 52, 0.08));
+}
+
+.inlineCatalogMiniTitle {
+  min-width: 0;
+  font-weight: 650;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.inlineCatalogMiniButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  background: rgba(197, 160, 89, 0.15);
+  color: #c5a059;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+
+.inlineCatalogMiniButton {
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .inlineCatalogMini {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .inlineCatalogMiniLeft {
+    width: 100%;
+  }
+  .inlineCatalogMiniButton {
+    width: 100%;
+  }
+}
+
+/* Editorial figure (hero / in-article photos) */
+.articleFigure {
+  margin: 1.75em 0 2em;
+}
+
+.articleFigureImg {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.articleFigureCaption {
+  margin: 0.65em 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Product pick band — keeps catalog promos visually grouped in the article flow */
+.articleProductPick {
+  margin: 1.5em 0 2em;
+  padding: 16px 18px;
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  background: linear-gradient(180deg, rgba(250, 247, 242, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  box-sizing: border-box;
+}
+
+.articleProductPickTitle {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.articleProductPickBody {
+  min-width: 0;
+}
+
+.articleProductPickBody .inlineCatalogMini {
+  box-shadow: none;
+  border-color: rgba(45, 42, 38, 0.1);
+}
+
+.inlineCatalogMiniButton:hover {
+  background: rgba(197, 160, 89, 0.28);
+  border-color: rgba(197, 160, 89, 0.45);
+  transform: translateY(-1px);
+}
+
+.inlineCatalogMiniButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.inlineCatalogCardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin: 1.25em 0 1.75em;
+}
+
+@media (min-width: 680px) {
+  .inlineCatalogCardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .inlineCatalogCardGrid .inlineCatalogCard {
+    max-width: none;
+    margin: 0;
+  }
+}
+
+/* Wraps MDX only so inline <a> styles do not affect ArticleCta links */
+.infoArticleMdx {
+  min-width: 0;
+}
+
+.infoArticleBody :global(.info-article-h2) {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 2em 0 0.75em;
+  color: var(--text);
+}
+
+.infoArticleBody :global(.info-article-h3) {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 1.5em 0 0.5em;
+  color: var(--text);
+}
+
+.infoArticleBody :global(.info-article-p) {
+  margin: 0 0 1em;
+  color: var(--text-muted);
+}
+
+.infoArticleBody :global(.info-article-ul) {
+  margin: 0 0 1em;
+  padding-left: 1.35rem;
+}
+
+.infoArticleBody :global(.info-article-li) {
+  margin-bottom: 0.55em;
+  color: var(--text-muted);
+  padding-left: 0.15rem;
+}
+
+/* Checklist blocks — icon rows inside styled cards */
+.articleChecklistBlock {
+  margin: 1.35em 0 1.65em;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  background: linear-gradient(180deg, rgba(250, 247, 242, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+  box-sizing: border-box;
+}
+
+.articleChecklistBlock[data-variant='recommended'] {
+  border-color: rgba(26, 60, 52, 0.16);
+  background: linear-gradient(180deg, rgba(244, 248, 246, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.articleChecklistBlock[data-variant='tip'] {
+  border-color: rgba(197, 160, 89, 0.18);
+  background: linear-gradient(180deg, rgba(255, 251, 245, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.articleChecklistBlockHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.articleChecklistBlockBadge {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background-color: rgba(197, 160, 89, 0.14);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 15px 15px;
+}
+
+.articleChecklistBlock[data-variant='essential'] .articleChecklistBlockBadge {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c5a059' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 11l3 3L22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlock[data-variant='recommended'] .articleChecklistBlockBadge {
+  background-color: rgba(26, 60, 52, 0.1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a3c34' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlock[data-variant='tip'] .articleChecklistBlockBadge {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c5a059' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2a7 7 0 0 1 7 7c0 2.8-1.6 4.4-3 5.8V18H8v-3.2C6.6 13.4 5 11.8 5 9a7 7 0 0 1 7-7z'/%3E%3Cpath d='M9 21h6'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlock[data-variant='default'] .articleChecklistBlockBadge {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c5a059' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z'/%3E%3Cpath d='M12 2v2.5M12 19.5V22M4.5 12H2M22 12h-2.5M6.4 6.4 4.6 4.6M19.4 19.4l-1.8-1.8M17.6 6.4l1.8-1.8M6.4 17.6l-1.8 1.8'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlockTitle {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.articleChecklistBlockBody :global(.info-article-ul) {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.articleChecklistBlockBody :global(.info-article-li) {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid rgba(45, 42, 38, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.articleChecklistBlockBody :global(.info-article-li-text) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.articleChecklistBlockBody :global(.info-article-li)::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background-color: rgba(197, 160, 89, 0.12);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 12px;
+}
+
+.articleChecklistBlock[data-variant='essential'] :global(.info-article-li)::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c5a059' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlock[data-variant='recommended'] :global(.info-article-li)::before {
+  background-color: rgba(26, 60, 52, 0.1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a3c34' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlock[data-variant='tip'] :global(.info-article-li)::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c5a059' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2a7 7 0 0 1 7 7c0 2.8-1.6 4.4-3 5.8V18H8v-3.2C6.6 13.4 5 11.8 5 9a7 7 0 0 1 7-7z'/%3E%3Cpath d='M9 21h6'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlock[data-variant='default'] :global(.info-article-li)::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c5a059' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2c2 4 6 6 6 10a6 6 0 1 1-12 0c0-4 4-6 6-10z'/%3E%3C/svg%3E");
+}
+
+.articleChecklistBlockBody :global(.info-article-li) :global(.info-article-strong) {
+  color: var(--text);
+}
+
+/* Numbered steps block */
+.articleStepsBlock {
+  margin: 1.35em 0 1.75em;
+  padding: 18px 18px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(45, 42, 38, 0.1);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.articleStepsBody :global(ol) {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: article-step;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.articleStepsBody :global(ol > li),
+.articleStepsBody :global(ol > .info-article-li) {
+  counter-increment: article-step;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(45, 42, 38, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.articleStepsBody :global(ol > .info-article-li .info-article-li-text) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.articleStepsBody :global(ol > li)::before,
+.articleStepsBody :global(ol > .info-article-li)::before {
+  content: counter(article-step);
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-cta-text, #1a3c34);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Images in MDX (module-scoped wrapper class; cards reset below) */
+.infoArticleBody .infoArticleMdx img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 2em 0 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Embedded catalog cards: undo article img rules; keep ProductCard image + plush badge aligned */
+.infoArticleBody .infoArticleMdx .inlineCatalogCard img {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Inline mini promo: undo article-wide img rules so thumbnail stays inside frame */
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb :global(span),
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb :global(span img),
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb img {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb :global(span) {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogMiniThumb img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: top center !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-image),
+.infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-image-shared img) {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover;
+  object-position: top center;
+  display: block !important;
+}
+
+.infoArticleBody .infoArticleMdx .inlineCatalogCard :global(.pcard-toy-icon img) {
+  width: 22px !important;
+  height: 22px !important;
+  max-width: 22px !important;
+  object-fit: contain !important;
+}
+
+/* em directly after an image acts as a caption */
+.infoArticleBody :global(img + em),
+.infoArticleBody :global(.info-article-p > em:only-child) {
+  display: block;
+  margin-top: 0.5em;
+  margin-bottom: 2em;
+  font-size: 0.85rem;
+  font-style: normal;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* em used inline (not a caption) */
+.infoArticleBody :global(.info-article-em) {
+  font-style: italic;
+  color: inherit;
+}
+
+/* Bold emphasis */
+.infoArticleBody :global(.info-article-strong) {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Callout / pull-quote block */
+.infoArticleBody :global(.info-article-callout) {
+  margin: 0.5em 0;
+  padding: 20px 24px;
+  background: var(--pastel-cream, #faf7f2);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.infoArticleBody :global(.info-article-callout p) {
+  margin: 0 0 0.5em;
+  color: var(--text);
+}
+
+.infoArticleBody :global(.info-article-callout p:last-child) {
+  margin: 0;
+}
+
+/* Horizontal rule divider */
+.infoArticleBody :global(.info-article-divider) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5em 0;
+}
+
+/* Inline links in MDX only — CTA buttons live outside .infoArticleMdx */
+.infoArticleMdx :global(a) {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.infoArticleMdx :global(a:hover) {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+/* Article CTA section */
+.infoArticleCta {
+  margin-top: 2.5em;
+  padding-top: 2em;
+  border-top: 1px solid var(--border);
+}
+
+.infoArticleCtaTitle {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 1rem;
+}
+
+.infoArticleCtaLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* CTA buttons — solid fills (match site hero-cta: gold + dark green text) */
+.infoArticleCtaLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  background: var(--accent);
+  color: var(--accent-cta-text, #1a3c34);
+  border: 2px solid var(--accent-border);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 9999px;
+  text-decoration: none !important;
+  transition: opacity 0.2s, transform 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.infoArticleCtaLink:hover {
+  opacity: 0.98;
+  transform: translateY(-1px);
+  color: var(--accent-cta-text, #1a3c34);
+}
+
+.infoArticleCtaLinkSecondary {
+  background: var(--accent-soft);
+  border: 2px solid var(--accent-border);
+  color: var(--accent-cta-text, #1a3c34);
+}
+
+.infoArticleCtaLinkSecondary:hover {
+  background: #e0d4c4;
+  border-color: var(--accent-border);
+  color: var(--accent-cta-text, #1a3c34);
+}

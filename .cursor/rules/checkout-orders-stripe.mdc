@@ -1,0 +1,27 @@
+---
+description: Rules for checkout, orders, Stripe payment flow, and customer order pages
+globs:
+  - "app/**/checkout/**"
+  - "app/order/**"
+  - "app/api/stripe/**"
+  - "app/api/orders/**"
+  - "lib/checkout/**"
+  - "lib/stripe/**"
+  - "lib/orders/**"
+alwaysApply: false
+---
+
+Before editing checkout, orders, Stripe, payment confirmation, or customer order pages, read:
+
+- `/ai_context/04_CHECKOUT_ORDERS_STRIPE.md`
+- `/ai_context/03_SECURITY_RULES.md`
+
+Critical rules:
+
+- Never trust client-side prices, totals, delivery fees, discounts, payment status, order status, user role, or ownership.
+- Stripe is the source of truth for payment confirmation (`payment_status` / PaymentIntent `succeeded`).
+- Fulfill via `fulfillPaidStripeCheckoutSession` (webhook, `order-status`, sync).
+- Cart flow: checkout draft → Stripe session → **create order only after confirmed payment**.
+- Do not re-enable public unpaid order creation from cart unless intentionally redesigned.
+- Customer order pages and `/api/orders/*` must not expose private order data without a valid `public_token`.
+- Webhook must remain idempotent (`stripe_events`).

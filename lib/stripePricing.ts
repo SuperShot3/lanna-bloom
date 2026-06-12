@@ -1,0 +1,300 @@
+/**
+ * Server-side order pricing for Stripe. Never trust client totals.
+ * Fetches prices from Sanity and computes items, add-ons, delivery fee.
+ */
+
+import {
+  getBalloonById,
+  getBouquetById,
+  getBouquetBySlugFromSanity,
+  getPlushyToyById,
+  getProductById,
+} from '@/lib/sanity';
+import { resolveBouquetOptionFromIdentifier } from '@/lib/bouquetOptions';
+import type { OrderCardType, OrderWrappingOption, OrderDeliveryDestinationId } from '@/lib/orders';
+import { isExpansionDestination } from '@/lib/delivery/markets';
+import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
+import type { Locale } from '@/lib/i18n';
+import { computeFinalPrice } from '@/lib/partnerPricing';
+import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
+import { normalizeBalloonText } from '@/lib/balloonCustomization';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
+import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
+
+/** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
+const CARD_BEAUTIFUL_PRICE_THB = 20;
+
+export interface CartItemIdentifier {
+  itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
+  bouquetId: string;
+  bouquetSlug?: string;
+  size: string;
+  addOns: {
+    cardType: OrderCardType;
+    cardMessage: string;
+    wrappingOption: OrderWrappingOption;
+    balloonText?: string;
+    productAddOns?: ProductAddOnsSelected;
+  };
+  imageUrl?: string;
+}
+
+export interface ComputedOrderItem {
+  bouquetId: string;
+  bouquetTitle: string;
+  size: string;
+  price: number;
+  addOns: {
+    cardType: OrderCardType;
+    cardMessage: string;
+    wrappingOption: OrderWrappingOption;
+    balloonText?: string;
+  };
+  imageUrl?: string;
+  bouquetSlug?: string;
+  itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
+  cost?: number;
+  commissionAmount?: number;
+}
+
+export interface ComputedOrderTotals {
+  items: ComputedOrderItem[];
+  itemsTotal: number;
+  deliveryFee: number;
+  grandTotal: number;
+}
+
+/** Delivery fields required for server-side pricing (zone fee + expansion rules). */
+export interface PricingDeliveryInput {
+  deliveryDestination: OrderDeliveryDestinationId;
+  deliveryZoneId: string;
+}
+
+/**
+ * Compute order totals from cart identifiers. Fetches prices from Sanity.
+ * Never accepts price/total from client.
+ */
+export async function computeOrderTotals(
+  cartItems: CartItemIdentifier[],
+  delivery: PricingDeliveryInput,
+  lang: Locale
+): Promise<{ ok: true; totals: ComputedOrderTotals } | { ok: false; message: string }> {
+  if (!cartItems?.length) {
+    return { ok: false, message: 'Cart is empty' };
+  }
+
+  if (!isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) {
+    return { ok: false, message: 'Invalid delivery zone for this destination' };
+  }
+
+  const deliveryFeeResolved = getZoneFee(delivery.deliveryDestination, delivery.deliveryZoneId);
+  if (deliveryFeeResolved == null) {
+    return { ok: false, message: 'Invalid delivery zone for this destination' };
+  }
+
+  if (isExpansionDestination(delivery.deliveryDestination)) {
+    for (const item of cartItems) {
+      const lineType = item.itemType ?? 'bouquet';
+      if (lineType !== 'bouquet') {
+        return {
+          ok: false,
+          message:
+            'This delivery area only supports flower bouquets. Remove other item types from your cart.',
+        };
+      }
+      if (getAddOnsTotal(item.addOns?.productAddOns ?? {}) > 0) {
+        return {
+          ok: false,
+          message:
+            'This delivery area does not support these add-ons. Remove gift add-ons and try again.',
+        };
+      }
+      if (normalizeBalloonText(item.addOns?.balloonText)) {
+        return {
+          ok: false,
+          message: 'This delivery area does not support balloon custom text on this order.',
+        };
+      }
+    }
+  }
+
+  const items: ComputedOrderItem[] = [];
+  let itemsTotal = 0;
+
+  for (const item of cartItems) {
+    const isProduct = item.itemType === 'product';
+    const isPlushyToy = item.itemType === 'plushyToy';
+    const isBalloon = item.itemType === 'balloon';
+    const applyMarkup = (v: number) => applyExpansionItemMarkupThb(v, delivery.deliveryDestination);
+
+    if (isPlushyToy) {
+      const toy = await getPlushyToyById(item.bouquetId);
+      if (!toy) {
+        return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
+      }
+      const finalPrice = applyCatalogDiscountThb(toy.price, toy.discountPercent);
+      let itemPrice = finalPrice;
+      if (item.addOns?.cardType === 'premium') {
+        itemPrice += CARD_BEAUTIFUL_PRICE_THB;
+      }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
+
+      const toyTitle = lang === 'th' && toy.nameTh ? toy.nameTh : toy.nameEn;
+      const sizeLabel = (item.size || toy.sizeLabel || '—').trim() || '—';
+      items.push({
+        bouquetId: toy.id,
+        bouquetTitle: toyTitle,
+        size: sizeLabel,
+        price: itemPrice,
+        addOns: {
+          cardType: item.addOns?.cardType ?? null,
+          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          wrappingOption: item.addOns?.wrappingOption ?? null,
+        },
+        imageUrl: item.imageUrl ?? toy.imageUrl,
+        bouquetSlug: item.bouquetSlug,
+        itemType: 'plushyToy',
+        cost: undefined,
+        commissionAmount: undefined,
+      });
+      itemsTotal += itemPrice;
+    } else if (isBalloon) {
+      const balloon = await getBalloonById(item.bouquetId);
+      if (!balloon) {
+        return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
+      }
+      const finalPrice = applyCatalogDiscountThb(balloon.price, balloon.discountPercent);
+      let itemPrice = finalPrice;
+      if (item.addOns?.cardType === 'premium') {
+        itemPrice += CARD_BEAUTIFUL_PRICE_THB;
+      }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
+
+      const balloonTitle = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
+      const sizeLabel = (item.size || balloon.sizeLabel || '—').trim() || '—';
+      items.push({
+        bouquetId: balloon.id,
+        bouquetTitle: balloonTitle,
+        size: sizeLabel,
+        price: itemPrice,
+        addOns: {
+          cardType: item.addOns?.cardType ?? null,
+          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          wrappingOption: item.addOns?.wrappingOption ?? null,
+          ...(normalizeBalloonText(item.addOns?.balloonText) && {
+            balloonText: normalizeBalloonText(item.addOns?.balloonText),
+          }),
+        },
+        imageUrl: item.imageUrl ?? balloon.imageUrl,
+        bouquetSlug: item.bouquetSlug,
+        itemType: 'balloon',
+        cost: undefined,
+        commissionAmount: undefined,
+      });
+      itemsTotal += itemPrice;
+    } else if (isProduct) {
+      const product = await getProductById(item.bouquetId);
+      if (!product) {
+        return { ok: false, message: `Product not found: ${item.bouquetId}` };
+      }
+      if (product.moderationStatus !== 'live') {
+        return { ok: false, message: `Product is not available: ${product.nameEn}` };
+      }
+      if (!bouquetIsAvailableForDestination(product, delivery.deliveryDestination)) {
+        return {
+          ok: false,
+          message: 'This product is not available for delivery to the selected province or market.',
+        };
+      }
+
+      const partnerCost = product.cost ?? product.price ?? 0;
+      const listedPrice = computeFinalPrice(partnerCost, product.commissionPercent);
+      const finalPrice = applyCatalogDiscountThb(listedPrice, product.discountPercent);
+      const commissionAmount = finalPrice - partnerCost;
+      let itemPrice = finalPrice;
+      if (item.addOns?.cardType === 'premium') {
+        itemPrice += CARD_BEAUTIFUL_PRICE_THB;
+      }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
+
+      const productTitle = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
+      items.push({
+        bouquetId: product.id,
+        bouquetTitle: productTitle,
+        size: '—',
+        price: itemPrice,
+        addOns: {
+          cardType: item.addOns?.cardType ?? null,
+          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          wrappingOption: item.addOns?.wrappingOption ?? null,
+        },
+        imageUrl: item.imageUrl ?? product.imageUrl,
+        bouquetSlug: item.bouquetSlug,
+        itemType: 'product',
+        cost: partnerCost,
+        commissionAmount,
+      });
+      itemsTotal += itemPrice;
+    } else {
+      const bouquet =
+        (item.bouquetSlug ? await getBouquetBySlugFromSanity(item.bouquetSlug) : null) ??
+        (await getBouquetById(item.bouquetId));
+      if (!bouquet) {
+        return { ok: false, message: `Bouquet not found: ${item.bouquetId}` };
+      }
+
+      if (!bouquetIsAvailableForDestination(bouquet, delivery.deliveryDestination)) {
+        return {
+          ok: false,
+          message: 'This bouquet is not available for delivery to the selected province or market.',
+        };
+      }
+
+      const size =
+        resolveBouquetOptionFromIdentifier(bouquet, item.size) ?? bouquet.sizes?.[0];
+      if (!size) {
+        return { ok: false, message: `Bouquet ${bouquet.slug} has no sizes` };
+      }
+
+      let itemPrice = applyCatalogDiscountThb(size.price ?? 0, bouquet.discountPercent);
+      if (item.addOns?.cardType === 'premium') {
+        itemPrice += CARD_BEAUTIFUL_PRICE_THB;
+      }
+      itemPrice += getAddOnsTotal(item.addOns?.productAddOns ?? {});
+      itemPrice = applyMarkup(itemPrice);
+
+      const bouquetTitle = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
+      items.push({
+        bouquetId: bouquet.id,
+        bouquetTitle,
+        size: size.label,
+        price: itemPrice,
+        addOns: {
+          cardType: item.addOns?.cardType ?? null,
+          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          wrappingOption: item.addOns?.wrappingOption ?? null,
+        },
+        imageUrl: item.imageUrl,
+        bouquetSlug: item.bouquetSlug ?? bouquet.slug,
+        itemType: 'bouquet',
+      });
+      itemsTotal += itemPrice;
+    }
+  }
+
+  const grandTotal = itemsTotal + deliveryFeeResolved;
+
+  return {
+    ok: true,
+    totals: {
+      items,
+      itemsTotal,
+      deliveryFee: deliveryFeeResolved,
+      grandTotal,
+    },
+  };
+}

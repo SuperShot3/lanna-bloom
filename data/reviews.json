@@ -1,0 +1,152 @@
+[
+  {
+    "id": "r1",
+    "name": "สมศรี วงศ์",
+    "initials": "สว",
+    "rating": 5,
+    "text": "ดอกกุหลาบสวยมากค่ะ สั่งให้แม่วันเกิด แม่ชอบมาก ส่งวันเดียวกันได้ ดอกไม้สดและจัดสวยมาก จะสั่งอีกแน่นอนค่ะ",
+    "date": "2026-02-15",
+    "location": "Nimman, Chiang Mai",
+    "featured": true
+  },
+  {
+    "id": "r2",
+    "name": "วิชัย พงษ์",
+    "initials": "วพ",
+    "rating": 5,
+    "text": "ร้านดอกไม้ที่ดีที่สุดในเชียงใหม่ ช่อผสมสวยเกินคาด บริการมืออาชีพ ดอกไม้อยู่ได้เกินสัปดาห์ แนะนำมากครับ",
+    "date": "2026-02-14",
+    "location": "Suthep, Chiang Mai",
+    "featured": true
+  },
+  {
+    "id": "r3",
+    "name": "อัญชลี สมศรี",
+    "initials": "อส",
+    "rating": 5,
+    "text": "สั่งช่อโรแมนติกวันวาเลนไทน์ ส่งตรงเวลา ห่อสวยมาก แฟนชอบมาก ขอบคุณ Lanna Bloom ค่ะ",
+    "date": "2026-02-13",
+    "location": "Hang Dong, Chiang Mai",
+    "featured": true
+  },
+  {
+    "id": "r4",
+    "name": "พิมพ์ใจ ใจดี",
+    "initials": "พจ",
+    "rating": 4,
+    "text": "ดอกไม้คุณภาพดี บริการเป็นกันเอง ให้ 4 ดาวเพราะอยากได้สีให้เลือกมากกว่านี้ แต่โดยรวมก็พอใจมากค่ะ",
+    "date": "2026-02-12",
+    "location": "Mueang Chiang Mai",
+    "featured": true
+  },
+  {
+    "id": "r5",
+    "name": "ธนพล รักดี",
+    "initials": "ทร",
+    "rating": 5,
+    "text": "ส่งดอกไม้ให้แฟนที่อยู่เชียงใหม่ บอกว่าสวยมาก ส่งรวดเร็วทันใจ จะใช้บริการอีกในโอกาสพิเศษครับ",
+    "date": "2026-02-11",
+    "location": "San Sai, Chiang Mai",
+    "featured": true
+  },
+  {
+    "id": "r6",
+    "name": "นภา ธารา",
+    "initials": "นธ",
+    "rating": 5,
+    "text": "เหมาะสำหรับช่อไว้อาลัยมาก สะอาดตา สวยงาม ส่งมาอย่างใส่ใจ ทีมงานเข้าใจดีมาก ขอบคุณค่ะ",
+    "date": "2026-02-10",
+    "location": "Doi Saket, Chiang Mai",
+    "featured": true
+  },
+  {
+    "id": "r7",
+    "name": "มนตรี เกียรติ",
+    "initials": "มก",
+    "rating": 5,
+    "text": "สั่งช่อกุหลาบในกล่องวันครบรอบแต่งงาน การจัดสวยมาก ภรรยาเซอร์ไพรส์มาก คุ้มค่าทุกบาทครับ",
+    "date": "2026-02-09",
+    "location": "Nimman, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r8",
+    "name": "ลัดดา วิเศษ",
+    "initials": "ลว",
+    "rating": 4,
+    "text": "ดอกไม้สวย ส่งตรงเวลา มีปัญหาเล็กน้อยที่ก้านหนึ่ง แต่โดยรวมพอใจมาก จะสั่งอีกค่ะ",
+    "date": "2026-02-08",
+    "location": "Suthep, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r9",
+    "name": "Tom H.",
+    "initials": "TH",
+    "rating": 5,
+    "text": "First time ordering flowers online in Thailand. Lanna Bloom made it easy. Great communication via LINE and perfect delivery.",
+    "date": "2026-02-07",
+    "location": "Hang Dong, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r10",
+    "name": "สุภา บุญมา",
+    "initials": "สบ",
+    "rating": 5,
+    "text": "ช่อวันเกิดให้พี่สาวถูกใจมาก ดอกไม้สด หอม และจัดสวย ส่งวันเดียวกันได้สมบูรณ์แบบค่ะ",
+    "date": "2026-02-06",
+    "location": "Mueang Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r11",
+    "name": "Chris N.",
+    "initials": "CN",
+    "rating": 5,
+    "text": "Excellent service from start to finish. The bouquet looked exactly like the photo. Delivered to my hotel on time. Highly recommend!",
+    "date": "2026-02-05",
+    "location": "Nimman, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r12",
+    "name": "อัจฉรา สุขใจ",
+    "initials": "อศ",
+    "rating": 4,
+    "text": "ดอกไม้สวยมากให้แม่ แม่ชอบมาก ส่งช้ากว่าที่คิดนิดหน่อยแต่ยังได้วันเดียวกัน คุ้มค่าค่ะ",
+    "date": "2026-02-04",
+    "location": "San Sai, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r13",
+    "name": "Peter O.",
+    "initials": "PO",
+    "rating": 5,
+    "text": "Got well bouquet for a colleague. Professional and thoughtful. The team even added a nice card. Will definitely use again.",
+    "date": "2026-02-03",
+    "location": "Doi Saket, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r14",
+    "name": "รัตนา กรองทอง",
+    "initials": "รก",
+    "rating": 5,
+    "text": "คุณภาพดีมาก สั่งวันครบรอบแต่งงาน กุหลาบสดมากอยู่ได้เกือบสองสัปดาห์ ขอบคุณค่ะ",
+    "date": "2026-02-02",
+    "location": "Suthep, Chiang Mai",
+    "featured": false
+  },
+  {
+    "id": "r15",
+    "name": "Kevin F.",
+    "initials": "KF",
+    "rating": 5,
+    "text": "Surprised my girlfriend with a mono bouquet. She cried happy tears. Best flower delivery experience in Chiang Mai.",
+    "date": "2026-02-01",
+    "location": "Nimman, Chiang Mai",
+    "featured": false
+  }
+]

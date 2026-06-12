@@ -1,0 +1,292 @@
+'use client';
+
+/**
+ * Post-checkout confirmation-pending flow. Order stays in a non-paid pending state
+ * until payment is truly confirmed.
+ *
+ * CRITICAL:
+ * - This page MUST NOT fire GA4 purchase or behave like Stripe paid success.
+ * - Purchase is sent only from backend when admin sets status to paid/confirmed_paid.
+ * - generate_lead (non-ecommerce) is fired once when user sees pending confirmation.
+ */
+
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { OrderPendingConfirmation } from '@/components/OrderPendingConfirmation';
+import { useCart } from '@/contexts/CartContext';
+import { trackGenerateLead } from '@/lib/analytics';
+import { CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY } from '@/lib/checkout/submissionToken';
+import { translations } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
+import type { Order } from '@/lib/orders';
+
+const POLL_INTERVAL_MS = 2500;
+const POLL_MAX_MS = 60000;
+const MANUAL_STATUS_POLL_MS = 20000; // When admin marks paid, redirect after this interval
+const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+
+function isPaidStatus(s: string | null | undefined): boolean {
+  return String(s ?? '').toUpperCase() === 'PAID';
+}
+
+type OrderWithPaymentStatus = Order & {
+  payment_status?: string | null;
+  paid_at?: string | null;
+  payment_method?: string | null;
+};
+
+export function ConfirmationPendingClient({
+  lang,
+  orderId: initialOrderId,
+  sessionId,
+}: {
+  lang: Locale;
+  orderId: string;
+  publicOrderUrl?: string;
+  shareText?: string;
+  sessionId?: string;
+}) {
+  const t = translations[lang].confirmationPending;
+  const tNav = translations[lang].nav;
+  const { clearCart } = useCart();
+  const [order, setOrder] = useState<Order | null>(null);
+  const [orderId, setOrderId] = useState(initialOrderId);
+  const [publicToken, setPublicToken] = useState<string | null>(null);
+  const [stripeStatus, setStripeStatus] = useState<'processing' | 'paid' | 'payment_failed' | null>(
+    sessionId ? 'processing' : null
+  );
+  const pollStartRef = useRef<number | null>(null);
+  const cartClearedRef = useRef(false);
+  const redirectingRef = useRef(false);
+
+  useEffect(() => {
+    document.body.classList.add('checkout-confirmation-pending-page-active');
+    return () => document.body.classList.remove('checkout-confirmation-pending-page-active');
+  }, []);
+
+  // Stripe order-status polling
+  useEffect(() => {
+    if (!sessionId || stripeStatus !== 'processing') return;
+    const poll = async () => {
+      if (pollStartRef.current && Date.now() - pollStartRef.current > POLL_MAX_MS) {
+        return;
+      }
+      try {
+        const submissionToken =
+          typeof window !== 'undefined'
+            ? (window.sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY) ?? '')
+            : '';
+        const res = await fetch(`/api/stripe/order-status?session_id=${encodeURIComponent(sessionId)}`, {
+          headers: submissionToken ? { 'x-checkout-submission-token': submissionToken } : undefined,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (typeof data.orderId === 'string' && data.orderId.trim()) {
+          setOrderId(data.orderId.trim());
+        }
+        if (typeof data.token === 'string' && data.token.trim()) {
+          setPublicToken(data.token.trim());
+        }
+        if (data.status === 'paid') {
+          setStripeStatus('paid');
+          return;
+        }
+        if (data.status === 'payment_failed') {
+          setStripeStatus('payment_failed');
+          return;
+        }
+      } catch {
+        // continue polling
+      }
+      setTimeout(poll, POLL_INTERVAL_MS);
+    };
+    if (!pollStartRef.current) pollStartRef.current = Date.now();
+    const tId = setTimeout(poll, 0);
+    return () => clearTimeout(tId);
+  }, [sessionId, stripeStatus]);
+
+  // When Stripe confirms paid: redirect to order details page (single source of "final" order view and GA4 purchase)
+  useEffect(() => {
+    if (!sessionId || stripeStatus !== 'paid' || !orderId || redirectingRef.current) return;
+    redirectingRef.current = true;
+    const token =
+      publicToken?.trim() ||
+      (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+      '';
+    const qs = new URLSearchParams();
+    if (token) qs.set('token', token);
+    window.location.href = `/order/${encodeURIComponent(orderId)}${qs.toString() ? `?${qs.toString()}` : ''}`;
+  }, [sessionId, stripeStatus, orderId, publicToken]);
+
+  // Fetch order only when no sessionId (manual path) or when we need it for redirect target
+  useEffect(() => {
+    if (!orderId) return;
+    if (sessionId && stripeStatus !== 'paid') return;
+
+    const token =
+      publicToken?.trim() ||
+      (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+      '';
+    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+
+    fetch(`/api/orders/${encodeURIComponent(orderId)}${qs}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: OrderWithPaymentStatus | null) => {
+        setOrder(data);
+      })
+      .catch(() => {
+        setOrder(null);
+      });
+  }, [orderId, sessionId, stripeStatus, publicToken]);
+
+  // Poll payment status on manual path so that when admin marks paid, user is redirected
+  useEffect(() => {
+    if (!orderId || sessionId || redirectingRef.current) return;
+    const poll = async () => {
+      if (redirectingRef.current) return;
+      try {
+        const token =
+          publicToken?.trim() ||
+          (typeof window !== 'undefined' ? window.localStorage.getItem('lanna-bloom-last-order-token') : '') ||
+          '';
+        if (!token) return;
+
+        const res = await fetch(
+          `/api/orders/${encodeURIComponent(orderId)}?token=${encodeURIComponent(token)}`,
+          { cache: 'no-store' }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (isPaidStatus(data.payment_status)) {
+          redirectingRef.current = true;
+          const qs = new URLSearchParams();
+          if (token) qs.set('token', token);
+          window.location.href = `/order/${encodeURIComponent(orderId)}${qs.toString() ? `?${qs.toString()}` : ''}`;
+        }
+      } catch {
+        // ignore
+      }
+    };
+    const tId = setInterval(poll, MANUAL_STATUS_POLL_MS);
+    return () => clearInterval(tId);
+  }, [orderId, sessionId, publicToken]);
+
+  // generate_lead: non-ecommerce, only when showing pending confirmation (manual or before Stripe paid)
+  const generateLeadFiredRef = useRef(false);
+  useEffect(() => {
+    if (generateLeadFiredRef.current || !orderId) return;
+    if (sessionId && stripeStatus === 'paid') return;
+    if (sessionId && stripeStatus === 'payment_failed') return;
+    generateLeadFiredRef.current = true;
+    trackGenerateLead({
+      page_path: typeof window !== 'undefined' ? window.location.pathname : '',
+      lead_type: 'pending_order',
+      lead_source: 'checkout',
+      orderId,
+    });
+  }, [orderId, sessionId, stripeStatus]);
+
+  // Cart clear: manual path when we have orderId; Stripe path when we're about to redirect (handled by redirect)
+  useEffect(() => {
+    if (cartClearedRef.current) return;
+    const isManualPath = !sessionId;
+    if (isManualPath && orderId) {
+      clearCart();
+      cartClearedRef.current = true;
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.removeItem(CART_FORM_STORAGE_KEY);
+          window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
+            if (publicToken) window.localStorage.setItem('lanna-bloom-last-order-token', publicToken);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    // For Stripe paid we redirect; cart can be cleared on order page or we clear here before redirect
+    if (sessionId && stripeStatus === 'paid') {
+      clearCart();
+      cartClearedRef.current = true;
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(CART_FORM_STORAGE_KEY);
+          if (orderId) window.localStorage.setItem('lanna-bloom-last-order-id', orderId);
+          if (publicToken) window.localStorage.setItem('lanna-bloom-last-order-token', publicToken);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [clearCart, orderId, sessionId, stripeStatus, publicToken]);
+
+  if (stripeStatus === 'payment_failed') {
+    return (
+      <div className="confirmation-pending-page">
+        <div className="container">
+          <h1 className="confirmation-pending-title">{t.orderCreated}</h1>
+          <p className="confirmation-pending-text">
+            {lang === 'th' ? 'การชำระเงินล้มเหลว กรุณาลองอีกครั้งจากตะกร้า' : 'Payment failed. Please try again from your cart.'}
+          </p>
+          <Link href={`/${lang}/cart`} className="confirmation-pending-link">
+            {tNav.cart}
+          </Link>
+        </div>
+        <style jsx>{confirmationPendingStyles}</style>
+      </div>
+    );
+  }
+
+  if (sessionId && stripeStatus === 'processing') {
+    return (
+      <div className="confirmation-pending-page">
+        <div className="container">
+          <h1 className="confirmation-pending-title">{t.orderCreated}</h1>
+          <p className="confirmation-pending-text">
+            {lang === 'th' ? 'การชำระเงินสำเร็จ กำลังดำเนินการออเดอร์ของคุณ...' : 'Payment confirmed, finalizing your order…'}
+          </p>
+        </div>
+        <style jsx>{confirmationPendingStyles}</style>
+      </div>
+    );
+  }
+
+  if (!orderId && !sessionId) {
+    return (
+      <div className="confirmation-pending-page">
+        <div className="container">
+          <h1 className="confirmation-pending-title">{t.orderCreated}</h1>
+          <p className="confirmation-pending-text">No order ID. Please place an order from the cart.</p>
+          <Link href={`/${lang}/cart`} className="confirmation-pending-link">
+            {tNav.cart}
+          </Link>
+        </div>
+        <style jsx>{confirmationPendingStyles}</style>
+      </div>
+    );
+  }
+
+  // Manual path (no Stripe session) or any path with orderId before paid: show pending confirmation (contact us)
+  return <OrderPendingConfirmation orderId={orderId} locale={lang} />;
+}
+
+const confirmationPendingStyles = `
+  .confirmation-pending-page {
+    padding: 24px 0 48px;
+  }
+  .confirmation-pending-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 12px;
+  }
+  .confirmation-pending-text {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+  }
+  .confirmation-pending-link {
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  .confirmation-pending-link:hover {
+    color: #967a4d;
+  }
+`;

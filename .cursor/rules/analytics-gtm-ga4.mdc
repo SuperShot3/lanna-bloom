@@ -1,0 +1,22 @@
+---
+description: Rules for GTM, GA4, Google Ads, and purchase conversion tracking
+globs:
+  - "lib/analytics/**"
+  - "lib/analytics.ts"
+  - "components/GoogleAnalytics.tsx"
+  - "app/**/checkout/**"
+  - "app/order/**"
+alwaysApply: false
+---
+
+Before editing analytics, GTM, GA4, Google Ads, or conversion tracking, read:
+
+- `/ai_context/05_ANALYTICS_GTM_GA4_ADS.md`
+
+Critical rules:
+
+- `purchase` must fire only after confirmed paid order (`order-status` returns `purchase` payload).
+- App pushes to `dataLayer` only — no direct `gtag` in app code; GTM forwards to GA4/Ads.
+- Do not duplicate GA4 or Google Ads purchase events (one browser `purchase` pipeline only; no server-side GA4 purchase).
+- Funnel events (`add_to_cart`, `begin_checkout`, messenger clicks) are secondary to `purchase`.
+- `view_item` should usually be GA4-only in GTM configuration.

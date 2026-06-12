@@ -1,0 +1,91 @@
+import 'server-only';
+/**
+ * Order store — Supabase is the single source of truth.
+ * Blob is legacy; all reads/writes go through Supabase.
+ */
+
+import type { Order, OrderPayload } from './types';
+import { generateOrderId } from './orderId';
+import * as supabaseStore from './supabaseStore';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
+
+function requireSupabase() {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw new Error(
+      'Supabase is required for orders. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.'
+    );
+  }
+  return supabase;
+}
+
+export { generateOrderId };
+
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderById(orderId);
+}
+
+export async function getOrderByIdWithPublicToken(
+  orderId: string,
+  publicToken: string
+): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderByIdWithPublicToken(orderId, publicToken);
+}
+
+export async function getOrderByStripeSessionId(stripeSessionId: string): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderByStripeSessionId(stripeSessionId);
+}
+
+export async function getOrderBySubmissionToken(submissionToken: string): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderBySubmissionToken(submissionToken);
+}
+
+export async function getOrderPublicToken(orderId: string): Promise<string | null> {
+  requireSupabase();
+  return supabaseStore.supabaseGetOrderPublicToken(orderId);
+}
+
+export async function createOrder(
+  payload: OrderPayload
+): Promise<{ order: Order; created: boolean }> {
+  requireSupabase();
+  return supabaseStore.supabaseCreateOrder(payload);
+}
+
+export async function createPendingOrder(
+  payload: OrderPayload
+): Promise<{ order: Order; created: boolean }> {
+  requireSupabase();
+  return supabaseStore.supabaseCreateOrder(payload, 'pending_payment');
+}
+
+export async function updateOrderPaymentStatus(
+  orderId: string,
+  update: {
+    status: 'paid' | 'payment_failed';
+    stripeSessionId?: string;
+    paymentIntentId?: string;
+    amountTotal?: number;
+    currency?: string;
+    paidAt?: string;
+    /** Stripe balance_transaction fee in major units (e.g. THB); syncs `orders.payment_fee`. */
+    paymentFeeMajor?: number;
+  }
+): Promise<Order | null> {
+  requireSupabase();
+  return supabaseStore.supabaseUpdateOrderPaymentStatus(orderId, update);
+}
+
+export async function deleteOrder(orderId: string): Promise<boolean> {
+  requireSupabase();
+  return supabaseStore.supabaseDeleteOrder(orderId);
+}
+
+export async function listOrders(): Promise<Order[]> {
+  requireSupabase();
+  return supabaseStore.supabaseListOrders();
+}

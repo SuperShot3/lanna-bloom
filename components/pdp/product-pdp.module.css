@@ -1,0 +1,1132 @@
+/* Mobile-first bouquet PDP — desktop ≥768px keeps legacy SizeSelector */
+
+.pdpBlock {
+  margin-bottom: 16px;
+}
+
+.pdpPriceRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pdpUnitPrice {
+  font-size: clamp(1.75rem, 6vw, 2rem);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.pdpDeliveryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--color-sage-dark) 72%, var(--text-muted));
+  background: color-mix(in srgb, var(--color-sage-light) 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-sage) 14%, transparent);
+  border-radius: 999px;
+}
+
+.pdpDeliveryBadgeIcon {
+  flex-shrink: 0;
+  color: var(--color-sage);
+  opacity: 0.75;
+}
+
+/* Size card */
+.sizeCard {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sizeCardSingle {
+  cursor: default;
+}
+
+.sizeCardCheck {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #b39868;
+  color: #fff;
+}
+
+.sizeCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sizeCardLabel {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.sizeCardSub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.sizeCardPrice {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.sizeCardChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.sizeCardChevron svg {
+  display: block;
+}
+
+.sizeCardChevronOpen {
+  transform: rotate(180deg);
+}
+
+.sizePickerList {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sizePickerOptionCheckSpacer {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+
+.sizePickerOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--background-light, #fdfcf8);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sizePickerOptionActive {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.sizePickerOptionLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sizePickerOptionPrice {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.desktopOnly {
+  display: none;
+}
+
+.mobileOnly {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .desktopOnly {
+    display: block;
+  }
+  .mobileOnly {
+    display: none;
+  }
+}
+
+/* Purchase actions */
+.purchaseActionsStage {
+  position: relative;
+  display: grid;
+  grid-template: 1fr / 1fr;
+  min-height: 106px;
+  margin-bottom: 16px;
+}
+
+.purchaseActionsLayer {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.42s;
+}
+
+.purchaseActionsLayerVisible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.purchaseActionsLayerHidden {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.purchaseActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.purchaseAdded {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--pastel-cream, #fdf8f3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.purchaseAddedText {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.purchaseAddedText :global(.material-symbols-outlined) {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--primary, #1a3c34);
+  flex-shrink: 0;
+  transform: scale(0.6);
+  opacity: 0;
+}
+
+.purchaseActionsStage[data-added] .purchaseAddedText :global(.material-symbols-outlined) {
+  animation: purchaseAddedCheck 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) 0.08s forwards;
+}
+
+.purchaseAddedLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.purchaseAddedLinkSecondary,
+.purchaseAddedLinkPrimary {
+  display: inline-flex;
+  flex: 1 1 calc(50% - 5px);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.purchaseActionsStage[data-added] .purchaseAddedLinkSecondary {
+  animation: purchaseLinkIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.14s forwards;
+}
+
+.purchaseActionsStage[data-added] .purchaseAddedLinkPrimary {
+  animation: purchaseLinkIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.22s forwards;
+}
+
+.purchaseAddedLinkSecondary {
+  background: var(--pastel-cream, #e8e2da);
+  color: var(--text);
+  border: 2px solid var(--border);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.purchaseAddedLinkSecondary:hover {
+  background: #fff;
+  border-color: rgba(26, 60, 52, 0.25);
+}
+
+.purchaseAddedLinkPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--accent);
+  transition: background 0.2s, transform 0.15s;
+}
+
+.purchaseAddedLinkPrimary:hover {
+  background: #b39868;
+  border-color: #b39868;
+  transform: translateY(-1px);
+}
+
+.purchaseAddedLinkPrimary :global(.material-symbols-outlined) {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@keyframes purchaseAddedCheck {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes purchaseLinkIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .purchaseActionsLayer,
+  .purchaseAddedLinkSecondary,
+  .purchaseAddedLinkPrimary,
+  .purchaseAddedText :global(.material-symbols-outlined),
+  .giftRowChevron,
+  .giftRowPanel,
+  .compositionRowChevron,
+  .compositionRowPanel {
+    transition: none;
+    animation: none !important;
+    transform: none;
+    opacity: 1;
+  }
+
+  .giftRowChevronOpen,
+  .compositionRowChevronOpen {
+    transform: rotate(180deg);
+  }
+
+  .giftRowPanelOpen,
+  .compositionRowPanelOpen {
+    grid-template-rows: 1fr;
+  }
+
+  .purchaseActionsLayerHidden {
+    display: none;
+  }
+}
+
+.purchaseAtc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.purchaseAtc:hover:not(:disabled) {
+  background: #b39868;
+  transform: translateY(-1px);
+}
+
+.purchaseAtc:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.purchaseBuyNow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 20px;
+  background: transparent;
+  border: 1px solid rgba(197, 160, 89, 0.32);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.purchaseAtc svg,
+.purchaseBuyNow svg {
+  flex-shrink: 0;
+}
+
+.purchaseBuyNow:hover:not(:disabled) {
+  background: rgba(197, 160, 89, 0.06);
+  border-color: rgba(197, 160, 89, 0.48);
+  color: #0f2e28;
+}
+
+.purchaseBuyNow:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Trust strip */
+.trustStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 10px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: none;
+}
+
+.trustStripItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trustStripIcon {
+  color: var(--accent);
+}
+
+.trustStripTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.trustStripSub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.trustStripLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.trustStripLink:hover .trustStripTitle {
+  color: var(--accent);
+}
+
+/* Gift message row */
+.giftRow {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.giftRowToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.giftRowToggleStart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.giftRowIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.giftRowIcon {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.giftRowToggleLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.giftRowOptional {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.giftRowChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.giftRowChevron svg {
+  display: block;
+}
+
+.giftRowChevronOpen {
+  transform: rotate(180deg);
+}
+
+.giftRowPanel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.giftRowPanelOpen {
+  grid-template-rows: 1fr;
+}
+
+.giftRowPanelInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.giftRowBody {
+  padding: 0 16px 16px;
+}
+
+/* Add-ons carousel header */
+.addOnsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.addOnsHeading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.addOnsViewAll {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.addOnsViewAll:hover {
+  text-decoration: underline;
+}
+
+/* Quantity */
+.qtyRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.qtyLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qtyControl {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.qtyBtn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.qtyBtn:hover {
+  background: var(--pastel-cream);
+}
+
+.qtyValue {
+  width: 44px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* About section */
+.aboutSection {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.aboutHeading {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.aboutDesc {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
+}
+
+.aboutDescClamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.aboutReadMore {
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.compositionRow {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--pastel-cream, #fdf8f3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.compositionRowToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.compositionRowHeading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.compositionRowChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.compositionRowChevron svg {
+  display: block;
+}
+
+.compositionRowChevronOpen {
+  transform: rotate(180deg);
+}
+
+.compositionRowPanel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.compositionRowPanelOpen {
+  grid-template-rows: 1fr;
+}
+
+.compositionRowPanelInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.compositionRowText {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.compositionRowTextLine {
+  margin: 0;
+}
+
+/* Identity */
+.productIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 12px;
+}
+
+.identityHeader {
+  position: relative;
+  margin: 0;
+}
+
+.identityHeader :global(.product-title) {
+  margin: 0;
+  padding-right: 3rem;
+  line-height: 1.2;
+}
+
+.shareAction {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  z-index: 1;
+  margin: 0;
+  line-height: 0;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.shareAction:hover,
+.shareAction:focus-within {
+  opacity: 1;
+}
+
+.shareAction :global(.product-share-link.share-button-wrap) {
+  margin-top: 0;
+}
+
+.shareAction :global(.product-share-link) button {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+}
+
+.shareAction :global(.share-apple-icon) {
+  width: 26px;
+  height: 26px;
+}
+
+.compositionSubtitle {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .compositionSubtitle {
+    max-width: 70%;
+  }
+
+  .identityHeader :global(.product-title) {
+    padding-right: 2.75rem;
+  }
+
+  .shareAction :global(.product-share-link) button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .shareAction :global(.share-apple-icon) {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.identityMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1px;
+}
+
+.identityMetaSep {
+  flex-shrink: 0;
+  margin: 0 2px;
+  font-size: 0.65rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.45;
+  user-select: none;
+}
+
+.reviewMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.reviewMeta:hover .reviewMetaText {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.reviewMeta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.reviewMetaStar {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #c5a059;
+}
+
+.reviewMetaText {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.popularBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  line-height: 1;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.popularBadgeIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Material Symbols default to 24px; scale down inside the fixed wrap */
+.popularBadgeIcon {
+  display: block;
+  font-size: 24px;
+  line-height: 1;
+  color: #c5a059;
+  transform: scale(0.667);
+  transform-origin: center center;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.popularBadgeLabel {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+/* Sticky purchase bar */
+.stickyBar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 95;
+  padding: 10px 12px 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--primary, #1a3c34);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  pointer-events: none;
+}
+
+.stickyBarVisible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.stickyBarInner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 4px;
+}
+
+.stickyThumb {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.stickyThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stickyInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.stickyTitle {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stickyPrice {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stickyPriceValue {
+  font: inherit;
+  color: inherit;
+}
+
+.stickyAtcPrice {
+  font: inherit;
+  color: inherit;
+}
+
+.stickyActionsStage {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
+  min-width: 0;
+  max-width: min(58vw, 220px);
+  min-height: 44px;
+}
+
+@media (max-width: 390px) {
+  .stickyActionsStage {
+    max-width: min(72vw, 240px);
+  }
+
+  .stickyAtc {
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .purchaseAtc {
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
+
+.stickyActionsLayer {
+  transition:
+    opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.38s;
+}
+
+.stickyActionsLayerVisible {
+  opacity: 1;
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.stickyActionsLayerHidden {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateX(12px);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.stickyAtc {
+  min-height: 44px;
+  padding: 10px 18px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.stickyAtc:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.stickyAddedLinkPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.stickyBar[data-added] .stickyAddedLinkPrimary {
+  animation: purchaseLinkIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+}
+
+.stickyAddedLinkPrimary :global(.material-symbols-outlined) {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .stickyBar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .stickyBar {
+    display: block;
+  }
+}
