@@ -6,6 +6,21 @@ Read this file before substantive work. Use topic files below for depth; use `do
 
 **Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Bilingual storefront (`/en`, `/th`), Stripe web checkout, Supabase orders and **catalog**, admin ops. Partner **application** form only (dashboard and Sanity Studio retired).
 
+Production site: `lannabloom.shop`. Social links live in `README.md`.
+
+## Business and customer flow
+
+| Area | Current behavior |
+|------|------------------|
+| Locales | URL-based English and Thai routes (`/en/*`, `/th/*`); language switcher preserves the current path where possible |
+| Browse | Localized storefront and catalog read approved products from Supabase catalog tables |
+| Product / cart | Product pages support size selection; cart collects delivery area/date and customer contact details |
+| Pay | Primary web flow is Stripe Checkout; server recomputes totals and creates orders after confirmed payment |
+| After pay | Thank-you flow resolves the paid checkout session and links to the customer order page |
+| Order tracking | `/order/{orderId}?token=...` requires the public token and shows customer-facing status/contact options |
+| Messenger | LINE / WhatsApp / Telegram links are supporting contact channels, not the primary payment/order authority |
+| Partner flow | Public self-service partner dashboard is retired; `/[lang]/partner/apply` stores applications for admin review |
+
 ## Stack
 
 | Layer | Technology |
@@ -23,7 +38,6 @@ Read this file before substantive work. Use topic files below for depth; use `do
 
 | File | When to read |
 |------|----------------|
-| [01_PROJECT_HANDOVER.md](01_PROJECT_HANDOVER.md) | Business, locales, partner flow, customer journeys |
 | [02_ARCHITECTURE_MAP.md](02_ARCHITECTURE_MAP.md) | Routes, folders, key entry points |
 | [03_SECURITY_RULES.md](03_SECURITY_RULES.md) | API changes, auth, tokens, env secrets |
 | [04_CHECKOUT_ORDERS_STRIPE.md](04_CHECKOUT_ORDERS_STRIPE.md) | Cart, checkout, orders, Stripe webhook |

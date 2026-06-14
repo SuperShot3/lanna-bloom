@@ -21,7 +21,9 @@ import {
   ADMIN_DELIVERY_SPEED_OPTIONS,
   ADMIN_FLOWER_TYPE_OPTIONS,
   ADMIN_OCCASION_OPTIONS,
+  ADMIN_PRICING_TYPE_OPTIONS,
 } from '@/lib/catalogAdminFieldOptions';
+import type { PricingType } from '@/lib/catalog/pricing';
 import { ProductCreateImagesStep } from './ProductCreateImagesStep';
 import {
   type AiOptionCount,
@@ -289,6 +291,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     ...DELIVERY_DESTINATIONS,
   ]);
   const [featuredPopular, setFeaturedPopular] = useState(false);
+  const [pricingType, setPricingType] = useState<PricingType>('single_price');
 
   const [loading, setLoading] = useState<LoadingState>(null);
   const [error, setError] = useState('');
@@ -979,6 +982,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             (destination) => !availableDeliveryDestinations.includes(destination)
           ),
           featuredPopular,
+          pricingType: isFlowerProduct ? pricingType : 'single_price',
         }),
       });
       const payload = await readJsonResponse(response);
@@ -1024,6 +1028,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setDeliveryOptions(['same_day', 'next_day']);
     setAvailableDeliveryDestinations([...DELIVERY_DESTINATIONS]);
     setFeaturedPopular(false);
+    setPricingType('single_price');
     setBasePreservationPrompt(DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT);
     setPresentationPresets({ ...DEFAULT_SAFE_PRESENTATION_PRESETS });
     setShowRules(false);
@@ -1193,6 +1198,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               onToggleDeliveryDestination={toggleAvailableDeliveryDestination}
               featuredPopular={featuredPopular}
               setFeaturedPopular={setFeaturedPopular}
+              pricingType={pricingType}
+              setPricingType={setPricingType}
               primaryDraft={primaryDraft ?? imageDrafts[0] ?? null}
               readyDraftsCount={readyDrafts.length}
               loading={loading}
@@ -1562,6 +1569,8 @@ type ReviewStepProps = {
   onToggleDeliveryDestination: (value: DeliveryDestinationId) => void;
   featuredPopular: boolean;
   setFeaturedPopular: (value: boolean) => void;
+  pricingType: PricingType;
+  setPricingType: (value: PricingType) => void;
   primaryDraft: ImageDraft | null;
   readyDraftsCount: number;
   loading: LoadingState;
@@ -1591,6 +1600,8 @@ function ReviewStep({
   onToggleDeliveryDestination,
   featuredPopular,
   setFeaturedPopular,
+  pricingType,
+  setPricingType,
   primaryDraft,
   readyDraftsCount,
   loading,
@@ -1658,6 +1669,38 @@ function ReviewStep({
             )}
           </label>
         </div>
+        <fieldset className="admin-form-group">
+          <legend>Pricing options</legend>
+          {isFlowerProduct ? (
+            <>
+              <p className="admin-product-create-card-hint">
+                Choose how customers pick a variant on the product page. You can fine-tune sizes and
+                prices after saving on the bouquet review page.
+              </p>
+              <div className="admin-product-create-choice-grid">
+                {ADMIN_PRICING_TYPE_OPTIONS.map((option) => (
+                  <label className="admin-product-create-choice" key={option.value}>
+                    <input
+                      type="radio"
+                      name="create-pricing-type"
+                      checked={pricingType === option.value}
+                      onChange={() => setPricingType(option.value)}
+                    />
+                    <span>
+                      <strong>{option.label}</strong>
+                      {option.helper ? <small>{option.helper}</small> : null}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="admin-product-create-card-hint">
+              Non-flower products use a single price with one purchasable option (no size or stem
+              tiers).
+            </p>
+          )}
+        </fieldset>
         <fieldset className="admin-form-group admin-product-create-occasion-hints">
           <legend>Color tags</legend>
           <p className="admin-product-create-card-hint">

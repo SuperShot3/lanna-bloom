@@ -163,17 +163,8 @@ export function ProductOrderBlock({
         />
       </div>
 
-      <ProductSizeCard
-        sizes={bouquet.sizes}
-        selected={selectedSize}
-        onSelect={handleSizeSelect}
-        lang={lang}
-        destinationId={checkoutProfile.destinationId}
-        discountPercent={bouquet.discountPercent}
-      />
-
-      <div className={pdpStyles.desktopOnly}>
-        <SizeSelector
+      {bouquet.sizes.length > 1 ? (
+        <ProductSizeCard
           sizes={bouquet.sizes}
           selected={selectedSize}
           onSelect={handleSizeSelect}
@@ -181,7 +172,20 @@ export function ProductOrderBlock({
           destinationId={checkoutProfile.destinationId}
           discountPercent={bouquet.discountPercent}
         />
-      </div>
+      ) : null}
+
+      {bouquet.sizes.length > 1 ? (
+        <div className={pdpStyles.desktopOnly}>
+          <SizeSelector
+            sizes={bouquet.sizes}
+            selected={selectedSize}
+            onSelect={handleSizeSelect}
+            lang={lang}
+            destinationId={checkoutProfile.destinationId}
+            discountPercent={bouquet.discountPercent}
+          />
+        </div>
+      ) : null}
 
       {!availableForDestination && (
         <p className="order-destination-block-notice" role="alert">

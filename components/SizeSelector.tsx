@@ -21,6 +21,9 @@ export function SizeSelector({
   destinationId: DeliveryDestinationId;
   discountPercent?: number;
 }) {
+  if (sizes.length <= 1) {
+    return null;
+  }
   const selectedSizeLabel = optionDisplayLabel(selected, lang);
   const selectedSizeText = lang === 'th' ? `ขนาดที่เลือก: ${selectedSizeLabel}` : `Selected size: ${selectedSizeLabel}`;
 

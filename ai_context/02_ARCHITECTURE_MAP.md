@@ -13,6 +13,8 @@ Where code lives in the Next.js App Router monorepo.
 | `app/task/[token]/` | Supplier task (neutral links) |
 | `content/` | MDX info articles, guides |
 
+Localized routes are URL-based (`/en/*`, `/th/*`). The language switcher should preserve the current path where possible.
+
 ## Storefront (`app/[lang]/`)
 
 | Area | Path |
@@ -23,7 +25,7 @@ Where code lives in the Next.js App Router monorepo.
 | Cart | `cart/` |
 | Checkout | `checkout/complete`, `checkout/success`, `checkout/confirmation-pending` |
 | Info / SEO | `info/[slug]/`, guides |
-| Partner apply (portal retired) | `partner/apply` |
+| Partner apply (public portal retired) | `partner/apply` |
 | Static pages | `refund-replacement`, etc. |
 
 Layouts: `app/[lang]/layout.tsx`, market layouts under `(markets)/`.

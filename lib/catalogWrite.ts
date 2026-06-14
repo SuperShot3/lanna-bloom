@@ -10,6 +10,11 @@ import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
 import type { CatalogBouquetPricing, CatalogStoredImage } from '@/lib/catalog/types';
 import { CATALOG_SYSTEM_PARTNER_LEGACY_ID } from '@/lib/catalog/types';
 import { slugFromName } from '@/lib/catalog/mappers';
+import {
+  ensureFourSizeSlots,
+  pricingPayloadForSave,
+  type PricingType,
+} from '@/lib/catalog/pricing';
 import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import {
   buildCatalogImageRecord,
@@ -458,9 +463,39 @@ export type CreateAdminCatalogBouquetInput = {
   deliveryOptions?: string[];
   excludedDeliveryDestinations?: string[];
   featuredPopular?: boolean;
+  pricingType?: PricingType;
   createdBy?: string;
   createdAt?: string;
 };
+
+function adminCreateBouquetPricing(
+  pricingType: PricingType,
+  price: number
+): { pricingType: PricingType; pricing: CatalogBouquetPricing } {
+  if (pricingType === 'size_based') {
+    const rows = ensureFourSizeSlots([]).map((row) =>
+      row.key === 'm'
+        ? { ...row, enabled: true, price, availability: true }
+        : { ...row, enabled: false, availability: false }
+    );
+    return {
+      pricingType: 'size_based',
+      pricing: pricingPayloadForSave('size_based', { sizes: rows }),
+    };
+  }
+  if (pricingType === 'stem_count') {
+    return {
+      pricingType: 'stem_count',
+      pricing: pricingPayloadForSave('stem_count', {
+        stemOptions: [{ stemCount: 12, price, availability: true }],
+      }),
+    };
+  }
+  return {
+    pricingType: 'single_price',
+    pricing: pricingPayloadForSave('single_price', { singlePrice: price }),
+  };
+}
 
 export type CreateAdminCatalogProductInput = {
   nameEn: string;
@@ -578,6 +613,8 @@ export async function createAdminReviewBouquetInCatalog(
   const price = Math.max(0, Number(input.price));
   const images = writeImagesToStored(supabase, input.images);
   const occasion = input.occasion?.filter((value) => value.trim()) ?? [];
+  const pricingType = input.pricingType ?? 'single_price';
+  const { pricingType: resolvedType, pricing } = adminCreateBouquetPricing(pricingType, price);
 
   const { data, error } = await supabase
     .from('catalog_bouquets')
@@ -591,19 +628,8 @@ export async function createAdminReviewBouquetInCatalog(
       description_th: (input.descriptionTh || '').trim(),
       composition_en: (input.compositionEn || '').trim(),
       composition_th: (input.compositionTh || '').trim(),
-      pricing_type: 'single_price',
-      pricing: {
-        price,
-        sizes: [
-          {
-            key: 'm',
-            enabled: true,
-            labelEn: 'Standard',
-            price,
-            availability: true,
-          },
-        ],
-      },
+      pricing_type: resolvedType,
+      pricing,
       status: 'pending_review',
       featured_popular: input.featuredPopular === true,
       delivery_options: input.deliveryOptions ?? [],

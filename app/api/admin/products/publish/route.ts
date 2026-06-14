@@ -13,6 +13,7 @@ import {
 } from '@/lib/catalogWrite';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/catalogCategories';
 import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
+import type { PricingType } from '@/lib/catalog/pricing';
 
 export const runtime = 'nodejs';
 
@@ -64,6 +65,13 @@ function customAttribute(key: string, value: string): { key: string; value: stri
 
 function listAttribute(key: string, values: string[]): { key: string; value: string } | null {
   return customAttribute(key, values.join(', '));
+}
+
+function parsePricingType(value: unknown): PricingType | null {
+  if (value === 'single_price' || value === 'size_based' || value === 'stem_count') {
+    return value;
+  }
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -147,6 +155,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const pricingType = parsePricingType(b.pricingType) ?? 'single_price';
+
     const result = await createAdminReviewBouquetInCatalog({
       nameEn,
       nameTh: stringField(b, 'nameTh'),
@@ -164,6 +174,7 @@ export async function POST(request: NextRequest) {
       deliveryOptions: stringArrayField(b, 'deliveryOptions'),
       excludedDeliveryDestinations,
       featuredPopular: b.featuredPopular === true,
+      pricingType,
       createdBy,
       createdAt,
     });

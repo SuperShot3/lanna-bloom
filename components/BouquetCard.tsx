@@ -106,6 +106,8 @@ export function BouquetCard({
   const expandablePanel = showHoverPanel && !simpleActions;
   const showPanel = expandablePanel;
 
+  const sizes = bouquet.sizes ?? [];
+  const hasMultipleSizes = sizes.length > 1;
   const defaultOid = useMemo(() => defaultOptionIdForBouquet(bouquet), [bouquet]);
   const [hovered, setHovered] = useState(false);
   const [selectedOptionId, setSelectedOptionId] = useState<string>(defaultOid);
@@ -566,9 +568,11 @@ export function BouquetCard({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="card-hover-panel-inner">
-            <p className="card-hover-options-title">{t.productCardOptions}</p>
-            <ul className="card-hover-option-list" role="list">
-              {(bouquet.sizes ?? []).map((s) => {
+            {hasMultipleSizes ? (
+              <>
+                <p className="card-hover-options-title">{t.productCardOptions}</p>
+                <ul className="card-hover-option-list" role="list">
+                  {sizes.map((s) => {
                 const unavailable = s.availability === false;
                 if (unavailable) {
                   return (
@@ -612,7 +616,9 @@ export function BouquetCard({
                   </li>
                 );
               })}
-            </ul>
+                </ul>
+              </>
+            ) : null}
             {justAdded ? (
               <>
                 <p className="card-hover-added" role="status">

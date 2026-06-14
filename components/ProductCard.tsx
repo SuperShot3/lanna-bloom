@@ -11,7 +11,6 @@ import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
-import type { SizeKey } from '@/lib/bouquets';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
@@ -25,56 +24,6 @@ import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 
 const SWIPE_THRESHOLD_PX = 50;
-
-type OptionRow = {
-  id: string;
-  label: string;
-  price: number;
-  available: boolean;
-  sizeKey: SizeKey;
-};
-
-function buildSyntheticOptions(
-  baseThb: number,
-  labels: {
-    elegant: string;
-    compact: string;
-    standard: string;
-    business: string;
-  }
-): OptionRow[] {
-  const base = Math.max(1, Math.round(baseThb));
-  return [
-    {
-      id: 'elegant',
-      label: labels.elegant,
-      price: Math.round(base * 1.12),
-      available: false,
-      sizeKey: 's',
-    },
-    {
-      id: 'compact',
-      label: labels.compact,
-      price: Math.round(base * 0.62),
-      available: true,
-      sizeKey: 's',
-    },
-    {
-      id: 'standard',
-      label: labels.standard,
-      price: base,
-      available: true,
-      sizeKey: 'm',
-    },
-    {
-      id: 'business',
-      label: labels.business,
-      price: Math.round(base * 1.84),
-      available: true,
-      sizeKey: 'l',
-    },
-  ];
-}
 
 export function ProductCard({
   product,
@@ -199,19 +148,7 @@ export function ProductCard({
     };
   }, []);
 
-  const options = useMemo(
-    () =>
-      buildSyntheticOptions(discountedBase, {
-        elegant: t.productCardOptionElegant,
-        compact: t.productCardOptionCompact,
-        standard: t.productCardOptionStandard,
-        business: t.productCardOptionBusiness,
-      }),
-    [discountedBase, t]
-  );
-
   const [hovered, setHovered] = useState(false);
-  const [selectedId, setSelectedId] = useState('business');
   const [justAdded, setJustAdded] = useState(false);
   const [actionsPinned, setActionsPinned] = useState(false);
   const [showMobileActions, setShowMobileActions] = useState(false);
@@ -242,8 +179,6 @@ export function ProductCard({
     return () => media.removeEventListener('change', sync);
   }, [expandablePanel]);
 
-  const selected = options.find((o) => o.id === selectedId && o.available) ?? options.filter((o) => o.available).pop();
-
   const handleLinkClick = () => {
     const item: AnalyticsItem = {
       item_id: product.id,
@@ -266,74 +201,25 @@ export function ProductCard({
 
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
-      if (isStandaloneProduct) {
-        const displayUnitPrice = effectiveCatalogUnitPriceWithExpansion(
-          finalPrice,
-          product.discountPercent,
-          checkoutProfile.destinationId
-        );
-        addItem(
-          {
-            itemType: isBalloon ? 'balloon' : 'plushyToy',
-            bouquetId: product.id,
-            slug: product.slug,
-            nameEn: product.nameEn,
-            nameTh: product.nameTh ?? product.nameEn,
-            imageUrl: imgSrc || undefined,
-            size: {
-              optionId: 'product_default',
-              key: 'm',
-              label: sizeLabel || '—',
-              price: discountedBase,
-              description: '',
-            },
-            addOns: getDefaultAddOns(),
-            excludedDeliveryDestinations: product.excludedDeliveryDestinations,
-          },
-          1
-        );
-        trackAddToCart({
-          currency: 'THB',
-          value: displayUnitPrice,
-          items: [
-            {
-              item_id: product.id,
-              item_name: name,
-              price: displayUnitPrice,
-              quantity: 1,
-              index: 0,
-              item_category: getProductDisplayCategory(product),
-              item_variant: sizeLabel || undefined,
-            },
-          ],
-        });
-        if (mode === 'stay') {
-          setJustAdded(true);
-          window.setTimeout(() => setJustAdded(false), 6000);
-        } else {
-          router.push(`/${lang}/cart`);
-        }
-        return;
-      }
-      if (!selected) return;
-      const displaySelectedPrice = effectiveCatalogUnitPriceWithExpansion(
-        selected.price,
+      const itemType = isBalloon ? 'balloon' : isPlushyToys ? 'plushyToy' : 'product';
+      const displayUnitPrice = effectiveCatalogUnitPriceWithExpansion(
+        finalPrice,
         product.discountPercent,
         checkoutProfile.destinationId
       );
       addItem(
         {
-          itemType: 'product',
+          itemType,
           bouquetId: product.id,
           slug: product.slug,
           nameEn: product.nameEn,
           nameTh: product.nameTh ?? product.nameEn,
           imageUrl: imgSrc || undefined,
           size: {
-            optionId: `product_${product.id}_${selected.id}`,
-            key: selected.sizeKey,
-            label: selected.label,
-            price: selected.price,
+            optionId: 'product_default',
+            key: 'm',
+            label: sizeLabel || '—',
+            price: discountedBase,
             description: '',
           },
           addOns: getDefaultAddOns(),
@@ -343,16 +229,16 @@ export function ProductCard({
       );
       trackAddToCart({
         currency: 'THB',
-        value: displaySelectedPrice,
+        value: displayUnitPrice,
         items: [
           {
             item_id: product.id,
             item_name: name,
-            price: displaySelectedPrice,
+            price: displayUnitPrice,
             quantity: 1,
             index: 0,
             item_category: getProductDisplayCategory(product),
-            item_variant: selected.label,
+            item_variant: sizeLabel || undefined,
           },
         ],
       });
@@ -370,17 +256,14 @@ export function ProductCard({
       finalPrice,
       imgSrc,
       isBalloon,
-      isStandaloneProduct,
+      isPlushyToys,
       lang,
       name,
       product,
       router,
-      selected,
       sizeLabel,
     ]
   );
-
-  const radioName = `product-opt-${product.id}`;
 
   return (
     <article
@@ -525,57 +408,6 @@ export function ProductCard({
           onPointerDown={(e) => e.stopPropagation()}
         >
         <div className="pcard-panel-inner">
-          {isStandaloneProduct ? null : (
-            <>
-              <p className="pcard-options-title">{t.productCardOptions}</p>
-              <ul className="pcard-option-list" role="list">
-                {options.map((row) => {
-                  if (!row.available) {
-                    return (
-                      <li key={row.id} className="pcard-option pcard-option--disabled">
-                        <span className="pcard-option-label">
-                          <input type="radio" disabled className="pcard-radio" />
-                          <span>{row.label}</span>
-                        </span>
-                        <span className="pcard-option-right">{t.productCardNotAvailable}</span>
-                      </li>
-                    );
-                  }
-                  const isChecked = selectedId === row.id;
-                  return (
-                    <li key={row.id} className="pcard-option">
-                      <label className="pcard-option-label">
-                        <input
-                          type="radio"
-                          className="pcard-radio"
-                          name={radioName}
-                          checked={isChecked}
-                          onChange={() => setSelectedId(row.id)}
-                        />
-                        <span className="pcard-label-text">
-                          {row.label}
-                          {isChecked ? (
-                            <span className="pcard-check" aria-hidden>
-                              {' '}
-                              ✓
-                            </span>
-                          ) : null}
-                        </span>
-                      </label>
-                      <span className="pcard-option-price">
-                        ฿{effectiveCatalogUnitPriceWithExpansion(
-                          row.price,
-                          product.discountPercent,
-                          checkoutProfile.destinationId
-                        ).toLocaleString()}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          )}
-
           {justAdded ? (
             <>
               <p className="pcard-added" role="status">
