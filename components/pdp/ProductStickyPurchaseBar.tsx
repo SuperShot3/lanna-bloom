@@ -79,7 +79,7 @@ export function ProductStickyPurchaseBar({
               width={48}
               height={48}
               className={styles.stickyThumbImg}
-              unoptimized={thumbUrl.startsWith('data:')}
+              unoptimized={thumbUrl.startsWith('data:') || thumbUrl.includes('supabase.co')}
             />
           </div>
         ) : null}

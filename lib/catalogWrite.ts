@@ -13,6 +13,7 @@ import { slugFromName } from '@/lib/catalog/mappers';
 import {
   ensureFourSizeSlots,
   pricingPayloadForSave,
+  primaryCatalogPriceFromPricing,
   type PricingType,
 } from '@/lib/catalog/pricing';
 import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
@@ -468,7 +469,7 @@ export type CreateAdminCatalogBouquetInput = {
   createdAt?: string;
 };
 
-function adminCreateBouquetPricing(
+function adminCreateCatalogPricing(
   pricingType: PricingType,
   price: number
 ): { pricingType: PricingType; pricing: CatalogBouquetPricing } {
@@ -505,6 +506,7 @@ export type CreateAdminCatalogProductInput = {
   descriptionTh?: string;
   category: string;
   price: number;
+  pricingType?: PricingType;
   images: CatalogWriteImageInput[];
   occasion?: string[];
   excludedDeliveryDestinations?: string[];
@@ -519,6 +521,9 @@ export type UpdateCatalogProductByAdminInput = {
   descriptionEn?: string;
   descriptionTh?: string;
   price?: number;
+  pricingType?: import('@/lib/catalog/pricing').PricingType;
+  pricing?: CatalogBouquetPricing;
+  discountPercent?: number | null;
   occasion?: string[];
   excludedDeliveryDestinations?: DeliveryDestinationId[];
   adminOverrides?: {
@@ -614,7 +619,7 @@ export async function createAdminReviewBouquetInCatalog(
   const images = writeImagesToStored(supabase, input.images);
   const occasion = input.occasion?.filter((value) => value.trim()) ?? [];
   const pricingType = input.pricingType ?? 'single_price';
-  const { pricingType: resolvedType, pricing } = adminCreateBouquetPricing(pricingType, price);
+  const { pricingType: resolvedType, pricing } = adminCreateCatalogPricing(pricingType, price);
 
   const { data, error } = await supabase
     .from('catalog_bouquets')
@@ -659,6 +664,8 @@ export async function createAdminReviewProductInCatalog(
   const price = Math.max(0, Number(input.price));
   const images = writeImagesToStored(supabase, input.images);
   const occasion = input.occasion?.find((value) => value.trim());
+  const pricingType = input.pricingType ?? 'single_price';
+  const { pricingType: resolvedType, pricing } = adminCreateCatalogPricing(pricingType, price);
   const customAttributes = (input.customAttributes ?? [])
     .filter((attribute) => attribute.key.trim() && attribute.value.trim())
     .map((attribute) => ({
@@ -678,6 +685,8 @@ export async function createAdminReviewProductInCatalog(
       description_th: (input.descriptionTh || '').trim(),
       category: input.category,
       price,
+      pricing_type: resolvedType,
+      pricing,
       cost: price,
       commission_percent: 0,
       moderation_status: 'submitted',
@@ -729,7 +738,7 @@ export async function updateCatalogProductByAdmin(
   const supabase = requireSupabase();
   const { data: existing, error: loadError } = await supabase
     .from('catalog_products')
-    .select('structured_attributes')
+    .select('structured_attributes, pricing_type, pricing')
     .eq('id', productId)
     .maybeSingle();
 
@@ -741,12 +750,38 @@ export async function updateCatalogProductByAdmin(
     structured.occasion = input.occasion.length ? input.occasion.join(', ') : undefined;
   }
 
+  let nextPricingType =
+    input.pricingType ?? (existing.pricing_type as PricingType | undefined) ?? 'single_price';
+  let nextPricing = (input.pricing ??
+    existing.pricing ??
+    {}) as CatalogBouquetPricing;
+
+  if (input.pricingType != null || input.pricing != null) {
+    if (input.pricing != null) {
+      nextPricing = input.pricing;
+    }
+    if (input.pricingType != null) {
+      nextPricingType = input.pricingType;
+    }
+  }
+
+  const syncedPrice =
+    input.price ??
+    (input.pricingType != null || input.pricing != null
+      ? primaryCatalogPriceFromPricing(nextPricingType, nextPricing)
+      : undefined);
+
   const patch: Record<string, unknown> = {
     ...(input.nameEn != null && { name_en: input.nameEn.trim() }),
     ...(input.nameTh != null && { name_th: input.nameTh.trim() }),
     ...(input.descriptionEn != null && { description_en: input.descriptionEn.trim() }),
     ...(input.descriptionTh != null && { description_th: input.descriptionTh.trim() }),
-    ...(input.price != null && Number.isFinite(input.price) && { price: input.price }),
+    ...(syncedPrice != null && Number.isFinite(syncedPrice) && { price: syncedPrice }),
+    ...(input.pricingType != null && { pricing_type: input.pricingType }),
+    ...(input.pricing != null && { pricing: input.pricing }),
+    ...(input.discountPercent !== undefined && {
+      discount_percent: input.discountPercent,
+    }),
     ...(input.excludedDeliveryDestinations != null && {
       excluded_delivery_destinations: input.excludedDeliveryDestinations,
     }),

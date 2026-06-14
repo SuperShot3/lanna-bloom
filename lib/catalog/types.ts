@@ -17,6 +17,9 @@ export interface CatalogProduct {
   category: string;
   catalogKind?: 'product' | 'plushyToy' | 'balloon';
   sizeLabel?: string;
+  pricingType?: PricingType;
+  /** Sellable options derived from pricing (empty = use price only). */
+  sizes?: BouquetSellableOption[];
   price: number;
   cost?: number;
   commissionPercent?: number;
@@ -99,6 +102,10 @@ export interface AdminProductDetail {
   descriptionTh?: string;
   category: string;
   price: number;
+  pricingType: PricingType;
+  pricing: CatalogBouquetPricing;
+  sizes: BouquetSellableOption[];
+  discountPercent?: number;
   cost?: number;
   moderationStatus: string;
   commissionPercent?: number;
@@ -394,6 +401,8 @@ export type CatalogProductRow = {
   description_th: string;
   category: string;
   price: number;
+  pricing_type?: PricingType | null;
+  pricing?: CatalogBouquetPricing;
   cost: number | null;
   commission_percent: number | null;
   moderation_status: 'submitted' | 'live' | 'needs_changes' | 'rejected';

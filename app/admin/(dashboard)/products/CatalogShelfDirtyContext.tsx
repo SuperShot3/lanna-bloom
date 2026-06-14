@@ -21,7 +21,11 @@ export type CatalogProductPendingEdit = {
   nameTh: string;
   descriptionEn: string;
   descriptionTh: string;
-  price: string;
+  pricingType: PricingType;
+  singlePrice: string;
+  sizeRows: CatalogSizePricingRow[];
+  stemOptions: CatalogStemPricingRow[];
+  discountPercent: string;
   occasion: string[];
   availableMarkets: DeliveryDestinationId[];
 };
@@ -63,7 +67,7 @@ const CatalogShelfDirtyContext = createContext<ContextValue | null>(null);
 function isProductPending(
   value: CatalogProductPendingEdit | CatalogBouquetPendingEdit
 ): value is CatalogProductPendingEdit {
-  return !('compositionEn' in value);
+  return !('compositionEn' in value) && !('featuredPopular' in value);
 }
 
 export function CatalogShelfDirtyProvider({ children }: { children: ReactNode }) {

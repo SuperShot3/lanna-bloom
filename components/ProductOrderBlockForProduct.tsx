@@ -1,19 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AddOnsSection,
   getDefaultAddOns,
   type AddOnsValues,
 } from './AddOnsSection';
+import { SizeSelector } from './SizeSelector';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
-import type { Bouquet } from '@/lib/bouquets';
+import type { Bouquet, BouquetSize } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
@@ -53,12 +54,30 @@ export function ProductOrderBlockForProduct({
     balloonTextHelper?: string;
   };
   const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
-  const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
-  const discountedBase = applyCatalogDiscountThb(finalPrice, product.discountPercent);
+  const sizeLabel = (product.sizeLabel || '').trim();
+  const availableSizes = useMemo(
+    () => (product.sizes ?? []).filter((s) => s.availability !== false),
+    [product.sizes]
+  );
+  const defaultSize = useMemo((): BouquetSize => {
+    if (availableSizes.length) return availableSizes[0];
+    const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
+    const discountedBase = applyCatalogDiscountThb(finalPrice, product.discountPercent);
+    return {
+      optionId: 'product_default',
+      key: 'm',
+      label: sizeLabel || '—',
+      price: discountedBase,
+      description: '',
+      availability: true,
+    };
+  }, [availableSizes, product, sizeLabel]);
+  const [selectedSize, setSelectedSize] = useState<BouquetSize>(defaultSize);
+  const selectedBase = applyCatalogDiscountThb(selectedSize.price, product.discountPercent);
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
   const unitPrice = applyExpansionItemMarkupThb(
-    discountedBase + addOnsTotal,
+    selectedBase + addOnsTotal,
     checkoutProfile.destinationId
   );
   const totalPrice = unitPrice * qty;
@@ -68,19 +87,7 @@ export function ProductOrderBlockForProduct({
     isPlushyToy ? 'plushyToy' : isBalloonProduct ? 'balloon' : 'product';
   const isBalloon = itemType === 'balloon';
 
-  const sizeLabel = (product.sizeLabel || '').trim();
-
   const handleAddToCart = () => {
-    const syntheticSize = {
-      optionId: 'product_default',
-      key: 'm' as const,
-      label: sizeLabel || '—',
-      // IMPORTANT: Cart totals add add-ons separately, so keep base price here.
-      price: discountedBase,
-      description: '',
-      preparationTime: undefined as number | undefined,
-      availability: true,
-    };
     const balloonText = isBalloon ? normalizeBalloonText(addOns.balloonText) : undefined;
     addItem(
       {
@@ -90,7 +97,10 @@ export function ProductOrderBlockForProduct({
         nameEn: product.nameEn,
         nameTh: product.nameTh ?? product.nameEn,
         imageUrl: selectedImageUrl ?? product.images?.[0],
-        size: syntheticSize,
+        size: {
+          ...selectedSize,
+          price: selectedBase,
+        },
         addOns: { ...addOns, balloonText },
       },
       qty
@@ -115,7 +125,19 @@ export function ProductOrderBlockForProduct({
   return (
     <div className="order-block">
       <h2 className="order-block-title">{tBuyNow.title}</h2>
-      {sizeLabel ? <p className="order-size">Size: {sizeLabel}</p> : null}
+      {sizeLabel && availableSizes.length <= 1 ? (
+        <p className="order-size">Size: {sizeLabel}</p>
+      ) : null}
+      {availableSizes.length > 1 ? (
+        <SizeSelector
+          sizes={availableSizes}
+          selected={selectedSize}
+          onSelect={setSelectedSize}
+          lang={lang}
+          destinationId={checkoutProfile.destinationId}
+          discountPercent={product.discountPercent}
+        />
+      ) : null}
       {justAdded ? (
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>

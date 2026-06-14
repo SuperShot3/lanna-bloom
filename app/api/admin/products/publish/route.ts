@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         descriptionTh: stringField(b, 'descriptionTh'),
         category: itemCategory,
         price,
+        pricingType: 'single_price',
         images,
         occasion: stringArrayField(b, 'occasion'),
         excludedDeliveryDestinations,

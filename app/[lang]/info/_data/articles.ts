@@ -243,6 +243,28 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: 'flowers-for-men',
+    title: 'Flowers for Men: Thoughtful Bouquet Ideas That Feel Right',
+    excerpt:
+      'Not sure what to send? Discover flowers for men that work—orchids, sunflowers, yellow lilies, rustic roses, and bright mixed bouquets—plus when to send them and how to order in Chiang Mai.',
+    titleTh: 'ดอกไม้สำหรับผู้ชาย: ไอเดียช่อที่เหมาะและส่งได้จริง',
+    excerptTh:
+      'ไม่แน่ใจว่าควรส่งอะไร? แนะนำดอกไม้สำหรับผู้ชาย—กล้วยไม้ ทานตะวัน ลิลลี่เหลือง กุหลาบรัสติก และมิกซ์โทนสดใส—พร้อมโอกาสที่เหมาะและวิธีสั่งในเชียงใหม่',
+    publishedAt: '2026-06-14T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fef9c3 0%, #fde68a 45%, #d9f99d 100%)',
+      center: { kind: 'emoji', value: '🌻' },
+    },
+    ctaLinks: [
+      { label: 'Shop orchids', labelTh: 'ดูกล้วยไม้', href: '/collections/orchids-chiang-mai' },
+      { label: 'Sunflower bouquet', labelTh: 'ช่อทานตะวัน', href: '/catalog/sunflower-bouquet' },
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Same-day delivery', labelTh: 'จัดส่งวันเดียว', href: '/info/same-day-flower-delivery-chiang-mai' },
+    ],
+  },
+  {
     slug: 'flower-delivery-to-hospitals-chiang-mai', // URL-friendly, lowercase, hyphens (e.g. birthday-flowers)
     title: 'How to Deliver Flowers to Hospitals in Chiang Mai', // English title
     excerpt: 'Sending flowers to someone in a hospital? Here’s the easiest way to arrange delivery in Chiang Mai, plus links to major hospitals to confirm addresses and contact numbers.', // English excerpt (1–2 sentences)

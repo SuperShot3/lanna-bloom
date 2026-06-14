@@ -18,6 +18,7 @@ import {
 import {
   createCatalogProductImage,
   ensureCatalogProductImagesFromInline,
+  filterCatalogImagesByVariant,
   getCatalogProductImagesForEntity,
   getCatalogProductImagesForRevision,
   moveCatalogProductImage,
@@ -28,6 +29,13 @@ import {
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import {
+  pricingPayloadForSave,
+  primaryCatalogPriceFromPricing,
+  type CatalogSizePricingRow,
+  type CatalogStemPricingRow,
+  type PricingType,
+} from '@/lib/catalog/pricing';
 import { revalidateCatalogCacheAfterSupabaseWrite } from '@/lib/catalogRouting';
 import {
   deleteCatalogBouquet,
@@ -111,6 +119,8 @@ function parseJsonArray<T>(value: string): T[] | undefined {
   }
 }
 
+const PRICING_TYPES = new Set<PricingType>(['single_price', 'size_based', 'stem_count']);
+
 export async function updateProductByAdminAction(formData: FormData): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) {
@@ -129,10 +139,62 @@ export async function updateProductByAdminAction(formData: FormData): Promise<{ 
   if (formData.has('descriptionEn')) input.descriptionEn = String(formData.get('descriptionEn') ?? '');
   if (formData.has('descriptionTh')) input.descriptionTh = String(formData.get('descriptionTh') ?? '');
 
-  const priceRaw = String(formData.get('price') ?? '').trim();
-  if (priceRaw) {
-    const price = Number(priceRaw);
-    if (!Number.isNaN(price) && price >= 0) input.price = price;
+  if (formData.has('descriptionTh')) input.descriptionTh = String(formData.get('descriptionTh') ?? '');
+
+  const pricingTypeRaw = String(formData.get('pricingType') ?? '').trim() as PricingType;
+  if (formData.has('pricingType')) {
+    if (!PRICING_TYPES.has(pricingTypeRaw)) {
+      return { error: 'Invalid pricing type' };
+    }
+    input.pricingType = pricingTypeRaw;
+  }
+
+  const singlePriceRaw = String(formData.get('singlePrice') ?? '').trim();
+  const singlePrice = Number(singlePriceRaw);
+  const sizeRows = parseJsonArray<CatalogSizePricingRow>(String(formData.get('sizeRows') ?? '')) ?? [];
+  const stemOptions =
+    parseJsonArray<CatalogStemPricingRow>(String(formData.get('stemOptions') ?? '')) ?? [];
+
+  if (formData.has('pricingType')) {
+    if (pricingTypeRaw === 'single_price') {
+      if (!Number.isFinite(singlePrice) || singlePrice < 0) {
+        return { error: 'Single price is required' };
+      }
+    } else if (pricingTypeRaw === 'size_based') {
+      const enabled = sizeRows.filter((r) => r.enabled && (r.price ?? 0) >= 0);
+      if (!enabled.length) {
+        return { error: 'Enable at least one size with a price' };
+      }
+    } else if (pricingTypeRaw === 'stem_count') {
+      if (!stemOptions.length || stemOptions.some((t) => !t.stemCount || t.stemCount < 1)) {
+        return { error: 'Add at least one valid stem tier' };
+      }
+    }
+
+    input.pricing = pricingPayloadForSave(pricingTypeRaw, {
+      singlePrice: Number.isFinite(singlePrice) ? singlePrice : undefined,
+      sizes: sizeRows,
+      stemOptions,
+    });
+    input.price = primaryCatalogPriceFromPricing(pricingTypeRaw, input.pricing);
+  } else {
+    const priceRaw = String(formData.get('price') ?? '').trim();
+    if (priceRaw) {
+      const price = Number(priceRaw);
+      if (!Number.isNaN(price) && price >= 0) input.price = price;
+    }
+  }
+
+  const discountRaw = String(formData.get('discountPercent') ?? '').trim();
+  if (formData.has('discountPercent')) {
+    if (discountRaw === '') {
+      input.discountPercent = null;
+    } else {
+      const discountPercent = Number(discountRaw);
+      if (!Number.isNaN(discountPercent)) {
+        input.discountPercent = discountPercent;
+      }
+    }
   }
 
   const occasion = parseJsonArray<string>(String(formData.get('occasion') ?? ''));
@@ -172,6 +234,9 @@ export async function updateProductByAdminAction(formData: FormData): Promise<{ 
           ...(input.descriptionEn != null && { descriptionEn: input.descriptionEn }),
           ...(input.descriptionTh != null && { descriptionTh: input.descriptionTh }),
           ...(input.price != null && { price: input.price }),
+          ...(input.pricingType != null && { pricingType: input.pricingType }),
+          ...(input.pricing != null && { pricing: input.pricing }),
+          ...(input.discountPercent !== undefined && { discountPercent: input.discountPercent }),
           ...(input.occasion != null && { occasion: input.occasion }),
           ...(input.excludedDeliveryDestinations != null && {
             excludedDeliveryDestinations: input.excludedDeliveryDestinations,
@@ -221,7 +286,8 @@ export async function publishProductDraftAction(
 
 export async function reorderProductImagesAction(
   productId: string,
-  orderedIds: string[]
+  orderedIds: string[],
+  variantKey?: string | null
 ): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: 'Unauthorized - Session not found' };
@@ -245,6 +311,7 @@ export async function reorderProductImagesAction(
       entityId: revisionId ? undefined : writeId,
       revisionId,
       orderedIds,
+      variantKey: variantKey ?? null,
       actor: actorFromSessionUser(session.user),
     });
     if (!revisionId) {
@@ -273,6 +340,7 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
   const file = formData.get('file');
   const altEn = String(formData.get('altEn') || '').trim();
   const altTh = String(formData.get('altTh') || '').trim();
+  const variantKey = String(formData.get('variantKey') || '').trim() || null;
   if (!productId) return { error: 'Missing productId' };
   if (!file || !(file instanceof File)) return { error: 'Image file is required' };
 
@@ -288,9 +356,10 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
       usesDraft,
       actor,
     });
-    const existingImages = revisionId
+    const allImages = revisionId
       ? await getCatalogProductImagesForRevision(revisionId)
       : await ensureCatalogProductImagesFromInline('product', writeId);
+    const existingImages = filterCatalogImagesByVariant(allImages, variantKey);
     await validateProductImage(file);
     const prefix = `products/${writeId}/cms-${Date.now()}`;
     const { webp, pngMaster } = await prepareCatalogImageUpload({
@@ -308,9 +377,13 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
       sourceType: 'uploaded',
       altEn: altEn || 'Product image',
       altTh,
-      isPrimary: existingImages.length === 0,
+      isPrimary: !variantKey && existingImages.length === 0,
       sortOrder: existingImages.length,
-      metadata: { format: 'webp', master_path: pngMaster.storage_path },
+      metadata: {
+        format: 'webp',
+        master_path: pngMaster.storage_path,
+        ...(variantKey ? { variant_key: variantKey } : {}),
+      },
       actor,
     });
     if (revisionId) {

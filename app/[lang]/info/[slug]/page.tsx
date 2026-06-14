@@ -85,6 +85,7 @@ export function generateStaticParams() {
     '51-roses-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
     'flower-delivery-to-hotels-chiang-mai',
+    'flowers-for-men',
     'flower-delivery-to-hospitals-chiang-mai',
     'delivery-policy',
   ];

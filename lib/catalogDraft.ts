@@ -35,6 +35,9 @@ export type CatalogProductDraftPayload = {
   descriptionEn?: string;
   descriptionTh?: string;
   price?: number;
+  pricingType?: string;
+  pricing?: Record<string, unknown>;
+  discountPercent?: number | null;
   occasion?: string[];
   excludedDeliveryDestinations?: string[];
 };
@@ -344,6 +347,15 @@ function parseProductDraftPayload(payload: Record<string, unknown>): UpdateCatal
   if (typeof payload.price === 'number' && Number.isFinite(payload.price)) {
     input.price = payload.price;
   }
+  if (typeof payload.pricingType === 'string') {
+    input.pricingType = payload.pricingType as UpdateCatalogProductByAdminInput['pricingType'];
+  }
+  if (payload.pricing && typeof payload.pricing === 'object') {
+    input.pricing = payload.pricing as UpdateCatalogProductByAdminInput['pricing'];
+  }
+  if (payload.discountPercent === null || typeof payload.discountPercent === 'number') {
+    input.discountPercent = payload.discountPercent;
+  }
   if (Array.isArray(payload.occasion)) {
     input.occasion = payload.occasion.map((v) => String(v)).filter(Boolean);
   }
@@ -474,6 +486,11 @@ export function applyProductDraftToDetail<T extends Record<string, unknown>>(
     ...(typeof p.descriptionEn === 'string' && { descriptionEn: p.descriptionEn }),
     ...(typeof p.descriptionTh === 'string' && { descriptionTh: p.descriptionTh }),
     ...(typeof p.price === 'number' && { price: p.price }),
+    ...(typeof p.pricingType === 'string' && { pricingType: p.pricingType }),
+    ...(p.pricing && typeof p.pricing === 'object' && { pricing: p.pricing }),
+    ...(p.discountPercent === null || typeof p.discountPercent === 'number'
+      ? { discountPercent: p.discountPercent }
+      : {}),
     ...(Array.isArray(p.occasion) && { occasion: p.occasion.join(', ') }),
     ...(Array.isArray(p.excludedDeliveryDestinations) && {
       excludedDeliveryDestinations: p.excludedDeliveryDestinations,

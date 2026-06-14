@@ -2,13 +2,23 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AdminCmsCollapsibleSection,
   AdminCmsEditor,
   AdminCmsSection,
   AdminCheckboxGrid,
+  PricingSectionEditor,
   ProductImageListEditor,
 } from '@/app/admin/components/cms-editor';
+import { reorderImagesByIds } from '@/lib/catalogImageReorder';
+import {
+  ensureFourSizeSlots,
+  normalizePricingJson,
+  type CatalogSizePricingRow,
+  type CatalogStemPricingRow,
+  type PricingType,
+} from '@/lib/catalog/pricing';
 import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogShelfDirtyContext';
 import { useCatalogUnsavedLeaveGuard } from '@/app/admin/(dashboard)/products/useCatalogUnsavedLeaveGuard';
 import type { AdminCatalogProductImage, AdminProductDetail } from '@/lib/catalog/types';
@@ -60,6 +70,19 @@ const STATUS_LABELS: Record<string, string> = {
 
 type Props = { product: AdminProductDetail };
 
+function initialProductPricingState(product: AdminProductDetail) {
+  const pricingType = product.pricingType ?? 'single_price';
+  const normalized = normalizePricingJson(pricingType, product.pricing ?? {});
+  return {
+    pricingType,
+    singlePrice: String(
+      normalized.price ?? product.pricing?.price ?? product.sizes[0]?.price ?? product.price ?? 0
+    ),
+    sizeRows: ensureFourSizeSlots(normalized.sizes ?? []),
+    stemOptions: normalized.stemOptions ?? [],
+  };
+}
+
 function parseOccasion(value: string | undefined): string[] {
   if (!value?.trim()) return [];
   return value
@@ -73,6 +96,7 @@ export function AdminProductDetailClient({ product }: Props) {
   const { getProductPending, setProductPending } = useCatalogShelfDirty();
 
   const pending = getProductPending(product.id);
+  const serverPricing = useMemo(() => initialProductPricingState(product), [product]);
 
   const [nameEn, setNameEn] = useState(() => pending?.nameEn ?? product.nameEn);
   const [nameTh, setNameTh] = useState(() => pending?.nameTh ?? product.nameTh ?? '');
@@ -82,7 +106,23 @@ export function AdminProductDetailClient({ product }: Props) {
   const [descriptionTh, setDescriptionTh] = useState(
     () => pending?.descriptionTh ?? product.descriptionTh ?? ''
   );
-  const [price, setPrice] = useState(() => pending?.price ?? String(product.price));
+  const [pricingType, setPricingType] = useState<PricingType>(
+    () => pending?.pricingType ?? serverPricing.pricingType
+  );
+  const [singlePrice, setSinglePrice] = useState(
+    () => pending?.singlePrice ?? serverPricing.singlePrice
+  );
+  const [sizeRows, setSizeRows] = useState<CatalogSizePricingRow[]>(
+    () => pending?.sizeRows ?? serverPricing.sizeRows
+  );
+  const [stemOptions, setStemOptions] = useState<CatalogStemPricingRow[]>(
+    () => pending?.stemOptions ?? serverPricing.stemOptions
+  );
+  const [discountPercent, setDiscountPercent] = useState(
+    () =>
+      pending?.discountPercent ??
+      (product.discountPercent != null ? String(product.discountPercent) : '')
+  );
   const [occasion, setOccasion] = useState<string[]>(
     () => pending?.occasion ?? parseOccasion(product.occasion)
   );
@@ -94,8 +134,8 @@ export function AdminProductDetailClient({ product }: Props) {
   const [editableImages, setEditableImages] = useState<AdminCatalogProductImage[]>(
     product.editableImages ?? []
   );
-  const [copyOpen, setCopyOpen] = useState(true);
   const [loading, setLoading] = useState<string | null>(null);
+  const [savingImageOrder, setSavingImageOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -105,7 +145,12 @@ export function AdminProductDetailClient({ product }: Props) {
     setNameTh(product.nameTh ?? '');
     setDescriptionEn(product.descriptionEn ?? '');
     setDescriptionTh(product.descriptionTh ?? '');
-    setPrice(String(product.price));
+    const next = initialProductPricingState(product);
+    setPricingType(next.pricingType);
+    setSinglePrice(next.singlePrice);
+    setSizeRows(next.sizeRows);
+    setStemOptions(next.stemOptions);
+    setDiscountPercent(product.discountPercent != null ? String(product.discountPercent) : '');
     setOccasion(parseOccasion(product.occasion));
     setAvailableMarkets(availableMarketsFromExcluded(product.excludedDeliveryDestinations));
     setEditableImages(product.editableImages ?? []);
@@ -121,7 +166,8 @@ export function AdminProductDetailClient({ product }: Props) {
       nameTh: product.nameTh ?? '',
       descriptionEn: product.descriptionEn ?? '',
       descriptionTh: product.descriptionTh ?? '',
-      price: String(product.price),
+      pricing: initialProductPricingState(product),
+      discountPercent: product.discountPercent != null ? String(product.discountPercent) : '',
       occasion: parseOccasion(product.occasion).join('|'),
       markets: availableMarketsFromExcluded(product.excludedDeliveryDestinations).join('|'),
     }),
@@ -129,12 +175,17 @@ export function AdminProductDetailClient({ product }: Props) {
   );
 
   const hasUnsavedChanges = useMemo(() => {
+    const savedPricing = savedSnapshot.pricing;
     return (
       nameEn !== savedSnapshot.nameEn ||
       nameTh !== savedSnapshot.nameTh ||
       descriptionEn !== savedSnapshot.descriptionEn ||
       descriptionTh !== savedSnapshot.descriptionTh ||
-      price !== savedSnapshot.price ||
+      pricingType !== savedPricing.pricingType ||
+      singlePrice !== savedPricing.singlePrice ||
+      JSON.stringify(sizeRows) !== JSON.stringify(savedPricing.sizeRows) ||
+      JSON.stringify(stemOptions) !== JSON.stringify(savedPricing.stemOptions) ||
+      discountPercent !== savedSnapshot.discountPercent ||
       occasion.join('|') !== savedSnapshot.occasion ||
       availableMarkets.join('|') !== savedSnapshot.markets
     );
@@ -143,7 +194,11 @@ export function AdminProductDetailClient({ product }: Props) {
     nameTh,
     descriptionEn,
     descriptionTh,
-    price,
+    pricingType,
+    singlePrice,
+    sizeRows,
+    stemOptions,
+    discountPercent,
     occasion,
     availableMarkets,
     savedSnapshot,
@@ -166,7 +221,11 @@ export function AdminProductDetailClient({ product }: Props) {
       nameTh,
       descriptionEn,
       descriptionTh,
-      price,
+      pricingType,
+      singlePrice,
+      sizeRows,
+      stemOptions,
+      discountPercent,
       occasion,
       availableMarkets,
     });
@@ -178,7 +237,11 @@ export function AdminProductDetailClient({ product }: Props) {
     nameTh,
     descriptionEn,
     descriptionTh,
-    price,
+    pricingType,
+    singlePrice,
+    sizeRows,
+    stemOptions,
+    discountPercent,
     occasion,
     availableMarkets,
   ]);
@@ -196,7 +259,11 @@ export function AdminProductDetailClient({ product }: Props) {
     formData.set('nameTh', nameTh);
     formData.set('descriptionEn', descriptionEn);
     formData.set('descriptionTh', descriptionTh);
-    formData.set('price', price);
+    formData.set('pricingType', pricingType);
+    formData.set('singlePrice', singlePrice);
+    formData.set('sizeRows', JSON.stringify(sizeRows));
+    formData.set('stemOptions', JSON.stringify(stemOptions));
+    formData.set('discountPercent', discountPercent);
     formData.set('occasion', JSON.stringify(occasion));
     formData.set(
       'excludedDeliveryDestinations',
@@ -273,6 +340,80 @@ export function AdminProductDetailClient({ product }: Props) {
     router.push('/admin/products');
     router.refresh();
   }
+
+  const handleImageReorder = useCallback(
+    async (variantKey: string | null, orderedIds: string[]) => {
+      const previous = editableImages;
+      setEditableImages((current) => reorderImagesByIds(current, orderedIds, variantKey));
+      setSavingImageOrder(true);
+      const result = await reorderProductImagesAction(product.id, orderedIds, variantKey);
+      setSavingImageOrder(false);
+      if (result.error) {
+        setEditableImages(previous);
+        setError(result.error);
+      }
+    },
+    [editableImages, product.id]
+  );
+
+  const imageHandlers = {
+    loadingKey: loading,
+    onReorder: handleImageReorder,
+    onUpload: async (variantKey: string | null, file: File) => {
+      setLoading('upload');
+      const formData = new FormData();
+      formData.set('productId', product.id);
+      formData.set('file', file);
+      formData.set('altEn', nameEn);
+      formData.set('altTh', nameTh);
+      if (variantKey) formData.set('variantKey', variantKey);
+      const result = await uploadProductImageAction(formData);
+      setLoading(null);
+      if (result.error) setError(result.error);
+      else router.refresh();
+    },
+    onSaveAlt: async (image: AdminCatalogProductImage) => {
+      setLoading(`alt-${image.id}`);
+      const formData = new FormData();
+      formData.set('productId', product.id);
+      formData.set('imageId', image.id);
+      formData.set('altEn', image.altEn);
+      formData.set('altTh', image.altTh);
+      const result = await updateProductImageAltAction(formData);
+      setLoading(null);
+      if (result.error) setError(result.error);
+      else router.refresh();
+    },
+    onReplace: async (imageId: string, file: File) => {
+      const image = editableImages.find((i) => i.id === imageId);
+      if (!image) return;
+      setLoading('replace');
+      const formData = new FormData();
+      formData.set('productId', product.id);
+      formData.set('file', file);
+      formData.set('altEn', image.altEn || nameEn);
+      formData.set('altTh', image.altTh || nameTh);
+      if (image.variantKey) formData.set('variantKey', image.variantKey);
+      const upload = await uploadProductImageAction(formData);
+      if (upload.error) {
+        setLoading(null);
+        setError(upload.error);
+        return;
+      }
+      const del = await deleteProductImageAction(product.id, imageId);
+      setLoading(null);
+      if (del.error) setError(del.error);
+      else router.refresh();
+    },
+    onRemove: async (imageId: string) => {
+      if (!window.confirm('Remove this image?')) return;
+      setLoading(`delete-${imageId}`);
+      const result = await deleteProductImageAction(product.id, imageId);
+      setLoading(null);
+      if (result.error) setError(result.error);
+      else router.refresh();
+    },
+  };
 
   return (
     <AdminCmsEditor>
@@ -361,75 +502,70 @@ export function AdminProductDetailClient({ product }: Props) {
       {error ? <div className="admin-cms-alert is-error">{error}</div> : null}
       {success ? <div className="admin-cms-alert is-success">{success}</div> : null}
 
-      <AdminCmsSection label="Product images">
-        <div className="admin-cms-bordered-list">
-          <ProductImageListEditor
-            images={editableImages}
-            disabled={!!loading}
-            loadingKey={loading}
-            enableCrop
-            onReorder={async (orderedIds) => {
-              setLoading('reorder');
-              const result = await reorderProductImagesAction(product.id, orderedIds);
-              setLoading(null);
-              if (result.error) setError(result.error);
-              else router.refresh();
-            }}
-            onUpload={async (file) => {
-              setLoading('upload');
-              const formData = new FormData();
-              formData.set('productId', product.id);
-              formData.set('file', file);
-              formData.set('altEn', nameEn);
-              formData.set('altTh', nameTh);
-              const result = await uploadProductImageAction(formData);
-              setLoading(null);
-              if (result.error) setError(result.error);
-              else router.refresh();
-            }}
-            onSaveAlt={async (image) => {
-              setLoading(`alt-${image.id}`);
-              const formData = new FormData();
-              formData.set('productId', product.id);
-              formData.set('imageId', image.id);
-              formData.set('altEn', image.altEn);
-              formData.set('altTh', image.altTh);
-              const result = await updateProductImageAltAction(formData);
-              setLoading(null);
-              if (result.error) setError(result.error);
-              else router.refresh();
-            }}
-            onReplace={async (imageId, file) => {
-              const image = editableImages.find((i) => i.id === imageId);
-              if (!image) return;
-              setLoading('replace');
-              const formData = new FormData();
-              formData.set('productId', product.id);
-              formData.set('file', file);
-              formData.set('altEn', image.altEn || nameEn);
-              formData.set('altTh', image.altTh || nameTh);
-              const upload = await uploadProductImageAction(formData);
-              if (upload.error) {
-                setLoading(null);
-                setError(upload.error);
-                return;
-              }
-              const del = await deleteProductImageAction(product.id, imageId);
-              setLoading(null);
-              if (del.error) setError(del.error);
-              else router.refresh();
-            }}
-            onRemove={async (imageId) => {
-              if (!window.confirm('Remove this image?')) return;
-              setLoading(`delete-${imageId}`);
-              const result = await deleteProductImageAction(product.id, imageId);
-              setLoading(null);
-              if (result.error) setError(result.error);
-              else router.refresh();
-            }}
+      <AdminCmsSection label="Copy">
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">Name (EN)</span>
+          <input className="admin-cms-input" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+        </label>
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">Name (TH)</span>
+          <input className="admin-cms-input" value={nameTh} onChange={(e) => setNameTh(e.target.value)} />
+        </label>
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">Description (EN)</span>
+          <textarea
+            className="admin-cms-input"
+            rows={3}
+            value={descriptionEn}
+            onChange={(e) => setDescriptionEn(e.target.value)}
           />
-        </div>
+        </label>
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">Description (TH)</span>
+          <textarea
+            className="admin-cms-input"
+            rows={3}
+            value={descriptionTh}
+            onChange={(e) => setDescriptionTh(e.target.value)}
+          />
+        </label>
       </AdminCmsSection>
+
+      <PricingSectionEditor
+        pricingType={pricingType}
+        onPricingTypeChange={setPricingType}
+        singlePrice={singlePrice}
+        onSinglePriceChange={setSinglePrice}
+        sizeRows={sizeRows}
+        onSizeRowsChange={setSizeRows}
+        stemOptions={stemOptions}
+        onStemOptionsChange={setStemOptions}
+        images={editableImages}
+        imageHandlers={imageHandlers}
+        discountPercent={discountPercent}
+        onDiscountPercentChange={setDiscountPercent}
+        featuredPopular={false}
+        onFeaturedPopularChange={() => {}}
+      />
+
+      <AdminCmsCollapsibleSection
+        label="Product gallery"
+        helper="Main images shown on the product page. Size or stem overrides are set in Pricing above."
+        className="admin-cms-collapsible-panel"
+        defaultOpen
+      >
+        <ProductImageListEditor
+          images={editableImages}
+          variantKey={null}
+          disabled={!!loading || savingImageOrder}
+          loadingKey={loading}
+          onReorder={(ids) => imageHandlers.onReorder(null, ids)}
+          onUpload={(file) => imageHandlers.onUpload(null, file)}
+          onSaveAlt={imageHandlers.onSaveAlt}
+          onReplace={imageHandlers.onReplace}
+          onRemove={imageHandlers.onRemove}
+        />
+      </AdminCmsCollapsibleSection>
 
       <AdminCmsSection
         label="Available in these delivery markets"
@@ -455,60 +591,6 @@ export function AdminProductDetailClient({ product }: Props) {
           onChange={setOccasion}
         />
       </AdminCmsSection>
-
-      <div className="admin-cms-collapsible">
-        <button
-          type="button"
-          className="admin-cms-collapsible-trigger"
-          aria-expanded={copyOpen}
-          onClick={() => setCopyOpen((v) => !v)}
-        >
-          Copy & pricing
-          <span className={`material-symbols-outlined admin-cms-sortable-chevron${copyOpen ? ' is-open' : ''}`}>
-            chevron_right
-          </span>
-        </button>
-        {copyOpen ? (
-          <div className="admin-cms-collapsible-body">
-            <label className="admin-cms-field">
-              <span className="admin-cms-field-label">Name (EN)</span>
-              <input className="admin-cms-input" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
-            </label>
-            <label className="admin-cms-field">
-              <span className="admin-cms-field-label">Name (TH)</span>
-              <input className="admin-cms-input" value={nameTh} onChange={(e) => setNameTh(e.target.value)} />
-            </label>
-            <label className="admin-cms-field">
-              <span className="admin-cms-field-label">Description (EN)</span>
-              <textarea
-                className="admin-cms-input"
-                rows={3}
-                value={descriptionEn}
-                onChange={(e) => setDescriptionEn(e.target.value)}
-              />
-            </label>
-            <label className="admin-cms-field">
-              <span className="admin-cms-field-label">Description (TH)</span>
-              <textarea
-                className="admin-cms-input"
-                rows={3}
-                value={descriptionTh}
-                onChange={(e) => setDescriptionTh(e.target.value)}
-              />
-            </label>
-            <label className="admin-cms-field">
-              <span className="admin-cms-field-label">Price (฿)</span>
-              <input
-                type="number"
-                min={0}
-                className="admin-cms-input"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </label>
-          </div>
-        ) : null}
-      </div>
     </AdminCmsEditor>
   );
 }

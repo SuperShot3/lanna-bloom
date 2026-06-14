@@ -8,6 +8,11 @@ import { clampGalleryIndex } from '@/lib/pdpVariantMedia';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
 
+/** Match catalog cards: load Supabase CDN directly (skip Vercel Image Optimization). */
+function isUnoptimizedImageSrc(src: string): boolean {
+  return src.startsWith('data:') || src.includes('supabase.co');
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -393,7 +398,7 @@ export function ProductGallery({
                     className="gallery-image"
                     sizes="(max-width: 600px) 100vw, 50vw"
                     loading={i === 0 ? 'eager' : 'lazy'}
-                    unoptimized={src.startsWith('data:')}
+                    unoptimized={isUnoptimizedImageSrc(src)}
                     draggable={false}
                   />
                 </div>
@@ -481,7 +486,7 @@ export function ProductGallery({
                   height={80}
                   className="thumb-img"
                   loading="lazy"
-                  unoptimized={src.startsWith('data:')}
+                  unoptimized={isUnoptimizedImageSrc(src)}
                 />
               </button>
             ))}
@@ -516,7 +521,7 @@ export function ProductGallery({
               width={1200}
               height={1200}
               className="gallery-lightbox-image"
-              unoptimized={list[lightboxIndex].startsWith('data:')}
+              unoptimized={isUnoptimizedImageSrc(list[lightboxIndex])}
               draggable={false}
               style={{
                 transform: `translate(${lightboxOffset.x}px, ${lightboxOffset.y}px) scale(${lightboxScale})`,

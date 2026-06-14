@@ -11,6 +11,7 @@ import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
+import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
@@ -47,15 +48,23 @@ export function ProductCard({
   const href = buildCatalogItemHref({ lang, slug: product.slug, pathname });
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const discountedBase = applyCatalogDiscountThb(finalPrice, product.discountPercent);
-  const displayFromPrice = effectiveCatalogUnitPriceWithExpansion(
-    finalPrice,
-    product.discountPercent,
-    checkoutProfile.destinationId
-  );
   const isPlushyToys = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
   const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
   const isStandaloneProduct = isPlushyToys || isBalloon;
   const sizeLabel = (product.sizeLabel || '').trim();
+  const availableSizes = useMemo(
+    () => (product.sizes ?? []).filter((s) => s.availability !== false),
+    [product.sizes]
+  );
+  const hasMultipleSizes = availableSizes.length > 1;
+  const listBasePrice = hasMultipleSizes
+    ? Math.min(...availableSizes.map((s) => s.price))
+    : finalPrice;
+  const displayFromPrice = effectiveCatalogUnitPriceWithExpansion(
+    listBasePrice,
+    product.discountPercent,
+    checkoutProfile.destinationId
+  );
 
   const images = useMemo(() => {
     const raw = product.images ?? [];
@@ -149,6 +158,9 @@ export function ProductCard({
   }, []);
 
   const [hovered, setHovered] = useState(false);
+  const [selectedOptionId, setSelectedOptionId] = useState(
+    () => availableSizes[availableSizes.length - 1]?.optionId ?? 'product_default'
+  );
   const [justAdded, setJustAdded] = useState(false);
   const [actionsPinned, setActionsPinned] = useState(false);
   const [showMobileActions, setShowMobileActions] = useState(false);
@@ -179,6 +191,14 @@ export function ProductCard({
     return () => media.removeEventListener('change', sync);
   }, [expandablePanel]);
 
+  useEffect(() => {
+    if (!hasMultipleSizes) return;
+    setSelectedOptionId(availableSizes[availableSizes.length - 1]?.optionId ?? 'product_default');
+  }, [availableSizes, hasMultipleSizes, product.id]);
+
+  const selectedSize =
+    availableSizes.find((s) => s.optionId === selectedOptionId) ?? availableSizes[0];
+
   const handleLinkClick = () => {
     const item: AnalyticsItem = {
       item_id: product.id,
@@ -202,8 +222,23 @@ export function ProductCard({
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       const itemType = isBalloon ? 'balloon' : isPlushyToys ? 'plushyToy' : 'product';
+      const cartSize = hasMultipleSizes && selectedSize
+        ? {
+            optionId: selectedSize.optionId,
+            key: selectedSize.key ?? ('m' as const),
+            label: optionDisplayLabel(selectedSize, lang),
+            price: applyCatalogDiscountThb(selectedSize.price, product.discountPercent),
+            description: selectedSize.description ?? '',
+          }
+        : {
+            optionId: 'product_default',
+            key: 'm' as const,
+            label: sizeLabel || '—',
+            price: discountedBase,
+            description: '',
+          };
       const displayUnitPrice = effectiveCatalogUnitPriceWithExpansion(
-        finalPrice,
+        hasMultipleSizes && selectedSize ? selectedSize.price : finalPrice,
         product.discountPercent,
         checkoutProfile.destinationId
       );
@@ -215,13 +250,7 @@ export function ProductCard({
           nameEn: product.nameEn,
           nameTh: product.nameTh ?? product.nameEn,
           imageUrl: imgSrc || undefined,
-          size: {
-            optionId: 'product_default',
-            key: 'm',
-            label: sizeLabel || '—',
-            price: discountedBase,
-            description: '',
-          },
+          size: cartSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: product.excludedDeliveryDestinations,
         },
@@ -238,7 +267,9 @@ export function ProductCard({
             quantity: 1,
             index: 0,
             item_category: getProductDisplayCategory(product),
-            item_variant: sizeLabel || undefined,
+            item_variant: hasMultipleSizes && selectedSize
+              ? optionDisplayLabel(selectedSize, lang)
+              : sizeLabel || undefined,
           },
         ],
       });
@@ -254,6 +285,7 @@ export function ProductCard({
       checkoutProfile.destinationId,
       discountedBase,
       finalPrice,
+      hasMultipleSizes,
       imgSrc,
       isBalloon,
       isPlushyToys,
@@ -261,9 +293,12 @@ export function ProductCard({
       name,
       product,
       router,
+      selectedSize,
       sizeLabel,
     ]
   );
+
+  const radioName = `product-opt-${product.id}`;
 
   return (
     <article
@@ -408,6 +443,45 @@ export function ProductCard({
           onPointerDown={(e) => e.stopPropagation()}
         >
         <div className="pcard-panel-inner">
+          {hasMultipleSizes ? (
+            <>
+              <p className="pcard-options-title">{t.productCardOptions}</p>
+              <ul className="pcard-option-list" role="list">
+                {availableSizes.map((row) => {
+                  const isChecked = selectedOptionId === row.optionId;
+                  return (
+                    <li key={row.optionId} className="pcard-option">
+                      <label className="pcard-option-label">
+                        <input
+                          type="radio"
+                          className="pcard-radio"
+                          name={radioName}
+                          checked={isChecked}
+                          onChange={() => setSelectedOptionId(row.optionId)}
+                        />
+                        <span className="pcard-label-text">
+                          {optionDisplayLabel(row, lang)}
+                          {isChecked ? (
+                            <span className="pcard-check" aria-hidden>
+                              {' '}
+                              ✓
+                            </span>
+                          ) : null}
+                        </span>
+                      </label>
+                      <span className="pcard-option-price">
+                        ฿{effectiveCatalogUnitPriceWithExpansion(
+                          row.price,
+                          product.discountPercent,
+                          checkoutProfile.destinationId
+                        ).toLocaleString()}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : null}
           {justAdded ? (
             <>
               <p className="pcard-added" role="status">

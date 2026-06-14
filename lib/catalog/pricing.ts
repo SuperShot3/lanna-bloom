@@ -358,6 +358,19 @@ export function buildSellableOptions(
   return options.length ? options : [{ optionId: 'default', key: 'm', label: '—', price: 0 }];
 }
 
+/** List / cart base price from pricing config (minimum active sellable option). */
+export function primaryCatalogPriceFromPricing(
+  pricingType: PricingType,
+  pricing: CatalogBouquetPricing
+): number {
+  const options = buildSellableOptionsFromPricing(pricingType, pricing);
+  const active = options.filter((o) => o.availability !== false);
+  if (!active.length) {
+    return pricing.price ?? pricing.sizes?.[0]?.price ?? 0;
+  }
+  return Math.min(...active.map((o) => o.price));
+}
+
 export function pricingPayloadForSave(
   pricingType: PricingType,
   input: {

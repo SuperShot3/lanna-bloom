@@ -8,6 +8,7 @@ import {
   mapBouquetRowToBouquet,
   mapProductRowToCatalogProduct,
 } from '@/lib/catalog/mappers';
+import { buildSellableOptions, normalizePricingJson, resolvePricingType } from '@/lib/catalog/pricing';
 import {
   applyBouquetDraftToDetail,
   applyProductDraftToDetail,
@@ -413,6 +414,12 @@ export async function getCatalogProductByIdForAdmin(
 
   const row = data as CatalogProductRow;
   const mapped = mapProductRowToCatalogProduct(supabase, row);
+  const pricing = row.pricing ?? { price: row.price };
+  const pricingType = resolvePricingType({
+    pricing_type: row.pricing_type,
+    pricing,
+  });
+  const sizes = buildSellableOptions({ pricing_type: pricingType, pricing }, 'en');
   const overrides = row.admin_overrides;
   const draft = await getActiveCatalogDraft('product', row.id);
 
@@ -438,6 +445,10 @@ export async function getCatalogProductByIdForAdmin(
       descriptionTh: mapped.descriptionTh,
       category: row.category,
       price: Number(row.price),
+      pricingType,
+      pricing: normalizePricingJson(pricingType, pricing),
+      sizes,
+      discountPercent: mapped.discountPercent,
       cost: row.cost != null ? Number(row.cost) : undefined,
       moderationStatus: row.moderation_status,
       commissionPercent: row.commission_percent != null ? Number(row.commission_percent) : undefined,

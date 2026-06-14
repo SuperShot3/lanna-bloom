@@ -7,7 +7,7 @@ import {
   attachVariantImagesToSellableOptions,
   type VariantImageSet,
 } from '@/lib/catalog/bouquetImages';
-import { buildSellableOptions, resolvePricingType } from '@/lib/catalog/pricing';
+import { buildSellableOptions, primaryCatalogPriceFromPricing, resolvePricingType } from '@/lib/catalog/pricing';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { filterStorefrontCatalogStoredImages } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
@@ -162,6 +162,15 @@ export function mapProductRowToCatalogProduct(
     descriptionEn ?? descriptionTh ?? nameEn ?? nameTh ?? ''
   );
 
+  const pricing = row.pricing ?? { price: row.price };
+  const pricingType = resolvePricingType({
+    pricing_type: row.pricing_type,
+    pricing,
+  });
+  const sizes = buildSellableOptions({ pricing_type: pricingType, pricing }, 'en');
+  const listPrice =
+    primaryCatalogPriceFromPricing(pricingType, pricing) || Number(row.price);
+
   return {
     id: row.id,
     slug,
@@ -172,7 +181,9 @@ export function mapProductRowToCatalogProduct(
     category: row.category,
     catalogKind: catalogKindFromCategory(row.category),
     sizeLabel: row.structured_attributes?.sizeLabel,
-    price: Number(row.price),
+    pricingType,
+    sizes,
+    price: listPrice,
     cost: row.cost != null ? Number(row.cost) : undefined,
     commissionPercent: row.commission_percent != null ? Number(row.commission_percent) : undefined,
     images: urls.length ? urls : [PRODUCT_PLACEHOLDER],
