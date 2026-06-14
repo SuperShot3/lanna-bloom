@@ -13,7 +13,8 @@ export const FEED_DESTINATION = 'CHIANG_MAI' as const;
 /** Flat standard delivery for Chiang Mai feed (no region code — invalid for TH in Merchant Center). */
 export const FEED_SHIPPING = 'TH::Standard:350.00 THB';
 
-const DEFAULT_BASE_URL = 'https://lannabloom.shop';
+export const DEFAULT_BASE_URL = 'https://lannabloom.shop';
+export const MAX_FEED_ID_LENGTH = 49;
 
 /** Official Google Product Taxonomy numeric IDs (taxonomy.google.com). */
 export const GOOGLE_TAXONOMY_ID: Record<string, string> = {
@@ -109,17 +110,35 @@ export interface GoogleMerchantFeedResult {
 }
 
 function feedBaseUrl(override?: string): string {
-  const raw =
-    override?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
-    DEFAULT_BASE_URL;
+  const raw = override?.trim() || DEFAULT_BASE_URL;
   return raw.replace(/\/$/, '');
 }
 
 /** Strip tabs/newlines for TSV safety. */
 export function sanitiseFeedField(value: string): string {
   return value.replace(/\t/g, ' ').replace(/[\r\n]+/g, ' ').trim();
+}
+
+function hashFeedId(value: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash.toString(36).padStart(7, '0');
+}
+
+export function compactFeedId(value: string): string {
+  const normalised = sanitiseFeedField(value)
+    .replace(/[^A-Za-z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  if (normalised.length <= MAX_FEED_ID_LENGTH) return normalised;
+
+  const suffix = hashFeedId(normalised);
+  const prefixLength = MAX_FEED_ID_LENGTH - suffix.length - 1;
+  const prefix = normalised.slice(0, prefixLength).replace(/_+$/g, '');
+  return `${prefix}_${suffix}`;
 }
 
 export function formatFeedPrice(amountThb: number): string {
@@ -254,6 +273,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
 
     for (const option of bouquet.sizes) {
       const sku = `${bouquet.id}_${option.optionId}`.trim();
+      const merchantId = compactFeedId(sku);
       if (!sku) {
         skip(skipped, {
           id: bouquet.id,
@@ -296,7 +316,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       const availability = option.availability !== false ? 'in_stock' : 'out_of_stock';
 
       pushRow(rows, [
-        sku,
+        merchantId,
         title,
         baseDesc,
         link,
@@ -366,7 +386,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
     );
 
     pushRow(rows, [
-      sku,
+      compactFeedId(sku),
       title,
       description,
       link,
@@ -435,7 +455,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
     );
 
     pushRow(rows, [
-      sku,
+      compactFeedId(sku),
       title,
       description,
       link,
