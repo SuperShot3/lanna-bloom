@@ -39,6 +39,7 @@ import {
 } from '@/lib/catalogListLogic';
 
 import { loadBouquetVariantImages } from '@/lib/catalog/bouquetImages';
+import { pickSimilarBouquets } from '@/lib/catalog/similarBouquets';
 
 import {
 
@@ -366,6 +367,22 @@ export async function getBouquetsFromCatalog(): Promise<Bouquet[]> {
     (a.nameEn || '').localeCompare(b.nameEn || '', undefined, { sensitivity: 'base' })
 
   );
+
+}
+
+
+
+export async function getSimilarBouquetsFromCatalog(
+
+  source: Bouquet,
+
+  limit = 3
+
+): Promise<Bouquet[]> {
+
+  const all = await getBouquetsFromCatalog();
+
+  return pickSimilarBouquets(source, all, limit);
 
 }
 

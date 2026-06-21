@@ -5,13 +5,14 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Image from 'next/image';
 import './ProductGallery.css';
 import { clampGalleryIndex } from '@/lib/pdpVariantMedia';
+import {
+  catalogImageUnoptimized,
+  CATALOG_PDP_HERO_SIZES,
+  CATALOG_PDP_LIGHTBOX_SIZES,
+  shouldLoadGallerySlideImage,
+} from '@/lib/catalog/catalogImage';
 
 const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600"%3E%3Crect fill="%23f9f5f0" width="600" height="600"/%3E%3C/svg%3E';
-
-/** Match catalog cards: load Supabase CDN directly (skip Vercel Image Optimization). */
-function isUnoptimizedImageSrc(src: string): boolean {
-  return src.startsWith('data:') || src.includes('supabase.co');
-}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -73,7 +74,7 @@ export function ProductGallery({
   );
   const viewTransitionName = productId ? `product-${productId}` : undefined;
 
-  const [sliderReady, setSliderReady] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -94,46 +95,17 @@ export function ProductGallery({
   const emblaPointerDownRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
-    const firstSrc = list[0];
-    const run = async () => {
-      if (!firstSrc) {
-        setSliderReady(true);
-        return;
-      }
-      if (firstSrc.startsWith('data:')) {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (!cancelled) setSliderReady(true);
-          });
-        });
-        return;
-      }
-      try {
-        const img = document.createElement('img');
-        img.src = firstSrc;
-        if (typeof img.decode === 'function') {
-          await img.decode();
-        } else {
-          await new Promise<void>((res) => {
-            img.onload = () => res();
-            img.onerror = () => res();
-          });
-        }
-        if (cancelled) return;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (!cancelled) setSliderReady(true);
-          });
-        });
-      } catch {
-        if (!cancelled) setSliderReady(true);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
+    setHeroReady(false);
+  }, [list[0]]);
+
+  const handleHeroLoad = useCallback(() => {
+    setHeroReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (list[0]?.startsWith('data:')) {
+      setHeroReady(true);
+    }
   }, [list[0]]);
 
   useEffect(() => {
@@ -378,7 +350,7 @@ export function ProductGallery({
   return (
     <div className="gallery">
       <div className="gallery-main">
-        <div className="gallery-viewport" ref={sliderReady ? emblaRef : undefined} onClick={openLightbox}>
+        <div className="gallery-viewport" ref={emblaRef} onClick={openLightbox}>
           <div className="gallery-container">
             {list.map((src, i) => (
               <div key={i} className="gallery-slide">
@@ -390,17 +362,23 @@ export function ProductGallery({
                       : undefined
                   }
                 >
-                  <Image
-                    src={src}
-                    alt={imageAlts?.[i]?.trim() || (i === 0 ? name : `${name} - image ${i + 1}`)}
-                    width={600}
-                    height={600}
-                    className="gallery-image"
-                    sizes="(max-width: 600px) 100vw, 50vw"
-                    loading={i === 0 ? 'eager' : 'lazy'}
-                    unoptimized={isUnoptimizedImageSrc(src)}
-                    draggable={false}
-                  />
+                  {shouldLoadGallerySlideImage(i, active) ? (
+                    <Image
+                      src={src}
+                      alt={imageAlts?.[i]?.trim() || (i === 0 ? name : `${name} - image ${i + 1}`)}
+                      width={600}
+                      height={600}
+                      className="gallery-image"
+                      sizes={CATALOG_PDP_HERO_SIZES}
+                      priority={i === 0}
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      unoptimized={catalogImageUnoptimized(src)}
+                      draggable={false}
+                      onLoad={i === 0 ? handleHeroLoad : undefined}
+                    />
+                  ) : (
+                    <div className="gallery-image gallery-image-placeholder" aria-hidden />
+                  )}
                 </div>
               </div>
             ))}
@@ -466,7 +444,7 @@ export function ProductGallery({
         <p className="gallery-size-caption">{sizeCaption}</p>
       ) : null}
 
-      {list.length > 1 && (
+      {heroReady && list.length > 1 && (
         <div className="gallery-thumbs">
             {list.map((src, i) => (
               <button
@@ -485,8 +463,9 @@ export function ProductGallery({
                   width={80}
                   height={80}
                   className="thumb-img"
+                  sizes="80px"
                   loading="lazy"
-                  unoptimized={isUnoptimizedImageSrc(src)}
+                  unoptimized={catalogImageUnoptimized(src)}
                 />
               </button>
             ))}
@@ -521,7 +500,8 @@ export function ProductGallery({
               width={1200}
               height={1200}
               className="gallery-lightbox-image"
-              unoptimized={isUnoptimizedImageSrc(list[lightboxIndex])}
+              sizes={CATALOG_PDP_LIGHTBOX_SIZES}
+              unoptimized={catalogImageUnoptimized(list[lightboxIndex])}
               draggable={false}
               style={{
                 transform: `translate(${lightboxOffset.x}px, ${lightboxOffset.y}px) scale(${lightboxScale})`,

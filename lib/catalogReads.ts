@@ -12,6 +12,7 @@ import {
   getBouquetsCatalogDataFromCatalog,
   getBouquetsFilteredFromCatalog,
   getBouquetsFromCatalog,
+  getSimilarBouquetsFromCatalog,
   getBouquetsFromCatalogPaginated,
   getHeroCarouselImagesFromCatalog,
   getHeroImageFromCatalog,
@@ -40,6 +41,14 @@ function catalogReadNotConfigured(): never {
 export async function getCatalogBouquets(): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   return getBouquetsFromCatalog();
+}
+
+export async function getCatalogSimilarBouquets(
+  source: Bouquet,
+  limit = 3
+): Promise<Bouquet[]> {
+  if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
+  return getSimilarBouquetsFromCatalog(source, limit);
 }
 
 export async function getCatalogBouquetsPaginated(

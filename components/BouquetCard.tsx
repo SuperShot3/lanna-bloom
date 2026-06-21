@@ -31,6 +31,12 @@ import {
 } from '@/lib/catalogDiscount';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
+import {
+  catalogImageUnoptimized,
+  CATALOG_CARD_IMAGE_SIZES,
+  CATALOG_PDP_PRELOAD_WIDTH,
+  preloadCatalogImage,
+} from '@/lib/catalog/catalogImage';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -100,7 +106,9 @@ export function BouquetCard({
   const [imageIndex, setImageIndex] = useState(0);
   const imgSrc = images[imageIndex] ?? images[0] ?? '';
   const imgAlt = bouquet.imageAlts?.[imageIndex]?.trim() || bouquet.imageAlts?.[0]?.trim() || name;
-  const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
+  const handlePdpImagePreload = useCallback(() => {
+    if (imgSrc) preloadCatalogImage(imgSrc, CATALOG_PDP_PRELOAD_WIDTH);
+  }, [imgSrc]);
   const isPopular = variant === 'popular' || variant === 'popular-compact';
   const canSwipe = images.length > 1 && !isPopular;
   const expandablePanel = showHoverPanel && !simpleActions;
@@ -387,6 +395,8 @@ export function BouquetCard({
         className="card-link"
         data-ga-select-item="catalog"
         onClick={handleLinkClick}
+        onMouseEnter={handlePdpImagePreload}
+        onTouchStart={handlePdpImagePreload}
         aria-label={`${name} — from ฿${displayMinPrice.toLocaleString()}`}
       >
         <div
@@ -438,8 +448,8 @@ export function BouquetCard({
                 width={400}
                 height={400}
                 className="card-image"
-                sizes="(max-width: 600px) 50vw, (max-width: 900px) 50vw, 33vw"
-                unoptimized={isDataUrl || imgSrc.includes('supabase.co')}
+                sizes={CATALOG_CARD_IMAGE_SIZES}
+                unoptimized={catalogImageUnoptimized(imgSrc)}
                 draggable={false}
                 style={{ pointerEvents: 'none' }}
               />

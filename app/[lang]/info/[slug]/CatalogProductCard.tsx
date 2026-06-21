@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
 import { getBouquetBySlugFromSanity, getProductBySlugFromSanity } from '@/lib/sanity';
+import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 import styles from './article.module.css';
 
 export async function CatalogProductCard({
@@ -27,7 +28,6 @@ export async function CatalogProductCard({
       const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
       const imgSrc = product.images?.[0] ?? '';
       const imgAlt = product.imageAlts?.[0]?.trim() || name;
-      const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
       return (
         <div className={styles.inlineCatalogMini}>
           <div className={styles.inlineCatalogMiniLeft}>
@@ -39,7 +39,7 @@ export async function CatalogProductCard({
                   fill
                   sizes="168px"
                   className={styles.inlineCatalogMiniThumbImg}
-                  unoptimized={isDataUrl || imgSrc.includes('supabase.co')}
+                  unoptimized={catalogImageUnoptimized(imgSrc)}
                   draggable={false}
                 />
               ) : (
@@ -67,7 +67,6 @@ export async function CatalogProductCard({
       const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
       const imgSrc = bouquet.images?.[0] ?? '';
       const imgAlt = bouquet.imageAlts?.[0]?.trim() || name;
-      const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
       return (
         <div className={styles.inlineCatalogMini}>
           <div className={styles.inlineCatalogMiniLeft}>
@@ -79,7 +78,7 @@ export async function CatalogProductCard({
                   fill
                   sizes="168px"
                   className={styles.inlineCatalogMiniThumbImg}
-                  unoptimized={isDataUrl || imgSrc.includes('supabase.co')}
+                  unoptimized={catalogImageUnoptimized(imgSrc)}
                   draggable={false}
                 />
               ) : (

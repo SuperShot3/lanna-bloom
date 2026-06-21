@@ -767,21 +767,22 @@
 }
 
 .identityHeader {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin: 0;
 }
 
 .identityHeader :global(.product-title) {
   margin: 0;
-  padding-right: 3rem;
+  flex: 1;
+  min-width: 0;
   line-height: 1.2;
 }
 
 .shareAction {
-  position: absolute;
-  top: 6px;
-  right: 0;
-  z-index: 1;
+  flex-shrink: 0;
   margin: 0;
   line-height: 0;
   opacity: 0.4;
@@ -797,13 +798,13 @@
   margin-top: 0;
 }
 
-.shareAction :global(.product-share-link) button {
+.identityHeader .shareAction :global(.product-share-link.iconOnly.share-button-wrap) :global(.share-button) {
   width: 40px;
   height: 40px;
   min-width: 40px;
 }
 
-.shareAction :global(.share-apple-icon) {
+.identityHeader .shareAction :global(.product-share-link.iconOnly.share-button-wrap) :global(.share-button) :global(.share-apple-icon) {
   width: 26px;
   height: 26px;
 }
@@ -822,21 +823,13 @@
 }
 
 @media (max-width: 480px) {
-  .compositionSubtitle {
-    max-width: 70%;
-  }
-
-  .identityHeader :global(.product-title) {
-    padding-right: 2.75rem;
-  }
-
-  .shareAction :global(.product-share-link) button {
+  .identityHeader .shareAction :global(.product-share-link.iconOnly.share-button-wrap) :global(.share-button) {
     width: 36px;
     height: 36px;
     min-width: 36px;
   }
 
-  .shareAction :global(.share-apple-icon) {
+  .identityHeader .shareAction :global(.product-share-link.iconOnly.share-button-wrap) :global(.share-button) :global(.share-apple-icon) {
     width: 22px;
     height: 22px;
   }
@@ -1128,5 +1121,31 @@
 @media (max-width: 767px) {
   .stickyBar {
     display: block;
+  }
+}
+
+.similarBouquetsSection {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.similarBouquetsHeading {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 16px;
+  line-height: 1.3;
+}
+
+@media (min-width: 768px) {
+  .similarBouquetsSection {
+    margin-top: 40px;
+    padding-top: 32px;
+  }
+
+  .similarBouquetsHeading {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
   }
 }

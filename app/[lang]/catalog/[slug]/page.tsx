@@ -5,6 +5,7 @@ import { getBaseUrl } from '@/lib/orders';
 import { buildBouquetProductJsonLd } from '@/lib/seo/productJsonLd';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
+import { ProductSimilarBouquetsSection } from '@/components/pdp/ProductSimilarBouquetsSection';
 import {
   getBalloonBySlugFromSanity,
   getBouquetBySlugFromSanity,
@@ -13,6 +14,7 @@ import {
   getPopularBouquetsFromSanity,
   getProductBySlugFromSanity,
   getProductsFilteredFromSanity,
+  getSimilarBouquetsForBouquet,
 } from '@/lib/sanity';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -82,6 +84,7 @@ export default async function ProductPage({
   if (bouquet) {
     const reviewStats = await getReviewStatsAsync();
     const gifts = await getProductsFilteredFromSanity({ categoryKey: 'gifts' });
+    const similarBouquets = await getSimilarBouquetsForBouquet(bouquet, 3);
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const description = lang === 'th' ? bouquet.descriptionTh : bouquet.descriptionEn;
     const composition = lang === 'th' ? bouquet.compositionTh : bouquet.compositionEn;
@@ -122,6 +125,9 @@ export default async function ProductPage({
               gifts={gifts}
             />
           </div>
+          {similarBouquets.length > 0 ? (
+            <ProductSimilarBouquetsSection bouquets={similarBouquets} lang={lang as Locale} />
+          ) : null}
         </div>
       </div>
     );

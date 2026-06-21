@@ -302,6 +302,7 @@ const baseTranslations = {
     product: {
       descriptionHeading: 'Product Description',
       aboutHeading: 'About this bouquet',
+      similarBouquetsTitle: 'You might also like',
       readMore: 'Read more',
       readLess: 'Read less',
       sizeShownInPhotos: 'Photos show: {size}',
@@ -1540,6 +1541,7 @@ const baseTranslations = {
     product: {
       descriptionHeading: 'รายละเอียดสินค้า',
       aboutHeading: 'เกี่ยวกับช่อนี้',
+      similarBouquetsTitle: 'ช่อดอกไม้ที่คุณอาจชอบ',
       readMore: 'อ่านเพิ่ม',
       readLess: 'ย่อ',
       sizeShownInPhotos: 'รูปแสดง: {size}',

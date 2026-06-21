@@ -32,20 +32,26 @@ export function CareGuideSection({ lang }: { lang: Locale }) {
   ];
 
   return (
-    <div className="mt-20 pt-12 border-t border-stone-200">
-      <h3 className="font-[family-name:var(--font-family-display)] text-2xl text-[#1A3C34] mb-6">
+    <div className="mt-12 pt-8 border-t border-stone-200 md:mt-20 md:pt-12">
+      <h3 className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] mb-4 md:text-2xl md:mb-6">
         {t.title}
       </h3>
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-3 gap-3 sm:gap-5 md:gap-8">
         {tips.map((tip) => (
-          <div key={tip.icon} className="space-y-2">
-            <span className="material-symbols-outlined text-[#C5A059] text-2xl">
+          <div
+            key={tip.icon}
+            className="flex min-w-0 flex-col items-center gap-1.5 text-center sm:gap-2"
+          >
+            <span
+              className="material-symbols-outlined text-[22px] leading-none text-[#C5A059] sm:text-2xl"
+              aria-hidden
+            >
               {tip.icon}
             </span>
-            <h5 className="font-semibold text-sm text-stone-800">
+            <h5 className="text-[11px] font-semibold leading-tight text-stone-800 sm:text-sm">
               {tip.title}
             </h5>
-            <p className="text-xs text-stone-500 leading-relaxed">
+            <p className="text-[10px] leading-snug text-stone-500 sm:text-xs sm:leading-relaxed">
               {tip.desc}
             </p>
           </div>

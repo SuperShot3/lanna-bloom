@@ -13,10 +13,112 @@ import interest from '@/components/interestCarouselItem.module.css';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 
-export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang: Locale }) {
+type BouquetsCarouselProps = {
+  bouquets: Bouquet[];
+  lang: Locale;
+  listName?: string;
+  /** `pdpSimilar` — larger equal-size tiles for bouquet PDP recommendations (≤3 items). */
+  variant?: 'default' | 'pdpSimilar';
+};
+
+function BouquetCarouselTile({
+  bouquet,
+  lang,
+  listName,
+  index,
+  variant,
+}: {
+  bouquet: Bouquet;
+  lang: Locale;
+  listName: string;
+  index: number;
+  variant: 'default' | 'pdpSimilar';
+}) {
   const pathname = usePathname();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
+  const isPdpSimilar = variant === 'pdpSimilar';
+  const name = lang === 'th' && bouquet.nameTh ? bouquet.nameTh : bouquet.nameEn;
+  const imgSrc = bouquet.images?.[0] ?? '';
+  const minPrice =
+    bouquet.sizes?.length > 0 ? Math.min(...bouquet.sizes.map((s) => s.price)) : 0;
+  const displayMinPrice = applyExpansionItemMarkupThb(
+    minPrice,
+    checkoutProfile.destinationId
+  );
+  const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
+
+  const handleClick = () => {
+    const item: AnalyticsItem = {
+      item_id: bouquet.id,
+      item_name: name,
+      item_category: getBouquetDisplayCategory(bouquet),
+      price: displayMinPrice,
+      quantity: 1,
+      index,
+    };
+    trackSelectItem(listName, item);
+  };
+
+  const frameClass = isPdpSimilar ? interest.framePdpSimilar : interest.frame;
+  const surfaceClass = isPdpSimilar ? interest.surfacePdpSimilar : interest.surface;
+  const imageWrapClass = isPdpSimilar ? interest.imageWrapPdpSimilar : interest.imageWrap;
+  const metaClass = isPdpSimilar ? interest.metaPdpSimilar : interest.meta;
+  const nameClass = isPdpSimilar
+    ? `${interest.name} ${interest.nameFixedLines}`
+    : interest.name;
+  const priceClass = isPdpSimilar
+    ? `${interest.price} ${interest.priceFixedLine}`
+    : interest.price;
+  const placeholderClass = isPdpSimilar
+    ? interest.imagePlaceholderPdpSimilar
+    : interest.imagePlaceholder;
+  const imageSizes = isPdpSimilar
+    ? '(max-width: 480px) 30vw, (max-width: 768px) 24vw, 220px'
+    : '84px';
+
+  return (
+    <div className={frameClass}>
+      <Link
+        href={href}
+        className={surfaceClass}
+        onClick={handleClick}
+        data-ga-select-item={listName}
+      >
+        <div className={imageWrapClass}>
+          {imgSrc ? (
+            <Image
+              src={imgSrc}
+              alt={name}
+              fill
+              sizes={imageSizes}
+              className={`${interest.carouselFillImage} bouquets-product-image`}
+              unoptimized={catalogImageUnoptimized(imgSrc)}
+              draggable={false}
+            />
+          ) : (
+            <div className={placeholderClass} aria-hidden />
+          )}
+        </div>
+        <div className={metaClass}>
+          <p className={nameClass} title={name}>
+            {name}
+          </p>
+          <p className={priceClass}>
+            {lang === 'th' ? 'เริ่มต้น ' : 'From '}฿{displayMinPrice.toLocaleString()}
+          </p>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+function BouquetsCarouselDefault({
+  bouquets,
+  lang,
+  listName,
+}: BouquetsCarouselProps & { listName: string }) {
   const [emblaRef] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
@@ -26,76 +128,24 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
     duration: 35,
   });
 
-  if (!bouquets.length) return null;
-
   return (
     <div className="bouquets-carousel-wrap">
       <div className="bouquets-carousel-viewport" ref={emblaRef}>
         <div className="bouquets-carousel-container">
-          {bouquets.map((bouquet) => {
-            const name = lang === 'th' && bouquet.nameTh ? bouquet.nameTh : bouquet.nameEn;
-            const imgSrc = bouquet.images?.[0] ?? '';
-            const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
-            const minPrice =
-              bouquet.sizes?.length > 0 ? Math.min(...bouquet.sizes.map((s) => s.price)) : 0;
-            const displayMinPrice = applyExpansionItemMarkupThb(
-              minPrice,
-              checkoutProfile.destinationId
-            );
-            const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
-
-            const handleClick = () => {
-              const item: AnalyticsItem = {
-                item_id: bouquet.id,
-                item_name: name,
-                item_category: getBouquetDisplayCategory(bouquet),
-                price: displayMinPrice,
-                quantity: 1,
-                index: 0,
-              };
-              trackSelectItem('plushy_cross_sell_bouquets', item);
-            };
-
-            return (
-              <div key={bouquet.id} className="bouquets-carousel-slide">
-                <div className={interest.frame}>
-                  <Link
-                    href={href}
-                    className={interest.surface}
-                    onClick={handleClick}
-                    data-ga-select-item="plushy_cross_sell_bouquets"
-                  >
-                    <div className={interest.imageWrap}>
-                      {imgSrc ? (
-                        <Image
-                          src={imgSrc}
-                          alt={name}
-                          fill
-                          sizes="84px"
-                          className={`${interest.carouselFillImage} bouquets-product-image`}
-                          unoptimized={isDataUrl || imgSrc.includes('supabase.co')}
-                          draggable={false}
-                        />
-                      ) : (
-                        <div className={interest.imagePlaceholder} aria-hidden />
-                      )}
-                    </div>
-                    <div className={interest.meta}>
-                      <p className={interest.name} title={name}>
-                        {name}
-                      </p>
-                      <p className={interest.price}>
-                        {lang === 'th' ? 'เริ่มต้น ' : 'From '}฿{displayMinPrice.toLocaleString()}
-                      </p>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
+          {bouquets.map((bouquet, index) => (
+            <div key={bouquet.id} className="bouquets-carousel-slide">
+              <BouquetCarouselTile
+                bouquet={bouquet}
+                lang={lang}
+                listName={listName}
+                index={index}
+                variant="default"
+              />
+            </div>
+          ))}
         </div>
       </div>
-      {bouquets.length > 1 && (
+      {bouquets.length > 3 && (
         <p className="bouquets-carousel-swipe-hint" aria-hidden>
           {lang === 'th' ? 'เลื่อนเพื่อดูเพิ่มเติม' : 'Swipe to browse'}
         </p>
@@ -145,5 +195,64 @@ export function BouquetsCarousel({ bouquets, lang }: { bouquets: Bouquet[]; lang
         }
       `}</style>
     </div>
+  );
+}
+
+function BouquetsCarouselPdpSimilar({
+  bouquets,
+  lang,
+  listName,
+}: BouquetsCarouselProps & { listName: string }) {
+  return (
+    <div className="bouquets-pdp-similar-grid">
+      {bouquets.map((bouquet, index) => (
+        <div key={bouquet.id} className="bouquets-pdp-similar-cell">
+          <BouquetCarouselTile
+            bouquet={bouquet}
+            lang={lang}
+            listName={listName}
+            index={index}
+            variant="pdpSimilar"
+          />
+        </div>
+      ))}
+      <style jsx>{`
+        .bouquets-pdp-similar-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          align-items: stretch;
+        }
+        .bouquets-pdp-similar-cell {
+          display: flex;
+          min-width: 0;
+          min-height: 0;
+        }
+        @media (min-width: 768px) {
+          .bouquets-pdp-similar-grid {
+            gap: 16px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export function BouquetsCarousel({
+  bouquets,
+  lang,
+  listName = 'plushy_cross_sell_bouquets',
+  variant = 'default',
+}: BouquetsCarouselProps) {
+  if (!bouquets.length) return null;
+
+  if (variant === 'pdpSimilar') {
+    return (
+      <BouquetsCarouselPdpSimilar bouquets={bouquets} lang={lang} listName={listName} />
+    );
+  }
+
+  return (
+    <BouquetsCarouselDefault bouquets={bouquets} lang={lang} listName={listName} variant={variant} />
   );
 }

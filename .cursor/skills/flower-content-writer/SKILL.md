@@ -47,7 +47,7 @@ Use this exact structure for every flower product:
 [Final Thai product name]
 
 **Description - English:**
-[One medium-length description, around 45-80 words. It should be longer than a short description but shorter than a full product description. Make it warm, customer-focused, and easy to read. Include the English focus keyword naturally when possible.]
+[One polished product description, usually around 80-140 words. Make it warm, customer-focused, and expressive: describe the bouquet's mood, main flowers, color feeling, texture, and gift appeal without sounding generic. Include the English focus keyword naturally when possible.]
 
 **Description - Thai:**
 [Natural Thai description with the same intent as the English version. It should be medium length, customer-friendly, and not a literal word-for-word translation.]
@@ -79,6 +79,7 @@ Use this exact structure for every flower product:
 - Preserve the meaning between English and Thai, but adapt phrasing so each language sounds native.
 - Keep brand tone consistent in both languages: warm, elegant, helpful, and trustworthy.
 - Prefer specific product details over generic phrases.
+- For product descriptions, use premium editorial wording: start with the bouquet's mood, explain how the main and supporting flowers shape the design, and close with why it makes a thoughtful gift.
 - Avoid exaggerated claims like "best in the world" or guaranteed emotional results.
 - Avoid repeating the same keyword too often.
 - Make each flower product sound unique.

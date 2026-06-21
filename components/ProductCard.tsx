@@ -23,6 +23,12 @@ import {
 } from '@/lib/catalogDiscount';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
+import {
+  catalogImageUnoptimized,
+  CATALOG_CARD_IMAGE_SIZES,
+  CATALOG_PDP_PRELOAD_WIDTH,
+  preloadCatalogImage,
+} from '@/lib/catalog/catalogImage';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -82,7 +88,9 @@ export function ProductCard({
   const imgAlt = isStandaloneProduct
     ? (product.imageAlts?.[imageIndex]?.trim() || product.imageAlts?.[0]?.trim() || name)
     : (product.imageAlts?.[0]?.trim() || name);
-  const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
+  const handlePdpImagePreload = useCallback(() => {
+    if (imgSrc) preloadCatalogImage(imgSrc, CATALOG_PDP_PRELOAD_WIDTH);
+  }, [imgSrc]);
   const canSwipeStandaloneImages = isStandaloneProduct && images.length > 1;
 
   const touchStartX = useRef<number | null>(null);
@@ -316,6 +324,8 @@ export function ProductCard({
         className="pcard-link"
         data-ga-select-item="catalog"
         onClick={handleLinkClickGuarded}
+        onMouseEnter={handlePdpImagePreload}
+        onTouchStart={handlePdpImagePreload}
         aria-label={`${name} — ${t.from} ฿${displayFromPrice.toLocaleString()}`}
       >
         <div
@@ -351,8 +361,8 @@ export function ProductCard({
                 width={400}
                 height={400}
                 className="pcard-image"
-                sizes="(max-width: 600px) 50vw, (max-width: 900px) 50vw, 33vw"
-                unoptimized={isDataUrl || imgSrc.includes('supabase.co')}
+                sizes={CATALOG_CARD_IMAGE_SIZES}
+                unoptimized={catalogImageUnoptimized(imgSrc)}
                 draggable={false}
                 style={{ pointerEvents: 'none' }}
               />

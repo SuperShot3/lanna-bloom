@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
 import { useNarrowViewport } from '@/hooks/useNarrowViewport';
 import { CartIcon } from '@/components/icons';
+import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 import styles from './product-pdp.module.css';
 
 const PDP_ATC_SENTINEL_ID = 'pdp-primary-atc';
@@ -78,8 +79,9 @@ export function ProductStickyPurchaseBar({
               alt=""
               width={48}
               height={48}
+              sizes="48px"
               className={styles.stickyThumbImg}
-              unoptimized={thumbUrl.startsWith('data:') || thumbUrl.includes('supabase.co')}
+              unoptimized={catalogImageUnoptimized(thumbUrl)}
             />
           </div>
         ) : null}

@@ -10,6 +10,7 @@ import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
+import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 
 /** Visible name length on gift tiles (full name in title + aria-label; price is not clipped). */
 const GIFT_TILE_NAME_MAX = 7;
@@ -116,7 +117,6 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           {gifts.map((product) => {
             const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
             const imgSrc = product.images?.[0] ?? '';
-            const isDataUrl = typeof imgSrc === 'string' && imgSrc.startsWith('data:');
             const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
             const inCart = isInCart(product);
             const priceLabel = `฿${finalPrice.toLocaleString()}`;
@@ -139,7 +139,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
                           sizes="100px"
                           className={`${interest.surfaceCoverImage} gifts-product-image`}
                           style={{ objectFit: 'cover', objectPosition: 'center center' }}
-                          unoptimized={isDataUrl || imgSrc.includes('supabase.co')}
+                          unoptimized={catalogImageUnoptimized(imgSrc)}
                           draggable={false}
                         />
                       </span>
