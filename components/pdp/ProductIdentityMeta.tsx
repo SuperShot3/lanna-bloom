@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
+import { StorefrontIcon } from '@/components/icons';
 import styles from './product-pdp.module.css';
 
 type ProductIdentityMetaProps = {
@@ -56,9 +57,7 @@ export function ProductIdentityMeta({
       {showPopular ? (
         <span className={styles.popularBadge} aria-label={tCatalog.popularPickAria}>
           <span className={styles.popularBadgeIconWrap} aria-hidden>
-            <span className={`material-symbols-outlined ${styles.popularBadgeIcon}`}>
-              local_fire_department
-            </span>
+            <StorefrontIcon name="local-fire-department" filled className={styles.popularBadgeIcon} size={16} />
           </span>
           <span className={styles.popularBadgeLabel}>{tCatalog.popularPickBadge}</span>
         </span>

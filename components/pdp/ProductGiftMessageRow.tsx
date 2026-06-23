@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import { translations, type Locale } from '@/lib/i18n';
 import { GiftMessageField } from './GiftMessageField';
+import { StorefrontIcon } from '@/components/icons';
 import styles from './product-pdp.module.css';
 
 export function ProductGiftMessageRow({
@@ -33,7 +34,7 @@ export function ProductGiftMessageRow({
       >
         <span className={styles.giftRowToggleStart}>
           <span className={styles.giftRowIconWrap} aria-hidden>
-            <span className={`material-symbols-outlined ${styles.giftRowIcon}`}>sms</span>
+            <StorefrontIcon name="sms" className={styles.giftRowIcon} size={20} />
           </span>
           <span>
             <span className={styles.giftRowToggleLabel}>

@@ -18,6 +18,7 @@ import {
   PhoneIcon,
   MapIcon,
   MenuIcon,
+  StorefrontIcon,
 } from './icons';
 import {
   MARKETS,
@@ -451,11 +452,7 @@ export function Header({
               <NavItem
                 href={customOrderHref}
                 label={t.customOrder}
-                icon={
-                  <span className="material-symbols-outlined text-[22px] leading-none w-[22px] flex items-center justify-center">
-                    edit_note
-                  </span>
-                }
+                icon={<StorefrontIcon name="edit-note" size={22} />}
                 active={basePath === '/custom-order'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}

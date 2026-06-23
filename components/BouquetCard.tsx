@@ -30,6 +30,7 @@ import {
   effectiveCatalogUnitPriceWithExpansion,
 } from '@/lib/catalogDiscount';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { StorefrontIcon } from '@/components/icons';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import {
   catalogImageUnoptimized,
@@ -413,9 +414,7 @@ export function BouquetCard({
         >
           {bouquet.featuredPopular ? (
             <span className="card-popular-pick" aria-label={t.popularPickAria}>
-              <span className="card-popular-pick__icon material-symbols-outlined" aria-hidden>
-                local_fire_department
-              </span>
+              <StorefrontIcon name="local-fire-department" filled size={22} className="card-popular-pick__icon" />
             </span>
           ) : null}
           <CatalogDiscountBadge
@@ -430,11 +429,7 @@ export function BouquetCard({
               aria-pressed={favoriteActive}
               onClick={toggleFavorite}
             >
-              <span
-                className={`material-symbols-outlined ${favoriteActive ? 'material-symbols-filled' : ''}`}
-              >
-                favorite
-              </span>
+              <StorefrontIcon name="favorite" filled={favoriteActive} size={23} />
             </button>
           )}
           {imgSrc ? (
@@ -479,12 +474,7 @@ export function BouquetCard({
           {isPopular && (
             <div className="card-stars">
               {[1, 2, 3, 4, 5].map((i) => (
-                <span
-                  key={i}
-                  className="material-symbols-outlined material-symbols-filled"
-                >
-                  star
-                </span>
+                  <StorefrontIcon key={i} name="star" filled size={16} />
               ))}
             </div>
           )}
@@ -517,9 +507,7 @@ export function BouquetCard({
             title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
             onClick={() => pushToCart('checkout')}
           >
-            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
-              bolt
-            </span>
+            <StorefrontIcon name="bolt" filled size={18} />
             <span>{t.buyInOneClick}</span>
           </button>
           <button
@@ -529,9 +517,7 @@ export function BouquetCard({
             title={!availableForDestination && !justAdded ? tProduct.unavailableInDeliveryArea : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
-            <span className="material-symbols-outlined" aria-hidden>
-              {justAdded ? 'shopping_bag' : 'shopping_cart'}
-            </span>
+            <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
             <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
           </button>
         </div>
@@ -550,9 +536,7 @@ export function BouquetCard({
             title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
             onClick={() => pushToCart('checkout')}
           >
-            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
-              bolt
-            </span>
+            <StorefrontIcon name="bolt" filled size={18} />
             <span>{t.buyInOneClick}</span>
           </button>
           <button
@@ -562,9 +546,7 @@ export function BouquetCard({
             title={!availableForDestination && !justAdded ? tProduct.unavailableInDeliveryArea : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
-            <span className="material-symbols-outlined" aria-hidden>
-              {justAdded ? 'shopping_bag' : 'shopping_cart'}
-            </span>
+            <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
             <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
           </button>
         </div>
@@ -738,9 +720,7 @@ export function BouquetCard({
           pointer-events: none;
         }
         .card-popular-pick__icon {
-          font-size: 20px;
           line-height: 1;
-          font-variation-settings: 'FILL' 1;
         }
         .card-favorite {
           position: absolute;
@@ -782,7 +762,7 @@ export function BouquetCard({
           font-size: 14px;
           margin-bottom: 6px;
         }
-        .card-stars .material-symbols-outlined {
+        .card-stars .storefront-icon {
           font-size: 14px;
         }
         .card-partner-badge {
@@ -929,7 +909,7 @@ export function BouquetCard({
           cursor: pointer;
           touch-action: manipulation;
         }
-        .card-simple-actions .material-symbols-outlined {
+        .card-simple-actions .storefront-icon {
           font-size: 18px;
           line-height: 1;
           flex: 0 0 auto;
@@ -1108,7 +1088,7 @@ export function BouquetCard({
             cursor: pointer;
             touch-action: manipulation;
           }
-          .card-mobile-actions .material-symbols-outlined {
+          .card-mobile-actions .storefront-icon {
             font-size: 13px;
             line-height: 1;
             flex: 0 0 auto;

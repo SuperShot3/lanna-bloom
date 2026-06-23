@@ -238,16 +238,16 @@
   color: var(--text);
 }
 
-.purchaseAddedText :global(.material-symbols-outlined) {
-  font-size: 22px;
+.purchaseAddedText .storefront-icon {
+  width: 22px;
+  height: 22px;
   line-height: 1;
-  color: var(--primary, #1a3c34);
   flex-shrink: 0;
   transform: scale(0.6);
   opacity: 0;
 }
 
-.purchaseActionsStage[data-added] .purchaseAddedText :global(.material-symbols-outlined) {
+.purchaseActionsStage[data-added] .purchaseAddedText .storefront-icon {
   animation: purchaseAddedCheck 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) 0.08s forwards;
 }
 
@@ -308,7 +308,7 @@
   transform: translateY(-1px);
 }
 
-.purchaseAddedLinkPrimary :global(.material-symbols-outlined) {
+.purchaseAddedLinkPrimary .storefront-icon {
   font-size: 20px;
   line-height: 1;
   flex-shrink: 0;
@@ -332,7 +332,7 @@
   .purchaseActionsLayer,
   .purchaseAddedLinkSecondary,
   .purchaseAddedLinkPrimary,
-  .purchaseAddedText :global(.material-symbols-outlined),
+  .purchaseAddedText .storefront-icon,
   .giftRowChevron,
   .giftRowPanel,
   .compositionRowChevron,
@@ -910,15 +910,10 @@
   overflow: hidden;
 }
 
-/* Material Symbols default to 24px; scale down inside the fixed wrap */
 .popularBadgeIcon {
   display: block;
-  font-size: 24px;
-  line-height: 1;
+  flex-shrink: 0;
   color: #c5a059;
-  transform: scale(0.667);
-  transform-origin: center center;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 .popularBadgeLabel {
@@ -1106,7 +1101,7 @@
   animation: purchaseLinkIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
 }
 
-.stickyAddedLinkPrimary :global(.material-symbols-outlined) {
+.stickyAddedLinkPrimary .storefront-icon {
   font-size: 18px;
   line-height: 1;
   flex-shrink: 0;

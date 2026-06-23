@@ -45,7 +45,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css" />
         <link rel="stylesheet" href="/vendor/flag-icons/css/flag-icons.min.css" />
         <script
           dangerouslySetInnerHTML={{

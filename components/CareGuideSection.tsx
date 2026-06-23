@@ -1,5 +1,6 @@
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { StorefrontIcon, type StorefrontIconName } from '@/components/icons';
 
 export function CareGuideSection({ lang }: { lang: Locale }) {
   const tRaw = (translations[lang] as Record<string, unknown>).careGuide as Record<string, string> | undefined;
@@ -13,22 +14,10 @@ export function CareGuideSection({ lang }: { lang: Locale }) {
     freshWaterDesc: 'Change the water daily and use the provided flower food for longevity.',
   };
 
-  const tips = [
-    {
-      icon: 'water_drop',
-      title: t.trimStems,
-      desc: t.trimStemsDesc,
-    },
-    {
-      icon: 'wb_sunny',
-      title: t.avoidSun,
-      desc: t.avoidSunDesc,
-    },
-    {
-      icon: 'local_florist',
-      title: t.freshWater,
-      desc: t.freshWaterDesc,
-    },
+  const tips: { icon: StorefrontIconName; title: string; desc: string }[] = [
+    { icon: 'water-drop', title: t.trimStems, desc: t.trimStemsDesc },
+    { icon: 'wb-sunny', title: t.avoidSun, desc: t.avoidSunDesc },
+    { icon: 'local-florist', title: t.freshWater, desc: t.freshWaterDesc },
   ];
 
   return (
@@ -40,14 +29,9 @@ export function CareGuideSection({ lang }: { lang: Locale }) {
         {tips.map((tip) => (
           <div
             key={tip.icon}
-            className="flex min-w-0 flex-col items-center gap-1.5 text-center sm:gap-2"
+            className="flex min-w-0 flex-col items-center gap-1.5 text-center sm:gap-2 text-[#C5A059]"
           >
-            <span
-              className="material-symbols-outlined text-[22px] leading-none text-[#C5A059] sm:text-2xl"
-              aria-hidden
-            >
-              {tip.icon}
-            </span>
+            <StorefrontIcon name={tip.icon} size={22} className="sm:!w-6 sm:!h-6" />
             <h5 className="text-[11px] font-semibold leading-tight text-stone-800 sm:text-sm">
               {tip.title}
             </h5>

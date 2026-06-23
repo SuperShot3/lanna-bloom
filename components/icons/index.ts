@@ -18,3 +18,4 @@ export { InfoIcon } from './InfoIcon';
 export { PhoneIcon } from './PhoneIcon';
 export { EmailIcon } from './EmailIcon';
 export { MapIcon } from './MapIcon';
+export { StorefrontIcon, type StorefrontIconName } from './StorefrontIcon';

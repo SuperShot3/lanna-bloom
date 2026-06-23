@@ -1,6 +1,7 @@
 'use client';
 
 import { hasCatalogDiscount, normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
+import { StorefrontIcon } from '@/components/icons';
 
 export function CatalogDiscountBadge({
   discountPercent,
@@ -19,9 +20,7 @@ export function CatalogDiscountBadge({
       className={`catalog-discount-badge ${className}`.trim()}
       aria-label={ariaLabel.replace('{percent}', String(pct))}
     >
-      <span className="material-symbols-outlined material-symbols-filled catalog-discount-badge__icon" aria-hidden>
-        sell
-      </span>
+      <StorefrontIcon name="sell" filled className="catalog-discount-badge__icon" size={18} />
       <span className="catalog-discount-badge__pct" aria-hidden>
         -{pct}%
       </span>
@@ -47,9 +46,7 @@ export function CatalogDiscountBadge({
           pointer-events: none;
         }
         .catalog-discount-badge__icon {
-          font-size: 18px;
           line-height: 1;
-          font-variation-settings: 'FILL' 1;
         }
         .catalog-discount-badge__pct {
           font-size: 10px;

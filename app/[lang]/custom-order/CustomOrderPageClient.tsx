@@ -14,7 +14,7 @@ import {
   type FullPhoneHint,
 } from '@/lib/phoneFieldHints';
 import { resolveTranslation } from '@/lib/resolveTranslation';
-import { CalendarIcon } from '@/components/icons';
+import { CalendarIcon, StorefrontIcon } from '@/components/icons';
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const ALLOWED_REFERENCE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -763,9 +763,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
 
           <button type="submit" className="co-submit" disabled={submitting}>
             <span>{submitting ? t.submitSending : t.submit}</span>
-            <span className="material-symbols-outlined co-submit-icon" aria-hidden>
-              arrow_forward
-            </span>
+            <StorefrontIcon name="arrow-forward" className="co-submit-icon" size={20} />
           </button>
         </form>
       </div>

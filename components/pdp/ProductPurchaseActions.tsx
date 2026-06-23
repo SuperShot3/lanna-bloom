@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
 import { useNarrowViewport } from '@/hooks/useNarrowViewport';
-import { BoltIcon, CartIcon } from '@/components/icons';
+import { BoltIcon, CartIcon, StorefrontIcon } from '@/components/icons';
 import styles from './product-pdp.module.css';
 
 function formatAtcLabel(
@@ -79,9 +79,7 @@ export function ProductPurchaseActions({
       >
         <div className={styles.purchaseAdded} role="status" aria-live="polite">
           <p className={styles.purchaseAddedText}>
-            <span className="material-symbols-outlined" aria-hidden>
-              check_circle
-            </span>
+            <StorefrontIcon name="check-circle" size={20} />
             {tCart.addedToCart}
           </p>
           <div className={styles.purchaseAddedLinks}>

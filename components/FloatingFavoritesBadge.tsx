@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { getFavoritesCount, FAVORITES_STORAGE_KEY } from '@/lib/favorites';
+import { StorefrontIcon } from '@/components/icons';
 
 function readCount() {
   try {
@@ -75,8 +76,8 @@ export function FloatingFavoritesBadge({ lang }: { lang: string }) {
         onClick={() => router.push(favoritesHref)}
         aria-label={`View favorites (${count})`}
       >
-        <span className="material-symbols-outlined material-symbols-filled favorites-badge-heart" aria-hidden>
-          favorite
+        <span className="favorites-badge-heart">
+          <StorefrontIcon name="favorite" filled size={26} />
         </span>
         <span className="favorites-badge-count" aria-hidden>
           {count}
@@ -125,9 +126,12 @@ export function FloatingFavoritesBadge({ lang }: { lang: string }) {
           transform: translateX(90px);
         }
         .favorites-badge-heart {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
           color: #e11d48;
-          font-size: 18px;
-          line-height: 1;
+          line-height: 0;
         }
         .favorites-badge-count {
           min-width: 18px;

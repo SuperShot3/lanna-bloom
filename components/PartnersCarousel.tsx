@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { getPartnersForHomepage } from '@/lib/supabase/partnerQueries';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { StorefrontIcon } from '@/components/icons';
 
 const PLACEHOLDER_PARTNERS = [
   { id: '1', shop_name: 'Flora Art Chiang Mai', specialty: 'Nimman Area Specialist' },
@@ -58,8 +59,8 @@ export async function PartnersCarousel({ lang }: { lang: Locale }) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="material-symbols-outlined text-2xl text-stone-400 leading-none inline-flex items-center justify-center">
-                      store
+                    <span className="text-stone-400">
+                      <StorefrontIcon name="store" size={24} />
                     </span>
                   )}
                 </div>
@@ -70,12 +71,7 @@ export async function PartnersCarousel({ lang }: { lang: Locale }) {
               </div>
               <div className="flex gap-1 text-[#C5A059]">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    className="material-symbols-outlined text-sm material-symbols-filled"
-                  >
-                    star
-                  </span>
+                  <StorefrontIcon key={star} name="star" filled size={14} />
                 ))}
               </div>
             </div>

@@ -22,6 +22,7 @@ import {
   effectiveCatalogUnitPriceWithExpansion,
 } from '@/lib/catalogDiscount';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { StorefrontIcon } from '@/components/icons';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import {
   catalogImageUnoptimized,
@@ -402,9 +403,7 @@ export function ProductCard({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button type="button" className="pcard-simple-buy" onClick={() => pushToCart('checkout')}>
-            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
-              bolt
-            </span>
+            <StorefrontIcon name="bolt" filled size={18} />
             <span>{t.buyInOneClick}</span>
           </button>
           <button
@@ -412,9 +411,7 @@ export function ProductCard({
             className="pcard-simple-cart"
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
-            <span className="material-symbols-outlined" aria-hidden>
-              {justAdded ? 'shopping_bag' : 'shopping_cart'}
-            </span>
+            <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
             <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
           </button>
         </div>
@@ -427,9 +424,7 @@ export function ProductCard({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <button type="button" className="pcard-mobile-buy" onClick={() => pushToCart('checkout')}>
-            <span className="material-symbols-outlined material-symbols-filled" aria-hidden>
-              bolt
-            </span>
+            <StorefrontIcon name="bolt" filled size={18} />
             <span>{t.buyInOneClick}</span>
           </button>
           <button
@@ -437,9 +432,7 @@ export function ProductCard({
             className="pcard-mobile-cart"
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
-            <span className="material-symbols-outlined" aria-hidden>
-              {justAdded ? 'shopping_bag' : 'shopping_cart'}
-            </span>
+            <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
             <span>{justAdded ? tCart.goToCart : tCart.addToCart}</span>
           </button>
         </div>
@@ -748,7 +741,7 @@ export function ProductCard({
           cursor: pointer;
           touch-action: manipulation;
         }
-        .pcard-simple-actions .material-symbols-outlined {
+        .pcard-simple-actions .storefront-icon {
           font-size: 18px;
           line-height: 1;
           flex: 0 0 auto;
@@ -942,7 +935,7 @@ export function ProductCard({
             cursor: pointer;
             touch-action: manipulation;
           }
-          .pcard-mobile-actions .material-symbols-outlined {
+          .pcard-mobile-actions .storefront-icon {
             font-size: 13px;
             line-height: 1;
             flex: 0 0 auto;

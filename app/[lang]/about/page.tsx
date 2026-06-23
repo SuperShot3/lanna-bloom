@@ -5,6 +5,7 @@ import { aboutPageCopy } from '@/lib/aboutPageCopy';
 import type { AboutRichParagraph, AboutSegment } from '@/lib/aboutPageCopy';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { AboutNewsletterSignup } from './AboutNewsletterSignup';
+import { StorefrontIcon } from '@/components/icons';
 
 const linkClassName =
   'font-medium text-[#1A3C34] underline decoration-[#C5A059]/45 underline-offset-[4px] hover:decoration-[#C5A059] hover:text-[#14332c] transition-colors cursor-pointer';
@@ -137,11 +138,8 @@ function QuickLinksSection({
               href={`/${locale}${item.href}`}
               className="group flex items-center gap-2 text-[17px] leading-snug text-[#2d2a26] rounded-lg px-2 py-2 -mx-2 hover:bg-[#f9f5f0] transition-colors cursor-pointer"
             >
-              <span
-                className="material-symbols-outlined text-[#C5A059] text-xl shrink-0 group-hover:translate-x-0.5 transition-transform"
-                aria-hidden
-              >
-                arrow_forward
+              <span className="text-[#C5A059] shrink-0 group-hover:translate-x-0.5 transition-transform">
+                <StorefrontIcon name="arrow-forward" size={20} />
               </span>
               <span className="font-medium text-[#1A3C34] group-hover:underline decoration-[#C5A059]/50 underline-offset-2">
                 {item.label}

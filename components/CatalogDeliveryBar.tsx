@@ -21,7 +21,7 @@ import {
   readMarketSession,
   writeMarketSession,
 } from '@/lib/delivery/marketSession';
-import { CalendarIcon } from '@/components/icons';
+import { CalendarIcon, StorefrontIcon } from '@/components/icons';
 
 export interface CatalogDeliveryBarProps {
   lang: Locale;
@@ -172,9 +172,11 @@ export function CatalogDeliveryBar({
     >
       <div className="catalog-delivery-row catalog-delivery-row-top">
         <div className="catalog-delivery-main">
-          <span className="material-symbols-outlined catalog-delivery-icon catalog-delivery-icon-location" aria-hidden>
-            location_on
-          </span>
+          <StorefrontIcon
+            name="location-on"
+            size={20}
+            className="catalog-delivery-icon catalog-delivery-icon-location shrink-0"
+          />
           <label className="catalog-delivery-location-wrap">
             <span className="sr-only">
               {lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery location'}

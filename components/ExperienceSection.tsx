@@ -1,8 +1,15 @@
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import { StorefrontIcon, type StorefrontIconName } from '@/components/icons';
 
 export function ExperienceSection({ lang }: { lang: Locale }) {
   const t = translations[lang].experience;
+
+  const steps: { icon: StorefrontIconName; title: string; desc: string }[] = [
+    { icon: 'grid-view', title: t.step1Title, desc: t.step1Desc },
+    { icon: 'handyman', title: t.step2Title, desc: t.step2Desc },
+    { icon: 'local-shipping', title: t.step3Title, desc: t.step3Desc },
+  ];
 
   return (
     <section className="py-16 sm:py-20 lg:py-24" data-home-reveal>
@@ -16,39 +23,17 @@ export function ExperienceSection({ lang }: { lang: Locale }) {
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 home-reveal-stagger">
-          <div className="home-reveal-item text-center">
-            <div className="w-20 h-20 rounded-2xl bg-[#1A3C34]/5 flex items-center justify-center mx-auto mb-6">
-              <span className="material-symbols-outlined text-4xl text-[#1A3C34] leading-none inline-flex items-center justify-center">
-                grid_view
-              </span>
+          {steps.map((step) => (
+            <div key={step.icon} className="home-reveal-item text-center">
+              <div className="w-20 h-20 rounded-2xl bg-[#1A3C34]/5 flex items-center justify-center mx-auto mb-6 text-[#1A3C34]">
+                <StorefrontIcon name={step.icon} size={40} />
+              </div>
+              <h3 className="font-[family-name:var(--font-family-display)] text-xl mb-3">
+                {step.title}
+              </h3>
+              <p className="text-stone-500 text-sm leading-relaxed">{step.desc}</p>
             </div>
-            <h3 className="font-[family-name:var(--font-family-display)] text-xl mb-3">
-              {t.step1Title}
-            </h3>
-            <p className="text-stone-500 text-sm leading-relaxed">{t.step1Desc}</p>
-          </div>
-          <div className="home-reveal-item text-center">
-            <div className="w-20 h-20 rounded-2xl bg-[#1A3C34]/5 flex items-center justify-center mx-auto mb-6">
-              <span className="material-symbols-outlined text-4xl text-[#1A3C34] leading-none inline-flex items-center justify-center">
-                handyman
-              </span>
-            </div>
-            <h3 className="font-[family-name:var(--font-family-display)] text-xl mb-3">
-              {t.step2Title}
-            </h3>
-            <p className="text-stone-500 text-sm leading-relaxed">{t.step2Desc}</p>
-          </div>
-          <div className="home-reveal-item text-center">
-            <div className="w-20 h-20 rounded-2xl bg-[#1A3C34]/5 flex items-center justify-center mx-auto mb-6">
-              <span className="material-symbols-outlined text-4xl text-[#1A3C34] leading-none inline-flex items-center justify-center">
-                local_shipping
-              </span>
-            </div>
-            <h3 className="font-[family-name:var(--font-family-display)] text-xl mb-3">
-              {t.step3Title}
-            </h3>
-            <p className="text-stone-500 text-sm leading-relaxed">{t.step3Desc}</p>
-          </div>
+          ))}
         </div>
       </div>
     </section>

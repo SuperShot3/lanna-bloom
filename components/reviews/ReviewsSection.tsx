@@ -2,6 +2,7 @@ import { getFeaturedReviewsAsync, getReviewStatsAsync } from '@/lib/reviews';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { StorefrontIcon } from '@/components/icons';
 
 interface ReviewsSectionProps {
   lang: Locale;
@@ -45,12 +46,7 @@ export async function ReviewsSection({
           />
           <div className="flex text-yellow-400 justify-center">
             {[1, 2, 3, 4, 5].map((i) => (
-              <span
-                key={i}
-                className="material-symbols-outlined material-symbols-filled text-xl"
-              >
-                star
-              </span>
+              <StorefrontIcon key={i} name="star" filled size={20} />
             ))}
           </div>
         </div>
@@ -64,8 +60,8 @@ export async function ReviewsSection({
           <p className="text-xl italic text-stone-500 mb-12">{featuredQuote}</p>
         </div>
         <div className="home-reveal-stagger flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-12 border-t border-stone-100">
-          <div className="home-reveal-item flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#C5A059] text-3xl">verified</span>
+          <div className="home-reveal-item flex items-center gap-3 text-[#C5A059]">
+            <StorefrontIcon name="verified" size={30} />
             <div className="text-left">
               <p className="font-bold text-sm">{lang === 'th' ? 'การจัดส่งที่ไว้ใจได้' : 'Verified delivery'}</p>
               <p className="text-xs text-stone-400">
@@ -73,17 +69,15 @@ export async function ReviewsSection({
               </p>
             </div>
           </div>
-          <div className="home-reveal-item flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#C5A059] text-3xl">bolt</span>
+          <div className="home-reveal-item flex items-center gap-3 text-[#C5A059]">
+            <StorefrontIcon name="bolt" size={30} />
             <div className="text-left">
               <p className="font-bold text-sm">Fast Delivery</p>
               <p className="text-xs text-stone-400">Chiang Mai Inner City</p>
             </div>
           </div>
-          <div className="home-reveal-item flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#C5A059] text-3xl">
-              support_agent
-            </span>
+          <div className="home-reveal-item flex items-center gap-3 text-[#C5A059]">
+            <StorefrontIcon name="support-agent" size={30} />
             <div className="text-left">
               <p className="font-bold text-sm">Local Support</p>
               <p className="text-xs text-stone-400">English & Thai</p>

@@ -50,6 +50,7 @@ import {
   type CheckoutSectionId,
 } from '@/lib/checkout/premiumCheckoutValidation';
 import { TrustBadges } from '@/components/TrustBadges';
+import { StorefrontIcon } from '@/components/icons';
 import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import {
@@ -1649,7 +1650,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       <div className="container">
         <div className="cart-checkout-header">
           <Link href={`/${lang}/catalog`} className="btn-pill">
-            <i className="ti ti-arrow-left" aria-hidden="true" />
+            <StorefrontIcon name="arrow-left" size={18} />
             {t.backToShop}
           </Link>
         </div>

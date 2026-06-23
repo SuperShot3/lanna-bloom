@@ -9,8 +9,7 @@ function checkCriticalFontsLoaded(): boolean {
   try {
     const mulishLoaded = document.fonts.check('16px Mulish');
     const arimaLoaded = document.fonts.check('16px "Arima Madurai"');
-    const iconsLoaded = document.fonts.check('24px "Material Symbols Outlined"');
-    return mulishLoaded && arimaLoaded && iconsLoaded;
+    return mulishLoaded && arimaLoaded;
   } catch {
     return false;
   }
@@ -62,8 +61,6 @@ export function LoadingScreen() {
           return;
         }
 
-        // Brief extra wait for Material Symbols on slow 3G
-        await new Promise<void>((resolve) => setTimeout(resolve, 200));
         hideLoader();
       } catch {
         setTimeout(() => {

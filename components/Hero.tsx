@@ -12,6 +12,7 @@ import {
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
+import { StorefrontIcon } from '@/components/icons';
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
 
@@ -39,9 +40,7 @@ function HeroExpressDeliveryCard({
     >
       <div className="flex items-center gap-2.5 mb-2">
         <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
-          <span className="material-symbols-outlined text-lg leading-none inline-flex items-center justify-center">
-            schedule
-          </span>
+          <StorefrontIcon name="schedule" size={18} className="leading-none" />
         </div>
         <div className="min-w-0">
           <p className="font-bold text-xs">{t.expressDelivery}</p>
@@ -117,7 +116,7 @@ function HeroCtaSection({
           className="hero-cta px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 text-sm sm:text-base"
         >
           {t.ctaBrowse}
-          <span className="material-symbols-outlined">arrow_forward</span>
+          <StorefrontIcon name="arrow-forward" size={20} />
         </Link>
         <Link
           href={howToHref}
@@ -198,7 +197,7 @@ export function Hero({
           <div
             className={`${introItemClass} inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4`.trim()}
           >
-            <span className="material-symbols-outlined text-lg">verified</span>
+            <StorefrontIcon name="verified" size={18} />
             {t.badge}
           </div>
           <h1

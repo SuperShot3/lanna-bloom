@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { StorefrontIcon } from '@/components/icons';
 
 export interface FloristCardProps {
   lang: Locale;
@@ -33,10 +34,8 @@ export function FloristCard({
               className="w-full h-full object-cover rounded-full"
             />
           ) : (
-            <div className="w-full h-full rounded-full bg-stone-200 flex items-center justify-center">
-              <span className="material-symbols-outlined text-stone-400 text-2xl">
-                store
-              </span>
+            <div className="w-full h-full rounded-full bg-stone-200 flex items-center justify-center text-stone-400">
+              <StorefrontIcon name="store" size={24} />
             </div>
           )}
         </div>
