@@ -117,10 +117,11 @@ export default function AccountingInfoPage() {
               unchanged; total business money unchanged.
             </li>
             <li>
-              <strong>Personal withdrawal</strong> — Money leaving the business for your personal use. Requires{' '}
-              <strong>when</strong> (date), <strong>amount</strong>, and <strong>where it went</strong> (purpose). Reduces
-              the bank balance on the overview but does <strong>not</strong> reduce revenue or net profit. Appears in the
-              ledger for history only.
+              <strong>Personal withdrawal</strong> — Money leaving the business for your personal use. Record via{' '}
+              <strong>Pay out</strong> on the Accounting header (choose <strong>Personal withdrawal</strong>), or from the{' '}
+              <strong>Payouts</strong> tab. Requires <strong>when</strong> (date), <strong>amount</strong>, and{' '}
+              <strong>where it went</strong> (purpose). Reduces the bank balance on the overview but does <strong>not</strong>{' '}
+              reduce revenue or net profit. Appears in the ledger for history only.
             </li>
           </ul>
         </section>

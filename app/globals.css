@@ -23,7 +23,7 @@
   --color-ring: #c5a059;
   --color-popover: #ffffff;
   --color-popover-foreground: #1a3c34;
-  /* Font families — Mulish via next/font; Arima Madurai via Google Fonts link */
+  /* Font families — Mulish via next/font; Arima Madurai self-hosted in /public/fonts */
   --font-family-display: 'Arima Madurai', ui-serif, Georgia, serif;
   --font-family-sans: var(--font-sans), ui-sans-serif, 'Segoe UI', system-ui, sans-serif;
   /* Border radius */
@@ -226,9 +226,39 @@ html.loading-lock {
   }
 }
 
+/* Self-hosted display + icon fonts (see /public/fonts) */
+@font-face {
+  font-family: 'Arima Madurai';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/arima-madurai-400.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Arima Madurai';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/arima-madurai-700.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
 /* Material Symbols icons */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
   font-weight: normal;
   font-style: normal;
   display: inline-flex;
@@ -9570,11 +9600,6 @@ a.admin-summary-key-value {
   background: #dbeafe;
   color: #1d4ed8;
 }
-.admin-accounting-header-action-withdrawal {
-  border-color: #a78bfa;
-  background: #ede9fe;
-  color: #6d28d9;
-}
 .admin-accounting-header-action-income {
   border: 1px solid #22c55e;
   background: #22c55e;
@@ -9586,10 +9611,43 @@ a.admin-summary-key-value {
   color: #be123c;
 }
 .admin-accounting-header-action-payout:hover,
-.admin-accounting-header-action-withdrawal:hover,
 .admin-accounting-header-action-expense:hover {
   opacity: 1;
   filter: brightness(0.98);
+}
+
+.admin-accounting-payout-mode {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--admin-surface-muted, #f5f5f4);
+}
+.admin-accounting-payout-mode-btn {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--admin-text-muted, #57534e);
+  background: transparent;
+  cursor: pointer;
+}
+.admin-accounting-payout-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+.admin-accounting-payout-mode-btn-active {
+  border-color: #93c5fd;
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.admin-accounting-payouts-withdrawals {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--admin-border, #e7e5e4);
 }
 
 /* KPI grid */

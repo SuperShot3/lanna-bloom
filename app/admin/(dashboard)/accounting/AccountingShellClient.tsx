@@ -34,10 +34,12 @@ export function AccountingShellClient({
   const transferFileInputRef = useRef<HTMLInputElement>(null);
   const withdrawalFileInputRef = useRef<HTMLInputElement>(null);
 
+  type PayoutMode = 'transfer' | 'withdrawal';
+
   const [dateFrom, setDateFrom] = useState(initialDateFrom ?? '');
   const [dateTo, setDateTo] = useState(initialDateTo ?? '');
-  const [transferOpen, setTransferOpen] = useState(false);
-  const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [payoutOpen, setPayoutOpen] = useState(false);
+  const [payoutMode, setPayoutMode] = useState<PayoutMode>('transfer');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferCurrency, setTransferCurrency] = useState('THB');
   const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -64,12 +66,20 @@ export function AccountingShellClient({
   }, [initialDateFrom, initialDateTo]);
 
   useEffect(() => {
-    if (sp.get('action') !== 'withdrawal') return;
-    setWithdrawalOpen(true);
-    setTransferOpen(false);
+    const action = sp.get('action');
+    if (action !== 'payout' && action !== 'withdrawal') return;
+
+    const mode: PayoutMode =
+      action === 'withdrawal' || sp.get('mode') === 'withdrawal' ? 'withdrawal' : 'transfer';
+
+    setPayoutOpen(true);
+    setPayoutMode(mode);
+    setTransferMsg(null);
     setWithdrawalMsg(null);
+
     const next = new URLSearchParams(sp.toString());
     next.delete('action');
+    next.delete('mode');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [sp, pathname, router]);
@@ -201,32 +211,20 @@ export function AccountingShellClient({
             type="button"
             className="admin-btn admin-btn-outline admin-accounting-header-action admin-accounting-header-action-payout"
             onClick={() => {
-              setTransferOpen((v) => !v);
-              setWithdrawalOpen(false);
+              setPayoutOpen((v) => {
+                if (!v) setPayoutMode('transfer');
+                return !v;
+              });
               setTransferMsg(null);
+              setWithdrawalMsg(null);
             }}
+            aria-expanded={payoutOpen}
           >
             <span className="material-symbols-outlined" aria-hidden>
               swap_horiz
             </span>
-            <span className="admin-action-label-full">Payout</span>
-            <span className="admin-action-label-short">Payout</span>
-          </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn-outline admin-accounting-header-action admin-accounting-header-action-withdrawal"
-            onClick={() => {
-              setWithdrawalOpen((v) => !v);
-              setTransferOpen(false);
-              setWithdrawalMsg(null);
-            }}
-            aria-expanded={withdrawalOpen}
-          >
-            <span className="material-symbols-outlined" aria-hidden>
-              savings
-            </span>
-            <span className="admin-action-label-full">Personal withdrawal</span>
-            <span className="admin-action-label-short">Withdraw</span>
+            <span className="admin-action-label-full">Pay out</span>
+            <span className="admin-action-label-short">Pay out</span>
           </button>
           <Link
             href="/admin/accounting/income/new"
@@ -256,8 +254,39 @@ export function AccountingShellClient({
         </div>
       </header>
 
-      {withdrawalOpen && (
+      {payoutOpen && (
         <div className="admin-accounting-section" style={{ marginTop: 12 }}>
+          <div className="admin-accounting-payout-mode" role="tablist" aria-label="Pay out type">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={payoutMode === 'transfer'}
+              className={`admin-accounting-payout-mode-btn${payoutMode === 'transfer' ? ' admin-accounting-payout-mode-btn-active' : ''}`}
+              onClick={() => {
+                setPayoutMode('transfer');
+                setTransferMsg(null);
+                setWithdrawalMsg(null);
+              }}
+            >
+              Payout / transfer
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={payoutMode === 'withdrawal'}
+              className={`admin-accounting-payout-mode-btn${payoutMode === 'withdrawal' ? ' admin-accounting-payout-mode-btn-active' : ''}`}
+              onClick={() => {
+                setPayoutMode('withdrawal');
+                setTransferMsg(null);
+                setWithdrawalMsg(null);
+              }}
+            >
+              Personal withdrawal
+            </button>
+          </div>
+
+          {payoutMode === 'withdrawal' ? (
+            <>
           <h2 className="admin-accounting-section-title">Record personal withdrawal</h2>
           <p className="admin-hint">
             This reduces your bank balance but does not change revenue or business profit. Use this when money leaves the
@@ -389,12 +418,10 @@ export function AccountingShellClient({
               {withdrawalMsg}
             </p>
           )}
-        </div>
-      )}
-
-      {transferOpen && (
-        <div className="admin-accounting-section" style={{ marginTop: 12 }}>
-          <h2 className="admin-accounting-section-title">Record Stripe Payout / Money Transfer</h2>
+            </>
+          ) : (
+            <>
+          <h2 className="admin-accounting-section-title">Record payout / transfer</h2>
           <p className="admin-hint">
             Moves already-recorded money between locations. This is not income and does not change revenue or profit.
           </p>
@@ -586,6 +613,8 @@ export function AccountingShellClient({
             <p className="admin-hint" style={{ marginTop: 6 }}>
               {transferMsg}
             </p>
+          )}
+            </>
           )}
         </div>
       )}

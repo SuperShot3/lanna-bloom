@@ -33,11 +33,11 @@ Same file aggregates expenses by **`expenses.payment_method`**:
 - **Bank account** (`bank_transfer`), **Card**, **QR payment** → subtracted from the **Bank account** row.
 - Unknown / legacy values → treated as **bank** for aggregation.
 
-**Important:** You cannot spend directly from the Stripe balance inside this system—record payouts via **transfers** (Accounting → Payouts & Transfers) when money moves Stripe → bank. Operating costs paid from the shop bank should use **Bank account** (or QR/card) on the expense row.
+**Important:** You cannot spend directly from the Stripe balance inside this system—record payouts via **Pay out** on the Accounting header (or the **Payouts** tab) when money moves Stripe → bank. Operating costs paid from the shop bank should use **Bank account** (or QR/card) on the expense row.
 
 ### Owner / personal withdrawals
 
-When money leaves the **business bank account** for **personal use** (rent, family expenses, savings transfer, etc.), record a **personal withdrawal** (Accounting → Personal Withdrawals or the header **Personal withdrawal** button).
+When money leaves the **business bank account** for **personal use** (rent, family expenses, savings transfer, etc.), record a **personal withdrawal** under **Accounting → Payouts** using **Pay out** → **Personal withdrawal**.
 
 | Action | Bank balance | Revenue | Net profit |
 |--------|--------------|---------|------------|

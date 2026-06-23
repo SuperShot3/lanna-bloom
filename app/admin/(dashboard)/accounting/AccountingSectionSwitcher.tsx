@@ -26,14 +26,8 @@ const SECTIONS = [
   {
     id: 'payouts-transfers',
     href: '/admin/accounting/payouts-transfers',
-    label: 'Payouts & Transfers',
+    label: 'Payouts',
     icon: 'swap_horiz',
-  },
-  {
-    id: 'withdrawals',
-    href: '/admin/accounting/withdrawals',
-    label: 'Personal Withdrawals',
-    icon: 'savings',
   },
   {
     id: 'ledger',
@@ -49,7 +43,6 @@ export interface AccountingSectionCounts {
   expenses?: number;
   income?: number;
   transfers?: number;
-  withdrawals?: number;
   ledger?: number;
 }
 
@@ -57,7 +50,6 @@ function accountingSectionFromPath(pathname: string): AccountingSectionId {
   if (pathname.startsWith('/admin/accounting/overview')) return 'overview';
   if (pathname.startsWith('/admin/accounting/expenses')) return 'expenses';
   if (pathname.startsWith('/admin/accounting/payouts-transfers')) return 'payouts-transfers';
-  if (pathname.startsWith('/admin/accounting/withdrawals')) return 'withdrawals';
   if (pathname.startsWith('/admin/accounting/ledger')) return 'ledger';
   if (pathname.startsWith('/admin/accounting/income')) return 'income';
   return 'overview';
@@ -110,9 +102,7 @@ export function AccountingSectionSwitcher({ counts, mobilePanelChildren, mode = 
                   ? counts?.income
                   : section.id === 'payouts-transfers'
                     ? counts?.transfers
-                    : section.id === 'withdrawals'
-                      ? counts?.withdrawals
-                      : section.id === 'ledger'
+                    : section.id === 'ledger'
                       ? counts?.ledger
                       : undefined;
             return (

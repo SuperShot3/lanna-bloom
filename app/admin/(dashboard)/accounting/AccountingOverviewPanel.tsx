@@ -71,7 +71,9 @@ function withdrawalsPeriodHref(sp: URLSearchParams): string {
   const next = new URLSearchParams();
   copyPeriodQuery(sp, next);
   const q = next.toString();
-  return q ? `/admin/accounting/withdrawals?${q}` : '/admin/accounting/withdrawals';
+  return q
+    ? `/admin/accounting/payouts-transfers?${q}#personal-withdrawals`
+    : '/admin/accounting/payouts-transfers#personal-withdrawals';
 }
 
 /** Stripe → Bank → Cash always listed when returned by API; Other only when non-zero; unknown buckets appended. */

@@ -1,7 +1,9 @@
 import { getAccountingTransfers } from '@/lib/accounting/transfers';
+import { getAccountingWithdrawals, sumWithdrawalsInRange } from '@/lib/accounting/withdrawals';
 import { buildAccountingPeriodLabel, resolveAccountingPeriod } from '../accounting-period';
 import { AccountingShellClient } from '../AccountingShellClient';
 import { AccountingTransfersPanel } from '../AccountingTransfersPanel';
+import { AccountingWithdrawalsPanel } from '../AccountingWithdrawalsPanel';
 
 interface PageProps {
   searchParams: Promise<{
@@ -15,7 +17,11 @@ export default async function AccountingPayoutsTransfersPage({ searchParams }: P
   const params = await searchParams;
   const { userAskedAllTime, noExplicitPeriod, effectivePeriod } = resolveAccountingPeriod(params);
   const period = { dateFrom: effectivePeriod.dateFrom, dateTo: effectivePeriod.dateTo };
-  const transfersData = await getAccountingTransfers(period);
+  const [transfersData, withdrawalsResult, totals] = await Promise.all([
+    getAccountingTransfers(period),
+    getAccountingWithdrawals(period),
+    sumWithdrawalsInRange(period),
+  ]);
   const periodLabel = buildAccountingPeriodLabel(effectivePeriod, {
     userAskedAllTime,
     noExplicitPeriod,
@@ -32,6 +38,15 @@ export default async function AccountingPayoutsTransfersPage({ searchParams }: P
       navCounts={navCounts}
     >
       <AccountingTransfersPanel transfersData={transfersData} periodLabel={periodLabel} />
+      <AccountingWithdrawalsPanel
+        withdrawalsData={{
+          withdrawals: withdrawalsResult.withdrawals,
+          periodTotal: totals.total,
+          periodCount: totals.count,
+          error: withdrawalsResult.error,
+        }}
+        periodLabel={periodLabel}
+      />
     </AccountingShellClient>
   );
 }

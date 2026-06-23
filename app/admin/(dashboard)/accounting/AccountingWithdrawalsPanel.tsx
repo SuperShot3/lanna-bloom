@@ -48,6 +48,13 @@ const LOCATION_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+function payoutsActionHref(sp: URLSearchParams, mode: 'transfer' | 'withdrawal'): string {
+  const next = new URLSearchParams(sp.toString());
+  next.set('action', 'payout');
+  next.set('mode', mode);
+  return `/admin/accounting/payouts-transfers?${next.toString()}`;
+}
+
 interface Props {
   withdrawalsData: {
     withdrawals: AccountingWithdrawal[];
@@ -62,11 +69,6 @@ export function AccountingWithdrawalsPanel({ withdrawalsData, periodLabel }: Pro
   const router = useRouter();
   const searchParams = useSearchParams();
   const sp = searchParams ?? new URLSearchParams();
-  const recordHref = (() => {
-    const next = new URLSearchParams(sp.toString());
-    next.set('action', 'withdrawal');
-    return `/admin/accounting/withdrawals?${next.toString()}`;
-  })();
   const [editing, setEditing] = useState<AccountingWithdrawal | null>(null);
   const [editDate, setEditDate] = useState('');
   const [editAmount, setEditAmount] = useState('');
@@ -164,14 +166,17 @@ export function AccountingWithdrawalsPanel({ withdrawalsData, periodLabel }: Pro
   };
 
   return (
-    <div className="admin-expenses">
+    <div className="admin-expenses admin-accounting-payouts-withdrawals" id="personal-withdrawals">
+      <h2 className="admin-accounting-section-title" style={{ marginTop: 24 }}>
+        Personal withdrawals
+      </h2>
       <div className="admin-expenses-filters">
         <Link
-          href={recordHref}
+          href={payoutsActionHref(sp, 'withdrawal')}
           className="admin-btn admin-btn-primary admin-btn-sm"
           scroll={false}
         >
-          + Record withdrawal
+          Record withdrawal
         </Link>
         <button
           type="button"
@@ -203,7 +208,7 @@ export function AccountingWithdrawalsPanel({ withdrawalsData, periodLabel }: Pro
       ) : withdrawalsData.withdrawals.length === 0 ? (
         <p className="admin-empty">
           No personal withdrawals in this period.{' '}
-          <Link href={recordHref} className="admin-link" scroll={false}>
+          <Link href={payoutsActionHref(sp, 'withdrawal')} className="admin-link" scroll={false}>
             Record a withdrawal
           </Link>{' '}
           when money leaves the business bank for personal use.

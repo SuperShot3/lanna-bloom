@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import type { AccountingTransfer } from '@/types/accountingTransfers';
 
 function formatAmount(amount: number, currency = 'THB') {
@@ -51,12 +53,22 @@ const TRANSFER_STATUS_LABEL: Record<string, string> = {
   reconciled: 'Reconciled',
 };
 
+function payoutsActionHref(sp: URLSearchParams, mode: 'transfer' | 'withdrawal'): string {
+  const next = new URLSearchParams(sp.toString());
+  next.set('action', 'payout');
+  next.set('mode', mode);
+  return `/admin/accounting/payouts-transfers?${next.toString()}`;
+}
+
 interface Props {
   transfersData: { transfers: AccountingTransfer[]; error?: string };
   periodLabel: string;
 }
 
 export function AccountingTransfersPanel({ transfersData, periodLabel }: Props) {
+  const searchParams = useSearchParams();
+  const sp = searchParams ?? new URLSearchParams();
+
   const exportTransfersCsv = () => {
     const headers = [
       'Transfer date',
@@ -107,8 +119,16 @@ export function AccountingTransfersPanel({ transfersData, periodLabel }: Props) 
   };
 
   return (
-    <div className="admin-expenses">
+    <div className="admin-expenses admin-accounting-payouts-transfers">
+      <h2 className="admin-accounting-section-title">Stripe payouts / transfers</h2>
       <div className="admin-expenses-filters">
+        <Link
+          href={payoutsActionHref(sp, 'transfer')}
+          className="admin-btn admin-btn-primary admin-btn-sm"
+          scroll={false}
+        >
+          Record payout
+        </Link>
         <button
           type="button"
           className="admin-btn admin-btn-outline admin-btn-sm"
@@ -135,7 +155,11 @@ export function AccountingTransfersPanel({ transfersData, periodLabel }: Props) 
         </div>
       ) : transfersData.transfers.length === 0 ? (
         <p className="admin-empty">
-          No transfers found. Use <strong>Record Stripe Payout</strong> to move money from Stripe Balance to Bank Account.
+          No transfers found. Use{' '}
+          <Link href={payoutsActionHref(sp, 'transfer')} className="admin-link" scroll={false}>
+            Pay out
+          </Link>{' '}
+          to move money from Stripe Balance to Bank Account.
         </p>
       ) : (
         <div className="admin-expenses-table-wrap">

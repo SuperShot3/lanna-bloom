@@ -208,7 +208,7 @@ function toWithdrawalLedgerRow(
     createdBy: w.created_by,
     status: w.status,
     currency: w.currency || 'THB',
-    detailHref: '/admin/accounting/withdrawals',
+    detailHref: '/admin/accounting/payouts-transfers#personal-withdrawals',
     receiptAttached: !!w.proof_attached,
     rawCategory: 'withdrawal',
     rawPaymentMethod: w.from_location,

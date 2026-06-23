@@ -13,6 +13,7 @@ export default async function AdminAccountingIndexPage({
   if (tab === 'expenses') targetPath = '/admin/accounting/expenses';
   else if (tab === 'income') targetPath = '/admin/accounting/income';
   else if (tab === 'transfers') targetPath = '/admin/accounting/payouts-transfers';
+  else if (tab === 'withdrawals') targetPath = '/admin/accounting/payouts-transfers';
   else if (tab === 'ledger') targetPath = '/admin/accounting/ledger';
 
   const q = new URLSearchParams();

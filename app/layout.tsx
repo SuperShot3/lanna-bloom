@@ -45,24 +45,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Arima+Madurai:wght@300;400;500;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
-          rel="stylesheet"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.23.0/dist/tabler-icons.min.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.2/css/flag-icons.min.css"
-        />
+        <link rel="stylesheet" href="/vendor/tabler-icons/tabler-icons.min.css" />
+        <link rel="stylesheet" href="/vendor/flag-icons/css/flag-icons.min.css" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
