@@ -1,4 +1,4 @@
-import { DELIVERY_SHOP_TIMEZONE, getBangkokYmd } from '@/lib/deliveryHours';
+import { addDaysToYmd, DELIVERY_SHOP_TIMEZONE, getBangkokYmd } from '@/lib/deliveryHours';
 
 /** Four delivery windows from 09:00 to 20:00 (Bangkok). */
 export const DELIVERY_TIME_SLOTS = [
@@ -149,4 +149,48 @@ export function getSuggestedSpecificDeliveryTimes(
     suggestions.push(formatDeliveryTimeMinutes(m));
   }
   return suggestions;
+}
+
+export type DeliverySchedule = {
+  date: string;
+  timeSlot: string;
+};
+
+/** Prefer today; if no windows remain, use tomorrow with the first selectable slot. */
+export function getEarliestSelectableDeliverySchedule(
+  todayYmd: string,
+  now: Date = new Date()
+): DeliverySchedule {
+  const todaySlots = getSelectableDeliveryTimeSlotsForDate(todayYmd, now);
+  if (todaySlots.length > 0) {
+    return { date: todayYmd, timeSlot: todaySlots[0] };
+  }
+  const tomorrowYmd = addDaysToYmd(todayYmd, 1);
+  const tomorrowSlots = getSelectableDeliveryTimeSlotsForDate(tomorrowYmd, now);
+  return {
+    date: tomorrowYmd,
+    timeSlot: tomorrowSlots[0] ?? DELIVERY_TIME_SLOTS[0],
+  };
+}
+
+/** Keep valid user choices; fill empty or expired date/time with the earliest schedule. */
+export function resolveDeliverySchedule(
+  schedule: { date: string; timeSlot: string },
+  todayYmd: string,
+  now: Date = new Date()
+): DeliverySchedule {
+  const { date, timeSlot } = schedule;
+
+  if (date && timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) {
+    return { date, timeSlot };
+  }
+
+  if (date) {
+    const slots = getSelectableDeliveryTimeSlotsForDate(date, now);
+    if (slots.length > 0) {
+      return { date, timeSlot: slots[0] };
+    }
+  }
+
+  return getEarliestSelectableDeliverySchedule(todayYmd, now);
 }

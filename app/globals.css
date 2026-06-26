@@ -1033,6 +1033,134 @@ main {
 }
 
 /* Cart helper (premium header toast) */
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes app-toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.98);
+    filter: blur(6px);
+  }
+}
+
+@keyframes app-toast-progress-shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.app-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hover);
+  z-index: 10001;
+  animation: app-toast-in 0.28s ease-out;
+  max-width: min(92vw, 420px);
+  text-align: center;
+  pointer-events: none;
+}
+
+.app-toast--exiting {
+  animation: app-toast-out 0.48s ease-in forwards;
+}
+
+.app-toast--error {
+  padding: 16px 20px 12px;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 22px;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Cart checkout: float above bottom Pay / sticky bar (mobile + desktop) */
+body.cart-checkout-active .app-toast--error {
+  bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 900px) {
+  body.cart-checkout-active .app-toast--error {
+    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.app-toast__message {
+  display: block;
+  line-height: 1.45;
+  padding-bottom: 10px;
+}
+
+.app-toast--error .app-toast__message {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.app-toast__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  width: 100%;
+  border-radius: 0 0 22px 22px;
+  background: #0e9a52;
+  transform-origin: left center;
+  animation-name: app-toast-progress-shrink;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-toast {
+    animation: none;
+  }
+  .app-toast--exiting {
+    animation: app-toast-out-reduced 0.35s ease-in forwards;
+  }
+  .app-toast__progress {
+    animation: none;
+    transform: scaleX(0);
+  }
+}
+
+@keyframes app-toast-out-reduced {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes cart-helper-pulse-ring {
   0% {
     transform: scale(0.85);

@@ -8,11 +8,13 @@ import { useSharedCartImport } from '@/hooks/useSharedCartImport';
 import { useCheckoutRecoveryImport } from '@/hooks/useCheckoutRecoveryImport';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import {
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
   type DeliveryFormValues,
 } from '@/components/DeliveryForm';
+import { resolveDeliverySchedule } from '@/lib/deliveryTimeSelection';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { resolveTranslation } from '@/lib/resolveTranslation';
@@ -49,11 +51,12 @@ import {
   isPremiumDeliveryValid,
   isPremiumRecipientValid,
   isPremiumSenderValid,
+  shouldPromptForGoogleMapsLink,
   type CheckoutSectionId,
 } from '@/lib/checkout/premiumCheckoutValidation';
+import { GoogleMapsLinkPromptModal } from '@/components/checkout/GoogleMapsLinkPromptModal';
 import { TrustBadges } from '@/components/TrustBadges';
 import { StorefrontIcon } from '@/components/icons';
-import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import {
   CHECKOUT_FIELD_LIMITS,
@@ -86,6 +89,7 @@ import {
   normalizeNationalPhoneOnBlur,
   nationalDigitsValidForCheckout,
 } from '@/lib/phoneFieldHints';
+import { getLocalTodayYmd } from '@/lib/localDateYmd';
 import {
   isValidLineUserId,
   normalizeLineUserId,
@@ -788,13 +792,57 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, [checkoutDeliveryProfile.destinationId, items.length]);
 
   useEffect(() => {
-    if (!delivery.date || !delivery.timeSlot) return;
-    if (isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return;
-    setDelivery((prev) => ({ ...prev, timeSlot: '' }));
-  }, [delivery.date, delivery.timeSlot]);
+    if (items.length === 0) return;
+    const todayYmd = getLocalTodayYmd();
+    const { date, timeSlot } = resolveDeliverySchedule(
+      { date: delivery.date, timeSlot: delivery.timeSlot },
+      todayYmd
+    );
+    setDelivery((prev) =>
+      prev.date === date && prev.timeSlot === timeSlot ? prev : { ...prev, date, timeSlot }
+    );
+  }, [items.length, delivery.date, delivery.timeSlot]);
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    const id = window.setInterval(() => {
+      const todayYmd = getLocalTodayYmd();
+      setDelivery((prev) => {
+        const { date, timeSlot } = resolveDeliverySchedule(
+          { date: prev.date, timeSlot: prev.timeSlot },
+          todayYmd
+        );
+        return prev.date === date && prev.timeSlot === timeSlot ? prev : { ...prev, date, timeSlot };
+      });
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [items.length]);
+
+  const { showToast } = useToast();
+
+  const showCheckoutError = useCallback(
+    (message: string) => {
+      showToast(message, { variant: 'error' });
+    },
+    [showToast]
+  );
+
+  const handleDeliveryChange = useCallback(
+    (next: DeliveryFormValues) => {
+      if (items.length === 0) {
+        setDelivery(next);
+        return;
+      }
+      const { date, timeSlot } = resolveDeliverySchedule(
+        { date: next.date, timeSlot: next.timeSlot },
+        getLocalTodayYmd()
+      );
+      setDelivery({ ...next, date, timeSlot });
+    },
+    [items.length]
+  );
 
   const [placing, setPlacing] = useState(false);
-  const [orderError, setOrderError] = useState<string | null>(null);
   const [referralCleared, setReferralCleared] = useState(0);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
@@ -875,6 +923,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [noCardMessage, setNoCardMessage] = useState(false);
   const [highlightSection, setHighlightSection] = useState<CheckoutSectionId | null>(null);
+  const [highlightMapsLink, setHighlightMapsLink] = useState(false);
+  const [showMapsPrompt, setShowMapsPrompt] = useState(false);
+  const mapsPromptSkippedRef = useRef(false);
   const sectionRefs = {
     product: useRef<HTMLElement>(null),
     delivery: useRef<HTMLElement>(null),
@@ -893,6 +944,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const hideOnThisPage = () => {
       const shouldHide = mql.matches || items.length > 0;
       document.body.classList.toggle('hide-checkout-footer', shouldHide);
+      document.body.classList.toggle('cart-checkout-active', items.length > 0);
     };
 
     hideOnThisPage();
@@ -903,6 +955,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       if (mql.removeEventListener) mql.removeEventListener('change', hideOnThisPage);
       else mql.removeListener(hideOnThisPage);
       document.body.classList.remove('hide-checkout-footer');
+      document.body.classList.remove('cart-checkout-active');
     };
   }, [items.length]);
 
@@ -1115,78 +1168,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     return '';
   };
 
-  /** Same copy as StickyCheckoutBar incompleteHint — shown on desktop Place Order hover (native title). */
-  const preparingCheckoutMsg = t.preparingCheckout;
-  const paymentAvailabilityDesktopBase = getPaymentAvailability({
-    hasDeliveryDistrict: hasDeliveryZone,
-    isFormValid: isPaymentUnlocked,
-    isLoading: placing,
-    firstIncompleteHint: getFirstIncompleteHint(),
-    messages: {
-      selectDeliveryArea: t.selectDeliveryAreaPayment,
-      processing: t.processing,
-    },
-  });
-  const paymentAvailabilityDesktop =
-    checkoutSubmissionToken || items.length === 0
-      ? paymentAvailabilityDesktopBase
-      : {
-          stripe: { enabled: false, reason: preparingCheckoutMsg },
-        };
-
-  /** Same priority as StickyCheckoutBar (orderError ?? incompleteHint). */
-  const desktopCheckoutHintMessage =
-    orderError ??
-    (!paymentAvailabilityDesktop.stripe.enabled
-      ? paymentAvailabilityDesktop.stripe.reason
-      : null) ??
-    null;
-  const isDesktopCheckoutHintError = Boolean(orderError);
-
-  const [desktopHintDisplay, setDesktopHintDisplay] = useState<{
-    text: string;
-    isError: boolean;
-  } | null>(() =>
-    desktopCheckoutHintMessage
-      ? { text: desktopCheckoutHintMessage, isError: isDesktopCheckoutHintError }
-      : null
-  );
-  const [desktopHintAnimOpen, setDesktopHintAnimOpen] = useState(() =>
-    Boolean(desktopCheckoutHintMessage)
-  );
-
-  useEffect(() => {
-    if (!desktopCheckoutHintMessage) {
-      setDesktopHintAnimOpen(false);
-      return;
-    }
-    setDesktopHintDisplay({
-      text: desktopCheckoutHintMessage,
-      isError: isDesktopCheckoutHintError,
-    });
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setDesktopHintAnimOpen(true));
-    });
-    return () => cancelAnimationFrame(id);
-  }, [desktopCheckoutHintMessage, isDesktopCheckoutHintError]);
-
-  const handleDesktopCheckoutHintTransitionEnd = useCallback(
-    (e: React.TransitionEvent<HTMLDivElement>) => {
-      if (e.target !== e.currentTarget) return;
-      if (e.propertyName !== 'max-height') return;
-      if (!desktopHintAnimOpen && !desktopCheckoutHintMessage) {
-        setDesktopHintDisplay(null);
-      }
-    },
-    [desktopHintAnimOpen, desktopCheckoutHintMessage]
-  );
-
-  useEffect(() => {
-    if (!orderError) return;
-    const t = setTimeout(() => setOrderError(null), 5000);
-    return () => clearTimeout(t);
-  }, [orderError]);
-
   const toggleContactPreference = (option: ContactPreferenceOption) => {
     setContactPreference((prev) =>
       prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
@@ -1219,12 +1200,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const runStripeCheckoutSubmit = async () => {
     if (!checkoutSubmissionToken) {
-      setOrderError(t.refreshAndTryAgain);
+      showCheckoutError(t.refreshAndTryAgain);
       return;
     }
     if (orderSubmitInFlightRef.current || placing) return;
     orderSubmitInFlightRef.current = true;
-    setOrderError(null);
     setPlacing(true);
     const fullPhone = countryCode + phoneNational;
     const recipientPhoneDigits =
@@ -1263,7 +1243,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       });
       const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!res.ok) {
-        setOrderError(
+        showCheckoutError(
           typeof data.error === 'string' && data.error.trim()
             ? data.error
             : t.couldNotCreateOrder
@@ -1276,11 +1256,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         window.location.href = data.url.trim();
         return;
       }
-      setOrderError(t.couldNotCreateOrder);
+      showCheckoutError(t.couldNotCreateOrder);
       setPlacing(false);
       orderSubmitInFlightRef.current = false;
     } catch {
-      setOrderError(t.couldNotCreateOrder);
+      showCheckoutError(t.couldNotCreateOrder);
       setPlacing(false);
       orderSubmitInFlightRef.current = false;
     }
@@ -1293,6 +1273,26 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     window.setTimeout(() => setHighlightSection(null), 1600);
+  };
+
+  const focusMapsLinkInput = () => {
+    setHighlightMapsLink(true);
+    scrollToCheckoutSection('delivery');
+    window.setTimeout(() => setHighlightMapsLink(false), 1600);
+    requestAnimationFrame(() => {
+      const input = document.getElementById('checkout-delivery-address-maps-link');
+      if (input instanceof HTMLElement) {
+        input.focus();
+      }
+    });
+  };
+
+  const proceedToStripeOrPromptMaps = async () => {
+    if (!mapsPromptSkippedRef.current && shouldPromptForGoogleMapsLink(delivery)) {
+      setShowMapsPrompt(true);
+      return;
+    }
+    await runStripeCheckoutSubmit();
   };
 
   const getPremiumFieldIssue = () =>
@@ -1313,7 +1313,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handleCheckoutBottomAction = async () => {
     const issue = getPremiumFieldIssue();
     if (issue) {
-      setOrderError(issue.message);
+      showCheckoutError(issue.message);
       scrollToCheckoutSection(issue.sectionId);
       return;
     }
@@ -1323,16 +1323,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const handlePlaceOrder = async () => {
     const issue = getPremiumFieldIssue();
     if (issue) {
-      setOrderError(issue.message);
+      showCheckoutError(issue.message);
       scrollToCheckoutSection(issue.sectionId);
       return;
     }
     if (cartExpansionInvalid) {
-      setOrderError(t.flowerOnlyIncomplete);
+      showCheckoutError(t.flowerOnlyIncomplete);
       return;
     }
     if (cartDestinationBouquetInvalid) {
-      setOrderError(
+      showCheckoutError(
         String(
           (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
             'Some bouquets are not available for this delivery region.'
@@ -1341,10 +1341,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return;
     }
     if (!checkoutSubmissionToken) {
-      setOrderError(t.refreshAndTryAgain);
+      showCheckoutError(t.refreshAndTryAgain);
       return;
     }
-    await runStripeCheckoutSubmit();
+    await proceedToStripeOrPromptMaps();
   };
 
   if (alreadySubmittedBlock) {
@@ -1782,7 +1782,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           lang={lang}
           items={items}
           delivery={delivery}
-          onDeliveryChange={setDelivery}
+          onDeliveryChange={handleDeliveryChange}
           checkoutDeliveryProfile={checkoutDeliveryProfile}
           recipientName={recipientName}
           onRecipientNameChange={setRecipientName}
@@ -1822,6 +1822,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onReferralChange={() => setReferralCleared((c) => c + 1)}
           mayCampaignEligible={mayCampaignEligible}
           highlightSection={highlightSection}
+          highlightMapsLink={highlightMapsLink}
           sectionRefs={sectionRefs}
           onRemoveItem={(index) => {
             const removed = items[index];
@@ -1868,13 +1869,26 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             }
             updateItem(index, { ...item, quantity: nextQty });
           }}
-          orderError={orderError}
           isPaymentUnlocked={isPaymentUnlocked}
           hasDeliveryZone={hasDeliveryZone}
           placing={placing}
           checkoutSubmissionToken={checkoutSubmissionToken}
           onBottomAction={handleCheckoutBottomAction}
           onPay={handlePlaceOrder}
+        />
+        <GoogleMapsLinkPromptModal
+          lang={lang}
+          isOpen={showMapsPrompt}
+          onClose={() => setShowMapsPrompt(false)}
+          onAddLocation={() => {
+            setShowMapsPrompt(false);
+            focusMapsLinkInput();
+          }}
+          onContinueWithout={() => {
+            mapsPromptSkippedRef.current = true;
+            setShowMapsPrompt(false);
+            void proceedToStripeOrPromptMaps();
+          }}
         />
       </div>
       <style jsx>{`

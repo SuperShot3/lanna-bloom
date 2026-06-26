@@ -42,7 +42,7 @@ export function getBangkokYmd(date: Date): string {
   }).format(date);
 }
 
-function addDaysToYmd(ymd: string, days: number): string {
+export function addDaysToYmd(ymd: string, days: number): string {
   const [y, m, d] = ymd.split('-').map(Number);
   const next = new Date(Date.UTC(y, m - 1, d + days));
   const yy = next.getUTCFullYear();

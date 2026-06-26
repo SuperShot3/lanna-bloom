@@ -82,10 +82,10 @@ export type PremiumCheckoutFlowProps = {
   onReferralChange: () => void;
   mayCampaignEligible: boolean;
   highlightSection: CheckoutSectionId | null;
+  highlightMapsLink?: boolean;
   sectionRefs: Record<CheckoutSectionId, React.RefObject<HTMLElement | null>>;
   onRemoveItem: (index: number) => void;
   onChangeItemQuantity: (index: number, quantity: number) => void;
-  inlineError?: string | null;
   paymentSection: ReactNode;
 };
 
@@ -124,10 +124,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     onReferralChange,
     mayCampaignEligible,
     highlightSection,
+    highlightMapsLink = false,
     sectionRefs,
     onRemoveItem,
     onChangeItemQuantity,
-    inlineError,
     paymentSection,
   } = props;
 
@@ -367,7 +367,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             lang={lang}
             value={delivery}
             onChange={onDeliveryChange}
+            inputId="checkout-delivery-address"
             highlight={highlightSection === 'delivery'}
+            highlightMapsLink={highlightMapsLink}
             labels={{
               addressLabel: tBuyNow.addressLabel,
               addressPlaceholder: t.addressPlaceholder,
@@ -676,12 +678,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
       <section ref={sectionRef('payment')} data-checkout-section="payment" className="co-section">
         {paymentSection}
       </section>
-
-      {inlineError && (
-        <p className="co-inline-error" role="alert">
-          {inlineError}
-        </p>
-      )}
 
       <TrustBadges lang={lang} />
 
@@ -1375,14 +1371,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         .co-price-was {
           opacity: 0.55;
           margin-right: 4px;
-        }
-        .co-inline-error {
-          margin: 0;
-          padding: 12px 14px;
-          border-radius: 12px;
-          background: #fef2f2;
-          color: #991b1b;
-          font-size: 14px;
         }
       `}</style>
     </div>

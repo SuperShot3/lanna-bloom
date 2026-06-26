@@ -3,19 +3,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import { getSelectableDeliveryTimeSlotsForDate } from '@/lib/deliveryTimeSelection';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 import { DeliveryDatePicker } from '@/components/checkout/DeliveryDatePicker';
 import { SelectionTile } from '@/components/checkout/premium/SelectionTile';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 
-export type DeliveryDateMode = 'today' | 'tomorrow' | 'custom';
+export type DeliveryDateMode = 'today' | 'tomorrow' | 'custom' | null;
 
 function inferDateMode(
   date: string,
   todayStr: string,
   tomorrowStr: string
 ): DeliveryDateMode {
-  if (!date || date === todayStr) return 'today';
+  if (!date) return null;
+  if (date === todayStr) return 'today';
   if (date === tomorrowStr) return 'tomorrow';
   return 'custom';
 }
@@ -38,6 +40,7 @@ export function DeliveryDateSelector({
   const t = translations[lang].premiumCheckout;
   const todayStr = getLocalTodayYmd();
   const tomorrowStr = getLocalTomorrowYmd();
+  const todaySelectable = getSelectableDeliveryTimeSlotsForDate(todayStr).length > 0;
 
   const [dateMode, setDateMode] = useState<DeliveryDateMode>(() =>
     inferDateMode(value, todayStr, tomorrowStr)
@@ -81,10 +84,12 @@ export function DeliveryDateSelector({
       <div className="delivery-date-selector__tiles">
         <SelectionTile
           compact
-          className="co-tile--date"
+          className={['co-tile--date', !todaySelectable ? 'co-tile--disabled' : '']
+            .filter(Boolean)
+            .join(' ')}
           selected={dateMode === 'today'}
           title={t.todayTile}
-          onClick={selectToday}
+          onClick={() => todaySelectable && selectToday()}
         />
         <SelectionTile
           compact

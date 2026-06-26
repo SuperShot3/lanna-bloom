@@ -13,7 +13,6 @@ import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumChecko
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
-import { getPaymentAvailability } from '@/lib/checkout/paymentAvailability';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 
@@ -94,10 +93,10 @@ export function CartCheckoutView({
   onReferralChange,
   mayCampaignEligible,
   highlightSection,
+  highlightMapsLink = false,
   sectionRefs,
   onRemoveItem,
   onChangeItemQuantity,
-  orderError,
   isPaymentUnlocked,
   hasDeliveryZone,
   placing,
@@ -141,10 +140,10 @@ export function CartCheckoutView({
   onReferralChange: () => void;
   mayCampaignEligible: boolean;
   highlightSection: CheckoutSectionId | null;
+  highlightMapsLink?: boolean;
   sectionRefs: Record<CheckoutSectionId, React.RefObject<HTMLElement | null>>;
   onRemoveItem: (index: number) => void;
   onChangeItemQuantity: (index: number, quantity: number) => void;
-  orderError: string | null;
   isPaymentUnlocked: boolean;
   hasDeliveryZone: boolean;
   placing: boolean;
@@ -154,24 +153,9 @@ export function CartCheckoutView({
 }) {
   const t = translations[lang].cart;
   const tPremium = translations[lang].premiumCheckout;
-  const preparingCheckout = t.preparingCheckout;
 
-  const paymentAvailabilityBase = getPaymentAvailability({
-    hasDeliveryDistrict: hasDeliveryZone,
-    isFormValid: isPaymentUnlocked,
-    isLoading: placing,
-    firstIncompleteHint: undefined,
-    messages: {
-      selectDeliveryArea: t.selectDeliveryAreaPayment,
-      processing: t.processing,
-    },
-  });
-  const paymentAvailability =
-    checkoutSubmissionToken && items.length > 0
-      ? paymentAvailabilityBase
-      : { stripe: { enabled: false, reason: preparingCheckout } };
-
-  const checkoutDisabled = !paymentAvailability.stripe.enabled || placing;
+  const payButtonDisabled = placing || !checkoutSubmissionToken;
+  const payButtonMuted = !isPaymentUnlocked || !hasDeliveryZone;
 
   const deliveryScheduleLine = formatCheckoutStickySchedule(
     delivery,
@@ -277,17 +261,22 @@ export function CartCheckoutView({
         onReferralChange={onReferralChange}
         mayCampaignEligible={mayCampaignEligible}
         highlightSection={highlightSection}
+        highlightMapsLink={highlightMapsLink}
         sectionRefs={sectionRefs}
         onRemoveItem={onRemoveItem}
         onChangeItemQuantity={onChangeItemQuantity}
-        inlineError={orderError}
         paymentSection={
           <div className="co-payment-block">
             <button
               type="button"
-              className="co-payment-btn"
+              className={[
+                'co-payment-btn',
+                payButtonMuted ? 'co-payment-btn--muted' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               onClick={onPay}
-              disabled={checkoutDisabled}
+              disabled={payButtonDisabled}
               aria-busy={placing}
             >
               {placing ? t.creatingCheckout : tPremium.paySecurely}
@@ -314,6 +303,9 @@ export function CartCheckoutView({
               .co-payment-btn:disabled {
                 opacity: 0.55;
                 cursor: not-allowed;
+              }
+              .co-payment-btn--muted:not(:disabled) {
+                opacity: 0.72;
               }
             `}</style>
           </div>

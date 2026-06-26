@@ -45,13 +45,6 @@ export function DeliveryTimeSelector({
     if (specificSelected) setCustomOpen(true);
   }, [specificSelected]);
 
-  useEffect(() => {
-    if (!date || !timeSlot || !now) return;
-    if (isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) return;
-    onChange('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only revalidate when date/time/live clock changes
-  }, [date, timeSlot, now]);
-
   const liveNow = now ?? new Date();
   const minSpecificTime = date ? getMinSpecificDeliveryTimeForDate(date, liveNow) : '09:00';
   const maxSpecificTime = getMaxSpecificDeliveryTime();

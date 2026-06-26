@@ -13,6 +13,7 @@ export function DeliveryAddressFields({
   onChange,
   inputId = 'checkout-delivery-address',
   highlight = false,
+  highlightMapsLink = false,
   labels,
 }: {
   lang: Locale;
@@ -20,6 +21,7 @@ export function DeliveryAddressFields({
   onChange: (v: DeliveryFormValues) => void;
   inputId?: string;
   highlight?: boolean;
+  highlightMapsLink?: boolean;
   labels: {
     addressLabel: string;
     addressPlaceholder: string;
@@ -116,7 +118,9 @@ export function DeliveryAddressFields({
       </div>
 
       <div className="co-field co-field--tight">
-        <div className="co-maps-link-row">
+        <div
+          className={`co-maps-link-row${highlightMapsLink ? ' co-maps-link-row--highlight' : ''}`}
+        >
           <input
             id={`${inputId}-maps-link`}
             type="url"
@@ -242,6 +246,10 @@ export function DeliveryAddressFields({
         }
         .co-maps-link-row:focus-within {
           border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+        }
+        .co-maps-link-row--highlight {
+          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 65%, transparent);
         }
         .co-maps-link-input {
           flex: 1;
