@@ -93,6 +93,7 @@ export interface SupabaseOrderItemRow {
 export interface OrderItemAddOnsDisplay {
   cardType?: 'free' | 'premium' | null;
   wrappingOption?: string | null;
+  paperColor?: string | null;
   cardMessage?: string | null;
   balloonText?: string | null;
 }

@@ -6582,6 +6582,19 @@ a.admin-summary-key-value {
 .admin-addon-row {
   display: inline;
 }
+.admin-addon-row--paper-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-paper-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #d8cfc6;
+  flex-shrink: 0;
+}
 .admin-addon-message {
   font-style: italic;
 }

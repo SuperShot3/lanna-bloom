@@ -177,6 +177,7 @@ export interface SupplierMessageCardSnapshot {
     itemTitle: string;
     cardType?: string | null;
     wrappingOption?: string | null;
+    paperColor?: string | null;
     cardMessage?: string | null;
     balloonText?: string | null;
   }>;
@@ -380,6 +381,7 @@ export function buildSupplierSnapshots(
         itemTitle: nullIfBlank(item.bouquet_title) ?? `รายการที่ ${index + 1}`,
         cardType: nullIfBlank(item.addOns?.cardType),
         wrappingOption: nullIfBlank(item.addOns?.wrappingOption),
+        paperColor: nullIfBlank(item.addOns?.paperColor),
         cardMessage: nullIfBlank(item.addOns?.cardMessage),
         balloonText: nullIfBlank(item.addOns?.balloonText),
       })),

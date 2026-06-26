@@ -8,7 +8,10 @@ import {
   DELIVERY_TIME_SLOTS,
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
-} from '@/components/DeliveryForm';
+  isSpecificDeliveryTime,
+  getMinSpecificDeliveryTimeForDate,
+  getMaxSpecificDeliveryTime,
+} from '@/lib/deliveryTimeSelection';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
 import { getLocalTodayYmd } from '@/lib/localDateYmd';
 
@@ -104,17 +107,20 @@ export function StickyCheckoutBar({
   const touchStartY = useRef(0);
 
   const minDate = getLocalTodayYmd();
-  const timeSlots = DELIVERY_TIME_SLOTS;
+  const timeSlots = DELIVERY_TIME_SLOTS.slice(0, 3);
+  const windowEditSlot = isSpecificDeliveryTime(editTimeSlot) ? '' : editTimeSlot;
+  const specificEditTime = isSpecificDeliveryTime(editTimeSlot) ? editTimeSlot : '';
+  const minSpecificTime = editDate ? getMinSpecificDeliveryTimeForDate(editDate) : '09:00';
+  const maxSpecificTime = getMaxSpecificDeliveryTime();
 
   const openEditSheet = useCallback(() => {
     const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
       ? summary.date
       : minDate;
-    const timeSlot = summary.timeSlot &&
-      timeSlots.includes(summary.timeSlot as typeof timeSlots[number]) &&
-      isDeliveryTimeSlotSelectableForDate(date, summary.timeSlot)
-      ? summary.timeSlot
-      : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
+    const timeSlot =
+      summary.timeSlot && isDeliveryTimeSlotSelectableForDate(date, summary.timeSlot)
+        ? summary.timeSlot
+        : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
     setEditDate(date);
     setEditTimeSlot(timeSlot);
     setEditSheetOpen(true);
@@ -125,11 +131,10 @@ export function StickyCheckoutBar({
     const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
       ? summary.date
       : minDate;
-    const timeSlot = summary.timeSlot &&
-      timeSlots.includes(summary.timeSlot as typeof timeSlots[number]) &&
-      isDeliveryTimeSlotSelectableForDate(date, summary.timeSlot)
-      ? summary.timeSlot
-      : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
+    const timeSlot =
+      summary.timeSlot && isDeliveryTimeSlotSelectableForDate(date, summary.timeSlot)
+        ? summary.timeSlot
+        : getSelectableDeliveryTimeSlotsForDate(date)[0] ?? '';
     setEditDate(date);
     setEditTimeSlot(timeSlot);
   }, [editSheetOpen, summary.date, summary.timeSlot, minDate, timeSlots]);
@@ -473,12 +478,12 @@ export function StickyCheckoutBar({
               </label>
               <select
                 id="sticky-edit-time"
-                value={editTimeSlot}
+                value={windowEditSlot}
                 onChange={(e) => setEditTimeSlot(e.target.value)}
                 className="sticky-checkout-bar__sheet-select"
                 aria-label={labels.selectTimeSlot ?? 'Select time slot'}
               >
-                <option value="" disabled>
+                <option value="">
                   {labels.selectTimeSlot ?? 'Select time slot'}
                 </option>
                 {timeSlots.map((slot) => (
@@ -491,6 +496,26 @@ export function StickyCheckoutBar({
                   </option>
                 ))}
               </select>
+              {specificEditTime ? (
+                <input
+                  type="time"
+                  className="sticky-checkout-bar__sheet-select sticky-checkout-bar__sheet-time"
+                  value={specificEditTime}
+                  min={minSpecificTime}
+                  max={maxSpecificTime}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (!v) {
+                      setEditTimeSlot('');
+                      return;
+                    }
+                    if (isDeliveryTimeSlotSelectableForDate(editDate, v)) {
+                      setEditTimeSlot(v);
+                    }
+                  }}
+                  aria-label={labels.preferredTime ?? 'Preferred time'}
+                />
+              ) : null}
             </div>
             <button
               type="button"
@@ -951,6 +976,10 @@ export function StickyCheckoutBar({
           font-family: inherit;
           color: var(--text);
           background: var(--surface);
+        }
+        .sticky-checkout-bar__sheet-time {
+          margin-top: 8px;
+          padding-right: 12px;
         }
         .sticky-checkout-bar__sheet-save {
           width: 100%;

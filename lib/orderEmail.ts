@@ -10,6 +10,10 @@ import { Resend } from 'resend';
 import { getBaseUrl, getOrderDetailsUrl, getOrderPublicToken, type Order } from '@/lib/orders';
 import { formatInternationalPhoneAdmin } from '@/lib/admin/orderSummaryPlainText';
 import { formatShopDateTime } from '@/lib/shopTime';
+import {
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 import { buildOrderTemplateVariables } from '@/lib/email/variablesFromOrder';
 import { getDefaultSocialLinks, getEmailBrandHeaderHtml, getSocialFooterHtml } from '@/lib/email/socialFooter';
 import type { Locale } from '@/lib/i18n';
@@ -95,6 +99,9 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
     .map((i) => {
       let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
       if (i.addOns?.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
+      if (isSpecificWrappingPaperColor(i.addOns?.paperColor)) {
+        line += ` (Wrapping paper: ${escapeHtml(getWrappingPaperColorLabel(i.addOns.paperColor, 'en'))})`;
+      }
       if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
       if (i.addOns?.balloonText) line += ` — Balloon text: ${escapeHtml(i.addOns.balloonText)}`;
       return line;
@@ -191,6 +198,9 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
     .map((i) => {
       let line = `• ${escapeHtml(i.bouquetTitle)} — ${escapeHtml(i.size)} — ฿${i.price.toLocaleString()}`;
       if (i.addOns?.wrappingOption) line += ` (Wrapping: ${escapeHtml(i.addOns.wrappingOption)})`;
+      if (isSpecificWrappingPaperColor(i.addOns?.paperColor)) {
+        line += ` (Wrapping paper: ${escapeHtml(getWrappingPaperColorLabel(i.addOns.paperColor, 'en'))})`;
+      }
       if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
       if (i.addOns?.balloonText) line += ` — Balloon text: ${escapeHtml(i.addOns.balloonText)}`;
       return line;

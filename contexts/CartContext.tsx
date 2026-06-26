@@ -58,6 +58,8 @@ interface CartContextValue {
   updateItem: (index: number, item: CartItem) => void;
   removeItem: (index: number) => void;
   clearCart: () => void;
+  /** Replace all cart lines atomically (e.g. shared cart import). */
+  replaceItems: (items: CartItem[]) => void;
   /** Persisted draft when cart has no bouquet line yet (synced with PDP + checkout). */
   orderGiftCardMessageDraft: string;
   /** Set order-level gift card message on draft and all bouquet cart lines. */
@@ -149,6 +151,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           p.size.optionId === item.size.optionId &&
           (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim() &&
           (p.addOns.balloonText ?? '').trim() === (item.addOns.balloonText ?? '').trim() &&
+          (p.addOns.paperColor ?? null) === (item.addOns.paperColor ?? null) &&
           JSON.stringify(p.addOns.productAddOns ?? {}) ===
             JSON.stringify(item.addOns.productAddOns ?? {})
       );
@@ -183,6 +186,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setOrderGiftCardMessageDraft('');
   }, []);
 
+  const replaceItems = useCallback((nextItems: CartItem[]) => {
+    setItems(nextItems);
+  }, []);
+
   const setOrderGiftCardMessage = useCallback((message: string) => {
     const clipped = clipOrderGiftCardMessage(message);
     setOrderGiftCardMessageDraft(clipped);
@@ -199,6 +206,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updateItem,
       removeItem,
       clearCart,
+      replaceItems,
       orderGiftCardMessageDraft,
       setOrderGiftCardMessage,
     }),
@@ -210,6 +218,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updateItem,
       removeItem,
       clearCart,
+      replaceItems,
       orderGiftCardMessageDraft,
       setOrderGiftCardMessage,
     ]

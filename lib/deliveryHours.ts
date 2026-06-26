@@ -10,6 +10,9 @@ const START_MIN = 9 * 60;
 /** Half-open: includes 09:00, excludes 20:00 (closed from 20:00). */
 const END_MIN = 20 * 60;
 
+/** Same-day order cutoff in Bangkok (18:00). Orders after this usually deliver next day. */
+export const SAME_DAY_ORDER_CUTOFF_MIN = 18 * 60;
+
 function minutesSinceMidnightInZone(date: Date, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone,
@@ -73,6 +76,17 @@ export function getSameDayDeliveryPhaseBangkok(now: Date): SameDayDeliveryPhase 
   if (t < START_MIN) return 'before';
   if (t < END_MIN) return 'open';
   return 'after';
+}
+
+/** Same-day order cutoff phase for cart banner (Bangkok). */
+export type SameDayOrderCutoffPhase = 'before-cutoff' | 'after-cutoff' | 'before-open' | 'closed';
+
+export function getSameDayOrderCutoffPhaseBangkok(now: Date): SameDayOrderCutoffPhase {
+  const t = minutesSinceMidnightInZone(now, DELIVERY_SHOP_TIMEZONE);
+  if (t < START_MIN) return 'before-open';
+  if (t >= END_MIN) return 'closed';
+  if (t < SAME_DAY_ORDER_CUTOFF_MIN) return 'before-cutoff';
+  return 'after-cutoff';
 }
 
 /** Human-readable tomorrow date in Bangkok (for "next from 09:00" line). */

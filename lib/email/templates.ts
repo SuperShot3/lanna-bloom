@@ -9,6 +9,7 @@ export const EMAIL_TEMPLATE_KEYS = [
   'reminder_3_days',
   'reminder_1_day',
   'newsletter_welcome',
+  'abandoned_checkout',
 ] as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[number];

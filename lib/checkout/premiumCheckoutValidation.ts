@@ -1,5 +1,5 @@
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
-import { isDeliveryTimeSlotSelectableForDate } from '@/components/DeliveryForm';
+import { isDeliveryTimeSlotSelectableForDate } from '@/lib/deliveryTimeSelection';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { isSupportedZone } from '@/lib/delivery/zones';
 import type { ContactPreferenceOption } from '@/lib/orders';
@@ -27,10 +27,23 @@ export type CheckoutFieldIssue = {
   message: string;
 };
 
+/** Minimum manual address length when no valid Google Maps link is present. */
+export const DELIVERY_ADDRESS_MIN_CHARS = 6;
+
+export function isDeliveryAddressSufficient(
+  addressLine: string,
+  deliveryGoogleMapsUrl?: string | null
+): boolean {
+  const manual = addressLine.trim();
+  if (manual.length >= DELIVERY_ADDRESS_MIN_CHARS) return true;
+  const mapsUrl = deliveryGoogleMapsUrl?.trim() ?? '';
+  return mapsUrl.length > 0 && isValidGoogleMapsUrl(mapsUrl);
+}
+
 export function hasDeliveryAddressInput(delivery: DeliveryFormValues): boolean {
   const manual =
     delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
-  return manual.length >= 10;
+  return isDeliveryAddressSufficient(manual, delivery.deliveryGoogleMapsUrl);
 }
 
 /** Soft hint: address entered but no room/floor note for driver. */

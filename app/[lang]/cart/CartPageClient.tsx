@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import Link from 'next/link';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
+import { useSharedCartImport } from '@/hooks/useSharedCartImport';
+import { useCheckoutRecoveryImport } from '@/hooks/useCheckoutRecoveryImport';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
 import {
@@ -58,6 +60,7 @@ import {
   clipCheckoutField,
   sanitizeDeliveryFormValues,
 } from '@/lib/checkout/checkoutFieldLimits';
+import type { RecoveredCartForm } from '@/lib/checkout/recoveredCartForm';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
@@ -67,6 +70,11 @@ import {
   isNonBouquetCartLine,
 } from '@/lib/cart/cartPriceBreakdown';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
+import { CartShareButton } from '@/components/cart/CartShareButton';
+import {
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 import {
   CHECKOUT_COMPLETED_SUBMISSION_TOKEN_SESSION_KEY,
   CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY,
@@ -127,10 +135,18 @@ function balloonTextLabel(t: { balloonTextLabel?: string }): string {
   return t.balloonTextLabel ?? 'Balloon text';
 }
 
-/** Balloon custom text is shown on cart so customers can review it before checkout. */
-function buildAddOnsSummaryForDisplay(item: CartItem, t: { balloonTextLabel?: string }): string {
-  const balloonText = item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
-  return balloonText ? `${balloonTextLabel(t)}: "${balloonText}"` : '';
+function wrappingPaperLabel(t: { wrappingPaperLabel?: string }): string {
+  return t.wrappingPaperLabel ?? 'Wrapping paper';
+}
+
+/** Balloon custom text and bouquet paper color shown on cart for review before checkout. */
+function buildAddOnsSummaryForDisplay(
+  item: CartItem,
+  lang: Locale,
+  t: { balloonTextLabel?: string; wrappingPaperLabel?: string }
+): string {
+  const lines = buildAddOnsSummaryLines(item, lang, t);
+  return lines.join(' · ');
 }
 
 function formatCartItemSizePriceLine(
@@ -151,9 +167,25 @@ function formatCartItemSizePriceLine(
   return `${item.size.label} — ฿${unitDisplayPrice.toLocaleString()}`;
 }
 
-function buildAddOnsSummaryLines(item: CartItem, t: { balloonTextLabel?: string }): string[] {
+function buildAddOnsSummaryLines(
+  item: CartItem,
+  lang: Locale,
+  t: { balloonTextLabel?: string; wrappingPaperLabel?: string }
+): string[] {
+  const lines: string[] = [];
   const balloonText = item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
-  return balloonText ? [`${balloonTextLabel(t)}: "${balloonText}"`] : [];
+  if (balloonText) {
+    lines.push(`${balloonTextLabel(t)}: "${balloonText}"`);
+  }
+  if (
+    (item.itemType ?? 'bouquet') === 'bouquet' &&
+    isSpecificWrappingPaperColor(item.addOns?.paperColor)
+  ) {
+    lines.push(
+      `${wrappingPaperLabel(t)}: ${getWrappingPaperColorLabel(item.addOns.paperColor, lang)}`
+    );
+  }
+  return lines;
 }
 
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
@@ -185,6 +217,22 @@ type StoredCartForm = {
   marketingEmailConsent?: boolean;
   deliveryNotes?: string;
 };
+
+function loadContactPreferenceFromStorage(): ContactPreferenceOption[] {
+  if (typeof window === 'undefined') return ['whatsapp'];
+  try {
+    const raw = localStorage.getItem(CART_FORM_STORAGE_KEY);
+    if (!raw) return ['whatsapp'];
+    const parsed = JSON.parse(raw) as StoredCartForm;
+    if (!parsed || typeof parsed !== 'object') return ['whatsapp'];
+    if (!('contactPreference' in parsed)) return ['whatsapp'];
+    const stored = parsed.contactPreference;
+    if (!Array.isArray(stored)) return ['whatsapp'];
+    return stored.filter((o): o is ContactPreferenceOption => CONTACT_OPTIONS.includes(o));
+  } catch {
+    return ['whatsapp'];
+  }
+}
 
 function loadCartFormFromStorage(): StoredCartForm | null {
   if (typeof window === 'undefined') return null;
@@ -760,16 +808,71 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [recipientPhoneNational, setRecipientPhoneNational] = useState(() => loadCartFormFromStorage()?.recipientPhoneNational ?? '');
   const [isOrderingForSomeoneElse, setIsOrderingForSomeoneElse] = useState(() => loadCartFormFromStorage()?.isOrderingForSomeoneElse ?? false);
   const [surpriseDelivery, setSurpriseDelivery] = useState(() => loadCartFormFromStorage()?.surpriseDelivery ?? false);
-  const [contactPreference, setContactPreference] = useState<ContactPreferenceOption[]>(() => {
-    const stored = loadCartFormFromStorage()?.contactPreference;
-    if (!Array.isArray(stored)) return [];
-    return stored.filter((o): o is ContactPreferenceOption =>
-      CONTACT_OPTIONS.includes(o)
-    );
-  });
+  const [contactPreference, setContactPreference] = useState<ContactPreferenceOption[]>(
+    () => loadContactPreferenceFromStorage()
+  );
   const [lineId, setLineId] = useState(() =>
     sanitizeLineUserIdInput(loadCartFormFromStorage()?.lineId ?? '')
   );
+
+  const applyRecoveredForm = useCallback((form: RecoveredCartForm) => {
+    setDelivery(sanitizeDeliveryFormValues(form.delivery));
+    setCustomerName(clipCheckoutField(form.customerName ?? '', 'customerName'));
+    setCustomerEmail(clipCheckoutField(form.customerEmail ?? '', 'customerEmail'));
+    setCountryCode(form.countryCode || '66');
+    setPhoneNational(
+      clipCheckoutField((form.phoneNational ?? '').replace(/\D/g, ''), 'phoneNational')
+    );
+    setRecipientName(clipCheckoutField(form.recipientName ?? '', 'recipientName'));
+    setRecipientCountryCode(form.recipientCountryCode || '66');
+    setRecipientPhoneNational(
+      clipCheckoutField(
+        (form.recipientPhoneNational ?? '').replace(/\D/g, ''),
+        'recipientPhoneNational'
+      )
+    );
+    setContactPreference(
+      Array.isArray(form.contactPreference) && form.contactPreference.length > 0
+        ? form.contactPreference.filter((o): o is ContactPreferenceOption =>
+            CONTACT_OPTIONS.includes(o)
+          )
+        : ['whatsapp']
+    );
+    setLineId(sanitizeLineUserIdInput(form.lineId ?? ''));
+    setIsOrderingForSomeoneElse(form.isOrderingForSomeoneElse === true);
+    setSurpriseDelivery(form.surpriseDelivery === true);
+    setMarketingEmailConsent(form.marketingEmailConsent === true);
+    saveCartFormToStorage({
+      delivery: sanitizeDeliveryFormValues(form.delivery),
+      customerName: clipCheckoutField(form.customerName ?? '', 'customerName'),
+      customerEmail: clipCheckoutField(form.customerEmail ?? '', 'customerEmail'),
+      countryCode: form.countryCode || '66',
+      phoneNational: clipCheckoutField(
+        (form.phoneNational ?? '').replace(/\D/g, ''),
+        'phoneNational'
+      ),
+      recipientName: clipCheckoutField(form.recipientName ?? '', 'recipientName'),
+      recipientCountryCode: form.recipientCountryCode || '66',
+      recipientPhoneNational: clipCheckoutField(
+        (form.recipientPhoneNational ?? '').replace(/\D/g, ''),
+        'recipientPhoneNational'
+      ),
+      contactPreference:
+        Array.isArray(form.contactPreference) && form.contactPreference.length > 0
+          ? form.contactPreference.filter((o): o is ContactPreferenceOption =>
+              CONTACT_OPTIONS.includes(o)
+            )
+          : ['whatsapp'],
+      lineId: sanitizeLineUserIdInput(form.lineId ?? ''),
+      isOrderingForSomeoneElse: form.isOrderingForSomeoneElse === true,
+      surpriseDelivery: form.surpriseDelivery === true,
+      marketingEmailConsent: form.marketingEmailConsent === true,
+    });
+  }, []);
+
+  useCheckoutRecoveryImport(lang, applyRecoveredForm);
+  useSharedCartImport(lang);
+
   const [noCardMessage, setNoCardMessage] = useState(false);
   const [highlightSection, setHighlightSection] = useState<CheckoutSectionId | null>(null);
   const sectionRefs = {
@@ -829,7 +932,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, [contactPreference, lineId]);
 
   useEffect(() => {
-    if (!addShippingInfoFiredRef.current && items.length > 0 && delivery.addressLine.trim().length >= 10) {
+    if (!addShippingInfoFiredRef.current && items.length > 0 && hasDeliveryAddressInput(delivery)) {
       addShippingInfoFiredRef.current = true;
       const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
       trackAddShippingInfo({
@@ -839,7 +942,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         items: analyticsItems,
       });
     }
-  }, [delivery.addressLine, delivery.deliveryDestination, items, lang]);
+  }, [delivery.addressLine, delivery.deliveryGoogleMapsUrl, delivery.deliveryFormattedAddress, delivery.deliveryDestination, items, lang]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -959,7 +1062,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       );
     }
     const addressTrim = delivery.addressLine?.trim() ?? '';
-    if (addressTrim.length < 10) {
+    if (!hasDeliveryAddressInput(delivery)) {
       return fmt(String(tB.addressLabel ?? 'Address'));
     }
     if (addressTrim.length > 300) {
@@ -1653,6 +1756,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             <StorefrontIcon name="arrow-left" size={18} />
             {t.backToShop}
           </Link>
+          <CartShareButton items={items} lang={lang} />
         </div>
         {destinationChangeNotice && (
           <p className="cart-destination-notice" role="status">
@@ -1793,6 +1897,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-checkout-header {
           margin-bottom: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .cart-checkout-header :global(.cart-share-btn) {
+          flex-shrink: 0;
+          margin-left: auto;
         }
         .cart-destination-notice,
         .cart-expansion-block-notice {

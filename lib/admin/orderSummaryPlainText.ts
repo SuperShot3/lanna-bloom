@@ -11,6 +11,10 @@ import {
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
 import { zoneLabel } from '@/lib/delivery/zones';
+import {
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 
 export type OrderSummaryItemRow = SupabaseOrderItemRow & {
   catalogHref?: string;
@@ -392,6 +396,11 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
       }
       if (item.addOns?.wrappingOption) {
         lines.push(`     Wrapping: ${getWrappingLabel(item.addOns.wrappingOption)}`);
+      }
+      if (isSpecificWrappingPaperColor(item.addOns?.paperColor)) {
+        lines.push(
+          `     Wrapping paper: ${getWrappingPaperColorLabel(item.addOns.paperColor, 'en')}`
+        );
       }
       if (item.catalogHref) {
         lines.push(`     View on shop: ${item.catalogHref}`);

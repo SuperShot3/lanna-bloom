@@ -21,6 +21,7 @@ import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
+import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -34,6 +35,7 @@ export interface CartItemIdentifier {
     cardType: OrderCardType;
     cardMessage: string;
     wrappingOption: OrderWrappingOption;
+    paperColor?: string;
     balloonText?: string;
     productAddOns?: ProductAddOnsSelected;
   };
@@ -49,6 +51,7 @@ export interface ComputedOrderItem {
     cardType: OrderCardType;
     cardMessage: string;
     wrappingOption: OrderWrappingOption;
+    paperColor?: string | null;
     balloonText?: string;
   };
   imageUrl?: string;
@@ -277,6 +280,9 @@ export async function computeOrderTotals(
           cardType: item.addOns?.cardType ?? null,
           cardMessage: item.addOns?.cardMessage?.trim() ?? '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
+          ...(isSpecificWrappingPaperColor(item.addOns?.paperColor) && {
+            paperColor: item.addOns.paperColor,
+          }),
         },
         imageUrl: item.imageUrl,
         bouquetSlug: item.bouquetSlug ?? bouquet.slug,

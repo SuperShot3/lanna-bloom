@@ -14,6 +14,10 @@ import type { ContactPreferenceStored } from '@/lib/orders';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { formatShopDateTime } from '@/lib/shopTime';
+import {
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 
 /** Parse preferredTimeSlot: "2025-02-15 09:00-10:00" -> { date, time } or legacy format. */
 function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
@@ -267,6 +271,11 @@ export function OrderDetailsView({
       if (item.addOns?.wrappingOption) {
         const wrapLabel = getWrappingLabel(item.addOns.wrappingOption, t);
         lines.push(`  ${t.wrapping}: ${wrapLabel}`);
+      }
+      if (isSpecificWrappingPaperColor(item.addOns?.paperColor)) {
+        lines.push(
+          `  ${t.wrappingPaper ?? 'Wrapping paper'}: ${getWrappingPaperColorLabel(item.addOns.paperColor, locale)}`
+        );
       }
       if (item.addOns?.cardMessage?.trim()) {
         lines.push(`  ${t.cardMessage}: ${item.addOns.cardMessage.trim()}`);
@@ -539,6 +548,16 @@ export function OrderDetailsView({
                         <span className="order-details-addon-label">{t.wrapping}:</span>
                         <span className="order-details-addon-value order-details-addon-highlight">
                           {getWrappingLabel(item.addOns.wrappingOption, t)}
+                        </span>
+                      </p>
+                    )}
+                    {isSpecificWrappingPaperColor(item.addOns?.paperColor) && (
+                      <p className="order-details-addon-row">
+                        <span className="order-details-addon-label">
+                          {t.wrappingPaper ?? 'Wrapping paper'}:
+                        </span>
+                        <span className="order-details-addon-value order-details-addon-highlight">
+                          {getWrappingPaperColorLabel(item.addOns.paperColor, locale)}
                         </span>
                       </p>
                     )}

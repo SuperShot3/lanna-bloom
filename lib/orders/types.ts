@@ -14,6 +14,8 @@ export interface OrderItemAddOns {
   cardType: OrderCardType;
   cardMessage: string;
   wrappingOption: OrderWrappingOption;
+  /** Bouquet wrapping-paper color preference (display-only for florists). */
+  paperColor?: string | null;
   /** Optional custom text requested for standalone balloons. */
   balloonText?: string;
 }

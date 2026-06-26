@@ -14,6 +14,7 @@ import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { runStripePostPaymentSuccessHooks } from '@/lib/stripe/postStripePaymentSuccess';
 import { getPaymentIntentStripeFeeMajor } from '@/lib/stripe/getPaymentIntentStripeFeeMajor';
 import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
+import { cancelCheckoutAbandonment } from '@/lib/checkout/abandonedCheckout';
 
 export type FulfillStripeCheckoutResult =
   | { kind: 'order_ready'; orderId: string; order: Order; didCreate: boolean }
@@ -174,8 +175,13 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   const amountTotal = session.amount_total ?? paymentIntent?.amount ?? undefined;
   const currency = session.currency ?? paymentIntent?.currency ?? undefined;
 
+  const markAbandonmentCancelled = () => {
+    void cancelCheckoutAbandonment({ stripeSessionId }).catch(() => {});
+  };
+
   const existingBySession = await getOrderByStripeSessionId(stripeSessionId);
   if (existingBySession?.status === 'paid') {
+    markAbandonmentCancelled();
     return {
       kind: 'order_ready',
       orderId: existingBySession.orderId,
@@ -195,6 +201,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
       trigger,
     });
     if (recovered) {
+      markAbandonmentCancelled();
       return {
         kind: 'order_ready',
         orderId: recovered.orderId,
@@ -219,6 +226,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
       return { kind: 'error', message: 'order_not_found' };
     }
     if (order.status === 'paid') {
+      markAbandonmentCancelled();
       return { kind: 'order_ready', orderId: order.orderId, order, didCreate: false };
     }
 
@@ -234,6 +242,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     if (!updated) {
       return { kind: 'error', message: 'mark_paid_failed' };
     }
+    markAbandonmentCancelled();
     return { kind: 'order_ready', orderId: updated.orderId, order: updated, didCreate: false };
   }
 
@@ -247,6 +256,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   if (!payload && submissionTokenFromMeta) {
     const byToken = await getOrderBySubmissionToken(submissionTokenFromMeta);
     if (byToken?.status === 'paid') {
+      markAbandonmentCancelled();
       return {
         kind: 'order_ready',
         orderId: byToken.orderId,
@@ -259,6 +269,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   if (!payload) {
     const bySessionAgain = await getOrderByStripeSessionId(stripeSessionId);
     if (bySessionAgain) {
+      markAbandonmentCancelled();
       return {
         kind: 'order_ready',
         orderId: bySessionAgain.orderId,
@@ -274,6 +285,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     const existingByToken = await getOrderBySubmissionToken(submissionToken);
     if (existingByToken?.status === 'paid') {
       await deleteCheckoutDraftById(checkoutDraftId);
+      markAbandonmentCancelled();
       return {
         kind: 'order_ready',
         orderId: existingByToken.orderId,
@@ -311,5 +323,6 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     return { kind: 'error', message: 'mark_paid_failed' };
   }
 
+  markAbandonmentCancelled();
   return { kind: 'order_ready', orderId: updated.orderId, order: updated, didCreate: true };
 }

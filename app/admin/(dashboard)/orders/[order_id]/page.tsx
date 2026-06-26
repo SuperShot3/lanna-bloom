@@ -59,7 +59,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
       itemType?: string;
       cost?: number;
       commissionAmount?: number;
-      addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string; balloonText?: string };
+      addOns?: { cardType?: string; wrappingOption?: string; cardMessage?: string; balloonText?: string; paperColor?: string };
     }>;
   } | undefined;
   const jsonItems = jsonPayload?.items ?? [];
@@ -92,6 +92,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
             wrappingOption: jsonItem.addOns.wrappingOption ?? undefined,
             cardMessage: jsonItem.addOns.cardMessage ?? undefined,
             balloonText: jsonItem.addOns.balloonText ?? undefined,
+            paperColor: jsonItem.addOns.paperColor ?? undefined,
           }
         : undefined;
       return { ...item, catalogHref, addOns };

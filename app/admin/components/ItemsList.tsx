@@ -1,6 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { SupabaseOrderItemRow, OrderItemAddOnsDisplay } from '@/lib/supabase/adminQueries';
+import {
+  getWrappingPaperColorHex,
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 
 export interface ItemWithCatalog extends SupabaseOrderItemRow {
   catalogHref?: string;
@@ -117,7 +122,7 @@ export function ItemsList({ items, summary, embedded }: ItemsListProps) {
                   <span>Qty: 1</span>
                   <span>{formatAmount(item.price)}</span>
                 </div>
-                {(item.addOns?.cardType != null || item.addOns?.wrappingOption) && (
+                {(item.addOns?.cardType != null || item.addOns?.wrappingOption || isSpecificWrappingPaperColor(item.addOns?.paperColor)) && (
                   <div className="admin-item-addons">
                     {item.addOns?.cardType != null && (
                       <span className="admin-addon-row">
@@ -127,6 +132,18 @@ export function ItemsList({ items, summary, embedded }: ItemsListProps) {
                     {item.addOns?.wrappingOption && (
                       <span className="admin-addon-row">
                         Wrapping: {getWrappingLabel(item.addOns.wrappingOption)}
+                      </span>
+                    )}
+                    {isSpecificWrappingPaperColor(item.addOns?.paperColor) && (
+                      <span className="admin-addon-row admin-addon-row--paper-color">
+                        Wrapping paper: {getWrappingPaperColorLabel(item.addOns.paperColor, 'en')}
+                        <span
+                          className="admin-paper-color-dot"
+                          style={{
+                            backgroundColor: getWrappingPaperColorHex(item.addOns.paperColor),
+                          }}
+                          aria-hidden
+                        />
                       </span>
                     )}
                   </div>

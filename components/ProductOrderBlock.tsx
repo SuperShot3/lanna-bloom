@@ -27,9 +27,11 @@ import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBen
 import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
 import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
 import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
+import { ProductPaperColorRow } from '@/components/pdp/ProductPaperColorRow';
 import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
+import type { WrappingPaperColorSelection } from '@/lib/wrappingPaperColors';
 import { imageIndexForSizeIndex } from '@/lib/pdpVariantMedia';
 
 export function ProductOrderBlock({
@@ -63,6 +65,7 @@ export function ProductOrderBlock({
     return bouquet.sizes[0];
   });
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
+  const [paperColor, setPaperColor] = useState<WrappingPaperColorSelection>(null);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
@@ -116,7 +119,7 @@ export function ProductOrderBlock({
           selectedSize.imageUrls?.[0] ??
           bouquet.images?.[0],
         size: { ...selectedSize, price: discountedSizePrice },
-        addOns: { ...addOns, cardMessage: giftCardMessage },
+        addOns: { ...addOns, cardMessage: giftCardMessage, paperColor },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
       },
       qty
@@ -213,6 +216,8 @@ export function ProductOrderBlock({
         value={giftCardMessage}
         onChange={setGiftCardMessage}
       />
+
+      <ProductPaperColorRow lang={lang} value={paperColor} onChange={setPaperColor} />
 
       <div className={pdpStyles.qtyRow}>
         <span className={pdpStyles.qtyLabel}>{translations[lang].buyNow.quantity ?? 'Quantity'}</span>

@@ -16,6 +16,7 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import { normalizeLineUserId } from '@/lib/lineUserId';
+import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
 
 function mapWrappingForStripe(
   pref: CartItem['addOns']['wrappingPreference']
@@ -44,6 +45,11 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
     const balloonText = item.itemType === 'balloon'
       ? normalizeBalloonText(item.addOns.balloonText)
       : undefined;
+    const paperColor =
+      (item.itemType ?? 'bouquet') === 'bouquet' &&
+      isSpecificWrappingPaperColor(item.addOns.paperColor)
+        ? item.addOns.paperColor
+        : undefined;
     for (let i = 0; i < qty; i++) {
       rows.push({
         itemType: item.itemType ?? 'bouquet',
@@ -58,6 +64,7 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
           ),
           wrappingOption,
           ...(balloonText && { balloonText }),
+          ...(paperColor && { paperColor }),
           productAddOns: item.addOns.productAddOns,
         },
         imageUrl: item.imageUrl,

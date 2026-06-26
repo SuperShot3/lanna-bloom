@@ -8,6 +8,10 @@ import type {
   SupplierProductSnapshot,
   SupplierResponseType,
 } from '@/lib/supplierRequests';
+import {
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 
 interface SupplierResponseFormProps {
   token: string;
@@ -129,6 +133,7 @@ const UI: Record<
     card: string;
     balloon: string;
     wrap: string;
+    paper: string;
     customCard: string;
     noExtraMessage: string;
     replyHeading: string;
@@ -184,6 +189,7 @@ const UI: Record<
     card: 'การ์ด',
     balloon: 'บอลลูน',
     wrap: 'ห่อ',
+    paper: 'สีกระดาษห่อ',
     customCard: 'การ์ดออเดอร์พิเศษ',
     noExtraMessage: 'ไม่มีข้อความเพิ่มเติม',
     replyHeading: 'ตอบกลับงานนี้',
@@ -238,6 +244,7 @@ const UI: Record<
     card: 'Card',
     balloon: 'Balloon',
     wrap: 'Wrapping',
+    paper: 'Wrapping paper',
     customCard: 'Custom greeting card',
     noExtraMessage: 'No extra message',
     replyHeading: 'Reply to this request',
@@ -537,8 +544,13 @@ export function SupplierResponseForm({
             </p>
           </div>
           <div className="supplier-task-grid-col" aria-label={t.sectionMessage}>
-            {messageCard.cards.some((card) => card.cardMessage || card.balloonText) ||
-            messageCard.customGreetingCard ? (
+            {messageCard.cards.some(
+              (card) =>
+                card.cardMessage ||
+                card.balloonText ||
+                card.wrappingOption ||
+                isSpecificWrappingPaperColor(card.paperColor)
+            ) || messageCard.customGreetingCard ? (
               <>
                 {messageCard.cards.map((card, index) => (
                   <div key={`${card.itemTitle}:${index}`} className="supplier-task-note supplier-task-message-item">
@@ -555,6 +567,11 @@ export function SupplierResponseForm({
                     {card.wrappingOption && (
                       <p className="supplier-task-message-line">
                         {t.wrap}: {card.wrappingOption}
+                      </p>
+                    )}
+                    {isSpecificWrappingPaperColor(card.paperColor) && (
+                      <p className="supplier-task-message-line">
+                        {t.paper}: {getWrappingPaperColorLabel(card.paperColor, lang)}
                       </p>
                     )}
                   </div>

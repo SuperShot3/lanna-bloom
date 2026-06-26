@@ -22,9 +22,14 @@ import {
 } from '@/lib/delivery/zones';
 import { buildStripeCheckoutDraftMetadata } from '@/lib/stripe/metadata';
 import { upsertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
+import { scheduleCheckoutAbandonment } from '@/lib/checkout/abandonedCheckout';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
+import {
+  DELIVERY_ADDRESS_MIN_CHARS,
+  isDeliveryAddressSufficient,
+} from '@/lib/checkout/premiumCheckoutValidation';
 import {
   callingCodeMismatchError,
   normalizeOptionalCallingCodeDigits,
@@ -32,6 +37,10 @@ import {
   thaiFullPhoneHasDuplicateCountryCode,
 } from '@/lib/phoneFieldHints';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
+import {
+  isSpecificWrappingPaperColor,
+  isWrappingPaperColorId,
+} from '@/lib/wrappingPaperColors';
 import { EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
 import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
@@ -68,6 +77,23 @@ function validateStripePayload(
     if (typeof addOns.cardMessage === 'string') {
       cardMessages.push(addOns.cardMessage.trim());
     }
+    const itemTypeRaw = i.itemType;
+    const itemTypeForPaper =
+      itemTypeRaw === 'product'
+        ? 'product'
+        : itemTypeRaw === 'plushyToy'
+          ? 'plushyToy'
+          : itemTypeRaw === 'balloon'
+            ? 'balloon'
+            : 'bouquet';
+    if (addOns.paperColor != null && addOns.paperColor !== '') {
+      if (!isWrappingPaperColorId(addOns.paperColor)) {
+        return { ok: false, message: 'Invalid paperColor value' };
+      }
+      if (itemTypeForPaper !== 'bouquet') {
+        return { ok: false, message: 'paperColor is only allowed for bouquet items' };
+      }
+    }
   }
 
   const delivery = b.delivery;
@@ -84,16 +110,6 @@ function validateStripePayload(
     Boolean(deliveryPlaceId) &&
     typeof deliveryLat === 'number' &&
     typeof deliveryLng === 'number';
-  if (
-    !address ||
-    address.length < 10 ||
-    address.length > CHECKOUT_FIELD_LIMITS.deliveryAddress
-  ) {
-    return {
-      ok: false,
-      message: `delivery.address is required (10–${CHECKOUT_FIELD_LIMITS.deliveryAddress} characters)`,
-    };
-  }
   if (deliveryPlaceId && !hasGooglePlace) {
     return {
       ok: false,
@@ -112,6 +128,18 @@ function validateStripePayload(
     if (!isValidGoogleMapsUrl(deliveryGoogleMapsUrlRaw)) {
       return { ok: false, message: 'delivery.deliveryGoogleMapsUrl must be a valid Google Maps link' };
     }
+  }
+  if (address.length > CHECKOUT_FIELD_LIMITS.deliveryAddress) {
+    return {
+      ok: false,
+      message: `delivery.address exceeds maximum length (${CHECKOUT_FIELD_LIMITS.deliveryAddress})`,
+    };
+  }
+  if (!isDeliveryAddressSufficient(address, deliveryGoogleMapsUrlRaw || undefined)) {
+    return {
+      ok: false,
+      message: `delivery.address is required (${DELIVERY_ADDRESS_MIN_CHARS}–${CHECKOUT_FIELD_LIMITS.deliveryAddress} characters) or a valid Google Maps link`,
+    };
   }
 
   const deliveryNotesRaw = typeof d.notes === 'string' ? d.notes.trim() : '';
@@ -196,6 +224,13 @@ function validateStripePayload(
           ? 'balloon'
         : 'bouquet') as 'bouquet' | 'product' | 'plushyToy' | 'balloon';
     const balloonText = itemType === 'balloon' ? normalizeBalloonText(addOns.balloonText) : undefined;
+    const paperColorRaw = addOns.paperColor;
+    const paperColor =
+      itemType === 'bouquet' &&
+      typeof paperColorRaw === 'string' &&
+      isSpecificWrappingPaperColor(paperColorRaw)
+        ? paperColorRaw
+        : undefined;
     const productAddOnsRaw = addOns.productAddOns;
     const productAddOns =
       productAddOnsRaw && typeof productAddOnsRaw === 'object'
@@ -219,6 +254,7 @@ function validateStripePayload(
                 ? 'no paper'
                 : null,
         ...(balloonText && { balloonText }),
+        ...(paperColor && { paperColor }),
         productAddOns,
       },
       imageUrl: typeof i.imageUrl === 'string' ? i.imageUrl : undefined,
@@ -683,6 +719,20 @@ export async function POST(request: NextRequest) {
       mode: stripeConfig.mode,
       metadata: stripeMetadata,
     });
+
+    if (data.customerEmail?.trim()) {
+      void scheduleCheckoutAbandonment({
+        stripeSessionId: session.id,
+        checkoutDraftId,
+        submissionToken: data.submissionToken,
+        customerEmail: data.customerEmail,
+        customerName: data.customerName,
+        lang: data.lang,
+        payload: orderPayload,
+      }).catch((err) => {
+        console.error('[stripe/create-checkout-session] abandonment schedule failed', err);
+      });
+    }
 
     return NextResponse.json({
       sessionId: session.id,

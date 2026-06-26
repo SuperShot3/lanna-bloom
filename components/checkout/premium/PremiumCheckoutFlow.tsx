@@ -7,14 +7,12 @@ import { translations } from '@/lib/i18n';
 import type { CartItem } from '@/contexts/CartContext';
 import { useCart } from '@/contexts/CartContext';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
-import {
-  DELIVERY_TIME_SLOTS,
-  isDeliveryTimeSlotSelectableForDate,
-} from '@/components/DeliveryForm';
+import { DeliveryTimeSelector } from '@/components/checkout/DeliveryTimeSelector';
 import { DeliveryAddressFields } from '@/components/checkout/DeliveryAddressFields';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
+import { SameDayCutoffBanner } from '@/components/checkout/SameDayCutoffBanner';
 import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/SelectionTile';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
@@ -23,6 +21,10 @@ import { getZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import { isNonBouquetCartLine } from '@/lib/cart/cartPriceBreakdown';
+import {
+  getWrappingPaperColorLabel,
+  isSpecificWrappingPaperColor,
+} from '@/lib/wrappingPaperColors';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { formatThb } from '@/lib/costsUtils';
@@ -30,10 +32,6 @@ import {
   CHECKOUT_FIELD_LIMITS,
   clipCheckoutField,
 } from '@/lib/checkout/checkoutFieldLimits';
-
-const MORNING_SLOT = DELIVERY_TIME_SLOTS[0];
-const MID_AFTERNOON_SLOT = DELIVERY_TIME_SLOTS[1];
-const EVENING_SLOT = DELIVERY_TIME_SLOTS[2];
 
 function formatDestinationLabel(
   profile: CheckoutDeliveryProfile,
@@ -144,14 +142,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const giftMessageTouchStartY = useRef<number | null>(null);
   const zones = getZonesForDestination(delivery.deliveryDestination);
   const destLabel = formatDestinationLabel(deliveryProfile, lang);
-
-  const morningOk =
-    !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, MORNING_SLOT);
-  const middayOk =
-    !delivery.date ||
-    isDeliveryTimeSlotSelectableForDate(delivery.date, MID_AFTERNOON_SLOT);
-  const eveningOk =
-    !delivery.date || isDeliveryTimeSlotSelectableForDate(delivery.date, EVENING_SLOT);
+  const hasGiftMessage = !noCardMessage && cardMessage.trim().length > 0;
+  const giftMessageChipLabel = noCardMessage
+    ? t.noCardMessage
+    : hasGiftMessage
+      ? (t.giftMessageComplete ?? 'Message added')
+      : t.giftMessageTitle;
+  const giftMessageChipActive =
+    cardMessageOpen || noCardMessage || cardMessage.trim().length > 0;
 
   const hideGiftChipsIfHasText = () => {
     if (!noCardMessage && giftMessageDraft.trim()) {
@@ -253,6 +251,22 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             const unit =
               item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
             const display = applyExpansionItemMarkupThb(unit, delivery.deliveryDestination) * qty;
+            const addOnSummaryLines: string[] = [];
+            const balloonText =
+              item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
+            if (balloonText) {
+              addOnSummaryLines.push(
+                `${tCart.balloonTextLabel ?? 'Balloon text'}: "${balloonText}"`
+              );
+            }
+            if (
+              (item.itemType ?? 'bouquet') === 'bouquet' &&
+              isSpecificWrappingPaperColor(item.addOns?.paperColor)
+            ) {
+              addOnSummaryLines.push(
+                `${tCart.wrappingPaperLabel ?? 'Wrapping paper'}: ${getWrappingPaperColorLabel(item.addOns.paperColor, lang)}`
+              );
+            }
             return (
               <div key={`${item.bouquetId}-${index}`} className="co-product-row">
                 {item.imageUrl ? (
@@ -268,6 +282,11 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                     {item.size.label} · {'\u0E3F'}
                     {display.toLocaleString()}
                   </span>
+                  {addOnSummaryLines.map((line) => (
+                    <span key={line} className="co-product-row__addon-note">
+                      {line}
+                    </span>
+                  ))}
                   <span className="co-product-row__dest">
                     {destLabel} {t.deliveryRegionLabel}
                   </span>
@@ -369,6 +388,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         className={sectionClass('deliveryDate')}
       >
         <h2 className="co-section-title">{t.deliveryDateTitle}</h2>
+        {deliveryProfile.variant === 'chiang-mai' && <SameDayCutoffBanner lang={lang} />}
         <DeliveryDateSelector
           lang={lang}
           value={delivery.date}
@@ -383,36 +403,12 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         className={sectionClass('deliveryTime')}
       >
         <h2 className="co-section-title">{t.deliveryTimeTitle}</h2>
-        <div className="co-tile-grid co-tile-grid--time">
-          <SelectionTile
-            compact
-            selected={delivery.timeSlot === MORNING_SLOT}
-            title={t.morningTile}
-            subtitle={t.morningSub}
-            onClick={() => morningOk && onDeliveryChange({ ...delivery, timeSlot: MORNING_SLOT })}
-            className={!morningOk ? 'co-tile--disabled' : ''}
-          />
-          <SelectionTile
-            compact
-            selected={delivery.timeSlot === MID_AFTERNOON_SLOT}
-            title={t.afternoonTile}
-            subtitle={t.afternoonSub}
-            onClick={() =>
-              middayOk && onDeliveryChange({ ...delivery, timeSlot: MID_AFTERNOON_SLOT })
-            }
-            className={!middayOk ? 'co-tile--disabled' : ''}
-          />
-          <SelectionTile
-            compact
-            selected={delivery.timeSlot === EVENING_SLOT}
-            title={t.eveningTile}
-            subtitle={t.eveningSub}
-            onClick={() =>
-              eveningOk && onDeliveryChange({ ...delivery, timeSlot: EVENING_SLOT })
-            }
-            className={!eveningOk ? 'co-tile--disabled' : ''}
-          />
-        </div>
+        <DeliveryTimeSelector
+          lang={lang}
+          date={delivery.date}
+          timeSlot={delivery.timeSlot}
+          onChange={(timeSlot) => onDeliveryChange({ ...delivery, timeSlot })}
+        />
       </section>
 
       <section
@@ -429,7 +425,29 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         data-checkout-section="recipient"
         className={sectionClass('recipient')}
       >
+        <div className="co-opt-in-chip-row">
+          <RecipientOptInToggle
+            showReveal={false}
+            selected={orderingForSomeoneElse}
+            onSelectedChange={(next) => {
+              onOrderingForSomeoneElseChange(next);
+              if (!next) onSurpriseDeliveryChange(false);
+            }}
+            toggleLabel={t.recipientDetailsToggle}
+          />
+          {primaryBouquetIndex(items) >= 0 && (
+            <RecipientOptInToggle
+              showReveal={false}
+              selected={cardMessageOpen}
+              onSelectedChange={setCardMessageOpen}
+              toggleLabel={giftMessageChipLabel}
+              chipActive={giftMessageChipActive}
+              chipComplete={hasGiftMessage}
+            />
+          )}
+        </div>
         <RecipientOptInToggle
+          showChip={false}
           selected={orderingForSomeoneElse}
           onSelectedChange={(next) => {
             onOrderingForSomeoneElseChange(next);
@@ -498,15 +516,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             <p className="co-hint">{t.surpriseHelper}</p>
           </div>
         </RecipientOptInToggle>
-      </section>
-
-      {primaryBouquetIndex(items) >= 0 && (
-        <section className="co-section">
+        {primaryBouquetIndex(items) >= 0 && (
           <RecipientOptInToggle
+            showChip={false}
             selected={cardMessageOpen}
             onSelectedChange={setCardMessageOpen}
-            toggleLabel={noCardMessage ? t.noCardMessage : t.giftMessageTitle}
-            chipActive={cardMessageOpen || noCardMessage || cardMessage.trim().length > 0}
+            toggleLabel={giftMessageChipLabel}
+            chipActive={giftMessageChipActive}
+            chipComplete={hasGiftMessage}
           >
             <div
               className="co-card co-card--pad co-gift-message-card"
@@ -575,8 +592,8 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               </div>
             </div>
           </RecipientOptInToggle>
-        </section>
-      )}
+        )}
+      </section>
 
       <section className="co-section co-price-section">
         <div className="co-card co-card--pad">
@@ -1104,9 +1121,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           }
         }
         .co-product-row__meta,
-        .co-product-row__dest {
+        .co-product-row__dest,
+        .co-product-row__addon-note {
           font-size: 13px;
           color: var(--text-muted);
+        }
+        .co-product-row__addon-note {
+          display: block;
+          margin-top: 2px;
         }
         .co-qty-stepper {
           display: inline-flex;
@@ -1311,6 +1333,13 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         }
         .co-recipient-fields {
           margin-top: 0;
+        }
+        .co-opt-in-chip-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          gap: 10px;
+          margin-bottom: 4px;
         }
         .co-chips {
           display: flex;

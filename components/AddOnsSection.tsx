@@ -7,6 +7,7 @@ import { GiftsCarousel } from '@/components/GiftsCarousel';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
 import { GiftMessageField } from '@/components/pdp/GiftMessageField';
+import type { WrappingPaperColorSelection } from '@/lib/wrappingPaperColors';
 
 export type CardType = 'free' | 'beautiful' | null;
 export type WrappingPreference = 'none' | 'classic' | 'premium' | null;
@@ -15,6 +16,8 @@ export interface AddOnsValues {
   cardType: CardType;
   cardMessage: string;
   wrappingPreference: WrappingPreference;
+  /** Bouquet wrapping-paper color preference (display-only for florists). */
+  paperColor?: WrappingPaperColorSelection;
   /** Custom text to write/print on standalone balloons. */
   balloonText?: string;
   /** Product add-ons (legacy) — kept for cart/order compatibility */
@@ -27,6 +30,7 @@ const defaultAddOns: AddOnsValues = {
   cardType: null,
   cardMessage: '',
   wrappingPreference: null,
+  paperColor: null,
   productAddOns: {},
 };
 

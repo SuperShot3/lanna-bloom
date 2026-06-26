@@ -20,6 +20,18 @@ const stripeOrderStatusStore = new Map<string, { count: number; resetAt: number 
 const STRIPE_ORDER_STATUS_WINDOW_MS = 60 * 1000; // 1 minute
 const STRIPE_ORDER_STATUS_MAX = 30;
 
+const sharedCartCreateStore = new Map<string, { count: number; resetAt: number }>();
+const SHARED_CART_CREATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const SHARED_CART_CREATE_MAX = 10;
+
+const sharedCartReadStore = new Map<string, { count: number; resetAt: number }>();
+const SHARED_CART_READ_WINDOW_MS = 60 * 1000; // 1 minute
+const SHARED_CART_READ_MAX = 30;
+
+const checkoutRecoveryReadStore = new Map<string, { count: number; resetAt: number }>();
+const CHECKOUT_RECOVERY_READ_WINDOW_MS = 60 * 1000; // 1 minute
+const CHECKOUT_RECOVERY_READ_MAX = 30;
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -97,6 +109,60 @@ export function checkNotifyAdminRateLimit(ip: string, orderId: string): boolean 
   }
   entry.count++;
   return entry.count <= NOTIFY_ADMIN_MAX;
+}
+
+export function checkSharedCartCreateRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `create:${ip}`;
+  const entry = sharedCartCreateStore.get(key);
+  if (!entry) {
+    sharedCartCreateStore.set(key, { count: 1, resetAt: now + SHARED_CART_CREATE_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    sharedCartCreateStore.set(key, { count: 1, resetAt: now + SHARED_CART_CREATE_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= SHARED_CART_CREATE_MAX;
+}
+
+export function checkCheckoutRecoveryReadRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `recover:${ip}`;
+  const entry = checkoutRecoveryReadStore.get(key);
+  if (!entry) {
+    checkoutRecoveryReadStore.set(key, {
+      count: 1,
+      resetAt: now + CHECKOUT_RECOVERY_READ_WINDOW_MS,
+    });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    checkoutRecoveryReadStore.set(key, {
+      count: 1,
+      resetAt: now + CHECKOUT_RECOVERY_READ_WINDOW_MS,
+    });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= CHECKOUT_RECOVERY_READ_MAX;
+}
+
+export function checkSharedCartReadRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `read:${ip}`;
+  const entry = sharedCartReadStore.get(key);
+  if (!entry) {
+    sharedCartReadStore.set(key, { count: 1, resetAt: now + SHARED_CART_READ_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    sharedCartReadStore.set(key, { count: 1, resetAt: now + SHARED_CART_READ_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= SHARED_CART_READ_MAX;
 }
 
 export function checkStripeOrderStatusRateLimit(ip: string, sessionId: string): boolean {

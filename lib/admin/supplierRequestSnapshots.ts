@@ -23,6 +23,7 @@ type OrderJsonItem = {
   addOns?: {
     cardType?: string | null;
     wrappingOption?: string | null;
+    paperColor?: string | null;
     cardMessage?: string | null;
     balloonText?: string | null;
   };
@@ -54,6 +55,7 @@ export function resolveSupplierOrderItems(
           wrappingOption: jsonItem.addOns.wrappingOption ?? undefined,
           cardMessage: jsonItem.addOns.cardMessage ?? undefined,
           balloonText: jsonItem.addOns.balloonText ?? undefined,
+          paperColor: jsonItem.addOns.paperColor ?? undefined,
         }
       : undefined;
     return { ...item, addOns };

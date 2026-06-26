@@ -38,7 +38,7 @@ export function ProductGiftMessageRow({
           </span>
           <span>
             <span className={styles.giftRowToggleLabel}>
-              {t.addFreeGiftMessage ?? 'Add a free gift message'}
+              {t.addFreeGiftMessage ?? 'Add a gift message'}
             </span>
             {' '}
             <span className={styles.giftRowOptional}>({t.optional ?? 'Optional'})</span>

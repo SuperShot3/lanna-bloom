@@ -7,38 +7,68 @@ export function RecipientOptInToggle({
   onSelectedChange,
   toggleLabel,
   chipActive,
+  chipComplete,
   children,
   variant = 'premium',
+  showChip = true,
+  showReveal = true,
 }: {
   selected: boolean;
   onSelectedChange: (next: boolean) => void;
   toggleLabel: string;
   /** Chip highlight when collapsed but a choice is saved (defaults to `selected`). */
   chipActive?: boolean;
-  children: ReactNode;
+  /** Green check + compact styling when a gift/card message is already set. */
+  chipComplete?: boolean;
+  children?: ReactNode;
   variant?: 'premium' | 'cart';
+  /** When false, only the expandable panel is rendered (chip lives elsewhere). */
+  showChip?: boolean;
+  /** When false, only the chip is rendered (panel lives elsewhere). */
+  showReveal?: boolean;
 }) {
   const rootClass =
     variant === 'cart' ? 'cart-recipient-opt-in' : 'co-recipient-opt-in';
   const chipOn = chipActive ?? selected;
 
+  if (!showChip && !showReveal) return null;
+
   return (
-    <div className={rootClass}>
-      <button
-        type="button"
-        className={`${rootClass}__chip${chipOn ? ` ${rootClass}__chip--on` : ''}`}
-        onClick={() => onSelectedChange(!selected)}
-        aria-pressed={chipOn}
-        aria-expanded={selected}
-      >
-        {toggleLabel}
-      </button>
-      <div
-        className={`${rootClass}__reveal${selected ? ` ${rootClass}__reveal--open` : ''}`}
-        aria-hidden={!selected}
-      >
-        <div className={`${rootClass}__reveal-inner`}>{children}</div>
-      </div>
+    <div
+      className={`${rootClass}${!showChip ? ` ${rootClass}--reveal-only` : ''}${!showReveal ? ` ${rootClass}--chip-only` : ''}`}
+    >
+      {showChip && (
+        <button
+          type="button"
+          className={`${rootClass}__chip${chipOn ? ` ${rootClass}__chip--on` : ''}${chipComplete ? ` ${rootClass}__chip--complete` : ''}`}
+          onClick={() => onSelectedChange(!selected)}
+          aria-pressed={chipOn}
+          aria-expanded={selected}
+        >
+          {chipComplete ? (
+            <span className={`${rootClass}__chip-check`} aria-hidden>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 13l4 4L19 7"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+          ) : null}
+          <span className={`${rootClass}__chip-label`}>{toggleLabel}</span>
+        </button>
+      )}
+      {showReveal && (
+        <div
+          className={`${rootClass}__reveal${selected ? ` ${rootClass}__reveal--open` : ''}`}
+          aria-hidden={!selected}
+        >
+          <div className={`${rootClass}__reveal-inner`}>{children}</div>
+        </div>
+      )}
       <style jsx>{`
         .co-recipient-opt-in,
         .cart-recipient-opt-in {
@@ -48,11 +78,22 @@ export function RecipientOptInToggle({
           gap: 0;
         }
 
+        .co-recipient-opt-in--chip-only,
+        .cart-recipient-opt-in--chip-only {
+          display: inline-flex;
+        }
+
+        .co-recipient-opt-in--reveal-only,
+        .cart-recipient-opt-in--reveal-only {
+          width: 100%;
+        }
+
         .co-recipient-opt-in__chip,
         .cart-recipient-opt-in__chip {
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          gap: 5px;
           padding: 10px 18px;
           border-radius: 999px;
           border: 1.5px solid var(--border);
@@ -70,6 +111,37 @@ export function RecipientOptInToggle({
             box-shadow 0.2s ease-out,
             color 0.2s ease-out,
             transform 0.15s ease-out;
+        }
+
+        .co-recipient-opt-in__chip-label,
+        .cart-recipient-opt-in__chip-label {
+          white-space: nowrap;
+        }
+
+        .co-recipient-opt-in__chip-check,
+        .cart-recipient-opt-in__chip-check {
+          display: inline-flex;
+          flex-shrink: 0;
+          color: #2e7d52;
+        }
+
+        .co-recipient-opt-in__chip--complete,
+        .cart-recipient-opt-in__chip--complete {
+          padding: 8px 14px;
+          font-size: 14px;
+          font-weight: 600;
+          border-color: #b8dcc4;
+          background: #eef8f1;
+          color: #1e6b45;
+        }
+
+        .co-recipient-opt-in__chip--complete.co-recipient-opt-in__chip--on,
+        .cart-recipient-opt-in__chip--complete.cart-recipient-opt-in__chip--on {
+          padding: 7px 13px;
+          border-color: #2e7d52;
+          background: #e4f4ea;
+          box-shadow: 0 0 0 2px color-mix(in srgb, #2e7d52 18%, transparent);
+          color: #1e6b45;
         }
 
         .co-recipient-opt-in__chip:hover,

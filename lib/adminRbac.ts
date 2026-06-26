@@ -32,6 +32,14 @@ export function canUploadDeliveryProof(role: string | undefined): boolean {
   return role === 'OWNER' || role === 'MANAGER';
 }
 
+export function canViewMarketing(role: string | undefined): boolean {
+  return role === 'OWNER' || role === 'MANAGER';
+}
+
+export function canApplyMarketingAds(role: string | undefined): boolean {
+  return role === 'OWNER';
+}
+
 export type AuthResult =
   | { ok: true; session: { user: { email?: string | null; role?: string } } }
   | { ok: false; response: NextResponse };

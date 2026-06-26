@@ -18,59 +18,18 @@ import {
   CHECKOUT_FIELD_LIMITS,
   clipCheckoutField,
 } from '@/lib/checkout/checkoutFieldLimits';
+import { DELIVERY_ADDRESS_MIN_CHARS } from '@/lib/checkout/premiumCheckoutValidation';
+import {
+  DELIVERY_TIME_SLOTS,
+  getSelectableDeliveryTimeSlotsForDate,
+  isDeliveryTimeSlotSelectableForDate,
+} from '@/lib/deliveryTimeSelection';
 
-/** 4 delivery windows from 09:00 to 20:00. */
-export const DELIVERY_TIME_SLOTS = [
-  '09:00–12:00',  // Morning
-  '12:00–15:00',  // Midday
-  '15:00–18:00',  // Afternoon
-  '18:00–20:00',  // Evening
-] as const;
-
-type DeliveryTimeSlot = typeof DELIVERY_TIME_SLOTS[number];
-
-function minutesSinceMidnightBangkok(date: Date): number {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Bangkok',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  }).formatToParts(date);
-
-  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
-  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
-  return hour * 60 + minute;
-}
-
-function slotEndMinutes(slot: string): number | null {
-  const end = slot.split('–')[1]?.trim();
-  const match = end?.match(/^(\d{2}):(\d{2})$/);
-  if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
-}
-
-export function isDeliveryTimeSlotSelectableForDate(
-  deliveryDate: string,
-  slot: string,
-  now: Date = new Date()
-): boolean {
-  if (!deliveryDate || !slot) return true;
-  if (!DELIVERY_TIME_SLOTS.includes(slot as DeliveryTimeSlot)) return false;
-  if (deliveryDate !== getBangkokYmd(now)) return true;
-
-  const endMinutes = slotEndMinutes(slot);
-  if (endMinutes === null) return false;
-  return endMinutes > minutesSinceMidnightBangkok(now);
-}
-
-export function getSelectableDeliveryTimeSlotsForDate(
-  deliveryDate: string,
-  now: Date = new Date()
-): DeliveryTimeSlot[] {
-  return DELIVERY_TIME_SLOTS.filter((slot) =>
-    isDeliveryTimeSlotSelectableForDate(deliveryDate, slot, now)
-  );
-}
+export {
+  DELIVERY_TIME_SLOTS,
+  getSelectableDeliveryTimeSlotsForDate,
+  isDeliveryTimeSlotSelectableForDate,
+} from '@/lib/deliveryTimeSelection';
 
 export interface DeliveryFormValues {
   addressLine: string;
@@ -258,7 +217,7 @@ export function DeliveryForm({
                   })
                 }
                 placeholder={t.addressPlaceholder}
-                minLength={10}
+                minLength={DELIVERY_ADDRESS_MIN_CHARS}
                 maxLength={CHECKOUT_FIELD_LIMITS.deliveryAddress}
                 rows={2}
                 className="buy-now-input buy-now-textarea"
@@ -267,7 +226,7 @@ export function DeliveryForm({
               />
               <span id="buy-now-address-hint" className="buy-now-address-hint">
                 {value.addressLine.length}/{CHECKOUT_FIELD_LIMITS.deliveryAddress}{' '}
-                {value.addressLine.length > 0 && value.addressLine.length < 10 && (
+                {value.addressLine.length > 0 && value.addressLine.length < DELIVERY_ADDRESS_MIN_CHARS && (
                   <span className="buy-now-address-error"> — {t.addressTooShort}</span>
                 )}
               </span>

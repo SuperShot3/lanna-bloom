@@ -167,7 +167,7 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     bouquetTitle: i.bouquet_title ?? '',
     size: i.size ?? '',
     price: i.price ?? 0,
-    addOns: { cardType: null, cardMessage: '', wrappingOption: null },
+    addOns: { cardType: null, cardMessage: '', wrappingOption: null, paperColor: null },
     imageUrl: i.image_url_snapshot ?? undefined,
   }));
 
