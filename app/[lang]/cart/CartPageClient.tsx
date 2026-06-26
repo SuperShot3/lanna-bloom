@@ -44,6 +44,7 @@ import { CartCheckoutView } from '@/app/[lang]/cart/CartCheckoutView';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import { LineIdFieldReveal } from '@/components/checkout/LineIdFieldReveal';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
+import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 import {
   getFirstCheckoutFieldIssue,
@@ -1493,6 +1494,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const linePreferenceSelected = contactPreference.includes('line');
     const lineIdFormatError =
       linePreferenceSelected && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
+    const showRecoveryEmailConsent = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim());
 
     return (
     <div className={rootClass}>
@@ -1653,7 +1655,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             'Optional — for order confirmation. Check the box below if you want a one-time reminder to finish checkout.'}
         </p>
       </div>
-      {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim()) && (
+      <OverlayReveal
+        open={showRecoveryEmailConsent}
+        className="cart-recovery-email-consent-reveal"
+      >
         <label
           className="cart-marketing-consent"
           htmlFor={`${idPrefix}cart-recovery-email-consent`}
@@ -1664,13 +1669,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             checked={checkoutRecoveryEmailConsent}
             onChange={(e) => setCheckoutRecoveryEmailConsent(e.target.checked)}
             className="cart-marketing-consent-input"
+            disabled={!showRecoveryEmailConsent}
+            tabIndex={showRecoveryEmailConsent ? undefined : -1}
           />
           <span>
             {(t as { checkoutRecoveryEmailConsentLabel?: string }).checkoutRecoveryEmailConsentLabel ??
               "Email me once if I don't finish checkout (optional)"}
           </span>
         </label>
-      )}
+      </OverlayReveal>
       <label className="cart-marketing-consent" htmlFor={`${idPrefix}cart-marketing-consent`}>
         <input
           id={`${idPrefix}cart-marketing-consent`}
@@ -3494,6 +3501,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           height: 14px;
           flex-shrink: 0;
           accent-color: var(--accent);
+        }
+        :global(.cart-recovery-email-consent-reveal.ui-overlay-reveal--open) {
+          margin-top: 6px;
         }
       `}</style>
     </div>
