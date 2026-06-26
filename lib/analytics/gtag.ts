@@ -1,3 +1,5 @@
+import { isAnalyticsAllowed } from '@/lib/analytics/isAnalyticsAllowed';
+
 /**
  * Analytics helpers — GTM dataLayer pushes only.
  *
@@ -25,6 +27,7 @@ const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'develo
  */
 export function pushToDataLayer(eventName: string, params: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') return;
+  if (!isAnalyticsAllowed()) return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event: eventName, ...params });
   if (isDev) console.debug('[pushToDataLayer]', eventName, params);
@@ -208,6 +211,7 @@ export function trackCheckoutPurchase(params: {
   userData?: PurchaseUserData;
 }): Promise<boolean> {
   if (typeof window === 'undefined') return Promise.resolve(false);
+  if (!isAnalyticsAllowed()) return Promise.resolve(false);
 
   const normalizedOrderId = normalizeOrderId(params.orderId);
   const value = toAnalyticsNumber(params.value);

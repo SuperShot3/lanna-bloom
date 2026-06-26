@@ -219,6 +219,7 @@ type StoredCartForm = {
   isOrderingForSomeoneElse?: boolean;
   surpriseDelivery?: boolean;
   marketingEmailConsent?: boolean;
+  checkoutRecoveryEmailConsent?: boolean;
   deliveryNotes?: string;
 };
 
@@ -849,6 +850,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [marketingEmailConsent, setMarketingEmailConsent] = useState(
     () => loadCartFormFromStorage()?.marketingEmailConsent === true
   );
+  const [checkoutRecoveryEmailConsent, setCheckoutRecoveryEmailConsent] = useState(
+    () => loadCartFormFromStorage()?.checkoutRecoveryEmailConsent === true
+  );
   const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
   const [phoneNational, setPhoneNational] = useState(() => loadCartFormFromStorage()?.phoneNational ?? '');
   const [recipientName, setRecipientName] = useState(() => loadCartFormFromStorage()?.recipientName ?? '');
@@ -890,6 +894,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setIsOrderingForSomeoneElse(form.isOrderingForSomeoneElse === true);
     setSurpriseDelivery(form.surpriseDelivery === true);
     setMarketingEmailConsent(form.marketingEmailConsent === true);
+    setCheckoutRecoveryEmailConsent(form.checkoutRecoveryEmailConsent === true);
     saveCartFormToStorage({
       delivery: sanitizeDeliveryFormValues(form.delivery),
       customerName: clipCheckoutField(form.customerName ?? '', 'customerName'),
@@ -915,6 +920,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       isOrderingForSomeoneElse: form.isOrderingForSomeoneElse === true,
       surpriseDelivery: form.surpriseDelivery === true,
       marketingEmailConsent: form.marketingEmailConsent === true,
+      checkoutRecoveryEmailConsent: form.checkoutRecoveryEmailConsent === true,
     });
   }, []);
 
@@ -975,14 +981,24 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       isOrderingForSomeoneElse,
       surpriseDelivery,
       marketingEmailConsent,
+      checkoutRecoveryEmailConsent,
     });
-  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent, checkoutRecoveryEmailConsent]);
 
   useEffect(() => {
     if (!contactPreference.includes('line') && lineId) {
       setLineId('');
     }
   }, [contactPreference, lineId]);
+
+  useEffect(() => {
+    const emailTrim = customerEmail.trim();
+    if (!emailTrim || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+      if (checkoutRecoveryEmailConsent) {
+        setCheckoutRecoveryEmailConsent(false);
+      }
+    }
+  }, [customerEmail, checkoutRecoveryEmailConsent]);
 
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && hasDeliveryAddressInput(delivery)) {
@@ -1227,6 +1243,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         phoneCountryCode: countryCode,
         customerEmail: customerEmail.trim() || undefined,
         ...(marketingEmailConsent ? { marketingEmailConsent: true } : {}),
+        ...(checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
         contactPreference,
         lineId: lineId.trim(),
         submissionToken: checkoutSubmissionToken,
@@ -1633,9 +1650,27 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         />
         <p id={`${idPrefix}cart-email-hint`} className="cart-field-hint">
           {(t as { emailHint?: string }).emailHint ??
-            'Optional — we send your order confirmation here. Leave blank if you do not need it.'}
+            'Optional — for order confirmation. Check the box below if you want a one-time reminder to finish checkout.'}
         </p>
       </div>
+      {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim()) && (
+        <label
+          className="cart-marketing-consent"
+          htmlFor={`${idPrefix}cart-recovery-email-consent`}
+        >
+          <input
+            id={`${idPrefix}cart-recovery-email-consent`}
+            type="checkbox"
+            checked={checkoutRecoveryEmailConsent}
+            onChange={(e) => setCheckoutRecoveryEmailConsent(e.target.checked)}
+            className="cart-marketing-consent-input"
+          />
+          <span>
+            {(t as { checkoutRecoveryEmailConsentLabel?: string }).checkoutRecoveryEmailConsentLabel ??
+              "Email me once if I don't finish checkout (optional)"}
+          </span>
+        </label>
+      )}
       <label className="cart-marketing-consent" htmlFor={`${idPrefix}cart-marketing-consent`}>
         <input
           id={`${idPrefix}cart-marketing-consent`}

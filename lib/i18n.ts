@@ -43,6 +43,16 @@ const baseTranslations = {
       bannerMessageShort: 'Free delivery 19–26 May · ฿2,500+ on flowers',
       bannerAlt: 'Free delivery 19–26 May — spend ฿2,500+ on flowers',
     },
+    cookieBanner: {
+      ariaLabel: 'Cookie consent',
+      messageBeforeLink:
+        'We use cookies and analytics (e.g. Google Analytics via Google Tag Manager) to understand how the site is used and to measure ads. Essential cookies for cart and checkout always run. For analytics and marketing measurement, choose Accept or Decline. See our',
+      privacyLinkLabel: 'Privacy Policy',
+      cookieLinkLabel: 'Cookie Policy',
+      messageAfterLink: 'for details.',
+      acceptLabel: 'Accept',
+      rejectLabel: 'Decline',
+    },
     delivery: {
       title: 'Delivery in Chiang Mai',
       line1: 'Delivery is included with every order.',
@@ -526,7 +536,10 @@ const baseTranslations = {
       contactPhoneRequired: 'Please enter your phone number.',
       emailLabel: 'Email',
       emailPlaceholder: 'e.g. you@example.com',
-      emailHint: 'Optional — we email your order confirmation here. Leave blank if you do not need it.',
+      emailHint:
+        'Optional — for order confirmation. Check the box below if you want a one-time reminder to finish checkout.',
+      checkoutRecoveryEmailConsentLabel:
+        "Email me once if I don't finish checkout (optional)",
       marketingEmailConsentLabel:
         'Email me occasional offers and a review invitation (optional)',
       emailInvalid: 'Please enter a valid email address.',
@@ -1313,6 +1326,16 @@ const baseTranslations = {
       bannerMessageShort: 'ส่งฟรี 19–26 พ.ค. · ดอกไม้ครบ ฿2,500',
       bannerAlt: 'ส่งฟรี 19–26 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
     },
+    cookieBanner: {
+      ariaLabel: 'การยินยอมใช้คุกกี้',
+      messageBeforeLink:
+        'เราใช้คุกกี้และเครื่องมือวิเคราะห์ (เช่น Google Analytics ผ่าน Google Tag Manager) เพื่อทำความเข้าใจการใช้งานเว็บไซต์และวัดผลโฆษณา คุกกี้ที่จำเป็นสำหรับตะกร้าและการชำระเงินจะทำงานเสมอ สำหรับการวิเคราะห์และการตลาด กรุณาเลือก ยอมรับ หรือ ปฏิเสธ ดูรายละเอียดใน',
+      privacyLinkLabel: 'นโยบายความเป็นส่วนตัว',
+      cookieLinkLabel: 'นโยบายคุกกี้',
+      messageAfterLink: '',
+      acceptLabel: 'ยอมรับ',
+      rejectLabel: 'ปฏิเสธ',
+    },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',
       line1: 'การจัดส่งรวมอยู่ในทุกออเดอร์',
@@ -1792,7 +1815,10 @@ const baseTranslations = {
       contactPhoneRequired: 'กรุณากรอกเบอร์โทรศัพท์',
       emailLabel: 'อีเมล',
       emailPlaceholder: 'เช่น you@example.com',
-      emailHint: 'ไม่บังคับ — ใช้ส่งอีเมลยืนยันออเดอร์ ว่างไว้ถ้าไม่ต้องการ',
+      emailHint:
+        'ไม่บังคับ — สำหรับยืนยันคำสั่งซื้อ หากต้องการรับอีเมลเตือนครั้งเดียวเพื่อชำระเงินต่อ ให้ติ๊กช่องด้านล่าง',
+      checkoutRecoveryEmailConsentLabel:
+        'ส่งอีเมลเตือนครั้งเดียวหากยังชำระเงินไม่เสร็จ (ไม่บังคับ)',
       marketingEmailConsentLabel:
         'ส่งอีเมลโปรโมชันและคำเชิญรีวิวเป็นครั้งคราว (ไม่บังคับ)',
       emailInvalid: 'กรุณากรอกอีเมลที่ถูกต้อง',

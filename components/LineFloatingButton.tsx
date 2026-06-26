@@ -34,7 +34,7 @@ export function LineFloatingButton() {
   return (
     <div
       className="
-        fixed right-4 z-[95]
+        fixed right-4 z-[101]
         bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]
         md:right-6 md:bottom-6
       "

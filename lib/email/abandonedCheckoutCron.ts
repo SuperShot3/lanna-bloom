@@ -8,6 +8,7 @@ import { sendOutboxViaResend } from './sendOutboxEmail';
 import { renderTemplate } from './renderTemplate';
 import {
   buildCheckoutRecoveryUrl,
+  buildCheckoutRecoveryUnsubscribeUrl,
   cancelCheckoutAbandonment,
   claimCheckoutAbandonmentEmailSend,
   releaseCheckoutAbandonmentEmailClaim,
@@ -61,13 +62,29 @@ function buildTemplateVariables(row: CheckoutAbandonmentRow): Record<string, str
   const links = getDefaultSocialLinks();
   const lang = row.lang === 'th' ? 'th' : 'en';
   const name = row.customer_name?.trim() || 'there';
+  const unsubscribeToken = row.recovery_unsubscribe_token?.trim() ?? '';
   return {
     customer_name: name,
     cart_restore_url: buildCheckoutRecoveryUrl(lang, row.recovery_token),
+    recovery_unsubscribe_url: unsubscribeToken
+      ? buildCheckoutRecoveryUnsubscribeUrl(unsubscribeToken)
+      : `${base}/checkout-recovery/unsubscribe`,
     website_url: base,
     brand_header: getEmailBrandHeaderHtml(links),
     social_footer: getSocialFooterHtml(links),
   };
+}
+
+async function isCheckoutRecoveryOptedOut(email: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return true;
+  const normalized = email.trim().toLowerCase();
+  const { data } = await supabase
+    .from('checkout_recovery_email_opt_outs')
+    .select('email')
+    .eq('email', normalized)
+    .maybeSingle();
+  return Boolean(data);
 }
 
 /**
@@ -94,7 +111,7 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
   const { data: rows, error } = await supabase
     .from('checkout_abandonments')
     .select(
-      'id, stripe_session_id, submission_token, recovery_token, customer_email, customer_name, lang, payload_json, recovery_email_scheduled_for, recovery_email_sent_at, cancelled_at, expires_at'
+      'id, stripe_session_id, submission_token, recovery_token, recovery_unsubscribe_token, recovery_email_consent, customer_email, customer_name, lang, payload_json, recovery_email_scheduled_for, recovery_email_sent_at, cancelled_at, expires_at'
     )
     .is('recovery_email_sent_at', null)
     .is('cancelled_at', null)
@@ -114,6 +131,18 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
   let skipped = 0;
 
   for (const raw of rows as CheckoutAbandonmentRow[]) {
+    if (raw.recovery_email_consent !== true) {
+      await cancelCheckoutAbandonment({ stripeSessionId: raw.stripe_session_id });
+      skipped += 1;
+      continue;
+    }
+
+    if (await isCheckoutRecoveryOptedOut(raw.customer_email)) {
+      await cancelCheckoutAbandonment({ stripeSessionId: raw.stripe_session_id });
+      skipped += 1;
+      continue;
+    }
+
     const expiresAt = raw.expires_at ? new Date(raw.expires_at) : null;
     if (!expiresAt || expiresAt.getTime() <= Date.now()) {
       await cancelCheckoutAbandonment({ stripeSessionId: raw.stripe_session_id });

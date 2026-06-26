@@ -1,4 +1,8 @@
+'use client';
+
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
+import { useCookieConsent } from '@/contexts/CookieConsentContext';
 
 const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID?.trim();
 const SHOULD_LOAD_CLARITY =
@@ -6,10 +10,15 @@ const SHOULD_LOAD_CLARITY =
 
 /**
  * Microsoft Clarity — session recordings and heatmaps.
- * Loads only in production when NEXT_PUBLIC_CLARITY_PROJECT_ID is set.
+ * Loads only in production after cookie consent is accepted.
  */
 export function MicrosoftClarity() {
+  const pathname = usePathname();
+  const { status, hydrated } = useCookieConsent();
+
+  if (pathname?.startsWith('/admin')) return null;
   if (!SHOULD_LOAD_CLARITY || !CLARITY_ID) return null;
+  if (!hydrated || status !== 'accepted') return null;
 
   return (
     <Script id="microsoft-clarity" strategy="afterInteractive">

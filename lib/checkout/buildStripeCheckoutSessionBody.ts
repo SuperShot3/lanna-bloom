@@ -84,6 +84,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   phoneCountryCode: string;
   customerEmail?: string;
   marketingEmailConsent?: boolean;
+  checkoutRecoveryEmailConsent?: boolean;
   contactPreference: ContactPreferenceOption[];
   /** Required in API when `contactPreference` includes `line`. */
   lineId?: string;
@@ -105,6 +106,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     phoneCountryCode,
     customerEmail,
     marketingEmailConsent,
+    checkoutRecoveryEmailConsent,
     contactPreference,
     lineId,
     submissionToken,
@@ -188,6 +190,10 @@ export function buildStripeCheckoutSessionRequestBody(params: {
 
   if (marketingEmailConsent === true) {
     body.marketingEmailConsent = true;
+  }
+
+  if (checkoutRecoveryEmailConsent === true) {
+    body.checkoutRecoveryEmailConsent = true;
   }
 
   if (contactPreference.includes('line')) {

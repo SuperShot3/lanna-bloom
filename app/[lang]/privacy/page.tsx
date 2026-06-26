@@ -56,6 +56,25 @@ export default function PrivacyPage({ params }: { params: { lang: string } }) {
             : 'We may share data with service providers necessary to operate the service, such as payment, hosting, email, and order management providers.'}
         </p>
 
+        <h2>{isTh ? 'การเตือนการชำระเงิน' : 'Checkout reminders'}</h2>
+        <p>
+          {isTh ? (
+            <>
+              หากคุณติ๊กยินยอมที่หน้าตะกร้าและยังชำระเงินไม่เสร็จ เราอาจส่งอีเมลเตือน{' '}
+              <strong>หนึ่งฉบับ</strong> ภายในประมาณ 30 นาที พร้อมลิงก์เพื่อกู้คืนตะกร้าและรายละเอียดการจัดส่ง
+              ลิงก์จะหมดอายุภายในสามวัน หากชำระเงินสำเร็จแล้ว คุณจะไม่ได้รับอีเมลนี้
+              อีเมลเตือนแต่ละฉบับมีลิงก์ยกเลิกการรับอีเมลเตือนการชำระเงินในอนาคต
+            </>
+          ) : (
+            <>
+              If you opt in at checkout and do not complete payment, we may send{' '}
+              <strong>one</strong> email within about 30 minutes with a link to restore your cart and delivery
+              details. The link expires after three days. If you complete payment, you will not receive this
+              reminder. Each reminder email includes an unsubscribe link to stop future checkout reminders.
+            </>
+          )}
+        </p>
+
         <h2>{isTh ? 'การติดต่อ' : 'Contact'}</h2>
         <p>
           {isTh

@@ -59,6 +59,11 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
           </li>
           <li>
             {isTh
+              ? 'Microsoft Clarity — โหลดเฉพาะหลังจากที่คุณยินยอม (Analytics)'
+              : 'Microsoft Clarity — loaded only after you consent (Analytics).'}
+          </li>
+          <li>
+            {isTh
               ? 'การจัดเก็บตะกร้าใน localStorage (จำเป็นต่อการใช้งาน)'
               : 'Cart storage in localStorage (essential for functionality).'}
           </li>
@@ -68,12 +73,16 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
         <p>
           {isTh ? (
             <>
-              คุณสามารถเปลี่ยนการตั้งค่าคุกกี้ได้ตลอดเวลาโดยคลิก “Cookie settings” ที่ด้านล่างของหน้า หรืออ่านเพิ่มเติมใน{' '}
+              คุณสามารถตั้งค่าคุกกี้ได้เมื่อเข้าเว็บไซต์ครั้งแรกผ่านแถบยินยอมที่ด้านล่างของหน้า
+              หากต้องการเห็นแถบนั้นอีกครั้ง ให้ลบคุกกี้ <code>cookie_consent</code> ในเบราว์เซอร์แล้วโหลดหน้าใหม่
+              อ่านเพิ่มเติมใน{' '}
               <Link href={`/${locale}/privacy`}>นโยบายความเป็นส่วนตัว</Link>.
             </>
           ) : (
             <>
-              You can change your cookie preferences anytime by clicking “Cookie settings” in the footer. For more details, see our{' '}
+              You set your cookie preferences on your first visit via the consent banner at the bottom of the page.
+              To see the banner again, clear the <code>cookie_consent</code> cookie in your browser and reload.
+              For more details, see our{' '}
               <Link href={`/${locale}/privacy`}>Privacy Policy</Link>.
             </>
           )}

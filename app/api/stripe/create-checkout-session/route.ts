@@ -183,6 +183,10 @@ function validateStripePayload(
   }
 
   const marketingEmailConsent = b.marketingEmailConsent === true;
+  const checkoutRecoveryEmailConsent = b.checkoutRecoveryEmailConsent === true;
+  if (checkoutRecoveryEmailConsent && !customerEmail) {
+    return { ok: false, message: 'checkoutRecoveryEmailConsent requires customerEmail' };
+  }
 
   const contactPreferenceRaw = b.contactPreference;
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
@@ -376,6 +380,7 @@ function validateStripePayload(
       phone,
       customerEmail,
       ...(marketingEmailConsent ? { marketingEmailConsent: true } : {}),
+      ...(checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
       contactPreference,
       ...(wantsLineContact && lineIdNormalized ? { lineId: lineIdNormalized } : {}),
       items: cartItems,
@@ -431,6 +436,7 @@ interface StripeCheckoutPayload {
   phoneCountryCode?: string;
   customerEmail?: string;
   marketingEmailConsent?: boolean;
+  checkoutRecoveryEmailConsent?: boolean;
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
   items: CartItemIdentifier[];
@@ -608,6 +614,7 @@ export async function POST(request: NextRequest) {
       ...(data.phoneCountryCode && { phoneCountryCode: data.phoneCountryCode }),
       customerEmail: data.customerEmail,
       ...(data.marketingEmailConsent ? { marketingEmailConsent: true } : {}),
+      ...(data.checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
       contactPreference: data.contactPreference,
       ...(data.lineId ? { lineId: data.lineId } : {}),
       items: totals.items,
@@ -720,7 +727,7 @@ export async function POST(request: NextRequest) {
       metadata: stripeMetadata,
     });
 
-    if (data.customerEmail?.trim()) {
+    if (data.customerEmail?.trim() && data.checkoutRecoveryEmailConsent) {
       void scheduleCheckoutAbandonment({
         stripeSessionId: session.id,
         checkoutDraftId,
@@ -729,6 +736,7 @@ export async function POST(request: NextRequest) {
         customerName: data.customerName,
         lang: data.lang,
         payload: orderPayload,
+        recoveryEmailConsent: true,
       }).catch((err) => {
         console.error('[stripe/create-checkout-session] abandonment schedule failed', err);
       });

@@ -48,6 +48,7 @@ function buildMock(base: string): Record<string, string> {
   logo_url: '',
   social_footer: '',
   cart_restore_url: `${b}/en/cart?recover=demo-recovery-token`,
+  recovery_unsubscribe_url: `${b}/checkout-recovery/unsubscribe?token=demo-recovery-unsub`,
   };
 }
 

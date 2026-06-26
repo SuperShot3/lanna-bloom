@@ -5,6 +5,7 @@ import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { MicrosoftClarity } from '@/components/MicrosoftClarity';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { fontVariables, mulish } from '@/lib/fonts';
 import './globals.css';
@@ -87,14 +88,16 @@ export default function RootLayout({
       </head>
       <body className={`${fontVariables} ${mulish.className}`}>
         <ThemeProvider>
-          <DocumentLangSync />
-          <LoadingScreen />
-          <InternalTrafficBootstrap />
-          <GoogleAnalytics />
-          <MicrosoftClarity />
-          <ViewTransitions>
-            {children}
-          </ViewTransitions>
+          <CookieConsentProvider>
+            <DocumentLangSync />
+            <LoadingScreen />
+            <InternalTrafficBootstrap />
+            <GoogleAnalytics />
+            <MicrosoftClarity />
+            <ViewTransitions>
+              {children}
+            </ViewTransitions>
+          </CookieConsentProvider>
         </ThemeProvider>
       </body>
     </html>

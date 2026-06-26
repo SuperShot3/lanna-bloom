@@ -118,6 +118,8 @@ export interface OrderPayload {
   customerEmail?: string;
   /** Checkout opt-in for offers and review-invitation email (Trustpilot BCC when delivered email is sent). */
   marketingEmailConsent?: boolean;
+  /** Checkout opt-in for a one-time abandoned-checkout recovery reminder email. */
+  checkoutRecoveryEmailConsent?: boolean;
   items: OrderItem[];
   delivery: OrderDelivery;
   pricing: OrderPricing;

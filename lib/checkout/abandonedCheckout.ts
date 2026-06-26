@@ -7,6 +7,8 @@ import { getBaseUrl } from '@/lib/orders';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export const ABANDONED_CHECKOUT_RECOVERY_EXPIRY_DAYS = 3;
+/** Default delay before recovery email (hours). Override with ABANDONED_CHECKOUT_DELAY_HOURS. */
+export const ABANDONED_CHECKOUT_DELAY_HOURS_DEFAULT = 0.5;
 
 function delayHours(): number {
   const raw = process.env.ABANDONED_CHECKOUT_DELAY_HOURS?.trim();
@@ -14,7 +16,7 @@ function delayHours(): number {
     const n = Number(raw);
     if (Number.isFinite(n) && n > 0 && n <= 168) return n;
   }
-  return 3;
+  return ABANDONED_CHECKOUT_DELAY_HOURS_DEFAULT;
 }
 
 export function buildCheckoutRecoveryUrl(lang: string, token: string): string {
@@ -24,7 +26,13 @@ export function buildCheckoutRecoveryUrl(lang: string, token: string): string {
   return `${base}/${locale}/cart?${qs}`;
 }
 
-/** Schedule a recovery email after Stripe session create (requires customer email). */
+export function buildCheckoutRecoveryUnsubscribeUrl(token: string): string {
+  const base = getBaseUrl().replace(/\/$/, '');
+  const qs = new URLSearchParams({ token: token.trim() }).toString();
+  return `${base}/checkout-recovery/unsubscribe?${qs}`;
+}
+
+/** Schedule a recovery email after Stripe session create (requires customer email + opt-in). */
 export async function scheduleCheckoutAbandonment(params: {
   stripeSessionId: string;
   checkoutDraftId: string;
@@ -33,16 +41,24 @@ export async function scheduleCheckoutAbandonment(params: {
   customerName?: string;
   lang: Locale;
   payload: OrderPayload;
+  recoveryEmailConsent: boolean;
   sessionCreatedAt?: Date;
 }): Promise<void> {
   const email = params.customerEmail.trim().toLowerCase();
-  if (!email) return;
+  if (!email || !params.recoveryEmailConsent) return;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     console.warn('[abandonedCheckout] Supabase not configured; skipping schedule');
     return;
   }
+
+  const { data: optedOut } = await supabase
+    .from('checkout_recovery_email_opt_outs')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+  if (optedOut) return;
 
   const sessionCreatedAt = params.sessionCreatedAt ?? new Date();
   const scheduledFor = new Date(sessionCreatedAt.getTime() + delayHours() * 60 * 60 * 1000);
@@ -51,6 +67,7 @@ export async function scheduleCheckoutAbandonment(params: {
       ABANDONED_CHECKOUT_RECOVERY_EXPIRY_DAYS * 24 * 60 * 60 * 1000
   );
   const recoveryToken = nanoid(21);
+  const recoveryUnsubscribeToken = nanoid(21);
   const lang = params.lang === 'th' ? 'th' : 'en';
 
   const { error } = await supabase.from('checkout_abandonments').insert({
@@ -58,6 +75,8 @@ export async function scheduleCheckoutAbandonment(params: {
     checkout_draft_id: params.checkoutDraftId,
     submission_token: params.submissionToken.trim() || null,
     recovery_token: recoveryToken,
+    recovery_unsubscribe_token: recoveryUnsubscribeToken,
+    recovery_email_consent: true,
     customer_email: email,
     customer_name: params.customerName?.trim() || null,
     lang,
@@ -138,6 +157,8 @@ export type CheckoutAbandonmentRow = {
   stripe_session_id: string;
   submission_token: string | null;
   recovery_token: string;
+  recovery_unsubscribe_token: string | null;
+  recovery_email_consent: boolean;
   customer_email: string;
   customer_name: string | null;
   lang: string;

@@ -165,6 +165,7 @@ export function orderPayloadToCartForm(payload: OrderPayload): RecoveredCartForm
     isOrderingForSomeoneElse: hasRecipient,
     surpriseDelivery: delivery.surpriseDelivery ?? false,
     marketingEmailConsent: payload.marketingEmailConsent === true,
+    checkoutRecoveryEmailConsent: payload.checkoutRecoveryEmailConsent === true,
     deliveryNotes: delivery.notes,
   };
 }

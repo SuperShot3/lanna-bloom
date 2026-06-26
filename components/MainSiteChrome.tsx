@@ -8,6 +8,7 @@ import { LineFloatingButton } from '@/components/LineFloatingButton';
 import { MayFreeDeliveryPromoBanner } from '@/components/MayFreeDeliveryPromoBanner';
 import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
+import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner';
 
 export function MainSiteChrome({
   lang,
@@ -51,6 +52,7 @@ export function MainSiteChrome({
       </div>
       <Footer lang={lang} />
       {!isCartRoute && <LineFloatingButton />}
+      <CookieConsentBanner lang={lang} />
     </>
   );
 }

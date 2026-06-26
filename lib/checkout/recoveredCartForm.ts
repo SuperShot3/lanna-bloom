@@ -16,5 +16,6 @@ export type RecoveredCartForm = {
   isOrderingForSomeoneElse?: boolean;
   surpriseDelivery?: boolean;
   marketingEmailConsent?: boolean;
+  checkoutRecoveryEmailConsent?: boolean;
   deliveryNotes?: string;
 };
