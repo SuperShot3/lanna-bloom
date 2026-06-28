@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { CAMPAIGN_BUILDER_PROMPT_VERSION } from './types';
 import type {
   CampaignBrief,
   CampaignDraftRecord,
@@ -21,6 +22,11 @@ type DbRow = {
   selected_asset_resource_names: string[] | null;
   google_ads_resource_names: Record<string, unknown> | null;
   apply_error: string | null;
+  wizard_step: string | null;
+  step_approvals: Record<string, unknown> | null;
+  step_outputs: Record<string, unknown> | null;
+  territory_context: Record<string, unknown> | null;
+  prompt_version: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -38,6 +44,11 @@ function mapRow(row: DbRow): CampaignDraftRecord {
     selectedAssetResourceNames: row.selected_asset_resource_names ?? [],
     googleAdsResourceNames: row.google_ads_resource_names,
     applyError: row.apply_error ?? undefined,
+    wizardStep: row.wizard_step ?? 'location',
+    stepApprovals: (row.step_approvals as CampaignDraftRecord['stepApprovals']) ?? {},
+    stepOutputs: (row.step_outputs as CampaignDraftRecord['stepOutputs']) ?? {},
+    territoryContext: row.territory_context,
+    promptVersion: row.prompt_version ?? CAMPAIGN_BUILDER_PROMPT_VERSION,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -73,10 +84,13 @@ export async function getCampaignDraftById(id: string): Promise<CampaignDraftRec
 
 export async function insertCampaignDraft(input: {
   adminEmail: string;
-  naturalLanguagePrompt: string;
+  naturalLanguagePrompt?: string;
   questionAnswers?: Record<string, unknown>;
   structuredBrief?: CampaignBrief;
   campaignDraft?: SearchCampaignDraft;
+  wizardStep?: string;
+  stepOutputs?: Record<string, unknown>;
+  territoryContext?: Record<string, unknown> | null;
 }): Promise<CampaignDraftRecord> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error('Supabase not configured');
@@ -85,11 +99,16 @@ export async function insertCampaignDraft(input: {
     .from('marketing_campaign_drafts')
     .insert({
       admin_email: input.adminEmail,
-      natural_language_prompt: input.naturalLanguagePrompt,
+      natural_language_prompt: input.naturalLanguagePrompt ?? '',
       question_answers: input.questionAnswers ?? {},
       structured_brief: input.structuredBrief ?? null,
       campaign_draft: input.campaignDraft ?? null,
       status: 'draft',
+      wizard_step: input.wizardStep ?? 'location',
+      step_outputs: input.stepOutputs ?? {},
+      step_approvals: {},
+      territory_context: input.territoryContext ?? null,
+      prompt_version: CAMPAIGN_BUILDER_PROMPT_VERSION,
     })
     .select('*')
     .single();
@@ -101,6 +120,7 @@ export async function insertCampaignDraft(input: {
 export async function updateCampaignDraft(input: {
   id: string;
   status?: CampaignDraftStatus;
+  naturalLanguagePrompt?: string;
   questionAnswers?: Record<string, unknown>;
   structuredBrief?: CampaignBrief | null;
   campaignDraft?: SearchCampaignDraft | null;
@@ -108,6 +128,10 @@ export async function updateCampaignDraft(input: {
   selectedAssetResourceNames?: string[];
   googleAdsResourceNames?: Record<string, unknown> | null;
   applyError?: string | null;
+  wizardStep?: string;
+  stepApprovals?: Record<string, { approvedAt: string; approvedBy: string }>;
+  stepOutputs?: Record<string, unknown>;
+  territoryContext?: Record<string, unknown> | null;
 }): Promise<CampaignDraftRecord | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
@@ -125,6 +149,13 @@ export async function updateCampaignDraft(input: {
     patch.google_ads_resource_names = input.googleAdsResourceNames;
   }
   if (input.applyError !== undefined) patch.apply_error = input.applyError;
+  if (input.wizardStep) patch.wizard_step = input.wizardStep;
+  if (input.naturalLanguagePrompt !== undefined) {
+    patch.natural_language_prompt = input.naturalLanguagePrompt;
+  }
+  if (input.stepApprovals) patch.step_approvals = input.stepApprovals;
+  if (input.stepOutputs) patch.step_outputs = input.stepOutputs;
+  if (input.territoryContext !== undefined) patch.territory_context = input.territoryContext;
 
   const { data, error } = await supabase
     .from('marketing_campaign_drafts')

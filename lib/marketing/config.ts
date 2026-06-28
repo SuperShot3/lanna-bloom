@@ -114,7 +114,7 @@ export const MARKETING_SAFETY = {
   defaultLookbackDays: 14,
   cacheTtlMs: 15 * 60 * 1000,
   llmPromptVersion: 'marketing-v1',
-  campaignBuilderPromptVersion: 'campaign-builder-v1',
+  campaignBuilderPromptVersion: 'campaign-builder-v2-wizard',
 } as const;
 
 export function isAutoApplyEnabled(): boolean {

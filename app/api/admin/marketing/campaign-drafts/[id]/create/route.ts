@@ -34,6 +34,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Draft is incomplete.' }, { status: 400 });
   }
 
+  const isWizard = record.promptVersion === 'campaign-builder-v2-wizard';
+  if (isWizard) {
+    const requiredSteps = ['location', 'audience', 'ad_groups', 'keywords', 'negative_keywords', 'ad_copy'];
+    const missing = requiredSteps.filter((s) => !record.stepApprovals[s]?.approvedAt);
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: 'All wizard steps must be approved before create.', missingSteps: missing },
+        { status: 400 },
+      );
+    }
+  }
+
   let dryRun = false;
   try {
     const body = await request.json().catch(() => ({}));

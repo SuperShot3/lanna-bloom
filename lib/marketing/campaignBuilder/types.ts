@@ -12,9 +12,19 @@ export type CampaignDraftStatus = (typeof CAMPAIGN_DRAFT_STATUSES)[number];
 export const KEYWORD_MATCH_TYPES = ['EXACT', 'PHRASE'] as const;
 export type KeywordMatchType = (typeof KEYWORD_MATCH_TYPES)[number];
 
+export const CAMPAIGN_BUILDER_PROMPT_VERSION = 'campaign-builder-v2-wizard';
+
+export const LOCATION_TARGET_TYPES = ['PRESENCE', 'PRESENCE_OR_INTEREST'] as const;
+export type LocationTargetType = (typeof LOCATION_TARGET_TYPES)[number];
+
 export interface CampaignBrief {
   territory: string;
+  territoryId?: string;
+  marketSlug?: string;
   territoryGeoTargetId?: number;
+  locationTargetType?: LocationTargetType;
+  languageCode?: 'en' | 'th';
+  landingUrl?: string;
   dailyBudgetThb: number;
   campaignGoal?: string;
   finalUrl: string;
@@ -45,6 +55,7 @@ export interface SearchCampaignDraft {
   languageCode: 'en';
   territory: string;
   territoryGeoTargetId: number;
+  locationTargetType?: LocationTargetType;
   dailyBudgetThb: number;
   biddingStrategy: 'MANUAL_CPC' | 'MAXIMIZE_CLICKS';
   adGroups: AdGroupDraft[];
@@ -89,6 +100,11 @@ export interface CampaignDraftRecord {
   selectedAssetResourceNames: string[];
   googleAdsResourceNames: Record<string, unknown> | null;
   applyError?: string;
+  wizardStep: string;
+  stepApprovals: Record<string, { approvedAt: string; approvedBy: string }>;
+  stepOutputs: Record<string, unknown>;
+  territoryContext: Record<string, unknown> | null;
+  promptVersion: string;
   createdAt: string;
   updatedAt: string;
 }

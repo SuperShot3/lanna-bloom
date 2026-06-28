@@ -29,7 +29,7 @@ const INTEGRATIONS: {
     key: 'llm',
     name: 'OpenAI',
     powers: 'Richer AI recommendations and Campaign Builder copy',
-    envVars: 'OPENAI_API_KEY, MARKETING_LLM_MODEL (optional)',
+    envVars: 'OPENAI_API_KEY, MARKETING_LLM_MODEL, MARKETING_CAMPAIGN_BUILDER_STRUCTURE_LLM_MODEL, MARKETING_CAMPAIGN_BUILDER_COPY_LLM_MODEL (optional)',
     optional: true,
   },
   {

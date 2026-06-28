@@ -5,9 +5,10 @@ import { buildDefaultNegativeKeywords } from './negativeKeywords';
 import { mergeBriefFromAnswers } from './questionPlanner';
 import { resolveTerritoryGeoTargetId } from './territories';
 import type { CampaignBrief, SearchCampaignDraft } from './types';
+import { CAMPAIGN_BUILDER_PROMPT_VERSION } from './types';
 import { parseSearchCampaignDraft } from './types';
 
-export const CAMPAIGN_BUILDER_PROMPT_VERSION = 'campaign-builder-v1';
+export { CAMPAIGN_BUILDER_PROMPT_VERSION };
 
 function getClient(): OpenAI | null {
   const apiKey = process.env.OPENAI_API_KEY?.trim();

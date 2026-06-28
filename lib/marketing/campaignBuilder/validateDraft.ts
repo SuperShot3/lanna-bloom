@@ -78,6 +78,15 @@ export function validateCampaignBrief(brief: CampaignBrief): ValidationIssue[] {
     });
   }
 
+  if (brief.locationTargetType && brief.locationTargetType !== 'PRESENCE' && brief.locationTargetType !== 'PRESENCE_OR_INTEREST') {
+    pushIssue(issues, {
+      level: 'error',
+      code: 'invalid_location_target_type',
+      message: 'Location targeting must be PRESENCE or PRESENCE_OR_INTEREST.',
+      field: 'locationTargetType',
+    });
+  }
+
   if (!brief.dailyBudgetThb || brief.dailyBudgetThb <= 0) {
     pushIssue(issues, {
       level: 'error',
@@ -191,9 +200,9 @@ export function validateSearchCampaignDraft(
       validateUnsafeClaims(headline, 'headline', issues);
       if (headline.length > 30) {
         pushIssue(issues, {
-          level: 'warning',
+          level: 'error',
           code: 'headline_too_long',
-          message: `Headline may be truncated: "${headline}" (${headline.length} chars).`,
+          message: `Headline exceeds 30 characters (${headline.length}): "${headline}"`,
           field: 'headline',
         });
       }
@@ -204,9 +213,9 @@ export function validateSearchCampaignDraft(
       validateUnsafeClaims(desc, 'description', issues);
       if (desc.length > 90) {
         pushIssue(issues, {
-          level: 'warning',
+          level: 'error',
           code: 'description_too_long',
-          message: `Description may be truncated: "${desc.slice(0, 40)}..."`,
+          message: `Description exceeds 90 characters (${desc.length}): "${desc.slice(0, 40)}..."`,
           field: 'description',
         });
       }

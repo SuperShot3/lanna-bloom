@@ -49,6 +49,7 @@ export async function createPausedSearchCampaign(
       `dry-run:budget:${draft.dailyBudgetThb}THB`,
       `dry-run:campaign:${draft.campaignName}`,
       `dry-run:location:${draft.territoryGeoTargetId}`,
+      `dry-run:geoTargetType:${draft.locationTargetType ?? 'PRESENCE'}`,
       `dry-run:language:en`,
       ...draft.adGroups.flatMap((g) => [
         `dry-run:adGroup:${g.name}`,
@@ -88,6 +89,13 @@ export async function createPausedSearchCampaign(
       target_search_network: false,
       target_content_network: false,
       target_partner_search_network: false,
+    },
+    geo_target_type_setting: {
+      positive_geo_target_type:
+        draft.locationTargetType === 'PRESENCE_OR_INTEREST'
+          ? enums.PositiveGeoTargetType.PRESENCE_OR_INTEREST
+          : enums.PositiveGeoTargetType.PRESENCE,
+      negative_geo_target_type: enums.NegativeGeoTargetType.PRESENCE,
     },
     contains_eu_political_advertising: enums.EuPoliticalAdvertisingStatus.DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING,
   };

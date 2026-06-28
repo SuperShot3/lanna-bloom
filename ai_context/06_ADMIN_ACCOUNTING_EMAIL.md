@@ -21,16 +21,23 @@ Admin APIs: `app/api/admin/**` — always verify session + RBAC.
 
 Owner-only workflow at `/admin/marketing` → **Campaign Builder** tab:
 
-1. Describe campaign in natural language (English Search only).
-2. Answer follow-up questions (territory, budget, `/en/` landing page).
-3. Review generated draft: keyword groups, negative keywords, ad copy.
-4. Validate / dry run → create **paused** Search campaign in Google Ads.
+**Wizard flow (v2 — expansion-first):**
 
-Server modules: `lib/marketing/campaignBuilder/`  
+1. **Location** — explicit select from supported Thailand markets (Chiang Mai, Phuket, Pattaya, Krabi, Koh Samui, Hua Hin); PRESENCE targeting default.
+2. **Audience + landing URL** — English-first; territory-matched `/en/...` landing page (no AI).
+3. **Ad groups** — 1–3 intent buckets (optional AI / rule fallback).
+4. **Keywords** — exact/phrase only; territory-aware; cross-city blockers.
+5. **Negative keywords** — global + cross-city library first; optional AI extras.
+6. **Ad copy + review/create** — RSA headlines/descriptions, daily budget, validate, create **paused** Search campaign.
+
+Per-step APIs: `POST /campaign-drafts`, `POST/PATCH /campaign-drafts/[id]/steps/[step]`, `POST .../generate`, `POST .../approve`.  
+Legacy single-shot generate (`POST .../generate`) remains for older drafts.
+
+Server modules: `lib/marketing/campaignBuilder/`, wizard in `lib/marketing/campaignBuilder/wizard/`  
 APIs: `app/api/admin/marketing/campaign-drafts/*`, `app/api/admin/marketing/assets`  
-Storage: `marketing_campaign_drafts` (service_role only; migration `20260628120000_marketing_campaign_drafts.sql`)
+Storage: `marketing_campaign_drafts` (wizard columns: `wizard_step`, `step_outputs`, `step_approvals`, `territory_context`)
 
-Safety: English-only copy/keywords, max daily budget (`CAMPAIGN_BUILDER_LIMITS`), owner-only mutations, audit via `marketing_apply_audit`.
+Safety: English-only copy/keywords, PRESENCE geo targeting, max daily budget (`CAMPAIGN_BUILDER_LIMITS`), owner-only mutations, audit via `marketing_apply_audit`.
 
 ## Marketing Diagnostics
 
