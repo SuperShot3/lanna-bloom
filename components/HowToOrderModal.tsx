@@ -1,9 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+
+const DESKTOP_MEDIA = '(min-width: 768px)';
 
 export const HOW_TO_ORDER_INFOGRAPHIC_SRC = '/content/how-to-order-lannabloom.png';
 
@@ -17,11 +20,17 @@ export interface HowToOrderModalProps {
 export function HowToOrderModal({ lang, isOpen, onClose, triggerRef }: HowToOrderModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
   const t = translations[lang].hero;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const desktopQuery = window.matchMedia(DESKTOP_MEDIA);
     closeButtonRef.current?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,18 +39,27 @@ export function HowToOrderModal({ lang, isOpen, onClose, triggerRef }: HowToOrde
         triggerRef?.current?.focus();
       }
     };
+    const syncDesktopChrome = () => {
+      document.body.classList.toggle('how-to-order-modal-open', desktopQuery.matches);
+    };
+
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
+    syncDesktopChrome();
+    desktopQuery.addEventListener('change', syncDesktopChrome);
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      desktopQuery.removeEventListener('change', syncDesktopChrome);
+      document.body.classList.remove('how-to-order-modal-open');
       document.body.style.overflow = '';
       previouslyFocused?.focus();
     };
   }, [isOpen, onClose, triggerRef]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       className="how-to-order-modal"
       role="dialog"
@@ -145,23 +163,37 @@ export function HowToOrderModal({ lang, isOpen, onClose, triggerRef }: HowToOrde
         }
         @media (min-width: 768px) {
           .how-to-order-modal {
-            padding: 20px;
+            padding: 16px;
           }
           .how-to-order-modal-close {
-            top: 20px;
-            right: 20px;
+            top: 16px;
+            right: 16px;
           }
           .how-to-order-modal-stage {
-            width: min(92vw, 980px);
-            max-height: calc(100vh - 40px);
-            max-height: calc(100dvh - 40px);
+            width: auto;
+            max-width: min(78vw, 720px);
+            max-height: calc(100vh - 32px);
+            max-height: calc(100dvh - 32px);
+            transform: scale(0.9);
           }
           .how-to-order-modal-image {
-            max-height: calc(100vh - 40px);
-            max-height: calc(100dvh - 40px);
+            width: auto !important;
+            height: auto !important;
+            max-width: min(78vw, 720px);
+            max-height: calc(100vh - 32px);
+            max-height: calc(100dvh - 32px);
           }
         }
       `}</style>
-    </div>
+      <style jsx global>{`
+        @media (min-width: 768px) {
+          body.how-to-order-modal-open header {
+            visibility: hidden;
+            pointer-events: none;
+          }
+        }
+      `}</style>
+    </div>,
+    document.body
   );
 }
