@@ -1,6 +1,4 @@
-import { readCookieConsent } from '@/lib/cookies/consent';
-
-/** True when the visitor accepted analytics/marketing cookies via the consent banner. */
+/** True on the client under the notice-based analytics model. */
 export function isAnalyticsAllowed(): boolean {
-  return readCookieConsent() === 'accepted';
+  return typeof window !== 'undefined';
 }

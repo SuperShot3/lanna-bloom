@@ -7,8 +7,8 @@ import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 
 export function CookieConsentBanner({ lang }: { lang: Locale }) {
-  const { status, hydrated, accept, reject } = useCookieConsent();
-  const visible = hydrated && status === null;
+  const { status, hydrated, accept } = useCookieConsent();
+  const visible = hydrated && status !== 'accepted';
   const t = lang === 'th' ? translations.th.cookieBanner : translations.en.cookieBanner;
 
   useEffect(() => {
@@ -45,9 +45,6 @@ export function CookieConsentBanner({ lang }: { lang: Locale }) {
           {t.messageAfterLink ? ` ${t.messageAfterLink}` : null}
         </p>
         <div className="cookie-consent-banner__actions">
-          <button type="button" className="cookie-consent-banner__btn cookie-consent-banner__btn--reject" onClick={reject}>
-            {t.rejectLabel}
-          </button>
           <button type="button" className="cookie-consent-banner__btn cookie-consent-banner__btn--accept" onClick={accept}>
             {t.acceptLabel}
           </button>
@@ -118,17 +115,6 @@ export function CookieConsentBanner({ lang }: { lang: Locale }) {
 
         .cookie-consent-banner__btn--accept:hover {
           background: #0f2e28;
-        }
-
-        .cookie-consent-banner__btn--reject {
-          background: transparent;
-          color: #57534e;
-          border-color: rgba(87, 83, 78, 0.35);
-        }
-
-        .cookie-consent-banner__btn--reject:hover {
-          border-color: #57534e;
-          color: #1a3c34;
         }
 
         @media (min-width: 768px) {

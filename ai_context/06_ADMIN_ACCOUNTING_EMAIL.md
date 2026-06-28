@@ -13,8 +13,24 @@ Internal ops surfaces under `/admin`. Requires NextAuth (`AUTH_SECRET`, seeded a
 | Partners | `app/admin/partners/applications` | Approve applications |
 | Email Control Center | `app/admin/(dashboard)/emails/` | Templates, outbox, preview, test send |
 | Settings | `app/admin/(dashboard)/settings/` | Collections, config |
+| Marketing | `app/admin/(dashboard)/marketing/` | Google Ads insights, funnel, recommendations, **Campaign Builder** |
 
 Admin APIs: `app/api/admin/**` — always verify session + RBAC.
+
+## Marketing Campaign Builder
+
+Owner-only workflow at `/admin/marketing` → **Campaign Builder** tab:
+
+1. Describe campaign in natural language (English Search only).
+2. Answer follow-up questions (territory, budget, `/en/` landing page).
+3. Review generated draft: keyword groups, negative keywords, ad copy.
+4. Validate / dry run → create **paused** Search campaign in Google Ads.
+
+Server modules: `lib/marketing/campaignBuilder/`  
+APIs: `app/api/admin/marketing/campaign-drafts/*`, `app/api/admin/marketing/assets`  
+Storage: `marketing_campaign_drafts` (service_role only; migration `20260628120000_marketing_campaign_drafts.sql`)
+
+Safety: English-only copy/keywords, max daily budget (`CAMPAIGN_BUILDER_LIMITS`), owner-only mutations, audit via `marketing_apply_audit`.
 
 ## Accounting model (short)
 

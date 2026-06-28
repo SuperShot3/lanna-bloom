@@ -21,8 +21,8 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
       <div className="prose prose-stone max-w-none">
         <p>
           {isTh
-            ? 'หน้านี้อธิบายว่าเว็บไซต์ใช้คุกกี้และการจัดเก็บข้อมูลบนอุปกรณ์ (เช่น localStorage) อย่างไร และคุณสามารถจัดการการตั้งค่าได้อย่างไร'
-            : 'This page explains how we use cookies and device storage (such as localStorage) and how you can control your preferences.'}
+            ? 'หน้านี้อธิบายว่าเว็บไซต์ใช้คุกกี้และการจัดเก็บข้อมูลบนอุปกรณ์ (เช่น localStorage) อย่างไร เพื่อให้เว็บไซต์ทำงาน วิเคราะห์การใช้งาน ปรับปรุงการสั่งซื้อ และวัดผลการตลาด'
+            : 'This page explains how we use cookies and device storage (such as localStorage) to run the website, understand usage, improve ordering, and measure marketing.'}
         </p>
 
         <h2>{isTh ? 'ประเภทของคุกกี้' : 'Cookie categories'}</h2>
@@ -36,31 +36,31 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
           <li>
             <strong>{isTh ? 'วิเคราะห์ (Analytics)' : 'Analytics'}</strong> —{' '}
             {isTh
-              ? 'ช่วยให้เราเข้าใจการใช้งานเว็บไซต์ (เช่น ผ่าน Google Analytics 4 ผ่าน Google Tag Manager) เปิดใช้งานเฉพาะเมื่อคุณยินยอม'
-              : 'Helps us understand website usage (e.g. Google Analytics 4 via Google Tag Manager). Enabled only with your consent.'}
+              ? 'ช่วยให้เราเข้าใจการใช้งานเว็บไซต์ เช่น หน้าใดมีผู้เข้าชม การคลิก และขั้นตอนที่ลูกค้าออกจากการสั่งซื้อ (เช่น ผ่าน Google Analytics 4 ผ่าน Google Tag Manager)'
+              : 'Helps us understand website usage, such as visited pages, clicks, and where customers leave the ordering flow (e.g. Google Analytics 4 via Google Tag Manager).'}
           </li>
           <li>
             <strong>{isTh ? 'การตลาด (Marketing)' : 'Marketing'}</strong> —{' '}
             {isTh
-              ? 'ใช้เพื่อวัดผลโฆษณาและการทำรีมาร์เก็ตติ้ง (เช่น Google Ads ผ่าน Google Tag Manager) เปิดใช้งานเฉพาะเมื่อคุณยินยอม'
-              : 'Used for ads measurement and remarketing (e.g. Google Ads via Google Tag Manager). Enabled only with your consent.'}
+              ? 'ใช้เพื่อวัดผลโฆษณาและการตลาด (เช่น Google Ads ผ่าน Google Tag Manager) เพื่อช่วยให้เราเข้าใจว่าแคมเปญใดนำไปสู่การสั่งซื้อ'
+              : 'Used for ads and marketing measurement (e.g. Google Ads via Google Tag Manager) so we can understand which campaigns lead to orders.'}
           </li>
         </ul>
 
         <h2>{isTh ? 'สิ่งที่เราใช้บนเว็บไซต์นี้' : 'What we use on this site'}</h2>
         <ul>
           <li>
-            {isTh ? 'Google Tag Manager (GTM) — โหลดเฉพาะหลังจากที่คุณยินยอม (Analytics/Marketing)' : 'Google Tag Manager (GTM) — loaded only after you consent (Analytics/Marketing).'}
+            {isTh ? 'Google Tag Manager (GTM) — ใช้สำหรับโหลดและจัดการเครื่องมือวิเคราะห์/การตลาด' : 'Google Tag Manager (GTM) — used to load and manage analytics/marketing measurement.'}
           </li>
           <li>
             {isTh
-              ? 'Google Consent Mode v2 — ตั้งค่าเริ่มต้นเป็น “ปฏิเสธ” และอัปเดตตามตัวเลือกของคุณ'
-              : 'Google Consent Mode v2 — defaults to “denied” and updates based on your choices.'}
+              ? 'Google Consent Mode v2 — ตั้งค่าเริ่มต้นให้รองรับการวิเคราะห์และการวัดผลโฆษณาตามประกาศคุกกี้นี้'
+              : 'Google Consent Mode v2 — defaults to support analytics and ads measurement under this cookie notice.'}
           </li>
           <li>
             {isTh
-              ? 'Microsoft Clarity — โหลดเฉพาะหลังจากที่คุณยินยอม (Analytics)'
-              : 'Microsoft Clarity — loaded only after you consent (Analytics).'}
+              ? 'Microsoft Clarity — ใช้เพื่อดูฮีตแมปและการบันทึกเซสชันแบบไม่แสดงรหัสผ่านหรือข้อมูลบัตร เพื่อช่วยปรับปรุงประสบการณ์การสั่งซื้อ'
+              : 'Microsoft Clarity — used for heatmaps and session recordings without passwords or card details, helping us improve the ordering experience.'}
           </li>
           <li>
             {isTh
@@ -69,19 +69,21 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
           </li>
         </ul>
 
-        <h2>{isTh ? 'จัดการการตั้งค่า' : 'Manage your preferences'}</h2>
+        <h2>{isTh ? 'ประกาศคุกกี้' : 'Cookie notice'}</h2>
         <p>
           {isTh ? (
             <>
-              คุณสามารถตั้งค่าคุกกี้ได้เมื่อเข้าเว็บไซต์ครั้งแรกผ่านแถบยินยอมที่ด้านล่างของหน้า
-              หากต้องการเห็นแถบนั้นอีกครั้ง ให้ลบคุกกี้ <code>cookie_consent</code> ในเบราว์เซอร์แล้วโหลดหน้าใหม่
+              เมื่อคุณเข้าเว็บไซต์ เราจะแสดงประกาศคุกกี้ที่ด้านล่างของหน้า การใช้งานเว็บไซต์ต่อไปหรือกด OK
+              ถือว่าคุณรับทราบการใช้งานคุกกี้และเครื่องมือวิเคราะห์ตามที่อธิบายในหน้านี้
+              หากต้องการเห็นประกาศอีกครั้ง ให้ลบคุกกี้ <code>cookie_consent</code> ในเบราว์เซอร์แล้วโหลดหน้าใหม่
               อ่านเพิ่มเติมใน{' '}
               <Link href={`/${locale}/privacy`}>นโยบายความเป็นส่วนตัว</Link>.
             </>
           ) : (
             <>
-              You set your cookie preferences on your first visit via the consent banner at the bottom of the page.
-              To see the banner again, clear the <code>cookie_consent</code> cookie in your browser and reload.
+              We show a cookie notice at the bottom of the page when you first visit. By continuing to use the site
+              or clicking OK, you acknowledge our use of cookies and analytics as described here.
+              To see the notice again, clear the <code>cookie_consent</code> cookie in your browser and reload.
               For more details, see our{' '}
               <Link href={`/${locale}/privacy`}>Privacy Policy</Link>.
             </>

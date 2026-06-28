@@ -44,14 +44,13 @@ const baseTranslations = {
       bannerAlt: 'Free delivery 19–26 May — spend ฿2,500+ on flowers',
     },
     cookieBanner: {
-      ariaLabel: 'Cookie consent',
+      ariaLabel: 'Cookie notice',
       messageBeforeLink:
-        'We use cookies and analytics (e.g. Google Analytics via Google Tag Manager) to understand how the site is used and to measure ads. Essential cookies for cart and checkout always run. For analytics and marketing measurement, choose Accept or Decline. See our',
+        'We use cookies and analytics to understand website usage, improve ordering, and measure marketing. By continuing or clicking OK, you acknowledge this use. See our',
       privacyLinkLabel: 'Privacy Policy',
       cookieLinkLabel: 'Cookie Policy',
       messageAfterLink: 'for details.',
-      acceptLabel: 'Accept',
-      rejectLabel: 'Decline',
+      acceptLabel: 'OK',
     },
     delivery: {
       title: 'Delivery in Chiang Mai',
@@ -1327,14 +1326,13 @@ const baseTranslations = {
       bannerAlt: 'ส่งฟรี 19–26 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
     },
     cookieBanner: {
-      ariaLabel: 'การยินยอมใช้คุกกี้',
+      ariaLabel: 'ประกาศเกี่ยวกับคุกกี้',
       messageBeforeLink:
-        'เราใช้คุกกี้และเครื่องมือวิเคราะห์ (เช่น Google Analytics ผ่าน Google Tag Manager) เพื่อทำความเข้าใจการใช้งานเว็บไซต์และวัดผลโฆษณา คุกกี้ที่จำเป็นสำหรับตะกร้าและการชำระเงินจะทำงานเสมอ สำหรับการวิเคราะห์และการตลาด กรุณาเลือก ยอมรับ หรือ ปฏิเสธ ดูรายละเอียดใน',
+        'เราใช้คุกกี้และเครื่องมือวิเคราะห์เพื่อทำความเข้าใจการใช้งานเว็บไซต์ ปรับปรุงขั้นตอนการสั่งซื้อ และวัดผลการตลาด การใช้งานเว็บไซต์ต่อไปหรือกด OK ถือว่าคุณรับทราบการใช้งานนี้ ดูรายละเอียดใน',
       privacyLinkLabel: 'นโยบายความเป็นส่วนตัว',
       cookieLinkLabel: 'นโยบายคุกกี้',
       messageAfterLink: '',
-      acceptLabel: 'ยอมรับ',
-      rejectLabel: 'ปฏิเสธ',
+      acceptLabel: 'OK',
     },
     delivery: {
       title: 'การจัดส่งในเชียงใหม่',

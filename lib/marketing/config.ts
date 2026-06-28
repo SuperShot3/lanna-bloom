@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { MarketingConfigStatus } from './types';
+import { CAMPAIGN_BUILDER_LIMITS } from './campaignBuilder/limits';
 
 function normalizeCustomerId(raw: string | undefined): string | undefined {
   const v = raw?.trim().replace(/-/g, '');
@@ -109,9 +110,11 @@ export const MARKETING_SAFETY = {
   maxBudgetIncreasePercent: 0,
   maxBudgetDecreasePercent: 15,
   maxAutoApplyPerDay: 0,
+  maxNewCampaignDailyBudgetThb: CAMPAIGN_BUILDER_LIMITS.maxNewCampaignDailyBudgetThb,
   defaultLookbackDays: 14,
   cacheTtlMs: 15 * 60 * 1000,
   llmPromptVersion: 'marketing-v1',
+  campaignBuilderPromptVersion: 'campaign-builder-v1',
 } as const;
 
 export function isAutoApplyEnabled(): boolean {

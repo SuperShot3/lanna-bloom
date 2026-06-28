@@ -9,8 +9,9 @@ import type {
   MarketingRecommendation,
   TrackingHealthReport,
 } from '@/lib/marketing/types';
+import { CampaignBuilderTab } from './CampaignBuilderTab';
 
-type Tab = 'ads' | 'funnel' | 'recommendations';
+type Tab = 'ads' | 'funnel' | 'recommendations' | 'campaign-builder';
 
 function fmtThb(n: number) {
   return new Intl.NumberFormat('th-TH', {
@@ -261,15 +262,21 @@ export function MarketingDashboardClient() {
         </div>
       )}
 
-      <div className="admin-tabs" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {(['ads', 'funnel', 'recommendations'] as Tab[]).map((t) => (
+      <div className="admin-tabs" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {(['ads', 'funnel', 'recommendations', 'campaign-builder'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             className={`admin-btn ${tab === t ? 'admin-btn-primary' : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'ads' ? 'Google Ads' : t === 'funnel' ? 'Funnel & tracking' : 'Recommendations'}
+            {t === 'ads'
+              ? 'Google Ads'
+              : t === 'funnel'
+                ? 'Funnel & tracking'
+                : t === 'recommendations'
+                  ? 'Recommendations'
+                  : 'Campaign Builder'}
           </button>
         ))}
       </div>
@@ -474,6 +481,14 @@ export function MarketingDashboardClient() {
             </ul>
           )}
         </section>
+      )}
+
+      {tab === 'campaign-builder' && (
+        <CampaignBuilderTab
+          isOwner={isOwner}
+          googleAdsConfigured={config?.googleAds ?? false}
+          llmConfigured={config?.llm ?? false}
+        />
       )}
     </div>
   );

@@ -31,19 +31,23 @@ export default function PrivacyPage({ params }: { params: { lang: string } }) {
         <ul>
           <li>{isTh ? 'ข้อมูลการติดต่อและการจัดส่ง (ชื่อ เบอร์โทร ที่อยู่ ข้อความการ์ด ฯลฯ)' : 'Contact and delivery details (name, phone, address, card message, etc.).'}</li>
           <li>{isTh ? 'ข้อมูลการสั่งซื้อและการชำระเงิน (ผ่านผู้ให้บริการชำระเงิน เช่น Stripe เมื่อมีการชำระด้วยบัตร)' : 'Order and payment data (via payment providers such as Stripe when paying by card).'}</li>
-          <li>{isTh ? 'ข้อมูลการใช้งานเว็บไซต์ (เมื่อคุณยินยอมคุกกี้วิเคราะห์/การตลาด)' : 'Website usage data (only when you consent to analytics/marketing cookies).'}</li>
+          <li>{isTh ? 'ข้อมูลการใช้งานเว็บไซต์ เช่น หน้าเข้าชม การคลิก ขั้นตอนการสั่งซื้อ และข้อมูลอุปกรณ์/เบราว์เซอร์ เพื่อปรับปรุงเว็บไซต์และวัดผลการตลาด' : 'Website usage data, such as visited pages, clicks, ordering steps, and device/browser information, to improve the site and measure marketing.'}</li>
         </ul>
 
         <h2>{isTh ? 'คุกกี้และการวัดผล' : 'Cookies & measurement'}</h2>
         <p>
           {isTh ? (
             <>
-              เราใช้คุกกี้ที่จำเป็นเพื่อให้เว็บไซต์ทำงานได้ และใช้คุกกี้/การวัดผลเพิ่มเติมเมื่อคุณยินยอม ดูรายละเอียดใน{' '}
+              เราใช้คุกกี้ที่จำเป็นเพื่อให้เว็บไซต์ทำงานได้ และใช้คุกกี้/การวัดผลเพื่อทำความเข้าใจการใช้งานเว็บไซต์
+              ปรับปรุงขั้นตอนการสั่งซื้อ และวัดผลการตลาด เมื่อคุณใช้งานเว็บไซต์ต่อไปหรือกด OK
+              บนประกาศคุกกี้ ถือว่าคุณรับทราบการใช้งานนี้ ดูรายละเอียดใน{' '}
               <Link href={`/${locale}/cookies`}>นโยบายคุกกี้</Link>.
             </>
           ) : (
             <>
-              We use essential cookies to make the site work and only use additional analytics/marketing measurement when you consent. See our{' '}
+              We use essential cookies to make the site work, and we use cookies and analytics to understand website
+              usage, improve ordering, and measure marketing. By continuing to use the site or clicking OK on the
+              cookie notice, you acknowledge this use. See our{' '}
               <Link href={`/${locale}/cookies`}>Cookie Policy</Link>.
             </>
           )}
