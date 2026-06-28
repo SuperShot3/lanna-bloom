@@ -2,7 +2,7 @@
 
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { LocationTargetType } from '@/lib/marketing/campaignBuilder/types';
-import styles from '../CampaignBuilderTab.module.css';
+import styles from '../../CampaignBuilderTab.module.css';
 import { StepShell } from '../StepShell';
 
 export interface TerritoryOption {
