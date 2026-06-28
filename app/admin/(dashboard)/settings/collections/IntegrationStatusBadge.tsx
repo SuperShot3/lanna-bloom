@@ -1,4 +1,4 @@
-export function MarketingStatusBadge({ ok }: { ok: boolean }) {
+export function IntegrationStatusBadge({ ok }: { ok: boolean }) {
   return (
     <span
       style={{

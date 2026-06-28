@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type {
@@ -13,10 +12,18 @@ import type {
 } from '@/lib/marketing/types';
 import { CampaignBuilderTab } from './CampaignBuilderTab';
 import { DiagnosticsPanel, FunnelBar } from './MarketingDiagnostics';
-import { MarketingSetupBanner } from './MarketingSetupBanner';
+import dashStyles from './MarketingDashboard.module.css';
 import styles from './MarketingDiagnostics.module.css';
 
 type Tab = 'diagnostics' | 'ads' | 'funnel' | 'recommendations' | 'campaign-builder';
+
+const TAB_LABELS: Record<Tab, string> = {
+  diagnostics: 'Diagnostics',
+  ads: 'Google Ads',
+  funnel: 'Funnel & tracking',
+  recommendations: 'Recommendations',
+  'campaign-builder': 'Campaign Builder',
+};
 
 function fmtThb(n: number) {
   return new Intl.NumberFormat('th-TH', {
@@ -233,10 +240,6 @@ export function MarketingDashboardClient() {
       <header className="admin-page-header">
         <div>
           <h1 className="admin-page-title">Marketing Insights</h1>
-          <p className="admin-hint">Diagnostics, ads performance, and campaign tools.</p>
-          <Link href="/admin/settings/marketing" className="admin-hint" style={{ display: 'inline-block', marginTop: 4 }}>
-            Setup &amp; integrations →
-          </Link>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <label className="admin-hint">
@@ -254,23 +257,17 @@ export function MarketingDashboardClient() {
         </div>
       </header>
 
-      <div className="admin-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div className={dashStyles.tabBar} role="tablist" aria-label="Marketing sections">
         {(['diagnostics', 'ads', 'funnel', 'recommendations', 'campaign-builder'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
-            className={`admin-btn ${tab === t ? 'admin-btn-primary' : ''}`}
+            role="tab"
+            aria-selected={tab === t}
+            className={`${dashStyles.tab} ${tab === t ? dashStyles.tabActive : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'diagnostics'
-              ? 'Diagnostics'
-              : t === 'ads'
-                ? 'Google Ads'
-                : t === 'funnel'
-                  ? 'Funnel & tracking'
-                  : t === 'recommendations'
-                    ? 'Recommendations'
-                    : 'Campaign Builder'}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
@@ -283,27 +280,19 @@ export function MarketingDashboardClient() {
 
       {loading && <p className="admin-hint">Loading…</p>}
 
-      {tab === 'diagnostics' && (
-        <>
-          {!config?.ga4 && <MarketingSetupBanner integration="ga4" />}
-          {diagnostics && (
-            <DiagnosticsPanel
-              diagnostics={diagnostics}
-              onNavigate={(target) => {
-                setTab(target);
-                if (target === 'ads') setWasteFilterSearchTerms(true);
-              }}
-            />
-          )}
-        </>
+      {tab === 'diagnostics' && diagnostics && (
+        <DiagnosticsPanel
+          diagnostics={diagnostics}
+          onNavigate={(target) => {
+            setTab(target);
+            if (target === 'ads') setWasteFilterSearchTerms(true);
+          }}
+        />
       )}
 
-      {tab === 'ads' && (
+      {tab === 'ads' && overview && (
         <>
-          {!config?.googleAds && <MarketingSetupBanner integration="googleAds" />}
-          {overview && (
-            <>
-              <div className="admin-stats-grid">
+          <div className="admin-stats-grid">
                 <div className="admin-stat-card">
                   <div className="admin-stat-label">Spend</div>
                   <div className="admin-stat-value">{fmtThb(overview.summary.spend)}</div>
@@ -371,31 +360,35 @@ export function MarketingDashboardClient() {
                 wasteFilter={wasteFilterSearchTerms}
                 onWasteFilterChange={setWasteFilterSearchTerms}
               />
-              <MetricTable title="Landing pages" rows={overview.landingPages} nameLabel="URL" />
-            </>
-          )}
+          <MetricTable title="Landing pages" rows={overview.landingPages} nameLabel="URL" />
         </>
       )}
 
-      {tab === 'funnel' && (
+      {tab === 'funnel' && funnel && (
         <>
-          {!config?.ga4 && <MarketingSetupBanner integration="ga4" />}
-          {funnel && (
-            <>
-              <section className="admin-card">
-                <h3 className="admin-section-title">Checkout funnel</h3>
-                <FunnelBar steps={funnel.steps} />
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="admin-table" style={{ width: '100%', fontSize: 14 }}>
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left' }}>Step</th>
-                        <th>Events</th>
-                        <th>From prev</th>
-                        <th>From top</th>
-                        <th>Drop-off %</th>
-                      </tr>
-                    </thead>
+          <section className="admin-card">
+            <h3 className="admin-section-title">Checkout funnel</h3>
+            <p className="admin-hint" style={{ marginTop: 0, marginBottom: 12 }}>
+              GA4 event counts for each checkout step. <strong>Kept from prev step</strong> = % who reached the
+              previous step and continued here. <strong>Kept from start</strong> = % of product viewers who got
+              this far. See Settings → Marketing Insights guide for details.
+            </p>
+            <FunnelBar steps={funnel.steps} />
+            <div style={{ overflowX: 'auto' }}>
+              <table className="admin-table" style={{ width: '100%', fontSize: 14 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left' }}>Step</th>
+                    <th>Events</th>
+                    <th title="% of users who did the previous step and also reached this step">
+                      Kept from prev step
+                    </th>
+                    <th title="% of users who viewed a product (first step) and reached this step">
+                      Kept from start
+                    </th>
+                    <th title="% who dropped off between the previous step and this one">Lost from prev step</th>
+                  </tr>
+                </thead>
                     <tbody>
                       {funnel.steps.map((step) => (
                         <tr key={step.event}>
@@ -418,6 +411,10 @@ export function MarketingDashboardClient() {
               {landingPages && landingPages.pages.length > 0 && (
                 <section className="admin-card" style={{ marginTop: 16 }}>
                   <h3 className="admin-section-title">Paid landing pages (GA4)</h3>
+                  <p className="admin-hint" style={{ marginTop: 0, marginBottom: 12 }}>
+                    First page URL for paid-channel sessions. Yellow <strong>Thai URL</strong> = path uses{' '}
+                    <code>/th/</code> — English Search ads should usually land on <code>/en/</code> pages.
+                  </p>
                   <div style={{ overflowX: 'auto' }}>
                     <table className="admin-table" style={{ width: '100%', fontSize: 14 }}>
                       <thead>
@@ -434,8 +431,11 @@ export function MarketingDashboardClient() {
                             <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {page.landingPage}
                               {page.localeMismatch && (
-                                <span className={styles.localeFlag} title="Thai URL — English campaigns should use /en/">
-                                  /th/ mismatch
+                                <span
+                                  className={styles.localeFlag}
+                                  title="Paid traffic landed on a Thai (/th/) URL. English campaigns should use /en/ final URLs."
+                                >
+                                  Thai URL
                                 </span>
                               )}
                             </td>
@@ -449,8 +449,6 @@ export function MarketingDashboardClient() {
                   </div>
                 </section>
               )}
-            </>
-          )}
         </>
       )}
 
@@ -484,10 +482,7 @@ export function MarketingDashboardClient() {
             <p className="admin-hint">Only owners can approve or apply changes. You can view recommendations.</p>
           )}
           {recommendations.length === 0 ? (
-            <p className="admin-hint">
-              No recommendations yet.
-              {config?.googleAds ? ' Use Generate recommendations above.' : ' Connect Google Ads in settings first.'}
-            </p>
+            <p className="admin-hint">No recommendations yet.</p>
           ) : (
             <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
               {recommendations.map((rec) => (
@@ -553,14 +548,11 @@ export function MarketingDashboardClient() {
       )}
 
       {tab === 'campaign-builder' && (
-        <>
-          {!config?.googleAds && <MarketingSetupBanner integration="googleAds" />}
-          <CampaignBuilderTab
-            isOwner={isOwner}
-            googleAdsConfigured={config?.googleAds ?? false}
-            llmConfigured={config?.llm ?? false}
-          />
-        </>
+        <CampaignBuilderTab
+          isOwner={isOwner}
+          googleAdsConfigured={config?.googleAds ?? false}
+          llmConfigured={config?.llm ?? false}
+        />
       )}
     </div>
   );

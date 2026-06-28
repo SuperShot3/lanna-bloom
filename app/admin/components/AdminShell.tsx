@@ -136,19 +136,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               href="/admin/settings/collections"
               prefetch={false}
               className="admin-shell-nav-link admin-shell-nav-link-info"
-              title={sidebarCollapsed ? 'Collection settings' : undefined}
+              title={sidebarCollapsed ? 'Settings' : undefined}
             >
               <span className="material-symbols-outlined admin-shell-icon">settings</span>
-              <span className="admin-shell-nav-label">Collection settings</span>
-            </Link>
-            <Link
-              href="/admin/settings/marketing"
-              prefetch={false}
-              className="admin-shell-nav-link admin-shell-nav-link-info"
-              title={sidebarCollapsed ? 'Marketing settings' : undefined}
-            >
-              <span className="material-symbols-outlined admin-shell-icon">campaign</span>
-              <span className="admin-shell-nav-label">Marketing settings</span>
+              <span className="admin-shell-nav-label">Settings</span>
             </Link>
             <a
               href="/api/auth/signout?callbackUrl=/admin/login"
@@ -185,8 +176,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               href="/admin/settings/collections"
               prefetch={false}
               className="admin-shell-header-logout"
-              aria-label="Collection settings"
-              title="Collection settings"
+              aria-label="Settings"
+              title="Settings"
             >
               <span className="material-symbols-outlined admin-shell-icon">settings</span>
               <span>Settings</span>

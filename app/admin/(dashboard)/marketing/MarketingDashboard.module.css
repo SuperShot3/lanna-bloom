@@ -1,0 +1,54 @@
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: rgba(45, 71, 62, 0.06);
+  border: 1px solid rgba(45, 71, 62, 0.1);
+  border-radius: 12px;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tab:hover:not(.tabActive) {
+  color: #2d473e;
+  background: rgba(45, 71, 62, 0.06);
+}
+
+.tabActive {
+  background: #fff;
+  color: #2d473e;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(45, 71, 62, 0.12);
+}
+
+.tab:focus-visible {
+  outline: 2px solid #2d473e;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .tabBar {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
