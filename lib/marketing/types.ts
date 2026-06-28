@@ -66,6 +66,66 @@ export interface FunnelStep {
   count: number;
   dropoffFromPrevious: number | null;
   dropoffRateFromPrevious: number | null;
+  rateFromPrevious: number | null;
+  rateFromTop: number | null;
+}
+
+export interface PaidLandingPageRow {
+  landingPage: string;
+  sessions: number;
+  addToCart: number;
+  purchases: number;
+  localeMismatch?: boolean;
+}
+
+export interface PaidLandingPagesReport {
+  dateFrom: string;
+  dateTo: string;
+  pages: PaidLandingPageRow[];
+}
+
+export type DiagnosticsVerdictCode =
+  | 'tracking_ads'
+  | 'traffic_no_engagement'
+  | 'checkout_friction'
+  | 'purchase_tag_broken'
+  | 'paid_underperforms'
+  | 'healthy';
+
+export interface DiagnosticsMetrics {
+  paidOrderCount: number;
+  paidOrderRevenue: number;
+  ga4Purchases: number;
+  adsConversions: number | null;
+  adsSpend: number | null;
+  adsClicks: number | null;
+  adsImpressions: number | null;
+  funnelEventCounts: Record<string, number>;
+  paidSessions: number;
+  organicSessions: number;
+  paidPurchaseRate: number | null;
+  organicPurchaseRate: number | null;
+}
+
+export interface DiagnosticsVerdict {
+  code: DiagnosticsVerdictCode;
+  severity: 'ok' | 'warn' | 'error';
+  title: string;
+  message: string;
+  nextSteps: string[];
+}
+
+export interface DiagnosticsReport {
+  dateFrom: string;
+  dateTo: string;
+  metrics: DiagnosticsMetrics;
+  verdict: DiagnosticsVerdict;
+  checks: TrackingHealthCheck[];
+  configured: {
+    ga4: boolean;
+    googleAds: boolean;
+    supabase: boolean;
+  };
 }
 
 export interface FunnelReport {

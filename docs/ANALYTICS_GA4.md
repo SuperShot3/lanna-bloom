@@ -259,3 +259,33 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 - `components/StickyHomeCta.tsx`
 - `components/HomeBottomCta.tsx`
 - `components/LanguageSwitcher.tsx`
+
+## Using admin Diagnostics
+
+The **Diagnostics** tab at `/admin/marketing` compares three sources of truth for the selected period:
+
+| Card | Source | What it means |
+|------|--------|----------------|
+| Paid orders | Supabase `orders` (`payment_status = PAID`, `paid_at` in range) | Real revenue — authoritative |
+| GA4 purchases | GA4 Data API `purchase` event count | Browser tracking via GTM |
+| Google Ads conversions | Google Ads API | Attribution window may differ from orders |
+| Ad spend + clicks | Google Ads API | Traffic volume |
+
+The **verdict banner** flags likely causes: broken Ads conversion tag, landing-page mismatch, checkout drop-off, missing purchase event, or paid traffic underperforming organic.
+
+**Tracking health** checks mirror funnel zeros and GA4 purchases vs Supabase paid orders (~85% alignment is healthy).
+
+### Manual checklist before trusting diagnostics
+
+Code cannot fix tracking alone. Confirm in GTM / Ads / GA4 UI:
+
+| Area | Check |
+|------|-------|
+| GTM | `NEXT_PUBLIC_GTM_ID` matches production container; **purchase** trigger is Custom Event `purchase` (not URL contains checkout); optional AND Page Path `/lanna-order-thank-you`; funnel event tags for `view_item`, `add_to_cart`, `view_cart`, `begin_checkout`, `add_shipping_info`, `add_payment_info`; one GA4 + one Ads tag on `purchase` |
+| Google Ads | Purchase conversion linked to GTM; marked **Primary**; English campaigns use `/en/` final URLs |
+| GA4 | Service account has Viewer on property; `purchase` marked key event; Realtime shows test purchase |
+| Production test | GTM does not load locally; complete test order → thank-you page → check `lanna_purchase_fired_<orderId>` in localStorage |
+
+If diagnostics says tracking is broken but GTM looks fine: test in production, disable ad blockers, confirm customer reaches `/lanna-order-thank-you?session_id=…` after Stripe.
+
+See also [GOOGLE_ADS_PURCHASE_CONVERSION.md](./GOOGLE_ADS_PURCHASE_CONVERSION.md).

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDaysParam, requireMarketingView } from '@/lib/marketing/adminApi';
 import { isGa4Configured } from '@/lib/marketing/config';
-import { fetchFunnelReport, fetchPaidLandingPages } from '@/lib/marketing/ga4Client';
+import { fetchDiagnosticsReport } from '@/lib/marketing/diagnostics';
 
 export async function GET(request: NextRequest) {
   const auth = await requireMarketingView();
@@ -20,13 +20,10 @@ export async function GET(request: NextRequest) {
   const days = parseDaysParam(request.nextUrl.searchParams.get('days'));
 
   try {
-    const [funnel, landingPages] = await Promise.all([
-      fetchFunnelReport(days),
-      fetchPaidLandingPages(days).catch(() => null),
-    ]);
-    return NextResponse.json({ funnel, landingPages });
+    const diagnostics = await fetchDiagnosticsReport(days);
+    return NextResponse.json({ diagnostics });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch GA4 funnel data';
+    const message = error instanceof Error ? error.message : 'Failed to fetch diagnostics';
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

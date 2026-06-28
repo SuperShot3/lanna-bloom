@@ -1,8 +1,69 @@
 import 'server-only';
 
 import { MARKETING_SAFETY } from '../config';
-import type { AdsOverview, MarketingRecommendation, PerformanceFlag } from '../types';
+import type { AdsOverview, DiagnosticsMetrics, FunnelReport, MarketingRecommendation, PerformanceFlag } from '../types';
 import type { RecommendationDraft } from './draftTypes';
+
+function funnelCount(funnel: FunnelReport | null | undefined, event: string): number {
+  return funnel?.steps.find((s) => s.event === event)?.count ?? 0;
+}
+
+export function buildFunnelRecommendations(
+  funnel: FunnelReport | null | undefined,
+  overview?: AdsOverview | null,
+  metrics?: DiagnosticsMetrics | null,
+): RecommendationDraft[] {
+  const drafts: RecommendationDraft[] = [];
+  if (!funnel) return drafts;
+
+  const addToCart = metrics?.funnelEventCounts.add_to_cart ?? funnelCount(funnel, 'add_to_cart');
+  const viewCart = metrics?.funnelEventCounts.view_cart ?? funnelCount(funnel, 'view_cart');
+  const beginCheckout = metrics?.funnelEventCounts.begin_checkout ?? funnelCount(funnel, 'begin_checkout');
+  const addPaymentInfo = metrics?.funnelEventCounts.add_payment_info ?? funnelCount(funnel, 'add_payment_info');
+  const purchases = metrics?.funnelEventCounts.purchase ?? funnelCount(funnel, 'purchase');
+  const adsClicks = overview?.summary.clicks ?? metrics?.adsClicks ?? 0;
+
+  if (adsClicks >= 50 && addToCart === 0) {
+    drafts.push({
+      actionType: 'suggest_landing_page',
+      title: 'Review landing page relevance',
+      summary: 'Paid clicks are arriving but no add-to-cart events — landing page or intent may be mismatched.',
+      reasoning: `${adsClicks} ad clicks with 0 add_to_cart events in GA4 for this period.`,
+      confidence: 'medium',
+      riskLevel: 'low',
+      canApplyViaApi: false,
+      evidence: { clicks: adsClicks, addToCart: 0 },
+    });
+  }
+
+  if (viewCart >= 10 && beginCheckout < viewCart * 0.2) {
+    drafts.push({
+      actionType: 'manual_review',
+      title: 'Review cart → checkout UX',
+      summary: 'Many cart views but few begin_checkout events — check mobile checkout flow and delivery form.',
+      reasoning: `${viewCart} view_cart vs ${beginCheckout} begin_checkout (${Math.round((beginCheckout / viewCart) * 100)}% progression).`,
+      confidence: 'medium',
+      riskLevel: 'low',
+      canApplyViaApi: false,
+      evidence: { viewCart, beginCheckout },
+    });
+  }
+
+  if (addPaymentInfo >= 5 && purchases === 0) {
+    drafts.push({
+      actionType: 'manual_review',
+      title: 'Verify GTM purchase on thank-you page',
+      summary: 'Payment clicks recorded but no purchase events — purchase tag may be broken.',
+      reasoning: `${addPaymentInfo} add_payment_info events but 0 purchase events. Check /lanna-order-thank-you GTM setup.`,
+      confidence: 'high',
+      riskLevel: 'medium',
+      canApplyViaApi: false,
+      evidence: { addPaymentInfo, purchases },
+    });
+  }
+
+  return drafts;
+}
 
 export function buildRuleBasedRecommendations(
   overview: AdsOverview,

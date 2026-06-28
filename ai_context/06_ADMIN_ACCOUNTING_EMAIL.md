@@ -13,7 +13,7 @@ Internal ops surfaces under `/admin`. Requires NextAuth (`AUTH_SECRET`, seeded a
 | Partners | `app/admin/partners/applications` | Approve applications |
 | Email Control Center | `app/admin/(dashboard)/emails/` | Templates, outbox, preview, test send |
 | Settings | `app/admin/(dashboard)/settings/` | Collections, config |
-| Marketing | `app/admin/(dashboard)/marketing/` | Google Ads insights, funnel, recommendations, **Campaign Builder** |
+| Marketing | `app/admin/(dashboard)/marketing/` | Google Ads insights, **Diagnostics** (orders vs GA4 vs Ads), funnel, recommendations, Campaign Builder |
 
 Admin APIs: `app/api/admin/**` — always verify session + RBAC.
 
@@ -31,6 +31,21 @@ APIs: `app/api/admin/marketing/campaign-drafts/*`, `app/api/admin/marketing/asse
 Storage: `marketing_campaign_drafts` (service_role only; migration `20260628120000_marketing_campaign_drafts.sql`)
 
 Safety: English-only copy/keywords, max daily budget (`CAMPAIGN_BUILDER_LIMITS`), owner-only mutations, audit via `marketing_apply_audit`.
+
+## Marketing Diagnostics
+
+Default tab at `/admin/marketing` → **Diagnostics**:
+
+- **Reality check** — Supabase paid orders + revenue, GA4 purchases, Google Ads conversions, ad spend/clicks side-by-side.
+- **Verdict** — rule-based diagnosis (tracking broken, checkout friction, paid underperforms, etc.) with next-step bullets.
+- **Tracking health** — GA4 funnel zeros, purchase vs order alignment, Ads vs GA4 cross-check.
+
+API: `GET /api/admin/marketing/diagnostics?days=14`  
+Server: `lib/marketing/diagnostics.ts` (`buildDiagnosticsVerdict`, `fetchDiagnosticsReport`)
+
+Funnel tab adds full checkout steps (`view_item` … `purchase`), step conversion rates, and paid landing pages from GA4. Ads tab shows ad groups, impressions, avg CPC, and a waste filter (spend with 0 conversions). Recommendations include funnel-leak rules when GA4 data is available.
+
+Before trusting diagnostics in production, verify GTM purchase trigger, GA4 key events, and Ads conversion linking — see `docs/ANALYTICS_GA4.md` § Using admin Diagnostics.
 
 ## Accounting model (short)
 

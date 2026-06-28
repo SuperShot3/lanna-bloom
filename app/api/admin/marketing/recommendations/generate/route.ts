@@ -3,6 +3,7 @@ import { parseDaysParam, requireMarketingView } from '@/lib/marketing/adminApi';
 import { isGoogleAdsConfigured } from '@/lib/marketing/config';
 import { fetchFunnelReport } from '@/lib/marketing/ga4Client';
 import { fetchAdsOverview } from '@/lib/marketing/googleAdsClient';
+import { fetchDiagnosticsReport } from '@/lib/marketing/diagnostics';
 import { generateRecommendationDrafts } from '@/lib/marketing/recommendations/generate';
 import { insertRecommendations } from '@/lib/marketing/recommendations/store';
 
@@ -26,15 +27,42 @@ export async function POST(request: NextRequest) {
   try {
     const overview = await fetchAdsOverview(days);
     let funnel = null;
+    let diagnosticsMetrics = null;
     try {
       funnel = await fetchFunnelReport(days);
     } catch {
       /* GA4 optional for generation */
     }
+    try {
+      const diagnostics = await fetchDiagnosticsReport(days);
+      diagnosticsMetrics = diagnostics.metrics;
+      if (!funnel) {
+        funnel = {
+          dateFrom: diagnostics.dateFrom,
+          dateTo: diagnostics.dateTo,
+          steps: Object.entries(diagnostics.metrics.funnelEventCounts).map(([event, count]) => ({
+            event,
+            label: event,
+            count,
+            dropoffFromPrevious: null,
+            dropoffRateFromPrevious: null,
+            rateFromPrevious: null,
+            rateFromTop: null,
+          })),
+          paidSessions: diagnostics.metrics.paidSessions,
+          organicSessions: diagnostics.metrics.organicSessions,
+          paidPurchaseRate: diagnostics.metrics.paidPurchaseRate,
+          organicPurchaseRate: diagnostics.metrics.organicPurchaseRate,
+        };
+      }
+    } catch {
+      /* diagnostics optional */
+    }
 
     const { drafts, llmModel, llmPromptVersion } = await generateRecommendationDrafts({
       overview,
       funnel,
+      diagnosticsMetrics,
       includeLlm,
     });
 

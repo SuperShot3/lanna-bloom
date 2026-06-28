@@ -1,17 +1,22 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import type {
   AdsOverview,
+  DiagnosticsReport,
   FunnelReport,
   MarketingConfigStatus,
   MarketingRecommendation,
-  TrackingHealthReport,
+  PaidLandingPagesReport,
 } from '@/lib/marketing/types';
 import { CampaignBuilderTab } from './CampaignBuilderTab';
+import { DiagnosticsPanel, FunnelBar } from './MarketingDiagnostics';
+import { MarketingSetupBanner } from './MarketingSetupBanner';
+import styles from './MarketingDiagnostics.module.css';
 
-type Tab = 'ads' | 'funnel' | 'recommendations' | 'campaign-builder';
+type Tab = 'diagnostics' | 'ads' | 'funnel' | 'recommendations' | 'campaign-builder';
 
 function fmtThb(n: number) {
   return new Intl.NumberFormat('th-TH', {
@@ -26,50 +31,43 @@ function fmtPct(n: number | null) {
   return `${(n * 100).toFixed(1)}%`;
 }
 
-function StatusBadge({ ok }: { ok: boolean }) {
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 999,
-        fontSize: 12,
-        background: ok ? '#dcfce7' : '#fef3c7',
-        color: ok ? '#166534' : '#92400e',
-      }}
-    >
-      {ok ? 'Configured' : 'Not set'}
-    </span>
-  );
-}
-
-function HealthBadge({ status }: { status: 'ok' | 'warn' | 'error' }) {
-  const colors = {
-    ok: { bg: '#dcfce7', fg: '#166534' },
-    warn: { bg: '#fef3c7', fg: '#92400e' },
-    error: { bg: '#fee2e2', fg: '#991b1b' },
-  };
-  const c = colors[status];
-  return (
-    <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 12, background: c.bg, color: c.fg }}>
-      {status}
-    </span>
-  );
-}
-
 function MetricTable({
   title,
   rows,
   nameLabel,
+  wasteFilter,
+  onWasteFilterChange,
 }: {
   title: string;
-  rows: { id: string; name: string; spend: number; clicks: number; conversions: number; roas: number | null; cpa: number | null }[];
+  rows: {
+    id: string;
+    name: string;
+    spend: number;
+    clicks: number;
+    conversions: number;
+    roas: number | null;
+    cpa: number | null;
+  }[];
   nameLabel: string;
+  wasteFilter?: boolean;
+  onWasteFilterChange?: (value: boolean) => void;
 }) {
+  const filtered =
+    wasteFilter === true ? rows.filter((r) => r.spend > 0 && r.conversions === 0) : rows;
   if (rows.length === 0) return null;
   return (
     <section className="admin-card" style={{ marginTop: 16 }}>
       <h3 className="admin-section-title">{title}</h3>
+      {onWasteFilterChange && (
+        <label className={styles.wasteToggle}>
+          <input
+            type="checkbox"
+            checked={wasteFilter ?? false}
+            onChange={(e) => onWasteFilterChange(e.target.checked)}
+          />
+          Show only spend with 0 conversions
+        </label>
+      )}
       <div style={{ overflowX: 'auto' }}>
         <table className="admin-table" style={{ width: '100%', fontSize: 14 }}>
           <thead>
@@ -83,7 +81,7 @@ function MetricTable({
             </tr>
           </thead>
           <tbody>
-            {rows.slice(0, 15).map((row) => (
+            {filtered.slice(0, 15).map((row) => (
               <tr key={row.id}>
                 <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</td>
                 <td>{fmtThb(row.spend)}</td>
@@ -103,16 +101,19 @@ function MetricTable({
 export function MarketingDashboardClient() {
   const { data: session } = useSession();
   const isOwner = (session?.user as { role?: string } | undefined)?.role === 'OWNER';
-  const [tab, setTab] = useState<Tab>('ads');
+  const [tab, setTab] = useState<Tab>('diagnostics');
   const [days, setDays] = useState(14);
   const [config, setConfig] = useState<MarketingConfigStatus | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [overview, setOverview] = useState<AdsOverview | null>(null);
   const [funnel, setFunnel] = useState<FunnelReport | null>(null);
-  const [health, setHealth] = useState<TrackingHealthReport | null>(null);
+  const [landingPages, setLandingPages] = useState<PaidLandingPagesReport | null>(null);
   const [recommendations, setRecommendations] = useState<MarketingRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [wasteFilterKeywords, setWasteFilterKeywords] = useState(false);
+  const [wasteFilterSearchTerms, setWasteFilterSearchTerms] = useState(false);
 
   const loadConfig = useCallback(async () => {
     const res = await fetch('/api/admin/marketing/status');
@@ -129,6 +130,21 @@ export function MarketingDashboardClient() {
       setRecommendations(data.recommendations ?? []);
     }
   }, []);
+
+  const loadDiagnostics = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/marketing/diagnostics?days=${days}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to load diagnostics');
+      setDiagnostics(data.diagnostics);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load diagnostics');
+    } finally {
+      setLoading(false);
+    }
+  }, [days]);
 
   const loadAds = useCallback(async () => {
     setLoading(true);
@@ -149,15 +165,11 @@ export function MarketingDashboardClient() {
     setLoading(true);
     setError(null);
     try {
-      const [funnelRes, healthRes] = await Promise.all([
-        fetch(`/api/admin/marketing/funnel?days=${days}`),
-        fetch(`/api/admin/marketing/tracking-health?days=${days}`),
-      ]);
-      const funnelData = await funnelRes.json();
-      const healthData = await healthRes.json();
-      if (!funnelRes.ok) throw new Error(funnelData.error ?? 'Failed to load funnel');
-      setFunnel(funnelData.funnel);
-      if (healthRes.ok) setHealth(healthData.health);
+      const res = await fetch(`/api/admin/marketing/funnel?days=${days}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to load funnel');
+      setFunnel(data.funnel);
+      setLandingPages(data.landingPages ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load funnel');
     } finally {
@@ -171,9 +183,10 @@ export function MarketingDashboardClient() {
   }, [loadConfig, loadRecommendations]);
 
   useEffect(() => {
+    if (tab === 'diagnostics' && config?.ga4) loadDiagnostics();
     if (tab === 'ads' && config?.googleAds) loadAds();
     if (tab === 'funnel' && config?.ga4) loadFunnel();
-  }, [tab, days, config, loadAds, loadFunnel]);
+  }, [tab, days, config, loadDiagnostics, loadAds, loadFunnel]);
 
   async function generateRecommendations() {
     setLoading(true);
@@ -220,9 +233,10 @@ export function MarketingDashboardClient() {
       <header className="admin-page-header">
         <div>
           <h1 className="admin-page-title">Marketing Insights</h1>
-          <p className="admin-hint">
-            Monitor Google Ads, checkout funnel drop-off, and AI recommendations. Changes require owner approval.
-          </p>
+          <p className="admin-hint">Diagnostics, ads performance, and campaign tools.</p>
+          <Link href="/admin/settings/marketing" className="admin-hint" style={{ display: 'inline-block', marginTop: 4 }}>
+            Setup &amp; integrations →
+          </Link>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <label className="admin-hint">
@@ -237,46 +251,26 @@ export function MarketingDashboardClient() {
               <option value={30}>30 days</option>
             </select>
           </label>
-          {config?.googleAds && (
-            <button type="button" className="admin-btn admin-btn-primary" onClick={generateRecommendations} disabled={loading}>
-              Generate recommendations
-            </button>
-          )}
         </div>
       </header>
 
-      {config && (
-        <div className="admin-stats-grid" style={{ marginBottom: 16 }}>
-          <div className="admin-stat-card">
-            <div className="admin-stat-label">Google Ads API</div>
-            <StatusBadge ok={config.googleAds} />
-          </div>
-          <div className="admin-stat-card">
-            <div className="admin-stat-label">GA4 Data API</div>
-            <StatusBadge ok={config.ga4} />
-          </div>
-          <div className="admin-stat-card">
-            <div className="admin-stat-label">LLM (OpenAI)</div>
-            <StatusBadge ok={config.llm} />
-          </div>
-        </div>
-      )}
-
-      <div className="admin-tabs" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {(['ads', 'funnel', 'recommendations', 'campaign-builder'] as Tab[]).map((t) => (
+      <div className="admin-tabs" style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {(['diagnostics', 'ads', 'funnel', 'recommendations', 'campaign-builder'] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
             className={`admin-btn ${tab === t ? 'admin-btn-primary' : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'ads'
-              ? 'Google Ads'
-              : t === 'funnel'
-                ? 'Funnel & tracking'
-                : t === 'recommendations'
-                  ? 'Recommendations'
-                  : 'Campaign Builder'}
+            {t === 'diagnostics'
+              ? 'Diagnostics'
+              : t === 'ads'
+                ? 'Google Ads'
+                : t === 'funnel'
+                  ? 'Funnel & tracking'
+                  : t === 'recommendations'
+                    ? 'Recommendations'
+                    : 'Campaign Builder'}
           </button>
         ))}
       </div>
@@ -289,13 +283,24 @@ export function MarketingDashboardClient() {
 
       {loading && <p className="admin-hint">Loading…</p>}
 
+      {tab === 'diagnostics' && (
+        <>
+          {!config?.ga4 && <MarketingSetupBanner integration="ga4" />}
+          {diagnostics && (
+            <DiagnosticsPanel
+              diagnostics={diagnostics}
+              onNavigate={(target) => {
+                setTab(target);
+                if (target === 'ads') setWasteFilterSearchTerms(true);
+              }}
+            />
+          )}
+        </>
+      )}
+
       {tab === 'ads' && (
         <>
-          {!config?.googleAds && (
-            <div className="admin-card">
-              <p>Configure Google Ads env vars to load campaign data. See <code>.env.example</code>.</p>
-            </div>
-          )}
+          {!config?.googleAds && <MarketingSetupBanner integration="googleAds" />}
           {overview && (
             <>
               <div className="admin-stats-grid">
@@ -306,6 +311,14 @@ export function MarketingDashboardClient() {
                 <div className="admin-stat-card">
                   <div className="admin-stat-label">Clicks</div>
                   <div className="admin-stat-value">{overview.summary.clicks}</div>
+                </div>
+                <div className="admin-stat-card">
+                  <div className="admin-stat-label">Impressions</div>
+                  <div className="admin-stat-value">{overview.summary.impressions}</div>
+                </div>
+                <div className="admin-stat-card">
+                  <div className="admin-stat-label">Avg CPC</div>
+                  <div className="admin-stat-value">{fmtThb(overview.summary.averageCpc)}</div>
                 </div>
                 <div className="admin-stat-card">
                   <div className="admin-stat-label">CTR</div>
@@ -343,8 +356,21 @@ export function MarketingDashboardClient() {
               )}
 
               <MetricTable title="Campaigns" rows={overview.campaigns} nameLabel="Campaign" />
-              <MetricTable title="Top keywords" rows={overview.keywords} nameLabel="Keyword" />
-              <MetricTable title="Search terms" rows={overview.searchTerms} nameLabel="Search term" />
+              <MetricTable title="Ad groups" rows={overview.adGroups} nameLabel="Ad group" />
+              <MetricTable
+                title="Top keywords"
+                rows={overview.keywords}
+                nameLabel="Keyword"
+                wasteFilter={wasteFilterKeywords}
+                onWasteFilterChange={setWasteFilterKeywords}
+              />
+              <MetricTable
+                title="Search terms"
+                rows={overview.searchTerms}
+                nameLabel="Search term"
+                wasteFilter={wasteFilterSearchTerms}
+                onWasteFilterChange={setWasteFilterSearchTerms}
+              />
               <MetricTable title="Landing pages" rows={overview.landingPages} nameLabel="URL" />
             </>
           )}
@@ -353,22 +379,20 @@ export function MarketingDashboardClient() {
 
       {tab === 'funnel' && (
         <>
-          {!config?.ga4 && (
-            <div className="admin-card">
-              <p>Configure GA4_PROPERTY_ID and a Google service account to load funnel diagnostics.</p>
-            </div>
-          )}
+          {!config?.ga4 && <MarketingSetupBanner integration="ga4" />}
           {funnel && (
             <>
               <section className="admin-card">
                 <h3 className="admin-section-title">Checkout funnel</h3>
+                <FunnelBar steps={funnel.steps} />
                 <div style={{ overflowX: 'auto' }}>
                   <table className="admin-table" style={{ width: '100%', fontSize: 14 }}>
                     <thead>
                       <tr>
                         <th style={{ textAlign: 'left' }}>Step</th>
                         <th>Events</th>
-                        <th>Drop-off</th>
+                        <th>From prev</th>
+                        <th>From top</th>
                         <th>Drop-off %</th>
                       </tr>
                     </thead>
@@ -377,7 +401,8 @@ export function MarketingDashboardClient() {
                         <tr key={step.event}>
                           <td>{step.label}</td>
                           <td>{step.count}</td>
-                          <td>{step.dropoffFromPrevious ?? '—'}</td>
+                          <td>{fmtPct(step.rateFromPrevious)}</td>
+                          <td>{fmtPct(step.rateFromTop)}</td>
                           <td>{fmtPct(step.dropoffRateFromPrevious)}</td>
                         </tr>
                       ))}
@@ -390,20 +415,38 @@ export function MarketingDashboardClient() {
                 </p>
               </section>
 
-              {health && (
+              {landingPages && landingPages.pages.length > 0 && (
                 <section className="admin-card" style={{ marginTop: 16 }}>
-                  <h3 className="admin-section-title">Tracking health</h3>
-                  <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
-                    {health.checks.map((c) => (
-                      <li key={c.code} style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                        <HealthBadge status={c.status} />
-                        <div>
-                          <strong>{c.title}</strong>
-                          <p className="admin-hint" style={{ margin: '4px 0 0' }}>{c.detail}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="admin-section-title">Paid landing pages (GA4)</h3>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="admin-table" style={{ width: '100%', fontSize: 14 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left' }}>Landing page</th>
+                          <th>Sessions</th>
+                          <th>Add to cart</th>
+                          <th>Purchases</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {landingPages.pages.map((page) => (
+                          <tr key={page.landingPage}>
+                            <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {page.landingPage}
+                              {page.localeMismatch && (
+                                <span className={styles.localeFlag} title="Thai URL — English campaigns should use /en/">
+                                  /th/ mismatch
+                                </span>
+                              )}
+                            </td>
+                            <td>{page.sessions}</td>
+                            <td>{page.addToCart}</td>
+                            <td>{page.purchases}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </section>
               )}
             </>
@@ -413,12 +456,38 @@ export function MarketingDashboardClient() {
 
       {tab === 'recommendations' && (
         <section className="admin-card">
-          <h3 className="admin-section-title">Recommendations</h3>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 12,
+              flexWrap: 'wrap',
+              marginBottom: 8,
+            }}
+          >
+            <h3 className="admin-section-title" style={{ margin: 0 }}>
+              Recommendations
+            </h3>
+            {config?.googleAds && (
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary"
+                onClick={generateRecommendations}
+                disabled={loading}
+              >
+                Generate recommendations
+              </button>
+            )}
+          </div>
           {!isOwner && (
             <p className="admin-hint">Only owners can approve or apply changes. You can view recommendations.</p>
           )}
           {recommendations.length === 0 ? (
-            <p className="admin-hint">No recommendations yet. Generate from the Google Ads tab when configured.</p>
+            <p className="admin-hint">
+              No recommendations yet.
+              {config?.googleAds ? ' Use Generate recommendations above.' : ' Connect Google Ads in settings first.'}
+            </p>
           ) : (
             <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
               {recommendations.map((rec) => (
@@ -484,11 +553,14 @@ export function MarketingDashboardClient() {
       )}
 
       {tab === 'campaign-builder' && (
-        <CampaignBuilderTab
-          isOwner={isOwner}
-          googleAdsConfigured={config?.googleAds ?? false}
-          llmConfigured={config?.llm ?? false}
-        />
+        <>
+          {!config?.googleAds && <MarketingSetupBanner integration="googleAds" />}
+          <CampaignBuilderTab
+            isOwner={isOwner}
+            googleAdsConfigured={config?.googleAds ?? false}
+            llmConfigured={config?.llm ?? false}
+          />
+        </>
       )}
     </div>
   );

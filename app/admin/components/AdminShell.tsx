@@ -141,6 +141,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <span className="material-symbols-outlined admin-shell-icon">settings</span>
               <span className="admin-shell-nav-label">Collection settings</span>
             </Link>
+            <Link
+              href="/admin/settings/marketing"
+              prefetch={false}
+              className="admin-shell-nav-link admin-shell-nav-link-info"
+              title={sidebarCollapsed ? 'Marketing settings' : undefined}
+            >
+              <span className="material-symbols-outlined admin-shell-icon">campaign</span>
+              <span className="admin-shell-nav-label">Marketing settings</span>
+            </Link>
             <a
               href="/api/auth/signout?callbackUrl=/admin/login"
               className="admin-shell-nav-link admin-shell-nav-link-logout"

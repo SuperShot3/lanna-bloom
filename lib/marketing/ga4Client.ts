@@ -4,12 +4,21 @@ import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { cacheKey, getCached, setCached } from './cache';
 import { getGa4Config, MARKETING_SAFETY } from './config';
 import { resolveDateRange } from './metrics';
-import type { FunnelReport, FunnelStep, TrackingHealthCheck, TrackingHealthReport } from './types';
+import type {
+  FunnelReport,
+  FunnelStep,
+  PaidLandingPageRow,
+  PaidLandingPagesReport,
+  TrackingHealthCheck,
+  TrackingHealthReport,
+} from './types';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
-const FUNNEL_EVENTS = [
+export const FUNNEL_EVENTS = [
+  { event: 'view_item', label: 'View item' },
   { event: 'add_to_cart', label: 'Add to cart' },
   { event: 'view_cart', label: 'View cart' },
+  { event: 'begin_checkout', label: 'Begin checkout' },
   { event: 'add_shipping_info', label: 'Shipping info' },
   { event: 'add_payment_info', label: 'Payment click' },
   { event: 'purchase', label: 'Purchase' },
@@ -112,16 +121,33 @@ async function runChannelPurchaseRates(
 function buildFunnelSteps(counts: Record<string, number>): FunnelStep[] {
   const steps: FunnelStep[] = [];
   let previous: number | null = null;
+  const topCount = counts[FUNNEL_EVENTS[0].event] ?? 0;
 
   for (const { event, label } of FUNNEL_EVENTS) {
     const count = counts[event] ?? 0;
     let dropoffFromPrevious: number | null = null;
     let dropoffRateFromPrevious: number | null = null;
+    let rateFromPrevious: number | null = null;
+    let rateFromTop: number | null = null;
+
     if (previous != null && previous > 0) {
       dropoffFromPrevious = previous - count;
       dropoffRateFromPrevious = dropoffFromPrevious / previous;
+      rateFromPrevious = count / previous;
     }
-    steps.push({ event, label, count, dropoffFromPrevious, dropoffRateFromPrevious });
+    if (topCount > 0) {
+      rateFromTop = count / topCount;
+    }
+
+    steps.push({
+      event,
+      label,
+      count,
+      dropoffFromPrevious,
+      dropoffRateFromPrevious,
+      rateFromPrevious,
+      rateFromTop,
+    });
     previous = count;
   }
 
@@ -149,17 +175,142 @@ export async function fetchFunnelReport(days: number = MARKETING_SAFETY.defaultL
   };
 }
 
-async function countPaidOrders(dateFrom: string, dateTo: string): Promise<number> {
+export interface PaidOrderStats {
+  count: number;
+  revenue: number;
+}
+
+export async function getPaidOrderStats(
+  dateFrom: string,
+  dateTo: string,
+): Promise<PaidOrderStats> {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return 0;
-  const { count, error } = await supabase
+  if (!supabase) return { count: 0, revenue: 0 };
+
+  const { data, error } = await supabase
     .from('orders')
-    .select('order_id', { count: 'exact', head: true })
+    .select('grand_total, total_amount')
     .eq('payment_status', 'PAID')
     .gte('paid_at', `${dateFrom}T00:00:00.000Z`)
     .lte('paid_at', `${dateTo}T23:59:59.999Z`);
-  if (error) return 0;
-  return count ?? 0;
+
+  if (error || !data) return { count: 0, revenue: 0 };
+
+  const revenue = data.reduce((sum, row) => {
+    const amount = Number(row.grand_total ?? row.total_amount ?? 0);
+    return sum + (Number.isFinite(amount) ? amount : 0);
+  }, 0);
+
+  return { count: data.length, revenue };
+}
+
+async function countPaidOrders(dateFrom: string, dateTo: string): Promise<number> {
+  const stats = await getPaidOrderStats(dateFrom, dateTo);
+  return stats.count;
+}
+
+function isThaiLandingPath(path: string): boolean {
+  return /\/th(\/|$|\?)/i.test(path);
+}
+
+export async function fetchPaidLandingPages(
+  days: number = MARKETING_SAFETY.defaultLookbackDays,
+): Promise<PaidLandingPagesReport> {
+  const { dateFrom, dateTo } = resolveDateRange(days);
+  const key = cacheKey(['ga4', 'paid-landing-pages', dateFrom, dateTo]);
+  const cached = getCached<PaidLandingPagesReport>(key);
+  if (cached) return cached;
+
+  const client = getClient();
+  const paidChannelFilter = {
+    filter: {
+      fieldName: 'sessionDefaultChannelGroup',
+      stringFilter: { matchType: 'CONTAINS' as const, value: 'Paid', caseSensitive: false },
+    },
+  };
+
+  const [sessionsResponse, cartResponse, purchaseResponse] = await Promise.all([
+    client.runReport({
+      property: propertyName(),
+      dateRanges: [{ startDate: dateFrom, endDate: dateTo }],
+      dimensions: [{ name: 'landingPagePlusQueryString' }],
+      metrics: [{ name: 'sessions' }],
+      dimensionFilter: paidChannelFilter,
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 15,
+    }),
+    client.runReport({
+      property: propertyName(),
+      dateRanges: [{ startDate: dateFrom, endDate: dateTo }],
+      dimensions: [{ name: 'landingPagePlusQueryString' }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        andGroup: {
+          expressions: [
+            paidChannelFilter,
+            {
+              filter: {
+                fieldName: 'eventName',
+                stringFilter: { matchType: 'EXACT', value: 'add_to_cart' },
+              },
+            },
+          ],
+        },
+      },
+      orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+      limit: 50,
+    }),
+    client.runReport({
+      property: propertyName(),
+      dateRanges: [{ startDate: dateFrom, endDate: dateTo }],
+      dimensions: [{ name: 'landingPagePlusQueryString' }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: {
+        andGroup: {
+          expressions: [
+            paidChannelFilter,
+            {
+              filter: {
+                fieldName: 'eventName',
+                stringFilter: { matchType: 'EXACT', value: 'purchase' },
+              },
+            },
+          ],
+        },
+      },
+      orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+      limit: 50,
+    }),
+  ]);
+
+  const cartByPage = new Map<string, number>();
+  for (const row of cartResponse[0].rows ?? []) {
+    const page = row.dimensionValues?.[0]?.value ?? '';
+    if (page) cartByPage.set(page, Number(row.metricValues?.[0]?.value ?? 0));
+  }
+
+  const purchaseByPage = new Map<string, number>();
+  for (const row of purchaseResponse[0].rows ?? []) {
+    const page = row.dimensionValues?.[0]?.value ?? '';
+    if (page) purchaseByPage.set(page, Number(row.metricValues?.[0]?.value ?? 0));
+  }
+
+  const pages: PaidLandingPageRow[] = [];
+  for (const row of sessionsResponse[0].rows ?? []) {
+    const landingPage = row.dimensionValues?.[0]?.value ?? '';
+    if (!landingPage) continue;
+    pages.push({
+      landingPage,
+      sessions: Number(row.metricValues?.[0]?.value ?? 0),
+      addToCart: cartByPage.get(landingPage) ?? 0,
+      purchases: purchaseByPage.get(landingPage) ?? 0,
+      localeMismatch: isThaiLandingPath(landingPage),
+    });
+  }
+
+  const result: PaidLandingPagesReport = { dateFrom, dateTo, pages };
+  setCached(key, result);
+  return result;
 }
 
 export async function fetchTrackingHealth(

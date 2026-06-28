@@ -1,8 +1,8 @@
 import 'server-only';
 
 import OpenAI from 'openai';
-import type { AdsOverview, FunnelReport } from '../types';
-import { buildRuleBasedRecommendations, dedupeDrafts, LLM_PROMPT_VERSION } from './rules';
+import type { AdsOverview, DiagnosticsMetrics, FunnelReport } from '../types';
+import { buildFunnelRecommendations, buildRuleBasedRecommendations, dedupeDrafts, LLM_PROMPT_VERSION } from './rules';
 import type { RecommendationDraft } from './draftTypes';
 
 export type { RecommendationDraft } from './draftTypes';
@@ -87,9 +87,15 @@ Max 8 recommendations. Be specific and evidence-based.`;
 export async function generateRecommendationDrafts(input: {
   overview: AdsOverview;
   funnel?: FunnelReport | null;
+  diagnosticsMetrics?: DiagnosticsMetrics | null;
   includeLlm?: boolean;
 }): Promise<{ drafts: RecommendationDraft[]; llmModel: string | null; llmPromptVersion: string }> {
   const ruleDrafts = buildRuleBasedRecommendations(input.overview, input.overview.flags);
+  const funnelDrafts = buildFunnelRecommendations(
+    input.funnel,
+    input.overview,
+    input.diagnosticsMetrics,
+  );
   let llmDrafts: RecommendationDraft[] = [];
   let llmModel: string | null = null;
 
@@ -100,7 +106,7 @@ export async function generateRecommendationDrafts(input: {
     }
   }
 
-  const drafts = dedupeDrafts([...ruleDrafts, ...llmDrafts]);
+  const drafts = dedupeDrafts([...ruleDrafts, ...funnelDrafts, ...llmDrafts]);
   return { drafts, llmModel, llmPromptVersion: LLM_PROMPT_VERSION };
 }
 
