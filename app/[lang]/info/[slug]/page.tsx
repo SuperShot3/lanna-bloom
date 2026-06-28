@@ -80,7 +80,6 @@ export function generateStaticParams() {
     'birthday-flower-gift-guide',
     'order-flowers-website-vs-facebook-chiang-mai',
     'birthday-flowers-chiang-mai-from-abroad',
-    'how-to-order-flower-delivery-chiang-mai',
     'rose-bouquets-chiang-mai',
     '51-roses-chiang-mai',
     'same-day-flower-delivery-chiang-mai',

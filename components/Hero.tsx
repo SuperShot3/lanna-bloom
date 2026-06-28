@@ -12,6 +12,7 @@ import {
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
+import { HowToOrderModal } from '@/components/HowToOrderModal';
 import { StorefrontIcon } from '@/components/icons';
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
@@ -92,14 +93,14 @@ function HeroVisualBlock({
 function HeroCtaSection({
   lang,
   primaryCtaHref,
-  howToHref,
+  onOpenHowTo,
   introItemClass,
   ctaExtraClass = '',
   reviewsExtraClass = '',
 }: {
   lang: Locale;
   primaryCtaHref: string;
-  howToHref: string;
+  onOpenHowTo: () => void;
   introItemClass: string;
   ctaExtraClass?: string;
   reviewsExtraClass?: string;
@@ -118,12 +119,13 @@ function HeroCtaSection({
           {t.ctaBrowse}
           <StorefrontIcon name="arrow-forward" size={20} />
         </Link>
-        <Link
-          href={howToHref}
+        <button
+          type="button"
+          onClick={onOpenHowTo}
           className="px-6 py-3 sm:px-8 sm:py-4 bg-white border border-stone-200 font-semibold rounded-full hover:bg-stone-50 transition-all text-sm sm:text-base flex items-center justify-center"
         >
           {t.ctaHowItWorks}
-        </Link>
+        </button>
       </div>
       <GoogleReviewsBadge
         lang={lang}
@@ -166,7 +168,7 @@ export function Hero({
     ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
     : `/${lang}/catalog`;
   const primaryCtaHref = browseCollectionHref ?? catalogHref;
-  const howToHref = `/${lang}/info/how-to-order-flower-delivery-chiang-mai`;
+  const [howToOpen, setHowToOpen] = useState(false);
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
   const heroCarouselImages = buildHeroCarouselImages(imageSrc, carouselImages);
   const isHomeLanding =
@@ -219,7 +221,7 @@ export function Hero({
             <HeroCtaSection
               lang={lang}
               primaryCtaHref={primaryCtaHref}
-              howToHref={howToHref}
+              onOpenHowTo={() => setHowToOpen(true)}
               introItemClass={introItemClass}
             />
           </div>
@@ -235,13 +237,14 @@ export function Hero({
           <HeroCtaSection
             lang={lang}
             primaryCtaHref={primaryCtaHref}
-            howToHref={howToHref}
+            onOpenHowTo={() => setHowToOpen(true)}
             introItemClass={introItemClass}
             ctaExtraClass="home-hero-intro__delay-5"
             reviewsExtraClass="home-hero-intro__delay-6"
           />
         </div>
       </div>
+      <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
       {isHomeLanding ? (
         <div
           id="hero-sentinel"

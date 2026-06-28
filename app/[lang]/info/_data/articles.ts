@@ -124,25 +124,6 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
-    slug: 'how-to-order-flower-delivery-chiang-mai',
-    title: 'How to Order Flower Delivery in Chiang Mai',
-    excerpt:
-      'Place an order on our website, then message us your order link or number to confirm details. Payment happens after confirmation. Delivery in Chiang Mai 09:00–20:00; orders after 18:00 may move to the next day.',
-    titleTh: 'วิธีสั่งดอกไม้จัดส่งในเชียงใหม่',
-    excerptTh:
-      'สั่งซื้อบนเว็บไซต์ แล้วส่งลิงก์หรือหมายเลขออเดอร์มาที่แชทเพื่อยืนยันรายละเอียด ชำระเงินหลังยืนยัน จัดส่งในเชียงใหม่ 09:00–20:00 สั่งหลัง 18:00 อาจจัดส่งวันถัดไป',
-    publishedAt: '2026-02-17T00:00:00.000Z',
-    featured: false,
-    cover: {
-      type: 'gradient',
-      gradientCss: 'linear-gradient(135deg, #f5e6e8 0%, #e8dfd0 50%, #e8f0ed 100%)',
-      center: { kind: 'emoji', value: '🌸' },
-    },
-    ctaLinks: [
-      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-    ],
-  },
-  {
     slug: 'rose-bouquets-chiang-mai', // URL-friendly, lowercase, hyphens (e.g. birthday-flowers)
     title: 'Rose Bouquets Delivery in Chiang Mai', // English title
     excerpt: 'Order beautiful rose bouquets and have them delivered across Chiang Mai. Same-day delivery during working hours. Message us via LINE or WhatsApp with your choice and delivery details.', // English excerpt (1–2 sentences)

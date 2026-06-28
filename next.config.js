@@ -87,6 +87,21 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/:lang(en|th|ru)/info/how-to-order-flower-delivery-chiang-mai',
+        destination: '/:lang',
+        permanent: true,
+      },
+      {
+        source: '/zh-sg/info/how-to-order-flower-delivery-chiang-mai',
+        destination: '/zh-sg',
+        permanent: true,
+      },
+      {
+        source: '/zh-hk/info/how-to-order-flower-delivery-chiang-mai',
+        destination: '/zh-hk',
+        permanent: true,
+      },
+      {
         source: '/collections/white-roses-chiang-mai',
         destination: '/en/collections/roses-chiang-mai?color=white',
         permanent: true,
