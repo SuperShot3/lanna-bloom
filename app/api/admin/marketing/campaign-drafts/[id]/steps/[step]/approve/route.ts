@@ -6,6 +6,7 @@ import {
   updateCampaignDraft,
 } from '@/lib/marketing/campaignBuilder/store';
 import { approveWizardStep } from '@/lib/marketing/campaignBuilder/wizard/approveStep';
+import { sanitizeGuidanceFields } from '@/lib/marketing/campaignBuilder/wizard/customGuidance';
 import { isWizardStepId, type StepApprovals, type StepOutputs } from '@/lib/marketing/campaignBuilder/wizard/steps';
 
 interface RouteContext {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const priorOutputs = record.stepOutputs as StepOutputs;
-  const stepOutput = body.output ?? priorOutputs[step];
+  const stepOutput = body.output ? sanitizeGuidanceFields(body.output as Record<string, unknown>) : priorOutputs[step];
   if (!stepOutput) {
     return NextResponse.json({ error: 'No step output to approve.' }, { status: 400 });
   }
@@ -73,9 +74,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (result.campaignDraft) patch.campaignDraft = result.campaignDraft;
 
   if (step === 'location' && body.output && typeof body.output === 'object') {
-    const goal = (body.output as { campaignGoal?: string }).campaignGoal;
-    if (goal !== undefined) {
-      patch.naturalLanguagePrompt = goal;
+    const note = (body.output as { customNotes?: string }).customNotes;
+    if (note !== undefined) {
+      patch.naturalLanguagePrompt = note;
     }
   }
 

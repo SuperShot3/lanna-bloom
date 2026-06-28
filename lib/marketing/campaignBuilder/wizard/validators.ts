@@ -2,6 +2,7 @@ import { CAMPAIGN_BUILDER_LIMITS } from '../limits';
 import { containsThaiCharacters } from '../questionPlanner';
 import { isAllowedLandingUrl } from '../validateDraft';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { validateCustomGuidanceFields } from './customGuidance';
 import { getTerritoryProfileByDestinationId } from './territoryProfiles';
 import type {
   AdCopyStepOutput,
@@ -303,6 +304,7 @@ export function validateStepOutput(
       const issues = [
         ...validateTerritoryIsSupported(loc.destinationId),
         ...validatePresenceTargeting(loc.locationTargetType),
+        ...validateCustomGuidanceFields({ customNotes: loc.customNotes }, ctx),
       ];
       return issues;
     }
@@ -321,7 +323,10 @@ export function validateStepOutput(
           },
         ];
       }
-      return validateLandingUrlMatchesTerritory(aud.landingUrl, ctx);
+      return [
+        ...validateLandingUrlMatchesTerritory(aud.landingUrl, ctx),
+        ...validateCustomGuidanceFields(aud, ctx),
+      ];
     }
     case 'ad_groups': {
       const groups = output as AdGroupsStepOutput;
@@ -355,7 +360,7 @@ export function validateStepOutput(
         }
         if (key) names.add(key);
       }
-      return issues;
+      return [...issues, ...validateCustomGuidanceFields(groups, ctx)];
     }
     case 'keywords': {
       if (!ctx) {
@@ -377,6 +382,7 @@ export function validateStepOutput(
         ...validateNoWrongCityKeywords(allKeywords, ctx),
         ...validateNoBroadMatchForExpansion(allKeywords, ctx),
         ...validateKeywordIntent(allKeywords),
+        ...validateCustomGuidanceFields(kw, ctx),
         ...allKeywords.flatMap((k) =>
           containsThaiCharacters(k.text)
             ? [
@@ -393,6 +399,7 @@ export function validateStepOutput(
     }
     case 'negative_keywords': {
       const neg = output as NegativeKeywordsStepOutput;
+      const guidanceIssues = validateCustomGuidanceFields(neg, ctx);
       if (!neg.negativeKeywords?.length) {
         return [
           {
@@ -401,16 +408,20 @@ export function validateStepOutput(
             message: 'No negative keywords — consider adding the default library.',
             field: 'negativeKeywords',
           },
+          ...guidanceIssues,
         ];
       }
-      return [];
+      return guidanceIssues;
     }
     case 'ad_copy': {
       if (!ctx) {
         return [{ level: 'error', code: 'missing_context', message: 'Territory context required.' }];
       }
       const copy = output as AdCopyStepOutput;
-      const issues = [...validateBudgetCap(copy.dailyBudgetThb)];
+      const issues = [
+        ...validateBudgetCap(copy.dailyBudgetThb),
+        ...validateCustomGuidanceFields(copy, ctx),
+      ];
       for (const g of copy.adGroups ?? []) {
         if (g.headlines.length < 3) {
           push(issues, {

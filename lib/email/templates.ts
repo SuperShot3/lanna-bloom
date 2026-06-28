@@ -5,6 +5,7 @@ export const EMAIL_TEMPLATE_KEYS = [
   'payment_failed',
   'order_delivered',
   'review_request',
+  'customer_thank_you',
   'reminder_7_days',
   'reminder_3_days',
   'reminder_1_day',

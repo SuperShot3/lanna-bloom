@@ -371,6 +371,96 @@
   color: #991b1b;
 }
 
+.guidanceBox {
+  margin: 16px 0;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.guidanceHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.guidanceInputRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@media (min-width: 520px) {
+  .guidanceInputRow {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.guidanceSavedList,
+.guidanceSelectedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guidanceSavedItem,
+.guidanceSelectedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  font-size: 0.8125rem;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+}
+
+.guidanceSavedChip {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.guidanceSavedChipSelected {
+  color: var(--admin-accent, #4f46e5);
+  font-weight: 600;
+}
+
+.guidanceIconButton,
+.guidanceTextButton {
+  padding: 0 4px;
+  color: #64748b;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.guidanceTextButton {
+  color: var(--admin-accent, #4f46e5);
+  font-weight: 600;
+}
+
+.guidanceNote {
+  margin-top: 12px;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.guidanceNote summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.guidanceNote textarea {
+  margin-top: 8px;
+}
+
 .subheading {
   margin: 16px 0 8px;
   font-size: 0.9375rem;

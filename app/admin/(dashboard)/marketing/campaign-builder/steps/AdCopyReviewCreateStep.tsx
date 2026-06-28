@@ -1,7 +1,12 @@
 'use client';
 
 import type { CampaignValidationResult } from '@/lib/marketing/campaignBuilder/types';
+import type {
+  CustomGuidanceCategory,
+  CustomGuidanceLibraryItem,
+} from '@/lib/marketing/campaignBuilder/wizard/steps';
 import styles from '../../CampaignBuilderTab.module.css';
+import { CustomGuidanceField } from '../CustomGuidanceField';
 import { StepShell } from '../StepShell';
 
 export interface AdCopyGroup {
@@ -17,8 +22,23 @@ interface AdCopyReviewCreateStepProps {
   territoryName: string;
   locationTargetType: string;
   landingUrl: string;
+  audienceGuidance?: {
+    customAudienceContexts?: string[];
+    customOccasions?: string[];
+    customDeliveryContexts?: string[];
+    customNotes?: string;
+  };
+  adGroupGuidance?: { customAdGroupIdeas?: string[]; customNotes?: string };
+  keywordGuidance?: { customKeywordThemes?: string[]; customNotes?: string };
+  negativeGuidance?: { customNegativeThemes?: string[]; customNotes?: string };
+  copyInstructions: string[];
+  customNotes?: string;
   onChange: (groups: AdCopyGroup[]) => void;
   onBudgetChange: (budget: number) => void;
+  onGuidanceChange: (guidance: { copyInstructions?: string[]; customNotes?: string }) => void;
+  reusableItems?: CustomGuidanceLibraryItem[];
+  onSaveReusable?: (category: CustomGuidanceCategory, label: string) => Promise<void>;
+  onDeleteReusable?: (id: string) => Promise<void>;
   onGenerate: () => void;
   onApprove: () => void;
   onValidate: () => void;
@@ -42,8 +62,18 @@ export function AdCopyReviewCreateStep({
   territoryName,
   locationTargetType,
   landingUrl,
+  audienceGuidance,
+  adGroupGuidance,
+  keywordGuidance,
+  negativeGuidance,
+  copyInstructions,
+  customNotes,
   onChange,
   onBudgetChange,
+  onGuidanceChange,
+  reusableItems,
+  onSaveReusable,
+  onDeleteReusable,
   onGenerate,
   onApprove,
   onValidate,
@@ -90,6 +120,29 @@ export function AdCopyReviewCreateStep({
       issues={issues}
       showApprove={!validation?.ok}
     >
+      <CustomGuidanceField
+        title="Copy instructions"
+        helperText="Instructions can guide tone and wording, but validators still enforce character limits, territory, and delivery-claim rules."
+        category="copy_instructions"
+        presetOptions={[
+          'mention hotel delivery',
+          'mention villas',
+          'avoid same-day claim',
+          'friendly premium tone',
+          'birthday surprise',
+          'graduation gifts',
+        ]}
+        value={copyInstructions}
+        onChange={(tags) => onGuidanceChange({ copyInstructions: tags, customNotes })}
+        reusableItems={reusableItems}
+        onSaveReusable={onSaveReusable}
+        onDeleteReusable={onDeleteReusable}
+        noteLabel="More copy guidance"
+        noteValue={customNotes ?? ''}
+        onNoteChange={(note) => onGuidanceChange({ copyInstructions, customNotes: note })}
+        disabled={loading}
+      />
+
       <div className={styles.actions} style={{ marginTop: 0, marginBottom: 16 }}>
         <button
           type="button"
@@ -183,6 +236,14 @@ export function AdCopyReviewCreateStep({
               <dd style={{ margin: '0 0 8px' }}>{campaignName}</dd>
             </div>
           )}
+          <GuidanceSummary
+            audienceGuidance={audienceGuidance}
+            adGroupGuidance={adGroupGuidance}
+            keywordGuidance={keywordGuidance}
+            negativeGuidance={negativeGuidance}
+            copyInstructions={copyInstructions}
+            copyNotes={customNotes}
+          />
         </dl>
       </div>
 
@@ -243,5 +304,64 @@ export function AdCopyReviewCreateStep({
         </div>
       )}
     </StepShell>
+  );
+}
+
+function GuidanceSummary({
+  audienceGuidance,
+  adGroupGuidance,
+  keywordGuidance,
+  negativeGuidance,
+  copyInstructions,
+  copyNotes,
+}: {
+  audienceGuidance?: {
+    customAudienceContexts?: string[];
+    customOccasions?: string[];
+    customDeliveryContexts?: string[];
+    customNotes?: string;
+  };
+  adGroupGuidance?: { customAdGroupIdeas?: string[]; customNotes?: string };
+  keywordGuidance?: { customKeywordThemes?: string[]; customNotes?: string };
+  negativeGuidance?: { customNegativeThemes?: string[]; customNotes?: string };
+  copyInstructions: string[];
+  copyNotes?: string;
+}) {
+  const rows = [
+    ['Audience contexts', audienceGuidance?.customAudienceContexts],
+    ['Occasions', audienceGuidance?.customOccasions],
+    ['Delivery places', audienceGuidance?.customDeliveryContexts],
+    ['Ad group ideas', adGroupGuidance?.customAdGroupIdeas],
+    ['Keyword themes', keywordGuidance?.customKeywordThemes],
+    ['Avoid themes', negativeGuidance?.customNegativeThemes],
+    ['Copy instructions', copyInstructions],
+  ].filter(([, values]) => Array.isArray(values) && values.length > 0) as Array<[string, string[]]>;
+
+  const notes = [
+    audienceGuidance?.customNotes,
+    adGroupGuidance?.customNotes,
+    keywordGuidance?.customNotes,
+    negativeGuidance?.customNotes,
+    copyNotes,
+  ].filter(Boolean);
+
+  if (rows.length === 0 && notes.length === 0) return null;
+
+  return (
+    <div>
+      <dt style={{ fontWeight: 600 }}>Approved custom guidance</dt>
+      <dd style={{ margin: '0 0 8px' }}>
+        {rows.map(([label, values]) => (
+          <div key={label}>
+            <strong>{label}:</strong> {values.join(', ')}
+          </div>
+        ))}
+        {notes.length > 0 && (
+          <div>
+            <strong>Notes:</strong> {notes.join(' / ')}
+          </div>
+        )}
+      </dd>
+    </div>
   );
 }

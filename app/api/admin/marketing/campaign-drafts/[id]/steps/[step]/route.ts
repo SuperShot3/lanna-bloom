@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireMarketingApply } from '@/lib/marketing/adminApi';
 import { getCampaignDraftById, updateCampaignDraft } from '@/lib/marketing/campaignBuilder/store';
+import { sanitizeGuidanceFields } from '@/lib/marketing/campaignBuilder/wizard/customGuidance';
 import { isWizardStepId, type StepOutputs } from '@/lib/marketing/campaignBuilder/wizard/steps';
 
 interface RouteContext {
@@ -24,7 +25,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const body = await request.json();
+    const body = sanitizeGuidanceFields(await request.json());
     const priorOutputs = record.stepOutputs as StepOutputs;
     const existingMeta = (priorOutputs[step] as Record<string, unknown> | undefined)?._meta;
 

@@ -160,6 +160,7 @@ export function EmailControlCenterClient() {
 
       {tab === 'preview' && (
         <PreviewTab
+          templates={templates}
           onRefreshTemplates={() => void load()}
         />
       )}
@@ -285,8 +286,14 @@ function TemplateEditModal({
   );
 }
 
-function PreviewTab({ onRefreshTemplates: _r }: { onRefreshTemplates: () => void }) {
-  const [templateKey, setTemplateKey] = useState('order_delivered');
+function PreviewTab({
+  templates,
+  onRefreshTemplates: _r,
+}: {
+  templates: TemplateRow[];
+  onRefreshTemplates: () => void;
+}) {
+  const [templateKey, setTemplateKey] = useState('customer_thank_you');
   const [orderId, setOrderId] = useState('');
   const [useMock, setUseMock] = useState(true);
   const [subject, setSubject] = useState('');
@@ -331,21 +338,45 @@ function PreviewTab({ onRefreshTemplates: _r }: { onRefreshTemplates: () => void
   };
 
   return (
-    <section className="admin-section">
-      <h2 className="admin-section-title">Preview &amp; test send</h2>
+    <section className="admin-section admin-template-preview-section">
+      <div className="admin-template-preview-heading">
+        <div>
+          <h2 className="admin-section-title">Preview &amp; test send</h2>
+          <p className="admin-hint">
+            Review any saved Email Control Center template with mock data or a real order id.
+          </p>
+        </div>
+      </div>
       {err && <p className="admin-costs-error">{err}</p>}
-      <div className="admin-form" style={{ maxWidth: 520 }}>
+      <div className="admin-form admin-template-preview-controls">
         <div className="admin-form-group">
-          <label>Template key</label>
-          <input
+          <label htmlFor="email-template-preview-key">Template</label>
+          <select
+            id="email-template-preview-key"
             className="admin-input"
             value={templateKey}
-            onChange={(e) => setTemplateKey(e.target.value)}
-          />
+            onChange={(e) => {
+              setTemplateKey(e.target.value);
+              setSubject('');
+              setHtml('');
+              setMiss([]);
+              setErr(null);
+            }}
+          >
+            {templates.some((tpl) => tpl.template_key === 'customer_thank_you') ? null : (
+              <option value="customer_thank_you">Customer thank-you (run migration to add)</option>
+            )}
+            {templates.map((tpl) => (
+              <option key={tpl.id} value={tpl.template_key}>
+                {tpl.template_name} ({tpl.template_key})
+              </option>
+            ))}
+          </select>
         </div>
         <div className="admin-form-group">
-          <label>Sample order id (optional)</label>
+          <label htmlFor="email-template-order-id">Sample order id (optional)</label>
           <input
+            id="email-template-order-id"
             className="admin-input"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
@@ -370,6 +401,11 @@ function PreviewTab({ onRefreshTemplates: _r }: { onRefreshTemplates: () => void
           </button>
         </div>
       </div>
+      {templates.length === 0 && (
+        <p className="admin-hint" style={{ marginTop: 10 }}>
+          No templates loaded yet. Refresh the page after migrations are applied.
+        </p>
+      )}
       {miss.length > 0 && (
         <p className="admin-error-warning" style={{ marginTop: 12, padding: 10, borderRadius: 6 }}>
           Missing/empty: {miss.join(', ')}

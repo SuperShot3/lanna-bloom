@@ -3,6 +3,7 @@ import { requireMarketingApply } from '@/lib/marketing/adminApi';
 import { getCampaignDraftById, updateCampaignDraft } from '@/lib/marketing/campaignBuilder/store';
 import { buildTerritoryContext } from '@/lib/marketing/campaignBuilder/wizard/buildTerritoryContext';
 import { generateStepOutput } from '@/lib/marketing/campaignBuilder/wizard/generateStep';
+import { pickSanitizedGuidanceFields } from '@/lib/marketing/campaignBuilder/wizard/customGuidance';
 import { isWizardStepId, type StepOutputs, type TerritoryContext } from '@/lib/marketing/campaignBuilder/wizard/steps';
 
 interface RouteContext {
@@ -36,11 +37,13 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
   try {
     const result = await generateStepOutput(step, ctx, priorOutputs);
+    const guidance = pickSanitizedGuidanceFields(priorOutputs[step]);
 
     const stepOutputs = {
       ...priorOutputs,
       [step]: {
         ...result.output,
+        ...guidance,
         _meta: {
           source: result.source,
           aiAvailable: result.aiAvailable,

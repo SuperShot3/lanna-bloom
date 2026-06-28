@@ -121,8 +121,8 @@ export function getDefaultSocialLinks(): SocialLinks {
 }
 
 /**
- * Table-based, email-client-safe social footer. Defaults to 24px icons (see DEFAULT_FOOTER_ICONS);
- * override with EMAIL_FOOTER_ICON_*_URL or use EMAIL_FOOTER_TEXT_ONLY=1 for text links only.
+ * Table-based, email-client-safe social footer. Uses 24px icons by default
+ * and allows icon URL overrides via EMAIL_FOOTER_ICON_*_URL.
  */
 export function getSocialFooterHtml(links: SocialLinks = getDefaultSocialLinks()): string {
   const w = escapeHtml(links.websiteUrl);
@@ -132,39 +132,30 @@ export function getSocialFooterHtml(links: SocialLinks = getDefaultSocialLinks()
   const maps = escapeHtml(links.googleMapsUrl);
   const review = escapeHtml(links.reviewUrl);
 
-  const textOnly =
-    process.env.EMAIL_FOOTER_TEXT_ONLY === '1' || process.env.EMAIL_FOOTER_TEXT_ONLY === 'true';
-
-  const websiteIcon = process.env.EMAIL_FOOTER_ICON_WEBSITE_URL?.trim() || (textOnly ? undefined : DEFAULT_FOOTER_ICONS.website);
-  const instaIcon = process.env.EMAIL_FOOTER_ICON_INSTAGRAM_URL?.trim() || (textOnly ? undefined : DEFAULT_FOOTER_ICONS.instagram);
-  const facebookIcon = process.env.EMAIL_FOOTER_ICON_FACEBOOK_URL?.trim() || (textOnly ? undefined : DEFAULT_FOOTER_ICONS.facebook);
-  const mapsIcon = process.env.EMAIL_FOOTER_ICON_MAPS_URL?.trim() || (textOnly ? undefined : DEFAULT_FOOTER_ICONS.maps);
-  const reviewIcon = process.env.EMAIL_FOOTER_ICON_REVIEW_URL?.trim() || (textOnly ? undefined : DEFAULT_FOOTER_ICONS.review);
+  const websiteIcon = process.env.EMAIL_FOOTER_ICON_WEBSITE_URL?.trim() || DEFAULT_FOOTER_ICONS.website;
+  const instaIcon = process.env.EMAIL_FOOTER_ICON_INSTAGRAM_URL?.trim() || DEFAULT_FOOTER_ICONS.instagram;
+  const facebookIcon = process.env.EMAIL_FOOTER_ICON_FACEBOOK_URL?.trim() || DEFAULT_FOOTER_ICONS.facebook;
+  const mapsIcon = process.env.EMAIL_FOOTER_ICON_MAPS_URL?.trim() || DEFAULT_FOOTER_ICONS.maps;
+  const reviewIcon = process.env.EMAIL_FOOTER_ICON_REVIEW_URL?.trim() || DEFAULT_FOOTER_ICONS.review;
   const tiktokIcon =
-    process.env.EMAIL_FOOTER_ICON_TIKTOK_URL?.trim() || (textOnly ? undefined : DEFAULT_FOOTER_ICONS.tiktok);
+    process.env.EMAIL_FOOTER_ICON_TIKTOK_URL?.trim() || DEFAULT_FOOTER_ICONS.tiktok;
 
-  const linkWithOptionalIcon = (href: string, label: string, iconUrl: string | undefined) => {
-    if (iconUrl) {
-      return `<a href="${href}" style="text-decoration: none; color: #5c4a32; display: inline-block; margin: 0 6px; vertical-align: middle;" title="${escapeHtml(
-        label
-      )}"><img src="${escapeHtml(iconUrl)}" alt="${escapeHtml(label)}" width="24" height="24" style="display: block; border: 0; vertical-align: middle; outline: none;" /></a>`;
-    }
-    return `<a href="${href}" style="color: #967a4d; font-weight: 600; text-decoration: none; font-size: 14px; margin: 0 8px; display: inline-block;">${escapeHtml(
+  const iconLink = (href: string, label: string, iconUrl: string) =>
+    `<a href="${href}" style="text-decoration: none; color: #5c4a32; display: inline-block; margin: 0 6px; vertical-align: middle;" title="${escapeHtml(
       label
-    )}</a>`;
-  };
+    )}"><img src="${escapeHtml(iconUrl)}" alt="${escapeHtml(label)}" width="24" height="24" style="display: block; border: 0; vertical-align: middle; outline: none;" /></a>`;
 
   const parts: string[] = [
-    linkWithOptionalIcon(w, 'Website', websiteIcon),
-    linkWithOptionalIcon(ig, 'Instagram', instaIcon),
-    linkWithOptionalIcon(fb, 'Facebook', facebookIcon),
+    iconLink(w, 'Website', websiteIcon),
+    iconLink(ig, 'Instagram', instaIcon),
+    iconLink(fb, 'Facebook', facebookIcon),
   ];
   if (tt) {
-    parts.push(linkWithOptionalIcon(tt, 'TikTok', tiktokIcon));
+    parts.push(iconLink(tt, 'TikTok', tiktokIcon));
   }
   parts.push(
-    linkWithOptionalIcon(maps, 'Google Maps', mapsIcon),
-    linkWithOptionalIcon(review, 'Review us', reviewIcon)
+    iconLink(maps, 'Google Maps', mapsIcon),
+    iconLink(review, 'Review us', reviewIcon)
   );
 
   return `

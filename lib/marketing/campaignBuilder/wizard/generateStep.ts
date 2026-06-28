@@ -4,6 +4,7 @@ import { buildDefaultNegativeKeywords } from '../negativeKeywords';
 import { callStructuredLlm, getStepLlmConfig } from '../llmClient';
 import type { CampaignBrief, SearchCampaignDraft } from '../types';
 import { buildRuleBasedAdGroupNames, buildRuleBasedKeywords } from './buildTerritoryContext';
+import { formatGuidanceForPrompt, pickSanitizedGuidanceFields } from './customGuidance';
 import {
   adCopySystemPrompt,
   adGroupsSystemPrompt,
@@ -37,7 +38,7 @@ export async function generateStepOutput(
 
   switch (stepId) {
     case 'ad_groups':
-      return generateAdGroups(ctx, config.enabled);
+      return generateAdGroups(ctx, priorOutputs, config.enabled);
     case 'keywords':
       return generateKeywords(ctx, priorOutputs, config.enabled);
     case 'negative_keywords':
@@ -51,9 +52,13 @@ export async function generateStepOutput(
 
 async function generateAdGroups(
   ctx: TerritoryContext,
+  priorOutputs: StepOutputs,
   aiEnabled: boolean,
 ): Promise<GenerateStepResult> {
-  const ruleNames = buildRuleBasedAdGroupNames(ctx.profile);
+  const customIdeas = pickSanitizedGuidanceFields(priorOutputs.ad_groups).customAdGroupIdeas ?? [];
+  const ruleNames = customIdeas.length
+    ? customIdeas.slice(0, 3).map((idea) => titleCaseAdGroupName(idea, ctx.profile.territoryName))
+    : buildRuleBasedAdGroupNames(ctx.profile);
   const ruleOutput: AdGroupsStepOutput = {
     adGroups: ruleNames.map((name) => ({ name })),
   };
@@ -65,7 +70,11 @@ async function generateAdGroups(
   const result = await callStructuredLlm<{ adGroups: Array<{ name: string }> }>({
     stepId: 'ad_groups',
     system: adGroupsSystemPrompt(ctx),
-    user: JSON.stringify({ territory: ctx.profile.territoryName, ruleBased: ruleNames }),
+    user: JSON.stringify({
+      territory: ctx.profile.territoryName,
+      ruleBased: ruleNames,
+      customGuidance: collectPromptGuidance(priorOutputs),
+    }),
     schemaName: 'ad_groups',
   });
 
@@ -88,11 +97,15 @@ async function generateKeywords(
 ): Promise<GenerateStepResult> {
   const adGroups = priorOutputs.ad_groups?.adGroups ?? buildRuleBasedAdGroupNames(ctx.profile).map((n) => ({ name: n }));
   const ruleKeywords = buildRuleBasedKeywords(ctx.profile);
+  const customThemes = pickSanitizedGuidanceFields(priorOutputs.keywords).customKeywordThemes ?? [];
 
   const ruleOutput: KeywordsStepOutput = {
     adGroups: adGroups.map((g, i) => ({
       name: g.name,
-      keywords: ruleKeywords.slice(i * 4, i * 4 + 4).map((text) => ({
+      keywords: [
+        ...ruleKeywords.slice(i * 4, i * 4 + 4),
+        ...(i === 0 ? customThemes : []),
+      ].slice(0, 12).map((text) => ({
         text,
         matchType: i === 0 ? ('PHRASE' as const) : ('EXACT' as const),
       })),
@@ -106,7 +119,7 @@ async function generateKeywords(
   const result = await callStructuredLlm<KeywordsStepOutput>({
     stepId: 'keywords',
     system: keywordsSystemPrompt(ctx),
-    user: JSON.stringify({ adGroups, territory: ctx.profile }),
+    user: JSON.stringify({ adGroups, territory: ctx.profile, customGuidance: collectPromptGuidance(priorOutputs) }),
     schemaName: 'keywords',
   });
 
@@ -132,9 +145,16 @@ async function generateNegatives(
     territory: ctx.profile.territoryName,
     occasion,
   });
+  const customNegativeThemes = pickSanitizedGuidanceFields(
+    priorOutputs.negative_keywords,
+  ).customNegativeThemes ?? [];
+  const seenRuleNegatives = new Set(ruleNegatives.map((k) => k.text.toLowerCase()));
+  const customNegatives = customNegativeThemes
+    .filter((theme) => !seenRuleNegatives.has(theme.toLowerCase()))
+    .map((text) => ({ text, matchType: 'PHRASE' as const }));
 
   const ruleOutput: NegativeKeywordsStepOutput = {
-    negativeKeywords: ruleNegatives,
+    negativeKeywords: [...ruleNegatives, ...customNegatives],
   };
 
   if (!aiEnabled) {
@@ -147,6 +167,7 @@ async function generateNegatives(
     user: JSON.stringify({
       existing: ruleNegatives.map((k) => k.text),
       territory: ctx.profile.territoryName,
+      customGuidance: collectPromptGuidance(priorOutputs),
     }),
     schemaName: 'negatives',
   });
@@ -209,6 +230,7 @@ async function generateAdCopy(
       territory: ctx.profile,
       keywords: priorOutputs.keywords,
       landingUrl: priorOutputs.audience?.landingUrl ?? ctx.landingUrl,
+      customGuidance: collectPromptGuidance(priorOutputs),
     }),
     schemaName: 'ad_copy',
   });
@@ -248,7 +270,7 @@ export function mergeWizardToDraft(input: {
     languageCode: aud.languageCode,
     landingUrl: aud.landingUrl,
     dailyBudgetThb: copy.dailyBudgetThb,
-    campaignGoal: loc.campaignGoal,
+    campaignGoal: loc.customNotes,
     finalUrl: aud.landingUrl,
     occasion: aud.occasion,
     productFocus: aud.productFocus,
@@ -284,8 +306,38 @@ export function mergeWizardToDraft(input: {
       };
     }),
     negativeKeywords: negatives,
-    notes: loc.campaignGoal,
+    notes: loc.customNotes,
   };
 
   return { brief, draft };
+}
+
+function collectPromptGuidance(outputs: StepOutputs): Record<string, string[]> {
+  const fields = [
+    pickSanitizedGuidanceFields(outputs.audience),
+    pickSanitizedGuidanceFields(outputs.ad_groups),
+    pickSanitizedGuidanceFields(outputs.keywords),
+    pickSanitizedGuidanceFields(outputs.negative_keywords),
+    pickSanitizedGuidanceFields(outputs.ad_copy),
+  ];
+
+  return formatGuidanceForPrompt({
+    customNotes: fields.map((field) => field.customNotes).filter(Boolean).join(' / ') || undefined,
+    customAudienceContexts: fields.flatMap((field) => field.customAudienceContexts ?? []),
+    customOccasions: fields.flatMap((field) => field.customOccasions ?? []),
+    customDeliveryContexts: fields.flatMap((field) => field.customDeliveryContexts ?? []),
+    customAdGroupIdeas: fields.flatMap((field) => field.customAdGroupIdeas ?? []),
+    customKeywordThemes: fields.flatMap((field) => field.customKeywordThemes ?? []),
+    customNegativeThemes: fields.flatMap((field) => field.customNegativeThemes ?? []),
+    copyInstructions: fields.flatMap((field) => field.copyInstructions ?? []),
+  });
+}
+
+function titleCaseAdGroupName(value: string, territoryName: string): string {
+  const name = value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+  return name.toLowerCase().includes(territoryName.toLowerCase()) ? name : `${name} ${territoryName}`;
 }

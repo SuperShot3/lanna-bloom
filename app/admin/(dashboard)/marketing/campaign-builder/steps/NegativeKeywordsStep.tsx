@@ -1,12 +1,23 @@
 'use client';
 
+import type {
+  CustomGuidanceCategory,
+  CustomGuidanceLibraryItem,
+} from '@/lib/marketing/campaignBuilder/wizard/steps';
 import styles from '../../CampaignBuilderTab.module.css';
+import { CustomGuidanceField } from '../CustomGuidanceField';
 import { StepShell } from '../StepShell';
 import type { KeywordItem } from './KeywordsStep';
 
 interface NegativeKeywordsStepProps {
   negativeKeywords: KeywordItem[];
+  customNegativeThemes: string[];
+  customNotes?: string;
   onChange: (keywords: KeywordItem[]) => void;
+  onGuidanceChange: (guidance: { customNegativeThemes?: string[]; customNotes?: string }) => void;
+  reusableItems?: CustomGuidanceLibraryItem[];
+  onSaveReusable?: (category: CustomGuidanceCategory, label: string) => Promise<void>;
+  onDeleteReusable?: (id: string) => Promise<void>;
   onGenerate: () => void;
   onApprove: () => void;
   onBack: () => void;
@@ -19,7 +30,13 @@ interface NegativeKeywordsStepProps {
 
 export function NegativeKeywordsStep({
   negativeKeywords,
+  customNegativeThemes,
+  customNotes,
   onChange,
+  onGuidanceChange,
+  reusableItems,
+  onSaveReusable,
+  onDeleteReusable,
   onGenerate,
   onApprove,
   onBack,
@@ -53,6 +70,22 @@ export function NegativeKeywordsStep({
       loading={loading}
       issues={issues}
     >
+      <CustomGuidanceField
+        title="Terms or themes to avoid"
+        helperText="Used only to suggest additional negatives. Global and cross-city safety negatives stay in place."
+        category="negative_themes"
+        presetOptions={['jobs', 'free', 'images', 'meaning', 'drawing', 'wholesale']}
+        value={customNegativeThemes}
+        onChange={(tags) => onGuidanceChange({ customNegativeThemes: tags, customNotes })}
+        reusableItems={reusableItems}
+        onSaveReusable={onSaveReusable}
+        onDeleteReusable={onDeleteReusable}
+        noteLabel="More negative keyword guidance"
+        noteValue={customNotes ?? ''}
+        onNoteChange={(note) => onGuidanceChange({ customNegativeThemes, customNotes: note })}
+        disabled={loading}
+      />
+
       <div className={styles.actions} style={{ marginTop: 0, marginBottom: 16 }}>
         <button
           type="button"

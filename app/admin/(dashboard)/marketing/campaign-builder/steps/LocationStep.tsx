@@ -2,7 +2,12 @@
 
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { LocationTargetType } from '@/lib/marketing/campaignBuilder/types';
+import type {
+  CustomGuidanceCategory,
+  CustomGuidanceLibraryItem,
+} from '@/lib/marketing/campaignBuilder/wizard/steps';
 import styles from '../../CampaignBuilderTab.module.css';
+import { CustomGuidanceField } from '../CustomGuidanceField';
 import { StepShell } from '../StepShell';
 
 export interface TerritoryOption {
@@ -20,15 +25,16 @@ export interface LocationStepData {
   territoryName: string;
   marketSlug: string | null;
   locationTargetType: LocationTargetType;
-  campaignGoal?: string;
+  customNotes?: string;
 }
 
 interface LocationStepProps {
   territories: TerritoryOption[];
   value: LocationStepData | null;
-  campaignGoal: string;
   onChange: (value: LocationStepData) => void;
-  onGoalChange: (goal: string) => void;
+  reusableItems?: CustomGuidanceLibraryItem[];
+  onSaveReusable?: (category: CustomGuidanceCategory, label: string) => Promise<void>;
+  onDeleteReusable?: (id: string) => Promise<void>;
   onApprove: () => void;
   loading?: boolean;
   issues?: Array<{ level: string; message: string }>;
@@ -37,9 +43,10 @@ interface LocationStepProps {
 export function LocationStep({
   territories,
   value,
-  campaignGoal,
   onChange,
-  onGoalChange,
+  reusableItems,
+  onSaveReusable,
+  onDeleteReusable,
   onApprove,
   loading,
   issues,
@@ -54,18 +61,6 @@ export function LocationStep({
       issues={issues}
     >
       <label className={styles.questionLabel}>
-        Campaign goal <span className={styles.required}>(optional)</span>
-      </label>
-      <textarea
-        className={styles.textarea}
-        rows={3}
-        value={campaignGoal}
-        onChange={(e) => onGoalChange(e.target.value)}
-        placeholder="e.g. Birthday flower delivery for tourists in Phuket"
-        disabled={loading}
-      />
-
-      <label className={styles.questionLabel} style={{ marginTop: 16 }}>
         Target market <span className={styles.required}>*</span>
       </label>
       <div className={styles.chipGrid} role="listbox" aria-label="Target market">
@@ -82,7 +77,7 @@ export function LocationStep({
                 territoryName: t.territoryName,
                 marketSlug: t.marketSlug,
                 locationTargetType: value?.locationTargetType ?? 'PRESENCE',
-                campaignGoal,
+                customNotes: value?.customNotes,
               })
             }
             disabled={loading}
@@ -119,6 +114,23 @@ export function LocationStep({
           People in or interested in
         </button>
       </div>
+
+      {value && (
+        <CustomGuidanceField
+          title="Internal note for this market"
+          helperText="This does not change the selected market or landing page."
+          category="market_notes"
+          value={value.customNotes ? [value.customNotes] : []}
+          onChange={(tags) => onChange({ ...value, customNotes: tags[tags.length - 1] ?? '' })}
+          reusableItems={reusableItems}
+          onSaveReusable={onSaveReusable}
+          onDeleteReusable={onDeleteReusable}
+          noteLabel="Add note"
+          noteValue={value.customNotes ?? ''}
+          onNoteChange={(note) => onChange({ ...value, customNotes: note })}
+          disabled={loading}
+        />
+      )}
     </StepShell>
   );
 }

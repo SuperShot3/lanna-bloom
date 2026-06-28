@@ -1,6 +1,11 @@
 'use client';
 
+import type {
+  CustomGuidanceCategory,
+  CustomGuidanceLibraryItem,
+} from '@/lib/marketing/campaignBuilder/wizard/steps';
 import styles from '../../CampaignBuilderTab.module.css';
+import { CustomGuidanceField } from '../CustomGuidanceField';
 import { StepShell } from '../StepShell';
 
 export interface AdGroupItem {
@@ -9,7 +14,13 @@ export interface AdGroupItem {
 
 interface AdGroupsStepProps {
   adGroups: AdGroupItem[];
+  customAdGroupIdeas: string[];
+  customNotes?: string;
   onChange: (groups: AdGroupItem[]) => void;
+  onGuidanceChange: (guidance: { customAdGroupIdeas?: string[]; customNotes?: string }) => void;
+  reusableItems?: CustomGuidanceLibraryItem[];
+  onSaveReusable?: (category: CustomGuidanceCategory, label: string) => Promise<void>;
+  onDeleteReusable?: (id: string) => Promise<void>;
   onGenerate: () => void;
   onApprove: () => void;
   onBack: () => void;
@@ -22,7 +33,13 @@ interface AdGroupsStepProps {
 
 export function AdGroupsStep({
   adGroups,
+  customAdGroupIdeas,
+  customNotes,
   onChange,
+  onGuidanceChange,
+  reusableItems,
+  onSaveReusable,
+  onDeleteReusable,
   onGenerate,
   onApprove,
   onBack,
@@ -58,6 +75,22 @@ export function AdGroupsStep({
       loading={loading}
       issues={issues}
     >
+      <CustomGuidanceField
+        title="Custom intent ideas"
+        helperText="Examples: hospital flower delivery, condo delivery, graduation flowers. Generation clusters these into 1-3 ad groups."
+        category="ad_group_ideas"
+        presetOptions={['hospital flower delivery', 'condo delivery', 'graduation flowers']}
+        value={customAdGroupIdeas}
+        onChange={(tags) => onGuidanceChange({ customAdGroupIdeas: tags, customNotes })}
+        reusableItems={reusableItems}
+        onSaveReusable={onSaveReusable}
+        onDeleteReusable={onDeleteReusable}
+        noteLabel="More ad group guidance"
+        noteValue={customNotes ?? ''}
+        onNoteChange={(note) => onGuidanceChange({ customAdGroupIdeas, customNotes: note })}
+        disabled={loading}
+      />
+
       <div className={styles.actions} style={{ marginTop: 0, marginBottom: 16 }}>
         <button
           type="button"

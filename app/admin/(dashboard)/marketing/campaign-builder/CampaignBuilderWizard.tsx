@@ -8,6 +8,8 @@ import type {
 import {
   WIZARD_STEP_LABELS,
   WIZARD_STEP_ORDER,
+  type CustomGuidanceCategory,
+  type CustomGuidanceLibraryItem,
   type WizardStepId,
 } from '@/lib/marketing/campaignBuilder/wizard/steps';
 import styles from '../CampaignBuilderTab.module.css';
@@ -55,10 +57,10 @@ export function CampaignBuilderWizard({
   llmConfigured,
 }: CampaignBuilderWizardProps) {
   const [territories, setTerritories] = useState<TerritoryOption[]>([]);
+  const [guidanceLibrary, setGuidanceLibrary] = useState<CustomGuidanceLibraryItem[]>([]);
   const [drafts, setDrafts] = useState<CampaignDraftRecord[]>([]);
   const [activeDraft, setActiveDraft] = useState<CampaignDraftRecord | null>(null);
   const [activeStep, setActiveStep] = useState<WizardStepId>('location');
-  const [campaignGoal, setCampaignGoal] = useState('');
   const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
   const [approvalIssues, setApprovalIssues] = useState<Array<{ level: string; message: string }>>([]);
   const [validation, setValidation] = useState<CampaignValidationResult | null>(null);
@@ -83,10 +85,19 @@ export function CampaignBuilderWizard({
     }
   }, []);
 
+  const loadGuidanceLibrary = useCallback(async () => {
+    const res = await fetch('/api/admin/marketing/campaign-drafts/custom-guidance');
+    if (res.ok) {
+      const data = await res.json();
+      setGuidanceLibrary(data.items ?? []);
+    }
+  }, []);
+
   useEffect(() => {
     loadDrafts();
     loadTerritories();
-  }, [loadDrafts, loadTerritories]);
+    loadGuidanceLibrary();
+  }, [loadDrafts, loadGuidanceLibrary, loadTerritories]);
 
   const [locationData, setLocationData] = useState<LocationStepData | null>(null);
   const [audienceData, setAudienceData] = useState<AudienceStepData | null>(null);
@@ -94,7 +105,6 @@ export function CampaignBuilderWizard({
   useEffect(() => {
     if (activeDraft) {
       setActiveStep((activeDraft.wizardStep as WizardStepId) || 'location');
-      setCampaignGoal(activeDraft.naturalLanguagePrompt ?? '');
       setValidation(activeDraft.validationResult);
       const outs = activeDraft.stepOutputs as Record<string, unknown>;
       setLocationData((outs.location as LocationStepData) ?? null);
@@ -115,7 +125,7 @@ export function CampaignBuilderWizard({
       const res = await fetch('/api/admin/marketing/campaign-drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignGoal }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to create draft');
@@ -150,6 +160,28 @@ export function CampaignBuilderWizard({
     } finally {
       setLoadingAction(null);
     }
+  }
+
+  async function saveReusableGuidance(category: CustomGuidanceCategory, label: string) {
+    const res = await fetch('/api/admin/marketing/campaign-drafts/custom-guidance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, label }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Failed to save custom guidance');
+    await loadGuidanceLibrary();
+  }
+
+  async function deleteReusableGuidance(id: string) {
+    if (!window.confirm('Delete this reusable guidance chip? Existing drafts will keep their selected guidance.')) {
+      return;
+    }
+    const res = await fetch(`/api/admin/marketing/campaign-drafts/custom-guidance/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) return;
+    await loadGuidanceLibrary();
   }
 
   async function approveStep(step: WizardStepId, output: unknown, clearDownstream = false) {
@@ -261,21 +293,27 @@ export function CampaignBuilderWizard({
 
   const loading = loadingAction !== null;
   const loc = outputs.location as LocationStepData | undefined;
-  const aud = outputs.audience as {
-    languageCode: 'en';
-    landingUrl: string;
-    occasion?: string;
-  } | undefined;
-  const adGroups = (outputs.ad_groups as { adGroups: Array<{ name: string }> } | undefined)?.adGroups ?? [];
+  const aud = outputs.audience as AudienceStepData | undefined;
+  const adGroupsOutput = outputs.ad_groups as
+    | { adGroups: Array<{ name: string }>; customAdGroupIdeas?: string[]; customNotes?: string }
+    | undefined;
+  const adGroups = adGroupsOutput?.adGroups ?? [];
   const keywords =
-    (outputs.keywords as { adGroups: Array<{ name: string; keywords: Array<{ text: string; matchType: 'EXACT' | 'PHRASE' }> }> } | undefined)
+    (outputs.keywords as { adGroups: Array<{ name: string; keywords: Array<{ text: string; matchType: 'EXACT' | 'PHRASE' }> }>; customKeywordThemes?: string[]; customNotes?: string } | undefined)
       ?.adGroups ?? [];
+  const keywordsOutput = outputs.keywords as
+    | { adGroups: Array<{ name: string; keywords: Array<{ text: string; matchType: 'EXACT' | 'PHRASE' }> }>; customKeywordThemes?: string[]; customNotes?: string }
+    | undefined;
+  const negativeOutput = outputs.negative_keywords as
+    | { negativeKeywords: Array<{ text: string; matchType: 'PHRASE' }>; customNegativeThemes?: string[]; customNotes?: string }
+    | undefined;
   const negatives =
-    (outputs.negative_keywords as { negativeKeywords: Array<{ text: string; matchType: 'PHRASE' }> } | undefined)
-      ?.negativeKeywords ?? [];
+    negativeOutput?.negativeKeywords ?? [];
   const adCopy = outputs.ad_copy as {
     adGroups: Array<{ name: string; headlines: string[]; descriptions: string[] }>;
     dailyBudgetThb: number;
+    copyInstructions?: string[];
+    customNotes?: string;
   } | undefined;
 
   return (
@@ -307,16 +345,8 @@ export function CampaignBuilderWizard({
         <section className={styles.card}>
           <h3 className={styles.sectionTitle}>New Search campaign</h3>
           <p className={styles.hint}>
-            Step-by-step wizard for supported Thailand markets. Pick territory explicitly — no AI location guessing.
+            Step-by-step wizard for supported Thailand markets. Pick territory explicitly, then add structured custom guidance per step.
           </p>
-          <label className={styles.questionLabel}>Campaign goal (optional)</label>
-          <textarea
-            className={styles.textarea}
-            rows={3}
-            value={campaignGoal}
-            onChange={(e) => setCampaignGoal(e.target.value)}
-            placeholder="e.g. Birthday flower delivery for hotel guests in Phuket"
-          />
           <div className={styles.actions}>
             <button
               type="button"
@@ -362,13 +392,14 @@ export function CampaignBuilderWizard({
             <LocationStep
               territories={territories}
               value={locationData}
-              campaignGoal={campaignGoal}
               onChange={setLocationData}
-              onGoalChange={setCampaignGoal}
+              reusableItems={guidanceLibrary}
+              onSaveReusable={saveReusableGuidance}
+              onDeleteReusable={deleteReusableGuidance}
               onApprove={async () => {
                 if (!locationData) return;
-                await patchStep('location', { ...locationData, campaignGoal });
-                await approveStep('location', { ...locationData, campaignGoal });
+                await patchStep('location', locationData);
+                await approveStep('location', locationData);
               }}
               loading={loading}
               issues={approvalIssues}
@@ -388,6 +419,9 @@ export function CampaignBuilderWizard({
               audienceNotes={selectedTerritory.audienceNotes}
               isExpansion={selectedTerritory.marketType !== 'home'}
               onChange={setAudienceData}
+              reusableItems={guidanceLibrary}
+              onSaveReusable={saveReusableGuidance}
+              onDeleteReusable={deleteReusableGuidance}
               onApprove={async () => {
                 const data = audienceData ?? {
                   languageCode: 'en' as const,
@@ -405,9 +439,15 @@ export function CampaignBuilderWizard({
           {activeStep === 'ad_groups' && (
             <AdGroupsStep
               adGroups={adGroups}
-              onChange={(groups) => patchStep('ad_groups', { adGroups: groups })}
+              customAdGroupIdeas={adGroupsOutput?.customAdGroupIdeas ?? []}
+              customNotes={adGroupsOutput?.customNotes}
+              onChange={(groups) => patchStep('ad_groups', { ...adGroupsOutput, adGroups: groups })}
+              onGuidanceChange={(guidance) => patchStep('ad_groups', { ...adGroupsOutput, adGroups, ...guidance })}
+              reusableItems={guidanceLibrary}
+              onSaveReusable={saveReusableGuidance}
+              onDeleteReusable={deleteReusableGuidance}
               onGenerate={() => generateStep('ad_groups')}
-              onApprove={() => approveStep('ad_groups', { adGroups })}
+              onApprove={() => approveStep('ad_groups', { ...adGroupsOutput, adGroups })}
               onBack={goBack}
               loading={loading}
               generating={loadingAction === 'generate'}
@@ -420,9 +460,15 @@ export function CampaignBuilderWizard({
           {activeStep === 'keywords' && (
             <KeywordsStep
               adGroups={keywords.length ? keywords : adGroups.map((g) => ({ ...g, keywords: [] }))}
-              onChange={(groups) => patchStep('keywords', { adGroups: groups })}
+              customKeywordThemes={keywordsOutput?.customKeywordThemes ?? []}
+              customNotes={keywordsOutput?.customNotes}
+              onChange={(groups) => patchStep('keywords', { ...keywordsOutput, adGroups: groups })}
+              onGuidanceChange={(guidance) => patchStep('keywords', { ...keywordsOutput, adGroups: keywords, ...guidance })}
+              reusableItems={guidanceLibrary}
+              onSaveReusable={saveReusableGuidance}
+              onDeleteReusable={deleteReusableGuidance}
               onGenerate={() => generateStep('keywords')}
-              onApprove={() => approveStep('keywords', { adGroups: keywords })}
+              onApprove={() => approveStep('keywords', { ...keywordsOutput, adGroups: keywords })}
               onBack={goBack}
               loading={loading}
               generating={loadingAction === 'generate'}
@@ -435,9 +481,17 @@ export function CampaignBuilderWizard({
           {activeStep === 'negative_keywords' && (
             <NegativeKeywordsStep
               negativeKeywords={negatives}
-              onChange={(kws) => patchStep('negative_keywords', { negativeKeywords: kws })}
+              customNegativeThemes={negativeOutput?.customNegativeThemes ?? []}
+              customNotes={negativeOutput?.customNotes}
+              onChange={(kws) => patchStep('negative_keywords', { ...negativeOutput, negativeKeywords: kws })}
+              onGuidanceChange={(guidance) =>
+                patchStep('negative_keywords', { ...negativeOutput, negativeKeywords: negatives, ...guidance })
+              }
+              reusableItems={guidanceLibrary}
+              onSaveReusable={saveReusableGuidance}
+              onDeleteReusable={deleteReusableGuidance}
               onGenerate={() => generateStep('negative_keywords')}
-              onApprove={() => approveStep('negative_keywords', { negativeKeywords: negatives })}
+              onApprove={() => approveStep('negative_keywords', { ...negativeOutput, negativeKeywords: negatives })}
               onBack={goBack}
               loading={loading}
               generating={loadingAction === 'generate'}
@@ -462,18 +516,37 @@ export function CampaignBuilderWizard({
               territoryName={(locationData ?? loc)!.territoryName}
               locationTargetType={(locationData ?? loc)!.locationTargetType}
               landingUrl={(audienceData ?? aud)!.landingUrl}
+              audienceGuidance={audienceData ?? aud}
+              adGroupGuidance={adGroupsOutput}
+              keywordGuidance={keywordsOutput}
+              negativeGuidance={negativeOutput}
+              copyInstructions={adCopy?.copyInstructions ?? []}
+              customNotes={adCopy?.customNotes}
               onChange={(groups) =>
-                patchStep('ad_copy', { adGroups: groups, dailyBudgetThb: adCopy?.dailyBudgetThb ?? 500 })
+                patchStep('ad_copy', { ...adCopy, adGroups: groups, dailyBudgetThb: adCopy?.dailyBudgetThb ?? 500 })
               }
               onBudgetChange={(b) =>
                 patchStep('ad_copy', {
+                  ...adCopy,
                   adGroups: adCopy?.adGroups ?? [],
                   dailyBudgetThb: b,
                 })
               }
+              onGuidanceChange={(guidance) =>
+                patchStep('ad_copy', {
+                  ...adCopy,
+                  adGroups: adCopy?.adGroups ?? [],
+                  dailyBudgetThb: adCopy?.dailyBudgetThb ?? 500,
+                  ...guidance,
+                })
+              }
+              reusableItems={guidanceLibrary}
+              onSaveReusable={saveReusableGuidance}
+              onDeleteReusable={deleteReusableGuidance}
               onGenerate={() => generateStep('ad_copy')}
               onApprove={() =>
                 approveStep('ad_copy', {
+                  ...adCopy,
                   adGroups: adCopy?.adGroups ?? [],
                   dailyBudgetThb: adCopy?.dailyBudgetThb ?? 500,
                 })

@@ -7,12 +7,47 @@ export interface TerritoryContext {
   hasLocalHistory: boolean;
 }
 
+export type CustomGuidanceCategory =
+  | 'market_notes'
+  | 'audience_contexts'
+  | 'occasions'
+  | 'delivery_contexts'
+  | 'ad_group_ideas'
+  | 'keyword_themes'
+  | 'negative_themes'
+  | 'copy_instructions';
+
+export interface CustomGuidanceLibraryItem {
+  id: string;
+  category: CustomGuidanceCategory;
+  label: string;
+  createdByAdminEmail: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomGuidanceLibraryInput {
+  category: CustomGuidanceCategory;
+  label: string;
+}
+
+export interface CustomGuidanceFields {
+  customNotes?: string;
+  customAudienceContexts?: string[];
+  customOccasions?: string[];
+  customDeliveryContexts?: string[];
+  customAdGroupIdeas?: string[];
+  customKeywordThemes?: string[];
+  customNegativeThemes?: string[];
+  copyInstructions?: string[];
+}
+
 export interface LocationStepOutput {
   destinationId: DeliveryDestinationId;
   territoryName: string;
   marketSlug: string | null;
   locationTargetType: 'PRESENCE' | 'PRESENCE_OR_INTEREST';
-  campaignGoal?: string;
+  customNotes?: string;
 }
 
 export interface AudienceStepOutput {
@@ -20,6 +55,10 @@ export interface AudienceStepOutput {
   landingUrl: string;
   occasion?: string;
   productFocus?: string;
+  customNotes?: string;
+  customAudienceContexts?: string[];
+  customOccasions?: string[];
+  customDeliveryContexts?: string[];
 }
 
 export interface AdGroupStepItem {
@@ -28,6 +67,8 @@ export interface AdGroupStepItem {
 
 export interface AdGroupsStepOutput {
   adGroups: AdGroupStepItem[];
+  customNotes?: string;
+  customAdGroupIdeas?: string[];
 }
 
 export interface KeywordStepItem {
@@ -37,11 +78,15 @@ export interface KeywordStepItem {
 
 export interface KeywordsStepOutput {
   adGroups: Array<AdGroupStepItem & { keywords: KeywordStepItem[] }>;
+  customNotes?: string;
+  customKeywordThemes?: string[];
 }
 
 export interface NegativeKeywordsStepOutput {
   negativeKeywords: KeywordStepItem[];
   aiSuggested?: KeywordStepItem[];
+  customNotes?: string;
+  customNegativeThemes?: string[];
 }
 
 export interface AdCopyStepOutput {
@@ -52,6 +97,8 @@ export interface AdCopyStepOutput {
     }
   >;
   dailyBudgetThb: number;
+  customNotes?: string;
+  copyInstructions?: string[];
 }
 
 export type StepOutputMap = {

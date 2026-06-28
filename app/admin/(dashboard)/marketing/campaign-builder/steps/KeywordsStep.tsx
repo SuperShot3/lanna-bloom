@@ -1,6 +1,11 @@
 'use client';
 
+import type {
+  CustomGuidanceCategory,
+  CustomGuidanceLibraryItem,
+} from '@/lib/marketing/campaignBuilder/wizard/steps';
 import styles from '../../CampaignBuilderTab.module.css';
+import { CustomGuidanceField } from '../CustomGuidanceField';
 import { StepShell } from '../StepShell';
 
 export interface KeywordItem {
@@ -15,7 +20,13 @@ export interface KeywordGroup {
 
 interface KeywordsStepProps {
   adGroups: KeywordGroup[];
+  customKeywordThemes: string[];
+  customNotes?: string;
   onChange: (groups: KeywordGroup[]) => void;
+  onGuidanceChange: (guidance: { customKeywordThemes?: string[]; customNotes?: string }) => void;
+  reusableItems?: CustomGuidanceLibraryItem[];
+  onSaveReusable?: (category: CustomGuidanceCategory, label: string) => Promise<void>;
+  onDeleteReusable?: (id: string) => Promise<void>;
   onGenerate: () => void;
   onApprove: () => void;
   onBack: () => void;
@@ -28,7 +39,13 @@ interface KeywordsStepProps {
 
 export function KeywordsStep({
   adGroups,
+  customKeywordThemes,
+  customNotes,
   onChange,
+  onGuidanceChange,
+  reusableItems,
+  onSaveReusable,
+  onDeleteReusable,
   onGenerate,
   onApprove,
   onBack,
@@ -91,6 +108,27 @@ export function KeywordsStep({
       loading={loading}
       issues={issues}
     >
+      <CustomGuidanceField
+        title="Keyword themes to include"
+        helperText="Use high-intent English themes only. Wrong-city, Thai, broad, and low-intent terms are still blocked."
+        category="keyword_themes"
+        presetOptions={[
+          'condo flower delivery',
+          'hospital flowers',
+          'graduation flowers',
+          'private house delivery',
+        ]}
+        value={customKeywordThemes}
+        onChange={(tags) => onGuidanceChange({ customKeywordThemes: tags, customNotes })}
+        reusableItems={reusableItems}
+        onSaveReusable={onSaveReusable}
+        onDeleteReusable={onDeleteReusable}
+        noteLabel="More keyword guidance"
+        noteValue={customNotes ?? ''}
+        onNoteChange={(note) => onGuidanceChange({ customKeywordThemes, customNotes: note })}
+        disabled={loading}
+      />
+
       <div className={styles.actions} style={{ marginTop: 0, marginBottom: 16 }}>
         <button
           type="button"
