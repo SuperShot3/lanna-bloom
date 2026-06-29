@@ -6873,7 +6873,7 @@ a.admin-summary-key-value {
 }
 .admin-partner-table {
   width: 100%;
-  min-width: 700px;
+  min-width: 960px;
   border-collapse: collapse;
 }
 .admin-partner-table th,
@@ -7017,6 +7017,88 @@ a.admin-summary-key-value {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
+}
+.admin-partner-link-col {
+  white-space: nowrap;
+}
+.admin-partner-link-cell {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.admin-partner-link-cell:hover {
+  text-decoration: underline;
+}
+.admin-partner-drawer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-partner-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 0 4px;
+}
+.admin-partner-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.admin-partner-edit-section {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+.admin-partner-edit-section legend {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.admin-partner-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+.admin-partner-edit-field--full {
+  grid-column: 1 / -1;
+}
+.admin-partner-edit-field .admin-partner-reject-input {
+  width: 100%;
+}
+.admin-partner-edit-checkbox {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.admin-partner-edit-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.admin-partner-edit-error {
+  color: #c0392b;
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 10px 12px;
+  background: #fdecea;
+  border-radius: var(--radius-sm);
+}
+@media (max-width: 520px) {
+  .admin-partner-edit-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Admin product moderation */
@@ -8645,6 +8727,10 @@ a.admin-summary-key-value {
 }
 .admin-theme .admin-partner-detail a,
 .admin-shell .admin-partner-detail a {
+  color: var(--admin-primary) !important;
+}
+.admin-theme .admin-partner-link-cell,
+.admin-shell .admin-partner-link-cell {
   color: var(--admin-primary) !important;
 }
 

@@ -176,6 +176,35 @@ export async function createCatalogPartner(input: CreateCatalogPartnerInput): Pr
   return data.id;
 }
 
+/** Sync storefront catalog partner from an approved application row. */
+export async function syncCatalogPartnerFromApplication(
+  catalogPartnerId: string,
+  app: {
+    shop_name?: string | null;
+    contact_name?: string | null;
+    phone?: string | null;
+    line_id?: string | null;
+    address?: string | null;
+    district?: string | null;
+  }
+): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from('catalog_partners')
+    .update({
+      shop_name: app.shop_name?.trim() || '',
+      contact_name: app.contact_name?.trim() || '',
+      phone_number: app.phone?.trim() || '',
+      line_or_whatsapp: app.line_id?.trim() || null,
+      shop_address: app.address?.trim() || null,
+      city: app.district?.trim() || 'Chiang Mai',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', catalogPartnerId);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function updateCatalogPartnerProfile(
   partnerId: string,
   input: UpdateCatalogPartnerProfileInput

@@ -131,16 +131,42 @@ export async function getPartnerApplicationById(id: string): Promise<PartnerAppl
   return data as PartnerApplicationRow;
 }
 
-/** Update application (admin): status, user_id, sanity_partner_id, admin_note. */
+/** Editable partner application contact / ops fields (admin). */
+export type UpdatePartnerApplicationFieldsInput = {
+  shop_name?: string | null;
+  contact_name?: string | null;
+  email?: string | null;
+  line_id?: string | null;
+  phone?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  address?: string | null;
+  district?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  self_deliver?: boolean | null;
+  delivery_zones?: string | null;
+  delivery_fee_note?: string | null;
+  categories?: string[] | null;
+  prep_time?: string | null;
+  cutoff_time?: string | null;
+  max_orders_per_day?: number | null;
+  sample_photo_urls?: string[] | null;
+  experience_note?: string | null;
+  admin_note?: string | null;
+};
+
+export type UpdatePartnerApplicationInput = UpdatePartnerApplicationFieldsInput & {
+  status?: string;
+  user_id?: string | null;
+  sanity_partner_id?: string | null;
+  temp_password?: string | null;
+};
+
+/** Update application (admin): status metadata and/or contact fields. */
 export async function updatePartnerApplication(
   id: string,
-  updates: {
-    status?: string;
-    user_id?: string | null;
-    sanity_partner_id?: string | null;
-    admin_note?: string | null;
-    temp_password?: string | null;
-  }
+  updates: UpdatePartnerApplicationInput
 ): Promise<boolean> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return false;

@@ -49,13 +49,13 @@
   width: 100%;
   height: 100%;
   aspect-ratio: 1;
-  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
 }
 
 .gallery-container {
   display: flex;
-  touch-action: pan-y;
-  margin-left: 0;
+  touch-action: pan-y pinch-zoom;
+  margin-left: -0.001px;
   height: 100%;
 }
 

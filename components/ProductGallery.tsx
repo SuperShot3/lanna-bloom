@@ -53,8 +53,8 @@ export function ProductGallery({
   onActiveChangeRef.current = onActiveChange;
   /** Ignore settle events caused by parent-driven scrollTo (not user swipe/button). */
   const programmaticScrollRef = useRef(false);
-  /** Prev/next chevrons should update parent index in controlled mode. */
-  const chevronNavRef = useRef(false);
+  /** Embla's live snap — used for lazy slide loading before parent state catches up. */
+  const [snapIndex, setSnapIndex] = useState(0);
 
   const reportActiveIndex = useCallback(
     (index: number) => {
@@ -117,12 +117,10 @@ export function ProductGallery({
   }, []);
 
   const goPrev = useCallback(() => {
-    chevronNavRef.current = true;
     emblaApi?.scrollPrev();
   }, [emblaApi]);
 
   const goNext = useCallback(() => {
-    chevronNavRef.current = true;
     emblaApi?.scrollNext();
   }, [emblaApi]);
 
@@ -290,27 +288,27 @@ export function ProductGallery({
 
   useEffect(() => {
     if (!emblaApi) return;
+    const syncSnapIndex = () => {
+      setSnapIndex(emblaApi.selectedScrollSnap());
+    };
     const onSettle = () => {
       const idx = emblaApi.selectedScrollSnap();
-      const fromProgrammatic = programmaticScrollRef.current;
-      const fromChevron = chevronNavRef.current;
-      const fromUserDrag = emblaDragDuringPointerRef.current;
-      if (fromProgrammatic) {
+      syncSnapIndex();
+      if (programmaticScrollRef.current) {
         programmaticScrollRef.current = false;
+        return;
       }
-      if (fromChevron) {
-        chevronNavRef.current = false;
-      }
-      const shouldReport = !isControlled ? true : fromUserDrag || fromChevron;
-      if (!shouldReport) return;
       if (isControlled && idx === activeIndex) return;
       reportActiveIndex(idx);
     };
+    emblaApi.on('select', syncSnapIndex);
     emblaApi.on('settle', onSettle);
+    syncSnapIndex();
     if (!isControlled) {
       onSettle();
     }
     return () => {
+      emblaApi.off('select', syncSnapIndex);
       emblaApi.off('settle', onSettle);
     };
   }, [emblaApi, isControlled, activeIndex, reportActiveIndex]);
@@ -338,13 +336,26 @@ export function ProductGallery({
   }, [emblaApi]);
 
   useEffect(() => {
-    if (emblaApi && isControlled && activeIndex !== undefined) {
-      const safeIndex = clampGalleryIndex(activeIndex, list.length);
-      if (emblaApi.selectedScrollSnap() !== safeIndex) {
-        programmaticScrollRef.current = true;
-        emblaApi.scrollTo(safeIndex);
-      }
+    if (!emblaApi) return;
+    emblaApi.reInit();
+    const safeIndex = isControlled && activeIndex !== undefined
+      ? clampGalleryIndex(activeIndex, list.length)
+      : clampGalleryIndex(emblaApi.selectedScrollSnap(), list.length);
+    programmaticScrollRef.current = true;
+    emblaApi.scrollTo(safeIndex);
+    setSnapIndex(safeIndex);
+  }, [emblaApi, imagesKey, list.length]);
+
+  useEffect(() => {
+    if (!emblaApi || !isControlled || activeIndex === undefined) return;
+    const safeIndex = clampGalleryIndex(activeIndex, list.length);
+    if (emblaApi.selectedScrollSnap() === safeIndex) {
+      setSnapIndex(safeIndex);
+      return;
     }
+    programmaticScrollRef.current = true;
+    emblaApi.scrollTo(safeIndex);
+    setSnapIndex(safeIndex);
   }, [emblaApi, isControlled, activeIndex, list.length]);
 
   return (
@@ -362,7 +373,7 @@ export function ProductGallery({
                       : undefined
                   }
                 >
-                  {shouldLoadGallerySlideImage(i, active) ? (
+                  {shouldLoadGallerySlideImage(i, snapIndex) ? (
                     <Image
                       src={src}
                       alt={imageAlts?.[i]?.trim() || (i === 0 ? name : `${name} - image ${i + 1}`)}
