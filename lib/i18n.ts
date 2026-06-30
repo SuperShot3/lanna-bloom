@@ -102,6 +102,9 @@ const baseTranslations = {
       backToTop: 'Back to top',
       flowerTypeSectionTitle: '{type} Bouquets',
       flowerTypeSectionTitlePotted: '{type}',
+      productSectionPlushyToys: 'Plushy toys',
+      productSectionBalloons: 'Balloons',
+      productSectionSweets: 'Sweets',
     },
     experience: {
       title: 'Lanna Bloom Experience',
@@ -1422,6 +1425,9 @@ const baseTranslations = {
       backToTop: 'กลับขึ้นด้านบน',
       flowerTypeSectionTitle: 'ช่อ{type}',
       flowerTypeSectionTitlePotted: '{type}',
+      productSectionPlushyToys: 'ตุ๊กตา',
+      productSectionBalloons: 'บอลลูน',
+      productSectionSweets: 'ขนมและของหวาน',
     },
     experience: {
       title: 'ประสบการณ์ Lanna Bloom',
@@ -2722,6 +2728,9 @@ const russianTranslations = {
     showMore: 'Показать ещё',
     browseBouquets: 'Смотреть букеты',
     backToTop: 'Наверх',
+    productSectionPlushyToys: 'Плюшевые игрушки',
+    productSectionBalloons: 'Шары',
+    productSectionSweets: 'Сладости',
   },
   experience: {
     ...baseTranslations.en.experience,
@@ -3573,6 +3582,9 @@ const chineseSingaporeTranslations = {
     showMore: '显示更多',
     browseBouquets: '浏览花束',
     backToTop: '返回顶部',
+    productSectionPlushyToys: '毛绒玩具',
+    productSectionBalloons: '气球',
+    productSectionSweets: '甜品',
   },
   experience: {
     ...baseTranslations.en.experience,
@@ -4238,6 +4250,9 @@ const chineseHongKongTranslations = {
     showMore: '顯示更多',
     browseBouquets: '瀏覽花束',
     backToTop: '返回頂部',
+    productSectionPlushyToys: '毛絨玩具',
+    productSectionBalloons: '氣球',
+    productSectionSweets: '甜品',
   },
   delivery: {
     ...baseTranslations.en.delivery,

@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import { BouquetCard } from '@/components/BouquetCard';
+import { ProductCard } from '@/components/ProductCard';
 import { StorefrontIcon } from '@/components/icons';
-import { getHomeFlowerTypeSectionsFromSanity } from '@/lib/sanity';
+import {
+  getHomeFlowerTypeSectionsFromSanity,
+  getProductsFilteredFromSanity,
+  type CatalogProduct,
+} from '@/lib/sanity';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -19,12 +24,90 @@ function flowerTypeSectionTitle(
   return template.replace('{type}', flowerTypeLabel(type, catalog));
 }
 
+const HOME_PRODUCT_SECTION_LIMIT = 6;
+
+type ProductSectionConfig = {
+  categoryKey: string;
+  titleKey: 'productSectionPlushyToys' | 'productSectionBalloons' | 'productSectionSweets';
+};
+
+const HOME_PRODUCT_SECTIONS: ProductSectionConfig[] = [
+  { categoryKey: 'plushy_toys', titleKey: 'productSectionPlushyToys' },
+  { categoryKey: 'balloons', titleKey: 'productSectionBalloons' },
+  { categoryKey: 'food_sweets', titleKey: 'productSectionSweets' },
+];
+
+function ShowMoreLink({ href, label }: { href: string; label: string }) {
+  return (
+    <div className="mt-8 sm:mt-10 flex justify-center">
+      <Link
+        href={href}
+        className="popular-show-more group"
+      >
+        <span>{label}</span>
+        <StorefrontIcon
+          name="arrow-forward"
+          size={18}
+          className="popular-show-more__icon"
+        />
+      </Link>
+    </div>
+  );
+}
+
+function ProductFeedRow({
+  title,
+  href,
+  products,
+  lang,
+  showMoreLabel,
+}: {
+  title: string;
+  href: string;
+  products: CatalogProduct[];
+  lang: Locale;
+  showMoreLabel: string;
+}) {
+  return (
+    <div className="home-reveal-item mb-12 sm:mb-14 last:mb-0">
+      <h2 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-6 sm:mb-8">
+        {title}
+      </h2>
+      <div className="popular-scroll-wrap">
+        <div className="popular-scroll">
+          {products.map((product) => (
+            <div key={product.id} className="popular-card-slot">
+              <ProductCard product={product} lang={lang} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <ShowMoreLink href={href} label={showMoreLabel} />
+    </div>
+  );
+}
+
 export async function PopularSection({ lang }: { lang: Locale }) {
-  const sections = await getHomeFlowerTypeSectionsFromSanity();
+  const [sections, productSectionResults] = await Promise.all([
+    getHomeFlowerTypeSectionsFromSanity(),
+    Promise.all(
+      HOME_PRODUCT_SECTIONS.map(async (section) => ({
+        ...section,
+        products: (
+          await getProductsFilteredFromSanity({
+            categoryKey: section.categoryKey,
+            sort: 'newest',
+            catalogDeliveryDestination: 'CHIANG_MAI',
+          })
+        ).slice(0, HOME_PRODUCT_SECTION_LIMIT),
+      }))
+    ),
+  ]);
   const tHome = translations[lang].home;
   const tCatalog = translations[lang].catalog;
+  const productSections = productSectionResults.filter((section) => section.products.length > 0);
 
-  if (sections.length === 0) return null;
+  if (sections.length === 0 && productSections.length === 0) return null;
 
   return (
     <section
@@ -62,22 +145,20 @@ export async function PopularSection({ lang }: { lang: Locale }) {
                   ))}
                 </div>
               </div>
-              <div className="mt-8 sm:mt-10 flex justify-center">
-                <Link
-                  href={catalogHref}
-                  className="popular-show-more group"
-                >
-                  <span>{tHome.showMore}</span>
-                  <StorefrontIcon
-                    name="arrow-forward"
-                    size={18}
-                    className="popular-show-more__icon"
-                  />
-                </Link>
-              </div>
+              <ShowMoreLink href={catalogHref} label={tHome.showMore} />
             </div>
           );
         })}
+        {productSections.map((section) => (
+          <ProductFeedRow
+            key={section.categoryKey}
+            title={tHome[section.titleKey]}
+            href={`/${lang}/catalog${buildCatalogSearchString({ topCategory: section.categoryKey })}`}
+            products={section.products}
+            lang={lang}
+            showMoreLabel={tHome.showMore}
+          />
+        ))}
       </div>
     </section>
   );
