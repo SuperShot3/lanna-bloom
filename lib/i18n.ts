@@ -627,6 +627,34 @@ const baseTranslations = {
       checkoutRecoveryInvalid: 'This recovery link is invalid or has expired.',
       checkoutRecoveryReplaceConfirm:
         'Replace your current cart and form with the saved checkout?',
+      deliveryLocationCta: "Can't find your area?",
+      deliveryLocationCtaSub: "We'll check delivery for you ✨",
+      deliveryLocationModalTitle: 'Check delivery to your area',
+      deliveryLocationModalIntro:
+        'Tell us where you need delivery. We will reply by email. Your cart stays saved for 3 days while we confirm.',
+      deliveryLocationTextLabel: 'Your location (hotel, address, area)',
+      deliveryLocationTextPlaceholder: 'e.g. Nimman, Anantara Chiang Mai, 123/4 Soi 5',
+      deliveryLocationMapsLabel: 'Google Maps link',
+      deliveryLocationMapsPlaceholder: 'Paste pin link from Google Maps (Share → Copy link)',
+      deliveryLocationHint:
+        'Add your location or paste a Google Maps pin link — at least one is required.',
+      deliveryLocationMessengerTitle: 'Or send us a message',
+      deliveryLocationConsentLabel:
+        'I agree that Lanna Bloom may use my contact details and location to check delivery availability.',
+      deliveryLocationSubmit: 'Send delivery check request',
+      deliveryLocationSubmitting: 'Sending…',
+      deliveryLocationSuccess:
+        'We received your request. We will check delivery and get back to you soon. Your cart is saved.',
+      deliveryLocationError: 'Could not send request. Please try again or message us directly.',
+      deliveryLocationLocationRequired:
+        'Please enter your location or paste a Google Maps link.',
+      deliveryLocationConsentRequired: 'Please agree to let us process your details.',
+      deliveryLocationNameRequired: 'Please enter your name.',
+      deliveryLocationEmailRequired: 'Please enter your email so we can reply.',
+      deliveryLocationEmailHint: 'Required — we will reply to this email address.',
+      deliveryLocationPhoneOptional: 'Phone (optional)',
+      deliveryLocationLine: 'LINE',
+      deliveryLocationFacebook: 'Facebook',
     },
     premiumCheckout: {
       pageTitle: 'Complete your flower delivery',
@@ -1907,6 +1935,34 @@ const baseTranslations = {
       checkoutRecoveryInvalid: 'ลิงก์กู้คืนนี้ไม่ถูกต้องหรือหมดอายุแล้ว',
       checkoutRecoveryReplaceConfirm:
         'แทนที่ตะกร้าและแบบฟอร์มปัจจุบันด้วยการชำระเงินที่บันทึกไว้หรือไม่?',
+      deliveryLocationCta: 'ไม่พบพื้นที่ของคุณ?',
+      deliveryLocationCtaSub: 'เราจะช่วยเช็คการจัดส่งให้ ✨',
+      deliveryLocationModalTitle: 'เช็คการจัดส่งในพื้นที่ของคุณ',
+      deliveryLocationModalIntro:
+        'บอกเราว่าต้องการจัดส่งที่ไหน เราจะตอบกลับทางอีเมล ตะกร้าของคุณจะถูกบันทึกไว้ 3 วัน ระหว่างที่เราเช็คให้',
+      deliveryLocationTextLabel: 'พื้นที่ของคุณ (โรงแรม ที่อยู่ ย่าน)',
+      deliveryLocationTextPlaceholder: 'เช่น นิมมาน อนันตราเชียงใหม่ 123/4 ซอย 5',
+      deliveryLocationMapsLabel: 'ลิงก์ Google Maps',
+      deliveryLocationMapsPlaceholder: 'วางลิงก์ปักหมุดจาก Google Maps (แชร์ → คัดลอกลิงก์)',
+      deliveryLocationHint:
+        'กรอกพื้นที่หรือวางลิงก์ Google Maps — ต้องมีอย่างน้อยหนึ่งอย่าง',
+      deliveryLocationMessengerTitle: 'หรือส่งข้อความหาเรา',
+      deliveryLocationConsentLabel:
+        'ยินยอมให้ Lanna Bloom ใช้ข้อมูลติดต่อและพื้นที่ของฉันเพื่อเช็คความพร้อมจัดส่ง',
+      deliveryLocationSubmit: 'ส่งคำขอเช็คการจัดส่ง',
+      deliveryLocationSubmitting: 'กำลังส่ง…',
+      deliveryLocationSuccess:
+        'เราได้รับคำขอแล้ว จะเช็คการจัดส่งและติดต่อกลับโดยเร็ว ตะกร้าของคุณถูกบันทึกไว้แล้ว',
+      deliveryLocationError: 'ส่งคำขอไม่สำเร็จ ลองอีกครั้งหรือทักหาเราโดยตรง',
+      deliveryLocationLocationRequired:
+        'กรุณากรอกพื้นที่หรือวางลิงก์ Google Maps',
+      deliveryLocationConsentRequired: 'กรุณายินยอมให้เราประมวลผลข้อมูลของคุณ',
+      deliveryLocationNameRequired: 'กรุณากรอกชื่อของคุณ',
+      deliveryLocationEmailRequired: 'กรุณากรอกอีเมลเพื่อให้เราติดต่อกลับ',
+      deliveryLocationEmailHint: 'จำเป็น — เราจะตอบกลับทางอีเมลนี้',
+      deliveryLocationPhoneOptional: 'เบอร์โทร (ไม่บังคับ)',
+      deliveryLocationLine: 'LINE',
+      deliveryLocationFacebook: 'Facebook',
     },
     premiumCheckout: {
       pageTitle: 'กรอกรายละเอียดการจัดส่งดอกไม้',

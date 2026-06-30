@@ -32,6 +32,10 @@ const checkoutRecoveryReadStore = new Map<string, { count: number; resetAt: numb
 const CHECKOUT_RECOVERY_READ_WINDOW_MS = 60 * 1000; // 1 minute
 const CHECKOUT_RECOVERY_READ_MAX = 30;
 
+const deliveryLocationRequestStore = new Map<string, { count: number; resetAt: number }>();
+const DELIVERY_LOCATION_REQUEST_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const DELIVERY_LOCATION_REQUEST_MAX = 5;
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -163,6 +167,28 @@ export function checkSharedCartReadRateLimit(ip: string): boolean {
   }
   entry.count++;
   return entry.count <= SHARED_CART_READ_MAX;
+}
+
+export function checkDeliveryLocationRequestRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `dlr:${ip}`;
+  const entry = deliveryLocationRequestStore.get(key);
+  if (!entry) {
+    deliveryLocationRequestStore.set(key, {
+      count: 1,
+      resetAt: now + DELIVERY_LOCATION_REQUEST_WINDOW_MS,
+    });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    deliveryLocationRequestStore.set(key, {
+      count: 1,
+      resetAt: now + DELIVERY_LOCATION_REQUEST_WINDOW_MS,
+    });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= DELIVERY_LOCATION_REQUEST_MAX;
 }
 
 export function checkStripeOrderStatusRateLimit(ip: string, sessionId: string): boolean {

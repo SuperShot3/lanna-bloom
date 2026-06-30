@@ -315,6 +315,25 @@ export function trackLanguageChange(lang: string): void {
   sendEvent('language_change', { language: lang, page_path: window.location.pathname });
 }
 
+/** Delivery location request modal — checkout trial flow. */
+export function trackDeliveryLocationRequestOpen(): void {
+  if (typeof window === 'undefined') return;
+  sendEvent('delivery_location_request_open', { page_path: window.location.pathname });
+}
+
+export function trackDeliveryLocationRequestSubmit(): void {
+  if (typeof window === 'undefined') return;
+  sendEvent('delivery_location_request_submit', { page_path: window.location.pathname });
+}
+
+export function trackDeliveryLocationRequestValidationError(reason: string): void {
+  if (typeof window === 'undefined') return;
+  sendEvent('delivery_location_request_validation_error', {
+    page_path: window.location.pathname,
+    reason,
+  });
+}
+
 // --- Legacy / alias for existing callers ---
 
 /**

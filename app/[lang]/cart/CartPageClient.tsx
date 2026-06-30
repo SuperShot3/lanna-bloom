@@ -1917,6 +1917,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           checkoutSubmissionToken={checkoutSubmissionToken}
           onBottomAction={handleCheckoutBottomAction}
           onPay={handlePlaceOrder}
+          customerName={customerName}
+          countryCode={countryCode}
+          phoneNational={phoneNational}
+          customerEmail={customerEmail}
         />
         <GoogleMapsLinkPromptModal
           lang={lang}

@@ -103,6 +103,10 @@ export function CartCheckoutView({
   checkoutSubmissionToken,
   onBottomAction,
   onPay,
+  customerName,
+  countryCode,
+  phoneNational,
+  customerEmail,
 }: {
   lang: Locale;
   items: CartItem[];
@@ -150,6 +154,10 @@ export function CartCheckoutView({
   checkoutSubmissionToken: string | null;
   onBottomAction: () => void;
   onPay: () => void;
+  customerName: string;
+  countryCode: string;
+  phoneNational: string;
+  customerEmail: string;
 }) {
   const t = translations[lang].cart;
   const tPremium = translations[lang].premiumCheckout;
@@ -265,6 +273,10 @@ export function CartCheckoutView({
         sectionRefs={sectionRefs}
         onRemoveItem={onRemoveItem}
         onChangeItemQuantity={onChangeItemQuantity}
+        customerName={customerName}
+        countryCode={countryCode}
+        phoneNational={phoneNational}
+        customerEmail={customerEmail}
         paymentSection={
           <div className="co-payment-block">
             <button
