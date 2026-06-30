@@ -7,6 +7,7 @@ import {
   validateReferralCode,
   getDiscountForCode,
   getDiscountAllocationForCode,
+  isCartFivePercentCode,
 } from '@/lib/referral';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -98,10 +99,13 @@ export function ReferralCodeBox({
   };
 
   if (appliedCode) {
+    const appliedLabel = isCartFivePercentCode(appliedCode)
+      ? (t.cartFivePercentApplied ?? '5% discount applied')
+      : (t.referralApplied ?? 'Applied: {code}').replace('{code}', appliedCode);
     return (
       <div className="referral-code-box referral-code-box--applied">
         <span className="referral-code-box-applied">
-          {(t.referralApplied ?? 'Applied: {code}').replace('{code}', appliedCode)}
+          {appliedLabel}
         </span>
         <button
           type="button"

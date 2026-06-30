@@ -32,7 +32,7 @@ import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
 import { isExpansionDestination } from '@/lib/delivery/markets';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
-import { getStoredReferral, clearReferral } from '@/lib/referral';
+import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
 import {
   isMay2026FreeDeliveryActive,
@@ -196,6 +196,7 @@ function buildAddOnsSummaryLines(
 const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
+const CART_SOCIAL_NUDGE_DISMISSED_KEY = 'lb_cart_social_nudge_dismissed';
 
 const DELIVERY_POLICY_LINK_STYLE: React.CSSProperties = {
   color: 'var(--accent-border)',
@@ -1087,6 +1088,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     deliveryFeeVal > 0 && (isCampaignDiscount || isManualFreeDelivery);
   const stickyDeliveryFeeNet = waivesDeliveryFee ? 0 : deliveryFeeVal;
   const stickyDeliveryFeeGross = waivesDeliveryFee ? deliveryFeeVal : undefined;
+  const showCartFivePercentOffer = orderDiscountVal === 0 && itemsTotalVal > 0;
+  const [cartSocialNudgeDismissed, setCartSocialNudgeDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return sessionStorage.getItem(CART_SOCIAL_NUDGE_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const showCartSocialNudge =
+    isCartFivePercentCode(appliedReferralCode) &&
+    orderDiscountVal > 0 &&
+    !cartSocialNudgeDismissed;
+
+  const handleApplyCartFivePercent = useCallback(() => {
+    storeReferral(CART_FIVE_PERCENT_CODE);
+    setReferralCleared((c) => c + 1);
+  }, []);
+
+  const handleDismissCartSocialNudge = useCallback(() => {
+    try {
+      sessionStorage.setItem(CART_SOCIAL_NUDGE_DISMISSED_KEY, '1');
+    } catch {
+      // ignore
+    }
+    setCartSocialNudgeDismissed(true);
+  }, []);
 
   const tPremium = translations[lang].premiumCheckout;
   const isDeliveryValidNow = isPremiumDeliveryValid(delivery);
@@ -1853,10 +1881,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           discountLabel={
             isCampaignDiscount
               ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
-              : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
-                  '{code}',
-                  resolvedDiscount?.code ?? ''
-                )
+              : isCartFivePercentCode(resolvedDiscount?.code)
+                ? (t.cartFivePercentDiscountLabel ?? '5% discount')
+                : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
+                    '{code}',
+                    resolvedDiscount?.code ?? ''
+                  )
           }
           grandTotal={grandTotalVal}
           mayCampaignProgressRemaining={mayCampaignProgressRemaining}
@@ -1917,6 +1947,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           checkoutSubmissionToken={checkoutSubmissionToken}
           onBottomAction={handleCheckoutBottomAction}
           onPay={handlePlaceOrder}
+          showCartFivePercentOffer={showCartFivePercentOffer}
+          onApplyCartFivePercent={handleApplyCartFivePercent}
+          showCartSocialNudge={showCartSocialNudge}
+          onDismissCartSocialNudge={handleDismissCartSocialNudge}
           customerName={customerName}
           countryCode={countryCode}
           phoneNational={phoneNational}

@@ -35,6 +35,13 @@ export interface ReferralCommission {
   commissionAmount: number;
 }
 
+/** One-click cart offer — applied via the checkout discount button. */
+export const CART_FIVE_PERCENT_CODE = 'CART5';
+
+export function isCartFivePercentCode(code: string | null | undefined): boolean {
+  return code?.trim().toUpperCase() === CART_FIVE_PERCENT_CODE;
+}
+
 /** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
 const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   'LB-DELIVERY-FREE': { type: 'free_delivery' },
@@ -51,6 +58,11 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
       name: 'Vasiliy',
       commissionPercent: 5,
     },
+  },
+  [CART_FIVE_PERCENT_CODE]: {
+    type: 'percent',
+    value: 5,
+    discountBase: 'items',
   },
 };
 

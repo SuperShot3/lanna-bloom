@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
 import { translations } from '@/lib/i18n';
+import { OverlayReveal } from '@/components/ui/overlay-reveal';
+import { SocialLinks } from '@/components/SocialLinks';
 import type { CartItem } from '@/contexts/CartContext';
 import {
   isDeliveryTimeSlotSelectableForDate,
@@ -103,6 +105,10 @@ export function CartCheckoutView({
   checkoutSubmissionToken,
   onBottomAction,
   onPay,
+  showCartFivePercentOffer = false,
+  onApplyCartFivePercent,
+  showCartSocialNudge = false,
+  onDismissCartSocialNudge,
   customerName,
   countryCode,
   phoneNational,
@@ -154,6 +160,10 @@ export function CartCheckoutView({
   checkoutSubmissionToken: string | null;
   onBottomAction: () => void;
   onPay: () => void;
+  showCartFivePercentOffer?: boolean;
+  onApplyCartFivePercent?: () => void;
+  showCartSocialNudge?: boolean;
+  onDismissCartSocialNudge?: () => void;
   customerName: string;
   countryCode: string;
   phoneNational: string;
@@ -161,6 +171,59 @@ export function CartCheckoutView({
 }) {
   const t = translations[lang].cart;
   const tPremium = translations[lang].premiumCheckout;
+
+  const DISCOUNT_BTN_EXIT_MS = 280;
+  const SOCIAL_NUDGE_DELAY_MS = 400;
+
+  type DiscountBtnPhase = 'visible' | 'exiting' | 'hidden';
+  const [discountBtnPhase, setDiscountBtnPhase] = useState<DiscountBtnPhase>(() =>
+    showCartFivePercentOffer ? 'visible' : 'hidden'
+  );
+  const [socialNudgeOpen, setSocialNudgeOpen] = useState(false);
+  const discountExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const socialNudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (showCartFivePercentOffer && discountBtnPhase === 'hidden') {
+      setDiscountBtnPhase('visible');
+      setSocialNudgeOpen(false);
+    }
+  }, [showCartFivePercentOffer, discountBtnPhase]);
+
+  useEffect(() => {
+    if (!showCartSocialNudge) {
+      setSocialNudgeOpen(false);
+      return;
+    }
+    socialNudgeTimerRef.current = setTimeout(() => {
+      setSocialNudgeOpen(true);
+    }, SOCIAL_NUDGE_DELAY_MS);
+    return () => {
+      if (socialNudgeTimerRef.current) clearTimeout(socialNudgeTimerRef.current);
+    };
+  }, [showCartSocialNudge]);
+
+  useEffect(
+    () => () => {
+      if (discountExitTimerRef.current) clearTimeout(discountExitTimerRef.current);
+      if (socialNudgeTimerRef.current) clearTimeout(socialNudgeTimerRef.current);
+    },
+    []
+  );
+
+  const handleDiscountClick = () => {
+    if (discountBtnPhase !== 'visible' || !onApplyCartFivePercent) return;
+    setDiscountBtnPhase('exiting');
+    discountExitTimerRef.current = setTimeout(() => {
+      onApplyCartFivePercent();
+      setDiscountBtnPhase('hidden');
+    }, DISCOUNT_BTN_EXIT_MS);
+  };
+
+  const showDiscountButton =
+    onApplyCartFivePercent &&
+    (discountBtnPhase === 'visible' || discountBtnPhase === 'exiting');
+  const payButtonSolo = discountBtnPhase === 'hidden';
 
   const payButtonDisabled = placing || !checkoutSubmissionToken;
   const payButtonMuted = !isPaymentUnlocked || !hasDeliveryZone;
@@ -279,38 +342,150 @@ export function CartCheckoutView({
         customerEmail={customerEmail}
         paymentSection={
           <div className="co-payment-block">
-            <button
-              type="button"
-              className={[
-                'co-payment-btn',
-                payButtonMuted ? 'co-payment-btn--muted' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={onPay}
-              disabled={payButtonDisabled}
-              aria-busy={placing}
+            <div className="co-payment-row">
+              <button
+                type="button"
+                className={[
+                  'co-payment-btn',
+                  payButtonMuted ? 'co-payment-btn--muted' : '',
+                  payButtonSolo ? 'co-payment-btn--solo' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={onPay}
+                disabled={payButtonDisabled}
+                aria-busy={placing}
+              >
+                {placing ? t.creatingCheckout : tPremium.paySecurely}
+              </button>
+              {showDiscountButton && (
+                <div
+                  className={[
+                    'co-discount-btn-wrap',
+                    discountBtnPhase === 'exiting' ? 'co-discount-btn-wrap--exit' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <button
+                    type="button"
+                    className={[
+                      'co-discount-btn',
+                      discountBtnPhase === 'exiting' ? 'co-discount-btn--exit' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={handleDiscountClick}
+                    disabled={placing || discountBtnPhase === 'exiting'}
+                  >
+                    {t.cartFivePercentBtn ?? 'I want 5% off'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <OverlayReveal
+              open={socialNudgeOpen}
+              className="co-social-nudge-reveal"
+              hiddenWhenClosed
             >
-              {placing ? t.creatingCheckout : tPremium.paySecurely}
-            </button>
+              <div className="co-social-nudge" role="status">
+                <p className="co-social-nudge-title">
+                  {t.cartFivePercentSocialTitle ??
+                    'Discount applied! Follow us for new bouquets and offers.'}
+                </p>
+                <div className="co-social-nudge-actions">
+                  <SocialLinks />
+                  {onDismissCartSocialNudge && (
+                    <button
+                      type="button"
+                      className="co-social-nudge-later"
+                      onClick={onDismissCartSocialNudge}
+                    >
+                      {t.cartFivePercentSocialLater ?? 'Maybe later'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </OverlayReveal>
             <style jsx>{`
               .co-payment-block {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 8px;
                 padding: 4px 0 8px;
               }
-              .co-payment-btn {
-                width: 100%;
-                min-height: 52px;
+              .co-payment-row {
+                display: flex;
+                gap: 10px;
+                align-items: stretch;
+              }
+              .co-discount-btn-wrap {
+                flex: 0 0 auto;
+                overflow: hidden;
+                max-width: 12rem;
+                transition:
+                  max-width 0.28s var(--ui-overlay-ease, ease),
+                  opacity 0.28s var(--ui-overlay-ease, ease),
+                  margin 0.28s var(--ui-overlay-ease, ease);
+              }
+              .co-discount-btn-wrap--exit {
+                max-width: 0;
+                opacity: 0;
+                margin-left: -10px;
+              }
+              .co-discount-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 48px;
+                padding: 0 10px;
                 border: none;
-                border-radius: 14px;
+                border-radius: 12px;
+                background: #43a047;
+                color: #fff;
+                font-size: 12px;
+                font-weight: 600;
+                line-height: 1.2;
+                font-family: inherit;
+                white-space: nowrap;
+                cursor: pointer;
+                opacity: 1;
+                transform: scale(1);
+                transition:
+                  background 0.15s ease,
+                  opacity 0.28s var(--ui-overlay-ease, ease),
+                  transform 0.28s var(--ui-overlay-ease, ease);
+              }
+              .co-discount-btn--exit {
+                opacity: 0;
+                transform: scale(0.92);
+              }
+              .co-discount-btn:hover:not(:disabled) {
+                background: #388e3c;
+              }
+              .co-discount-btn:disabled {
+                cursor: not-allowed;
+              }
+              .co-discount-btn-wrap--exit .co-discount-btn:disabled {
+                opacity: 0;
+              }
+              .co-payment-btn {
+                flex: 1 1 0;
+                min-width: 0;
+                min-height: 48px;
+                border: none;
+                border-radius: 12px;
                 background: var(--primary);
                 color: #fff;
-                font-size: 17px;
+                font-size: 16px;
                 font-weight: 600;
                 font-family: inherit;
                 cursor: pointer;
+                transition: flex 0.3s var(--ui-overlay-ease, ease);
+              }
+              .co-payment-btn--solo {
+                width: 100%;
+                flex: 1 1 100%;
               }
               .co-payment-btn:disabled {
                 opacity: 0.55;
@@ -318,6 +493,78 @@ export function CartCheckoutView({
               }
               .co-payment-btn--muted:not(:disabled) {
                 opacity: 0.72;
+              }
+              .co-social-nudge-reveal:global(.ui-overlay-reveal--open) {
+                margin-top: 4px;
+              }
+              .co-social-nudge {
+                padding: 12px 14px;
+                border-radius: 12px;
+                background: var(--pastel-cream, #faf6f0);
+                border: 1px solid var(--border, #e8e0d8);
+              }
+              .co-social-nudge-title {
+                margin: 0 0 10px;
+                font-size: 13px;
+                line-height: 1.45;
+                color: var(--text);
+              }
+              .co-social-nudge-actions {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px 14px;
+              }
+              .co-social-nudge-later {
+                margin-left: auto;
+                padding: 0;
+                border: none;
+                background: transparent;
+                color: var(--text-muted);
+                font-size: 12px;
+                font-family: inherit;
+                text-decoration: underline;
+                text-underline-offset: 2px;
+                cursor: pointer;
+              }
+              .co-social-nudge-later:hover {
+                color: var(--text);
+              }
+              @media (max-width: 380px) {
+                .co-payment-row {
+                  flex-direction: column;
+                  align-items: stretch;
+                }
+                .co-discount-btn-wrap {
+                  align-self: flex-end;
+                  max-width: 100%;
+                }
+                .co-discount-btn-wrap--exit {
+                  max-width: 0;
+                  margin-left: 0;
+                  align-self: flex-end;
+                }
+                .co-discount-btn {
+                  min-height: 52px;
+                }
+                .co-payment-btn {
+                  min-height: 52px;
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .co-discount-btn-wrap,
+                .co-discount-btn,
+                .co-payment-btn {
+                  transition: none;
+                }
+                .co-discount-btn-wrap--exit {
+                  max-width: 0;
+                  opacity: 0;
+                  margin-left: 0;
+                }
+                .co-discount-btn--exit {
+                  transform: none;
+                }
               }
             `}</style>
           </div>

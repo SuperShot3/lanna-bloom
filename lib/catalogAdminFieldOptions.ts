@@ -37,6 +37,7 @@ export const ADMIN_FLOWER_TYPE_OPTIONS = [
   { value: 'chrysanthemums', label: 'Chrysanthemums' },
   { value: 'lisianthus', label: 'Lisianthus' },
   { value: 'daisy', label: 'Daisy' },
+  { value: 'hydrangea', label: 'Hydrangea' },
   { value: 'mixed', label: 'Mixed' },
 ] as const;
 
