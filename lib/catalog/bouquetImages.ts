@@ -5,23 +5,13 @@ import {
   getCatalogImageVariantKey,
   getCatalogProductImagesForEntity,
 } from '@/lib/catalogCms';
+import { isStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import { catalogPublicUrl, type CatalogSupabaseClient } from '@/lib/catalog/storage';
 import { stemVariantKey, type PricingType } from '@/lib/catalog/pricing';
 import type { CatalogProductImageRow } from '@/lib/catalog/types';
 
 export type VariantImageSet = { urls: string[]; alts: string[] };
-
-function isSanityCdnUrl(url: string): boolean {
-  const raw = url.trim();
-  if (!raw) return false;
-  try {
-    const u = new URL(raw);
-    return u.hostname.includes('cdn.sanity.io') || u.hostname.includes('sanity.io');
-  } catch {
-    return raw.includes('cdn.sanity.io') || raw.includes('sanity.io');
-  }
-}
 
 function rowsToUrls(
   supabase: CatalogSupabaseClient,
@@ -37,7 +27,12 @@ function rowsToUrls(
       continue;
     }
     const publicUrl = row.public_url?.trim();
-    urls.push(publicUrl && !isSanityCdnUrl(publicUrl) ? publicUrl : catalogPublicUrl(supabase, row.storage_path));
+    const resolved =
+      publicUrl && isStorefrontRenderableImageUrl(publicUrl)
+        ? publicUrl
+        : catalogPublicUrl(supabase, row.storage_path);
+    if (!isStorefrontRenderableImageUrl(resolved)) continue;
+    urls.push(resolved);
     alts.push(row.alt_en?.trim() || row.alt_th?.trim() || '');
   }
   return { urls, alts };

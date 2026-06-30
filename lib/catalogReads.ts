@@ -21,6 +21,7 @@ import {
   getPlushyToyBySlugFromCatalog,
   getPopularBouquetsFromCatalogPaginated,
   getPopularCatalogItemsFromCatalogPaginated,
+  getHomeFlowerTypeSectionsFromCatalog,
   getProductByIdFromCatalog,
   getProductBySlugFromCatalog,
   getProductsFilteredFromCatalog,
@@ -28,6 +29,7 @@ import {
 } from '@/lib/catalog';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import type { CatalogFilterParams, PopularCatalogItem } from '@/lib/catalogListLogic';
+import type { HomeFlowerTypeSection } from '@/lib/catalog';
 import type { Bouquet } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
@@ -100,6 +102,11 @@ export async function getCatalogPopularItemsPaginated(
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   void catalogDeliveryDestination;
   return getPopularCatalogItemsFromCatalogPaginated(start, limit);
+}
+
+export async function getCatalogHomeFlowerTypeSections(): Promise<HomeFlowerTypeSection[]> {
+  if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
+  return getHomeFlowerTypeSectionsFromCatalog();
 }
 
 export async function getCatalogBouquetsFiltered(params: CatalogFilterParams): Promise<Bouquet[]> {

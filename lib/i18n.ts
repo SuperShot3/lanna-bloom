@@ -100,6 +100,8 @@ const baseTranslations = {
       showMore: 'Show More',
       browseBouquets: 'Browse bouquets',
       backToTop: 'Back to top',
+      flowerTypeSectionTitle: '{type} Bouquets',
+      flowerTypeSectionTitlePotted: '{type}',
     },
     experience: {
       title: 'Lanna Bloom Experience',
@@ -1384,6 +1386,8 @@ const baseTranslations = {
       showMore: 'แสดงเพิ่มเติม',
       browseBouquets: 'เลือกช่อดอกไม้',
       backToTop: 'กลับขึ้นด้านบน',
+      flowerTypeSectionTitle: 'ช่อ{type}',
+      flowerTypeSectionTitlePotted: '{type}',
     },
     experience: {
       title: 'ประสบการณ์ Lanna Bloom',

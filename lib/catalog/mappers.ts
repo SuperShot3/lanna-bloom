@@ -9,6 +9,7 @@ import {
 } from '@/lib/catalog/bouquetImages';
 import { buildSellableOptions, primaryCatalogPriceFromPricing, resolvePricingType } from '@/lib/catalog/pricing';
 import type { CatalogProduct } from '@/lib/catalog/types';
+import { filterStorefrontRenderableImageUrls } from '@/lib/catalog/catalogImage';
 import { filterStorefrontCatalogStoredImages } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
 import type {
@@ -38,7 +39,12 @@ function imageUrlsFromStored(
     urls.push(storedImagePublicUrl(supabase, img));
     alts.push(img.alt?.trim() ?? '');
   }
-  return { urls, alts };
+  const safeUrls = filterStorefrontRenderableImageUrls(urls);
+  const safeAlts = safeUrls.map((url) => {
+    const index = urls.indexOf(url);
+    return index >= 0 ? alts[index] ?? '' : '';
+  });
+  return { urls: safeUrls, alts: safeAlts };
 }
 
 function withFallbackImageAlts(imageUrls: string[], imageAlts: string[], fallbackText: string): string[] {

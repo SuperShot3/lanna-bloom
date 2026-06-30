@@ -7,10 +7,9 @@ import type { CatalogFilterParams } from '@/lib/sanity';
 import type { StemBucketKey } from '@/lib/bouquetOptions';
 import { STEM_BUCKET_RANGES } from '@/lib/bouquetOptions';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
-import { CATALOG_OCCASION_CHIPS } from '@/lib/catalogCategories';
+import { CATALOG_OCCASION_CHIPS, STOREFRONT_FLOWER_TYPES } from '@/lib/catalogCategories';
 
 const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
-const FLOWER_TYPES = ['rose', 'tulip', 'lily', 'orchid', 'sunflower', 'gerbera', 'carnation', 'mums', 'chrysanthemums', 'lisianthus', 'daisy', 'mixed'] as const;
 const DELIVERY_OPTS = ['same_day', 'next_day'] as const;
 const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement', 'potted'] as const;
 const STEM_OPTS: { key: StemBucketKey; labelKey: 'stemSmall' | 'stemMedium' | 'stemLarge' | 'stemGrand' }[] = [
@@ -340,9 +339,10 @@ export function FlowerFilterPanel({
         </div>
       </div>
 
-      <Collapsible title={t.filterTypes}>
+      <div className="flower-filter-group">
+        <p className="flower-filter-group-static-heading">{t.filterTypes}</p>
         <div className="flower-pill-row">
-          {FLOWER_TYPES.map((ty) => {
+          {STOREFRONT_FLOWER_TYPES.map((ty) => {
             const active = draft.types?.includes(ty) ?? false;
             const count = flowerTypeCounts?.[ty];
             const label = t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string;
@@ -360,10 +360,9 @@ export function FlowerFilterPanel({
             );
           })}
         </div>
-      </Collapsible>
+      </div>
 
-      <div className="flower-filter-group flower-filter-group--swatches">
-        <p className="flower-filter-group-static-heading">{t.filterColors}</p>
+      <Collapsible title={t.filterColors} openDefault={false}>
         <div className="flower-swatch-grid">
           {COLOR_KEYS.map((c) => {
             const active = draft.colors?.includes(c);
@@ -385,7 +384,7 @@ export function FlowerFilterPanel({
             );
           })}
         </div>
-      </div>
+      </Collapsible>
 
       {(draft.topCategory ?? 'flowers') === 'flowers' && (
         <Collapsible title={t.filterOccasion}>

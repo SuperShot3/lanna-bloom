@@ -18,6 +18,7 @@ export {
   getCatalogPopularBouquetsPaginated as getPopularBouquetsFromSanityPaginated,
   getCatalogPopularBouquets as getPopularBouquetsFromSanity,
   getCatalogPopularItemsPaginated as getPopularCatalogItemsFromSanityPaginated,
+  getCatalogHomeFlowerTypeSections as getHomeFlowerTypeSectionsFromSanity,
   getCatalogBouquetsFiltered as getBouquetsFilteredFromSanity,
   getCatalogBouquetsCatalogData as getBouquetsCatalogData,
   getCatalogProductsFiltered as getProductsFilteredFromSanity,

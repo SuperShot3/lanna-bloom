@@ -10,9 +10,10 @@ import 'server-only';
 
 import type { Bouquet, Partner } from '@/lib/bouquets';
 
+import { bouquetIsPottedOnly } from '@/lib/bouquetPresentationFormats';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
-import { PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
+import { PRODUCT_CATEGORIES, STOREFRONT_FLOWER_TYPES } from '@/lib/catalogCategories';
 
 import {
 
@@ -639,6 +640,51 @@ export async function getPopularBouquetsFromCatalogPaginated(
   const safeStart = Math.max(0, start);
 
   return ordered.slice(safeStart, safeStart + limit);
+
+}
+
+
+
+export type HomeFlowerTypeSection = {
+
+  type: string;
+
+  bouquets: Bouquet[];
+
+  totalCount: number;
+
+  /** All items in this section are potted-only (heading omits "Bouquets"). */
+  pottedOnly: boolean;
+
+};
+
+
+
+const HOME_FLOWER_TYPE_SECTION_LIMIT = 6;
+
+
+
+export async function getHomeFlowerTypeSectionsFromCatalog(): Promise<HomeFlowerTypeSection[]> {
+
+  const ordered = await getOrderedPopularBouquetsFromCatalog();
+
+  return STOREFRONT_FLOWER_TYPES.map((type) => {
+
+    const all = ordered.filter((b) => b.flowerTypes?.includes(type));
+
+    return {
+
+      type,
+
+      bouquets: all.slice(0, HOME_FLOWER_TYPE_SECTION_LIMIT),
+
+      totalCount: all.length,
+
+      pottedOnly: all.length > 0 && all.every(bouquetIsPottedOnly),
+
+    };
+
+  }).filter((section) => section.bouquets.length > 0);
 
 }
 

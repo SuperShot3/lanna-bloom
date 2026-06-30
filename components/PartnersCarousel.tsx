@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { getPartnersForHomepage } from '@/lib/supabase/partnerQueries';
+import { firstStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { StorefrontIcon } from '@/components/icons';
@@ -20,7 +21,7 @@ export async function PartnersCarousel({ lang }: { lang: Locale }) {
           id: p.id,
           name: p.shop_name || 'Partner',
           specialty: p.district || 'Chiang Mai',
-          imageUrl: p.sample_photo_urls?.[0] ?? null,
+          imageUrl: firstStorefrontRenderableImageUrl(p.sample_photo_urls),
         }))
       : PLACEHOLDER_PARTNERS.map((p) => ({
           id: p.id,

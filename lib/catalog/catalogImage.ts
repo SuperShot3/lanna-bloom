@@ -19,6 +19,58 @@ export function catalogImageUnoptimized(src: string): boolean {
   return false;
 }
 
+function configuredSupabaseHostname(): string | null {
+  const raw = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  try {
+    return new URL(raw).hostname.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+function isSanityCdnHostname(hostname: string): boolean {
+  return hostname.includes('cdn.sanity.io') || hostname.endsWith('.sanity.io');
+}
+
+function isSupabaseStorageHostname(hostname: string): boolean {
+  return hostname.endsWith('.supabase.co') || hostname === configuredSupabaseHostname();
+}
+
+/** True when a URL is safe to pass to `next/image` (matches next.config remotePatterns). */
+export function isStorefrontRenderableImageUrl(src: string | undefined | null): boolean {
+  const raw = src?.trim();
+  if (!raw) return false;
+  if (raw.startsWith('data:image/')) return true;
+  if (raw.startsWith('/') && !raw.startsWith('//')) return true;
+
+  try {
+    const { protocol, hostname, pathname } = new URL(raw);
+    if (protocol !== 'https:' && protocol !== 'http:') return false;
+    const host = hostname.toLowerCase();
+    if (host === 'images.unsplash.com') return true;
+    if (isSanityCdnHostname(host)) return true;
+    if (isSupabaseStorageHostname(host)) {
+      return pathname.includes('/storage/v1/object/');
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export function firstStorefrontRenderableImageUrl(
+  urls: string[] | null | undefined
+): string | null {
+  for (const url of urls ?? []) {
+    if (isStorefrontRenderableImageUrl(url)) return url.trim();
+  }
+  return null;
+}
+
+export function filterStorefrontRenderableImageUrls(urls: string[]): string[] {
+  return urls.filter(isStorefrontRenderableImageUrl);
+}
+
 /** Build a /_next/image URL for link preload hints. */
 export function catalogOptimizedImageUrl(src: string, width: number): string {
   if (catalogImageUnoptimized(src)) return src;

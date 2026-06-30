@@ -4,6 +4,11 @@
  * Partners do NOT create new categories — platform-defined only.
  */
 
+import { ADMIN_FLOWER_TYPE_OPTIONS } from '@/lib/catalogAdminFieldOptions';
+
+/** Canonical storefront flower-type filter values (bouquet `flowerTypes` tags). */
+export const STOREFRONT_FLOWER_TYPES = ADMIN_FLOWER_TYPE_OPTIONS.map((opt) => opt.value);
+
 /** Top-level catalog categories (flowers = bouquets, others = Sanity products) */
 export const CATALOG_TOP_CATEGORIES = [
   'flowers',
