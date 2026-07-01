@@ -23,6 +23,7 @@ type ImageHandlers = {
     file: File,
     options?: ProductImageUploadOptions
   ) => void | Promise<void>;
+  onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
@@ -205,6 +206,7 @@ export function FixedVariantEditor({
                       onReplace={(imageId, file, options) =>
                         imageHandlers.onReplace(imageId, file, options)
                       }
+                      onEditFraming={imageHandlers.onEditFraming}
                       onConvertToWebp={imageHandlers.onConvertToWebp}
                       onRemove={imageHandlers.onRemove}
                     />

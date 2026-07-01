@@ -36,6 +36,7 @@ import {
   deleteProductAction,
   convertProductImageToWebpAction,
   deleteProductImageAction,
+  editProductImageFramingAction,
   reorderProductImagesAction,
   publishProductDraftAction,
   unpublishProductAction,
@@ -419,6 +420,17 @@ export function AdminProductDetailClient({ product }: Props) {
       if (result.error) setError(result.error);
       else router.refresh();
     },
+    onEditFraming: async (imageId: string, file: File) => {
+      setLoading(`framing-${imageId}`);
+      const formData = new FormData();
+      formData.set('productId', product.id);
+      formData.set('imageId', imageId);
+      formData.set('file', file);
+      const result = await editProductImageFramingAction(formData);
+      setLoading(null);
+      if (result.error) setError(result.error);
+      else router.refresh();
+    },
     onRemove: async (imageId: string) => {
       if (!window.confirm('Remove this image?')) return;
       setLoading(`delete-${imageId}`);
@@ -577,6 +589,7 @@ export function AdminProductDetailClient({ product }: Props) {
           onUpload={(file, options) => imageHandlers.onUpload(null, file, options)}
           onSaveAlt={imageHandlers.onSaveAlt}
           onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
+          onEditFraming={imageHandlers.onEditFraming}
           onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />

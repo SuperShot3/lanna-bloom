@@ -14046,6 +14046,11 @@ a.admin-summary-key-value {
   gap: 8px;
 }
 
+.admin-cms-image-list.is-processing {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
 .admin-cms-image-edit-panel {
   padding: 10px;
   border: 1px solid var(--cms-border);

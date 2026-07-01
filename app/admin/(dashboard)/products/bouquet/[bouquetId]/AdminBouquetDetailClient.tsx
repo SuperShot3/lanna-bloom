@@ -42,6 +42,7 @@ import {
   convertBouquetImageToWebpAction,
   deleteBouquetFromStudioAction,
   deleteBouquetImageAction,
+  editBouquetImageFramingAction,
   publishBouquetDraftAction,
   reorderBouquetImagesAction,
   unpublishBouquetFromStudioAction,
@@ -424,6 +425,17 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       if (result.error) setError(result.error);
       else router.refresh();
     },
+    onEditFraming: async (imageId: string, file: File) => {
+      setLoading(`framing-${imageId}`);
+      const formData = new FormData();
+      formData.set('bouquetId', bouquet.id);
+      formData.set('imageId', imageId);
+      formData.set('file', file);
+      const result = await editBouquetImageFramingAction(formData);
+      setLoading(null);
+      if (result.error) setError(result.error);
+      else router.refresh();
+    },
     onRemove: async (imageId: string) => {
       if (!window.confirm('Remove this image?')) return;
       setLoading(`delete-${imageId}`);
@@ -656,6 +668,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
           onUpload={(file, options) => imageHandlers.onUpload(null, file, options)}
           onSaveAlt={imageHandlers.onSaveAlt}
           onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
+          onEditFraming={imageHandlers.onEditFraming}
           onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />

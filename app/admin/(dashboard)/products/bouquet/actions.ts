@@ -444,6 +444,70 @@ export async function convertBouquetImageToWebpAction(formData: FormData): Promi
   }
 }
 
+export async function editBouquetImageFramingAction(formData: FormData): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: 'Unauthorized - Session not found' };
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const bouquetId = String(formData.get('bouquetId') || '').trim();
+  const imageId = String(formData.get('imageId') || '').trim();
+  const file = formData.get('file');
+  if (!bouquetId || !imageId) return { error: 'Missing bouquetId or imageId' };
+  if (!file || !(file instanceof File)) return { error: 'Image file is required' };
+
+  try {
+    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
+    const images = revisionId
+      ? await getCatalogProductImagesForRevision(revisionId)
+      : await getCatalogProductImagesForEntity('bouquet', writeId);
+    const imageRow = images.find((image) => image.id === imageId);
+    if (!imageRow) return { error: 'Image not found' };
+
+    const format = catalogImageFormat({
+      storage_path: imageRow.storage_path,
+      metadata: imageRow.metadata,
+    });
+    if (format === 'webp' || format === 'png_master') {
+      return { error: 'Edit framing is only available before WebP conversion' };
+    }
+
+    await validateProductImage(file);
+    const prefix = `bouquets/${writeId}/framing-${Date.now()}`;
+    const { source } = await prepareCatalogSourceUpload({
+      file,
+      alt: imageRow.alt_en ?? undefined,
+      prefix,
+    });
+
+    const existingMeta = (imageRow.metadata ?? {}) as Record<string, unknown>;
+    const { master_path: _master, source_path: _source, ...restMeta } = existingMeta;
+    const actor = actorFromSessionUser(session.user);
+    await updateCatalogProductImageStorage({
+      imageId,
+      storagePath: source.storage_path,
+      publicUrl: source.public_url ?? '',
+      metadata: {
+        ...restMeta,
+        format: 'source',
+      },
+      actor,
+    });
+
+    if (revisionId) {
+      revalidateBouquetAdminPaths(bouquetId);
+    } else {
+      await syncCatalogProductInlineImagesFromNormalized('bouquet', writeId);
+      await revalidateBouquetAdminAndCatalogPaths(bouquetId, writeId);
+    }
+    return {};
+  } catch (err) {
+    console.error('[Products] editBouquetImageFraming failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to save image framing' };
+  }
+}
+
 export async function updateBouquetImageAltAction(formData: FormData): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: 'Unauthorized - Session not found' };

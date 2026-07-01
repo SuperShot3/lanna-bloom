@@ -11,6 +11,7 @@ export { AdminSortableList } from './AdminSortableList';
 export { AdminSortableRow } from './AdminSortableRow';
 export { AdminRowMenu } from './AdminRowMenu';
 export { ProductImageListEditor } from './ProductImageListEditor';
+export { AdminImageProcessingBanner } from './AdminImageProcessingBanner';
 export { AdminImageCropModal, type AdminImageCropResult } from './AdminImageCropModal';
 export { FixedVariantEditor, type FixedVariantRow } from './FixedVariantEditor';
 export { PricingSectionEditor } from './PricingSectionEditor';

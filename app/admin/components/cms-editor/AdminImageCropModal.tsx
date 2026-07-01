@@ -45,6 +45,8 @@ type Props = {
   onApply: (result: CropResult) => void | Promise<void>;
   /** When provided, shows a "Use original" button that returns the original File untouched. */
   onSkip?: () => void;
+  /** When true, hides the "Use original" skip button even if onSkip is set. */
+  hideSkip?: boolean;
 };
 
 const MIN_CROP_PX = 32;
@@ -117,6 +119,7 @@ export function AdminImageCropModal({
   onCancel,
   onApply,
   onSkip,
+  hideSkip,
 }: Props) {
   const headingId = useId();
   const stageRef = useRef<HTMLDivElement>(null);
@@ -597,7 +600,7 @@ export function AdminImageCropModal({
         </div>
 
         <footer className="admin-crop-modal-footer">
-          {onSkip ? (
+          {onSkip && !hideSkip ? (
             <button
               type="button"
               className="admin-crop-btn admin-crop-btn-ghost"

@@ -10,6 +10,7 @@ import { AdminSortableRow } from './AdminSortableRow';
 import { AdminImageAltModal } from './AdminImageAltModal';
 import { AdminImagePreviewModal } from './AdminImagePreviewModal';
 import { AdminImageCropModal } from './AdminImageCropModal';
+import { AdminImageProcessingBanner } from './AdminImageProcessingBanner';
 
 export type ProductImageUploadOptions = {
   convertToWebp?: boolean;
@@ -26,6 +27,7 @@ type Props = {
   onUpload: (file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
   onSaveAlt: (image: AdminCatalogProductImage) => void | Promise<void>;
   onReplace: (imageId: string, file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
+  onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onGenerateAi?: (imageId: string, file: File) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
@@ -33,7 +35,17 @@ type Props = {
 
 type PendingCrop =
   | { mode: 'upload'; file: File }
-  | { mode: 'replace'; imageId: string; file: File };
+  | { mode: 'replace'; imageId: string; file: File }
+  | { mode: 'edit'; imageId: string; file: File };
+
+function imageLoadingMessage(loadingKey: string | null | undefined): string | null {
+  if (!loadingKey) return null;
+  if (loadingKey === 'upload') return 'Uploading image…';
+  if (loadingKey === 'replace') return 'Replacing image…';
+  if (loadingKey.startsWith('convert-')) return 'Converting to WebP…';
+  if (loadingKey.startsWith('framing-')) return 'Saving image framing…';
+  return null;
+}
 
 function imageNeedsWebpConversion(image: AdminCatalogProductImage): boolean {
   const format = catalogImageFormat({ storage_path: image.storagePath, format: image.format });
@@ -50,6 +62,7 @@ export function ProductImageListEditor({
   onUpload,
   onSaveAlt,
   onReplace,
+  onEditFraming,
   onConvertToWebp,
   onGenerateAi,
   onRemove,
@@ -73,6 +86,8 @@ export function ProductImageListEditor({
 
   const ids = scoped.map((img) => img.id);
   const uploadOptions: ProductImageUploadOptions = { convertToWebp: convertOnUpload };
+  const processingMessage = imageLoadingMessage(loadingKey);
+  const isProcessing = Boolean(processingMessage);
 
   function openEdit(image: AdminCatalogProductImage) {
     setEditingId(image.id);
@@ -100,6 +115,19 @@ export function ProductImageListEditor({
       return;
     }
     window.location.href = payload.signedUrl;
+  }
+
+  async function openEditFraming(image: AdminCatalogProductImage) {
+    try {
+      const response = await fetch(image.url);
+      if (!response.ok) throw new Error('Failed to load image');
+      const blob = await response.blob();
+      const name = image.storagePath?.split('/').pop() ?? 'image.png';
+      const file = new File([blob], name, { type: blob.type || 'image/png' });
+      setPendingCrop({ mode: 'edit', imageId: image.id, file });
+    } catch (err) {
+      console.error('[ProductImageListEditor] edit framing fetch failed:', err);
+    }
   }
 
   function handleUploadFile(file: File) {
@@ -144,6 +172,13 @@ export function ProductImageListEditor({
         },
       },
     ];
+    if (onEditFraming && imageNeedsWebpConversion(image)) {
+      items.push({
+        id: 'edit-framing',
+        label: 'Edit framing',
+        onClick: () => void openEditFraming(image),
+      });
+    }
     if (onConvertToWebp && imageNeedsWebpConversion(image)) {
       items.push({
         id: 'convert-webp',
@@ -172,7 +207,8 @@ export function ProductImageListEditor({
   }
 
   return (
-    <div className="admin-cms-image-list">
+    <div className={`admin-cms-image-list${isProcessing ? ' is-processing' : ''}`}>
+      {processingMessage ? <AdminImageProcessingBanner message={processingMessage} /> : null}
       {scoped.length === 0 ? (
         <p className="admin-cms-empty-hint">No images yet.</p>
       ) : (
@@ -281,20 +317,35 @@ export function ProductImageListEditor({
       <AdminImageCropModal
         open={Boolean(pendingCrop)}
         file={pendingCrop?.file ?? null}
-        title={pendingCrop?.mode === 'replace' ? 'Crop replacement image' : 'Crop new image'}
+        title={
+          pendingCrop?.mode === 'edit'
+            ? 'Edit image framing'
+            : pendingCrop?.mode === 'replace'
+              ? 'Crop replacement image'
+              : 'Crop new image'
+        }
+        aspect={pendingCrop?.mode === 'edit' ? 1 : undefined}
+        outputSize={pendingCrop?.mode === 'edit' ? 2400 : undefined}
+        outputMime={pendingCrop?.mode === 'edit' ? 'image/png' : undefined}
+        hideSkip={pendingCrop?.mode === 'edit'}
         onCancel={() => setPendingCrop(null)}
-        onSkip={() => {
-          const next = pendingCrop;
-          setPendingCrop(null);
-          if (!next) return;
-          if (next.mode === 'upload') void onUpload(next.file, uploadOptions);
-          else void onReplace(next.imageId, next.file, uploadOptions);
-        }}
+        onSkip={
+          pendingCrop?.mode === 'edit'
+            ? undefined
+            : () => {
+                const next = pendingCrop;
+                setPendingCrop(null);
+                if (!next) return;
+                if (next.mode === 'upload') void onUpload(next.file, uploadOptions);
+                else void onReplace(next.imageId, next.file, uploadOptions);
+              }
+        }
         onApply={({ file }) => {
           const next = pendingCrop;
           setPendingCrop(null);
           if (!next) return;
-          if (next.mode === 'upload') void onUpload(file, uploadOptions);
+          if (next.mode === 'edit') void onEditFraming?.(next.imageId, file);
+          else if (next.mode === 'upload') void onUpload(file, uploadOptions);
           else void onReplace(next.imageId, file, uploadOptions);
         }}
       />
