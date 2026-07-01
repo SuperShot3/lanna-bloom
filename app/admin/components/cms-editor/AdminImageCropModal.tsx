@@ -35,7 +35,7 @@ type Props = {
   aspect?: number;
   /** When true, frame keeps the configured aspect on resize. Defaults to true. */
   lockAspect?: boolean;
-  /** Output max pixel size for the longer crop edge. Defaults to 1600. */
+  /** Output max pixel size for the longer crop edge. Defaults to 2400. */
   outputSize?: number;
   /** Output file mime; default image/png. */
   outputMime?: 'image/png' | 'image/jpeg' | 'image/webp';
@@ -111,7 +111,7 @@ export function AdminImageCropModal({
   title = 'Crop image',
   aspect = 1,
   lockAspect = true,
-  outputSize = 1600,
+  outputSize = 2400,
   outputMime = 'image/png',
   outputFilename,
   onCancel,
@@ -121,6 +121,7 @@ export function AdminImageCropModal({
   const headingId = useId();
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const backdropMouseDown = useRef(false);
 
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -483,8 +484,14 @@ export function AdminImageCropModal({
     <div
       className="admin-crop-modal-backdrop"
       role="presentation"
-      onClick={() => {
-        if (!applying) onCancel();
+      onMouseDown={(e) => {
+        backdropMouseDown.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (backdropMouseDown.current && e.target === e.currentTarget && !applying) {
+          onCancel();
+        }
+        backdropMouseDown.current = false;
       }}
     >
       <div

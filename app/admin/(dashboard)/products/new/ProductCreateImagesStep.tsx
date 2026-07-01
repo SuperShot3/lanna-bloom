@@ -91,7 +91,7 @@ export function ProductCreateImagesStep({
           <h3>Images</h3>
           <p>
             Upload a photo, choose how many AI alternatives you want, then select which optimized
-            WebP images go on the product.
+            WebP images (up to 2400px) go on the product.
           </p>
         </div>
       </header>
@@ -172,7 +172,7 @@ export function ProductCreateImagesStep({
             </button>
           </div>
           <p className="admin-product-create-webp-note">
-            All selected website images are automatically optimized as WebP.
+            Selected website images are optimized as WebP at up to 2400px square.
           </p>
           <button type="button" className="admin-btn admin-btn-outline" disabled={isBusy} onClick={onCancelSession}>
             Choose a different photo
@@ -192,7 +192,7 @@ export function ProductCreateImagesStep({
           </div>
           <div>
             <strong>{statusLine || 'Working…'}</strong>
-            <p>Images are prepared and optimized automatically — no extra upload step.</p>
+            <p>Images are prepared and optimized for the web at up to 2400px — no extra upload step.</p>
           </div>
         </div>
       ) : null}

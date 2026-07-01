@@ -464,6 +464,35 @@ export async function syncCatalogProductInlineImagesFromNormalized(
   return inlineImages;
 }
 
+export async function updateCatalogProductImageStorage(input: {
+  imageId: string;
+  storagePath: string;
+  publicUrl: string;
+  metadata: JsonObject;
+  actor?: string | null;
+}): Promise<CatalogProductImageRow> {
+  const supabase = requireSupabase();
+  const storagePath = input.storagePath.trim();
+  if (!storagePath) throw new Error('Image storagePath is required');
+
+  const { data, error } = await supabase
+    .from('catalog_product_images')
+    .update({
+      storage_path: storagePath,
+      public_url: cleanText(input.publicUrl) ?? catalogPublicUrl(supabase, storagePath),
+      metadata: input.metadata,
+      updated_by: cleanText(input.actor),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.imageId)
+    .is('deleted_at', null)
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Failed to update catalog image');
+  return data as CatalogProductImageRow;
+}
+
 export async function updateCatalogProductImageText(input: {
   imageId: string;
   altEn?: string | null;

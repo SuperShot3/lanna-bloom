@@ -134,7 +134,7 @@ const stepCopy: Record<WizardStep, { eyebrow: string; label: string; description
     eyebrow: 'Step 1',
     label: 'Images',
     description:
-      'Upload a photo, generate AI alternatives if you want, and choose optimized WebP images for the gallery.',
+      'Upload a photo, generate AI alternatives if you want, and choose optimized WebP images (up to 2400px) for the gallery.',
   },
   text: {
     eyebrow: 'Step 2',

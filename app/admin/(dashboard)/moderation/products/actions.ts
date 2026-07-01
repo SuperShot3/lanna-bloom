@@ -2,7 +2,12 @@
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { prepareCatalogImageUpload, validateProductImage } from '@/lib/adminProductImages';
+import {
+  convertCatalogSourceToWebp,
+  prepareCatalogImageUpload,
+  prepareCatalogSourceUpload,
+  validateProductImage,
+} from '@/lib/adminProductImages';
 import {
   getCatalogBouquetByIdForAdmin,
   getCatalogProductByIdForAdmin,
@@ -26,6 +31,7 @@ import {
   setCatalogProductPrimaryImage,
   softDeleteCatalogProductImage,
   syncCatalogProductInlineImagesFromNormalized,
+  updateCatalogProductImageStorage,
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
@@ -46,6 +52,21 @@ import {
   updateCatalogProductModerationStatus,
 } from '@/lib/catalogWrite';
 import { canChangeStatus } from '@/lib/adminRbac';
+import { catalogImageFormat } from '@/lib/catalog/storefrontImages';
+
+function shouldConvertOnUpload(formData: FormData): boolean {
+  const value = formData.get('convertToWebp');
+  return value === 'true' || value === '1';
+}
+
+function resolveSourcePathForConversion(
+  metadata: Record<string, unknown> | null | undefined,
+  storagePath: string
+): string {
+  const masterPath = metadata?.master_path;
+  if (typeof masterPath === 'string' && masterPath.trim()) return masterPath.trim();
+  return storagePath;
+}
 
 async function resolveBouquetIdForWrite(bouquetId: string): Promise<string> {
   const resolved = await resolveCatalogBouquetId(bouquetId);
@@ -362,30 +383,58 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
     const existingImages = filterCatalogImagesByVariant(allImages, variantKey);
     await validateProductImage(file);
     const prefix = `products/${writeId}/cms-${Date.now()}`;
-    const { webp, pngMaster } = await prepareCatalogImageUpload({
-      file,
-      alt: altEn || undefined,
-      prefix,
-    });
+    const convertNow = shouldConvertOnUpload(formData);
 
-    await createCatalogProductImage({
-      entityType: 'product',
-      entityId: revisionId ? null : writeId,
-      revisionId,
-      storagePath: webp.storage_path,
-      publicUrl: webp.public_url,
-      sourceType: 'uploaded',
-      altEn: altEn || 'Product image',
-      altTh,
-      isPrimary: !variantKey && existingImages.length === 0,
-      sortOrder: existingImages.length,
-      metadata: {
-        format: 'webp',
-        master_path: pngMaster.storage_path,
-        ...(variantKey ? { variant_key: variantKey } : {}),
-      },
-      actor,
-    });
+    if (convertNow) {
+      const { webp, pngMaster } = await prepareCatalogImageUpload({
+        file,
+        alt: altEn || undefined,
+        prefix,
+      });
+
+      await createCatalogProductImage({
+        entityType: 'product',
+        entityId: revisionId ? null : writeId,
+        revisionId,
+        storagePath: webp.storage_path,
+        publicUrl: webp.public_url,
+        sourceType: 'uploaded',
+        altEn: altEn || 'Product image',
+        altTh,
+        isPrimary: !variantKey && existingImages.length === 0,
+        sortOrder: existingImages.length,
+        metadata: {
+          format: 'webp',
+          master_path: pngMaster.storage_path,
+          ...(variantKey ? { variant_key: variantKey } : {}),
+        },
+        actor,
+      });
+    } else {
+      const { source } = await prepareCatalogSourceUpload({
+        file,
+        alt: altEn || undefined,
+        prefix,
+      });
+
+      await createCatalogProductImage({
+        entityType: 'product',
+        entityId: revisionId ? null : writeId,
+        revisionId,
+        storagePath: source.storage_path,
+        publicUrl: source.public_url,
+        sourceType: 'uploaded',
+        altEn: altEn || 'Product image',
+        altTh,
+        isPrimary: !variantKey && existingImages.length === 0,
+        sortOrder: existingImages.length,
+        metadata: {
+          format: 'source',
+          ...(variantKey ? { variant_key: variantKey } : {}),
+        },
+        actor,
+      });
+    }
     if (revisionId) {
       revalidateProductAdminPaths(productId);
     } else {
@@ -396,6 +445,68 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
   } catch (err) {
     console.error('[Moderation] uploadProductImage failed:', err);
     return { error: err instanceof Error ? err.message : 'Failed to upload image' };
+  }
+}
+
+export async function convertProductImageToWebpAction(formData: FormData): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const productId = String(formData.get('productId') || '').trim();
+  const imageId = String(formData.get('imageId') || '').trim();
+  if (!productId || !imageId) return { error: 'Missing productId or imageId' };
+
+  try {
+    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
+    const images = revisionId
+      ? await getCatalogProductImagesForRevision(revisionId)
+      : await getCatalogProductImagesForEntity('product', writeId);
+    const imageRow = images.find((image) => image.id === imageId);
+    if (!imageRow) return { error: 'Image not found' };
+
+    const format = catalogImageFormat({
+      storage_path: imageRow.storage_path,
+      metadata: imageRow.metadata,
+    });
+    if (format === 'webp') return { error: 'Image is already WebP' };
+
+    const sourcePath = resolveSourcePathForConversion(imageRow.metadata, imageRow.storage_path);
+    const prefix = `products/${writeId}/cms-${Date.now()}`;
+    const { webp, pngMaster } = await convertCatalogSourceToWebp({
+      sourceStoragePath: sourcePath,
+      alt: imageRow.alt_en ?? undefined,
+      prefix,
+    });
+
+    const actor = actorFromSessionUser(session.user);
+    await updateCatalogProductImageStorage({
+      imageId,
+      storagePath: webp.storage_path,
+      publicUrl: webp.public_url ?? '',
+      metadata: {
+        ...(imageRow.metadata ?? {}),
+        format: 'webp',
+        master_path: pngMaster.storage_path,
+        source_path: sourcePath,
+      },
+      actor,
+    });
+
+    if (revisionId) {
+      revalidateProductAdminPaths(productId);
+    } else {
+      await syncCatalogProductInlineImagesFromNormalized('product', writeId);
+      await revalidateProductAdminAndCatalogPaths(productId, writeId);
+    }
+    return {};
+  } catch (err) {
+    console.error('[Moderation] convertProductImageToWebp failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to convert image to WebP' };
   }
 }
 

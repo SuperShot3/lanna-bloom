@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 
 type Props = {
   open: boolean;
@@ -11,6 +11,19 @@ type Props = {
 };
 
 export function AdminCmsModal({ open, title, onClose, children, footer }: Props) {
+  const backdropMouseDown = useRef(false);
+
+  function onBackdropMouseDown(e: MouseEvent<HTMLDivElement>) {
+    backdropMouseDown.current = e.target === e.currentTarget;
+  }
+
+  function onBackdropClick(e: MouseEvent<HTMLDivElement>) {
+    if (backdropMouseDown.current && e.target === e.currentTarget) {
+      onClose();
+    }
+    backdropMouseDown.current = false;
+  }
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -28,7 +41,12 @@ export function AdminCmsModal({ open, title, onClose, children, footer }: Props)
   if (!open) return null;
 
   return (
-    <div className="admin-cms-modal-backdrop" role="presentation" onClick={onClose}>
+    <div
+      className="admin-cms-modal-backdrop"
+      role="presentation"
+      onMouseDown={onBackdropMouseDown}
+      onClick={onBackdropClick}
+    >
       <div
         className="admin-cms-modal"
         role="dialog"

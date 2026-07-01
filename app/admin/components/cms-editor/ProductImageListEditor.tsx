@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import type { AdminCatalogProductImage } from '@/lib/catalog/types';
+import { catalogImageFormat } from '@/lib/catalog/storefrontImages';
 import { catalogImageFormatLabel, imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
 import { AdminRowMenu, type AdminRowMenuItem } from './AdminRowMenu';
 import { AdminSortableList } from './AdminSortableList';
@@ -9,6 +10,10 @@ import { AdminSortableRow } from './AdminSortableRow';
 import { AdminImageAltModal } from './AdminImageAltModal';
 import { AdminImagePreviewModal } from './AdminImagePreviewModal';
 import { AdminImageCropModal } from './AdminImageCropModal';
+
+export type ProductImageUploadOptions = {
+  convertToWebp?: boolean;
+};
 
 type Props = {
   images: AdminCatalogProductImage[];
@@ -18,9 +23,10 @@ type Props = {
   /** When true, every upload/replace runs through the interactive crop modal first. */
   enableCrop?: boolean;
   onReorder: (orderedIds: string[]) => void | Promise<void>;
-  onUpload: (file: File) => void | Promise<void>;
+  onUpload: (file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
   onSaveAlt: (image: AdminCatalogProductImage) => void | Promise<void>;
-  onReplace: (imageId: string, file: File) => void | Promise<void>;
+  onReplace: (imageId: string, file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
+  onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onGenerateAi?: (imageId: string, file: File) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
@@ -28,6 +34,11 @@ type Props = {
 type PendingCrop =
   | { mode: 'upload'; file: File }
   | { mode: 'replace'; imageId: string; file: File };
+
+function imageNeedsWebpConversion(image: AdminCatalogProductImage): boolean {
+  const format = catalogImageFormat({ storage_path: image.storagePath, format: image.format });
+  return format !== 'webp' && format !== 'png_master';
+}
 
 export function ProductImageListEditor({
   images,
@@ -39,6 +50,7 @@ export function ProductImageListEditor({
   onUpload,
   onSaveAlt,
   onReplace,
+  onConvertToWebp,
   onGenerateAi,
   onRemove,
 }: Props) {
@@ -50,6 +62,7 @@ export function ProductImageListEditor({
   const [editAltTh, setEditAltTh] = useState('');
   const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
   const [previewItem, setPreviewItem] = useState<{ url: string; title: string } | null>(null);
+  const [convertOnUpload, setConvertOnUpload] = useState(false);
 
   const scoped = useMemo(() => {
     if (variantKey) {
@@ -59,6 +72,7 @@ export function ProductImageListEditor({
   }, [images, variantKey]);
 
   const ids = scoped.map((img) => img.id);
+  const uploadOptions: ProductImageUploadOptions = { convertToWebp: convertOnUpload };
 
   function openEdit(image: AdminCatalogProductImage) {
     setEditingId(image.id);
@@ -93,7 +107,7 @@ export function ProductImageListEditor({
       setPendingCrop({ mode: 'upload', file });
       return;
     }
-    void onUpload(file);
+    void onUpload(file, uploadOptions);
   }
 
   function handleReplaceFile(imageId: string, file: File) {
@@ -101,7 +115,7 @@ export function ProductImageListEditor({
       setPendingCrop({ mode: 'replace', imageId, file });
       return;
     }
-    void onReplace(imageId, file);
+    void onReplace(imageId, file, uploadOptions);
   }
 
   function menuItems(image: AdminCatalogProductImage, index: number): AdminRowMenuItem[] {
@@ -130,6 +144,13 @@ export function ProductImageListEditor({
         },
       },
     ];
+    if (onConvertToWebp && imageNeedsWebpConversion(image)) {
+      items.push({
+        id: 'convert-webp',
+        label: 'Convert to WebP',
+        onClick: () => void onConvertToWebp(image.id),
+      });
+    }
     if (onGenerateAi) {
       items.push({
         id: 'ai',
@@ -186,6 +207,16 @@ export function ProductImageListEditor({
           ))}
         </AdminSortableList>
       )}
+
+      <label className="admin-cms-checkbox">
+        <input
+          type="checkbox"
+          checked={convertOnUpload}
+          disabled={disabled || !!loadingKey}
+          onChange={(event) => setConvertOnUpload(event.target.checked)}
+        />
+        <span>Also convert to WebP on upload (up to 2400px)</span>
+      </label>
 
       <button
         type="button"
@@ -256,15 +287,15 @@ export function ProductImageListEditor({
           const next = pendingCrop;
           setPendingCrop(null);
           if (!next) return;
-          if (next.mode === 'upload') void onUpload(next.file);
-          else void onReplace(next.imageId, next.file);
+          if (next.mode === 'upload') void onUpload(next.file, uploadOptions);
+          else void onReplace(next.imageId, next.file, uploadOptions);
         }}
         onApply={({ file }) => {
           const next = pendingCrop;
           setPendingCrop(null);
           if (!next) return;
-          if (next.mode === 'upload') void onUpload(file);
-          else void onReplace(next.imageId, file);
+          if (next.mode === 'upload') void onUpload(file, uploadOptions);
+          else void onReplace(next.imageId, file, uploadOptions);
         }}
       />
     </div>

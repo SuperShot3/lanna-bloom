@@ -2,14 +2,26 @@ import 'server-only';
 
 import sharp from 'sharp';
 import type { CatalogStoredImage } from '@/lib/catalog/types';
+import {
+  type AllowedProductImageType,
+  normalizeDeclaredImageMime,
+  sniffImageMimeType,
+  validateImageMimeFromBuffer,
+} from '@/lib/adminProductImageMime';
+import {
+  buildCatalogImageRecord,
+  uploadBufferToCatalog,
+  type CatalogSupabaseClient,
+} from '@/lib/catalog/storage';
 import { uploadCatalogProductImages } from '@/lib/catalogWrite';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export const PRODUCT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
-export const PRODUCT_IMAGE_SIZE = 1200;
+export const PRODUCT_IMAGE_SIZE = 2400;
+export const PRODUCT_IMAGE_SOURCE_MAX_SIZE = 2400;
 
-export const ALLOWED_PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-
-export type AllowedProductImageType = (typeof ALLOWED_PRODUCT_IMAGE_TYPES)[number];
+export { ALLOWED_PRODUCT_IMAGE_TYPES } from '@/lib/adminProductImageMime';
+export type { AllowedProductImageType } from '@/lib/adminProductImageMime';
 
 export type ValidatedProductImage = {
   file: File;
@@ -26,48 +38,20 @@ export type ProductImageVariantUpload = {
   alt?: string;
 };
 
-function isAllowedProductImageType(type: string): type is AllowedProductImageType {
-  return ALLOWED_PRODUCT_IMAGE_TYPES.includes(type as AllowedProductImageType);
-}
+export type PreparedCatalogSourceUpload = {
+  source: CatalogStoredImage;
+};
 
-function extensionForMime(mime: AllowedProductImageType): ValidatedProductImage['ext'] {
-  if (mime === 'image/png') return 'png';
-  if (mime === 'image/webp') return 'webp';
-  return 'jpg';
+function requireSupabase(): CatalogSupabaseClient {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  }
+  return supabase;
 }
 
 function fileFromBuffer(buffer: Buffer, name: string, type: string): File {
   return new File([new Uint8Array(buffer)], name, { type });
-}
-
-function sniffImageMimeType(buffer: Buffer): AllowedProductImageType | null {
-  if (buffer.length < 12) return null;
-  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
-  if (
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47 &&
-    buffer[4] === 0x0d &&
-    buffer[5] === 0x0a &&
-    buffer[6] === 0x1a &&
-    buffer[7] === 0x0a
-  ) {
-    return 'image/png';
-  }
-  if (
-    buffer[0] === 0x52 &&
-    buffer[1] === 0x49 &&
-    buffer[2] === 0x46 &&
-    buffer[3] === 0x46 &&
-    buffer[8] === 0x57 &&
-    buffer[9] === 0x45 &&
-    buffer[10] === 0x42 &&
-    buffer[11] === 0x50
-  ) {
-    return 'image/webp';
-  }
-  return null;
 }
 
 export async function validateProductImage(file: File): Promise<ValidatedProductImage> {
@@ -77,21 +61,50 @@ export async function validateProductImage(file: File): Promise<ValidatedProduct
   if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
     throw new Error('Image is too large. Maximum size is 10MB.');
   }
-  if (!isAllowedProductImageType(file.type)) {
-    throw new Error('Image type must be JPEG, PNG, or WebP.');
-  }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const sniffed = sniffImageMimeType(buffer);
-  if (sniffed !== file.type) {
-    throw new Error('Image contents do not match the declared file type.');
-  }
+  const { mime, ext } = validateImageMimeFromBuffer(buffer, file.type, file.name);
 
   return {
     file,
     buffer,
-    mime: sniffed,
-    ext: extensionForMime(sniffed),
+    mime,
+    ext,
+  };
+}
+
+async function resizeSourceBufferIfNeeded(
+  buffer: Buffer,
+  mime: AllowedProductImageType,
+  maxSize = PRODUCT_IMAGE_SOURCE_MAX_SIZE
+): Promise<Buffer> {
+  const image = sharp(buffer, { limitInputPixels: 40_000_000 }).rotate();
+  const meta = await image.metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (width <= maxSize && height <= maxSize) {
+    return buffer;
+  }
+
+  const pipeline = image.resize(maxSize, maxSize, {
+    fit: 'inside',
+    withoutEnlargement: true,
+  });
+  if (mime === 'image/jpeg') return pipeline.jpeg({ quality: 92 }).toBuffer();
+  if (mime === 'image/webp') return pipeline.webp({ quality: 92 }).toBuffer();
+  return pipeline.png({ compressionLevel: 9 }).toBuffer();
+}
+
+/** Validate and prepare a source file (max 2400px edge, original format preserved). */
+export async function storeSourceImage(file: File): Promise<ValidatedProductImage & { file: File }> {
+  const validated = await validateProductImage(file);
+  const outputBuffer = await resizeSourceBufferIfNeeded(validated.buffer, validated.mime);
+  const outputName = `source.${validated.ext}`;
+  const outputFile = fileFromBuffer(outputBuffer, outputName, validated.mime);
+  return {
+    ...validated,
+    file: outputFile,
+    buffer: outputBuffer,
   };
 }
 
@@ -102,7 +115,7 @@ export async function resizeToSquare(file: File, size = PRODUCT_IMAGE_SIZE): Pro
     .resize(size, size, {
       fit: 'contain',
       background: { r: 255, g: 255, b: 255, alpha: 1 },
-      withoutEnlargement: false,
+      withoutEnlargement: true,
     })
     .png({ compressionLevel: 9 })
     .toBuffer();
@@ -134,9 +147,31 @@ export async function createPngMaster(file: File, size = PRODUCT_IMAGE_SIZE): Pr
   return fileFromBuffer(output, 'product-master.png', 'image/png');
 }
 
+export async function convertSourceToWebpVariants(
+  file: File,
+  size = PRODUCT_IMAGE_SIZE
+): Promise<{ webp: File; pngMaster: File }> {
+  await validateProductImage(file);
+  const [webp, pngMaster] = await Promise.all([convertToWebp(file, size), createPngMaster(file, size)]);
+  return { webp, pngMaster };
+}
+
 export async function fileToDataUrl(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
   return `data:${file.type};base64,${buffer.toString('base64')}`;
+}
+
+export async function downloadCatalogImageAsFile(storagePath: string): Promise<File> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.storage.from('catalog').download(storagePath);
+  if (error || !data) {
+    throw new Error('Failed to download source image');
+  }
+  const buffer = Buffer.from(await data.arrayBuffer());
+  const sniffed = sniffImageMimeType(buffer);
+  const mime = sniffed ?? normalizeDeclaredImageMime('', storagePath) ?? 'application/octet-stream';
+  const name = storagePath.split('/').pop() ?? 'source';
+  return fileFromBuffer(buffer, name, mime);
 }
 
 /** Upload WebP + PNG master to Supabase Storage `catalog` bucket. */
@@ -144,11 +179,13 @@ export async function uploadProductImageVariants(input: {
   webp: File;
   pngMaster: File;
   alt?: string;
+  prefix?: string;
 }): Promise<ProductImageVariantUpload[]> {
   const stored = await uploadCatalogProductImages({
     webp: input.webp,
     pngMaster: input.pngMaster,
     alt: input.alt,
+    prefix: input.prefix,
   });
   return stored.map((image) => ({
     assetId: image.storage_path,
@@ -164,6 +201,25 @@ export type PreparedCatalogImageUpload = {
   pngMaster: CatalogStoredImage;
 };
 
+/** Upload a validated source image without WebP conversion. */
+export async function prepareCatalogSourceUpload(input: {
+  file: File;
+  alt?: string;
+  prefix: string;
+}): Promise<PreparedCatalogSourceUpload> {
+  const stored = await storeSourceImage(input.file);
+  const supabase = requireSupabase();
+  const storagePath = `${input.prefix}/source.${stored.ext}`;
+  await uploadBufferToCatalog(supabase, storagePath, stored.buffer, stored.mime);
+  const source = buildCatalogImageRecord(supabase, storagePath, {
+    format: 'source',
+    is_primary: false,
+    alt: input.alt,
+    sort_order: 0,
+  });
+  return { source };
+}
+
 /**
  * Validate, convert, and upload WebP + PNG master variants (same pipeline as
  * `/api/admin/products/prepare-image`). Returns both storage records; callers
@@ -176,6 +232,28 @@ export async function prepareCatalogImageUpload(input: {
 }): Promise<PreparedCatalogImageUpload> {
   await validateProductImage(input.file);
   const [webp, pngMaster] = await Promise.all([convertToWebp(input.file), createPngMaster(input.file)]);
+  const variants = await uploadCatalogProductImages({
+    webp,
+    pngMaster,
+    alt: input.alt,
+    prefix: input.prefix,
+  });
+  const webpRecord = variants.find((variant) => variant.format === 'webp');
+  const pngRecord = variants.find((variant) => variant.format === 'png_master');
+  if (!webpRecord || !pngRecord) {
+    throw new Error('Failed to prepare image variants');
+  }
+  return { webp: webpRecord, pngMaster: pngRecord };
+}
+
+/** Generate and upload WebP + PNG master from an existing catalog storage path. */
+export async function convertCatalogSourceToWebp(input: {
+  sourceStoragePath: string;
+  alt?: string;
+  prefix: string;
+}): Promise<PreparedCatalogImageUpload> {
+  const sourceFile = await downloadCatalogImageAsFile(input.sourceStoragePath);
+  const { webp, pngMaster } = await convertSourceToWebpVariants(sourceFile);
   const variants = await uploadCatalogProductImages({
     webp,
     pngMaster,

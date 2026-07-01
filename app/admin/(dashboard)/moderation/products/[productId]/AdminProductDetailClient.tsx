@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ProductImageUploadOptions } from '@/app/admin/components/cms-editor/ProductImageListEditor';
 import {
   AdminCmsCollapsibleSection,
   AdminCmsEditor,
@@ -33,6 +34,7 @@ import { confirmCatalogDeleteAction } from '@/app/admin/components/confirmDelete
 import {
   approveProductAction,
   deleteProductAction,
+  convertProductImageToWebpAction,
   deleteProductImageAction,
   reorderProductImagesAction,
   publishProductDraftAction,
@@ -359,7 +361,7 @@ export function AdminProductDetailClient({ product }: Props) {
   const imageHandlers = {
     loadingKey: loading,
     onReorder: handleImageReorder,
-    onUpload: async (variantKey: string | null, file: File) => {
+    onUpload: async (variantKey: string | null, file: File, options?: ProductImageUploadOptions) => {
       setLoading('upload');
       const formData = new FormData();
       formData.set('productId', product.id);
@@ -367,6 +369,7 @@ export function AdminProductDetailClient({ product }: Props) {
       formData.set('altEn', nameEn);
       formData.set('altTh', nameTh);
       if (variantKey) formData.set('variantKey', variantKey);
+      if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const result = await uploadProductImageAction(formData);
       setLoading(null);
       if (result.error) setError(result.error);
@@ -384,7 +387,7 @@ export function AdminProductDetailClient({ product }: Props) {
       if (result.error) setError(result.error);
       else router.refresh();
     },
-    onReplace: async (imageId: string, file: File) => {
+    onReplace: async (imageId: string, file: File, options?: ProductImageUploadOptions) => {
       const image = editableImages.find((i) => i.id === imageId);
       if (!image) return;
       setLoading('replace');
@@ -394,6 +397,7 @@ export function AdminProductDetailClient({ product }: Props) {
       formData.set('altEn', image.altEn || nameEn);
       formData.set('altTh', image.altTh || nameTh);
       if (image.variantKey) formData.set('variantKey', image.variantKey);
+      if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const upload = await uploadProductImageAction(formData);
       if (upload.error) {
         setLoading(null);
@@ -403,6 +407,16 @@ export function AdminProductDetailClient({ product }: Props) {
       const del = await deleteProductImageAction(product.id, imageId);
       setLoading(null);
       if (del.error) setError(del.error);
+      else router.refresh();
+    },
+    onConvertToWebp: async (imageId: string) => {
+      setLoading(`convert-${imageId}`);
+      const formData = new FormData();
+      formData.set('productId', product.id);
+      formData.set('imageId', imageId);
+      const result = await convertProductImageToWebpAction(formData);
+      setLoading(null);
+      if (result.error) setError(result.error);
       else router.refresh();
     },
     onRemove: async (imageId: string) => {
@@ -560,9 +574,10 @@ export function AdminProductDetailClient({ product }: Props) {
           disabled={!!loading || savingImageOrder}
           loadingKey={loading}
           onReorder={(ids) => imageHandlers.onReorder(null, ids)}
-          onUpload={(file) => imageHandlers.onUpload(null, file)}
+          onUpload={(file, options) => imageHandlers.onUpload(null, file, options)}
           onSaveAlt={imageHandlers.onSaveAlt}
-          onReplace={imageHandlers.onReplace}
+          onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
+          onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />
       </AdminCmsCollapsibleSection>

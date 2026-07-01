@@ -7,7 +7,7 @@ import { AdminCmsSection } from './AdminCmsSection';
 import { AdminRowMenu } from './AdminRowMenu';
 import { AdminSortableList } from './AdminSortableList';
 import { AdminSortableRow } from './AdminSortableRow';
-import { ProductImageListEditor } from './ProductImageListEditor';
+import { ProductImageListEditor, type ProductImageUploadOptions } from './ProductImageListEditor';
 
 export type FixedVariantRow = NonNullable<CatalogBouquetPricing['fixedVariants']>[number] & {
   variantKey: string;
@@ -16,9 +16,14 @@ export type FixedVariantRow = NonNullable<CatalogBouquetPricing['fixedVariants']
 type ImageHandlers = {
   loadingKey: string | null;
   onReorder: (variantKey: string, orderedIds: string[]) => void | Promise<void>;
-  onUpload: (variantKey: string, file: File) => void | Promise<void>;
+  onUpload: (variantKey: string, file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
   onSaveAlt: (image: AdminCatalogProductImage) => void | Promise<void>;
-  onReplace: (imageId: string, file: File) => void | Promise<void>;
+  onReplace: (
+    imageId: string,
+    file: File,
+    options?: ProductImageUploadOptions
+  ) => void | Promise<void>;
+  onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
 
@@ -193,9 +198,14 @@ export function FixedVariantEditor({
                       onReorder={(orderedIds) =>
                         imageHandlers.onReorder(variant.variantKey, orderedIds)
                       }
-                      onUpload={(file) => imageHandlers.onUpload(variant.variantKey, file)}
+                      onUpload={(file, options) =>
+                        imageHandlers.onUpload(variant.variantKey, file, options)
+                      }
                       onSaveAlt={imageHandlers.onSaveAlt}
-                      onReplace={imageHandlers.onReplace}
+                      onReplace={(imageId, file, options) =>
+                        imageHandlers.onReplace(imageId, file, options)
+                      }
+                      onConvertToWebp={imageHandlers.onConvertToWebp}
                       onRemove={imageHandlers.onRemove}
                     />
                   </AdminCmsSection>

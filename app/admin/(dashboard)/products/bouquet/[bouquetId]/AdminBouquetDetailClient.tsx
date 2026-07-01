@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ProductImageUploadOptions } from '@/app/admin/components/cms-editor/ProductImageListEditor';
 import {
   AdminCmsCollapsibleSection,
   AdminCmsEditor,
@@ -38,6 +39,7 @@ import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogSh
 import { useCatalogUnsavedLeaveGuard } from '@/app/admin/(dashboard)/products/useCatalogUnsavedLeaveGuard';
 import {
   approveBouquetFromStudioAction,
+  convertBouquetImageToWebpAction,
   deleteBouquetFromStudioAction,
   deleteBouquetImageAction,
   publishBouquetDraftAction,
@@ -364,7 +366,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
   const imageHandlers = {
     loadingKey: loading,
     onReorder: handleImageReorder,
-    onUpload: async (variantKey: string | null, file: File) => {
+    onUpload: async (variantKey: string | null, file: File, options?: ProductImageUploadOptions) => {
       setLoading('upload');
       const formData = new FormData();
       formData.set('bouquetId', bouquet.id);
@@ -372,6 +374,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       formData.set('altEn', nameEn);
       formData.set('altTh', nameTh);
       if (variantKey) formData.set('variantKey', variantKey);
+      if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const result = await uploadBouquetImageAction(formData);
       setLoading(null);
       if (result.error) setError(result.error);
@@ -389,7 +392,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       if (result.error) setError(result.error);
       else router.refresh();
     },
-    onReplace: async (imageId: string, file: File) => {
+    onReplace: async (imageId: string, file: File, options?: ProductImageUploadOptions) => {
       const image = editableImages.find((i) => i.id === imageId);
       if (!image) return;
       setLoading('replace');
@@ -399,6 +402,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       formData.set('altEn', image.altEn || nameEn);
       formData.set('altTh', image.altTh || nameTh);
       if (image.variantKey) formData.set('variantKey', image.variantKey);
+      if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const upload = await uploadBouquetImageAction(formData);
       if (upload.error) {
         setLoading(null);
@@ -408,6 +412,16 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       const del = await deleteBouquetImageAction(bouquet.id, imageId);
       setLoading(null);
       if (del.error) setError(del.error);
+      else router.refresh();
+    },
+    onConvertToWebp: async (imageId: string) => {
+      setLoading(`convert-${imageId}`);
+      const formData = new FormData();
+      formData.set('bouquetId', bouquet.id);
+      formData.set('imageId', imageId);
+      const result = await convertBouquetImageToWebpAction(formData);
+      setLoading(null);
+      if (result.error) setError(result.error);
       else router.refresh();
     },
     onRemove: async (imageId: string) => {
@@ -639,9 +653,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
           disabled={!!loading}
           loadingKey={loading}
           onReorder={(ids) => imageHandlers.onReorder(null, ids)}
-          onUpload={(file) => imageHandlers.onUpload(null, file)}
+          onUpload={(file, options) => imageHandlers.onUpload(null, file, options)}
           onSaveAlt={imageHandlers.onSaveAlt}
-          onReplace={imageHandlers.onReplace}
+          onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
+          onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />
       </AdminCmsCollapsibleSection>
