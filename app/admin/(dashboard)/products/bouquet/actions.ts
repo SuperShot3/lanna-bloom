@@ -469,31 +469,47 @@ export async function editBouquetImageFramingAction(formData: FormData): Promise
       storage_path: imageRow.storage_path,
       metadata: imageRow.metadata,
     });
-    if (format === 'webp' || format === 'png_master') {
-      return { error: 'Edit framing is only available before WebP conversion' };
-    }
 
     await validateProductImage(file);
     const prefix = `bouquets/${writeId}/framing-${Date.now()}`;
-    const { source } = await prepareCatalogSourceUpload({
-      file,
-      alt: imageRow.alt_en ?? undefined,
-      prefix,
-    });
-
     const existingMeta = (imageRow.metadata ?? {}) as Record<string, unknown>;
-    const { master_path: _master, source_path: _source, ...restMeta } = existingMeta;
     const actor = actorFromSessionUser(session.user);
-    await updateCatalogProductImageStorage({
-      imageId,
-      storagePath: source.storage_path,
-      publicUrl: source.public_url ?? '',
-      metadata: {
-        ...restMeta,
-        format: 'source',
-      },
-      actor,
-    });
+
+    if (format === 'webp') {
+      const { webp, pngMaster } = await prepareCatalogImageUpload({
+        file,
+        alt: imageRow.alt_en ?? undefined,
+        prefix,
+      });
+      await updateCatalogProductImageStorage({
+        imageId,
+        storagePath: webp.storage_path,
+        publicUrl: webp.public_url ?? '',
+        metadata: {
+          ...existingMeta,
+          format: 'webp',
+          master_path: pngMaster.storage_path,
+        },
+        actor,
+      });
+    } else {
+      const { source } = await prepareCatalogSourceUpload({
+        file,
+        alt: imageRow.alt_en ?? undefined,
+        prefix,
+      });
+      const { master_path: _master, source_path: _source, ...restMeta } = existingMeta;
+      await updateCatalogProductImageStorage({
+        imageId,
+        storagePath: source.storage_path,
+        publicUrl: source.public_url ?? '',
+        metadata: {
+          ...restMeta,
+          format: 'source',
+        },
+        actor,
+      });
+    }
 
     if (revisionId) {
       revalidateBouquetAdminPaths(bouquetId);

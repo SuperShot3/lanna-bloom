@@ -172,7 +172,7 @@ export function ProductImageListEditor({
         },
       },
     ];
-    if (onEditFraming && imageNeedsWebpConversion(image)) {
+    if (onEditFraming) {
       items.push({
         id: 'edit-framing',
         label: 'Edit framing',
