@@ -7,8 +7,6 @@ import { SelectionTile } from '@/components/checkout/premium/SelectionTile';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import {
   DELIVERY_TIME_SLOTS,
-  getMaxSpecificDeliveryTime,
-  getMinSpecificDeliveryTimeForDate,
   isDeliveryTimeSlotSelectableForDate,
   isSpecificDeliveryTime,
 } from '@/lib/deliveryTimeSelection';
@@ -46,8 +44,6 @@ export function DeliveryTimeSelector({
   }, [specificSelected]);
 
   const liveNow = now ?? new Date();
-  const minSpecificTime = date ? getMinSpecificDeliveryTimeForDate(date, liveNow) : '09:00';
-  const maxSpecificTime = getMaxSpecificDeliveryTime();
   const specificInputValue = specificSelected ? timeSlot : '';
 
   const morningOk =
@@ -68,19 +64,8 @@ export function DeliveryTimeSelector({
   };
 
   const handleSpecificInput = (value: string) => {
-    if (!value) {
-      onChange('');
-      return;
-    }
-    if (isDeliveryTimeSlotSelectableForDate(date, value, liveNow)) {
-      onChange(value);
-    }
+    onChange(value);
   };
-
-  const specificInvalid =
-    customOpen &&
-    Boolean(specificInputValue) &&
-    !isDeliveryTimeSlotSelectableForDate(date, specificInputValue, liveNow);
 
   return (
     <div className="delivery-time-selector">
@@ -124,24 +109,11 @@ export function DeliveryTimeSelector({
           <input
             id="delivery-specific-time"
             type="time"
-            className={[
-              'delivery-time-selector__input',
-              specificInvalid ? 'delivery-time-selector__input--invalid' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
+            className="delivery-time-selector__input"
             value={specificInputValue}
-            min={minSpecificTime}
-            max={maxSpecificTime}
             onChange={(e) => handleSpecificInput(e.target.value)}
             aria-label={t.specificTimeInputLabel}
-            aria-invalid={specificInvalid}
           />
-          {specificInvalid && (
-            <p className="delivery-time-selector__error" role="alert">
-              {t.specificTimeInvalid.replace('{time}', minSpecificTime)}
-            </p>
-          )}
         </div>
       </OverlayReveal>
 

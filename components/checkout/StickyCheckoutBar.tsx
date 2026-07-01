@@ -9,8 +9,6 @@ import {
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
   isSpecificDeliveryTime,
-  getMinSpecificDeliveryTimeForDate,
-  getMaxSpecificDeliveryTime,
 } from '@/lib/deliveryTimeSelection';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
 import { getLocalTodayYmd } from '@/lib/localDateYmd';
@@ -110,8 +108,6 @@ export function StickyCheckoutBar({
   const timeSlots = DELIVERY_TIME_SLOTS.slice(0, 3);
   const windowEditSlot = isSpecificDeliveryTime(editTimeSlot) ? '' : editTimeSlot;
   const specificEditTime = isSpecificDeliveryTime(editTimeSlot) ? editTimeSlot : '';
-  const minSpecificTime = editDate ? getMinSpecificDeliveryTimeForDate(editDate) : '09:00';
-  const maxSpecificTime = getMaxSpecificDeliveryTime();
 
   const openEditSheet = useCallback(() => {
     const date = summary.date && /^\d{4}-\d{2}-\d{2}$/.test(summary.date) && summary.date >= minDate
@@ -501,18 +497,7 @@ export function StickyCheckoutBar({
                   type="time"
                   className="sticky-checkout-bar__sheet-select sticky-checkout-bar__sheet-time"
                   value={specificEditTime}
-                  min={minSpecificTime}
-                  max={maxSpecificTime}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (!v) {
-                      setEditTimeSlot('');
-                      return;
-                    }
-                    if (isDeliveryTimeSlotSelectableForDate(editDate, v)) {
-                      setEditTimeSlot(v);
-                    }
-                  }}
+                  onChange={(e) => setEditTimeSlot(e.target.value)}
                   aria-label={labels.preferredTime ?? 'Preferred time'}
                 />
               ) : null}

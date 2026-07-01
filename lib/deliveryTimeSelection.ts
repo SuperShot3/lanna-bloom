@@ -66,10 +66,6 @@ export function slotEndMinutes(slot: string): number | null {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
-function isWithinShopHours(minutes: number): boolean {
-  return minutes >= SHOP_OPEN_MIN && minutes < SHOP_CLOSE_MIN;
-}
-
 export function getMinSpecificDeliveryMinutesForDate(
   deliveryDate: string,
   now: Date = new Date()
@@ -93,13 +89,10 @@ export function getMaxSpecificDeliveryTime(): string {
 export function isSpecificDeliveryTimeSelectableForDate(
   deliveryDate: string,
   hm: string,
-  now: Date = new Date()
+  _now: Date = new Date()
 ): boolean {
   if (!deliveryDate || !hm) return false;
-  const minutes = parseSpecificDeliveryTimeMinutes(hm);
-  if (minutes === null) return false;
-  if (!isWithinShopHours(minutes)) return false;
-  return minutes >= getMinSpecificDeliveryMinutesForDate(deliveryDate, now);
+  return parseSpecificDeliveryTimeMinutes(hm) !== null;
 }
 
 export function isDeliveryTimeSlotSelectableForDate(

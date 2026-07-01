@@ -4,6 +4,11 @@
  */
 
 import { calcDeliveryFeeTHB, detectDistrictFromAddress, DISTRICTS } from './deliveryFees';
+import {
+  detectChiangMaiZoneFromAddress,
+  getZoneFee,
+  getZonesForDestination,
+} from './delivery/zones';
 
 function assert(condition: boolean, msg: string) {
   if (!condition) throw new Error(msg);
@@ -36,6 +41,19 @@ assert(detectDistrictFromAddress('หางดง') === 'HANG_DONG', 'Thai Hang 
 assert(detectDistrictFromAddress('อ.สันกำแพง') === 'SAN_KAMPHAENG', 'Thai San Kamphaeng');
 assert(detectDistrictFromAddress('Mueang Lamphun') === 'LAMPHUN', 'Lamphun before generic mueang');
 assert(detectDistrictFromAddress('random address') === null, 'No match -> null');
+
+// Chiang Mai zone detection (tambon / locality)
+assert(detectChiangMaiZoneFromAddress('123 Chang Phueak Road') === 'cm-chang-phueak', 'Chang Phueak zone');
+assert(detectChiangMaiZoneFromAddress('Suthep, Chiang Mai') === 'cm-suthep', 'Suthep zone');
+assert(detectChiangMaiZoneFromAddress('หนองป่าคร้าง') === 'cm-nong-pa-khrang', 'Nong Pa Khrang zone');
+assert(detectChiangMaiZoneFromAddress('Nong Chom, Chiang Mai') === 'cm-nong-chom', 'Nong Chom zone');
+assert(detectChiangMaiZoneFromAddress('Mae Hia, Hang Dong') === 'cm-mae-hia', 'Mae Hia zone');
+assert(detectChiangMaiZoneFromAddress('Don Kaeo, Chiang Mai') === 'cm-don-kaeo', 'Don Kaeo zone');
+assert(getZoneFee('CHIANG_MAI', 'cm-suthep') === 350, 'Suthep fee = 350');
+assert(getZoneFee('CHIANG_MAI', 'cm-nong-chom') === 350, 'Nong Chom fee = 350');
+assert(getZoneFee('CHIANG_MAI', 'cm-mae-hia') === 450, 'Mae Hia fee = 450');
+assert(getZoneFee('CHIANG_MAI', 'cm-don-kaeo') === 450, 'Don Kaeo fee = 450');
+assert(getZonesForDestination('CHIANG_MAI').length === 19, 'Chiang Mai has 19 zones');
 
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');

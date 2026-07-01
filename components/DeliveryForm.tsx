@@ -10,6 +10,7 @@ import {
   getZoneFee,
   chiangMaiZoneIdFromLegacyDistrict,
   legacyDistrictFromChiangMaiZone,
+  detectChiangMaiZoneFromAddress,
 } from '@/lib/delivery/zones';
 import { PinIcon } from '@/components/icons/PinIcon';
 import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
@@ -103,6 +104,20 @@ export function DeliveryForm({
   useEffect(() => {
     if (deliveryVariant !== 'chiang-mai') return;
     if (zoneManuallyChangedRef.current) return;
+
+    const detectedZone = detectChiangMaiZoneFromAddress(value.addressLine);
+    if (detectedZone && value.deliveryZoneId !== detectedZone) {
+      const legacy = legacyDistrictFromChiangMaiZone(detectedZone);
+      onChange({
+        ...value,
+        deliveryDestination: 'CHIANG_MAI',
+        deliveryZoneId: detectedZone,
+        deliveryDistrict: legacy.deliveryDistrict,
+        isMueangCentral: legacy.isMueangCentral,
+      });
+      return;
+    }
+
     const detected = detectDistrictFromAddress(value.addressLine);
     if (!detected) return;
     if (detected === 'MUEANG') return;

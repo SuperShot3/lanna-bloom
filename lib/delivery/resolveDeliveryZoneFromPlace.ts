@@ -7,6 +7,7 @@ import { detectDistrictFromAddress } from '@/lib/deliveryFees';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import {
   chiangMaiZoneIdFromLegacyDistrict,
+  detectChiangMaiZoneFromAddress,
   findZoneDef,
   getZonesForDestination,
   isSupportedZone,
@@ -83,6 +84,13 @@ export function resolveDeliveryZoneFromPlace(input: ResolveDeliveryZoneInput): s
   }
 
   if (deliveryDestination === 'CHIANG_MAI') {
+    if (text) {
+      const fromLocality = detectChiangMaiZoneFromAddress(text);
+      if (fromLocality && isSupportedZone('CHIANG_MAI', fromLocality)) {
+        return fromLocality;
+      }
+    }
+
     const detected = text ? detectDistrictFromAddress(text) : null;
     if (detected) {
       const isCentral =

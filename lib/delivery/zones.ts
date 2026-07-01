@@ -20,12 +20,26 @@ export interface DeliveryZoneDef {
   postalPrefixes?: string[];
 }
 
+/** Tambon / locality keywords → Chiang Mai zone id (more specific patterns first). */
+const CHIANG_MAI_ZONE_KEYWORDS: { zoneId: string; patterns: string[] }[] = [
+  { zoneId: 'cm-nong-pa-khrang', patterns: ['nong pa khrang', 'nong pakhrang', 'หนองป่าคร้าง', 'ต.หนองป่าคร้าง'] },
+  { zoneId: 'cm-chang-phueak', patterns: ['chang phueak', 'chang pueak', 'ช้างเผือก', 'ต.ช้างเผือก'] },
+  { zoneId: 'cm-suthep', patterns: ['suthep', 'su thep', 'สุเทพ', 'ต.สุเทพ', 'doi suthep', 'ดอยสุเทพ'] },
+  { zoneId: 'cm-nong-chom', patterns: ['nong chom', 'nong jom', 'หนองจ๊อม', 'หนองจอม', 'ต.หนองจ๊อม', 'ต.หนองจอม'] },
+  { zoneId: 'cm-mae-hia', patterns: ['mae hia', 'mai hia', 'mea hia', 'แม่เหียะ', 'ต.แม่เหียะ'] },
+  { zoneId: 'cm-don-kaeo', patterns: ['don kaeo', 'donkaeo', 'ดอนแก้ว', 'ต.ดอนแก้ว'] },
+];
+
 export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef[]> = {
   CHIANG_MAI: [
     { id: 'cm-mueang-central', labelEn: 'Mueang Chiang Mai — central', labelTh: 'เมืองเชียงใหม่ — ใจกลาง', feeThb: 250 },
-    { id: 'cm-mueang-non-central', labelEn: 'Mueang Chiang Mai — other areas', labelTh: 'เมืองเชียงใหม่ — พื้นที่อื่น', feeThb: 350 },
-    { id: 'cm-nong-pa-khrang', labelEn: 'Nong Pa Khrang', labelTh: 'หนองป่าคร้าง', feeThb: 300 },
     { id: 'cm-chang-phueak', labelEn: 'Chang Phueak', labelTh: 'ช้างเผือก', feeThb: 350 },
+    { id: 'cm-suthep', labelEn: 'Suthep', labelTh: 'สุเทพ', feeThb: 350 },
+    { id: 'cm-nong-pa-khrang', labelEn: 'Nong Pa Khrang', labelTh: 'หนองป่าคร้าง', feeThb: 300 },
+    { id: 'cm-nong-chom', labelEn: 'Nong Chom', labelTh: 'หนองจ๊อม', feeThb: 350 },
+    { id: 'cm-mae-hia', labelEn: 'Mae Hia', labelTh: 'แม่เหียะ', feeThb: 450 },
+    { id: 'cm-don-kaeo', labelEn: 'Don Kaeo', labelTh: 'ดอนแก้ว', feeThb: 450 },
+    { id: 'cm-mueang-non-central', labelEn: 'Mueang Chiang Mai — other areas', labelTh: 'เมืองเชียงใหม่ — พื้นที่อื่น', feeThb: 350 },
     { id: 'cm-saraphi', labelEn: 'Saraphi', labelTh: 'สารภี', feeThb: 350 },
     { id: 'cm-san-sai', labelEn: 'San Sai', labelTh: 'สันทราย', feeThb: 350 },
     { id: 'cm-hang-dong', labelEn: 'Hang Dong', labelTh: 'หางดง', feeThb: 450 },
@@ -91,6 +105,25 @@ export function getZonesForDestination(destinationId: DeliveryDestinationId): De
   return ZONES_BY_DESTINATION[destinationId] ?? [];
 }
 
+/**
+ * Detect Chiang Mai zone from address text (tambon / locality names).
+ * Returns zone id or null when no subdistrict match.
+ */
+export function detectChiangMaiZoneFromAddress(addressText: string): string | null {
+  const normalized = addressText
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+  if (!normalized) return null;
+
+  for (const { zoneId, patterns } of CHIANG_MAI_ZONE_KEYWORDS) {
+    for (const p of patterns) {
+      if (normalized.includes(p)) return zoneId;
+    }
+  }
+  return null;
+}
+
 export function findZoneDef(
   destinationId: DeliveryDestinationId,
   zoneId: string
@@ -132,8 +165,12 @@ export function legacyDistrictFromChiangMaiZone(zoneId: string): {
   const map: Record<string, { deliveryDistrict: DistrictKey; isMueangCentral: boolean }> = {
     'cm-mueang-central': { deliveryDistrict: 'MUEANG', isMueangCentral: true },
     'cm-mueang-non-central': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
-    'cm-nong-pa-khrang': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
     'cm-chang-phueak': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
+    'cm-suthep': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
+    'cm-nong-pa-khrang': { deliveryDistrict: 'MUEANG', isMueangCentral: false },
+    'cm-nong-chom': { deliveryDistrict: 'SAN_SAI', isMueangCentral: false },
+    'cm-mae-hia': { deliveryDistrict: 'HANG_DONG', isMueangCentral: false },
+    'cm-don-kaeo': { deliveryDistrict: 'MAE_RIM', isMueangCentral: false },
     'cm-saraphi': { deliveryDistrict: 'SARAPHI', isMueangCentral: false },
     'cm-san-sai': { deliveryDistrict: 'SAN_SAI', isMueangCentral: false },
     'cm-hang-dong': { deliveryDistrict: 'HANG_DONG', isMueangCentral: false },
