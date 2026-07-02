@@ -434,34 +434,79 @@ export function CartCheckoutView({
                 margin-left: -10px;
               }
               .co-discount-btn {
+                position: relative;
+                overflow: hidden;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 min-height: 48px;
-                padding: 0 10px;
-                border: none;
+                padding: 0 14px;
+                border: 1px solid color-mix(in srgb, var(--accent-border, #a88b5c) 70%, transparent);
                 border-radius: 12px;
-                background: #43a047;
-                color: #fff;
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-secondary, #e6be8a) 0%,
+                  var(--accent, #c5a059) 100%
+                );
+                color: var(--accent-cta-text, #1a3c34);
                 font-size: 12px;
-                font-weight: 600;
+                font-weight: 700;
+                letter-spacing: 0.02em;
                 line-height: 1.2;
                 font-family: inherit;
                 white-space: nowrap;
                 cursor: pointer;
                 opacity: 1;
                 transform: scale(1);
+                box-shadow:
+                  inset 0 1px 0 rgba(255, 255, 255, 0.45),
+                  0 2px 8px color-mix(in srgb, var(--accent, #c5a059) 40%, transparent);
                 transition:
-                  background 0.15s ease,
+                  box-shadow 0.2s ease,
+                  filter 0.2s ease,
                   opacity 0.28s var(--ui-overlay-ease, ease),
                   transform 0.28s var(--ui-overlay-ease, ease);
+              }
+              .co-discount-btn::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(
+                  115deg,
+                  transparent 30%,
+                  rgba(255, 255, 255, 0.55) 50%,
+                  transparent 70%
+                );
+                transform: translateX(-100%);
+                animation: co-discount-shimmer 3.2s ease-in-out infinite;
+                pointer-events: none;
+              }
+              @keyframes co-discount-shimmer {
+                0%,
+                60% {
+                  transform: translateX(-100%);
+                }
+                100% {
+                  transform: translateX(100%);
+                }
               }
               .co-discount-btn--exit {
                 opacity: 0;
                 transform: scale(0.92);
               }
               .co-discount-btn:hover:not(:disabled) {
-                background: #388e3c;
+                transform: translateY(-1px);
+                filter: brightness(1.04);
+                box-shadow:
+                  inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                  0 4px 14px color-mix(in srgb, var(--accent, #c5a059) 55%, transparent);
+              }
+              .co-discount-btn:active:not(:disabled) {
+                transform: translateY(0);
+                filter: brightness(0.98);
+                box-shadow:
+                  inset 0 1px 0 rgba(255, 255, 255, 0.35),
+                  0 1px 4px color-mix(in srgb, var(--accent, #c5a059) 35%, transparent);
               }
               .co-discount-btn:disabled {
                 cursor: not-allowed;
@@ -556,6 +601,9 @@ export function CartCheckoutView({
                 .co-discount-btn,
                 .co-payment-btn {
                   transition: none;
+                }
+                .co-discount-btn::after {
+                  animation: none;
                 }
                 .co-discount-btn-wrap--exit {
                   max-width: 0;

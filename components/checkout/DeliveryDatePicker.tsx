@@ -129,6 +129,7 @@ export function DeliveryDatePicker({
       aria-label={lang === 'th' ? 'เลือกวันจัดส่ง' : 'Choose delivery date'}
       className={cn(
         'relative w-full border border-border bg-background shadow-sm',
+        compact ? 'delivery-date-picker--compact' : 'delivery-date-picker--default',
         compact
           ? 'rounded-xl p-2.5 max-w-[280px]'
           : 'rounded-2xl p-4 max-w-sm',
@@ -161,10 +162,7 @@ export function DeliveryDatePicker({
         </button>
 
         <p
-          className={cn(
-            'min-w-0 flex-1 overflow-hidden text-center leading-snug',
-            compact ? 'text-[10px]' : 'text-xs sm:text-sm'
-          )}
+          className="delivery-date-picker__header-label min-w-0 flex-1 overflow-hidden text-center leading-snug"
           role="status"
           aria-live="polite"
         >
@@ -269,6 +267,22 @@ export function DeliveryDatePicker({
           );
         })}
       </div>
+
+      <style jsx global>{`
+        .delivery-date-picker--compact .delivery-date-picker__header-label {
+          font-size: 15px;
+          line-height: 1.35;
+        }
+        .delivery-date-picker--default .delivery-date-picker__header-label {
+          font-size: 16px;
+          line-height: 1.35;
+        }
+        @media (min-width: 640px) {
+          .delivery-date-picker--compact .delivery-date-picker__header-label {
+            font-size: 16px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

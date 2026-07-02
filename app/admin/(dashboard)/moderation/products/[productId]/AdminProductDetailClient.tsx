@@ -38,6 +38,7 @@ import {
   deleteProductImageAction,
   editProductImageFramingAction,
   reorderProductImagesAction,
+  setPrimaryProductImageAction,
   publishProductDraftAction,
   unpublishProductAction,
   updateProductByAdminAction,
@@ -431,6 +432,13 @@ export function AdminProductDetailClient({ product }: Props) {
       if (result.error) setError(result.error);
       else router.refresh();
     },
+    onSetPrimary: async (imageId: string) => {
+      setLoading(`primary-${imageId}`);
+      const result = await setPrimaryProductImageAction(product.id, imageId);
+      setLoading(null);
+      if (result.error) setError(result.error);
+      else router.refresh();
+    },
     onRemove: async (imageId: string) => {
       if (!window.confirm('Remove this image?')) return;
       setLoading(`delete-${imageId}`);
@@ -590,6 +598,7 @@ export function AdminProductDetailClient({ product }: Props) {
           onSaveAlt={imageHandlers.onSaveAlt}
           onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
           onEditFraming={imageHandlers.onEditFraming}
+          onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />

@@ -28,6 +28,7 @@ type Props = {
   onSaveAlt: (image: AdminCatalogProductImage) => void | Promise<void>;
   onReplace: (imageId: string, file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
   onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
+  onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onGenerateAi?: (imageId: string, file: File) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
@@ -44,6 +45,7 @@ function imageLoadingMessage(loadingKey: string | null | undefined): string | nu
   if (loadingKey === 'replace') return 'Replacing image…';
   if (loadingKey.startsWith('convert-')) return 'Converting to WebP…';
   if (loadingKey.startsWith('framing-')) return 'Saving image framing…';
+  if (loadingKey.startsWith('primary-')) return 'Setting main image…';
   return null;
 }
 
@@ -63,6 +65,7 @@ export function ProductImageListEditor({
   onSaveAlt,
   onReplace,
   onEditFraming,
+  onSetPrimary,
   onConvertToWebp,
   onGenerateAi,
   onRemove,
@@ -117,16 +120,33 @@ export function ProductImageListEditor({
     window.location.href = payload.signedUrl;
   }
 
+  const [framingError, setFramingError] = useState<string | null>(null);
+
   async function openEditFraming(image: AdminCatalogProductImage) {
+    setFramingError(null);
     try {
-      const response = await fetch(image.url);
-      if (!response.ok) throw new Error('Failed to load image');
-      const blob = await response.blob();
-      const name = image.storagePath?.split('/').pop() ?? 'image.png';
+      const storagePath = image.storagePath?.trim();
+      if (!storagePath) throw new Error('Image has no storage path');
+
+      // Fetch via signed URL to avoid CORS restrictions on public Supabase URLs
+      const apiRes = await fetch(
+        `/api/admin/products/catalog-image-url?path=${encodeURIComponent(storagePath)}`,
+        { method: 'GET' }
+      );
+      const payload = (await apiRes.json().catch(() => ({}))) as { signedUrl?: string; error?: string };
+      if (!apiRes.ok || !payload.signedUrl) {
+        throw new Error(payload.error || 'Could not load image for editing');
+      }
+
+      const imgRes = await fetch(payload.signedUrl);
+      if (!imgRes.ok) throw new Error('Failed to download image');
+      const blob = await imgRes.blob();
+      const name = storagePath.split('/').pop() ?? 'image.png';
       const file = new File([blob], name, { type: blob.type || 'image/png' });
       setPendingCrop({ mode: 'edit', imageId: image.id, file });
     } catch (err) {
       console.error('[ProductImageListEditor] edit framing fetch failed:', err);
+      setFramingError(err instanceof Error ? err.message : 'Could not load image for editing');
     }
   }
 
@@ -172,6 +192,13 @@ export function ProductImageListEditor({
         },
       },
     ];
+    if (onSetPrimary && !image.isPrimary) {
+      items.push({
+        id: 'set-primary',
+        label: 'Set as main image',
+        onClick: () => void onSetPrimary(image.id),
+      });
+    }
     if (onEditFraming) {
       items.push({
         id: 'edit-framing',
@@ -209,6 +236,9 @@ export function ProductImageListEditor({
   return (
     <div className={`admin-cms-image-list${isProcessing ? ' is-processing' : ''}`}>
       {processingMessage ? <AdminImageProcessingBanner message={processingMessage} /> : null}
+      {framingError ? (
+        <p className="admin-cms-alert is-error" style={{ marginBottom: 0 }}>{framingError}</p>
+      ) : null}
       {scoped.length === 0 ? (
         <p className="admin-cms-empty-hint">No images yet.</p>
       ) : (
@@ -235,7 +265,7 @@ export function ProductImageListEditor({
                   >
                     {catalogImageFormatLabel(image)}
                   </span>
-                  {index === 0 ? <span className="admin-cms-badge-main">Main image</span> : null}
+                  {image.isPrimary ? <span className="admin-cms-badge-main">Main image</span> : null}
                 </span>
               }
               menu={<AdminRowMenu items={menuItems(image, index)} ariaLabel="Image actions" />}

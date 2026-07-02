@@ -13,6 +13,7 @@ import {
 import {
   countryDialFlag,
   countryDialGroupLabels,
+  countryDialTriggerText,
   findCountryByDialCode,
   type CountryCodeEntry,
 } from '@/lib/checkout/phoneCountryDial';
@@ -28,7 +29,7 @@ export function PhoneCountrySelect({
   lang,
   ariaLabel,
   className = 'co-phone-cc',
-  display = 'flag',
+  display = 'full',
 }: {
   id?: string;
   value: string;
@@ -38,14 +39,14 @@ export function PhoneCountrySelect({
   lang: Locale;
   ariaLabel: string;
   className?: string;
-  /** `flag` shows emoji on the trigger; `full` shows flag + dial code. */
+  /** `flag` shows emoji only; `full` shows flag + dial code (e.g. "🇹🇭 +66"). */
   display?: 'flag' | 'full';
 }) {
   const selected = findCountryByDialCode(value, popular, all);
   const { popular: popularLabel, all: allLabel } = countryDialGroupLabels(lang);
   const triggerFlag = selected ? countryDialFlag(selected.label) : '🌐';
   const triggerText =
-    display === 'full' ? (selected?.label ?? `+${value}`) : triggerFlag;
+    display === 'full' ? countryDialTriggerText(selected, value) : triggerFlag;
 
   return (
     <DropdownMenu>

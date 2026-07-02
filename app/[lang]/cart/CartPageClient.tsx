@@ -2567,8 +2567,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           cursor: pointer;
           flex-shrink: 0;
           width: auto;
-          min-width: 7rem;
-          max-width: 12rem;
+          min-width: 5.75rem;
+          max-width: 9rem;
           height: auto;
           justify-content: space-between;
           gap: 6px;

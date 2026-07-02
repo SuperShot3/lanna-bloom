@@ -1,0 +1,40 @@
+---
+description: Reusable gold "premium offer" button style for opt-in perks (discounts, upgrades, bonuses)
+globs:
+  - app/**/cart/**
+  - app/**/checkout/**
+  - components/checkout/**
+---
+# Premium offer button
+
+For opt-in incentive buttons — "I want 5% off", "Add gift wrap", bonus/upgrade
+offers — use the shared **`.btn-premium-offer`** class instead of a one-off green
+or flat button.
+
+```tsx
+<button type="button" className="btn-premium-offer" onClick={onApplyOffer}>
+  {label}
+</button>
+```
+
+## What it gives you
+
+- Gold gradient (`--accent-secondary` → `--accent`) with dark brand text
+  (`--accent-cta-text`), a soft gold border, and an inner highlight — reads as a
+  premium chip beside the dark `--primary` pay button without stealing its emphasis.
+- A slow shimmer sweep (~3.2s) to draw the eye gently.
+- Lift-on-hover / press-on-active feedback.
+- Respects `prefers-reduced-motion: reduce` (shimmer + transitions disabled).
+
+## Where it lives
+
+- Styles: `app/globals.css` (`.btn-premium-offer`, `@keyframes btn-premium-offer-shimmer`).
+- Origin / reference usage: cart discount button in `app/[lang]/cart/CartCheckoutView.tsx`.
+
+## Notes
+
+- Keep the primary action on `--primary` (dark). The offer button is secondary.
+- Do not recolor to green/blue per-instance — adjust the shared class or the
+  `--accent*` tokens so all offer buttons stay consistent.
+- Add layout (width, exit animation, spacing) at the call site; the class only
+  owns the visual "offer" look.

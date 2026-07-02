@@ -1303,11 +1303,16 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         }
         :global(.co-phone-cc--trigger-full) {
           width: auto;
-          min-width: 7rem;
-          max-width: 12rem;
+          min-width: 5.75rem;
+          max-width: 9rem;
           font-size: 0.95rem;
           font-weight: 600;
           justify-content: space-between;
+        }
+        :global(.co-phone-cc--trigger-full .co-phone-cc__trigger-text) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         :global(.co-phone-cc__chevron) {
           flex-shrink: 0;

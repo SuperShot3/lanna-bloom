@@ -9,6 +9,16 @@ export function countryDialFlag(label: string): string {
   return space > 0 ? label.slice(0, space) : label;
 }
 
+/** Compact trigger label: flag emoji + calling code (e.g. "🇹🇭 +66"). */
+export function countryDialTriggerText(
+  entry: CountryCodeEntry | undefined,
+  dialCode: string
+): string {
+  const code = dialCode.replace(/\D/g, '') || dialCode;
+  if (!entry) return `+${code}`;
+  return `${countryDialFlag(entry.label)} +${entry.code}`;
+}
+
 export function countryDialGroupLabels(lang: Locale): { popular: string; all: string } {
   return {
     popular:

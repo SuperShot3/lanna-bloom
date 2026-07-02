@@ -873,6 +873,38 @@ main {
   animation: partners-scroll 30s linear infinite;
 }
 
+/* Hero feature carousel (HeroFeatureCarousel) */
+@keyframes hero-carousel-kenburns {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.07) translate3d(0.6%, -0.6%, 0);
+  }
+}
+.hero-carousel-kenburns {
+  animation: hero-carousel-kenburns 7s ease-out both;
+}
+
+@keyframes hero-carousel-progress {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+.hero-carousel-progress {
+  animation: hero-carousel-progress linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel-kenburns,
+  .hero-carousel-progress {
+    animation: none;
+  }
+}
+
 /* Homepage reveal motion (hero intro + scroll sections; non-blocking) */
 :root {
   --home-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -14169,4 +14201,91 @@ a.admin-summary-key-value {
 .premium-checkout .co-card--pad,
 .premium-checkout .co-field {
   overflow: visible;
+}
+
+/*
+ * Premium offer button — reusable gold "incentive" chip.
+ * Use for opt-in perks (discounts, upgrades, bonus offers) that should feel
+ * inviting next to a primary CTA without stealing its emphasis.
+ * Pairs well beside the dark `--primary` pay button.
+ * Origin: cart "I want 5% off" discount button.
+ */
+.btn-premium-offer {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent-border, #a88b5c) 70%, transparent);
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    var(--accent-secondary, #e6be8a) 0%,
+    var(--accent, #c5a059) 100%
+  );
+  color: var(--accent-cta-text, #1a3c34);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 2px 8px color-mix(in srgb, var(--accent, #c5a059) 40%, transparent);
+  transition:
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s var(--ui-overlay-ease, ease);
+}
+.btn-premium-offer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: btn-premium-offer-shimmer 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes btn-premium-offer-shimmer {
+  0%,
+  60% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.btn-premium-offer:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 14px color-mix(in srgb, var(--accent, #c5a059) 55%, transparent);
+}
+.btn-premium-offer:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 1px 4px color-mix(in srgb, var(--accent, #c5a059) 35%, transparent);
+}
+.btn-premium-offer:disabled {
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-premium-offer {
+    transition: none;
+  }
+  .btn-premium-offer::after {
+    animation: none;
+  }
 }

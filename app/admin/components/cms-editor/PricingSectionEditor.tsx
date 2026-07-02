@@ -35,6 +35,7 @@ type ImageHandlers = {
     options?: ProductImageUploadOptions
   ) => void | Promise<void>;
   onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
+  onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
@@ -274,6 +275,7 @@ function BouquetSizeEditModal({
           onSaveAlt={imageHandlers.onSaveAlt}
           onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
           onEditFraming={imageHandlers.onEditFraming}
+          onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />
@@ -429,6 +431,7 @@ function StemTierEditModal({
           onSaveAlt={imageHandlers.onSaveAlt}
           onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
           onEditFraming={imageHandlers.onEditFraming}
+          onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}
           onRemove={imageHandlers.onRemove}
         />
