@@ -66,7 +66,7 @@ export function CookieConsentBanner({ lang }: { lang: Locale }) {
           right: 0.75rem;
           left: auto;
           bottom: calc(0.625rem + env(safe-area-inset-bottom, 0px));
-          z-index: 80;
+          z-index: 110;
           width: fit-content;
           max-width: calc(100% - 1.5rem);
           padding: 0.4375rem 0.5rem 0.4375rem 0.5625rem;

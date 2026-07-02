@@ -7,12 +7,6 @@ import type { CatalogFilterParams } from '@/lib/sanity';
 import type { CatalogTopCategory } from '@/lib/catalogCategories';
 import { CATALOG_TOP_CATEGORIES, CATEGORY_I18N_KEYS } from '@/lib/catalogCategories';
 
-const SORT_OPTIONS: { value: CatalogFilterParams['sort']; labelKey: 'sortFeatured' | 'sortNewest' | 'sortPriceAsc' | 'sortPriceDesc' }[] = [
-  { value: 'newest', labelKey: 'sortFeatured' },
-  { value: 'price_asc', labelKey: 'sortPriceAsc' },
-  { value: 'price_desc', labelKey: 'sortPriceDesc' },
-];
-
 const CATEGORY_ICONS: Partial<Record<CatalogTopCategory, string>> = {
   flowers: '/icons/category_icons/flowers_icon.webp',
   plushy_toys: '/icons/category_icons/teadybear_category_icon.webp',
@@ -52,7 +46,6 @@ export function CatalogFilterBar({
   const jiggleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentTopCategory = filterParams?.topCategory ?? 'flowers';
-  const currentSort = filterParams?.sort ?? 'newest';
 
   const handleTopCategoryClick = (key: CatalogTopCategory) => {
     if (jiggleTimerRef.current) {
@@ -63,12 +56,6 @@ export function CatalogFilterBar({
 
     if (onQuickFilter) {
       onQuickFilter({ topCategory: key === 'flowers' ? undefined : key });
-    }
-  };
-
-  const handleSortChange = (value: CatalogFilterParams['sort']) => {
-    if (onQuickFilter) {
-      onQuickFilter({ sort: value });
     }
   };
 
@@ -92,10 +79,13 @@ export function CatalogFilterBar({
           aria-controls={drawerId}
           aria-haspopup="dialog"
         >
-          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" aria-hidden>
-            <line x1="4" y1="6" x2="20" y2="6" />
-            <line x1="7" y1="12" x2="17" y2="12" />
-            <line x1="10" y1="18" x2="14" y2="18" />
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.9" viewBox="0 0 24 24" aria-hidden>
+            <line x1="4" y1="6.5" x2="20" y2="6.5" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17.5" x2="20" y2="17.5" />
+            <circle cx="9" cy="6.5" r="1.8" fill="currentColor" />
+            <circle cx="14.5" cy="12" r="1.8" fill="currentColor" />
+            <circle cx="11.5" cy="17.5" r="1.8" fill="currentColor" />
           </svg>
           {t.filters}
           {activeCount > 0 && (
@@ -133,32 +123,6 @@ export function CatalogFilterBar({
             );
           })}
 
-        {/* Sort chip */}
-        {onQuickFilter && (
-          <div className={`catalog-sort-chip ${currentSort !== 'newest' ? 'active' : ''}`}>
-            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
-              <path d="M3 6h18M7 12h10M11 18h2" />
-            </svg>
-            <span className="catalog-sort-label">
-              {currentSort === 'newest' ? t.sortFeatured : currentSort === 'price_asc' ? t.sortPriceAsc : t.sortPriceDesc}
-            </span>
-            <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden>
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-            <select
-              className="catalog-sort-select"
-              value={currentSort}
-              onChange={(e) => handleSortChange(e.target.value as CatalogFilterParams['sort'])}
-              aria-label={t.filterSort}
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {t[opt.labelKey]}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
       <style jsx>{`
         .catalog-filter-bar {
@@ -197,35 +161,58 @@ export function CatalogFilterBar({
           flex-shrink: 0;
           display: flex;
           align-items: center;
-          gap: 5px;
-          background: var(--text);
-          color: var(--surface);
-          border: none;
+          gap: 6px;
+          background: color-mix(in srgb, var(--surface) 94%, var(--pastel-cream, #f7f0e7));
+          color: color-mix(in srgb, var(--text) 86%, #4a3a2f);
+          border: 1.5px solid color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
           border-radius: 100px;
-          padding: 7px 13px 7px 10px;
+          padding: 7px 13px 7px 11px;
           font-family: inherit;
           font-size: 12.5px;
-          font-weight: 500;
+          font-weight: 600;
           cursor: pointer;
-          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.75),
+            0 1px 0 rgba(255, 255, 255, 0.5),
+            0 6px 18px -14px rgba(44, 36, 32, 0.35);
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .catalog-filter-icon-btn svg {
+          flex-shrink: 0;
         }
         .catalog-filter-icon-btn:hover {
-          background: var(--text-muted);
-          box-shadow: 0 3px 0 rgba(0,0,0,0.2), 0 6px 16px rgba(45, 42, 38, 0.2);
+          border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+          background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.82),
+            0 2px 0 rgba(168, 139, 92, 0.32),
+            0 10px 24px -14px rgba(45, 42, 38, 0.42);
           transform: translateY(-2px);
+        }
+        .catalog-filter-icon-btn:active {
+          transform: translateY(0) scale(0.98);
+        }
+        .catalog-filter-icon-btn.has-filters {
+          border-color: color-mix(in srgb, var(--accent) 56%, var(--border));
         }
         .catalog-filter-icon-btn:focus-visible {
           outline: 3px solid var(--accent);
           outline-offset: 2px;
         }
         .catalog-filter-count-badge {
+          min-width: 17px;
+          height: 17px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           background: var(--accent);
           color: var(--surface);
           border-radius: 100px;
           font-size: 10px;
-          font-weight: 600;
-          padding: 1px 6px;
+          font-weight: 700;
+          padding: 0 5px;
           margin-left: 2px;
+          border: 1px solid color-mix(in srgb, var(--accent-border) 75%, transparent);
         }
 
         /* Chips */
@@ -311,52 +298,14 @@ export function CatalogFilterBar({
           }
         }
 
-        /* Sort chip */
-        .catalog-sort-chip {
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          border: 1.5px solid var(--border);
-          background: var(--surface);
-          border-radius: 100px;
-          padding: 6px 12px;
-          font-size: 12.5px;
-          font-family: inherit;
-          color: var(--text);
-          cursor: pointer;
-          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
-          white-space: nowrap;
-          position: relative;
-        }
-        .catalog-sort-chip:hover {
-          border-color: var(--accent);
-          background: var(--accent-soft);
-          box-shadow: 0 3px 0 #a88b5c, 0 6px 16px rgba(45, 42, 38, 0.12);
-          transform: translateY(-2px);
-        }
-        .catalog-sort-chip:focus-within {
-          outline: 3px solid var(--accent);
-          outline-offset: 2px;
-        }
-        .catalog-sort-chip.active {
-          border-color: var(--accent);
-          color: var(--accent);
-        }
-        .catalog-sort-chip.active:hover {
-          background: var(--accent-soft);
-          box-shadow: 0 3px 0 #a88b5c, 0 6px 16px rgba(45, 42, 38, 0.12);
-        }
-        .catalog-sort-label {
-          pointer-events: none;
-        }
-        .catalog-sort-select {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          width: 100%;
-          cursor: pointer;
-          font-size: inherit;
+        @media (prefers-reduced-motion: reduce) {
+          .catalog-filter-icon-btn {
+            transition: none;
+          }
+          .catalog-filter-icon-btn:hover,
+          .catalog-filter-icon-btn:active {
+            transform: none;
+          }
         }
       `}</style>
     </div>

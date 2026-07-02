@@ -1201,6 +1201,10 @@ body.cookie-consent-banner-open {
   body.cookie-consent-banner-open {
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
+
+  body.cookie-consent-banner-open .line-floating-contact {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @keyframes cart-helper-pulse-ring {
@@ -14204,18 +14208,19 @@ a.admin-summary-key-value {
 }
 
 /*
- * Premium offer button — reusable gold "incentive" chip.
- * Use for opt-in perks (discounts, upgrades, bonus offers) that should feel
- * inviting next to a primary CTA without stealing its emphasis.
- * Pairs well beside the dark `--primary` pay button.
- * Origin: cart "I want 5% off" discount button.
+ * Premium button — reusable gold accent style for any interactive control.
+ * Apply to <button>, <a>, or other clickable elements. Layout (width, flex,
+ * margins) stays at the call site; this class owns only the visual treatment.
+ * Sibling to other globals: a.hero-cta, a.btn-pill, dark --primary CTAs.
  */
-.btn-premium-offer {
+.btn-premium,
+a.btn-premium {
   position: relative;
   overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   min-height: 48px;
   padding: 0 14px;
   border: 1px solid color-mix(in srgb, var(--accent-border, #a88b5c) 70%, transparent);
@@ -14231,6 +14236,7 @@ a.admin-summary-key-value {
   letter-spacing: 0.02em;
   line-height: 1.2;
   font-family: inherit;
+  text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
   box-shadow:
@@ -14241,7 +14247,8 @@ a.admin-summary-key-value {
     filter 0.2s ease,
     transform 0.2s var(--ui-overlay-ease, ease);
 }
-.btn-premium-offer::after {
+.btn-premium::after,
+a.btn-premium::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -14252,10 +14259,10 @@ a.admin-summary-key-value {
     transparent 70%
   );
   transform: translateX(-100%);
-  animation: btn-premium-offer-shimmer 3.2s ease-in-out infinite;
+  animation: btn-premium-shimmer 3.2s ease-in-out infinite;
   pointer-events: none;
 }
-@keyframes btn-premium-offer-shimmer {
+@keyframes btn-premium-shimmer {
   0%,
   60% {
     transform: translateX(-100%);
@@ -14264,28 +14271,38 @@ a.admin-summary-key-value {
     transform: translateX(100%);
   }
 }
-.btn-premium-offer:hover:not(:disabled) {
+.btn-premium:hover:not(:disabled),
+a.btn-premium:hover {
   transform: translateY(-1px);
   filter: brightness(1.04);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 4px 14px color-mix(in srgb, var(--accent, #c5a059) 55%, transparent);
 }
-.btn-premium-offer:active:not(:disabled) {
+.btn-premium:active:not(:disabled),
+a.btn-premium:active {
   transform: translateY(0);
   filter: brightness(0.98);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 1px 4px color-mix(in srgb, var(--accent, #c5a059) 35%, transparent);
 }
-.btn-premium-offer:disabled {
+.btn-premium:focus-visible,
+a.btn-premium:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.btn-premium:disabled {
   cursor: not-allowed;
+  opacity: 0.55;
 }
 @media (prefers-reduced-motion: reduce) {
-  .btn-premium-offer {
+  .btn-premium,
+  a.btn-premium {
     transition: none;
   }
-  .btn-premium-offer::after {
+  .btn-premium::after,
+  a.btn-premium::after {
     animation: none;
   }
 }

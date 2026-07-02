@@ -12,6 +12,14 @@ import { CATALOG_OCCASION_CHIPS, STOREFRONT_FLOWER_TYPES } from '@/lib/catalogCa
 const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
 const DELIVERY_OPTS = ['same_day', 'next_day'] as const;
 const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement', 'potted'] as const;
+const SORT_OPTS: Array<{
+  value: NonNullable<CatalogFilterParams['sort']>;
+  labelKey: 'sortFeatured' | 'sortPriceAsc' | 'sortPriceDesc';
+}> = [
+  { value: 'newest', labelKey: 'sortFeatured' },
+  { value: 'price_asc', labelKey: 'sortPriceAsc' },
+  { value: 'price_desc', labelKey: 'sortPriceDesc' },
+];
 const STEM_OPTS: { key: StemBucketKey; labelKey: 'stemSmall' | 'stemMedium' | 'stemLarge' | 'stemGrand' }[] = [
   { key: 'small', labelKey: 'stemSmall' },
   { key: 'medium', labelKey: 'stemMedium' },
@@ -275,6 +283,26 @@ export function FlowerFilterPanel({
           </div>
         </div>
       )}
+
+      <div className="flower-filter-group">
+        <p className="flower-filter-group-static-heading">{t.filterSort}</p>
+        <div className="flower-pill-row flower-pill-row--sort">
+          {SORT_OPTS.map(({ value, labelKey }) => {
+            const active = (draft.sort ?? 'newest') === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                className={`flower-pill flower-pill--sort ${active ? 'is-active' : ''}`}
+                onClick={() => setDraft((d) => ({ ...d, sort: value === 'newest' ? undefined : value }))}
+                aria-pressed={active}
+              >
+                {t[labelKey]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="flower-filter-group">
         <p className="flower-filter-group-static-heading">{t.filterPriceRange}</p>
@@ -821,6 +849,17 @@ export function FlowerFilterPanel({
           flex-wrap: wrap;
           gap: 8px;
         }
+        .flower-pill-row--sort {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          padding-bottom: 2px;
+        }
+        .flower-pill-row--sort::-webkit-scrollbar {
+          display: none;
+        }
         .flower-pill-row--stem {
           flex-direction: column;
           align-items: stretch;
@@ -834,6 +873,13 @@ export function FlowerFilterPanel({
           color: #5c4a3a;
           cursor: pointer;
           text-align: left;
+        }
+        .flower-pill--sort {
+          flex: 0 0 auto;
+          white-space: nowrap;
+          padding: 6px 10px;
+          font-size: 11.5px;
+          line-height: 1.2;
         }
         .flower-pill.is-active {
           background: #f2c4c0;

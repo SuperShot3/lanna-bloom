@@ -1,0 +1,64 @@
+---
+description: Reusable gold premium button style (.btn-premium) for any button or link
+globs:
+  - app/**
+  - components/**
+---
+# Premium button (`.btn-premium`)
+
+Shared global button style for **any** interactive control that should feel
+premium and gold-accented. Not tied to checkout, discounts, or a specific feature.
+
+## Use it when
+
+- A button or link should stand out with the brand gold treatment
+- You want a secondary / accent action beside a dark `--primary` CTA
+- You need a compact chip-style control (offers, upgrades, "learn more", etc.)
+
+## Do not use it when
+
+- The action is the **main** page CTA → `a.hero-cta` (large pill, hero sections)
+- You need a **neutral** nav/back control → `a.btn-pill`
+- You need the **primary** checkout/pay action → dark `--primary` background
+
+## Usage
+
+Works on `<button>` and `<a>`. Add layout classes at the call site; `.btn-premium`
+only owns look and interaction.
+
+```tsx
+<button type="button" className="btn-premium" onClick={onClick}>
+  {label}
+</button>
+
+<Link href={href} className="btn-premium">
+  {label}
+</Link>
+```
+
+Combine with local classes for width, flex, or animation wrappers:
+
+```tsx
+<button type="button" className="btn-premium my-local-wrap" disabled={loading}>
+  Save
+</button>
+```
+
+## What you get
+
+- Gold gradient (`--accent-secondary` → `--accent`), dark text (`--accent-cta-text`)
+- Soft border, inner highlight, gentle shimmer (~3.2s)
+- Hover lift, active press, `:focus-visible` ring
+- `prefers-reduced-motion: reduce` disables shimmer and transitions
+- `:disabled` dims and blocks pointer
+
+## Source of truth
+
+- Styles: `app/globals.css` — `.btn-premium`, `a.btn-premium`, `@keyframes btn-premium-shimmer`
+- First use: cart discount button in `app/[lang]/cart/CartCheckoutView.tsx` (`co-discount-btn` scoped copy)
+
+## Rules for agents
+
+1. **Reuse the class** — do not copy gradient/shimmer CSS into styled-jsx or one-off modules.
+2. **Tune globally** — change `--accent*` tokens or `.btn-premium` in `globals.css`, not per page.
+3. **Layout stays local** — width, flex, exit animations, spacing belong at the call site.

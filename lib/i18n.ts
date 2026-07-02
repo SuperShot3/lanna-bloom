@@ -76,7 +76,7 @@ const baseTranslations = {
       headlineNew: 'Chiang Mai Flower Delivery',
       headlineAccent: '',
       sublineNew: 'Order fresh flowers online with fast delivery for birthdays, anniversaries, and special moments.',
-      ctaBrowse: 'Browse Collection',
+      ctaBrowse: 'Explore Signature Collections',
       ctaHowItWorks: 'How it Works',
       howToOrderClose: 'Close',
       howToOrderInfographicAlt: 'How to order flowers from Lanna Bloom — step-by-step guide',
