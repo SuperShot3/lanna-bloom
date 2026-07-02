@@ -45,11 +45,11 @@ const baseTranslations = {
     },
     cookieBanner: {
       ariaLabel: 'Cookie notice',
-      messageBeforeLink:
-        'We use cookies and analytics to understand website usage, improve ordering, and measure marketing. By continuing or clicking OK, you acknowledge this use. See our',
+      messageBeforeLink: 'We use cookies for analytics and marketing.',
+      linksIntro: 'See our',
       privacyLinkLabel: 'Privacy Policy',
       cookieLinkLabel: 'Cookie Policy',
-      messageAfterLink: 'for details.',
+      messageAfterLink: '.',
       acceptLabel: 'OK',
     },
     delivery: {
@@ -1368,8 +1368,8 @@ const baseTranslations = {
     },
     cookieBanner: {
       ariaLabel: 'ประกาศเกี่ยวกับคุกกี้',
-      messageBeforeLink:
-        'เราใช้คุกกี้และเครื่องมือวิเคราะห์เพื่อทำความเข้าใจการใช้งานเว็บไซต์ ปรับปรุงขั้นตอนการสั่งซื้อ และวัดผลการตลาด การใช้งานเว็บไซต์ต่อไปหรือกด OK ถือว่าคุณรับทราบการใช้งานนี้ ดูรายละเอียดใน',
+      messageBeforeLink: 'เราใช้คุกกี้เพื่อวิเคราะห์และการตลาด',
+      linksIntro: 'ดู',
       privacyLinkLabel: 'นโยบายความเป็นส่วนตัว',
       cookieLinkLabel: 'นโยบายคุกกี้',
       messageAfterLink: '',

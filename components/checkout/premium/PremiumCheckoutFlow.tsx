@@ -357,45 +357,33 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             <label className="co-label" htmlFor="checkout-zone">
               {tBuyNow.districtLabel} <span className="co-req">*</span>
             </label>
-            <select
-              id="checkout-zone"
-              className="co-input"
-              value={delivery.deliveryZoneId}
-              onChange={(e) =>
-                onDeliveryChange({ ...delivery, deliveryZoneId: e.target.value })
-              }
-            >
-              <option value="">{tBuyNow.selectDistrict}</option>
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {lang === 'th' ? z.labelTh : z.labelEn} — {'\u0E3F'}
-                  {(getZoneFee(delivery.deliveryDestination, z.id) ?? z.feeThb).toLocaleString()}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              ref={locationRequestTriggerRef}
-              className="co-location-request-cta"
-              onClick={() => setLocationRequestOpen(true)}
-            >
-              <span className="co-location-request-cta__emoji" aria-hidden>
-                📍
-              </span>
-              <span className="co-location-request-cta__copy">
-                <span className="co-location-request-cta__title">
-                  {(tCart as { deliveryLocationCta?: string }).deliveryLocationCta ??
-                    "Can't find your area?"}
-                </span>
-                <span className="co-location-request-cta__sub">
-                  {(tCart as { deliveryLocationCtaSub?: string }).deliveryLocationCtaSub ??
-                    "We'll check delivery for you ✨"}
-                </span>
-              </span>
-              <span className="co-location-request-cta__chevron" aria-hidden>
-                ›
-              </span>
-            </button>
+            <div className="co-zone-control">
+              <select
+                id="checkout-zone"
+                className="co-input"
+                value={delivery.deliveryZoneId}
+                onChange={(e) =>
+                  onDeliveryChange({ ...delivery, deliveryZoneId: e.target.value })
+                }
+              >
+                <option value="">{tBuyNow.selectDistrict}</option>
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {lang === 'th' ? z.labelTh : z.labelEn} — {'\u0E3F'}
+                    {(getZoneFee(delivery.deliveryDestination, z.id) ?? z.feeThb).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                ref={locationRequestTriggerRef}
+                className="co-location-request-link"
+                onClick={() => setLocationRequestOpen(true)}
+              >
+                {(tCart as { deliveryLocationCta?: string }).deliveryLocationCta ??
+                  "Can't find your area?"}
+              </button>
+            </div>
           </div>
           <DeliveryAddressFields
             lang={lang}
@@ -1406,82 +1394,32 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           opacity: 0.55;
           margin-right: 4px;
         }
-        .co-location-request-cta {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          margin-top: 12px;
-          padding: 12px 14px;
-          min-height: 56px;
-          border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
-          border-radius: 14px;
-          background: linear-gradient(
-            135deg,
-            color-mix(in srgb, var(--pastel-cream) 92%, #fff) 0%,
-            color-mix(in srgb, var(--pastel-mint) 35%, #fff) 100%
-          );
-          color: var(--primary);
-          font-family: inherit;
-          text-align: left;
-          cursor: pointer;
-          box-shadow: 0 2px 10px rgba(26, 60, 52, 0.06);
-          transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease,
-            transform 0.2s ease;
-        }
-        .co-location-request-cta:hover {
-          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-          box-shadow: 0 4px 16px rgba(26, 60, 52, 0.1);
-          transform: translateY(-1px);
-        }
-        .co-location-request-cta:active {
-          transform: translateY(0);
-        }
-        .co-location-request-cta:focus-visible {
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
-        }
-        .co-location-request-cta__emoji {
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          background: color-mix(in srgb, #fff 75%, var(--pastel-cream));
-          font-size: 1.25rem;
-          line-height: 1;
-          box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
-        }
-        .co-location-request-cta__copy {
-          flex: 1;
-          min-width: 0;
+        .co-zone-control {
           display: flex;
           flex-direction: column;
           gap: 2px;
         }
-        .co-location-request-cta__title {
-          font-size: 14px;
-          font-weight: 700;
-          line-height: 1.3;
-          color: var(--primary);
-        }
-        .co-location-request-cta__sub {
-          font-size: 12px;
+        .co-location-request-link {
+          align-self: flex-start;
+          margin: 0;
+          padding: 0 0 0 14px;
+          border: none;
+          background: transparent;
+          font-family: inherit;
+          font-size: 13px;
           font-weight: 500;
-          line-height: 1.35;
-          color: color-mix(in srgb, var(--primary) 72%, var(--text-muted));
+          line-height: 1.4;
+          color: var(--accent);
+          text-decoration: none;
+          text-align: left;
+          cursor: pointer;
         }
-        .co-location-request-cta__chevron {
-          flex-shrink: 0;
-          font-size: 1.35rem;
-          font-weight: 300;
-          line-height: 1;
-          color: color-mix(in srgb, var(--accent) 80%, var(--primary));
-          opacity: 0.85;
+        .co-location-request-link:hover {
+          color: color-mix(in srgb, var(--accent) 75%, var(--primary));
+        }
+        .co-location-request-link:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
       `}</style>
       <DeliveryLocationRequestModal
