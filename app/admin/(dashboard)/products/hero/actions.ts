@@ -174,6 +174,62 @@ export async function reorderCarouselHeroImagesAction(
   }
 }
 
+export async function editCarouselHeroFramingAction(formData: FormData): Promise<ActionResult> {
+  const gate = await requireHeroEditor();
+  if (gate.error) return gate;
+
+  const storagePath = String(formData.get('storagePath') || '').trim();
+  const file = formData.get('file');
+  if (!storagePath) return { error: 'Missing image' };
+  if (!file || !(file instanceof File)) return { error: 'Image file is required' };
+
+  try {
+    const { heroCarouselImages } = await getCatalogSiteSettingsRowForAdmin();
+    const existing = heroCarouselImages.find((img) => img.storage_path === storagePath);
+    if (!existing) return { error: 'Image not found' };
+
+    const newStoragePath = `site-settings/default-carousel/${Date.now()}.webp`;
+    const record = await uploadHeroWebp(
+      file,
+      newStoragePath,
+      existing.alt ?? 'Hero carousel',
+      existing.sort_order ?? 0
+    );
+    const next = heroCarouselImages.map((img) =>
+      img.storage_path === storagePath ? record : img
+    );
+    await upsertCatalogSiteSettings({ heroCarouselImages: normalizeCarouselOrder(next) });
+    revalidateHeroPaths();
+    return { message: 'Image framing saved.' };
+  } catch (err) {
+    console.error('[Hero] editCarouselHeroFraming failed:', err);
+    return { error: err instanceof Error ? err.message : 'Save failed' };
+  }
+}
+
+export async function editMainHeroFramingAction(formData: FormData): Promise<ActionResult> {
+  const gate = await requireHeroEditor();
+  if (gate.error) return gate;
+
+  const file = formData.get('file');
+  if (!file || !(file instanceof File)) return { error: 'Image file is required' };
+
+  try {
+    const { heroImage } = await getCatalogSiteSettingsRowForAdmin();
+    if (!heroImage?.storage_path) return { error: 'No fallback hero image set' };
+
+    const storagePath = `site-settings/default/hero-${Date.now()}.webp`;
+    const alt = heroImage.alt?.trim() || 'Homepage hero';
+    const record = await uploadHeroWebp(file, storagePath, alt, 0);
+    await upsertCatalogSiteSettings({ heroImage: record });
+    revalidateHeroPaths();
+    return { message: 'Image framing saved.' };
+  } catch (err) {
+    console.error('[Hero] editMainHeroFraming failed:', err);
+    return { error: err instanceof Error ? err.message : 'Save failed' };
+  }
+}
+
 export async function updateCarouselHeroAltAction(
   storagePath: string,
   alt: string

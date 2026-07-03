@@ -5,6 +5,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { AdminCmsCollapsibleSection } from '@/app/admin/components/cms-editor/AdminCmsCollapsibleSection';
 import { AdminCmsSection } from '@/app/admin/components/cms-editor/AdminCmsSection';
 import { AdminImageAltModal } from '@/app/admin/components/cms-editor/AdminImageAltModal';
+import { AdminImageCropModal } from '@/app/admin/components/cms-editor/AdminImageCropModal';
 import { AdminImagePreviewModal } from '@/app/admin/components/cms-editor/AdminImagePreviewModal';
 import { AdminRowMenu } from '@/app/admin/components/cms-editor/AdminRowMenu';
 import { AdminSortableList } from '@/app/admin/components/cms-editor/AdminSortableList';
@@ -12,6 +13,8 @@ import { AdminSortableRow } from '@/app/admin/components/cms-editor/AdminSortabl
 import type { AdminHeroSettings } from '@/lib/catalogAdmin';
 import { imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
 import {
+  editCarouselHeroFramingAction,
+  editMainHeroFramingAction,
   removeCarouselHeroImageAction,
   removeMainHeroImageAction,
   reorderCarouselHeroImagesAction,
@@ -24,6 +27,29 @@ type Props = {
   settings: AdminHeroSettings;
 };
 
+type PendingCrop =
+  | { mode: 'upload-carousel'; file: File }
+  | { mode: 'upload-main'; file: File }
+  | { mode: 'edit-carousel'; storagePath: string; file: File }
+  | { mode: 'edit-main'; file: File };
+
+async function fetchImageFile(storagePath: string): Promise<File> {
+  const apiRes = await fetch(
+    `/api/admin/products/catalog-image-url?path=${encodeURIComponent(storagePath)}`,
+    { method: 'GET' }
+  );
+  const payload = (await apiRes.json().catch(() => ({}))) as { signedUrl?: string; error?: string };
+  if (!apiRes.ok || !payload.signedUrl) {
+    throw new Error(payload.error || 'Could not load image for editing');
+  }
+
+  const imgRes = await fetch(payload.signedUrl);
+  if (!imgRes.ok) throw new Error('Failed to download image');
+  const blob = await imgRes.blob();
+  const name = storagePath.split('/').pop() ?? 'image.png';
+  return new File([blob], name, { type: blob.type || 'image/png' });
+}
+
 export function HeroSettingsClient({ settings }: Props) {
   const router = useRouter();
   const mainInputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +60,8 @@ export function HeroSettingsClient({ settings }: Props) {
   const [editingPath, setEditingPath] = useState<string | null>(null);
   const [editAlt, setEditAlt] = useState('');
   const [previewItem, setPreviewItem] = useState<{ url: string; title: string } | null>(null);
+  const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
+  const [framingError, setFramingError] = useState<string | null>(null);
 
   const carouselIds = settings.carousel.map((item) => item.storagePath);
 
@@ -67,25 +95,74 @@ export function HeroSettingsClient({ settings }: Props) {
     router.refresh();
   }
 
+  async function openEditFraming(storagePath: string) {
+    setFramingError(null);
+    try {
+      const file = await fetchImageFile(storagePath);
+      setPendingCrop({ mode: 'edit-carousel', storagePath, file });
+    } catch (err) {
+      console.error('[HeroSettingsClient] edit framing fetch failed:', err);
+      setFramingError(err instanceof Error ? err.message : 'Could not load image for editing');
+    }
+  }
+
+  async function openMainEditFraming() {
+    if (!settings.heroStoragePath) return;
+    setFramingError(null);
+    try {
+      const file = await fetchImageFile(settings.heroStoragePath);
+      setPendingCrop({ mode: 'edit-main', file });
+    } catch (err) {
+      console.error('[HeroSettingsClient] edit main framing fetch failed:', err);
+      setFramingError(err instanceof Error ? err.message : 'Could not load image for editing');
+    }
+  }
+
   async function handleMainUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.set('file', file);
-    formData.set('alt', 'Homepage hero');
-    await runAction('main-upload', () => uploadMainHeroImageAction(formData));
+    setPendingCrop({ mode: 'upload-main', file });
     event.target.value = '';
   }
 
   async function handleCarouselUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.set('file', file);
-    formData.set('alt', 'Hero carousel');
-    await runAction('carousel-upload', () => uploadCarouselHeroImageAction(formData));
+    setPendingCrop({ mode: 'upload-carousel', file });
     event.target.value = '';
   }
+
+  async function applyCrop(crop: PendingCrop, file: File) {
+    if (crop.mode === 'upload-carousel') {
+      const formData = new FormData();
+      formData.set('file', file);
+      formData.set('alt', 'Hero carousel');
+      await runAction('carousel-upload', () => uploadCarouselHeroImageAction(formData));
+      return;
+    }
+
+    if (crop.mode === 'upload-main') {
+      const formData = new FormData();
+      formData.set('file', file);
+      formData.set('alt', 'Homepage hero');
+      await runAction('main-upload', () => uploadMainHeroImageAction(formData));
+      return;
+    }
+
+    if (crop.mode === 'edit-carousel') {
+      const formData = new FormData();
+      formData.set('storagePath', crop.storagePath);
+      formData.set('file', file);
+      await runAction(`framing-${crop.storagePath}`, () => editCarouselHeroFramingAction(formData));
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set('file', file);
+    await runAction('main-framing', () => editMainHeroFramingAction(formData));
+  }
+
+  const cropIsEdit = pendingCrop?.mode === 'edit-carousel' || pendingCrop?.mode === 'edit-main';
 
   return (
     <div className="admin-cms-editor admin-hero-settings">
@@ -97,6 +174,11 @@ export function HeroSettingsClient({ settings }: Props) {
       {success ? (
         <p className="admin-cms-alert is-success" role="status">
           {success}
+        </p>
+      ) : null}
+      {framingError ? (
+        <p className="admin-cms-alert is-error" role="alert">
+          {framingError}
         </p>
       ) : null}
 
@@ -142,6 +224,12 @@ export function HeroSettingsClient({ settings }: Props) {
                             setEditingPath(item.storagePath);
                             setEditAlt(item.alt);
                           },
+                        },
+                        {
+                          id: 'edit-framing',
+                          label: 'Edit framing',
+                          disabled: !!loading,
+                          onClick: () => void openEditFraming(item.storagePath),
                         },
                         {
                           id: 'remove',
@@ -213,6 +301,14 @@ export function HeroSettingsClient({ settings }: Props) {
               </button>
               <button
                 type="button"
+                className="admin-cms-btn admin-cms-btn-ghost"
+                disabled={!!loading}
+                onClick={() => void openMainEditFraming()}
+              >
+                Edit framing
+              </button>
+              <button
+                type="button"
                 className="admin-cms-btn admin-cms-btn-ghost admin-cms-btn-danger"
                 disabled={!!loading}
                 onClick={() => {
@@ -254,6 +350,39 @@ export function HeroSettingsClient({ settings }: Props) {
         }}
         onClose={() => setEditingPath(null)}
         saving={loading === 'alt'}
+      />
+
+      <AdminImageCropModal
+        open={Boolean(pendingCrop)}
+        file={pendingCrop?.file ?? null}
+        title={
+          cropIsEdit
+            ? 'Edit image framing'
+            : pendingCrop?.mode === 'upload-main'
+              ? 'Crop fallback hero image'
+              : 'Crop new hero image'
+        }
+        aspect={cropIsEdit ? 1 : undefined}
+        outputSize={cropIsEdit ? 2400 : undefined}
+        outputMime={cropIsEdit ? 'image/png' : undefined}
+        hideSkip={cropIsEdit}
+        onCancel={() => setPendingCrop(null)}
+        onSkip={
+          cropIsEdit
+            ? undefined
+            : () => {
+                const next = pendingCrop;
+                setPendingCrop(null);
+                if (!next) return;
+                void applyCrop(next, next.file);
+              }
+        }
+        onApply={({ file }) => {
+          const next = pendingCrop;
+          setPendingCrop(null);
+          if (!next) return;
+          void applyCrop(next, file);
+        }}
       />
     </div>
   );

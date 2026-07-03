@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
   if (
     !storagePath.startsWith('products/') &&
     !storagePath.startsWith('bouquets/') &&
-    !storagePath.startsWith('hero/')
+    !storagePath.startsWith('hero/') &&
+    !storagePath.startsWith('site-settings/')
   ) {
     return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
   }
