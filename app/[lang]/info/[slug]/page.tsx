@@ -76,6 +76,7 @@ export async function generateMetadata({
 
 export function generateStaticParams() {
   const slugs = [
+    'gift-card-ideas-with-flowers',
     'plush-toys-teddy-bears-chiang-mai',
     'birthday-flower-gift-guide',
     'order-flowers-website-vs-facebook-chiang-mai',

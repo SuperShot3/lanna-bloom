@@ -9,7 +9,7 @@ import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 
 export type HeroCarouselImage = { src: string; alt: string };
 
-const AUTOPLAY_MS = 5000;
+const AUTOPLAY_MS = 3000;
 const SWIPE_THRESHOLD_PX = 48;
 
 function usePrefersReducedMotion() {

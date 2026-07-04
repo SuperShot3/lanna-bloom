@@ -616,7 +616,7 @@ const baseTranslations = {
       mapsPromptStep3: 'Tap “Copy link”',
       mapsPromptStep4: 'Return here and paste the link into “Paste Google Maps link” below the search',
       mapsPromptAddPin: 'Add location',
-      mapsPromptContinueWithoutLink: 'Continue without link',
+      mapsPromptContinueWithoutLink: 'I’ll skip and hope for the best 🤞',
       policyConsentBefore: 'By placing your order, you agree to our',
       policyDeliveryLink: 'delivery policy',
       policyConsentBetween: 'and',

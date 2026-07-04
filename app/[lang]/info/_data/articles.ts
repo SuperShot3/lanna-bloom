@@ -43,6 +43,27 @@ export type ArticleMeta = {
 
 export const articles: ArticleMeta[] = [
   {
+    slug: 'gift-card-ideas-with-flowers',
+    title: 'Gift Card Ideas with Flowers for Thoughtful Gifts',
+    excerpt:
+      'Short and thoughtful gift card ideas to pair with flowers—from romantic notes and birthday wishes to thank-you messages and simple standalone cards.',
+    titleTh: 'ไอเดียการ์ดอวยพรคู่ดอกไม้สำหรับของขวัญที่ใส่ใจ',
+    excerptTh:
+      'ไอเดียการ์ดอวยพรสั้น ๆ ที่เข้ากับดอกไม้—ตั้งแต่ข้อความโรแมนติก อวยพรวันเกิด ขอบคุณ ไปจนถึงการ์ดที่ส่งแยกได้อย่างสวยงาม',
+    publishedAt: '2026-07-04T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff8f0 0%, #fce7f3 45%, #fef3c7 100%)',
+      center: { kind: 'emoji', value: '💌' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Red rose romance', labelTh: 'ช่อกุหลาบโรแมนติก', href: '/catalog/red-rose-romance' },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
     slug: 'plush-toys-teddy-bears-chiang-mai',
     title: 'Plush Toys and Teddy Bears Now Available at Lanna Bloom in Chiang Mai',
     excerpt:
