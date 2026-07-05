@@ -5,14 +5,16 @@ import styles from './article.module.css';
 export function ArticleCta({
   links,
   lang,
+  title,
 }: {
   links: ArticleCtaLink[];
   lang: string;
+  title?: string;
 }) {
   return (
     <section className={styles.infoArticleCta} aria-labelledby="info-article-cta-title">
       <h2 id="info-article-cta-title" className={styles.infoArticleCtaTitle}>
-        {lang === 'th' ? 'สั่งซื้อหรือเลือกช่อ' : 'Order or browse'}
+        {title ?? (lang === 'th' ? 'สั่งซื้อหรือเลือกช่อ' : 'Order or browse')}
       </h2>
       <div className={styles.infoArticleCtaLinks}>
         {links.map((link, i) => {

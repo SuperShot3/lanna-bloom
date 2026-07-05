@@ -77,6 +77,7 @@ export async function generateMetadata({
 export function generateStaticParams() {
   const slugs = [
     'gift-card-ideas-with-flowers',
+    'thai-breakfast-chiang-mai',
     'plush-toys-teddy-bears-chiang-mai',
     'birthday-flower-gift-guide',
     'order-flowers-website-vs-facebook-chiang-mai',
@@ -116,6 +117,7 @@ export default async function InfoArticlePage({
   const articleTitle = getArticleTitle(article, lang);
   const articleExcerpt = getArticleExcerpt(article, lang);
   const ctaLinks = getArticleCtaLinks(article, lang);
+  const ctaTitle = lang === 'th' ? article.ctaTitleTh ?? article.ctaTitle : article.ctaTitle;
   const guidesBackLabel = lang === 'th' ? '← คู่มือ' : '← Guides';
 
   const base = getBaseUrl();
@@ -282,7 +284,7 @@ export default async function InfoArticlePage({
           <div className={styles.infoArticleMdx}>
             <MDXRemote source={mdxSource} components={mdxComponents} />
           </div>
-          <ArticleCta links={ctaLinks} lang={lang} />
+          <ArticleCta links={ctaLinks} lang={lang} title={ctaTitle} />
         </div>
       </article>
     </div>

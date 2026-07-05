@@ -32,6 +32,9 @@ export type ArticleMeta = {
   featured?: boolean;
   /** CTA links at bottom of article. If empty, default "Browse bouquets" link is shown. */
   ctaLinks?: ArticleCtaLink[];
+  /** Optional CTA heading override for non-commercial articles. */
+  ctaTitle?: string;
+  ctaTitleTh?: string;
   cover:
     | {
         type: 'gradient';
@@ -42,6 +45,32 @@ export type ArticleMeta = {
 };
 
 export const articles: ArticleMeta[] = [
+  {
+    slug: 'thai-breakfast-chiang-mai',
+    title: 'Thai Breakfast in Chiang Mai: Jok, Patongko and Local Morning Spots',
+    excerpt:
+      'A personal local guide to Thai-style breakfast in Chiang Mai, including jok rice porridge, hot patongko, old-style Thai coffee, and favorite morning food spots.',
+    titleTh: 'อาหารเช้าแบบไทยในเชียงใหม่: โจ๊ก ปาท่องโก๋ และร้านยามเช้า',
+    excerptTh:
+      'คู่มืออาหารเช้าแบบไทยในเชียงใหม่จากประสบการณ์ส่วนตัว ทั้งโจ๊ก ปาท่องโก๋ร้อน ๆ กาแฟโบราณ และร้านยามเช้าที่น่าแวะลอง',
+    publishedAt: '2026-07-05T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff7ed 0%, #fde68a 45%, #bbf7d0 100%)',
+      center: { kind: 'emoji', value: '🍚' },
+    },
+    ctaTitle: 'Keep exploring Chiang Mai',
+    ctaTitleTh: 'อ่านเรื่องเชียงใหม่ต่อ',
+    ctaLinks: [
+      { label: 'More guides', labelTh: 'คู่มืออื่น ๆ', href: '/info' },
+      {
+        label: 'Flower delivery to hotels',
+        labelTh: 'ส่งดอกไม้ไปโรงแรม',
+        href: '/info/flower-delivery-to-hotels-chiang-mai',
+      },
+    ],
+  },
   {
     slug: 'gift-card-ideas-with-flowers',
     title: 'Gift Card Ideas with Flowers for Thoughtful Gifts',
