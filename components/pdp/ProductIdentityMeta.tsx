@@ -8,13 +8,32 @@ type ProductIdentityMetaProps = {
   featuredPopular?: boolean;
   reviewAverage: number;
   reviewCount: number;
+  clickable?: boolean;
 };
+
+function ReviewStarIcon() {
+  return (
+    <svg
+      className={styles.reviewMetaStar}
+      viewBox="0 0 24 24"
+      width={14}
+      height={14}
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+      />
+    </svg>
+  );
+}
 
 export function ProductIdentityMeta({
   lang,
   featuredPopular,
   reviewAverage,
   reviewCount,
+  clickable = true,
 }: ProductIdentityMetaProps) {
   const tCatalog = translations[lang].catalog;
   const tReviews = translations[lang].reviews;
@@ -26,28 +45,29 @@ export function ProductIdentityMeta({
 
   const reviewLabel = `${reviewAverage.toFixed(1)} · ${reviewCount.toLocaleString(lang === 'th' ? 'th-TH' : 'en-US')} ${tReviews.reviewsCount}`;
 
+  const reviewContent = (
+    <>
+      <ReviewStarIcon />
+      <span className={styles.reviewMetaText}>{reviewLabel}</span>
+    </>
+  );
+
   return (
     <div className={styles.identityMeta}>
       {showReviews ? (
-        <Link
-          href={reviewsHref}
-          className={styles.reviewMeta}
-          aria-label={reviewLabel}
-        >
-          <svg
-            className={styles.reviewMetaStar}
-            viewBox="0 0 24 24"
-            width={14}
-            height={14}
-            aria-hidden
+        clickable ? (
+          <Link
+            href={reviewsHref}
+            className={styles.reviewMeta}
+            aria-label={reviewLabel}
           >
-            <path
-              fill="currentColor"
-              d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
-            />
-          </svg>
-          <span className={styles.reviewMetaText}>{reviewLabel}</span>
-        </Link>
+            {reviewContent}
+          </Link>
+        ) : (
+          <span className={`${styles.reviewMeta} ${styles.reviewMetaStatic}`} aria-label={reviewLabel}>
+            {reviewContent}
+          </span>
+        )
       ) : null}
       {showReviews && showPopular ? (
         <span className={styles.identityMetaSep} aria-hidden>

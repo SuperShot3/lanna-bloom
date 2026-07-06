@@ -129,6 +129,7 @@ export function ProductPageClient({
             featuredPopular={bouquet.featuredPopular}
             reviewAverage={reviewAverage}
             reviewCount={reviewCount}
+            clickable={false}
           />
         </div>
         <ProductOrderBlock

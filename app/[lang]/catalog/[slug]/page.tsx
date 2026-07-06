@@ -20,7 +20,7 @@ import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { getMarketByPathSlug } from '@/lib/delivery/markets';
 import MarketCatalogPageViaSlug from './catalog/page';
-import { getReviewStatsAsync } from '@/lib/reviews';
+import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
 
 // Revalidate product pages every 60 seconds so Sanity updates appear without rebuild
 export const revalidate = 60;
@@ -82,7 +82,7 @@ export default async function ProductPage({
 
   const bouquet = await getBouquetBySlugFromSanity(params.slug);
   if (bouquet) {
-    const reviewStats = await getReviewStatsAsync();
+    const reviewStats = getBouquetDisplayReviewStats(bouquet.id);
     const gifts = await getProductsFilteredFromSanity({ categoryKey: 'gifts' });
     const similarBouquets = await getSimilarBouquetsForBouquet(bouquet, 3);
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;

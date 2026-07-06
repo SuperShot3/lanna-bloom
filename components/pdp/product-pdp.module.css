@@ -950,6 +950,14 @@
   border-radius: 4px;
 }
 
+.reviewMetaStatic {
+  cursor: default;
+}
+
+.reviewMetaStatic:hover .reviewMetaText {
+  text-decoration: none;
+}
+
 .reviewMetaStar {
   display: block;
   width: 14px;
