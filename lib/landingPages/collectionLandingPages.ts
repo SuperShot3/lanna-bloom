@@ -171,7 +171,7 @@ const rosesHubCopy = withLocaleFallback({
     intro:
       'Choose white, pink, or red rose bouquets for anniversaries, birthdays, romance, and thoughtful gifts—delivered across Chiang Mai.',
     primaryCta: 'Shop Roses',
-    deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+    deliveryNote: 'Order before 6:00 PM for same-day delivery when available.',
     addOnsTitle: 'Also perfect with your bouquet',
     addOnsIntro: 'Complete the gift with available teddy bears, balloons, or gift sets from our product catalog.',
     trustItems: trustItems.en,
@@ -190,7 +190,7 @@ const rosesHubCopy = withLocaleFallback({
     intro:
       'เลือกช่อกุหลาบขาว ชมพู หรือแดง สำหรับวันครบรอบ วันเกิด ความรัก และของขวัญพิเศษ พร้อมจัดส่งทั่วเชียงใหม่',
     primaryCta: 'เลือกช่อกุหลาบ',
-    deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+    deliveryNote: 'สั่งก่อน 18:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
     addOnsTitle: 'ของเสริมที่เข้ากับช่อดอกไม้',
     addOnsIntro: 'เติมเต็มของขวัญด้วยตุ๊กตา ลูกโป่ง หรือชุดของขวัญจาก product catalog',
     trustItems: trustItems.th,
@@ -219,7 +219,7 @@ export const roseColorLandings = [
         intro:
           'Elegant white rose bouquets for anniversaries, congratulations, sympathy, and thoughtful gifts across Chiang Mai.',
         primaryCta: 'Shop White Roses',
-        deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+        deliveryNote: 'Order before 6:00 PM for same-day delivery when available.',
         collectionTitle: 'White Roses Collection',
         collectionIntro:
           'A focused selection of white rose bouquets from our Sanity catalog, filtered for rose type and white color.',
@@ -244,7 +244,7 @@ export const roseColorLandings = [
         intro:
           'ช่อกุหลาบขาวโทนเรียบหรู เหมาะสำหรับวันครบรอบ แสดงความยินดี ส่งกำลังใจ และของขวัญในเชียงใหม่',
         primaryCta: 'เลือกกุหลาบขาว',
-        deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+        deliveryNote: 'สั่งก่อน 18:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
         collectionTitle: 'คอลเลกชันกุหลาบขาว',
         collectionIntro:
           'รายการช่อกุหลาบขาวจาก Sanity catalog โดยกรองจากชนิดดอกกุหลาบและสีขาว',
@@ -278,7 +278,7 @@ export const roseColorLandings = [
         intro:
           'Sweet pink rose bouquets for birthdays, romance, thank-you gifts, and gentle celebrations delivered in Chiang Mai.',
         primaryCta: 'Shop Pink Roses',
-        deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+        deliveryNote: 'Order before 6:00 PM for same-day delivery when available.',
         collectionTitle: 'Pink Roses Collection',
         collectionIntro:
           'A focused selection of pink rose bouquets from our Sanity catalog, filtered for rose type and pink color.',
@@ -303,7 +303,7 @@ export const roseColorLandings = [
         intro:
           'ช่อกุหลาบชมพูสำหรับวันเกิด ความรัก คำขอบคุณ และช่วงเวลาพิเศษ พร้อมจัดส่งในเชียงใหม่',
         primaryCta: 'เลือกกุหลาบชมพู',
-        deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+        deliveryNote: 'สั่งก่อน 18:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
         collectionTitle: 'คอลเลกชันกุหลาบชมพู',
         collectionIntro:
           'รายการช่อกุหลาบชมพูจาก Sanity catalog โดยกรองจากชนิดดอกกุหลาบและสีชมพู',
@@ -337,7 +337,7 @@ export const roseColorLandings = [
         intro:
           'Classic red rose bouquets for anniversaries, proposals, romantic surprises, and meaningful gifts across Chiang Mai.',
         primaryCta: 'Shop Red Roses',
-        deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+        deliveryNote: 'Order before 6:00 PM for same-day delivery when available.',
         collectionTitle: 'Red Roses Collection',
         collectionIntro:
           'A focused selection of red rose bouquets from our Sanity catalog, filtered for rose type and red color.',
@@ -362,7 +362,7 @@ export const roseColorLandings = [
         intro:
           'ช่อกุหลาบแดงคลาสสิกสำหรับวันครบรอบ การขอแต่งงาน เซอร์ไพรส์คนรัก และของขวัญสำคัญในเชียงใหม่',
         primaryCta: 'เลือกกุหลาบแดง',
-        deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+        deliveryNote: 'สั่งก่อน 18:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
         collectionTitle: 'คอลเลกชันกุหลาบแดง',
         collectionIntro:
           'รายการช่อกุหลาบแดงจาก Sanity catalog โดยกรองจากชนิดดอกกุหลาบและสีแดง',
@@ -438,7 +438,7 @@ const orchidsHubCopy = withLocaleFallback({
     intro:
       'Fresh orchid arrangements for celebrations, respect, and thoughtful gifts—delivered across Chiang Mai. Our catalog includes popular types such as Phalaenopsis (moth orchids), Dendrobium, Cymbidium, and other varieties partners arrange by season.',
     primaryCta: 'Shop Orchids',
-    deliveryNote: 'Order before 2:00 PM for same-day delivery when available.',
+    deliveryNote: 'Order before 6:00 PM for same-day delivery when available.',
     addOnsTitle: 'Also perfect with your bouquet',
     addOnsIntro: 'Complete the gift with available teddy bears, balloons, or gift sets from our product catalog.',
     trustItems: trustItems.en,
@@ -510,7 +510,7 @@ const orchidsHubCopy = withLocaleFallback({
     intro:
       'กล้วยไม้สดสำหรับงานฉลอง แสดงความเคาระ และของขวัญพิเศษ พร้อมจัดส่งทั่วเชียงใหม่ ในคอลเลกชันมีทั้งฟาเลนออปซิส (กล้วยไม้แมลงปอ) เดนโดรเบียม ซิมบิเดียม และสายพันธุ์อื่นตามฤดูกาลจากพาร์ทเนอร์',
     primaryCta: 'เลือกกล้วยไม้',
-    deliveryNote: 'สั่งก่อน 14:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
+    deliveryNote: 'สั่งก่อน 18:00 น. เพื่อจัดส่งวันเดียวเมื่อสินค้าพร้อมจำหน่าย',
     addOnsTitle: 'ของเสริมที่เข้ากับช่อดอกไม้',
     addOnsIntro: 'เติมเต็มของขวัญด้วยตุ๊กตา ลูกโป่ง หรือชุดของขวัญจาก product catalog',
     trustItems: trustItems.th,

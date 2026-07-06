@@ -4,6 +4,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { StorefrontIcon } from '@/components/icons';
 import {
   getHomeFlowerTypeSectionsFromSanity,
+  getPopularBouquetsFromSanity,
   getProductsFilteredFromSanity,
   type CatalogProduct,
 } from '@/lib/sanity';
@@ -25,6 +26,7 @@ function flowerTypeSectionTitle(
 }
 
 const HOME_PRODUCT_SECTION_LIMIT = 6;
+const HOME_POPULAR_ROW_LIMIT = 8;
 
 type ProductSectionConfig = {
   categoryKey: string;
@@ -88,7 +90,8 @@ function ProductFeedRow({
 }
 
 export async function PopularSection({ lang }: { lang: Locale }) {
-  const [sections, productSectionResults] = await Promise.all([
+  const [popularBouquets, sections, productSectionResults] = await Promise.all([
+    getPopularBouquetsFromSanity(HOME_POPULAR_ROW_LIMIT),
     getHomeFlowerTypeSectionsFromSanity(),
     Promise.all(
       HOME_PRODUCT_SECTIONS.map(async (section) => ({
@@ -107,7 +110,9 @@ export async function PopularSection({ lang }: { lang: Locale }) {
   const tCatalog = translations[lang].catalog;
   const productSections = productSectionResults.filter((section) => section.products.length > 0);
 
-  if (sections.length === 0 && productSections.length === 0) return null;
+  if (popularBouquets.length === 0 && sections.length === 0 && productSections.length === 0) {
+    return null;
+  }
 
   return (
     <section
@@ -116,6 +121,23 @@ export async function PopularSection({ lang }: { lang: Locale }) {
       data-home-reveal
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 home-reveal-stagger">
+        {popularBouquets.length > 0 && (
+          <div className="home-reveal-item mb-12 sm:mb-14 last:mb-0">
+            <h2 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-6 sm:mb-8">
+              {tHome.popularTitle}
+            </h2>
+            <div className="popular-scroll-wrap">
+              <div className="popular-scroll">
+                {popularBouquets.map((bouquet) => (
+                  <div key={bouquet.id} className="popular-card-slot">
+                    <BouquetCard bouquet={bouquet} lang={lang} variant="popular-compact" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ShowMoreLink href={`/${lang}/catalog`} label={tHome.viewAllBouquets} />
+          </div>
+        )}
         {sections.map((section) => {
           const catalogHref = `/${lang}/catalog${buildCatalogSearchString({ types: [section.type] })}`;
           const titleTemplate = section.pottedOnly

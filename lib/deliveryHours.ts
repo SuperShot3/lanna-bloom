@@ -13,6 +13,17 @@ const END_MIN = 20 * 60;
 /** Same-day order cutoff in Bangkok (18:00). Orders after this usually deliver next day. */
 export const SAME_DAY_ORDER_CUTOFF_MIN = 18 * 60;
 
+/** Delivery window bounds for site copy — keep wording in sync with these instead of hard-coding times. */
+export const DELIVERY_WINDOW_START_MIN = START_MIN;
+export const DELIVERY_WINDOW_END_MIN = END_MIN;
+
+/** Minutes since midnight → "HH:mm" for customer-facing copy. */
+export function formatMinutesAsClockTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 function minutesSinceMidnightInZone(date: Date, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone,

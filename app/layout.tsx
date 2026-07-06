@@ -8,6 +8,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { fontVariables, mulish } from '@/lib/fonts';
+import { getBaseUrl } from '@/lib/orders';
 import './globals.css';
 
 
@@ -19,6 +20,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getBaseUrl()),
   title: 'Lanna Bloom | Flower & gift delivery Chiang Mai',
   description:
     'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available. Bouquet delivery in selected Thailand destinations.',
