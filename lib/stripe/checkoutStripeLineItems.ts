@@ -89,7 +89,11 @@ export function buildStripeCheckoutLineItems(params: {
   return lineItems;
 }
 
-/** Success redirect for Stripe Checkout: client can sync session and strip query params. */
+/**
+ * Success redirect for Stripe Checkout: client can sync session and strip query params.
+ * `track_purchase=1` is the explicit recovery signal for the order page purchase fallback —
+ * without it, a paid order view never fires `purchase` (server claim still dedupes globally).
+ */
 export function stripeOrderSuccessUrl(
   baseUrl: string,
   orderId: string,
@@ -100,7 +104,7 @@ export function stripeOrderSuccessUrl(
     options?.checkoutToken && options.checkoutToken.length >= 8
       ? `checkout_token=${encodeURIComponent(options.checkoutToken)}&`
       : '';
-  return `${baseUrl}/order/${id}?${tokenQs}stripe=success&session_id={CHECKOUT_SESSION_ID}`;
+  return `${baseUrl}/order/${id}?${tokenQs}stripe=success&track_purchase=1&session_id={CHECKOUT_SESSION_ID}`;
 }
 
 /** Cart checkout: universal thank-you page (no checkout/complete in path — avoids GTM URL false positives). */

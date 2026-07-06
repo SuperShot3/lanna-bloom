@@ -135,6 +135,41 @@ export interface PurchaseUserData {
   phone_number?: string;
 }
 
+/** Server-side claim: order-level purchase dedupe (source of truth; localStorage is secondary). */
+export interface PurchaseClaim {
+  /** Public order token — the claim endpoint returns 404 without a valid one. */
+  token: string;
+}
+
+type ClaimResult =
+  | { shouldTrack: true }
+  | { shouldTrack: false; reason: 'already_claimed' | 'not_paid' | 'error' };
+
+/**
+ * Ask the backend to claim purchase tracking for this order.
+ * Atomic on the server — only the first caller globally gets `shouldTrack: true`.
+ * Network/server errors fail closed (`error`) so the browser never pushes an unclaimed purchase.
+ */
+async function claimPurchaseTracking(orderId: string, token: string): Promise<ClaimResult> {
+  try {
+    const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/claim-purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    if (!res.ok) return { shouldTrack: false, reason: 'error' };
+    const data = (await res.json().catch(() => null)) as {
+      shouldTrack?: boolean;
+      reason?: string;
+    } | null;
+    if (data?.shouldTrack === true) return { shouldTrack: true };
+    const reason = data?.reason === 'not_paid' ? 'not_paid' : 'already_claimed';
+    return { shouldTrack: false, reason };
+  } catch {
+    return { shouldTrack: false, reason: 'error' };
+  }
+}
+
 /** Whether checkout purchase was already sent for this order (localStorage + same-document guard). */
 export function wasCheckoutPurchaseSent(orderId: string): boolean {
   const normalizedOrderId = normalizeOrderId(orderId);
@@ -200,8 +235,15 @@ function waitForGtmConsentThen(onReady: () => void): void {
 }
 
 /**
- * Standard `purchase` after successful web checkout — **once per order id** (localStorage).
- * Resolves `true` after GTM `eventCallback`, `false` on invalid input, duplicate, or push failure.
+ * Standard `purchase` after successful web checkout — **once per order id, globally**.
+ *
+ * Dedupe layers (in order):
+ * 1. `claim` (when provided) — atomic server-side claim on the order row; the source of truth
+ *    across browsers/devices. `shouldTrack: false` or claim failure → no push (fail closed).
+ * 2. localStorage + in-memory guard — secondary browser-level protection (refresh-safe).
+ *
+ * Resolves `true` after GTM `eventCallback`, `false` on invalid input, duplicate, denied claim,
+ * or push failure.
  */
 export function trackCheckoutPurchase(params: {
   orderId: string;
@@ -209,6 +251,7 @@ export function trackCheckoutPurchase(params: {
   currency?: string;
   items: PurchaseItem[];
   userData?: PurchaseUserData;
+  claim?: PurchaseClaim;
 }): Promise<boolean> {
   if (typeof window === 'undefined') return Promise.resolve(false);
   if (!isAnalyticsAllowed()) return Promise.resolve(false);
@@ -302,47 +345,76 @@ export function trackCheckoutPurchase(params: {
         resolve(ok);
       };
 
-      try {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ ecommerce: null });
+      const doPush = () => {
+        try {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({ ecommerce: null });
 
-        window.dataLayer.push({
-          event: 'purchase',
-          ecommerce,
-          transaction_id: normalizedOrderId,
-          value,
-          currency,
-          items,
-          ...(hasUserData ? { user_data: userData } : {}),
-          eventCallback: () => {
-            markCheckoutPurchaseSent(normalizedOrderId);
-            if (isDev) {
-              console.info('[analytics] purchase pushed to dataLayer (eventCallback)', {
-                orderId: normalizedOrderId,
-                value,
-                itemCount: items.length,
-              });
-            }
-            finish(true);
-          },
-          eventTimeout: 5000,
-        });
+          window.dataLayer.push({
+            event: 'purchase',
+            ecommerce,
+            transaction_id: normalizedOrderId,
+            value,
+            currency,
+            items,
+            ...(hasUserData ? { user_data: userData } : {}),
+            eventCallback: () => {
+              markCheckoutPurchaseSent(normalizedOrderId);
+              if (isDev) {
+                console.info('[analytics] purchase pushed to dataLayer (eventCallback)', {
+                  orderId: normalizedOrderId,
+                  value,
+                  itemCount: items.length,
+                });
+              }
+              finish(true);
+            },
+            eventTimeout: 5000,
+          });
 
-        window.setTimeout(() => {
-          if (!settled) {
-            if (isDev) {
-              console.warn('[analytics] purchase settled via eventTimeout (no eventCallback)', {
-                orderId: normalizedOrderId,
-              });
+          window.setTimeout(() => {
+            if (!settled) {
+              if (isDev) {
+                console.warn('[analytics] purchase settled via eventTimeout (no eventCallback)', {
+                  orderId: normalizedOrderId,
+                });
+              }
+              markCheckoutPurchaseSent(normalizedOrderId);
+              finish(true);
             }
-            markCheckoutPurchaseSent(normalizedOrderId);
-            finish(true);
-          }
-        }, 5000);
-      } catch (e) {
-        if (isDev) console.error('[analytics] purchase push failed', e);
-        finish(false);
+          }, 5000);
+        } catch (e) {
+          if (isDev) console.error('[analytics] purchase push failed', e);
+          finish(false);
+        }
+      };
+
+      const claim = params.claim;
+      if (!claim?.token?.trim()) {
+        doPush();
+        return;
       }
+
+      // Claim as late as possible (GTM already confirmed loaded) and push immediately after,
+      // so the window where a claim is consumed without a push is milliseconds.
+      void claimPurchaseTracking(normalizedOrderId, claim.token.trim()).then((result) => {
+        if (result.shouldTrack) {
+          doPush();
+          return;
+        }
+        if (result.reason === 'already_claimed') {
+          // Tracked globally (another device/browser) — persist locally so this browser stops retrying.
+          markCheckoutPurchaseSent(normalizedOrderId);
+        }
+        // 'not_paid' / 'error': no local flag, so a later legitimate attempt can still claim.
+        if (isDev) {
+          console.debug('[analytics] purchase skipped — claim denied', {
+            orderId: normalizedOrderId,
+            reason: result.reason,
+          });
+        }
+        finish(false);
+      });
     });
   });
 }

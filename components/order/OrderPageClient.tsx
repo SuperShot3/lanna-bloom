@@ -23,7 +23,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { trackCheckoutPurchase, wasCheckoutPurchaseSent } from '@/lib/analytics';
+import { trackCheckoutPurchase } from '@/lib/analytics';
 import {
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
@@ -137,7 +137,11 @@ export function OrderPageClient({
     }
   }, [paid]);
 
-  // Fallback purchase: only when /lanna-order-thank-you did not successfully track.
+  // Fallback purchase: ONLY on explicit tracking-recovery signals in the URL —
+  // `purchase_tracked=0` (thank-you page could not track) or `track_purchase=1`
+  // (return from pay-from-order Stripe checkout). A plain paid order view (shared
+  // link, other device, admin "view public page") must never fire `purchase`.
+  // The backend claim in trackCheckoutPurchase is the order-level dedupe.
   useEffect(() => {
     if (!paid || !stripePollResolved || typeof window === 'undefined') return;
 
@@ -149,25 +153,33 @@ export function OrderPageClient({
 
     const params = new URLSearchParams(window.location.search);
     const purchaseTrackedParam = params.get('purchase_tracked');
+    const trackPurchaseParam = params.get('track_purchase');
 
-    const stripPurchaseTrackedParam = () => {
-      if (!params.has('purchase_tracked')) return;
+    const stripTrackingParams = () => {
+      if (!params.has('purchase_tracked') && !params.has('track_purchase')) return;
       params.delete('purchase_tracked');
+      params.delete('track_purchase');
       const qs = params.toString();
       window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
     };
 
-    if (purchaseTrackedParam === '1') {
-      stripPurchaseTrackedParam();
+    const explicitRecovery = purchaseTrackedParam === '0' || trackPurchaseParam === '1';
+    if (!explicitRecovery) {
+      stripTrackingParams();
       return;
     }
 
-    const shouldFallbackPurchase =
-      purchaseTrackedParam === '0' ||
-      (purchaseTrackedParam == null && !wasCheckoutPurchaseSent(normalizedOrderId));
-
-    if (!shouldFallbackPurchase) {
-      stripPurchaseTrackedParam();
+    // The backend claim requires the public token; without it, do not fire.
+    const tokenFromUrl = params.get('token')?.trim() ?? '';
+    let tokenFromStorage = '';
+    try {
+      tokenFromStorage = window.localStorage.getItem('lanna-bloom-last-order-token')?.trim() ?? '';
+    } catch {
+      // ignore
+    }
+    const publicToken = tokenFromUrl || tokenFromStorage;
+    if (!publicToken) {
+      stripTrackingParams();
       return;
     }
 
@@ -179,10 +191,11 @@ export function OrderPageClient({
         value,
         currency,
         items: buildPurchaseAnalyticsItemsFromOrder(order, normalizedOrderId),
+        claim: { token: publicToken },
       }).catch(() => false);
 
       if (!cancelled) {
-        stripPurchaseTrackedParam();
+        stripTrackingParams();
       }
     })();
 

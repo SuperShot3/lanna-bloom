@@ -99,6 +99,8 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
 
           const redirectDelay = wait(REDIRECT_DELAY_MS);
 
+          // Server-side order-level dedupe: trackCheckoutPurchase claims tracking on the
+          // backend (via the public token) before pushing — only one browser globally wins.
           let purchaseSent = false;
           if (
             purchase &&
@@ -108,7 +110,8 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
             Number.isFinite(purchase.value) &&
             purchase.value > 0 &&
             typeof purchase.currency === 'string' &&
-            Array.isArray(purchase.items)
+            Array.isArray(purchase.items) &&
+            publicToken
           ) {
             purchaseSent = await trackCheckoutPurchase({
               orderId: purchase.transaction_id,
@@ -116,6 +119,7 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
               currency: purchase.currency,
               items: purchase.items,
               userData: purchase.user_data,
+              claim: { token: publicToken },
             }).catch(() => false);
           }
 
