@@ -7,11 +7,12 @@ import { AdminCmsSection } from '@/app/admin/components/cms-editor/AdminCmsSecti
 import { AdminImageAltModal } from '@/app/admin/components/cms-editor/AdminImageAltModal';
 import { AdminImageCropModal } from '@/app/admin/components/cms-editor/AdminImageCropModal';
 import { AdminImagePreviewModal } from '@/app/admin/components/cms-editor/AdminImagePreviewModal';
+import { AdminImageProcessingBanner } from '@/app/admin/components/cms-editor/AdminImageProcessingBanner';
 import { AdminRowMenu } from '@/app/admin/components/cms-editor/AdminRowMenu';
 import { AdminSortableList } from '@/app/admin/components/cms-editor/AdminSortableList';
 import { AdminSortableRow } from '@/app/admin/components/cms-editor/AdminSortableRow';
 import type { AdminHeroSettings } from '@/lib/catalogAdmin';
-import { imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
+import { catalogImageFormatLabel, imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
 import {
   editCarouselHeroFramingAction,
   editMainHeroFramingAction,
@@ -20,6 +21,7 @@ import {
   reorderCarouselHeroImagesAction,
   updateCarouselHeroAltAction,
   uploadCarouselHeroImageAction,
+  uploadCarouselHeroImagesBulkAction,
   uploadMainHeroImageAction,
 } from './actions';
 
@@ -50,11 +52,26 @@ async function fetchImageFile(storagePath: string): Promise<File> {
   return new File([blob], name, { type: blob.type || 'image/png' });
 }
 
+function heroLoadingMessage(loading: string | null, bulkCount: number | null): string | null {
+  if (!loading) return null;
+  if (loading === 'carousel-bulk' && bulkCount) {
+    return `Uploading ${bulkCount} hero image${bulkCount === 1 ? '' : 's'}…`;
+  }
+  if (loading === 'carousel-upload' || loading === 'main-upload') return 'Uploading image…';
+  if (loading === 'main-framing' || loading.startsWith('framing-')) return 'Saving image framing…';
+  if (loading === 'reorder') return 'Saving order…';
+  if (loading === 'alt') return 'Saving alt text…';
+  if (loading === 'main-remove' || loading.startsWith('remove-')) return 'Removing image…';
+  return 'Saving…';
+}
+
 export function HeroSettingsClient({ settings }: Props) {
   const router = useRouter();
   const mainInputRef = useRef<HTMLInputElement>(null);
   const carouselInputRef = useRef<HTMLInputElement>(null);
+  const carouselBulkInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [bulkUploadCount, setBulkUploadCount] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingPath, setEditingPath] = useState<string | null>(null);
@@ -64,6 +81,8 @@ export function HeroSettingsClient({ settings }: Props) {
   const [framingError, setFramingError] = useState<string | null>(null);
 
   const carouselIds = settings.carousel.map((item) => item.storagePath);
+  const processingMessage = heroLoadingMessage(loading, bulkUploadCount);
+  const isProcessing = Boolean(processingMessage);
 
   function openPreview(item: { url: string; alt?: string; storagePath: string }) {
     setPreviewItem({
@@ -86,6 +105,7 @@ export function HeroSettingsClient({ settings }: Props) {
     setLoading(key);
     const result = await fn();
     setLoading(null);
+    setBulkUploadCount(null);
     if (result.error) {
       setError(result.error);
       return;
@@ -130,6 +150,33 @@ export function HeroSettingsClient({ settings }: Props) {
     if (!file) return;
     setPendingCrop({ mode: 'upload-carousel', file });
     event.target.value = '';
+  }
+
+  async function handleCarouselBulkUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (!files.length) return;
+
+    clearMessages();
+    setBulkUploadCount(files.length);
+    setLoading('carousel-bulk');
+
+    const formData = new FormData();
+    formData.set('alt', 'Hero carousel');
+    for (const file of files) {
+      formData.append('files', file);
+    }
+
+    const result = await uploadCarouselHeroImagesBulkAction(formData);
+    setLoading(null);
+    setBulkUploadCount(null);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    setSuccess(result.message ?? 'Saved.');
+    router.refresh();
   }
 
   async function applyCrop(crop: PendingCrop, file: File) {
@@ -184,9 +231,20 @@ export function HeroSettingsClient({ settings }: Props) {
 
       <AdminCmsSection
         label="Homepage hero images"
-        helper="The first image is the main hero on the homepage. Drag to reorder the swipe stack."
+        helper="The first image is the main hero on the homepage. Drag to reorder the swipe stack. Bulk add skips cropping and converts images to WebP."
       >
-        <div className="admin-cms-image-list">
+        <div className={`admin-cms-image-list${isProcessing ? ' is-processing' : ''}`}>
+          {processingMessage ? (
+            <AdminImageProcessingBanner
+              message={processingMessage}
+              detail={
+                loading === 'carousel-bulk'
+                  ? 'Please wait — do not close this page until the upload finishes.'
+                  : undefined
+              }
+            />
+          ) : null}
+
           {settings.carousel.length === 0 ? (
             <p className="admin-cms-empty-hint">No hero images yet.</p>
           ) : (
@@ -205,9 +263,23 @@ export function HeroSettingsClient({ settings }: Props) {
                   onIconClick={() => openPreview(item)}
                   icon={
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.url} alt="" className="admin-cms-image-thumb" />
+                    <img
+                      src={item.url}
+                      alt=""
+                      className="admin-cms-image-thumb admin-cms-image-thumb--hero"
+                    />
                   }
-                  badge={index === 0 ? <span className="admin-cms-badge-main">Main</span> : null}
+                  badge={
+                    <span className="admin-cms-image-badges">
+                      <span
+                        className="admin-cms-badge-format"
+                        title={`Format: ${catalogImageFormatLabel(item)}`}
+                      >
+                        {catalogImageFormatLabel(item)}
+                      </span>
+                      {index === 0 ? <span className="admin-cms-badge-main">Main</span> : null}
+                    </span>
+                  }
                   menu={
                     <AdminRowMenu
                       ariaLabel="Carousel image actions"
@@ -253,10 +325,18 @@ export function HeroSettingsClient({ settings }: Props) {
           <button
             type="button"
             className="admin-cms-btn admin-cms-btn-outline admin-cms-btn-block"
-            disabled={!!loading}
+            disabled={isProcessing}
             onClick={() => carouselInputRef.current?.click()}
           >
             + Add hero image
+          </button>
+          <button
+            type="button"
+            className="admin-cms-btn admin-cms-btn-outline admin-cms-btn-block"
+            disabled={isProcessing}
+            onClick={() => carouselBulkInputRef.current?.click()}
+          >
+            + Add multiple images
           </button>
           <input
             ref={carouselInputRef}
@@ -264,6 +344,14 @@ export function HeroSettingsClient({ settings }: Props) {
             accept="image/jpeg,image/png,image/webp"
             className="admin-cms-sr-only"
             onChange={handleCarouselUpload}
+          />
+          <input
+            ref={carouselBulkInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="admin-cms-sr-only"
+            onChange={handleCarouselBulkUpload}
           />
         </div>
       </AdminCmsSection>
@@ -282,7 +370,7 @@ export function HeroSettingsClient({ settings }: Props) {
           <button
             type="button"
             className="admin-cms-btn admin-cms-btn-outline"
-            disabled={!!loading}
+            disabled={isProcessing}
             onClick={() => mainInputRef.current?.click()}
           >
             {settings.heroImageUrl ? 'Replace fallback' : 'Upload fallback'}
@@ -292,7 +380,7 @@ export function HeroSettingsClient({ settings }: Props) {
               <button
                 type="button"
                 className="admin-cms-btn admin-cms-btn-ghost"
-                disabled={!!loading}
+                disabled={isProcessing}
                 onClick={() =>
                   setPreviewItem({ url: settings.heroImageUrl!, title: 'Fallback hero image' })
                 }
@@ -302,7 +390,7 @@ export function HeroSettingsClient({ settings }: Props) {
               <button
                 type="button"
                 className="admin-cms-btn admin-cms-btn-ghost"
-                disabled={!!loading}
+                disabled={isProcessing}
                 onClick={() => void openMainEditFraming()}
               >
                 Edit framing
@@ -310,7 +398,7 @@ export function HeroSettingsClient({ settings }: Props) {
               <button
                 type="button"
                 className="admin-cms-btn admin-cms-btn-ghost admin-cms-btn-danger"
-                disabled={!!loading}
+                disabled={isProcessing}
                 onClick={() => {
                   if (!window.confirm('Remove the fallback hero image?')) return;
                   runAction('main-remove', removeMainHeroImageAction);

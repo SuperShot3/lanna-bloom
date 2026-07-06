@@ -14,6 +14,8 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 type ActionResult = { error?: string; message?: string };
 
+const HERO_BULK_UPLOAD_MAX = 20;
+
 async function requireHeroEditor(): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: 'Unauthorized' };
@@ -107,6 +109,49 @@ export async function removeMainHeroImageAction(): Promise<ActionResult> {
   } catch (err) {
     console.error('[Hero] removeMainHeroImage failed:', err);
     return { error: err instanceof Error ? err.message : 'Remove failed' };
+  }
+}
+
+export async function uploadCarouselHeroImagesBulkAction(formData: FormData): Promise<ActionResult> {
+  const gate = await requireHeroEditor();
+  if (gate.error) return gate;
+
+  const files = formData
+    .getAll('files')
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  if (!files.length) return { error: 'At least one image file is required' };
+  if (files.length > HERO_BULK_UPLOAD_MAX) {
+    return { error: `You can upload up to ${HERO_BULK_UPLOAD_MAX} images at once` };
+  }
+
+  const alt = String(formData.get('alt') || 'Hero carousel').trim() || 'Hero carousel';
+
+  try {
+    const { heroCarouselImages } = await getCatalogSiteSettingsRowForAdmin();
+    const batchId = Date.now();
+    const records: CatalogStoredImage[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const storagePath = `site-settings/default-carousel/${batchId}-${i}.webp`;
+      const record = await uploadHeroWebp(
+        files[i],
+        storagePath,
+        alt,
+        heroCarouselImages.length + i
+      );
+      records.push(record);
+    }
+
+    const next = normalizeCarouselOrder([...heroCarouselImages, ...records]);
+    await upsertCatalogSiteSettings({ heroCarouselImages: next });
+    revalidateHeroPaths();
+    return {
+      message:
+        records.length === 1 ? 'Carousel image added.' : `Added ${records.length} hero images.`,
+    };
+  } catch (err) {
+    console.error('[Hero] uploadCarouselHeroImagesBulk failed:', err);
+    return { error: err instanceof Error ? err.message : 'Upload failed' };
   }
 }
 

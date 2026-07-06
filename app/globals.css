@@ -8238,6 +8238,29 @@ a.admin-summary-key-value {
   object-fit: cover;
 }
 
+.admin-hero-settings .admin-cms-sortable-icon,
+.admin-hero-settings .admin-cms-sortable-icon-btn {
+  width: auto;
+  height: auto;
+}
+
+.admin-hero-settings .admin-cms-image-thumb--hero {
+  width: 80px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.admin-hero-settings .admin-cms-sortable-row-head {
+  align-items: center;
+  min-height: 116px;
+  padding: 10px 12px;
+}
+
+.admin-hero-settings .admin-cms-image-list .admin-cms-btn-block + .admin-cms-btn-block {
+  margin-top: 8px;
+}
+
 .admin-products-studio-item-thumb {
   width: 40px;
   height: 40px;

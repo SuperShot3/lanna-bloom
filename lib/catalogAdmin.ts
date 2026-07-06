@@ -476,6 +476,7 @@ export type AdminHeroCarouselItem = {
   url: string;
   alt: string;
   sortOrder: number;
+  format?: CatalogStoredImage['format'];
 };
 
 export type AdminHeroSettings = {
@@ -515,6 +516,7 @@ export async function getCatalogSiteSettingsForAdmin(): Promise<AdminHeroSetting
       url: storedImagePublicUrl(supabase, img),
       alt: img.alt?.trim() ?? '',
       sortOrder: img.sort_order ?? index,
+      format: img.format,
     }));
 
   return {
