@@ -1,7 +1,16 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
 import { CATALOG_OCCASION_CHIPS } from '@/lib/catalogCategories';
-import { StorefrontIcon } from '@/components/icons';
+import { StorefrontIcon, type StorefrontIconName } from '@/components/icons';
+
+const OCCASION_ICONS: Record<string, StorefrontIconName> = {
+  romantic: 'favorite',
+  birthday: 'star',
+  anniversary: 'local-fire-department',
+  sympathy: 'water-drop',
+  congrats: 'check-circle',
+  get_well: 'wb-sunny',
+};
 
 export function OccasionsSection({ lang }: { lang: Locale }) {
   const t = translations[lang].homeLanding.occasions;
@@ -34,16 +43,16 @@ export function OccasionsSection({ lang }: { lang: Locale }) {
               <Link
                 key={chip.value}
                 href={`/${lang}/catalog?occasion=${chip.value}`}
-                className="home-reveal-item group flex items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-[#FDFCF8] px-4 py-4 sm:px-5 sm:py-5 transition-all duration-300 hover:border-[#C5A059]/60 hover:bg-[#C5A059]/[0.06] hover:-translate-y-0.5 active:translate-y-0"
+                className="home-reveal-item group flex items-center gap-3 rounded-2xl border border-stone-200 bg-[#FDFCF8] px-4 py-4 sm:px-5 sm:py-5 transition-all duration-300 hover:border-[#C5A059]/60 hover:bg-[#C5A059]/[0.06] hover:-translate-y-0.5 active:translate-y-0"
               >
-                <span className="min-w-0">
-                  <span
-                    aria-hidden
-                    className="block w-6 h-px bg-[#C5A059]/70 mb-2.5 transition-all duration-300 group-hover:w-9"
-                  />
-                  <span className="block font-medium text-sm sm:text-base text-[#1A3C34] truncate">
-                    {tCatalog[chip.labelKey]}
-                  </span>
+                <div
+                  aria-hidden
+                  className="w-9 h-9 rounded-xl bg-[#C5A059]/10 flex items-center justify-center text-[#C5A059] flex-shrink-0 transition-colors duration-300 group-hover:bg-[#C5A059]/15"
+                >
+                  <StorefrontIcon name={OCCASION_ICONS[chip.value]} size={18} />
+                </div>
+                <span className="min-w-0 flex-1 font-medium text-sm sm:text-base text-[#1A3C34] truncate">
+                  {tCatalog[chip.labelKey]}
                 </span>
                 <StorefrontIcon
                   name="arrow-forward"

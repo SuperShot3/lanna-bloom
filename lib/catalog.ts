@@ -615,10 +615,10 @@ export async function getBouquetsFilteredFromCatalog(params: CatalogFilterParams
 
 async function getOrderedPopularBouquetsFromCatalog(): Promise<Bouquet[]> {
 
-  const bouquets = (await getApprovedBouquets()).filter((b) =>
-
-    bouquetIsAvailableForDestination(b, 'CHIANG_MAI')
-
+  const bouquets = (await getApprovedBouquets()).filter(
+    (b) =>
+      b.featuredPopular === true &&
+      bouquetIsAvailableForDestination(b, 'CHIANG_MAI')
   );
 
   return orderPopularBouquetsWithFeaturedFirst(bouquets);
