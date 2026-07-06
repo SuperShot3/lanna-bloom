@@ -615,6 +615,20 @@ export async function getBouquetsFilteredFromCatalog(params: CatalogFilterParams
 
 async function getOrderedPopularBouquetsFromCatalog(): Promise<Bouquet[]> {
 
+  const bouquets = (await getApprovedBouquets()).filter((b) =>
+
+    bouquetIsAvailableForDestination(b, 'CHIANG_MAI')
+
+  );
+
+  return orderPopularBouquetsWithFeaturedFirst(bouquets);
+
+}
+
+
+
+async function getFeaturedPopularBouquetsFromCatalog(): Promise<Bouquet[]> {
+
   const bouquets = (await getApprovedBouquets()).filter(
     (b) =>
       b.featuredPopular === true &&
@@ -635,7 +649,7 @@ export async function getPopularBouquetsFromCatalogPaginated(
 
 ): Promise<Bouquet[]> {
 
-  const ordered = await getOrderedPopularBouquetsFromCatalog();
+  const ordered = await getFeaturedPopularBouquetsFromCatalog();
 
   const safeStart = Math.max(0, start);
 
