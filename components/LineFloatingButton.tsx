@@ -40,11 +40,12 @@ export function LineFloatingButton({
   if (flowerFilterSheetOpen) return null;
 
   return (
-    <div className="line-floating-contact fixed right-4 z-[101] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-6">
-      <div className="flex flex-col items-end gap-3">
-        <BackToTopButton lang={lang} />
-        {showContactButtons &&
-          contactButtons.map(({ href, label, tooltip, Icon, className }) => (
+    <>
+      <BackToTopButton lang={lang} showContactButtons={showContactButtons} />
+      <div className="line-floating-contact fixed right-4 z-[111] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-6">
+        <div className="flex flex-col items-end gap-3">
+          {showContactButtons &&
+            contactButtons.map(({ href, label, tooltip, Icon, className }) => (
           <div key={label} className="group relative">
             {/* Desktop tooltip */}
             <div
@@ -91,8 +92,9 @@ export function LineFloatingButton({
             </a>
           </div>
           ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

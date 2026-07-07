@@ -87,7 +87,7 @@ Order emails: `lib/orderEmail.ts`, variables from `lib/email/variablesFromOrder.
 
 ## Receipt and proof upload pipeline
 
-**Goal:** iPhone-friendly receipt photos (~150 KB target) for Supabase free-tier storage.
+**Goal:** iPhone-friendly receipt photos (~150 KB target) for Supabase Storage (keeps uploads fast and storage lean).
 
 | Bucket | Use |
 |--------|-----|

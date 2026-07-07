@@ -5,16 +5,46 @@ import { ChevronUp } from 'lucide-react';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
 
-/** Show when the viewport bottom is within this distance of the page end. */
-const BOTTOM_THRESHOLD_PX = 160;
+const FOOTER_SELECTOR = '#site-footer';
+/** Extra px before the document end (mobile needs a larger margin). */
+const BOTTOM_THRESHOLD_MOBILE_PX = 360;
+const BOTTOM_THRESHOLD_DESKTOP_PX = 200;
+const MIN_SCROLL_BEFORE_SHOW_PX = 280;
 
-function isNearPageBottom(): boolean {
-  const scrollBottom = window.scrollY + window.innerHeight;
-  const docHeight = document.documentElement.scrollHeight;
-  return scrollBottom >= docHeight - BOTTOM_THRESHOLD_PX;
+function getViewportHeight(): number {
+  return window.visualViewport?.height ?? window.innerHeight;
 }
 
-export function BackToTopButton({ lang }: { lang: Locale }) {
+function getScrollTop(): number {
+  return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+}
+
+function getDocumentHeight(): number {
+  return Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.offsetHeight,
+  );
+}
+
+function isNearPageBottom(): boolean {
+  const scrollTop = getScrollTop();
+  const viewportHeight = getViewportHeight();
+  const docHeight = getDocumentHeight();
+  const threshold =
+    viewportHeight < 768 ? BOTTOM_THRESHOLD_MOBILE_PX : BOTTOM_THRESHOLD_DESKTOP_PX;
+
+  return scrollTop > MIN_SCROLL_BEFORE_SHOW_PX && scrollTop + viewportHeight >= docHeight - threshold;
+}
+
+export function BackToTopButton({
+  lang,
+  showContactButtons = true,
+}: {
+  lang: Locale;
+  showContactButtons?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
   const label = translations[lang].home.backToTop;
 
@@ -24,10 +54,52 @@ export function BackToTopButton({ lang }: { lang: Locale }) {
     };
 
     sync();
+
+    let observer: IntersectionObserver | undefined;
+    let footerRetryTimer: number | undefined;
+
+    const attachFooterObserver = () => {
+      const footer = document.querySelector(FOOTER_SELECTOR);
+      if (!footer) return false;
+
+      observer?.disconnect();
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            return;
+          }
+          sync();
+        },
+        {
+          root: null,
+          rootMargin: '0px 0px 280px 0px',
+          threshold: 0,
+        },
+      );
+      observer.observe(footer);
+      return true;
+    };
+
+    if (!attachFooterObserver()) {
+      footerRetryTimer = window.setInterval(() => {
+        if (attachFooterObserver()) {
+          window.clearInterval(footerRetryTimer);
+        }
+      }, 250);
+    }
+
     window.addEventListener('scroll', sync, { passive: true });
+    window.visualViewport?.addEventListener('resize', sync);
+    window.visualViewport?.addEventListener('scroll', sync);
     window.addEventListener('resize', sync);
+
     return () => {
+      if (footerRetryTimer) window.clearInterval(footerRetryTimer);
+      observer?.disconnect();
       window.removeEventListener('scroll', sync);
+      window.visualViewport?.removeEventListener('resize', sync);
+      window.visualViewport?.removeEventListener('scroll', sync);
       window.removeEventListener('resize', sync);
     };
   }, []);
@@ -39,13 +111,18 @@ export function BackToTopButton({ lang }: { lang: Locale }) {
 
   if (!visible) return null;
 
+  const bottomClass = showContactButtons
+    ? 'bottom-[calc(6rem+7.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.5rem+8.25rem+env(safe-area-inset-bottom,0px))]'
+    : 'bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] md:bottom-6';
+
   return (
     <button
       type="button"
       onClick={scrollToTop}
       aria-label={label}
       className={`
-        relative inline-flex items-center justify-center
+        back-to-top-floating ${showContactButtons ? '' : 'back-to-top-floating--solo'} fixed right-4 z-[112] md:right-6 ${bottomClass}
+        inline-flex items-center justify-center
         rounded-full overflow-hidden
         ring-1 ring-black/10
         shadow-[0_14px_26px_rgba(0,0,0,0.22),0_3px_0_rgba(0,0,0,0.12)]

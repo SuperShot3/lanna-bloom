@@ -1197,12 +1197,32 @@ body.cookie-consent-banner-open {
   padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
 }
 
+body.cookie-consent-banner-open .line-floating-contact {
+  bottom: calc(6rem + 4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.cookie-consent-banner-open .back-to-top-floating {
+  bottom: calc(6rem + 7.5rem + 4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.cookie-consent-banner-open .back-to-top-floating--solo {
+  bottom: calc(6rem + 4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 @media (min-width: 768px) {
   body.cookie-consent-banner-open {
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   body.cookie-consent-banner-open .line-floating-contact {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.cookie-consent-banner-open .back-to-top-floating {
+    bottom: calc(5.5rem + 8.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.cookie-consent-banner-open .back-to-top-floating--solo {
     bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
 }

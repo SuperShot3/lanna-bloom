@@ -26,9 +26,9 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 | Layer | Technology |
 |-------|------------|
 | App | Next.js 14 App Router, React 18, TypeScript |
-| Hosting | Vercel |
+| Hosting | Vercel (paid plan — not Hobby) |
 | Catalog | Supabase (`catalog_*` tables + `catalog` Storage bucket) |
-| Orders / admin data | Supabase (service role server-side only) |
+| Orders / admin data | Supabase (paid plan; service role server-side only) |
 | Payments | Stripe Checkout |
 | Email | Resend + Email Control Center (templates + outbox) |
 | Analytics | GTM → GA4 / Google Ads (client `dataLayer` only in production) |
