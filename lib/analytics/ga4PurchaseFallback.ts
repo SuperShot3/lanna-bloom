@@ -2,6 +2,7 @@ import 'server-only';
 
 import { getOrderById } from '@/lib/orders';
 import {
+  type OrderLikeForPurchase,
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
@@ -40,12 +41,30 @@ type FallbackOrderRow = {
   phone: string | null;
   phone_country_code: string | null;
   order_json: Record<string, unknown> | null;
+  grand_total?: number | null;
+  currency?: string | null;
 };
 
 function isOrderPaid(row: Pick<FallbackOrderRow, 'payment_status' | 'paid_at'>): boolean {
   return (
     (row.payment_status ?? '').toUpperCase() === 'PAID' || Boolean(row.paid_at)
   );
+}
+
+function orderLikeFromFallbackRow(row: Pick<FallbackOrderRow, 'order_json' | 'grand_total' | 'currency'>): OrderLikeForPurchase | null {
+  const json = row.order_json;
+  if (json && typeof json === 'object') {
+    return json as unknown as OrderLikeForPurchase;
+  }
+  const total = Number(row.grand_total ?? 0);
+  if (Number.isFinite(total) && total > 0) {
+    return {
+      pricing: { grandTotal: total },
+      currency: (row.currency ?? 'THB') || 'THB',
+      items: [],
+    };
+  }
+  return null;
 }
 
 /** Schedule MP fallback window after payment (idempotent). */
@@ -98,7 +117,7 @@ async function loadOrderRowForMp(orderId: string): Promise<FallbackOrderRow | nu
   const full = await supabase
     .from('orders')
     .select(
-      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json',
+      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json, grand_total, currency',
     )
     .eq('order_id', orderId)
     .maybeSingle();
@@ -110,7 +129,7 @@ async function loadOrderRowForMp(orderId: string): Promise<FallbackOrderRow | nu
   const basic = await supabase
     .from('orders')
     .select(
-      'order_id, payment_status, paid_at, ga4_purchase_sent, ga_client_id, customer_email, phone, phone_country_code, order_json',
+      'order_id, payment_status, paid_at, ga4_purchase_sent, ga_client_id, customer_email, phone, phone_country_code, order_json, grand_total, currency',
     )
     .eq('order_id', orderId)
     .maybeSingle();
@@ -133,7 +152,7 @@ async function acquireMpLock(orderId: string): Promise<FallbackOrderRow | null> 
     .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
     .or(`ga4_purchase_mp_lock_at.is.null,ga4_purchase_mp_lock_at.lt.${staleBefore}`)
     .select(
-      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json',
+      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json, grand_total, currency',
     );
 
   if (!error && locked?.length) {
@@ -321,13 +340,14 @@ export async function tryProcessGa4PurchaseFallback(
 
   try {
     const order = await getOrderById(normalized);
-    if (!order) {
-      await releaseMpLock(normalized);
-      return { status: 'skipped', reason: 'order_load_failed' };
+    const orderForPurchase = order ?? orderLikeFromFallbackRow(locked);
+    if (!orderForPurchase) {
+      await markMpFailure(normalized, 'order_load_failed', attempts, true);
+      return { status: 'failed', orderId: normalized, error: 'order_load_failed', retryable: true };
     }
 
-    const { value, currency } = purchaseValueAndCurrencyFromOrder(order);
-    const items = buildPurchaseAnalyticsItemsFromOrder(order, normalized);
+    const { value, currency } = purchaseValueAndCurrencyFromOrder(orderForPurchase);
+    const items = buildPurchaseAnalyticsItemsFromOrder(orderForPurchase, normalized);
     if (!Number.isFinite(value) || value <= 0 || items.length === 0) {
       await markMpFailure(normalized, 'invalid_purchase_payload', attempts, false);
       return { status: 'failed', orderId: normalized, error: 'invalid_purchase_payload', retryable: false };
@@ -345,9 +365,10 @@ export async function tryProcessGa4PurchaseFallback(
       items,
       clientId: gaClientId,
       sessionId: locked.ga_session_id,
-      email: locked.customer_email ?? order.customerEmail,
-      phone: locked.phone ?? order.phone,
-      phoneCountryCode: locked.phone_country_code ?? order.phoneCountryCode,
+      email: locked.customer_email ?? (order as { customerEmail?: string } | null)?.customerEmail,
+      phone: locked.phone ?? (order as { phone?: string } | null)?.phone,
+      phoneCountryCode:
+        locked.phone_country_code ?? (order as { phoneCountryCode?: string } | null)?.phoneCountryCode,
       gclid: locked.gclid,
       gbraid: locked.gbraid,
       wbraid: locked.wbraid,
