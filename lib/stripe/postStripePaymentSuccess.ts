@@ -3,10 +3,15 @@ import 'server-only';
 import { getOrderById, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
+import {
+  scheduleGa4PurchaseFallback,
+  tryProcessGa4PurchaseFallback,
+} from '@/lib/analytics/ga4PurchaseFallback';
 
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or order-status poll).
- * Browser **`purchase`** is sent from `/lanna-order-thank-you` → GTM (not from `/order/...`). No server-side GA4 purchase.
+ * Browser **`purchase`** is sent from `/lanna-order-thank-you` → GTM. Measurement Protocol fallback
+ * runs server-side when browser tracking does not confirm within the delay window.
  */
 export async function runStripePostPaymentSuccessHooks(params: {
   orderId: string;
@@ -60,5 +65,12 @@ export async function runStripePostPaymentSuccessHooks(params: {
       createdBy,
       stripeProcessingFeeMajor: params.stripeProcessingFeeMajor,
     }).catch((e) => console.error('[stripe/postPayment] income upsert error:', e))
+  );
+
+  void scheduleGa4PurchaseFallback(orderId).catch((e) =>
+    console.error('[stripe/postPayment] scheduleGa4PurchaseFallback error:', e),
+  );
+  void tryProcessGa4PurchaseFallback(orderId).catch((e) =>
+    console.error('[stripe/postPayment] tryProcessGa4PurchaseFallback error:', e),
   );
 }

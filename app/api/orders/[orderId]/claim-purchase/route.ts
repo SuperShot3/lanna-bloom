@@ -10,12 +10,13 @@ export const dynamic = 'force-dynamic';
  *
  * The browser must call this endpoint and receive `shouldTrack: true` before pushing
  * `event: "purchase"` to the dataLayer. The claim is a single atomic conditional UPDATE
- * on `orders.ga4_purchase_sent`, so exactly one caller can ever win per order —
+ * on `orders.ga4_purchase_claimed`, so exactly one caller can ever win per order —
  * across browsers, devices, reloads, admin views, and shared order links.
+ * Successful delivery is recorded separately via `confirm-purchase` (`ga4_purchase_sent`).
  *
  * Responses:
  * - `{ shouldTrack: true }` — order is paid and this caller won the claim; push `purchase` now.
- * - `{ shouldTrack: false, reason: 'already_claimed' }` — tracked before; never push again.
+ * - `{ shouldTrack: false, reason: 'already_claimed' }` — claimed or already sent; never push again.
  * - `{ shouldTrack: false, reason: 'not_paid' }` — order not paid; do not push (do not persist a local flag).
  * - 404 — unknown order or invalid public token (no detail leaked).
  */
@@ -75,7 +76,7 @@ export async function POST(
   // Server-side paid check — never trust the client's payment state.
   const { data: paymentRow, error: paymentError } = await supabase
     .from('orders')
-    .select('payment_status, paid_at')
+    .select('payment_status, paid_at, ga4_purchase_sent, ga4_purchase_claimed')
     .eq('order_id', normalized)
     .single();
 
@@ -97,13 +98,27 @@ export async function POST(
     );
   }
 
+  if (paymentRow.ga4_purchase_sent === true) {
+    return NextResponse.json(
+      { shouldTrack: false, reason: 'already_claimed' },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+
+  if (paymentRow.ga4_purchase_claimed === true) {
+    return NextResponse.json(
+      { shouldTrack: false, reason: 'already_claimed' },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+
   // Atomic claim: the WHERE condition ensures only the first caller updates the row.
   const now = new Date().toISOString();
   const { data: claimed, error: claimError } = await supabase
     .from('orders')
-    .update({ ga4_purchase_sent: true, ga4_purchase_sent_at: now, updated_at: now })
+    .update({ ga4_purchase_claimed: true, ga4_purchase_claimed_at: now, updated_at: now })
     .eq('order_id', normalized)
-    .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
+    .or('ga4_purchase_claimed.is.null,ga4_purchase_claimed.eq.false')
     .select('order_id');
 
   if (claimError) {

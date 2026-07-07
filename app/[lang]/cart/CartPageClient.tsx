@@ -59,6 +59,7 @@ import { GoogleMapsLinkPromptModal } from '@/components/checkout/GoogleMapsLinkP
 import { TrustBadges } from '@/components/TrustBadges';
 import { StorefrontIcon } from '@/components/icons';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
+import { readCheckoutAnalyticsContext } from '@/lib/analytics/captureAnalyticsContext';
 import {
   CHECKOUT_FIELD_LIMITS,
   clipCheckoutField,
@@ -1280,6 +1281,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         recipientPhone: isOrderingForSomeoneElse ? recipientPhoneDigits : undefined,
         recipientPhoneCountryCode: isOrderingForSomeoneElse ? recipientCountryCode : undefined,
         surpriseDelivery: isOrderingForSomeoneElse ? surpriseDelivery : false,
+        ...readCheckoutAnalyticsContext(),
       });
 
       const res = await fetch('/api/stripe/create-checkout-session', {

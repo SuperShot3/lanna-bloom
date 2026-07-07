@@ -47,10 +47,21 @@ export interface SupabaseOrderRow {
   fulfillment_status: string | null;
   fulfillment_status_updated_at: string | null;
   /** True once browser purchase tracking was claimed (order-level dedupe; see /api/orders/[orderId]/claim-purchase). */
+  ga4_purchase_claimed?: boolean | null;
+  ga4_purchase_claimed_at?: string | null;
+  /** True once GA4 purchase was successfully delivered (browser confirm or Measurement Protocol). */
   ga4_purchase_sent?: boolean | null;
   ga4_purchase_sent_at?: string | null;
+  ga4_purchase_source?: string | null;
+  ga4_purchase_last_error?: string | null;
+  ga4_purchase_attempts?: number | null;
+  ga4_purchase_fallback_run_after?: string | null;
   /** Optional GA client_id from frontend for server-side purchase attribution. */
   ga_client_id?: string | null;
+  ga_session_id?: string | null;
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
   /** Full order payload; items include addOns (card, wrapping, message). */
   order_json?: Record<string, unknown> | null;
   /** True after admin was notified once at order creation (one email per order). */

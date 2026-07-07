@@ -26,11 +26,12 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 **Shape:** `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { transaction_id, value, currency, items }, ... })` with root-level mirror of `transaction_id`, `value`, `currency`, `items` for GTM variables.
 
-**Dedupe (source of truth — server claim):** Before pushing, `trackCheckoutPurchase` calls
+**Dedupe (source of truth — server claim + confirm):** Before pushing, `trackCheckoutPurchase` calls
 `POST /api/orders/[orderId]/claim-purchase` (public token required) which atomically sets
-`orders.ga4_purchase_sent` / `ga4_purchase_sent_at`. Only the first caller globally gets
-`shouldTrack: true`; everyone else (other browser, device, admin view, shared link) gets
-`shouldTrack: false` and must not push. Claim failures fail closed (no push).
+`orders.ga4_purchase_claimed`. After a successful dataLayer push, it calls
+`POST /api/orders/[orderId]/confirm-purchase` to set `orders.ga4_purchase_sent`.
+Only the first browser globally gets `shouldTrack: true` on claim. Server Measurement Protocol
+fallback runs when `ga4_purchase_sent` is still false after a delay (Stripe-confirmed payment).
 `localStorage` key `lanna_purchase_fired_<orderId>` (also reads legacy `sent_purchase_<orderId>`)
 + in-memory guard remain as secondary browser-level protection only.
 
@@ -46,7 +47,8 @@ fires `purchase`; `view_order_status`-style events are fine, `purchase` is not.
 
 **Legacy:** `/{lang}/checkout/complete` redirects to `/lanna-order-thank-you` — no purchase on legacy page.
 
-**No server-side GA4 purchase:** Revenue `purchase` is browser → dataLayer → GTM only (no Measurement Protocol from webhooks).
+**No duplicate revenue:** Browser `purchase` remains primary; server MP fallback uses the same
+`transaction_id` (order id) and only fires when `ga4_purchase_sent` is false after the delay window.
 
 ## Funnel events (secondary)
 
@@ -92,7 +94,10 @@ Configure matching **Custom Event** triggers in GTM.
 | `lib/analytics/buildPurchaseItemsFromOrder.ts` | Server line items for `order-status` |
 | `app/lanna-order-thank-you/page.tsx` | Universal post-Stripe thank-you (lang via `?lang=`) |
 | `app/api/stripe/order-status/route.ts` | Returns `purchase` (+ optional `user_data`) when paid + proof |
-| `app/api/orders/[orderId]/claim-purchase/route.ts` | Atomic order-level purchase claim (server-side dedupe) |
+| `app/api/orders/[orderId]/claim-purchase/route.ts` | Atomic order-level purchase claim (browser dedupe) |
+| `app/api/orders/[orderId]/confirm-purchase/route.ts` | Mark browser purchase delivered (`ga4_purchase_sent`) |
+| `lib/analytics/ga4PurchaseFallback.ts` | Measurement Protocol fallback scheduler/processor |
+| `lib/analytics/ga4MeasurementProtocol.ts` | GA4 MP `purchase` sender |
 
 ## Deep dive
 

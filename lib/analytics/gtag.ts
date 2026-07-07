@@ -170,6 +170,19 @@ async function claimPurchaseTracking(orderId: string, token: string): Promise<Cl
   }
 }
 
+/** Tell the server the browser purchase was pushed to dataLayer (sets ga4_purchase_sent). */
+async function confirmPurchaseTracking(orderId: string, token: string): Promise<void> {
+  try {
+    await fetch(`/api/orders/${encodeURIComponent(orderId)}/confirm-purchase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+  } catch {
+    // Non-blocking; server MP fallback may still run if confirm never arrives.
+  }
+}
+
 /** Whether checkout purchase was already sent for this order (localStorage + same-document guard). */
 export function wasCheckoutPurchaseSent(orderId: string): boolean {
   const normalizedOrderId = normalizeOrderId(orderId);
@@ -346,6 +359,14 @@ export function trackCheckoutPurchase(params: {
       };
 
       const doPush = () => {
+        const claimToken = claim?.token?.trim();
+        const afterPush = () => {
+          markCheckoutPurchaseSent(normalizedOrderId);
+          if (claimToken) {
+            void confirmPurchaseTracking(normalizedOrderId, claimToken);
+          }
+        };
+
         try {
           window.dataLayer = window.dataLayer || [];
           window.dataLayer.push({ ecommerce: null });
@@ -359,7 +380,6 @@ export function trackCheckoutPurchase(params: {
             items,
             ...(hasUserData ? { user_data: userData } : {}),
             eventCallback: () => {
-              markCheckoutPurchaseSent(normalizedOrderId);
               if (isDev) {
                 console.info('[analytics] purchase pushed to dataLayer (eventCallback)', {
                   orderId: normalizedOrderId,
@@ -367,6 +387,7 @@ export function trackCheckoutPurchase(params: {
                   itemCount: items.length,
                 });
               }
+              afterPush();
               finish(true);
             },
             eventTimeout: 5000,
@@ -379,7 +400,7 @@ export function trackCheckoutPurchase(params: {
                   orderId: normalizedOrderId,
                 });
               }
-              markCheckoutPurchaseSent(normalizedOrderId);
+              afterPush();
               finish(true);
             }
           }, 5000);

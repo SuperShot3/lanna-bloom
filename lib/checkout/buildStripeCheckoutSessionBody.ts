@@ -96,6 +96,11 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   surpriseDelivery?: boolean;
   /** @deprecated Prefer delivery.deliveryNote on DeliveryFormValues */
   deliveryNotes?: string;
+  ga_client_id?: string;
+  ga_session_id?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
 }): Record<string, unknown> {
   const {
     lang,
@@ -115,6 +120,11 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     recipientPhoneCountryCode,
     surpriseDelivery,
     deliveryNotes,
+    ga_client_id,
+    ga_session_id,
+    gclid,
+    gbraid,
+    wbraid,
   } = params;
 
   const addressLineTrim = clipCheckoutField(
@@ -204,6 +214,12 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     body.referralCode = resolvedDiscount.code;
     body.referralDiscount = referralDiscount;
   }
+
+  if (ga_client_id?.trim()) body.ga_client_id = ga_client_id.trim();
+  if (ga_session_id?.trim()) body.ga_session_id = ga_session_id.trim();
+  if (gclid?.trim()) body.gclid = gclid.trim();
+  if (gbraid?.trim()) body.gbraid = gbraid.trim();
+  if (wbraid?.trim()) body.wbraid = wbraid.trim();
 
   return body;
 }

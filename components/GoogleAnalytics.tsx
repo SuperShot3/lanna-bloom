@@ -1,7 +1,9 @@
 'use client';
 
 import Script from 'next/script';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { captureAdClickIdsFromUrl } from '@/lib/analytics/captureAnalyticsContext';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim();
 const SHOULD_LOAD_ANALYTICS = process.env.NODE_ENV === 'production' && Boolean(GTM_ID);
@@ -13,6 +15,10 @@ const SHOULD_LOAD_ANALYTICS = process.env.NODE_ENV === 'production' && Boolean(G
  */
 export function GoogleAnalytics() {
   const pathname = usePathname();
+
+  useEffect(() => {
+    captureAdClickIdsFromUrl();
+  }, [pathname]);
 
   if (pathname?.startsWith('/admin')) return null;
   if (!SHOULD_LOAD_ANALYTICS || !GTM_ID) return null;

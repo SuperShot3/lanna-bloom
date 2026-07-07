@@ -398,6 +398,18 @@ export async function supabaseCreateOrder(
     ...((order as { ga_client_id?: string }).ga_client_id && {
       ga_client_id: (order as { ga_client_id: string }).ga_client_id,
     }),
+    ...((order as { ga_session_id?: string }).ga_session_id && {
+      ga_session_id: (order as { ga_session_id: string }).ga_session_id,
+    }),
+    ...((order as { gclid?: string }).gclid && {
+      gclid: (order as { gclid: string }).gclid,
+    }),
+    ...((order as { gbraid?: string }).gbraid && {
+      gbraid: (order as { gbraid: string }).gbraid,
+    }),
+    ...((order as { wbraid?: string }).wbraid && {
+      wbraid: (order as { wbraid: string }).wbraid,
+    }),
     ...(submissionToken ? { submission_token: submissionToken } : {}),
     marketing_email_consent: order.marketingEmailConsent === true,
   };

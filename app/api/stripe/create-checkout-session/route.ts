@@ -46,6 +46,34 @@ import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckoutFieldLimits';
 
+function optionalTrimmedString(raw: unknown, maxLen: number): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const t = raw.trim();
+  if (!t || t.length > maxLen) return undefined;
+  return t;
+}
+
+function parseCheckoutAnalyticsFields(b: Record<string, unknown>) {
+  const ga_client_id = optionalTrimmedString(b.ga_client_id, 64);
+  const ga_session_id = optionalTrimmedString(b.ga_session_id, 64);
+  const gclid = optionalTrimmedString(b.gclid, 256);
+  const gbraid = optionalTrimmedString(b.gbraid, 256);
+  const wbraid = optionalTrimmedString(b.wbraid, 256);
+  if (ga_client_id && !/^\d+\.\d+$/.test(ga_client_id)) {
+    return { ok: false as const, message: 'ga_client_id has invalid format' };
+  }
+  return {
+    ok: true as const,
+    fields: {
+      ...(ga_client_id ? { ga_client_id } : {}),
+      ...(ga_session_id ? { ga_session_id } : {}),
+      ...(gclid ? { gclid } : {}),
+      ...(gbraid ? { gbraid } : {}),
+      ...(wbraid ? { wbraid } : {}),
+    },
+  };
+}
+
 function validateStripePayload(
   body: unknown
 ): { ok: true; data: StripeCheckoutPayload } | { ok: false; message: string } {
@@ -372,6 +400,11 @@ function validateStripePayload(
     return fieldLimitCheck;
   }
 
+  const analyticsParsed = parseCheckoutAnalyticsFields(b);
+  if (!analyticsParsed.ok) {
+    return analyticsParsed;
+  }
+
   return {
     ok: true,
     data: {
@@ -387,6 +420,7 @@ function validateStripePayload(
       referralCode,
       referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
       submissionToken: submissionTokenRaw,
+      ...analyticsParsed.fields,
       delivery: {
         address,
         preferredTimeSlot,
@@ -443,6 +477,11 @@ interface StripeCheckoutPayload {
   referralCode?: string;
   referralDiscount?: number;
   submissionToken: string;
+  ga_client_id?: string;
+  ga_session_id?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
   delivery: {
     address: string;
     preferredTimeSlot: string;
@@ -662,6 +701,11 @@ export async function POST(request: NextRequest) {
         }),
       }),
       submissionToken: data.submissionToken,
+      ...(data.ga_client_id ? { ga_client_id: data.ga_client_id } : {}),
+      ...(data.ga_session_id ? { ga_session_id: data.ga_session_id } : {}),
+      ...(data.gclid ? { gclid: data.gclid } : {}),
+      ...(data.gbraid ? { gbraid: data.gbraid } : {}),
+      ...(data.wbraid ? { wbraid: data.wbraid } : {}),
     };
 
     const { id: checkoutDraftId } = await upsertCheckoutDraft({

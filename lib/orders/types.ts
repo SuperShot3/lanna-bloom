@@ -133,6 +133,12 @@ export interface OrderPayload {
   referralCommissionAmount?: number;
   /** Optional GA4 client_id from frontend for server-side purchase attribution (stored in DB only). */
   ga_client_id?: string;
+  /** Optional GA4 session_id for Measurement Protocol attribution. */
+  ga_session_id?: string;
+  /** Google Ads click ids captured at checkout (if available). */
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
   /** Channel hint for admin/ops reporting. */
   orderSource?: 'web' | 'custom_form' | 'legacy_line';
   /** When set, order came from the custom order form; details for ops and customer. */

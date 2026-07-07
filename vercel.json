@@ -10,6 +10,10 @@
       "schedule": "*/30 * * * *"
     },
     {
+      "path": "/api/cron/ga4-purchase-fallback",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/cleanup-custom-order-reference-images",
       "schedule": "30 2 * * *"
     }
