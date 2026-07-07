@@ -1,5 +1,5 @@
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
-import { isDeliveryTimeSlotSelectableForDate } from '@/lib/deliveryTimeSelection';
+import { isDeliveryTimeSlotSelectableForDate, isSpecificDeliveryTime } from '@/lib/deliveryTimeSelection';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { isSupportedZone } from '@/lib/delivery/zones';
 import type { ContactPreferenceOption } from '@/lib/orders';
@@ -74,6 +74,9 @@ export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
   const note = delivery.deliveryNote?.trim() ?? '';
   if (exceedsLimit(note, CHECKOUT_FIELD_LIMITS.deliveryNote)) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
+  if (delivery.deliveryTimeMode === 'custom' && !isSpecificDeliveryTime(delivery.timeSlot)) {
+    return false;
+  }
   if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
   return true;
 }
@@ -191,7 +194,13 @@ export function getFirstCheckoutFieldIssue(
     return { sectionId: 'deliveryDate', message: copy.pleaseChooseDeliveryDate };
   }
 
-  if (!delivery.timeSlot || !isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) {
+  if (!delivery.timeSlot) {
+    return { sectionId: 'deliveryTime', message: copy.pleaseChooseDeliveryTime };
+  }
+  if (delivery.deliveryTimeMode === 'custom' && !isSpecificDeliveryTime(delivery.timeSlot)) {
+    return { sectionId: 'deliveryTime', message: copy.pleaseChooseDeliveryTime };
+  }
+  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) {
     return { sectionId: 'deliveryTime', message: copy.pleaseChooseDeliveryTime };
   }
 

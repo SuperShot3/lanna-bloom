@@ -86,13 +86,27 @@ export function getMaxSpecificDeliveryTime(): string {
   return '19:59';
 }
 
+/** Reject calendar dates before today in Chiang Mai. */
+export function isDeliveryDateSelectable(
+  deliveryDate: string,
+  now: Date = new Date()
+): boolean {
+  if (!deliveryDate || !/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) return false;
+  return deliveryDate >= getBangkokYmd(now);
+}
+
 export function isSpecificDeliveryTimeSelectableForDate(
   deliveryDate: string,
   hm: string,
-  _now: Date = new Date()
+  now: Date = new Date()
 ): boolean {
   if (!deliveryDate || !hm) return false;
-  return parseSpecificDeliveryTimeMinutes(hm) !== null;
+  if (!isDeliveryDateSelectable(deliveryDate, now)) return false;
+  const minutes = parseSpecificDeliveryTimeMinutes(hm);
+  if (minutes === null) return false;
+  if (minutes < SHOP_OPEN_MIN || minutes >= SHOP_CLOSE_MIN) return false;
+  const minMinutes = getMinSpecificDeliveryMinutesForDate(deliveryDate, now);
+  return minutes >= minMinutes;
 }
 
 export function isDeliveryTimeSlotSelectableForDate(
@@ -101,6 +115,7 @@ export function isDeliveryTimeSlotSelectableForDate(
   now: Date = new Date()
 ): boolean {
   if (!deliveryDate || !slot) return true;
+  if (!isDeliveryDateSelectable(deliveryDate, now)) return false;
 
   if (isSpecificDeliveryTime(slot)) {
     return isSpecificDeliveryTimeSelectableForDate(deliveryDate, slot, now);
@@ -147,6 +162,7 @@ export function getSuggestedSpecificDeliveryTimes(
 export type DeliverySchedule = {
   date: string;
   timeSlot: string;
+  deliveryTimeMode?: 'window' | 'custom';
 };
 
 /** Prefer today; if no windows remain, use tomorrow with the first selectable slot. */
@@ -156,34 +172,74 @@ export function getEarliestSelectableDeliverySchedule(
 ): DeliverySchedule {
   const todaySlots = getSelectableDeliveryTimeSlotsForDate(todayYmd, now);
   if (todaySlots.length > 0) {
-    return { date: todayYmd, timeSlot: todaySlots[0] };
+    return { date: todayYmd, timeSlot: todaySlots[0], deliveryTimeMode: 'window' };
   }
   const tomorrowYmd = addDaysToYmd(todayYmd, 1);
   const tomorrowSlots = getSelectableDeliveryTimeSlotsForDate(tomorrowYmd, now);
   return {
     date: tomorrowYmd,
     timeSlot: tomorrowSlots[0] ?? DELIVERY_TIME_SLOTS[0],
+    deliveryTimeMode: 'window',
   };
 }
 
 /** Keep valid user choices; fill empty or expired date/time with the earliest schedule. */
 export function resolveDeliverySchedule(
-  schedule: { date: string; timeSlot: string },
+  schedule: { date: string; timeSlot: string; deliveryTimeMode?: 'window' | 'custom' },
   todayYmd: string,
   now: Date = new Date()
 ): DeliverySchedule {
-  const { date, timeSlot } = schedule;
+  const { date, timeSlot, deliveryTimeMode } = schedule;
 
-  if (date && timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) {
-    return { date, timeSlot };
+  if (date && !isDeliveryDateSelectable(date, now)) {
+    return getEarliestSelectableDeliverySchedule(todayYmd, now);
   }
 
-  if (date) {
+  if (
+    deliveryTimeMode === 'custom' &&
+    date &&
+    isDeliveryDateSelectable(date, now) &&
+    (!timeSlot || isSpecificDeliveryTime(timeSlot))
+  ) {
+    if (timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) {
+      return { date, timeSlot, deliveryTimeMode: 'custom' };
+    }
+    return { date, timeSlot: '', deliveryTimeMode: 'custom' };
+  }
+
+  if (date && timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) {
+    return {
+      date,
+      timeSlot,
+      deliveryTimeMode: isSpecificDeliveryTime(timeSlot) ? 'custom' : 'window',
+    };
+  }
+
+  if (date && isDeliveryDateSelectable(date, now)) {
     const slots = getSelectableDeliveryTimeSlotsForDate(date, now);
     if (slots.length > 0) {
-      return { date, timeSlot: slots[0] };
+      return { date, timeSlot: slots[0], deliveryTimeMode: 'window' };
     }
   }
 
   return getEarliestSelectableDeliverySchedule(todayYmd, now);
+}
+
+/** Parse `"YYYY-MM-DD HH:mm"` or `"YYYY-MM-DD 09:00–12:00"` from checkout payload. */
+export function parsePreferredTimeSlot(
+  value: string
+): { date: string; time: string } | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+  if (!match) return null;
+  const time = match[2].trim();
+  if (!time) return null;
+  return { date: match[1], time };
+}
+
+export function isPreferredTimeSlotValid(value: string, now: Date = new Date()): boolean {
+  const parsed = parsePreferredTimeSlot(value);
+  if (!parsed) return false;
+  return isDeliveryTimeSlotSelectableForDate(parsed.date, parsed.time, now);
 }

@@ -15,6 +15,7 @@ import { runStripePostPaymentSuccessHooks } from '@/lib/stripe/postStripePayment
 import { getPaymentIntentStripeFeeMajor } from '@/lib/stripe/getPaymentIntentStripeFeeMajor';
 import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
 import { cancelCheckoutAbandonment } from '@/lib/checkout/abandonedCheckout';
+import { nudgeGa4PurchaseFallback } from '@/lib/analytics/ga4PurchaseFallback';
 
 export type FulfillStripeCheckoutResult =
   | { kind: 'order_ready'; orderId: string; order: Order; didCreate: boolean }
@@ -182,6 +183,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   const existingBySession = await getOrderByStripeSessionId(stripeSessionId);
   if (existingBySession?.status === 'paid') {
     markAbandonmentCancelled();
+    nudgeGa4PurchaseFallback(existingBySession.orderId);
     return {
       kind: 'order_ready',
       orderId: existingBySession.orderId,
@@ -227,6 +229,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     }
     if (order.status === 'paid') {
       markAbandonmentCancelled();
+      nudgeGa4PurchaseFallback(order.orderId);
       return { kind: 'order_ready', orderId: order.orderId, order, didCreate: false };
     }
 
@@ -257,6 +260,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     const byToken = await getOrderBySubmissionToken(submissionTokenFromMeta);
     if (byToken?.status === 'paid') {
       markAbandonmentCancelled();
+      nudgeGa4PurchaseFallback(byToken.orderId);
       return {
         kind: 'order_ready',
         orderId: byToken.orderId,
@@ -270,6 +274,9 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     const bySessionAgain = await getOrderByStripeSessionId(stripeSessionId);
     if (bySessionAgain) {
       markAbandonmentCancelled();
+      if (bySessionAgain.status === 'paid') {
+        nudgeGa4PurchaseFallback(bySessionAgain.orderId);
+      }
       return {
         kind: 'order_ready',
         orderId: bySessionAgain.orderId,
@@ -286,6 +293,7 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     if (existingByToken?.status === 'paid') {
       await deleteCheckoutDraftById(checkoutDraftId);
       markAbandonmentCancelled();
+      nudgeGa4PurchaseFallback(existingByToken.orderId);
       return {
         kind: 'order_ready',
         orderId: existingByToken.orderId,

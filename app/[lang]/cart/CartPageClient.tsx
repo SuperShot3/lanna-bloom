@@ -91,7 +91,7 @@ import {
   normalizeNationalPhoneOnBlur,
   nationalDigitsValidForCheckout,
 } from '@/lib/phoneFieldHints';
-import { getLocalTodayYmd } from '@/lib/localDateYmd';
+import { getShopTodayYmd } from '@/lib/deliveryHours';
 import {
   isValidLineUserId,
   normalizeLineUserId,
@@ -797,26 +797,40 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (items.length === 0) return;
-    const todayYmd = getLocalTodayYmd();
-    const { date, timeSlot } = resolveDeliverySchedule(
-      { date: delivery.date, timeSlot: delivery.timeSlot },
+    const todayYmd = getShopTodayYmd();
+    const { date, timeSlot, deliveryTimeMode } = resolveDeliverySchedule(
+      {
+        date: delivery.date,
+        timeSlot: delivery.timeSlot,
+        deliveryTimeMode: delivery.deliveryTimeMode,
+      },
       todayYmd
     );
     setDelivery((prev) =>
-      prev.date === date && prev.timeSlot === timeSlot ? prev : { ...prev, date, timeSlot }
+      prev.date === date && prev.timeSlot === timeSlot && prev.deliveryTimeMode === deliveryTimeMode
+        ? prev
+        : { ...prev, date, timeSlot, deliveryTimeMode }
     );
   }, [items.length, delivery.date, delivery.timeSlot]);
 
   useEffect(() => {
     if (items.length === 0) return;
     const id = window.setInterval(() => {
-      const todayYmd = getLocalTodayYmd();
+      const todayYmd = getShopTodayYmd();
       setDelivery((prev) => {
-        const { date, timeSlot } = resolveDeliverySchedule(
-          { date: prev.date, timeSlot: prev.timeSlot },
+        const { date, timeSlot, deliveryTimeMode } = resolveDeliverySchedule(
+          {
+            date: prev.date,
+            timeSlot: prev.timeSlot,
+            deliveryTimeMode: prev.deliveryTimeMode,
+          },
           todayYmd
         );
-        return prev.date === date && prev.timeSlot === timeSlot ? prev : { ...prev, date, timeSlot };
+        return prev.date === date &&
+          prev.timeSlot === timeSlot &&
+          prev.deliveryTimeMode === deliveryTimeMode
+          ? prev
+          : { ...prev, date, timeSlot, deliveryTimeMode };
       });
     }, 30_000);
     return () => window.clearInterval(id);
@@ -837,11 +851,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         setDelivery(next);
         return;
       }
-      const { date, timeSlot } = resolveDeliverySchedule(
-        { date: next.date, timeSlot: next.timeSlot },
-        getLocalTodayYmd()
+      const { date, timeSlot, deliveryTimeMode } = resolveDeliverySchedule(
+        {
+          date: next.date,
+          timeSlot: next.timeSlot,
+          deliveryTimeMode: next.deliveryTimeMode,
+        },
+        getShopTodayYmd()
       );
-      setDelivery({ ...next, date, timeSlot });
+      setDelivery({ ...next, date, timeSlot, deliveryTimeMode });
     },
     [items.length]
   );

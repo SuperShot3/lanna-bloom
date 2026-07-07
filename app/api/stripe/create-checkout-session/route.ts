@@ -45,6 +45,7 @@ import { EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
 import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckoutFieldLimits';
+import { isPreferredTimeSlotValid } from '@/lib/deliveryTimeSelection';
 
 function optionalTrimmedString(raw: unknown, maxLen: number): string | undefined {
   if (typeof raw !== 'string') return undefined;
@@ -294,7 +295,16 @@ function validateStripePayload(
   });
 
   const preferredTimeSlot =
-    typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot : '';
+    typeof d.preferredTimeSlot === 'string' ? d.preferredTimeSlot.trim() : '';
+  if (!preferredTimeSlot) {
+    return { ok: false, message: 'delivery.preferredTimeSlot is required' };
+  }
+  if (!isPreferredTimeSlotValid(preferredTimeSlot)) {
+    return {
+      ok: false,
+      message: 'delivery.preferredTimeSlot is not a valid selectable date and time',
+    };
+  }
   const recipientName = typeof d.recipientName === 'string' ? d.recipientName.trim() : undefined;
   const recipientPhoneRaw = typeof d.recipientPhone === 'string' ? d.recipientPhone.trim() : undefined;
   const recipientPhone = recipientPhoneRaw

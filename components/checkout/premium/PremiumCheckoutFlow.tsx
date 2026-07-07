@@ -431,7 +431,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           lang={lang}
           date={delivery.date}
           timeSlot={delivery.timeSlot}
-          onChange={(timeSlot) => onDeliveryChange({ ...delivery, timeSlot })}
+          deliveryTimeMode={delivery.deliveryTimeMode}
+          onChange={(timeSlot, deliveryTimeMode) =>
+            onDeliveryChange({ ...delivery, timeSlot, deliveryTimeMode })
+          }
         />
       </section>
 

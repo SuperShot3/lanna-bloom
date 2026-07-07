@@ -12,6 +12,7 @@ import {
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
 import { phoneInternational } from '@/lib/admin/deliveryContactLinks';
+import { nudgeGa4PurchaseFallback } from '@/lib/analytics/ga4PurchaseFallback';
 
 export async function GET(request: NextRequest) {
   const stripeConfig = getStripeServerConfig();
@@ -151,6 +152,7 @@ export async function GET(request: NextRequest) {
         token: hasProof ? publicToken : null,
       };
       if (status === 'paid' && hasProof) {
+        nudgeGa4PurchaseFallback(orderId);
         const { value, currency } = purchaseValueAndCurrencyFromOrder(order);
         const items = buildPurchaseAnalyticsItemsFromOrder(order, orderId);
         const userData: { email_address?: string; phone_number?: string } = {};

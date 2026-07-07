@@ -13,8 +13,7 @@ import {
   detectChiangMaiZoneFromAddress,
 } from '@/lib/delivery/zones';
 import { PinIcon } from '@/components/icons/PinIcon';
-import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
-import { getBangkokYmd } from '@/lib/deliveryHours';
+import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
 import {
   CHECKOUT_FIELD_LIMITS,
   clipCheckoutField,
@@ -36,6 +35,8 @@ export interface DeliveryFormValues {
   addressLine: string;
   date: string;
   timeSlot: string;
+  /** Window preset vs exact HH:mm — drives schedule resolve and checkout validation. */
+  deliveryTimeMode?: 'window' | 'custom';
   deliveryLat: number | null;
   deliveryLng: number | null;
   deliveryGoogleMapsUrl: string | null;
@@ -158,8 +159,8 @@ export function DeliveryForm({
     return `${day} ${month}`;
   }, [lang]);
 
-  const todayStr = getLocalTodayYmd();
-  const tomorrowStr = getLocalTomorrowYmd();
+  const todayStr = getShopTodayYmd();
+  const tomorrowStr = getShopTomorrowYmd();
   const minDate = todayStr;
   const selectableTimeSlots = getSelectableDeliveryTimeSlotsForDate(value.date);
 

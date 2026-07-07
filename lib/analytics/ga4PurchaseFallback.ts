@@ -386,16 +386,44 @@ export async function tryProcessGa4PurchaseFallback(
   }
 }
 
-/** Process all pending fallbacks (cron). */
-export async function runGa4PurchaseFallbackCron(limit = 25): Promise<{
+export type Ga4FallbackCronResult = {
   processed: number;
   sent: number;
   failed: number;
   skipped: number;
-}> {
+  mpConfigured: boolean;
+  supabaseAvailable: boolean;
+  queryError?: string;
+};
+
+/** Non-blocking MP retry — safe on order-status polls and already-paid fulfill paths. */
+export function nudgeGa4PurchaseFallback(orderId: string): void {
+  const normalized = orderId.trim();
+  if (!normalized) return;
+  void tryProcessGa4PurchaseFallback(normalized).catch((e) =>
+    console.error('[ga4/fallback] nudge error:', e),
+  );
+}
+
+/** Process all pending fallbacks (cron). */
+export async function runGa4PurchaseFallbackCron(limit = 25): Promise<Ga4FallbackCronResult> {
+  const mpConfigured = isGa4MeasurementProtocolConfigured();
   const supabase = getSupabaseAdmin();
-  if (!supabase || !isGa4MeasurementProtocolConfigured()) {
-    return { processed: 0, sent: 0, failed: 0, skipped: 0 };
+  const supabaseAvailable = Boolean(supabase);
+  const empty: Ga4FallbackCronResult = {
+    processed: 0,
+    sent: 0,
+    failed: 0,
+    skipped: 0,
+    mpConfigured,
+    supabaseAvailable,
+  };
+
+  if (!supabase || !mpConfigured) {
+    if (!mpConfigured) {
+      console.warn('[ga4/fallback/cron] skipped — GA4_MEASUREMENT_ID / GA4_MEASUREMENT_API_SECRET not set');
+    }
+    return empty;
   }
 
   const now = new Date().toISOString();
@@ -410,8 +438,12 @@ export async function runGa4PurchaseFallbackCron(limit = 25): Promise<{
     .order('ga4_purchase_fallback_run_after', { ascending: true })
     .limit(limit);
 
-  if (error || !rows?.length) {
-    return { processed: 0, sent: 0, failed: 0, skipped: 0 };
+  if (error) {
+    console.warn('[ga4/fallback/cron] pending query failed', { error: error.message });
+    return { ...empty, queryError: error.message };
+  }
+  if (!rows?.length) {
+    return empty;
   }
 
   let sent = 0;
@@ -427,5 +459,5 @@ export async function runGa4PurchaseFallbackCron(limit = 25): Promise<{
     else skipped += 1;
   }
 
-  return { processed: rows.length, sent, failed, skipped };
+  return { processed: rows.length, sent, failed, skipped, mpConfigured, supabaseAvailable };
 }

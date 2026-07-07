@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { getSelectableDeliveryTimeSlotsForDate } from '@/lib/deliveryTimeSelection';
-import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
+import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
 import { DeliveryDatePicker } from '@/components/checkout/DeliveryDatePicker';
 import { SelectionTile } from '@/components/checkout/premium/SelectionTile';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
@@ -38,8 +38,8 @@ export function DeliveryDateSelector({
   pickerClassName = '',
 }: DeliveryDateSelectorProps) {
   const t = translations[lang].premiumCheckout;
-  const todayStr = getLocalTodayYmd();
-  const tomorrowStr = getLocalTomorrowYmd();
+  const todayStr = getShopTodayYmd();
+  const tomorrowStr = getShopTomorrowYmd();
   const todaySelectable = getSelectableDeliveryTimeSlotsForDate(todayStr).length > 0;
 
   const [dateMode, setDateMode] = useState<DeliveryDateMode>(() =>

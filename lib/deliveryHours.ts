@@ -53,6 +53,16 @@ export function getBangkokYmd(date: Date): string {
   }).format(date);
 }
 
+/** Today's calendar date in Chiang Mai (YYYY-MM-DD). Single source of truth for checkout. */
+export function getShopTodayYmd(now: Date = new Date()): string {
+  return getBangkokYmd(now);
+}
+
+/** Tomorrow's calendar date in Chiang Mai (YYYY-MM-DD). */
+export function getShopTomorrowYmd(now: Date = new Date()): string {
+  return addDaysToYmd(getBangkokYmd(now), 1);
+}
+
 export function addDaysToYmd(ymd: string, days: number): string {
   const [y, m, d] = ymd.split('-').map(Number);
   const next = new Date(Date.UTC(y, m - 1, d + days));

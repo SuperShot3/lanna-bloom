@@ -15,7 +15,7 @@ import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumChecko
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
-import { getLocalTodayYmd, getLocalTomorrowYmd } from '@/lib/localDateYmd';
+import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 
 function formatCheckoutStickySchedule(
@@ -28,8 +28,8 @@ function formatCheckoutStickySchedule(
   if (!date || !timeSlot) return null;
   if (!isDeliveryTimeSlotSelectableForDate(date, timeSlot)) return null;
 
-  const todayStr = getLocalTodayYmd();
-  const tomorrowStr = getLocalTomorrowYmd();
+  const todayStr = getShopTodayYmd();
+  const tomorrowStr = getShopTomorrowYmd();
   let dateLabel: string;
   if (date === todayStr) dateLabel = todayLabel;
   else if (date === tomorrowStr) dateLabel = tomorrowLabel;

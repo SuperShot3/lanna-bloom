@@ -11,7 +11,7 @@ import {
   isSpecificDeliveryTime,
 } from '@/lib/deliveryTimeSelection';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
-import { getLocalTodayYmd } from '@/lib/localDateYmd';
+import { getShopTodayYmd } from '@/lib/deliveryHours';
 
 export type StickyBarSummary = {
   date?: string;
@@ -104,7 +104,7 @@ export function StickyCheckoutBar({
   const [editTimeSlot, setEditTimeSlot] = useState('');
   const touchStartY = useRef(0);
 
-  const minDate = getLocalTodayYmd();
+  const minDate = getShopTodayYmd();
   const timeSlots = DELIVERY_TIME_SLOTS.slice(0, 3);
   const windowEditSlot = isSpecificDeliveryTime(editTimeSlot) ? '' : editTimeSlot;
   const specificEditTime = isSpecificDeliveryTime(editTimeSlot) ? editTimeSlot : '';

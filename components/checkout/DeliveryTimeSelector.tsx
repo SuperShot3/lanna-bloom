@@ -21,17 +21,18 @@ export function DeliveryTimeSelector({
   lang,
   date,
   timeSlot,
+  deliveryTimeMode = 'window',
   onChange,
 }: {
   lang: Locale;
   date: string;
   timeSlot: string;
-  onChange: (timeSlot: string) => void;
+  deliveryTimeMode?: 'window' | 'custom';
+  onChange: (timeSlot: string, mode: 'window' | 'custom') => void;
 }) {
   const t = translations[lang].premiumCheckout;
   const [now, setNow] = useState<Date | null>(null);
-  const specificSelected = isSpecificDeliveryTime(timeSlot);
-  const [customOpen, setCustomOpen] = useState(specificSelected);
+  const customOpen = deliveryTimeMode === 'custom';
 
   useEffect(() => {
     setNow(new Date());
@@ -39,12 +40,8 @@ export function DeliveryTimeSelector({
     return () => window.clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (specificSelected) setCustomOpen(true);
-  }, [specificSelected]);
-
   const liveNow = now ?? new Date();
-  const specificInputValue = specificSelected ? timeSlot : '';
+  const specificInputValue = isSpecificDeliveryTime(timeSlot) ? timeSlot : '';
 
   const morningOk =
     !date || isDeliveryTimeSlotSelectableForDate(date, MORNING_SLOT, liveNow);
@@ -54,17 +51,15 @@ export function DeliveryTimeSelector({
     !date || isDeliveryTimeSlotSelectableForDate(date, EVENING_SLOT, liveNow);
 
   const selectWindow = (slot: string) => {
-    setCustomOpen(false);
-    onChange(slot);
+    onChange(slot, 'window');
   };
 
   const openCustom = () => {
-    setCustomOpen(true);
-    if (!specificSelected) onChange('');
+    onChange('', 'custom');
   };
 
   const handleSpecificInput = (value: string) => {
-    onChange(value);
+    onChange(value, 'custom');
   };
 
   return (
@@ -72,7 +67,7 @@ export function DeliveryTimeSelector({
       <div className="delivery-time-selector__tiles" role="group" aria-label={t.deliveryTimeTitle}>
         <SelectionTile
           compact
-          selected={timeSlot === MORNING_SLOT}
+          selected={!customOpen && timeSlot === MORNING_SLOT}
           title={t.morningTile}
           subtitle={t.morningSub}
           onClick={() => morningOk && selectWindow(MORNING_SLOT)}
@@ -80,7 +75,7 @@ export function DeliveryTimeSelector({
         />
         <SelectionTile
           compact
-          selected={timeSlot === MIDDAY_SLOT}
+          selected={!customOpen && timeSlot === MIDDAY_SLOT}
           title={t.afternoonTile}
           subtitle={t.afternoonSub}
           onClick={() => middayOk && selectWindow(MIDDAY_SLOT)}
@@ -88,7 +83,7 @@ export function DeliveryTimeSelector({
         />
         <SelectionTile
           compact
-          selected={timeSlot === EVENING_SLOT}
+          selected={!customOpen && timeSlot === EVENING_SLOT}
           title={t.eveningTile}
           subtitle={t.eveningSub}
           onClick={() => eveningOk && selectWindow(EVENING_SLOT)}
@@ -105,7 +100,9 @@ export function DeliveryTimeSelector({
 
       <OverlayReveal open={customOpen} className="delivery-time-selector__custom">
         <div className="delivery-time-selector__custom-inner">
-          <p className="delivery-time-selector__hint">{t.specificTimeHint}</p>
+          <label className="delivery-time-selector__hint" htmlFor="delivery-specific-time">
+            {t.specificTimeHint}
+          </label>
           <input
             id="delivery-specific-time"
             type="time"
@@ -113,6 +110,7 @@ export function DeliveryTimeSelector({
             value={specificInputValue}
             onChange={(e) => handleSpecificInput(e.target.value)}
             aria-label={t.specificTimeInputLabel}
+            required={customOpen}
           />
         </div>
       </OverlayReveal>
@@ -129,12 +127,13 @@ export function DeliveryTimeSelector({
         .delivery-time-selector__custom-inner {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 8px;
         }
         .delivery-time-selector__hint {
           margin: 0;
-          font-size: 12px;
-          color: var(--text-muted);
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text);
           line-height: 1.4;
         }
         .delivery-time-selector__input {
