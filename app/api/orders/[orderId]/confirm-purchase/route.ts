@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByIdWithPublicToken } from '@/lib/orders';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { checkOrderLookupRateLimit } from '@/lib/rateLimit';
+import { isSupabaseMissingColumnError } from '@/lib/supabase/columnErrors';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,27 +94,46 @@ export async function POST(
   }
 
   const now = new Date().toISOString();
-  const { data: confirmed, error: confirmError } = await supabase
+  const fullUpdate = {
+    ga4_purchase_sent: true,
+    ga4_purchase_sent_at: now,
+    ga4_purchase_source: 'browser',
+    ga4_purchase_last_error: null,
+    updated_at: now,
+  };
+
+  let confirmed = await supabase
     .from('orders')
-    .update({
-      ga4_purchase_sent: true,
-      ga4_purchase_sent_at: now,
-      ga4_purchase_source: 'browser',
-      ga4_purchase_last_error: null,
-      updated_at: now,
-    })
+    .update(fullUpdate)
     .eq('order_id', normalized)
     .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
     .select('order_id');
 
-  if (confirmError) {
-    console.error('[orders/confirm-purchase] update failed:', confirmError.message, {
+  if (
+    confirmed.error &&
+    (isSupabaseMissingColumnError(confirmed.error, 'ga4_purchase_source') ||
+      isSupabaseMissingColumnError(confirmed.error, 'ga4_purchase_last_error'))
+  ) {
+    confirmed = await supabase
+      .from('orders')
+      .update({
+        ga4_purchase_sent: true,
+        ga4_purchase_sent_at: now,
+        updated_at: now,
+      })
+      .eq('order_id', normalized)
+      .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
+      .select('order_id');
+  }
+
+  if (confirmed.error) {
+    console.error('[orders/confirm-purchase] update failed:', confirmed.error.message, {
       orderId: normalized,
     });
     return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
   }
 
-  const won = Array.isArray(confirmed) && confirmed.length > 0;
+  const won = Array.isArray(confirmed.data) && confirmed.data.length > 0;
   return NextResponse.json(
     won
       ? { confirmed: true }

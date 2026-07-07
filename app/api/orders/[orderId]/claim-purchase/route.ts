@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByIdWithPublicToken } from '@/lib/orders';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { checkOrderLookupRateLimit } from '@/lib/rateLimit';
+import { isSupabaseMissingColumnError } from '@/lib/supabase/columnErrors';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +15,8 @@ export const dynamic = 'force-dynamic';
  * across browsers, devices, reloads, admin views, and shared order links.
  * Successful delivery is recorded separately via `confirm-purchase` (`ga4_purchase_sent`).
  *
- * Responses:
- * - `{ shouldTrack: true }` — order is paid and this caller won the claim; push `purchase` now.
- * - `{ shouldTrack: false, reason: 'already_claimed' }` — claimed or already sent; never push again.
- * - `{ shouldTrack: false, reason: 'not_paid' }` — order not paid; do not push (do not persist a local flag).
- * - 404 — unknown order or invalid public token (no detail leaked).
+ * If migration `20260708120000_ga4_purchase_fallback` is not applied yet, falls back to
+ * the legacy atomic claim on `ga4_purchase_sent` (pre-confirm flow).
  */
 
 function normalizeOrderToken(raw: unknown): string | null {
@@ -29,9 +27,45 @@ function normalizeOrderToken(raw: unknown): string | null {
   return t;
 }
 
+type PaymentRow = {
+  payment_status: string | null;
+  paid_at: string | null;
+  ga4_purchase_sent: boolean | null;
+  ga4_purchase_claimed?: boolean | null;
+};
+
+async function loadPaymentRow(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  orderId: string,
+): Promise<{ row: PaymentRow | null; usesLegacyClaim: boolean }> {
+  const withClaimed = await supabase
+    .from('orders')
+    .select('payment_status, paid_at, ga4_purchase_sent, ga4_purchase_claimed')
+    .eq('order_id', orderId)
+    .single();
+
+  if (!withClaimed.error && withClaimed.data) {
+    return { row: withClaimed.data as PaymentRow, usesLegacyClaim: false };
+  }
+
+  if (isSupabaseMissingColumnError(withClaimed.error, 'ga4_purchase_claimed')) {
+    const legacy = await supabase
+      .from('orders')
+      .select('payment_status, paid_at, ga4_purchase_sent')
+      .eq('order_id', orderId)
+      .single();
+    if (legacy.error || !legacy.data) {
+      return { row: null, usesLegacyClaim: true };
+    }
+    return { row: legacy.data as PaymentRow, usesLegacyClaim: true };
+  }
+
+  return { row: null, usesLegacyClaim: false };
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ orderId: string }> },
 ) {
   const { orderId } = await params;
   const normalized = orderId?.trim();
@@ -46,7 +80,7 @@ export async function POST(
   if (!checkOrderLookupRateLimit(ip, `claim_purchase:${normalized}`)) {
     return NextResponse.json(
       { error: 'Too many attempts. Please try again later.' },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -55,7 +89,7 @@ export async function POST(
   if (!orderToken) {
     return NextResponse.json(
       { error: 'Order not found' },
-      { status: 404, headers: { 'Cache-Control': 'no-store' } }
+      { status: 404, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -63,7 +97,7 @@ export async function POST(
   if (!order) {
     return NextResponse.json(
       { error: 'Order not found' },
-      { status: 404, headers: { 'Cache-Control': 'no-store' } }
+      { status: 404, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -73,17 +107,11 @@ export async function POST(
     return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
   }
 
-  // Server-side paid check — never trust the client's payment state.
-  const { data: paymentRow, error: paymentError } = await supabase
-    .from('orders')
-    .select('payment_status, paid_at, ga4_purchase_sent, ga4_purchase_claimed')
-    .eq('order_id', normalized)
-    .single();
-
-  if (paymentError || !paymentRow) {
+  const { row: paymentRow, usesLegacyClaim } = await loadPaymentRow(supabase, normalized);
+  if (!paymentRow) {
     return NextResponse.json(
       { error: 'Order not found' },
-      { status: 404, headers: { 'Cache-Control': 'no-store' } }
+      { status: 404, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -94,7 +122,7 @@ export async function POST(
   if (!paid) {
     return NextResponse.json(
       { shouldTrack: false, reason: 'not_paid' },
-      { headers: { 'Cache-Control': 'no-store' } }
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -105,15 +133,45 @@ export async function POST(
     );
   }
 
-  if (paymentRow.ga4_purchase_claimed === true) {
+  if (!usesLegacyClaim && paymentRow.ga4_purchase_claimed === true) {
     return NextResponse.json(
       { shouldTrack: false, reason: 'already_claimed' },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
-  // Atomic claim: the WHERE condition ensures only the first caller updates the row.
   const now = new Date().toISOString();
+
+  if (usesLegacyClaim) {
+    const { data: claimed, error: claimError } = await supabase
+      .from('orders')
+      .update({ ga4_purchase_sent: true, ga4_purchase_sent_at: now, updated_at: now })
+      .eq('order_id', normalized)
+      .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
+      .select('order_id');
+
+    if (claimError) {
+      console.error('[orders/claim-purchase] legacy claim update failed:', claimError.message, {
+        orderId: normalized,
+      });
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
+    }
+
+    const won = Array.isArray(claimed) && claimed.length > 0;
+    if (won) {
+      console.warn(
+        '[orders/claim-purchase] using legacy ga4_purchase_sent claim — apply migration 20260708120000_ga4_purchase_fallback',
+        { orderId: normalized },
+      );
+    }
+    return NextResponse.json(
+      won
+        ? { shouldTrack: true, legacy: true }
+        : { shouldTrack: false, reason: 'already_claimed' },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+
   const { data: claimed, error: claimError } = await supabase
     .from('orders')
     .update({ ga4_purchase_claimed: true, ga4_purchase_claimed_at: now, updated_at: now })
@@ -125,7 +183,6 @@ export async function POST(
     console.error('[orders/claim-purchase] claim update failed:', claimError.message, {
       orderId: normalized,
     });
-    // Fail closed: without a confirmed claim the browser must not push `purchase`.
     return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
   }
 
@@ -134,6 +191,6 @@ export async function POST(
     won
       ? { shouldTrack: true }
       : { shouldTrack: false, reason: 'already_claimed' },
-    { headers: { 'Cache-Control': 'no-store' } }
+    { headers: { 'Cache-Control': 'no-store' } },
   );
 }

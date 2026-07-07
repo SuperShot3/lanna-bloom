@@ -1,8 +1,10 @@
 'use client';
 
 import { LineIcon, WhatsAppIcon } from '@/components/icons';
+import { BackToTopButton } from '@/components/BackToTopButton';
 import { useFlowerFilterSheetOpen } from '@/contexts/FlowerFilterSheetOpenContext';
 import { getLineContactUrl, getWhatsAppContactUrl } from '@/lib/messenger';
+import type { Locale } from '@/lib/i18n';
 
 const contactButtons = [
   {
@@ -27,14 +29,22 @@ const contactButtons = [
   },
 ];
 
-export function LineFloatingButton() {
+export function LineFloatingButton({
+  lang,
+  showContactButtons = true,
+}: {
+  lang: Locale;
+  showContactButtons?: boolean;
+}) {
   const { isOpen: flowerFilterSheetOpen } = useFlowerFilterSheetOpen();
   if (flowerFilterSheetOpen) return null;
 
   return (
     <div className="line-floating-contact fixed right-4 z-[101] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] md:right-6 md:bottom-6">
       <div className="flex flex-col items-end gap-3">
-        {contactButtons.map(({ href, label, tooltip, Icon, className }) => (
+        <BackToTopButton lang={lang} />
+        {showContactButtons &&
+          contactButtons.map(({ href, label, tooltip, Icon, className }) => (
           <div key={label} className="group relative">
             {/* Desktop tooltip */}
             <div
@@ -80,7 +90,7 @@ export function LineFloatingButton() {
               <span className="sr-only">{label}</span>
             </a>
           </div>
-        ))}
+          ))}
       </div>
     </div>
   );

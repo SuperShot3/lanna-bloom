@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { BackToTopButton } from '@/components/BackToTopButton';
 import { LineFloatingButton } from '@/components/LineFloatingButton';
 import { MayFreeDeliveryPromoBanner } from '@/components/MayFreeDeliveryPromoBanner';
 import type { Locale } from '@/lib/i18n';
@@ -52,8 +51,7 @@ export function MainSiteChrome({
         <main>{children}</main>
       </div>
       <Footer lang={lang} />
-      <BackToTopButton lang={lang} />
-      {!isCartRoute && <LineFloatingButton />}
+      <LineFloatingButton lang={lang} showContactButtons={!isCartRoute} />
       <CookieConsentBanner lang={lang} />
     </>
   );

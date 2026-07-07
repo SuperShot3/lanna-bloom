@@ -10,7 +10,9 @@ export interface Ga4MpConfig {
 
 export function getGa4MeasurementProtocolConfig(): Ga4MpConfig | null {
   const measurementId = process.env.GA4_MEASUREMENT_ID?.trim();
-  const apiSecret = process.env.GA4_MEASUREMENT_PROTOCOL_SECRET?.trim();
+  const apiSecret =
+    process.env.GA4_MEASUREMENT_API_SECRET?.trim() ||
+    process.env.GA4_MEASUREMENT_PROTOCOL_SECRET?.trim();
   if (!measurementId || !apiSecret) return null;
   if (!/^G-[A-Z0-9]+$/i.test(measurementId)) return null;
   return { measurementId, apiSecret };
