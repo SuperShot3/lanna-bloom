@@ -177,9 +177,9 @@ async function releaseMpLock(orderId: string): Promise<void> {
     .eq('order_id', orderId);
 }
 
-async function markMpSuccess(orderId: string): Promise<boolean> {
+async function markMpSuccess(orderId: string): Promise<{ ok: boolean; alreadySentRace: boolean; error?: string }> {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return false;
+  if (!supabase) return { ok: false, alreadySentRace: false, error: 'supabase_unavailable' };
   const now = new Date().toISOString();
   const fullUpdate = {
     ga4_purchase_sent: true,
@@ -215,7 +215,13 @@ async function markMpSuccess(orderId: string): Promise<boolean> {
       .select('order_id');
   }
 
-  return !result.error && Array.isArray(result.data) && result.data.length > 0;
+  if (result.error) {
+    return { ok: false, alreadySentRace: false, error: result.error.message };
+  }
+  if (Array.isArray(result.data) && result.data.length > 0) {
+    return { ok: true, alreadySentRace: false };
+  }
+  return { ok: false, alreadySentRace: true, error: 'already_sent_race' };
 }
 
 async function markMpFailure(orderId: string, error: string, attempts: number, retryable: boolean): Promise<void> {
@@ -376,14 +382,24 @@ export async function tryProcessGa4PurchaseFallback(
 
     if (result.ok) {
       const marked = await markMpSuccess(normalized);
-      if (marked) {
+      if (marked.ok) {
         console.info('[ga4/fallback] purchase sent via Measurement Protocol', {
           orderId: normalized,
           clientIdUsed: result.clientIdUsed,
         });
         return { status: 'sent', orderId: normalized };
       }
-      return { status: 'skipped', reason: 'already_sent_race' };
+      if (marked.alreadySentRace) {
+        await releaseMpLock(normalized);
+        return { status: 'skipped', reason: 'already_sent_race' };
+      }
+      await markMpFailure(normalized, marked.error ?? 'mark_success_failed', attempts, true);
+      return {
+        status: 'failed',
+        orderId: normalized,
+        error: marked.error ?? 'mark_success_failed',
+        retryable: true,
+      };
     }
 
     await markMpFailure(normalized, result.error, attempts, result.retryable);
