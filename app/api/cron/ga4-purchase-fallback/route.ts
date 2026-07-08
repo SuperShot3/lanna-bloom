@@ -5,6 +5,8 @@ import { runGa4PurchaseFallbackCron } from '@/lib/analytics/ga4PurchaseFallback'
  * Vercel Cron: every 2 minutes — processes GA4 Measurement Protocol purchase fallbacks.
  * Protect with CRON_SECRET in Authorization: Bearer <secret> or x-cron-secret.
  */
+export const maxDuration = 60;
+
 export async function GET(request: NextRequest) {
   const expected = process.env.CRON_SECRET?.trim();
   if (!expected) {

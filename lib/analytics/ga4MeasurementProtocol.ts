@@ -144,10 +144,13 @@ export async function sendGa4MeasurementProtocolPurchase(
   url.searchParams.set('api_secret', config.apiSecret);
 
   try {
+    // Timeout so a hung request becomes a recorded retryable failure instead of
+    // the serverless function dying mid-flight with the MP lock still held.
     const res = await fetch(url.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (res.ok) {

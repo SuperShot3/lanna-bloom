@@ -243,18 +243,28 @@ async function markMpFailure(orderId: string, error: string, attempts: number, r
   };
 
   const result = await supabase.from('orders').update(fullUpdate).eq('order_id', orderId);
+  if (!result.error) return;
+
   if (
-    result.error &&
-    (isSupabaseMissingColumnError(result.error, 'ga4_purchase_attempts') ||
-      isSupabaseMissingColumnError(result.error, 'ga4_purchase_last_error') ||
-      isSupabaseMissingColumnError(result.error, 'ga4_purchase_fallback_run_after') ||
-      isSupabaseMissingColumnError(result.error, 'ga4_purchase_mp_lock_at'))
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_attempts') ||
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_last_error') ||
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_fallback_run_after') ||
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_mp_lock_at')
   ) {
     console.warn('[ga4/fallback] could not persist MP failure metadata — apply migration 20260708120000', {
       orderId,
       error: result.error.message,
     });
+    return;
   }
+
+  // Any other persistence error must not leave the lock dangling with attempts=0,
+  // or the order silently loops forever as "skipped".
+  console.error('[ga4/fallback] failed to persist MP failure — releasing lock', {
+    orderId,
+    error: result.error.message,
+  });
+  await releaseMpLock(orderId);
 }
 
 /**
@@ -332,13 +342,13 @@ export async function tryProcessGa4PurchaseFallback(
 
   if (dueAtMs != null && Date.now() < dueAtMs) {
     if (!runAfterRaw) {
-      void scheduleGa4PurchaseFallback(normalized);
+      await scheduleGa4PurchaseFallback(normalized);
     }
     return { status: 'skipped', reason: 'delay_not_elapsed' };
   }
 
   if (!runAfterRaw) {
-    void scheduleGa4PurchaseFallback(normalized);
+    await scheduleGa4PurchaseFallback(normalized);
   }
 
   const locked = await acquireMpLock(normalized);
@@ -428,16 +438,28 @@ export type Ga4FallbackCronResult = {
   sent: number;
   failed: number;
   skipped: number;
+  /** Skip counts keyed by reason, e.g. { lock_not_acquired: 2 } */
+  skippedByReason: Record<string, number>;
+  /** Per-order failure details from this run */
+  failures: Array<{ orderId: string; error: string; retryable: boolean }>;
   mpConfigured: boolean;
   supabaseAvailable: boolean;
   queryError?: string;
 };
 
-/** Non-blocking MP retry — safe on order-status polls and already-paid fulfill paths. */
+/**
+ * Non-blocking nudge for request paths (order-status polls, fulfill re-checks).
+ *
+ * Schedule-only on purpose: serverless request handlers are frozen as soon as the
+ * response is returned, so an unawaited MP send here could acquire
+ * `ga4_purchase_mp_lock_at` and then never run the send or bookkeeping — leaving a
+ * dangling lock that starves the cron forever. Actual MP sends happen only in
+ * `runGa4PurchaseFallbackCron`, where execution is fully awaited.
+ */
 export function nudgeGa4PurchaseFallback(orderId: string): void {
   const normalized = orderId.trim();
   if (!normalized) return;
-  void tryProcessGa4PurchaseFallback(normalized).catch((e) =>
+  void scheduleGa4PurchaseFallback(normalized).catch((e) =>
     console.error('[ga4/fallback] nudge error:', e),
   );
 }
@@ -452,6 +474,8 @@ export async function runGa4PurchaseFallbackCron(limit = 25): Promise<Ga4Fallbac
     sent: 0,
     failed: 0,
     skipped: 0,
+    skippedByReason: {},
+    failures: [],
     mpConfigured,
     supabaseAvailable,
   };
@@ -486,15 +510,32 @@ export async function runGa4PurchaseFallbackCron(limit = 25): Promise<Ga4Fallbac
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  const skippedByReason: Record<string, number> = {};
+  const failures: Ga4FallbackCronResult['failures'] = [];
 
   for (const row of rows) {
     const orderId = String(row.order_id ?? '').trim();
     if (!orderId) continue;
     const result = await tryProcessGa4PurchaseFallback(orderId);
-    if (result.status === 'sent') sent += 1;
-    else if (result.status === 'failed') failed += 1;
-    else skipped += 1;
+    if (result.status === 'sent') {
+      sent += 1;
+    } else if (result.status === 'failed') {
+      failed += 1;
+      failures.push({ orderId, error: result.error, retryable: result.retryable });
+    } else {
+      skipped += 1;
+      skippedByReason[result.reason] = (skippedByReason[result.reason] ?? 0) + 1;
+    }
   }
 
-  return { processed: rows.length, sent, failed, skipped, mpConfigured, supabaseAvailable };
+  return {
+    processed: rows.length,
+    sent,
+    failed,
+    skipped,
+    skippedByReason,
+    failures,
+    mpConfigured,
+    supabaseAvailable,
+  };
 }

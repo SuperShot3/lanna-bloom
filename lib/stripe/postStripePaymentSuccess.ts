@@ -3,10 +3,7 @@ import 'server-only';
 import { getOrderById, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
 import { sendCustomerConfirmationEmail } from '@/lib/orderEmail';
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
-import {
-  scheduleGa4PurchaseFallback,
-  tryProcessGa4PurchaseFallback,
-} from '@/lib/analytics/ga4PurchaseFallback';
+import { scheduleGa4PurchaseFallback } from '@/lib/analytics/ga4PurchaseFallback';
 
 /**
  * Shared side effects after an order is marked paid via Stripe (webhook, sync, or order-status poll).
@@ -67,10 +64,10 @@ export async function runStripePostPaymentSuccessHooks(params: {
     }).catch((e) => console.error('[stripe/postPayment] income upsert error:', e))
   );
 
-  void scheduleGa4PurchaseFallback(orderId).catch((e) =>
+  // Schedule-only: the MP send itself runs in the awaited cron. An unawaited send
+  // here can be frozen mid-flight after the response returns, leaving the MP lock
+  // dangling (see nudgeGa4PurchaseFallback).
+  await scheduleGa4PurchaseFallback(orderId).catch((e) =>
     console.error('[stripe/postPayment] scheduleGa4PurchaseFallback error:', e),
-  );
-  void tryProcessGa4PurchaseFallback(orderId).catch((e) =>
-    console.error('[stripe/postPayment] tryProcessGa4PurchaseFallback error:', e),
   );
 }
