@@ -7,54 +7,19 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
-import { trackCheckoutPurchase } from '@/lib/analytics';
-import type { PurchaseItem, PurchaseUserData } from '@/lib/analytics/gtag';
-
-type OrderStatusPurchase = {
-  transaction_id: string;
-  value: number;
-  currency: string;
-  items: PurchaseItem[];
-  user_data?: PurchaseUserData;
-};
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 
-const POLL_MS = 2000;
+/** Poll while waiting for webhook/fulfillment to create the order — no cosmetic delay after paid. */
+const POLL_MS = 800;
 const MAX_MS = 90000;
-const REDIRECT_DELAY_MS = 5000;
-const REDIRECT_PROGRESS_INTERVAL_MS = 100;
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
 
 export function OrderThankYouClient({ lang }: { lang: Locale }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams?.get('session_id')?.trim() ?? '';
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [redirectMsLeft, setRedirectMsLeft] = useState(REDIRECT_DELAY_MS);
-
-  useEffect(() => {
-    if (!success) return;
-
-    const started = Date.now();
-    setRedirectMsLeft(REDIRECT_DELAY_MS);
-
-    const timer = window.setInterval(() => {
-      const elapsed = Date.now() - started;
-      setRedirectMsLeft(Math.max(0, REDIRECT_DELAY_MS - elapsed));
-    }, REDIRECT_PROGRESS_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [success]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -87,42 +52,13 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
           status?: string;
           orderId?: string | null;
           token?: string | null;
-          purchase?: OrderStatusPurchase;
         };
         if (cancelled) return;
         if (data.status === 'paid' && typeof data.orderId === 'string' && data.orderId.trim()) {
           const oid = data.orderId.trim();
           const publicToken = typeof data.token === 'string' ? data.token.trim() : '';
-          const purchase = data.purchase;
 
-          setSuccess(true);
-
-          const redirectDelay = wait(REDIRECT_DELAY_MS);
-
-          // Server-side order-level dedupe: trackCheckoutPurchase claims tracking on the
-          // backend (via the public token) before pushing — only one browser globally wins.
-          let purchaseSent = false;
-          if (
-            purchase &&
-            typeof purchase.transaction_id === 'string' &&
-            purchase.transaction_id.trim() &&
-            typeof purchase.value === 'number' &&
-            Number.isFinite(purchase.value) &&
-            purchase.value > 0 &&
-            typeof purchase.currency === 'string' &&
-            Array.isArray(purchase.items) &&
-            publicToken
-          ) {
-            purchaseSent = await trackCheckoutPurchase({
-              orderId: purchase.transaction_id,
-              value: purchase.value,
-              currency: purchase.currency,
-              items: purchase.items,
-              userData: purchase.user_data,
-              claim: { token: publicToken },
-            }).catch(() => false);
-          }
-
+          // Thin resolver only: browser `purchase` fires on the order page via track_purchase=1.
           const token = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
           const qs = new URLSearchParams();
           if (token && /^[0-9a-fA-F-]+$/.test(token) && token.length >= 8) {
@@ -132,7 +68,8 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
           if (publicToken) {
             qs.set('token', publicToken);
           }
-          qs.set('purchase_tracked', purchaseSent ? '1' : '0');
+          qs.set('track_purchase', '1');
+          qs.set('session_id', sessionId);
           try {
             localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
             localStorage.removeItem(CART_FORM_STORAGE_KEY);
@@ -142,12 +79,10 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
             // ignore
           }
 
-          await redirectDelay;
           if (!cancelled) {
             const query = qs.toString();
             window.location.replace(`/order/${encodeURIComponent(oid)}${query ? `?${query}` : ''}`);
           }
-
           return;
         }
         if (data.status === 'payment_failed') {
@@ -165,151 +100,58 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
     };
   }, [sessionId, lang]);
 
-  if (success) {
-    const redirectSecondsLeft = Math.ceil(redirectMsLeft / 1000);
-    const redirectProgress = Math.max(0, Math.min(100, (redirectMsLeft / REDIRECT_DELAY_MS) * 100));
-
-    return (
-      <div
-        style={{
-          minHeight: '100dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 24,
-          backgroundColor: 'var(--surface-sunken, #fcfaf8)',
-          background: 'radial-gradient(circle at center, #ffffff 0%, var(--surface-sunken, #fcfaf8) 100%)',
-          textAlign: 'center',
-        }}
-      >
-        <div 
-          style={{ 
-            fontSize: '3.5rem', 
-            marginBottom: '1rem',
-            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-          }} 
-          aria-hidden
-        >
-          🎉
-        </div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text, #1e1e1e)', marginBottom: '0.75rem', fontFamily: 'var(--font-serif)' }}>
-          {lang === 'th' ? 'ชำระเงินสำเร็จ!' : 'Payment Successful!'}
-        </h1>
-        <p style={{ color: 'var(--text-muted, #666)', fontSize: '1rem', letterSpacing: '0.02em' }}>
-          {lang === 'th' 
-            ? 'ขอบคุณสำหรับคำสั่งซื้อของคุณ' 
-            : 'Thank you for your order.'}
-        </p>
-        <p style={{ color: 'var(--text-muted, #999)', fontSize: '0.85rem', marginTop: '1rem', animation: 'pulse 2s infinite' }}>
-          {lang === 'th' 
-            ? 'กำลังพากลับไปยังหน้ารายละเอียดคำสั่งซื้อ...' 
-            : 'Redirecting you to the order details...'}
-        </p>
-        <div
-          role="timer"
-          aria-live="polite"
-          style={{
-            width: 'min(320px, 100%)',
-            marginTop: '1rem',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '0.78rem',
-              color: 'var(--text-muted, #777)',
-              marginBottom: 8,
-              letterSpacing: '0.02em',
-            }}
-          >
-            {lang === 'th'
-              ? `จะเปลี่ยนหน้าใน ${redirectSecondsLeft} วินาที`
-              : `Redirecting in ${redirectSecondsLeft} second${redirectSecondsLeft === 1 ? '' : 's'}`}
-          </div>
-          <div
-            aria-hidden
-            style={{
-              height: 8,
-              width: '100%',
-              overflow: 'hidden',
-              borderRadius: 999,
-              background: 'rgba(180, 140, 90, 0.16)',
-              border: '1px solid rgba(180, 140, 90, 0.18)',
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${redirectProgress}%`,
-                borderRadius: 999,
-                background: 'linear-gradient(90deg, var(--accent, #b48c5a), #d4b068)',
-                transition: 'width 0.1s linear',
-              }}
-            />
-          </div>
-        </div>
-        
-        <style dangerouslySetInnerHTML={{__html: `
-          @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-          }
-          @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-          }
-        `}} />
-      </div>
-    );
-  }
-
   return (
     <div
-        style={{
-          minHeight: '100dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 24,
-          gap: 20,
-          backgroundColor: 'var(--surface-sunken, #fcfaf8)',
-        }}
-      >
-        {error ? (
-          <>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }} aria-hidden>⚠️</div>
-            <p style={{ textAlign: 'center', maxWidth: 420, color: 'var(--error, #d32f2f)' }}>{error}</p>
-            <button
-              type="button"
-              onClick={() => router.push(`/${lang}/cart`)}
-              style={{
-                marginTop: '1rem',
-                padding: '12px 24px',
-                borderRadius: '999px',
-                border: '1px solid var(--border, #ddd)',
-                background: 'var(--surface)',
-                color: 'var(--text)',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                transition: 'all 0.2s',
-              }}
-            >
-              {lang === 'th' ? 'กลับไปที่ตะกร้า' : 'Back to cart'}
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="spinner"></div>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'var(--text)' }} role="status" aria-live="polite">
-              {lang === 'th' ? 'กำลังยืนยันการชำระเงิน…' : 'Confirming your payment…'}
-            </h2>
-            <style dangerouslySetInnerHTML={{__html: `
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        gap: 20,
+        backgroundColor: 'var(--surface-sunken, #fcfaf8)',
+      }}
+    >
+      {error ? (
+        <>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }} aria-hidden>
+            ⚠️
+          </div>
+          <p style={{ textAlign: 'center', maxWidth: 420, color: 'var(--error, #d32f2f)' }}>{error}</p>
+          <button
+            type="button"
+            onClick={() => router.push(`/${lang}/cart`)}
+            style={{
+              marginTop: '1rem',
+              padding: '12px 24px',
+              borderRadius: '999px',
+              border: '1px solid var(--border, #ddd)',
+              background: 'var(--surface)',
+              color: 'var(--text)',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s',
+            }}
+          >
+            {lang === 'th' ? 'กลับไปที่ตะกร้า' : 'Back to cart'}
+          </button>
+        </>
+      ) : (
+        <>
+          <div className="spinner" />
+          <h2
+            style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'var(--text)' }}
+            role="status"
+            aria-live="polite"
+          >
+            {lang === 'th' ? 'กำลังยืนยันการชำระเงิน…' : 'Confirming your payment…'}
+          </h2>
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
               .spinner {
                 width: 40px;
                 height: 40px;
@@ -321,9 +163,11 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
               @keyframes spin {
                 to { transform: rotate(360deg); }
               }
-            `}} />
-          </>
-        )}
-      </div>
+            `,
+            }}
+          />
+        </>
+      )}
+    </div>
   );
 }

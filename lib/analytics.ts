@@ -2,8 +2,8 @@
  * Analytics helpers for GTM-owned Google Analytics 4 tracking.
  * The app only pushes structured events to dataLayer; GTM owns transport and pageviews.
  * All events fire only on client; per-event dedupe where noted.
- * **Paid order (browser):** `/lanna-order-thank-you` (`OrderThankYouClient`) pushes dataLayer **`purchase`**
- * after Stripe returns and `order-status` reports paid. GTM forwards to GA4 / Ads. Helper: `trackCheckoutPurchase`
+ * **Paid order (browser):** `/order/...?track_purchase=1` (`OrderPageClient`) pushes dataLayer **`purchase`**
+ * after Stripe → thank-you resolver redirect (or pay-from-order success). GTM forwards to GA4 / Ads. Helper: `trackCheckoutPurchase`
  * in `lib/analytics/gtag.ts` (shape + dedupe `lanna_purchase_fired_<orderId>`, legacy `sent_purchase_*` read).
  */
 

@@ -107,7 +107,7 @@ export function stripeOrderSuccessUrl(
   return `${baseUrl}/order/${id}?${tokenQs}stripe=success&track_purchase=1&session_id={CHECKOUT_SESSION_ID}`;
 }
 
-/** Cart checkout: universal thank-you page (no checkout/complete in path — avoids GTM URL false positives). */
+/** Cart checkout: thin session→order resolver (no celebration UI; redirects ASAP to /order). */
 export function stripeCheckoutDraftSuccessUrl(baseUrl: string, lang: string): string {
   const l = isValidLocale(lang) ? lang : 'en';
   return `${baseUrl}/lanna-order-thank-you?session_id={CHECKOUT_SESSION_ID}&lang=${l}`;

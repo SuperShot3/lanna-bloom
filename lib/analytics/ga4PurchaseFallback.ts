@@ -165,6 +165,8 @@ async function loadOrderRowForMp(orderId: string): Promise<FallbackOrderRow | nu
 /**
  * Atomically acquire MP lock and increment attempt counter.
  * Returns the locked row with the post-increment attempt count.
+ * When reclaiming a stale lock that left `ga4_purchase_last_error` null, stamp
+ * `stale_mp_lock_cleared` so ops can see why the prior attempt vanished.
  */
 async function acquireMpLock(orderId: string): Promise<FallbackOrderRow | null> {
   const supabase = getSupabaseAdmin();
@@ -175,7 +177,7 @@ async function acquireMpLock(orderId: string): Promise<FallbackOrderRow | null> 
 
   const { data: current, error: readError } = await supabase
     .from('orders')
-    .select('ga4_purchase_attempts')
+    .select('ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga4_purchase_last_error')
     .eq('order_id', orderId)
     .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
     .or(`ga4_purchase_mp_lock_at.is.null,ga4_purchase_mp_lock_at.lt.${staleBefore}`)
@@ -186,14 +188,28 @@ async function acquireMpLock(orderId: string): Promise<FallbackOrderRow | null> 
   const nextAttempts = Number(current.ga4_purchase_attempts ?? 0) + 1;
   if (nextAttempts > MAX_MP_ATTEMPTS) return null;
 
+  const priorLockAt = (current as { ga4_purchase_mp_lock_at?: string | null }).ga4_purchase_mp_lock_at;
+  const priorLastError = (current as { ga4_purchase_last_error?: string | null }).ga4_purchase_last_error;
+  const reclaimingStaleLock =
+    typeof priorLockAt === 'string' &&
+    priorLockAt.length > 0 &&
+    new Date(priorLockAt).getTime() < Date.now() - MP_LOCK_STALE_MS;
+  const stampStaleLockCleared =
+    reclaimingStaleLock && (priorLastError == null || String(priorLastError).trim() === '');
+
+  const updatePayload: Record<string, unknown> = {
+    ga4_purchase_mp_lock_at: now,
+    ga4_purchase_attempts: nextAttempts,
+    ga4_purchase_last_attempt_at: now,
+    updated_at: now,
+  };
+  if (stampStaleLockCleared) {
+    updatePayload.ga4_purchase_last_error = 'stale_mp_lock_cleared';
+  }
+
   const { data: locked, error } = await supabase
     .from('orders')
-    .update({
-      ga4_purchase_mp_lock_at: now,
-      ga4_purchase_attempts: nextAttempts,
-      ga4_purchase_last_attempt_at: now,
-      updated_at: now,
-    })
+    .update(updatePayload)
     .eq('order_id', orderId)
     .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
     .or(`ga4_purchase_mp_lock_at.is.null,ga4_purchase_mp_lock_at.lt.${staleBefore}`)
@@ -278,9 +294,11 @@ async function markMpFailure(orderId: string, error: string, attempts: number, r
     ? new Date(Date.now() + RETRY_BACKOFF_MS[backoffIdx]).toISOString()
     : null;
 
+  // Always clear the lock here too so mid-flight death + skipped finally still leave a readable error.
   const fullUpdate = {
     ga4_purchase_last_error: error.slice(0, 500),
     ga4_purchase_fallback_run_after: runAfter,
+    ga4_purchase_mp_lock_at: null,
     updated_at: now,
   };
 
@@ -289,12 +307,26 @@ async function markMpFailure(orderId: string, error: string, attempts: number, r
 
   if (
     isSupabaseMissingColumnError(result.error, 'ga4_purchase_last_error') ||
-    isSupabaseMissingColumnError(result.error, 'ga4_purchase_fallback_run_after')
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_fallback_run_after') ||
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_mp_lock_at')
   ) {
     console.warn('[ga4/fallback] could not persist MP failure metadata — apply migration 20260708120000', {
       orderId,
       error: result.error.message,
     });
+    // Best-effort: still try to clear lock + write error without run_after.
+    try {
+      await supabase
+        .from('orders')
+        .update({
+          ga4_purchase_last_error: error.slice(0, 500),
+          ga4_purchase_mp_lock_at: null,
+          updated_at: now,
+        })
+        .eq('order_id', orderId);
+    } catch {
+      // ignore secondary persist failure
+    }
   } else {
     console.error('[ga4/fallback] failed to persist MP failure metadata', {
       orderId,
@@ -387,13 +419,14 @@ export async function tryProcessGa4PurchaseFallback(
   if (!locked) return { status: 'skipped', reason: 'lock_not_acquired' };
 
   const lockedAttempts = Number(locked.ga4_purchase_attempts ?? attempts + 1);
-  let sent = false;
+  let terminalBookkeepingDone = false;
 
   try {
     const order = await getOrderById(normalized);
     const orderForPurchase = order ?? orderLikeFromFallbackRow(locked);
     if (!orderForPurchase) {
       await markMpFailure(normalized, 'order_load_failed', lockedAttempts, true);
+      terminalBookkeepingDone = true;
       return { status: 'failed', orderId: normalized, error: 'order_load_failed', retryable: true };
     }
 
@@ -401,6 +434,7 @@ export async function tryProcessGa4PurchaseFallback(
     const items = buildPurchaseAnalyticsItemsFromOrder(orderForPurchase, normalized);
     if (!Number.isFinite(value) || value <= 0 || items.length === 0) {
       await markMpFailure(normalized, 'invalid_purchase_payload', lockedAttempts, false);
+      terminalBookkeepingDone = true;
       return { status: 'failed', orderId: normalized, error: 'invalid_purchase_payload', retryable: false };
     }
 
@@ -416,6 +450,7 @@ export async function tryProcessGa4PurchaseFallback(
       items,
       clientId: gaClientId,
       sessionId: locked.ga_session_id,
+      paidAt: locked.paid_at ?? (order as { paidAt?: string } | null)?.paidAt ?? null,
       email: locked.customer_email ?? (order as { customerEmail?: string } | null)?.customerEmail,
       phone: locked.phone ?? (order as { phone?: string } | null)?.phone,
       phoneCountryCode:
@@ -428,7 +463,7 @@ export async function tryProcessGa4PurchaseFallback(
     if (result.ok) {
       const marked = await markMpSuccess(normalized);
       if (marked.ok) {
-        sent = true;
+        terminalBookkeepingDone = true;
         console.info('[ga4/fallback] purchase sent via Measurement Protocol', {
           orderId: normalized,
           clientIdUsed: result.clientIdUsed,
@@ -436,9 +471,12 @@ export async function tryProcessGa4PurchaseFallback(
         return { status: 'sent', orderId: normalized };
       }
       if (marked.alreadySentRace) {
+        terminalBookkeepingDone = true;
+        await releaseMpLock(normalized);
         return { status: 'skipped', reason: 'already_sent_race' };
       }
       await markMpFailure(normalized, marked.error ?? 'mark_success_failed', lockedAttempts, true);
+      terminalBookkeepingDone = true;
       return {
         status: 'failed',
         orderId: normalized,
@@ -448,6 +486,7 @@ export async function tryProcessGa4PurchaseFallback(
     }
 
     await markMpFailure(normalized, result.error, lockedAttempts, result.retryable);
+    terminalBookkeepingDone = true;
     console.warn('[ga4/fallback] Measurement Protocol send failed', {
       orderId: normalized,
       error: result.error,
@@ -463,10 +502,12 @@ export async function tryProcessGa4PurchaseFallback(
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     await markMpFailure(normalized, message, lockedAttempts, true);
+    terminalBookkeepingDone = true;
     return { status: 'failed', orderId: normalized, error: message, retryable: true };
   } finally {
-    if (!sent) {
-      await releaseMpLock(normalized);
+    // Safety net: every post-lock exit must leave last_error or success — never a silent stuck lock.
+    if (!terminalBookkeepingDone) {
+      await markMpFailure(normalized, 'unexpected_exit_after_mp_lock', lockedAttempts, true);
     }
   }
 }

@@ -5,9 +5,10 @@ import { isAnalyticsAllowed } from '@/lib/analytics/isAnalyticsAllowed';
  *
  * Architecture: App → `window.dataLayer.push(...)` → GTM. No `gtag('event', …)` in app code.
  *
- * **Paid order (browser):** `OrderThankYouClient` calls `trackCheckoutPurchase`, which pushes **`purchase`** with GA4 **`ecommerce`**
- * (`transaction_id`, `value`, `currency`, `items`) and the **same** fields mirrored at the **root**
- * of the pushed object so GTM DL variables aligned with funnel events (`add_to_cart`, etc.) still work.
+ * **Paid order (browser):** `OrderPageClient` calls `trackCheckoutPurchase` when `track_purchase=1`
+ * (cart thank-you redirects here; pay-from-order Stripe success already lands here). Pushes **`purchase`**
+ * with GA4 **`ecommerce`** (`transaction_id`, `value`, `currency`, `items`) and the **same** fields
+ * mirrored at the **root** so GTM DL variables aligned with funnel events (`add_to_cart`, etc.) still work.
  */
 
 declare global {

@@ -15,14 +15,17 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 ## Canonical `purchase` (paid web checkout)
 
-**Where:** `components/checkout/OrderThankYouClient.tsx` on `/lanna-order-thank-you`
+**Where (primary):** `components/order/OrderPageClient.tsx` on `/order/{id}?token=…&track_purchase=1`
 
-**When:**
+**Cart flow:**
 
-1. Customer returns from Stripe with `?session_id=...`
+1. Customer returns from Stripe to `/lanna-order-thank-you?session_id=...` (thank-you is a **resolver only** — does not push `purchase`)
 2. Client polls `GET /api/stripe/order-status`
-3. Response has `status: 'paid'`, `orderId`, and `purchase` (server-built analytics payload)
-4. Client calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`
+3. Response has `status: 'paid'`, `orderId`, and public `token`
+4. Thank-you redirects to `/order/{id}?token=…&track_purchase=1&session_id=…`
+5. Order page calls `trackCheckoutPurchase` in `lib/analytics/gtag.ts`
+
+**Pay-from-order:** Stripe `success_url` already lands on `/order/...?track_purchase=1` (`stripeOrderSuccessUrl`) — same order-page fire path.
 
 **Shape:** `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { transaction_id, value, currency, items }, ... })` with root-level mirror of `transaction_id`, `value`, `currency`, `items` for GTM variables.
 
@@ -45,17 +48,24 @@ delay window (independent sent flag — GA4 MP can succeed while Ads upload skip
 **Timing:** `waitForGtmConsentThen` defers push briefly for GTM/consent ordering. The claim runs
 after GTM is confirmed loaded, immediately before the push (minimizes claimed-but-not-pushed loss).
 
-**Order page fallback (`/order/...`):** fires only on explicit recovery signals —
-`purchase_tracked=0` (thank-you page could not track) or `track_purchase=1` (return from
-pay-from-order Stripe checkout; added by `stripeOrderSuccessUrl`). A plain paid order view never
-fires `purchase`; `view_order_status`-style events are fine, `purchase` is not.
+**Legacy recovery:** `purchase_tracked=0` on the order page still triggers the same fire path (older thank-you redirects). A plain paid order view never fires `purchase`; `view_order_status`-style events are fine, `purchase` is not.
 
-**GTM triggers:** Use Custom Event `purchase` only — do not use Page URL contains `checkout` / `complete` / `success` (matches `checkout.stripe.com`). Optional AND: Page Path equals `/lanna-order-thank-you`.
+**GTM triggers:** Use Custom Event `purchase` only — do not use Page URL contains `checkout` / `complete` / `success` (matches `checkout.stripe.com`). If a purchase tag previously ANDed Page Path equals `/lanna-order-thank-you`, **broaden or remove that path filter** so `/order/...` fires (manual GTM check — no app GTM JSON).
 
 **Legacy:** `/{lang}/checkout/complete` redirects to `/lanna-order-thank-you` — no purchase on legacy page.
 
 **No duplicate revenue:** Browser `purchase` remains primary; server MP fallback uses the same
 `transaction_id` (order id) and only fires when `ga4_purchase_sent` is false after the delay window.
+
+### Measurement Protocol sender notes
+
+- Payload: `session_id` as integer (omit if invalid), `timestamp_micros`, dynamic `engagement_time_msec`.
+- Host: `https://google-analytics.com` (override via `GA4_MP_ENDPOINT_HOST`; `GA4_MP_EU_ENDPOINT`).
+- Non-prod: `/debug/mp/collect` only; refuse when `validationMessages` non-empty.
+- Prod: validate-before-send default on (`GA4_MP_VALIDATE_BEFORE_SEND`), then `/mp/collect`.
+- Failures always persist to `ga4_purchase_last_error`.
+
+**Ops (one-time after deploy):** Reset 8 Jul 2026 maxed PAID rows (`ga4_purchase_attempts`, `ga4_purchase_mp_lock_at`, `ga4_purchase_last_error`, restore `ga4_purchase_fallback_run_after`) so the fixed sender can retry — see `docs/ANALYTICS_GA4.md`.
 
 ## Funnel events (secondary)
 
@@ -103,7 +113,9 @@ Configure matching **Custom Event** triggers in GTM.
 | `lib/analytics.ts` | Funnel event API |
 | `lib/analytics/gtag.ts` | dataLayer transport, `trackCheckoutPurchase`, dedupe |
 | `lib/analytics/buildPurchaseItemsFromOrder.ts` | Server line items for `order-status` |
-| `app/lanna-order-thank-you/page.tsx` | Universal post-Stripe thank-you (lang via `?lang=`) |
+| `app/lanna-order-thank-you/page.tsx` | Post-Stripe resolver → redirects to order with `track_purchase=1` |
+| `components/checkout/OrderThankYouClient.tsx` | Resolver UI only (no `purchase` push) |
+| `components/order/OrderPageClient.tsx` | Primary browser `purchase` on `track_purchase=1` |
 | `app/api/stripe/order-status/route.ts` | Returns `purchase` (+ optional `user_data`) when paid + proof |
 | `app/api/orders/[orderId]/claim-purchase/route.ts` | Atomic order-level purchase claim (browser dedupe) |
 | `app/api/orders/[orderId]/confirm-purchase/route.ts` | Mark browser purchase delivered (`ga4_purchase_sent` + `google_ads_conversion_sent`) |

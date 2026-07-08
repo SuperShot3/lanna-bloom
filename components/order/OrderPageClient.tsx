@@ -138,10 +138,10 @@ export function OrderPageClient({
     }
   }, [paid]);
 
-  // Fallback purchase: ONLY on explicit tracking-recovery signals in the URL —
-  // `purchase_tracked=0` (thank-you page could not track) or `track_purchase=1`
-  // (return from pay-from-order Stripe checkout). A plain paid order view (shared
-  // link, other device, admin "view public page") must never fire `purchase`.
+  // Browser purchase: ONLY on explicit URL signals —
+  // `track_purchase=1` (cart thank-you resolver redirect, or pay-from-order Stripe
+  // success) or legacy `purchase_tracked=0`. A plain paid order view (shared link,
+  // other device, admin "view public page") must never fire `purchase`.
   // The backend claim in trackCheckoutPurchase is the order-level dedupe.
   useEffect(() => {
     if (!paid || !stripePollResolved || typeof window === 'undefined') return;

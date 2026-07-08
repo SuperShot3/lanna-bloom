@@ -16,7 +16,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 | Browse | Localized storefront and catalog read approved products from Supabase catalog tables |
 | Product / cart | Product pages support size selection; cart collects delivery area/date and customer contact details |
 | Pay | Primary web flow is Stripe Checkout; server recomputes totals and creates orders after confirmed payment |
-| After pay | Thank-you flow resolves the paid checkout session and links to the customer order page |
+| After pay | Thin `/lanna-order-thank-you` resolver polls until paid, then instantly redirects to `/order/...?track_purchase=1` (no celebration delay) |
 | Order tracking | `/order/{orderId}?token=...` requires the public token and shows customer-facing status/contact options |
 | Messenger | LINE / WhatsApp / Telegram links are supporting contact channels, not the primary payment/order authority |
 | Partner flow | Public self-service partner dashboard is retired; `/[lang]/partner/apply` stores applications for admin review |
@@ -83,7 +83,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 1. **Inspect code** — README may be outdated for payments/storage; trust `lib/checkout/`, `lib/orders/`, and `docs/`.
 2. **Server recomputes money** — never trust client prices, discounts, or payment status.
 3. **Stripe confirms payment** — cart orders are created after paid checkout session.
-4. **Analytics `purchase`** — browser on `/lanna-order-thank-you` after server confirms paid + `purchase` payload.
+4. **Analytics `purchase`** — browser on `/order/...?track_purchase=1` after thank-you resolves paid Stripe session (thank-you itself does not push `purchase`).
 5. **Content copy** — use `.cursor/skills/` writers, not new giant prompts here.
 
 ## Catalog cutover
