@@ -10,10 +10,15 @@ import {
   isGa4MeasurementProtocolConfigured,
   sendGa4MeasurementProtocolPurchase,
 } from '@/lib/analytics/ga4MeasurementProtocol';
+import {
+  isGoogleAdsConversionUploadConfigured,
+  tryProcessGoogleAdsConversionUpload,
+} from '@/lib/analytics/googleAdsConversionUpload';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { isSupabaseMissingColumnError } from '@/lib/supabase/columnErrors';
 
 const DEFAULT_FALLBACK_DELAY_MS = 90_000;
+const DEFAULT_CLAIMED_GRACE_MS = 300_000;
 const MAX_MP_ATTEMPTS = 5;
 const MP_LOCK_STALE_MS = 5 * 60_000;
 const RETRY_BACKOFF_MS = [120_000, 300_000, 600_000, 1_800_000, 3_600_000];
@@ -24,14 +29,23 @@ function readFallbackDelayMs(): number {
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_FALLBACK_DELAY_MS;
 }
 
+function readClaimedGraceMs(): number {
+  const raw = process.env.GA4_PURCHASE_CLAIMED_GRACE_MS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_CLAIMED_GRACE_MS;
+}
+
 type FallbackOrderRow = {
   order_id: string;
   payment_status: string | null;
   paid_at: string | null;
   ga4_purchase_sent: boolean | null;
+  ga4_purchase_claimed?: boolean | null;
+  ga4_purchase_claimed_at?: string | null;
   ga4_purchase_fallback_run_after: string | null;
   ga4_purchase_attempts: number | null;
   ga4_purchase_mp_lock_at: string | null;
+  ga4_purchase_last_attempt_at?: string | null;
   ga_client_id: string | null;
   ga_session_id: string | null;
   gclid: string | null;
@@ -65,6 +79,15 @@ function orderLikeFromFallbackRow(row: Pick<FallbackOrderRow, 'order_json' | 'gr
     };
   }
   return null;
+}
+
+function claimedGraceNotElapsed(row: Pick<FallbackOrderRow, 'ga4_purchase_claimed' | 'ga4_purchase_claimed_at'>): boolean {
+  if (row.ga4_purchase_claimed !== true) return false;
+  const claimedAtMs = row.ga4_purchase_claimed_at
+    ? new Date(row.ga4_purchase_claimed_at).getTime()
+    : null;
+  if (claimedAtMs == null || !Number.isFinite(claimedAtMs)) return false;
+  return Date.now() < claimedAtMs + readClaimedGraceMs();
 }
 
 /** Schedule MP fallback window after payment (idempotent). */
@@ -110,15 +133,16 @@ export type Ga4FallbackProcessResult =
   | { status: 'sent'; orderId: string }
   | { status: 'failed'; orderId: string; error: string; retryable: boolean };
 
+const MP_ROW_SELECT =
+  'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_claimed, ga4_purchase_claimed_at, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga4_purchase_last_attempt_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json, grand_total, currency';
+
 async function loadOrderRowForMp(orderId: string): Promise<FallbackOrderRow | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
 
   const full = await supabase
     .from('orders')
-    .select(
-      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json, grand_total, currency',
-    )
+    .select(MP_ROW_SELECT)
     .eq('order_id', orderId)
     .maybeSingle();
 
@@ -138,6 +162,10 @@ async function loadOrderRowForMp(orderId: string): Promise<FallbackOrderRow | nu
   return basic.data as FallbackOrderRow;
 }
 
+/**
+ * Atomically acquire MP lock and increment attempt counter.
+ * Returns the locked row with the post-increment attempt count.
+ */
 async function acquireMpLock(orderId: string): Promise<FallbackOrderRow | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
@@ -145,15 +173,31 @@ async function acquireMpLock(orderId: string): Promise<FallbackOrderRow | null> 
   const staleBefore = new Date(Date.now() - MP_LOCK_STALE_MS).toISOString();
   const now = new Date().toISOString();
 
-  const { data: locked, error } = await supabase
+  const { data: current, error: readError } = await supabase
     .from('orders')
-    .update({ ga4_purchase_mp_lock_at: now, updated_at: now })
+    .select('ga4_purchase_attempts')
     .eq('order_id', orderId)
     .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
     .or(`ga4_purchase_mp_lock_at.is.null,ga4_purchase_mp_lock_at.lt.${staleBefore}`)
-    .select(
-      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at, ga_client_id, ga_session_id, gclid, gbraid, wbraid, customer_email, phone, phone_country_code, order_json, grand_total, currency',
-    );
+    .maybeSingle();
+
+  if (readError || !current) return null;
+
+  const nextAttempts = Number(current.ga4_purchase_attempts ?? 0) + 1;
+  if (nextAttempts > MAX_MP_ATTEMPTS) return null;
+
+  const { data: locked, error } = await supabase
+    .from('orders')
+    .update({
+      ga4_purchase_mp_lock_at: now,
+      ga4_purchase_attempts: nextAttempts,
+      ga4_purchase_last_attempt_at: now,
+      updated_at: now,
+    })
+    .eq('order_id', orderId)
+    .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
+    .or(`ga4_purchase_mp_lock_at.is.null,ga4_purchase_mp_lock_at.lt.${staleBefore}`)
+    .select(MP_ROW_SELECT);
 
   if (!error && locked?.length) {
     return locked[0] as FallbackOrderRow;
@@ -224,20 +268,18 @@ async function markMpSuccess(orderId: string): Promise<{ ok: boolean; alreadySen
   return { ok: false, alreadySentRace: true, error: 'already_sent_race' };
 }
 
+/** Persist MP failure metadata. Attempt count was already incremented on lock acquire. */
 async function markMpFailure(orderId: string, error: string, attempts: number, retryable: boolean): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return;
   const now = new Date().toISOString();
-  const nextAttempts = attempts + 1;
-  const backoffIdx = Math.min(nextAttempts - 1, RETRY_BACKOFF_MS.length - 1);
-  const runAfter = retryable && nextAttempts < MAX_MP_ATTEMPTS
+  const backoffIdx = Math.min(Math.max(attempts, 1) - 1, RETRY_BACKOFF_MS.length - 1);
+  const runAfter = retryable && attempts < MAX_MP_ATTEMPTS
     ? new Date(Date.now() + RETRY_BACKOFF_MS[backoffIdx]).toISOString()
     : null;
 
   const fullUpdate = {
-    ga4_purchase_attempts: nextAttempts,
     ga4_purchase_last_error: error.slice(0, 500),
-    ga4_purchase_mp_lock_at: null,
     ga4_purchase_fallback_run_after: runAfter,
     updated_at: now,
   };
@@ -246,25 +288,19 @@ async function markMpFailure(orderId: string, error: string, attempts: number, r
   if (!result.error) return;
 
   if (
-    isSupabaseMissingColumnError(result.error, 'ga4_purchase_attempts') ||
     isSupabaseMissingColumnError(result.error, 'ga4_purchase_last_error') ||
-    isSupabaseMissingColumnError(result.error, 'ga4_purchase_fallback_run_after') ||
-    isSupabaseMissingColumnError(result.error, 'ga4_purchase_mp_lock_at')
+    isSupabaseMissingColumnError(result.error, 'ga4_purchase_fallback_run_after')
   ) {
     console.warn('[ga4/fallback] could not persist MP failure metadata — apply migration 20260708120000', {
       orderId,
       error: result.error.message,
     });
-    return;
+  } else {
+    console.error('[ga4/fallback] failed to persist MP failure metadata', {
+      orderId,
+      error: result.error.message,
+    });
   }
-
-  // Any other persistence error must not leave the lock dangling with attempts=0,
-  // or the order silently loops forever as "skipped".
-  console.error('[ga4/fallback] failed to persist MP failure — releasing lock', {
-    orderId,
-    error: result.error.message,
-  });
-  await releaseMpLock(orderId);
 }
 
 /**
@@ -284,30 +320,22 @@ export async function tryProcessGa4PurchaseFallback(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { status: 'skipped', reason: 'supabase_unavailable' };
 
-  let row:
-    | {
-        order_id: string;
-        payment_status: string | null;
-        paid_at: string | null;
-        ga4_purchase_sent: boolean | null;
-        ga4_purchase_fallback_run_after?: string | null;
-        ga4_purchase_attempts?: number | null;
-      }
-    | null = null;
+  let row: FallbackOrderRow | null = null;
 
   const fullSelect = await supabase
     .from('orders')
     .select(
-      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_fallback_run_after, ga4_purchase_attempts',
+      'order_id, payment_status, paid_at, ga4_purchase_sent, ga4_purchase_claimed, ga4_purchase_claimed_at, ga4_purchase_fallback_run_after, ga4_purchase_attempts, ga4_purchase_mp_lock_at',
     )
     .eq('order_id', normalized)
     .maybeSingle();
 
   if (!fullSelect.error && fullSelect.data) {
-    row = fullSelect.data;
+    row = fullSelect.data as FallbackOrderRow;
   } else if (
     isSupabaseMissingColumnError(fullSelect.error, 'ga4_purchase_fallback_run_after') ||
-    isSupabaseMissingColumnError(fullSelect.error, 'ga4_purchase_attempts')
+    isSupabaseMissingColumnError(fullSelect.error, 'ga4_purchase_attempts') ||
+    isSupabaseMissingColumnError(fullSelect.error, 'ga4_purchase_claimed')
   ) {
     const basic = await supabase
       .from('orders')
@@ -317,7 +345,7 @@ export async function tryProcessGa4PurchaseFallback(
     if (basic.error || !basic.data) {
       return { status: 'skipped', reason: 'order_not_found' };
     }
-    row = basic.data;
+    row = basic.data as FallbackOrderRow;
   } else {
     return { status: 'skipped', reason: 'order_not_found' };
   }
@@ -325,6 +353,10 @@ export async function tryProcessGa4PurchaseFallback(
   if (!row) return { status: 'skipped', reason: 'order_not_found' };
   if (row.ga4_purchase_sent === true) return { status: 'skipped', reason: 'already_sent' };
   if (!isOrderPaid(row)) return { status: 'skipped', reason: 'not_paid' };
+
+  if (claimedGraceNotElapsed(row)) {
+    return { status: 'skipped', reason: 'claimed_grace' };
+  }
 
   const attempts = Number(row.ga4_purchase_attempts ?? 0);
   if (attempts >= MAX_MP_ATTEMPTS) {
@@ -354,18 +386,21 @@ export async function tryProcessGa4PurchaseFallback(
   const locked = await acquireMpLock(normalized);
   if (!locked) return { status: 'skipped', reason: 'lock_not_acquired' };
 
+  const lockedAttempts = Number(locked.ga4_purchase_attempts ?? attempts + 1);
+  let sent = false;
+
   try {
     const order = await getOrderById(normalized);
     const orderForPurchase = order ?? orderLikeFromFallbackRow(locked);
     if (!orderForPurchase) {
-      await markMpFailure(normalized, 'order_load_failed', attempts, true);
+      await markMpFailure(normalized, 'order_load_failed', lockedAttempts, true);
       return { status: 'failed', orderId: normalized, error: 'order_load_failed', retryable: true };
     }
 
     const { value, currency } = purchaseValueAndCurrencyFromOrder(orderForPurchase);
     const items = buildPurchaseAnalyticsItemsFromOrder(orderForPurchase, normalized);
     if (!Number.isFinite(value) || value <= 0 || items.length === 0) {
-      await markMpFailure(normalized, 'invalid_purchase_payload', attempts, false);
+      await markMpFailure(normalized, 'invalid_purchase_payload', lockedAttempts, false);
       return { status: 'failed', orderId: normalized, error: 'invalid_purchase_payload', retryable: false };
     }
 
@@ -393,6 +428,7 @@ export async function tryProcessGa4PurchaseFallback(
     if (result.ok) {
       const marked = await markMpSuccess(normalized);
       if (marked.ok) {
+        sent = true;
         console.info('[ga4/fallback] purchase sent via Measurement Protocol', {
           orderId: normalized,
           clientIdUsed: result.clientIdUsed,
@@ -400,10 +436,9 @@ export async function tryProcessGa4PurchaseFallback(
         return { status: 'sent', orderId: normalized };
       }
       if (marked.alreadySentRace) {
-        await releaseMpLock(normalized);
         return { status: 'skipped', reason: 'already_sent_race' };
       }
-      await markMpFailure(normalized, marked.error ?? 'mark_success_failed', attempts, true);
+      await markMpFailure(normalized, marked.error ?? 'mark_success_failed', lockedAttempts, true);
       return {
         status: 'failed',
         orderId: normalized,
@@ -412,12 +447,12 @@ export async function tryProcessGa4PurchaseFallback(
       };
     }
 
-    await markMpFailure(normalized, result.error, attempts, result.retryable);
+    await markMpFailure(normalized, result.error, lockedAttempts, result.retryable);
     console.warn('[ga4/fallback] Measurement Protocol send failed', {
       orderId: normalized,
       error: result.error,
       retryable: result.retryable,
-      attempts: attempts + 1,
+      attempts: lockedAttempts,
     });
     return {
       status: 'failed',
@@ -427,9 +462,12 @@ export async function tryProcessGa4PurchaseFallback(
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    await markMpFailure(normalized, message, attempts, true);
-    await releaseMpLock(normalized);
+    await markMpFailure(normalized, message, lockedAttempts, true);
     return { status: 'failed', orderId: normalized, error: message, retryable: true };
+  } finally {
+    if (!sent) {
+      await releaseMpLock(normalized);
+    }
   }
 }
 
@@ -443,12 +481,18 @@ export type Ga4FallbackCronResult = {
   /** Per-order failure details from this run */
   failures: Array<{ orderId: string; error: string; retryable: boolean }>;
   mpConfigured: boolean;
+  adsConfigured: boolean;
   supabaseAvailable: boolean;
+  adsSent: number;
+  adsFailed: number;
+  adsSkipped: number;
+  adsSkippedByReason: Record<string, number>;
+  adsFailures: Array<{ orderId: string; error: string; retryable: boolean }>;
   queryError?: string;
 };
 
 /**
- * Non-blocking nudge for request paths (order-status polls, fulfill re-checks).
+ * Non-blocking nudge for request paths (fulfill idempotent re-checks).
  *
  * Schedule-only on purpose: serverless request handlers are frozen as soon as the
  * response is returned, so an unawaited MP send here could acquire
@@ -467,6 +511,7 @@ export function nudgeGa4PurchaseFallback(orderId: string): void {
 /** Process all pending fallbacks (cron). */
 export async function runGa4PurchaseFallbackCron(limit = 25): Promise<Ga4FallbackCronResult> {
   const mpConfigured = isGa4MeasurementProtocolConfigured();
+  const adsConfigured = isGoogleAdsConversionUploadConfigured();
   const supabase = getSupabaseAdmin();
   const supabaseAvailable = Boolean(supabase);
   const empty: Ga4FallbackCronResult = {
@@ -477,33 +522,82 @@ export async function runGa4PurchaseFallbackCron(limit = 25): Promise<Ga4Fallbac
     skippedByReason: {},
     failures: [],
     mpConfigured,
+    adsConfigured,
     supabaseAvailable,
+    adsSent: 0,
+    adsFailed: 0,
+    adsSkipped: 0,
+    adsSkippedByReason: {},
+    adsFailures: [],
   };
 
-  if (!supabase || !mpConfigured) {
-    if (!mpConfigured) {
-      console.warn('[ga4/fallback/cron] skipped — GA4_MEASUREMENT_ID / GA4_MEASUREMENT_API_SECRET not set');
+  if (!supabase || (!mpConfigured && !adsConfigured)) {
+    if (!mpConfigured && !adsConfigured) {
+      console.warn(
+        '[ga4/fallback/cron] skipped — neither GA4 MP nor Google Ads conversion upload is configured',
+      );
     }
     return empty;
   }
 
   const now = new Date().toISOString();
-  const { data: rows, error } = await supabase
-    .from('orders')
-    .select('order_id')
-    .eq('payment_status', 'PAID')
-    .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
-    .not('ga4_purchase_fallback_run_after', 'is', null)
-    .lte('ga4_purchase_fallback_run_after', now)
-    .or(`ga4_purchase_attempts.is.null,ga4_purchase_attempts.lt.${MAX_MP_ATTEMPTS}`)
-    .order('ga4_purchase_fallback_run_after', { ascending: true })
-    .limit(limit);
+  const staleLockBefore = new Date(Date.now() - MP_LOCK_STALE_MS).toISOString();
 
-  if (error) {
-    console.warn('[ga4/fallback/cron] pending query failed', { error: error.message });
-    return { ...empty, queryError: error.message };
+  const pendingOrderIds = new Set<string>();
+
+  if (mpConfigured) {
+    const { data: ga4Rows, error: ga4Error } = await supabase
+      .from('orders')
+      .select('order_id')
+      .eq('payment_status', 'PAID')
+      .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
+      .not('ga4_purchase_fallback_run_after', 'is', null)
+      .lte('ga4_purchase_fallback_run_after', now)
+      .or(`ga4_purchase_attempts.is.null,ga4_purchase_attempts.lt.${MAX_MP_ATTEMPTS}`)
+      .or(`ga4_purchase_mp_lock_at.is.null,ga4_purchase_mp_lock_at.lt.${staleLockBefore}`)
+      .order('ga4_purchase_fallback_run_after', { ascending: true })
+      .limit(limit);
+
+    if (ga4Error) {
+      console.warn('[ga4/fallback/cron] GA4 pending query failed', { error: ga4Error.message });
+      return { ...empty, queryError: ga4Error.message };
+    }
+    for (const row of ga4Rows ?? []) {
+      const orderId = String(row.order_id ?? '').trim();
+      if (orderId) pendingOrderIds.add(orderId);
+    }
   }
-  if (!rows?.length) {
+
+  if (adsConfigured) {
+    const { data: adsRows, error: adsError } = await supabase
+      .from('orders')
+      .select('order_id')
+      .eq('payment_status', 'PAID')
+      .eq('ga4_purchase_sent', true)
+      .or('google_ads_conversion_sent.is.null,google_ads_conversion_sent.eq.false')
+      .not('ga4_purchase_fallback_run_after', 'is', null)
+      .lte('ga4_purchase_fallback_run_after', now)
+      .or(`google_ads_conversion_attempts.is.null,google_ads_conversion_attempts.lt.${MAX_MP_ATTEMPTS}`)
+      .order('ga4_purchase_fallback_run_after', { ascending: true })
+      .limit(limit);
+
+    if (adsError) {
+      if (isSupabaseMissingColumnError(adsError, 'google_ads_conversion_sent')) {
+        console.warn('[ga4/fallback/cron] Ads columns missing — apply migration 20260710120000');
+      } else {
+        console.warn('[ga4/fallback/cron] Ads pending query failed', { error: adsError.message });
+        return { ...empty, queryError: adsError.message };
+      }
+    } else {
+      for (const row of adsRows ?? []) {
+        const orderId = String(row.order_id ?? '').trim();
+        if (orderId) pendingOrderIds.add(orderId);
+      }
+    }
+  }
+
+  const orderIds = Array.from(pendingOrderIds).slice(0, limit);
+  if (!orderIds.length) {
     return empty;
   }
 
@@ -512,30 +606,54 @@ export async function runGa4PurchaseFallbackCron(limit = 25): Promise<Ga4Fallbac
   let skipped = 0;
   const skippedByReason: Record<string, number> = {};
   const failures: Ga4FallbackCronResult['failures'] = [];
+  let adsSent = 0;
+  let adsFailed = 0;
+  let adsSkipped = 0;
+  const adsSkippedByReason: Record<string, number> = {};
+  const adsFailures: Ga4FallbackCronResult['adsFailures'] = [];
 
-  for (const row of rows) {
-    const orderId = String(row.order_id ?? '').trim();
-    if (!orderId) continue;
-    const result = await tryProcessGa4PurchaseFallback(orderId);
-    if (result.status === 'sent') {
-      sent += 1;
-    } else if (result.status === 'failed') {
-      failed += 1;
-      failures.push({ orderId, error: result.error, retryable: result.retryable });
-    } else {
-      skipped += 1;
-      skippedByReason[result.reason] = (skippedByReason[result.reason] ?? 0) + 1;
+  for (const orderId of orderIds) {
+    if (mpConfigured) {
+      const result = await tryProcessGa4PurchaseFallback(orderId);
+      if (result.status === 'sent') {
+        sent += 1;
+      } else if (result.status === 'failed') {
+        failed += 1;
+        failures.push({ orderId, error: result.error, retryable: result.retryable });
+      } else {
+        skipped += 1;
+        skippedByReason[result.reason] = (skippedByReason[result.reason] ?? 0) + 1;
+      }
+    }
+
+    if (adsConfigured) {
+      const adsResult = await tryProcessGoogleAdsConversionUpload(orderId);
+      if (adsResult.status === 'sent') {
+        adsSent += 1;
+      } else if (adsResult.status === 'failed') {
+        adsFailed += 1;
+        adsFailures.push({ orderId, error: adsResult.error, retryable: adsResult.retryable });
+      } else {
+        adsSkipped += 1;
+        adsSkippedByReason[adsResult.reason] = (adsSkippedByReason[adsResult.reason] ?? 0) + 1;
+      }
     }
   }
 
   return {
-    processed: rows.length,
+    processed: orderIds.length,
     sent,
     failed,
     skipped,
     skippedByReason,
     failures,
     mpConfigured,
+    adsConfigured,
     supabaseAvailable,
+    adsSent,
+    adsFailed,
+    adsSkipped,
+    adsSkippedByReason,
+    adsFailures,
   };
 }

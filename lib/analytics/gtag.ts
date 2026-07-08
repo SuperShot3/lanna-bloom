@@ -171,16 +171,39 @@ async function claimPurchaseTracking(orderId: string, token: string): Promise<Cl
 }
 
 /** Tell the server the browser purchase was pushed to dataLayer (sets ga4_purchase_sent). */
-async function confirmPurchaseTracking(orderId: string, token: string): Promise<void> {
+async function confirmPurchaseTracking(orderId: string, token: string): Promise<boolean> {
   try {
-    await fetch(`/api/orders/${encodeURIComponent(orderId)}/confirm-purchase`, {
+    const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/confirm-purchase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
+    return res.ok;
   } catch {
-    // Non-blocking; server MP fallback may still run if confirm never arrives.
+    return false;
   }
+}
+
+const CONFIRM_PURCHASE_RETRY_DELAYS_MS = [500, 2000, 5000] as const;
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+/** Await confirm-purchase with backoff so MP fallback does not fire while browser succeeded. */
+async function confirmPurchaseTrackingWithRetries(orderId: string, token: string): Promise<boolean> {
+  for (let attempt = 0; attempt <= CONFIRM_PURCHASE_RETRY_DELAYS_MS.length; attempt++) {
+    if (await confirmPurchaseTracking(orderId, token)) {
+      return true;
+    }
+    if (attempt < CONFIRM_PURCHASE_RETRY_DELAYS_MS.length) {
+      await sleepMs(CONFIRM_PURCHASE_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  console.warn('[analytics] confirm-purchase failed after retries', { orderId });
+  return false;
 }
 
 /** Whether checkout purchase was already sent for this order (localStorage + same-document guard). */
@@ -360,10 +383,10 @@ export function trackCheckoutPurchase(params: {
 
       const doPush = () => {
         const claimToken = claim?.token?.trim();
-        const afterPush = () => {
+        const afterPush = async () => {
           markCheckoutPurchaseSent(normalizedOrderId);
           if (claimToken) {
-            void confirmPurchaseTracking(normalizedOrderId, claimToken);
+            await confirmPurchaseTrackingWithRetries(normalizedOrderId, claimToken);
           }
         };
 
@@ -380,28 +403,32 @@ export function trackCheckoutPurchase(params: {
             items,
             ...(hasUserData ? { user_data: userData } : {}),
             eventCallback: () => {
-              if (isDev) {
-                console.info('[analytics] purchase pushed to dataLayer (eventCallback)', {
-                  orderId: normalizedOrderId,
-                  value,
-                  itemCount: items.length,
-                });
-              }
-              afterPush();
-              finish(true);
+              void (async () => {
+                if (isDev) {
+                  console.info('[analytics] purchase pushed to dataLayer (eventCallback)', {
+                    orderId: normalizedOrderId,
+                    value,
+                    itemCount: items.length,
+                  });
+                }
+                await afterPush();
+                finish(true);
+              })();
             },
             eventTimeout: 5000,
           });
 
           window.setTimeout(() => {
             if (!settled) {
-              if (isDev) {
-                console.warn('[analytics] purchase settled via eventTimeout (no eventCallback)', {
-                  orderId: normalizedOrderId,
-                });
-              }
-              afterPush();
-              finish(true);
+              void (async () => {
+                if (isDev) {
+                  console.warn('[analytics] purchase settled via eventTimeout (no eventCallback)', {
+                    orderId: normalizedOrderId,
+                  });
+                }
+                await afterPush();
+                finish(true);
+              })();
             }
           }, 5000);
         } catch (e) {

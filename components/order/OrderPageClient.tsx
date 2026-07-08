@@ -28,6 +28,7 @@ import {
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
+import { phoneInternational } from '@/lib/admin/deliveryContactLinks';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -186,11 +187,18 @@ export function OrderPageClient({
     let cancelled = false;
 
     void (async () => {
+      const userData: { email_address?: string; phone_number?: string } = {};
+      const email = order.customerEmail?.trim();
+      if (email) userData.email_address = email;
+      const phone = phoneInternational(order.phone, order.phoneCountryCode);
+      if (phone) userData.phone_number = phone;
+
       await trackCheckoutPurchase({
         orderId: normalizedOrderId,
         value,
         currency,
         items: buildPurchaseAnalyticsItemsFromOrder(order, normalizedOrderId),
+        ...(userData.email_address || userData.phone_number ? { userData } : {}),
         claim: { token: publicToken },
       }).catch(() => false);
 

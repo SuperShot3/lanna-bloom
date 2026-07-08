@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByIdWithPublicToken } from '@/lib/orders';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { checkOrderLookupRateLimit } from '@/lib/rateLimit';
 import { isSupabaseMissingColumnError } from '@/lib/supabase/columnErrors';
+import { checkOrderLookupRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Mark GA4 purchase as successfully delivered from the browser (after dataLayer push).
- * Server MP fallback checks `ga4_purchase_sent` and skips when this is true.
+ * Mark GA4 + Google Ads purchase as successfully delivered from the browser (after dataLayer push).
+ * Server fallbacks check `ga4_purchase_sent` / `google_ads_conversion_sent` and skip when set.
  */
 
 function normalizeOrderToken(raw: unknown): string | null {
@@ -62,13 +62,42 @@ export async function POST(
     return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
   }
 
-  const { data: paymentRow, error: paymentError } = await supabase
+  let paymentRow: {
+    payment_status: string | null;
+    paid_at: string | null;
+    ga4_purchase_sent: boolean | null;
+    google_ads_conversion_sent?: boolean | null;
+  } | null = null;
+
+  const fullSelect = await supabase
     .from('orders')
-    .select('payment_status, paid_at, ga4_purchase_sent')
+    .select('payment_status, paid_at, ga4_purchase_sent, google_ads_conversion_sent')
     .eq('order_id', normalized)
     .single();
 
-  if (paymentError || !paymentRow) {
+  if (!fullSelect.error && fullSelect.data) {
+    paymentRow = fullSelect.data;
+  } else if (isSupabaseMissingColumnError(fullSelect.error, 'google_ads_conversion_sent')) {
+    const legacy = await supabase
+      .from('orders')
+      .select('payment_status, paid_at, ga4_purchase_sent')
+      .eq('order_id', normalized)
+      .single();
+    if (legacy.error || !legacy.data) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404, headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
+    paymentRow = legacy.data;
+  } else {
+    return NextResponse.json(
+      { error: 'Order not found' },
+      { status: 404, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+
+  if (!paymentRow) {
     return NextResponse.json(
       { error: 'Order not found' },
       { status: 404, headers: { 'Cache-Control': 'no-store' } },
@@ -86,7 +115,10 @@ export async function POST(
     );
   }
 
-  if (paymentRow.ga4_purchase_sent === true) {
+  const ga4AlreadySent = paymentRow.ga4_purchase_sent === true;
+  const adsColumnPresent = paymentRow.google_ads_conversion_sent !== undefined;
+  const adsAlreadySent = adsColumnPresent && paymentRow.google_ads_conversion_sent === true;
+  if (ga4AlreadySent && (!adsColumnPresent || adsAlreadySent)) {
     return NextResponse.json(
       { confirmed: true, reason: 'already_sent' },
       { headers: { 'Cache-Control': 'no-store' } },
@@ -94,46 +126,41 @@ export async function POST(
   }
 
   const now = new Date().toISOString();
-  const fullUpdate = {
-    ga4_purchase_sent: true,
-    ga4_purchase_sent_at: now,
-    ga4_purchase_source: 'browser',
-    ga4_purchase_last_error: null,
+  const browserConfirmUpdate: Record<string, unknown> = {
     updated_at: now,
   };
-
-  let confirmed = await supabase
-    .from('orders')
-    .update(fullUpdate)
-    .eq('order_id', normalized)
-    .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
-    .select('order_id');
-
-  if (
-    confirmed.error &&
-    (isSupabaseMissingColumnError(confirmed.error, 'ga4_purchase_source') ||
-      isSupabaseMissingColumnError(confirmed.error, 'ga4_purchase_last_error'))
-  ) {
-    confirmed = await supabase
-      .from('orders')
-      .update({
-        ga4_purchase_sent: true,
-        ga4_purchase_sent_at: now,
-        updated_at: now,
-      })
-      .eq('order_id', normalized)
-      .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
-      .select('order_id');
+  if (adsColumnPresent) {
+    browserConfirmUpdate.google_ads_conversion_sent = true;
+    browserConfirmUpdate.google_ads_conversion_sent_at = now;
+    browserConfirmUpdate.google_ads_conversion_source = 'browser';
+    browserConfirmUpdate.google_ads_conversion_last_error = null;
+  }
+  if (!ga4AlreadySent) {
+    browserConfirmUpdate.ga4_purchase_sent = true;
+    browserConfirmUpdate.ga4_purchase_sent_at = now;
+    browserConfirmUpdate.ga4_purchase_source = 'browser';
+    browserConfirmUpdate.ga4_purchase_last_error = null;
   }
 
-  if (confirmed.error) {
-    console.error('[orders/confirm-purchase] update failed:', confirmed.error.message, {
+  const updateFilter = adsColumnPresent
+    ? 'ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false,google_ads_conversion_sent.is.null,google_ads_conversion_sent.eq.false'
+    : 'ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false';
+
+  const { data: confirmed, error: confirmError } = await supabase
+    .from('orders')
+    .update(browserConfirmUpdate)
+    .eq('order_id', normalized)
+    .or(updateFilter)
+    .select('order_id');
+
+  if (confirmError) {
+    console.error('[orders/confirm-purchase] update failed:', confirmError.message, {
       orderId: normalized,
     });
     return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
   }
 
-  const won = Array.isArray(confirmed.data) && confirmed.data.length > 0;
+  const won = Array.isArray(confirmed) && confirmed.length > 0;
   return NextResponse.json(
     won
       ? { confirmed: true }

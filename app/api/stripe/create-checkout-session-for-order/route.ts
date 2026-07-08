@@ -13,8 +13,61 @@ import { stripeIdempotencyFingerprint } from '@/lib/stripe/idempotency';
 import { applyExpansionItemMarkupThb, EXPANSION_MARKUP_DESTINATIONS } from '@/lib/expansionMarkup';
 import { getDiscountAllocationForCode } from '@/lib/referral';
 import { isValidLocale } from '@/lib/i18n';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
+import type { CheckoutAnalyticsContext } from '@/lib/analytics/captureAnalyticsContext';
 
 export const dynamic = 'force-dynamic';
+
+function optionalTrimmedString(raw: unknown, maxLen: number): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const t = raw.trim();
+  if (!t || t.length > maxLen) return undefined;
+  return t;
+}
+
+function parseCheckoutAnalyticsFields(b: Record<string, unknown>):
+  | { ok: true; fields: CheckoutAnalyticsContext }
+  | { ok: false; message: string } {
+  const ga_client_id = optionalTrimmedString(b.ga_client_id, 64);
+  const ga_session_id = optionalTrimmedString(b.ga_session_id, 64);
+  const gclid = optionalTrimmedString(b.gclid, 256);
+  const gbraid = optionalTrimmedString(b.gbraid, 256);
+  const wbraid = optionalTrimmedString(b.wbraid, 256);
+  if (ga_client_id && !/^\d+\.\d+$/.test(ga_client_id)) {
+    return { ok: false, message: 'ga_client_id has invalid format' };
+  }
+  return {
+    ok: true,
+    fields: {
+      ...(ga_client_id ? { ga_client_id } : {}),
+      ...(ga_session_id ? { ga_session_id } : {}),
+      ...(gclid ? { gclid } : {}),
+      ...(gbraid ? { gbraid } : {}),
+      ...(wbraid ? { wbraid } : {}),
+    },
+  };
+}
+
+async function persistOrderAnalyticsContext(
+  orderId: string,
+  fields: CheckoutAnalyticsContext,
+): Promise<void> {
+  const updates: Record<string, string> = {};
+  if (fields.ga_client_id) updates.ga_client_id = fields.ga_client_id;
+  if (fields.ga_session_id) updates.ga_session_id = fields.ga_session_id;
+  if (fields.gclid) updates.gclid = fields.gclid;
+  if (fields.gbraid) updates.gbraid = fields.gbraid;
+  if (fields.wbraid) updates.wbraid = fields.wbraid;
+  if (Object.keys(updates).length === 0) return;
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  await supabase
+    .from('orders')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('order_id', orderId);
+}
 
 function tokensEqual(a: string, b: string): boolean {
   const aa = a.trim();
@@ -37,11 +90,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
-  let body: { orderId?: string; publicToken?: string; lang?: string };
+  let body: {
+    orderId?: string;
+    publicToken?: string;
+    lang?: string;
+    ga_client_id?: string;
+    ga_session_id?: string;
+    gclid?: string;
+    gbraid?: string;
+    wbraid?: string;
+  };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const analyticsParsed = parseCheckoutAnalyticsFields(body as Record<string, unknown>);
+  if (!analyticsParsed.ok) {
+    return NextResponse.json({ error: analyticsParsed.message }, { status: 400 });
   }
 
   const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
@@ -68,6 +135,8 @@ export async function POST(request: NextRequest) {
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
+
+  await persistOrderAnalyticsContext(orderId, analyticsParsed.fields);
 
   const supabasePayment = await getSupabasePaymentStatusByOrderId(orderId);
   const paymentStatus = (supabasePayment?.payment_status ?? order.status ?? '').toUpperCase();

@@ -5,10 +5,10 @@ import { ChevronUp } from 'lucide-react';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
 
-const FOOTER_SELECTOR = '#site-footer';
-/** Extra px before the document end (mobile needs a larger margin). */
-const BOTTOM_THRESHOLD_MOBILE_PX = 360;
-const BOTTOM_THRESHOLD_DESKTOP_PX = 200;
+/** Trigger earlier on long feeds, not only right at footer. */
+const SHOW_AFTER_SCROLL_PROGRESS = 0.55;
+const BOTTOM_THRESHOLD_MOBILE_PX = 720;
+const BOTTOM_THRESHOLD_DESKTOP_PX = 520;
 const MIN_SCROLL_BEFORE_SHOW_PX = 280;
 
 function getViewportHeight(): number {
@@ -28,14 +28,21 @@ function getDocumentHeight(): number {
   );
 }
 
-function isNearPageBottom(): boolean {
+function shouldShowBackToTop(): boolean {
   const scrollTop = getScrollTop();
   const viewportHeight = getViewportHeight();
   const docHeight = getDocumentHeight();
+
+  if (scrollTop <= MIN_SCROLL_BEFORE_SHOW_PX) return false;
+
+  const maxScrollable = Math.max(1, docHeight - viewportHeight);
+  const scrollProgress = scrollTop / maxScrollable;
   const threshold =
     viewportHeight < 768 ? BOTTOM_THRESHOLD_MOBILE_PX : BOTTOM_THRESHOLD_DESKTOP_PX;
 
-  return scrollTop > MIN_SCROLL_BEFORE_SHOW_PX && scrollTop + viewportHeight >= docHeight - threshold;
+  const nearBottom = scrollTop + viewportHeight >= docHeight - threshold;
+  const crossedProgressThreshold = scrollProgress >= SHOW_AFTER_SCROLL_PROGRESS;
+  return nearBottom || crossedProgressThreshold;
 }
 
 export function BackToTopButton({
@@ -50,44 +57,10 @@ export function BackToTopButton({
 
   useEffect(() => {
     const sync = () => {
-      setVisible(isNearPageBottom());
+      setVisible(shouldShowBackToTop());
     };
 
     sync();
-
-    let observer: IntersectionObserver | undefined;
-    let footerRetryTimer: number | undefined;
-
-    const attachFooterObserver = () => {
-      const footer = document.querySelector(FOOTER_SELECTOR);
-      if (!footer) return false;
-
-      observer?.disconnect();
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            return;
-          }
-          sync();
-        },
-        {
-          root: null,
-          rootMargin: '0px 0px 280px 0px',
-          threshold: 0,
-        },
-      );
-      observer.observe(footer);
-      return true;
-    };
-
-    if (!attachFooterObserver()) {
-      footerRetryTimer = window.setInterval(() => {
-        if (attachFooterObserver()) {
-          window.clearInterval(footerRetryTimer);
-        }
-      }, 250);
-    }
 
     window.addEventListener('scroll', sync, { passive: true });
     window.visualViewport?.addEventListener('resize', sync);
@@ -95,8 +68,6 @@ export function BackToTopButton({
     window.addEventListener('resize', sync);
 
     return () => {
-      if (footerRetryTimer) window.clearInterval(footerRetryTimer);
-      observer?.disconnect();
       window.removeEventListener('scroll', sync);
       window.visualViewport?.removeEventListener('resize', sync);
       window.visualViewport?.removeEventListener('scroll', sync);

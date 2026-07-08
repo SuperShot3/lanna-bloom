@@ -7,7 +7,7 @@
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
-- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/lanna-order-thank-you`** after Stripe returns and `GET /api/stripe/order-status` reports `paid` with `purchase`. `OrderThankYouClient` calls `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read). The **paid** `/order/...` page does **not** push `purchase` for cart checkout (thank-you page fires first). GTM must use Custom Event `purchase`, not URL contains `checkout`. **No server-side GA4 purchase** (Measurement Protocol removed).
+- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/lanna-order-thank-you`** (cart checkout) or **`/order/...`** (explicit recovery only) after Stripe confirms payment. `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: server **claim** + **confirm** (`ga4_purchase_claimed` / `ga4_purchase_sent`) plus `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read). **Server-side GA4 Measurement Protocol** runs as fallback when browser does not confirm within the delay window (+ claimed grace when applicable).
 
 ## Paid order: browser `purchase` (canonical)
 
@@ -116,8 +116,10 @@ Removed legacy messenger events:
 
 ### Stripe (and all paid orders)
 
-- GA4 **`purchase`** (revenue) is recorded when the customer reaches **`checkout/complete`** after Stripe and the browser pushes `purchase` to the dataLayer; GTM sends it to GA4.
-- **Coverage gap:** If `purchaseAnalytics` is missing or validation fails, nothing is pushed on that screen; there is **no** server-side fallback.
+- GA4 **`purchase`** (revenue) is recorded when the browser pushes `purchase` to the dataLayer after confirmed payment; GTM sends it to GA4.
+- **Primary path:** `/lanna-order-thank-you` after `order-status` returns `paid` + `purchase` payload.
+- **Recovery path:** `/order/...` only on `?purchase_tracked=0` or `?track_purchase=1`.
+- **Server fallback:** GA4 Measurement Protocol cron (`/api/cron/ga4-purchase-fallback`) when `ga4_purchase_sent` is still false after `GA4_PURCHASE_FALLBACK_DELAY_MS` (+ `GA4_PURCHASE_CLAIMED_GRACE_MS` when browser claimed).
 
 ### Manual Payment Methods
 
@@ -128,7 +130,8 @@ we do not have any
 
 | Layer | Role | How |
 |-------|------|-----|
-| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `OrderThankYouClient` on `/lanna-order-thank-you` → `purchase` + `ecommerce.*`; dedupe `lanna_purchase_fired_<orderId>` |
+| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `OrderThankYouClient` / recovery `OrderPageClient` → `purchase` + `ecommerce.*`; dedupe claim + localStorage |
+| **Server (Measurement Protocol)** | GA4 `purchase` fallback | Cron when browser does not confirm; same `transaction_id` (order id) |
 
 **GTM rule:** Use a **GA4 Event** tag (or equivalent) on Custom Event **`purchase`**, reading `ecommerce.*`. For **Google Ads**, fire a conversion tag on the same event using DL variables `ecommerce.value`, `ecommerce.transaction_id`, `ecommerce.currency`.
 

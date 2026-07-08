@@ -4,6 +4,10 @@
  */
 
 const AD_CLICK_STORAGE_KEY = 'lanna_ad_click_ids';
+const AD_CLICK_COOKIE_GCLID = 'lanna_ad_gclid';
+const AD_CLICK_COOKIE_GBRAID = 'lanna_ad_gbraid';
+const AD_CLICK_COOKIE_WBRAID = 'lanna_ad_wbraid';
+const AD_CLICK_COOKIE_MAX_AGE_DAYS = 90;
 
 export interface CheckoutAnalyticsContext {
   ga_client_id?: string;
@@ -22,6 +26,12 @@ function readCookie(name: string): string | undefined {
   } catch {
     return match[1].trim();
   }
+}
+
+function writeCookie(name: string, value: string): void {
+  if (typeof document === 'undefined') return;
+  const maxAgeSec = AD_CLICK_COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax`;
 }
 
 /** Parse `_ga` cookie → GA4 client_id (`XXXXXXXXXX.YYYYYYYYYY`). */
@@ -65,7 +75,7 @@ export function readGaSessionIdFromCookie(): string | undefined {
   return undefined;
 }
 
-/** Persist ad click ids from URL into sessionStorage for checkout. */
+/** Persist ad click ids from URL into cookies (~90 days) and sessionStorage. */
 export function captureAdClickIdsFromUrl(): void {
   if (typeof window === 'undefined') return;
   try {
@@ -74,6 +84,11 @@ export function captureAdClickIdsFromUrl(): void {
     const gbraid = params.get('gbraid')?.trim();
     const wbraid = params.get('wbraid')?.trim();
     if (!gclid && !gbraid && !wbraid) return;
+
+    if (gclid) writeCookie(AD_CLICK_COOKIE_GCLID, gclid);
+    if (gbraid) writeCookie(AD_CLICK_COOKIE_GBRAID, gbraid);
+    if (wbraid) writeCookie(AD_CLICK_COOKIE_WBRAID, wbraid);
+
     window.sessionStorage.setItem(
       AD_CLICK_STORAGE_KEY,
       JSON.stringify({ gclid: gclid || undefined, gbraid: gbraid || undefined, wbraid: wbraid || undefined }),
@@ -83,20 +98,34 @@ export function captureAdClickIdsFromUrl(): void {
   }
 }
 
-function readStoredAdClickIds(): Pick<CheckoutAnalyticsContext, 'gclid' | 'gbraid' | 'wbraid'> {
-  if (typeof window === 'undefined') return {};
+function readAdClickIdFromCookieOrStorage(
+  cookieName: string,
+  key: 'gclid' | 'gbraid' | 'wbraid',
+): string | undefined {
+  const fromCookie = readCookie(cookieName)?.trim();
+  if (fromCookie) return fromCookie;
+
+  if (typeof window === 'undefined') return undefined;
   try {
     const raw = window.sessionStorage.getItem(AD_CLICK_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as { gclid?: string; gbraid?: string; wbraid?: string };
-    return {
-      ...(parsed.gclid ? { gclid: parsed.gclid } : {}),
-      ...(parsed.gbraid ? { gbraid: parsed.gbraid } : {}),
-      ...(parsed.wbraid ? { wbraid: parsed.wbraid } : {}),
-    };
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as Record<string, string | undefined>;
+    const fromStorage = parsed[key]?.trim();
+    return fromStorage || undefined;
   } catch {
-    return {};
+    return undefined;
   }
+}
+
+function readStoredAdClickIds(): Pick<CheckoutAnalyticsContext, 'gclid' | 'gbraid' | 'wbraid'> {
+  const gclid = readAdClickIdFromCookieOrStorage(AD_CLICK_COOKIE_GCLID, 'gclid');
+  const gbraid = readAdClickIdFromCookieOrStorage(AD_CLICK_COOKIE_GBRAID, 'gbraid');
+  const wbraid = readAdClickIdFromCookieOrStorage(AD_CLICK_COOKIE_WBRAID, 'wbraid');
+  return {
+    ...(gclid ? { gclid } : {}),
+    ...(gbraid ? { gbraid } : {}),
+    ...(wbraid ? { wbraid } : {}),
+  };
 }
 
 /** Full analytics context to attach to checkout session request. */

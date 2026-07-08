@@ -28,12 +28,19 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 **Dedupe (source of truth — server claim + confirm):** Before pushing, `trackCheckoutPurchase` calls
 `POST /api/orders/[orderId]/claim-purchase` (public token required) which atomically sets
-`orders.ga4_purchase_claimed`. After a successful dataLayer push, it calls
-`POST /api/orders/[orderId]/confirm-purchase` to set `orders.ga4_purchase_sent`.
-Only the first browser globally gets `shouldTrack: true` on claim. Server Measurement Protocol
-fallback runs when `ga4_purchase_sent` is still false after a delay (Stripe-confirmed payment).
+`orders.ga4_purchase_claimed`. After a successful dataLayer push, it **awaits**
+`POST /api/orders/[orderId]/confirm-purchase` (with 500ms / 2s / 5s retries) to set
+`orders.ga4_purchase_sent` and `orders.google_ads_conversion_sent` (browser GTM fires both GA4
+and Ads from the same `purchase` event). Only the first browser globally gets `shouldTrack: true`
+on claim. Server Measurement Protocol fallback runs when `ga4_purchase_sent` is still false after
+`GA4_PURCHASE_FALLBACK_DELAY_MS` (and `GA4_PURCHASE_CLAIMED_GRACE_MS` when claimed). Google Ads
+Conversion Upload API fallback runs when `google_ads_conversion_sent` is still false after the same
+delay window (independent sent flag — GA4 MP can succeed while Ads upload skips when no click ID).
 `localStorage` key `lanna_purchase_fired_<orderId>` (also reads legacy `sent_purchase_<orderId>`)
 + in-memory guard remain as secondary browser-level protection only.
+
+**Ad click IDs:** `gclid` / `gbraid` / `wbraid` captured from URL into cookies (~90 days,
+`SameSite=Lax`) and sessionStorage; attached to checkout session requests for MP attribution.
 
 **Timing:** `waitForGtmConsentThen` defers push briefly for GTM/consent ordering. The claim runs
 after GTM is confirmed loaded, immediately before the push (minimizes claimed-but-not-pushed loss).
@@ -70,7 +77,11 @@ Configure matching **Custom Event** triggers in GTM.
 ## Google Ads
 
 - Purchase conversion should listen to the same browser `purchase` dataLayer event (GTM tag).
-- See [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md) for GTM variable mapping (`ecommerce.*`).
+- Browser confirm sets `google_ads_conversion_sent=true`, `google_ads_conversion_source=browser`.
+- Server Conversion Upload API fallback (`lib/analytics/googleAdsConversionUpload.ts`) runs from the
+  purchase-fallback cron when `google_ads_conversion_sent` is still false after the delay window.
+  Requires `GOOGLE_ADS_PURCHASE_CONVERSION_ACTION` plus existing `GOOGLE_ADS_*` OAuth creds.
+- See [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md) for GTM variable mapping (`ecommerce.*`) and upload rules.
 
 ## Consent
 
@@ -80,7 +91,7 @@ Configure matching **Custom Event** triggers in GTM.
 ## Do not
 
 - Fire `purchase` before server confirms paid order + valid `purchaseAnalytics` payload.
-- Add server-side GA4 `purchase` (Measurement Protocol) alongside browser `purchase` without a dedupe design.
+- Do not add server-side GA4 `purchase` (Measurement Protocol) **alongside** a confirmed browser `purchase` without dedupe — fallback only when `ga4_purchase_sent` is false.
 - Add duplicate Google Ads + GA4 purchase tags that both count revenue without GTM coordination.
 - Push `page_view` from app code (conflicts with GTM SPA handling).
 
@@ -95,9 +106,10 @@ Configure matching **Custom Event** triggers in GTM.
 | `app/lanna-order-thank-you/page.tsx` | Universal post-Stripe thank-you (lang via `?lang=`) |
 | `app/api/stripe/order-status/route.ts` | Returns `purchase` (+ optional `user_data`) when paid + proof |
 | `app/api/orders/[orderId]/claim-purchase/route.ts` | Atomic order-level purchase claim (browser dedupe) |
-| `app/api/orders/[orderId]/confirm-purchase/route.ts` | Mark browser purchase delivered (`ga4_purchase_sent`) |
-| `lib/analytics/ga4PurchaseFallback.ts` | Measurement Protocol fallback scheduler/processor |
+| `app/api/orders/[orderId]/confirm-purchase/route.ts` | Mark browser purchase delivered (`ga4_purchase_sent` + `google_ads_conversion_sent`) |
+| `lib/analytics/ga4PurchaseFallback.ts` | Measurement Protocol + Ads upload fallback scheduler/processor |
 | `lib/analytics/ga4MeasurementProtocol.ts` | GA4 MP `purchase` sender |
+| `lib/analytics/googleAdsConversionUpload.ts` | Google Ads Conversion Upload API sender |
 
 ## Deep dive
 

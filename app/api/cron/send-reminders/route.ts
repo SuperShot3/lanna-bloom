@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runReminderEmailCron } from '@/lib/email/reminderCron';
-import { runGa4PurchaseFallbackCron } from '@/lib/analytics/ga4PurchaseFallback';
 
 /**
  * Vercel Cron: daily at 09:00 Asia/Bangkok (02:00 UTC) — set in vercel.json.
@@ -17,6 +16,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const result = await runReminderEmailCron();
-  const ga4Fallback = await runGa4PurchaseFallbackCron();
-  return NextResponse.json({ ok: true, ...result, ga4Fallback });
+  return NextResponse.json({ ok: true, ...result });
 }
