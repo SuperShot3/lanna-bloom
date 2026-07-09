@@ -235,6 +235,10 @@ export function OrderDetailsView({
     if (!addressHidden) {
       lines.push(`${t.address}:`);
       lines.push(order.delivery.address || '—');
+      if (order.delivery.notes?.trim()) {
+        lines.push(`${(t as { deliveryNotesForDriver?: string }).deliveryNotesForDriver ?? 'Delivery details for driver'}:`);
+        lines.push(order.delivery.notes.trim());
+      }
       if (order.delivery.deliveryGoogleMapsUrl) {
         lines.push(order.delivery.deliveryGoogleMapsUrl);
       }
@@ -463,6 +467,15 @@ export function OrderDetailsView({
         ) : (
           <>
             <p className="order-details-value">{order.delivery.address || '—'}</p>
+            {order.delivery.notes?.trim() && (
+              <>
+                <h2 className="order-details-heading">
+                  {(t as { deliveryNotesForDriver?: string }).deliveryNotesForDriver ??
+                    'Delivery details for driver'}
+                </h2>
+                <p className="order-details-value">{order.delivery.notes.trim()}</p>
+              </>
+            )}
             {order.delivery.deliveryGoogleMapsUrl && (
               <>
                 <p className="order-details-gmaps-wrap">

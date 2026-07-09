@@ -3,6 +3,7 @@ import {
   buildDriverMessengerPlainText,
   buildOrderSummaryPlainText,
   checkoutMapsUrl,
+  deliveryNotesDisplay,
   customerLineIdDisplay,
   customerPhoneDisplay,
   formatAmountNa,
@@ -39,6 +40,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
   const referralCommissionAmount =
     typeof orderJson?.referralCommissionAmount === 'number' ? orderJson.referralCommissionAmount : null;
   const mapsUrl = checkoutMapsUrl(order);
+  const deliveryNotes = deliveryNotesDisplay(order);
   const recipientName = recipientNameDisplay(order);
   const recipientPhone = recipientPhoneDisplay(order);
   const surpriseDelivery = surpriseDeliveryAdminLabel(order);
@@ -59,7 +61,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
   const deliveryDateTimeAddressForCopy = hasDeliveryWhenWhere
     ? `Date: ${deliveryDateRaw || 'N/A'}\nTime / window: ${deliveryWindowRaw || 'N/A'}\nAddress: ${
         deliveryAddressResolved || 'N/A'
-      }\nGoogle Maps: ${mapsUrlRaw || 'N/A'}`
+      }\nDriver notes: ${deliveryNotes || 'N/A'}\nGoogle Maps: ${mapsUrlRaw || 'N/A'}`
     : '';
   const recipientNameForCopy = recipientName.trim();
   const recipientPhoneForCopy = recipientPhone.trim();
@@ -181,6 +183,12 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
                 <span className="admin-summary-inline-label">Address:</span>{' '}
                 <span className="admin-summary-key-value admin-summary-key-value--multiline">
                   {naText(deliveryAddressResolved)}
+                </span>
+              </p>
+              <p className="admin-summary-recipient-line">
+                <span className="admin-summary-inline-label">Driver notes:</span>{' '}
+                <span className="admin-summary-key-value admin-summary-key-value--multiline">
+                  {naText(deliveryNotes)}
                 </span>
               </p>
               <p className="admin-summary-recipient-line">

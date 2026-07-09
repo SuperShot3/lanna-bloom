@@ -122,21 +122,27 @@ interface LooseOrderJson {
   customOrderDetails?: { referenceImageUrl?: string; greetingCard?: string };
 }
 
-/** True when the customer provided greeting/card text (checkout card message or custom-order message card). */
-export function orderHasCustomerCardMessage(order: SupabaseOrderRow): boolean {
+export function customerCardMessagePreview(order: SupabaseOrderRow): string {
   const json = order.order_json as LooseOrderJson | null | undefined;
+  const messages: string[] = [];
   const items = json?.items;
   if (Array.isArray(items)) {
     for (const it of items) {
       const msg = typeof it?.addOns?.cardMessage === 'string' ? it.addOns.cardMessage.trim() : '';
-      if (msg) return true;
+      if (msg) messages.push(msg);
     }
   }
   const greeting =
     typeof json?.customOrderDetails?.greetingCard === 'string'
       ? json.customOrderDetails.greetingCard.trim()
       : '';
-  return Boolean(greeting);
+  if (greeting) messages.push(greeting);
+  return messages.join(' / ');
+}
+
+/** True when the customer provided greeting/card text (checkout card message or custom-order message card). */
+export function orderHasCustomerCardMessage(order: SupabaseOrderRow): boolean {
+  return Boolean(customerCardMessagePreview(order));
 }
 
 export function firstLineImageFromOrder(order: SupabaseOrderRow): string | null {
@@ -164,6 +170,23 @@ export function firstLineProductLabel(order: SupabaseOrderRow): string {
   return 'Order';
 }
 
+export function allProductLabels(order: SupabaseOrderRow, max = 4): string[] {
+  const json = order.order_json as LooseOrderJson | null | undefined;
+  const items = Array.isArray(json?.items) ? json.items : [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const it of items) {
+    const title = typeof it?.bouquetTitle === 'string' ? it.bouquetTitle.trim() : '';
+    const fallback = typeof it?.itemType === 'string' ? itemTypeDisplayLabel(it.itemType.trim()) : '';
+    const label = title || fallback;
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    out.push(label);
+    if (out.length >= max) return out;
+  }
+  return out.length > 0 ? out : ['Order'];
+}
+
 export function itemTypeDisplayLabel(itemType: string): string {
   const u = itemType.toLowerCase();
   if (u === 'bouquet') return 'Bouquet';
@@ -181,6 +204,66 @@ export function deliveryCoordsFromOrder(order: SupabaseOrderRow): { lat: number;
     return { lat, lng };
   }
   return null;
+}
+
+export function orderImagePreviews(order: SupabaseOrderRow, max = 4): string[] {
+  return orderProductThumbPreviews(order, max).map((p) => p.imageUrl);
+}
+
+export interface OrderProductThumbPreview {
+  imageUrl: string;
+  label: string;
+  spec: string | null;
+}
+
+function itemSpecSummary(it: JsonItem, qtyOverride?: number | null): string | null {
+  const rawSize = typeof it.size === 'string' ? it.size.trim() : '';
+  const qtyRaw = it.quantity;
+  const qtyFromField =
+    typeof qtyRaw === 'number' && Number.isFinite(qtyRaw) && qtyRaw > 1 ? Math.floor(qtyRaw) : null;
+  const qty = qtyOverride && qtyOverride > 1 ? qtyOverride : qtyFromField;
+  const parts: string[] = [];
+  if (qty) parts.push(`×${qty}`);
+  if (rawSize && !isPlaceholderSize(rawSize)) {
+    if (LEGACY_SIZE_CODE.test(rawSize)) {
+      parts.push(`Size ${rawSize.toUpperCase()}`);
+    } else {
+      parts.push(rawSize);
+    }
+  }
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/** Unique product image + matching label/spec for delivery-board thumbnails. */
+export function orderProductThumbPreviews(
+  order: SupabaseOrderRow,
+  max = 4
+): OrderProductThumbPreview[] {
+  const json = order.order_json as LooseOrderJson | null | undefined;
+  const items = Array.isArray(json?.items) ? json.items : [];
+  const seen = new Set<string>();
+  const out: OrderProductThumbPreview[] = [];
+
+  for (const it of items) {
+    const raw = typeof it?.imageUrl === 'string' ? it.imageUrl.trim() : '';
+    if (!raw || seen.has(raw)) continue;
+    seen.add(raw);
+    const title = typeof it?.bouquetTitle === 'string' ? it.bouquetTitle.trim() : '';
+    const fallback =
+      typeof it?.itemType === 'string' ? itemTypeDisplayLabel(it.itemType.trim()) : '';
+    out.push({
+      imageUrl: raw,
+      label: title || fallback || 'Order',
+      spec: itemSpecSummary(it),
+    });
+    if (out.length >= max) return out;
+  }
+
+  const ref = json?.customOrderDetails?.referenceImageUrl?.trim();
+  if (ref && !seen.has(ref) && out.length < max) {
+    out.push({ imageUrl: ref, label: 'Custom order', spec: null });
+  }
+  return out;
 }
 
 export function sortOrdersForBoard(list: SupabaseOrderRow[]): SupabaseOrderRow[] {

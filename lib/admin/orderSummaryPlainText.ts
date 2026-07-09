@@ -127,6 +127,11 @@ export function checkoutMapsUrl(order: SupabaseOrderRow): string | null {
   return null;
 }
 
+/** Driver-facing delivery directions entered at checkout (room, gate code, landmark, etc.). */
+export function deliveryNotesDisplay(order: SupabaseOrderRow): string {
+  return orderJsonDelivery(order)?.notes?.trim() ?? '';
+}
+
 export function recipientNameDisplay(order: SupabaseOrderRow): string {
   const col = order.recipient_name?.trim();
   if (col) return col;
@@ -283,6 +288,7 @@ export function buildDriverMessengerPlainText(
   customGreetingCard?: string | null
 ): string {
   const mapsUrl = checkoutMapsUrl(order);
+  const deliveryNotes = deliveryNotesDisplay(order);
   const rName = recipientNameDisplay(order);
   const rPhone = recipientPhoneDisplay(order);
   const surprise = surpriseDeliveryDriverThaiLabel(order);
@@ -306,6 +312,9 @@ export function buildDriverMessengerPlainText(
   lines.push('');
   lines.push('ที่อยู่:');
   lines.push(customerDeliveryAddressRaw(order).trim() || 'ไม่ระบุ');
+  lines.push('');
+  lines.push('รายละเอียดสำหรับคนขับ:');
+  lines.push(deliveryNotes || 'ไม่มี');
   lines.push('');
   if (mapsUrl) {
     lines.push('พิน Google Maps:');
@@ -356,14 +365,19 @@ function getItemTypeLabel(type: string | null | undefined): string {
 export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: OrderSummaryItemRow[]): string {
   const lines: string[] = [];
   const mapsUrl = checkoutMapsUrl(order);
+  const deliveryNotes = deliveryNotesDisplay(order);
+  const delivery = orderJsonDelivery(order);
   const rName = recipientNameDisplay(order);
   const rPhone = recipientPhoneDisplay(order);
   const surprise = surpriseDeliveryAdminLabel(order);
+  const cardText = buildClipboardCardText(items).trim();
+  const dest = order.delivery_destination?.trim() || delivery?.deliveryDestination?.trim() || '';
+  const zoneId = order.delivery_zone?.trim() || delivery?.deliveryZoneId?.trim() || '';
+  const postcode = order.postal_code?.trim() || delivery?.postalCode?.trim() || '';
+  const legacyDistrict = order.district?.trim() || '';
 
-  lines.push('ORDER SUMMARY');
-  lines.push('');
-  lines.push(`Order ID: ${naText(order.order_id)}`);
-  lines.push(`Created: ${formatShopDateTime(order.created_at, 'N/A')}`);
+  lines.push(`Delivery for : ${naText(order.delivery_date)}`);
+  lines.push(`  Window: ${naText(order.delivery_window)}`);
   lines.push('');
   lines.push('Customer');
   lines.push(`  Name: ${naText(order.customer_name)}`);
@@ -375,59 +389,33 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
     lines.push(`  LINE ID: ${lineIdRow}`);
   }
   lines.push('');
-  lines.push('Items');
-  if (items.length === 0) {
-    lines.push('  (No line items)');
-  } else {
-    items.forEach((item, i) => {
-      const type = getItemTypeLabel(item.item_type);
-      lines.push(`  ${i + 1}. ${naText(item.bouquet_title)} (${type})`);
-      lines.push(
-        `     Size: ${naText(item.size)} | Qty: 1 | Price: ${formatAmountNa(item.price)}`
-      );
-      if (item.addOns?.cardMessage?.trim()) {
-        lines.push(`     Card text: "${item.addOns.cardMessage.trim()}"`);
-      }
-      if (item.addOns?.balloonText?.trim()) {
-        lines.push(`     Balloon text: "${item.addOns.balloonText.trim()}"`);
-      }
-      if (item.addOns?.cardType != null) {
-        lines.push(`     Card: ${item.addOns.cardType === 'premium' ? 'Premium' : 'Free'}`);
-      }
-      if (item.addOns?.wrappingOption) {
-        lines.push(`     Wrapping: ${getWrappingLabel(item.addOns.wrappingOption)}`);
-      }
-      if (isSpecificWrappingPaperColor(item.addOns?.paperColor)) {
-        lines.push(
-          `     Wrapping paper: ${getWrappingPaperColorLabel(item.addOns.paperColor, 'en')}`
-        );
-      }
-      if (item.catalogHref) {
-        lines.push(`     View on shop: ${item.catalogHref}`);
-      }
-    });
+  lines.push(`Address: ${naText(customerDeliveryAddressRaw(order))}  Driver notes: ${naText(deliveryNotes)}`);
+  lines.push('');
+  if (cardText) {
+    lines.push(`Card text:  "${cardText}"`);
+    lines.push('');
+  }
+  if (dest) {
+    lines.push(`Destination: ${destinationDisplayName(dest as DeliveryDestinationId, 'en')} `);
+  }
+  if (zoneId && dest) {
+    lines.push(`Zone: ${zoneLabel(dest as DeliveryDestinationId, zoneId, 'en') ?? zoneId} `);
+  } else if (legacyDistrict) {
+    lines.push(`Zone: ${legacyDistrict} `);
+  }
+  if (postcode) {
+    lines.push(`Postcode: ${postcode}`);
   }
   lines.push('');
-  lines.push(`Items total: ${formatAmountNa(order.items_total)}`);
-  lines.push(`Delivery fee: ${formatAmountNa(order.delivery_fee)}`);
-  if (order.referral_discount != null && order.referral_discount > 0) {
-    lines.push(`Discount: -${formatAmountNa(order.referral_discount)}`);
-  }
-  lines.push(`Grand total: ${formatAmountNa(order.grand_total)}`);
-  lines.push('');
-  lines.push('Delivery');
-  lines.push(`  Date: ${naText(order.delivery_date)}`);
-  lines.push(`  Window: ${naText(order.delivery_window)}`);
-  for (const g of adminDeliveryGeographyLines(order)) {
-    lines.push(`  ${g}`);
-  }
-  lines.push(`  Address: ${naText(customerDeliveryAddressRaw(order))}`);
-  lines.push(`  Google Maps (checkout): ${mapsUrl ?? 'N/A'}`);
+  lines.push(`Google Maps (checkout): ${mapsUrl ?? 'N/A'}`);
   lines.push('');
   lines.push('Recipient');
   lines.push(`  Name: ${naText(rName)}`);
   lines.push(`  Phone: ${naText(rPhone)}`);
   lines.push(`  Surprise delivery: ${surprise}`);
+  lines.push('');
+  lines.push(`Order ID: ${naText(order.order_id)}`);
+  lines.push(`Created: ${formatShopDateTime(order.created_at, 'N/A')}`);
 
   return lines.join('\n');
 }

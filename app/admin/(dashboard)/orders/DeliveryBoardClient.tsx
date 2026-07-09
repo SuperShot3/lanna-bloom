@@ -31,7 +31,7 @@ import {
   type OrderStatus,
 } from '@/lib/orders/statusConstants';
 import {
-  firstLineImageFromOrder,
+  customerCardMessagePreview,
   firstLineItemSpecSummary,
   firstLineProductLabel,
   formatDeliveryDateCard,
@@ -39,12 +39,14 @@ import {
   groupOrdersByDayPart,
   itemTypeDisplayLabel,
   orderHasCustomerCardMessage,
+  orderProductThumbPreviews,
   sortOrdersForBoard,
 } from '@/lib/admin/deliveryBoardPreview';
 import {
   checkoutMapsUrl,
   customerDeliveryAddressRaw,
   customerLineIdDisplay,
+  deliveryNotesDisplay,
 } from '@/lib/admin/orderSummaryPlainText';
 import { getLineUserContactUrl } from '@/lib/messenger';
 import { LineIcon } from '@/components/icons';
@@ -179,12 +181,22 @@ function DeliveryCardPartyNames({ order }: { order: SupabaseOrderRow }) {
 function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
   const raw = customerDeliveryAddressRaw(order);
   const mapsHref = checkoutMapsUrl(order);
+  const deliveryNotes = deliveryNotesDisplay(order);
+  const cardMessage = customerCardMessagePreview(order);
   const area = deliveryAreaSubtitle(order);
   const addressFieldIsMapsLink = Boolean(raw && mapsHref && raw.trim() === mapsHref);
   const fallbackAreaOnly = !raw && !mapsHref && Boolean(area);
 
   const copyText =
-    raw && mapsHref && raw.trim() !== mapsHref ? `${raw}\n${mapsHref}` : raw || mapsHref || '';
+    raw && mapsHref && raw.trim() !== mapsHref
+      ? `${raw}\n${deliveryNotes ? `Driver notes: ${deliveryNotes}\n` : ''}${cardMessage ? `Card message: ${cardMessage}\n` : ''}${mapsHref}`
+      : [
+          raw || mapsHref || '',
+          deliveryNotes ? `Driver notes: ${deliveryNotes}` : '',
+          cardMessage ? `Card message: ${cardMessage}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
 
   let main: ReactNode;
   if (fallbackAreaOnly) {
@@ -245,6 +257,30 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
       </div>
       {showAreaBelow ? (
         <p className="admin-delivery-card-meta admin-delivery-card-meta--area">{area}</p>
+      ) : null}
+      {deliveryNotes ? (
+        <p
+          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-meta--driver-notes"
+          title={deliveryNotes}
+        >
+          Driver notes: {deliveryNotes}
+        </p>
+      ) : null}
+      {cardMessage ? (
+        <div className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-meta--copy-row admin-delivery-card-meta--card-message">
+          <p className="admin-delivery-card-meta-text" title={cardMessage}>
+            Card message: {cardMessage}
+          </p>
+          <AdminCopyTextButton
+            text={cardMessage}
+            ariaLabel="Copy card message"
+            className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-address-copy"
+          >
+            <span className="material-symbols-outlined admin-delivery-contact-chip-copy-ico">
+              content_copy
+            </span>
+          </AdminCopyTextButton>
+        </div>
       ) : null}
     </div>
   );
@@ -1182,9 +1218,13 @@ export function DeliveryBoardClient({
                     {!isCollapsed ? (
                       <ul className="admin-delivery-card-list">
                         {sec.orders.map((o) => {
-                          const img = firstLineImageFromOrder(o);
+                          const productThumbs = orderProductThumbPreviews(o);
+                          const hasMultipleImages = productThumbs.length > 1;
                           const productLabel = firstLineProductLabel(o);
-                          const specLine = firstLineItemSpecSummary(o);
+                          const singleSpecLine =
+                            productThumbs.length === 1
+                              ? productThumbs[0]?.spec ?? firstLineItemSpecSummary(o)
+                              : null;
                           const cardStatusClass = deliveryCardStatusClass(o.order_status);
                           const flowBadgeStatusClass = deliveryFlowBadgeStatusClass(o.order_status);
                           const paid = (o.payment_status ?? '').toUpperCase() === 'PAID';
@@ -1201,25 +1241,48 @@ export function DeliveryBoardClient({
                             <li key={o.order_id} className="admin-delivery-card-wrap">
                               <div className={`admin-delivery-card ${cardStatusClass}`}>
                                 <div className="admin-delivery-card-thumb">
-                                  <div className="admin-delivery-card-thumb-visual">
-                                    {img ? (
-                                      <Image
-                                        src={img}
-                                        alt={productLabel}
-                                        width={88}
-                                        height={88}
-                                        className="admin-delivery-card-img"
-                                        unoptimized
-                                      />
-                                    ) : (
+                                  {productThumbs.length > 0 ? (
+                                    <div
+                                      className={`admin-delivery-card-thumb-visual${
+                                        hasMultipleImages ? ' admin-delivery-card-thumb-visual--multi' : ''
+                                      }`}
+                                    >
+                                      {productThumbs.map((thumb, index) => (
+                                        <div
+                                          key={`${o.order_id}-${index}`}
+                                          className="admin-delivery-card-product"
+                                        >
+                                          <div className="admin-delivery-card-mini-img-wrap">
+                                            <Image
+                                              src={thumb.imageUrl}
+                                              alt={thumb.label}
+                                              fill
+                                              sizes="112px"
+                                              className="admin-delivery-card-mini-img"
+                                              unoptimized
+                                            />
+                                          </div>
+                                          <p className="admin-delivery-card-thumb-caption">{thumb.label}</p>
+                                          {thumb.spec ? (
+                                            <p className="admin-delivery-card-thumb-spec">{thumb.spec}</p>
+                                          ) : null}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="admin-delivery-card-thumb-visual">
                                       <div className="admin-delivery-card-thumb-placeholder">
                                         <span className="material-symbols-outlined">local_florist</span>
                                       </div>
-                                    )}
-                                  </div>
-                                  <p className="admin-delivery-card-thumb-caption">{productLabel}</p>
-                                  {specLine ? (
-                                    <p className="admin-delivery-card-thumb-spec">{specLine}</p>
+                                    </div>
+                                  )}
+                                  {productThumbs.length === 0 ? (
+                                    <>
+                                      <p className="admin-delivery-card-thumb-caption">{productLabel}</p>
+                                      {singleSpecLine ? (
+                                        <p className="admin-delivery-card-thumb-spec">{singleSpecLine}</p>
+                                      ) : null}
+                                    </>
                                   ) : null}
                                 </div>
                                 <div className="admin-delivery-card-body">
@@ -1328,6 +1391,15 @@ export function DeliveryBoardClient({
                                           card_giftcard
                                         </span>
                                         {hasCardMessage ? 'Card message' : 'Gift card N/A'}
+                                      </span>
+                                      <span
+                                        className={`admin-delivery-gift-card-pill${deliveryNotesDisplay(o) ? ' admin-delivery-gift-card-pill--yes' : ' admin-delivery-gift-card-pill--na'}`}
+                                        title={deliveryNotesDisplay(o) || undefined}
+                                      >
+                                        <span className="material-symbols-outlined admin-delivery-gift-card-pill-ico">
+                                          note_alt
+                                        </span>
+                                        {deliveryNotesDisplay(o) ? 'Driver notes' : 'Driver notes N/A'}
                                       </span>
                                     </div>
                                     <Link href={detailHref(o.order_id)} className="admin-btn admin-btn-sm admin-btn-primary">
