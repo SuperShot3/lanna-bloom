@@ -23,7 +23,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { trackCheckoutPurchase, hasPendingPurchaseTrack } from '@/lib/analytics';
+import { trackCheckoutPurchase } from '@/lib/analytics';
 import {
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
@@ -138,11 +138,10 @@ export function OrderPageClient({
     }
   }, [paid]);
 
-  // Browser purchase: ONLY on explicit URL signals —
-  // `track_purchase=1` (cart thank-you resolver redirect, or pay-from-order Stripe
-  // success) or legacy `purchase_tracked=0`. A plain paid order view (shared link,
-  // other device, admin "view public page") must never fire `purchase`.
-  // The backend claim in trackCheckoutPurchase is the order-level dedupe.
+  // Browser purchase fallback: ONLY on explicit URL signals —
+  // `purchase_tracked=0` (thank-you could not track) or `track_purchase=1`
+  // (pay-from-order Stripe success). A plain paid order view must never fire `purchase`.
+  // Primary fire is on /lanna-order-thank-you; dedupe is localStorage in trackCheckoutPurchase.
   useEffect(() => {
     if (!paid || !stripePollResolved || typeof window === 'undefined') return;
 
@@ -164,25 +163,8 @@ export function OrderPageClient({
       window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
     };
 
-    const explicitRecovery =
-      purchaseTrackedParam === '0' ||
-      trackPurchaseParam === '1' ||
-      hasPendingPurchaseTrack(normalizedOrderId);
+    const explicitRecovery = purchaseTrackedParam === '0' || trackPurchaseParam === '1';
     if (!explicitRecovery) {
-      stripTrackingParams();
-      return;
-    }
-
-    // The backend claim requires the public token; without it, do not fire.
-    const tokenFromUrl = params.get('token')?.trim() ?? '';
-    let tokenFromStorage = '';
-    try {
-      tokenFromStorage = window.localStorage.getItem('lanna-bloom-last-order-token')?.trim() ?? '';
-    } catch {
-      // ignore
-    }
-    const publicToken = tokenFromUrl || tokenFromStorage;
-    if (!publicToken) {
       stripTrackingParams();
       return;
     }
@@ -202,7 +184,6 @@ export function OrderPageClient({
         currency,
         items: buildPurchaseAnalyticsItemsFromOrder(order, normalizedOrderId),
         ...(userData.email_address || userData.phone_number ? { userData } : {}),
-        claim: { token: publicToken },
       }).catch(() => false);
 
       if (!cancelled && purchaseResult) {

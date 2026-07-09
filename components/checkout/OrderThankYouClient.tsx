@@ -7,7 +7,7 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
-import { trackCheckoutPurchase, markPendingPurchaseTrack } from '@/lib/analytics';
+import { trackCheckoutPurchase } from '@/lib/analytics';
 import type { PurchaseItem, PurchaseUserData } from '@/lib/analytics/gtag';
 
 type OrderStatusPurchase = {
@@ -70,10 +70,9 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
           const publicToken = typeof data.token === 'string' ? data.token.trim() : '';
           const purchase = data.purchase;
 
-          markPendingPurchaseTrack(oid);
-
-          // Primary browser purchase: fire here while we still have the paid payload and token.
-          // Order page remains a fallback via track_purchase=1 / sessionStorage pending flag.
+          // Primary browser purchase: fire here while we still have the paid payload.
+          // Order page retries when purchase_tracked=0 (or pay-from-order track_purchase=1).
+          let purchaseSent = false;
           if (
             purchase &&
             typeof purchase.transaction_id === 'string' &&
@@ -82,16 +81,14 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
             Number.isFinite(purchase.value) &&
             purchase.value > 0 &&
             typeof purchase.currency === 'string' &&
-            Array.isArray(purchase.items) &&
-            publicToken
+            Array.isArray(purchase.items)
           ) {
-            await trackCheckoutPurchase({
+            purchaseSent = await trackCheckoutPurchase({
               orderId: purchase.transaction_id,
               value: purchase.value,
               currency: purchase.currency,
               items: purchase.items,
               userData: purchase.user_data,
-              claim: { token: publicToken },
             }).catch(() => false);
           }
 
@@ -104,7 +101,7 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
           if (publicToken) {
             qs.set('token', publicToken);
           }
-          qs.set('track_purchase', '1');
+          qs.set('purchase_tracked', purchaseSent ? '1' : '0');
           qs.set('session_id', sessionId);
           try {
             localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));

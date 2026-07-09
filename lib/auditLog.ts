@@ -7,7 +7,8 @@ export type AuditAction =
   | 'DRIVER_ASSIGN'
   | 'PHOTO_UPLOAD'
   | 'NOTE_UPDATE'
-  | 'MANUAL_MARK_PAID';
+  | 'MANUAL_MARK_PAID'
+  | 'DELIVERY_DETAILS_UPDATE';
 
 /**
  * Insert an audit log entry. Best-effort; never throws.

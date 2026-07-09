@@ -84,6 +84,13 @@ After mark paid, `runStripePostPaymentSuccessHooks` (`lib/stripe/postStripePayme
 - Stripe paths update **payment** fields only.
 - **Fulfillment status** (preparing, dispatched, delivered, etc.) is admin-controlled and not overwritten by webhook.
 
+## Admin delivery edits
+
+- OWNER/MANAGER can edit delivery date, window, address, Maps URL, recipient, driver notes, and surprise flag via `PATCH /api/admin/orders/[order_id]/delivery-details`.
+- Dual-writes normalized columns and `order_json.delivery` (including `preferredTimeSlot`) so customer order page, delivery board, and track-order lookup stay in sync.
+- Does **not** change delivery fee or grand total.
+- Blocked when `order_status` is `DELIVERED` or `CANCELLED`.
+- Each edit is audited (`DELIVERY_DETAILS_UPDATE` in `audit_logs` with before/after). Admin order detail **Order history** merges status transitions and delivery diffs.
 ## Metadata
 
 - Draft metadata on session: `checkout_draft_id`, `submission_token`, etc. (`lib/stripe/metadata.ts`).

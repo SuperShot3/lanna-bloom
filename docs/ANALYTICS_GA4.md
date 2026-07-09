@@ -7,15 +7,15 @@
 - Direct `gtag` is removed from the app code.
 - Analytics load only in production.
 - There are no fallback GA/GTM IDs in source.
-- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/order/{id}?token=…&track_purchase=1`** after Stripe confirms payment. Cart checkout lands on `/lanna-order-thank-you` as a **resolver only**, then redirects to the order page with `track_purchase=1`. `trackCheckoutPurchase` → `window.dataLayer` once per order; **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: server **claim** + **confirm** (`ga4_purchase_claimed` / `ga4_purchase_sent`) plus `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read). **Server-side GA4 Measurement Protocol** runs as fallback when browser does not confirm within the delay window (+ claimed grace when applicable).
+- **GA4 `purchase` (authoritative for this project):** Fired from the **browser** on **`/lanna-order-thank-you`** after Stripe confirms payment (`OrderThankYouClient` → `trackCheckoutPurchase` → `window.dataLayer`). Redirects to `/order/...` with `purchase_tracked=0|1`; order page retries only when `purchase_tracked=0` or `track_purchase=1`. **GTM** forwards to GA4 (and optionally Google Ads). Dedupe: `lanna_purchase_fired_<orderId>` in **localStorage** (legacy `sent_purchase_*` read) + in-memory guard. **Server Measurement Protocol / claim-confirm are retired from the hot path** (code may remain unused).
 
 ## Paid order: browser `purchase` (canonical)
 
-**Source code:** `components/order/OrderPageClient.tsx` on `/order/...` when `track_purchase=1` (cart thank-you redirect or pay-from-order Stripe success). Thank-you (`OrderThankYouClient`) polls `order-status` then redirects with `token` + `track_purchase=1` — it does **not** push `purchase`.
+**Source code:** `components/checkout/OrderThankYouClient.tsx` (primary) after `order-status` returns paid + `purchase` payload. Fallback: `components/order/OrderPageClient.tsx` when `purchase_tracked=0` or `track_purchase=1`.
 
-**Event `purchase`** — at most once per order id (`lanna_purchase_fired_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items` (each item: `item_id`, `item_name`, `price`, `quantity`). The same four fields are **also** mirrored at the **root** of the object (`transaction_id`, `value`, `currency`, `items`) so GTM Data Layer Variables that point at root-level keys (as used for `add_to_cart` / `begin_checkout`) still work on `purchase`. **Transport:** browser → `window.dataLayer` only — no app HTTP call to GTM or GA4 for these events. **`purchase`** is deferred briefly so GTM/consent can settle (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
+**Event `purchase`** — at most once per order id (`lanna_purchase_fired_<orderId>`). Sequence: `dataLayer.push({ ecommerce: null })` then `dataLayer.push({ event: 'purchase', ecommerce: { ... }, … })` where **`ecommerce`** contains `transaction_id`, `value`, `currency`, and `items`. The same four fields are **also** mirrored at the **root**. **Transport:** browser → `window.dataLayer` only. **`purchase`** is deferred briefly so GTM/consent can settle (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
-**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` (called from `OrderPageClient`).
+**Implementation:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts`.
 
 ## Runtime Configuration
 
@@ -117,9 +117,9 @@ Removed legacy messenger events:
 ### Stripe (and all paid orders)
 
 - GA4 **`purchase`** (revenue) is recorded when the browser pushes `purchase` to the dataLayer after confirmed payment; GTM sends it to GA4.
-- **Primary path:** `/order/...?track_purchase=1` after thank-you resolves `order-status` `paid` (or pay-from-order Stripe success URL).
+- **Primary path:** `/lanna-order-thank-you` after `order-status` returns `paid` + `purchase` payload.
 - **Recovery path:** `/order/...` only on `?purchase_tracked=0` or `?track_purchase=1`.
-- **Server fallback:** GA4 Measurement Protocol cron (`/api/cron/ga4-purchase-fallback`) when `ga4_purchase_sent` is still false after `GA4_PURCHASE_FALLBACK_DELAY_MS` (+ `GA4_PURCHASE_CLAIMED_GRACE_MS` when browser claimed).
+- **Server fallback:** Disabled on the hot path (Measurement Protocol cron removed from `vercel.json`).
 
 ### Manual Payment Methods
 
@@ -130,8 +130,8 @@ we do not have any
 
 | Layer | Role | How |
 |-------|------|-----|
-| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `OrderPageClient` (`track_purchase=1`) → `purchase` + `ecommerce.*`; dedupe claim + localStorage |
-| **Server (Measurement Protocol)** | GA4 `purchase` fallback | Cron when browser does not confirm; same `transaction_id` (order id); validate via `/debug/mp/collect` before prod send |
+| **Browser (dataLayer)** | GA4 `purchase` + optional Google Ads | `OrderThankYouClient` (primary) / `OrderPageClient` (fallback) → `purchase` + `ecommerce.*`; dedupe localStorage |
+| **Server (Measurement Protocol)** | Retired from hot path | Code may remain unused; do not re-enable until browser GTM is proven |
 
 **GTM rule:** Use a **GA4 Event** tag (or equivalent) on Custom Event **`purchase`**, reading `ecommerce.*`. For **Google Ads**, fire a conversion tag on the same event using DL variables `ecommerce.value`, `ecommerce.transaction_id`, `ecommerce.currency`.
 
@@ -228,32 +228,12 @@ Use this list when “nothing fires” or “wrong variable is empty”:
 6. **GTM not loaded:** `components/GoogleAnalytics.tsx` loads GTM only when `NODE_ENV === 'production'` and `NEXT_PUBLIC_GTM_ID` is set; `/admin` skips the component.
 7. **Tag Assistant / “missing” `purchase`:** Pushes may run before `gtm.js` loads; GTM still processes prior `dataLayer` entries once the container boots. If nothing fires, confirm **`NEXT_PUBLIC_GTM_ID`** matches the container (including `GTM-` prefix) and GTM loads in production (`components/GoogleAnalytics.tsx`).
 
-## Audit: Purchase transport (browser-first)
+## Audit: Purchase transport (browser-only)
 
-- **Browser (dataLayer → GTM):** **`/lanna-order-thank-you`** (resolver) → **`/order/...?track_purchase=1`** → **`OrderPageClient`** → **`trackCheckoutPurchase`** pushes **`purchase`** with **`ecommerce`** (`transaction_id`, `value`, `currency`, `items`), after `{ ecommerce: null }`, after a short GTM/consent wait (`waitForGtmConsentThen`).
-- **Server fallback:** GA4 Measurement Protocol when `ga4_purchase_sent` stays false (`lib/analytics/ga4MeasurementProtocol.ts` — integer `session_id`, `timestamp_micros`, debug validate-before-send).
-- **Duplicate guard (browser):** `lanna_purchase_fired_<orderId>` in localStorage (legacy `sent_purchase_*` read) + server claim/confirm.
+- **Browser (dataLayer → GTM):** **`/lanna-order-thank-you`** → **`trackCheckoutPurchase`** pushes **`purchase`** with **`ecommerce`** (`transaction_id`, `value`, `currency`, `items`), after `{ ecommerce: null }`, after a short GTM/consent wait (`waitForGtmConsentThen`). Redirect includes `purchase_tracked=0|1`; order page retries on `0` or `track_purchase=1`.
+- **Server fallback:** Disabled (cron removed). MP/claim-confirm code may remain unused.
+- **Duplicate guard (browser):** `lanna_purchase_fired_<orderId>` in localStorage (legacy `sent_purchase_*` read) + in-memory guard.
 - **`generate_lead`:** `trackGenerateLead` only pushes `generate_lead`; it does not call purchase helpers.
-
-### One-time ops: reset 8 Jul 2026 maxed MP rows (after deploy)
-
-After this MP fix is live, reset stuck PAID rows from **2026-07-08** that hit max attempts with null/empty last_error so cron can retry:
-
-```sql
-UPDATE orders
-SET
-  ga4_purchase_attempts = 0,
-  ga4_purchase_mp_lock_at = NULL,
-  ga4_purchase_last_error = NULL,
-  ga4_purchase_fallback_run_after = NOW()
-WHERE payment_status = 'PAID'
-  AND (ga4_purchase_sent IS NULL OR ga4_purchase_sent = false)
-  AND paid_at >= '2026-07-08T00:00:00+00'
-  AND paid_at < '2026-07-09T00:00:00+00'
-  AND COALESCE(ga4_purchase_attempts, 0) >= 5;
-```
-
-Run once; do not re-run after rows show `ga4_purchase_sent = true`.
 
 ## Files Controlling Analytics Logic
 

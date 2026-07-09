@@ -1,10 +1,10 @@
 # Google Ads purchase conversion (browser)
 
-Goal: Record **purchase** in GA4 and (optionally) a **purchase** conversion in Google Ads when the customer lands on **`/order/...?track_purchase=1`** after Stripe (cart thank-you is a resolver only), with good session attribution.
+Goal: Record **purchase** in GA4 and (optionally) a **purchase** conversion in Google Ads when the customer completes Stripe checkout, with good session attribution.
 
 ## What the app pushes (source of truth)
 
-Cart: Stripe → **`/lanna-order-thank-you`** (polls `order-status`, no `purchase` push) → redirect to **`/order/{id}?token=…&track_purchase=1`**. Pay-from-order Stripe success URL already includes `track_purchase=1`. **`OrderPageClient`** pushes to **`window.dataLayer`** via **`trackCheckoutPurchase`**:
+Cart: Stripe → **`/lanna-order-thank-you`** (polls `order-status`, pushes **`purchase`**) → redirect to **`/order/{id}?token=…&purchase_tracked=0|1`**. Pay-from-order Stripe success URL includes `track_purchase=1` for order-page fallback. **`trackCheckoutPurchase`** pushes to **`window.dataLayer`**:
 
 - **`event`:** `purchase` (lowercase — standard GA4 name).
 - **`ecommerce`:** `transaction_id`, `value`, `currency`, `items` (each item: `item_id`, `item_name`, `price`, `quantity`) — **only** these keys under `ecommerce`; no root `order_id`.
@@ -13,16 +13,16 @@ Cart: Stripe → **`/lanna-order-thank-you`** (polls `order-status`, no `purchas
 - **Dedupe:** localStorage `lanna_purchase_fired_<orderId>` (also reads legacy `sent_purchase_<orderId>`) so a refresh does not fire again.
 - **Timing:** Push runs after a short GTM/consent wait (`waitForGtmConsentThen` in `lib/analytics/gtag.ts`).
 
-**GA4 revenue:** Configure GTM to send this same **`purchase`** event to GA4 (e.g. GA4 Event tag on Custom Event `purchase` with ecommerce mapping). Browser `purchase` is primary; server GA4 Measurement Protocol is a deduped fallback when `ga4_purchase_sent` stays false (see `docs/ANALYTICS_GA4.md`).
+**GA4 revenue:** Configure GTM to send this same **`purchase`** event to GA4 (e.g. GA4 Event tag on Custom Event `purchase` with ecommerce mapping). Browser `purchase` is the only active path (Measurement Protocol cron disabled).
 
-**Google Ads conversion:** Configure GTM to fire a Google Ads Conversion tag on the same **`purchase`** event. Browser confirm sets `google_ads_conversion_sent`. When the customer never reaches the order page with tracking, the purchase-fallback cron may upload the conversion via the Google Ads Conversion Upload API if `google_ads_conversion_sent` stays false (see **Server upload fallback** below).
+**Google Ads conversion:** Configure GTM to fire a Google Ads Conversion tag on the same **`purchase`** event.
 
 **Optional helper:** `trackCheckoutPurchase` in `lib/analytics/gtag.ts` is the single entry point for the browser `purchase` shape and dedupe.
 
 ## Setup (browser only)
 
 - GTM **Custom Event** trigger **`purchase`** → GA4 Event tag + optional **Google Ads Conversion** tag. Read value and transaction id from **`ecommerce.*`** (Data Layer Variables).
-- Fires on `/order/...?track_purchase=1` after paid confirmation. If the customer leaves before tracking completes, GA4 Measurement Protocol fallback may still record revenue server-side; Google Ads Conversion Upload API fallback may record the Ads conversion when click ID or hashed PII is available.
+- Primary fire is on `/lanna-order-thank-you`; fallback on `/order/...?purchase_tracked=0` or `track_purchase=1`.
 
 ## GTM setup (browser `purchase`)
 
@@ -30,7 +30,7 @@ Cart: Stripe → **`/lanna-order-thank-you`** (polls `order-status`, no `purchas
    - Type: **Custom Event**.
    - Event name: **`purchase`**.
    - **Do not** use Page URL contains `checkout`, `complete`, `success`, `stripe`, or `payment` — those match Stripe Hosted Checkout (`checkout.stripe.com`) and cause false conversions.
-   - **Do not** AND Page Path equals `/lanna-order-thank-you` only — purchase now fires on `/order/...`. Prefer Custom Event alone, or broaden path to include `/order`.
+   - Prefer Custom Event alone (no Page Path filter), or allow both `/lanna-order-thank-you` and `/order`.
 
 2. **Variables (examples)**
    - Data Layer Variable: `ecommerce.value` (conversion value / revenue).
@@ -48,31 +48,14 @@ Cart: Stripe → **`/lanna-order-thank-you`** (polls `order-status`, no `purchas
 
 Recommendation: GTM **Custom Event** `purchase` → **GA4** + optional **Google Ads Conversion** using DL vars under `ecommerce.*`. Read **Troubleshooting** in `docs/ANALYTICS_GA4.md` if tags do not fire.
 
-## Server upload fallback (no order-page return)
+## Server upload fallback (parked)
 
-When the browser never confirms (`google_ads_conversion_sent` stays false), the **`/api/cron/ga4-purchase-fallback`** job may upload the purchase conversion via the [Google Ads Conversion Upload API](https://developers.google.com/google-ads/api/docs/conversions/upload-clicks).
+Code for Google Ads Conversion Upload API still exists under `lib/analytics/`, but the cron is **not** scheduled. Live Ads purchase conversions rely on the browser `dataLayer` → GTM path above.
 
-**Env (server-only):**
-
-| Variable | Purpose |
-|----------|---------|
-| `GOOGLE_ADS_PURCHASE_CONVERSION_ACTION` | Resource name, e.g. `customers/1234567890/conversionActions/987654321` (from Google Ads → Goals → Conversions) |
-| Existing `GOOGLE_ADS_*` OAuth vars | Same credentials as admin Marketing Insights |
-
-**Upload rules (`lib/analytics/googleAdsConversionUpload.ts`):**
-
-- Runs only after the same delay/grace window as GA4 MP (`GA4_PURCHASE_FALLBACK_DELAY_MS`, `GA4_PURCHASE_CLAIMED_GRACE_MS`).
-- Skips silently when `GOOGLE_ADS_PURCHASE_CONVERSION_ACTION` is not set.
-- Skips (not fails) when there is no `gclid` / `gbraid` / `wbraid` **and** no usable hashed email or phone.
-- Sends **one** click ID only — priority: `gclid` > `gbraid` > `wbraid`.
-- Uses `paid_at` for conversion time, order total/currency for value, `order_id` for deduplication.
-- Sets `google_ads_conversion_sent=true`, `google_ads_conversion_source=upload_api` only on API success.
-- Never uploads when browser already confirmed (`google_ads_conversion_sent=true`).
-
-**Dedupe columns on `orders`:**
+**Dedupe columns on `orders` (legacy / parked):**
 
 | Column | Meaning |
 |--------|---------|
-| `ga4_purchase_sent` | GA4 delivered (browser or MP) |
-| `google_ads_conversion_sent` | Google Ads delivered (browser or upload) |
+| `ga4_purchase_sent` | Was set by claim/confirm or MP when that path was live |
+| `google_ads_conversion_sent` | Was set by browser confirm or upload API |
 | `google_ads_conversion_source` | `browser` \| `upload_api` |

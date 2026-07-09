@@ -17,6 +17,6 @@ Critical rules:
 
 - `purchase` must fire only after confirmed paid order (`order-status` returns `purchase` payload).
 - App pushes to `dataLayer` only — no direct `gtag` in app code; GTM forwards to GA4/Ads.
-- Do not duplicate GA4 or Google Ads purchase events (one browser `purchase` pipeline; server MP fallback only when browser does not confirm).
+- Browser-only purchase: thank-you is primary; order page is fallback (`purchase_tracked=0` / `track_purchase=1`). Do not re-enable claim/confirm or MP on the hot path without proving browser GTM first.
 - Funnel events (`add_to_cart`, `begin_checkout`, messenger clicks) are secondary to `purchase`.
 - `view_item` should usually be GA4-only in GTM configuration.

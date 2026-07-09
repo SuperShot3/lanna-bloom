@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { getLatestSupplierRequestForOrder, getOrderByOrderId } from '@/lib/supabase/adminQueries';
+import {
+  getLatestSupplierRequestForOrder,
+  getOrderByOrderId,
+  getOrderDeliveryChangeHistory,
+} from '@/lib/supabase/adminQueries';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
 import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
@@ -10,10 +14,11 @@ import { PaymentCard } from '@/app/admin/components/PaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
 import { SupplierRequestSummaryCard } from '@/app/admin/components/SupplierRequestSummaryCard';
+import { DeliveryEditCard } from '@/app/admin/components/DeliveryEditCard';
+import { OrderHistoryTimeline } from '@/app/admin/components/OrderHistoryTimeline';
 import type { CustomOrderDetails } from '@/lib/orders';
 import { canChangeStatus, canRefund, canRemoveOrder } from '@/lib/adminRbac';
 import { notFound } from 'next/navigation';
-import { formatShopDateTime } from '@/lib/shopTime';
 
 interface PageProps {
   params: Promise<{ order_id: string }>;
@@ -25,6 +30,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
   const { returnTo } = await searchParams;
   const session = await auth();
   const { order, items, statusHistory, error } = await getOrderByOrderId(order_id);
+  const deliveryChanges = await getOrderDeliveryChangeHistory(order_id);
   const role = session?.user ? (session.user as { role?: string }).role : undefined;
   const backHref = returnTo && returnTo.startsWith('/admin') ? returnTo : '/admin/orders';
 
@@ -132,6 +138,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         canRefund={canRefund(role)}
       />
       <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
+      <DeliveryEditCard order={order} canEdit={canChangeStatus(role)} />
       <OrderSummaryCard
         order={order}
         items={itemsWithCatalog}
@@ -168,23 +175,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <p>{order.internal_notes}</p>
         </section>
       )}
-      {statusHistory.length > 0 && (
-        <section className="admin-section">
-          <h2 className="admin-section-title">Status history</h2>
-          <ul className="admin-timeline">
-            {statusHistory.map((h, i) => (
-              <li key={i}>
-                <span className="admin-timeline-status">
-                  {h.from_status ?? '—'} → {h.to_status ?? '—'}
-                </span>
-                <span className="admin-timeline-date">
-                  {h.created_at ? formatShopDateTime(h.created_at) : '—'}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <OrderHistoryTimeline statusHistory={statusHistory} deliveryChanges={deliveryChanges} />
 
       {canRemoveOrder(role) && (
         <section className="admin-section admin-order-remove-footer" aria-label="Remove order">

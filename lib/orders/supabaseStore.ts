@@ -6,6 +6,16 @@ import 'server-only';
 import { nanoid } from 'nanoid';
 import { createSupabaseAnonWithOrderToken, getSupabaseAdmin } from '@/lib/supabase/server';
 import type { Order, OrderPayload } from './types';
+import {
+  buildDeliveryUpdatePayload,
+  deliveryWindowFromTimeSlot,
+  isDeliveryWindow,
+  preferredTimeSlotFromParts,
+  type DeliveryDetailsPatch,
+  type DeliveryDetailsSnapshot,
+  type DeliveryWindow,
+} from './deliveryFields';
+import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from './statusConstants';
 
 function normalizeSubmissionToken(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
@@ -27,7 +37,6 @@ function stripSubmissionTokenForStorage(payload: OrderPayload): OrderPayload {
   const { submissionToken: _drop, ...rest } = payload as OrderPayload & { submissionToken?: string };
   return rest;
 }
-import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from './statusConstants';
 
 /**
  * Customer fulfillment key from DB columns. If `order_status` is empty, use `fulfillment_status`
@@ -55,15 +64,7 @@ function mapSupabasePaymentToLegacy(paymentStatus: string | null | undefined): O
 }
 
 function mapDeliveryWindowToTimeSlot(window: string | null | undefined, date: string | null | undefined): string {
-  const d = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().slice(0, 10);
-  const timeMap: Record<string, string> = {
-    MORNING_9_12: '09:00–12:00',
-    MIDDAY_12_15: '12:00–15:00',
-    AFTERNOON_15_18: '15:00–18:00',
-    EVENING_18_20: '18:00–20:00',
-  };
-  const time = window ? timeMap[window] ?? '09:00–12:00' : '09:00–12:00';
-  return `${d} ${time}`;
+  return preferredTimeSlotFromParts(date, window);
 }
 
 interface SupabaseOrderRow {
@@ -100,6 +101,7 @@ interface SupabaseOrderRow {
   referral_discount?: number | null;
   fulfillment_status?: string | null;
   fulfillment_status_updated_at?: string | null;
+  delivery_google_maps_url?: string | null;
   /** True after admin was notified once at order creation (one email per order). */
   admin_notified?: boolean | null;
   admin_notified_at?: string | null;
@@ -143,9 +145,16 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       delivery: {
         ...json.delivery,
         address: row.address ?? json.delivery?.address ?? '',
+        preferredTimeSlot:
+          mapDeliveryWindowToTimeSlot(row.delivery_window, row.delivery_date) ||
+          json.delivery?.preferredTimeSlot ||
+          '',
         recipientName: row.recipient_name ?? json.delivery?.recipientName,
         recipientPhone: row.recipient_phone ?? json.delivery?.recipientPhone,
         recipientPhoneCountryCode: recipientCc || json.delivery?.recipientPhoneCountryCode,
+        ...(row.delivery_google_maps_url?.trim()
+          ? { deliveryGoogleMapsUrl: row.delivery_google_maps_url.trim() }
+          : {}),
       },
       ...(row.order_source && {
         orderSource: row.order_source as 'web' | 'custom_form' | 'legacy_line',
@@ -351,13 +360,7 @@ export async function supabaseCreateOrder(
   const paymentMethod = order.stripeSessionId || order.paymentIntentId ? 'STRIPE' : 'BANK_TRANSFER';
 
   const deliveryDate = order.delivery.preferredTimeSlot?.split(' ')[0];
-  const deliveryWindow = (() => {
-    const s = order.delivery.preferredTimeSlot ?? '';
-    if (s.includes('12:00') && s.includes('15:00')) return 'MIDDAY_12_15';
-    if (s.includes('15:00') && s.includes('18:00')) return 'AFTERNOON_15_18';
-    if (s.includes('18:00') && s.includes('20:00')) return 'EVENING_18_20';
-    return 'MORNING_9_12';
-  })();
+  const deliveryWindow = deliveryWindowFromTimeSlot(order.delivery.preferredTimeSlot ?? '');
 
   const orderStatus = 'NEW';
   const paymentStatus = status === 'paid' ? 'PAID' : status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
@@ -576,13 +579,7 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
   const publicToken = existingOrder?.public_token ?? nanoid(21);
   const paymentMethod = order.stripeSessionId || order.paymentIntentId ? 'STRIPE' : 'BANK_TRANSFER';
   const deliveryDate = order.delivery.preferredTimeSlot?.split(' ')[0];
-  const deliveryWindow = (() => {
-    const s = order.delivery.preferredTimeSlot ?? '';
-    if (s.includes('12:00') && s.includes('15:00')) return 'MIDDAY_12_15';
-    if (s.includes('15:00') && s.includes('18:00')) return 'AFTERNOON_15_18';
-    if (s.includes('18:00') && s.includes('20:00')) return 'EVENING_18_20';
-    return 'MORNING_9_12';
-  })();
+  const deliveryWindow = deliveryWindowFromTimeSlot(order.delivery.preferredTimeSlot ?? '');
   const orderStatus = 'NEW';
   const paymentStatus = order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
 
@@ -783,5 +780,164 @@ export async function supabaseLookupOrdersByOrderId(
     deliveryDate: r.delivery_date ?? null,
     createdAt: r.created_at ?? new Date().toISOString(),
   }));
+}
+
+function snapshotFromOrderRow(row: {
+  delivery_date?: string | null;
+  delivery_window?: string | null;
+  address?: string | null;
+  delivery_google_maps_url?: string | null;
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
+  order_json?: Record<string, unknown> | null;
+}): DeliveryDetailsSnapshot {
+  const json = row.order_json as Order | null | undefined;
+  const delivery = json?.delivery;
+  const windowRaw = row.delivery_window?.trim() || null;
+  const window: DeliveryWindow | null =
+    windowRaw && isDeliveryWindow(windowRaw)
+      ? windowRaw
+      : windowRaw
+        ? deliveryWindowFromTimeSlot(windowRaw)
+        : delivery?.preferredTimeSlot
+          ? deliveryWindowFromTimeSlot(delivery.preferredTimeSlot)
+          : null;
+
+  const surprise = delivery?.surpriseDelivery;
+  return {
+    delivery_date: row.delivery_date?.trim() || null,
+    delivery_window: window,
+    address: row.address?.trim() || delivery?.address?.trim() || null,
+    delivery_google_maps_url:
+      row.delivery_google_maps_url?.trim() || delivery?.deliveryGoogleMapsUrl?.trim() || null,
+    recipient_name: row.recipient_name?.trim() || delivery?.recipientName?.trim() || null,
+    recipient_phone: row.recipient_phone?.trim() || delivery?.recipientPhone?.trim() || null,
+    notes: delivery?.notes?.trim() || null,
+    surprise_delivery: typeof surprise === 'boolean' ? surprise : null,
+  };
+}
+
+export type UpdateOrderDeliveryDetailsResult =
+  | {
+      ok: true;
+      order: {
+        order_id: string;
+        delivery_date: string | null;
+        delivery_window: string | null;
+        address: string | null;
+        delivery_google_maps_url: string | null;
+        recipient_name: string | null;
+        recipient_phone: string | null;
+        order_status: string | null;
+        updated_at: string | null;
+      };
+      from: Partial<DeliveryDetailsSnapshot>;
+      to: Partial<DeliveryDetailsSnapshot>;
+      changedFields: string[];
+    }
+  | { ok: false; error: string; status: number };
+
+/**
+ * Admin dual-write of delivery details into normalized columns + order_json.delivery.
+ * Does not change pricing. Rejects DELIVERED / CANCELLED orders.
+ */
+export async function updateOrderDeliveryDetails(
+  orderId: string,
+  patch: DeliveryDetailsPatch
+): Promise<UpdateOrderDeliveryDetailsResult> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return { ok: false, error: 'Supabase not configured', status: 503 };
+  }
+
+  const id = orderId.trim();
+  if (!id) {
+    return { ok: false, error: 'order_id required', status: 400 };
+  }
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('orders')
+    .select(
+      'order_id, order_status, delivery_date, delivery_window, address, delivery_google_maps_url, recipient_name, recipient_phone, order_json'
+    )
+    .eq('order_id', id)
+    .single();
+
+  if (fetchError || !existing) {
+    return { ok: false, error: 'Order not found', status: 404 };
+  }
+
+  const status = normalizeOrderStatus(existing.order_status);
+  if (status === 'DELIVERED' || status === 'CANCELLED') {
+    return {
+      ok: false,
+      error: `Cannot edit delivery details when order status is ${status}`,
+      status: 400,
+    };
+  }
+
+  const current = snapshotFromOrderRow(existing);
+  const built = buildDeliveryUpdatePayload(current, patch);
+  if ('error' in built) {
+    return { ok: false, error: built.error, status: 400 };
+  }
+
+  const existingJson =
+    existing.order_json && typeof existing.order_json === 'object'
+      ? (existing.order_json as Record<string, unknown>)
+      : {};
+  const existingDelivery =
+    existingJson.delivery && typeof existingJson.delivery === 'object'
+      ? (existingJson.delivery as Record<string, unknown>)
+      : {};
+
+  const nextJson: Record<string, unknown> = {
+    ...existingJson,
+    delivery: {
+      ...existingDelivery,
+      ...built.deliveryJsonPatch,
+    },
+  };
+
+  const updatedAt = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase
+    .from('orders')
+    .update({
+      ...built.columnUpdates,
+      order_json: nextJson,
+      updated_at: updatedAt,
+    })
+    .eq('order_id', id)
+    .select(
+      'order_id, delivery_date, delivery_window, address, delivery_google_maps_url, recipient_name, recipient_phone, order_status, updated_at'
+    )
+    .single();
+
+  if (updateError || !updated) {
+    console.error('[orders/supabase] updateOrderDeliveryDetails error:', updateError);
+    return {
+      ok: false,
+      error: updateError?.message ?? 'Failed to update delivery details',
+      status: 500,
+    };
+  }
+
+  return {
+    ok: true,
+    order: {
+      order_id: updated.order_id,
+      delivery_date: updated.delivery_date ?? null,
+      delivery_window: updated.delivery_window ?? null,
+      address: updated.address ?? null,
+      delivery_google_maps_url: updated.delivery_google_maps_url ?? null,
+      recipient_name: updated.recipient_name ?? null,
+      recipient_phone: updated.recipient_phone ?? null,
+      order_status: updated.order_status ?? null,
+      updated_at: updated.updated_at ?? updatedAt,
+    },
+    from: built.from,
+    to: built.to,
+    changedFields: built.changedFields,
+  };
 }
 

@@ -16,7 +16,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 | Browse | Localized storefront and catalog read approved products from Supabase catalog tables |
 | Product / cart | Product pages support size selection; cart collects delivery area/date and customer contact details |
 | Pay | Primary web flow is Stripe Checkout; server recomputes totals and creates orders after confirmed payment |
-| After pay | Thin `/lanna-order-thank-you` resolver polls until paid, then instantly redirects to `/order/...?track_purchase=1` (no celebration delay) |
+| After pay | Thin `/lanna-order-thank-you` polls until paid, fires browser `purchase` via GTM, then redirects to `/order/...?purchase_tracked=0|1` |
 | Order tracking | `/order/{orderId}?token=...` requires the public token and shows customer-facing status/contact options |
 | Messenger | LINE / WhatsApp / Telegram links are supporting contact channels, not the primary payment/order authority |
 | Partner flow | Public self-service partner dashboard is retired; `/[lang]/partner/apply` stores applications for admin review |

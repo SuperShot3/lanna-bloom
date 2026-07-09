@@ -116,6 +116,19 @@ export interface SupabaseStatusHistoryRow {
   created_at: string | null;
 }
 
+export interface OrderDeliveryChangeHistoryRow {
+  id: string;
+  admin_email: string;
+  action: string;
+  target_order_id: string | null;
+  diff_json: {
+    from?: Record<string, string | boolean | null>;
+    to?: Record<string, string | boolean | null>;
+    changedFields?: string[];
+  } | null;
+  created_at: string | null;
+}
+
 export interface SupplierOrderRequestRow {
   id: string;
   order_id: string;
@@ -513,6 +526,31 @@ export async function getSupabaseOrderStatusHistoryByOrderId(
 
     if (error || !data) return [];
     return data as SupabaseStatusHistoryRow[];
+  } catch {
+    return [];
+  }
+}
+
+/** Admin delivery-detail edits for an order (from audit_logs). */
+export async function getOrderDeliveryChangeHistory(
+  orderId: string
+): Promise<OrderDeliveryChangeHistoryRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const normalized = String(orderId ?? '').trim();
+  if (!normalized) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('id, admin_email, action, target_order_id, diff_json, created_at')
+      .eq('target_order_id', normalized)
+      .eq('action', 'DELIVERY_DETAILS_UPDATE')
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    return data as OrderDeliveryChangeHistoryRow[];
   } catch {
     return [];
   }
