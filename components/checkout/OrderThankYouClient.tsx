@@ -7,6 +7,16 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
+import { trackCheckoutPurchase, markPendingPurchaseTrack } from '@/lib/analytics';
+import type { PurchaseItem, PurchaseUserData } from '@/lib/analytics/gtag';
+
+type OrderStatusPurchase = {
+  transaction_id: string;
+  value: number;
+  currency: string;
+  items: PurchaseItem[];
+  user_data?: PurchaseUserData;
+};
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -52,13 +62,39 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
           status?: string;
           orderId?: string | null;
           token?: string | null;
+          purchase?: OrderStatusPurchase;
         };
         if (cancelled) return;
         if (data.status === 'paid' && typeof data.orderId === 'string' && data.orderId.trim()) {
           const oid = data.orderId.trim();
           const publicToken = typeof data.token === 'string' ? data.token.trim() : '';
+          const purchase = data.purchase;
 
-          // Thin resolver only: browser `purchase` fires on the order page via track_purchase=1.
+          markPendingPurchaseTrack(oid);
+
+          // Primary browser purchase: fire here while we still have the paid payload and token.
+          // Order page remains a fallback via track_purchase=1 / sessionStorage pending flag.
+          if (
+            purchase &&
+            typeof purchase.transaction_id === 'string' &&
+            purchase.transaction_id.trim() &&
+            typeof purchase.value === 'number' &&
+            Number.isFinite(purchase.value) &&
+            purchase.value > 0 &&
+            typeof purchase.currency === 'string' &&
+            Array.isArray(purchase.items) &&
+            publicToken
+          ) {
+            await trackCheckoutPurchase({
+              orderId: purchase.transaction_id,
+              value: purchase.value,
+              currency: purchase.currency,
+              items: purchase.items,
+              userData: purchase.user_data,
+              claim: { token: publicToken },
+            }).catch(() => false);
+          }
+
           const token = sessionStorage.getItem(CHECKOUT_SUBMISSION_TOKEN_SESSION_KEY);
           const qs = new URLSearchParams();
           if (token && /^[0-9a-fA-F-]+$/.test(token) && token.length >= 8) {

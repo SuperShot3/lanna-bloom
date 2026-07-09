@@ -15,6 +15,9 @@ export {
   trackCheckoutPurchase,
   wasCheckoutPurchaseSent,
   markCheckoutPurchaseSent,
+  markPendingPurchaseTrack,
+  hasPendingPurchaseTrack,
+  clearPendingPurchaseTrack,
 } from './analytics/gtag';
 
 const CURRENCY = 'THB';

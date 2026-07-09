@@ -142,16 +142,45 @@ export async function POST(
     browserConfirmUpdate.ga4_purchase_last_error = null;
   }
 
-  const updateFilter = adsColumnPresent
-    ? 'ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false,google_ads_conversion_sent.is.null,google_ads_conversion_sent.eq.false'
-    : 'ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false';
-
-  const { data: confirmed, error: confirmError } = await supabase
+  let confirmQuery = supabase
     .from('orders')
     .update(browserConfirmUpdate)
-    .eq('order_id', normalized)
-    .or(updateFilter)
-    .select('order_id');
+    .eq('order_id', normalized);
+
+  // PostgREST `.or('col.is.null,col.eq.false')` can fail with misleading "column does not exist";
+  // use `.neq(col, true)` for atomic confirm (matches claim-purchase fix).
+  if (!ga4AlreadySent) {
+    confirmQuery = confirmQuery.neq('ga4_purchase_sent', true);
+  } else if (adsColumnPresent && !adsAlreadySent) {
+    confirmQuery = confirmQuery.neq('google_ads_conversion_sent', true);
+  }
+
+  let { data: confirmed, error: confirmError } = await confirmQuery.select('order_id');
+
+  if (
+    confirmError &&
+    !ga4AlreadySent &&
+    (isSupabaseMissingColumnError(confirmError, 'ga4_purchase_source') ||
+      isSupabaseMissingColumnError(confirmError, 'ga4_purchase_last_error'))
+  ) {
+    const minimalUpdate: Record<string, unknown> = {
+      updated_at: now,
+      ga4_purchase_sent: true,
+      ga4_purchase_sent_at: now,
+    };
+    if (adsColumnPresent && !adsAlreadySent) {
+      minimalUpdate.google_ads_conversion_sent = true;
+      minimalUpdate.google_ads_conversion_sent_at = now;
+    }
+    const retry = await supabase
+      .from('orders')
+      .update(minimalUpdate)
+      .eq('order_id', normalized)
+      .neq('ga4_purchase_sent', true)
+      .select('order_id');
+    confirmed = retry.data;
+    confirmError = retry.error;
+  }
 
   if (confirmError) {
     console.error('[orders/confirm-purchase] update failed:', confirmError.message, {
@@ -161,6 +190,9 @@ export async function POST(
   }
 
   const won = Array.isArray(confirmed) && confirmed.length > 0;
+  if (won) {
+    console.info('[orders/confirm-purchase] browser purchase confirmed', { orderId: normalized });
+  }
   return NextResponse.json(
     won
       ? { confirmed: true }

@@ -23,7 +23,7 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { trackCheckoutPurchase } from '@/lib/analytics';
+import { trackCheckoutPurchase, hasPendingPurchaseTrack } from '@/lib/analytics';
 import {
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
@@ -164,7 +164,10 @@ export function OrderPageClient({
       window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
     };
 
-    const explicitRecovery = purchaseTrackedParam === '0' || trackPurchaseParam === '1';
+    const explicitRecovery =
+      purchaseTrackedParam === '0' ||
+      trackPurchaseParam === '1' ||
+      hasPendingPurchaseTrack(normalizedOrderId);
     if (!explicitRecovery) {
       stripTrackingParams();
       return;
@@ -193,7 +196,7 @@ export function OrderPageClient({
       const phone = phoneInternational(order.phone, order.phoneCountryCode);
       if (phone) userData.phone_number = phone;
 
-      await trackCheckoutPurchase({
+      const purchaseResult = await trackCheckoutPurchase({
         orderId: normalizedOrderId,
         value,
         currency,
@@ -202,7 +205,7 @@ export function OrderPageClient({
         claim: { token: publicToken },
       }).catch(() => false);
 
-      if (!cancelled) {
+      if (!cancelled && purchaseResult) {
         stripTrackingParams();
       }
     })();

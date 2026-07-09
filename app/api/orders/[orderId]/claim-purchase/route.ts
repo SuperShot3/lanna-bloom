@@ -34,6 +34,24 @@ type PaymentRow = {
   ga4_purchase_claimed?: boolean | null;
 };
 
+async function attemptLegacyPurchaseClaim(
+  supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  orderId: string,
+  now: string,
+): Promise<{ won: boolean; error: { message?: string } | null }> {
+  const { data: claimed, error: claimError } = await supabase
+    .from('orders')
+    .update({ ga4_purchase_sent: true, ga4_purchase_sent_at: now, updated_at: now })
+    .eq('order_id', orderId)
+    .neq('ga4_purchase_sent', true)
+    .select('order_id');
+
+  return {
+    won: Array.isArray(claimed) && claimed.length > 0,
+    error: claimError,
+  };
+}
+
 async function loadPaymentRow(
   supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
   orderId: string,
@@ -143,21 +161,13 @@ export async function POST(
   const now = new Date().toISOString();
 
   if (usesLegacyClaim) {
-    const { data: claimed, error: claimError } = await supabase
-      .from('orders')
-      .update({ ga4_purchase_sent: true, ga4_purchase_sent_at: now, updated_at: now })
-      .eq('order_id', normalized)
-      .or('ga4_purchase_sent.is.null,ga4_purchase_sent.eq.false')
-      .select('order_id');
-
+    const { won, error: claimError } = await attemptLegacyPurchaseClaim(supabase, normalized, now);
     if (claimError) {
       console.error('[orders/claim-purchase] legacy claim update failed:', claimError.message, {
         orderId: normalized,
       });
       return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
     }
-
-    const won = Array.isArray(claimed) && claimed.length > 0;
     if (won) {
       console.warn(
         '[orders/claim-purchase] using legacy ga4_purchase_sent claim — apply migration 20260708120000_ga4_purchase_fallback',
@@ -176,10 +186,32 @@ export async function POST(
     .from('orders')
     .update({ ga4_purchase_claimed: true, ga4_purchase_claimed_at: now, updated_at: now })
     .eq('order_id', normalized)
-    .or('ga4_purchase_claimed.is.null,ga4_purchase_claimed.eq.false')
+    .neq('ga4_purchase_claimed', true)
     .select('order_id');
 
   if (claimError) {
+    const missingClaimedColumn =
+      isSupabaseMissingColumnError(claimError, 'ga4_purchase_claimed') ||
+      isSupabaseMissingColumnError(claimError, 'ga4_purchase_claimed_at');
+    if (missingClaimedColumn) {
+      console.warn(
+        '[orders/claim-purchase] ga4_purchase_claimed columns missing — falling back to legacy claim',
+        { orderId: normalized },
+      );
+      const legacy = await attemptLegacyPurchaseClaim(supabase, normalized, now);
+      if (legacy.error) {
+        console.error('[orders/claim-purchase] legacy claim fallback failed:', legacy.error.message, {
+          orderId: normalized,
+        });
+        return NextResponse.json({ error: 'Service unavailable' }, { status: 500 });
+      }
+      return NextResponse.json(
+        legacy.won
+          ? { shouldTrack: true, legacy: true }
+          : { shouldTrack: false, reason: 'already_claimed' },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
     console.error('[orders/claim-purchase] claim update failed:', claimError.message, {
       orderId: normalized,
     });
@@ -187,6 +219,11 @@ export async function POST(
   }
 
   const won = Array.isArray(claimed) && claimed.length > 0;
+  if (won) {
+    console.info('[orders/claim-purchase] claim won', { orderId: normalized });
+  } else {
+    console.info('[orders/claim-purchase] claim lost (already claimed)', { orderId: normalized });
+  }
   return NextResponse.json(
     won
       ? { shouldTrack: true }

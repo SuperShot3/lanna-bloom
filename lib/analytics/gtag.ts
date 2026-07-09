@@ -80,6 +80,42 @@ function toAnalyticsNumber(raw: unknown): number {
 /** Same-tab guard so a re-running effect cannot double-push before localStorage updates. */
 const purchaseSentThisDocument = new Set<string>();
 
+/** Prevents parallel trackCheckoutPurchase calls from racing claim vs local dedupe. */
+const purchaseTrackInFlight = new Set<string>();
+
+const PENDING_PURCHASE_SESSION_PREFIX = 'lanna_pending_track_purchase_';
+
+/** Set on thank-you before redirect so the order page can still fire if URL params are lost. */
+export function markPendingPurchaseTrack(orderId: string): void {
+  const id = normalizeOrderId(orderId);
+  if (!id || typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(`${PENDING_PURCHASE_SESSION_PREFIX}${id}`, '1');
+  } catch {
+    // ignore
+  }
+}
+
+export function hasPendingPurchaseTrack(orderId: string): boolean {
+  const id = normalizeOrderId(orderId);
+  if (!id || typeof window === 'undefined') return false;
+  try {
+    return window.sessionStorage.getItem(`${PENDING_PURCHASE_SESSION_PREFIX}${id}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function clearPendingPurchaseTrack(orderId: string): void {
+  const id = normalizeOrderId(orderId);
+  if (!id || typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(`${PENDING_PURCHASE_SESSION_PREFIX}${id}`);
+  } catch {
+    // ignore
+  }
+}
+
 function hasStorageSentFlag(storage: Storage | undefined, key: string): boolean {
   if (!storage) return false;
   try {
@@ -331,6 +367,10 @@ export function trackCheckoutPurchase(params: {
     return Promise.resolve(false);
   }
 
+  if (purchaseTrackInFlight.has(normalizedOrderId)) {
+    return Promise.resolve(false);
+  }
+
   const items = itemsInput.map((item, idx) => {
     const price = toAnalyticsNumber(item.price);
     const quantity = Math.max(1, Math.floor(toAnalyticsNumber(item.quantity ?? 1)) || 1);
@@ -368,19 +408,27 @@ export function trackCheckoutPurchase(params: {
   if (phone) userData.phone_number = phone;
   const hasUserData = Boolean(userData.email_address || userData.phone_number);
 
-  return new Promise<boolean>((resolve) => {
-    waitForGtmConsentThen(() => {
-      if (wasCheckoutPurchaseSent(normalizedOrderId)) {
-        resolve(false);
-        return;
-      }
+  purchaseTrackInFlight.add(normalizedOrderId);
 
+  return new Promise<boolean>((resolve) => {
+    const releaseInFlight = () => {
+      purchaseTrackInFlight.delete(normalizedOrderId);
+    };
+
+    waitForGtmConsentThen(() => {
       let settled = false;
       const finish = (ok: boolean) => {
         if (settled) return;
         settled = true;
+        releaseInFlight();
+        if (ok) clearPendingPurchaseTrack(normalizedOrderId);
         resolve(ok);
       };
+
+      if (wasCheckoutPurchaseSent(normalizedOrderId)) {
+        finish(false);
+        return;
+      }
 
       const doPush = () => {
         const claimToken = claim?.token?.trim();
@@ -451,10 +499,8 @@ export function trackCheckoutPurchase(params: {
           doPush();
           return;
         }
-        if (result.reason === 'already_claimed') {
-          // Tracked globally (another device/browser) — persist locally so this browser stops retrying.
-          markCheckoutPurchaseSent(normalizedOrderId);
-        }
+        // Do not mark local dedupe on already_claimed — a parallel in-flight call may still
+        // be pushing for this tab; server claim dedupe is the source of truth.
         // 'not_paid' / 'error': no local flag, so a later legitimate attempt can still claim.
         if (isDev) {
           console.debug('[analytics] purchase skipped — claim denied', {
