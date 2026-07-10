@@ -2,6 +2,7 @@ import type { CartItem } from '@/contexts/CartContext';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
+import { applyPeakCelebrationMarkupThb } from '@/lib/promo/peakCelebrationPricing';
 
 export function isNonBouquetCartLine(item: CartItem): boolean {
   return item.itemType === 'product' || item.itemType === 'plushyToy' || item.itemType === 'balloon';
@@ -20,8 +21,10 @@ export type CartPriceBreakdown = {
 
 export function cartPriceBreakdown(
   items: CartItem[],
-  deliveryDestination: OrderDeliveryDestinationId
+  deliveryDestination: OrderDeliveryDestinationId,
+  deliveryDateYmd?: string
 ): CartPriceBreakdown {
+  const peakDate = deliveryDateYmd?.trim() ?? '';
   let bouquetSubtotal = 0;
   let addOnsSubtotal = 0;
   let otherItemsSubtotal = 0;
@@ -29,10 +32,8 @@ export function cartPriceBreakdown(
   for (const item of items) {
     const qty = item.quantity ?? 1;
     const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-    const unitMarked = applyExpansionItemMarkupThb(
-      item.size.price + addOnsUnit,
-      deliveryDestination
-    );
+    const basePrice = applyPeakCelebrationMarkupThb(item.size.price, peakDate);
+    const unitMarked = applyExpansionItemMarkupThb(basePrice + addOnsUnit, deliveryDestination);
 
     if (isNonBouquetCartLine(item)) {
       otherItemsSubtotal += unitMarked * qty;
@@ -40,7 +41,8 @@ export function cartPriceBreakdown(
     }
 
     const addOnsMarked = applyExpansionItemMarkupThb(addOnsUnit, deliveryDestination);
-    bouquetSubtotal += (unitMarked - addOnsMarked) * qty;
+    const bouquetMarked = applyExpansionItemMarkupThb(basePrice, deliveryDestination);
+    bouquetSubtotal += bouquetMarked * qty;
     addOnsSubtotal += addOnsMarked * qty;
   }
 
@@ -54,7 +56,8 @@ export function cartPriceBreakdown(
 
 export function cartValue(
   items: CartItem[],
-  deliveryDestination: OrderDeliveryDestinationId
+  deliveryDestination: OrderDeliveryDestinationId,
+  deliveryDateYmd?: string
 ): number {
-  return cartPriceBreakdown(items, deliveryDestination).itemsTotal;
+  return cartPriceBreakdown(items, deliveryDestination, deliveryDateYmd).itemsTotal;
 }

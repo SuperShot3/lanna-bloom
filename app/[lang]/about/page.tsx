@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { aboutPageCopy } from '@/lib/aboutPageCopy';
+import { aboutPageCopy, DBD_BANNER_URL, DBD_VERIFY_URL } from '@/lib/aboutPageCopy';
 import type { AboutRichParagraph, AboutSegment } from '@/lib/aboutPageCopy';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { AboutNewsletterSignup } from './AboutNewsletterSignup';
@@ -274,6 +274,32 @@ export default function AboutPage({ params }: { params: { lang: string } }) {
                 {c.lookingAhead.paragraphs.map((p, i) => (
                   <Body key={`ahead-${i}`}>{p}</Body>
                 ))}
+              </div>
+            </section>
+
+            <section className="space-y-5 pt-2 border-t border-stone-200/90">
+              <SectionTitle>{c.dbdVerification.title}</SectionTitle>
+              <div className="rounded-2xl border border-[#ebe6e0] bg-white p-5 sm:p-7 shadow-[var(--shadow)] space-y-4">
+                <div className="inline-flex rounded-lg bg-white p-1 shadow-[var(--shadow)]">
+                  <img
+                    src={DBD_BANNER_URL}
+                    alt="DBD Verified badge (Thailand Department of Business Development)"
+                    className="block h-14 w-14 object-contain sm:h-[76px] sm:w-[76px]"
+                    loading="lazy"
+                    decoding="async"
+                    width={76}
+                    height={76}
+                  />
+                </div>
+                <Body>{c.dbdVerification.explanation}</Body>
+                <a
+                  href={DBD_VERIFY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkClassName}
+                >
+                  {c.dbdVerification.verifyLinkText}
+                </a>
               </div>
             </section>
 

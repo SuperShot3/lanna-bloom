@@ -22,6 +22,12 @@ import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
+import {
+  applyPeakCelebrationMarkupThb,
+  getPeakCelebrationRuleForDeliveryDate,
+  peakCelebrationMinOrderShortfall,
+} from '@/lib/promo/peakCelebrationPricing';
+import { peakCelebrationMinOrderErrorMessage } from '@/lib/promo/peakCelebrationMessages';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -72,6 +78,8 @@ export interface ComputedOrderTotals {
 export interface PricingDeliveryInput {
   deliveryDestination: OrderDeliveryDestinationId;
   deliveryZoneId: string;
+  /** Requested delivery date (YYYY-MM-DD) from preferredTimeSlot. */
+  deliveryDateYmd: string;
 }
 
 /**
@@ -95,6 +103,8 @@ export async function computeOrderTotals(
   if (deliveryFeeResolved == null) {
     return { ok: false, message: 'Invalid delivery zone for this destination' };
   }
+
+  const deliveryDateYmd = delivery.deliveryDateYmd?.trim() ?? '';
 
   if (isExpansionDestination(delivery.deliveryDestination)) {
     for (const item of cartItems) {
@@ -137,7 +147,7 @@ export async function computeOrderTotals(
         return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
       }
       const finalPrice = applyCatalogDiscountThb(toy.price, toy.discountPercent);
-      let itemPrice = finalPrice;
+      let itemPrice = applyPeakCelebrationMarkupThb(finalPrice, deliveryDateYmd);
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
@@ -169,7 +179,7 @@ export async function computeOrderTotals(
         return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
       }
       const finalPrice = applyCatalogDiscountThb(balloon.price, balloon.discountPercent);
-      let itemPrice = finalPrice;
+      let itemPrice = applyPeakCelebrationMarkupThb(finalPrice, deliveryDateYmd);
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
@@ -217,7 +227,7 @@ export async function computeOrderTotals(
       const listedPrice = computeFinalPrice(partnerCost, product.commissionPercent);
       const finalPrice = applyCatalogDiscountThb(listedPrice, product.discountPercent);
       const commissionAmount = finalPrice - partnerCost;
-      let itemPrice = finalPrice;
+      let itemPrice = applyPeakCelebrationMarkupThb(finalPrice, deliveryDateYmd);
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
@@ -263,7 +273,10 @@ export async function computeOrderTotals(
         return { ok: false, message: `Bouquet ${bouquet.slug} has no sizes` };
       }
 
-      let itemPrice = applyCatalogDiscountThb(size.price ?? 0, bouquet.discountPercent);
+      let itemPrice = applyPeakCelebrationMarkupThb(
+        applyCatalogDiscountThb(size.price ?? 0, bouquet.discountPercent),
+        deliveryDateYmd
+      );
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
       }
@@ -289,6 +302,17 @@ export async function computeOrderTotals(
         itemType: 'bouquet',
       });
       itemsTotal += itemPrice;
+    }
+  }
+
+  const peakRule = deliveryDateYmd ? getPeakCelebrationRuleForDeliveryDate(deliveryDateYmd) : null;
+  if (peakRule) {
+    const shortfall = peakCelebrationMinOrderShortfall(itemsTotal, deliveryDateYmd);
+    if (shortfall > 0) {
+      return {
+        ok: false,
+        message: peakCelebrationMinOrderErrorMessage(lang, peakRule, shortfall),
+      };
     }
   }
 

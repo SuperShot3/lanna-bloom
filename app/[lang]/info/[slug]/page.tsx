@@ -12,6 +12,7 @@ import { ArticleCta } from './ArticleCta';
 import { ArticleListenPlayer } from './ArticleListenPlayer';
 import { CatalogProductCard } from './CatalogProductCard';
 import { GuideComments } from '../_components/GuideComments';
+import { RelatedGuides } from '../_components/RelatedGuides';
 import styles from './article.module.css';
 
 /** Public static URL; file must live under /public */
@@ -90,6 +91,7 @@ export function generateStaticParams() {
     'monday-flowers-thailand-yellow-bouquets',
     'flowers-for-men',
     'flower-delivery-to-hospitals-chiang-mai',
+    'buy-flowers-online-chiang-mai-thailand',
     'delivery-policy',
   ];
   const params: { lang: string; slug: string }[] = [];
@@ -287,6 +289,7 @@ export default async function InfoArticlePage({
             <MDXRemote source={mdxSource} components={mdxComponents} />
           </div>
           <ArticleCta links={ctaLinks} lang={lang} title={ctaTitle} />
+          <RelatedGuides excludeSlug={slug} lang={lang} />
           <GuideComments guideSlug={slug} lang={lang} />
         </div>
       </article>

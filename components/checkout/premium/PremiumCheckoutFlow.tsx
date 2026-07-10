@@ -13,6 +13,7 @@ import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
 import { SameDayCutoffBanner } from '@/components/checkout/SameDayCutoffBanner';
+import { PeakCelebrationCheckoutNotice } from '@/components/checkout/PeakCelebrationCheckoutNotice';
 import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/SelectionTile';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
@@ -413,6 +414,11 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
       >
         <h2 className="co-section-title">{t.deliveryDateTitle}</h2>
         {deliveryProfile.variant === 'chiang-mai' && <SameDayCutoffBanner lang={lang} />}
+        <PeakCelebrationCheckoutNotice
+          lang={lang}
+          deliveryDateYmd={delivery.date}
+          itemsTotal={itemsTotal}
+        />
         <DeliveryDateSelector
           lang={lang}
           value={delivery.date}

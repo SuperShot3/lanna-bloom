@@ -9,6 +9,7 @@ import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
 import { GuideComments } from '../_components/GuideComments';
+import { RelatedGuides } from '../_components/RelatedGuides';
 
 const BOUQUET_SECTIONS = [
   {
@@ -337,6 +338,7 @@ export default async function BirthdayFlowerGiftGuidePage({
         <GuideFaq faq={faqItems} title="Frequently asked questions" />
 
         <section className="guide-section">
+          <RelatedGuides excludeSlug="birthday-flower-gift-guide" lang={lang} />
           <GuideComments guideSlug="birthday-flower-gift" lang={locale} />
         </section>
 

@@ -4,7 +4,34 @@ import { Stars } from '@/components/reviews/Stars';
 import { GOOGLE_REVIEW_URL } from '@/lib/reviewsConfig';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import type { Metadata } from 'next';
+import { getBaseUrl } from '@/lib/orders';
 import styles from '@/components/reviews/reviews.module.css';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { lang: string };
+}): Promise<Metadata> {
+  if (!isValidLocale(params.lang)) return { title: 'Lanna Bloom' };
+  const locale = params.lang as Locale;
+  const title = `${translations[locale].reviews.pageTitle} | Lanna Bloom`;
+  const description = translations[locale].reviews.subtitle;
+  const canonical = `${getBaseUrl()}/${locale}/reviews`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      siteName: 'Lanna Bloom',
+      locale: locale === 'th' ? 'th_TH' : 'en_US',
+      type: 'website',
+    },
+  };
+}
 
 export default async function ReviewsPage({
   params,

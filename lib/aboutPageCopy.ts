@@ -4,6 +4,11 @@
 
 import type { Locale } from '@/lib/i18n';
 
+export const DBD_BANNER_URL =
+  'https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B';
+export const DBD_VERIFY_URL =
+  'https://dbdregistered.dbd.go.th/api/public/shopinfo?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B';
+
 /** Inline segment: plain text, bold emphasis, or link (href without locale prefix). */
 export type AboutSegment =
   | { type: 'text'; text: string }
@@ -59,6 +64,11 @@ export type AboutPageCopy = {
     newsletterInvalidEmail: string;
   };
   lookingAhead: { title: string; paragraphs: string[] };
+  dbdVerification: {
+    title: string;
+    explanation: string;
+    verifyLinkText: string;
+  };
   contact: {
     title: string;
     intro: AboutRichParagraph;
@@ -217,6 +227,12 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
         'Lanna Bloom is growing step by step — with the goal of helping customers discover meaningful gifts more easily, while helping local sellers and craftsmen reach a wider audience in a better way.',
         'Thank you for supporting a local startup and being part of our journey.',
       ],
+    },
+    dbdVerification: {
+      title: 'DBD Verified (Thailand)',
+      explanation:
+        'Lanna Bloom is a DBD Verified online business in Thailand (Department of Business Development, Ministry of Commerce). This verification supports transparency and customer trust for online orders.',
+      verifyLinkText: 'Verify on DBD (opens official page)',
     },
     contact: {
       title: 'Contact',
@@ -388,6 +404,12 @@ const baseAboutPageCopy: Record<'en' | 'th', AboutPageCopy> = {
         'Lanna Bloom กำลังเติบโตทีละขั้น — ด้วยเป้าหมายช่วยให้ลูกค้าค้นพบของขวัญที่มีความหมายได้ง่ายขึ้น — และช่วยให้ผู้ขายท้องถิ่นกับช่างฝีมือเข้าถึงกลุ่มคนได้กว้างขึ้นในแบบที่ดีขึ้น',
         'ขอบคุณที่สนับสนุนสตาร์ทอัพท้องถิ่นและเป็นส่วนหนึ่งของการเดินทางของเรา',
       ],
+    },
+    dbdVerification: {
+      title: 'DBD Verified (ประเทศไทย)',
+      explanation:
+        'Lanna Bloom เป็นธุรกิจออนไลน์ที่ผ่านการตรวจสอบ DBD (กรมพัฒนาธุรกิจการค้า กระทรวงพาณิชย์) การตรวจสอบนี้สนับสนุนความโปร่งใสและความเชื่อมั่นของลูกค้าสำหรับการสั่งซื้อออนไลน์',
+      verifyLinkText: 'ตรวจสอบบน DBD (เปิดหน้าอย่างเป็นทางการ)',
     },
     contact: {
       title: 'ติดต่อ',

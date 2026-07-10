@@ -238,10 +238,10 @@ export const articles: ArticleMeta[] = [
     slug: 'delivery-policy',
     title: 'Delivery Policy',
     excerpt:
-      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance (orders after 18:00 usually roll to the next day), zones and fees at checkout, chat confirmation after you order online, and what we need for a smooth delivery. Custom requests or extra questions? Message us on LINE or WhatsApp.',
+      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance (orders after 18:00 usually roll to the next day), zones and fees at checkout, peak celebration pricing on major holidays, chat confirmation after you order online, and what we need for a smooth delivery. Custom requests or extra questions? Message us on LINE or WhatsApp.',
     titleTh: 'นโยบายการจัดส่ง',
     excerptTh:
-      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวัน (ออเดอร์หลัง 18:00 มักนัดวันถัดไป) โซนและค่าจัดส่งตอนเช็กเอาต์ การยืนยันทางแชทหลังสั่งบนเว็บ และข้อมูลที่อยู่ที่ควรเตรียม ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
+      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวัน (ออเดอร์หลัง 18:00 มักนัดวันถัดไป) โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาช่วงเทศกาลสำคัญ การยืนยันทางแชทหลังสั่งบนเว็บ และข้อมูลที่อยู่ที่ควรเตรียม ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
     publishedAt: '2026-02-20T00:00:00.000Z',
     featured: false,
     cover: {
@@ -271,6 +271,24 @@ export const articles: ArticleMeta[] = [
       { label: 'Rose bouquets', labelTh: 'ช่อกุหลาบ', href: '/info/rose-bouquets-chiang-mai' },
       { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'buy-flowers-online-chiang-mai-thailand',
+    title: 'Buy Flowers Online in Chiang Mai, Thailand',
+    excerpt:
+      'Buy flowers online in Chiang Mai with secure card checkout and local delivery. Browse bouquets, pay online, and send fresh flowers across Chiang Mai.',
+    publishedAt: '2026-07-10T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/buy-flowers-online/buy-flower-online-lannabloom.png',
+      alt: 'Fresh flower bouquet from Lanna Bloom with laptop showing online flower ordering for Chiang Mai delivery in Thailand',
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      { label: 'Order on website vs Facebook', labelTh: 'สั่งบนเว็บ vs Facebook', href: '/info/order-flowers-website-vs-facebook-chiang-mai' },
     ],
   },
   {
@@ -312,6 +330,50 @@ export const articles: ArticleMeta[] = [
       { label: 'Sunflower bouquet', labelTh: 'ช่อทานตะวัน', href: '/catalog/sunflower-bouquet' },
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
       { label: 'Same-day delivery', labelTh: 'จัดส่งวันเดียว', href: '/info/same-day-flower-delivery-chiang-mai' },
+    ],
+  },
+  {
+    slug: 'flowers-chiang-mai',
+    title: 'Flower Delivery in Chiang Mai',
+    excerpt:
+      'Order fresh bouquets and gifts online with delivery across Chiang Mai. Secure Stripe checkout — same-day delivery during working hours when you order in time.',
+    titleTh: 'ส่งดอกไม้ในเชียงใหม่',
+    excerptTh:
+      'สั่งช่อดอกไม้และของขวัญออนไลน์ พร้อมจัดส่งในเชียงใหม่ ชำระเงินปลอดภัยผ่าน Stripe จัดส่งวันเดียวได้ในช่วงเวลาทำการ',
+    externalPath: '/info/flowers-chiang-mai',
+    publishedAt: '2026-03-01T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff7ed 0%, #fde68a 45%, #bbf7d0 100%)',
+      center: { kind: 'emoji', value: '🌸' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Same-day delivery', labelTh: 'จัดส่งวันเดียว', href: '/info/same-day-flower-delivery-chiang-mai' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+    ],
+  },
+  {
+    slug: 'perfect-bouquet-someone-special',
+    title: 'How to Choose the Perfect Bouquet for Someone Special',
+    excerpt:
+      'Match the bouquet to the moment — romantic reds, soft pastels, bold celebrations, and timeless classics with real product picks from our catalog.',
+    titleTh: 'วิธีเลือกช่อดอกไม้ที่ใช่สำหรับคนพิเศษ',
+    excerptTh:
+      'เลือกช่อให้เหมาะกับโอกาส — โทนโรแมนติก โทนอ่อนหวาน โทนฉลอง และสไตล์คลาสสิก พร้อมช่อจริงจากแคตตาล็อกของเรา',
+    externalPath: '/info/perfect-bouquet-someone-special',
+    publishedAt: '2026-05-20T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/images_other/roses_colors_landingpage/red_roses.webp',
+      alt: 'Red rose bouquet for choosing the perfect gift bouquet in Chiang Mai',
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Rose bouquets guide', labelTh: 'คู่มือช่อกุหลาบ', href: '/info/rose-bouquets-chiang-mai' },
+      { label: 'Birthday flower gifts', labelTh: 'ของขวัญวันเกิด', href: '/info/birthday-flower-gift' },
     ],
   },
   {
@@ -371,4 +433,14 @@ export function getMoreGuides(excludeSlug?: string): ArticleMeta[] {
   return [...filtered].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
+}
+
+export function getArticlePath(article: ArticleMeta, lang: string): string {
+  if (article.externalPath) return `/${lang}${article.externalPath}`;
+  return `/${lang}/info/${article.slug}`;
+}
+
+/** Recent guides for cross-linking (excludes the current article slug). */
+export function getRelatedGuides(excludeSlug: string, limit = 3): ArticleMeta[] {
+  return getMoreGuides(excludeSlug).slice(0, limit);
 }

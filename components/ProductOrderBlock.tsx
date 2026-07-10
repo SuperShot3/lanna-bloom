@@ -24,6 +24,7 @@ import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
+import { ProductPeakCelebrationNotice } from '@/components/pdp/ProductPeakCelebrationNotice';
 import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
 import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
 import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
@@ -210,6 +211,8 @@ export function ProductOrderBlock({
         showSameDay={checkoutProfile.variant === 'chiang-mai'}
         destinationSub={destinationLabel}
       />
+
+      <ProductPeakCelebrationNotice lang={lang} />
 
       <ProductGiftMessageRow
         lang={lang}

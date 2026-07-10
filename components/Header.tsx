@@ -66,10 +66,10 @@ function getDeliveryPickerCopy(lang: Locale): DeliveryPickerCopy {
 
 export function Header({
   lang,
-  hasMayPromoBanner = false,
+  hasTopPromoBanner = false,
 }: {
   lang: Locale;
-  hasMayPromoBanner?: boolean;
+  hasTopPromoBanner?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -245,7 +245,7 @@ export function Header({
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,colors] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${mobilePdpScrollHeader ? 'site-header--pdp-scroll' : ''} ${hasMayPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,colors] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${mobilePdpScrollHeader ? 'site-header--pdp-scroll' : ''} ${hasTopPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled}
         data-header-mode={mobileScrollHeaderCollapse ? headerCollapseMode : undefined}
       >

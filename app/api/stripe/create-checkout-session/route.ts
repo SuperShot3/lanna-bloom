@@ -46,6 +46,7 @@ import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckoutFieldLimits';
 import { isPreferredTimeSlotValid } from '@/lib/deliveryTimeSelection';
+import { parseDeliveryDateFromPreferredTimeSlot } from '@/lib/promo/peakCelebrationPricing';
 
 function optionalTrimmedString(raw: unknown, maxLen: number): string | undefined {
   if (typeof raw !== 'string') return undefined;
@@ -566,11 +567,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const deliveryDateYmd =
+      parseDeliveryDateFromPreferredTimeSlot(data.delivery.preferredTimeSlot) ?? '';
+
     const computed = await computeOrderTotals(
       data.items,
       {
         deliveryDestination: data.delivery.deliveryDestination,
         deliveryZoneId: serverZoneId,
+        deliveryDateYmd,
       },
       data.lang
     );

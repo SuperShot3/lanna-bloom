@@ -9,6 +9,7 @@ import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
 import { GuideComments } from '../_components/GuideComments';
+import { RelatedGuides } from '../_components/RelatedGuides';
 
 const BOUQUET_SECTIONS = [
   {
@@ -429,6 +430,7 @@ export default async function PerfectBouquetGuidePage({
         <GuideFaq faq={faq.items} title={faq.title} />
 
         <section className="guide-section">
+          <RelatedGuides excludeSlug="perfect-bouquet-someone-special" lang={lang} />
           <GuideComments guideSlug="perfect-bouquet-someone-special" lang={locale} />
         </section>
 

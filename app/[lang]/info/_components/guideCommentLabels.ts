@@ -1,8 +1,10 @@
 import type { Locale } from '@/lib/i18n';
 
 export type GuideCommentLabels = {
+  eyebrow: string;
   title: string;
   hint: string;
+  formTitle: string;
   helpful: string;
   helpfulCount: (n: number) => string;
   empty: string;
@@ -20,8 +22,10 @@ export type GuideCommentLabels = {
 
 const LABELS: Record<'en' | 'th', GuideCommentLabels> = {
   en: {
+    eyebrow: 'Community',
     title: 'Reader comments',
     hint: 'Share a tip or question about this guide. Comments are reviewed before they appear.',
+    formTitle: 'Add your comment',
     helpful: 'Helpful',
     helpfulCount: (n: number) => (n === 1 ? '1 person' : `${n} people`),
     empty: 'No comments yet. Be the first to share your thoughts.',
@@ -37,8 +41,10 @@ const LABELS: Record<'en' | 'th', GuideCommentLabels> = {
     commentRequired: 'Comment is required',
   },
   th: {
+    eyebrow: 'ชุมชน',
     title: 'ความคิดเห็นจากผู้อ่าน',
     hint: 'แชร์เคล็ดลับหรือคำถามเกี่ยวกับบทความนี้ ความคิดเห็นจะแสดงหลังตรวจสอบแล้ว',
+    formTitle: 'เขียนความคิดเห็น',
     helpful: 'มีประโยชน์',
     helpfulCount: (n: number) => `${n} คน`,
     empty: 'ยังไม่มีความคิดเห็น เป็นคนแรกที่แชร์ความคิดของคุณ',
@@ -60,7 +66,11 @@ export function getGuideCommentLabels(lang: Locale): GuideCommentLabels {
 }
 
 /** Serializable strings for server-rendered headings only. */
-export function getGuideCommentHeaderStrings(lang: Locale): { title: string; hint: string } {
+export function getGuideCommentHeaderStrings(lang: Locale): {
+  eyebrow: string;
+  title: string;
+  hint: string;
+} {
   const labels = getGuideCommentLabels(lang);
-  return { title: labels.title, hint: labels.hint };
+  return { eyebrow: labels.eyebrow, title: labels.title, hint: labels.hint };
 }

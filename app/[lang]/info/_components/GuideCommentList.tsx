@@ -46,6 +46,14 @@ function formatDate(dateStr: string, lang: Locale): string {
   }
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase() || '?';
+}
+
 type GuideCommentListProps = {
   comments: PublicGuideComment[];
   lang: Locale;
@@ -91,21 +99,30 @@ export function GuideCommentList({ comments, lang }: GuideCommentListProps) {
         const isLiked = liked.has(comment.id);
         return (
           <li key={comment.id} className={styles.guideCommentItem}>
-            <div className={styles.guideCommentMeta}>
-              <p className={styles.guideCommentAuthor}>{comment.authorName}</p>
-              <p className={styles.guideCommentDate}>{formatDate(comment.createdAt, lang)}</p>
-            </div>
-            <p className={styles.guideCommentBody}>{comment.body}</p>
-            <button
-              type="button"
-              className={`${styles.guideCommentHelpfulBtn} ${isLiked ? styles.guideCommentHelpfulBtnActive : ''}`}
-              disabled={isLiked || likingId === comment.id}
-              onClick={() => handleLike(comment.id)}
-              aria-pressed={isLiked}
+            <div
+              className={styles.guideCommentAvatar}
+              role="img"
+              aria-label={`Avatar for ${comment.authorName}`}
             >
-              {labels.helpful}
-              {count > 0 ? ` · ${labels.helpfulCount(count)}` : ''}
-            </button>
+              {getInitials(comment.authorName)}
+            </div>
+            <div className={styles.guideCommentContent}>
+              <div className={styles.guideCommentMeta}>
+                <p className={styles.guideCommentAuthor}>{comment.authorName}</p>
+                <p className={styles.guideCommentDate}>{formatDate(comment.createdAt, lang)}</p>
+              </div>
+              <p className={styles.guideCommentBody}>{comment.body}</p>
+              <button
+                type="button"
+                className={`${styles.guideCommentHelpfulBtn} ${isLiked ? styles.guideCommentHelpfulBtnActive : ''}`}
+                disabled={isLiked || likingId === comment.id}
+                onClick={() => handleLike(comment.id)}
+                aria-pressed={isLiked}
+              >
+                {labels.helpful}
+                {count > 0 ? ` · ${labels.helpfulCount(count)}` : ''}
+              </button>
+            </div>
           </li>
         );
       })}

@@ -12,16 +12,29 @@ type GuideCommentsProps = {
 
 export async function GuideComments({ guideSlug, lang }: GuideCommentsProps) {
   const comments = await getApprovedGuideComments(guideSlug);
-  const { title, hint } = getGuideCommentHeaderStrings(lang);
+  const { eyebrow, title, hint } = getGuideCommentHeaderStrings(lang);
 
   return (
     <section className={styles.guideComments} aria-labelledby="guide-comments-heading">
-      <h2 id="guide-comments-heading" className={styles.guideCommentsTitle}>
-        {title}
-      </h2>
-      <p className={styles.guideCommentsHint}>{hint}</p>
-      <GuideCommentList comments={comments} lang={lang} />
-      <GuideCommentForm guideSlug={guideSlug} lang={lang} />
+      <header className={styles.guideCommentsHeader}>
+        <p className={styles.guideCommentsEyebrow}>{eyebrow}</p>
+        <div className={styles.guideCommentsTitleRow}>
+          <h2 id="guide-comments-heading" className={styles.guideCommentsTitle}>
+            {title}
+          </h2>
+          {comments.length > 0 && (
+            <span className={styles.guideCommentsCount} aria-hidden>
+              {comments.length}
+            </span>
+          )}
+        </div>
+        <p className={styles.guideCommentsHint}>{hint}</p>
+      </header>
+
+      <div className={styles.guideCommentsPanel}>
+        <GuideCommentList comments={comments} lang={lang} />
+        <GuideCommentForm guideSlug={guideSlug} lang={lang} />
+      </div>
     </section>
   );
 }

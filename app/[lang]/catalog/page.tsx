@@ -18,9 +18,31 @@ import { getBaseUrl } from '@/lib/orders';
 // Revalidate catalog every 60 seconds so new flowers from Sanity appear without rebuild
 export const revalidate = 60;
 
-const BALLOONS_SEO_TITLE = 'Balloons Delivery in Chiang Mai';
-const BALLOONS_SEO_DESCRIPTION =
-  'Order balloons for birthdays, surprises, flower add-ons, and gift delivery in Chiang Mai. Available with flowers, plush toys, and gifts from Lanna Bloom.';
+const BALLOONS_SEO = {
+  en: {
+    title: 'Balloons Delivery in Chiang Mai | Lanna Bloom',
+    description:
+      'Order balloons for birthdays, surprises, flower add-ons, and gift delivery in Chiang Mai. Available with flowers, plush toys, and gifts from Lanna Bloom.',
+  },
+  th: {
+    title: 'ส่งบอลลูนในเชียงใหม่ | Lanna Bloom',
+    description:
+      'สั่งบอลลูนวันเกิด เซอร์ไพรส์ หรือเสริมช่อดอกไม้ พร้อมจัดส่งของขวัญในเชียงใหม่ มีบอลลูน ตุ๊กตา และของขวัญจาก Lanna Bloom',
+  },
+} as const;
+
+const CATALOG_SEO = {
+  en: {
+    title: 'Flower Bouquets & Gifts | Order Online | Lanna Bloom',
+    description:
+      'Browse bouquets, balloons, plush toys, and gifts for delivery in Chiang Mai. Order online with secure checkout from Lanna Bloom.',
+  },
+  th: {
+    title: 'ช่อดอกไม้และของขวัญ | สั่งออนไลน์ | Lanna Bloom',
+    description:
+      'เลือกช่อดอกไม้ บอลลูน ตุ๊กตา และของขวัญสำหรับจัดส่งในเชียงใหม่ สั่งออนไลน์ชำระเงินปลอดภัยกับ Lanna Bloom',
+  },
+} as const;
 
 export async function generateMetadata({
   params,
@@ -30,21 +52,29 @@ export async function generateMetadata({
   searchParams: Record<string, string | string[] | undefined>;
 }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return { title: 'Lanna Bloom' };
-  const filterParams = parseCatalogSearchParams(searchParams);
-  if (filterParams.topCategory !== 'balloons') return {};
-
   const locale = params.lang as Locale;
-  const canonical = `${getBaseUrl()}/${locale}/catalog?topCategory=balloons`;
+  const isTh = locale === 'th';
+  const filterParams = parseCatalogSearchParams(searchParams);
+  const canonical = `${getBaseUrl()}/${locale}/catalog`;
+  const seo =
+    filterParams.topCategory === 'balloons'
+      ? BALLOONS_SEO[isTh ? 'th' : 'en']
+      : CATALOG_SEO[isTh ? 'th' : 'en'];
+  const pageCanonical =
+    filterParams.topCategory === 'balloons'
+      ? `${canonical}?topCategory=balloons`
+      : canonical;
+
   return {
-    title: BALLOONS_SEO_TITLE,
-    description: BALLOONS_SEO_DESCRIPTION,
-    alternates: { canonical },
+    title: seo.title,
+    description: seo.description,
+    alternates: { canonical: pageCanonical },
     openGraph: {
-      title: BALLOONS_SEO_TITLE,
-      description: BALLOONS_SEO_DESCRIPTION,
-      url: canonical,
+      title: seo.title,
+      description: seo.description,
+      url: pageCanonical,
       siteName: 'Lanna Bloom',
-      locale: locale === 'th' ? 'th_TH' : 'en_US',
+      locale: isTh ? 'th_TH' : 'en_US',
       type: 'website',
     },
   };

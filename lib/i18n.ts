@@ -43,6 +43,29 @@ const baseTranslations = {
       bannerMessageShort: 'Free delivery 19–26 May · ฿2,500+ on flowers',
       bannerAlt: 'Free delivery 19–26 May — spend ฿2,500+ on flowers',
     },
+    peakCelebration: {
+      events: {
+        valentines: "Valentine's Day",
+        'womens-day': "International Women's Day",
+        'mothers-day': "Thai Mother's Day",
+        'new-year': 'New Year',
+      },
+      noticeBanner:
+        '{event} peak pricing starts {start} — order early to secure your delivery date. See delivery policy.',
+      noticeBannerShort: '{event} peak pricing from {start} — order early',
+      noticeBannerAlt: '{event} peak pricing advance notice',
+      checkoutAdvanceHint:
+        'Peak celebration pricing applies for deliveries {start}–{end}. Select your delivery date to see updated prices.',
+      checkoutActiveNotice:
+        '{event} peak pricing applies (+{markup}% on bouquet prices). Minimum order ฿{min}.',
+      checkoutMinOrderWarning:
+        'Minimum order for {event} deliveries is ฿{min}. Add ฿{remaining} more to continue.',
+      minOrderError:
+        'Minimum order for {event} deliveries is ฿{min}. Add ฿{remaining} more to your cart.',
+      pdpNotice:
+        'Peak celebration pricing applies on selected delivery dates around {event} ({start}–{end}).',
+      policyLinkLabel: 'Delivery policy',
+    },
     cookieBanner: {
       ariaLabel: 'Cookie notice',
       messageBeforeLink: 'We use cookies for analytics and marketing.',
@@ -1458,6 +1481,29 @@ const baseTranslations = {
         'ส่งฟรี 19–26 พ.ค. เมื่อซื้อดอกไม้ครบ ฿2,500 — ระบบหักให้อัตโนมัติเมื่อชำระเงิน',
       bannerMessageShort: 'ส่งฟรี 19–26 พ.ค. · ดอกไม้ครบ ฿2,500',
       bannerAlt: 'ส่งฟรี 19–26 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
+    },
+    peakCelebration: {
+      events: {
+        valentines: 'วันวาเลนไทน์',
+        'womens-day': 'วันสตรีสากล',
+        'mothers-day': 'วันแม่แห่งชาติ',
+        'new-year': 'ปีใหม่',
+      },
+      noticeBanner:
+        'ราคาช่วง {event} เริ่ม {start} — สั่งล่วงหน้าเพื่อจองวันจัดส่ง ดูนโยบายจัดส่ง',
+      noticeBannerShort: 'ราคาช่วง {event} ตั้งแต่ {start} — สั่งล่วงหน้า',
+      noticeBannerAlt: 'แจ้งเตือนราคาช่วง {event}',
+      checkoutAdvanceHint:
+        'มีราคาช่วงเทศกาลสำหรับการจัดส่ง {start}–{end} เลือกวันที่จัดส่งเพื่อดูราคาที่อัปเดต',
+      checkoutActiveNotice:
+        'ใช้ราคาช่วง {event} (+{markup}% จากราคาช่อ) ยอดสั่งขั้นต่ำ ฿{min}',
+      checkoutMinOrderWarning:
+        'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} เพิ่มอีก ฿{remaining} เพื่อดำเนินการต่อ',
+      minOrderError:
+        'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} เพิ่มอีก ฿{remaining} ในตะกร้า',
+      pdpNotice:
+        'มีราคาช่วงเทศกาลสำหรับวันจัดส่งช่วง {event} ({start}–{end})',
+      policyLinkLabel: 'นโยบายจัดส่ง',
     },
     cookieBanner: {
       ariaLabel: 'ประกาศเกี่ยวกับคุกกี้',

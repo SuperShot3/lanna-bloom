@@ -74,6 +74,11 @@ import {
   cartValue,
   isNonBouquetCartLine,
 } from '@/lib/cart/cartPriceBreakdown';
+import {
+  getPeakCelebrationRuleForDeliveryDate,
+  peakCelebrationMinOrderShortfall,
+} from '@/lib/promo/peakCelebrationPricing';
+import { formatPeakCelebrationTemplate } from '@/lib/promo/peakCelebrationMessages';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
 import { CartShareButton } from '@/components/cart/CartShareButton';
 import {
@@ -1028,7 +1033,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       trackAddShippingInfo({
         shippingTier: 'standard',
         currency: 'THB',
-        value: cartValue(items, delivery.deliveryDestination),
+        value: cartValue(items, delivery.deliveryDestination, delivery.date),
         items: analyticsItems,
       });
     }
@@ -1063,7 +1068,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
 
-  const cartPricing = cartPriceBreakdown(items, delivery.deliveryDestination);
+  const cartPricing = cartPriceBreakdown(items, delivery.deliveryDestination, delivery.date);
   const itemsTotalVal = cartPricing.itemsTotal;
   const cartExpansionInvalid = cartViolatesExpansionRules(items, delivery.deliveryDestination);
   const cartDestinationBouquetInvalid = cartViolatesDestinationBouquetRules(
@@ -1135,6 +1140,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setCartSocialNudgeDismissed(true);
   }, []);
 
+  const peakMinOrderShortfall =
+    delivery.date && itemsTotalVal > 0
+      ? peakCelebrationMinOrderShortfall(itemsTotalVal, delivery.date)
+      : 0;
+  const peakMinOrderBlocked = peakMinOrderShortfall > 0;
+
   const tPremium = translations[lang].premiumCheckout;
   const isDeliveryValidNow = isPremiumDeliveryValid(delivery);
   const isRecipientValidNow = isPremiumRecipientValid(
@@ -1155,7 +1166,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     (!isOrderingForSomeoneElse || isRecipientValidNow) &&
     isContactValidNow &&
     !cartExpansionInvalid &&
-    !cartDestinationBouquetInvalid;
+    !cartDestinationBouquetInvalid &&
+    !peakMinOrderBlocked;
 
   const { bouquetSubtotal: bouquetCartSubtotal, addOnsSubtotal: addOnsCartTotal, otherItemsSubtotal: otherItemsCartSubtotal } =
     cartPricing;
@@ -1193,6 +1205,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     }
     if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) {
       return fmt(String(tB.selectTimeSlot ?? 'Time slot'));
+    }
+    if (delivery.date && peakMinOrderBlocked) {
+      const rule = getPeakCelebrationRuleForDeliveryDate(delivery.date);
+      if (rule) {
+        const peakCopy = translations[lang].peakCelebration ?? translations.en.peakCelebration;
+        return formatPeakCelebrationTemplate(lang, peakCopy.checkoutMinOrderWarning, rule).replace(
+          '{remaining}',
+          String(peakMinOrderShortfall)
+        );
+      }
     }
     if (!customerName.trim()) {
       return fmt(String(tC.senderName ?? 'Name'));

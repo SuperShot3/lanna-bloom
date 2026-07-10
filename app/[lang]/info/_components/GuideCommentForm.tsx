@@ -72,7 +72,9 @@ export function GuideCommentForm({ guideSlug, lang, onSubmitted }: GuideCommentF
   }
 
   return (
-    <form className={styles.guideCommentForm} onSubmit={handleSubmit} noValidate>
+    <div className={styles.guideCommentFormWrap}>
+      <h3 className={styles.guideCommentFormTitle}>{labels.formTitle}</h3>
+      <form className={styles.guideCommentForm} onSubmit={handleSubmit} noValidate>
       <div className={styles.guideCommentHoneypot} aria-hidden="true">
         <label htmlFor="guide-comment-company">Company</label>
         <input
@@ -142,6 +144,7 @@ export function GuideCommentForm({ guideSlug, lang, onSubmitted }: GuideCommentF
           {labels.error}
         </p>
       )}
-    </form>
+      </form>
+    </div>
   );
 }

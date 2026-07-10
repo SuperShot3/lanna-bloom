@@ -8,6 +8,7 @@ import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
 import { GuideComments } from '../_components/GuideComments';
+import { RelatedGuides } from '../_components/RelatedGuides';
 
 const POPULAR_LIMIT = 6;
 export const revalidate = 60;
@@ -113,6 +114,8 @@ export default async function FlowersChiangMaiGuidePage({
           faq={t.faq}
           title={locale === 'en' ? 'Frequently Asked Questions' : 'คำถามที่พบบ่อย'}
         />
+
+        <RelatedGuides excludeSlug="flowers-chiang-mai" lang={lang} />
 
         <section className="guide-section">
           <GuideComments guideSlug="flowers-chiang-mai" lang={locale} />
