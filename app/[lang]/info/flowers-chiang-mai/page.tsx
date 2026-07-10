@@ -7,6 +7,7 @@ import { isValidLocale, translations, type Locale } from '@/lib/i18n';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
+import { GuideComments } from '../_components/GuideComments';
 
 const POPULAR_LIMIT = 6;
 export const revalidate = 60;
@@ -112,6 +113,10 @@ export default async function FlowersChiangMaiGuidePage({
           faq={t.faq}
           title={locale === 'en' ? 'Frequently Asked Questions' : 'คำถามที่พบบ่อย'}
         />
+
+        <section className="guide-section">
+          <GuideComments guideSlug="flowers-chiang-mai" lang={locale} />
+        </section>
       </div>
     </div>
   );

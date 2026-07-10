@@ -11,6 +11,7 @@ import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
 import { ArticleListenPlayer } from './ArticleListenPlayer';
 import { CatalogProductCard } from './CatalogProductCard';
+import { GuideComments } from '../_components/GuideComments';
 import styles from './article.module.css';
 
 /** Public static URL; file must live under /public */
@@ -86,6 +87,7 @@ export function generateStaticParams() {
     '51-roses-chiang-mai',
     'same-day-flower-delivery-chiang-mai',
     'flower-delivery-to-hotels-chiang-mai',
+    'monday-flowers-thailand-yellow-bouquets',
     'flowers-for-men',
     'flower-delivery-to-hospitals-chiang-mai',
     'delivery-policy',
@@ -285,6 +287,7 @@ export default async function InfoArticlePage({
             <MDXRemote source={mdxSource} components={mdxComponents} />
           </div>
           <ArticleCta links={ctaLinks} lang={lang} title={ctaTitle} />
+          <GuideComments guideSlug={slug} lang={lang} />
         </div>
       </article>
     </div>

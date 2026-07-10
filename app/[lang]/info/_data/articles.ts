@@ -274,6 +274,25 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: 'monday-flowers-thailand-yellow-bouquets',
+    title: 'Monday Flowers in Thailand: Yellow Bouquet Meaning',
+    excerpt:
+      'In Thailand, Monday is traditionally connected with yellow or cream and the Moon. Discover the cultural background and learn how to choose a thoughtful Monday-inspired bouquet for someone special in Chiang Mai.',
+    publishedAt: '2026-07-10T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/monday-flowers/monday-flowers-yellow-bouquet-chiang-mai.png',
+      alt: 'Yellow and cream Monday flower bouquet for delivery in Chiang Mai, Thailand',
+    },
+    ctaLinks: [
+      { label: 'Yellow flower bouquets', labelTh: 'ช่อดอกไม้สีเหลือง', href: '/catalog?colors=yellow' },
+      { label: 'Custom bouquet', labelTh: 'ช่อตามสั่ง', href: '/custom-order' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
     slug: 'flowers-for-men',
     title: 'Flowers for Men: Thoughtful Bouquet Ideas That Feel Right',
     excerpt:

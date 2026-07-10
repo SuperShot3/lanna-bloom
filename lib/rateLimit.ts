@@ -36,6 +36,21 @@ const deliveryLocationRequestStore = new Map<string, { count: number; resetAt: n
 const DELIVERY_LOCATION_REQUEST_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const DELIVERY_LOCATION_REQUEST_MAX = 5;
 
+const guideCommentSubmitStore = new Map<string, { count: number; resetAt: number }>();
+const GUIDE_COMMENT_SUBMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const GUIDE_COMMENT_SUBMIT_MAX = 5;
+
+const guideCommentLikeStore = new Map<string, { count: number; resetAt: number }>();
+const GUIDE_COMMENT_LIKE_WINDOW_MS = 60 * 1000; // 1 minute
+const GUIDE_COMMENT_LIKE_MAX = 30;
+
+const guideCommentReadStore = new Map<string, { count: number; resetAt: number }>();
+const GUIDE_COMMENT_READ_WINDOW_MS = 60 * 1000; // 1 minute
+const GUIDE_COMMENT_READ_MAX = 60;
+
+const guideCommentVisitorCooldownStore = new Map<string, number>();
+const GUIDE_COMMENT_VISITOR_COOLDOWN_MS = 60 * 1000; // 1 minute
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -206,6 +221,66 @@ export function checkStripeOrderStatusRateLimit(ip: string, sessionId: string): 
   }
   entry.count++;
   return entry.count <= STRIPE_ORDER_STATUS_MAX;
+}
+
+export function checkGuideCommentSubmitRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `gcs:${ip}`;
+  const entry = guideCommentSubmitStore.get(key);
+  if (!entry) {
+    guideCommentSubmitStore.set(key, { count: 1, resetAt: now + GUIDE_COMMENT_SUBMIT_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    guideCommentSubmitStore.set(key, { count: 1, resetAt: now + GUIDE_COMMENT_SUBMIT_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= GUIDE_COMMENT_SUBMIT_MAX;
+}
+
+export function checkGuideCommentLikeRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `gcl:${ip}`;
+  const entry = guideCommentLikeStore.get(key);
+  if (!entry) {
+    guideCommentLikeStore.set(key, { count: 1, resetAt: now + GUIDE_COMMENT_LIKE_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    guideCommentLikeStore.set(key, { count: 1, resetAt: now + GUIDE_COMMENT_LIKE_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= GUIDE_COMMENT_LIKE_MAX;
+}
+
+export function checkGuideCommentReadRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `gcr:${ip}`;
+  const entry = guideCommentReadStore.get(key);
+  if (!entry) {
+    guideCommentReadStore.set(key, { count: 1, resetAt: now + GUIDE_COMMENT_READ_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    guideCommentReadStore.set(key, { count: 1, resetAt: now + GUIDE_COMMENT_READ_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= GUIDE_COMMENT_READ_MAX;
+}
+
+export function checkGuideCommentVisitorCooldown(visitorTokenHash: string): boolean {
+  const now = Date.now();
+  const key = visitorTokenHash.trim();
+  if (!key) return false;
+  const lastAt = guideCommentVisitorCooldownStore.get(key);
+  if (lastAt != null && now - lastAt < GUIDE_COMMENT_VISITOR_COOLDOWN_MS) {
+    return false;
+  }
+  guideCommentVisitorCooldownStore.set(key, now);
+  return true;
 }
 
 export function checkLoginRateLimit(ip: string): { allowed: boolean; remaining: number } {

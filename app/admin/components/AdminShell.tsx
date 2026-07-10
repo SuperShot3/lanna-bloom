@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/products', label: 'Products', icon: 'inventory_2' },
   { href: '/admin/marketing', label: 'Marketing', icon: 'campaign' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'reviews' },
+  { href: '/admin/info-comments', label: 'Guide comments', icon: 'forum' },
 ] as const;
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
@@ -24,6 +25,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pendingGuideComments, setPendingGuideComments] = useState(0);
   const { data: session } = useSession();
   const userEmail = session?.user?.email;
 
@@ -34,6 +36,28 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPendingCount() {
+      try {
+        const res = await fetch('/api/admin/info-comments?pendingCount=1', {
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const data = (await res.json().catch(() => null)) as { count?: unknown } | null;
+        if (cancelled) return;
+        const count = typeof data?.count === 'number' ? data.count : 0;
+        setPendingGuideComments(count > 0 ? count : 0);
+      } catch {
+        /* ignore */
+      }
+    }
+    loadPendingCount();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   function toggleSidebarCollapsed() {
     setSidebarCollapsed((current) => {
@@ -107,17 +131,45 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <nav className="admin-shell-nav" aria-label="Admin sections">
             {NAV_ITEMS.map(({ href, label, icon }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
+              const showPendingBadge =
+                href === '/admin/info-comments' && pendingGuideComments > 0;
+              const badgeText =
+                pendingGuideComments > 99 ? '99+' : String(pendingGuideComments);
               return (
                 <Link
                   key={href}
                   href={href}
                   prefetch={false}
                   className={`admin-shell-nav-link ${isActive ? 'active' : ''}`}
-                  title={sidebarCollapsed ? label : undefined}
+                  title={
+                    sidebarCollapsed
+                      ? showPendingBadge
+                        ? `${label} (${pendingGuideComments} pending)`
+                        : label
+                      : undefined
+                  }
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <span className="material-symbols-outlined admin-shell-icon">{icon}</span>
+                  <span className="admin-shell-nav-icon-wrap">
+                    <span className="material-symbols-outlined admin-shell-icon">{icon}</span>
+                    {showPendingBadge && (
+                      <span
+                        className="admin-shell-nav-badge admin-shell-nav-badge--collapsed"
+                        aria-hidden
+                      >
+                        {badgeText}
+                      </span>
+                    )}
+                  </span>
                   <span className="admin-shell-nav-label">{label}</span>
+                  {showPendingBadge && (
+                    <span
+                      className="admin-shell-nav-badge"
+                      aria-label={`${pendingGuideComments} pending comments`}
+                    >
+                      {badgeText}
+                    </span>
+                  )}
                 </Link>
               );
             })}

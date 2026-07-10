@@ -1,0 +1,157 @@
+.guideComments {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.guideCommentsTitle {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.guideCommentsHint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+
+.guideCommentsList {
+  list-style: none;
+  margin: 0 0 32px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.guideCommentItem {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.guideCommentMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.guideCommentAuthor {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.guideCommentDate {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.guideCommentBody {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.guideCommentHelpfulBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.guideCommentHelpfulBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.guideCommentHelpfulBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.guideCommentHelpfulBtnActive {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.guideCommentEmpty {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+
+.guideCommentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guideCommentField label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.guideCommentField input,
+.guideCommentField textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.guideCommentField textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.guideCommentOptional {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.guideCommentSubmit {
+  align-self: flex-start;
+}
+
+.guideCommentMessage {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.guideCommentMessageSuccess {
+  color: #15803d;
+}
+
+.guideCommentMessageError {
+  color: #b91c1c;
+}
+
+.guideCommentHoneypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}

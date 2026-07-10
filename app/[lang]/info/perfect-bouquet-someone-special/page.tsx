@@ -8,6 +8,7 @@ import { getBouquetBySlugFromSanity } from '@/lib/sanity';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
+import { GuideComments } from '../_components/GuideComments';
 
 const BOUQUET_SECTIONS = [
   {
@@ -426,6 +427,10 @@ export default async function PerfectBouquetGuidePage({
         </section>
 
         <GuideFaq faq={faq.items} title={faq.title} />
+
+        <section className="guide-section">
+          <GuideComments guideSlug="perfect-bouquet-someone-special" lang={locale} />
+        </section>
 
         <section className="guide-section guide-final-cta" aria-labelledby="perfect-bouquet-final-cta">
           <h2 id="perfect-bouquet-final-cta" className="popular-title">

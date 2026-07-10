@@ -8,6 +8,7 @@ import { getBouquetBySlugFromSanity } from '@/lib/sanity';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
+import { GuideComments } from '../_components/GuideComments';
 
 const BOUQUET_SECTIONS = [
   {
@@ -334,6 +335,10 @@ export default async function BirthdayFlowerGiftGuidePage({
         </section>
 
         <GuideFaq faq={faqItems} title="Frequently asked questions" />
+
+        <section className="guide-section">
+          <GuideComments guideSlug="birthday-flower-gift" lang={locale} />
+        </section>
 
         <section className="guide-section guide-final-cta" aria-labelledby="birthday-final-cta-heading">
           <h2 id="birthday-final-cta-heading" className="popular-title">
