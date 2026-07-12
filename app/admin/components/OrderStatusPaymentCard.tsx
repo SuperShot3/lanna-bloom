@@ -167,11 +167,11 @@ export function OrderStatusPaymentCard({
         {canEditCosts && (
           <button
             type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline admin-status-cogs-btn"
+            className="admin-btn admin-btn-sm admin-status-cogs-btn"
             onClick={() => setCostsOpen(true)}
-            aria-label="Edit order COGS and costs"
+            aria-label="Add order COGS and costs"
           >
-            COGS
+            Add COGS
             {missingCogs && <span className="admin-status-cogs-dot" aria-hidden />}
           </button>
         )}

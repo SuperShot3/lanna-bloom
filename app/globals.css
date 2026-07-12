@@ -6554,10 +6554,17 @@ select::-ms-expand { display: none; }
 }
 .admin-status-cogs-btn {
   position: relative;
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  padding: 5px 12px;
+  font-size: 0.85rem;
   min-width: unset;
   line-height: 1.2;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--accent-secondary, #d4a853) 24%, var(--surface));
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--accent-secondary, #d4a853) 48%, var(--border));
+}
+.admin-status-cogs-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-secondary, #d4a853) 36%, var(--surface));
 }
 .admin-status-cogs-dot {
   position: absolute;
