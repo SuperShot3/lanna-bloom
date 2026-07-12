@@ -6529,6 +6529,58 @@ select::-ms-expand { display: none; }
 .admin-status-card {
   margin-bottom: 24px;
 }
+.admin-status-card-header {
+  margin-bottom: 12px;
+}
+.admin-status-payment-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px 32px;
+}
+.admin-status-payment-group {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.admin-status-payment-group label,
+.admin-status-payment-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.admin-status-payment-content {
+  min-width: 0;
+}
+.admin-status-cogs-btn {
+  position: relative;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  min-width: unset;
+  line-height: 1.2;
+}
+.admin-status-cogs-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c53030;
+}
+.admin-order-costs-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.admin-order-costs-modal .admin-costs-card {
+  margin-bottom: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
 .admin-status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

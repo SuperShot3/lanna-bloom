@@ -1,23 +1,18 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
-import {
-  getLatestSupplierRequestForOrder,
-  getOrderByOrderId,
-  getOrderDeliveryChangeHistory,
-} from '@/lib/supabase/adminQueries';
+import { getOrderByOrderId, getOrderDeliveryChangeHistory } from '@/lib/supabase/adminQueries';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
 import { getBouquetById, getProductById } from '@/lib/sanity';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import type { ItemWithCatalog } from '@/app/admin/components/ItemsList';
-import { StatusUpdateCard } from '@/app/admin/components/StatusUpdateCard';
-import { PaymentCard } from '@/app/admin/components/PaymentCard';
+import { OrderStatusPaymentCard } from '@/app/admin/components/OrderStatusPaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
-import { SupplierRequestSummaryCard } from '@/app/admin/components/SupplierRequestSummaryCard';
 import { DeliveryEditCard } from '@/app/admin/components/DeliveryEditCard';
 import { OrderHistoryTimeline } from '@/app/admin/components/OrderHistoryTimeline';
 import type { CustomOrderDetails } from '@/lib/orders';
-import { canChangeStatus, canRefund, canRemoveOrder } from '@/lib/adminRbac';
+import { canChangeStatus, canEditCosts, canRemoveOrder } from '@/lib/adminRbac';
+import { getCogsExpenseByOrderId, getDeliveryExpenseSyncedFromOrderCosts } from '@/lib/expenses/expenseQueries';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -74,7 +69,8 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
 
   const customOrderDetails = (order.order_json as { customOrderDetails?: CustomOrderDetails } | null | undefined)
     ?.customOrderDetails;
-  const latestSupplierRequest = await getLatestSupplierRequestForOrder(order.order_id);
+  const cogsExpense = await getCogsExpenseByOrderId(order_id);
+  const deliveryExpense = await getDeliveryExpenseSyncedFromOrderCosts(order_id);
 
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
     itemsToUse.map(async (item, index) => {
@@ -132,36 +128,21 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         </div>
       </header>
 
-      <StatusUpdateCard
+      <OrderStatusPaymentCard
         order={order}
-        canEdit={canChangeStatus(role)}
-        canRefund={canRefund(role)}
+        items={itemsToUse}
+        canEditStatus={canChangeStatus(role)}
+        canMarkPaid={canChangeStatus(role)}
+        canEditCosts={canEditCosts(role)}
+        initialCogsExpense={cogsExpense}
+        initialDeliveryExpense={deliveryExpense}
       />
-      <PaymentCard order={order} canMarkPaid={canChangeStatus(role)} />
-      <DeliveryEditCard order={order} canEdit={canChangeStatus(role)} />
       <OrderSummaryCard
         order={order}
         items={itemsWithCatalog}
         customGreetingCard={customOrderDetails?.greetingCard}
       />
-      <SupplierRequestSummaryCard
-        order={order}
-        latestRequest={latestSupplierRequest}
-        canManage={canChangeStatus(role)}
-      />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
-      <section className="admin-section">
-        <h2 className="admin-section-title">Costs & profit</h2>
-        <p className="admin-hint" style={{ marginBottom: 12 }}>
-          Per-order COGS, delivery cost, payment fee, and profit are managed under Accounting (same data as before).
-        </p>
-        <Link
-          href={`/admin/accounting/orders/${encodeURIComponent(order.order_id)}`}
-          className="admin-btn admin-btn-outline"
-        >
-          Edit costs & profit in Accounting
-        </Link>
-      </section>
       {(order.driver_name || order.driver_phone) && (
         <section className="admin-section">
           <h2 className="admin-section-title">Driver (internal)</h2>
@@ -175,6 +156,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <p>{order.internal_notes}</p>
         </section>
       )}
+      <DeliveryEditCard order={order} canEdit={canChangeStatus(role)} />
       <OrderHistoryTimeline statusHistory={statusHistory} deliveryChanges={deliveryChanges} />
 
       {canRemoveOrder(role) && (
