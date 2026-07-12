@@ -5894,8 +5894,21 @@ a.btn-pill:focus-visible {
   flex: 1;
   min-width: 0;
 }
-.admin-delivery-card-meta--card-message,
-.admin-delivery-card-meta--card-message .admin-delivery-card-meta-text,
+.admin-delivery-card-meta--card-message {
+  margin-top: 8px;
+  padding: 8px 10px;
+  padding-left: 10px;
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--admin-surface, #fff));
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-border) 25%, var(--border));
+  color: var(--admin-text, #0f172a);
+  opacity: 1;
+}
+.admin-delivery-card-meta--card-message .admin-delivery-card-meta-text {
+  color: var(--admin-text, #0f172a);
+  opacity: 1;
+  line-height: 1.45;
+}
 .admin-delivery-card-meta--driver-notes {
   color: var(--admin-text, #0f172a);
   opacity: 1;

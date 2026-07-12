@@ -1,0 +1,61 @@
+{
+  "cluster": "Thai Weekday Flowers",
+  "language": "English",
+  "primary_location": "Chiang Mai, Thailand",
+  "pillar_slug": "flowers-by-day-of-week-thailand",
+  "monday": {
+    "status": "existing",
+    "action": "preserve URL and integrate"
+  },
+  "weekdays": [
+    {
+      "day": "Sunday",
+      "color": "red",
+      "slug": "sunday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/red-flower-bouquet"
+    },
+    {
+      "day": "Monday",
+      "color": "yellow or cream",
+      "slug": "monday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/yellow-flower-bouquet"
+    },
+    {
+      "day": "Tuesday",
+      "color": "pink",
+      "slug": "tuesday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/pink-flower-bouquet"
+    },
+    {
+      "day": "Wednesday",
+      "color": "green",
+      "slug": "wednesday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/green-white-flower-bouquet"
+    },
+    {
+      "day": "Thursday",
+      "color": "orange",
+      "slug": "thursday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/orange-flower-bouquet"
+    },
+    {
+      "day": "Friday",
+      "color": "blue or light blue",
+      "slug": "friday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/blue-hydrangea-bouquet"
+    },
+    {
+      "day": "Saturday",
+      "color": "purple or dark violet",
+      "slug": "saturday-flowers-thailand",
+      "image": "https://unsplash.com/s/photos/purple-flower-bouquet"
+    }
+  ],
+  "source_notes": {
+    "thai_foundation_astrology": "https://thailandfoundation.or.th/astrology-in-thailand-life-guidance-from-the-stars/",
+    "thai_foundation_colors": "https://thailandfoundation.or.th/th/this-car-is-technically-red-beliefs-about-colors-in-thailand/",
+    "royal_society_monday": "https://legacy.orst.go.th/?knowledges=%E0%B8%97%E0%B8%B1%E0%B8%81%E0%B8%A9%E0%B8%B2-%E0%B9%91%E0%B9%98-%E0%B8%98%E0%B8%B1%E0%B8%99%E0%B8%A7%E0%B8%B2%E0%B8%84%E0%B8%A1-%E0%B9%92%E0%B9%95%E0%B9%95%E0%B9%92",
+    "thai_prd_monday": "https://thailand.prd.go.th/en/content/category/detail/id/44/iid/409028",
+    "tourism_weekday_buddhas": "https://www.tourismthailand.org/Articles/10-things-to-do-in-khon-kaen"
+  }
+}

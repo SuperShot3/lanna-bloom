@@ -311,6 +311,132 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: 'flowers-by-day-of-week-thailand',
+    title: 'Flowers by Day of the Week in Thailand: Colors and Gift Ideas',
+    excerpt:
+      "Explore Thailand's weekday colors and meaningful flower ideas for every birth day, with bouquet inspiration and delivery options in Chiang Mai.",
+    publishedAt: '2026-07-11T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fecaca 0%, #fde68a 20%, #fbcfe8 40%, #bbf7d0 60%, #fed7aa 80%, #c7d2fe 100%)',
+      center: { kind: 'emoji', value: '🌈' },
+    },
+    ctaLinks: [
+      { label: 'Monday flowers', labelTh: 'ดอกไม้วันจันทร์', href: '/info/monday-flowers-thailand-yellow-bouquets' },
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Custom bouquet', labelTh: 'ช่อตามสั่ง', href: '/custom-order' },
+    ],
+  },
+  {
+    slug: 'tuesday-flowers-thailand',
+    title: 'Tuesday Flowers in Thailand: Pink Bouquets and Gift Ideas',
+    excerpt:
+      'Learn why Tuesday is pink in Thai culture and choose meaningful pink flowers for birthdays, romance, and delivery in Chiang Mai.',
+    publishedAt: '2026-07-12T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff1f2 0%, #fbcfe8 50%, #fce7f3 100%)',
+      center: { kind: 'emoji', value: '🌸' },
+    },
+    ctaLinks: [
+      { label: 'Pink flower bouquets', labelTh: 'ช่อดอกไม้สีชมพู', href: '/catalog?colors=pink' },
+      { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
+      { label: 'Custom bouquet', labelTh: 'ช่อตามสั่ง', href: '/custom-order' },
+    ],
+  },
+  {
+    slug: 'wednesday-flowers-thailand',
+    title: 'Wednesday Flowers in Thailand: Fresh Green Bouquet Ideas',
+    excerpt:
+      "Discover Wednesday's green color in Thai culture and fresh flower ideas for birthdays, thoughtful gifts, and Chiang Mai delivery.",
+    publishedAt: '2026-07-13T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #ecfdf5 0%, #bbf7d0 50%, #f0fdf4 100%)',
+      center: { kind: 'emoji', value: '🌿' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+    ],
+  },
+  {
+    slug: 'thursday-flowers-thailand',
+    title: 'Thursday Flowers in Thailand: Warm Orange Bouquet Ideas',
+    excerpt:
+      'Learn why Thursday is orange in Thai culture and find warm bouquet ideas for birthdays, congratulations, and Chiang Mai delivery.',
+    publishedAt: '2026-07-14T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 50%, #ffedd5 100%)',
+      center: { kind: 'emoji', value: '🧡' },
+    },
+    ctaLinks: [
+      { label: 'Orange flower bouquets', labelTh: 'ช่อดอกไม้สีส้ม', href: '/catalog?colors=orange' },
+      { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
+      { label: 'Custom bouquet', labelTh: 'ช่อตามสั่ง', href: '/custom-order' },
+    ],
+  },
+  {
+    slug: 'friday-flowers-thailand',
+    title: 'Friday Flowers in Thailand: Blue and Calm Bouquet Ideas',
+    excerpt:
+      "Explore Friday's blue color in Thai culture and elegant blue, white, and lavender flower ideas for delivery in Chiang Mai.",
+    publishedAt: '2026-07-15T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #eff6ff 0%, #bfdbfe 50%, #e0e7ff 100%)',
+      center: { kind: 'emoji', value: '💙' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'saturday-flowers-thailand',
+    title: 'Saturday Flowers in Thailand: Purple Bouquet Meaning',
+    excerpt:
+      "Discover Saturday's purple color in Thai culture and choose distinctive orchids, lisianthus, and bouquets for Chiang Mai delivery.",
+    publishedAt: '2026-07-16T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #f5f3ff 0%, #ddd6fe 50%, #ede9fe 100%)',
+      center: { kind: 'emoji', value: '💜' },
+    },
+    ctaLinks: [
+      { label: 'Purple flower bouquets', labelTh: 'ช่อดอกไม้สีม่วง', href: '/catalog?colors=purple' },
+      { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
+      { label: 'Custom bouquet', labelTh: 'ช่อตามสั่ง', href: '/custom-order' },
+    ],
+  },
+  {
+    slug: 'sunday-flowers-thailand',
+    title: 'Sunday Flowers in Thailand: Red Bouquets and Their Meaning',
+    excerpt:
+      'Learn why Sunday is red in Thai culture and choose meaningful roses, gerberas, and red bouquets for delivery in Chiang Mai.',
+    publishedAt: '2026-07-17T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fff1f2 0%, #fecaca 50%, #fee2e2 100%)',
+      center: { kind: 'emoji', value: '❤️' },
+    },
+    ctaLinks: [
+      { label: 'Red flower bouquets', labelTh: 'ช่อดอกไม้สีแดง', href: '/catalog?colors=red' },
+      { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
+      { label: 'Rose bouquets guide', labelTh: 'คู่มือช่อกุหลาบ', href: '/info/rose-bouquets-chiang-mai' },
+    ],
+  },
+  {
     slug: 'flowers-for-men',
     title: 'Flowers for Men: Thoughtful Bouquet Ideas That Feel Right',
     excerpt:
