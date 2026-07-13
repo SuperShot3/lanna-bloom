@@ -17,7 +17,12 @@ export type IntentLandingConfig = {
   pageMode: Exclude<PageMode, 'blog'>;
   heroVariant: IntentHeroVariant;
   /** Optional hero image (split layout). Path under /public */
-  heroImage?: { src: string; alt: LocalizedString };
+  heroImage?: {
+    src: string;
+    alt: LocalizedString;
+    /** CSS object-position, e.g. "75% center" to bias toward bouquet */
+    objectPosition?: string;
+  };
   /** Accent badge above H1 (e.g. same-day) */
   eyebrow?: LocalizedString;
   directAnswer: LocalizedString;
@@ -39,6 +44,8 @@ export type IntentLandingConfig = {
   stickyCta: LocalizedString;
   /** Collapse MDX by default */
   seoBodyCollapsible?: boolean;
+  /** Show interactive Chiang Mai delivery district map */
+  showDeliveryMap?: boolean;
 };
 
 function L(en: string, th: string): LocalizedString {
@@ -146,7 +153,16 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
   'same-day-flower-delivery-chiang-mai': {
     slug: 'same-day-flower-delivery-chiang-mai',
     pageMode: 'commercial',
-    heroVariant: 'compact',
+    heroVariant: 'split',
+    heroImage: {
+      src: '/blog_images/same-day-delivery/same-day-flower-delivery-chiang-mai.png',
+      alt: L(
+        'Same-day flower delivery in Chiang Mai — fresh pink and white bouquet ready for local delivery',
+        'จัดส่งดอกไม้วันเดียวในเชียงใหม่ — ช่อโทนชมพูขาวพร้อมส่งในพื้นที่'
+      ),
+      // Bias toward bouquet; baked English headline sits on the left of the artwork
+      objectPosition: '78% center',
+    },
     eyebrow: L('Same-day in Chiang Mai', 'จัดส่งวันเดียวในเชียงใหม่'),
     directAnswer: L(
       'Yes — order online before 18:00 for same-day flower delivery across Chiang Mai during service hours 09:00–20:00. Pay securely at checkout, then our local team prepares and delivers.',
@@ -215,6 +231,7 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     seoMoreLabel: L('Delivery areas & how to order today', 'พื้นที่จัดส่งและวิธีสั่งวันนี้'),
     stickyCta: L('Order for today', 'สั่งส่งวันนี้'),
     seoBodyCollapsible: true,
+    showDeliveryMap: true,
   },
 };
 

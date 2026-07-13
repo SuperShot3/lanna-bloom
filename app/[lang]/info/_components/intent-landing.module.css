@@ -185,6 +185,10 @@
   margin: var(--space-8) 0;
 }
 
+.deliveryMapSection {
+  margin: var(--space-8) 0;
+}
+
 .catalogHeader {
   display: flex;
   flex-wrap: wrap;

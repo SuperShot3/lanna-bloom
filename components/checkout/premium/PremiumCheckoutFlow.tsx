@@ -18,7 +18,7 @@ import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/Sel
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { TrustBadges } from '@/components/TrustBadges';
-import { getZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
+import { getCheckoutZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import { isNonBouquetCartLine } from '@/lib/cart/cartPriceBreakdown';
@@ -152,7 +152,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const locationRequestTriggerRef = useRef<HTMLButtonElement>(null);
   const giftMessageFocusedRef = useRef(false);
   const giftMessageTouchStartY = useRef<number | null>(null);
-  const zones = getZonesForDestination(delivery.deliveryDestination);
+  const zones = getCheckoutZonesForDestination(delivery.deliveryDestination);
   const destLabel = formatDestinationLabel(deliveryProfile, lang);
   const hasGiftMessage = !noCardMessage && cardMessage.trim().length > 0;
   const giftMessageChipLabel = noCardMessage

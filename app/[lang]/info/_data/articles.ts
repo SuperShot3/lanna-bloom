@@ -229,9 +229,9 @@ export const articles: ArticleMeta[] = [
     publishedAt: '2026-02-19T00:00:00.000Z',
     featured: false,
     cover: {
-      type: 'gradient',
-      gradientCss: 'linear-gradient(135deg, #e8f0ed 0%, #c8d9b8 50%, #a8c494 100%)',
-      center: { kind: 'emoji', value: '🚚' },
+      type: 'image',
+      src: '/blog_images/same-day-delivery/same-day-flower-delivery-chiang-mai.png',
+      alt: 'Same-day flower delivery in Chiang Mai — fresh bouquet for local delivery',
     },
     ctaLinks: [
       { label: 'Order same-day delivery', labelTh: 'สั่งจัดส่งวันเดียว', href: '/catalog' },

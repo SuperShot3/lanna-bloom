@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { DELIVERY_DESTINATIONS, destinationDisplayName, type DeliveryDestinationId } from '@/lib/delivery/markets';
-import { getZoneFee, getZonesForDestination } from '@/lib/delivery/zones';
+import { getZoneFee, getCheckoutZonesForDestination } from '@/lib/delivery/zones';
 import {
   FULL_PHONE_MAX,
   fullPhoneDigitsValid,
@@ -42,7 +42,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
   const [yourPhoneDigits, setYourPhoneDigits] = useState('');
   const [selectedDestination, setSelectedDestination] = useState<DeliveryDestinationId>('CHIANG_MAI');
   const [selectedZoneId, setSelectedZoneId] = useState(() => {
-    const firstZone = getZonesForDestination('CHIANG_MAI')[0];
+    const firstZone = getCheckoutZonesForDestination('CHIANG_MAI')[0];
     return firstZone?.id ?? '';
   });
 
@@ -116,7 +116,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
 
   const zoneOptions = useMemo(
     () =>
-      getZonesForDestination(selectedDestination).map((zone) => ({
+      getCheckoutZonesForDestination(selectedDestination).map((zone) => ({
         value: zone.id,
         label: lang === 'th' ? zone.labelTh : zone.labelEn,
         fee: getZoneFee(selectedDestination, zone.id) ?? zone.feeThb,
@@ -244,7 +244,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
         setRecipientPhoneDigits('');
         setYourPhoneDigits('');
         setSelectedDestination('CHIANG_MAI');
-        setSelectedZoneId(getZonesForDestination('CHIANG_MAI')[0]?.id ?? '');
+        setSelectedZoneId(getCheckoutZonesForDestination('CHIANG_MAI')[0]?.id ?? '');
         setPickedFileName(null);
         setFileError(null);
         setSelectedDate(null);
@@ -303,7 +303,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
                 onChange={(e) => {
                   const nextDestination = e.target.value as DeliveryDestinationId;
                   setSelectedDestination(nextDestination);
-                  setSelectedZoneId(getZonesForDestination(nextDestination)[0]?.id ?? '');
+                  setSelectedZoneId(getCheckoutZonesForDestination(nextDestination)[0]?.id ?? '');
                 }}
               >
                 {destinationOptions.map((option) => (

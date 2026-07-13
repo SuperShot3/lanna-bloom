@@ -30,6 +30,7 @@ import {
 import { GuideComments } from './GuideComments';
 import { GuideFaq } from './GuideFaq';
 import { IntentStickyBar } from './IntentStickyBar';
+import { DeliveryDistrictMap } from '@/components/delivery/DeliveryDistrictMap';
 import styles from './intent-landing.module.css';
 
 async function loadIntentBouquets(
@@ -292,6 +293,11 @@ export async function IntentLandingPage({
                   width={720}
                   height={560}
                   className={styles.heroImage}
+                  style={
+                    config.heroImage.objectPosition
+                      ? { objectPosition: config.heroImage.objectPosition }
+                      : undefined
+                  }
                   priority
                   sizes="(max-width: 800px) 100vw, 48vw"
                 />
@@ -324,6 +330,12 @@ export async function IntentLandingPage({
                 />
               ))}
             </div>
+          </section>
+        ) : null}
+
+        {config.showDeliveryMap ? (
+          <section className={styles.deliveryMapSection} aria-label={lang === 'th' ? 'แผนที่พื้นที่จัดส่ง' : 'Delivery area map'}>
+            <DeliveryDistrictMap lang={locale} />
           </section>
         ) : null}
 

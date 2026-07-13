@@ -12,6 +12,7 @@ import {
   getBouquetsCatalogDataFromCatalog,
   getBouquetsFilteredFromCatalog,
   getBouquetsFromCatalog,
+  getBouquetSitemapEntriesFromCatalog,
   getSimilarBouquetsFromCatalog,
   getBouquetsFromCatalogPaginated,
   getHeroCarouselImagesFromCatalog,
@@ -31,6 +32,7 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import type { CatalogFilterParams, PopularCatalogItem } from '@/lib/catalogListLogic';
 import type { HomeFlowerTypeSection } from '@/lib/catalog';
 import type { Bouquet } from '@/lib/bouquets';
+import type { BouquetSitemapEntry } from '@/lib/catalog';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
 function catalogReadNotConfigured(): never {
@@ -43,6 +45,11 @@ function catalogReadNotConfigured(): never {
 export async function getCatalogBouquets(): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   return getBouquetsFromCatalog();
+}
+
+export async function getCatalogBouquetSitemapEntries(): Promise<BouquetSitemapEntry[]> {
+  if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
+  return getBouquetSitemapEntriesFromCatalog();
 }
 
 export async function getCatalogSimilarBouquets(

@@ -39,7 +39,8 @@ export interface OrderItem {
 /** District key for delivery fee calculation. */
 export type DeliveryDistrictKey =
   | 'MUEANG' | 'SARAPHI' | 'SAN_SAI' | 'HANG_DONG' | 'SAN_KAMPHAENG'
-  | 'MAE_RIM' | 'DOI_SAKET' | 'MAE_ON' | 'SAMOENG' | 'MAE_TAENG' | 'LAMPHUN' | 'UNKNOWN';
+  | 'MAE_RIM' | 'DOI_SAKET' | 'MAE_ON' | 'SAMOENG' | 'MAE_TAENG' | 'LAMPHUN'
+  | 'SAN_PA_TONG' | 'MAE_WANG' | 'CHIANG_DAO' | 'FANG' | 'MAE_AI' | 'UNKNOWN';
 
 /** Canonical delivery market (Chiang Mai + regional expansion). */
 export type OrderDeliveryDestinationId =

@@ -15,6 +15,8 @@ export interface DeliveryZoneDef {
   labelEn: string;
   labelTh: string;
   feeThb: number;
+  /** Map-only zone — excluded from customer checkout dropdown */
+  manualQuote?: boolean;
   /** When set, inferred postcode must match one of these or a prefix rule, else checkout rejected */
   postalCodes?: string[];
   postalPrefixes?: string[];
@@ -28,28 +30,38 @@ const CHIANG_MAI_ZONE_KEYWORDS: { zoneId: string; patterns: string[] }[] = [
   { zoneId: 'cm-nong-chom', patterns: ['nong chom', 'nong jom', 'หนองจ๊อม', 'หนองจอม', 'ต.หนองจ๊อม', 'ต.หนองจอม'] },
   { zoneId: 'cm-mae-hia', patterns: ['mae hia', 'mai hia', 'mea hia', 'แม่เหียะ', 'ต.แม่เหียะ'] },
   { zoneId: 'cm-don-kaeo', patterns: ['don kaeo', 'donkaeo', 'ดอนแก้ว', 'ต.ดอนแก้ว'] },
+  { zoneId: 'cm-san-pa-tong', patterns: ['san pa tong', 'sanpatong', 'สันป่าตอง', 'อ.สันป่าตอง', 'อำเภอสันป่าตอง'] },
+  { zoneId: 'cm-mae-wang', patterns: ['mae wang', 'แม่วาง', 'อ.แม่วาง', 'อำเภอแม่วาง'] },
+  { zoneId: 'cm-chiang-dao', patterns: ['chiang dao', 'เชียงดาว', 'อ.เชียงดาว', 'อำเภอเชียงดาว'] },
+  { zoneId: 'cm-fang', patterns: ['fang', 'ฝาง', 'อ.ฝาง', 'อำเภอฝาง'] },
+  { zoneId: 'cm-mae-ai', patterns: ['mae ai', 'แม่เอ๋ย', 'อ.แม่เอ๋ย', 'อำเภอแม่เอ๋ย'] },
 ];
 
 export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef[]> = {
   CHIANG_MAI: [
     { id: 'cm-mueang-central', labelEn: 'Mueang Chiang Mai — central', labelTh: 'เมืองเชียงใหม่ — ใจกลาง', feeThb: 250 },
-    { id: 'cm-chang-phueak', labelEn: 'Chang Phueak', labelTh: 'ช้างเผือก', feeThb: 350 },
-    { id: 'cm-suthep', labelEn: 'Suthep', labelTh: 'สุเทพ', feeThb: 350 },
+    { id: 'cm-chang-phueak', labelEn: 'Chang Phueak', labelTh: 'ช้างเผือก', feeThb: 300 },
+    { id: 'cm-suthep', labelEn: 'Suthep', labelTh: 'สุเทพ', feeThb: 300 },
     { id: 'cm-nong-pa-khrang', labelEn: 'Nong Pa Khrang', labelTh: 'หนองป่าคร้าง', feeThb: 300 },
     { id: 'cm-nong-chom', labelEn: 'Nong Chom', labelTh: 'หนองจ๊อม', feeThb: 350 },
-    { id: 'cm-mae-hia', labelEn: 'Mae Hia', labelTh: 'แม่เหียะ', feeThb: 450 },
-    { id: 'cm-don-kaeo', labelEn: 'Don Kaeo', labelTh: 'ดอนแก้ว', feeThb: 450 },
+    { id: 'cm-mae-hia', labelEn: 'Mae Hia', labelTh: 'แม่เหียะ', feeThb: 350 },
+    { id: 'cm-don-kaeo', labelEn: 'Don Kaeo', labelTh: 'ดอนแก้ว', feeThb: 400 },
     { id: 'cm-mueang-non-central', labelEn: 'Mueang Chiang Mai — other areas', labelTh: 'เมืองเชียงใหม่ — พื้นที่อื่น', feeThb: 350 },
-    { id: 'cm-saraphi', labelEn: 'Saraphi', labelTh: 'สารภี', feeThb: 350 },
-    { id: 'cm-san-sai', labelEn: 'San Sai', labelTh: 'สันทราย', feeThb: 350 },
+    { id: 'cm-saraphi', labelEn: 'Saraphi', labelTh: 'สารภี', feeThb: 400 },
+    { id: 'cm-san-sai', labelEn: 'San Sai', labelTh: 'สันทราย', feeThb: 400 },
     { id: 'cm-hang-dong', labelEn: 'Hang Dong', labelTh: 'หางดง', feeThb: 450 },
     { id: 'cm-san-kamphaeng', labelEn: 'San Kamphaeng', labelTh: 'สันกำแพง', feeThb: 450 },
     { id: 'cm-mae-rim', labelEn: 'Mae Rim', labelTh: 'แม่ริม', feeThb: 450 },
-    { id: 'cm-lamphun', labelEn: 'Lamphun', labelTh: 'ลำพูน', feeThb: 350 },
+    { id: 'cm-lamphun', labelEn: 'Lamphun', labelTh: 'ลำพูน', feeThb: 650 },
     { id: 'cm-doi-saket', labelEn: 'Doi Saket', labelTh: 'ดอยสะเก็ด', feeThb: 550 },
-    { id: 'cm-mae-on', labelEn: 'Mae On', labelTh: 'แม่ออน', feeThb: 550 },
-    { id: 'cm-samoeng', labelEn: 'Samoeng', labelTh: 'สะเมิง', feeThb: 550 },
-    { id: 'cm-mae-taeng', labelEn: 'Mae Taeng', labelTh: 'แม่แตง', feeThb: 550 },
+    { id: 'cm-san-pa-tong', labelEn: 'San Pa Tong', labelTh: 'สันป่าตอง', feeThb: 550 },
+    { id: 'cm-mae-on', labelEn: 'Mae On', labelTh: 'แม่ออน', feeThb: 750 },
+    { id: 'cm-mae-wang', labelEn: 'Mae Wang', labelTh: 'แม่วาง', feeThb: 750 },
+    { id: 'cm-mae-taeng', labelEn: 'Mae Taeng', labelTh: 'แม่แตง', feeThb: 850 },
+    { id: 'cm-samoeng', labelEn: 'Samoeng', labelTh: 'สะเมิง', feeThb: 950 },
+    { id: 'cm-chiang-dao', labelEn: 'Chiang Dao', labelTh: 'เชียงดาว', feeThb: 950 },
+    { id: 'cm-fang', labelEn: 'Fang', labelTh: 'ฝาง', feeThb: 950, manualQuote: true },
+    { id: 'cm-mae-ai', labelEn: 'Mae Ai', labelTh: 'แม่เอ๋ย', feeThb: 950, manualQuote: true },
     { id: 'cm-unknown', labelEn: 'Other / unknown area', labelTh: 'อื่นๆ / ไม่ทราบพื้นที่', feeThb: 550 },
   ],
   PATTAYA: [
@@ -103,6 +115,13 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
 
 export function getZonesForDestination(destinationId: DeliveryDestinationId): DeliveryZoneDef[] {
   return ZONES_BY_DESTINATION[destinationId] ?? [];
+}
+
+/** Zones selectable in customer checkout (excludes manual-quote map-only zones). */
+export function getCheckoutZonesForDestination(
+  destinationId: DeliveryDestinationId
+): DeliveryZoneDef[] {
+  return getZonesForDestination(destinationId).filter((z) => !z.manualQuote);
 }
 
 /**
@@ -181,6 +200,11 @@ export function legacyDistrictFromChiangMaiZone(zoneId: string): {
     'cm-mae-on': { deliveryDistrict: 'MAE_ON', isMueangCentral: false },
     'cm-samoeng': { deliveryDistrict: 'SAMOENG', isMueangCentral: false },
     'cm-mae-taeng': { deliveryDistrict: 'MAE_TAENG', isMueangCentral: false },
+    'cm-san-pa-tong': { deliveryDistrict: 'SAN_PA_TONG', isMueangCentral: false },
+    'cm-mae-wang': { deliveryDistrict: 'MAE_WANG', isMueangCentral: false },
+    'cm-chiang-dao': { deliveryDistrict: 'CHIANG_DAO', isMueangCentral: false },
+    'cm-fang': { deliveryDistrict: 'FANG', isMueangCentral: false },
+    'cm-mae-ai': { deliveryDistrict: 'MAE_AI', isMueangCentral: false },
     'cm-unknown': { deliveryDistrict: 'UNKNOWN', isMueangCentral: false },
   };
   return map[zoneId] ?? { deliveryDistrict: 'UNKNOWN', isMueangCentral: false };
@@ -206,6 +230,11 @@ export function chiangMaiZoneIdFromLegacyDistrict(
     MAE_ON: 'cm-mae-on',
     SAMOENG: 'cm-samoeng',
     MAE_TAENG: 'cm-mae-taeng',
+    SAN_PA_TONG: 'cm-san-pa-tong',
+    MAE_WANG: 'cm-mae-wang',
+    CHIANG_DAO: 'cm-chiang-dao',
+    FANG: 'cm-fang',
+    MAE_AI: 'cm-mae-ai',
     UNKNOWN: 'cm-unknown',
   };
   return d2z[district] ?? 'cm-unknown';

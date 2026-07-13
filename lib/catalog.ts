@@ -373,6 +373,38 @@ export async function getBouquetsFromCatalog(): Promise<Bouquet[]> {
 
 
 
+export type BouquetSitemapEntry = { slug: string; updatedAt: string };
+
+
+
+/** Lightweight slug + updated_at for sitemap generation (approved bouquets only). */
+
+export async function getBouquetSitemapEntriesFromCatalog(): Promise<BouquetSitemapEntry[]> {
+
+  const rows = await fetchApprovedBouquetRows();
+
+  const seen = new Set<string>();
+
+  const entries: BouquetSitemapEntry[] = [];
+
+  for (const row of rows) {
+
+    const slug = row.slug_en?.trim();
+
+    if (!slug || seen.has(slug)) continue;
+
+    seen.add(slug);
+
+    entries.push({ slug, updatedAt: row.updated_at });
+
+  }
+
+  return entries.sort((a, b) => a.slug.localeCompare(b.slug));
+
+}
+
+
+
 export async function getSimilarBouquetsFromCatalog(
 
   source: Bouquet,

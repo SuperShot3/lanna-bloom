@@ -16,6 +16,11 @@ export type DistrictKey =
   | 'SAMOENG'
   | 'MAE_TAENG'
   | 'LAMPHUN'
+  | 'SAN_PA_TONG'
+  | 'MAE_WANG'
+  | 'CHIANG_DAO'
+  | 'FANG'
+  | 'MAE_AI'
   | 'UNKNOWN';
 
 export interface DistrictOption {
@@ -36,6 +41,11 @@ export const DISTRICTS: DistrictOption[] = [
   { key: 'SAMOENG', labelEn: 'Samoeng', labelTh: 'อำเภอสะเมิง' },
   { key: 'MAE_TAENG', labelEn: 'Mae Taeng', labelTh: 'อำเภอแม่แตง' },
   { key: 'LAMPHUN', labelEn: 'Lamphun', labelTh: 'จังหวัดลำพูน' },
+  { key: 'SAN_PA_TONG', labelEn: 'San Pa Tong', labelTh: 'อำเภอสันป่าตอง' },
+  { key: 'MAE_WANG', labelEn: 'Mae Wang', labelTh: 'อำเภอแม่วาง' },
+  { key: 'CHIANG_DAO', labelEn: 'Chiang Dao', labelTh: 'อำเภอเชียงดาว' },
+  { key: 'FANG', labelEn: 'Fang', labelTh: 'อำเภอฝาง' },
+  { key: 'MAE_AI', labelEn: 'Mae Ai', labelTh: 'อำเภอแม่เอ๋ย' },
   { key: 'UNKNOWN', labelEn: 'Other / Unknown', labelTh: 'อื่นๆ / ไม่ทราบ' },
 ];
 
@@ -72,17 +82,26 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
   switch (district) {
     case 'SARAPHI':
     case 'SAN_SAI':
-      return 350;
+      return 400;
     case 'HANG_DONG':
     case 'SAN_KAMPHAENG':
     case 'MAE_RIM':
       return 450;
     case 'LAMPHUN':
-      return 350;
+      return 650;
     case 'DOI_SAKET':
+    case 'SAN_PA_TONG':
+      return 550;
     case 'MAE_ON':
-    case 'SAMOENG':
+    case 'MAE_WANG':
+      return 750;
     case 'MAE_TAENG':
+      return 850;
+    case 'SAMOENG':
+    case 'CHIANG_DAO':
+      return 950;
+    case 'FANG':
+    case 'MAE_AI':
     case 'UNKNOWN':
     default:
       return 550;
@@ -101,6 +120,11 @@ export function getDeliveryFeeTHB(input?: DeliveryInput): number {
 
 /** Keywords for district detection (lowercase). Order matters: more specific first. */
 const DISTRICT_KEYWORDS: { key: DistrictKey; patterns: string[] }[] = [
+  { key: 'MAE_AI', patterns: ['mae ai', 'แม่เอ๋ย', 'อ.แม่เอ๋ย', 'อำเภอแม่เอ๋ย'] },
+  { key: 'FANG', patterns: ['fang', 'ฝาง', 'อ.ฝาง', 'อำเภอฝาง'] },
+  { key: 'CHIANG_DAO', patterns: ['chiang dao', 'เชียงดาว', 'อ.เชียงดาว', 'อำเภอเชียงดาว'] },
+  { key: 'MAE_WANG', patterns: ['mae wang', 'แม่วาง', 'อ.แม่วาง', 'อำเภอแม่วาง'] },
+  { key: 'SAN_PA_TONG', patterns: ['san pa tong', 'sanpatong', 'สันป่าตอง', 'อ.สันป่าตอง', 'อำเภอสันป่าตอง'] },
   { key: 'MAE_TAENG', patterns: ['mae taeng', 'แม่แตง', 'อ.แม่แตง', 'อำเภอแม่แตง'] },
   { key: 'MAE_ON', patterns: ['mae on', 'แม่ออน', 'อ.แม่ออน', 'อำเภอแม่ออน'] },
   { key: 'SAMOENG', patterns: ['samoeng', 'สะเมิง', 'อ.สะเมิง', 'อำเภอสะเมิง'] },

@@ -6,7 +6,7 @@ import type { Locale } from '@/lib/i18n';
 import { detectDistrictFromAddress, type DistrictKey } from '@/lib/deliveryFees';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import {
-  getZonesForDestination,
+  getCheckoutZonesForDestination,
   getZoneFee,
   chiangMaiZoneIdFromLegacyDistrict,
   legacyDistrictFromChiangMaiZone,
@@ -100,7 +100,7 @@ export function DeliveryForm({
     deliveryVariant === 'expansion'
       ? value.deliveryDestination
       : 'CHIANG_MAI';
-  const zones = getZonesForDestination(destinationForZones);
+  const zones = getCheckoutZonesForDestination(destinationForZones);
 
   useEffect(() => {
     if (deliveryVariant !== 'chiang-mai') return;

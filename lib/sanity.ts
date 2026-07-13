@@ -9,6 +9,7 @@ export type { CatalogFilterParams, PopularCatalogItem } from '@/lib/catalogListL
 
 export {
   getCatalogBouquets as getBouquetsFromSanity,
+  getCatalogBouquetSitemapEntries as getBouquetSitemapEntriesFromSanity,
   getCatalogSimilarBouquets as getSimilarBouquetsForBouquet,
   getCatalogBouquetsPaginated as getBouquetsFromSanityPaginated,
   getCatalogBouquetBySlug as getBouquetBySlugFromSanity,
