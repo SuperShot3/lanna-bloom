@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 /** Short catalog nav — only categories we currently sell. */
 const CATALOG_NAV_ITEMS = [
   { id: 'flowers', label: (lang: Locale) => translations[lang].catalog.topCategoryFlowers },
-  { id: 'boxes', label: (lang: Locale) => translations[lang].catalog.formatBox },
+  { id: 'toys', label: (lang: Locale) => translations[lang].catalog.topCategoryPlushyToys },
   { id: 'balloons', label: (lang: Locale) => translations[lang].catalog.topCategoryBalloons },
   { id: 'candy', label: (lang: Locale) => translations[lang].home.productSectionSweets },
 ] as const;
@@ -30,8 +30,8 @@ function catalogNavHref(catalogHref: string, id: CatalogNavId): string {
   switch (id) {
     case 'flowers':
       return catalogHref;
-    case 'boxes':
-      return `${catalogHref}${buildCatalogSearchString({ formats: ['box'] })}`;
+    case 'toys':
+      return `${catalogHref}${buildCatalogSearchString({ topCategory: 'plushy_toys' })}`;
     case 'balloons':
       return `${catalogHref}${buildCatalogSearchString({ topCategory: 'balloons' })}`;
     case 'candy':
@@ -42,14 +42,10 @@ function catalogNavHref(catalogHref: string, id: CatalogNavId): string {
 function useActiveCatalogNavId(): CatalogNavId | null {
   const searchParams = useSearchParams();
   const topCategory = searchParams?.get('topCategory') ?? '';
-  const formats = (searchParams?.get('formats') ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
 
+  if (topCategory === 'plushy_toys') return 'toys';
   if (topCategory === 'balloons') return 'balloons';
   if (topCategory === 'food_sweets') return 'candy';
-  if (formats.includes('box')) return 'boxes';
   if (!topCategory || topCategory === 'flowers') return 'flowers';
   return null;
 }
