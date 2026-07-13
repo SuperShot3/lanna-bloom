@@ -3,6 +3,11 @@ import 'server-only';
 import sharp from 'sharp';
 import type { CatalogStoredImage } from '@/lib/catalog/types';
 import {
+  convertToWebp,
+  createPngMaster,
+  PRODUCT_IMAGE_SIZE,
+} from '@/lib/adminProductImageProcessing';
+import {
   type AllowedProductImageType,
   normalizeDeclaredImageMime,
   sniffImageMimeType,
@@ -17,7 +22,7 @@ import { uploadCatalogProductImages } from '@/lib/catalogWrite';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export const PRODUCT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
-export const PRODUCT_IMAGE_SIZE = 2400;
+export { PRODUCT_IMAGE_SIZE, convertToWebp, createPngMaster } from '@/lib/adminProductImageProcessing';
 export const PRODUCT_IMAGE_SOURCE_MAX_SIZE = 2400;
 
 export { ALLOWED_PRODUCT_IMAGE_TYPES } from '@/lib/adminProductImageMime';
@@ -123,51 +128,8 @@ export async function resizeToSquare(file: File, size = PRODUCT_IMAGE_SIZE): Pro
   return fileFromBuffer(output, 'product-square.png', 'image/png');
 }
 
-async function prepareSquarePngBuffer(file: File, size = PRODUCT_IMAGE_SIZE): Promise<Buffer> {
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const pipeline = sharp(buffer, { limitInputPixels: 40_000_000 }).rotate();
-  const meta = await pipeline.metadata();
-  const width = meta.width ?? 0;
-  const height = meta.height ?? 0;
-  const maxEdge = Math.max(width, height);
-  const aspectRatio = width && height ? width / height : 0;
-  const isSquareish = aspectRatio >= 0.98 && aspectRatio <= 1.02;
-
-  if (isSquareish) {
-    if (maxEdge <= size) {
-      return pipeline.png({ compressionLevel: 9 }).toBuffer();
-    }
-    return pipeline
-      .resize(size, size, { fit: 'inside', withoutEnlargement: true })
-      .png({ compressionLevel: 9 })
-      .toBuffer();
-  }
-
-  return sharp(buffer, { limitInputPixels: 40_000_000 })
-    .rotate()
-    .resize(size, size, {
-      fit: 'contain',
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-      withoutEnlargement: true,
-    })
-    .png({ compressionLevel: 9 })
-    .toBuffer();
-}
-
 export async function stripImageMetadata(file: File): Promise<File> {
   return resizeToSquare(file);
-}
-
-export async function convertToWebp(file: File, size = PRODUCT_IMAGE_SIZE): Promise<File> {
-  const output = await prepareSquarePngBuffer(file, size);
-  const webpBuffer = await sharp(output).webp({ quality: 90, effort: 5 }).toBuffer();
-
-  return fileFromBuffer(webpBuffer, 'product-primary.webp', 'image/webp');
-}
-
-export async function createPngMaster(file: File, size = PRODUCT_IMAGE_SIZE): Promise<File> {
-  const output = await prepareSquarePngBuffer(file, size);
-  return fileFromBuffer(output, 'product-master.png', 'image/png');
 }
 
 export async function convertSourceToWebpVariants(

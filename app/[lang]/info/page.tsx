@@ -2,15 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBaseUrl } from '@/lib/orders';
-import { isValidLocale, translations, type Locale } from '@/lib/i18n';
-import {
-  getFeaturedArticle,
-  getMoreGuides,
-  getArticleTitle,
-  getArticleExcerpt,
-} from './_data/articles';
+import { isValidLocale, type Locale } from '@/lib/i18n';
+import { getInfoHubGuides } from './_data/articles';
 import { InfoCard } from './InfoCard';
-import { ShareButton } from '@/components/ShareButton';
+import { WeekdayClusterHub } from './WeekdayClusterHub';
 import styles from './info.module.css';
 
 export const revalidate = 3600;
@@ -55,68 +50,57 @@ export default async function InfoHubPage({
   const locale = lang as Locale;
   const base = getBaseUrl();
   const basePath = `/${lang}/info`;
-  const featured = getFeaturedArticle();
-  const moreGuides = getMoreGuides(featured.slug);
-  const featuredUrl = `${base}${basePath}/${featured.slug}`;
-  const featuredTitle = getArticleTitle(featured, lang);
-  const featuredExcerpt = getArticleExcerpt(featured, lang);
+  const catalogHref = `/${lang}/catalog`;
 
   const t =
     locale === 'en'
-      ? { readMore: 'Read more', moreGuides: 'More guides' }
-      : { readMore: 'อ่านต่อ', moreGuides: 'คู่มืออื่นๆ' };
+      ? {
+          h1: 'Guides & Info',
+          intro:
+            'Flower delivery guides, same-day delivery info, and tips for ordering bouquets in Chiang Mai.',
+          browseBouquets: 'Browse bouquets',
+          allGuides: 'All guides',
+          weekdaySeries: 'Thai weekday flowers',
+        }
+      : {
+          h1: 'คู่มือและข้อมูล',
+          intro:
+            'คู่มือการจัดส่งดอกไม้ ข้อมูลจัดส่งวันเดียว และเคล็ดลับการสั่งช่อดอกไม้ในเชียงใหม่',
+          browseBouquets: 'เลือกช่อดอกไม้',
+          allGuides: 'คู่มือทั้งหมด',
+          weekdaySeries: 'ดอกไม้ตามวันเกิด',
+        };
 
-  const featuredCoverStyle =
-    featured.cover.type === 'gradient'
-      ? { background: featured.cover.gradientCss }
-      : undefined;
+  const guides = getInfoHubGuides();
 
   return (
     <div className={styles.infoPage}>
       <div className="container">
-        {/* Featured section */}
-        <section className={styles.infoFeatured} aria-labelledby="info-featured-title">
-          <div className={styles.infoFeaturedContent}>
-            <h1 id="info-featured-title" className={styles.infoFeaturedTitle}>
-              {featuredTitle}
-            </h1>
-            <p className={styles.infoFeaturedExcerpt}>{featuredExcerpt}</p>
-            <div className={styles.infoFeaturedActions}>
-              <Link href={`${basePath}/${featured.slug}`} className={styles.infoCta}>
-                {t.readMore}
-              </Link>
-              <ShareButton
-                url={featuredUrl}
-                title={featuredTitle}
-                text={featuredExcerpt}
-                ariaLabel="Share this guide"
-              />
-            </div>
-          </div>
-          <Link
-            href={`${basePath}/${featured.slug}`}
-            className={styles.infoFeaturedCard}
-          >
-            <div
-              className={styles.infoFeaturedCover}
-              style={featuredCoverStyle}
-            >
-              {featured.cover.type === 'gradient' && (
-                <span className={styles.infoFeaturedCoverCenter} aria-hidden>
-                  {featured.cover.center.value}
-                </span>
-              )}
-            </div>
-          </Link>
+        <section className={styles.infoHubHero} aria-labelledby="info-hub-title">
+          <h1 id="info-hub-title" className={styles.infoHubTitle}>
+            {t.h1}
+          </h1>
+          <p className={styles.infoHubIntro}>{t.intro}</p>
+          <p className={styles.infoHubActions}>
+            <Link href={catalogHref} className={styles.infoCta}>
+              {t.browseBouquets}
+            </Link>
+          </p>
         </section>
 
-        {/* More guides grid */}
+        <section className={styles.infoWeekdaySection} aria-labelledby="info-weekday-series-title">
+          <h2 id="info-weekday-series-title" className={styles.infoMoreTitle}>
+            {t.weekdaySeries}
+          </h2>
+          <WeekdayClusterHub lang={lang} basePath={basePath} />
+        </section>
+
         <section className={styles.infoMore} aria-labelledby="info-more-title">
           <h2 id="info-more-title" className={styles.infoMoreTitle}>
-            {t.moreGuides}
+            {t.allGuides}
           </h2>
           <div className={styles.infoGrid}>
-            {moreGuides.map((article) => (
+            {guides.map((article) => (
               <InfoCard
                 key={article.slug}
                 article={article}

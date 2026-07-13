@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -9,11 +9,17 @@ import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
 import {
+  CatalogMobileNav,
+  CatalogNavDropdown,
+} from './CatalogNavDropdown';
+import {
+  OccasionsMobileNav,
+  OccasionsNavDropdown,
+} from './OccasionsNavDropdown';
+import {
   CartIcon,
   HomeIcon,
   SearchIcon,
-  CatalogIcon,
-  GiftIcon,
   InfoIcon,
   PhoneIcon,
   MapIcon,
@@ -97,7 +103,6 @@ export function Header({
   const catalogHref = effectiveMarket
     ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
     : `/${lang}/catalog`;
-  const occasionsHref = catalogHref;
   const cartHref = `/${lang}/cart`;
   const contactHref = `/${lang}/contact`;
   const infoHref = `/${lang}/info`;
@@ -281,20 +286,33 @@ export function Header({
                 className="hidden md:flex items-center gap-8 font-medium text-sm tracking-wide uppercase"
                 aria-label="Main"
               >
-                <NavItem
-                  href={catalogHref}
-                  label={t.catalog}
-                  active={basePath === '/catalog' || basePath.startsWith('/catalog/')}
-                  variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
-                />
-                <NavItem
-                  href={occasionsHref}
-                  label={t.occasions}
-                  active={false}
-                  variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
-                />
+                <Suspense
+                  fallback={
+                    <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[#1A3C34]">
+                      {t.catalog}
+                    </span>
+                  }
+                >
+                  <CatalogNavDropdown
+                    lang={lang}
+                    catalogHref={catalogHref}
+                    label={t.catalog}
+                    pathActive={basePath === '/catalog' || basePath.startsWith('/catalog/')}
+                  />
+                </Suspense>
+                <Suspense
+                  fallback={
+                    <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[#1A3C34]">
+                      {t.occasions}
+                    </span>
+                  }
+                >
+                  <OccasionsNavDropdown
+                    lang={lang}
+                    catalogHref={catalogHref}
+                    label={t.occasions}
+                  />
+                </Suspense>
                 <NavItem
                   href={infoHref}
                   label={t.information}
@@ -426,21 +444,31 @@ export function Header({
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
-              <NavItem
-                href={catalogHref}
-                label={t.catalog}
-                icon={<CatalogIcon size={22} />}
-                active={basePath === '/catalog' || basePath.startsWith('/catalog/')}
-                variant="mobile"
-                onClick={() => setMenuOpen(false)}
-              />
-              <NavItem
-                href={occasionsHref}
-                label={t.occasions}
-                icon={<GiftIcon size={22} />}
-                variant="mobile"
-                onClick={() => setMenuOpen(false)}
-              />
+              <Suspense
+                fallback={
+                  <span className="nav-item nav-item--mobile">{t.catalog}</span>
+                }
+              >
+                <CatalogMobileNav
+                  lang={lang}
+                  catalogHref={catalogHref}
+                  label={t.catalog}
+                  pathActive={basePath === '/catalog' || basePath.startsWith('/catalog/')}
+                  onNavigate={() => setMenuOpen(false)}
+                />
+              </Suspense>
+              <Suspense
+                fallback={
+                  <span className="nav-item nav-item--mobile">{t.occasions}</span>
+                }
+              >
+                <OccasionsMobileNav
+                  lang={lang}
+                  catalogHref={catalogHref}
+                  label={t.occasions}
+                  onNavigate={() => setMenuOpen(false)}
+                />
+              </Suspense>
               <NavItem
                 href={infoHref}
                 label={t.information}

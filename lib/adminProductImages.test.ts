@@ -1,17 +1,26 @@
 /**
- * MIME validation tests for admin product image uploads.
+ * MIME validation and WebP conversion tests for admin product image uploads.
  * Run with: npx tsx lib/adminProductImages.test.ts
  */
 
+import sharp from 'sharp';
 import {
   extensionForMime,
   normalizeDeclaredImageMime,
   sniffImageMimeType,
   validateImageMimeFromBuffer,
 } from './adminProductImageMime';
+import { convertToWebp, PRODUCT_IMAGE_SIZE } from './adminProductImageProcessing';
 
 function assert(condition: boolean, msg: string) {
   if (!condition) throw new Error(msg);
+}
+
+async function assertDimensions(file: File, expectedWidth: number, expectedHeight: number, msg: string) {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const meta = await sharp(buffer).metadata();
+  assert(meta.width === expectedWidth, `${msg}: expected width ${expectedWidth}, got ${meta.width}`);
+  assert(meta.height === expectedHeight, `${msg}: expected height ${expectedHeight}, got ${meta.height}`);
 }
 
 // Minimal 1x1 PNG
@@ -50,4 +59,68 @@ try {
 }
 assert(mismatchThrown, 'JPEG bytes with declared image/png is rejected');
 
-console.log('adminProductImages.test.ts: all assertions passed');
+async function testWebpPreservesAspectRatio() {
+  const portraitWidth = 800;
+  const portraitHeight = 1200;
+  const portraitBuffer = await sharp({
+    create: {
+      width: portraitWidth,
+      height: portraitHeight,
+      channels: 3,
+      background: { r: 120, g: 80, b: 200 },
+    },
+  })
+    .jpeg()
+    .toBuffer();
+
+  const portraitFile = new File([new Uint8Array(portraitBuffer)], 'portrait.jpg', {
+    type: 'image/jpeg',
+  });
+  const webp = await convertToWebp(portraitFile);
+  assert(webp.type === 'image/webp', 'convertToWebp returns image/webp');
+  await assertDimensions(
+    webp,
+    portraitWidth,
+    portraitHeight,
+    'portrait image should keep original dimensions'
+  );
+}
+
+async function testWebpDownscalesLongestEdge() {
+  const sourceWidth = 4000;
+  const sourceHeight = 3000;
+  const sourceBuffer = await sharp({
+    create: {
+      width: sourceWidth,
+      height: sourceHeight,
+      channels: 3,
+      background: { r: 40, g: 160, b: 90 },
+    },
+  })
+    .jpeg()
+    .toBuffer();
+
+  const sourceFile = new File([new Uint8Array(sourceBuffer)], 'landscape.jpg', {
+    type: 'image/jpeg',
+  });
+  const webp = await convertToWebp(sourceFile);
+  const expectedWidth = PRODUCT_IMAGE_SIZE;
+  const expectedHeight = Math.round((sourceHeight / sourceWidth) * PRODUCT_IMAGE_SIZE);
+  await assertDimensions(
+    webp,
+    expectedWidth,
+    expectedHeight,
+    'landscape image should downscale proportionally'
+  );
+}
+
+async function runTests() {
+  await testWebpPreservesAspectRatio();
+  await testWebpDownscalesLongestEdge();
+  console.log('adminProductImages.test.ts: all assertions passed');
+}
+
+void runTests().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

@@ -4,6 +4,16 @@
   background: var(--bg);
 }
 
+.infoArticlePageWithStickyPay {
+  padding-bottom: calc(64px + 72px);
+}
+
+@media (min-width: 900px) {
+  .infoArticlePageWithStickyPay {
+    padding-bottom: 64px;
+  }
+}
+
 .infoArticle {
   max-width: 680px;
   margin: 0 auto;
@@ -12,6 +22,9 @@
 @media (max-width: 600px) {
   .infoArticlePage {
     padding: 24px 0 48px;
+  }
+  .infoArticlePageWithStickyPay {
+    padding-bottom: calc(48px + 72px);
   }
   .infoArticle {
     padding-left: 20px;
@@ -191,6 +204,12 @@
   margin: 1.75em 0 2em;
 }
 
+.articleFigureSm {
+  max-width: 340px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .articleFigureImg {
   width: 100%;
   max-width: 100%;
@@ -206,6 +225,34 @@
   line-height: 1.45;
   color: var(--text-muted);
   text-align: center;
+}
+
+.articleFigureCta {
+  margin: 0.75em 0 0;
+  text-align: center;
+}
+
+.articleFigureCtaLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none !important;
+  box-shadow: 0 6px 18px rgba(26, 60, 52, 0.18);
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.articleFigureCtaLink:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  color: #fff !important;
 }
 
 /* Product pick band — keeps catalog promos visually grouped in the article flow */
@@ -299,6 +346,54 @@
   margin-bottom: 0.55em;
   color: var(--text-muted);
   padding-left: 0.15rem;
+}
+
+.infoArticleBody :global(.info-article-table-wrap) {
+  margin: 1.25em 0 1.75em;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.infoArticleBody :global(.info-article-table) {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.infoArticleBody :global(.info-article-th),
+.infoArticleBody :global(.info-article-td) {
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.infoArticleBody :global(.info-article-th) {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(197, 160, 89, 0.08);
+  white-space: nowrap;
+}
+
+.infoArticleBody :global(.info-article-td) {
+  color: var(--text-muted);
+}
+
+.infoArticleBody :global(.info-article-tr:last-child .info-article-td) {
+  border-bottom: none;
+}
+
+.infoArticleBody :global(.info-article-td:first-child) {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
 }
 
 /* Checklist blocks — icon rows inside styled cards */
@@ -667,6 +762,21 @@
   color: var(--accent-cta-text, #1a3c34);
 }
 
+.infoArticleCtaPay {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.infoArticleCtaPayNote {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .infoRelatedGuides {
   margin-top: 2.5em;
   padding-top: 2em;
@@ -696,4 +806,67 @@
   color: var(--text);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Thai weekday flower cluster navigation */
+.weekdayClusterNav {
+  margin: 0 0 2rem;
+  padding: 16px 18px;
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid rgba(45, 42, 38, 0.1);
+  background: linear-gradient(180deg, rgba(250, 247, 242, 0.95) 0%, rgba(255, 255, 255, 0.92) 100%);
+}
+
+.weekdayClusterNavLabel {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.weekdayClusterNavList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weekdayClusterNavLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 11px;
+  border-radius: 9999px;
+  border: 1px solid rgba(45, 42, 38, 0.1);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.weekdayClusterNavLink:hover {
+  border-color: var(--day-color, var(--accent));
+  color: var(--text);
+}
+
+.weekdayClusterNavLink[data-active='true'] {
+  border-color: var(--day-color, var(--accent));
+  background: rgba(250, 247, 242, 0.95);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.weekdayClusterNavDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--day-color, var(--accent));
+  flex-shrink: 0;
 }

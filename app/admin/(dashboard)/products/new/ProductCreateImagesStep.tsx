@@ -172,7 +172,7 @@ export function ProductCreateImagesStep({
             </button>
           </div>
           <p className="admin-product-create-webp-note">
-            Selected website images are optimized as WebP at up to 2400px square.
+            Selected website images are optimized as WebP at up to 2400px on the longest edge.
           </p>
           <button type="button" className="admin-btn admin-btn-outline" disabled={isBusy} onClick={onCancelSession}>
             Choose a different photo

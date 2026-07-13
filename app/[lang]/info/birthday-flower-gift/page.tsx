@@ -171,7 +171,11 @@ export default async function BirthdayFlowerGiftGuidePage({
           <p className="guide-section-lede">
             The best birthday flower gift speaks to who they are-not only what is trending.
             Choose by mood, then scroll-each bouquet sits beside its story so you can compare while
-            you read.
+            you read. You can also{' '}
+            <Link href={catalogBirthdayHref} className="guide-browse-link">
+              browse the full catalog selection
+            </Link>
+            .
           </p>
         </section>
 

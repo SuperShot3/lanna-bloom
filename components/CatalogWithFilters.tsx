@@ -26,6 +26,7 @@ import type { AnalyticsItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getBouquetDisplayCategory, getProductDisplayCategory } from '@/lib/catalogCategories';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
+import { getCatalogOccasionGuide } from '@/lib/catalogOccasionGuides';
 
 export interface CatalogWithFiltersProps {
   lang: Locale;
@@ -108,6 +109,7 @@ export function CatalogWithFilters({
   const visibleProducts = hasNameQuery ? filteredProducts : products;
   const visibleItems = visibleBouquets.length > 0 ? visibleBouquets : visibleProducts;
   const hasSearchNoMatches = hasNameQuery && items.length > 0 && visibleItems.length === 0;
+  const occasionGuide = getCatalogOccasionGuide(filterParams.occasion);
   const catalogAnimationKey = useMemo(() => {
     const itemKey = visibleItems.map((item) => item.id).join('|');
     return [
@@ -282,6 +284,17 @@ export function CatalogWithFilters({
               {description && (
                 <p className="catalog-page-description">{description}</p>
               )}
+              {occasionGuide ? (
+                <p className="catalog-occasion-guide-hint">
+                  {lang === 'th' ? occasionGuide.hintTh : occasionGuide.hintEn}{' '}
+                  <Link
+                    href={`/${lang}${occasionGuide.href}`}
+                    className="catalog-occasion-guide-link"
+                  >
+                    {lang === 'th' ? occasionGuide.linkLabelTh : occasionGuide.linkLabelEn}
+                  </Link>
+                </p>
+              ) : null}
             </div>
           )}
           {visibleItems.length === 0 ? (
@@ -436,6 +449,24 @@ export function CatalogWithFilters({
           line-height: 1.6;
           color: var(--text-muted);
           max-width: 56ch;
+        }
+        .catalog-occasion-guide-hint {
+          margin: 8px 0 0;
+          font-size: 0.84rem;
+          line-height: 1.45;
+          color: var(--text-muted);
+        }
+        .catalog-occasion-guide-link {
+          font-size: inherit;
+          font-weight: 500;
+          color: var(--text-muted);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          text-decoration-color: rgba(45, 42, 38, 0.28);
+        }
+        .catalog-occasion-guide-link:hover {
+          color: var(--text);
+          text-decoration-color: currentColor;
         }
         .catalog-title {
           font-family: var(--font-serif);

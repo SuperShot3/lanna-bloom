@@ -23,6 +23,7 @@ export function InfoCard({
   const title = getArticleTitle(article, lang);
   const excerpt = getArticleExcerpt(article, lang);
   const readLabel = lang === 'th' ? 'อ่านต่อ →' : 'Read →';
+  const featuredLabel = lang === 'th' ? 'แนะนำ' : 'Featured';
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -60,9 +61,14 @@ export function InfoCard({
           )}
         </div>
         <div className="info-card-body">
-          <time className="info-card-date" dateTime={article.publishedAt}>
-            {formatDate(article.publishedAt)}
-          </time>
+          <div className="info-card-meta">
+            {article.featured ? (
+              <span className="info-card-featured">{featuredLabel}</span>
+            ) : null}
+            <time className="info-card-date" dateTime={article.publishedAt}>
+              {formatDate(article.publishedAt)}
+            </time>
+          </div>
           <h3 className="info-card-title">{title}</h3>
           <p className="info-card-excerpt">{excerpt}</p>
           <div className="info-card-footer">
@@ -121,11 +127,27 @@ export function InfoCard({
         .info-card-body {
           padding: 20px;
         }
+        .info-card-meta {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .info-card-featured {
+          display: inline-block;
+          font-size: 0.72rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+          color: var(--accent);
+          background: var(--accent-soft);
+          padding: 3px 8px;
+          border-radius: 9999px;
+        }
         .info-card-date {
           font-size: 0.8rem;
           color: var(--text-muted);
-          margin-bottom: 8px;
-          display: block;
         }
         .info-card-title {
           font-family: var(--font-serif);

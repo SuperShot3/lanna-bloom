@@ -21,25 +21,13 @@
   }
 }
 
-.infoFeatured {
-  display: grid;
-  gap: 32px;
-  margin-bottom: 56px;
-  align-items: center;
+.infoHubHero {
+  max-width: 640px;
+  margin: 0 auto 56px;
+  text-align: center;
 }
 
-@media (min-width: 768px) {
-  .infoFeatured {
-    grid-template-columns: 1fr 1fr;
-    gap: 48px;
-  }
-}
-
-.infoFeaturedContent {
-  max-width: 480px;
-}
-
-.infoFeaturedTitle {
+.infoHubTitle {
   font-family: var(--font-serif);
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 700;
@@ -48,18 +36,15 @@
   line-height: 1.2;
 }
 
-.infoFeaturedExcerpt {
+.infoHubIntro {
   font-size: 1.05rem;
   line-height: 1.6;
   color: var(--text-muted);
   margin: 0 0 24px;
 }
 
-.infoFeaturedActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
+.infoHubActions {
+  margin: 0;
 }
 
 .infoCta {
@@ -80,32 +65,6 @@
 .infoCta:hover {
   opacity: 0.95;
   transform: translateY(-1px);
-}
-
-.infoFeaturedCard {
-  display: block;
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow-hover);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.infoFeaturedCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(45, 42, 38, 0.12);
-}
-
-.infoFeaturedCover {
-  aspect-ratio: 4 / 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-}
-
-.infoFeaturedCoverCenter {
-  font-size: 5rem;
-  line-height: 1;
 }
 
 .infoMore {
@@ -136,4 +95,144 @@
   .infoGrid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.infoWeekdaySection {
+  margin-bottom: 56px;
+}
+
+.weekdayCluster {
+  margin: 0;
+}
+
+.weekdayClusterInner {
+  background: var(--surface);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.weekdayClusterRainbow {
+  height: 6px;
+  background: linear-gradient(
+    90deg,
+    #dc2626 0%,
+    #ca8a04 16%,
+    #ec4899 32%,
+    #16a34a 48%,
+    #ea580c 64%,
+    #2563eb 80%,
+    #7c3aed 100%
+  );
+}
+
+.weekdayClusterContent {
+  padding: 24px 22px 26px;
+}
+
+@media (min-width: 600px) {
+  .weekdayClusterContent {
+    padding: 28px 28px 30px;
+  }
+}
+
+.weekdayClusterEyebrow {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.weekdayClusterTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 700;
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+
+.weekdayClusterTitleLink {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.weekdayClusterTitleLink:hover {
+  color: var(--accent);
+}
+
+.weekdayClusterExcerpt {
+  margin: 0 0 20px;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 58ch;
+}
+
+.weekdayClusterDayLabel {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.weekdayClusterDays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.weekdayClusterDayLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(45, 42, 38, 0.1);
+  background: rgba(250, 247, 242, 0.7);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.weekdayClusterDayLink:hover {
+  border-color: var(--day-color, var(--accent));
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.weekdayClusterDayDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--day-color, var(--accent));
+  flex-shrink: 0;
+}
+
+.weekdayClusterDayName {
+  line-height: 1.2;
+}
+
+.weekdayClusterCta {
+  margin: 0;
+}
+
+.weekdayClusterCtaLink {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.weekdayClusterCtaLink:hover {
+  text-decoration: underline;
 }

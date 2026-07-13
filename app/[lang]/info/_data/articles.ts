@@ -1,3 +1,5 @@
+import { THAI_WEEKDAY_CLUSTER_SLUGS } from '@/lib/info/weekdayCluster';
+
 /**
  * Articles registry for the Guides / Info section.
  * Each article maps to a slug and usually MDX files:
@@ -29,6 +31,7 @@ export type ArticleMeta = {
    */
   externalPath?: string;
   publishedAt: string; // ISO date
+  /** When true, shows a "Featured" badge on the info hub card and sorts first in the grid. */
   featured?: boolean;
   /** CTA links at bottom of article. If empty, default "Browse bouquets" link is shown. */
   ctaLinks?: ArticleCtaLink[];
@@ -169,7 +172,8 @@ export const articles: ArticleMeta[] = [
       center: { kind: 'emoji', value: '🎂' },
     },
     ctaLinks: [
-      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Birthday flower gift guide', labelTh: 'คู่มือของขวัญวันเกิด', href: '/info/birthday-flower-gift' },
+      { label: 'Browse birthday flowers', labelTh: 'ดูดอกไม้วันเกิด', href: '/catalog?occasion=birthday' },
       { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
     ],
   },
@@ -180,7 +184,7 @@ export const articles: ArticleMeta[] = [
     titleTh: 'บริการส่งช่อกุหลาบในเชียงใหม่', // Thai title
     excerptTh: 'สั่งช่อกุหลาบสวย ๆ พร้อมบริการจัดส่งทั่วเชียงใหม่ จัดส่งภายในวันเดียวได้ในช่วงเวลาทำการ ทักหาเราผ่าน LINE หรือ WhatsApp พร้อมแจ้งแบบช่อและรายละเอียดการจัดส่งได้เลย', // Thai excerpt (1–2 sentences)
     publishedAt: '2026-02-19T00:00:00.000Z', // ISO date
-    featured: false, // true = shown in featured section at top
+    featured: false,
     cover: {
       type: 'gradient',
       gradientCss: 'linear-gradient(135deg, #fde2e4 0%, #f8edeb 50%, #e8dfd0 100%)',
@@ -219,9 +223,9 @@ export const articles: ArticleMeta[] = [
     slug: 'same-day-flower-delivery-chiang-mai',
     title: 'Same-day flower delivery in Chiang Mai',
     excerpt:
-      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai. Message us early for the best choice; we deliver during working hours (09:00–20:00).',
+      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai online. Pay by card at checkout; we deliver during working hours (09:00–20:00) when you order in time.',
       titleTh: 'บริการส่งดอกไม้ในวันเดียวกันในเชียงใหม่',
-      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ได้เลย ติดต่อเราล่วงหน้าเพื่อเลือกดอกไม้ที่ชอบที่สุด เราจัดส่งในช่วงเวลาทำการ (09:00–20:00)',
+      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ออนไลน์ จ่ายบัตรตอนเช็กเอาต์ เราจัดส่งในช่วงเวลาทำการ (09:00–20:00) เมื่อสั่งทันเวลา',
     publishedAt: '2026-02-19T00:00:00.000Z',
     featured: false,
     cover: {
@@ -332,16 +336,16 @@ export const articles: ArticleMeta[] = [
     slug: 'tuesday-flowers-thailand',
     title: 'Tuesday Flowers in Thailand: Pink Bouquets and Gift Ideas',
     excerpt:
-      'Learn why Tuesday is pink in Thai culture and choose meaningful pink flowers for birthdays, romance, and delivery in Chiang Mai.',
+      'What to buy for Tuesday flowers in Thailand: pink roses, lilies, gerberas, orchids, lotus, or a pastel pink mix. Order online for Chiang Mai delivery.',
     publishedAt: '2026-07-12T00:00:00.000Z',
     featured: false,
     cover: {
-      type: 'gradient',
-      gradientCss: 'linear-gradient(135deg, #fff1f2 0%, #fbcfe8 50%, #fce7f3 100%)',
-      center: { kind: 'emoji', value: '🌸' },
+      type: 'image',
+      src: '/blog_images/tuesday-flowers/tuesday-pink-lotus-bouquet-chiang-mai.jpg',
+      alt: 'Pink lotus bouquet wrapped in green lotus leaves for Tuesday flower gifts in Chiang Mai',
     },
     ctaLinks: [
-      { label: 'Pink flower bouquets', labelTh: 'ช่อดอกไม้สีชมพู', href: '/catalog?colors=pink' },
+      { label: 'Order & pay online', labelTh: 'สั่งและชำระออนไลน์', href: '/catalog?colors=pink' },
       { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
       { label: 'Custom bouquet', labelTh: 'ช่อตามสั่ง', href: '/custom-order' },
     ],
@@ -509,7 +513,7 @@ export const articles: ArticleMeta[] = [
     titleTh: 'วิธีส่งดอกไม้ไปโรงพยาบาลในเชียงใหม่', // Thai title
     excerptTh: 'อยากส่งดอกไม้ให้คนที่อยู่โรงพยาบาล? คู่มือนี้อธิบายวิธีสั่งและจัดส่งในเชียงใหม่ พร้อมลิงก์ไปยังโรงพยาบาลหลักเพื่อเช็คที่อยู่และเบอร์ติดต่อ', // Thai excerpt (1–2 sentences)
     publishedAt: '2026-02-19T00:00:00.000Z', // ISO date
-    featured: true, // true = shown in featured section at top
+    featured: true,
     cover: {
       type: 'gradient',
       gradientCss: 'linear-gradient(135deg, #fff1f2 0%, #f5f3ff 50%, #ecfeff 100%)',
@@ -549,16 +553,23 @@ export function getArticleCtaLinks(article: ArticleMeta, lang: string): ArticleC
   return links;
 }
 
-export function getFeaturedArticle(): ArticleMeta {
-  const featured = articles.find((a) => a.featured);
-  return featured ?? articles[0];
-}
-
 export function getMoreGuides(excludeSlug?: string): ArticleMeta[] {
   const filtered = articles.filter((a) => a.slug !== excludeSlug);
   return [...filtered].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
+}
+
+/** Guides for the info hub — weekday cluster members are shown in a dedicated section. */
+export function getInfoHubGuides(): ArticleMeta[] {
+  const clusterSet = new Set(THAI_WEEKDAY_CLUSTER_SLUGS);
+  return [...articles]
+    .filter((a) => !clusterSet.has(a.slug))
+    .sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
 }
 
 export function getArticlePath(article: ArticleMeta, lang: string): string {

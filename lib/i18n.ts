@@ -280,7 +280,8 @@ const baseTranslations = {
       searchPlaceholder: 'Search flowers by name',
       searchNoMatches: 'No flowers match your search.',
       occasionTitleBirthday: 'Birthday Bouquets',
-      occasionDescBirthday: "For birthdays, choose cheerful colors and a fuller look—mixed roses with baby's breath and fresh greenery feel festive and photo-ready. Add a short card message to make it personal.",
+      occasionDescBirthday:
+        "Make their birthday feel special with cheerful, fuller blooms—mixed roses, baby's breath, and fresh greenery look festive and photo-ready. Pick a bouquet below and add a short card message to make it theirs.",
       occasionTitleAnniversary: 'Anniversary Flowers',
       occasionDescAnniversary: 'Anniversary bouquets usually look more elegant than loud—classic roses (red or soft pink) with premium wrapping feel romantic and meaningful. A heartfelt note is often what they remember most.',
       occasionTitleRomantic: 'Romantic Flowers',
@@ -1718,7 +1719,8 @@ const baseTranslations = {
       searchPlaceholder: 'ค้นหาชื่อดอกไม้',
       searchNoMatches: 'ไม่พบดอกไม้ที่ตรงกับคำค้นหา',
       occasionTitleBirthday: 'ช่อดอกไม้วันเกิด',
-      occasionDescBirthday: 'วันเกิดเหมาะกับช่อโทนสดใสและดูฟู—กุหลาบผสมยิปโซและใบไม้แซมให้ความรู้สึกฉลองและถ่ายรูปสวย เพิ่มข้อความสั้น ๆ ในการ์ดจะทำให้ดูเป็นส่วนตัวมากขึ้น',
+      occasionDescBirthday:
+        'ทำให้วันเกิดพิเศษด้วยช่อโทนสดใสและดูฟู—กุหลาบผสมยิปโซและใบไม้แซมให้ความรู้สึกฉลองและถ่ายรูปสวย เลือกช่อด้านล่างแล้วเขียนข้อความสั้น ๆ ในการ์ดให้เป็นของขวัญที่จริงใจ',
       occasionTitleAnniversary: 'ช่อดอกไม้วันครบรอบ',
       occasionDescAnniversary: 'วันครบรอบเหมาะกับช่อที่ดูหรูและโรแมนติก—กุหลาบโทนแดงหรือชมพูอ่อนพร้อมห่อพรีเมียมช่วยสื่อความรักได้ดี ข้อความในการ์ดที่จริงใจคือสิ่งที่คนมักจดจำที่สุด',
       occasionTitleRomantic: 'ช่อดอกไม้โรแมนติก',
@@ -3120,7 +3122,7 @@ const russianTranslations = {
     searchNoMatches: 'Цветы по запросу не найдены.',
     occasionTitleBirthday: 'Букеты на день рождения',
     occasionDescBirthday:
-      'Для дня рождения выбирайте радостные цвета и более пышный вид. Смешанные розы с гипсофилой и зеленью выглядят празднично и красиво на фото.',
+      'Сделайте день рождения особенным: яркие, пышные букеты — смешанные розы с гипсофилой и зеленью выглядят празднично и красиво на фото. Выберите букет ниже и добавьте короткое пожелание на открытке.',
     occasionTitleAnniversary: 'Цветы на годовщину',
     occasionDescAnniversary:
       'Для годовщины лучше подходят элегантные букеты: классические розы в красном или нежно-розовом цвете с премиальной упаковкой.',

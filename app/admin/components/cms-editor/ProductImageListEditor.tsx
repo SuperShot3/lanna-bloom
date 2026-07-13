@@ -281,7 +281,7 @@ export function ProductImageListEditor({
           disabled={disabled || !!loadingKey}
           onChange={(event) => setConvertOnUpload(event.target.checked)}
         />
-        <span>Also convert to WebP on upload (up to 2400px)</span>
+        <span>Also convert to WebP on upload (up to 2400px on the longest edge)</span>
       </label>
 
       <button

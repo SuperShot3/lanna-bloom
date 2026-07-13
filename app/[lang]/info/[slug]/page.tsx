@@ -5,14 +5,22 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getBaseUrl } from '@/lib/orders';
+import { getLineContactUrl } from '@/lib/messenger';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLinks } from '../_data/articles';
+import { isCommercialIntentSlug } from '@/lib/landingPages/intentLandingPages';
 import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
 import { ArticleListenPlayer } from './ArticleListenPlayer';
 import { CatalogProductCard } from './CatalogProductCard';
 import { GuideComments } from '../_components/GuideComments';
+import { IntentLandingPage } from '../_components/IntentLandingPage';
+import { IntentStickyBar } from '../_components/IntentStickyBar';
 import { RelatedGuides } from '../_components/RelatedGuides';
+import { WeekdayClusterNav } from '../_components/WeekdayClusterNav';
+import { infoArticleTableMdxComponents } from '@/lib/info/infoArticleTableMdxComponents';
+import { infoArticleMdxOptions } from '@/lib/info/mdxRemoteOptions';
+import { isThaiWeekdayClusterArticle } from '@/lib/info/weekdayCluster';
 import styles from './article.module.css';
 
 /** Public static URL; file must live under /public */
@@ -57,6 +65,8 @@ export async function generateMetadata({
     : `${base}/${lang}/info/${slug}`;
   const title = getArticleTitle(article, lang);
   const description = getArticleExcerpt(article, lang);
+  const coverImage =
+    article.cover?.type === 'image' ? `${base}${article.cover.src}` : undefined;
   return {
     title: `${title} | Lanna Bloom`,
     description,
@@ -67,11 +77,13 @@ export async function generateMetadata({
       url: canonical,
       type: 'article',
       publishedTime: article.publishedAt,
+      ...(coverImage ? { images: [{ url: coverImage }] } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: `${title} | Lanna Bloom`,
       description,
+      ...(coverImage ? { images: [coverImage] } : {}),
     },
   };
 }
@@ -125,11 +137,22 @@ export default async function InfoArticlePage({
   const mdxSource = await getMdxContent(slug, lang);
   if (!mdxSource) notFound();
 
+  if (isCommercialIntentSlug(slug)) {
+    return (
+      <IntentLandingPage
+        article={article}
+        mdxSource={mdxSource}
+        lang={lang as Locale}
+      />
+    );
+  }
+
   const articleTitle = getArticleTitle(article, lang);
   const articleExcerpt = getArticleExcerpt(article, lang);
   const ctaLinks = getArticleCtaLinks(article, lang);
   const ctaTitle = lang === 'th' ? article.ctaTitleTh ?? article.ctaTitle : article.ctaTitle;
   const guidesBackLabel = lang === 'th' ? '← คู่มือ' : '← Guides';
+  const showWeekdayClusterNav = isThaiWeekdayClusterArticle(slug);
 
   const base = getBaseUrl();
   const basePath = `/${lang}/info`;
@@ -162,7 +185,13 @@ export default async function InfoArticlePage({
       ? 'article-catalog-button'
       : 'default';
 
+  const showPayCta = slug === 'tuesday-flowers-thailand';
+  const stickyPayHref = `/${lang}/catalog?colors=pink`;
+  const stickyPayLabel =
+    lang === 'th' ? 'สั่งและชำระออนไลน์' : 'Order & pay online';
+
   const mdxComponents = {
+    ...infoArticleTableMdxComponents,
     h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
       <h2 className="info-article-h2" {...props} />
     ),
@@ -209,19 +238,59 @@ export default async function InfoArticlePage({
       src,
       alt,
       caption,
+      href,
+      linkLabel,
+      size = 'md',
     }: {
       src: string;
       alt: string;
       caption?: string;
-    }) => (
-      <figure className={styles.articleFigure}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className={styles.articleFigureImg} loading="lazy" />
-        {caption ? (
-          <figcaption className={styles.articleFigureCaption}>{caption}</figcaption>
-        ) : null}
-      </figure>
-    ),
+      /** Site path (e.g. /catalog?colors=pink) or "line" for LINE contact */
+      href?: string;
+      linkLabel?: string;
+      size?: 'sm' | 'md';
+    }) => {
+      const isLine = href === 'line';
+      const resolvedHref = isLine
+        ? getLineContactUrl()
+        : href
+          ? href.startsWith('http')
+            ? href
+            : `/${lang}${href.startsWith('/') ? href : `/${href}`}`
+          : undefined;
+      const figureClass =
+        size === 'sm'
+          ? `${styles.articleFigure} ${styles.articleFigureSm}`
+          : styles.articleFigure;
+
+      return (
+        <figure className={figureClass}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt={alt} className={styles.articleFigureImg} loading="lazy" />
+          {caption ? (
+            <figcaption className={styles.articleFigureCaption}>{caption}</figcaption>
+          ) : null}
+          {resolvedHref && linkLabel ? (
+            <p className={styles.articleFigureCta}>
+              {isLine || resolvedHref.startsWith('http') ? (
+                <a
+                  href={resolvedHref}
+                  className={styles.articleFigureCtaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {linkLabel}
+                </a>
+              ) : (
+                <Link href={resolvedHref} className={styles.articleFigureCtaLink}>
+                  {linkLabel}
+                </Link>
+              )}
+            </p>
+          ) : null}
+        </figure>
+      );
+    },
     ArticleProductPick: ({
       title,
       children,
@@ -263,13 +332,18 @@ export default async function InfoArticlePage({
   };
 
   return (
-    <div className={styles.infoArticlePage}>
+    <div
+      className={`${styles.infoArticlePage}${showPayCta ? ` ${styles.infoArticlePageWithStickyPay}` : ''}`}
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <article className={styles.infoArticle}>
-        <header className={styles.infoArticleHeader}>
+        <header
+          className={styles.infoArticleHeader}
+          id={showPayCta ? 'intent-hero-sentinel' : undefined}
+        >
           <Link href={basePath} className={styles.infoArticleBack}>
             {guidesBackLabel}
           </Link>
@@ -292,14 +366,33 @@ export default async function InfoArticlePage({
           </div>
         </header>
         <div className={styles.infoArticleBody}>
+          {showWeekdayClusterNav ? (
+            <WeekdayClusterNav lang={lang} currentSlug={slug} />
+          ) : null}
           <div className={styles.infoArticleMdx}>
-            <MDXRemote source={mdxSource} components={mdxComponents} />
+            <MDXRemote
+              source={mdxSource}
+              components={mdxComponents}
+              options={infoArticleMdxOptions}
+            />
           </div>
-          <ArticleCta links={ctaLinks} lang={lang} title={ctaTitle} />
+          <ArticleCta
+            links={ctaLinks}
+            lang={lang}
+            title={ctaTitle}
+            showPaymentBadges={showPayCta}
+          />
           <RelatedGuides excludeSlug={slug} lang={lang} />
           <GuideComments guideSlug={slug} lang={lang} />
         </div>
       </article>
+      {showPayCta ? (
+        <IntentStickyBar
+          label={stickyPayLabel}
+          href={stickyPayHref}
+          intentSlug={slug}
+        />
+      ) : null}
     </div>
   );
 }
