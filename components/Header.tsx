@@ -17,10 +17,13 @@ import {
   OccasionsNavDropdown,
 } from './OccasionsNavDropdown';
 import {
+  GuidesMobileNav,
+  GuidesNavDropdown,
+} from './GuidesNavDropdown';
+import {
   CartIcon,
   HomeIcon,
   SearchIcon,
-  InfoIcon,
   PhoneIcon,
   MapIcon,
   MenuIcon,
@@ -313,12 +316,11 @@ export function Header({
                     label={t.occasions}
                   />
                 </Suspense>
-                <NavItem
-                  href={infoHref}
+                <GuidesNavDropdown
+                  lang={lang}
+                  infoHref={infoHref}
                   label={t.information}
-                  active={basePath === '/info'}
-                  variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  pathActive={basePath === '/info' || basePath.startsWith('/info/')}
                 />
                 <NavItem
                   href={customOrderHref}
@@ -469,13 +471,12 @@ export function Header({
                   onNavigate={() => setMenuOpen(false)}
                 />
               </Suspense>
-              <NavItem
-                href={infoHref}
+              <GuidesMobileNav
+                lang={lang}
+                infoHref={infoHref}
                 label={t.information}
-                icon={<InfoIcon size={22} />}
-                active={basePath === '/info'}
-                variant="mobile"
-                onClick={() => setMenuOpen(false)}
+                pathActive={basePath === '/info' || basePath.startsWith('/info/')}
+                onNavigate={() => setMenuOpen(false)}
               />
               <NavItem
                 href={customOrderHref}

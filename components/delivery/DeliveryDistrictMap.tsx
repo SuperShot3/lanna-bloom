@@ -316,6 +316,15 @@ export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
               </g>
             </svg>
 
+            {selected && feeDisplay ? (
+              <output className={styles.mobileFeeSummary} aria-live="polite">
+                <span className={styles.mobileFeeDistrict}>{infoTitle}</span>
+                <span className={styles.mobileFeeAmount}>
+                  {t.feeLabel}: {feeDisplay}
+                </span>
+              </output>
+            ) : null}
+
             <div className={styles.legend} aria-hidden="true">
               <span className={styles.legendLabel}>{t.legendNear}</span>
               <div className={styles.legendBar}>

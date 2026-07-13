@@ -350,6 +350,10 @@
   height: 100%;
 }
 
+.mobileFeeSummary {
+  display: none;
+}
+
 .tierTable {
   margin-top: 1.25rem;
   border: 1px solid rgba(197, 160, 89, 0.18);
@@ -422,6 +426,43 @@
 
   .mapStage {
     max-width: 360px;
+  }
+
+  .mobileFeeSummary {
+    position: absolute;
+    right: 0.35rem;
+    bottom: 2.2rem;
+    left: 0.35rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid rgba(197, 160, 89, 0.55);
+    border-radius: 0.7rem;
+    background: rgba(255, 254, 249, 0.94);
+    box-shadow: 0 8px 20px rgba(26, 60, 52, 0.18);
+    color: var(--primary, #1a3c34);
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+  }
+
+  .mobileFeeDistrict {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileFeeAmount {
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .districtLabel {
