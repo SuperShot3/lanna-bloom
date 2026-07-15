@@ -94,6 +94,13 @@ export default function FlowerDeliveryThailandPage({
           </p>
         </section>
 
+        <section
+          className="max-w-5xl mx-auto"
+          aria-label={isTh ? 'แผนที่พื้นที่จัดส่ง' : 'Delivery area map'}
+        >
+          <DeliveryDistrictMap lang={lang} />
+        </section>
+
         <section className="guide-section" aria-labelledby="thailand-areas-title">
           <h2 id="thailand-areas-title" className="popular-title text-center">
             {copy.areasTitle}
@@ -134,13 +141,6 @@ export default function FlowerDeliveryThailandPage({
 
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.chiangMaiNote}</p>
           </div>
-
-          <section
-            className="mt-10 max-w-5xl mx-auto"
-            aria-label={isTh ? 'แผนที่พื้นที่จัดส่ง' : 'Delivery area map'}
-          >
-            <DeliveryDistrictMap lang={lang} />
-          </section>
 
           <div className="mt-10 max-w-2xl mx-auto">
             <h3 className="popular-title text-center text-xl sm:text-2xl mb-2">
