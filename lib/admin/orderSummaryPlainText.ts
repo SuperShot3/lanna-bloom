@@ -250,28 +250,11 @@ function isForeignRecipientPhone(order: SupabaseOrderRow): boolean {
 }
 
 /**
- * Recipient name + phone + checkout driver notes (+ card text) for “Copy driver notes”.
- * Empty fields use English `Missing`. Blank line between notes and card.
+ * Checkout driver notes only for “Copy driver notes”.
+ * Empty → English `Missing`.
  */
-export function buildDriverNotesClipboardText(
-  order: SupabaseOrderRow,
-  items?: OrderSummaryItemRow[],
-  customGreetingCard?: string | null
-): string {
-  const name = recipientNameDisplay(order).trim() || MISSING_EN;
-  const phone = recipientPhoneDigitsForDriver(order) || MISSING_EN;
-  const phoneLine = phone !== MISSING_EN && isForeignRecipientPhone(order)
-    ? `Recipient phone (foreign): ${phone}`
-    : `Recipient phone: ${phone}`;
-  const notes = deliveryNotesDisplay(order).trim();
-  const notesLine = notes ? `Driver notes: ${notes}` : `Driver notes: ${MISSING_EN}`;
-  const cardFromItems = items?.length
-    ? buildClipboardCardText(items, customGreetingCard).trim()
-    : '';
-  const card = cardFromItems || cardTextFromBoardOrder(order).trim();
-  const cardLine = card ? `Card text: ${card}` : `Card text: ${MISSING_EN}`;
-
-  return [`Recipient name: ${name}`, phoneLine, '', notesLine, '', cardLine].join('\n');
+export function buildDriverNotesClipboardText(order: SupabaseOrderRow): string {
+  return deliveryNotesDisplay(order).trim() || MISSING_EN;
 }
 
 /** Card message for clipboard; always includes status (`Missing` when empty). */
@@ -313,21 +296,30 @@ export function driverNotesDisplayOrNone(notes: string | null | undefined): stri
   return notes?.trim() || MISSING_EN;
 }
 
-/** Customer name + phone for clipboard (Copy customer details). */
+/** Customer name + phone for clipboard (Copy customer details). Empty → disabled button. */
 export function buildCustomerDetailsClipboardText(order: SupabaseOrderRow): string {
-  const name = order.customer_name?.trim() || MISSING_EN;
-  const phone = customerPhoneDisplay(order).trim() || MISSING_EN;
-  return `Name: ${name}\nPhone: ${phone}`;
+  const name = order.customer_name?.trim() || '';
+  const phone = customerPhoneDisplay(order).trim() || '';
+  if (!name && !phone) return '';
+  return `Name: ${name || MISSING_EN}\nPhone: ${phone || MISSING_EN}`;
+}
+
+/** Recipient name + phone for clipboard (Copy recipient details). Empty → disabled button. */
+export function buildRecipientDetailsClipboardText(order: SupabaseOrderRow): string {
+  const name = recipientNameDisplay(order).trim() || '';
+  const phone = recipientPhoneDisplay(order).trim() || '';
+  if (!name && !phone) return '';
+  return `Name: ${name || MISSING_EN}\nPhone: ${phone || MISSING_EN}`;
 }
 
 /**
  * Compact Thai guidance block for driver LINE/Messenger.
- * Always includes driver notes + card text; empty fields use Thai “ขาดหาย”.
+ * Card text is copied separately — not included here.
  */
 export function buildDriverMessengerPlainText(
   order: SupabaseOrderRow,
-  items?: OrderSummaryItemRow[],
-  customGreetingCard?: string | null
+  _items?: OrderSummaryItemRow[],
+  _customGreetingCard?: string | null
 ): string {
   const lines: string[] = [];
   const headline = buildDriverPickupHeadline(order);
@@ -358,13 +350,6 @@ export function buildDriverMessengerPlainText(
 
   const notes = deliveryNotesDisplay(order).trim();
   lines.push(notes ? `หมายเหตุคนขับ: ${notes}` : `หมายเหตุคนขับ: ${MISSING_TH}`);
-  lines.push('');
-
-  const cardFromItems = items?.length
-    ? buildClipboardCardText(items, customGreetingCard).trim()
-    : '';
-  const card = cardFromItems || cardTextFromBoardOrder(order).trim();
-  lines.push(card ? `ข้อความการ์ด: ${card}` : `ข้อความการ์ด: ${MISSING_TH}`);
 
   return lines.join('\n');
 }

@@ -5451,6 +5451,25 @@ a.btn-pill:focus-visible {
   align-items: flex-start;
   gap: 6px;
 }
+.admin-delivery-card-thumb-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 240px;
+}
+.admin-delivery-card-thumb-status .admin-delivery-status-control {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  max-width: 100%;
+}
+.admin-delivery-card-thumb-status .admin-delivery-status-select {
+  max-width: 140px;
+}
 .admin-delivery-card-thumb-visual {
   width: auto;
   height: auto;
@@ -5551,6 +5570,13 @@ a.btn-pill:focus-visible {
   flex-direction: column;
   gap: 10px;
 }
+.admin-delivery-card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+}
 .admin-delivery-card-top {
   display: flex;
   justify-content: space-between;
@@ -5564,8 +5590,10 @@ a.btn-pill:focus-visible {
 .admin-delivery-card-id {
   font-weight: 700;
   font-size: 0.9rem;
-  margin: 0 0 4px;
+  margin: 0;
   word-break: break-all;
+  flex: 1;
+  min-width: 0;
 }
 .admin-delivery-card-name {
   margin: 0 0 10px;
@@ -5577,6 +5605,9 @@ a.btn-pill:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.admin-delivery-card-names .admin-delivery-card-copy-row--actions-only {
+  justify-content: flex-start;
 }
 .admin-delivery-card-name-line {
   margin: 0;
@@ -5594,16 +5625,29 @@ a.btn-pill:focus-visible {
   color: var(--admin-text-muted, #64748b);
 }
 .admin-delivery-card-name-value {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   font-weight: 600;
   color: #1a2e28;
   line-height: 1.35;
 }
+.admin-delivery-card-name-phone {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-text, #334155);
+  line-height: 1.35;
+  white-space: nowrap;
+}
 .admin-delivery-card-name--empty {
   font-weight: 600;
 }
 .admin-delivery-card-datetime {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
   margin: 0 0 10px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -5635,11 +5679,12 @@ a.btn-pill:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .admin-delivery-card-time-window {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px dashed rgba(45, 71, 62, 0.2);
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 .admin-delivery-datetime-icon {
   font-size: 20px !important;
@@ -5758,6 +5803,16 @@ a.btn-pill:focus-visible {
 .admin-delivery-contact-summary-icon {
   font-size: 18px !important;
 }
+.admin-delivery-contact-summary-snippet {
+  min-width: 0;
+  max-width: 160px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2d473e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .admin-delivery-contact-chevron {
   font-size: 20px !important;
   margin-left: 2px;
@@ -5779,6 +5834,15 @@ a.btn-pill:focus-visible {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+.admin-delivery-contact-party {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-delivery-contact-party-copy {
+  margin-top: 4px;
+  justify-content: flex-start;
 }
 .admin-delivery-contact-group-label {
   margin: 4px 0 0;
@@ -5844,14 +5908,28 @@ a.btn-pill:focus-visible {
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--admin-text, #334155);
+}
+.admin-delivery-field-label {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--admin-text-muted, #64748b);
+  letter-spacing: 0.01em;
 }
 .admin-delivery-address-text {
   word-break: break-word;
+  font-size: inherit;
+  font-weight: 400;
   color: var(--admin-text, #334155);
 }
 .admin-delivery-address-link {
+  font-size: inherit;
   font-weight: 600;
   color: #1d4ed8;
   text-decoration: underline;
@@ -5905,7 +5983,13 @@ a.btn-pill:focus-visible {
   gap: 6px;
 }
 .admin-delivery-copy-action {
-  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: max-content;
   font-size: 0.7rem !important;
   padding: 3px 8px !important;
   min-height: 0;
@@ -5915,9 +5999,121 @@ a.btn-pill:focus-visible {
 .admin-delivery-card-copy-row:not(.admin-delivery-card-copy-row--actions-only) .admin-delivery-copy-action {
   margin-left: auto;
 }
+.admin-delivery-card-copy-actions-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.admin-delivery-card-copy-actions-inline .admin-delivery-copy-action {
+  margin-left: 0;
+}
 .admin-delivery-copy-action--driver,
 .admin-delivery-copy-action--all {
   font-weight: 700;
+}
+.admin-delivery-copy-action--party {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #000 !important;
+  color: #0f172a;
+  background: #fff;
+}
+.admin-delivery-copy-action--party:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #000 !important;
+}
+.admin-delivery-copy-action-ico {
+  font-size: 14px !important;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.admin-delivery-address-block .admin-delivery-copy-action {
+  width: 9.5rem;
+  min-width: 9.5rem;
+  max-width: 9.5rem;
+  justify-content: flex-start;
+}
+.admin-delivery-field-pair {
+  align-items: stretch;
+  gap: 0;
+  margin-top: 6px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  overflow: hidden;
+}
+.admin-delivery-field-pair:first-child {
+  margin-top: 0;
+}
+.admin-delivery-field-body {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.45;
+}
+.admin-delivery-field-chip {
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-sizing: border-box;
+}
+.admin-delivery-field-pair .admin-delivery-copy-action {
+  align-self: stretch;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.admin-delivery-field-pair--address {
+  background: #e8f0fe;
+  border-color: #9db7e8;
+  color: #1e3a5f;
+}
+.admin-delivery-field-pair--maps {
+  background: #e4f6f1;
+  border-color: #8fc9b8;
+  color: #14532d;
+}
+.admin-delivery-field-pair--driver {
+  background: #fff4e5;
+  border-color: #e0b86a;
+  color: #7c4a03;
+}
+.admin-delivery-field-pair--card {
+  background: #fceef2;
+  border-color: #d4a0b0;
+  color: #6b2d45;
+}
+.admin-delivery-field-pair--address .admin-delivery-field-label,
+.admin-delivery-field-pair--maps .admin-delivery-field-label,
+.admin-delivery-field-pair--driver .admin-delivery-field-label,
+.admin-delivery-field-pair--card .admin-delivery-field-label,
+.admin-delivery-field-pair .admin-delivery-copy-action {
+  color: inherit;
+}
+.admin-delivery-field-pair--address .admin-delivery-field-label,
+.admin-delivery-field-pair--maps .admin-delivery-field-label,
+.admin-delivery-field-pair--driver .admin-delivery-field-label,
+.admin-delivery-field-pair--card .admin-delivery-field-label {
+  opacity: 0.75;
+}
+.admin-delivery-field-pair--address .admin-delivery-address-text,
+.admin-delivery-field-pair--maps .admin-delivery-address-text,
+.admin-delivery-field-pair--address .admin-delivery-address-link,
+.admin-delivery-field-pair--maps .admin-delivery-address-link,
+.admin-delivery-field-pair--maps .admin-delivery-address-maps-link {
+  color: inherit;
+}
+.admin-delivery-field-pair .admin-delivery-copy-action:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.06) !important;
+  filter: none;
 }
 .admin-delivery-card-meta--area {
   margin: 2px 0 0;
@@ -5936,23 +6132,30 @@ a.btn-pill:focus-visible {
   min-width: 0;
 }
 .admin-delivery-card-meta--card-message {
-  margin-top: 8px;
-  padding: 8px 10px;
-  padding-left: 10px;
-  background: color-mix(in srgb, var(--accent-soft) 70%, var(--admin-surface, #fff));
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent-border) 25%, var(--border));
-  color: var(--admin-text, #0f172a);
+  margin-top: 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.45;
   opacity: 1;
 }
 .admin-delivery-card-meta--card-message .admin-delivery-card-meta-text {
-  color: var(--admin-text, #0f172a);
   opacity: 1;
   line-height: 1.45;
 }
 .admin-delivery-card-meta--driver-notes {
-  color: var(--admin-text, #0f172a);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.45;
   opacity: 1;
+}
+.admin-delivery-card-meta--driver-notes .admin-delivery-field-label,
+.admin-delivery-card-meta--card-message .admin-delivery-field-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.admin-delivery-field-pair .admin-delivery-card-meta--area.admin-delivery-field-chip {
+  padding-left: 10px !important;
+  color: inherit;
 }
 .admin-delivery-meta-icon {
   font-size: 16px !important;
@@ -5972,10 +6175,15 @@ a.btn-pill:focus-visible {
   gap: 6px;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 2px;
+  flex-shrink: 0;
+  margin: 0;
 }
 .admin-delivery-card-top-copy .admin-delivery-copy-action {
   margin-left: 0;
+}
+.admin-delivery-card-header-row .admin-delivery-copy-action--driver,
+.admin-delivery-card-header-row .admin-delivery-copy-action--all {
+  font-weight: 700;
 }
 .admin-delivery-badge-pay {
   font-size: 0.72rem;
@@ -6219,6 +6427,21 @@ a.btn-pill:focus-visible {
     width: 100%;
     min-width: 0;
   }
+  .admin-delivery-card-header-row {
+    align-items: center;
+    gap: 8px;
+  }
+  .admin-delivery-card-header-row .admin-delivery-card-id {
+    font-size: 0.85rem;
+  }
+  .admin-delivery-card-top-copy {
+    justify-content: flex-end;
+  }
+  .admin-delivery-card-top-copy .admin-delivery-copy-action {
+    min-height: 36px;
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+  }
   .admin-delivery-card-top {
     flex-direction: column;
     align-items: stretch;
@@ -6236,12 +6459,78 @@ a.btn-pill:focus-visible {
     justify-content: flex-start;
     align-self: stretch;
     width: 100%;
+    gap: 8px;
   }
-  .admin-delivery-card-top-copy {
-    flex: 1 1 100%;
-    width: 100%;
+  .admin-delivery-card-copy-row {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+  .admin-delivery-card-copy-row .admin-delivery-card-meta--location,
+  .admin-delivery-card-copy-row-text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .admin-delivery-card-copy-row:not(.admin-delivery-card-copy-row--actions-only) .admin-delivery-copy-action {
+    margin-left: 8px;
+    width: auto;
+    max-width: max-content;
+    flex: 0 0 auto;
+    align-self: flex-start;
     justify-content: flex-end;
-    order: -1;
+  }
+  .admin-delivery-address-block .admin-delivery-copy-action {
+    width: 9.5rem;
+    min-width: 9.5rem;
+    max-width: 9.5rem;
+  }
+  .admin-delivery-field-pair {
+    align-items: stretch;
+    gap: 0;
+  }
+  .admin-delivery-field-pair .admin-delivery-copy-action {
+    margin-left: 0 !important;
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+  .admin-delivery-card-copy-actions-inline {
+    margin-left: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .admin-delivery-card-copy-row--actions-only {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .admin-delivery-copy-action {
+    min-height: 32px;
+    font-size: 0.72rem !important;
+    padding: 4px 8px !important;
+    white-space: nowrap;
+    text-align: right;
+    width: auto;
+    max-width: max-content;
+  }
+  .admin-delivery-card-copy-actions-inline .admin-delivery-copy-action {
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+  }
+  .admin-delivery-card-copy-row--actions-only .admin-delivery-copy-action {
+    width: auto;
+    max-width: max-content;
+    justify-content: flex-end;
+  }
+  .admin-delivery-contact-party-copy {
+    justify-content: flex-end;
+  }
+  .admin-copy-text-btn--inline {
+    min-height: 36px;
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
   }
   .admin-delivery-card-datetime {
     width: 100%;
@@ -6251,6 +6540,18 @@ a.btn-pill:focus-visible {
     align-items: flex-start;
     flex: 1 1 100%;
     width: 100%;
+  }
+  .admin-delivery-card-thumb-status {
+    max-width: 100%;
+  }
+  .admin-delivery-card-thumb-status .admin-delivery-status-control {
+    flex: 0 1 auto;
+    width: auto;
+  }
+  .admin-delivery-card-thumb-status .admin-delivery-status-select {
+    width: auto;
+    max-width: 150px;
+    min-height: 32px;
   }
   .admin-delivery-status-select {
     width: 100%;

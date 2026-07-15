@@ -47,6 +47,7 @@ import {
   buildDriverMessengerPlainText,
   buildDriverNotesClipboardText,
   buildOrderSummaryPlainTextFromBoardOrder,
+  buildRecipientDetailsClipboardText,
   cardTextDisplayOrNone,
   checkoutMapsUrl,
   customerDeliveryAddressRaw,
@@ -55,6 +56,7 @@ import {
   deliveryNotesDisplay,
   driverNotesDisplayOrNone,
   MISSING_EN,
+  recipientPhoneDisplay,
 } from '@/lib/admin/orderSummaryPlainText';
 import { getLineUserContactUrl } from '@/lib/messenger';
 import { LineIcon } from '@/components/icons';
@@ -147,72 +149,6 @@ function truncateAddressLine(s: string, max = 90): string {
   return `${t.slice(0, max - 1)}…`;
 }
 
-function DeliveryCardPartyNames({ order }: { order: SupabaseOrderRow }) {
-  const cust = order.customer_name?.trim() ?? '';
-  const rec = order.recipient_name?.trim() ?? '';
-  const samePerson =
-    Boolean(cust && rec && cust.localeCompare(rec, undefined, { sensitivity: 'base' }) === 0);
-  const customerDetailsForCopy = buildCustomerDetailsClipboardText(order);
-  const customerPhone = customerPhoneDisplay(order).trim();
-
-  if (!cust && !rec) {
-    return (
-      <div className="admin-delivery-card-names">
-        <div className="admin-delivery-card-copy-row">
-          <p className="admin-delivery-card-name admin-delivery-card-name--empty">—</p>
-          <AdminCopyTextButton
-            text={customerDetailsForCopy}
-            ariaLabel="Copy customer name and phone"
-            className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
-          >
-            Copy customer details
-          </AdminCopyTextButton>
-        </div>
-      </div>
-    );
-  }
-
-  const namesBlock = samePerson ? (
-    <p className="admin-delivery-card-name-line">
-      <span className="admin-delivery-card-name-role">Customer & recipient</span>
-      <span className="admin-delivery-card-name-value">{cust}</span>
-    </p>
-  ) : (
-    <>
-      <p className="admin-delivery-card-name-line">
-        <span className="admin-delivery-card-name-role">Customer</span>
-        <span className={`admin-delivery-card-name-value${cust ? '' : ' admin-hint'}`}>
-          {cust || 'N/A'}
-        </span>
-      </p>
-      <p className="admin-delivery-card-name-line">
-        <span className="admin-delivery-card-name-role">Recipient</span>
-        <span className={`admin-delivery-card-name-value${rec ? '' : ' admin-hint'}`}>
-          {rec || 'N/A'}
-        </span>
-      </p>
-    </>
-  );
-
-  return (
-    <div className="admin-delivery-card-names">
-      {namesBlock}
-      <div className="admin-delivery-card-copy-row">
-        <p className="admin-delivery-card-meta admin-delivery-card-copy-row-text admin-hint">
-          Customer phone: {customerPhone || MISSING_EN}
-        </p>
-        <AdminCopyTextButton
-          text={customerDetailsForCopy}
-          ariaLabel="Copy customer name and phone"
-          className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
-        >
-          Copy customer details
-        </AdminCopyTextButton>
-      </div>
-    </div>
-  );
-}
-
 function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
   const raw = customerDeliveryAddressRaw(order);
   const mapsHref = checkoutMapsUrl(order);
@@ -262,16 +198,28 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
 
   return (
     <div className="admin-delivery-address-block">
-      <div className="admin-delivery-card-copy-row">
-        <div className="admin-delivery-card-meta admin-delivery-card-meta--location">
+      <div
+        className={`admin-delivery-card-copy-row admin-delivery-field-pair ${
+          addressIsMapsOnly
+            ? 'admin-delivery-field-pair--maps'
+            : 'admin-delivery-field-pair--address'
+        }`}
+      >
+        <div className="admin-delivery-card-meta admin-delivery-card-meta--location admin-delivery-field-chip">
           <span className="material-symbols-outlined admin-delivery-meta-icon">location_on</span>
-          <div className="admin-delivery-address-main">{main}</div>
+          <div className="admin-delivery-address-main">
+            <span className="admin-delivery-field-label">Address:</span>
+            {main}
+          </div>
         </div>
         <AdminCopyTextButton
           text={primaryCopyText}
           ariaLabel={primaryCopyAria}
           className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
         >
+          <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+            content_copy
+          </span>
           {primaryCopyLabel}
         </AdminCopyTextButton>
       </div>
@@ -279,8 +227,8 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
         <p className="admin-delivery-card-meta admin-delivery-card-meta--area">{area}</p>
       ) : null}
       {showSeparateMapRow ? (
-        <div className="admin-delivery-card-copy-row">
-          <p className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text">
+        <div className="admin-delivery-card-copy-row admin-delivery-field-pair admin-delivery-field-pair--maps">
+          <p className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-field-chip">
             <a
               href={mapsHref!}
               target="_blank"
@@ -295,31 +243,45 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
             ariaLabel="Copy Google Maps pin link"
             className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
           >
+            <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+              content_copy
+            </span>
             Copy map pin
           </AdminCopyTextButton>
         </div>
       ) : null}
-      <div className="admin-delivery-card-copy-row">
+      <div className="admin-delivery-card-copy-row admin-delivery-field-pair admin-delivery-field-pair--driver">
         <p
-          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--driver-notes"
+          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--driver-notes admin-delivery-field-chip"
           title={deliveryNotes || MISSING_EN}
         >
-          Driver notes: {driverNotesDisplayOrNone(deliveryNotes)}
+          <span className="material-symbols-outlined admin-delivery-meta-icon">note_alt</span>
+          <span className="admin-delivery-field-body">
+            <span className="admin-delivery-field-label">Driver notes:</span>{' '}
+            {driverNotesDisplayOrNone(deliveryNotes)}
+          </span>
         </p>
         <AdminCopyTextButton
           text={driverNotesForCopy}
-          ariaLabel="Copy driver notes with recipient name and phone"
+          ariaLabel="Copy driver notes"
           className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
         >
+          <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+            content_copy
+          </span>
           Copy driver notes
         </AdminCopyTextButton>
       </div>
-      <div className="admin-delivery-card-copy-row">
+      <div className="admin-delivery-card-copy-row admin-delivery-field-pair admin-delivery-field-pair--card">
         <p
-          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--card-message"
+          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--card-message admin-delivery-field-chip"
           title={cardMessage || MISSING_EN}
         >
-          Card text: {cardTextDisplayOrNone(cardMessage)}
+          <span className="material-symbols-outlined admin-delivery-meta-icon">card_giftcard</span>
+          <span className="admin-delivery-field-body">
+            <span className="admin-delivery-field-label">Card text:</span>{' '}
+            {cardTextDisplayOrNone(cardMessage)}
+          </span>
         </p>
         <AdminCopyTextButton
           text={
@@ -330,6 +292,9 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
           ariaLabel="Copy card text"
           className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
         >
+          <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+            content_copy
+          </span>
           Copy card text
         </AdminCopyTextButton>
       </div>
@@ -399,6 +364,17 @@ function ContactNumberChip({
 }
 
 function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
+  const cust = order.customer_name?.trim() ?? '';
+  const rec = order.recipient_name?.trim() ?? '';
+  const samePerson =
+    Boolean(cust && rec && cust.localeCompare(rec, undefined, { sensitivity: 'base' }) === 0);
+  const customerPhone = customerPhoneDisplay(order).trim();
+  const recipientPhone = recipientPhoneDisplay(order).trim();
+  const custPhoneLabel = customerPhone || MISSING_EN;
+  const recPhoneLabel = recipientPhone || MISSING_EN;
+  const customerDetailsForCopy = buildCustomerDetailsClipboardText(order);
+  const recipientDetailsForCopy = buildRecipientDetailsClipboardText(order);
+
   const custTel = telHref(order.phone, order.phone_country_code);
   const custWa = whatsappHref(order.phone, order.phone_country_code);
   const customerLineId = customerLineIdDisplay(order);
@@ -418,116 +394,192 @@ function DeliveryCardContact({ order }: { order: SupabaseOrderRow }) {
   const showCustomer = Boolean(custTel || custWa || custLineHref);
   const showRecipient = Boolean((recTel || recWa) && !samePhone);
   const email = order.customer_email?.trim();
-  const hasAny = hasNumbers || showCustomer || showRecipient || Boolean(email);
-  if (!hasAny) {
-    return (
-      <p className="admin-delivery-contact-empty admin-hint">No phone or email on file</p>
-    );
-  }
+  const hasChannels = hasNumbers || showCustomer || showRecipient || Boolean(email);
+
+  const partySummary = samePerson
+    ? cust || 'No name'
+    : [cust || null, rec || null].filter(Boolean).join(' · ') || 'No name';
+
   return (
     <details className="admin-delivery-contact-details">
       <summary className="admin-delivery-contact-summary">
         <span className="material-symbols-outlined admin-delivery-contact-summary-icon">contact_phone</span>
         Contact
+        <span className="admin-delivery-contact-summary-snippet" title={partySummary}>
+          {partySummary}
+        </span>
         <span className="material-symbols-outlined admin-delivery-contact-chevron">expand_more</span>
       </summary>
       <div className="admin-delivery-contact-panel">
-        {hasNumbers ? (
-          <div className="admin-delivery-contact-numbers">
-            {hasCustPhone ? (
-              <ContactNumberChip label="Customer" phone={order.phone} countryCode={order.phone_country_code} />
-            ) : null}
-            {hasCustLineId ? (
-              <div className="admin-delivery-contact-chip">
-                <span className="admin-delivery-contact-chip-role">Customer LINE</span>
-                <span className="admin-delivery-contact-chip-num" title={customerLineId}>
-                  {customerLineId}
+        <p className="admin-delivery-contact-group-label">People</p>
+        <div className="admin-delivery-contact-party">
+          {samePerson ? (
+            <p className="admin-delivery-card-name-line">
+              <span className="admin-delivery-card-name-role">Customer & recipient</span>
+              <span className={`admin-delivery-card-name-value${cust ? '' : ' admin-hint'}`}>
+                {cust || 'N/A'}
+              </span>
+              <span
+                className={`admin-delivery-card-name-phone${customerPhone ? '' : ' admin-hint'}`}
+                title={custPhoneLabel}
+              >
+                {custPhoneLabel}
+              </span>
+            </p>
+          ) : (
+            <>
+              <p className="admin-delivery-card-name-line">
+                <span className="admin-delivery-card-name-role">Customer</span>
+                <span className={`admin-delivery-card-name-value${cust ? '' : ' admin-hint'}`}>
+                  {cust || 'N/A'}
                 </span>
-                <AdminCopyTextButton
-                  text={customerLineId}
-                  ariaLabel="Copy customer LINE ID"
-                  className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-contact-chip-copy"
+                <span
+                  className={`admin-delivery-card-name-phone${customerPhone ? '' : ' admin-hint'}`}
+                  title={custPhoneLabel}
                 >
-                  <span className="material-symbols-outlined admin-delivery-contact-chip-copy-ico">
-                    content_copy
-                  </span>
-                </AdminCopyTextButton>
+                  {custPhoneLabel}
+                </span>
+              </p>
+              <p className="admin-delivery-card-name-line">
+                <span className="admin-delivery-card-name-role">Recipient</span>
+                <span className={`admin-delivery-card-name-value${rec ? '' : ' admin-hint'}`}>
+                  {rec || 'N/A'}
+                </span>
+                <span
+                  className={`admin-delivery-card-name-phone${recipientPhone ? '' : ' admin-hint'}`}
+                  title={recPhoneLabel}
+                >
+                  {recPhoneLabel}
+                </span>
+              </p>
+            </>
+          )}
+          <div className="admin-delivery-card-copy-row admin-delivery-card-copy-row--actions-only admin-delivery-contact-party-copy">
+            <AdminCopyTextButton
+              text={customerDetailsForCopy}
+              ariaLabel="Copy customer name and phone"
+              className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action admin-delivery-copy-action--party"
+            >
+              <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+                content_copy
+              </span>
+              Copy customer details
+            </AdminCopyTextButton>
+            <AdminCopyTextButton
+              text={recipientDetailsForCopy}
+              ariaLabel="Copy recipient name and phone"
+              className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action admin-delivery-copy-action--party"
+            >
+              <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
+                content_copy
+              </span>
+              Copy recipient details
+            </AdminCopyTextButton>
+          </div>
+        </div>
+
+        {hasChannels ? (
+          <>
+            {hasNumbers ? (
+              <div className="admin-delivery-contact-numbers">
+                {hasCustPhone ? (
+                  <ContactNumberChip label="Customer" phone={order.phone} countryCode={order.phone_country_code} />
+                ) : null}
+                {hasCustLineId ? (
+                  <div className="admin-delivery-contact-chip">
+                    <span className="admin-delivery-contact-chip-role">Customer LINE</span>
+                    <span className="admin-delivery-contact-chip-num" title={customerLineId}>
+                      {customerLineId}
+                    </span>
+                    <AdminCopyTextButton
+                      text={customerLineId}
+                      ariaLabel="Copy customer LINE ID"
+                      className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-contact-chip-copy"
+                    >
+                      <span className="material-symbols-outlined admin-delivery-contact-chip-copy-ico">
+                        content_copy
+                      </span>
+                    </AdminCopyTextButton>
+                  </div>
+                ) : null}
+                {hasRecPhone ? (
+                  <ContactNumberChip
+                    label="Recipient"
+                    phone={order.recipient_phone}
+                    countryCode={order.recipient_phone_country_code}
+                  />
+                ) : null}
               </div>
             ) : null}
-            {hasRecPhone ? (
-              <ContactNumberChip
-                label="Recipient"
-                phone={order.recipient_phone}
-                countryCode={order.recipient_phone_country_code}
-              />
-            ) : null}
-          </div>
-        ) : null}
 
-        {showCustomer ? (
-          <div className="admin-delivery-contact-actions">
-            {custTel ? (
-              <a href={custTel} className="admin-delivery-contact-link admin-delivery-contact-link--compact">
-                <span className="material-symbols-outlined">call</span>
-                Call
-              </a>
+            {showCustomer ? (
+              <div className="admin-delivery-contact-actions">
+                {custTel ? (
+                  <a href={custTel} className="admin-delivery-contact-link admin-delivery-contact-link--compact">
+                    <span className="material-symbols-outlined">call</span>
+                    Call
+                  </a>
+                ) : null}
+                {custWa ? (
+                  <a
+                    href={custWa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="admin-delivery-contact-link admin-delivery-contact-link--compact"
+                  >
+                    <span className="material-symbols-outlined">chat</span>
+                    WhatsApp
+                  </a>
+                ) : null}
+                {custLineHref ? (
+                  <a
+                    href={custLineHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="admin-delivery-contact-link admin-delivery-contact-link--compact"
+                  >
+                    <LineIcon size={20} className="admin-delivery-contact-line-ico" />
+                    LINE
+                  </a>
+                ) : null}
+              </div>
             ) : null}
-            {custWa ? (
-              <a
-                href={custWa}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="admin-delivery-contact-link admin-delivery-contact-link--compact"
-              >
-                <span className="material-symbols-outlined">chat</span>
-                WhatsApp
-              </a>
-            ) : null}
-            {custLineHref ? (
-              <a
-                href={custLineHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="admin-delivery-contact-link admin-delivery-contact-link--compact"
-              >
-                <LineIcon size={20} className="admin-delivery-contact-line-ico" />
-                LINE
-              </a>
-            ) : null}
-          </div>
-        ) : null}
 
-        {showRecipient ? (
-          <div className="admin-delivery-contact-actions">
-            {recTel ? (
-              <a href={recTel} className="admin-delivery-contact-link admin-delivery-contact-link--compact">
-                <span className="material-symbols-outlined">call</span>
-                Call recipient
-              </a>
+            {showRecipient ? (
+              <div className="admin-delivery-contact-actions">
+                {recTel ? (
+                  <a href={recTel} className="admin-delivery-contact-link admin-delivery-contact-link--compact">
+                    <span className="material-symbols-outlined">call</span>
+                    Call recipient
+                  </a>
+                ) : null}
+                {recWa ? (
+                  <a
+                    href={recWa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="admin-delivery-contact-link admin-delivery-contact-link--compact"
+                  >
+                    <span className="material-symbols-outlined">chat</span>
+                    WhatsApp recipient
+                  </a>
+                ) : null}
+              </div>
             ) : null}
-            {recWa ? (
-              <a
-                href={recWa}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="admin-delivery-contact-link admin-delivery-contact-link--compact"
-              >
-                <span className="material-symbols-outlined">chat</span>
-                WhatsApp recipient
-              </a>
-            ) : null}
-          </div>
-        ) : null}
 
-        {email ? (
-          <>
-            <p className="admin-delivery-contact-group-label">Email</p>
-            <a href={`mailto:${encodeURIComponent(email)}`} className="admin-delivery-contact-link">
-              <span className="material-symbols-outlined">mail</span>
-              {email}
-            </a>
+            {email ? (
+              <>
+                <p className="admin-delivery-contact-group-label">Email</p>
+                <a href={`mailto:${encodeURIComponent(email)}`} className="admin-delivery-contact-link">
+                  <span className="material-symbols-outlined">mail</span>
+                  {email}
+                </a>
+              </>
+            ) : null}
           </>
-        ) : null}
+        ) : (
+          <p className="admin-delivery-contact-empty admin-hint">No phone or email on file</p>
+        )}
       </div>
     </details>
   );
@@ -1358,12 +1410,56 @@ export function DeliveryBoardClient({
                                       ) : null}
                                     </>
                                   ) : null}
+                                  <div className="admin-delivery-card-thumb-status">
+                                    <span
+                                      className={`admin-delivery-badge-pay ${paid ? 'paid' : 'unpaid'}`}
+                                    >
+                                      {paid ? 'Paid' : formatPaymentStatus(o.payment_status)}
+                                    </span>
+                                    {canEditStatus ? (
+                                      <div className="admin-delivery-status-control">
+                                        <label className="sr-only" htmlFor={`delivery-status-${o.order_id}`}>
+                                          Order status for {o.order_id}
+                                        </label>
+                                        <select
+                                          id={`delivery-status-${o.order_id}`}
+                                          className={`admin-delivery-status-select ${flowBadgeStatusClass}`}
+                                          value={normalizeOrderStatus(o.order_status)}
+                                          onChange={(e) => handleDeliveryStatusChange(o, e.target.value)}
+                                          disabled={isSavingStatus}
+                                          aria-label={`Order status for ${o.order_id}`}
+                                        >
+                                          {ORDER_STATUS.map((s) => (
+                                            <option key={s} value={s}>
+                                              {ORDER_STATUS_LABELS[s]}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {isSavingStatus ? (
+                                          <span className="admin-delivery-status-saving">Saving…</span>
+                                        ) : null}
+                                        {statusMessage ? (
+                                          <span
+                                            className={`admin-delivery-status-message admin-delivery-status-message--${statusMessage.type}`}
+                                          >
+                                            {statusMessage.text}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    ) : (
+                                      <span className={`admin-delivery-badge-flow ${flowBadgeStatusClass}`}>
+                                        {workflowLabel(o.order_status)}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="admin-delivery-card-body">
+                                  <div className="admin-delivery-card-header-row">
+                                    <p className="admin-delivery-card-id">{o.order_id}</p>
+                                    <DeliveryCardPrimaryCopyActions order={o} />
+                                  </div>
                                   <div className="admin-delivery-card-top">
                                     <div className="admin-delivery-card-top-text">
-                                      <p className="admin-delivery-card-id">{o.order_id}</p>
-                                      <DeliveryCardPartyNames order={o} />
                                       <div
                                         className="admin-delivery-card-datetime"
                                         aria-label="Delivery date and time window"
@@ -1388,47 +1484,6 @@ export function DeliveryBoardClient({
                                       <DeliveryCardAddress order={o} />
                                     </div>
                                     <div className="admin-delivery-card-badges">
-                                      <DeliveryCardPrimaryCopyActions order={o} />
-                                      <span
-                                        className={`admin-delivery-badge-pay ${paid ? 'paid' : 'unpaid'}`}
-                                      >
-                                        {paid ? 'Paid' : formatPaymentStatus(o.payment_status)}
-                                      </span>
-                                      {canEditStatus ? (
-                                        <div className="admin-delivery-status-control">
-                                          <label className="sr-only" htmlFor={`delivery-status-${o.order_id}`}>
-                                            Order status for {o.order_id}
-                                          </label>
-                                          <select
-                                            id={`delivery-status-${o.order_id}`}
-                                            className={`admin-delivery-status-select ${flowBadgeStatusClass}`}
-                                            value={normalizeOrderStatus(o.order_status)}
-                                            onChange={(e) => handleDeliveryStatusChange(o, e.target.value)}
-                                            disabled={isSavingStatus}
-                                            aria-label={`Order status for ${o.order_id}`}
-                                          >
-                                            {ORDER_STATUS.map((s) => (
-                                              <option key={s} value={s}>
-                                                {ORDER_STATUS_LABELS[s]}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          {isSavingStatus ? (
-                                            <span className="admin-delivery-status-saving">Saving…</span>
-                                          ) : null}
-                                          {statusMessage ? (
-                                            <span
-                                              className={`admin-delivery-status-message admin-delivery-status-message--${statusMessage.type}`}
-                                            >
-                                              {statusMessage.text}
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                      ) : (
-                                        <span className={`admin-delivery-badge-flow ${flowBadgeStatusClass}`}>
-                                          {workflowLabel(o.order_status)}
-                                        </span>
-                                      )}
                                       <DeliveryDriverAssignment
                                         orderId={o.order_id}
                                         driverName={driverName}

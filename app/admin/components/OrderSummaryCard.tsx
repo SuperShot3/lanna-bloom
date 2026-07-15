@@ -5,13 +5,13 @@ import {
   buildDriverMessengerPlainText,
   buildDriverNotesClipboardText,
   buildOrderSummaryPlainText,
+  buildRecipientDetailsClipboardText,
   checkoutMapsUrl,
   deliveryNotesDisplay,
   driverNotesDisplayOrNone,
   customerLineIdDisplay,
   customerPhoneDisplay,
   formatAmountNa,
-  MISSING_EN,
   naText,
   preferredContactDisplay,
   recipientNameDisplay,
@@ -60,13 +60,9 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
     '';
   const addressForCopy = deliveryAddressResolved.trim();
   const mapsUrlForCopy = mapsUrl?.trim() ?? '';
-  const driverNotesForCopy = buildDriverNotesClipboardText(order, items, customGreetingCard);
+  const driverNotesForCopy = buildDriverNotesClipboardText(order);
   const customerDetailsForCopy = buildCustomerDetailsClipboardText(order);
-  const recipientNameForCopy = recipientName.trim();
-  const recipientPhoneForCopy = recipientPhone.trim();
-  const recipientNamePhoneForCopy = `Name: ${
-    recipientNameForCopy || MISSING_EN
-  }\nPhone: ${recipientPhoneForCopy || MISSING_EN}`;
+  const recipientDetailsForCopy = buildRecipientDetailsClipboardText(order);
 
   return (
     <section className="admin-section admin-summary-card">
@@ -218,7 +214,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
             </div>
             <AdminCopyTextButton
               text={driverNotesForCopy}
-              ariaLabel="Copy driver notes with recipient name and phone to clipboard"
+          ariaLabel="Copy driver notes to clipboard"
               className="admin-copy-text-btn--inline"
             >
               Copy driver notes
@@ -283,11 +279,11 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
               </p>
             </div>
             <AdminCopyTextButton
-              text={recipientNamePhoneForCopy}
+              text={recipientDetailsForCopy}
               ariaLabel="Copy recipient name and phone to clipboard"
               className="admin-copy-text-btn--inline"
             >
-              Copy name & phone
+              Copy recipient details
             </AdminCopyTextButton>
           </div>
           <p>
