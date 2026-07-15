@@ -4,7 +4,6 @@ import { GUIDE_SLUG_RE, MAX_GUIDE_SLUG_LENGTH } from './constants';
 /** Bespoke guide pages that are not MDX articles but accept comments. */
 export const BESPOKE_GUIDE_SLUGS = [
   'birthday-flower-gift',
-  'flowers-chiang-mai',
   'perfect-bouquet-someone-special',
 ] as const;
 

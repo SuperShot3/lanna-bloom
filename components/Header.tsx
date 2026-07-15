@@ -24,10 +24,9 @@ import {
   CartIcon,
   HomeIcon,
   SearchIcon,
-  PhoneIcon,
   MapIcon,
   MenuIcon,
-  StorefrontIcon,
+  InfoIcon,
 } from './icons';
 import {
   MARKETS,
@@ -45,6 +44,7 @@ import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext'
 import { useMobileCartHeaderCollapse } from '@/hooks/useMobileCartHeaderCollapse';
 import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
 import { isCatalogProductDetailPath } from '@/lib/catalogProductPath';
+import { CurrencySelector } from '@/components/CurrencyDisplay';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
@@ -107,10 +107,10 @@ export function Header({
     ? `/${lang}/catalog/${effectiveMarket.pathSlug}`
     : `/${lang}/catalog`;
   const cartHref = `/${lang}/cart`;
-  const contactHref = `/${lang}/contact`;
+  const aboutHref = `/${lang}/about`;
+  const deliveryAreasHref = `/${lang}/flower-delivery-thailand`;
   const infoHref = `/${lang}/info`;
   const trackOrderHref = `/${lang}/track-order`;
-  const customOrderHref = `/${lang}/custom-order`;
   const t = translations[lang].nav;
   const { count: cartCount, lastAddEventId } = useCart();
   const deliveryPickerCopy = getDeliveryPickerCopy(lang);
@@ -286,7 +286,7 @@ export function Header({
             </Link>
             {!isMobile && (
               <nav
-                className="hidden md:flex items-center gap-8 font-medium text-sm tracking-wide uppercase"
+                className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 font-medium text-sm tracking-wide uppercase"
                 aria-label="Main"
               >
                 <Suspense
@@ -323,9 +323,16 @@ export function Header({
                   pathActive={basePath === '/info' || basePath.startsWith('/info/')}
                 />
                 <NavItem
-                  href={customOrderHref}
-                  label={t.customOrder}
-                  active={basePath === '/custom-order'}
+                  href={deliveryAreasHref}
+                  label={t.deliveryAreas}
+                  active={basePath === '/flower-delivery-thailand'}
+                  variant="pill"
+                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                />
+                <NavItem
+                  href={aboutHref}
+                  label={t.aboutUs}
+                  active={basePath === '/about'}
                   variant="pill"
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
@@ -342,6 +349,9 @@ export function Header({
                 variant="desktop"
                 onChange={handleDeliveryDestinationChange}
               />
+            </div>
+            <div className="hidden sm:block">
+              <CurrencySelector lang={lang} />
             </div>
             <Link
               href={cartHref}
@@ -437,6 +447,7 @@ export function Header({
               variant="mobile"
               onChange={handleDeliveryDestinationChange}
             />
+            <CurrencySelector lang={lang} className="w-full" />
             <nav className="flex flex-col gap-2" aria-label="Main">
               <NavItem
                 href={homeHref}
@@ -479,18 +490,18 @@ export function Header({
                 onNavigate={() => setMenuOpen(false)}
               />
               <NavItem
-                href={customOrderHref}
-                label={t.customOrder}
-                icon={<StorefrontIcon name="edit-note" size={22} />}
-                active={basePath === '/custom-order'}
+                href={deliveryAreasHref}
+                label={t.deliveryAreas}
+                icon={<MapIcon size={22} />}
+                active={basePath === '/flower-delivery-thailand'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />
               <NavItem
-                href={contactHref}
-                label={t.contactUs}
-                icon={<PhoneIcon size={22} />}
-                active={basePath === '/contact'}
+                href={aboutHref}
+                label={t.aboutUs}
+                icon={<InfoIcon size={22} />}
+                active={basePath === '/about'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />

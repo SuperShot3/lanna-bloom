@@ -23,12 +23,14 @@ const baseTranslations = {
       cart: 'Cart',
       trackOrder: 'Search',
       viewYourOrder: 'Your order',
-      contactUs: 'Contacts',
+      contactUs: 'Contact Us',
       refundReplacement: 'Refund & Replacement',
       findUs: 'Location',
       information: 'Guides',
       search: 'Search',
       customOrder: 'Custom order',
+      aboutUs: 'About Us',
+      deliveryAreas: 'Delivery Areas',
       dbdVerified: 'DBD Verified',
       flowerDeliveryChiangMai: 'Flower delivery Chiang Mai',
       roseBouquetsChiangMai: 'Rose bouquets Chiang Mai',
@@ -100,9 +102,10 @@ const baseTranslations = {
       cta: 'Choose a bouquet',
       trustLine: 'Same-day delivery in Chiang Mai',
       badge: 'Flower delivery in Chiang Mai, Thailand',
-      headlineNew: 'Chiang Mai Flower Delivery',
+      headlineNew: 'Buy Flowers Online in Chiang Mai',
       headlineAccent: '',
-      sublineNew: 'Order flowers online for same-day delivery across Chiang Mai — birthdays, anniversaries, and every special moment.',
+      sublineNew:
+        'Order flowers online for same-day delivery across Chiang Mai. Pay securely by card for birthdays, anniversaries, and every special moment.',
       ctaBrowse: 'Explore Signature Collections',
       ctaHowItWorks: 'How it Works',
       howToOrderClose: 'Close',
@@ -129,12 +132,12 @@ const baseTranslations = {
       backToTop: 'Back to top',
       flowerTypeSectionTitle: '{type} Bouquets',
       flowerTypeSectionTitlePotted: '{type}',
-      productSectionPlushyToys: 'Plushy toys',
+      productSectionPlushyToys: 'Toys',
       productSectionBalloons: 'Balloons',
       productSectionSweets: 'Sweets',
     },
     experience: {
-      title: 'Lanna Bloom Experience',
+      title: 'How It Works',
       subtitle: 'Simple online flower and gift delivery in Chiang Mai — browse, checkout, and we deliver locally with care.',
       step1Title: '1. Select Bouquet',
       step1Desc: 'Browse fresh bouquets and gifts for Chiang Mai delivery, then pay online with secure checkout.',
@@ -1343,7 +1346,7 @@ const baseTranslations = {
       sameDayFlowerDeliveryChiangMai: {
         bouquetGridTitle: 'Popular for same-day delivery',
         h1: 'Same-day flower delivery in Chiang Mai',
-        intro: 'Need flowers delivered today? Order same-day flower delivery across Chiang Mai. Message us early for the best choice; we deliver during working hours (09:00–20:00). Easy ordering via LINE or WhatsApp.',
+        intro: 'Need flowers delivered today? Order same-day flower delivery across Chiang Mai online. Pay securely by card at checkout; we deliver during working hours (09:00–20:00) when you order in time.',
         prefillMessage: "Hi! I'd like same-day flower delivery in Chiang Mai. My budget is ___ THB. Delivery address and preferred time: ___.",
         highlights: [
           'Same-day delivery during working hours (09:00–20:00)',
@@ -1353,9 +1356,9 @@ const baseTranslations = {
         ],
         deliveryArea: 'Delivery across Chiang Mai — Old City, Nimman, Santitham, Hang Dong, Mae Hia, San Sai, Mae Rim, and nearby areas.',
         faq: [
-          { q: 'How do I get same-day delivery?', a: 'Message us on LINE or WhatsApp with your bouquet choice, size, delivery address, and preferred time. We\'ll confirm if we can deliver today and the exact timeframe.' },
-          { q: 'Is there a cut-off time for same-day delivery?', a: 'We deliver 09:00–20:00. Order as early as possible so we have time to prepare and deliver. Orders after a certain time may be scheduled for the next day.' },
-          { q: 'Can I include a message card?', a: 'Yes. You can add a free or premium message card when ordering. Tell us your message in the chat and we\'ll write it on the card.' },
+          { q: 'How do I get same-day delivery?', a: 'Browse the catalog, add a bouquet to your cart, select today as the delivery date, and pay online through Stripe checkout. We confirm same-day availability for your area and timing.' },
+          { q: 'Is there a cut-off time for same-day delivery?', a: 'We deliver 09:00–20:00. Orders placed before about 18:00 are usually eligible for same-day when flowers and capacity allow. Later orders are typically scheduled for the next day.' },
+          { q: 'Can I include a message card?', a: 'Yes. Add a free or premium message card at checkout and enter your message there.' },
           { q: 'What payment methods do you accept?', a: 'Pay securely online at checkout with card via Stripe. Apple Pay and Google Pay are available where supported.' },
         ],
         browseAll: 'Browse all bouquets',
@@ -1372,15 +1375,20 @@ const baseTranslations = {
         title: 'Order Flowers Online — Delivered Across Chiang Mai',
         intro:
           'Choose a bouquet, pay securely at checkout, and our local florists prepare it fresh for delivery to your door, hotel, or condo.',
+        onlineOnlyNote:
+          'Lanna Bloom is an online-only flower delivery service and does not accept walk-in customers.',
         sameDayTitle: 'Same-day delivery',
         sameDayText:
           'Order by {cutoff} for same-day flower delivery in Chiang Mai. We deliver between {start} and {end}; later orders are delivered the next day.',
         cutoffTag: 'Order before',
         windowTag: 'Delivery hours',
         areasTitle: 'Chiang Mai delivery areas',
-        areasIntro: 'We deliver across Chiang Mai city and nearby districts, including:',
+        areasIntro:
+          'We deliver across Chiang Mai city and nearby districts — from the Old City and Nimman to Hang Dong, Mae Rim, and beyond.',
         areasNote: 'Delivery fees are calculated by zone at checkout.',
         policyCta: 'Read our delivery policy',
+        refundCta: 'Refund & replacement policy',
+        deliveryAreasCta: 'View delivery areas',
         thailandCta: 'Flower delivery in other Thai cities',
       },
       whyUs: {
@@ -1420,7 +1428,7 @@ const baseTranslations = {
           },
           {
             q: 'What payment methods do you accept?',
-            a: 'Payment is online at checkout with card via Stripe. Apple Pay and Google Pay are available where supported.',
+            a: 'Pay securely at checkout with Visa, Mastercard, American Express, and other international cards through Stripe. Apple Pay and Google Pay are available where supported. PromptPay may also appear for eligible THB payments in a Thai banking app.',
           },
           {
             q: 'Can I include a message card with my flowers?',
@@ -1434,6 +1442,22 @@ const baseTranslations = {
             q: 'Can you deliver flowers to a hotel or condo?',
             a: 'Yes. Add the recipient name, hotel or building name, and a phone number at checkout — our courier coordinates with reception or the juristic office on arrival.',
           },
+          {
+            q: 'Can I order flowers in Chiang Mai from another country?',
+            a: 'Yes. Pay securely by card through Stripe checkout (Apple Pay and Google Pay where supported). Our Chiang Mai team prepares and delivers locally — you do not need a Thai bank account.',
+          },
+          {
+            q: 'How do I share the delivery location with a Google Maps pin?',
+            a: 'At checkout you can paste a Google Maps share link or pin for the exact drop-off. Include the recipient’s phone number so the courier can confirm access at hotels, gated residences, or offices.',
+          },
+          {
+            q: 'What if flowers arrive damaged?',
+            a: 'Contact us promptly with photos. We follow our refund and replacement policy for damaged or wilted flowers after delivery.',
+          },
+          {
+            q: 'Will I receive a photo when the flowers are delivered?',
+            a: 'For quality and delivery confirmation, we may take a photo at the delivery location when permitted — for example at reception, with the recipient, or at the door. We avoid capturing sensitive personal details where possible.',
+          },
         ],
       },
       explore: {
@@ -1446,11 +1470,54 @@ const baseTranslations = {
         catalogLink: 'Browse the full catalog',
         guidesTitle: 'Guides',
         sameDayGuideLink: 'Same-day flower delivery in Chiang Mai',
-        chiangMaiGuideLink: 'Flower delivery in Chiang Mai — how it works',
+        abroadGuideLink: 'Send flowers to Chiang Mai from abroad',
         allGuidesLink: 'All guides & articles',
         destinationsTitle: 'Flower delivery in Thailand',
         thailandOverviewLink: 'All delivery destinations',
         marketLinkTemplate: 'Flower delivery in {city}',
+      },
+      local: {
+        eyebrow: 'Chiang Mai',
+        title: 'Flower Delivery in Chiang Mai',
+        intro:
+          'Lanna Bloom is for people ordering online in Chiang Mai — locals, visitors, and anyone sending flowers from another city or country. You choose a real bouquet, pay securely at checkout, and a local florist prepares it fresh for delivery.',
+        intro2:
+          'We deliver to homes, hotels, and condos across the city and nearby districts. Same-day options, clear checkout details, and English or Thai support keep the process straightforward.',
+        sameDayTitle: 'Same-day delivery for last-minute moments',
+        sameDayP1:
+          'Birthdays at a hotel tonight, an anniversary surprise in Nimman, or a gift you need to send while you are abroad — same-day delivery is often possible when you order by {cutoff}.',
+        sameDayP2:
+          'We deliver during our Chiang Mai service window. Order earlier for the best bouquet choice, then confirm today’s date at checkout.',
+        sameDayLink: 'Same-day flower delivery in Chiang Mai',
+        browseCatalogLink: 'Browse bouquets',
+        venuesTitle: 'Homes, hotels, and condos across the city',
+        venuesP1:
+          'Chiang Mai deliveries often go through hotel reception, condo juristic offices, or gated villages. Add the recipient’s full name, building or hotel name, and a working phone number so the courier can coordinate on arrival.',
+        venuesP2:
+          'A Google Maps pin or share link at checkout helps when the entrance is hard to describe. For complex addresses, use custom order or contact us before you pay.',
+        hotelsLink: 'Flower delivery to hotels in Chiang Mai',
+        customOrderLink: 'Custom order',
+        areasTitle: 'Areas we know well — Old City to Mae Rim',
+        areasP1:
+          'Old City and the inner city suit hotel stays and compact romantic evenings. Nimman and Suthep fit apartments, cafés, and expat neighbourhoods. Hang Dong, Mae Rim, and San Sai cover quieter villas and outskirts where a little extra timing cushion helps.',
+        areasP2:
+          'Further districts such as San Kamphaeng, Saraphi, and Doi Saket remain in our service area. Delivery fees are calculated by zone at checkout — see the delivery policy for full zone guidance.',
+        deliveryPolicyLink: 'Read our delivery policy',
+        abroadTitle: 'Sending flowers from abroad',
+        abroadP1:
+          'If you are outside Thailand, you can still order online: browse in English or Thai, pay by international card through Stripe, and leave a message card in either language. Same-day depends on Chiang Mai local time and the cutoff — not your home timezone.',
+        abroadP2:
+          'Our local team handles preparation and delivery, so the recipient gets a fresh bouquet without you needing to coordinate bank transfers or long chat threads.',
+        abroadLink: 'Send flowers to Chiang Mai from abroad',
+        occasionsTitle: 'Bouquets for birthdays, romance, and every occasion',
+        occasionsP1:
+          'Romantic and anniversary gifts often lean toward roses. Birthdays and congratulations suit brighter mixed bouquets. Softer tones work well for get-well or sympathy. If you are unsure, start with our birthday guide or rose and orchid collections.',
+        rosesLink: 'Rose bouquets in Chiang Mai',
+        orchidsLink: 'Orchid bouquets in Chiang Mai',
+        birthdayLink: 'Birthday flower gift guide',
+        closingCatalogCta: 'Explore the catalog',
+        closingSameDayCta: 'Same-day delivery guide',
+        refundLink: 'Refund & replacement',
       },
     },
   },
@@ -1467,12 +1534,14 @@ const baseTranslations = {
       cart: 'ตะกร้า',
       trackOrder: 'หา',
       viewYourOrder: 'ออเดอร์ของคุณ',
-      contactUs: 'ติดต่อ',
+      contactUs: 'ติดต่อเรา',
       refundReplacement: 'นโยบายคืนเงิน / เปลี่ยนสินค้า',
       findUs: 'แผนที่ร้าน',
       information: 'คู่มือ / ข้อมูล',
       search: 'ค้นหา',
       customOrder: 'สั่งทำพิเศษ',
+      aboutUs: 'เกี่ยวกับเรา',
+      deliveryAreas: 'พื้นที่จัดส่ง',
       dbdVerified: 'DBD Verified',
       flowerDeliveryChiangMai: 'ส่งดอกไม้ในเชียงใหม่',
       roseBouquetsChiangMai: 'ช่อกุหลาบในเชียงใหม่',
@@ -1544,9 +1613,10 @@ const baseTranslations = {
       cta: 'เลือกช่อดอกไม้',
       trustLine: 'จัดส่งวันเดียวถึงในเชียงใหม่',
       badge: 'ส่งดอกไม้ในเชียงใหม่ ประเทศไทย',
-      headlineNew: 'ส่งดอกไม้เชียงใหม่',
+      headlineNew: 'ซื้อดอกไม้ออนไลน์ในเชียงใหม่',
       headlineAccent: '',
-      sublineNew: 'สั่งดอกไม้ออนไลน์ จัดส่งวันเดียวทั่วเชียงใหม่ สำหรับวันเกิด วันครบรอบ และทุกช่วงเวลาพิเศษ',
+      sublineNew:
+        'สั่งดอกไม้ออนไลน์ จัดส่งวันเดียวทั่วเชียงใหม่ และชำระด้วยบัตรอย่างปลอดภัย สำหรับวันเกิด วันครบรอบ และทุกช่วงเวลาพิเศษ',
       ctaBrowse: 'ดูคอลเลกชัน',
       ctaHowItWorks: 'วิธีการทำงาน',
       howToOrderClose: 'ปิด',
@@ -1578,7 +1648,7 @@ const baseTranslations = {
       productSectionSweets: 'ขนมและของหวาน',
     },
     experience: {
-      title: 'ประสบการณ์ Lanna Bloom',
+      title: 'วิธีการสั่งซื้อ',
       subtitle: 'สั่งดอกไม้และของขวัญออนไลน์ในเชียงใหม่ง่ายๆ — เลือกช่อ ชำระเงิน และเราจัดส่งให้ในพื้นที่อย่างใส่ใจ',
       step1Title: '1. เลือกช่อดอกไม้',
       step1Desc: 'เลือกช่อดอกไม้และของขวัญสดสำหรับจัดส่งในเชียงใหม่ แล้วชำระเงินออนไลน์อย่างปลอดภัย',
@@ -2779,7 +2849,7 @@ const baseTranslations = {
       sameDayFlowerDeliveryChiangMai: {
         bouquetGridTitle: 'ยอดนิยมสำหรับจัดส่งวันเดียว',
         h1: 'จัดส่งดอกไม้วันเดียวในเชียงใหม่',
-        intro: 'ต้องการดอกไม้ส่งวันนี้ไหม? สั่งจัดส่งดอกไม้วันเดียวได้ทั่วเชียงใหม่ ส่งข้อความมาครั้งแรกๆ เพื่อเลือกช่อได้มากที่สุด เราจัดส่งในช่วงเวลาทำการ (09:00–20:00) สั่งง่ายผ่าน LINE หรือ WhatsApp',
+        intro: 'ต้องการดอกไม้ส่งวันนี้ไหม? สั่งจัดส่งดอกไม้วันเดียวได้ทั่วเชียงใหม่ออนไลน์ จ่ายบัตรอย่างปลอดภัยตอนชำระเงิน เราจัดส่งในช่วงเวลาทำการ (09:00–20:00) เมื่อสั่งทันเวลา',
         prefillMessage: 'สวัสดีค่ะ/ครับ ต้องการจัดส่งดอกไม้วันเดียวในเชียงใหม่ งบประมาณ ___ บาท ที่อยู่จัดส่งและเวลาที่ต้องการ: ___',
         highlights: [
           'จัดส่งวันเดียวได้ในช่วงเวลาทำการ (09:00–20:00)',
@@ -2789,9 +2859,9 @@ const baseTranslations = {
         ],
         deliveryArea: 'จัดส่งในเชียงใหม่ — คูเมือง นิมมาน สันติธรรม หางดง แม่เหียะ สันทราย แม่ริม และพื้นที่ใกล้เคียง',
         faq: [
-          { q: 'จัดส่งวันเดียวได้อย่างไร?', a: 'ส่งข้อความมาที่ LINE หรือ WhatsApp พร้อมบอกช่อที่ชอบ ขนาด ที่อยู่จัดส่ง และเวลาที่ต้องการ เราจะยืนยันว่าส่งวันนี้ได้หรือไม่ และช่วงเวลาจัดส่งโดยประมาณ' },
-          { q: 'มีเวลาตัดสำหรับจัดส่งวันเดียวไหม?', a: 'เราจัดส่ง 09:00–20:00 แนะนำให้สั่งล่วงหน้าให้เร็วที่สุดเพื่อให้มีเวลาเตรียมและจัดส่ง ออเดอร์หลังเวลาที่กำหนดอาจจัดส่งวันถัดไป' },
-          { q: 'ใส่การ์ดข้อความได้ไหม?', a: 'ได้ค่ะ สามารถเพิ่มการ์ดฟรีหรือการ์ดสวยเมื่อสั่งซื้อ บอกข้อความที่ต้องการในแชท เราจะเขียนลงการ์ดให้' },
+          { q: 'จัดส่งวันเดียวได้อย่างไร?', a: 'เลือกช่อในแคตตาล็อก ใส่ตะกร้า เลือกวันจัดส่งเป็นวันนี้ แล้วชำระเงินออนไลน์ผ่าน Stripe เราจะยืนยันว่าจัดส่งวันเดียวได้ตามพื้นที่และเวลาของคุณ' },
+          { q: 'มีเวลาตัดสำหรับจัดส่งวันเดียวไหม?', a: 'เราจัดส่ง 09:00–20:00 ออเดอร์ก่อนประมาณ 18:00 มักเข้าเกณฑ์วันเดียวเมื่อดอกไม้และความจุพอ ออเดอร์หลังนั้นมักนัดวันถัดไป' },
+          { q: 'ใส่การ์ดข้อความได้ไหม?', a: 'ได้ค่ะ เพิ่มการ์ดฟรีหรือพรีเมียมตอนชำระเงิน และพิมพ์ข้อความที่นั่นได้เลย' },
           { q: 'รับชำระเงินช่องทางไหนบ้าง?', a: 'ชำระเงินออนไลน์อย่างปลอดภัยที่หน้าชำระเงินด้วยบัตรผ่าน Stripe รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ' },
         ],
         browseAll: 'ดูช่อดอกไม้ทั้งหมด',
@@ -2808,15 +2878,20 @@ const baseTranslations = {
         title: 'สั่งดอกไม้ออนไลน์ — จัดส่งทั่วเชียงใหม่',
         intro:
           'เลือกช่อดอกไม้ ชำระเงินอย่างปลอดภัยที่หน้าชำระเงิน แล้วร้านดอกไม้พาร์ทเนอร์ของเราจัดช่อสดใหม่ พร้อมจัดส่งถึงบ้าน โรงแรม หรือคอนโด',
+        onlineOnlyNote:
+          'Lanna Bloom เป็นบริการจัดส่งดอกไม้ออนไลน์เท่านั้น และไม่รับลูกค้าแบบเดินเข้าร้าน',
         sameDayTitle: 'จัดส่งภายในวันเดียว',
         sameDayText:
           'สั่งก่อน {cutoff} น. เพื่อจัดส่งดอกไม้วันเดียวในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. ออเดอร์หลังจากนั้นจะจัดส่งวันถัดไป',
         cutoffTag: 'สั่งก่อน',
         windowTag: 'เวลาจัดส่ง',
         areasTitle: 'พื้นที่จัดส่งในเชียงใหม่',
-        areasIntro: 'เราจัดส่งทั่วตัวเมืองเชียงใหม่และอำเภอใกล้เคียง ได้แก่:',
+        areasIntro:
+          'เราจัดส่งทั่วตัวเมืองเชียงใหม่และอำเภอใกล้เคียง — ตั้งแต่คูเมืองและนิมมาน ไปจนถึงหางดง แม่ริม และพื้นที่ใกล้เคียง',
         areasNote: 'ค่าจัดส่งคำนวณตามโซนที่หน้าชำระเงิน',
         policyCta: 'อ่านนโยบายการจัดส่ง',
+        refundCta: 'นโยบายคืนเงินและเปลี่ยนสินค้า',
+        deliveryAreasCta: 'ดูพื้นที่จัดส่ง',
         thailandCta: 'ส่งดอกไม้ในจังหวัดอื่นทั่วไทย',
       },
       whyUs: {
@@ -2856,7 +2931,7 @@ const baseTranslations = {
           },
           {
             q: 'รับชำระเงินช่องทางไหนบ้าง?',
-            a: 'ชำระเงินออนไลน์ที่หน้าชำระเงินด้วยบัตรผ่าน Stripe รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ',
+            a: 'ชำระอย่างปลอดภัยที่หน้าชำระเงินด้วย Visa, Mastercard, American Express และบัตรต่างประเทศอื่น ๆ ผ่าน Stripe รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ ส่วน PromptPay อาจแสดงสำหรับการชำระ THB ที่เข้าเงื่อนไขผ่านแอปธนาคารไทย',
           },
           {
             q: 'ใส่การ์ดข้อความได้ไหม?',
@@ -2870,6 +2945,22 @@ const baseTranslations = {
             q: 'ส่งดอกไม้ไปโรงแรมหรือคอนโดได้ไหม?',
             a: 'ได้ค่ะ กรอกชื่อผู้รับ ชื่อโรงแรมหรืออาคาร และเบอร์โทรตอนชำระเงิน พนักงานส่งจะประสานกับแผนกต้อนรับหรือนิติบุคคลเมื่อไปถึง',
           },
+          {
+            q: 'สั่งดอกไม้ในเชียงใหม่จากต่างประเทศได้ไหม?',
+            a: 'ได้ค่ะ ชำระบัตรอย่างปลอดภัยผ่าน Stripe (รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ) ทีมในเชียงใหม่จัดช่อและจัดส่งในพื้นที่ — ไม่จำเป็นต้องมีบัญชีธนาคารไทย',
+          },
+          {
+            q: 'แชร์จุดส่งด้วยหมุด Google Maps อย่างไร?',
+            a: 'ตอนชำระเงินสามารถวางลิงก์แชร์หรือหมุด Google Maps ของจุดส่งได้ชัดเจน ใส่เบอร์ผู้รับด้วย เพื่อให้พนักงานส่งยืนยันการเข้าถึงที่โรงแรม ที่พักมีรั้ว หรือสำนักงานได้',
+          },
+          {
+            q: 'ถ้าดอกไม้มาถึงแล้วเสียหายทำอย่างไร?',
+            a: 'ติดต่อเราโดยเร็วพร้อมรูปถ่าย เราดำเนินการตามนโยบายคืนเงินและเปลี่ยนสินค้าสำหรับดอกไม้เสียหายหรือเหี่ยวหลังจัดส่ง',
+          },
+          {
+            q: 'จะได้รับรูปตอนจัดส่งดอกไม้ไหม?',
+            a: 'เพื่อยืนยันคุณภาพและการจัดส่ง เราอาจถ่ายภาพ ณ จุดส่งเมื่อเหมาะสม เช่น ที่รีเซ็ปชัน พร้อมผู้รับ หรือหน้าประตู และจะหลีกเลี่ยงการบันทึกข้อมูลส่วนบุคคลที่ละเอียดอ่อนเมื่อทำได้',
+          },
         ],
       },
       explore: {
@@ -2882,11 +2973,54 @@ const baseTranslations = {
         catalogLink: 'ดูแคตตาล็อกทั้งหมด',
         guidesTitle: 'คู่มือ',
         sameDayGuideLink: 'จัดส่งดอกไม้วันเดียวในเชียงใหม่',
-        chiangMaiGuideLink: 'ส่งดอกไม้ในเชียงใหม่ — ขั้นตอนการสั่งซื้อ',
+        abroadGuideLink: 'ส่งดอกไม้มาเชียงใหม่จากต่างประเทศ',
         allGuidesLink: 'คู่มือและบทความทั้งหมด',
         destinationsTitle: 'ส่งดอกไม้ทั่วประเทศไทย',
         thailandOverviewLink: 'จุดหมายจัดส่งทั้งหมด',
         marketLinkTemplate: 'ส่งดอกไม้ใน{city}',
+      },
+      local: {
+        eyebrow: 'เชียงใหม่',
+        title: 'ส่งดอกไม้เชียงใหม่',
+        intro:
+          'Lanna Bloom สำหรับคนที่ต้องการสั่งดอกไม้ออนไลน์ในเชียงใหม่ — ทั้งคนท้องถิ่น นักท่องเที่ยว และผู้ที่ส่งจากต่างจังหวัดหรือต่างประเทศ เลือกช่อจริง จ่ายปลอดภัยตอนชำระเงิน แล้วร้านดอกไม้ท้องถิ่นจัดช่อสดสำหรับวันจัดส่ง',
+        intro2:
+          'เราจัดส่งถึงบ้าน โรงแรม และคอนโดทั่วเมืองและอำเภอใกล้เคียง มีตัวเลือกวันเดียว รายละเอียดตอนชำระเงินที่ชัดเจน และบริการภาษาไทยหรืออังกฤษให้ขั้นตอนง่ายขึ้น',
+        sameDayTitle: 'จัดส่งวันเดียวสำหรับช่วงนาทีสุดท้าย',
+        sameDayP1:
+          'วันเกิดที่โรงแรมคืนนี้ เซอร์ไพรส์ครบรอบที่นิมมาน หรือของขวัญที่ต้องส่งตอนคุณอยู่ต่างประเทศ — จัดส่งวันเดียวมักทำได้เมื่อสั่งก่อน {cutoff} น.',
+        sameDayP2:
+          'เราจัดส่งในช่วงเวลาให้บริการในเชียงใหม่ สั่งเร็วจะเลือกช่อได้ดีกว่า จากนั้นยืนยันวันจัดส่งเป็นวันนี้ตอนชำระเงิน',
+        sameDayLink: 'จัดส่งดอกไม้วันเดียวในเชียงใหม่',
+        browseCatalogLink: 'เลือกช่อดอกไม้',
+        venuesTitle: 'บ้าน โรงแรม และคอนโดทั่วเมือง',
+        venuesP1:
+          'การส่งในเชียงใหม่มักผ่านแผนกต้อนรับโรงแรม นิติบุคคลคอนโด หรือหมู่บ้านมีรั้ว กรอกชื่อผู้รับเต็ม ชื่ออาคารหรือโรงแรม และเบอร์ที่ติดต่อได้ เพื่อให้พนักงานส่งประสานตอนถึง',
+        venuesP2:
+          'หมุดหรือลิงก์แชร์ Google Maps ตอนชำระเงินช่วยได้เมื่อทางเข้าอธิบายยาก ที่อยู่วุ่นวาย ใช้คำสั่งพิเศษหรือติดต่อเราก่อนจ่ายเงิน',
+        hotelsLink: 'ส่งดอกไม้ไปโรงแรมในเชียงใหม่',
+        customOrderLink: 'สั่งช่อตามใจ',
+        areasTitle: 'พื้นที่ที่เรารู้จักดี — จากคูเมืองถึงแม่ริม',
+        areasP1:
+          'คูเมืองและในเมืองเหมาะกับโรงแรมและการมอบดอกไม้ยามค่ำ นิมมานและสุเทพเหมาะกับอพาร์ตเมนต์ คาเฟ่ และย่านชาวต่างชาติ หางดง แม่ริม และสันทรายครอบคลุมวิลล่าและชานเมืองที่ควรเผื่อเวลาส่งอีกเล็กน้อย',
+        areasP2:
+          'อำเภออย่างสันกำแพง สารภี และดอยสะเก็ดยังอยู่ในพื้นที่ให้บริการ ค่าจัดส่งคำนวณตามโซนตอนชำระเงิน — ดูนโยบายจัดส่งสำหรับรายละเอียดโซนเต็ม',
+        deliveryPolicyLink: 'อ่านนโยบายการจัดส่ง',
+        abroadTitle: 'ส่งดอกไม้จากต่างประเทศ',
+        abroadP1:
+          'ถ้าคุณอยู่นอกประเทศไทย ก็สั่งออนไลน์ได้: เลือกดูเป็นภาษาอังกฤษหรือไทย จ่ายบัตรต่างประเทศผ่าน Stripe และฝากข้อความการ์ดได้ทั้งสองภาษา การจัดส่งวันเดียวขึ้นกับเวลาท้องถิ่นเชียงใหม่และเวลาตัดรอบ — ไม่ใช่โซนเวลาบ้านคุณ',
+        abroadP2:
+          'ทีมท้องถิ่นดูแลการจัดช่อและการจัดส่ง ผู้รับได้ดอกไม้สด โดยคุณไม่ต้องโอนเงินไทยหรือคุยยาวในแชท',
+        abroadLink: 'ส่งดอกไม้มาเชียงใหม่จากต่างประเทศ',
+        occasionsTitle: 'ช่อดอกไม้สำหรับวันเกิด โรแมนติก และทุกโอกาส',
+        occasionsP1:
+          'ของขวัญโรแมนติกและครบรอบมักเป็นกุหลาบ วันเกิดและแสดงความยินดีเหมาะกับช่อมิกซ์โทนสดใส โทนอ่อนเหมาะกับเยี่ยมไข้หรือแสดงความเสียใจ หากยังไม่แน่ใจ เริ่มจากคู่มือวันเกิด หรือคอลเลกชันกุหลาบและกล้วยไม้',
+        rosesLink: 'ช่อกุหลาบในเชียงใหม่',
+        orchidsLink: 'ช่อกล้วยไม้ในเชียงใหม่',
+        birthdayLink: 'คู่มือของขวัญวันเกิด',
+        closingCatalogCta: 'ดูแคตตาล็อก',
+        closingSameDayCta: 'คู่มือจัดส่งวันเดียว',
+        refundLink: 'คืนเงินและเปลี่ยนสินค้า',
       },
     },
   },
@@ -2950,7 +3084,7 @@ const russianTranslations = {
     cta: 'Выбрать букет',
     trustLine: 'Доставка сегодня по Чиангмаю',
     badge: 'Отобранные флористы Таиланда',
-    headlineNew: 'Доставка цветов в Чиангмае',
+    headlineNew: 'Купить цветы онлайн в Чиангмае',
     sublineNew:
       'Закажите свежие цветы онлайн с быстрой доставкой на день рождения, годовщину и другие важные моменты.',
     ctaBrowse: 'Смотреть коллекцию',
@@ -3809,7 +3943,7 @@ const chineseSingaporeTranslations = {
     cta: '选择花束',
     trustLine: '清迈当日配送',
     badge: '清迈鲜花配送 · 泰国',
-    headlineNew: '清迈鲜花配送',
+    headlineNew: '在线购买清迈鲜花',
     sublineNew: '在线订购新鲜花束，适合生日、纪念日和特别时刻，并快速配送。',
     ctaBrowse: '浏览系列',
     ctaHowItWorks: '运作方式',
@@ -4481,7 +4615,7 @@ const chineseHongKongTranslations = {
     cta: '選擇花束',
     trustLine: '清邁即日配送',
     badge: '清邁鮮花配送 · 泰國',
-    headlineNew: '清邁鮮花配送',
+    headlineNew: '網上購買清邁鮮花',
     sublineNew: '網上訂購新鮮花束，適合生日、紀念日和特別時刻，並快速配送。',
     ctaBrowse: '瀏覽系列',
     ctaHowItWorks: '運作方式',

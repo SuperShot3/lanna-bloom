@@ -488,6 +488,7 @@ export function BouquetCard({
               }
               discountPercent={bouquet.discountPercent}
               destinationId={checkoutProfile.destinationId}
+              lang={lang}
               fromLabel={t.from}
             />
           </div>

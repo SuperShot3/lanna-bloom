@@ -31,7 +31,10 @@ export function ExploreLinksSection({ lang }: { lang: Locale }) {
           href: `/${lang}/info/same-day-flower-delivery-chiang-mai`,
           label: t.sameDayGuideLink,
         },
-        { href: `/${lang}/info/flowers-chiang-mai`, label: t.chiangMaiGuideLink },
+        {
+          href: `/${lang}/info/birthday-flowers-chiang-mai-from-abroad`,
+          label: t.abroadGuideLink,
+        },
         { href: `/${lang}/info`, label: t.allGuidesLink },
       ],
     },

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { Locale } from '@/lib/i18n';
+import { CurrencyAmount } from '@/components/CurrencyDisplay';
 
 export type CheckoutBottomActionProps = {
   lang: Locale;
@@ -42,7 +43,6 @@ export function CheckoutBottomAction({
   labels,
 }: CheckoutBottomActionProps) {
   const cta = readyToPay ? labels.payNow : labels.continue;
-  const thb = '\u0E3F';
   const regionLabel =
     deliveryScheduleLine && deliveryScheduleLine.trim().length > 0
       ? `${cta}. ${deliveryScheduleLine}`
@@ -53,9 +53,8 @@ export function CheckoutBottomAction({
       <div className="checkout-bottom-action__inner">
         <div className="checkout-bottom-action__price" aria-live="polite">
           <div className="checkout-bottom-action__total-row">
-            <span className="checkout-bottom-action__currency">{thb}</span>
             <span className="checkout-bottom-action__total-amount">
-              {total.toLocaleString()}
+              <CurrencyAmount thb={total} lang={lang} />
             </span>
           </div>
           {deliveryScheduleLine && deliveryScheduleLine.trim().length > 0 ? (
@@ -68,15 +67,13 @@ export function CheckoutBottomAction({
             ) : deliveryFeeGross != null && deliveryFeeGross > deliveryFee ? (
               <>
                 <span className="checkout-bottom-action__delivery-was">
-                  {thb}
-                  {deliveryFeeGross.toLocaleString()}
+                  <CurrencyAmount thb={deliveryFeeGross} lang={lang} showEstimateLabel={false} />
                 </span>{' '}
                 {labels.deliveryFree}
               </>
             ) : (
               <>
-                {thb}
-                {deliveryFee.toLocaleString()}
+                <CurrencyAmount thb={deliveryFee} lang={lang} showEstimateLabel={false} />
               </>
             )}
           </p>

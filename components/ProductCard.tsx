@@ -388,6 +388,7 @@ export function ProductCard({
               basePriceThb={finalPrice}
               discountPercent={product.discountPercent}
               destinationId={checkoutProfile.destinationId}
+              lang={lang}
               fromLabel={t.from}
               amountClassName="pcard-price-amount"
             />

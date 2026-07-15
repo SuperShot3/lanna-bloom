@@ -141,7 +141,6 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     ],
     relatedIntents: [
       'same-day-flower-delivery-chiang-mai',
-      'flowers-chiang-mai',
       'birthday-flowers-chiang-mai-from-abroad',
       'delivery-policy',
     ],
@@ -203,8 +202,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       {
         q: L('What payment methods do you accept?', 'รับชำระแบบไหนบ้าง?'),
         a: L(
-          'Pay securely online by card through Stripe checkout (Visa, Mastercard, American Express, and other widely used cards). You can also message us on LINE or WhatsApp if you need help.',
-          'จ่ายออนไลน์ปลอดภัยด้วยบัตรผ่าน Stripe (Visa, Mastercard, American Express และบัตรที่ใช้ทั่วไป) หรือทัก LINE / WhatsApp หากต้องการความช่วยเหลือ'
+          'Pay securely online by card through Stripe checkout (Visa, Mastercard, American Express, and other widely used cards). Apple Pay and Google Pay are available where supported. Message us on LINE or WhatsApp only if you need help.',
+          'จ่ายออนไลน์ปลอดภัยด้วยบัตรผ่าน Stripe (Visa, Mastercard, American Express และบัตรที่ใช้ทั่วไป) รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ ทัก LINE / WhatsApp ได้หากต้องการความช่วยเหลือ'
         ),
       },
       {
@@ -224,8 +223,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     ],
     relatedIntents: [
       'buy-flowers-online-chiang-mai-thailand',
-      'flowers-chiang-mai',
       'flower-delivery-to-hotels-chiang-mai',
+      'birthday-flowers-chiang-mai-from-abroad',
       'delivery-policy',
     ],
     seoMoreLabel: L('Delivery areas & how to order today', 'พื้นที่จัดส่งและวิธีสั่งวันนี้'),

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { MDXRemote } from 'next-mdx-remote/rsc';
@@ -70,6 +70,7 @@ export async function generateMetadata({
   return {
     title: `${title} | Lanna Bloom`,
     description,
+    ...(article.noindex ? { robots: { index: false, follow: false } } : {}),
     alternates: { canonical },
     openGraph: {
       title: `${title} | Lanna Bloom`,
@@ -131,8 +132,9 @@ export default async function InfoArticlePage({
   if (!isValidLocale(lang)) notFound();
   const article = getArticleBySlug(slug);
   if (!article) notFound();
-  if (article.externalPath) {
-    redirect(`/${lang}${article.externalPath}`);
+  if (article.externalPath !== undefined) {
+    const suffix = article.externalPath.replace(/\/$/, '');
+    permanentRedirect(suffix ? `/${lang}${suffix}` : `/${lang}`);
   }
   const mdxSource = await getMdxContent(slug, lang);
   if (!mdxSource) notFound();

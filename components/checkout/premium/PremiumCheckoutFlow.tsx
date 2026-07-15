@@ -28,7 +28,7 @@ import {
 } from '@/lib/wrappingPaperColors';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
-import { formatThb } from '@/lib/costsUtils';
+import { CurrencyAmount } from '@/components/CurrencyDisplay';
 import {
   CHECKOUT_FIELD_LIMITS,
   clipCheckoutField,
@@ -633,13 +633,13 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           {bouquetSubtotal > 0 && (
             <div className="co-price-row">
               <span>{t.bouquetSubtotal}</span>
-              <span>{formatThb(bouquetSubtotal)}</span>
+              <CurrencyAmount thb={bouquetSubtotal} lang={lang} />
             </div>
           )}
           {addOnsTotal > 0 && (
             <div className="co-price-row">
               <span>{t.addonsSubtotal}</span>
-              <span>{formatThb(addOnsTotal)}</span>
+              <CurrencyAmount thb={addOnsTotal} lang={lang} />
             </div>
           )}
           {items.map((item, index) => {
@@ -657,7 +657,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                   {name}
                   {qty > 1 ? ` × ${qty}` : ''}
                 </span>
-                <span>{formatThb(lineTotal)}</span>
+                <CurrencyAmount thb={lineTotal} lang={lang} />
               </div>
             );
           })}
@@ -666,23 +666,23 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             <span>
               {deliveryFeeGross != null && deliveryFeeGross > deliveryFee ? (
                 <>
-                  <s className="co-price-was">{formatThb(deliveryFeeGross)}</s>{' '}
+                  <s className="co-price-was"><CurrencyAmount thb={deliveryFeeGross} lang={lang} showEstimateLabel={false} /></s>{' '}
                   {t.freeDelivery}
                 </>
               ) : (
-                formatThb(deliveryFee)
+                <CurrencyAmount thb={deliveryFee} lang={lang} />
               )}
             </span>
           </div>
           {discount > 0 && (
             <div className="co-price-row co-price-row--discount">
               <span>{discountLabel}</span>
-              <span>-{formatThb(discount)}</span>
+              <span>-<CurrencyAmount thb={discount} lang={lang} /></span>
             </div>
           )}
           <div className="co-price-row co-price-row--total">
             <span>{t.totalLine}</span>
-            <span>{formatThb(grandTotal)}</span>
+            <CurrencyAmount thb={grandTotal} lang={lang} />
           </div>
           {mayCampaignProgressRemaining > 0 && !appliedReferralCode && (
             <p className="co-hint" role="status">

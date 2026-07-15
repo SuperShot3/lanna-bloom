@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
-import { ZONES_BY_DESTINATION } from '@/lib/delivery/zones';
 import {
   SAME_DAY_ORDER_CUTOFF_MIN,
   DELIVERY_WINDOW_START_MIN,
@@ -10,16 +9,8 @@ import {
 import { StorefrontIcon } from '@/components/icons';
 import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
 
-/** Real Chiang Mai zone labels, excluding the internal fallback zone. */
-function chiangMaiAreaLabels(lang: Locale): string[] {
-  return ZONES_BY_DESTINATION.CHIANG_MAI.filter((zone) => zone.id !== 'cm-unknown').map(
-    (zone) => (lang === 'th' ? zone.labelTh : zone.labelEn)
-  );
-}
-
 export function DeliverySection({ lang }: { lang: Locale }) {
   const t = translations[lang].homeLanding.delivery;
-  const areas = chiangMaiAreaLabels(lang);
   const cutoff = formatMinutesAsClockTime(SAME_DAY_ORDER_CUTOFF_MIN);
   const window = `${formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN)}–${formatMinutesAsClockTime(DELIVERY_WINDOW_END_MIN)}`;
 
@@ -40,7 +31,8 @@ export function DeliverySection({ lang }: { lang: Locale }) {
           >
             {t.title}
           </h2>
-          <p className="text-stone-500 leading-relaxed">{t.intro}</p>
+          <p className="text-stone-500 leading-relaxed mb-3">{t.intro}</p>
+          <p className="text-stone-500 leading-relaxed text-sm sm:text-base">{t.onlineOnlyNote}</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[2fr_3fr] lg:gap-8 home-reveal-stagger">
@@ -85,6 +77,13 @@ export function DeliverySection({ lang }: { lang: Locale }) {
               {t.policyCta}
               <StorefrontIcon name="arrow-forward" size={16} />
             </Link>
+            <Link
+              href={`/${lang}/refund-replacement`}
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-stone-300 hover:text-[#C5A059] transition-colors"
+            >
+              {t.refundCta}
+              <StorefrontIcon name="arrow-forward" size={16} />
+            </Link>
           </div>
 
           <div className="home-reveal-item rounded-3xl border border-stone-200/80 bg-white p-7 sm:p-9 flex flex-col">
@@ -96,23 +95,13 @@ export function DeliverySection({ lang }: { lang: Locale }) {
                 {t.areasTitle}
               </h3>
             </div>
-            <p className="text-stone-500 text-sm leading-relaxed mb-4">{t.areasIntro}</p>
-            <ul className="flex flex-wrap gap-2 mb-4">
-              {areas.map((area) => (
-                <li
-                  key={area}
-                  className="px-3.5 py-1.5 rounded-full border border-stone-200 bg-[#FDFCF8] text-stone-600 text-xs sm:text-sm"
-                >
-                  {area}
-                </li>
-              ))}
-            </ul>
+            <p className="text-stone-500 text-sm sm:text-base leading-relaxed mb-4">{t.areasIntro}</p>
             <p className="text-stone-400 text-xs sm:text-sm mb-8">{t.areasNote}</p>
             <Link
               href={`/${lang}/flower-delivery-thailand`}
               className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-[#1A3C34] hover:text-[#C5A059] transition-colors"
             >
-              {t.thailandCta}
+              {t.deliveryAreasCta}
               <StorefrontIcon name="arrow-forward" size={16} />
             </Link>
           </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { DeliveryDistrictMap } from '@/components/delivery/DeliveryDistrictMap';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import {
@@ -84,7 +85,7 @@ export default function FlowerDeliveryThailandPage({
             <Link href={`/${lang}/catalog`} className="guide-browse-link">
               {copy.ctaCatalog}
             </Link>
-            <Link href={`/${lang}/info/flowers-chiang-mai`} className="guide-browse-link">
+            <Link href={`/${lang}`} className="guide-browse-link">
               {copy.ctaChiangMaiGuide}
             </Link>
             <Link href={`/${lang}/info/delivery-policy`} className="guide-browse-link">
@@ -133,6 +134,13 @@ export default function FlowerDeliveryThailandPage({
 
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.chiangMaiNote}</p>
           </div>
+
+          <section
+            className="mt-10 max-w-5xl mx-auto"
+            aria-label={isTh ? 'แผนที่พื้นที่จัดส่ง' : 'Delivery area map'}
+          >
+            <DeliveryDistrictMap lang={lang} />
+          </section>
 
           <div className="mt-10 max-w-2xl mx-auto">
             <h3 className="popular-title text-center text-xl sm:text-2xl mb-2">

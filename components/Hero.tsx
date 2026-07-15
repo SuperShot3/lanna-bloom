@@ -93,14 +93,14 @@ function HeroVisualBlock({
 function HeroCtaSection({
   lang,
   primaryCtaHref,
-  onOpenHowTo,
+  onHowItWorks,
   introItemClass,
   ctaExtraClass = '',
   reviewsExtraClass = '',
 }: {
   lang: Locale;
   primaryCtaHref: string;
-  onOpenHowTo: () => void;
+  onHowItWorks: () => void;
   introItemClass: string;
   ctaExtraClass?: string;
   reviewsExtraClass?: string;
@@ -129,7 +129,7 @@ function HeroCtaSection({
         </Link>
         <button
           type="button"
-          onClick={onOpenHowTo}
+          onClick={onHowItWorks}
           className="px-6 py-3 sm:px-8 sm:py-4 bg-white border border-stone-200 font-semibold rounded-full hover:bg-stone-50 transition-all text-sm sm:text-base flex items-center justify-center"
         >
           {t.ctaHowItWorks}
@@ -209,6 +209,14 @@ export function Hero({
   const introClass = isHomeLanding ? 'home-hero-intro' : '';
   const introItemClass = isHomeLanding ? 'home-hero-intro__item' : '';
 
+  const handleHowItWorks = () => {
+    if (isHomeLanding) {
+      document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    setHowToOpen(true);
+  };
+
   useEffect(() => {
     const load = () => {
       const s = readMarketSession();
@@ -252,7 +260,7 @@ export function Hero({
             <HeroCtaSection
               lang={lang}
               primaryCtaHref={primaryCtaHref}
-              onOpenHowTo={() => setHowToOpen(true)}
+              onHowItWorks={handleHowItWorks}
               introItemClass={introItemClass}
             />
           </div>
@@ -268,14 +276,16 @@ export function Hero({
           <HeroCtaSection
             lang={lang}
             primaryCtaHref={primaryCtaHref}
-            onOpenHowTo={() => setHowToOpen(true)}
+            onHowItWorks={handleHowItWorks}
             introItemClass={introItemClass}
             ctaExtraClass="home-hero-intro__delay-5"
             reviewsExtraClass="home-hero-intro__delay-6"
           />
         </div>
       </div>
-      <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
+      {!isHomeLanding ? (
+        <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
+      ) : null}
       {isHomeLanding ? (
         <div
           id="hero-sentinel"

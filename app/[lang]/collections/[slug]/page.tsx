@@ -377,8 +377,8 @@ export default async function CollectionLandingPage({
               <Link href={catalogHref}>{catalogView.collectionTitle}</Link>
               <Link href={allFlowerTypeHref}>{flowerTypeLabels.allInCatalog}</Link>
               {hub.flowerType === 'rose' ? (
-                <Link href={`/${locale}/info/rose-bouquets-chiang-mai`}>
-                  {locale === 'th' ? 'คู่มือช่อกุหลาบ' : 'Rose bouquet guide'}
+                <Link href={`/${locale}/info/51-roses-chiang-mai`}>
+                  {locale === 'th' ? 'ช่อกุหลาบ 51 ดอก' : '51 roses bouquets'}
                 </Link>
               ) : null}
               <Link href={`/${locale}/contact`}>{locale === 'th' ? 'ติดต่อเรา' : 'Contact us'}</Link>

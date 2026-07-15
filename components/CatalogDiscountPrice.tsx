@@ -6,11 +6,14 @@ import {
   hasCatalogDiscount,
 } from '@/lib/catalogDiscount';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import type { Locale } from '@/lib/i18n';
+import { CurrencyAmount } from '@/components/CurrencyDisplay';
 
 export function CatalogDiscountPrice({
   basePriceThb,
   discountPercent,
   destinationId,
+  lang,
   fromLabel,
   className = '',
   amountClassName = '',
@@ -18,6 +21,7 @@ export function CatalogDiscountPrice({
   basePriceThb: number;
   discountPercent?: number;
   destinationId: DeliveryDestinationId;
+  lang: Locale;
   fromLabel?: string;
   className?: string;
   amountClassName?: string;
@@ -34,7 +38,7 @@ export function CatalogDiscountPrice({
     return (
       <span className={className}>
         {fromLabel ? <span className="catalog-price-from">{fromLabel} </span> : null}
-        <span className={amountClassName}>฿{displayCurrent.toLocaleString()}</span>
+        <CurrencyAmount thb={displayCurrent} lang={lang} className={amountClassName} />
       </span>
     );
   }
@@ -45,9 +49,13 @@ export function CatalogDiscountPrice({
     <span className={`catalog-price-sale ${className}`.trim()}>
       {fromLabel ? <span className="catalog-price-from">{fromLabel} </span> : null}
       <span className="catalog-price-was" aria-hidden>
-        ฿{displayWas.toLocaleString()}
+        <CurrencyAmount thb={displayWas} lang={lang} showEstimateLabel={false} />
       </span>{' '}
-      <span className={`catalog-price-now ${amountClassName}`.trim()}>฿{displayCurrent.toLocaleString()}</span>
+      <CurrencyAmount
+        thb={displayCurrent}
+        lang={lang}
+        className={`catalog-price-now ${amountClassName}`.trim()}
+      />
       <style jsx>{`
         .catalog-price-sale {
           display: inline-flex;

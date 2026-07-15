@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import {
-  getBalloonsFilteredFromSanity,
   getBouquetsCatalogData,
-  getPlushyToysFilteredFromSanity,
   getProductsFilteredFromSanity,
   type CatalogProduct,
 } from '@/lib/sanity';
@@ -117,28 +115,6 @@ export default async function CatalogPage({
     });
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
-  } else if (topCategory === 'plushy_toys') {
-    const sort = filterParams.sort || 'newest';
-    const [standaloneToys, productToys] = await Promise.all([
-      getPlushyToysFilteredFromSanity({ sort }),
-      getProductsFilteredFromSanity({
-        categoryKey: 'plushy_toys',
-        sort,
-        catalogDeliveryDestination: 'CHIANG_MAI',
-      }),
-    ]);
-    products = [...standaloneToys, ...productToys];
-  } else if (topCategory === 'balloons') {
-    const sort = filterParams.sort || 'newest';
-    const [standaloneBalloons, productBalloons] = await Promise.all([
-      getBalloonsFilteredFromSanity({ sort }),
-      getProductsFilteredFromSanity({
-        categoryKey: 'balloons',
-        sort,
-        catalogDeliveryDestination: 'CHIANG_MAI',
-      }),
-    ]);
-    products = [...standaloneBalloons, ...productBalloons];
   } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {
     products = await getProductsFilteredFromSanity({
       categoryKey: topCategory,

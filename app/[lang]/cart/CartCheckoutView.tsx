@@ -13,6 +13,7 @@ import {
 } from '@/components/DeliveryForm';
 import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumCheckoutFlow';
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
+import { ThbChargeNotice } from '@/components/CurrencyDisplay';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
@@ -342,6 +343,7 @@ export function CartCheckoutView({
         customerEmail={customerEmail}
         paymentSection={
           <div className="co-payment-block">
+            <ThbChargeNotice lang={lang} className="mb-3" />
             <div className="co-payment-row">
               <button
                 type="button"

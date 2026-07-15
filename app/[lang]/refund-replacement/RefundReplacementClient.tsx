@@ -145,6 +145,14 @@ export function RefundReplacementClient({ lang }: { lang: Locale }) {
             <li>{t.refundMethod4}</li>
           </ul>
         </section>
+        <section className="policy-section">
+          <h2 className="policy-heading">{lang === 'th' ? 'สกุลเงินสำหรับการคืนเงิน' : 'Refund currency'}</h2>
+          <p className="policy-text">
+            {lang === 'th'
+              ? 'การคืนเงินจะดำเนินการเป็นเงินบาท (THB) หากบัตรหรือบัญชีของคุณใช้สกุลเงินอื่น จำนวนเงินที่ได้รับอาจแตกต่างจากยอดเดิมเนื่องจากอัตราแลกเปลี่ยนหรือค่าธรรมเนียมของธนาคารหรือผู้ออกบัตร'
+              : 'Refunds are issued in Thai baht (THB). If your card or account uses another currency, the amount you receive may differ from the original estimate because of exchange rates or fees set by your bank or card issuer.'}
+          </p>
+        </section>
 
         <section className="policy-section">
           <h2 className="policy-heading">{t.howToContactTitle}</h2>

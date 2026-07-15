@@ -57,13 +57,23 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/:lang(en|th|ru)/guides/flowers-chiang-mai',
-        destination: '/:lang/info/flowers-chiang-mai',
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/guides/flowers-chiang-mai',
+        destination: '/:lang',
         permanent: true,
       },
       {
-        source: '/:lang(en|th|ru)/guides/rose-bouquets-chiang-mai',
-        destination: '/:lang/info/rose-bouquets-chiang-mai',
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/info/flowers-chiang-mai',
+        destination: '/:lang',
+        permanent: true,
+      },
+      {
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/guides/rose-bouquets-chiang-mai',
+        destination: '/:lang/collections/roses-chiang-mai',
+        permanent: true,
+      },
+      {
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/info/rose-bouquets-chiang-mai',
+        destination: '/:lang/collections/roses-chiang-mai',
         permanent: true,
       },
       {

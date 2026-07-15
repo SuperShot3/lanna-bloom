@@ -708,13 +708,18 @@ export type HomeFlowerTypeSection = {
 
 const HOME_FLOWER_TYPE_SECTION_LIMIT = 6;
 
-
+/** Curated homepage flower-type order — not the full storefront facet list. */
+const HOME_FLOWER_TYPE_SECTION_ORDER = ['lily', 'rose', 'sunflower'] as const;
 
 export async function getHomeFlowerTypeSectionsFromCatalog(): Promise<HomeFlowerTypeSection[]> {
 
   const ordered = await getOrderedPopularBouquetsFromCatalog();
 
-  return STOREFRONT_FLOWER_TYPES.map((type) => {
+  const allowedTypes = HOME_FLOWER_TYPE_SECTION_ORDER.filter((type) =>
+    (STOREFRONT_FLOWER_TYPES as readonly string[]).includes(type)
+  );
+
+  return allowedTypes.map((type) => {
 
     const all = ordered.filter((b) => b.flowerTypes?.includes(type));
 

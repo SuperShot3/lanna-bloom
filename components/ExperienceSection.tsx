@@ -12,10 +12,18 @@ export function ExperienceSection({ lang }: { lang: Locale }) {
   ];
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24" data-home-reveal>
+    <section
+      id="how-it-works"
+      className="py-16 sm:py-20 lg:py-24 scroll-mt-24"
+      data-home-reveal
+      aria-labelledby="how-it-works-title"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="home-reveal-item mb-12 md:mb-16 text-center">
-          <h2 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-4">
+          <h2
+            id="how-it-works-title"
+            className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-4"
+          >
             {t.title}
           </h2>
           <p className="text-stone-500 max-w-2xl mx-auto text-center">

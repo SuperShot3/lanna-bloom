@@ -95,14 +95,14 @@ export function InformationModal({ lang, isOpen, onClose, triggerRef }: Informat
             {t.birthdayFlowerGiftGuide}
           </Link>
           <Link
-            href={`/${lang}/info/flowers-chiang-mai`}
+            href={`/${lang}`}
             className="information-modal-link"
             onClick={onClose}
           >
             {t.flowerDeliveryChiangMai}
           </Link>
           <Link
-            href={`/${lang}/info/rose-bouquets-chiang-mai`}
+            href={`/${lang}/collections/roses-chiang-mai`}
             className="information-modal-link"
             onClick={onClose}
           >

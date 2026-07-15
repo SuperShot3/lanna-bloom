@@ -15,6 +15,7 @@ import { OrderPageClient } from '@/components/order/OrderPageClient';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 import { OrderDeliveredBlock } from './OrderDeliveredBlock';
+import { CurrencyDisplayProvider } from '@/contexts/CurrencyDisplayContext';
 
 /** Always fetch fresh data; never cache. Status comes from Supabase (admin updates). */
 export const dynamic = 'force-dynamic';
@@ -139,22 +140,24 @@ export default async function OrderDetailsPage({
   return (
     <div className="order-page">
       <div className="container">
-        <OrderPageClient
-          order={order}
-          orderId={order.orderId}
-          detailsUrl={detailsUrl}
-          baseUrl={baseUrl}
-          paid={paid}
-          canPay={canPay}
-          fulfillmentStatus={fulfillmentStatus}
-          fulfillmentStatusUpdatedAt={fulfillmentStatusUpdatedAt ?? undefined}
-          statusTimestamps={lifecycleStatusTimestamps}
-          supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
-          supabasePaidAt={supabasePayment?.paid_at ?? order.paidAt ?? undefined}
-          driverAssignmentStatus={driverAssignmentStatus}
-          driverName={driverName}
-          locale={defaultLocale}
-        />
+        <CurrencyDisplayProvider>
+          <OrderPageClient
+            order={order}
+            orderId={order.orderId}
+            detailsUrl={detailsUrl}
+            baseUrl={baseUrl}
+            paid={paid}
+            canPay={canPay}
+            fulfillmentStatus={fulfillmentStatus}
+            fulfillmentStatusUpdatedAt={fulfillmentStatusUpdatedAt ?? undefined}
+            statusTimestamps={lifecycleStatusTimestamps}
+            supabasePaymentMethod={supabasePayment?.payment_method ?? undefined}
+            supabasePaidAt={supabasePayment?.paid_at ?? order.paidAt ?? undefined}
+            driverAssignmentStatus={driverAssignmentStatus}
+            driverName={driverName}
+            locale={defaultLocale}
+          />
+        </CurrencyDisplayProvider>
       </div>
     </div>
   );

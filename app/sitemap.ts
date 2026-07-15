@@ -25,7 +25,6 @@ const LOCALE_PAGES: LocalePage[] = [
   { path: '/refund-replacement', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/cookies', changeFrequency: 'yearly', priority: 0.3 },
-  { path: '/partner/how-it-works', changeFrequency: 'monthly', priority: 0.55 },
   { path: '/partner/apply', changeFrequency: 'monthly', priority: 0.55 },
   { path: '/custom-order', changeFrequency: 'monthly', priority: 0.65 },
   { path: '/info', changeFrequency: 'weekly', priority: 0.7 },
@@ -33,7 +32,11 @@ const LOCALE_PAGES: LocalePage[] = [
 ];
 
 function articleSitemapPath(article: ArticleMeta): string {
-  return article.externalPath ?? `/info/${article.slug}`;
+  if (article.externalPath !== undefined) {
+    const suffix = article.externalPath.replace(/\/$/, '');
+    return suffix || '';
+  }
+  return `/info/${article.slug}`;
 }
 
 function pushEntry(
@@ -73,6 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     for (const article of articles) {
+      if (article.excludeFromSitemap) continue;
       pushEntry(entries, `${base}/${lang}${articleSitemapPath(article)}`, {
         changeFrequency: 'monthly',
         priority: article.externalPath ? 0.62 : 0.6,

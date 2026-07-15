@@ -30,6 +30,12 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
             ? 'คำสั่งซื้ออาจต้องมีการยืนยันผ่านช่องทางแชท (LINE/WhatsApp) ก่อนการชำระเงินหรือการจัดส่ง'
             : 'Orders may require confirmation via chat (LINE/WhatsApp) before payment or delivery.'}
         </p>
+        <h2>{isTh ? 'สกุลเงินและการชำระเงิน' : 'Currency and payment'}</h2>
+        <p>
+          {isTh
+            ? 'ราคาสินค้า การจัดส่ง และการชำระเงินทั้งหมดกำหนดและเรียกเก็บเป็นเงินบาท (THB) หากเว็บไซต์แสดงสกุลเงินอื่น ยอดดังกล่าวเป็นเพียงประมาณการเพื่อความสะดวกเท่านั้น ธนาคารหรือผู้ออกบัตรเป็นผู้กำหนดอัตราแลกเปลี่ยนสุดท้ายและอาจเรียกเก็บค่าธรรมเนียมการทำรายการต่างประเทศ'
+            : 'All product, delivery, and payment prices are set and charged in Thai baht (THB). Any other currency shown on the website is an estimate for convenience only. Your bank or card issuer determines the final exchange rate and may charge a foreign-transaction fee.'}
+        </p>
         <h2>{isTh ? 'การคืนเงิน/เปลี่ยนสินค้า' : 'Refunds / replacements'}</h2>
         <p>
           {isTh ? (

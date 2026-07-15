@@ -33,6 +33,12 @@ export type ArticleMeta = {
   publishedAt: string; // ISO date
   /** When true, shows a "Featured" badge on the info hub card and sorts first in the grid. */
   featured?: boolean;
+  /** Hide from /info hub and related-guide lists (redirected or off-topic pages). */
+  excludeFromHub?: boolean;
+  /** Omit from sitemap.xml. */
+  excludeFromSitemap?: boolean;
+  /** Emit robots noindex when the MDX/dedicated page still exists. */
+  noindex?: boolean;
   /** CTA links at bottom of article. If empty, default "Browse bouquets" link is shown. */
   ctaLinks?: ArticleCtaLink[];
   /** Optional CTA heading override for non-commercial articles. */
@@ -58,6 +64,9 @@ export const articles: ArticleMeta[] = [
       'คู่มืออาหารเช้าแบบไทยในเชียงใหม่จากประสบการณ์ส่วนตัว ทั้งโจ๊ก ปาท่องโก๋ร้อน ๆ กาแฟโบราณ และร้านยามเช้าที่น่าแวะลอง',
     publishedAt: '2026-07-05T00:00:00.000Z',
     featured: false,
+    excludeFromHub: true,
+    excludeFromSitemap: true,
+    noindex: true,
     cover: {
       type: 'gradient',
       gradientCss: 'linear-gradient(135deg, #fff7ed 0%, #fde68a 45%, #bbf7d0 100%)',
@@ -183,8 +192,12 @@ export const articles: ArticleMeta[] = [
     excerpt: 'Order beautiful rose bouquets and have them delivered across Chiang Mai. Same-day delivery during working hours. Message us via LINE or WhatsApp with your choice and delivery details.', // English excerpt (1–2 sentences)
     titleTh: 'บริการส่งช่อกุหลาบในเชียงใหม่', // Thai title
     excerptTh: 'สั่งช่อกุหลาบสวย ๆ พร้อมบริการจัดส่งทั่วเชียงใหม่ จัดส่งภายในวันเดียวได้ในช่วงเวลาทำการ ทักหาเราผ่าน LINE หรือ WhatsApp พร้อมแจ้งแบบช่อและรายละเอียดการจัดส่งได้เลย', // Thai excerpt (1–2 sentences)
+    /** Canonical commercial hub — /info/rose-bouquets-chiang-mai 301s here. */
+    externalPath: '/collections/roses-chiang-mai',
     publishedAt: '2026-02-19T00:00:00.000Z', // ISO date
     featured: false,
+    excludeFromHub: true,
+    excludeFromSitemap: true,
     cover: {
       type: 'gradient',
       gradientCss: 'linear-gradient(135deg, #fde2e4 0%, #f8edeb 50%, #e8dfd0 100%)',
@@ -215,7 +228,7 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: '51 red roses', labelTh: 'กุหลาบแดง 51 ดอก', href: '/catalog/51-red-roses' },
-      { label: 'All rose bouquets', labelTh: 'ช่อกุหลาบทั้งหมด', href: '/info/rose-bouquets-chiang-mai' },
+      { label: 'All rose bouquets', labelTh: 'ช่อกุหลาบทั้งหมด', href: '/collections/roses-chiang-mai' },
       { label: 'Browse the catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog?types=rose' },
     ],
   },
@@ -235,7 +248,8 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Order same-day delivery', labelTh: 'สั่งจัดส่งวันเดียว', href: '/catalog' },
-      { label: 'Message us to order', labelTh: 'ทักสั่งซื้อ', href: '/contact' },
+      { label: 'Refund & replacement', labelTh: 'คืนเงินและเปลี่ยนสินค้า', href: '/refund-replacement' },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },
   {
@@ -272,7 +286,7 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-      { label: 'Rose bouquets', labelTh: 'ช่อกุหลาบ', href: '/info/rose-bouquets-chiang-mai' },
+      { label: 'Rose bouquets', labelTh: 'ช่อกุหลาบ', href: '/collections/roses-chiang-mai' },
       { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
@@ -437,7 +451,7 @@ export const articles: ArticleMeta[] = [
     ctaLinks: [
       { label: 'Red flower bouquets', labelTh: 'ช่อดอกไม้สีแดง', href: '/catalog?colors=red' },
       { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
-      { label: 'Rose bouquets guide', labelTh: 'คู่มือช่อกุหลาบ', href: '/info/rose-bouquets-chiang-mai' },
+      { label: 'Rose bouquets', labelTh: 'ช่อกุหลาบ', href: '/collections/roses-chiang-mai' },
     ],
   },
   {
@@ -470,9 +484,12 @@ export const articles: ArticleMeta[] = [
     titleTh: 'ส่งดอกไม้ในเชียงใหม่',
     excerptTh:
       'สั่งช่อดอกไม้และของขวัญออนไลน์ พร้อมจัดส่งในเชียงใหม่ ชำระเงินปลอดภัยผ่าน Stripe จัดส่งวันเดียวได้ในช่วงเวลาทำการ',
-    externalPath: '/info/flowers-chiang-mai',
+    /** Canonical head-term page — /info/flowers-chiang-mai 301s to homepage. */
+    externalPath: '',
     publishedAt: '2026-03-01T00:00:00.000Z',
     featured: false,
+    excludeFromHub: true,
+    excludeFromSitemap: true,
     cover: {
       type: 'gradient',
       gradientCss: 'linear-gradient(135deg, #fff7ed 0%, #fde68a 45%, #bbf7d0 100%)',
@@ -502,7 +519,7 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-      { label: 'Rose bouquets guide', labelTh: 'คู่มือช่อกุหลาบ', href: '/info/rose-bouquets-chiang-mai' },
+      { label: 'Rose bouquets', labelTh: 'ช่อกุหลาบ', href: '/collections/roses-chiang-mai' },
       { label: 'Birthday flower gifts', labelTh: 'ของขวัญวันเกิด', href: '/info/birthday-flower-gift' },
     ],
   },
@@ -544,7 +561,7 @@ export function getArticleExcerpt(article: ArticleMeta, lang: string): string {
 
 const DEFAULT_CTA: ArticleCtaLink[] = [
   { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
-  { label: 'Order via LINE / WhatsApp', labelTh: 'สั่งผ่าน LINE / WhatsApp', href: '/contact' },
+  { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
 ];
 
 /** Get CTA links for article. Uses article's ctaLinks or default. */
@@ -554,7 +571,9 @@ export function getArticleCtaLinks(article: ArticleMeta, lang: string): ArticleC
 }
 
 export function getMoreGuides(excludeSlug?: string): ArticleMeta[] {
-  const filtered = articles.filter((a) => a.slug !== excludeSlug);
+  const filtered = articles.filter(
+    (a) => a.slug !== excludeSlug && !a.excludeFromHub
+  );
   return [...filtered].sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
@@ -564,7 +583,7 @@ export function getMoreGuides(excludeSlug?: string): ArticleMeta[] {
 export function getInfoHubGuides(): ArticleMeta[] {
   const clusterSet = new Set(THAI_WEEKDAY_CLUSTER_SLUGS);
   return [...articles]
-    .filter((a) => !clusterSet.has(a.slug))
+    .filter((a) => !clusterSet.has(a.slug) && !a.excludeFromHub)
     .sort((a, b) => {
       if (a.featured && !b.featured) return -1;
       if (!a.featured && b.featured) return 1;
@@ -573,7 +592,10 @@ export function getInfoHubGuides(): ArticleMeta[] {
 }
 
 export function getArticlePath(article: ArticleMeta, lang: string): string {
-  if (article.externalPath) return `/${lang}${article.externalPath}`;
+  if (article.externalPath !== undefined) {
+    const suffix = article.externalPath.replace(/\/$/, '');
+    return suffix ? `/${lang}${suffix}` : `/${lang}`;
+  }
   return `/${lang}/info/${article.slug}`;
 }
 

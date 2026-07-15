@@ -11,6 +11,7 @@ import { trackViewItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { applyCatalogDiscountThb, hasCatalogDiscount } from '@/lib/catalogDiscount';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
+import { CurrencyAmount } from '@/components/CurrencyDisplay';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
@@ -107,11 +108,12 @@ export function ProductDetailClient({
               basePriceThb={finalPrice}
               discountPercent={product.discountPercent}
               destinationId={checkoutProfile.destinationId}
+              lang={lang}
               className="product-price"
               amountClassName="product-price"
             />
           ) : (
-            <span className="product-price">฿{finalPrice.toLocaleString()}</span>
+            <CurrencyAmount thb={finalPrice} lang={lang} className="product-price" />
           )}
         </div>
         <ProductOrderBlockForProduct

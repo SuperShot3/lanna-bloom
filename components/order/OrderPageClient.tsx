@@ -29,6 +29,7 @@ import {
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
 import { phoneInternational } from '@/lib/admin/deliveryContactLinks';
+import { CurrencyAmount, ThbChargeNotice } from '@/components/CurrencyDisplay';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -495,7 +496,7 @@ export function OrderPageClient({
               <div className="order-redesign-paid-details">
                 <div className="order-redesign-totals-row">
                   <span>{t.amountPaid}</span>
-                  <span>฿{grandTotal.toLocaleString()}</span>
+                  <CurrencyAmount thb={grandTotal} lang={locale} />
                 </div>
                 <div className="order-redesign-totals-row">
                   <span>{t.method}</span>
@@ -594,30 +595,31 @@ export function OrderPageClient({
                 <div className="order-redesign-item-name">{item.bouquetTitle}</div>
                 <div className="order-redesign-item-sub">{item.size}</div>
               </div>
-              <div className="order-redesign-item-price">฿{item.price.toLocaleString()}</div>
+              <div className="order-redesign-item-price"><CurrencyAmount thb={item.price} lang={locale} /></div>
             </div>
           ))}
 
           <div className="order-redesign-totals">
             <div className="order-redesign-totals-row">
               <span>{t.bouquetPrice}</span>
-              <span>฿{(order.pricing?.itemsTotal ?? 0).toLocaleString()}</span>
+              <CurrencyAmount thb={order.pricing?.itemsTotal ?? 0} lang={locale} />
             </div>
             <div className="order-redesign-totals-row">
               <span>{t.deliveryFee}</span>
-              <span>฿{(order.pricing?.deliveryFee ?? 0).toLocaleString()}</span>
+              <CurrencyAmount thb={order.pricing?.deliveryFee ?? 0} lang={locale} />
             </div>
             {order.referralDiscount != null && order.referralDiscount > 0 && (
               <div className="order-redesign-totals-row">
                 <span>{t.discount}</span>
-                <span>-฿{order.referralDiscount.toLocaleString()}</span>
+                <span>-<CurrencyAmount thb={order.referralDiscount} lang={locale} /></span>
               </div>
             )}
             <div className="order-redesign-totals-row total">
               <span>{t.total}</span>
-              <span>฿{grandTotal.toLocaleString()}</span>
+              <CurrencyAmount thb={grandTotal} lang={locale} />
             </div>
           </div>
+          <ThbChargeNotice lang={locale} className="mt-4" />
 
           {(order.customerName || order.phone) && (
             <>

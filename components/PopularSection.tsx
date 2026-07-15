@@ -30,13 +30,12 @@ const HOME_POPULAR_ROW_LIMIT = 8;
 
 type ProductSectionConfig = {
   categoryKey: string;
-  titleKey: 'productSectionPlushyToys' | 'productSectionBalloons' | 'productSectionSweets';
+  titleKey: 'productSectionPlushyToys' | 'productSectionBalloons';
 };
 
 const HOME_PRODUCT_SECTIONS: ProductSectionConfig[] = [
   { categoryKey: 'plushy_toys', titleKey: 'productSectionPlushyToys' },
   { categoryKey: 'balloons', titleKey: 'productSectionBalloons' },
-  { categoryKey: 'food_sweets', titleKey: 'productSectionSweets' },
 ];
 
 function ShowMoreLink({ href, label }: { href: string; label: string }) {
@@ -135,7 +134,7 @@ export async function PopularSection({ lang }: { lang: Locale }) {
                 ))}
               </div>
             </div>
-            <ShowMoreLink href={`/${lang}/catalog`} label={tHome.viewAllBouquets} />
+            <ShowMoreLink href={`/${lang}/catalog`} label={tHome.showMore} />
           </div>
         )}
         {sections.map((section) => {
