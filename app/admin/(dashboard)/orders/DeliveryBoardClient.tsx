@@ -43,10 +43,18 @@ import {
   sortOrdersForBoard,
 } from '@/lib/admin/deliveryBoardPreview';
 import {
+  buildCustomerDetailsClipboardText,
+  buildDriverMessengerPlainText,
+  buildDriverNotesClipboardText,
+  buildOrderSummaryPlainTextFromBoardOrder,
+  cardTextDisplayOrNone,
   checkoutMapsUrl,
   customerDeliveryAddressRaw,
   customerLineIdDisplay,
+  customerPhoneDisplay,
   deliveryNotesDisplay,
+  driverNotesDisplayOrNone,
+  MISSING_EN,
 } from '@/lib/admin/orderSummaryPlainText';
 import { getLineUserContactUrl } from '@/lib/messenger';
 import { LineIcon } from '@/components/icons';
@@ -144,24 +152,33 @@ function DeliveryCardPartyNames({ order }: { order: SupabaseOrderRow }) {
   const rec = order.recipient_name?.trim() ?? '';
   const samePerson =
     Boolean(cust && rec && cust.localeCompare(rec, undefined, { sensitivity: 'base' }) === 0);
+  const customerDetailsForCopy = buildCustomerDetailsClipboardText(order);
+  const customerPhone = customerPhoneDisplay(order).trim();
 
   if (!cust && !rec) {
-    return <p className="admin-delivery-card-name admin-delivery-card-name--empty">—</p>;
-  }
-
-  if (samePerson) {
     return (
       <div className="admin-delivery-card-names">
-        <p className="admin-delivery-card-name-line">
-          <span className="admin-delivery-card-name-role">Customer & recipient</span>
-          <span className="admin-delivery-card-name-value">{cust}</span>
-        </p>
+        <div className="admin-delivery-card-copy-row">
+          <p className="admin-delivery-card-name admin-delivery-card-name--empty">—</p>
+          <AdminCopyTextButton
+            text={customerDetailsForCopy}
+            ariaLabel="Copy customer name and phone"
+            className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
+          >
+            Copy customer details
+          </AdminCopyTextButton>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="admin-delivery-card-names">
+  const namesBlock = samePerson ? (
+    <p className="admin-delivery-card-name-line">
+      <span className="admin-delivery-card-name-role">Customer & recipient</span>
+      <span className="admin-delivery-card-name-value">{cust}</span>
+    </p>
+  ) : (
+    <>
       <p className="admin-delivery-card-name-line">
         <span className="admin-delivery-card-name-role">Customer</span>
         <span className={`admin-delivery-card-name-value${cust ? '' : ' admin-hint'}`}>
@@ -174,6 +191,24 @@ function DeliveryCardPartyNames({ order }: { order: SupabaseOrderRow }) {
           {rec || 'N/A'}
         </span>
       </p>
+    </>
+  );
+
+  return (
+    <div className="admin-delivery-card-names">
+      {namesBlock}
+      <div className="admin-delivery-card-copy-row">
+        <p className="admin-delivery-card-meta admin-delivery-card-copy-row-text admin-hint">
+          Customer phone: {customerPhone || MISSING_EN}
+        </p>
+        <AdminCopyTextButton
+          text={customerDetailsForCopy}
+          ariaLabel="Copy customer name and phone"
+          className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
+        >
+          Copy customer details
+        </AdminCopyTextButton>
+      </div>
     </div>
   );
 }
@@ -183,20 +218,12 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
   const mapsHref = checkoutMapsUrl(order);
   const deliveryNotes = deliveryNotesDisplay(order);
   const cardMessage = customerCardMessagePreview(order);
+  const driverNotesForCopy = buildDriverNotesClipboardText(order);
   const area = deliveryAreaSubtitle(order);
   const addressFieldIsMapsLink = Boolean(raw && mapsHref && raw.trim() === mapsHref);
   const fallbackAreaOnly = !raw && !mapsHref && Boolean(area);
-
-  const copyText =
-    raw && mapsHref && raw.trim() !== mapsHref
-      ? `${raw}\n${deliveryNotes ? `Driver notes: ${deliveryNotes}\n` : ''}${cardMessage ? `Card message: ${cardMessage}\n` : ''}${mapsHref}`
-      : [
-          raw || mapsHref || '',
-          deliveryNotes ? `Driver notes: ${deliveryNotes}` : '',
-          cardMessage ? `Card message: ${cardMessage}` : '',
-        ]
-          .filter(Boolean)
-          .join('\n');
+  const addressForCopy = addressFieldIsMapsLink ? '' : raw.trim();
+  const mapsForCopy = mapsHref?.trim() ?? '';
 
   let main: ReactNode;
   if (fallbackAreaOnly) {
@@ -214,74 +241,121 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
         Open in Google Maps
       </a>
     );
-  } else if (raw && mapsHref) {
-    main = (
-      <>
-        <span className="admin-delivery-address-text" title={raw}>
-          {truncateAddressLine(raw)}
-        </span>
-        <a
-          href={mapsHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="admin-delivery-address-maps-link"
-        >
-          Maps
-        </a>
-      </>
-    );
-  } else {
+  } else if (raw) {
     main = (
       <span className="admin-delivery-address-text" title={raw}>
         {truncateAddressLine(raw)}
       </span>
     );
+  } else {
+    main = <span className="admin-hint">—</span>;
   }
 
   const showAreaBelow = Boolean(area && !fallbackAreaOnly);
+  const addressIsMapsOnly = addressFieldIsMapsLink || (!raw && Boolean(mapsForCopy));
+  const showSeparateMapRow = Boolean(mapsForCopy) && !addressIsMapsOnly && Boolean(raw);
+  const primaryCopyText = addressIsMapsOnly ? mapsForCopy : addressForCopy;
+  const primaryCopyLabel = addressIsMapsOnly ? 'Copy map pin' : 'Copy address';
+  const primaryCopyAria = addressIsMapsOnly
+    ? 'Copy Google Maps pin link'
+    : 'Copy delivery address text';
 
   return (
     <div className="admin-delivery-address-block">
-      <div className="admin-delivery-card-meta admin-delivery-card-meta--location">
-        <span className="material-symbols-outlined admin-delivery-meta-icon">location_on</span>
-        <div className="admin-delivery-address-main">{main}</div>
-        {copyText ? (
-          <AdminCopyTextButton
-            text={copyText}
-            ariaLabel="Copy delivery address"
-            className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-address-copy"
-          >
-            <span className="material-symbols-outlined admin-delivery-contact-chip-copy-ico">content_copy</span>
-          </AdminCopyTextButton>
-        ) : null}
+      <div className="admin-delivery-card-copy-row">
+        <div className="admin-delivery-card-meta admin-delivery-card-meta--location">
+          <span className="material-symbols-outlined admin-delivery-meta-icon">location_on</span>
+          <div className="admin-delivery-address-main">{main}</div>
+        </div>
+        <AdminCopyTextButton
+          text={primaryCopyText}
+          ariaLabel={primaryCopyAria}
+          className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
+        >
+          {primaryCopyLabel}
+        </AdminCopyTextButton>
       </div>
       {showAreaBelow ? (
         <p className="admin-delivery-card-meta admin-delivery-card-meta--area">{area}</p>
       ) : null}
-      {deliveryNotes ? (
-        <p
-          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-meta--driver-notes"
-          title={deliveryNotes}
-        >
-          Driver notes: {deliveryNotes}
-        </p>
-      ) : null}
-      {cardMessage ? (
-        <div className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-meta--copy-row admin-delivery-card-meta--card-message">
-          <p className="admin-delivery-card-meta-text" title={cardMessage}>
-            Card message: {cardMessage}
+      {showSeparateMapRow ? (
+        <div className="admin-delivery-card-copy-row">
+          <p className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text">
+            <a
+              href={mapsHref!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="admin-delivery-address-maps-link"
+            >
+              Open in Google Maps
+            </a>
           </p>
           <AdminCopyTextButton
-            text={cardMessage}
-            ariaLabel="Copy card message"
-            className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-address-copy"
+            text={mapsForCopy}
+            ariaLabel="Copy Google Maps pin link"
+            className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
           >
-            <span className="material-symbols-outlined admin-delivery-contact-chip-copy-ico">
-              content_copy
-            </span>
+            Copy map pin
           </AdminCopyTextButton>
         </div>
       ) : null}
+      <div className="admin-delivery-card-copy-row">
+        <p
+          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--driver-notes"
+          title={deliveryNotes || MISSING_EN}
+        >
+          Driver notes: {driverNotesDisplayOrNone(deliveryNotes)}
+        </p>
+        <AdminCopyTextButton
+          text={driverNotesForCopy}
+          ariaLabel="Copy driver notes with recipient name and phone"
+          className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
+        >
+          Copy driver notes
+        </AdminCopyTextButton>
+      </div>
+      <div className="admin-delivery-card-copy-row">
+        <p
+          className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--card-message"
+          title={cardMessage || MISSING_EN}
+        >
+          Card text: {cardTextDisplayOrNone(cardMessage)}
+        </p>
+        <AdminCopyTextButton
+          text={
+            cardMessage.trim()
+              ? `Card text: ${cardMessage.trim()}`
+              : `Card text: ${MISSING_EN}`
+          }
+          ariaLabel="Copy card text"
+          className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
+        >
+          Copy card text
+        </AdminCopyTextButton>
+      </div>
+    </div>
+  );
+}
+
+function DeliveryCardPrimaryCopyActions({ order }: { order: SupabaseOrderRow }) {
+  const driverMessengerText = buildDriverMessengerPlainText(order);
+  const copyAllText = buildOrderSummaryPlainTextFromBoardOrder(order);
+  return (
+    <div className="admin-delivery-card-top-copy">
+      <AdminCopyTextButton
+        text={driverMessengerText}
+        ariaLabel="Copy Thai message for driver"
+        className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action admin-delivery-copy-action--driver"
+      >
+        Copy for driver
+      </AdminCopyTextButton>
+      <AdminCopyTextButton
+        text={copyAllText}
+        ariaLabel="Copy full order summary to clipboard"
+        className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action admin-delivery-copy-action--all"
+      >
+        Copy all
+      </AdminCopyTextButton>
     </div>
   );
 }
@@ -1314,6 +1388,7 @@ export function DeliveryBoardClient({
                                       <DeliveryCardAddress order={o} />
                                     </div>
                                     <div className="admin-delivery-card-badges">
+                                      <DeliveryCardPrimaryCopyActions order={o} />
                                       <span
                                         className={`admin-delivery-badge-pay ${paid ? 'paid' : 'unpaid'}`}
                                       >

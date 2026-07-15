@@ -54,37 +54,6 @@ export function customerDeliveryAddressRaw(order: SupabaseOrderRow): string {
   return orderJsonDelivery(order)?.address?.trim() ?? '';
 }
 
-function adminDeliveryGeographyLines(order: SupabaseOrderRow, lang: 'en' | 'th' = 'en'): string[] {
-  const dest =
-    order.delivery_destination?.trim() ||
-    orderJsonDelivery(order)?.deliveryDestination?.trim();
-  const zoneId =
-    order.delivery_zone?.trim() || orderJsonDelivery(order)?.deliveryZoneId?.trim();
-  const postal =
-    order.postal_code?.trim() || orderJsonDelivery(order)?.postalCode?.trim();
-  const isThai = lang === 'th';
-  const lines: string[] = [];
-  if (dest) {
-    const id = dest as DeliveryDestinationId;
-    lines.push(
-      isThai
-        ? `พื้นที่จัดส่ง: ${destinationDisplayName(id, 'th')} (${dest})`
-        : `Destination: ${destinationDisplayName(id, 'en')} (${dest})`
-    );
-  }
-  if (dest && zoneId) {
-    const id = dest as DeliveryDestinationId;
-    const lbl = zoneLabel(id, zoneId, lang);
-    lines.push(isThai ? `โซน: ${lbl ?? zoneId} (${zoneId})` : `Zone: ${lbl ?? zoneId} (${zoneId})`);
-  }
-  if (postal) lines.push(isThai ? `รหัสไปรษณีย์: ${postal}` : `Postcode: ${postal}`);
-  const leg = order.district?.trim();
-  if (leg && (!dest || !zoneId)) {
-    lines.push(isThai ? `เขต/อำเภอเดิม: ${leg}` : `Legacy district: ${leg}`);
-  }
-  return lines;
-}
-
 /** Admin / driver copy: show +calling national when we stored the checkout calling code. */
 export function formatInternationalPhoneAdmin(
   fullDigits: string | null | undefined,
@@ -227,118 +196,175 @@ export function buildClipboardCardText(
   return blocks.join('\n\n---\n\n');
 }
 
-function buildDriverClipboardCardTextThai(
-  items: OrderSummaryItemRow[],
-  customGreetingCard?: string | null
-): string {
-  const withMsg = items.filter((i) => i.addOns?.cardMessage?.trim());
-  const fromItems: string[] = [];
-  items.forEach((item, i) => {
-    const msg = item.addOns?.cardMessage?.trim();
-    if (!msg) return;
-    if (withMsg.length > 1) {
-      const title = item.bouquet_title?.trim() || `รายการที่ ${i + 1}`;
-      fromItems.push(`${title}: ${msg}`);
-    } else {
-      fromItems.push(msg);
-    }
-  });
-  const g = customGreetingCard?.trim();
-  const blocks: string[] = [];
-  if (fromItems.length) {
-    blocks.push(fromItems.join('\n\n'));
-  }
-  if (g) {
-    blocks.push(fromItems.length > 0 ? `ออเดอร์พิเศษ (ข้อความในการ์ด):\n${g}` : g);
-  }
-  return blocks.join('\n\n---\n\n');
+const DRIVER_FALLBACK_IF_NO_RECIPIENT_TH =
+  'ถ้าไม่เจอใคร วรรณโทรให้รบกวนบอกวรร';
+
+/** English empty-field label for admin copy / UI. */
+export const MISSING_EN = 'Missing';
+
+/** Thai empty-field label for driver LINE paste. */
+export const MISSING_TH = 'ขาดหาย';
+
+/** Normalize supplier ready time toward driver style (`8.30`, `14.00`). */
+export function formatSupplierReadyTimeForDriver(raw: string | null | undefined): string {
+  const t = raw?.trim() ?? '';
+  if (!t) return '';
+  const m = t.match(/(\d{1,2})[:.](\d{2})/);
+  if (!m) return t.replace(/\s+/g, '');
+  const hour = String(Number(m[1]));
+  return `${hour}.${m[2]}`;
 }
 
-function buildClipboardBalloonText(items: OrderSummaryItemRow[]): string {
-  const withText = items.filter((i) => i.addOns?.balloonText?.trim());
-  const lines: string[] = [];
-  items.forEach((item, i) => {
-    const text = item.addOns?.balloonText?.trim();
-    if (!text) return;
-    if (withText.length > 1) {
-      const title = item.bouquet_title?.trim() || `Item ${i + 1}`;
-      lines.push(`${title}: ${text}`);
-    } else {
-      lines.push(text);
-    }
-  });
-  return lines.join('\n\n');
+function pickupShopPhraseTh(shopName: string | null | undefined): string {
+  const shop = shopName?.trim() ?? '';
+  if (!shop) return '';
+  if (shop.startsWith('ร้าน')) return `รับดอกไม้${shop}`;
+  return `รับดอกไม้ร้าน${shop}`;
 }
 
-function surpriseDeliveryDriverThaiLabel(order: SupabaseOrderRow): string {
-  const rName = recipientNameDisplay(order);
-  if (!rName.trim()) return 'ไม่ระบุ';
-  const v = orderJsonDelivery(order)?.surpriseDelivery;
-  if (v === true) return 'ใช่';
-  if (v === false) return 'ไม่ใช่';
-  return 'ไม่ระบุ';
+/** First line when ready: `8.30 รับดอกไม้ร้านต้อย` (no date; omit if nothing confirmed). */
+export function buildDriverPickupHeadline(order: SupabaseOrderRow): string {
+  const timePart = formatSupplierReadyTimeForDriver(order.confirmed_supplier_ready_time);
+  const shopPart = pickupShopPhraseTh(order.confirmed_supplier_shop_name);
+  return [timePart || null, shopPart || null].filter(Boolean).join(' ');
+}
+
+function recipientPhoneDigitsForDriver(order: SupabaseOrderRow): string {
+  const full =
+    order.recipient_phone?.trim() || orderJsonDelivery(order)?.recipientPhone?.trim() || '';
+  if (!full) return '';
+  const cc = recipientPhoneCountryCodeDigits(order);
+  if (cc && full.startsWith(cc)) {
+    const national = full.slice(cc.length).replace(/\D/g, '');
+    if (cc === '66' && national) {
+      return national.startsWith('0') ? national : `0${national}`;
+    }
+    return national || full.replace(/\D/g, '');
+  }
+  return full.replace(/\D/g, '') || full;
+}
+
+function isForeignRecipientPhone(order: SupabaseOrderRow): boolean {
+  const cc = recipientPhoneCountryCodeDigits(order);
+  return Boolean(cc && cc !== '66');
 }
 
 /**
- * One Thai block to paste to a driver on LINE/Messenger: time, place, pin, recipient, card text, order ref.
+ * Recipient name + phone + checkout driver notes (+ card text) for “Copy driver notes”.
+ * Empty fields use English `Missing`. Blank line between notes and card.
  */
-export function buildDriverMessengerPlainText(
+export function buildDriverNotesClipboardText(
   order: SupabaseOrderRow,
+  items?: OrderSummaryItemRow[],
+  customGreetingCard?: string | null
+): string {
+  const name = recipientNameDisplay(order).trim() || MISSING_EN;
+  const phone = recipientPhoneDigitsForDriver(order) || MISSING_EN;
+  const phoneLine = phone !== MISSING_EN && isForeignRecipientPhone(order)
+    ? `Recipient phone (foreign): ${phone}`
+    : `Recipient phone: ${phone}`;
+  const notes = deliveryNotesDisplay(order).trim();
+  const notesLine = notes ? `Driver notes: ${notes}` : `Driver notes: ${MISSING_EN}`;
+  const cardFromItems = items?.length
+    ? buildClipboardCardText(items, customGreetingCard).trim()
+    : '';
+  const card = cardFromItems || cardTextFromBoardOrder(order).trim();
+  const cardLine = card ? `Card text: ${card}` : `Card text: ${MISSING_EN}`;
+
+  return [`Recipient name: ${name}`, phoneLine, '', notesLine, '', cardLine].join('\n');
+}
+
+/** Card message for clipboard; always includes status (`Missing` when empty). */
+export function buildCardTextClipboardText(
   items: OrderSummaryItemRow[],
   customGreetingCard?: string | null
 ): string {
-  const mapsUrl = checkoutMapsUrl(order);
-  const deliveryNotes = deliveryNotesDisplay(order);
-  const rName = recipientNameDisplay(order);
-  const rPhone = recipientPhoneDisplay(order);
-  const surprise = surpriseDeliveryDriverThaiLabel(order);
-  const cardBlock = buildDriverClipboardCardTextThai(items, customGreetingCard);
-  const balloonBlock = buildClipboardBalloonText(items);
+  const card = buildClipboardCardText(items, customGreetingCard).trim();
+  return card ? `Card text: ${card}` : `Card text: ${MISSING_EN}`;
+}
 
-  const datePart = order.delivery_date?.trim() ?? '';
-  const windowPart = order.delivery_window?.trim() ?? '';
-  const when = [datePart, windowPart].filter(Boolean).join(' · ') || 'ไม่ระบุ';
+/** Card text from board order `order_json` (no separate items query). */
+export function cardTextFromBoardOrder(order: SupabaseOrderRow): string {
+  const json = order.order_json as {
+    items?: Array<{ addOns?: { cardMessage?: string } }>;
+    customOrderDetails?: { greetingCard?: string };
+  } | null | undefined;
+  const messages: string[] = [];
+  if (Array.isArray(json?.items)) {
+    for (const it of json.items) {
+      const msg = typeof it?.addOns?.cardMessage === 'string' ? it.addOns.cardMessage.trim() : '';
+      if (msg) messages.push(msg);
+    }
+  }
+  const greeting =
+    typeof json?.customOrderDetails?.greetingCard === 'string'
+      ? json.customOrderDetails.greetingCard.trim()
+      : '';
+  if (greeting) messages.push(greeting);
+  return messages.join('\n\n');
+}
 
+/** Preview string for delivery-board cards (same empty fallback). */
+export function cardTextDisplayOrNone(cardMessage: string | null | undefined): string {
+  return cardMessage?.trim() || MISSING_EN;
+}
+
+export function driverNotesDisplayOrNone(notes: string | null | undefined): string {
+  return notes?.trim() || MISSING_EN;
+}
+
+/** Customer name + phone for clipboard (Copy customer details). */
+export function buildCustomerDetailsClipboardText(order: SupabaseOrderRow): string {
+  const name = order.customer_name?.trim() || MISSING_EN;
+  const phone = customerPhoneDisplay(order).trim() || MISSING_EN;
+  return `Name: ${name}\nPhone: ${phone}`;
+}
+
+/**
+ * Compact Thai guidance block for driver LINE/Messenger.
+ * Always includes driver notes + card text; empty fields use Thai “ขาดหาย”.
+ */
+export function buildDriverMessengerPlainText(
+  order: SupabaseOrderRow,
+  items?: OrderSummaryItemRow[],
+  customGreetingCard?: string | null
+): string {
   const lines: string[] = [];
-  lines.push(`ออเดอร์: ${order.order_id}`);
-  lines.push('');
-  lines.push(`เวลา: ${when}`);
-  const geo = adminDeliveryGeographyLines(order, 'th');
-  if (geo.length) {
-    lines.push(...geo);
-  } else if (order.district?.trim()) {
-    lines.push(`พื้นที่: ${order.district.trim()}`);
-  }
-  lines.push('');
-  lines.push('ที่อยู่:');
-  lines.push(customerDeliveryAddressRaw(order).trim() || 'ไม่ระบุ');
-  lines.push('');
-  lines.push('รายละเอียดสำหรับคนขับ:');
-  lines.push(deliveryNotes || 'ไม่มี');
-  lines.push('');
-  if (mapsUrl) {
-    lines.push('พิน Google Maps:');
-    lines.push(mapsUrl);
+  const headline = buildDriverPickupHeadline(order);
+  if (headline) {
+    lines.push(headline);
     lines.push('');
   }
-  lines.push('ผู้รับ:');
-  lines.push(`ชื่อ: ${rName.trim() || 'ไม่ระบุ'}`);
-  lines.push(`โทร: ${rPhone.trim() || 'ไม่ระบุ'}`);
-  lines.push(`เซอร์ไพรส์: ${surprise}`);
-  lines.push('');
-  lines.push(`เบอร์ผู้สั่ง/ลูกค้า: ${customerPhoneDisplay(order).trim() || 'ไม่ระบุ'}`);
-  lines.push('');
-  if (cardBlock.trim()) {
-    lines.push('ข้อความในการ์ด:');
-    lines.push(cardBlock);
+
+  const name = recipientNameDisplay(order).trim() || MISSING_TH;
+  lines.push(`ชื่อผู้รับ  ${name}`);
+
+  const phone = recipientPhoneDigitsForDriver(order);
+  if (phone) {
+    lines.push(
+      isForeignRecipientPhone(order)
+        ? `เบอร์ผู้รับเป็นต่างชาติ  ${phone}`
+        : `เบอร์ผู้รับ  ${phone}`
+    );
   } else {
-    lines.push('ข้อความในการ์ด: ไม่มี');
+    lines.push(`เบอร์ผู้รับ  ${MISSING_TH}`);
   }
-  if (balloonBlock.trim()) {
-    lines.push('');
-    lines.push('ข้อความบนบอลลูน:');
-    lines.push(balloonBlock);
-  }
+  lines.push(DRIVER_FALLBACK_IF_NO_RECIPIENT_TH);
+  lines.push('');
+
+  const address = customerDeliveryAddressRaw(order).trim() || MISSING_TH;
+  lines.push(`ส่งที่ ${address}`);
+  lines.push('');
+
+  const notes = deliveryNotesDisplay(order).trim();
+  lines.push(notes ? `หมายเหตุคนขับ: ${notes}` : `หมายเหตุคนขับ: ${MISSING_TH}`);
+  lines.push('');
+
+  const cardFromItems = items?.length
+    ? buildClipboardCardText(items, customGreetingCard).trim()
+    : '';
+  const card = cardFromItems || cardTextFromBoardOrder(order).trim();
+  lines.push(card ? `ข้อความการ์ด: ${card}` : `ข้อความการ์ด: ${MISSING_TH}`);
 
   return lines.join('\n');
 }
@@ -365,12 +391,12 @@ function getItemTypeLabel(type: string | null | undefined): string {
 export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: OrderSummaryItemRow[]): string {
   const lines: string[] = [];
   const mapsUrl = checkoutMapsUrl(order);
-  const deliveryNotes = deliveryNotesDisplay(order);
+  const deliveryNotes = driverNotesDisplayOrNone(deliveryNotesDisplay(order));
   const delivery = orderJsonDelivery(order);
   const rName = recipientNameDisplay(order);
   const rPhone = recipientPhoneDisplay(order);
   const surprise = surpriseDeliveryAdminLabel(order);
-  const cardText = buildClipboardCardText(items).trim();
+  const cardText = buildClipboardCardText(items).trim() || MISSING_EN;
   const dest = order.delivery_destination?.trim() || delivery?.deliveryDestination?.trim() || '';
   const zoneId = order.delivery_zone?.trim() || delivery?.deliveryZoneId?.trim() || '';
   const postcode = order.postal_code?.trim() || delivery?.postalCode?.trim() || '';
@@ -389,12 +415,10 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
     lines.push(`  LINE ID: ${lineIdRow}`);
   }
   lines.push('');
-  lines.push(`Address: ${naText(customerDeliveryAddressRaw(order))}  Driver notes: ${naText(deliveryNotes)}`);
+  lines.push(`Address: ${naText(customerDeliveryAddressRaw(order))}  Driver notes: ${deliveryNotes}`);
   lines.push('');
-  if (cardText) {
-    lines.push(`Card text:  "${cardText}"`);
-    lines.push('');
-  }
+  lines.push(`Card text:  "${cardText}"`);
+  lines.push('');
   if (dest) {
     lines.push(`Destination: ${destinationDisplayName(dest as DeliveryDestinationId, 'en')} `);
   }
@@ -418,4 +442,47 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push(`Created: ${formatShopDateTime(order.created_at, 'N/A')}`);
 
   return lines.join('\n');
+}
+
+/** Build summary clipboard text from a delivery-board order (`order_json` line items). */
+export function buildOrderSummaryPlainTextFromBoardOrder(order: SupabaseOrderRow): string {
+  const json = order.order_json as {
+    items?: Array<{
+      bouquetTitle?: string;
+      addOns?: OrderItemAddOnsDisplay;
+    }>;
+    customOrderDetails?: { greetingCard?: string };
+  } | null | undefined;
+
+  const items: OrderSummaryItemRow[] = Array.isArray(json?.items)
+    ? json!.items!.map((it) => ({
+        order_id: order.order_id,
+        bouquet_id: null,
+        bouquet_title: typeof it.bouquetTitle === 'string' ? it.bouquetTitle : null,
+        size: null,
+        price: null,
+        image_url_snapshot: null,
+        addOns: it.addOns,
+      }))
+    : [];
+
+  const greeting =
+    typeof json?.customOrderDetails?.greetingCard === 'string'
+      ? json.customOrderDetails.greetingCard
+      : null;
+
+  // Reuse summary builder; inject custom greeting as a synthetic card line when needed.
+  if (greeting?.trim() && !items.some((i) => i.addOns?.cardMessage?.trim())) {
+    items.push({
+      order_id: order.order_id,
+      bouquet_id: null,
+      bouquet_title: 'Custom order',
+      size: null,
+      price: null,
+      image_url_snapshot: null,
+      addOns: { cardMessage: greeting.trim() },
+    });
+  }
+
+  return buildOrderSummaryPlainText(order, items);
 }

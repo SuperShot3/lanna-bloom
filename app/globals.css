@@ -5878,6 +5878,47 @@ a.btn-pill:focus-visible {
   padding: 4px 6px !important;
   min-height: 0;
 }
+.admin-delivery-card-copy-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+.admin-delivery-card-copy-row:first-child {
+  margin-top: 0;
+}
+.admin-delivery-card-copy-row .admin-delivery-card-meta--location,
+.admin-delivery-card-copy-row-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-left: 0;
+}
+.admin-delivery-card-copy-row .admin-delivery-card-meta--area {
+  padding-left: 22px;
+}
+.admin-delivery-card-copy-row--actions-only {
+  justify-content: flex-end;
+  gap: 6px;
+}
+.admin-delivery-copy-action {
+  flex-shrink: 0;
+  font-size: 0.7rem !important;
+  padding: 3px 8px !important;
+  min-height: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.admin-delivery-card-copy-row:not(.admin-delivery-card-copy-row--actions-only) .admin-delivery-copy-action {
+  margin-left: auto;
+}
+.admin-delivery-copy-action--driver,
+.admin-delivery-copy-action--all {
+  font-weight: 700;
+}
 .admin-delivery-card-meta--area {
   margin: 2px 0 0;
   padding-left: 22px;
@@ -5924,6 +5965,17 @@ a.btn-pill:focus-visible {
   gap: 6px;
   align-items: flex-end;
   flex-shrink: 0;
+}
+.admin-delivery-card-top-copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.admin-delivery-card-top-copy .admin-delivery-copy-action {
+  margin-left: 0;
 }
 .admin-delivery-badge-pay {
   font-size: 0.72rem;
@@ -6184,6 +6236,12 @@ a.btn-pill:focus-visible {
     justify-content: flex-start;
     align-self: stretch;
     width: 100%;
+  }
+  .admin-delivery-card-top-copy {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: flex-end;
+    order: -1;
   }
   .admin-delivery-card-datetime {
     width: 100%;
@@ -6835,6 +6893,13 @@ a.admin-summary-key-value {
   flex: 1;
   min-width: min(12rem, 100%);
   margin: 0;
+}
+.admin-summary-copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: flex-start;
 }
 .admin-summary-recipient-line {
   margin: 0 0 6px;

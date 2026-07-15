@@ -1,12 +1,17 @@
 import type { Order } from '@/lib/orders';
 import {
+  buildCardTextClipboardText,
+  buildCustomerDetailsClipboardText,
   buildDriverMessengerPlainText,
+  buildDriverNotesClipboardText,
   buildOrderSummaryPlainText,
   checkoutMapsUrl,
   deliveryNotesDisplay,
+  driverNotesDisplayOrNone,
   customerLineIdDisplay,
   customerPhoneDisplay,
   formatAmountNa,
+  MISSING_EN,
   naText,
   preferredContactDisplay,
   recipientNameDisplay,
@@ -47,28 +52,21 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
   const copyText = buildOrderSummaryPlainText(order, items);
   const driverMessengerText = buildDriverMessengerPlainText(order, items, customGreetingCard);
   const customerLineId = customerLineIdDisplay(order);
+  const cardTextForCopy = buildCardTextClipboardText(items, customGreetingCard);
 
   const deliveryAddressResolved =
     order.address?.trim() ||
     orderJson?.delivery?.address?.trim() ||
     '';
-  const deliveryDateRaw = order.delivery_date?.trim() || '';
-  const deliveryWindowRaw = order.delivery_window?.trim() || '';
-  const mapsUrlRaw = mapsUrl?.trim() ?? '';
-  const hasDeliveryWhenWhere = Boolean(
-    deliveryDateRaw || deliveryWindowRaw || deliveryAddressResolved || mapsUrlRaw
-  );
-  const deliveryDateTimeAddressForCopy = hasDeliveryWhenWhere
-    ? `Date: ${deliveryDateRaw || 'N/A'}\nTime / window: ${deliveryWindowRaw || 'N/A'}\nAddress: ${
-        deliveryAddressResolved || 'N/A'
-      }\nDriver notes: ${deliveryNotes || 'N/A'}\nGoogle Maps: ${mapsUrlRaw || 'N/A'}`
-    : '';
+  const addressForCopy = deliveryAddressResolved.trim();
+  const mapsUrlForCopy = mapsUrl?.trim() ?? '';
+  const driverNotesForCopy = buildDriverNotesClipboardText(order, items, customGreetingCard);
+  const customerDetailsForCopy = buildCustomerDetailsClipboardText(order);
   const recipientNameForCopy = recipientName.trim();
   const recipientPhoneForCopy = recipientPhone.trim();
-  const recipientNamePhoneForCopy =
-    recipientNameForCopy || recipientPhoneForCopy
-      ? `Name: ${recipientNameForCopy || 'N/A'}\nPhone: ${recipientPhoneForCopy || 'N/A'}`
-      : '';
+  const recipientNamePhoneForCopy = `Name: ${
+    recipientNameForCopy || MISSING_EN
+  }\nPhone: ${recipientPhoneForCopy || MISSING_EN}`;
 
   return (
     <section className="admin-section admin-summary-card">
@@ -77,7 +75,7 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
         <div className="admin-summary-header-actions">
           <AdminCopyTextButton
             text={driverMessengerText}
-            ariaLabel="Copy message for driver: when, where, map pin, recipient, card text, balloon text, order id"
+            ariaLabel="Copy Thai message for driver: pickup time, phone, address (map pin separate)"
             className="admin-summary-copy-driver"
           >
             Copy for driver
@@ -96,19 +94,32 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
         </div>
         <div className="admin-summary-block-key">
           <strong>Customer</strong>
-          <p>{naText(order.customer_name)}</p>
-          <p className="admin-muted">Email: {naText(order.customer_email)}</p>
-          <p className="admin-muted">
-            Phone:{' '}
-            <span className="admin-summary-key-value">{naText(customerPhoneDisplay(order))}</span>
-          </p>
-          <p className="admin-muted">Preferred contact: {preferredContactDisplay(order)}</p>
-          {customerLineId ? (
-            <p className="admin-muted">
-              LINE ID:{' '}
-              <span className="admin-summary-key-value">{customerLineId}</span>
-            </p>
-          ) : null}
+          <div className="admin-summary-field-row">
+            <div className="admin-summary-field-main">
+              <p className="admin-summary-recipient-line">
+                <span className="admin-summary-inline-label">Name:</span> {naText(order.customer_name)}
+              </p>
+              <p className="admin-summary-recipient-line">
+                <span className="admin-summary-inline-label">Phone:</span>{' '}
+                <span className="admin-summary-key-value">{naText(customerPhoneDisplay(order))}</span>
+              </p>
+              <p className="admin-muted">Email: {naText(order.customer_email)}</p>
+              <p className="admin-muted">Preferred contact: {preferredContactDisplay(order)}</p>
+              {customerLineId ? (
+                <p className="admin-muted">
+                  LINE ID:{' '}
+                  <span className="admin-summary-key-value">{customerLineId}</span>
+                </p>
+              ) : null}
+            </div>
+            <AdminCopyTextButton
+              text={customerDetailsForCopy}
+              ariaLabel="Copy customer name and phone to clipboard"
+              className="admin-copy-text-btn--inline"
+            >
+              Copy customer details
+            </AdminCopyTextButton>
+          </div>
         </div>
         <ItemsList items={items} embedded summary={null} />
         <div>
@@ -138,59 +149,102 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
         </div>
         <div className="admin-summary-delivery admin-summary-block-key">
           <strong>Delivery</strong>
+          <p className="admin-summary-recipient-line">
+            <span className="admin-summary-inline-label">Date:</span>{' '}
+            <span className="admin-summary-emphasis">{naText(order.delivery_date)}</span>
+          </p>
+          <p className="admin-summary-recipient-line">
+            <span className="admin-summary-inline-label">Window:</span> {naText(order.delivery_window)}
+          </p>
+          {order.delivery_destination?.trim() && (
+            <p className="admin-summary-recipient-line">
+              <span className="admin-summary-inline-label">Destination:</span>{' '}
+              {destinationDisplayName(
+                order.delivery_destination.trim() as DeliveryDestinationId,
+                'en'
+              )}
+            </p>
+          )}
+          {order.delivery_zone?.trim() && order.delivery_destination?.trim() && (
+            <p className="admin-summary-recipient-line">
+              <span className="admin-summary-inline-label">Zone:</span>{' '}
+              {zoneLabel(
+                order.delivery_destination.trim() as DeliveryDestinationId,
+                order.delivery_zone.trim(),
+                'en'
+              ) ?? order.delivery_zone}
+              <span className="admin-muted"> ({order.delivery_zone})</span>
+            </p>
+          )}
+          {order.postal_code?.trim() && (
+            <p className="admin-summary-recipient-line">
+              <span className="admin-summary-inline-label">Postcode:</span>{' '}
+              {naText(order.postal_code)}
+            </p>
+          )}
+          {!order.delivery_destination?.trim() && order.district?.trim() && (
+            <p className="admin-summary-recipient-line">
+              <span className="admin-summary-inline-label">District (legacy):</span>{' '}
+              {naText(order.district)}
+            </p>
+          )}
+
           <div className="admin-summary-field-row">
             <div className="admin-summary-field-main">
-              <p className="admin-summary-recipient-line">
-                <span className="admin-summary-inline-label">Date:</span>{' '}
-                <span className="admin-summary-emphasis">{naText(order.delivery_date)}</span>
-              </p>
-              <p className="admin-summary-recipient-line">
-                <span className="admin-summary-inline-label">Window:</span> {naText(order.delivery_window)}
-              </p>
-              {order.delivery_destination?.trim() && (
-                <p className="admin-summary-recipient-line">
-                  <span className="admin-summary-inline-label">Destination:</span>{' '}
-                  {destinationDisplayName(
-                    order.delivery_destination.trim() as DeliveryDestinationId,
-                    'en'
-                  )}
-                </p>
-              )}
-              {order.delivery_zone?.trim() && order.delivery_destination?.trim() && (
-                <p className="admin-summary-recipient-line">
-                  <span className="admin-summary-inline-label">Zone:</span>{' '}
-                  {zoneLabel(
-                    order.delivery_destination.trim() as DeliveryDestinationId,
-                    order.delivery_zone.trim(),
-                    'en'
-                  ) ?? order.delivery_zone}
-                  <span className="admin-muted"> ({order.delivery_zone})</span>
-                </p>
-              )}
-              {order.postal_code?.trim() && (
-                <p className="admin-summary-recipient-line">
-                  <span className="admin-summary-inline-label">Postcode:</span>{' '}
-                  {naText(order.postal_code)}
-                </p>
-              )}
-              {!order.delivery_destination?.trim() && order.district?.trim() && (
-                <p className="admin-summary-recipient-line">
-                  <span className="admin-summary-inline-label">District (legacy):</span>{' '}
-                  {naText(order.district)}
-                </p>
-              )}
               <p className="admin-summary-recipient-line">
                 <span className="admin-summary-inline-label">Address:</span>{' '}
                 <span className="admin-summary-key-value admin-summary-key-value--multiline">
                   {naText(deliveryAddressResolved)}
                 </span>
               </p>
+            </div>
+            <AdminCopyTextButton
+              text={addressForCopy}
+              ariaLabel="Copy delivery address text to clipboard"
+              className="admin-copy-text-btn--inline"
+            >
+              Copy address
+            </AdminCopyTextButton>
+          </div>
+
+          <div className="admin-summary-field-row">
+            <div className="admin-summary-field-main">
               <p className="admin-summary-recipient-line">
                 <span className="admin-summary-inline-label">Driver notes:</span>{' '}
                 <span className="admin-summary-key-value admin-summary-key-value--multiline">
-                  {naText(deliveryNotes)}
+                  {driverNotesDisplayOrNone(deliveryNotes)}
                 </span>
               </p>
+            </div>
+            <AdminCopyTextButton
+              text={driverNotesForCopy}
+              ariaLabel="Copy driver notes with recipient name and phone to clipboard"
+              className="admin-copy-text-btn--inline"
+            >
+              Copy driver notes
+            </AdminCopyTextButton>
+          </div>
+
+          <div className="admin-summary-field-row">
+            <div className="admin-summary-field-main">
+              <p className="admin-summary-recipient-line">
+                <span className="admin-summary-inline-label">Card text:</span>{' '}
+                <span className="admin-summary-key-value admin-summary-key-value--multiline">
+                  {naText(cardTextForCopy)}
+                </span>
+              </p>
+            </div>
+            <AdminCopyTextButton
+              text={cardTextForCopy}
+              ariaLabel="Copy card message text to clipboard"
+              className="admin-copy-text-btn--inline"
+            >
+              Copy card text
+            </AdminCopyTextButton>
+          </div>
+
+          <div className="admin-summary-field-row">
+            <div className="admin-summary-field-main">
               <p className="admin-summary-recipient-line">
                 <span className="admin-summary-inline-label">Google Maps (checkout):</span>{' '}
                 {mapsUrl ? (
@@ -208,11 +262,11 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
               </p>
             </div>
             <AdminCopyTextButton
-              text={deliveryDateTimeAddressForCopy}
-              ariaLabel="Copy delivery date, time window, address, and Google Maps link to clipboard"
+              text={mapsUrlForCopy}
+              ariaLabel="Copy Google Maps pin link to clipboard"
               className="admin-copy-text-btn--inline"
             >
-              Copy date, time, address & map
+              Copy map pin
             </AdminCopyTextButton>
           </div>
         </div>
