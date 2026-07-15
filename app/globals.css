@@ -5544,6 +5544,15 @@ a.btn-pill:focus-visible {
   border-radius: 12px;
   overflow: hidden;
   background: rgba(45, 71, 62, 0.06);
+  cursor: zoom-in;
+}
+a.admin-delivery-card-mini-img-wrap:hover {
+  outline: 2px solid rgba(45, 71, 62, 0.35);
+  outline-offset: 1px;
+}
+a.admin-delivery-card-mini-img-wrap:focus-visible {
+  outline: 2px solid #2d473e;
+  outline-offset: 2px;
 }
 .admin-delivery-card-mini-img {
   display: block;

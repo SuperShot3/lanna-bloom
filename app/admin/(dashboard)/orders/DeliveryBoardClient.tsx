@@ -1378,7 +1378,13 @@ export function DeliveryBoardClient({
                                           key={`${o.order_id}-${index}`}
                                           className="admin-delivery-card-product"
                                         >
-                                          <div className="admin-delivery-card-mini-img-wrap">
+                                          <a
+                                            href={thumb.imageUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="admin-delivery-card-mini-img-wrap"
+                                            title="Open image in new tab"
+                                          >
                                             <Image
                                               src={thumb.imageUrl}
                                               alt={thumb.label}
@@ -1387,7 +1393,7 @@ export function DeliveryBoardClient({
                                               className="admin-delivery-card-mini-img"
                                               unoptimized
                                             />
-                                          </div>
+                                          </a>
                                           <p className="admin-delivery-card-thumb-caption">{thumb.label}</p>
                                           {thumb.spec ? (
                                             <p className="admin-delivery-card-thumb-spec">{thumb.spec}</p>
