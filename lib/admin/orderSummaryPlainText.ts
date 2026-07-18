@@ -287,9 +287,9 @@ export function cardTextFromBoardOrder(order: SupabaseOrderRow): string {
   return messages.join('\n\n');
 }
 
-/** Preview string for delivery-board cards (same empty fallback). */
+/** Preview string for delivery-board cards (empty → N/A). */
 export function cardTextDisplayOrNone(cardMessage: string | null | undefined): string {
-  return cardMessage?.trim() || MISSING_EN;
+  return cardMessage?.trim() || 'N/A';
 }
 
 export function driverNotesDisplayOrNone(notes: string | null | undefined): string {

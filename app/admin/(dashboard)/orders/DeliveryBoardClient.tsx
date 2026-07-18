@@ -272,10 +272,14 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
           Copy driver notes
         </AdminCopyTextButton>
       </div>
-      <div className="admin-delivery-card-copy-row admin-delivery-field-pair admin-delivery-field-pair--card">
+      <div
+        className={`admin-delivery-card-copy-row admin-delivery-field-pair admin-delivery-field-pair--card${
+          cardMessage.trim() ? '' : ' admin-delivery-field-pair--card-empty'
+        }`}
+      >
         <p
           className="admin-delivery-card-meta admin-delivery-card-meta--area admin-delivery-card-copy-row-text admin-delivery-card-meta--card-message admin-delivery-field-chip"
-          title={cardMessage || MISSING_EN}
+          title={cardMessage.trim() || 'N/A'}
         >
           <span className="material-symbols-outlined admin-delivery-meta-icon">card_giftcard</span>
           <span className="admin-delivery-field-body">

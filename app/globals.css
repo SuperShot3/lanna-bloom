@@ -6163,6 +6163,43 @@ a.admin-delivery-card-mini-img-wrap:focus-visible {
   background: rgba(15, 23, 42, 0.06) !important;
   filter: none;
 }
+.admin-delivery-field-pair .admin-delivery-copy-action:disabled,
+.admin-delivery-field-pair .admin-delivery-copy-action.admin-copy-text-btn--disabled {
+  opacity: 1 !important;
+  color: rgba(15, 23, 42, 0.42) !important;
+  background: transparent !important;
+  border-left-color: rgba(15, 23, 42, 0.1) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+/* Empty card text: one flat muted row — text + button identical */
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: rgba(15, 23, 42, 0.42);
+}
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-field-chip,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-field-label,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-field-body,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-meta-icon,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-copy-action-ico,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-copy-action,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-copy-action:disabled,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-copy-action.admin-copy-text-btn--disabled,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-btn:disabled {
+  opacity: 1 !important;
+  color: inherit !important;
+  background: transparent !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-copy-action:disabled,
+.admin-delivery-field-pair.admin-delivery-field-pair--card-empty .admin-delivery-copy-action.admin-copy-text-btn--disabled {
+  border: none !important;
+  border-left: 1px solid rgba(15, 23, 42, 0.1) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .admin-delivery-card-meta--area {
   margin: 2px 0 0;
   padding-left: 22px;
@@ -7168,8 +7205,11 @@ select::-ms-expand { display: none; }
   background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
 }
 .admin-copy-text-btn--disabled {
-  opacity: 0.45;
+  opacity: 0.38;
+  color: rgba(15, 23, 42, 0.5);
+  background: rgba(15, 23, 42, 0.06);
   cursor: not-allowed;
+  pointer-events: none;
 }
 .admin-summary-key-value {
   font-weight: 600;
