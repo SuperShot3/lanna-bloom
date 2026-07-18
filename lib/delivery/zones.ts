@@ -176,7 +176,7 @@ export function getChiangMaiZoneFeeLadder(): number[] {
       .filter((z) => z.id !== 'cm-unknown')
       .map((z) => z.feeThb)
   );
-  return [...fees].sort((a, b) => a - b);
+  return Array.from(fees).sort((a, b) => a - b);
 }
 
 export function zoneLabel(
