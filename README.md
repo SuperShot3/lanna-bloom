@@ -15,6 +15,17 @@ A mobile-first flower shop for selling bouquets online. Customers browse the cat
 - **Messenger** — Pre-filled “order via LINE / WhatsApp / Telegram” from product page and cart; contact links in the header
 - **Sanity Studio** — CMS at `/studio` for bouquets and partners; partner registration and dashboard (add/edit bouquets when approved)
 - **Admin** — `/admin`: dashboard with orders, status updates, costs, accounting (income/expenses), and remove (RBAC with NextAuth). Money-flow reference: **docs/ACCOUNTING_AND_EXPENSES.md**.
+- **Campaign Builder Assistant** — Owner-controlled wizard for planning, validating, and creating paused Google Ads Search campaigns
+
+## Campaign Builder Assistant
+
+The Campaign Builder Assistant is available in `/admin/marketing` under the **Campaign Builder** tab. It guides the owner through six reviewable steps: location, audience and landing page, ad groups, keywords, negative keywords, and responsive search ad copy with a daily budget.
+
+The assistant can generate territory-aware suggestions with AI when `OPENAI_API_KEY` is configured. Without AI, it remains usable with rule-based suggestions and manual editing. Reusable guidance can be saved for future campaigns, and every step must be reviewed and approved before creation.
+
+Safety controls include supported-market targeting, English-only campaigns, exact and phrase-match keywords, cross-city negative keywords, server-side validation, a maximum daily budget, and an optional dry run. Live creation requires owner access and configured Google Ads credentials. Campaigns, ad groups, and ads are always created **paused** so they can be checked in Google Ads before activation.
+
+For architecture, APIs, persistence, safety boundaries, known technical debt, and a ready-to-copy planning prompt for another AI, see **[Campaign Builder Assistant — AI Technical Handoff](docs/CAMPAIGN_BUILDER_ASSISTANT.md)**.
 
 ## Tech stack
 

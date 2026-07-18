@@ -29,6 +29,7 @@ type Props = {
   presentationPresets: Record<SafePresentationPresetKey, string>;
   showRules: boolean;
   isBusy: boolean;
+  isGenerating: boolean;
   statusLine: string;
   onAiOptionCountChange: (count: AiOptionCount) => void;
   onBasePreservationPromptChange: (value: string) => void;
@@ -55,6 +56,7 @@ export function ProductCreateImagesStep({
   presentationPresets,
   showRules,
   isBusy,
+  isGenerating,
   statusLine,
   onAiOptionCountChange,
   onBasePreservationPromptChange,
@@ -80,8 +82,8 @@ export function ProductCreateImagesStep({
   const showGenerationGrid =
     generationSession &&
     (generationSession.phase === 'generating' || generationSession.phase === 'select');
-  const showStatusBanner =
-    Boolean(statusLine) && (isBusy || generationSession?.phase === 'generating');
+  const showStatusBanner = Boolean(statusLine) && (isBusy || isGenerating);
+  const uploadDisabled = isBusy || isGenerating;
 
   return (
     <section className="admin-product-create-step-panel">
@@ -90,8 +92,8 @@ export function ProductCreateImagesStep({
           <span className="admin-product-create-eyebrow">Step 1</span>
           <h3>Images</h3>
           <p>
-            Upload a photo, choose how many AI alternatives you want, then select which optimized
-            WebP images (up to 2400px) go on the product.
+            Upload a photo, optionally create AI alternatives in the background, then continue to
+            text as soon as a selected WebP image is ready (up to 2400px).
           </p>
         </div>
       </header>
@@ -101,7 +103,7 @@ export function ProductCreateImagesStep({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
-          disabled={isBusy}
+          disabled={uploadDisabled}
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
             if (files.length) onAddFiles(files);
@@ -172,7 +174,8 @@ export function ProductCreateImagesStep({
             </button>
           </div>
           <p className="admin-product-create-webp-note">
-            Selected website images are optimized as WebP at up to 2400px on the longest edge.
+            AI alternatives are optional. After you start, you can continue to text once the original
+            (or any selected image) is ready — remaining AI options keep generating in the background.
           </p>
           <button type="button" className="admin-btn admin-btn-outline" disabled={isBusy} onClick={onCancelSession}>
             Choose a different photo
@@ -192,7 +195,10 @@ export function ProductCreateImagesStep({
           </div>
           <div>
             <strong>{statusLine || 'Working…'}</strong>
-            <p>Images are prepared and optimized for the web at up to 2400px — no extra upload step.</p>
+            <p>
+              Image work runs in the background. Continue to text whenever a selected WebP image is
+              ready — you can come back for AI options later.
+            </p>
           </div>
         </div>
       ) : null}
@@ -347,11 +353,14 @@ export function ProductCreateImagesStep({
         <button
           type="button"
           className="admin-btn admin-btn-primary"
-          disabled={isBusy || !canContinue}
+          disabled={!canContinue}
           onClick={onContinue}
         >
           Continue to text →
         </button>
+        {isGenerating && canContinue ? (
+          <p className="admin-hint">AI options are still generating — you can continue now.</p>
+        ) : null}
       </div>
     </section>
   );

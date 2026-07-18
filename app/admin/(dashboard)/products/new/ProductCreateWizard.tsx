@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
 import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABEL, type ProductCategory } from '@/lib/catalogCategories';
 import {
@@ -24,6 +24,7 @@ import {
   ADMIN_PRICING_TYPE_OPTIONS,
 } from '@/lib/catalogAdminFieldOptions';
 import type { PricingType } from '@/lib/catalog/pricing';
+import { useToast } from '@/contexts/ToastContext';
 import { ProductCreateImagesStep } from './ProductCreateImagesStep';
 import {
   type AiOptionCount,
@@ -34,6 +35,14 @@ import {
   hasReadyWebp,
   parseVariants,
 } from './productCreateImageTypes';
+
+function isCandidateInFlight(candidate: ImageCandidate): boolean {
+  return (
+    candidate.status === 'preparing' ||
+    candidate.status === 'generating' ||
+    candidate.status === 'queued'
+  );
+}
 
 type ProductImageAnalysis = {
   productFormat: string;
@@ -134,7 +143,7 @@ const stepCopy: Record<WizardStep, { eyebrow: string; label: string; description
     eyebrow: 'Step 1',
     label: 'Images',
     description:
-      'Upload a photo, generate AI alternatives if you want, and choose optimized WebP images (up to 2400px) for the gallery.',
+      'Upload a photo, optionally generate AI alternatives in the background, and continue to text as soon as a WebP image is ready.',
   },
   text: {
     eyebrow: 'Step 2',
@@ -263,6 +272,7 @@ async function readJsonResponse(response: Response): Promise<Record<string, unkn
 }
 
 export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
+  const { showToast } = useToast();
   const [activeStep, setActiveStep] = useState<WizardStep>('images');
   const [imageDrafts, setImageDrafts] = useState<ImageDraftWithAnalysis[]>([]);
   const [generationSession, setGenerationSession] = useState<GenerationSession | null>(null);
@@ -301,6 +311,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const primaryDraft = useMemo(() => imageDrafts.find((d) => d.isPrimary), [imageDrafts]);
   const readyDrafts = imageDrafts.filter((d) => hasReadyWebp(d));
   const hasPrimaryReady = readyDrafts.some((d) => d.isPrimary);
+  const isImageGenerationInFlight = Boolean(
+    generationSession?.candidates.some((candidate) => isCandidateInFlight(candidate))
+  );
 
   const stepCompletion: Record<WizardStep, boolean> = {
     images: hasPrimaryReady,
@@ -314,20 +327,27 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   );
 
   const canContinueFromImages = useMemo(() => {
-    const sessionHasSelection =
-      generationSession?.phase === 'select' &&
-      generationSession.candidates.some((candidate) => candidate.selected && hasReadyWebp(candidate));
+    const sessionHasReadySelection = Boolean(
+      generationSession?.candidates.some(
+        (candidate) => candidate.selected && hasReadyWebp(candidate)
+      )
+    );
     const draftsReady =
       hasPrimaryReady && imageDrafts.length > 0 && imageDrafts.every((row) => hasReadyWebp(row));
-    return Boolean(
-      (!generationSession || generationSession.phase === 'select') && (sessionHasSelection || draftsReady)
-    );
+    return sessionHasReadySelection || draftsReady;
   }, [generationSession, hasPrimaryReady, imageDrafts]);
 
   const occasionHintValues = useMemo(() => splitList(hints.occasion), [hints.occasion]);
   const colorHintValues = useMemo(() => splitList(hints.colors), [hints.colors]);
   const isFlowerProduct = hints.itemCategory === 'flowers';
   const itemCategoryLabel = getAdminItemCategoryLabel(hints.itemCategory);
+
+  const activeStepRef = useRef(activeStep);
+  const notifiedReadyCandidateIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    activeStepRef.current = activeStep;
+  }, [activeStep]);
 
   useEffect(() => {
     setTextGenerationHistory(readTextGenerationHistory());
@@ -346,6 +366,19 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     // We only want this on unmount; the drafts are immutable file refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const candidates = generationSession?.candidates ?? [];
+    candidates.forEach((candidate) => {
+      if (candidate.kind !== 'ai' || candidate.status !== 'ready' || !hasReadyWebp(candidate)) return;
+      if (notifiedReadyCandidateIdsRef.current.has(candidate.id)) return;
+      notifiedReadyCandidateIdsRef.current.add(candidate.id);
+      if (activeStepRef.current !== 'images') {
+        const slotLabel = candidate.aiSlot != null ? ` ${candidate.aiSlot}` : '';
+        showToast(`AI option${slotLabel} is ready. Open Images to add it to the gallery.`);
+      }
+    });
+  }, [generationSession, showToast]);
 
   function updateHint(key: keyof Hints, value: string) {
     setHints((current) => ({ ...current, [key]: value }));
@@ -649,6 +682,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     const alt = draft.altEn || draft.nameEn || source.sourceFile.name;
     setImageStatusLine('Preparing original photo...');
     const result = await prepareCandidateFile(source.sourceFile, alt);
+    if ('error' in result) {
+      showToast(result.error || 'Failed to prepare the original photo.', { variant: 'error' });
+    }
     updateSessionCandidates((candidates) =>
       candidates.map((candidate) => {
         if (candidate.id !== candidateId) return candidate;
@@ -684,6 +720,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       },
       analysis
     );
+    if ('error' in result) {
+      showToast(`AI option ${aiSlot} failed: ${result.error}`, { variant: 'error' });
+    }
     updateSessionCandidates((candidates) => {
       const next = candidates.map((candidate) => {
         if (candidate.id !== candidateId) return candidate;
@@ -703,10 +742,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     });
   }
 
-  async function startGeneration(mode: 'original-only' | 'with-ai') {
+  function startGeneration(mode: 'original-only' | 'with-ai') {
     if (!generationSession) return;
     setError('');
-    setLoading({ kind: 'images' });
     const candidates =
       mode === 'original-only'
         ? buildOriginalCandidate(generationSession)
@@ -737,23 +775,26 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       }
     });
 
-    try {
-      await Promise.all(tasks);
-      setGenerationSession((current) =>
-        current
-          ? {
-              ...current,
-              phase: 'select',
-              statusLine: 'Ready',
-            }
-          : current
-      );
-      setImageStatusLine('Ready');
-    } catch {
-      setError('Could not finish preparing images. Check your connection and try again.');
-    } finally {
-      setLoading(null);
-    }
+    // AI image work continues in the background so text generation can start once any
+    // selected WebP-ready image is available.
+    void Promise.all(tasks)
+      .then(() => {
+        setGenerationSession((current) =>
+          current
+            ? {
+                ...current,
+                phase: 'select',
+                statusLine: 'Ready',
+              }
+            : current
+        );
+        setImageStatusLine('Ready');
+      })
+      .catch(() => {
+        showToast('Could not finish preparing images. Check your connection and try again.', {
+          variant: 'error',
+        });
+      });
   }
 
   function toggleCandidateSelection(candidateId: string) {
@@ -795,13 +836,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setSavedProduct(null);
   }
 
-  async function retryCandidate(candidateId: string) {
+  function retryCandidate(candidateId: string) {
     if (!generationSession) return;
     const candidate = generationSession.candidates.find((row) => row.id === candidateId);
     if (!candidate) return;
 
     setError('');
-    setLoading({ kind: 'images' });
     updateSessionCandidates((candidates) =>
       candidates.map((row) =>
         row.id === candidateId
@@ -814,19 +854,15 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       )
     );
 
-    try {
-      if (candidate.kind === 'original') {
-        await runCandidatePrepare(candidateId, generationSession);
-      } else if (candidate.aiSlot) {
-        const aiTotal = generationSession.candidates.filter((row) => row.kind === 'ai').length;
-        await runCandidateEnhance(candidateId, generationSession, candidate.aiSlot, aiTotal);
-      }
-    } finally {
-      setLoading(null);
+    if (candidate.kind === 'original') {
+      void runCandidatePrepare(candidateId, generationSession);
+    } else if (candidate.aiSlot) {
+      const aiTotal = generationSession.candidates.filter((row) => row.kind === 'ai').length;
+      void runCandidateEnhance(candidateId, generationSession, candidate.aiSlot, aiTotal);
     }
   }
 
-  function commitSelectedCandidates(): boolean {
+  function commitSelectedCandidates(options?: { keepPending?: boolean }): boolean {
     if (!generationSession) return true;
     const selected = generationSession.candidates.filter(
       (candidate) => candidate.selected && hasReadyWebp(candidate)
@@ -835,6 +871,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       setError('Select at least one image with a ready WebP version for the product gallery.');
       return false;
     }
+
+    const selectedIds = new Set(selected.map((candidate) => candidate.id));
+    const remaining = generationSession.candidates.filter(
+      (candidate) => !selectedIds.has(candidate.id)
+    );
+    const hasPending = remaining.some((candidate) => isCandidateInFlight(candidate));
 
     setImageDrafts((current) => {
       const mainCandidate = selected.find((candidate) => candidate.isMain) ?? selected[0];
@@ -859,26 +901,49 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       return next;
     });
 
+    if (options?.keepPending && remaining.length > 0) {
+      setGenerationSession({
+        ...generationSession,
+        candidates: remaining,
+        phase: hasPending ? 'generating' : 'select',
+        statusLine: hasPending ? generationSession.statusLine || 'Creating AI options…' : 'Ready',
+      });
+      if (!hasPending) setImageStatusLine('Ready');
+      return true;
+    }
+
     cancelGenerationSession();
     return true;
   }
 
   function handleImagesContinue() {
-    if (generationSession?.phase === 'select') {
-      if (!commitSelectedCandidates()) return;
-    } else if (generationSession) {
-      setError('Finish creating and selecting images before continuing.');
-      return;
-    }
-    if (!hasPrimaryReady) {
+    const sessionHasReadySelection = Boolean(
+      generationSession?.candidates.some(
+        (candidate) => candidate.selected && hasReadyWebp(candidate)
+      )
+    );
+
+    if (generationSession) {
+      if (sessionHasReadySelection) {
+        if (!commitSelectedCandidates({ keepPending: true })) return;
+      } else if (!hasPrimaryReady) {
+        setError('Wait for at least one selected image to finish, or use original only.');
+        return;
+      }
+    } else if (!hasPrimaryReady) {
       setError('Select at least one WebP-ready image and mark one as Main before continuing.');
       return;
     }
+
     if (imageDrafts.some((row) => !hasReadyWebp(row))) {
       setError('Every gallery image must have a ready WebP version before continuing.');
       return;
     }
+
     setError('');
+    if (isImageGenerationInFlight) {
+      showToast('Continuing to text. AI image options can finish in the background.');
+    }
     setActiveStep('text');
   }
 
@@ -1014,6 +1079,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     });
     setImageDrafts([]);
     cancelGenerationSession();
+    notifiedReadyCandidateIdsRef.current.clear();
     setAiOptionCount(2);
     setImageStatusLine('');
     setPendingCropFile(null);
@@ -1126,7 +1192,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               basePreservationPrompt={basePreservationPrompt}
               presentationPresets={presentationPresets}
               showRules={showRules}
-              isBusy={loading?.kind === 'images'}
+              isBusy={false}
+              isGenerating={isImageGenerationInFlight}
               statusLine={imageStatusLine}
               onAiOptionCountChange={handleAiOptionCountChange}
               onBasePreservationPromptChange={setBasePreservationPrompt}
@@ -1136,11 +1203,11 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
                 for (const file of files) handleNewFileSelected(file);
               }}
               onCancelSession={cancelGenerationSession}
-              onCreateProductImages={() => void startGeneration('with-ai')}
-              onUseOriginalOnly={() => void startGeneration('original-only')}
+              onCreateProductImages={() => startGeneration('with-ai')}
+              onUseOriginalOnly={() => startGeneration('original-only')}
               onToggleCandidate={toggleCandidateSelection}
               onSetCandidateMain={setCandidateMain}
-              onRetryCandidate={(candidateId) => void retryCandidate(candidateId)}
+              onRetryCandidate={retryCandidate}
               onSetDraftPrimary={setPrimary}
               onRemoveDraft={removeDraft}
               canContinue={canContinueFromImages}
@@ -1160,6 +1227,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               draft={draft}
               analysis={analysis}
               loading={loading}
+              imageGenerationInFlight={isImageGenerationInFlight}
               onChangeHint={updateHint}
               onOccasionHintsChange={setOccasionHints}
               onChangeItemCategory={updateItemCategory}
@@ -1268,6 +1336,7 @@ type TextStepProps = {
   draft: ProductDraftCopy;
   analysis: ProductImageAnalysis | null;
   loading: LoadingState;
+  imageGenerationInFlight: boolean;
   onChangeHint: (key: keyof Hints, value: string) => void;
   onOccasionHintsChange: (values: string[]) => void;
   onChangeItemCategory: (value: string) => void;
@@ -1290,6 +1359,7 @@ function TextStep({
   draft,
   analysis,
   loading,
+  imageGenerationInFlight,
   onChangeHint,
   onOccasionHintsChange,
   onChangeItemCategory,
@@ -1318,6 +1388,13 @@ function TextStep({
           </div>
         ) : null}
       </header>
+
+      {imageGenerationInFlight ? (
+        <p className="admin-hint" role="status">
+          AI image options are still generating in the background. You can generate text now, or go
+          back to Images when they finish.
+        </p>
+      ) : null}
 
       <section className="admin-product-create-grid">
         <div className="admin-product-create-card">
