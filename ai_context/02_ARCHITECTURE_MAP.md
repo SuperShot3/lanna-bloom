@@ -69,7 +69,7 @@ Shared UI: `app/admin/components/`.
 | `lib/supabase/` | Server client, admin/partner queries, order adapter |
 | `lib/bouquets.ts`, `lib/catalog.ts`, `lib/catalogReads.ts` | Catalog reads (Supabase) |
 | `lib/catalogWrite.ts`, `lib/catalogAdmin.ts` | Catalog writes + admin moderation |
-| `lib/delivery/` | Zones, markets, fees, hours |
+| `lib/delivery/` | Zones, markets, fees, hours. **Fee amounts:** only `zones.ts` (`ZONES_BY_DESTINATION` / `getZoneFee`). Landing map / distance table derive display fees via `amphoeDisplayFees.ts` + `distanceTiers.ts` — never duplicate THB amounts in amphoe map data. |
 | `lib/adminRbac.ts` | Admin permissions |
 | `lib/i18n.ts` | Locale types/helpers |
 

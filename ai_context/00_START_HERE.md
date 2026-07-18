@@ -60,6 +60,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 | Admin APIs | `app/api/admin/` |
 | Email templates / outbox | `lib/email/`, Supabase `email_templates` / `email_outbox` |
 | Catalog (Supabase) | `lib/catalogReads.ts`, `lib/catalogWrite.ts`, `lib/sanity.ts` (facade), `app/[lang]/catalog/` |
+| Delivery fees (checkout + map) | `lib/delivery/zones.ts` (`getZoneFee`) — single source; map UI via `lib/delivery/amphoeDisplayFees.ts` |
 | Partner apply | `app/[lang]/partner/apply/` |
 
 ## Env vars (names only — see `.env.example`)

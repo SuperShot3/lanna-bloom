@@ -96,11 +96,21 @@ After mark paid, `runStripePostPaymentSuccessHooks` (`lib/stripe/postStripePayme
 - Draft metadata on session: `checkout_draft_id`, `submission_token`, etc. (`lib/stripe/metadata.ts`).
 - After order creation, order id backfilled to Stripe session/PaymentIntent/charge for reporting.
 
+## Delivery fees (single source)
+
+- **Authoritative THB amounts:** `lib/delivery/zones.ts` — `ZONES_BY_DESTINATION` / `getZoneFee`. Cart, Stripe session create, and order totals all use this.
+- **Thailand delivery landing / district map:** `components/delivery/DeliveryDistrictMap.tsx` resolves fees through `lib/delivery/amphoeDisplayFees.ts` from the same zones. Amphoe geometry lives in `amphoeMapData.ts` without hardcoded fees.
+- Checkout-backed amphoes show the same fee as checkout (or min–max when one amphoe spans several zone ids, e.g. Mueang). Fang / Mae Ai / “other” show an estimate flagged **confirm with driver**.
+- Distance reference table fee column uses `getChiangMaiZoneFeeLadder()` from `zones.ts` (`getDeliveryDistanceTiers()` in `distanceTiers.ts`).
+
+**Do not** duplicate delivery fee amounts in amphoe/map/marketing data. Change fees only in `zones.ts`.
+
 ## Do not
 
 - Trust client-sent `grandTotal`, `deliveryFee`, or discount amounts for Stripe line items.
 - Expose full order JSON without `public_token`.
 - Fire GA4 `purchase` from webhook as the primary path (browser + GTM is canonical — see [05_ANALYTICS_GTM_GA4_ADS.md](05_ANALYTICS_GTM_GA4_ADS.md)).
+- Hardcode delivery fee THB on the flower-delivery-thailand map or distance table separately from `zones.ts`.
 
 ## Deep dive
 

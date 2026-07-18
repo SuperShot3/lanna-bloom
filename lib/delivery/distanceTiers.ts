@@ -1,25 +1,32 @@
 /**
- * Distance-based delivery fee tiers from Warorot Market (Chiang Mai).
- * Used for map display and reference table — checkout uses zone ids in zones.ts.
+ * Distance-based delivery fee reference from Warorot Market (Chiang Mai).
+ * Distance labels / typical areas are marketing copy.
+ * Fee amounts come from the Chiang Mai zone fee ladder in zones.ts — do not hardcode.
  */
 
-export interface DeliveryDistanceTier {
+import { getChiangMaiZoneFeeLadder } from '@/lib/delivery/zones';
+
+export interface DeliveryDistanceTierBase {
   id: string;
   /** e.g. "0–5 km" */
   distanceLabelEn: string;
   distanceLabelTh: string;
-  feeThb: number | null;
-  /** null fee = manual confirmation required */
+  /** null fee = manual / driver confirmation required */
   typicalAreasEn: string;
   typicalAreasTh: string;
+  /** When true, fee column is driver-confirm (no ladder amount) */
+  driverConfirm?: boolean;
 }
 
-export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
+export interface DeliveryDistanceTier extends DeliveryDistanceTierBase {
+  feeThb: number | null;
+}
+
+const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
   {
     id: 'tier-0-5',
     distanceLabelEn: '0–5 km',
     distanceLabelTh: '0–5 กม.',
-    feeThb: 250,
     typicalAreasEn:
       'Chiang Mai central: Chang Moi, Wat Ket, Night Bazaar, Tha Phae, Old City, Chang Khlan, parts of Santitham and Nong Pa Khrang',
     typicalAreasTh:
@@ -29,7 +36,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-5-8',
     distanceLabelEn: 'More than 5–8 km',
     distanceLabelTh: 'มากกว่า 5–8 กม.',
-    feeThb: 300,
     typicalAreasEn:
       'Nimman, Chang Phueak, Suthep urban area, Chiang Mai Airport area, Nong Pa Khrang outer area, parts of Fa Ham and Nong Hoi',
     typicalAreasTh:
@@ -39,7 +45,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-8-12',
     distanceLabelEn: 'More than 8–12 km',
     distanceLabelTh: 'มากกว่า 8–12 กม.',
-    feeThb: 350,
     typicalAreasEn:
       'Mae Hia, Nong Chom near city, Don Kaeo near city, northern Saraphi, southern San Sai, outer Suthep',
     typicalAreasTh:
@@ -49,7 +54,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-12-16',
     distanceLabelEn: 'More than 12–16 km',
     distanceLabelTh: 'มากกว่า 12–16 กม.',
-    feeThb: 400,
     typicalAreasEn:
       'Saraphi town area, Hang Dong northern area, San Sai town area, Don Kaeo outer area, Mae Rim southern area',
     typicalAreasTh:
@@ -59,7 +63,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-16-20',
     distanceLabelEn: 'More than 16–20 km',
     distanceLabelTh: 'มากกว่า 16–20 กม.',
-    feeThb: 450,
     typicalAreasEn:
       'Mae Rim town, Hang Dong town, San Kamphaeng town, parts of San Sai and Saraphi, Doi Saket near town',
     typicalAreasTh:
@@ -69,7 +72,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-20-25',
     distanceLabelEn: 'More than 20–25 km',
     distanceLabelTh: 'มากกว่า 20–25 กม.',
-    feeThb: 550,
     typicalAreasEn:
       'Outer Hang Dong, outer San Sai, Doi Saket town and nearby areas, northern Lamphun Province, outer San Kamphaeng',
     typicalAreasTh:
@@ -79,7 +81,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-25-30',
     distanceLabelEn: 'More than 25–30 km',
     distanceLabelTh: 'มากกว่า 25–30 กม.',
-    feeThb: 650,
     typicalAreasEn:
       'Lamphun city area, outer Doi Saket, some Mae On approaches, distant parts of Hang Dong and San Kamphaeng',
     typicalAreasTh:
@@ -89,7 +90,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-30-35',
     distanceLabelEn: 'More than 30–35 km',
     distanceLabelTh: 'มากกว่า 30–35 กม.',
-    feeThb: 750,
     typicalAreasEn:
       'San Kamphaeng Hot Springs area, Mae On near areas, outer Lamphun, some lower Mae Rim mountain areas',
     typicalAreasTh:
@@ -99,7 +99,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-35-40',
     distanceLabelEn: 'More than 35–40 km',
     distanceLabelTh: 'มากกว่า 35–40 กม.',
-    feeThb: 850,
     typicalAreasEn:
       'Mae Taeng town, Mon Cham vicinity depending on route, outer Mae On and remote Doi Saket areas',
     typicalAreasTh:
@@ -109,7 +108,6 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-40-45',
     distanceLabelEn: 'More than 40–45 km',
     distanceLabelTh: 'มากกว่า 40–45 กม.',
-    feeThb: 950,
     typicalAreasEn:
       'Samoeng town, some remote Mae Rim, Mae On and Mae Taeng destinations',
     typicalAreasTh:
@@ -119,13 +117,27 @@ export const DELIVERY_DISTANCE_TIERS: DeliveryDistanceTier[] = [
     id: 'tier-45-plus',
     distanceLabelEn: 'More than 45 km',
     distanceLabelTh: 'มากกว่า 45 กม.',
-    feeThb: null,
     typicalAreasEn:
       'Remote Samoeng, Mae Kampong, distant Mae Taeng, mountain resorts, remote Lamphun and other unmapped destinations',
     typicalAreasTh:
       'สะเมิงห่างไกล แม่กำปอง แม่แตงไกล รีสอร์ทบนเขา ลำพูนห่างไกลและปลายทางอื่นๆ',
+    driverConfirm: true,
   },
 ];
+
+/**
+ * Distance tiers with fee column filled from the Chiang Mai zone fee ladder.
+ * Last (driver-confirm) row has null fee.
+ */
+export function getDeliveryDistanceTiers(): DeliveryDistanceTier[] {
+  const ladder = getChiangMaiZoneFeeLadder();
+  return DISTANCE_TIER_BASE.map((tier, index) => {
+    if (tier.driverConfirm) {
+      return { ...tier, feeThb: null };
+    }
+    return { ...tier, feeThb: ladder[index] ?? null };
+  });
+}
 
 /**
  * Fill color by fee tier for map districts.
@@ -150,7 +162,7 @@ export function formatFeeRange(
   feeTo: number | null,
   lang: 'en' | 'th'
 ): string {
-  const prefix = lang === 'th' ? '฿' : '฿';
+  const prefix = '฿';
   if (feeTo == null || feeFrom === feeTo) {
     return `${prefix}${feeFrom.toLocaleString()}`;
   }

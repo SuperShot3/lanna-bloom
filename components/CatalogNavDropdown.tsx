@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 /** Short catalog nav — only categories we currently sell. */
 const CATALOG_NAV_ITEMS = [
   { id: 'flowers', label: (lang: Locale) => translations[lang].catalog.topCategoryFlowers },
+  { id: 'roses', label: (lang: Locale) => lang === 'th' ? 'ช่อกุหลาบ' : 'Rose Bouquets' },
+  { id: 'orchids', label: (lang: Locale) => lang === 'th' ? 'ช่อกล้วยไม้' : 'Orchid Arrangements' },
   { id: 'toys', label: (lang: Locale) => translations[lang].catalog.topCategoryPlushyToys },
   { id: 'balloons', label: (lang: Locale) => translations[lang].catalog.topCategoryBalloons },
   { id: 'candy', label: (lang: Locale) => translations[lang].home.productSectionSweets },
@@ -26,10 +28,14 @@ const CATALOG_NAV_ITEMS = [
 
 type CatalogNavId = (typeof CATALOG_NAV_ITEMS)[number]['id'];
 
-function catalogNavHref(catalogHref: string, id: CatalogNavId): string {
+function catalogNavHref(catalogHref: string, lang: Locale, id: CatalogNavId): string {
   switch (id) {
     case 'flowers':
       return catalogHref;
+    case 'roses':
+      return `/${lang}/collections/roses-chiang-mai`;
+    case 'orchids':
+      return `/${lang}/collections/orchids-chiang-mai`;
     case 'toys':
       return `${catalogHref}${buildCatalogSearchString({ topCategory: 'plushy_toys' })}`;
     case 'balloons':
@@ -40,9 +46,12 @@ function catalogNavHref(catalogHref: string, id: CatalogNavId): string {
 }
 
 function useActiveCatalogNavId(): CatalogNavId | null {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const topCategory = searchParams?.get('topCategory') ?? '';
 
+  if (pathname?.endsWith('/collections/roses-chiang-mai')) return 'roses';
+  if (pathname?.endsWith('/collections/orchids-chiang-mai')) return 'orchids';
   if (topCategory === 'plushy_toys') return 'toys';
   if (topCategory === 'balloons') return 'balloons';
   if (topCategory === 'food_sweets') return 'candy';
@@ -89,7 +98,7 @@ export function CatalogNavDropdown({
           return (
             <DropdownMenuItem key={item.id} asChild>
               <Link
-                href={catalogNavHref(catalogHref, item.id)}
+                href={catalogNavHref(catalogHref, lang, item.id)}
                 className={cn(
                   'cursor-pointer text-sm font-medium normal-case tracking-normal',
                   isActive && 'bg-[#C5A059]/12 text-[#C5A059]',
@@ -156,7 +165,7 @@ export function CatalogMobileNav({
             return (
               <Link
                 key={item.id}
-                href={catalogNavHref(catalogHref, item.id)}
+                href={catalogNavHref(catalogHref, lang, item.id)}
                 className={cn(
                   'rounded-lg px-3 py-2.5 text-sm font-medium text-[#1A3C34] transition-colors hover:bg-[#C5A059]/10 hover:text-[#C5A059]',
                   isActive && 'bg-[#C5A059]/12 text-[#C5A059]',

@@ -5,8 +5,15 @@
 
 import { calcDeliveryFeeTHB, detectDistrictFromAddress, DISTRICTS } from './deliveryFees';
 import {
+  resolveAmphoeFeeDisplay,
+  resolveOtherAmphoeFeeDisplay,
+} from './delivery/amphoeDisplayFees';
+import { AMPHOE_MAP_DISTRICTS } from './delivery/amphoeMapData';
+import { getDeliveryDistanceTiers } from './delivery/distanceTiers';
+import {
   detectChiangMaiZoneFromAddress,
   getCheckoutZonesForDestination,
+  getChiangMaiZoneFeeLadder,
   getZoneFee,
   getZonesForDestination,
 } from './delivery/zones';
@@ -67,6 +74,44 @@ assert(getCheckoutZonesForDestination('CHIANG_MAI').length === 22, 'Checkout exc
 
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');
+
+// Map amphoe display fees derive from zones.ts
+for (const d of AMPHOE_MAP_DISTRICTS) {
+  const display = resolveAmphoeFeeDisplay(d);
+  if (d.manualQuote) {
+    assert(display.displayKind === 'driver_confirm', `${d.id} should be driver_confirm`);
+    assert(d.checkoutZoneId != null, `${d.id} should link estimate zone`);
+    assert(
+      display.feeFrom === getZoneFee('CHIANG_MAI', d.checkoutZoneId!),
+      `${d.id} estimate should match zone fee`
+    );
+    continue;
+  }
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const zoneIds = d.relatedCheckoutZoneIds?.length
+    ? d.relatedCheckoutZoneIds
+    : [d.checkoutZoneId!];
+  const fees = zoneIds.map((id) => getZoneFee('CHIANG_MAI', id)!);
+  assert(display.feeFrom === Math.min(...fees), `${d.id} feeFrom matches min zone fee`);
+  assert(
+    display.feeTo === Math.max(...fees) || (fees.length === 1 && display.feeTo === display.feeFrom),
+    `${d.id} feeTo matches max zone fee`
+  );
+}
+
+const otherDisplay = resolveOtherAmphoeFeeDisplay();
+assert(otherDisplay.displayKind === 'driver_confirm', 'other is driver_confirm');
+assert(otherDisplay.feeFrom === getZoneFee('CHIANG_MAI', 'cm-unknown'), 'other estimate = cm-unknown');
+
+const ladder = getChiangMaiZoneFeeLadder();
+const tiers = getDeliveryDistanceTiers();
+const feeTiers = tiers.filter((t) => !t.driverConfirm);
+assert(feeTiers.length === ladder.length, 'distance fee rows match zone ladder length');
+for (let i = 0; i < ladder.length; i++) {
+  assert(feeTiers[i].feeThb === ladder[i], `tier ${i} fee matches ladder`);
+}
+assert(tiers[tiers.length - 1].feeThb == null, 'last distance tier is driver-confirm');
 
 console.log('✓ All delivery fee assertions passed');
 process.exit(0);

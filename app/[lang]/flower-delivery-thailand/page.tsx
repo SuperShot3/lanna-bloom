@@ -164,6 +164,12 @@ export default function FlowerDeliveryThailandPage({
             </ul>
           </div>
         </section>
+
+        <div className="flex justify-center pb-4">
+          <Link href={`/${lang}/catalog`} className="hero-cta">
+            {copy.ctaCatalog}
+          </Link>
+        </div>
       </div>
     </div>
   );

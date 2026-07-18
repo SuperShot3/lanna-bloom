@@ -300,7 +300,11 @@ export function Header({
                     lang={lang}
                     catalogHref={catalogHref}
                     label={t.catalog}
-                    pathActive={basePath === '/catalog' || basePath.startsWith('/catalog/')}
+                    pathActive={
+                      basePath === '/catalog' ||
+                      basePath.startsWith('/catalog/') ||
+                      basePath.startsWith('/collections/')
+                    }
                   />
                 </Suspense>
                 <Suspense
@@ -466,7 +470,11 @@ export function Header({
                   lang={lang}
                   catalogHref={catalogHref}
                   label={t.catalog}
-                  pathActive={basePath === '/catalog' || basePath.startsWith('/catalog/')}
+                  pathActive={
+                    basePath === '/catalog' ||
+                    basePath.startsWith('/catalog/') ||
+                    basePath.startsWith('/collections/')
+                  }
                   onNavigate={() => setMenuOpen(false)}
                 />
               </Suspense>

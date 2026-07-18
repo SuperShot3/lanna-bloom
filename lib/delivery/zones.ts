@@ -166,6 +166,19 @@ export function getZoneFee(destinationId: DeliveryDestinationId, zoneId: string)
   return z.feeThb;
 }
 
+/**
+ * Unique sorted Chiang Mai zone fees for distance-reference / map ladders.
+ * Excludes cm-unknown; includes manual-quote zone fees so the ladder stays complete.
+ */
+export function getChiangMaiZoneFeeLadder(): number[] {
+  const fees = new Set(
+    getZonesForDestination('CHIANG_MAI')
+      .filter((z) => z.id !== 'cm-unknown')
+      .map((z) => z.feeThb)
+  );
+  return [...fees].sort((a, b) => a - b);
+}
+
 export function zoneLabel(
   destinationId: DeliveryDestinationId,
   zoneId: string,
