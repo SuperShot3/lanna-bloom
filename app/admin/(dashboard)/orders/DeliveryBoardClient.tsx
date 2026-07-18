@@ -284,18 +284,14 @@ function DeliveryCardAddress({ order }: { order: SupabaseOrderRow }) {
           </span>
         </p>
         <AdminCopyTextButton
-          text={
-            cardMessage.trim()
-              ? `Card text: ${cardMessage.trim()}`
-              : `Card text: ${MISSING_EN}`
-          }
-          ariaLabel="Copy card text"
+          text={cardMessage.trim() ? `Card text: ${cardMessage.trim()}` : ''}
+          ariaLabel={cardMessage.trim() ? 'Copy card text' : 'No card text to copy'}
           className="admin-btn admin-btn-outline admin-copy-text-btn admin-delivery-copy-action"
         >
           <span className="material-symbols-outlined admin-delivery-copy-action-ico" aria-hidden>
             content_copy
           </span>
-          Copy card text
+          {cardMessage.trim() ? 'Copy card text' : 'No text'}
         </AdminCopyTextButton>
       </div>
     </div>

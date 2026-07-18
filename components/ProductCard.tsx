@@ -30,6 +30,7 @@ import {
   CATALOG_PDP_PRELOAD_WIDTH,
   preloadCatalogImage,
 } from '@/lib/catalog/catalogImage';
+import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -38,12 +39,15 @@ export function ProductCard({
   lang,
   alwaysShowActions = false,
   simpleActions = false,
+  rememberCatalogReturn = false,
 }: {
   product: CatalogProduct;
   lang: Locale;
   alwaysShowActions?: boolean;
   /** Inline Buy 1-Click + Add to cart only (no expandable options panel). */
   simpleActions?: boolean;
+  /** Preserve browser back behavior when this card is rendered in the catalog. */
+  rememberCatalogReturn?: boolean;
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
@@ -224,6 +228,15 @@ export function ProductCard({
     if (didSwipeRef.current) {
       e.preventDefault();
       return;
+    }
+    if (
+      rememberCatalogReturn &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.shiftKey &&
+      !e.altKey
+    ) {
+      rememberCatalogProductNavigation(href);
     }
     handleLinkClick();
   };

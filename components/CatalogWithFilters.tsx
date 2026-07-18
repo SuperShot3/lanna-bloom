@@ -357,10 +357,20 @@ export function CatalogWithFilters({
               >
                 {visibleBouquets.length > 0
                   ? visibleBouquets.map((bouquet) => (
-                      <BouquetCard key={bouquet.id} bouquet={bouquet} lang={lang} />
+                      <BouquetCard
+                        key={bouquet.id}
+                        bouquet={bouquet}
+                        lang={lang}
+                        rememberCatalogReturn
+                      />
                     ))
                   : visibleProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} lang={lang} />
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        lang={lang}
+                        rememberCatalogReturn
+                      />
                     ))}
               </div>
                 {filterParams.topCategory !== 'flowers' ? null : (

@@ -348,6 +348,7 @@ const baseTranslations = {
       activeFiltersLabel: 'Active filters',
     },
     product: {
+      backToCatalog: 'Back to catalog',
       descriptionHeading: 'Product Description',
       aboutHeading: 'About this bouquet',
       similarBouquetsTitle: 'You might also like',
@@ -1855,6 +1856,7 @@ const baseTranslations = {
       activeFiltersLabel: 'ตัวกรองที่ใช้',
     },
     product: {
+      backToCatalog: 'กลับไปที่แคตตาล็อก',
       descriptionHeading: 'รายละเอียดสินค้า',
       aboutHeading: 'เกี่ยวกับช่อนี้',
       similarBouquetsTitle: 'ช่อดอกไม้ที่คุณอาจชอบ',

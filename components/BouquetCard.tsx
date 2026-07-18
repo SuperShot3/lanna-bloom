@@ -38,6 +38,7 @@ import {
   CATALOG_PDP_PRELOAD_WIDTH,
   preloadCatalogImage,
 } from '@/lib/catalog/catalogImage';
+import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -61,6 +62,7 @@ export function BouquetCard({
   showHoverPanel = true,
   showPartnerBadge = true,
   persistPreferredSizeOnClick = false,
+  rememberCatalogReturn = false,
 }: {
   bouquet: Bouquet;
   lang: Locale;
@@ -80,6 +82,8 @@ export function BouquetCard({
   showPartnerBadge?: boolean;
   /** When true, store the selected size for this bouquet before navigation. */
   persistPreferredSizeOnClick?: boolean;
+  /** Preserve browser back behavior when this card is rendered in the catalog. */
+  rememberCatalogReturn?: boolean;
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
@@ -313,6 +317,15 @@ export function BouquetCard({
       if (persistPreferredSizeOnClick && selectedSize) {
         setPreferredBouquetSize(bouquet.id, selectedSize.optionId);
       }
+      if (
+        rememberCatalogReturn &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.shiftKey &&
+        !e.altKey
+      ) {
+        rememberCatalogProductNavigation(href);
+      }
 
       const item: AnalyticsItem = {
         item_id: bouquet.id,
@@ -325,7 +338,16 @@ export function BouquetCard({
       };
       trackSelectItem('catalog', item);
     },
-    [bouquet, name, displayMinPrice, persistPreferredSizeOnClick, selectedSize, lang]
+    [
+      bouquet,
+      displayMinPrice,
+      href,
+      lang,
+      name,
+      persistPreferredSizeOnClick,
+      rememberCatalogReturn,
+      selectedSize,
+    ]
   );
 
   const viewTransitionName = `product-${bouquet.id}`;

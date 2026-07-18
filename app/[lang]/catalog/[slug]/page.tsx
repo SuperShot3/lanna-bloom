@@ -21,6 +21,7 @@ import { translations } from '@/lib/i18n';
 import { getMarketByPathSlug } from '@/lib/delivery/markets';
 import MarketCatalogPageViaSlug from './catalog/page';
 import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
+import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
 
 // Revalidate product pages every 60 seconds so Sanity updates appear without rebuild
 export const revalidate = 60;
@@ -105,6 +106,7 @@ export default async function ProductPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
         />
         <div className="container product-layout">
+          <ProductMobileBackButton catalogHref={catalogHref} label={t.backToCatalog} />
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link href={`/${lang}`}>{nav.home}</Link>
             <span className="sep">/</span>
@@ -144,6 +146,10 @@ export default async function ProductPage({
     return (
       <div className="product-page">
         <div className="container product-layout">
+          <ProductMobileBackButton
+            catalogHref={catalogHref}
+            label={translations[lang as Locale].product.backToCatalog}
+          />
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link href={`/${lang}`}>{nav.home}</Link>
             <span className="sep">/</span>
@@ -177,6 +183,10 @@ export default async function ProductPage({
     return (
       <div className="product-page">
         <div className="container product-layout">
+          <ProductMobileBackButton
+            catalogHref={catalogHref}
+            label={translations[lang as Locale].product.backToCatalog}
+          />
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link href={`/${lang}`}>{nav.home}</Link>
             <span className="sep">/</span>
@@ -210,6 +220,10 @@ export default async function ProductPage({
     return (
       <div className="product-page">
         <div className="container product-layout">
+          <ProductMobileBackButton
+            catalogHref={catalogHref}
+            label={translations[lang as Locale].product.backToCatalog}
+          />
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link href={`/${lang}`}>{nav.home}</Link>
             <span className="sep">/</span>
