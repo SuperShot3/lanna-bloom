@@ -377,7 +377,7 @@ export const articles: ArticleMeta[] = [
       center: { kind: 'emoji', value: '🌿' },
     },
     ctaLinks: [
-      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Green flower bouquets', labelTh: 'ช่อดอกไม้สีเขียว', href: '/catalog?colors=green' },
       { label: 'Weekday flowers guide', labelTh: 'คู่มือดอกไม้ตามวัน', href: '/info/flowers-by-day-of-week-thailand' },
       { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
     ],

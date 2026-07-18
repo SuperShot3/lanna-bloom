@@ -252,10 +252,7 @@ export function CatalogWithFilters({
           isOpen={mobileFilterOpen}
           onClose={() => setMobileFilterOpen(false)}
           values={filterParams}
-          onApply={(p) => {
-            handleApply(p);
-            setMobileFilterOpen(false);
-          }}
+          onApply={handleApply}
           onClear={handleClear}
           flowerTypeCounts={flowerTypeCounts}
         />

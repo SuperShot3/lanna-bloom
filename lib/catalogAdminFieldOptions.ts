@@ -22,6 +22,7 @@ export const ADMIN_COLOR_OPTIONS = [
   { value: 'yellow', label: 'Yellow' },
   { value: 'purple', label: 'Purple' },
   { value: 'orange', label: 'Orange' },
+  { value: 'green', label: 'Green' },
   { value: 'mixed', label: 'Mixed' },
 ] as const;
 

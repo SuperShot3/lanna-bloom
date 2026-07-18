@@ -9,7 +9,7 @@ import { STEM_BUCKET_RANGES } from '@/lib/bouquetOptions';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { CATALOG_OCCASION_CHIPS, STOREFRONT_FLOWER_TYPES } from '@/lib/catalogCategories';
 
-const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'mixed'] as const;
+const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'green', 'mixed'] as const;
 const DELIVERY_OPTS = ['same_day', 'next_day'] as const;
 const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement', 'potted'] as const;
 const SORT_OPTS: Array<{
@@ -38,6 +38,7 @@ const COLOR_HEX: Record<string, string> = {
   yellow: '#F5D547',
   purple: '#7B68A6',
   orange: '#E8944A',
+  green: '#5C9E6E',
   mixed: 'linear-gradient(135deg,#C41E3A,#F4A6C1,#F5D547)',
 };
 
@@ -98,8 +99,6 @@ export interface FlowerFilterPanelProps {
   onClear: () => void;
   /** When true, panel is inside mobile bottom sheet (full width) */
   mobileSheet?: boolean;
-  /** Lets the mobile drawer render Apply in the fixed header (next to Clear). */
-  onMobileToolbarChange?: (state: { isDirty: boolean; apply: () => void } | null) => void;
 }
 
 export function FlowerFilterPanel({
@@ -109,13 +108,14 @@ export function FlowerFilterPanel({
   onApply,
   onClear,
   mobileSheet = false,
-  onMobileToolbarChange,
 }: FlowerFilterPanelProps) {
   const t = translations[lang].catalog;
   const committedKey = useMemo(() => buildCatalogSearchString(values), [values]);
 
-  /** Local selections; URL updates only when the user clicks “Apply filters”. */
+  /** Local UI state; catalog URL updates as soon as a filter choice is committed. */
   const [draft, setDraft] = useState<CatalogFilterParams>(values);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
 
   const [minStr, setMinStr] = useState(values.min != null ? String(values.min) : '');
   const [maxStr, setMaxStr] = useState(values.max != null ? String(values.max) : '');
@@ -126,6 +126,7 @@ export function FlowerFilterPanel({
 
   useEffect(() => {
     setDraft(values);
+    draftRef.current = values;
     const lo = values.min != null && values.min > 0 ? values.min : 0;
     const hi =
       values.max != null && values.max > 0 ? Math.min(values.max, PRICE_SLIDER_MAX) : PRICE_SLIDER_MAX;
@@ -135,47 +136,50 @@ export function FlowerFilterPanel({
     setMaxStr(values.max != null && values.max > 0 ? String(values.max) : '');
   }, [committedKey]);
 
-  const draftKey = useMemo(() => buildCatalogSearchString(draft), [draft]);
-  const isDirty = draftKey !== committedKey;
-
-  useEffect(() => {
-    if (!onMobileToolbarChange) return;
-    if (!mobileSheet) {
-      onMobileToolbarChange(null);
-      return;
-    }
-    onMobileToolbarChange({
-      isDirty,
-      apply: () => onApply(draft),
-    });
-  }, [mobileSheet, onMobileToolbarChange, isDirty, draft, onApply]);
+  const commit = useCallback(
+    (updater: (prev: CatalogFilterParams) => CatalogFilterParams) => {
+      const next = updater(draftRef.current);
+      const nextKey = buildCatalogSearchString(next);
+      if (nextKey === buildCatalogSearchString(draftRef.current)) return;
+      draftRef.current = next;
+      setDraft(next);
+      onApply(next);
+    },
+    [onApply]
+  );
 
   const applyPrice = useCallback(() => {
     const min = minStr ? parseInt(minStr, 10) : undefined;
     const max = maxStr ? parseInt(maxStr, 10) : undefined;
-    setDraft((d) => ({
+    commit((d) => ({
       ...d,
       min: min != null && !isNaN(min) && min > 0 ? min : undefined,
       max: max != null && !isNaN(max) && max > 0 ? max : undefined,
     }));
-  }, [minStr, maxStr]);
+  }, [minStr, maxStr, commit]);
 
-  const toggleMulti = useCallback((key: 'colors' | 'types' | 'delivery' | 'formats', id: string) => {
-    setDraft((d) => {
-      const cur = new Set(d[key] ?? []);
-      if (cur.has(id)) cur.delete(id);
-      else cur.add(id);
-      const next = Array.from(cur);
-      return { ...d, [key]: next.length ? next : undefined };
-    });
-  }, []);
+  const toggleMulti = useCallback(
+    (key: 'colors' | 'types' | 'delivery' | 'formats', id: string) => {
+      commit((d) => {
+        const cur = new Set(d[key] ?? []);
+        if (cur.has(id)) cur.delete(id);
+        else cur.add(id);
+        const next = Array.from(cur);
+        return { ...d, [key]: next.length ? next : undefined };
+      });
+    },
+    [commit]
+  );
 
-  const toggleStem = useCallback((bucket: StemBucketKey) => {
-    setDraft((d) => ({
-      ...d,
-      stemBucket: d.stemBucket === bucket ? undefined : bucket,
-    }));
-  }, []);
+  const toggleStem = useCallback(
+    (bucket: StemBucketKey) => {
+      commit((d) => ({
+        ...d,
+        stemBucket: d.stemBucket === bucket ? undefined : bucket,
+      }));
+    },
+    [commit]
+  );
 
   const activePills = useMemo(() => {
     const pills: { key: string; label: string; remove: () => void }[] = [];
@@ -184,17 +188,17 @@ export function FlowerFilterPanel({
     // Price range is not shown here — only in the dedicated price inputs / slider below.
     draft.colors?.forEach((c) =>
       add(`c-${c}`, t[`color${c.charAt(0).toUpperCase() + c.slice(1)}` as keyof typeof t] as string, () =>
-        setDraft((d) => ({ ...d, colors: d.colors?.filter((x) => x !== c) }))
+        commit((d) => ({ ...d, colors: d.colors?.filter((x) => x !== c) }))
       )
     );
     draft.types?.forEach((ty) =>
       add(`t-${ty}`, t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string, () =>
-        setDraft((d) => ({ ...d, types: d.types?.filter((x) => x !== ty) }))
+        commit((d) => ({ ...d, types: d.types?.filter((x) => x !== ty) }))
       )
     );
     draft.delivery?.forEach((d) =>
       add(`d-${d}`, d === 'same_day' ? t.deliverySameDay : t.deliveryNextDay, () =>
-        setDraft((prev) => ({ ...prev, delivery: prev.delivery?.filter((x) => x !== d) }))
+        commit((prev) => ({ ...prev, delivery: prev.delivery?.filter((x) => x !== d) }))
       )
     );
     const fmtLabel: Record<string, keyof typeof t> = {
@@ -207,31 +211,31 @@ export function FlowerFilterPanel({
     };
     draft.formats?.forEach((f) =>
       add(`f-${f}`, t[fmtLabel[f]], () =>
-        setDraft((d) => ({ ...d, formats: d.formats?.filter((x) => x !== f) }))
+        commit((d) => ({ ...d, formats: d.formats?.filter((x) => x !== f) }))
       )
     );
     if (draft.stemBucket) {
       const sk = STEM_OPTS.find((s) => s.key === draft.stemBucket);
-      if (sk) add('stem', t[sk.labelKey], () => setDraft((d) => ({ ...d, stemBucket: undefined })));
+      if (sk) add('stem', t[sk.labelKey], () => commit((d) => ({ ...d, stemBucket: undefined })));
     }
     if (draft.occasion) {
       const oc = CATALOG_OCCASION_CHIPS.find((c) => c.value === draft.occasion);
       if (oc)
-        add('occasion', t[oc.labelKey] as string, () => setDraft((d) => ({ ...d, occasion: undefined })));
+        add('occasion', t[oc.labelKey] as string, () => commit((d) => ({ ...d, occasion: undefined })));
     }
     return pills;
-  }, [draft, t]);
+  }, [draft, t, commit]);
 
   const commitPriceFromSlider = useCallback(() => {
     const { lo, hi } = rangeRef.current;
     setMinStr(lo > 0 ? String(lo) : '');
     setMaxStr(hi < PRICE_SLIDER_MAX ? String(hi) : '');
-    setDraft((d) => ({
+    commit((d) => ({
       ...d,
       min: lo > 0 ? lo : undefined,
       max: hi > 0 && hi < PRICE_SLIDER_MAX ? hi : undefined,
     }));
-  }, []);
+  }, [commit]);
 
   const onMinSliderChange = (v: number) => {
     const next = Math.min(v, rangeHi - PRICE_SLIDER_STEP);
@@ -255,17 +259,6 @@ export function FlowerFilterPanel({
             {t.clearAllFilters}
           </button>
         </div>
-      )}
-
-      {!mobileSheet && (
-        <button
-          type="button"
-          className="flower-filter-apply"
-          disabled={!isDirty}
-          onClick={() => onApply(draft)}
-        >
-          {t.applyFilters}
-        </button>
       )}
 
       {activePills.length > 0 && (
@@ -294,7 +287,9 @@ export function FlowerFilterPanel({
                 key={value}
                 type="button"
                 className={`flower-pill flower-pill--sort ${active ? 'is-active' : ''}`}
-                onClick={() => setDraft((d) => ({ ...d, sort: value === 'newest' ? undefined : value }))}
+                onClick={() =>
+                  commit((d) => ({ ...d, sort: value === 'newest' ? undefined : value }))
+                }
                 aria-pressed={active}
               >
                 {t[labelKey]}
@@ -424,7 +419,7 @@ export function FlowerFilterPanel({
                   key={value || 'any'}
                   type="button"
                   className={`flower-pill ${active ? 'is-active' : ''}`}
-                  onClick={() => setDraft((d) => ({ ...d, occasion: value || undefined }))}
+                  onClick={() => commit((d) => ({ ...d, occasion: value || undefined }))}
                   aria-pressed={active}
                 >
                   {t[labelKey] as string}
@@ -608,28 +603,6 @@ export function FlowerFilterPanel({
         }
         .flower-filter-clear-all:hover {
           text-decoration: underline;
-        }
-        .flower-filter-apply {
-          width: 100%;
-          margin-bottom: 14px;
-          padding: 10px 14px;
-          border: none;
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          background: #c5a059;
-          color: #1a3c34;
-          box-shadow: 0 2px 0 #a88b5c;
-          transition: background 0.15s ease, opacity 0.15s ease;
-        }
-        .flower-filter-apply:hover:not(:disabled) {
-          background: #d4af37;
-        }
-        .flower-filter-apply:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
-          box-shadow: none;
         }
         .flower-filter-active {
           margin-bottom: 16px;
@@ -927,16 +900,8 @@ export function FlowerFilterMobileDrawer({
   ...panelProps
 }: FlowerFilterPanelProps & { isOpen: boolean; onClose: () => void }) {
   const tCat = translations[lang].catalog;
-  const [mobileToolbar, setMobileToolbar] = useState<{
-    isDirty: boolean;
-    apply: () => void;
-  } | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!isOpen) setMobileToolbar(null);
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -985,14 +950,6 @@ export function FlowerFilterMobileDrawer({
               {tCat.filters}
             </h2>
             <div className="flower-m-toolbar-actions">
-              <button
-                type="button"
-                className="flower-m-toolbar-apply"
-                disabled={!mobileToolbar?.isDirty}
-                onClick={() => mobileToolbar?.apply()}
-              >
-                {tCat.applyFilters}
-              </button>
               <button type="button" className="flower-m-toolbar-clear" onClick={panelProps.onClear}>
                 {tCat.clearAllFilters}
               </button>
@@ -1000,12 +957,7 @@ export function FlowerFilterMobileDrawer({
           </div>
         </div>
         <div className="flower-m-scroll">
-          <FlowerFilterPanel
-            {...panelProps}
-            lang={lang}
-            mobileSheet
-            onMobileToolbarChange={setMobileToolbar}
-          />
+          <FlowerFilterPanel {...panelProps} lang={lang} mobileSheet />
         </div>
       </div>
       <style jsx>{`
@@ -1095,32 +1047,6 @@ export function FlowerFilterMobileDrawer({
           justify-content: flex-end;
           gap: 8px;
           min-width: 0;
-        }
-        .flower-m-toolbar-apply {
-          flex: 0 1 auto;
-          padding: 8px 12px;
-          border: none;
-          border-radius: 10px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          background: #c5a059;
-          color: #1a3c34;
-          box-shadow: 0 2px 0 #a88b5c;
-          transition: background 0.15s ease, opacity 0.15s ease;
-          white-space: nowrap;
-          line-height: 1.2;
-          max-width: 46vw;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .flower-m-toolbar-apply:hover:not(:disabled) {
-          background: #d4af37;
-        }
-        .flower-m-toolbar-apply:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
-          box-shadow: none;
         }
         .flower-m-toolbar-clear {
           flex-shrink: 0;
