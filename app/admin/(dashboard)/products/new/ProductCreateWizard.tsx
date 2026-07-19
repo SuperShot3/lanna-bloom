@@ -143,12 +143,12 @@ const stepCopy: Record<WizardStep, { eyebrow: string; label: string; description
     eyebrow: 'Step 1',
     label: 'Images',
     description:
-      'Upload a photo, optionally generate AI alternatives in the background, and continue to text as soon as a WebP image is ready.',
+      'Upload a photo to use as the product image, then continue to text. AI image alternatives are optional.',
   },
   text: {
     eyebrow: 'Step 2',
     label: 'Text',
-    description: 'Use the main image to generate bilingual product copy you can edit before saving.',
+    description: 'Use the main product image to generate bilingual copy you can edit before saving.',
   },
   review: {
     eyebrow: 'Step 3',
@@ -276,8 +276,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const [activeStep, setActiveStep] = useState<WizardStep>('images');
   const [imageDrafts, setImageDrafts] = useState<ImageDraftWithAnalysis[]>([]);
   const [generationSession, setGenerationSession] = useState<GenerationSession | null>(null);
+  const [optionalAiSource, setOptionalAiSource] = useState<{ file: File; preview: string } | null>(
+    null
+  );
   const [aiOptionCount, setAiOptionCount] = useState<AiOptionCount>(2);
   const [imageStatusLine, setImageStatusLine] = useState('');
+  const [isPreparingOriginal, setIsPreparingOriginal] = useState(false);
   const [pendingCropFile, setPendingCropFile] = useState<File | null>(null);
   const [basePreservationPrompt, setBasePreservationPrompt] = useState<string>(
     DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT
@@ -327,14 +331,17 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   );
 
   const canContinueFromImages = useMemo(() => {
-    const sessionHasReadySelection = Boolean(
+    // Default path: original photo already attached to the gallery.
+    const draftsReady =
+      hasPrimaryReady && imageDrafts.length > 0 && imageDrafts.every((row) => hasReadyWebp(row));
+    if (draftsReady) return true;
+
+    // Optional AI path: a selected ready candidate can also unlock continue.
+    return Boolean(
       generationSession?.candidates.some(
         (candidate) => candidate.selected && hasReadyWebp(candidate)
       )
     );
-    const draftsReady =
-      hasPrimaryReady && imageDrafts.length > 0 && imageDrafts.every((row) => hasReadyWebp(row));
-    return sessionHasReadySelection || draftsReady;
   }, [generationSession, hasPrimaryReady, imageDrafts]);
 
   const occasionHintValues = useMemo(() => splitList(hints.occasion), [hints.occasion]);
@@ -490,49 +497,95 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setPendingCropFile(file);
   }
 
-  function applyPendingCrop(file: File) {
+  function clearOptionalAiSource() {
+    if (optionalAiSource?.preview) {
+      try {
+        URL.revokeObjectURL(optionalAiSource.preview);
+      } catch {
+        // ignore
+      }
+    }
+    setOptionalAiSource(null);
+  }
+
+  function cancelGenerationSession() {
+    if (generationSession?.sourcePreview) {
+      const sharedWithOptional =
+        optionalAiSource?.preview && generationSession.sourcePreview === optionalAiSource.preview;
+      if (!sharedWithOptional) {
+        try {
+          URL.revokeObjectURL(generationSession.sourcePreview);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    setGenerationSession(null);
+    setImageStatusLine('');
+  }
+
+  async function attachOriginalAsProductImage(file: File) {
     setPendingCropFile(null);
     setError('');
     setSavedProduct(null);
+
     if (generationSession?.phase === 'select') {
       const hasSelected = generationSession.candidates.some(
         (candidate) => candidate.selected && hasReadyWebp(candidate)
       );
       if (hasSelected) commitSelectedCandidates();
     }
-    if (generationSession?.sourcePreview) {
-      try {
-        URL.revokeObjectURL(generationSession.sourcePreview);
-      } catch {
-        // ignore
+    cancelGenerationSession();
+    clearOptionalAiSource();
+
+    const localPreview = URL.createObjectURL(file);
+    setOptionalAiSource({ file, preview: localPreview });
+    setIsPreparingOriginal(true);
+    setImageStatusLine('Preparing original photo…');
+
+    try {
+      const alt = draft.altEn || draft.nameEn || file.name;
+      const result = await prepareCandidateFile(file, alt);
+      if ('error' in result) {
+        showToast(result.error || 'Failed to prepare the original photo.', { variant: 'error' });
+        setError(result.error || 'Failed to prepare the original photo.');
+        setImageStatusLine('');
+        return;
       }
+
+      setImageDrafts((current) => {
+        const next = current.map((row) => ({ ...row, isPrimary: false }));
+        next.push({
+          id: createId(),
+          file,
+          localPreview: result.serverPreview ?? localPreview,
+          variants: result.variants,
+          serverPreview: result.serverPreview,
+          isPrimary: true,
+          enhanced: false,
+        });
+        return next;
+      });
+      setImageStatusLine('');
+      showToast('Original photo added as the product image. You can generate text next.');
+    } catch {
+      showToast('Could not prepare the original photo. Check your connection and try again.', {
+        variant: 'error',
+      });
+      setError('Could not prepare the original photo. Check your connection and try again.');
+      setImageStatusLine('');
+    } finally {
+      setIsPreparingOriginal(false);
     }
-    const sourcePreview = URL.createObjectURL(file);
-    setGenerationSession({
-      sourceFile: file,
-      sourcePreview,
-      aiOptionCount,
-      phase: 'configure',
-      statusLine: '',
-      candidates: [],
-    });
+  }
+
+  function applyPendingCrop(file: File) {
+    void attachOriginalAsProductImage(file);
   }
 
   function skipPendingCrop() {
     if (!pendingCropFile) return;
-    applyPendingCrop(pendingCropFile);
-  }
-
-  function cancelGenerationSession() {
-    if (generationSession?.sourcePreview) {
-      try {
-        URL.revokeObjectURL(generationSession.sourcePreview);
-      } catch {
-        // ignore
-      }
-    }
-    setGenerationSession(null);
-    setImageStatusLine('');
+    void attachOriginalAsProductImage(pendingCropFile);
   }
 
   function updateSessionCandidates(
@@ -637,34 +690,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     };
   }
 
-  function buildOriginalCandidate(source: GenerationSession): ImageCandidate[] {
-    return [
-      {
-        id: createId(),
-        kind: 'original',
-        file: source.sourceFile,
-        localPreview: source.sourcePreview,
-        status: 'preparing',
-        enhanced: false,
-        selected: true,
-        isMain: true,
-      },
-    ];
-  }
-
-  function buildGenerationCandidates(count: AiOptionCount, source: GenerationSession): ImageCandidate[] {
-    const originalId = createId();
-    const original: ImageCandidate = {
-      id: originalId,
-      kind: 'original',
-      file: source.sourceFile,
-      localPreview: source.sourcePreview,
-      status: 'preparing',
-      enhanced: false,
-      selected: true,
-      isMain: true,
-    };
-    const aiCandidates = Array.from({ length: count }, (_, index) => ({
+  function buildAiOnlyCandidates(count: AiOptionCount, source: GenerationSession): ImageCandidate[] {
+    return Array.from({ length: count }, (_, index) => ({
       id: createId(),
       kind: 'ai' as const,
       aiSlot: index + 1,
@@ -675,7 +702,6 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       selected: false,
       isMain: false,
     }));
-    return [original, ...aiCandidates];
   }
 
   async function runCandidatePrepare(candidateId: string, source: GenerationSession) {
@@ -742,41 +768,37 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     });
   }
 
-  function startGeneration(mode: 'original-only' | 'with-ai') {
-    if (!generationSession) return;
-    setError('');
-    const candidates =
-      mode === 'original-only'
-        ? buildOriginalCandidate(generationSession)
-        : buildGenerationCandidates(aiOptionCount, generationSession);
-
-    const sessionBase: GenerationSession = {
-      ...generationSession,
-      aiOptionCount: mode === 'original-only' ? 0 : aiOptionCount,
-      phase: 'generating',
-      statusLine: 'Preparing original photo...',
-      candidates,
-    };
-    setGenerationSession(sessionBase);
-    setImageStatusLine('Preparing original photo...');
-
-    const original = candidates.find((candidate) => candidate.kind === 'original');
-    const aiOnes = candidates.filter((candidate) => candidate.kind === 'ai');
-
-    const tasks: Promise<void>[] = [];
-    if (original) {
-      tasks.push(runCandidatePrepare(original.id, sessionBase));
+  function startOptionalAiGeneration() {
+    const source = optionalAiSource;
+    if (!source) {
+      setError('Add a product photo first, then you can create optional AI alternatives.');
+      return;
     }
-    aiOnes.forEach((candidate) => {
-      if (candidate.aiSlot) {
-        tasks.push(
-          runCandidateEnhance(candidate.id, sessionBase, candidate.aiSlot, aiOnes.length)
-        );
-      }
-    });
+    if (!hasPrimaryReady) {
+      setError('Wait for the original photo to finish preparing before creating AI alternatives.');
+      return;
+    }
 
-    // AI image work continues in the background so text generation can start once any
-    // selected WebP-ready image is available.
+    setError('');
+    const sessionBase: GenerationSession = {
+      sourceFile: source.file,
+      sourcePreview: source.preview,
+      aiOptionCount,
+      phase: 'generating',
+      statusLine: `Creating AI option 1 of ${aiOptionCount}…`,
+      candidates: [],
+    };
+    const candidates = buildAiOnlyCandidates(aiOptionCount, sessionBase);
+    sessionBase.candidates = candidates;
+    setGenerationSession(sessionBase);
+    setImageStatusLine(`Creating AI option 1 of ${aiOptionCount}…`);
+
+    const tasks = candidates
+      .filter((candidate) => candidate.aiSlot)
+      .map((candidate) =>
+        runCandidateEnhance(candidate.id, sessionBase, candidate.aiSlot!, candidates.length)
+      );
+
     void Promise.all(tasks)
       .then(() => {
         setGenerationSession((current) =>
@@ -791,7 +813,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         setImageStatusLine('Ready');
       })
       .catch(() => {
-        showToast('Could not finish preparing images. Check your connection and try again.', {
+        showToast('Could not finish creating AI images. Check your connection and try again.', {
           variant: 'error',
         });
       });
@@ -879,9 +901,10 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     const hasPending = remaining.some((candidate) => isCandidateInFlight(candidate));
 
     setImageDrafts((current) => {
-      const mainCandidate = selected.find((candidate) => candidate.isMain) ?? selected[0];
+      const explicitMain = selected.find((candidate) => candidate.isMain) ?? null;
       let next = [...current];
-      if (selected.some((candidate) => candidate.isMain)) {
+      // Only steal Main when the user explicitly marked an AI option as Main.
+      if (explicitMain) {
         next = next.map((draft) => ({ ...draft, isPrimary: false }));
       }
       selected.forEach((candidate) => {
@@ -891,7 +914,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           localPreview: candidate.serverPreview ?? candidate.localPreview,
           variants: candidate.variants ?? [],
           serverPreview: candidate.serverPreview,
-          isPrimary: mainCandidate ? candidate.id === mainCandidate.id : false,
+          isPrimary: explicitMain ? candidate.id === explicitMain.id : false,
           enhanced: candidate.enhanced,
         });
       });
@@ -923,15 +946,13 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       )
     );
 
-    if (generationSession) {
-      if (sessionHasReadySelection) {
-        if (!commitSelectedCandidates({ keepPending: true })) return;
-      } else if (!hasPrimaryReady) {
-        setError('Wait for at least one selected image to finish, or use original only.');
-        return;
-      }
-    } else if (!hasPrimaryReady) {
-      setError('Select at least one WebP-ready image and mark one as Main before continuing.');
+    // Commit any selected optional AI images; keep unfinished AI work in the background.
+    if (generationSession && sessionHasReadySelection) {
+      if (!commitSelectedCandidates({ keepPending: true })) return;
+    }
+
+    if (!hasPrimaryReady && !sessionHasReadySelection) {
+      setError('Add a product photo first. The original image is enough to continue to text.');
       return;
     }
 
@@ -942,7 +963,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
     setError('');
     if (isImageGenerationInFlight) {
-      showToast('Continuing to text. AI image options can finish in the background.');
+      showToast('Continuing to text. Optional AI images can finish in the background.');
     }
     setActiveStep('text');
   }
@@ -1079,9 +1100,11 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     });
     setImageDrafts([]);
     cancelGenerationSession();
+    clearOptionalAiSource();
     notifiedReadyCandidateIdsRef.current.clear();
     setAiOptionCount(2);
     setImageStatusLine('');
+    setIsPreparingOriginal(false);
     setPendingCropFile(null);
     setHints(emptyHints);
     setAnalysis(null);
@@ -1188,11 +1211,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             <ProductCreateImagesStep
               imageDrafts={imageDrafts}
               generationSession={generationSession}
+              optionalAiSourcePreview={optionalAiSource?.preview ?? null}
               aiOptionCount={aiOptionCount}
               basePreservationPrompt={basePreservationPrompt}
               presentationPresets={presentationPresets}
               showRules={showRules}
-              isBusy={false}
+              isBusy={isPreparingOriginal}
               isGenerating={isImageGenerationInFlight}
               statusLine={imageStatusLine}
               onAiOptionCountChange={handleAiOptionCountChange}
@@ -1203,8 +1227,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
                 for (const file of files) handleNewFileSelected(file);
               }}
               onCancelSession={cancelGenerationSession}
-              onCreateProductImages={() => startGeneration('with-ai')}
-              onUseOriginalOnly={() => startGeneration('original-only')}
+              onCreateOptionalAiImages={startOptionalAiGeneration}
               onToggleCandidate={toggleCandidateSelection}
               onSetCandidateMain={setCandidateMain}
               onRetryCandidate={retryCandidate}

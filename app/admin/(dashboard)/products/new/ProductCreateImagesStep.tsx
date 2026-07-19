@@ -24,6 +24,7 @@ const AI_OPTION_CHOICES: Array<{ value: AiOptionCount; label: string }> = [
 type Props = {
   imageDrafts: ImageDraft[];
   generationSession: GenerationSession | null;
+  optionalAiSourcePreview: string | null;
   aiOptionCount: AiOptionCount;
   basePreservationPrompt: string;
   presentationPresets: Record<SafePresentationPresetKey, string>;
@@ -37,8 +38,7 @@ type Props = {
   onShowRulesChange: (open: boolean) => void;
   onAddFiles: (files: File[]) => void;
   onCancelSession: () => void;
-  onCreateProductImages: () => void;
-  onUseOriginalOnly: () => void;
+  onCreateOptionalAiImages: () => void;
   onToggleCandidate: (candidateId: string) => void;
   onSetCandidateMain: (candidateId: string) => void;
   onRetryCandidate: (candidateId: string) => void;
@@ -51,6 +51,7 @@ type Props = {
 export function ProductCreateImagesStep({
   imageDrafts,
   generationSession,
+  optionalAiSourcePreview,
   aiOptionCount,
   basePreservationPrompt,
   presentationPresets,
@@ -64,8 +65,7 @@ export function ProductCreateImagesStep({
   onShowRulesChange,
   onAddFiles,
   onCancelSession,
-  onCreateProductImages,
-  onUseOriginalOnly,
+  onCreateOptionalAiImages,
   onToggleCandidate,
   onSetCandidateMain,
   onRetryCandidate,
@@ -77,11 +77,13 @@ export function ProductCreateImagesStep({
   const selectedCandidateCount =
     generationSession?.candidates.filter((candidate) => candidate.selected).length ?? 0;
 
-  const showConfigure =
-    generationSession?.phase === 'configure' && generationSession.candidates.length === 0;
   const showGenerationGrid =
     generationSession &&
     (generationSession.phase === 'generating' || generationSession.phase === 'select');
+  const showOptionalAiSetup =
+    Boolean(optionalAiSourcePreview) &&
+    imageDrafts.length > 0 &&
+    !showGenerationGrid;
   const showStatusBanner = Boolean(statusLine) && (isBusy || isGenerating);
   const uploadDisabled = isBusy || isGenerating;
 
@@ -92,8 +94,8 @@ export function ProductCreateImagesStep({
           <span className="admin-product-create-eyebrow">Step 1</span>
           <h3>Images</h3>
           <p>
-            Upload a photo, optionally create AI alternatives in the background, then continue to
-            text as soon as a selected WebP image is ready (up to 2400px).
+            Add your product photo. It becomes the catalog image automatically — no AI image
+            generation required. Continue to text whenever the photo is ready.
           </p>
         </div>
       </header>
@@ -113,75 +115,9 @@ export function ProductCreateImagesStep({
         <span className="admin-product-create-upload-empty">
           <span className="material-symbols-outlined">add_photo_alternate</span>
           <strong>Add product photo</strong>
-          <small>JPEG, PNG, or WebP. Each file opens in the cropper before generation.</small>
+          <small>JPEG, PNG, or WebP. Crop, then we attach the original as the product image.</small>
         </span>
       </label>
-
-      {showConfigure ? (
-        <section className="admin-product-create-generate-config" aria-label="Image generation options">
-          <div className="admin-product-create-generate-preview">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={generationSession.sourcePreview} alt="Cropped product photo" />
-          </div>
-
-          <fieldset className="admin-product-create-ai-count">
-            <legend>How many AI options would you like?</legend>
-            <p className="admin-product-create-ai-count-hint">
-              AI alternatives only — your processed original is always available separately.
-            </p>
-            <div
-              className="admin-product-create-segmented"
-              role="radiogroup"
-              aria-label="How many AI options would you like?"
-            >
-              {AI_OPTION_CHOICES.map((choice) => (
-                <label
-                  key={choice.value}
-                  className={`admin-product-create-segmented-item${
-                    aiOptionCount === choice.value ? ' is-active' : ''
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="ai-option-count"
-                    value={choice.value}
-                    checked={aiOptionCount === choice.value}
-                    disabled={isBusy}
-                    onChange={() => onAiOptionCountChange(choice.value)}
-                  />
-                  <span>{choice.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="admin-product-create-generate-actions">
-            <button
-              type="button"
-              className="admin-btn admin-btn-primary"
-              disabled={isBusy}
-              onClick={onCreateProductImages}
-            >
-              Create product images
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-text"
-              disabled={isBusy}
-              onClick={onUseOriginalOnly}
-            >
-              Use original only
-            </button>
-          </div>
-          <p className="admin-product-create-webp-note">
-            AI alternatives are optional. After you start, you can continue to text once the original
-            (or any selected image) is ready — remaining AI options keep generating in the background.
-          </p>
-          <button type="button" className="admin-btn admin-btn-outline" disabled={isBusy} onClick={onCancelSession}>
-            Choose a different photo
-          </button>
-        </section>
-      ) : null}
 
       {showStatusBanner ? (
         <div className="admin-product-create-loading" aria-live="polite">
@@ -196,22 +132,12 @@ export function ProductCreateImagesStep({
           <div>
             <strong>{statusLine || 'Working…'}</strong>
             <p>
-              Image work runs in the background. Continue to text whenever a selected WebP image is
-              ready — you can come back for AI options later.
+              {isBusy
+                ? 'Preparing your original photo for the catalog (WebP up to 2400px).'
+                : 'Optional AI images can finish in the background — continue to text anytime.'}
             </p>
           </div>
         </div>
-      ) : null}
-
-      {showGenerationGrid ? (
-        <CandidateSelectionGrid
-          session={generationSession}
-          isBusy={isBusy}
-          selectedCount={selectedCandidateCount}
-          onToggle={onToggleCandidate}
-          onSetMain={onSetCandidateMain}
-          onRetry={onRetryCandidate}
-        />
       ) : null}
 
       {imageDrafts.length ? (
@@ -238,6 +164,72 @@ export function ProductCreateImagesStep({
         </section>
       ) : null}
 
+      {showOptionalAiSetup ? (
+        <section className="admin-product-create-generate-config" aria-label="Optional AI image alternatives">
+          <div className="admin-product-create-generate-preview">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={optionalAiSourcePreview!} alt="Source photo for optional AI alternatives" />
+          </div>
+
+          <fieldset className="admin-product-create-ai-count">
+            <legend>Optional: create AI alternatives?</legend>
+            <p className="admin-product-create-ai-count-hint">
+              Skip this if you only want text. Your original photo is already the product image.
+            </p>
+            <div
+              className="admin-product-create-segmented"
+              role="radiogroup"
+              aria-label="How many AI options would you like?"
+            >
+              {AI_OPTION_CHOICES.map((choice) => (
+                <label
+                  key={choice.value}
+                  className={`admin-product-create-segmented-item${
+                    aiOptionCount === choice.value ? ' is-active' : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="ai-option-count"
+                    value={choice.value}
+                    checked={aiOptionCount === choice.value}
+                    disabled={isBusy || isGenerating}
+                    onChange={() => onAiOptionCountChange(choice.value)}
+                  />
+                  <span>{choice.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="admin-product-create-generate-actions">
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline"
+              disabled={isBusy || isGenerating}
+              onClick={onCreateOptionalAiImages}
+            >
+              Create AI alternatives
+            </button>
+          </div>
+          <p className="admin-product-create-webp-note">
+            AI image generation is optional. Prefer continuing to text with your original photo.
+          </p>
+        </section>
+      ) : null}
+
+      {showGenerationGrid ? (
+        <CandidateSelectionGrid
+          session={generationSession}
+          isBusy={isBusy}
+          selectedCount={selectedCandidateCount}
+          onToggle={onToggleCandidate}
+          onSetMain={onSetCandidateMain}
+          onRetry={onRetryCandidate}
+          onDismiss={onCancelSession}
+        />
+      ) : null}
+
       <details
         className="admin-product-create-rules"
         open={showRules}
@@ -249,7 +241,7 @@ export function ProductCreateImagesStep({
               Advanced AI image settings
             </span>
             <small>
-              Optional prompts for AI alternatives — used when you click Create product images.
+              Optional prompts for AI alternatives — used only if you create AI images.
             </small>
           </span>
           <span
@@ -353,11 +345,16 @@ export function ProductCreateImagesStep({
         <button
           type="button"
           className="admin-btn admin-btn-primary"
-          disabled={!canContinue}
+          disabled={!canContinue || isBusy}
           onClick={onContinue}
         >
           Continue to text →
         </button>
+        {canContinue && !isBusy ? (
+          <p className="admin-hint">
+            Original photo is ready. Continue to generate product text — AI images are optional.
+          </p>
+        ) : null}
         {isGenerating && canContinue ? (
           <p className="admin-hint">AI options are still generating — you can continue now.</p>
         ) : null}
@@ -373,6 +370,7 @@ function CandidateSelectionGrid({
   onToggle,
   onSetMain,
   onRetry,
+  onDismiss,
 }: {
   session: GenerationSession;
   isBusy: boolean;
@@ -380,41 +378,30 @@ function CandidateSelectionGrid({
   onToggle: (candidateId: string) => void;
   onSetMain: (candidateId: string) => void;
   onRetry: (candidateId: string) => void;
+  onDismiss: () => void;
 }) {
   const [preview, setPreview] = useState<{ src: string; title: string } | null>(null);
 
-  const original = session.candidates.find((candidate) => candidate.kind === 'original');
   const aiCandidates = session.candidates.filter((candidate) => candidate.kind === 'ai');
   const aiSlots = session.aiOptionCount;
 
   const previewAlt = useMemo(() => preview?.title ?? 'Image preview', [preview?.title]);
 
   return (
-    <section className="admin-product-create-selection" aria-label="Choose images for the product gallery">
+    <section className="admin-product-create-selection" aria-label="Optional AI image alternatives">
       <div className="admin-product-create-selection-head">
-        <h4>Choose gallery images</h4>
+        <h4>Optional AI alternatives</h4>
         <span>
           {selectedCount} image{selectedCount === 1 ? '' : 's'} selected
         </span>
       </div>
       <p className="admin-hint">
-        Tap an image to include it in the product. The first one you select becomes Main. Use the magnifier to zoom.
+        Your original is already in the gallery. Select any AI options you want to add, or continue
+        to text without them.
       </p>
 
       <div className="admin-product-create-image-grid admin-product-create-selection-grid">
-        {original ? (
-          <CandidateCard
-            candidate={original}
-            label="Original"
-            isBusy={isBusy}
-            onToggle={() => onToggle(original.id)}
-            onSetMain={() => onSetMain(original.id)}
-            onRetry={() => onRetry(original.id)}
-            onZoom={() => setPreview({ src: getWebpPreview(original), title: 'Original' })}
-          />
-        ) : null}
-
-        {Array.from({ length: aiSlots }, (_, index) => {
+        {Array.from({ length: aiSlots || aiCandidates.length }, (_, index) => {
           const slot = index + 1;
           const candidate = aiCandidates.find((row) => row.aiSlot === slot);
           if (candidate) {
@@ -437,6 +424,12 @@ function CandidateSelectionGrid({
             <PlaceholderCard key={`placeholder-${slot}`} label={`AI option ${slot}`} />
           );
         })}
+      </div>
+
+      <div className="admin-product-create-generate-actions">
+        <button type="button" className="admin-btn admin-btn-text" disabled={isBusy} onClick={onDismiss}>
+          Dismiss AI alternatives
+        </button>
       </div>
 
       {preview ? (
@@ -492,14 +485,10 @@ function CandidateCard({
           {isLoading ? (
             <div className="admin-product-create-image-card-overlay">
               <span className="admin-product-create-shimmer" aria-hidden="true" />
-              <span>{candidate.kind === 'original' ? 'Preparing…' : 'Creating…'}</span>
+              <span>Creating…</span>
             </div>
           ) : null}
-          {candidate.kind === 'original' ? (
-            <span className="admin-product-create-image-badge">Original</span>
-          ) : (
-            <span className="admin-product-create-image-badge admin-product-create-image-badge-ai">AI</span>
-          )}
+          <span className="admin-product-create-image-badge admin-product-create-image-badge-ai">AI</span>
           {candidate.selected ? <span className="admin-product-create-selected-indicator">✓</span> : null}
           {candidate.isMain && candidate.selected ? (
             <span className="admin-product-create-image-badge admin-product-create-image-badge-main">Main</span>
