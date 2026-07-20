@@ -79,7 +79,7 @@ export function CartShareButton({
 
   if (items.length === 0) return null;
 
-  const label = loading ? t.shareCartCreating : t.shareCartShort;
+  const label = loading ? t.shareCartCreating : t.shareCart;
 
   return (
     <button
@@ -98,25 +98,28 @@ export function CartShareButton({
       <style jsx>{`
         .cart-share-btn {
           display: inline-flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
           justify-content: center;
-          gap: 3px;
-          min-width: 52px;
-          padding: 6px 8px;
+          gap: 0.35rem;
+          min-height: 36px;
+          padding: 6px 12px;
           margin: 0;
-          border: none;
+          box-sizing: border-box;
+          border: 1px solid var(--border);
           border-radius: var(--radius-sm);
-          background: transparent;
-          color: var(--text-muted);
+          background: #fff;
+          color: var(--text);
           cursor: pointer;
           transition:
             background 0.2s,
+            border-color 0.2s,
             color 0.2s;
         }
         .cart-share-btn:hover:not(:disabled),
         .cart-share-btn:focus-visible:not(:disabled) {
-          background: color-mix(in srgb, var(--pastel-cream) 80%, transparent);
+          background: color-mix(in srgb, var(--pastel-cream) 70%, #fff);
+          border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
           color: var(--text);
         }
         .cart-share-btn:focus-visible {
@@ -131,23 +134,19 @@ export function CartShareButton({
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 18px;
-          height: 18px;
-          color: var(--accent);
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+          color: var(--text-muted);
         }
         .cart-share-btn-icon--loading {
           opacity: 0.45;
         }
         .cart-share-btn-label {
-          font-size: 0.68rem;
-          font-weight: 500;
-          line-height: 1.1;
-          letter-spacing: 0.01em;
-          max-width: 72px;
-          text-align: center;
+          font-size: 0.8125rem;
+          font-weight: 550;
+          line-height: 1.2;
           white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
       `}</style>
     </button>
@@ -157,8 +156,8 @@ export function CartShareButton({
 function ShareIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

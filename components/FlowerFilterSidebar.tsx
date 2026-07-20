@@ -365,7 +365,12 @@ export function FlowerFilterPanel({
       <div className="flower-filter-group">
         <p className="flower-filter-group-static-heading">{t.filterTypes}</p>
         <div className="flower-pill-row">
-          {STOREFRONT_FLOWER_TYPES.map((ty) => {
+          {STOREFRONT_FLOWER_TYPES.filter((ty) => {
+            const count = flowerTypeCounts?.[ty] ?? 0;
+            // Keep a selected type visible so it can be cleared even if facets change.
+            if (draft.types?.includes(ty)) return true;
+            return count > 0;
+          }).map((ty) => {
             const active = draft.types?.includes(ty) ?? false;
             const count = flowerTypeCounts?.[ty];
             const label = t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string;
@@ -385,7 +390,8 @@ export function FlowerFilterPanel({
         </div>
       </div>
 
-      <Collapsible title={t.filterColors} openDefault={false}>
+      <div className="flower-filter-group flower-filter-group--swatches">
+        <p className="flower-filter-group-static-heading">{t.filterColors}</p>
         <div className="flower-swatch-grid">
           {COLOR_KEYS.map((c) => {
             const active = draft.colors?.includes(c);
@@ -407,7 +413,7 @@ export function FlowerFilterPanel({
             );
           })}
         </div>
-      </Collapsible>
+      </div>
 
       {(draft.topCategory ?? 'flowers') === 'flowers' && (
         <Collapsible title={t.filterOccasion}>

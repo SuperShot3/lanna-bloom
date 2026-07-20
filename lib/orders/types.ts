@@ -121,6 +121,8 @@ export interface OrderPayload {
   marketingEmailConsent?: boolean;
   /** Checkout opt-in for a one-time abandoned-checkout recovery reminder email. */
   checkoutRecoveryEmailConsent?: boolean;
+  /** Checkout acknowledgment of Privacy Policy / personal data processing. */
+  personalDataProcessingConsent?: boolean;
   items: OrderItem[];
   delivery: OrderDelivery;
   pricing: OrderPricing;

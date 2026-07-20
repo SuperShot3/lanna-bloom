@@ -57,7 +57,7 @@ import {
 } from '@/lib/checkout/premiumCheckoutValidation';
 import { GoogleMapsLinkPromptModal } from '@/components/checkout/GoogleMapsLinkPromptModal';
 import { TrustBadges } from '@/components/TrustBadges';
-import { StorefrontIcon } from '@/components/icons';
+import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
 import { readCheckoutAnalyticsContext } from '@/lib/analytics/captureAnalyticsContext';
 import {
@@ -879,6 +879,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [checkoutRecoveryEmailConsent, setCheckoutRecoveryEmailConsent] = useState(
     () => loadCartFormFromStorage()?.checkoutRecoveryEmailConsent === true
   );
+  const [personalDataProcessingConsent, setPersonalDataProcessingConsent] = useState(false);
   const [countryCode, setCountryCode] = useState(() => loadCartFormFromStorage()?.countryCode ?? '66');
   const [phoneNational, setPhoneNational] = useState(() => loadCartFormFromStorage()?.phoneNational ?? '');
   const [recipientName, setRecipientName] = useState(() => loadCartFormFromStorage()?.recipientName ?? '');
@@ -1314,6 +1315,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         customerEmail: customerEmail.trim() || undefined,
         ...(marketingEmailConsent ? { marketingEmailConsent: true } : {}),
         ...(checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
+        personalDataProcessingConsent: true,
         contactPreference,
         lineId: lineId.trim(),
         submissionToken: checkoutSubmissionToken,
@@ -1405,6 +1407,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       scrollToCheckoutSection(issue.sectionId);
       return;
     }
+    if (isPaymentUnlocked && !personalDataProcessingConsent) {
+      showCheckoutError(
+        (t as { personalDataConsentRequired?: string }).personalDataConsentRequired ??
+          'Please acknowledge the Privacy Policy to continue.'
+      );
+      return;
+    }
     await handlePlaceOrder();
   };
 
@@ -1413,6 +1422,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (issue) {
       showCheckoutError(issue.message);
       scrollToCheckoutSection(issue.sectionId);
+      return;
+    }
+    if (!personalDataProcessingConsent) {
+      showCheckoutError(
+        (t as { personalDataConsentRequired?: string }).personalDataConsentRequired ??
+          'Please acknowledge the Privacy Policy to continue.'
+      );
       return;
     }
     if (cartExpansionInvalid) {
@@ -1864,9 +1880,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     <div className="cart-page cart-page--premium">
       <div className="container">
         <div className="cart-checkout-header">
-          <Link href={`/${lang}/catalog`} className="btn-pill">
-            <StorefrontIcon name="arrow-left" size={18} />
-            {t.backToShop}
+          <Link href={`/${lang}/catalog`} className="product-mobile-back cart-back-link">
+            <ArrowLeftIcon width={18} height={18} aria-hidden />
+            <span>{t.backToShop}</span>
           </Link>
           <CartShareButton items={items} lang={lang} />
         </div>
@@ -1987,6 +2003,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           hasDeliveryZone={hasDeliveryZone}
           placing={placing}
           checkoutSubmissionToken={checkoutSubmissionToken}
+          personalDataConsent={personalDataProcessingConsent}
+          onPersonalDataConsentChange={setPersonalDataProcessingConsent}
           onBottomAction={handleCheckoutBottomAction}
           onPay={handlePlaceOrder}
           showCartFivePercentOffer={showCartFivePercentOffer}
@@ -2032,16 +2050,23 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           display: none !important;
         }
         .cart-checkout-header {
-          margin-bottom: 20px;
+          max-width: 560px;
+          margin: 0 auto 8px;
+          padding: 4px 16px 0;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          flex-wrap: wrap;
+          box-sizing: border-box;
+        }
+        /* Same control as catalog PDP back; keep visible on desktop in cart */
+        .cart-checkout-header :global(.product-mobile-back.cart-back-link) {
+          display: inline-flex;
+          margin-bottom: 0;
+          text-decoration: none;
         }
         .cart-checkout-header :global(.cart-share-btn) {
           flex-shrink: 0;
-          margin-left: auto;
         }
         .cart-destination-notice,
         .cart-expansion-block-notice {
@@ -2049,7 +2074,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           line-height: 1.45;
           padding: 12px 14px;
           border-radius: var(--radius-sm);
-          margin: 0 0 16px;
+          margin: 0 auto 16px;
+          max-width: 560px;
+          box-sizing: border-box;
         }
         .cart-destination-notice {
           background: color-mix(in srgb, var(--accent-soft) 55%, var(--pastel-cream));
@@ -2527,12 +2554,6 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border-radius: 6px;
         }
         @media (prefers-reduced-motion: reduce) {
-          a.btn-pill:hover .ti {
-            transform: none;
-          }
-          a.btn-pill:active {
-            transform: none;
-          }
           .cart-place-order-hint-slot {
             transition-duration: 0.01ms;
           }

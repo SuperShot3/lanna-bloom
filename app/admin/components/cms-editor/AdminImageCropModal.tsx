@@ -47,6 +47,9 @@ type Props = {
   onSkip?: () => void;
   /** When true, hides the "Use original" skip button even if onSkip is set. */
   hideSkip?: boolean;
+  /** Bulk crop queue: skip crop for the current file and every remaining queued file. */
+  onSkipAll?: () => void;
+  skipAllLabel?: string;
 };
 
 const MIN_CROP_PX = 32;
@@ -120,6 +123,8 @@ export function AdminImageCropModal({
   onApply,
   onSkip,
   hideSkip,
+  onSkipAll,
+  skipAllLabel = 'Use original for all remaining',
 }: Props) {
   const headingId = useId();
   const stageRef = useRef<HTMLDivElement>(null);
@@ -608,6 +613,16 @@ export function AdminImageCropModal({
               onClick={onSkip}
             >
               Use original
+            </button>
+          ) : null}
+          {onSkipAll ? (
+            <button
+              type="button"
+              className="admin-crop-btn admin-crop-btn-ghost"
+              disabled={applying}
+              onClick={onSkipAll}
+            >
+              {skipAllLabel}
             </button>
           ) : null}
           <button

@@ -20,6 +20,13 @@
   letter-spacing: -0.02em;
 }
 
+.pdpUnitPriceAmount {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
 .pdpDeliveryBadge {
   display: inline-flex;
   align-items: center;

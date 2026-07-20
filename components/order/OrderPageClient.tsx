@@ -29,7 +29,7 @@ import {
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
 import { phoneInternational } from '@/lib/admin/deliveryContactLinks';
-import { CurrencyAmount, ThbChargeNotice } from '@/components/CurrencyDisplay';
+import { CurrencyAmount } from '@/components/CurrencyDisplay';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -619,7 +619,6 @@ export function OrderPageClient({
               <CurrencyAmount thb={grandTotal} lang={locale} />
             </div>
           </div>
-          <ThbChargeNotice lang={locale} className="mt-4" />
 
           {(order.customerName || order.phone) && (
             <>

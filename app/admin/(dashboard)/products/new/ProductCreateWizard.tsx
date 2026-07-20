@@ -281,8 +281,12 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   );
   const [aiOptionCount, setAiOptionCount] = useState<AiOptionCount>(2);
   const [imageStatusLine, setImageStatusLine] = useState('');
-  const [isPreparingOriginal, setIsPreparingOriginal] = useState(false);
-  const [pendingCropFile, setPendingCropFile] = useState<File | null>(null);
+  const [preparingImageCount, setPreparingImageCount] = useState(0);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [cropBatchSize, setCropBatchSize] = useState(0);
+  const isPreparingOriginal = preparingImageCount > 0;
+  const pendingCropFile = cropQueue[0] ?? null;
+  const cropQueueIndex = cropBatchSize > 0 ? cropBatchSize - cropQueue.length + 1 : 1;
   const [basePreservationPrompt, setBasePreservationPrompt] = useState<string>(
     DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT
   );
@@ -351,10 +355,15 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
   const activeStepRef = useRef(activeStep);
   const notifiedReadyCandidateIdsRef = useRef<Set<string>>(new Set());
+  const optionalAiSourceRef = useRef(optionalAiSource);
 
   useEffect(() => {
     activeStepRef.current = activeStep;
   }, [activeStep]);
+
+  useEffect(() => {
+    optionalAiSourceRef.current = optionalAiSource;
+  }, [optionalAiSource]);
 
   useEffect(() => {
     setTextGenerationHistory(readTextGenerationHistory());
@@ -492,19 +501,28 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setSavedProduct(null);
   }
 
-  function handleNewFileSelected(file: File | null) {
-    if (!file) return;
-    setPendingCropFile(file);
+  function enqueueCropFiles(files: File[]) {
+    const nextFiles = files.filter(Boolean);
+    if (!nextFiles.length) return;
+    setCropQueue((current) => {
+      if (current.length === 0) {
+        setCropBatchSize(nextFiles.length);
+      } else {
+        setCropBatchSize((size) => size + nextFiles.length);
+      }
+      return [...current, ...nextFiles];
+    });
   }
 
   function clearOptionalAiSource() {
-    if (optionalAiSource?.preview) {
+    if (optionalAiSourceRef.current?.preview) {
       try {
-        URL.revokeObjectURL(optionalAiSource.preview);
+        URL.revokeObjectURL(optionalAiSourceRef.current.preview);
       } catch {
         // ignore
       }
     }
+    optionalAiSourceRef.current = null;
     setOptionalAiSource(null);
   }
 
@@ -524,68 +542,148 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setImageStatusLine('');
   }
 
-  async function attachOriginalAsProductImage(file: File) {
-    setPendingCropFile(null);
+  function beginPreparingImages(count: number) {
+    setPreparingImageCount((current) => {
+      const next = current + count;
+      setImageStatusLine(
+        next === 1 ? 'Preparing product photo…' : `Preparing ${next} product photos…`
+      );
+      return next;
+    });
+  }
+
+  function endPreparingImage() {
+    setPreparingImageCount((current) => {
+      const next = Math.max(0, current - 1);
+      if (next === 0) {
+        setImageStatusLine('');
+      } else {
+        setImageStatusLine(
+          next === 1 ? 'Preparing product photo…' : `Preparing ${next} product photos…`
+        );
+      }
+      return next;
+    });
+  }
+
+  async function attachOriginalAsProductImage(file: File, options?: { silent?: boolean }) {
     setError('');
     setSavedProduct(null);
-
-    if (generationSession?.phase === 'select') {
-      const hasSelected = generationSession.candidates.some(
-        (candidate) => candidate.selected && hasReadyWebp(candidate)
-      );
-      if (hasSelected) commitSelectedCandidates();
-    }
-    cancelGenerationSession();
-    clearOptionalAiSource();
+    beginPreparingImages(1);
 
     const localPreview = URL.createObjectURL(file);
-    setOptionalAiSource({ file, preview: localPreview });
-    setIsPreparingOriginal(true);
-    setImageStatusLine('Preparing original photo…');
+    let keptPreviewForAi = false;
+    if (!optionalAiSourceRef.current) {
+      const source = { file, preview: localPreview };
+      optionalAiSourceRef.current = source;
+      setOptionalAiSource(source);
+      keptPreviewForAi = true;
+    }
 
     try {
       const alt = draft.altEn || draft.nameEn || file.name;
       const result = await prepareCandidateFile(file, alt);
       if ('error' in result) {
-        showToast(result.error || 'Failed to prepare the original photo.', { variant: 'error' });
-        setError(result.error || 'Failed to prepare the original photo.');
-        setImageStatusLine('');
+        if (!keptPreviewForAi) {
+          try {
+            URL.revokeObjectURL(localPreview);
+          } catch {
+            // ignore
+          }
+        }
+        showToast(result.error || 'Failed to prepare a product photo.', { variant: 'error' });
+        if (!options?.silent) {
+          setError(result.error || 'Failed to prepare a product photo.');
+        }
         return;
       }
 
       setImageDrafts((current) => {
-        const next = current.map((row) => ({ ...row, isPrimary: false }));
-        next.push({
-          id: createId(),
-          file,
-          localPreview: result.serverPreview ?? localPreview,
-          variants: result.variants,
-          serverPreview: result.serverPreview,
-          isPrimary: true,
-          enhanced: false,
-        });
-        return next;
+        const hasPrimary = current.some((row) => row.isPrimary);
+        return [
+          ...current,
+          {
+            id: createId(),
+            file,
+            localPreview: result.serverPreview ?? localPreview,
+            variants: result.variants,
+            serverPreview: result.serverPreview,
+            isPrimary: !hasPrimary,
+            enhanced: false,
+          },
+        ];
       });
-      setImageStatusLine('');
-      showToast('Original photo added as the product image. You can generate text next.');
+
+      if (!keptPreviewForAi && result.serverPreview) {
+        try {
+          URL.revokeObjectURL(localPreview);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!options?.silent) {
+        showToast('Photo added to the product gallery. You can generate text next.');
+      }
     } catch {
-      showToast('Could not prepare the original photo. Check your connection and try again.', {
+      if (!keptPreviewForAi) {
+        try {
+          URL.revokeObjectURL(localPreview);
+        } catch {
+          // ignore
+        }
+      }
+      showToast('Could not prepare a product photo. Check your connection and try again.', {
         variant: 'error',
       });
-      setError('Could not prepare the original photo. Check your connection and try again.');
-      setImageStatusLine('');
+      if (!options?.silent) {
+        setError('Could not prepare a product photo. Check your connection and try again.');
+      }
     } finally {
-      setIsPreparingOriginal(false);
+      endPreparingImage();
     }
   }
 
+  function advanceCropQueue() {
+    setCropQueue((current) => {
+      const next = current.slice(1);
+      if (next.length === 0) setCropBatchSize(0);
+      return next;
+    });
+  }
+
   function applyPendingCrop(file: File) {
-    void attachOriginalAsProductImage(file);
+    const remainingAfter = cropQueue.length - 1;
+    advanceCropQueue();
+    void attachOriginalAsProductImage(file, { silent: remainingAfter > 0 });
   }
 
   function skipPendingCrop() {
     if (!pendingCropFile) return;
-    void attachOriginalAsProductImage(pendingCropFile);
+    const remainingAfter = cropQueue.length - 1;
+    const current = pendingCropFile;
+    advanceCropQueue();
+    void attachOriginalAsProductImage(current, { silent: remainingAfter > 0 });
+  }
+
+  function skipAllPendingCrops() {
+    if (!cropQueue.length) return;
+    const files = [...cropQueue];
+    setCropQueue([]);
+    setCropBatchSize(0);
+    showToast(
+      files.length === 1
+        ? 'Adding photo to the gallery…'
+        : `Adding ${files.length} photos to the gallery…`
+    );
+    for (const file of files) {
+      void attachOriginalAsProductImage(file, { silent: true });
+    }
+  }
+
+  function cancelCropQueue() {
+    setCropQueue([]);
+    setCropBatchSize(0);
   }
 
   function updateSessionCandidates(
@@ -1104,8 +1202,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     notifiedReadyCandidateIdsRef.current.clear();
     setAiOptionCount(2);
     setImageStatusLine('');
-    setIsPreparingOriginal(false);
-    setPendingCropFile(null);
+    setPreparingImageCount(0);
+    setCropQueue([]);
+    setCropBatchSize(0);
     setHints(emptyHints);
     setAnalysis(null);
     setDraft(emptyDraft);
@@ -1223,9 +1322,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               onBasePreservationPromptChange={setBasePreservationPrompt}
               onPresentationPresetChange={handlePresentationPresetChange}
               onShowRulesChange={setShowRules}
-              onAddFiles={(files) => {
-                for (const file of files) handleNewFileSelected(file);
-              }}
+              onAddFiles={enqueueCropFiles}
               onCancelSession={cancelGenerationSession}
               onCreateOptionalAiImages={startOptionalAiGeneration}
               onToggleCandidate={toggleCandidateSelection}
@@ -1305,9 +1402,15 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       <AdminImageCropModal
         open={Boolean(pendingCropFile)}
         file={pendingCropFile}
-        title="Crop new image"
-        onCancel={() => setPendingCropFile(null)}
+        title={
+          cropBatchSize > 1
+            ? `Crop image ${cropQueueIndex} of ${cropBatchSize}`
+            : 'Crop new image'
+        }
+        onCancel={cancelCropQueue}
         onSkip={skipPendingCrop}
+        onSkipAll={cropQueue.length > 1 ? skipAllPendingCrops : undefined}
+        skipAllLabel={`Use original for all ${cropQueue.length} remaining`}
         onApply={({ file }) => applyPendingCrop(file)}
       />
 

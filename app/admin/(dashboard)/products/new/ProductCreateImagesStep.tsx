@@ -85,7 +85,6 @@ export function ProductCreateImagesStep({
     imageDrafts.length > 0 &&
     !showGenerationGrid;
   const showStatusBanner = Boolean(statusLine) && (isBusy || isGenerating);
-  const uploadDisabled = isBusy || isGenerating;
 
   return (
     <section className="admin-product-create-step-panel">
@@ -94,8 +93,8 @@ export function ProductCreateImagesStep({
           <span className="admin-product-create-eyebrow">Step 1</span>
           <h3>Images</h3>
           <p>
-            Add your product photo. It becomes the catalog image automatically — no AI image
-            generation required. Continue to text whenever the photo is ready.
+            Add one or more product photos. They become catalog images automatically — no AI image
+            generation required. Continue to text whenever at least one photo is ready.
           </p>
         </div>
       </header>
@@ -105,7 +104,7 @@ export function ProductCreateImagesStep({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
-          disabled={uploadDisabled}
+          disabled={isGenerating}
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
             if (files.length) onAddFiles(files);
@@ -114,8 +113,11 @@ export function ProductCreateImagesStep({
         />
         <span className="admin-product-create-upload-empty">
           <span className="material-symbols-outlined">add_photo_alternate</span>
-          <strong>Add product photo</strong>
-          <small>JPEG, PNG, or WebP. Crop, then we attach the original as the product image.</small>
+          <strong>Add product photos</strong>
+          <small>
+            JPEG, PNG, or WebP. Select multiple files for bulk add — crop each one, or use originals
+            for all remaining.
+          </small>
         </span>
       </label>
 
@@ -345,14 +347,15 @@ export function ProductCreateImagesStep({
         <button
           type="button"
           className="admin-btn admin-btn-primary"
-          disabled={!canContinue || isBusy}
+          disabled={!canContinue}
           onClick={onContinue}
         >
           Continue to text →
         </button>
-        {canContinue && !isBusy ? (
+        {canContinue ? (
           <p className="admin-hint">
-            Original photo is ready. Continue to generate product text — AI images are optional.
+            At least one photo is ready. Continue to generate product text — AI images are optional.
+            {isBusy ? ' More photos can finish preparing in the background.' : ''}
           </p>
         ) : null}
         {isGenerating && canContinue ? (

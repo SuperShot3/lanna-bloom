@@ -22,6 +22,7 @@ import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
+import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
 import { ProductPeakCelebrationNotice } from '@/components/pdp/ProductPeakCelebrationNotice';
@@ -156,7 +157,15 @@ export function ProductOrderBlock({
   return (
     <div className={`order-block ${stickyBarVisible ? 'order-block--sticky-pad' : ''}`}>
       <div className={pdpStyles.pdpPriceRow}>
-        <span className={pdpStyles.pdpUnitPrice}>฿{unitPrice.toLocaleString()}</span>
+        <CatalogDiscountPrice
+          basePriceThb={selectedSize.price}
+          discountPercent={bouquet.discountPercent}
+          extraThb={addOnsTotal}
+          destinationId={checkoutProfile.destinationId}
+          lang={lang}
+          className={pdpStyles.pdpUnitPrice}
+          amountClassName={pdpStyles.pdpUnitPriceAmount}
+        />
         <ProductDeliveryBenefitBadge
           lang={lang}
           lineTotalThb={lineTotalForPromo}

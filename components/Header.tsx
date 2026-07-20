@@ -451,7 +451,7 @@ export function Header({
               variant="mobile"
               onChange={handleDeliveryDestinationChange}
             />
-            <CurrencySelector lang={lang} className="w-full" />
+            <CurrencySelector lang={lang} className="block w-full" variant="mobile" />
             <nav className="flex flex-col gap-2" aria-label="Main">
               <NavItem
                 href={homeHref}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import type { Locale } from '@/lib/i18n';
 import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
 import { translations } from '@/lib/i18n';
@@ -13,7 +14,6 @@ import {
 } from '@/components/DeliveryForm';
 import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumCheckoutFlow';
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
-import { ThbChargeNotice } from '@/components/CurrencyDisplay';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
@@ -104,6 +104,8 @@ export function CartCheckoutView({
   hasDeliveryZone,
   placing,
   checkoutSubmissionToken,
+  personalDataConsent,
+  onPersonalDataConsentChange,
   onBottomAction,
   onPay,
   showCartFivePercentOffer = false,
@@ -159,6 +161,8 @@ export function CartCheckoutView({
   hasDeliveryZone: boolean;
   placing: boolean;
   checkoutSubmissionToken: string | null;
+  personalDataConsent: boolean;
+  onPersonalDataConsentChange: (checked: boolean) => void;
   onBottomAction: () => void;
   onPay: () => void;
   showCartFivePercentOffer?: boolean;
@@ -226,7 +230,8 @@ export function CartCheckoutView({
     (discountBtnPhase === 'visible' || discountBtnPhase === 'exiting');
   const payButtonSolo = discountBtnPhase === 'hidden';
 
-  const payButtonDisabled = placing || !checkoutSubmissionToken;
+  const payButtonDisabled =
+    placing || !checkoutSubmissionToken || !personalDataConsent;
   const payButtonMuted = !isPaymentUnlocked || !hasDeliveryZone;
 
   const deliveryScheduleLine = formatCheckoutStickySchedule(
@@ -263,7 +268,7 @@ export function CartCheckoutView({
       refundPolicyHref: `/${lang}/refund-replacement`,
       readyToPay: isPaymentUnlocked,
       loading: placing,
-      disabled: !checkoutSubmissionToken,
+      disabled: !checkoutSubmissionToken || (isPaymentUnlocked && !personalDataConsent),
       onAction: () => onBottomActionRef.current(),
       continueLabel: tPremium.continueBtn,
       payNowLabel: tPremium.payNowBtn,
@@ -274,6 +279,7 @@ export function CartCheckoutView({
     isPaymentUnlocked,
     placing,
     checkoutSubmissionToken,
+    personalDataConsent,
     stickyItemSummary,
     stickyHasToyItem,
     deliveryScheduleLine,
@@ -343,7 +349,24 @@ export function CartCheckoutView({
         customerEmail={customerEmail}
         paymentSection={
           <div className="co-payment-block">
-            <ThbChargeNotice lang={lang} className="mb-3" />
+            <label
+              className="co-personal-data-consent"
+              htmlFor="checkout-personal-data-consent"
+            >
+              <input
+                id="checkout-personal-data-consent"
+                type="checkbox"
+                checked={personalDataConsent}
+                onChange={(e) => onPersonalDataConsentChange(e.target.checked)}
+                className="co-personal-data-consent-input"
+              />
+              <span>
+                {t.personalDataConsentBefore}{' '}
+                <Link href={`/${lang}/privacy`} className="co-personal-data-consent-link">
+                  {t.personalDataConsentLink}
+                </Link>
+              </span>
+            </label>
             <div className="co-payment-row">
               <button
                 type="button"
@@ -415,6 +438,31 @@ export function CartCheckoutView({
                 flex-direction: column;
                 gap: 8px;
                 padding: 4px 0 8px;
+              }
+              .co-personal-data-consent {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                margin: 0 0 4px;
+                font-size: 12px;
+                line-height: 1.4;
+                color: var(--text-muted);
+                cursor: pointer;
+              }
+              .co-personal-data-consent-input {
+                margin: 2px 0 0;
+                flex-shrink: 0;
+                width: 15px;
+                height: 15px;
+                accent-color: var(--primary);
+              }
+              .co-personal-data-consent-link {
+                color: var(--primary);
+                font-weight: 600;
+                text-decoration: none;
+              }
+              .co-personal-data-consent-link:hover {
+                text-decoration: underline;
               }
               .co-payment-row {
                 display: flex;
@@ -629,7 +677,9 @@ export function CartCheckoutView({
         deliveryFeeKnown={hasDeliveryZone}
         readyToPay={isPaymentUnlocked}
         loading={placing}
-        disabled={!checkoutSubmissionToken}
+        disabled={
+          !checkoutSubmissionToken || (isPaymentUnlocked && !personalDataConsent)
+        }
         onAction={onBottomAction}
         labels={{
           continue: tPremium.continueBtn,

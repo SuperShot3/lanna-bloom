@@ -10,10 +10,23 @@ import {
 } from '@/lib/currencyDisplay';
 import { useCurrencyDisplay } from '@/contexts/CurrencyDisplayContext';
 
-export function CurrencySelector({ lang, className = '' }: { lang: Locale; className?: string }) {
+export function CurrencySelector({
+  lang,
+  className = '',
+  variant = 'compact',
+}: {
+  lang: Locale;
+  className?: string;
+  variant?: 'compact' | 'mobile';
+}) {
   const { currency, setCurrency, ratesAvailable } = useCurrencyDisplay();
   const label = lang === 'th' ? 'แสดงสกุลเงิน' : 'Display currency';
   if (!CURRENCY_DISPLAY_ENABLED) return null;
+
+  const selectClassName =
+    variant === 'mobile'
+      ? 'h-11 w-full cursor-pointer rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
+      : 'h-9 cursor-pointer rounded-full border border-stone-200 bg-white/80 px-2 text-xs font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20';
 
   return (
     <label className={className}>
@@ -22,7 +35,7 @@ export function CurrencySelector({ lang, className = '' }: { lang: Locale; class
         value={currency}
         onChange={(event) => setCurrency(event.target.value as DisplayCurrency)}
         aria-label={label}
-        className="h-9 cursor-pointer rounded-full border border-stone-200 bg-white/80 px-2 text-xs font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20"
+        className={selectClassName}
       >
         <option value="THB">THB ฿</option>
         <option value="USD" disabled={!ratesAvailable}>USD $</option>
@@ -65,15 +78,5 @@ export function CurrencyAmount({
         <span className="sr-only">{lang === 'th' ? `ประมาณการ อ้างอิง ${thbLabel}` : `estimated, based on ${thbLabel}`}</span>
       )}
     </span>
-  );
-}
-
-export function ThbChargeNotice({ lang, className = '' }: { lang: Locale; className?: string }) {
-  return (
-    <p className={`rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-stone-700 ${className}`.trim()}>
-      {lang === 'th'
-        ? 'การชำระเงินจะถูกเรียกเก็บเป็นเงินบาทไทย (THB) ราคาสกุลเงินอื่นเป็นเพียงประมาณการ ธนาคารหรือผู้ออกบัตรของคุณเป็นผู้กำหนดอัตราแลกเปลี่ยนและอาจมีค่าธรรมเนียมเพิ่มเติม'
-        : 'You will be charged in Thai baht (THB). Other currency prices are estimates; your card issuer sets the exchange rate and may charge additional fees.'}
-    </p>
   );
 }

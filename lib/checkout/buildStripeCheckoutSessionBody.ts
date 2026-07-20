@@ -85,6 +85,8 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   customerEmail?: string;
   marketingEmailConsent?: boolean;
   checkoutRecoveryEmailConsent?: boolean;
+  /** Required: customer agreed to personal data processing / Privacy Policy. */
+  personalDataProcessingConsent?: boolean;
   contactPreference: ContactPreferenceOption[];
   /** Required in API when `contactPreference` includes `line`. */
   lineId?: string;
@@ -112,6 +114,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     customerEmail,
     marketingEmailConsent,
     checkoutRecoveryEmailConsent,
+    personalDataProcessingConsent,
     contactPreference,
     lineId,
     submissionToken,
@@ -204,6 +207,10 @@ export function buildStripeCheckoutSessionRequestBody(params: {
 
   if (checkoutRecoveryEmailConsent === true) {
     body.checkoutRecoveryEmailConsent = true;
+  }
+
+  if (personalDataProcessingConsent === true) {
+    body.personalDataProcessingConsent = true;
   }
 
   if (contactPreference.includes('line')) {

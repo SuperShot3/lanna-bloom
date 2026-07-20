@@ -2,10 +2,10 @@
 
 import {
   applyCatalogDiscountThb,
-  effectiveCatalogUnitPriceWithExpansion,
   hasCatalogDiscount,
 } from '@/lib/catalogDiscount';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import type { Locale } from '@/lib/i18n';
 import { CurrencyAmount } from '@/components/CurrencyDisplay';
 
@@ -15,6 +15,7 @@ export function CatalogDiscountPrice({
   destinationId,
   lang,
   fromLabel,
+  extraThb = 0,
   className = '',
   amountClassName = '',
 }: {
@@ -23,15 +24,14 @@ export function CatalogDiscountPrice({
   destinationId: DeliveryDestinationId;
   lang: Locale;
   fromLabel?: string;
+  /** Added after discount and before expansion (e.g. PDP add-ons). */
+  extraThb?: number;
   className?: string;
   amountClassName?: string;
 }) {
+  const extra = Math.max(0, extraThb);
   const discountedBase = applyCatalogDiscountThb(basePriceThb, discountPercent);
-  const displayCurrent = effectiveCatalogUnitPriceWithExpansion(
-    basePriceThb,
-    discountPercent,
-    destinationId
-  );
+  const displayCurrent = applyExpansionItemMarkupThb(discountedBase + extra, destinationId);
   const onSale = hasCatalogDiscount(discountPercent) && discountedBase < basePriceThb;
 
   if (!onSale) {
@@ -43,7 +43,7 @@ export function CatalogDiscountPrice({
     );
   }
 
-  const displayWas = effectiveCatalogUnitPriceWithExpansion(basePriceThb, undefined, destinationId);
+  const displayWas = applyExpansionItemMarkupThb(basePriceThb + extra, destinationId);
 
   return (
     <span className={`catalog-price-sale ${className}`.trim()}>

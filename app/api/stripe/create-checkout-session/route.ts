@@ -218,6 +218,11 @@ function validateStripePayload(
     return { ok: false, message: 'checkoutRecoveryEmailConsent requires customerEmail' };
   }
 
+  const personalDataProcessingConsent = b.personalDataProcessingConsent === true;
+  if (!personalDataProcessingConsent) {
+    return { ok: false, message: 'personalDataProcessingConsent is required' };
+  }
+
   const contactPreferenceRaw = b.contactPreference;
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
@@ -425,6 +430,7 @@ function validateStripePayload(
       customerEmail,
       ...(marketingEmailConsent ? { marketingEmailConsent: true } : {}),
       ...(checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
+      personalDataProcessingConsent: true,
       contactPreference,
       ...(wantsLineContact && lineIdNormalized ? { lineId: lineIdNormalized } : {}),
       items: cartItems,
@@ -482,6 +488,7 @@ interface StripeCheckoutPayload {
   customerEmail?: string;
   marketingEmailConsent?: boolean;
   checkoutRecoveryEmailConsent?: boolean;
+  personalDataProcessingConsent?: boolean;
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
   items: CartItemIdentifier[];
@@ -669,6 +676,7 @@ export async function POST(request: NextRequest) {
       customerEmail: data.customerEmail,
       ...(data.marketingEmailConsent ? { marketingEmailConsent: true } : {}),
       ...(data.checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
+      personalDataProcessingConsent: true,
       contactPreference: data.contactPreference,
       ...(data.lineId ? { lineId: data.lineId } : {}),
       items: totals.items,
