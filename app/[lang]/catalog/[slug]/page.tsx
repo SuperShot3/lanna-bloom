@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getBaseUrl } from '@/lib/orders';
 import { buildBouquetProductJsonLd } from '@/lib/seo/productJsonLd';
@@ -19,7 +19,6 @@ import {
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { getMarketByPathSlug } from '@/lib/delivery/markets';
-import MarketCatalogPageViaSlug from './catalog/page';
 import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
 import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
 
@@ -69,16 +68,15 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
-  searchParams,
 }: {
   params: { lang: string; slug: string };
-  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
-  const market = getMarketByPathSlug(params.slug);
-  if (market) {
-    return MarketCatalogPageViaSlug({ params, searchParams });
+  // Market catalogs are dynamic (searchParams filters) and live at
+  // /[lang]/catalog/[market]/catalog. Prefer next.config rewrite; redirect is fallback.
+  if (getMarketByPathSlug(params.slug)) {
+    redirect(`/${lang}/catalog/${params.slug}/catalog`);
   }
 
   const bouquet = await getBouquetBySlugFromSanity(params.slug);

@@ -7,10 +7,8 @@ export const dynamicParams = true;
 
 export default function MarketCatalogProductPage({
   params,
-  searchParams,
 }: {
   params: { lang: string; slug: string; productSlug: string };
-  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const market = getMarketByPathSlug(params.slug);
   if (!market) notFound();
@@ -20,7 +18,6 @@ export default function MarketCatalogProductPage({
       lang: params.lang,
       slug: params.productSlug,
     },
-    searchParams,
   });
 }
 

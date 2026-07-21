@@ -12,7 +12,8 @@ import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
 import { getMarketByPathSlug } from '@/lib/delivery/markets';
 
-export const revalidate = 60;
+/** Always dynamic — reads searchParams for catalog filters. */
+export const dynamic = 'force-dynamic';
 
 function flowerTypeCountsFromBouquets(bouquets: Bouquet[]): Record<string, number> {
   const counts: Record<string, number> = {};

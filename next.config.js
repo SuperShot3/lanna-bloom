@@ -221,9 +221,19 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    const marketSlugs = ['pattaya', 'phuket', 'krabi', 'samui', 'hua-hin'];
+    // Keep public URLs as /[lang]/catalog/[market] while rendering the dynamic
+    // market catalog page (avoids static→dynamic 500 on the SSG product segment).
+    const marketCatalogRewrites = ['en', 'th'].flatMap((lang) =>
+      marketSlugs.map((slug) => ({
+        source: `/${lang}/catalog/${slug}`,
+        destination: `/${lang}/catalog/${slug}/catalog`,
+      }))
+    );
     return [
       { source: '/feeds/google.txt', destination: '/feeds/google-merchant-feed' },
       { source: '/feeds/google-merchant-feed.tsv', destination: '/feeds/google-merchant-feed' },
+      ...marketCatalogRewrites,
     ];
   },
   experimental: {
