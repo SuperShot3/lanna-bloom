@@ -35,6 +35,11 @@ import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
 import {
+  evaluateLannaBloomCoupon,
+  isLannaBloomCouponCode,
+} from '@/lib/promo/lannaBloomCoupon';
+import { hasCatalogDiscount } from '@/lib/catalogDiscount';
+import {
   isMay2026FreeDeliveryActive,
   MAY_FREE_DELIVERY_MIN_ITEMS_THB,
   qualifiesForMay2026FreeDelivery,
@@ -1084,11 +1089,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     : 0;
   const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
   const referralVal = getStoredReferral();
+  const hasCatalogProductDiscount = items.some((item) =>
+    hasCatalogDiscount(item.catalogDiscountPercent)
+  );
   const resolvedDiscount = resolveOrderDiscount({
     itemsTotal: itemsTotalVal,
     deliveryFee: deliveryFeeVal,
     referralCode: referralVal?.code,
     deliveryDestination: delivery.deliveryDestination,
+    hasCatalogProductDiscount,
   });
   const orderDiscountVal = resolvedDiscount?.discount ?? 0;
   const isCampaignDiscount = resolvedDiscount?.source === 'campaign';
@@ -1100,6 +1109,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     resolvedDiscount?.source === 'manual' && orderDiscountVal > 0
       ? resolvedDiscount.code
       : null;
+  const storedReferralCode = referralVal?.code ?? null;
+  const referralIneligibleReason = (() => {
+    if (!storedReferralCode || appliedReferralCode) return null;
+    if (isLannaBloomCouponCode(storedReferralCode)) {
+      const elig = evaluateLannaBloomCoupon(itemsTotalVal, { hasCatalogProductDiscount });
+      return elig.ok ? null : elig.reason;
+    }
+    return 'not_eligible' as const;
+  })();
   const grandTotalVal = subtotalWithDelivery - orderDiscountVal;
   const mayCampaignActive = isMay2026FreeDeliveryActive();
   const mayCampaignQualifies = qualifiesForMay2026FreeDelivery(itemsTotalVal);
@@ -1941,14 +1959,21 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
               : isCartFivePercentCode(resolvedDiscount?.code)
                 ? (t.cartFivePercentDiscountLabel ?? '5% discount')
-                : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
-                    '{code}',
-                    resolvedDiscount?.code ?? ''
-                  )
+                : isLannaBloomCouponCode(resolvedDiscount?.code)
+                  ? (t.lannaBloomDiscountLabel ?? 'Coupon {code} — ฿{amount} off')
+                      .replace('{code}', resolvedDiscount?.code ?? '')
+                      .replace('{amount}', String(orderDiscountVal))
+                  : (t.referralDiscountLabel ?? 'Referral discount ({code})').replace(
+                      '{code}',
+                      resolvedDiscount?.code ?? ''
+                    )
           }
           grandTotal={grandTotalVal}
           mayCampaignProgressRemaining={mayCampaignProgressRemaining}
           appliedReferralCode={appliedReferralCode}
+          storedReferralCode={storedReferralCode}
+          referralIneligibleReason={referralIneligibleReason}
+          hasCatalogProductDiscount={hasCatalogProductDiscount}
           onReferralChange={() => setReferralCleared((c) => c + 1)}
           mayCampaignEligible={mayCampaignEligible}
           highlightSection={highlightSection}

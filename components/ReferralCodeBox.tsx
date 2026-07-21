@@ -9,6 +9,12 @@ import {
   getDiscountAllocationForCode,
   isCartFivePercentCode,
 } from '@/lib/referral';
+import {
+  evaluateLannaBloomCoupon,
+  isLannaBloomCouponCode,
+  LANNA_BLOOM_COUPON_EXPIRES_YMD,
+  type LannaBloomIneligibleReason,
+} from '@/lib/promo/lannaBloomCoupon';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
@@ -28,8 +34,39 @@ export interface ReferralCodeBoxProps {
   onRemove: () => void;
   /** If true, show "can't combine with other discounts" and block apply */
   hasOtherDiscount?: boolean;
+  /** Cart has catalog % sale lines — blocks LANNABLOOM */
+  hasCatalogProductDiscount?: boolean;
   /** May 2026 auto free delivery would apply if no manual code is used */
   mayCampaignEligible?: boolean;
+  /** When code is stored but discount is 0 */
+  ineligibleReason?: LannaBloomIneligibleReason | 'not_eligible' | null;
+}
+
+function lannaBloomReasonMessage(
+  t: Record<string, string>,
+  reason: LannaBloomIneligibleReason | 'not_eligible'
+): string {
+  switch (reason) {
+    case 'catalog_discount':
+      return (
+        t.lannaBloomCannotCombineSale ??
+        'This coupon cannot be combined with sale items (products that already have a discount). Remove those items or remove this code.'
+      );
+    case 'below_minimum':
+      return (
+        t.lannaBloomBelowMinimum ??
+        'Add items to reach ฿3,000 (before delivery) to use this coupon.'
+      );
+    case 'expired':
+      return t.lannaBloomExpired ?? 'This coupon has expired.';
+    case 'inactive':
+      return t.lannaBloomInactive ?? 'This coupon is not active.';
+    default:
+      return (
+        t.referralNotEligible ??
+        'This code is not valid for the current cart or delivery area.'
+      );
+  }
 }
 
 export function ReferralCodeBox({
@@ -42,7 +79,9 @@ export function ReferralCodeBox({
   onApply,
   onRemove,
   hasOtherDiscount = false,
+  hasCatalogProductDiscount = false,
   mayCampaignEligible = false,
+  ineligibleReason = null,
 }: ReferralCodeBoxProps) {
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -60,10 +99,32 @@ export function ReferralCodeBox({
       setError(result.error ?? t.referralInvalid ?? 'Invalid code.');
       return;
     }
+
+    if (isLannaBloomCouponCode(result.code) && hasCatalogProductDiscount) {
+      setError(lannaBloomReasonMessage(t, 'catalog_discount'));
+      return;
+    }
+
+    if (isLannaBloomCouponCode(result.code)) {
+      const eligibility = evaluateLannaBloomCoupon(itemSubtotal, {
+        hasCatalogProductDiscount,
+      });
+      if (!eligibility.ok) {
+        // Still store so the link/session keeps the code while browsing.
+        storeReferral(result.code);
+        setInputValue('');
+        setError(null);
+        setCombineNotice(null);
+        onApply();
+        return;
+      }
+    }
+
     const discount = getDiscountForCode(result.code, subtotal, {
       deliveryFee,
       itemSubtotal,
       deliveryDestination,
+      hasCatalogProductDiscount,
     });
     if (discount <= 0) {
       clearReferral();
@@ -99,14 +160,25 @@ export function ReferralCodeBox({
   };
 
   if (appliedCode) {
+    const isLanna = isLannaBloomCouponCode(appliedCode);
     const appliedLabel = isCartFivePercentCode(appliedCode)
       ? (t.cartFivePercentApplied ?? '5% discount applied')
-      : (t.referralApplied ?? 'Applied: {code}').replace('{code}', appliedCode);
+      : isLanna
+        ? (t.lannaBloomApplied ?? 'Applied: {code}').replace('{code}', appliedCode)
+        : (t.referralApplied ?? 'Applied: {code}').replace('{code}', appliedCode);
+    const ineligibleMsg =
+      ineligibleReason != null ? lannaBloomReasonMessage(t, ineligibleReason) : null;
     return (
       <div className="referral-code-box referral-code-box--applied">
-        <span className="referral-code-box-applied">
-          {appliedLabel}
-        </span>
+        <span className="referral-code-box-applied">{appliedLabel}</span>
+        {isLanna && !ineligibleMsg ? (
+          <span className="referral-code-box-meta">
+            {(t.lannaBloomExpires ?? 'Expires {date}').replace(
+              '{date}',
+              LANNA_BLOOM_COUPON_EXPIRES_YMD
+            )}
+          </span>
+        ) : null}
         <button
           type="button"
           className="referral-code-box-remove"
@@ -115,6 +187,11 @@ export function ReferralCodeBox({
         >
           {t.referralRemove ?? 'Remove'}
         </button>
+        {ineligibleMsg ? (
+          <p className="referral-code-box-error" role="status">
+            {ineligibleMsg}
+          </p>
+        ) : null}
         <style jsx>{`
           .referral-code-box--applied {
             display: flex;
@@ -127,6 +204,10 @@ export function ReferralCodeBox({
             font-size: 0.9rem;
             color: var(--accent);
             font-weight: 600;
+          }
+          .referral-code-box-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
           }
           .referral-code-box-remove {
             padding: 4px 10px;
@@ -141,6 +222,12 @@ export function ReferralCodeBox({
           .referral-code-box-remove:hover {
             color: var(--text);
             border-color: var(--accent);
+          }
+          .referral-code-box-error {
+            flex-basis: 100%;
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
           }
         `}</style>
       </div>

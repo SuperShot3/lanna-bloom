@@ -102,6 +102,9 @@ export function ProductOrderBlockForProduct({
           price: selectedBase,
         },
         addOns: { ...addOns, balloonText },
+        ...(product.discountPercent != null && {
+          catalogDiscountPercent: product.discountPercent,
+        }),
       },
       qty
     );

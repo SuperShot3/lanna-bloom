@@ -20,7 +20,7 @@ import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
-import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
+import { applyCatalogDiscountThb, hasCatalogDiscount } from '@/lib/catalogDiscount';
 import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
 import {
   applyPeakCelebrationMarkupThb,
@@ -72,6 +72,8 @@ export interface ComputedOrderTotals {
   itemsTotal: number;
   deliveryFee: number;
   grandTotal: number;
+  /** True when any line used an active catalog discount_percent. */
+  hasCatalogProductDiscount: boolean;
 }
 
 /** Delivery fields required for server-side pricing (zone fee + expansion rules). */
@@ -134,6 +136,7 @@ export async function computeOrderTotals(
 
   const items: ComputedOrderItem[] = [];
   let itemsTotal = 0;
+  let hasCatalogProductDiscount = false;
 
   for (const item of cartItems) {
     const isProduct = item.itemType === 'product';
@@ -146,6 +149,7 @@ export async function computeOrderTotals(
       if (!toy) {
         return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
       }
+      if (hasCatalogDiscount(toy.discountPercent)) hasCatalogProductDiscount = true;
       const finalPrice = applyCatalogDiscountThb(toy.price, toy.discountPercent);
       let itemPrice = applyPeakCelebrationMarkupThb(finalPrice, deliveryDateYmd);
       if (item.addOns?.cardType === 'premium') {
@@ -178,6 +182,7 @@ export async function computeOrderTotals(
       if (!balloon) {
         return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
       }
+      if (hasCatalogDiscount(balloon.discountPercent)) hasCatalogProductDiscount = true;
       const finalPrice = applyCatalogDiscountThb(balloon.price, balloon.discountPercent);
       let itemPrice = applyPeakCelebrationMarkupThb(finalPrice, deliveryDateYmd);
       if (item.addOns?.cardType === 'premium') {
@@ -225,6 +230,7 @@ export async function computeOrderTotals(
 
       const partnerCost = product.cost ?? product.price ?? 0;
       const listedPrice = computeFinalPrice(partnerCost, product.commissionPercent);
+      if (hasCatalogDiscount(product.discountPercent)) hasCatalogProductDiscount = true;
       const finalPrice = applyCatalogDiscountThb(listedPrice, product.discountPercent);
       const commissionAmount = finalPrice - partnerCost;
       let itemPrice = applyPeakCelebrationMarkupThb(finalPrice, deliveryDateYmd);
@@ -273,6 +279,7 @@ export async function computeOrderTotals(
         return { ok: false, message: `Bouquet ${bouquet.slug} has no sizes` };
       }
 
+      if (hasCatalogDiscount(bouquet.discountPercent)) hasCatalogProductDiscount = true;
       let itemPrice = applyPeakCelebrationMarkupThb(
         applyCatalogDiscountThb(size.price ?? 0, bouquet.discountPercent),
         deliveryDateYmd
@@ -325,6 +332,7 @@ export async function computeOrderTotals(
       itemsTotal,
       deliveryFee: deliveryFeeResolved,
       grandTotal,
+      hasCatalogProductDiscount,
     },
   };
 }

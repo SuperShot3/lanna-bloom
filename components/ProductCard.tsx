@@ -275,6 +275,9 @@ export function ProductCard({
           size: cartSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: product.excludedDeliveryDestinations,
+          ...(product.discountPercent != null && {
+            catalogDiscountPercent: product.discountPercent,
+          }),
         },
         1
       );

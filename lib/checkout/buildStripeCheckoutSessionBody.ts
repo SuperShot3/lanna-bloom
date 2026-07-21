@@ -10,6 +10,7 @@ import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import type { CartItem } from '@/contexts/CartContext';
 import { getStoredReferral } from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
+import { hasCatalogDiscount } from '@/lib/catalogDiscount';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
@@ -157,11 +158,16 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       ? (getZoneFee(deliveryDestination, deliveryZoneId) ?? 0)
       : 0;
   const referral = getStoredReferral();
+  // Client estimate only — server recomputes with catalog discount detection.
+  const cartHasCatalogDiscount = cartItems.some((item) =>
+    hasCatalogDiscount(item.catalogDiscountPercent)
+  );
   const resolvedDiscount = resolveOrderDiscount({
     itemsTotal,
     deliveryFee,
     referralCode: referral?.code,
     deliveryDestination,
+    hasCatalogProductDiscount: cartHasCatalogDiscount,
   });
   const referralDiscount = resolvedDiscount?.discount ?? 0;
 

@@ -93,6 +93,9 @@ export function CartCheckoutView({
   grandTotal,
   mayCampaignProgressRemaining,
   appliedReferralCode,
+  storedReferralCode,
+  referralIneligibleReason = null,
+  hasCatalogProductDiscount = false,
   onReferralChange,
   mayCampaignEligible,
   highlightSection,
@@ -150,6 +153,9 @@ export function CartCheckoutView({
   grandTotal: number;
   mayCampaignProgressRemaining: number;
   appliedReferralCode: string | null;
+  storedReferralCode: string | null;
+  referralIneligibleReason?: import('@/lib/promo/lannaBloomCoupon').LannaBloomIneligibleReason | 'not_eligible' | null;
+  hasCatalogProductDiscount?: boolean;
   onReferralChange: () => void;
   mayCampaignEligible: boolean;
   highlightSection: CheckoutSectionId | null;
@@ -336,6 +342,9 @@ export function CartCheckoutView({
         grandTotal={grandTotal}
         mayCampaignProgressRemaining={mayCampaignProgressRemaining}
         appliedReferralCode={appliedReferralCode}
+        storedReferralCode={storedReferralCode}
+        referralIneligibleReason={referralIneligibleReason}
+        hasCatalogProductDiscount={hasCatalogProductDiscount}
         onReferralChange={onReferralChange}
         mayCampaignEligible={mayCampaignEligible}
         highlightSection={highlightSection}

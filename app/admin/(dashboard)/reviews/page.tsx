@@ -3,6 +3,7 @@ import { GOOGLE_REVIEW_URL } from '@/lib/reviewsConfig';
 import { AddReviewForm } from './AddReviewForm';
 import { CustomerReviewInvite } from './CustomerReviewInvite';
 import { ReviewList } from './ReviewList';
+import { CouponsStatusSection } from './CouponsStatusSection';
 
 export default async function AdminReviewsPage() {
   const reviews = await getAllReviewsAsync();
@@ -11,9 +12,10 @@ export default async function AdminReviewsPage() {
     <div className="admin-detail">
       <header className="admin-header admin-page-header">
         <div>
-          <h1 className="admin-title">Reviews</h1>
+          <h1 className="admin-title">Reviews &amp; Coupons</h1>
           <p className="admin-hint">
-            Send customers your Google review link, then add pasted reviews from Google Maps.
+            Google review invites and pasted reviews, plus a read-only view of storefront promo
+            codes.
           </p>
         </div>
       </header>
@@ -39,6 +41,8 @@ export default async function AdminReviewsPage() {
         <h2 className="admin-section-title">Recent reviews ({reviews.length})</h2>
         <ReviewList reviews={reviews} />
       </section>
+
+      <CouponsStatusSection />
     </div>
   );
 }

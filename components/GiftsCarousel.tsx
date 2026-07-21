@@ -90,6 +90,9 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           size: syntheticSize,
           addOns: defaultAddOns,
           excludedDeliveryDestinations: product.excludedDeliveryDestinations,
+          ...(product.discountPercent != null && {
+            catalogDiscountPercent: product.discountPercent,
+          }),
         },
         1
       );

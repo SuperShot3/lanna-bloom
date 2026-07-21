@@ -9,7 +9,19 @@ import {
   MAY_FREE_DELIVERY_CODE,
   may2026FreeDeliveryDiscount,
 } from '@/lib/promo/campaigns';
-import { getDiscountAllocationForCode, getDiscountForCode } from '@/lib/referral';
+import {
+  getDiscountAllocationForCode,
+  getDiscountCodeDefinition,
+  getDiscountForCode,
+} from '@/lib/referral';
+import { isLannaBloomCouponCode } from '@/lib/promo/lannaBloomCoupon';
+
+function isHeldManualPromoCode(code: string): boolean {
+  if (isLannaBloomCouponCode(code)) return true;
+  if (getDiscountCodeDefinition(code)) return true;
+  if (isWelcomeCode(code)) return true;
+  return false;
+}
 
 /** Server checkout: includes DB-backed welcome codes. Manual promo always beats campaign. */
 export async function resolveOrderDiscountServer(
@@ -22,6 +34,7 @@ export async function resolveOrderDiscountServer(
     deliveryDestination,
     customerEmail,
     now = new Date(),
+    hasCatalogProductDiscount = false,
   } = input;
   const subtotal = itemsTotal + deliveryFee;
   if (subtotal <= 0) return null;
@@ -32,6 +45,8 @@ export async function resolveOrderDiscountServer(
       deliveryFee,
       itemSubtotal: itemsTotal,
       deliveryDestination,
+      hasCatalogProductDiscount,
+      now,
     });
 
     if (discount <= 0 && isWelcomeCode(normalizedCode)) {
@@ -61,6 +76,9 @@ export async function resolveOrderDiscountServer(
         allocation: getDiscountAllocationForCode(normalizedCode),
         source: 'manual',
       };
+    }
+    if (isHeldManualPromoCode(normalizedCode)) {
+      return null;
     }
     return null;
   }

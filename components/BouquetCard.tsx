@@ -198,6 +198,9 @@ export function BouquetCard({
           size: discountedSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
+          ...(bouquet.discountPercent != null && {
+            catalogDiscountPercent: bouquet.discountPercent,
+          }),
         },
         1
       );

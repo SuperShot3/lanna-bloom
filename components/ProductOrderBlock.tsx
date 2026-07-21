@@ -120,6 +120,9 @@ export function ProductOrderBlock({
         size: { ...selectedSize, price: discountedSizePrice },
         addOns: { ...addOns, cardMessage: giftCardMessage, paperColor: null },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
+        ...(bouquet.discountPercent != null && {
+          catalogDiscountPercent: bouquet.discountPercent,
+        }),
       },
       qty
     );

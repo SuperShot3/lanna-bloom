@@ -3,6 +3,12 @@
  * Only keys listed in DISCOUNT_CODES receive a discount; unknown codes get 0.
  */
 
+import {
+  isLannaBloomCouponCode,
+  lannaBloomDiscountAmount,
+  LANNA_BLOOM_COUPON_CODE,
+} from '@/lib/promo/lannaBloomCoupon';
+
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
 type DiscountCodeDefinition =
@@ -25,7 +31,8 @@ type DiscountCodeDefinition =
         commissionPercent: number;
       };
     }
-  | { type: 'free_delivery'; allowedDeliveryDestinations?: string[] };
+  | { type: 'free_delivery'; allowedDeliveryDestinations?: string[] }
+  | { type: 'tiered_fixed_items' };
 
 export type ReferralDiscountAllocation = 'all' | 'items' | 'delivery';
 
@@ -49,6 +56,8 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   'LB-DELIVERY-FREE-2026': { type: 'free_delivery' },
   /** May 2026 auto free-delivery campaign (applied server-side when eligible; not entered by customer). */
   'MAY26-FREEDEL': { type: 'free_delivery' },
+  /** Public coupon campaign — tiered fixed off items; see lib/promo/lannaBloomCoupon.ts */
+  [LANNA_BLOOM_COUPON_CODE]: { type: 'tiered_fixed_items' },
   VASILIY10: {
     type: 'percent',
     value: 10,
@@ -65,6 +74,17 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
     discountBase: 'items',
   },
 };
+
+/** Allowlisted codes for admin status display (excludes per-subscriber welcome codes). */
+export function listAllowlistedDiscountCodes(): string[] {
+  return Object.keys(DISCOUNT_CODES);
+}
+
+export function getDiscountCodeDefinition(
+  code: string
+): DiscountCodeDefinition | undefined {
+  return DISCOUNT_CODES[code.trim().toUpperCase()];
+}
 
 const REFERRAL_CODE_MAX_LENGTH = 24;
 
@@ -125,6 +145,15 @@ export function storeReferral(code: string): void {
   }
 }
 
+export type GetDiscountForCodeOptions = {
+  deliveryFee?: number;
+  itemSubtotal?: number;
+  deliveryDestination?: string;
+  /** When true, LANNABLOOM (and similar exclusive codes) return 0. */
+  hasCatalogProductDiscount?: boolean;
+  now?: Date;
+};
+
 /**
  * Compute discount for a given code and subtotal. Server-safe (no localStorage).
  * Returns discount amount (positive number) or 0. Capped at subtotal.
@@ -132,7 +161,7 @@ export function storeReferral(code: string): void {
 export function getDiscountForCode(
   code: string,
   subtotal: number,
-  options: { deliveryFee?: number; itemSubtotal?: number; deliveryDestination?: string } = {}
+  options: GetDiscountForCodeOptions = {}
 ): number {
   if (!code || subtotal <= 0) return 0;
   const normalized = code.trim().toUpperCase();
@@ -141,9 +170,21 @@ export function getDiscountForCode(
   if (normalized.startsWith('WELCOME10-') && normalized.length > 'WELCOME10-'.length) {
     return Math.min(Math.floor((subtotal * 10) / 100), subtotal);
   }
+  if (isLannaBloomCouponCode(normalized)) {
+    const itemsTotal = Math.max(
+      0,
+      options.itemSubtotal ?? subtotal - (options.deliveryFee ?? 0)
+    );
+    const amount = lannaBloomDiscountAmount(itemsTotal, {
+      hasCatalogProductDiscount: options.hasCatalogProductDiscount,
+      now: options.now,
+    });
+    return Math.min(amount, subtotal);
+  }
   const def = DISCOUNT_CODES[normalized];
   if (def) {
     if (
+      'allowedDeliveryDestinations' in def &&
       def.allowedDeliveryDestinations?.length &&
       !def.allowedDeliveryDestinations.includes((options.deliveryDestination ?? '').toUpperCase())
     ) {
@@ -159,6 +200,9 @@ export function getDiscountForCode(
     if (def.type === 'free_delivery') {
       return Math.min(Math.max(0, options.deliveryFee ?? 0), subtotal);
     }
+    if (def.type === 'tiered_fixed_items') {
+      return 0;
+    }
     return Math.min(def.value, subtotal);
   }
   return 0;
@@ -169,6 +213,7 @@ export function getDiscountAllocationForCode(code: string): ReferralDiscountAllo
   const def = DISCOUNT_CODES[normalized];
   if (!def) return 'all';
   if (def.type === 'free_delivery') return 'delivery';
+  if (def.type === 'tiered_fixed_items') return 'items';
   if (def.type === 'percent' && def.discountBase === 'items') return 'items';
   return 'all';
 }

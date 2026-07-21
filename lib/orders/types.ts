@@ -131,6 +131,8 @@ export interface OrderPayload {
   lineId?: string;
   referralCode?: string;
   referralDiscount?: number;
+  /** Fixed tier amount when code is LANNABLOOM (200 | 300 | 500). */
+  referralDiscountTier?: number;
   referralPartnerName?: string;
   referralCommissionRate?: number;
   referralCommissionAmount?: number;

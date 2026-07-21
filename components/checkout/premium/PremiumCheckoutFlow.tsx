@@ -81,6 +81,10 @@ export type PremiumCheckoutFlowProps = {
   grandTotal: number;
   mayCampaignProgressRemaining: number;
   appliedReferralCode: string | null;
+  /** Stored code shown in ReferralCodeBox even when discount is currently 0. */
+  storedReferralCode: string | null;
+  referralIneligibleReason?: import('@/lib/promo/lannaBloomCoupon').LannaBloomIneligibleReason | 'not_eligible' | null;
+  hasCatalogProductDiscount?: boolean;
   onReferralChange: () => void;
   mayCampaignEligible: boolean;
   highlightSection: CheckoutSectionId | null;
@@ -127,6 +131,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     grandTotal,
     mayCampaignProgressRemaining,
     appliedReferralCode,
+    storedReferralCode,
+    referralIneligibleReason = null,
+    hasCatalogProductDiscount = false,
     onReferralChange,
     mayCampaignEligible,
     highlightSection,
@@ -698,10 +705,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             itemSubtotal={itemsTotal}
             deliveryFee={deliveryFee}
             deliveryDestination={delivery.deliveryDestination}
-            appliedCode={appliedReferralCode}
+            appliedCode={storedReferralCode}
             onApply={onReferralChange}
             onRemove={onReferralChange}
             mayCampaignEligible={mayCampaignEligible}
+            hasCatalogProductDiscount={hasCatalogProductDiscount}
+            ineligibleReason={
+              storedReferralCode && !appliedReferralCode ? referralIneligibleReason : null
+            }
           />
         </div>
       </section>

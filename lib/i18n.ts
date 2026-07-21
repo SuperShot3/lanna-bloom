@@ -610,6 +610,15 @@ const baseTranslations = {
       referralNotEligible: 'This code is not valid for the current cart or delivery area.',
       referralCannotStack: "Referral code can't be combined with other discounts.",
       mayFreeDeliveryDiscountLabel: 'May free delivery',
+      lannaBloomDiscountLabel: 'Coupon {code} — ฿{amount} off',
+      lannaBloomApplied: 'Applied: {code}',
+      lannaBloomExpires: 'Expires {date}',
+      lannaBloomBelowMinimum:
+        'Add items to reach ฿3,000 (before delivery) to use this coupon.',
+      lannaBloomCannotCombineSale:
+        'This coupon cannot be combined with sale items (products that already have a discount). Remove those items or remove this code.',
+      lannaBloomExpired: 'This coupon has expired.',
+      lannaBloomInactive: 'This coupon is not active.',
       stickyDeliveryFree: 'Free',
       stickyDeliverySelectArea: 'Select area',
       stickyPolicyApplies: 'Delivery & refund policies apply to all orders.',
@@ -2122,6 +2131,15 @@ const baseTranslations = {
       referralNotEligible: 'รหัสนี้ใช้ไม่ได้กับตะกร้าหรือพื้นที่จัดส่งที่เลือก',
       referralCannotStack: 'รหัสแนะนำใช้ร่วมกับส่วนลดอื่นไม่ได้',
       mayFreeDeliveryDiscountLabel: 'ส่งฟรีเดือนพฤษภาคม',
+      lannaBloomDiscountLabel: 'คูปอง {code} — ลด ฿{amount}',
+      lannaBloomApplied: 'ใช้แล้ว: {code}',
+      lannaBloomExpires: 'หมดอายุ {date}',
+      lannaBloomBelowMinimum:
+        'เพิ่มสินค้าให้ครบ ฿3,000 (ก่อนค่าส่ง) เพื่อใช้คูปองนี้',
+      lannaBloomCannotCombineSale:
+        'คูปองนี้ใช้ร่วมกับสินค้าที่มีส่วนลดอยู่แล้วไม่ได้ ลบสินค้านั้นหรือลบรหัสนี้',
+      lannaBloomExpired: 'คูปองนี้หมดอายุแล้ว',
+      lannaBloomInactive: 'คูปองนี้ยังไม่เปิดใช้งาน',
       stickyDeliveryFree: 'ฟรี',
       stickyDeliverySelectArea: 'เลือกพื้นที่',
       stickyPolicyApplies: 'ทุกออเดอร์เป็นไปตามนโยบายการจัดส่งและการคืนเงิน',

@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: '/admin/partners/applications', label: 'Partners', icon: 'group' },
   { href: '/admin/products', label: 'Products', icon: 'inventory_2' },
   { href: '/admin/marketing', label: 'Marketing', icon: 'campaign' },
-  { href: '/admin/reviews', label: 'Reviews', icon: 'reviews' },
+  { href: '/admin/reviews', label: 'Reviews & Coupons', icon: 'reviews' },
   { href: '/admin/info-comments', label: 'Guide comments', icon: 'forum' },
 ] as const;
 

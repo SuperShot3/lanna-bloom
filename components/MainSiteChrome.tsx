@@ -10,6 +10,7 @@ import { PeakCelebrationNoticeBanner } from '@/components/PeakCelebrationNoticeB
 import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
 import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner';
+import { CouponQueryCapture } from '@/components/CouponQueryCapture';
 
 export function MainSiteChrome({
   lang,
@@ -38,11 +39,17 @@ export function MainSiteChrome({
   }, []);
 
   if (isPartnerRoute || isConfirmationPending || isCheckoutComplete) {
-    return <>{children}</>;
+    return (
+      <>
+        <CouponQueryCapture lang={lang} />
+        {children}
+      </>
+    );
   }
 
   return (
     <>
+      <CouponQueryCapture lang={lang} />
       <DeliveryDestinationSessionSync lang={lang} />
       {!hideTopPromoBanner ? (
         <>

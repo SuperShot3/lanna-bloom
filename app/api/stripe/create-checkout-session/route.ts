@@ -7,6 +7,7 @@ import {
 } from '@/lib/stripe/checkoutStripeLineItems';
 import { getBaseUrl } from '@/lib/orders';
 import { getReferralCommissionForCode, validateReferralCode } from '@/lib/referral';
+import { LANNA_BLOOM_COUPON_CODE } from '@/lib/promo/lannaBloomCoupon';
 import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
@@ -607,6 +608,7 @@ export async function POST(request: NextRequest) {
       referralCode: data.referralCode,
       deliveryDestination: data.delivery.deliveryDestination,
       customerEmail: data.customerEmail,
+      hasCatalogProductDiscount: totals.hasCatalogProductDiscount,
     });
 
     if (data.referralCode) {
@@ -717,6 +719,9 @@ export async function POST(request: NextRequest) {
       ...(referralCode && referralDiscount > 0 && {
         referralCode,
         referralDiscount,
+        ...(referralCode === LANNA_BLOOM_COUPON_CODE && {
+          referralDiscountTier: referralDiscount,
+        }),
         ...(referralCommission && {
           referralPartnerName: referralCommission.partnerName,
           referralCommissionRate: referralCommission.commissionPercent,

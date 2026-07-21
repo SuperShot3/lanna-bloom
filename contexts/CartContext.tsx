@@ -41,6 +41,11 @@ export interface CartItem {
   quantity?: number;
   /** When set on catalog lines, used to validate cart vs selected delivery destination. */
   excludedDeliveryDestinations?: DeliveryDestinationId[];
+  /**
+   * Catalog discount_percent at add time (client eligibility for exclusive coupons).
+   * Server recomputes from catalog — never trust this for money.
+   */
+  catalogDiscountPercent?: number;
 }
 
 interface CartContextValue {
