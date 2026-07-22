@@ -85,7 +85,11 @@ export default function AccountingInfoPage() {
               <strong>Refunds</strong> — Stripe refunds are recorded automatically when Stripe sends a{' '}
               <code>refund.created</code> webhook (after you run the database migration for{' '}
               <code>income_refunds</code>). Stripe refunds reduce the <strong>Stripe — net volume</strong> line
-              for the refund date. You can still cancel or adjust income rows manually for non-Stripe refunds.
+              for the refund date. On an order detail page, OWNER can also use <strong>Refund</strong> to record
+              a Lanna Bloom accounting refund (manual fee + cancel order); that does <strong>not</strong> refund
+              the customer in Stripe — issue the customer refund in the Stripe Dashboard separately. If you
+              already recorded the refund in admin, a later matching Stripe webhook links to that row instead of
+              double-counting. You can still cancel or adjust income rows manually for non-Stripe refunds.
             </li>
             <li>
               <strong>Optional manual income deferral</strong> — Set env{' '}

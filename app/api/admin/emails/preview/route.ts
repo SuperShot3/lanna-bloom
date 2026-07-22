@@ -25,6 +25,7 @@ function buildMock(base: string): Record<string, string> {
   product_image: `${b}/favicon_io/android-chrome-192x192.png`,
   delivery_date: '2026-04-30 10:00–12:00',
   delivery_address: 'Nimman, Chiang Mai',
+  delivery_city: 'Chiang Mai',
   total_price: '฿2,800',
   review_link: 'https://g.page/r/CclGzPBur8RbEBM/review',
   important_dates_link: `${b}/important-dates?email=you%40example.com&name=Alex&order=order-demo-001`,

@@ -22,6 +22,7 @@ import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCust
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
+import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -44,6 +45,7 @@ export function ProductOrderBlockForProduct({
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
+  const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const tBalloon = tBuyNow as typeof tBuyNow & {
@@ -145,7 +147,7 @@ export function ProductOrderBlockForProduct({
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>
           <div className="order-added-links">
-            <Link href={`/${lang}/catalog`} className="order-added-link">
+            <Link href={catalogHref} className="order-added-link">
               {t.continueShopping}
             </Link>
             <Link href={`/${lang}/cart`} className="order-added-link order-added-link-primary">

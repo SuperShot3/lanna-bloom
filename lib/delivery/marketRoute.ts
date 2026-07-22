@@ -1,4 +1,37 @@
-import { isMarketPathSlug } from '@/lib/delivery/markets';
+import {
+  isMarketPathSlug,
+  type MarketPathSlug,
+} from '@/lib/delivery/markets';
+
+/**
+ * Market home: expansion → /{lang}/{market}/flower-delivery; otherwise Chiang Mai hub.
+ */
+export function buildMarketHomeHref(
+  lang: string,
+  marketSlug: MarketPathSlug | string | null | undefined
+): string {
+  if (marketSlug && isMarketPathSlug(marketSlug)) {
+    return `/${lang}/${marketSlug}/flower-delivery`;
+  }
+  return `/${lang}`;
+}
+
+/**
+ * Market catalog listing: expansion → /{lang}/catalog/{market}; otherwise CM catalog.
+ */
+export function buildMarketCatalogHref(
+  lang: string,
+  marketSlug: MarketPathSlug | string | null | undefined,
+  search?: string
+): string {
+  const path =
+    marketSlug && isMarketPathSlug(marketSlug)
+      ? `/${lang}/catalog/${marketSlug}`
+      : `/${lang}/catalog`;
+  if (!search) return path;
+  const q = search.startsWith('?') ? search : `?${search}`;
+  return `${path}${q}`;
+}
 
 /**
  * Build market-aware product detail href when browsing within a market funnel.

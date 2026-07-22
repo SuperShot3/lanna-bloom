@@ -10,6 +10,13 @@ import {
   destinationDisplayName,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
+import {
+  buildMarketCatalogHref,
+  buildMarketHomeHref,
+} from '@/lib/delivery/marketRoute';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { MessengerLinks } from './MessengerLinks';
+import { SocialLinks } from './SocialLinks';
 
 const FOOTER_DELIVERY_ORDER_LINKS: {
   destinationId: DeliveryDestinationId;
@@ -21,8 +28,6 @@ const FOOTER_DELIVERY_ORDER_LINKS: {
     href: (l: Locale) => `/${l}/${m.pathSlug}/flower-delivery`,
   })),
 ];
-import { MessengerLinks } from './MessengerLinks';
-import { SocialLinks } from './SocialLinks';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,6 +35,10 @@ type NewsletterMessage = 'success' | 'already' | 'error' | 'invalid' | null;
 
 export function Footer({ lang }: { lang: Locale }) {
   const t = translations[lang].footer;
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
+  const homeHref = buildMarketHomeHref(lang, checkoutProfile.pathSlug);
+  const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
+  const isExpansionMarket = checkoutProfile.variant === 'expansion';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<NewsletterMessage>(null);
@@ -91,7 +100,7 @@ export function Footer({ lang }: { lang: Locale }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div>
-            <Link href={`/${lang}`} className="flex items-center gap-2.5 mb-6">
+            <Link href={homeHref} className="flex items-center gap-2.5 mb-6">
               <Image
                 src="/logo_icon_64.png"
                 alt=""
@@ -113,38 +122,42 @@ export function Footer({ lang }: { lang: Locale }) {
             <h4 className="font-bold mb-6">{t.shop}</h4>
             <ul className="space-y-3 text-sm text-stone-500">
               <li>
-                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                <Link href={catalogHref} className="hover:text-[#C5A059] transition-colors">
                   {t.popularBouquets}
                 </Link>
               </li>
+              {!isExpansionMarket ? (
+                <>
+                  <li>
+                    <Link
+                      href={`/${lang}/collections/roses-chiang-mai`}
+                      className="hover:text-[#C5A059] transition-colors"
+                    >
+                      {t.roseBouquets}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href={`/${lang}/collections/orchids-chiang-mai`}
+                      className="hover:text-[#C5A059] transition-colors"
+                    >
+                      {t.orchidBouquets}
+                    </Link>
+                  </li>
+                </>
+              ) : null}
               <li>
-                <Link
-                  href={`/${lang}/collections/roses-chiang-mai`}
-                  className="hover:text-[#C5A059] transition-colors"
-                >
-                  {t.roseBouquets}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href={`/${lang}/collections/orchids-chiang-mai`}
-                  className="hover:text-[#C5A059] transition-colors"
-                >
-                  {t.orchidBouquets}
-                </Link>
-              </li>
-              <li>
-                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                <Link href={catalogHref} className="hover:text-[#C5A059] transition-colors">
                   {t.occasions}
                 </Link>
               </li>
               <li>
-                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                <Link href={catalogHref} className="hover:text-[#C5A059] transition-colors">
                   {t.subscription}
                 </Link>
               </li>
               <li>
-                <Link href={`/${lang}/catalog`} className="hover:text-[#C5A059] transition-colors">
+                <Link href={catalogHref} className="hover:text-[#C5A059] transition-colors">
                   {t.giftCards}
                 </Link>
               </li>

@@ -19,6 +19,7 @@ export const KNOWN_TEMPLATE_VARIABLES = new Set(
     'product_image',
     'delivery_date',
     'delivery_address',
+    'delivery_city',
     'total_price',
     'review_link',
     'important_dates_link',

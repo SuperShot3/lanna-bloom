@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import {
   getBouquetsCatalogData,
   getProductsFilteredFromSanity,
@@ -11,9 +12,25 @@ import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories'
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
 import { getMarketByPathSlug } from '@/lib/delivery/markets';
+import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
 
 /** Always dynamic — reads searchParams for catalog filters. */
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { lang: string; slug: string };
+}): Promise<Metadata> {
+  if (!isValidLocale(params.lang)) return {};
+  const market = getMarketByPathSlug(params.slug);
+  if (!market) return {};
+  return buildMarketPageMetadata({
+    lang: params.lang as Locale,
+    market,
+    kind: 'catalog',
+  });
+}
 
 function flowerTypeCountsFromBouquets(bouquets: Bouquet[]): Record<string, number> {
   const counts: Record<string, number> = {};

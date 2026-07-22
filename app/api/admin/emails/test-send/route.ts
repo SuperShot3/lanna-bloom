@@ -26,6 +26,7 @@ function buildMock(base: string): Record<string, string> {
   product_image: '',
   delivery_date: '—',
   delivery_address: '—',
+  delivery_city: 'Chiang Mai',
   total_price: '฿0',
   review_link: 'https://g.page/r/CclGzPBur8RbEBM/review',
   important_dates_link: `${b}/important-dates?email=test%40example.com&name=Alex&order=order-demo-001`,

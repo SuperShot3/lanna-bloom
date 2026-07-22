@@ -27,6 +27,7 @@ export function ProductPurchaseActions({
   onBuyNow,
   disabled,
   justAdded = false,
+  catalogHref,
 }: {
   lang: Locale;
   totalPrice: number;
@@ -34,11 +35,14 @@ export function ProductPurchaseActions({
   onBuyNow: () => void;
   disabled?: boolean;
   justAdded?: boolean;
+  /** Market-aware catalog link for continue shopping. */
+  catalogHref?: string;
 }) {
   const tProduct = translations[lang].product;
   const tCart = translations[lang].cart;
   const narrow = useNarrowViewport();
   const resolvedAtc = formatAtcLabel(lang, totalPrice, narrow);
+  const continueHref = catalogHref ?? `/${lang}/catalog`;
 
   return (
     <div className={styles.purchaseActionsStage} data-added={justAdded ? '' : undefined}>
@@ -83,7 +87,7 @@ export function ProductPurchaseActions({
             {tCart.addedToCart}
           </p>
           <div className={styles.purchaseAddedLinks}>
-            <Link href={`/${lang}/catalog`} className={styles.purchaseAddedLinkSecondary}>
+            <Link href={continueHref} className={styles.purchaseAddedLinkSecondary}>
               {tCart.continueShopping}
             </Link>
             <Link href={`/${lang}/cart`} className={styles.purchaseAddedLinkPrimary}>

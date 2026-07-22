@@ -18,7 +18,11 @@ import {
 } from '@/lib/sanity';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
-import { getMarketByPathSlug } from '@/lib/delivery/markets';
+import { getMarketByPathSlug, type MarketPathSlug } from '@/lib/delivery/markets';
+import {
+  buildMarketCatalogHref,
+  buildMarketHomeHref,
+} from '@/lib/delivery/marketRoute';
 import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
 import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
 
@@ -68,8 +72,11 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  marketPathSlug = null,
 }: {
   params: { lang: string; slug: string };
+  /** When set (market PDP wrapper), home/catalog links stay in that expansion market. */
+  marketPathSlug?: MarketPathSlug | null;
 }) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
@@ -78,6 +85,12 @@ export default async function ProductPage({
   if (getMarketByPathSlug(params.slug)) {
     redirect(`/${lang}/catalog/${params.slug}/catalog`);
   }
+
+  const homeHref = buildMarketHomeHref(lang, marketPathSlug);
+  const catalogHref = buildMarketCatalogHref(lang, marketPathSlug);
+  const pageUrl = marketPathSlug
+    ? `${getBaseUrl()}/${lang}/catalog/${marketPathSlug}/${params.slug}`
+    : `${getBaseUrl()}/${lang}/catalog/${params.slug}`;
 
   const bouquet = await getBouquetBySlugFromSanity(params.slug);
   if (bouquet) {
@@ -89,8 +102,6 @@ export default async function ProductPage({
     const composition = lang === 'th' ? bouquet.compositionTh : bouquet.compositionEn;
     const t = translations[lang as Locale].product;
     const nav = translations[lang as Locale].nav;
-    const catalogHref = `/${lang}/catalog`;
-    const pageUrl = `${getBaseUrl()}/${lang}/catalog/${bouquet.slug}`;
     const productJsonLd = buildBouquetProductJsonLd(
       bouquet,
       lang === 'th' ? 'th' : 'en',
@@ -106,7 +117,7 @@ export default async function ProductPage({
         <div className="container product-layout">
           <ProductMobileBackButton catalogHref={catalogHref} label={t.backToCatalog} />
           <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link href={`/${lang}`}>{nav.home}</Link>
+            <Link href={homeHref}>{nav.home}</Link>
             <span className="sep">/</span>
             <Link href={catalogHref}>{nav.catalog}</Link>
             <span className="sep">/</span>
@@ -138,7 +149,6 @@ export default async function ProductPage({
     const name = lang === 'th' && plushyToy.nameTh ? plushyToy.nameTh : plushyToy.nameEn;
     const description = (lang === 'th' ? plushyToy.descriptionTh : plushyToy.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
-    const catalogHref = `/${lang}/catalog`;
     const suggestedBouquets = await getPopularBouquetsFromSanity(8);
 
     return (
@@ -149,7 +159,7 @@ export default async function ProductPage({
             label={translations[lang as Locale].product.backToCatalog}
           />
           <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link href={`/${lang}`}>{nav.home}</Link>
+            <Link href={homeHref}>{nav.home}</Link>
             <span className="sep">/</span>
             <Link href={catalogHref}>{nav.catalog}</Link>
             <span className="sep">/</span>
@@ -175,20 +185,24 @@ export default async function ProductPage({
     const name = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
     const description = (lang === 'th' ? balloon.descriptionTh : balloon.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
-    const catalogHref = `/${lang}/catalog?topCategory=balloons`;
+    const balloonCatalogHref = buildMarketCatalogHref(
+      lang,
+      marketPathSlug,
+      'topCategory=balloons'
+    );
     const suggestedBouquets = await getPopularBouquetsFromSanity(8);
 
     return (
       <div className="product-page">
         <div className="container product-layout">
           <ProductMobileBackButton
-            catalogHref={catalogHref}
+            catalogHref={balloonCatalogHref}
             label={translations[lang as Locale].product.backToCatalog}
           />
           <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link href={`/${lang}`}>{nav.home}</Link>
+            <Link href={homeHref}>{nav.home}</Link>
             <span className="sep">/</span>
-            <Link href={catalogHref}>{nav.catalog}</Link>
+            <Link href={balloonCatalogHref}>{nav.catalog}</Link>
             <span className="sep">/</span>
             <span aria-current="page">{name}</span>
           </nav>
@@ -213,7 +227,6 @@ export default async function ProductPage({
     const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
     const description = (lang === 'th' ? product.descriptionTh : product.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
-    const catalogHref = `/${lang}/catalog`;
 
     return (
       <div className="product-page">
@@ -223,7 +236,7 @@ export default async function ProductPage({
             label={translations[lang as Locale].product.backToCatalog}
           />
           <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link href={`/${lang}`}>{nav.home}</Link>
+            <Link href={homeHref}>{nav.home}</Link>
             <span className="sep">/</span>
             <Link href={catalogHref}>{nav.catalog}</Link>
             <span className="sep">/</span>

@@ -9,6 +9,7 @@ import {
   isExpansionDestination,
   destinationDisplayName,
   type DeliveryDestinationId,
+  type MarketPathSlug,
 } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 import type { Locale } from '@/lib/i18n';
@@ -16,6 +17,8 @@ import type { Locale } from '@/lib/i18n';
 export type CheckoutDeliveryProfile = {
   destinationId: DeliveryDestinationId;
   variant: 'chiang-mai' | 'expansion';
+  /** Expansion market URL slug; null for Chiang Mai hub. */
+  pathSlug: MarketPathSlug | null;
   labels: { en: string; th: string };
 };
 
@@ -30,7 +33,8 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
     if (marketCtx) {
       return {
         destinationId: marketCtx.destinationId,
-        variant: 'expansion',
+        variant: 'expansion' as const,
+        pathSlug: marketCtx.pathSlug,
         labels: { en: marketCtx.labelEn, th: marketCtx.labelTh },
       };
     }
@@ -43,7 +47,8 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
       if (m) {
         return {
           destinationId: m.destinationId,
-          variant: 'expansion',
+          variant: 'expansion' as const,
+          pathSlug: m.pathSlug,
           labels: { en: m.customerFacingNameEn, th: m.customerFacingNameTh },
         };
       }
@@ -57,7 +62,8 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
       if (m) {
         return {
           destinationId: m.destinationId,
-          variant: 'expansion',
+          variant: 'expansion' as const,
+          pathSlug: m.pathSlug,
           labels: { en: m.customerFacingNameEn, th: m.customerFacingNameTh },
         };
       }
@@ -70,7 +76,8 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
         if (m) {
           return {
             destinationId: sess.destinationId,
-            variant: 'expansion',
+            variant: 'expansion' as const,
+            pathSlug: m.pathSlug,
             labels: { en: m.customerFacingNameEn, th: m.customerFacingNameTh },
           };
         }
@@ -78,8 +85,9 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
     }
 
     return {
-      destinationId: 'CHIANG_MAI',
-      variant: 'chiang-mai',
+      destinationId: 'CHIANG_MAI' as const,
+      variant: 'chiang-mai' as const,
+      pathSlug: null,
       labels: {
         en: destinationDisplayName('CHIANG_MAI', 'en'),
         th: destinationDisplayName('CHIANG_MAI', 'th'),

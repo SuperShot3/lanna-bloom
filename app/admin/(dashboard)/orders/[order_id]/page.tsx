@@ -7,11 +7,13 @@ import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import type { ItemWithCatalog } from '@/app/admin/components/ItemsList';
 import { OrderStatusPaymentCard } from '@/app/admin/components/OrderStatusPaymentCard';
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
+import { RefundOrderButton } from '@/app/admin/components/RefundOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
 import { DeliveryEditCard } from '@/app/admin/components/DeliveryEditCard';
 import { OrderHistoryTimeline } from '@/app/admin/components/OrderHistoryTimeline';
 import type { CustomOrderDetails } from '@/lib/orders';
-import { canChangeStatus, canEditCosts, canRemoveOrder } from '@/lib/adminRbac';
+import { canChangeStatus, canEditCosts, canRefund, canRemoveOrder } from '@/lib/adminRbac';
+import { orderHasIncomeRefund } from '@/lib/accounting/incomeRefunds';
 import { getCogsExpenseByOrderId, getDeliveryExpenseSyncedFromOrderCosts } from '@/lib/expenses/expenseQueries';
 import { notFound } from 'next/navigation';
 
@@ -71,6 +73,21 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
     ?.customOrderDetails;
   const cogsExpense = await getCogsExpenseByOrderId(order_id);
   const deliveryExpense = await getDeliveryExpenseSyncedFromOrderCosts(order_id);
+  const hasRefund = canRefund(role) ? await orderHasIncomeRefund(order_id) : false;
+  const orderStatusUpper = String(order.order_status ?? '').toUpperCase();
+  const paidTotal =
+    Math.round(
+      (parseFloat(String(order.grand_total ?? order.total_amount ?? 0)) || 0) * 100
+    ) / 100;
+  const paymentFeeRaw =
+    order.payment_fee != null ? parseFloat(String(order.payment_fee)) : NaN;
+  const paymentFee = Number.isFinite(paymentFeeRaw) ? paymentFeeRaw : null;
+  let refundDisabledReason: string | null = null;
+  if (hasRefund) refundDisabledReason = 'a refund is already recorded';
+  else if (orderStatusUpper === 'CANCELLED') refundDisabledReason = 'order is already cancelled';
+  else if (String(order.payment_status ?? '').toUpperCase() !== 'PAID') {
+    refundDisabledReason = 'order is not paid';
+  }
 
   const itemsWithCatalog: ItemWithCatalog[] = await Promise.all(
     itemsToUse.map(async (item, index) => {
@@ -159,13 +176,37 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
       <DeliveryEditCard order={order} canEdit={canChangeStatus(role)} />
       <OrderHistoryTimeline statusHistory={statusHistory} deliveryChanges={deliveryChanges} />
 
-      {canRemoveOrder(role) && (
-        <section className="admin-section admin-order-remove-footer" aria-label="Remove order">
-          <h2 className="admin-section-title">Remove order</h2>
-          <p className="admin-hint" style={{ marginBottom: 12 }}>
-            Delete this order from the system after delivery. This cannot be undone.
-          </p>
-          <RemoveOrderButton orderId={order.order_id} returnTo={backHref} canEdit />
+      {(canRefund(role) || canRemoveOrder(role)) && (
+        <section className="admin-section admin-order-remove-footer" aria-label="Order actions">
+          {canRefund(role) && (
+            <>
+              <h2 className="admin-section-title">Refund order</h2>
+              <p className="admin-hint" style={{ marginBottom: 12 }}>
+                Record a refund in Lanna Bloom accounting and cancel this order. Issue the customer
+                refund in Stripe separately, then enter the Stripe commission here for accurate books.
+              </p>
+              <div style={{ marginBottom: canRemoveOrder(role) ? 24 : 0 }}>
+                <RefundOrderButton
+                  orderId={order.order_id}
+                  customerName={order.customer_name}
+                  paymentMethod={order.payment_method}
+                  paidTotal={paidTotal}
+                  paymentFee={paymentFee}
+                  disabledReason={refundDisabledReason}
+                  canEdit
+                />
+              </div>
+            </>
+          )}
+          {canRemoveOrder(role) && (
+            <>
+              <h2 className="admin-section-title">Remove order</h2>
+              <p className="admin-hint" style={{ marginBottom: 12 }}>
+                Delete this order from the system after delivery. This cannot be undone.
+              </p>
+              <RemoveOrderButton orderId={order.order_id} returnTo={backHref} canEdit />
+            </>
+          )}
         </section>
       )}
     </div>

@@ -7,6 +7,7 @@ import {
   getHeroImageFromSanity,
   getHeroCarouselImagesFromSanity,
 } from '@/lib/sanity';
+import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
 import { Hero } from '@/components/Hero';
 import { MarketBouquetsShowcase } from '@/components/MarketBouquetsShowcase';
 
@@ -17,16 +18,14 @@ export async function generateMetadata({
 }: {
   params: { lang: string; market: string };
 }): Promise<Metadata> {
+  if (!isValidLocale(params.lang)) return {};
   const m = getMarketByPathSlug(params.market);
   if (!m) return {};
-  const isTh = params.lang === 'th';
-  const place = isTh ? m.customerFacingNameTh : m.customerFacingNameEn;
-  const title = isTh ? `ส่งดอกไม้ ${place} | Lanna Bloom` : `Flower delivery ${place} | Lanna Bloom`;
-  const bouquetOnly = isTh ? ' (ช่อดอกไม้เท่านั้น)' : ' (bouquet delivery only)';
-  const description = isTh
-    ? `ช่อดอกไม้สด จัดส่ง${place}${bouquetOnly} เลือกช่อออนไลน์ ชำระเงินปลอดภัย`
-    : `Fresh flower bouquets delivered in ${place}${bouquetOnly}. Order online with secure checkout.`;
-  return { title, description };
+  return buildMarketPageMetadata({
+    lang: params.lang as Locale,
+    market: m,
+    kind: 'landing',
+  });
 }
 
 export default async function MarketFlowerDeliveryPage({

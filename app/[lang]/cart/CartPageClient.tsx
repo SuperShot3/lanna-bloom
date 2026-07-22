@@ -31,6 +31,7 @@ import type { AnalyticsItem } from '@/lib/analytics';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
 import { isExpansionDestination } from '@/lib/delivery/markets';
+import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
@@ -1898,7 +1899,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     <div className="cart-page cart-page--premium">
       <div className="container">
         <div className="cart-checkout-header">
-          <Link href={`/${lang}/catalog`} className="product-mobile-back cart-back-link">
+          <Link
+            href={buildMarketCatalogHref(lang, checkoutDeliveryProfile.pathSlug)}
+            className="product-mobile-back cart-back-link"
+          >
             <ArrowLeftIcon width={18} height={18} aria-hidden />
             <span>{t.backToShop}</span>
           </Link>

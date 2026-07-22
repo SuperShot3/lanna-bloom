@@ -382,6 +382,8 @@ const baseTranslations = {
       shareLink: 'Share or copy product link',
       shareLinkCopied: 'Link copied',
       shareLinkCopyFailed: 'Could not copy link',
+      availableInDeliveryArea: 'Available for delivery in {destination}',
+      changeDeliveryArea: 'Change delivery area',
       unavailableInDeliveryArea:
         'This bouquet is not available for delivery to your selected area. Choose another bouquet or change delivery region.',
     },
@@ -1903,6 +1905,8 @@ const baseTranslations = {
       shareLink: 'แชร์หรือคัดลอกลิงก์สินค้า',
       shareLinkCopied: 'คัดลอกลิงก์แล้ว',
       shareLinkCopyFailed: 'คัดลอกลิงก์ไม่สำเร็จ',
+      availableInDeliveryArea: 'จัดส่งได้ใน{destination}',
+      changeDeliveryArea: 'เปลี่ยนพื้นที่จัดส่ง',
       unavailableInDeliveryArea:
         'ช่อนี้ไม่สามารถจัดส่งในพื้นที่ที่คุณเลือกได้ กรุณาเลือกช่ออื่นหรือเปลี่ยนพื้นที่จัดส่ง',
     },

@@ -33,6 +33,8 @@ import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
 import { imageIndexForSizeIndex } from '@/lib/pdpVariantMedia';
+import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
+import Link from 'next/link';
 
 export function ProductOrderBlock({
   bouquet,
@@ -78,6 +80,11 @@ export function ProductOrderBlock({
   );
   const hideGiftAddOns = checkoutProfile.variant === 'expansion';
   const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
+  const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
+  const availableInAreaText = (
+    tProduct.availableInDeliveryArea ?? 'Available for delivery in {destination}'
+  ).replace('{destination}', destinationLabel);
+  const changeAreaLabel = tProduct.changeDeliveryArea ?? 'Change delivery area';
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
@@ -200,9 +207,21 @@ export function ProductOrderBlock({
         </div>
       ) : null}
 
-      {!availableForDestination && (
-        <p className="order-destination-block-notice" role="alert">
-          {tProduct.unavailableInDeliveryArea}
+      {!availableForDestination ? (
+        <div className="order-destination-block-notice" role="alert">
+          <p>{tProduct.unavailableInDeliveryArea}</p>
+          <p>
+            <Link
+              href={`/${lang}/flower-delivery-thailand`}
+              className="order-destination-change-link"
+            >
+              {changeAreaLabel}
+            </Link>
+          </p>
+        </div>
+      ) : (
+        <p className="order-destination-available" role="status">
+          {availableInAreaText}
         </p>
       )}
 
@@ -213,6 +232,7 @@ export function ProductOrderBlock({
         onBuyNow={handleBuyNow}
         disabled={!availableForDestination}
         justAdded={justAdded}
+        catalogHref={catalogHref}
       />
 
       <ProductTrustStrip
@@ -292,6 +312,24 @@ export function ProductOrderBlock({
           background: #fff5f0;
           border: 1px solid #e8c4b8;
           border-radius: var(--radius-sm);
+        }
+        .order-destination-block-notice p {
+          margin: 0;
+        }
+        .order-destination-block-notice p + p {
+          margin-top: 8px;
+        }
+        .order-destination-block-notice :global(.order-destination-change-link) {
+          color: var(--primary, #1a3c34);
+          font-weight: 600;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .order-destination-available {
+          margin: 0 0 12px;
+          font-size: 0.875rem;
+          line-height: 1.4;
+          color: var(--text-muted, #6b7280);
         }
       `}</style>
     </div>

@@ -1,3 +1,5 @@
+import { destinationDisplayName, parseDeliveryDestinationId } from '@/lib/delivery/markets';
+import type { Locale } from '@/lib/i18n';
 import { getBaseUrl, getOrderDetailsUrl, type Order } from '@/lib/orders';
 import {
   getDefaultSocialLinks,
@@ -39,6 +41,10 @@ export function buildOrderTemplateVariables(
       ? items.map((i) => i.bouquetTitle).filter(Boolean).join(', ')
       : '—';
   const productImage = first?.imageUrl?.trim() || '';
+  const lang: Locale = order.locale === 'th' ? 'th' : 'en';
+  const deliveryDestination =
+    parseDeliveryDestinationId(order.delivery?.deliveryDestination) ?? 'CHIANG_MAI';
+  const deliveryCity = destinationDisplayName(deliveryDestination, lang);
 
   return {
     customer_name: (order.customerName ?? '').trim() || 'there',
@@ -49,6 +55,7 @@ export function buildOrderTemplateVariables(
     product_image: productImage,
     delivery_date: (order.delivery?.preferredTimeSlot ?? '').trim() || '—',
     delivery_address: (order.delivery?.address ?? '').trim() || '—',
+    delivery_city: deliveryCity,
     total_price: BAHT(order.pricing?.grandTotal ?? 0),
     review_link: links.reviewUrl,
     important_dates_link: importantDatesUrl(order, base),

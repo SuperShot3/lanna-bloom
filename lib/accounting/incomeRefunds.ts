@@ -26,8 +26,61 @@ export async function findOrderIdByStripePaymentIntent(paymentIntentId: string):
   return data?.order_id ? String(data.order_id) : null;
 }
 
+function amountsMatch(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.01;
+}
+
+export async function orderHasIncomeRefund(orderId: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return false;
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('id')
+    .eq('order_id', orderId.trim())
+    .limit(1);
+  if (error) {
+    console.error('[incomeRefunds] orderHasIncomeRefund error:', error.message);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
+export async function insertManualIncomeRefund(params: {
+  orderId: string;
+  amount: number;
+  notes?: string | null;
+  createdBy: string;
+}): Promise<{ ok: true; refundId: string } | { ok: false; error: string; status: number }> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { ok: false, error: 'Supabase not configured', status: 503 };
+
+  const refundedAt = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({
+      order_id: params.orderId.trim(),
+      amount: Math.round(params.amount * 100) / 100,
+      currency: 'THB',
+      refunded_at: refundedAt,
+      source: 'manual',
+      stripe_refund_id: null,
+      notes: params.notes ?? null,
+      created_by: params.createdBy,
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[incomeRefunds] insertManualIncomeRefund error:', error.message);
+    return { ok: false, error: error.message, status: 500 };
+  }
+  return { ok: true, refundId: String(data.id) };
+}
+
 /**
  * Persist a Stripe refund for accounting. Idempotent on `stripe_refund_id`.
+ * If a matching manual admin refund already exists for the order/amount, link
+ * `stripe_refund_id` (and promote source to stripe) instead of inserting again.
  */
 export async function recordStripeRefundEvent(refund: Stripe.Refund): Promise<{ recorded: boolean; reason?: string }> {
   const supabase = getSupabaseAdmin();
@@ -59,6 +112,40 @@ export async function recordStripeRefundEvent(refund: Stripe.Refund): Promise<{ 
     typeof refund.created === 'number'
       ? refundTimestampToYmd(refund.created)
       : new Date().toISOString().slice(0, 10);
+
+  // Avoid double-count when admin already recorded this refund manually.
+  const { data: existingRows, error: existingError } = await supabase
+    .from(TABLE)
+    .select('id, amount, source, stripe_refund_id')
+    .eq('order_id', orderId)
+    .eq('source', 'manual')
+    .is('stripe_refund_id', null);
+
+  if (existingError) {
+    console.error('[incomeRefunds] manual lookup error:', existingError.message);
+  } else {
+    const match = (existingRows ?? []).find((row) =>
+      amountsMatch(parseFloat(String((row as { amount?: unknown }).amount)) || 0, amountMajor)
+    ) as { id: string } | undefined;
+    if (match?.id) {
+      const { error: linkError } = await supabase
+        .from(TABLE)
+        .update({
+          stripe_refund_id: stripeRefundId,
+          source: 'stripe',
+          refunded_at: refundedAtYmd,
+        })
+        .eq('id', match.id);
+      if (linkError) {
+        if (linkError.code === '23505') {
+          return { recorded: false, reason: 'duplicate' };
+        }
+        console.error('[incomeRefunds] link manual refund error:', linkError.message);
+        return { recorded: false, reason: linkError.message };
+      }
+      return { recorded: true, reason: 'linked_manual' };
+    }
+  }
 
   const { error } = await supabase.from(TABLE).insert({
     order_id: orderId,

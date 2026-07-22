@@ -101,3 +101,22 @@ export function destinationDisplayName(
   if (!m) return id;
   return lang === 'th' ? m.customerFacingNameTh : m.customerFacingNameEn;
 }
+
+export function parseDeliveryDestinationId(
+  raw: string | null | undefined
+): DeliveryDestinationId | undefined {
+  const v = raw?.trim().toUpperCase();
+  if (!v) return undefined;
+  return (DELIVERY_DESTINATIONS as readonly string[]).includes(v)
+    ? (v as DeliveryDestinationId)
+    : undefined;
+}
+
+/** Customer-facing shop subtitle on order pages and similar surfaces. */
+export function flowerDeliverySubtitleLabel(
+  destinationId: DeliveryDestinationId | null | undefined,
+  lang: Locale
+): string {
+  const city = destinationDisplayName(destinationId ?? 'CHIANG_MAI', lang);
+  return lang === 'th' ? `ส่งดอกไม้ · ${city}` : `Flower Delivery · ${city}`;
+}

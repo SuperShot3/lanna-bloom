@@ -4,6 +4,7 @@
 
 import 'server-only';
 import { nanoid } from 'nanoid';
+import { parseDeliveryDestinationId } from '@/lib/delivery/markets';
 import { createSupabaseAnonWithOrderToken, getSupabaseAdmin } from '@/lib/supabase/server';
 import type { Order, OrderPayload } from './types';
 import {
@@ -149,6 +150,11 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
           mapDeliveryWindowToTimeSlot(row.delivery_window, row.delivery_date) ||
           json.delivery?.preferredTimeSlot ||
           '',
+        deliveryDestination:
+          parseDeliveryDestinationId(row.delivery_destination) ??
+          parseDeliveryDestinationId(json.delivery?.deliveryDestination) ??
+          'CHIANG_MAI',
+        deliveryZoneId: row.delivery_zone?.trim() || json.delivery?.deliveryZoneId,
         recipientName: row.recipient_name ?? json.delivery?.recipientName,
         recipientPhone: row.recipient_phone ?? json.delivery?.recipientPhone,
         recipientPhoneCountryCode: recipientCc || json.delivery?.recipientPhoneCountryCode,
@@ -196,6 +202,11 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
     delivery: {
       address: row.address ?? '',
       preferredTimeSlot,
+      deliveryDestination:
+        parseDeliveryDestinationId(row.delivery_destination) ??
+        parseDeliveryDestinationId(looseJson?.delivery?.deliveryDestination) ??
+        'CHIANG_MAI',
+      deliveryZoneId: row.delivery_zone?.trim() || looseJson?.delivery?.deliveryZoneId,
       recipientName: row.recipient_name ?? undefined,
       recipientPhone: row.recipient_phone ?? undefined,
       recipientPhoneCountryCode:

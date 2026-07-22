@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getContactPhoneDisplay, getContactPhoneTelUrl, getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
 import { LineIcon, WhatsAppIcon, HomeIcon, PhoneIcon, EmailIcon } from '@/components/icons';
+import { flowerDeliverySubtitleLabel } from '@/lib/delivery/markets';
 import { translations } from '@/lib/i18n';
 import type { OrderCustomerView } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
@@ -113,6 +114,10 @@ export function OrderPageClient({
   paidRef.current = paid;
   const t = translations[locale].orderPage;
   const tCustom = translations[locale].customOrder;
+  const deliverySubtitle = flowerDeliverySubtitleLabel(
+    order.delivery?.deliveryDestination,
+    locale
+  );
 
   useEffect(() => {
     const token = readCheckoutTokenFromUrl();
@@ -397,7 +402,7 @@ export function OrderPageClient({
         </div>
         <div>
           <div className="order-redesign-shop-name">Lanna Bloom</div>
-          <div className="order-redesign-shop-sub">{t.flowerDeliveryChiangMai}</div>
+          <div className="order-redesign-shop-sub">{deliverySubtitle}</div>
         </div>
       </header>
 
