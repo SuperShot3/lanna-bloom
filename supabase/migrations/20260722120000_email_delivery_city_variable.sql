@@ -1,5 +1,6 @@
 -- Make thank-you / florists copy market-aware via {{delivery_city}}
--- (filled from orders.delivery_destination by buildOrderTemplateVariables).
+-- Filled by buildOrderTemplateVariables from order.delivery.deliveryDestination
+-- (city name when known; "Thailand" when destination is missing/unknown).
 
 UPDATE public.email_templates
 SET

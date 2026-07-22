@@ -1,5 +1,4 @@
 import { destinationDisplayName, parseDeliveryDestinationId } from '@/lib/delivery/markets';
-import type { Locale } from '@/lib/i18n';
 import { getBaseUrl, getOrderDetailsUrl, type Order } from '@/lib/orders';
 import {
   getDefaultSocialLinks,
@@ -41,10 +40,12 @@ export function buildOrderTemplateVariables(
       ? items.map((i) => i.bouquetTitle).filter(Boolean).join(', ')
       : '—';
   const productImage = first?.imageUrl?.trim() || '';
-  const lang: Locale = order.locale === 'th' ? 'th' : 'en';
-  const deliveryDestination =
-    parseDeliveryDestinationId(order.delivery?.deliveryDestination) ?? 'CHIANG_MAI';
-  const deliveryCity = destinationDisplayName(deliveryDestination, lang);
+  const deliveryDestination = parseDeliveryDestinationId(
+    order.delivery?.deliveryDestination
+  );
+  const deliveryCity = deliveryDestination
+    ? destinationDisplayName(deliveryDestination, 'en')
+    : 'Thailand';
 
   return {
     customer_name: (order.customerName ?? '').trim() || 'there',
