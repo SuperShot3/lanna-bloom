@@ -306,6 +306,7 @@ export const articles: ArticleMeta[] = [
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
       { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      { label: 'Clear delivery address tips', labelTh: 'เคล็ดลับที่อยู่จัดส่ง', href: '/info/flower-delivery-address-chiang-mai' },
       { label: 'Order on website vs Facebook', labelTh: 'สั่งบนเว็บ vs Facebook', href: '/info/order-flowers-website-vs-facebook-chiang-mai' },
     ],
   },
@@ -538,6 +539,28 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Order flowers for delivery', labelTh: 'สั่งดอกไม้จัดส่ง', href: '/catalog' },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'flower-delivery-address-chiang-mai',
+    title: 'How to Give a Clear Flower Delivery Address in Chiang Mai',
+    excerpt:
+      'Thai addresses can confuse Maps. Learn how amphoe, tambon, and a Google Maps pin help flower delivery across Chiang Mai stay on time and keep bouquets fresher.',
+    titleTh: 'วิธีระบุที่อยู่จัดส่งดอกไม้ในเชียงใหม่ให้ชัดเจน',
+    excerptTh:
+      'ที่อยู่แบบไทยอาจทำให้แผนที่สับสน เรียนรู้เรื่องอำเภอ ตำบล และหมุด Google Maps เพื่อให้จัดส่งดอกไม้ในเชียงใหม่ตรงเวลาและช่อสดกว่า',
+    publishedAt: '2026-07-23T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #e8f5e9 0%, #fff8e1 50%, #fce4ec 100%)',
+      center: { kind: 'emoji', value: '📍' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      { label: 'Buy flowers online', labelTh: 'สั่งดอกไม้ออนไลน์', href: '/info/buy-flowers-online-chiang-mai-thailand' },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },

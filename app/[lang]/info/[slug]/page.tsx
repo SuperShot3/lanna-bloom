@@ -113,6 +113,7 @@ export function generateStaticParams() {
     'flower-delivery-to-hospitals-chiang-mai',
     'buy-flowers-online-chiang-mai-thailand',
     'delivery-policy',
+    'flower-delivery-address-chiang-mai',
   ];
   const params: { lang: string; slug: string }[] = [];
   for (const lang of locales) {
