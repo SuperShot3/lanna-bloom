@@ -129,7 +129,7 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
         <div className="home-reveal-item mt-12 md:mt-14 flex flex-wrap items-center gap-4 max-w-3xl">
           <Link
             href={`/${lang}/catalog`}
-            className="inline-flex items-center justify-center rounded-full bg-[#1A3C34] text-stone-50 px-6 py-3 text-sm font-semibold hover:bg-[#244a40] transition-colors"
+            className="inline-flex items-center justify-center rounded-full bg-[#1A3C34] !text-white px-6 py-3 text-sm font-semibold hover:bg-[#244a40] hover:!text-white transition-colors"
           >
             {t.closingCatalogCta}
           </Link>
