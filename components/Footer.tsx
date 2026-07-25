@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import {
-  MARKETS,
+  getActiveMarkets,
   destinationDisplayName,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
@@ -23,7 +23,7 @@ const FOOTER_DELIVERY_ORDER_LINKS: {
   href: (lang: Locale) => string;
 }[] = [
   { destinationId: 'CHIANG_MAI', href: (l) => `/${l}/catalog` },
-  ...MARKETS.map((m) => ({
+  ...getActiveMarkets().map((m) => ({
     destinationId: m.destinationId,
     href: (l: Locale) => `/${l}/${m.pathSlug}/flower-delivery`,
   })),

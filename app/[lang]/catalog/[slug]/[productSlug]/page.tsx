@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import ProductPage from '@/app/[lang]/catalog/[slug]/page';
-import { getMarketByPathSlug } from '@/lib/delivery/markets';
+import {
+  getMarketByPathSlug,
+  marketIsRouteAvailable,
+} from '@/lib/delivery/markets';
 import { getBouquetBySlugFromSanity } from '@/lib/sanity';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
@@ -16,7 +19,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return {};
   const market = getMarketByPathSlug(params.slug);
-  if (!market) return {};
+  if (!market || !marketIsRouteAvailable(market)) return {};
 
   const bouquet = await getBouquetBySlugFromSanity(params.productSlug);
   const isTh = params.lang === 'th';
@@ -41,7 +44,7 @@ export default function MarketCatalogProductPage({
   params: { lang: string; slug: string; productSlug: string };
 }) {
   const market = getMarketByPathSlug(params.slug);
-  if (!market) notFound();
+  if (!market || !marketIsRouteAvailable(market)) notFound();
 
   return ProductPage({
     params: {

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
-import { MARKETS } from '@/lib/delivery/markets';
+import { getActiveMarkets } from '@/lib/delivery/markets';
 import { ROSES_HUB_PATH, ORCHIDS_HUB_PATH } from '@/lib/landingPages/collectionLandingPages';
 import { StorefrontIcon, type StorefrontIconName } from '@/components/icons';
 
@@ -32,7 +32,7 @@ export function ExploreLinksSection({ lang }: { lang: Locale }) {
           label: t.sameDayGuideLink,
         },
         {
-          href: `/${lang}/info/birthday-flowers-chiang-mai-from-abroad`,
+          href: `/${lang}/info/buy-flowers-online-chiang-mai-thailand`,
           label: t.abroadGuideLink,
         },
         { href: `/${lang}/info`, label: t.allGuidesLink },
@@ -42,7 +42,7 @@ export function ExploreLinksSection({ lang }: { lang: Locale }) {
       icon: 'local-shipping',
       title: t.destinationsTitle,
       links: [
-        ...MARKETS.map((market) => ({
+        ...getActiveMarkets().map((market) => ({
           href: `/${lang}/${market.pathSlug}/flower-delivery`,
           label: t.marketLinkTemplate.replace(
             '{city}',

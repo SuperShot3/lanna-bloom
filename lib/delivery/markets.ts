@@ -33,12 +33,26 @@ export const MARKET_PATH_SLUGS = [
 
 export type MarketPathSlug = (typeof MARKET_PATH_SLUGS)[number];
 
+/** SEO / ops lifecycle for expansion city routes. */
+export type CityStatus = 'active' | 'coming_soon' | 'disabled';
+
 export interface MarketRegistryEntry {
   pathSlug: MarketPathSlug;
   destinationId: DeliveryDestinationId;
   /** Customer-facing; never use province name as primary for Hua Hin */
   customerFacingNameEn: string;
   customerFacingNameTh: string;
+  /**
+   * active → indexable + sitemap + nav as delivery location
+   * coming_soon → noindex,follow; excluded from sitemap; optional teaser in nav
+   * disabled → route unavailable (notFound)
+   */
+  status: CityStatus;
+  /** Optional SEO overrides for the city landing page */
+  seoTitleEn?: string;
+  seoTitleTh?: string;
+  metaDescriptionEn?: string;
+  metaDescriptionTh?: string;
 }
 
 export const MARKETS: MarketRegistryEntry[] = [
@@ -47,30 +61,35 @@ export const MARKETS: MarketRegistryEntry[] = [
     destinationId: 'PATTAYA',
     customerFacingNameEn: 'Pattaya',
     customerFacingNameTh: 'พัทยา',
+    status: 'active',
   },
   {
     pathSlug: 'phuket',
     destinationId: 'PHUKET',
     customerFacingNameEn: 'Phuket',
     customerFacingNameTh: 'ภูเก็ต',
+    status: 'active',
   },
   {
     pathSlug: 'krabi',
     destinationId: 'KRABI',
     customerFacingNameEn: 'Krabi / Ao Nang',
     customerFacingNameTh: 'กระบี่ / อ่าวนาง',
+    status: 'active',
   },
   {
     pathSlug: 'samui',
     destinationId: 'SAMUI',
     customerFacingNameEn: 'Koh Samui',
     customerFacingNameTh: 'เกาะสมุย',
+    status: 'active',
   },
   {
     pathSlug: 'hua-hin',
     destinationId: 'HUA_HIN',
     customerFacingNameEn: 'Hua Hin',
     customerFacingNameTh: 'หัวหิน',
+    status: 'active',
   },
 ];
 
@@ -88,6 +107,32 @@ export function isMarketPathSlug(s: string): s is MarketPathSlug {
 
 export function isExpansionDestination(id: DeliveryDestinationId): boolean {
   return id !== 'CHIANG_MAI';
+}
+
+export function marketIsIndexable(market: MarketRegistryEntry): boolean {
+  return market.status === 'active';
+}
+
+export function marketIsSitemapEnabled(market: MarketRegistryEntry): boolean {
+  return market.status === 'active';
+}
+
+export function marketIsNavSelectable(market: MarketRegistryEntry): boolean {
+  return market.status === 'active' || market.status === 'coming_soon';
+}
+
+export function marketIsRouteAvailable(market: MarketRegistryEntry): boolean {
+  return market.status !== 'disabled';
+}
+
+/** Expansion markets safe to list as active delivery destinations. */
+export function getActiveMarkets(): MarketRegistryEntry[] {
+  return MARKETS.filter((m) => m.status === 'active');
+}
+
+/** Markets that may appear in destination pickers (active + coming soon). */
+export function getNavMarkets(): MarketRegistryEntry[] {
+  return MARKETS.filter(marketIsNavSelectable);
 }
 
 export function destinationDisplayName(

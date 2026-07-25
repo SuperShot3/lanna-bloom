@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getBaseUrl } from '@/lib/orders';
 import { buildBouquetProductJsonLd } from '@/lib/seo/productJsonLd';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
 import { ProductSimilarBouquetsSection } from '@/components/pdp/ProductSimilarBouquetsSection';
@@ -65,7 +66,11 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical },
+    alternates: buildAlternates({
+      lang: params.lang,
+      pathSuffix: `/catalog/${bouquet.slug}`,
+      canonical,
+    }),
     openGraph: { title, description, url: canonical },
   };
 }

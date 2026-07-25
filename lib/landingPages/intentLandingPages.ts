@@ -60,23 +60,23 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     heroImage: {
       src: '/blog_images/buy-flowers-online/buy-flower-online-lannabloom.png',
       alt: L(
-        'Fresh flower bouquet from Lanna Bloom with laptop showing online flower ordering for Chiang Mai delivery',
-        'ช่อดอกไม้สดจาก Lanna Bloom คู่แล็ปท็อปที่แสดงการสั่งดอกไม้ออนไลน์สำหรับจัดส่งในเชียงใหม่'
+        'Fresh flower bouquet from Lanna Bloom with laptop for ordering Chiang Mai flower delivery from abroad',
+        'ช่อดอกไม้สดจาก Lanna Bloom คู่แล็ปท็อปสำหรับสั่งดอกไม้จัดส่งเชียงใหม่จากต่างประเทศ'
       ),
     },
     directAnswer: L(
-      'Yes — you can buy flowers online at Lanna Bloom. Browse real bouquets, pay securely by card through Stripe checkout, and our Chiang Mai team prepares and delivers within our local service area.',
-      'ได้ — สั่งดอกไม้ออนไลน์ที่ Lanna Bloom ได้เลย เลือกช่อจริง จ่ายบัตรปลอดภัยผ่าน Stripe แล้วทีมในเชียงใหม่จะจัดช่อและจัดส่งในพื้นที่ให้บริการของเรา'
+      'Yes — you can send flowers to Chiang Mai from abroad. Browse real bouquets, pay securely with an international card through Stripe, and our local Chiang Mai team prepares and delivers.',
+      'ได้ — ส่งดอกไม้ไปเชียงใหม่จากต่างประเทศได้ เลือกช่อจริง จ่ายบัตรต่างประเทศปลอดภัยผ่าน Stripe แล้วทีมท้องถิ่นในเชียงใหม่จะจัดช่อและจัดส่งให้'
     ),
     benefits: [
-      L('See real bouquets in one catalog', 'ดูช่อจริงในแคตตาล็อกเดียว'),
-      L('Choose size and delivery details before you pay', 'เลือกขนาดและรายละเอียดจัดส่งก่อนจ่าย'),
-      L('Pay securely online with major cards', 'จ่ายออนไลน์ปลอดภัยด้วยบัตรหลัก'),
-      L('Local Chiang Mai team handles delivery', 'ทีมท้องถิ่นในเชียงใหม่ดูแลการจัดส่ง'),
+      L('Pay with international cards (Apple Pay / Google Pay where supported)', 'จ่ายบัตรต่างประเทศ (รองรับ Apple Pay / Google Pay ตามอุปกรณ์)'),
+      L('No Thai bank account required', 'ไม่ต้องมีบัญชีธนาคารไทย'),
+      L('Clear hotel, condo, and home delivery details', 'รายละเอียดจัดส่งโรงแรม คอนโด และบ้านชัดเจน'),
+      L('Local Chiang Mai team handles fulfilment', 'ทีมท้องถิ่นเชียงใหม่ดูแลการจัดส่ง'),
     ],
-    primaryCta: L('Browse bouquets', 'เลือกช่อดอกไม้'),
+    primaryCta: L('Browse Chiang Mai bouquets', 'เลือกช่อดอกไม้เชียงใหม่'),
     primaryCtaHref: '/catalog',
-    catalogTitle: L('Popular bouquets to order online', 'ช่อยอดนิยมสำหรับสั่งออนไลน์'),
+    catalogTitle: L('Popular bouquets to send from abroad', 'ช่อยอดนิยมสำหรับส่งจากต่างประเทศ'),
     catalogLimit: 12,
     featuredSlugs: [
       'red-rose-romance',
@@ -90,52 +90,52 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     faq: [
       {
         q: L(
-          'Can I buy flowers online in Chiang Mai and pay by card?',
-          'สั่งดอกไม้ออนไลน์ในเชียงใหม่แล้วจ่ายบัตรได้ไหม?'
+          'Can I order flowers for Chiang Mai from another country?',
+          'สั่งดอกไม้ไปเชียงใหม่จากต่างประเทศได้ไหม?'
         ),
         a: L(
-          'Yes. Lanna Bloom uses secure Stripe checkout for major credit and debit cards. Browse bouquets, enter delivery details, and pay online in one flow.',
-          'ได้ Lanna Bloom ใช้ Stripe ชำระเงินปลอดภัยรองรับบัตรเครดิตและเดบิตหลัก เลือกช่อ กรอกรายละเอียดจัดส่ง และจ่ายออนไลน์ในขั้นตอนเดียว'
+          'Yes. Complete checkout online with an international card through Stripe. Our Chiang Mai team prepares and delivers locally — you do not need a Thai bank account.',
+          'ได้ ชำระออนไลน์ด้วยบัตรต่างประเทศผ่าน Stripe ทีมในเชียงใหม่จัดช่อและจัดส่งในพื้นที่ — ไม่ต้องมีบัญชีธนาคารไทย'
         ),
       },
       {
         q: L(
-          'Do you deliver locally in Chiang Mai after I order online?',
-          'หลังสั่งออนไลน์แล้วจัดส่งในเชียงใหม่ไหม?'
+          'Which payment methods work for overseas customers?',
+          'ลูกค้าต่างประเทศจ่ายแบบไหนได้บ้าง?'
         ),
         a: L(
-          'Yes. After checkout, our local team prepares your bouquet and delivers within our Chiang Mai service area. See the delivery policy for zones, fees, and timing.',
-          'ได้ หลังเช็กเอาต์ทีมท้องถิ่นจะจัดช่อและส่งในพื้นที่ให้บริการเชียงใหม่ ดูนโยบายจัดส่งสำหรับโซน ค่าส่ง และเวลา'
+          'Major credit and debit cards via Stripe. Apple Pay and Google Pay appear where your device and bank support them.',
+          'บัตรเครดิตและเดบิตหลักผ่าน Stripe หากอุปกรณ์และธนาคารรองรับ จะมี Apple Pay และ Google Pay'
         ),
       },
       {
         q: L(
-          'Can I order flowers online if I am outside Thailand?',
-          'สั่งดอกไม้ออนไลน์จากต่างประเทศได้ไหม?'
+          'What recipient details should I include?',
+          'ควรกรอกข้อมูลผู้รับอะไรบ้าง?'
         ),
         a: L(
-          'Yes. Card checkout makes it easier to order from abroad while delivery is handled locally in Chiang Mai.',
-          'ได้ การจ่ายบัตรช่วยให้สั่งจากต่างประเทศง่ายขึ้น ขณะที่การจัดส่งดูแลโดยทีมในเชียงใหม่'
+          'Recipient full name, a working Thai phone number, hotel or condo details or a clear address, a Google Maps pin when helpful, preferred delivery date, and any surprise notes.',
+          'ชื่อเต็มผู้รับ เบอร์ไทยที่ติดต่อได้ รายละเอียดโรงแรมหรือคอนโดหรือที่อยู่ชัดเจน หมุดแผนที่ถ้าช่วยได้ วันจัดส่ง และโน้ตเซอร์ไพรส์ถ้ามี'
         ),
       },
       {
         q: L(
-          'Is same-day delivery available for online orders?',
-          'สั่งออนไลน์แล้วขอจัดส่งวันเดียวได้ไหม?'
+          'Does same-day delivery follow my home timezone?',
+          'จัดส่งวันเดียวอิงเขตเวลาบ้านฉันไหม?'
         ),
         a: L(
-          'Same-day delivery may be available depending on bouquet, order time, and location. Order earlier in the day for the best chance — usually before 18:00 for delivery during 09:00–20:00.',
-          'อาจจัดส่งวันเดียวได้ ขึ้นกับช่อ เวลาสั่ง และพื้นที่ สั่งเช้า ๆ จะมีโอกาสดีกว่า — โดยทั่วไปก่อน 18:00 เพื่อจัดส่งช่วง 09:00–20:00'
+          'No. Same-day eligibility follows Chiang Mai local time and our cutoff. Plan the delivery date using Thailand time.',
+          'ไม่ อิงเวลาท้องถิ่นเชียงใหม่และเวลาตัดรอบของเรา วางแผนวันจัดส่งตามเวลาประเทศไทย'
         ),
       },
       {
         q: L(
-          'What details should I include at checkout?',
-          'ควรกรอกอะไรตอนเช็กเอาต์?'
+          'Can I keep the delivery a surprise?',
+          'จัดส่งแบบเซอร์ไพรส์ได้ไหม?'
         ),
         a: L(
-          'Include the recipient’s name, phone number, full address or map pin, preferred delivery date, and any message-card text or surprise notes.',
-          'ใส่ชื่อผู้รับ เบอร์โทร ที่อยู่เต็มหรือหมุดแผนที่ วันจัดส่งที่ต้องการ และข้อความการ์ดหรือโน้ตเซอร์ไพรส์ถ้ามี'
+          'Yes. Add surprise instructions in the order notes. We still need a reachable contact such as hotel reception or a trusted local number so delivery can complete.',
+          'ได้ ใส่โน้ตเซอร์ไพรส์ในออเดอร์ เรายังต้องมีเบอร์ที่ติดต่อได้ เช่น แผนกต้อนรับโรงแรมหรือคนในพื้นที่ เพื่อให้จัดส่งสำเร็จ'
         ),
       },
     ],
@@ -144,7 +144,7 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       'birthday-flowers-chiang-mai-from-abroad',
       'delivery-policy',
     ],
-    seoMoreLabel: L('How online ordering works', 'วิธีสั่งออนไลน์'),
+    seoMoreLabel: L('How ordering from abroad works', 'วิธีสั่งจากต่างประเทศ'),
     stickyCta: L('Browse bouquets', 'เลือกช่อดอกไม้'),
     seoBodyCollapsible: true,
   },

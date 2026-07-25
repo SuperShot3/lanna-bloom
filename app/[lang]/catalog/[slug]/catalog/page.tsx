@@ -11,7 +11,10 @@ import { CatalogWithFilters } from '@/components/CatalogWithFilters';
 import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
-import { getMarketByPathSlug } from '@/lib/delivery/markets';
+import {
+  getMarketByPathSlug,
+  marketIsRouteAvailable,
+} from '@/lib/delivery/markets';
 import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
 
 /** Always dynamic — reads searchParams for catalog filters. */
@@ -24,7 +27,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return {};
   const market = getMarketByPathSlug(params.slug);
-  if (!market) return {};
+  if (!market || !marketIsRouteAvailable(market)) return {};
   return buildMarketPageMetadata({
     lang: params.lang as Locale,
     market,
@@ -52,7 +55,7 @@ export default async function MarketCatalogPageViaSlug({
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
   const market = getMarketByPathSlug(params.slug);
-  if (!market) notFound();
+  if (!market || !marketIsRouteAvailable(market)) notFound();
 
   const filterParams = parseCatalogSearchParams(searchParams);
   const nameSearchQueryParam = searchParams.q;

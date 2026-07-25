@@ -55,7 +55,7 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
       paragraphs: [t.abroadP1, t.abroadP2],
       links: [
         {
-          href: `/${lang}/info/birthday-flowers-chiang-mai-from-abroad`,
+          href: `/${lang}/info/buy-flowers-online-chiang-mai-thailand`,
           label: t.abroadLink,
         },
         { href: `/${lang}/catalog`, label: t.browseCatalogLink },

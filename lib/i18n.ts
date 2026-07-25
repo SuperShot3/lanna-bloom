@@ -105,7 +105,7 @@ const baseTranslations = {
       headlineNew: 'Buy Flowers Online in Chiang Mai',
       headlineAccent: '',
       sublineNew:
-        'Order flowers online for same-day delivery across Chiang Mai. Pay securely by card for birthdays, anniversaries, and every special moment.',
+        'Lanna Bloom provides online flower and gift delivery in Chiang Mai, with bouquet delivery expanding to selected destinations across Thailand. Pay securely by card — including from abroad.',
       ctaBrowse: 'Explore Signature Collections',
       ctaHowItWorks: 'How it Works',
       howToOrderClose: 'Close',
@@ -1632,7 +1632,7 @@ const baseTranslations = {
       headlineNew: 'ซื้อดอกไม้ออนไลน์ในเชียงใหม่',
       headlineAccent: '',
       sublineNew:
-        'สั่งดอกไม้ออนไลน์ จัดส่งวันเดียวทั่วเชียงใหม่ และชำระด้วยบัตรอย่างปลอดภัย สำหรับวันเกิด วันครบรอบ และทุกช่วงเวลาพิเศษ',
+        'Lanna Bloom ให้บริการสั่งดอกไม้และของขวัญออนไลน์ในเชียงใหม่ และขยายบริการจัดส่งช่อดอกไม้ไปยังบางจุดหมายทั่วไทย จ่ายบัตรปลอดภัย — รวมถึงผู้สั่งจากต่างประเทศ',
       ctaBrowse: 'ดูคอลเลกชัน',
       ctaHowItWorks: 'วิธีการทำงาน',
       howToOrderClose: 'ปิด',

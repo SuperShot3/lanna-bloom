@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:seo": "tsx lib/seo/seoArchitecture.test.ts",
+    "test:delivery-fees": "tsx lib/deliveryFees.test.ts",
     "seed-admin": "tsx scripts/seed-admin.ts",
     "import-catalog": "tsx scripts/archive/import-catalog-from-sanity.ts",
     "import-catalog:dry-run": "tsx scripts/archive/import-catalog-from-sanity.ts --dry-run",

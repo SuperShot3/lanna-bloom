@@ -12,6 +12,7 @@ import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories'
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
+import { buildAlternates } from '@/lib/seo/alternates';
 
 // Revalidate catalog every 60 seconds so new flowers from Sanity appear without rebuild
 export const revalidate = 60;
@@ -58,19 +59,19 @@ export async function generateMetadata({
     filterParams.topCategory === 'balloons'
       ? BALLOONS_SEO[isTh ? 'th' : 'en']
       : CATALOG_SEO[isTh ? 'th' : 'en'];
-  const pageCanonical =
-    filterParams.topCategory === 'balloons'
-      ? `${canonical}?topCategory=balloons`
-      : canonical;
 
   return {
     title: seo.title,
     description: seo.description,
-    alternates: { canonical: pageCanonical },
+    alternates: buildAlternates({
+      lang: locale,
+      pathSuffix: '/catalog',
+      canonical,
+    }),
     openGraph: {
       title: seo.title,
       description: seo.description,
-      url: pageCanonical,
+      url: canonical,
       siteName: 'Lanna Bloom',
       locale: isTh ? 'th_TH' : 'en_US',
       type: 'website',

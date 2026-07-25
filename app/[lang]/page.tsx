@@ -5,9 +5,14 @@ import { PopularSection } from '@/components/PopularSection';
 import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { DeliverySection } from '@/components/home/DeliverySection';
+import { ExploreLinksSection } from '@/components/home/ExploreLinksSection';
+import { LocalLandingSection } from '@/components/home/LocalLandingSection';
+import { HomeFaq } from '@/components/home/HomeFaq';
+import { getHomeFaqItems } from '@/components/home/homeLandingContent';
 import { ExperienceSection } from '@/components/ExperienceSection';
 import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
 import {
+  buildFaqPageJsonLd,
   buildOrganizationJsonLd,
   buildWebSiteJsonLd,
 } from '@/lib/seo/siteJsonLd';
@@ -35,13 +40,14 @@ export async function generateMetadata({
     'x-default': `${base}/en`,
   };
   const isTh = params.lang === 'th';
+  // Phase 3a: keep Chiang Mai primary title for ranking protection.
   const title = isTh
     ? 'ซื้อดอกไม้ออนไลน์เชียงใหม่ — จัดส่งวันเดียว | Lanna Bloom'
     : 'Buy Flowers Online in Chiang Mai — Same-Day Flower Delivery | Lanna Bloom';
   const description = fillDeliveryTimePlaceholders(
     isTh
-      ? 'สั่งดอกไม้ออนไลน์ในเชียงใหม่ จัดส่งวันเดียวเมื่อสั่งก่อน {cutoff} น. ช่อดอกไม้สดจัดโดยร้านดอกไม้ท้องถิ่น ชำระเงินปลอดภัย ส่งถึงบ้าน โรงแรม และคอนโดทั่วเชียงใหม่'
-      : 'Order flowers online for delivery in Chiang Mai. Same-day delivery when you order by {cutoff} — fresh bouquets by local florists, secure checkout, delivery to homes, hotels, and condos.'
+      ? 'สั่งดอกไม้ออนไลน์ในเชียงใหม่ จัดส่งวันเดียวเมื่อสั่งก่อน {cutoff} น. ช่อดอกไม้สดจัดโดยร้านดอกไม้ท้องถิ่น ชำระเงินปลอดภัย ส่งถึงบ้าน โรงแรม และคอนโด — พร้อมขยายบริการไปยังบางจุดหมายทั่วไทย'
+      : 'Order flowers online for delivery in Chiang Mai. Same-day delivery when you order by {cutoff} — fresh bouquets by local florists, secure checkout, delivery to homes, hotels, and condos. Expanding to selected destinations across Thailand.'
   );
   return {
     title,
@@ -68,7 +74,12 @@ export default async function HomePage({
     getHeroImageFromSanity(),
     getHeroCarouselImagesFromSanity(),
   ]);
-  const jsonLd = [buildOrganizationJsonLd(), buildWebSiteJsonLd()];
+  const faqItems = getHomeFaqItems(lang);
+  const jsonLd = [
+    buildOrganizationJsonLd(),
+    buildWebSiteJsonLd(),
+    buildFaqPageJsonLd(faqItems),
+  ];
   return (
     <>
       <script
@@ -77,12 +88,15 @@ export default async function HomePage({
       />
       <Hero lang={lang} heroImageUrl={heroImageUrl} carouselImages={carouselImages} />
       <HomeRevealInit />
+      <ExploreLinksSection lang={lang} />
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang} />
       </Suspense>
       <ExperienceSection lang={lang} />
       <DeliverySection lang={lang} />
+      <LocalLandingSection lang={lang} />
       <ReviewsSection lang={lang} />
+      <HomeFaq lang={lang} faq={faqItems} />
     </>
   );
 }

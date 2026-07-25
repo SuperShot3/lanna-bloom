@@ -29,9 +29,9 @@ import {
   InfoIcon,
 } from './icons';
 import {
-  MARKETS,
   destinationDisplayName,
   getMarketByPathSlug,
+  getNavMarkets,
   isMarketPathSlug,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
@@ -226,7 +226,7 @@ export function Header({
         return;
       }
 
-      const market = MARKETS.find((m) => m.destinationId === nextDestination);
+      const market = getNavMarkets().find((m) => m.destinationId === nextDestination);
       if (!market) {
         clearMarketSession();
         setSessionMarketSlug(null);
@@ -563,7 +563,7 @@ function DeliveryProvincePicker({
       <option value={DEFAULT_DELIVERY_DESTINATION_ID}>
         {destinationDisplayName(DEFAULT_DELIVERY_DESTINATION_ID, lang)}
       </option>
-      {MARKETS.map((market) => (
+      {getNavMarkets().map((market) => (
         <option key={market.destinationId} value={market.destinationId}>
           {lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn}
         </option>

@@ -2,11 +2,11 @@
 import type { MetadataRoute } from 'next';
 import { getBaseUrl } from '@/lib/orders';
 import { getCatalogBouquetSitemapEntries } from '@/lib/catalogReads';
-import { locales } from '@/lib/i18n';
 import { articles } from '@/app/[lang]/info/_data/articles';
 import type { ArticleMeta } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
-import { MARKETS } from '@/lib/delivery/markets';
+import { getActiveMarkets } from '@/lib/delivery/markets';
+import { SEO_LOCALES } from '@/lib/seo/alternates';
 
 type SitemapChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>;
 
@@ -50,10 +50,10 @@ function pushEntry(
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getBaseUrl();
   const entries = new Map<string, MetadataRoute.Sitemap[number]>();
+  const activeMarkets = getActiveMarkets();
 
-  pushEntry(entries, base, { changeFrequency: 'daily', priority: 1 });
-
-  for (const lang of locales) {
+  // Storefront SEO: en + th only (ru/zh locales are thin)
+  for (const lang of SEO_LOCALES) {
     for (const page of LOCALE_PAGES) {
       pushEntry(entries, `${base}/${lang}${page.path}`, {
         changeFrequency: page.changeFrequency,
@@ -61,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
 
-    for (const market of MARKETS) {
+    for (const market of activeMarkets) {
       pushEntry(entries, `${base}/${lang}/${market.pathSlug}/flower-delivery`, {
         changeFrequency: 'weekly',
         priority: 0.68,
@@ -77,6 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const article of articles) {
       if (article.excludeFromSitemap) continue;
+      if (article.noindex) continue;
       pushEntry(entries, `${base}/${lang}${articleSitemapPath(article)}`, {
         changeFrequency: 'monthly',
         priority: article.externalPath ? 0.62 : 0.6,
@@ -87,7 +88,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const bouquets = await getCatalogBouquetSitemapEntries();
-    for (const lang of locales) {
+    for (const lang of SEO_LOCALES) {
       for (const bouquet of bouquets) {
         pushEntry(entries, `${base}/${lang}/catalog/${bouquet.slug}`, {
           changeFrequency: 'weekly',

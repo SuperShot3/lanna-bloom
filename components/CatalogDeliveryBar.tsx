@@ -11,7 +11,7 @@ import {
   formatBangkokTime,
 } from '@/lib/deliveryHours';
 import {
-  MARKETS,
+  getNavMarkets,
   getMarketByPathSlug,
   isMarketPathSlug,
   type MarketPathSlug,
@@ -125,7 +125,7 @@ export function CatalogDeliveryBar({
       return;
     }
 
-    const market = MARKETS.find((m) => m.destinationId === nextDestination);
+    const market = getNavMarkets().find((m) => m.destinationId === nextDestination);
     if (!market) {
       window.location.assign(`/${lang}/catalog`);
       return;
@@ -188,7 +188,7 @@ export function CatalogDeliveryBar({
               aria-label={lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery location'}
             >
               <option value="CHIANG_MAI">Chiang Mai</option>
-              {MARKETS.map((m) => (
+              {getNavMarkets().map((m) => (
                 <option key={m.destinationId} value={m.destinationId}>
                   {lang === 'th' ? m.customerFacingNameTh : m.customerFacingNameEn}
                 </option>

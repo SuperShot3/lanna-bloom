@@ -7,6 +7,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getBaseUrl } from '@/lib/orders';
 import { getLineContactUrl } from '@/lib/messenger';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLinks } from '../_data/articles';
 import { isCommercialIntentSlug } from '@/lib/landingPages/intentLandingPages';
 import { ShareButton } from '@/components/ShareButton';
@@ -67,11 +68,18 @@ export async function generateMetadata({
   const description = getArticleExcerpt(article, lang);
   const coverImage =
     article.cover?.type === 'image' ? `${base}${article.cover.src}` : undefined;
+  const pathSuffix = article.externalPath
+    ? article.externalPath.replace(/\/$/, '') || ''
+    : `/info/${slug}`;
   return {
     title: `${title} | Lanna Bloom`,
     description,
     ...(article.noindex ? { robots: { index: false, follow: false } } : {}),
-    alternates: { canonical },
+    alternates: buildAlternates({
+      lang,
+      pathSuffix,
+      canonical,
+    }),
     openGraph: {
       title: `${title} | Lanna Bloom`,
       description,

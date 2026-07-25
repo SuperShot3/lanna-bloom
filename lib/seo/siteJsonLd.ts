@@ -4,8 +4,8 @@
  * Intentionally Organization + WebSite only — the business has no walk-in
  * physical location, so no Florist/LocalBusiness schema and no street address.
  */
-import { getBaseUrl } from '@/lib/orders';
-import { MARKETS } from '@/lib/delivery/markets';
+import { getBaseUrl } from '@/lib/siteUrl';
+import { getActiveMarkets } from '@/lib/delivery/markets';
 
 const SOCIAL_LINKS = [
   'https://www.facebook.com/profile.php?id=61587782069439',
@@ -36,7 +36,10 @@ export function buildOrganizationJsonLd(): Record<string, unknown> {
     sameAs: SOCIAL_LINKS,
     areaServed: [
       { '@type': 'City', name: 'Chiang Mai' },
-      ...MARKETS.map((m) => ({ '@type': 'City', name: m.customerFacingNameEn })),
+      ...getActiveMarkets().map((m) => ({
+        '@type': 'City',
+        name: m.customerFacingNameEn,
+      })),
     ],
   };
 }

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import type { Locale } from '@/lib/i18n';
 import type { MarketRegistryEntry } from '@/lib/delivery/markets';
-import { getBaseUrl } from '@/lib/orders';
+import { marketIsIndexable } from '@/lib/delivery/markets';
+import { buildAlternates } from '@/lib/seo/alternates';
 
 export type MarketSeoKind = 'landing' | 'catalog' | 'product';
 
@@ -9,23 +10,45 @@ function placeName(market: MarketRegistryEntry, isTh: boolean): string {
   return isTh ? market.customerFacingNameTh : market.customerFacingNameEn;
 }
 
+function pathSuffixForKind(params: {
+  kind: MarketSeoKind;
+  market: MarketRegistryEntry;
+  productSlug?: string;
+}): string {
+  const { kind, market, productSlug } = params;
+  if (kind === 'landing') {
+    return `/${market.pathSlug}/flower-delivery`;
+  }
+  if (kind === 'catalog') {
+    return `/catalog/${market.pathSlug}/catalog`;
+  }
+  return `/catalog/${market.pathSlug}/${productSlug ?? ''}`;
+}
+
 function copyForKind(params: {
   kind: MarketSeoKind;
+  market: MarketRegistryEntry;
   place: string;
   isTh: boolean;
   productName?: string;
 }): { title: string; description: string } {
-  const { kind, place, isTh, productName } = params;
+  const { kind, market, place, isTh, productName } = params;
   const bouquetOnly = isTh ? ' (ช่อดอกไม้เท่านั้น)' : ' (bouquet delivery only)';
 
   if (kind === 'landing') {
+    const overrideTitle = isTh ? market.seoTitleTh : market.seoTitleEn;
+    const overrideDesc = isTh ? market.metaDescriptionTh : market.metaDescriptionEn;
     return {
-      title: isTh
-        ? `ส่งดอกไม้ ${place} | Lanna Bloom`
-        : `Flower delivery ${place} | Lanna Bloom`,
-      description: isTh
-        ? `ช่อดอกไม้สด จัดส่ง${place}${bouquetOnly} เลือกช่อออนไลน์ ชำระเงินปลอดภัย`
-        : `Fresh flower bouquets delivered in ${place}${bouquetOnly}. Order online with secure checkout.`,
+      title:
+        overrideTitle?.trim() ||
+        (isTh
+          ? `ส่งดอกไม้ ${place} | Lanna Bloom`
+          : `Flower delivery ${place} | Lanna Bloom`),
+      description:
+        overrideDesc?.trim() ||
+        (isTh
+          ? `ช่อดอกไม้สด จัดส่ง${place}${bouquetOnly} เลือกช่อออนไลน์ ชำระเงินปลอดภัย`
+          : `Fresh flower bouquets delivered in ${place}${bouquetOnly}. Order online with secure checkout.`),
     };
   }
 
@@ -51,25 +74,9 @@ function copyForKind(params: {
   };
 }
 
-function canonicalForKind(params: {
-  kind: MarketSeoKind;
-  lang: Locale;
-  market: MarketRegistryEntry;
-  productSlug?: string;
-}): string {
-  const base = getBaseUrl();
-  const { kind, lang, market, productSlug } = params;
-  if (kind === 'landing') {
-    return `${base}/${lang}/${market.pathSlug}/flower-delivery`;
-  }
-  if (kind === 'catalog') {
-    return `${base}/${lang}/catalog/${market.pathSlug}/catalog`;
-  }
-  return `${base}/${lang}/catalog/${market.pathSlug}/${productSlug ?? ''}`;
-}
-
 /**
  * Build title/description + explicit openGraph/twitter so root Chiang Mai OG is overridden.
+ * Applies city-status robots (coming_soon → noindex,follow).
  */
 export function buildMarketPageMetadata(params: {
   lang: Locale;
@@ -82,21 +89,32 @@ export function buildMarketPageMetadata(params: {
   const place = placeName(params.market, isTh);
   const { title, description } = copyForKind({
     kind: params.kind,
+    market: params.market,
     place,
     isTh,
     productName: params.productName,
   });
-  const canonical = canonicalForKind({
+  const pathSuffix = pathSuffixForKind({
     kind: params.kind,
-    lang: params.lang,
     market: params.market,
     productSlug: params.productSlug,
   });
+  const alternates = buildAlternates({
+    lang: params.lang,
+    pathSuffix,
+  });
+  const canonical =
+    typeof alternates.canonical === 'string' ? alternates.canonical : undefined;
+
+  const indexable = marketIsIndexable(params.market);
 
   return {
     title,
     description,
-    alternates: { canonical },
+    ...(indexable
+      ? {}
+      : { robots: { index: false, follow: true } }),
+    alternates,
     openGraph: {
       title,
       description,

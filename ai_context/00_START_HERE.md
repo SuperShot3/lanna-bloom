@@ -12,7 +12,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 
 | Area | Current behavior |
 |------|------------------|
-| Locales | URL-based English and Thai routes (`/en/*`, `/th/*`); language switcher preserves the current path where possible |
+| Locales | URL-based English and Thai routes (`/en/*`, `/th/*`); language switcher preserves the current path where possible. SEO sitemap/hreflang use **en+th** — see [docs/seo-keyword-map.md](../docs/seo-keyword-map.md) |
 | Browse | Localized storefront and catalog read approved products from Supabase catalog tables |
 | Product / cart | Product pages support size selection; cart collects delivery area/date and customer contact details |
 | Pay | Primary web flow is Stripe Checkout; server recomputes totals and creates orders after confirmed payment |

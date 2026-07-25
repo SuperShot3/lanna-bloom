@@ -23,6 +23,7 @@ import {
   getPlushyToysFilteredFromSanity,
   type CatalogProduct,
 } from '@/lib/sanity';
+import { buildAlternates } from '@/lib/seo/alternates';
 import styles from './CollectionLandingPage.module.css';
 
 export const revalidate = 60;
@@ -133,9 +134,11 @@ export async function generateMetadata({
   return {
     title: copy.seoTitle,
     description: copy.seoDescription,
-    alternates: {
+    alternates: buildAlternates({
+      lang: locale,
+      pathSuffix: hub.canonicalPath,
       canonical,
-    },
+    }),
     openGraph: {
       title: copy.seoTitle,
       description: copy.seoDescription,

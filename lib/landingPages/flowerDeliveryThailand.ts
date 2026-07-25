@@ -1,6 +1,6 @@
 import type { Locale } from '@/lib/i18n';
 import { CHIANG_MAI_DISTRICTS } from '@/lib/delivery-areas';
-import { MARKETS } from '@/lib/delivery/markets';
+import { getActiveMarkets } from '@/lib/delivery/markets';
 
 export type LocalizedLabel = { nameEn: string; nameTh: string };
 
@@ -55,7 +55,7 @@ export function getThailandServiceAreas(): ThailandServiceArea[] {
       noteEn: 'Full flower & gift catalog · same-day when available',
       noteTh: 'ดอกไม้และของขวัญครบ · จัดส่งวันเดียวได้ตามเงื่อนไข',
     },
-    ...MARKETS.map((m) => ({
+    ...getActiveMarkets().map((m) => ({
       nameEn: m.customerFacingNameEn,
       nameTh: m.customerFacingNameTh,
       href: (lang: Locale) => `/${lang}/${m.pathSlug}/flower-delivery`,
@@ -66,7 +66,7 @@ export function getThailandServiceAreas(): ThailandServiceArea[] {
 }
 
 export function getExpansionMarketAreas(): ThailandServiceArea[] {
-  return MARKETS.map((m) => ({
+  return getActiveMarkets().map((m) => ({
     nameEn: m.customerFacingNameEn,
     nameTh: m.customerFacingNameTh,
     href: (lang: Locale) => `/${lang}/${m.pathSlug}/flower-delivery`,

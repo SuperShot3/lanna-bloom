@@ -1,5 +1,5 @@
 import type { Bouquet } from '@/lib/bouquets';
-import { getBaseUrl } from '@/lib/orders';
+import { getBaseUrl } from '@/lib/siteUrl';
 
 function lowestAvailablePriceThb(bouquet: Bouquet): number {
   const prices = bouquet.sizes

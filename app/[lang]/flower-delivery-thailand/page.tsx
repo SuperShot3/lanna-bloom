@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { DeliveryDistrictMap } from '@/components/delivery/DeliveryDistrictMap';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
+import { buildAlternates } from '@/lib/seo/alternates';
 import {
   getChiangMaiDeliveryDistricts,
   getChiangMaiDeliveryNeighborhoods,
@@ -29,7 +30,11 @@ export async function generateMetadata({
   return {
     title: copy.metaTitle,
     description: copy.metaDescription,
-    alternates: { canonical },
+    alternates: buildAlternates({
+      lang: params.lang,
+      pathSuffix: '/flower-delivery-thailand',
+      canonical,
+    }),
     openGraph: {
       title: copy.metaTitle,
       description: copy.metaDescription,

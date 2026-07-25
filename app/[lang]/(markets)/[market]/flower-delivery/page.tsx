@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { isValidLocale, type Locale } from '@/lib/i18n';
-import { getMarketByPathSlug } from '@/lib/delivery/markets';
+import {
+  getMarketByPathSlug,
+  marketIsRouteAvailable,
+} from '@/lib/delivery/markets';
 import {
   getBouquetsFromSanityPaginated,
   getHeroImageFromSanity,
@@ -20,7 +23,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return {};
   const m = getMarketByPathSlug(params.market);
-  if (!m) return {};
+  if (!m || !marketIsRouteAvailable(m)) return {};
   return buildMarketPageMetadata({
     lang: params.lang as Locale,
     market: m,
@@ -35,7 +38,7 @@ export default async function MarketFlowerDeliveryPage({
 }) {
   if (!isValidLocale(params.lang)) notFound();
   const entry = getMarketByPathSlug(params.market);
-  if (!entry) notFound();
+  if (!entry || !marketIsRouteAvailable(entry)) notFound();
 
   const lang = params.lang as Locale;
   const [initialBouquets, heroImageUrl, carouselImages] = await Promise.all([
