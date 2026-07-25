@@ -5,7 +5,6 @@ import { PopularSection } from '@/components/PopularSection';
 import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { DeliverySection } from '@/components/home/DeliverySection';
-import { ExploreLinksSection } from '@/components/home/ExploreLinksSection';
 import { LocalLandingSection } from '@/components/home/LocalLandingSection';
 import { HomeFaq } from '@/components/home/HomeFaq';
 import { getHomeFaqItems } from '@/components/home/homeLandingContent';
@@ -88,14 +87,13 @@ export default async function HomePage({
       />
       <Hero lang={lang} heroImageUrl={heroImageUrl} carouselImages={carouselImages} />
       <HomeRevealInit />
-      <ExploreLinksSection lang={lang} />
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang} />
       </Suspense>
       <ExperienceSection lang={lang} />
       <DeliverySection lang={lang} />
-      <LocalLandingSection lang={lang} />
       <ReviewsSection lang={lang} />
+      <LocalLandingSection lang={lang} />
       <HomeFaq lang={lang} faq={faqItems} />
     </>
   );
