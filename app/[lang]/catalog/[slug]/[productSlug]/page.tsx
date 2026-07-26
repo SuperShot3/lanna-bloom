@@ -8,6 +8,7 @@ import {
 import { getBouquetBySlugFromSanity } from '@/lib/sanity';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
+import { resolveProductOgImage } from '@/lib/seo/productJsonLd';
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -28,6 +29,11 @@ export async function generateMetadata({
       ? bouquet.nameTh
       : bouquet.nameEn
     : undefined;
+  const ogImage = bouquet
+    ? resolveProductOgImage(bouquet.images, {
+        alt: bouquet.imageAlts?.[0] || productName,
+      })
+    : undefined;
 
   return buildMarketPageMetadata({
     lang: params.lang as Locale,
@@ -35,6 +41,7 @@ export async function generateMetadata({
     kind: 'product',
     productName,
     productSlug: params.productSlug,
+    ...(ogImage ? { ogImage } : {}),
   });
 }
 

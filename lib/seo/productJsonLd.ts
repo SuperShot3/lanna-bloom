@@ -10,11 +10,31 @@ function lowestAvailablePriceThb(bouquet: Bouquet): number {
   return bouquet.sizes[0]?.price ?? 0;
 }
 
+/** Absolute http(s) image URL suitable for OG/Twitter/schema (skips data: placeholders). */
+export function resolveProductOgImage(
+  images: string[],
+  options?: { alt?: string; baseUrl?: string }
+): { url: string; alt?: string } | undefined {
+  const base = (options?.baseUrl ?? getBaseUrl()).replace(/\/$/, '');
+  for (const raw of images) {
+    const url = raw?.trim();
+    if (!url || url.startsWith('data:')) continue;
+    const absolute =
+      url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : `${base}${url.startsWith('/') ? url : `/${url}`}`;
+    if (!absolute.startsWith('http://') && !absolute.startsWith('https://')) continue;
+    const alt = options?.alt?.trim();
+    return alt ? { url: absolute, alt } : { url: absolute };
+  }
+  return undefined;
+}
+
 function productImages(bouquet: Bouquet, base: string): string[] {
   return bouquet.images
-    .filter((url) => url.startsWith('http'))
-    .slice(0, 5)
-    .map((url) => (url.startsWith('http') ? url : `${base}${url}`));
+    .map((url) => resolveProductOgImage([url], { baseUrl: base })?.url)
+    .filter((url): url is string => Boolean(url))
+    .slice(0, 5);
 }
 
 export function buildBouquetProductJsonLd(

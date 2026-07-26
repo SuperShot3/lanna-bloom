@@ -84,6 +84,8 @@ export function buildMarketPageMetadata(params: {
   kind: MarketSeoKind;
   productName?: string;
   productSlug?: string;
+  /** Absolute product image for OG/Twitter (market PDPs). */
+  ogImage?: { url: string; alt?: string };
 }): Metadata {
   const isTh = params.lang === 'th';
   const place = placeName(params.market, isTh);
@@ -107,6 +109,7 @@ export function buildMarketPageMetadata(params: {
     typeof alternates.canonical === 'string' ? alternates.canonical : undefined;
 
   const indexable = marketIsIndexable(params.market);
+  const ogImage = params.ogImage;
 
   return {
     title,
@@ -122,11 +125,15 @@ export function buildMarketPageMetadata(params: {
       siteName: 'Lanna Bloom',
       locale: isTh ? 'th_TH' : 'en_US',
       type: 'website',
+      ...(ogImage
+        ? { images: [{ url: ogImage.url, ...(ogImage.alt ? { alt: ogImage.alt } : {}) }] }
+        : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      ...(ogImage ? { images: [ogImage.url] } : {}),
     },
   };
 }

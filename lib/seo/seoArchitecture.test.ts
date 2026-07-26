@@ -19,6 +19,7 @@ import {
   type MarketRegistryEntry,
 } from '@/lib/delivery/markets';
 import { buildMarketPageMetadata } from './marketPageMetadata';
+import { resolveProductOgImage } from './productJsonLd';
 import { articles } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
 
@@ -173,6 +174,25 @@ for (const market of getActiveMarkets()) {
     /birthday/i.test(birthday.title) || /วันเกิด/.test(birthday.titleTh ?? ''),
     `Birthday abroad title must be birthday-specific: ${birthday.title}`
   );
+}
+
+// --- Product OG image: skip data: placeholders, absolutize paths ---
+{
+  assert.equal(
+    resolveProductOgImage([
+      'data:image/svg+xml,%3Csvg%3E',
+      'https://cdn.example.com/bouquet.webp',
+    ])?.url,
+    'https://cdn.example.com/bouquet.webp'
+  );
+  assert.equal(
+    resolveProductOgImage(['/HeroImage/heroimage.webp'], {
+      baseUrl: 'https://lannabloom.shop',
+      alt: 'Roses',
+    })?.url,
+    'https://lannabloom.shop/HeroImage/heroimage.webp'
+  );
+  assert.equal(resolveProductOgImage(['data:image/svg+xml,x']), undefined);
 }
 
 console.log('seoArchitecture.test.ts: all assertions passed');

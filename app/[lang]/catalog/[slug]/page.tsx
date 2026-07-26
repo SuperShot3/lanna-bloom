@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getBaseUrl } from '@/lib/orders';
-import { buildBouquetProductJsonLd } from '@/lib/seo/productJsonLd';
+import {
+  buildBouquetProductJsonLd,
+  resolveProductOgImage,
+} from '@/lib/seo/productJsonLd';
 import { buildAlternates } from '@/lib/seo/alternates';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
@@ -63,6 +66,9 @@ export async function generateMetadata({
       : `Order ${name} with flower delivery in Chiang Mai.`);
 
   const canonical = `${getBaseUrl()}/${params.lang}/catalog/${bouquet.slug}`;
+  const ogImage = resolveProductOgImage(bouquet.images, {
+    alt: bouquet.imageAlts?.[0] || name,
+  });
   return {
     title,
     description,
@@ -71,7 +77,21 @@ export async function generateMetadata({
       pathSuffix: `/catalog/${bouquet.slug}`,
       canonical,
     }),
-    openGraph: { title, description, url: canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: 'website',
+      ...(ogImage
+        ? { images: [{ url: ogImage.url, ...(ogImage.alt ? { alt: ogImage.alt } : {}) }] }
+        : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage.url] } : {}),
+    },
   };
 }
 
