@@ -25,7 +25,7 @@ export function buildOrganizationJsonLd(): Record<string, unknown> {
     '@type': 'Organization',
     '@id': organizationId(base),
     name: 'Lanna Bloom',
-    url: `${base}/`,
+    url: `${base}/en`,
     logo: `${base}/favicon_io/apple-touch-icon.png`,
     contactPoint: {
       '@type': 'ContactPoint',
@@ -51,7 +51,7 @@ export function buildWebSiteJsonLd(): Record<string, unknown> {
     '@type': 'WebSite',
     '@id': `${base}/#website`,
     name: 'Lanna Bloom',
-    url: `${base}/`,
+    url: `${base}/en`,
     inLanguage: ['en', 'th'],
     publisher: { '@id': organizationId(base) },
   };
