@@ -5,10 +5,12 @@ import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { MicrosoftClarity } from '@/components/MicrosoftClarity';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { fontVariables, mulish } from '@/lib/fonts';
 import { getBaseUrl } from '@/lib/orders';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 
@@ -95,6 +97,8 @@ export default function RootLayout({
             <LoadingScreen />
             <InternalTrafficBootstrap />
             <GoogleAnalytics />
+            <WebVitalsReporter />
+            <SpeedInsights />
             <MicrosoftClarity />
             <ViewTransitions>
               {children}

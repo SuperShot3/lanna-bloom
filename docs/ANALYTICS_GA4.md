@@ -72,6 +72,7 @@ Create GTM custom event triggers for:
 - `messenger_click`
 - `language_change`
 - home CTA event names such as `cta_home_top`
+- **`web_vitals`** — field Core Web Vitals from `components/WebVitalsReporter.tsx` (INP, LCP, CLS, FCP, TTFB). See **Core Web Vitals (`web_vitals`)** below.
 
 ### Recommended Data Layer Variables
 
@@ -85,6 +86,42 @@ Create GTM custom event triggers for:
 - `page_location`
 - `page_path`
 - `traffic_type`
+- For `web_vitals`: `metric_name`, `metric_id`, `metric_value`, `metric_delta`, `metric_rating`, `metric_navigation_type`, `debug_target`, `debug_interaction_type`
+
+## Core Web Vitals (`web_vitals`)
+
+Real-user INP / LCP / CLS (plus FCP / TTFB) are measured in production by `components/WebVitalsReporter.tsx` via the `web-vitals` library and pushed to `dataLayer` as event **`web_vitals`**. Admin routes are skipped. Vercel Speed Insights (`<SpeedInsights />` in `app/layout.tsx`) also collects field data in the Vercel dashboard without GTM.
+
+**Good thresholds (Google):** INP ≤ 200ms · LCP ≤ 2.5s · CLS ≤ 0.1
+
+### GTM setup (one-time)
+
+1. **Trigger:** Custom Event — Event name `web_vitals`
+2. **Data Layer Variables:** `metric_name`, `metric_id`, `metric_value`, `metric_delta`, `metric_rating`, `value` (and optionally `debug_target`, `debug_interaction_type`)
+3. **GA4 Event tag:**
+   - Event name: `web_vitals`
+   - Event parameters: map the DLVs above (`metric_name`, `metric_id`, `metric_value`, `metric_delta`, `metric_rating`, `value`)
+   - Trigger: the `web_vitals` custom event
+4. **Publish** the GTM container (required for GA4; Speed Insights works without this)
+
+### GA4 custom dimensions
+
+Register event-scoped custom dimensions for at least:
+
+- `metric_name` (INP / LCP / CLS / …)
+- `metric_rating` (`good` / `needs-improvement` / `poor`)
+
+Optional: `debug_target`, `debug_interaction_type` for INP debugging.
+
+Page path and device are available as built-in dimensions — use them to find slow pages.
+
+### How to use for ranking
+
+1. **Google Search Console → Experience → Core Web Vitals** — this is what ranking uses (CrUX).
+2. **Vercel → Speed Insights** — live field data after deploy.
+3. **GA4** — explore `web_vitals` where `metric_name = INP` and `metric_rating = poor`, broken down by page path.
+
+If Search Console already shows Good CWV on mobile, a ranking drop is more likely content/competition than INP.
 
 ## Event Inventory
 
@@ -105,6 +142,7 @@ Create GTM custom event triggers for:
 | `contact_click` | LINE / WhatsApp / Telegram click | Canonical contact event |
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
 | `language_change` | Language switcher | Includes `language` and `page_path` |
+| `web_vitals` | Production storefront (not `/admin`) | `WebVitalsReporter` → INP/LCP/CLS/FCP/TTFB field metrics; GTM → GA4 |
 
 Removed legacy messenger events:
 

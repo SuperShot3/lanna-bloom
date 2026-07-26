@@ -12,6 +12,7 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 | Pageviews | Owned by GTM (History Change / config tag), not pushed from app code |
 | Loader | `components/GoogleAnalytics.tsx` |
 | Event helpers | `lib/analytics.ts` → `lib/analytics/gtag.ts` (`pushToDataLayer`) |
+| Core Web Vitals | `components/WebVitalsReporter.tsx` → `web_vitals` dataLayer; also Vercel Speed Insights — see [docs/ANALYTICS_GA4.md](../docs/ANALYTICS_GA4.md#core-web-vitals-web_vitals) |
 
 ## Canonical `purchase` (paid web checkout)
 
@@ -83,6 +84,7 @@ Configure matching **Custom Event** triggers in GTM.
 | File | Role |
 |------|------|
 | `components/GoogleAnalytics.tsx` | GTM + consent bootstrap |
+| `components/WebVitalsReporter.tsx` | Field CWV (`web_vitals` dataLayer); production, non-admin |
 | `lib/analytics.ts` | Funnel event API |
 | `lib/analytics/gtag.ts` | dataLayer transport, `trackCheckoutPurchase`, browser dedupe |
 | `lib/analytics/buildPurchaseItemsFromOrder.ts` | Server line items for `order-status` |
