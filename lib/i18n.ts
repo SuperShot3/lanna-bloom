@@ -106,6 +106,8 @@ const baseTranslations = {
       headlineAccent: '',
       sublineNew:
         'Lanna Bloom provides online flower and gift delivery in Chiang Mai, with bouquet delivery expanding to selected destinations across Thailand. Pay securely by card — including from abroad.',
+      deliveryMethodLine:
+        'Local delivery by car or Grab — whichever is fastest.',
       ctaBrowse: 'Explore Signature Collections',
       ctaHowItWorks: 'How it Works',
       howToOrderClose: 'Close',
@@ -1398,6 +1400,9 @@ const baseTranslations = {
           'Order by {cutoff} for same-day flower delivery in Chiang Mai. We deliver between {start} and {end}; later orders are delivered the next day.',
         cutoffTag: 'Order before',
         windowTag: 'Delivery hours',
+        methodTitle: 'How we deliver',
+        methodText:
+          'We send bouquets by car or Grab, picking whichever gets there fastest.',
         areasTitle: 'Chiang Mai delivery areas',
         areasIntro:
           'We deliver across Chiang Mai city and nearby districts — from the Old City and Nimman to Hang Dong, Mae Rim, and beyond.',
@@ -1436,7 +1441,7 @@ const baseTranslations = {
           },
           {
             q: 'Do you offer same-day flower delivery?',
-            a: 'Yes. Order by {cutoff} for same-day delivery in Chiang Mai. Deliveries run between {start} and {end}; orders placed later are delivered the next day.',
+            a: 'Yes. Order by {cutoff} for same-day delivery in Chiang Mai. Deliveries run between {start} and {end}; orders placed later are delivered the next day. We send by car or Grab, whichever is fastest.',
           },
           {
             q: 'Which areas of Chiang Mai do you deliver to?',
@@ -1633,6 +1638,8 @@ const baseTranslations = {
       headlineAccent: '',
       sublineNew:
         'Lanna Bloom ให้บริการสั่งดอกไม้และของขวัญออนไลน์ในเชียงใหม่ และขยายบริการจัดส่งช่อดอกไม้ไปยังบางจุดหมายทั่วไทย จ่ายบัตรปลอดภัย — รวมถึงผู้สั่งจากต่างประเทศ',
+      deliveryMethodLine:
+        'จัดส่งในพื้นที่ด้วยรถยนต์หรือ Grab — เลือกแบบที่ถึงเร็วที่สุด',
       ctaBrowse: 'ดูคอลเลกชัน',
       ctaHowItWorks: 'วิธีการทำงาน',
       howToOrderClose: 'ปิด',
@@ -2917,6 +2924,9 @@ const baseTranslations = {
           'สั่งก่อน {cutoff} น. เพื่อจัดส่งดอกไม้วันเดียวในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. ออเดอร์หลังจากนั้นจะจัดส่งวันถัดไป',
         cutoffTag: 'สั่งก่อน',
         windowTag: 'เวลาจัดส่ง',
+        methodTitle: 'วิธีจัดส่งของเรา',
+        methodText:
+          'เราส่งช่อดอกไม้ด้วยรถยนต์หรือ Grab โดยเลือกวิธีที่ถึงเร็วที่สุด',
         areasTitle: 'พื้นที่จัดส่งในเชียงใหม่',
         areasIntro:
           'เราจัดส่งทั่วตัวเมืองเชียงใหม่และอำเภอใกล้เคียง — ตั้งแต่คูเมืองและนิมมาน ไปจนถึงหางดง แม่ริม และพื้นที่ใกล้เคียง',
@@ -2955,7 +2965,7 @@ const baseTranslations = {
           },
           {
             q: 'จัดส่งวันเดียวได้ไหม?',
-            a: 'ได้ค่ะ สั่งก่อน {cutoff} น. เพื่อจัดส่งวันเดียวในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. ออเดอร์หลังจากนั้นจะจัดส่งวันถัดไป',
+            a: 'ได้ค่ะ สั่งก่อน {cutoff} น. เพื่อจัดส่งวันเดียวในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. ออเดอร์หลังจากนั้นจะจัดส่งวันถัดไป ส่งด้วยรถยนต์หรือ Grab โดยเลือกแบบที่ถึงเร็วที่สุด',
           },
           {
             q: 'จัดส่งพื้นที่ไหนในเชียงใหม่บ้าง?',

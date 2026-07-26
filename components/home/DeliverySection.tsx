@@ -67,9 +67,15 @@ export function DeliverySection({ lang }: { lang: Locale }) {
                 </p>
               </div>
             </div>
-            <p className="text-stone-200/90 text-sm leading-relaxed mb-8">
+            <p className="text-stone-200/90 text-sm leading-relaxed mb-5">
               {fillDeliveryTimePlaceholders(t.sameDayText)}
             </p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 mb-8">
+              <p className="text-[11px] uppercase tracking-wider text-stone-300/80 mb-1.5">
+                {t.methodTitle}
+              </p>
+              <p className="text-stone-100 text-sm leading-relaxed">{t.methodText}</p>
+            </div>
             <Link
               href={`/${lang}/info/delivery-policy`}
               className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-[#C5A059] hover:text-[#d9b876] transition-colors"

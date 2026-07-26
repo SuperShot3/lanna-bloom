@@ -239,7 +239,7 @@ export function Hero({
             className={`${introItemClass} inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4`.trim()}
           >
             <StorefrontIcon name="verified" size={18} />
-            {t.badge}
+            {t.trustLine}
           </div>
           <h1
             className={`${introItemClass} font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words`.trim()}
@@ -255,6 +255,11 @@ export function Hero({
             className={`${introItemClass} text-base sm:text-lg text-stone-600 mb-0 max-w-lg leading-relaxed`.trim()}
           >
             {t.sublineNew}
+          </p>
+          <p
+            className={`${introItemClass} text-sm sm:text-base text-stone-500 mt-2 sm:mt-3 mb-0 max-w-lg leading-relaxed`.trim()}
+          >
+            {t.deliveryMethodLine}
           </p>
           <div className="hidden lg:block mt-[6px]">
             <HeroCtaSection
