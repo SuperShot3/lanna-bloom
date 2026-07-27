@@ -24,6 +24,8 @@ export interface ResolveOrderDiscountInput {
   deliveryFee: number;
   referralCode?: string | null;
   deliveryDestination?: string;
+  /** Required for date-bounded codes such as MOM10. */
+  deliveryDateYmd?: string;
   /** Server welcome-code validation only. */
   customerEmail?: string;
   now?: Date;
@@ -38,6 +40,7 @@ function manualDiscountForCode(
     deliveryFee: number;
     itemsTotal: number;
     deliveryDestination?: string;
+    deliveryDateYmd?: string;
     hasCatalogProductDiscount?: boolean;
     now?: Date;
   }
@@ -46,6 +49,7 @@ function manualDiscountForCode(
     deliveryFee: options.deliveryFee,
     itemSubtotal: options.itemsTotal,
     deliveryDestination: options.deliveryDestination,
+    deliveryDateYmd: options.deliveryDateYmd,
     hasCatalogProductDiscount: options.hasCatalogProductDiscount,
     now: options.now,
   });
@@ -71,6 +75,7 @@ export function resolveOrderDiscount(
     deliveryFee,
     referralCode,
     deliveryDestination,
+    deliveryDateYmd,
     now = new Date(),
     hasCatalogProductDiscount = false,
   } = input;
@@ -83,6 +88,7 @@ export function resolveOrderDiscount(
       deliveryFee,
       itemsTotal,
       deliveryDestination,
+      deliveryDateYmd,
       hasCatalogProductDiscount,
       now,
     });

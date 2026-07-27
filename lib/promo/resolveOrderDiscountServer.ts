@@ -32,6 +32,7 @@ export async function resolveOrderDiscountServer(
     deliveryFee,
     referralCode,
     deliveryDestination,
+    deliveryDateYmd,
     customerEmail,
     now = new Date(),
     hasCatalogProductDiscount = false,
@@ -45,6 +46,7 @@ export async function resolveOrderDiscountServer(
       deliveryFee,
       itemSubtotal: itemsTotal,
       deliveryDestination,
+      deliveryDateYmd,
       hasCatalogProductDiscount,
       now,
     });

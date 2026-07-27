@@ -18,12 +18,11 @@ import { cn } from '@/lib/utils';
 
 /**
  * Featured guides in the nav dropdown.
- * Same-day (conversion) + Sunday flowers (weekday culture) + hotels (tourist/expat)
- * — hospital stays on the hub but is no longer the only spotlight.
+ * Same-day (conversion) + abroad (overseas buyers) + hotels (tourist/expat)
  */
 const FEATURED_GUIDE_SLUGS = [
   'same-day-flower-delivery-chiang-mai',
-  'sunday-flowers-thailand',
+  'buy-flowers-online-chiang-mai-thailand',
   'flower-delivery-to-hotels-chiang-mai',
 ] as const;
 
@@ -31,10 +30,10 @@ type FeaturedGuideSlug = (typeof FEATURED_GUIDE_SLUGS)[number];
 
 const FEATURED_LABEL_KEY: Record<
   FeaturedGuideSlug,
-  'guideNavSameDay' | 'guideNavSunday' | 'guideNavHotel'
+  'guideNavSameDay' | 'guideNavAbroad' | 'guideNavHotel'
 > = {
   'same-day-flower-delivery-chiang-mai': 'guideNavSameDay',
-  'sunday-flowers-thailand': 'guideNavSunday',
+  'buy-flowers-online-chiang-mai-thailand': 'guideNavAbroad',
   'flower-delivery-to-hotels-chiang-mai': 'guideNavHotel',
 };
 

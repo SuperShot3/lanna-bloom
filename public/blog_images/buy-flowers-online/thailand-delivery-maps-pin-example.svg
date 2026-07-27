@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Google Maps pin example for flower delivery</title>
+  <desc id="desc">Simple map illustration showing a delivery pin at a building entrance</desc>
+  <rect width="640" height="360" fill="#e8f0e9"/>
+  <path d="M0 220 Q160 180 320 210 T640 200 L640 360 L0 360 Z" fill="#d5e4d7"/>
+  <path d="M40 240 H600" stroke="#c5d4c8" stroke-width="18" stroke-linecap="round"/>
+  <path d="M40 240 H600" stroke="#f5f1ea" stroke-width="8" stroke-linecap="round" stroke-dasharray="18 14"/>
+  <rect x="380" y="90" width="140" height="150" rx="8" fill="#fff" stroke="#b7c4ba"/>
+  <rect x="400" y="110" width="40" height="40" fill="#cfe0d3"/>
+  <rect x="460" y="110" width="40" height="40" fill="#cfe0d3"/>
+  <rect x="400" y="170" width="40" height="40" fill="#cfe0d3"/>
+  <rect x="460" y="170" width="40" height="50" fill="#d9c4a5"/>
+  <path d="M250 95 C250 70 280 55 300 55 C320 55 350 70 350 95 C350 130 300 175 300 175 C300 175 250 130 250 95 Z" fill="#c45c4a"/>
+  <circle cx="300" cy="95" r="14" fill="#fff"/>
+  <text x="40" y="40" fill="#2f4a3a" font-family="Georgia, serif" font-size="22" font-weight="700">Share a Maps pin</text>
+  <text x="40" y="68" fill="#5c534a" font-family="system-ui, sans-serif" font-size="14">Helps the courier find the right hotel, condo, or villa entrance</text>
+</svg>

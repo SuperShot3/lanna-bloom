@@ -83,7 +83,7 @@ export type PremiumCheckoutFlowProps = {
   appliedReferralCode: string | null;
   /** Stored code shown in ReferralCodeBox even when discount is currently 0. */
   storedReferralCode: string | null;
-  referralIneligibleReason?: import('@/lib/promo/lannaBloomCoupon').LannaBloomIneligibleReason | 'not_eligible' | null;
+  referralIneligibleReason?: import('@/components/ReferralCodeBox').ReferralIneligibleReason | null;
   hasCatalogProductDiscount?: boolean;
   onReferralChange: () => void;
   mayCampaignEligible: boolean;
@@ -705,6 +705,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             itemSubtotal={itemsTotal}
             deliveryFee={deliveryFee}
             deliveryDestination={delivery.deliveryDestination}
+            deliveryDateYmd={delivery.date || undefined}
             appliedCode={storedReferralCode}
             onApply={onReferralChange}
             onRemove={onReferralChange}

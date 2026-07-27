@@ -6,6 +6,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { LineFloatingButton } from '@/components/LineFloatingButton';
 import { MayFreeDeliveryPromoBanner } from '@/components/MayFreeDeliveryPromoBanner';
+import { MothersDayMom10PromoBanner } from '@/components/MothersDayMom10PromoBanner';
 import { PeakCelebrationNoticeBanner } from '@/components/PeakCelebrationNoticeBanner';
 import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
@@ -20,6 +21,7 @@ export function MainSiteChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [mom10PromoBanner, setMom10PromoBanner] = useState(false);
   const [peakNoticeBanner, setPeakNoticeBanner] = useState(false);
   const [mayPromoBanner, setMayPromoBanner] = useState(false);
   const isPartnerRoute = pathname?.includes('/partner');
@@ -29,7 +31,10 @@ export function MainSiteChrome({
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const hideTopPromoBanner = isCartRoute && isMobileViewport;
   const hasTopPromoBanner =
-    !hideTopPromoBanner && (peakNoticeBanner || (!peakNoticeBanner && mayPromoBanner));
+    !hideTopPromoBanner &&
+    (mom10PromoBanner ||
+      (!mom10PromoBanner && peakNoticeBanner) ||
+      (!mom10PromoBanner && !peakNoticeBanner && mayPromoBanner));
 
   useEffect(() => {
     const syncViewport = () => setIsMobileViewport(window.innerWidth <= 768);
@@ -53,8 +58,11 @@ export function MainSiteChrome({
       <DeliveryDestinationSessionSync lang={lang} />
       {!hideTopPromoBanner ? (
         <>
-          <PeakCelebrationNoticeBanner lang={lang} onActiveChange={setPeakNoticeBanner} />
-          {!peakNoticeBanner ? (
+          <MothersDayMom10PromoBanner lang={lang} onActiveChange={setMom10PromoBanner} />
+          {!mom10PromoBanner ? (
+            <PeakCelebrationNoticeBanner lang={lang} onActiveChange={setPeakNoticeBanner} />
+          ) : null}
+          {!mom10PromoBanner && !peakNoticeBanner ? (
             <MayFreeDeliveryPromoBanner lang={lang} onActiveChange={setMayPromoBanner} />
           ) : null}
         </>

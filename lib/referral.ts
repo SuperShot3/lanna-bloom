@@ -8,6 +8,11 @@ import {
   lannaBloomDiscountAmount,
   LANNA_BLOOM_COUPON_CODE,
 } from '@/lib/promo/lannaBloomCoupon';
+import {
+  isMothersDay2026PromoCode,
+  mothersDay2026PromoDiscount,
+  MOTHERS_DAY_2026_PROMO_CODE,
+} from '@/lib/promo/mothersDay2026Promo';
 
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
@@ -58,6 +63,12 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   'MAY26-FREEDEL': { type: 'free_delivery' },
   /** Public coupon campaign — tiered fixed off items; see lib/promo/lannaBloomCoupon.ts */
   [LANNA_BLOOM_COUPON_CODE]: { type: 'tiered_fixed_items' },
+  /** Mother's Day 2026 early-order — see lib/promo/mothersDay2026Promo.ts */
+  [MOTHERS_DAY_2026_PROMO_CODE]: {
+    type: 'percent',
+    value: 10,
+    discountBase: 'items',
+  },
   VASILIY10: {
     type: 'percent',
     value: 10,
@@ -149,6 +160,8 @@ export type GetDiscountForCodeOptions = {
   deliveryFee?: number;
   itemSubtotal?: number;
   deliveryDestination?: string;
+  /** Required for date-bounded codes such as MOM10. */
+  deliveryDateYmd?: string;
   /** When true, LANNABLOOM (and similar exclusive codes) return 0. */
   hasCatalogProductDiscount?: boolean;
   now?: Date;
@@ -179,6 +192,18 @@ export function getDiscountForCode(
       hasCatalogProductDiscount: options.hasCatalogProductDiscount,
       now: options.now,
     });
+    return Math.min(amount, subtotal);
+  }
+  if (isMothersDay2026PromoCode(normalized)) {
+    const itemsTotal = Math.max(
+      0,
+      options.itemSubtotal ?? subtotal - (options.deliveryFee ?? 0)
+    );
+    const amount = mothersDay2026PromoDiscount(
+      itemsTotal,
+      options.deliveryDateYmd,
+      options.now ?? new Date()
+    );
     return Math.min(amount, subtotal);
   }
   const def = DISCOUNT_CODES[normalized];

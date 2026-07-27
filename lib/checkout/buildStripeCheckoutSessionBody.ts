@@ -167,6 +167,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     deliveryFee,
     referralCode: referral?.code,
     deliveryDestination,
+    deliveryDateYmd: delivery.date || undefined,
     hasCatalogProductDiscount: cartHasCatalogDiscount,
   });
   const referralDiscount = resolvedDiscount?.discount ?? 0;

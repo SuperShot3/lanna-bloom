@@ -91,6 +91,7 @@ export type FlowerDeliveryThailandCopy = {
   ctaCatalog: string;
   ctaChiangMaiGuide: string;
   ctaDeliveryPolicy: string;
+  ctaAbroad: string;
 };
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
@@ -100,7 +101,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'Order flowers online with Lanna Bloom. Flower and gift delivery across Chiang Mai province — all districts, Old City, Nimman, Hang Dong, Mae Rim, San Sai, and more. Bouquet delivery in Phuket, Hua Hin, Koh Samui, Krabi & Ao Nang, and Pattaya.',
     h1: 'Flower delivery in Thailand',
     intro:
-      'Lanna Bloom is a Chiang Mai flower and gift delivery service. Order online with secure checkout — we deliver across Chiang Mai city and province, plus selected destinations across Thailand.',
+      'Lanna Bloom is expanding flower delivery across Thailand. Order online with secure checkout — we deliver across Chiang Mai city and province, plus selected destinations. Availability, delivery fees and same-day service depend on the destination city.',
     areasTitle: 'Where we deliver',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
@@ -115,6 +116,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaCatalog: 'Shop Chiang Mai',
     ctaChiangMaiGuide: 'Chiang Mai delivery guide',
     ctaDeliveryPolicy: 'Delivery policy',
+    ctaAbroad: 'Send flowers from abroad',
   },
   th: {
     metaTitle: 'ส่งดอกไม้ทั่วประเทศไทย | Lanna Bloom',
@@ -122,7 +124,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'สั่งดอกไม้ออนไลน์กับ Lanna Bloom จัดส่งดอกไม้และของขวัญทั่วจังหวัดเชียงใหม่ ครบทุกอำเภอ เมืองเก่า นิมมาน หางดง แม่ริม สันทราย และอื่นๆ รวมลำพูน จัดส่งช่อดอกไม้ในภูเก็ต หัวหิน เกาะสมุย กระบี่และอ่าวนาง และพัทยา',
     h1: 'บริการส่งดอกไม้ในประเทศไทย',
     intro:
-      'Lanna Bloom ให้บริการส่งดอกไม้และของขวัญในเชียงใหม่ สั่งซื้อออนไลน์ชำระเงินปลอดภัย — เราจัดส่งทั่วเมืองและจังหวัดเชียงใหม่ รวมจุดหมายที่เลือกทั่วประเทศไทย',
+      'Lanna Bloom กำลังขยายบริการส่งดอกไม้ทั่วประเทศไทย สั่งซื้อออนไลน์ชำระเงินปลอดภัย — เราจัดส่งทั่วเมืองและจังหวัดเชียงใหม่ รวมจุดหมายที่เลือก ความพร้อม ค่าส่ง และการจัดส่งวันเดียวขึ้นกับเมืองปลายทาง',
     areasTitle: 'พื้นที่ที่ให้บริการ',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:
@@ -137,6 +139,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaCatalog: 'เลือกซื้อเชียงใหม่',
     ctaChiangMaiGuide: 'คู่มือจัดส่งเชียงใหม่',
     ctaDeliveryPolicy: 'นโยบายการจัดส่ง',
+    ctaAbroad: 'ส่งดอกไม้จากต่างประเทศ',
   },
 };
 

@@ -193,6 +193,20 @@ export async function IntentLandingPage({
     a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a {...props} />
     ),
+    img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        {...props}
+        alt={props.alt ?? ''}
+        loading="lazy"
+        style={{
+          maxWidth: '100%',
+          height: 'auto',
+          borderRadius: 12,
+          margin: '1rem 0',
+        }}
+      />
+    ),
     // Suppress product embeds in SEO body — catalog is above
     CatalogProductCard: () => null,
     CatalogProductCardGrid: ({ children }: { children: React.ReactNode }) => (

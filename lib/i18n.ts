@@ -37,6 +37,7 @@ const baseTranslations = {
       sameDayFlowerDeliveryChiangMai: 'Same-day delivery Chiang Mai',
       guideNavSameDay: 'Same-day delivery',
       guideNavSunday: 'Sunday flowers',
+      guideNavAbroad: 'Send from abroad',
       guideNavHotel: 'Hotel delivery',
       seeAllGuides: 'See all guides',
       birthdayFlowerGiftGuide: 'Birthday flower gifts',
@@ -48,6 +49,12 @@ const baseTranslations = {
         'Free delivery 19–26 May on flower orders ฿2,500+ — applied automatically at checkout',
       bannerMessageShort: 'Free delivery 19–26 May · ฿2,500+ on flowers',
       bannerAlt: 'Free delivery 19–26 May — spend ฿2,500+ on flowers',
+    },
+    mothersDay2026Promo: {
+      bannerMessage:
+        'Mother’s Day early order: 10% off flowers ฿1,500+ with code MOM10 — delivery before 10 Aug',
+      bannerMessageShort: '10% off flowers ฿1,500+ · code MOM10 · before 10 Aug',
+      bannerAlt: 'Mother’s Day early-order promo — 10% off with MOM10',
     },
     peakCelebration: {
       events: {
@@ -623,6 +630,13 @@ const baseTranslations = {
         'This coupon cannot be combined with sale items (products that already have a discount). Remove those items or remove this code.',
       lannaBloomExpired: 'This coupon has expired.',
       lannaBloomInactive: 'This coupon is not active.',
+      mom10BelowMinimum:
+        'Add items to reach ฿1,500 (before delivery) to use MOM10.',
+      mom10NeedsDeliveryDate: 'Select a delivery date before 10 August to use MOM10.',
+      mom10PeakDelivery:
+        'MOM10 is for deliveries before 10 August (outside Mother’s Day peak pricing).',
+      mom10Expired: 'The Mother’s Day early-order promo has ended.',
+      mom10Inactive: 'The Mother’s Day early-order promo is not active yet.',
       stickyDeliveryFree: 'Free',
       stickyDeliverySelectArea: 'Select area',
       stickyPolicyApplies: 'Delivery & refund policies apply to all orders.',
@@ -1491,7 +1505,7 @@ const baseTranslations = {
         catalogLink: 'Browse the full catalog',
         guidesTitle: 'Guides',
         sameDayGuideLink: 'Same-day flower delivery in Chiang Mai',
-        abroadGuideLink: 'Send flowers to Chiang Mai from abroad',
+        abroadGuideLink: 'Send flowers to Thailand from abroad',
         allGuidesLink: 'All guides & articles',
         destinationsTitle: 'Flower delivery in Thailand',
         thailandOverviewLink: 'All delivery destinations',
@@ -1526,10 +1540,10 @@ const baseTranslations = {
         deliveryPolicyLink: 'Read our delivery policy',
         abroadTitle: 'Sending flowers from abroad',
         abroadP1:
-          'If you are outside Thailand, you can still order online: browse in English or Thai, pay by international card through Stripe, and leave a message card in either language. Same-day depends on Chiang Mai local time and the cutoff — not your home timezone.',
+          'If you are outside Thailand, you can still order online: browse in English or Thai, pay by international card through Stripe, and leave a message card in either language. Availability and same-day depend on the destination city and Thailand local time — not your home timezone.',
         abroadP2:
           'Our local team handles preparation and delivery, so the recipient gets a fresh bouquet without you needing to coordinate bank transfers or long chat threads.',
-        abroadLink: 'Send flowers to Chiang Mai from abroad',
+        abroadLink: 'Send flowers to Thailand from abroad',
         occasionsTitle: 'Bouquets for birthdays, romance, and every occasion',
         occasionsP1:
           'Romantic and anniversary gifts often lean toward roses. Birthdays and congratulations suit brighter mixed bouquets. Softer tones work well for get-well or sympathy. If you are unsure, start with our birthday guide or rose and orchid collections.',
@@ -1569,6 +1583,7 @@ const baseTranslations = {
       sameDayFlowerDeliveryChiangMai: 'จัดส่งวันเดียวเชียงใหม่',
       guideNavSameDay: 'จัดส่งวันเดียว',
       guideNavSunday: 'ดอกไม้วันอาทิตย์',
+      guideNavAbroad: 'ส่งจากต่างประเทศ',
       guideNavHotel: 'ส่งดอกไม้โรงแรม',
       seeAllGuides: 'ดูคู่มือทั้งหมด',
       birthdayFlowerGiftGuide: 'ของขวัญดอกไม้วันเกิด',
@@ -1580,6 +1595,12 @@ const baseTranslations = {
         'ส่งฟรี 19–26 พ.ค. เมื่อซื้อดอกไม้ครบ ฿2,500 — ระบบหักให้อัตโนมัติเมื่อชำระเงิน',
       bannerMessageShort: 'ส่งฟรี 19–26 พ.ค. · ดอกไม้ครบ ฿2,500',
       bannerAlt: 'ส่งฟรี 19–26 พ.ค. — ซื้อดอกไม้ครบ ฿2,500',
+    },
+    mothersDay2026Promo: {
+      bannerMessage:
+        'สั่งล่วงหน้าวันแม่: ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด MOM10 — จัดส่งก่อน 10 ส.ค.',
+      bannerMessageShort: 'ลด 10% ดอกไม้ครบ ฿1,500 · โค้ด MOM10 · ก่อน 10 ส.ค.',
+      bannerAlt: 'โปรสั่งล่วงหน้าวันแม่ — ลด 10% ด้วยโค้ด MOM10',
     },
     peakCelebration: {
       events: {
@@ -2151,6 +2172,12 @@ const baseTranslations = {
         'คูปองนี้ใช้ร่วมกับสินค้าที่มีส่วนลดอยู่แล้วไม่ได้ ลบสินค้านั้นหรือลบรหัสนี้',
       lannaBloomExpired: 'คูปองนี้หมดอายุแล้ว',
       lannaBloomInactive: 'คูปองนี้ยังไม่เปิดใช้งาน',
+      mom10BelowMinimum: 'เพิ่มสินค้าให้ครบ ฿1,500 (ก่อนค่าส่ง) เพื่อใช้โค้ด MOM10',
+      mom10NeedsDeliveryDate: 'เลือกวันจัดส่งก่อน 10 สิงหาคมเพื่อใช้โค้ด MOM10',
+      mom10PeakDelivery:
+        'โค้ด MOM10 ใช้ได้กับการจัดส่งก่อน 10 สิงหาคมเท่านั้น (นอกช่วงราคาวันแม่)',
+      mom10Expired: 'โปรสั่งล่วงหน้าวันแม่สิ้นสุดแล้ว',
+      mom10Inactive: 'โปรสั่งล่วงหน้าวันแม่ยังไม่เปิดใช้งาน',
       stickyDeliveryFree: 'ฟรี',
       stickyDeliverySelectArea: 'เลือกพื้นที่',
       stickyPolicyApplies: 'ทุกออเดอร์เป็นไปตามนโยบายการจัดส่งและการคืนเงิน',
@@ -3015,7 +3042,7 @@ const baseTranslations = {
         catalogLink: 'ดูแคตตาล็อกทั้งหมด',
         guidesTitle: 'คู่มือ',
         sameDayGuideLink: 'จัดส่งดอกไม้วันเดียวในเชียงใหม่',
-        abroadGuideLink: 'ส่งดอกไม้มาเชียงใหม่จากต่างประเทศ',
+        abroadGuideLink: 'ส่งดอกไม้ไปประเทศไทยจากต่างประเทศ',
         allGuidesLink: 'คู่มือและบทความทั้งหมด',
         destinationsTitle: 'ส่งดอกไม้ทั่วประเทศไทย',
         thailandOverviewLink: 'จุดหมายจัดส่งทั้งหมด',
@@ -3050,10 +3077,10 @@ const baseTranslations = {
         deliveryPolicyLink: 'อ่านนโยบายการจัดส่ง',
         abroadTitle: 'ส่งดอกไม้จากต่างประเทศ',
         abroadP1:
-          'ถ้าคุณอยู่นอกประเทศไทย ก็สั่งออนไลน์ได้: เลือกดูเป็นภาษาอังกฤษหรือไทย จ่ายบัตรต่างประเทศผ่าน Stripe และฝากข้อความการ์ดได้ทั้งสองภาษา การจัดส่งวันเดียวขึ้นกับเวลาท้องถิ่นเชียงใหม่และเวลาตัดรอบ — ไม่ใช่โซนเวลาบ้านคุณ',
+          'ถ้าคุณอยู่นอกประเทศไทย ก็สั่งออนไลน์ได้: เลือกดูเป็นภาษาอังกฤษหรือไทย จ่ายบัตรต่างประเทศผ่าน Stripe และฝากข้อความการ์ดได้ทั้งสองภาษา ความพร้อมและการจัดส่งวันเดียวขึ้นกับเมืองปลายทางและเวลาประเทศไทย — ไม่ใช่โซนเวลาบ้านคุณ',
         abroadP2:
           'ทีมท้องถิ่นดูแลการจัดช่อและการจัดส่ง ผู้รับได้ดอกไม้สด โดยคุณไม่ต้องโอนเงินไทยหรือคุยยาวในแชท',
-        abroadLink: 'ส่งดอกไม้มาเชียงใหม่จากต่างประเทศ',
+        abroadLink: 'ส่งดอกไม้ไปประเทศไทยจากต่างประเทศ',
         occasionsTitle: 'ช่อดอกไม้สำหรับวันเกิด โรแมนติก และทุกโอกาส',
         occasionsP1:
           'ของขวัญโรแมนติกและครบรอบมักเป็นกุหลาบ วันเกิดและแสดงความยินดีเหมาะกับช่อมิกซ์โทนสดใส โทนอ่อนเหมาะกับเยี่ยมไข้หรือแสดงความเสียใจ หากยังไม่แน่ใจ เริ่มจากคู่มือวันเกิด หรือคอลเลกชันกุหลาบและกล้วยไม้',
@@ -3095,6 +3122,7 @@ const russianTranslations = {
     sameDayFlowerDeliveryChiangMai: 'Доставка сегодня в Чиангмае',
     guideNavSameDay: 'Доставка сегодня',
     guideNavSunday: 'Цветы воскресенья',
+    guideNavAbroad: 'Заказ из-за рубежа',
     guideNavHotel: 'Доставка в отель',
     seeAllGuides: 'Все гайды',
     birthdayFlowerGiftGuide: 'Цветы на день рождения',
@@ -3958,6 +3986,7 @@ const chineseSingaporeTranslations = {
     sameDayFlowerDeliveryChiangMai: '清迈当日配送',
     guideNavSameDay: '当日配送',
     guideNavSunday: '周日花卉',
+    guideNavAbroad: '海外订购',
     guideNavHotel: '酒店送花',
     seeAllGuides: '查看全部指南',
     birthdayFlowerGiftGuide: '生日鲜花礼物',
@@ -4650,6 +4679,7 @@ const chineseHongKongTranslations = {
     sameDayFlowerDeliveryChiangMai: '清邁即日配送',
     guideNavSameDay: '即日配送',
     guideNavSunday: '週日花卉',
+    guideNavAbroad: '海外訂購',
     guideNavHotel: '酒店送花',
     seeAllGuides: '查看全部指南',
     birthdayFlowerGiftGuide: '生日鮮花禮物',

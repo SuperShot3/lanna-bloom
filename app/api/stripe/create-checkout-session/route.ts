@@ -607,6 +607,7 @@ export async function POST(request: NextRequest) {
       deliveryFee: totals.deliveryFee,
       referralCode: data.referralCode,
       deliveryDestination: data.delivery.deliveryDestination,
+      deliveryDateYmd: deliveryDateYmd || undefined,
       customerEmail: data.customerEmail,
       hasCatalogProductDiscount: totals.hasCatalogProductDiscount,
     });

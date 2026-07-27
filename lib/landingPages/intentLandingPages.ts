@@ -60,21 +60,21 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     heroImage: {
       src: '/blog_images/buy-flowers-online/buy-flower-online-lannabloom.png',
       alt: L(
-        'Fresh flower bouquet from Lanna Bloom with laptop for ordering Chiang Mai flower delivery from abroad',
-        'ช่อดอกไม้สดจาก Lanna Bloom คู่แล็ปท็อปสำหรับสั่งดอกไม้จัดส่งเชียงใหม่จากต่างประเทศ'
+        'Fresh flower bouquet from Lanna Bloom with laptop for ordering flower delivery in Thailand from abroad',
+        'ช่อดอกไม้สดจาก Lanna Bloom คู่แล็ปท็อปสำหรับสั่งดอกไม้จัดส่งในประเทศไทยจากต่างประเทศ'
       ),
     },
     directAnswer: L(
-      'Yes — you can send flowers to Chiang Mai from abroad. Browse real bouquets, pay securely with an international card through Stripe, and our local Chiang Mai team prepares and delivers.',
-      'ได้ — ส่งดอกไม้ไปเชียงใหม่จากต่างประเทศได้ เลือกช่อจริง จ่ายบัตรต่างประเทศปลอดภัยผ่าน Stripe แล้วทีมท้องถิ่นในเชียงใหม่จะจัดช่อและจัดส่งให้'
+      'Yes — you can send flowers to Thailand from another country. Browse real bouquets, pay securely with an international card through Stripe, and a local team prepares and delivers. Availability depends on the destination city.',
+      'ได้ — ส่งดอกไม้ไปประเทศไทยจากต่างประเทศได้ เลือกช่อจริง จ่ายบัตรต่างประเทศปลอดภัยผ่าน Stripe แล้วทีมท้องถิ่นจัดช่อและจัดส่ง ความพร้อมขึ้นกับเมืองปลายทาง'
     ),
     benefits: [
       L('Pay with international cards (Apple Pay / Google Pay where supported)', 'จ่ายบัตรต่างประเทศ (รองรับ Apple Pay / Google Pay ตามอุปกรณ์)'),
       L('No Thai bank account required', 'ไม่ต้องมีบัญชีธนาคารไทย'),
-      L('Clear hotel, condo, and home delivery details', 'รายละเอียดจัดส่งโรงแรม คอนโด และบ้านชัดเจน'),
-      L('Local Chiang Mai team handles fulfilment', 'ทีมท้องถิ่นเชียงใหม่ดูแลการจัดส่ง'),
+      L('Hotels, villas, condos, hospitals, offices, and homes', 'โรงแรม วิลล่า คอนโด โรงพยาบาล ออฟฟิศ และบ้าน'),
+      L('Expanding across Thailand — Chiang Mai fullest catalogue', 'ขยายทั่วไทย — เชียงใหม่มีแคตตาล็อกครบที่สุด'),
     ],
-    primaryCta: L('Browse Chiang Mai bouquets', 'เลือกช่อดอกไม้เชียงใหม่'),
+    primaryCta: L('Browse bouquets', 'เลือกช่อดอกไม้'),
     primaryCtaHref: '/catalog',
     catalogTitle: L('Popular bouquets to send from abroad', 'ช่อยอดนิยมสำหรับส่งจากต่างประเทศ'),
     catalogLimit: 12,
@@ -90,12 +90,12 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     faq: [
       {
         q: L(
-          'Can I order flowers for Chiang Mai from another country?',
-          'สั่งดอกไม้ไปเชียงใหม่จากต่างประเทศได้ไหม?'
+          'Can I order flowers for someone in Thailand from another country?',
+          'สั่งดอกไม้ให้คนในประเทศไทยจากต่างประเทศได้ไหม?'
         ),
         a: L(
-          'Yes. Complete checkout online with an international card through Stripe. Our Chiang Mai team prepares and delivers locally — you do not need a Thai bank account.',
-          'ได้ ชำระออนไลน์ด้วยบัตรต่างประเทศผ่าน Stripe ทีมในเชียงใหม่จัดช่อและจัดส่งในพื้นที่ — ไม่ต้องมีบัญชีธนาคารไทย'
+          'Yes. Complete checkout online with an international card through Stripe. A local team prepares and delivers in the destination city — you do not need a Thai bank account. Coverage depends on the city; Chiang Mai has the fullest catalogue.',
+          'ได้ ชำระออนไลน์ด้วยบัตรต่างประเทศผ่าน Stripe ทีมท้องถิ่นจัดช่อและจัดส่งในเมืองปลายทาง — ไม่ต้องมีบัญชีธนาคารไทย ความครอบคลุมขึ้นกับเมือง เชียงใหม่มีแคตตาล็อกครบที่สุด'
         ),
       },
       {
@@ -114,8 +114,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
           'ควรกรอกข้อมูลผู้รับอะไรบ้าง?'
         ),
         a: L(
-          'Recipient full name, a working Thai phone number, hotel or condo details or a clear address, a Google Maps pin when helpful, preferred delivery date, and any surprise notes.',
-          'ชื่อเต็มผู้รับ เบอร์ไทยที่ติดต่อได้ รายละเอียดโรงแรมหรือคอนโดหรือที่อยู่ชัดเจน หมุดแผนที่ถ้าช่วยได้ วันจัดส่ง และโน้ตเซอร์ไพรส์ถ้ามี'
+          'Recipient full name, a working Thai phone number, hotel/villa/condo/hospital/office/home details, a Google Maps pin when helpful, preferred delivery date, and any surprise notes.',
+          'ชื่อเต็มผู้รับ เบอร์ไทยที่ติดต่อได้ รายละเอียดโรงแรม/วิลล่า/คอนโด/โรงพยาบาล/ออฟฟิศ/บ้าน หมุดแผนที่ถ้าช่วยได้ วันจัดส่ง และโน้ตเซอร์ไพรส์ถ้ามี'
         ),
       },
       {
@@ -124,27 +124,49 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
           'จัดส่งวันเดียวอิงเขตเวลาบ้านฉันไหม?'
         ),
         a: L(
-          'No. Same-day eligibility follows Chiang Mai local time and our cutoff. Plan the delivery date using Thailand time.',
-          'ไม่ อิงเวลาท้องถิ่นเชียงใหม่และเวลาตัดรอบของเรา วางแผนวันจัดส่งตามเวลาประเทศไทย'
+          'No. Same-day eligibility follows Thailand local time (ICT) and our cutoff. Chiang Mai same-day is strongest; other cities depend on availability. From most overseas time zones, order one day ahead when possible.',
+          'ไม่ อิงเวลาประเทศไทย (ICT) และเวลาตัดรอบของเรา วันเดียวในเชียงใหม่แข็งแรงที่สุด เมืองอื่นขึ้นกับความพร้อม จากเขตเวลาส่วนใหญ่ต่างประเทศ ควรสั่งล่วงหน้าหนึ่งวันเมื่อเป็นไปได้'
         ),
       },
       {
         q: L(
-          'Can I keep the delivery a surprise?',
-          'จัดส่งแบบเซอร์ไพรส์ได้ไหม?'
+          'Can I send flowers to a hotel in Thailand?',
+          'ส่งดอกไม้ไปโรงแรมในไทยได้ไหม?'
         ),
         a: L(
-          'Yes. Add surprise instructions in the order notes. We still need a reachable contact such as hotel reception or a trusted local number so delivery can complete.',
-          'ได้ ใส่โน้ตเซอร์ไพรส์ในออเดอร์ เรายังต้องมีเบอร์ที่ติดต่อได้ เช่น แผนกต้อนรับโรงแรมหรือคนในพื้นที่ เพื่อให้จัดส่งสำเร็จ'
+          'Yes. Include the hotel name, guest name, room if known, and a reachable phone or reception contact so delivery can complete — including surprise deliveries.',
+          'ได้ ใส่ชื่อโรงแรม ชื่อผู้เข้าพัก ห้องถ้ารู้ และเบอร์หรือแผนกต้อนรับที่ติดต่อได้ เพื่อให้จัดส่งสำเร็จ รวมถึงแบบเซอร์ไพรส์'
+        ),
+      },
+      {
+        q: L(
+          'Can I keep the delivery a surprise or anonymous?',
+          'จัดส่งแบบเซอร์ไพรส์หรือไม่ระบุผู้ส่งได้ไหม?'
+        ),
+        a: L(
+          'Yes. Add surprise instructions in the order notes and omit your name from the card if you wish. We still need a reachable contact such as hotel reception or a trusted local number.',
+          'ได้ ใส่โน้ตเซอร์ไพรส์ในออเดอร์และไม่ใส่ชื่อบนการ์ดได้หากต้องการ เรายังต้องมีเบอร์ที่ติดต่อได้ เช่น แผนกต้อนรับโรงแรมหรือคนในพื้นที่'
+        ),
+      },
+      {
+        q: L(
+          'What if the recipient does not answer?',
+          'ถ้าผู้รับไม่รับสายจะทำอย่างไร?'
+        ),
+        a: L(
+          'We follow the wait and redelivery rules in our delivery policy. A backup contact — reception, condo office, or your WhatsApp/LINE — greatly improves success.',
+          'เราทำตามกฎการรอและการส่งใหม่ในนโยบายจัดส่ง เบอร์สำรอง — แผนกต้อนรับ สำนักงานนิติบุคคล หรือ WhatsApp/LINE ของคุณ — ช่วยให้สำเร็จมากขึ้น'
         ),
       },
     ],
     relatedIntents: [
       'same-day-flower-delivery-chiang-mai',
+      'flower-delivery-to-hotels-chiang-mai',
+      'flower-delivery-address-chiang-mai',
       'birthday-flowers-chiang-mai-from-abroad',
       'delivery-policy',
     ],
-    seoMoreLabel: L('How ordering from abroad works', 'วิธีสั่งจากต่างประเทศ'),
+    seoMoreLabel: L('How to send flowers to Thailand from abroad', 'วิธีส่งดอกไม้ไปประเทศไทยจากต่างประเทศ'),
     stickyCta: L('Browse bouquets', 'เลือกช่อดอกไม้'),
     seoBodyCollapsible: true,
   },

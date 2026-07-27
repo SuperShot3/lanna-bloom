@@ -10,12 +10,18 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 | Same-day flower delivery Chiang Mai | `/en/info/same-day-flower-delivery-chiang-mai` |
 | Rose delivery Chiang Mai | `/en/collections/roses-chiang-mai` |
 | Orchid delivery Chiang Mai | `/en/collections/orchids-chiang-mai` |
-| Send flowers to CM from abroad | `/en/info/buy-flowers-online-chiang-mai-thailand` |
+| Send flowers to Thailand from abroad / international card checkout | `/en/info/buy-flowers-online-chiang-mai-thailand` (same URL also covers CM-from-abroad) |
 | Birthday flowers from abroad | `/en/info/birthday-flowers-chiang-mai-from-abroad` |
 | Hotel delivery Chiang Mai | `/en/info/flower-delivery-to-hotels-chiang-mai` |
 | Hospital delivery Chiang Mai | `/en/info/flower-delivery-to-hospitals-chiang-mai` |
 | Delivery address guidance | `/en/info/flower-delivery-address-chiang-mai` |
 | Product | `/en/catalog/{slug}` |
+
+## Role split (do not duplicate)
+
+- **Abroad how-to** (`buy-flowers-online-chiang-mai-thailand`) — overseas buyers: payment, recipient details, time zones, hotels/homes, advance ordering.
+- **Thailand coverage** (`flower-delivery-thailand`) — where we deliver; fees/areas overview; links to the abroad how-to for international customers.
+- **Birthday from abroad** — birthday occasion only; link to the abroad how-to for general checkout questions.
 
 ## URL rules (current architecture)
 
@@ -23,6 +29,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 - Expansion cities = `/{lang}/{city}/flower-delivery`.
 - Products = `/{lang}/catalog/{slug}` (city selection at checkout / market session; no mass city-product duplicates in sitemap).
 - Collections = `/{lang}/collections/{slug}` (Chiang Mai hubs first).
+- Keep slug `buy-flowers-online-chiang-mai-thailand` (do not rename); title/H1 may say Thailand-from-abroad.
 
 ## City status
 

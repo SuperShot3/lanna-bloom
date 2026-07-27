@@ -93,6 +93,12 @@ export default function FlowerDeliveryThailandPage({
             <Link href={`/${lang}`} className="guide-browse-link">
               {copy.ctaChiangMaiGuide}
             </Link>
+            <Link
+              href={`/${lang}/info/buy-flowers-online-chiang-mai-thailand`}
+              className="guide-browse-link"
+            >
+              {copy.ctaAbroad}
+            </Link>
             <Link href={`/${lang}/info/delivery-policy`} className="guide-browse-link">
               {copy.ctaDeliveryPolicy}
             </Link>

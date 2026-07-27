@@ -15,6 +15,11 @@ import {
   LANNA_BLOOM_COUPON_EXPIRES_YMD,
   type LannaBloomIneligibleReason,
 } from '@/lib/promo/lannaBloomCoupon';
+import {
+  evaluateMothersDay2026Promo,
+  isMothersDay2026PromoCode,
+  type MothersDay2026IneligibleReason,
+} from '@/lib/promo/mothersDay2026Promo';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
@@ -23,12 +28,19 @@ import {
   clipCheckoutField,
 } from '@/lib/checkout/checkoutFieldLimits';
 
+export type ReferralIneligibleReason =
+  | LannaBloomIneligibleReason
+  | MothersDay2026IneligibleReason
+  | 'not_eligible';
+
 export interface ReferralCodeBoxProps {
   lang: Locale;
   subtotal: number;
   itemSubtotal: number;
   deliveryFee: number;
   deliveryDestination: OrderDeliveryDestinationId;
+  /** Selected delivery date YMD — required for MOM10 eligibility. */
+  deliveryDateYmd?: string;
   appliedCode: string | null;
   onApply: () => void;
   onRemove: () => void;
@@ -39,7 +51,7 @@ export interface ReferralCodeBoxProps {
   /** May 2026 auto free delivery would apply if no manual code is used */
   mayCampaignEligible?: boolean;
   /** When code is stored but discount is 0 */
-  ineligibleReason?: LannaBloomIneligibleReason | 'not_eligible' | null;
+  ineligibleReason?: ReferralIneligibleReason | null;
 }
 
 function lannaBloomReasonMessage(
@@ -69,12 +81,51 @@ function lannaBloomReasonMessage(
   }
 }
 
+function mom10ReasonMessage(
+  t: Record<string, string>,
+  reason: MothersDay2026IneligibleReason
+): string {
+  switch (reason) {
+    case 'below_minimum':
+      return (
+        t.mom10BelowMinimum ??
+        'Add items to reach ฿1,500 (before delivery) to use MOM10.'
+      );
+    case 'needs_delivery_date':
+      return (
+        t.mom10NeedsDeliveryDate ??
+        'Select a delivery date before 10 August to use MOM10.'
+      );
+    case 'peak_delivery':
+      return (
+        t.mom10PeakDelivery ??
+        'MOM10 is for deliveries before 10 August (outside Mother’s Day peak pricing).'
+      );
+    case 'expired':
+      return t.mom10Expired ?? 'The Mother’s Day early-order promo has ended.';
+    case 'inactive':
+      return t.mom10Inactive ?? 'The Mother’s Day early-order promo is not active yet.';
+  }
+}
+
+function ineligibleMessage(
+  t: Record<string, string>,
+  reason: ReferralIneligibleReason,
+  code: string | null
+): string {
+  if (isMothersDay2026PromoCode(code) && reason !== 'not_eligible') {
+    return mom10ReasonMessage(t, reason as MothersDay2026IneligibleReason);
+  }
+  return lannaBloomReasonMessage(t, reason as LannaBloomIneligibleReason | 'not_eligible');
+}
+
 export function ReferralCodeBox({
   lang,
   subtotal,
   itemSubtotal,
   deliveryFee,
   deliveryDestination,
+  deliveryDateYmd,
   appliedCode,
   onApply,
   onRemove,
@@ -120,10 +171,35 @@ export function ReferralCodeBox({
       }
     }
 
+    if (isMothersDay2026PromoCode(result.code)) {
+      // Always store; cart shows ineligible reason until delivery/min are met.
+      storeReferral(result.code);
+      setInputValue('');
+      setError(null);
+      const eligibility = evaluateMothersDay2026Promo(itemSubtotal, {
+        deliveryDateYmd,
+      });
+      if (
+        mayCampaignEligible &&
+        eligibility.ok &&
+        getDiscountAllocationForCode(result.code) !== 'delivery'
+      ) {
+        setCombineNotice(
+          t.promoCannotCombineMay ??
+            'This offer cannot be combined with other promotions. Remove your code to use free delivery, or keep your code instead.'
+        );
+      } else {
+        setCombineNotice(null);
+      }
+      onApply();
+      return;
+    }
+
     const discount = getDiscountForCode(result.code, subtotal, {
       deliveryFee,
       itemSubtotal,
       deliveryDestination,
+      deliveryDateYmd,
       hasCatalogProductDiscount,
     });
     if (discount <= 0) {
@@ -167,7 +243,9 @@ export function ReferralCodeBox({
         ? (t.lannaBloomApplied ?? 'Applied: {code}').replace('{code}', appliedCode)
         : (t.referralApplied ?? 'Applied: {code}').replace('{code}', appliedCode);
     const ineligibleMsg =
-      ineligibleReason != null ? lannaBloomReasonMessage(t, ineligibleReason) : null;
+      ineligibleReason != null
+        ? ineligibleMessage(t, ineligibleReason, appliedCode)
+        : null;
     return (
       <div className="referral-code-box referral-code-box--applied">
         <span className="referral-code-box-applied">{appliedLabel}</span>

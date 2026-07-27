@@ -167,12 +167,12 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'birthday-flowers-chiang-mai-from-abroad',
-    title: 'Birthday Flowers to Chiang Mai From Abroad',
+    title: 'Birthday Flowers to Thailand From Abroad',
     excerpt:
-      'Sending birthday flowers to Chiang Mai from overseas: what to expect, how checkout works, and how a local team handles delivery for birthday surprises.',
-    titleTh: 'ส่งดอกไม้วันเกิดไปเชียงใหม่จากต่างประเทศ',
+      'Sending birthday flowers to Thailand from overseas: timing tips, surprise delivery, and how to choose a birthday bouquet. For payment and checkout basics, see the general abroad guide.',
+    titleTh: 'ส่งดอกไม้วันเกิดไปประเทศไทยจากต่างประเทศ',
     excerptTh:
-      'ส่งดอกไม้วันเกิดไปเชียงใหม่จากต่างประเทศ: สิ่งที่ควรคาดหวัง ขั้นตอนเช็กเอาต์ และการจัดส่งโดยทีมท้องถิ่นสำหรับเซอร์ไพรส์วันเกิด',
+      'ส่งดอกไม้วันเกิดไปประเทศไทยจากต่างประเทศ: เคล็ดลับเรื่องเวลา เซอร์ไพรส์ และการเลือกช่อวันเกิด สำหรับการชำระเงินและเช็กเอาต์ ดูคู่มือต่างประเทศทั่วไป',
     publishedAt: '2026-04-03T00:00:00.000Z',
     featured: false,
     cover: {
@@ -298,22 +298,37 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'buy-flowers-online-chiang-mai-thailand',
-    title: 'Send Flowers to Chiang Mai From Abroad',
+    title: 'Send Flowers to Thailand From Abroad',
     excerpt:
-      'Order flower delivery in Chiang Mai from another country: international card checkout, recipient details for hotels and condos, time zones, and surprise delivery tips.',
-    titleTh: 'ส่งดอกไม้ไปเชียงใหม่จากต่างประเทศ',
+      'How to send flowers to Thailand from another country: international card checkout, recipient details for hotels and homes, Thailand time zones, and delivery tips. Availability depends on the destination city.',
+    titleTh: 'ส่งดอกไม้ไปประเทศไทยจากต่างประเทศ',
     excerptTh:
-      'สั่งดอกไม้จัดส่งเชียงใหม่จากต่างประเทศ: จ่ายบัตรต่างประเทศ รายละเอียดผู้รับสำหรับโรงแรมและคอนโด เขตเวลา และเคล็ดลับเซอร์ไพรส์',
+      'วิธีส่งดอกไม้ไปประเทศไทยจากต่างประเทศ: จ่ายบัตรต่างประเทศ รายละเอียดผู้รับสำหรับโรงแรมและบ้าน เขตเวลาไทย และเคล็ดลับจัดส่ง ความพร้อมขึ้นกับเมืองปลายทาง',
     publishedAt: '2026-07-10T00:00:00.000Z',
-    featured: false,
+    featured: true,
     cover: {
       type: 'image',
       src: '/blog_images/buy-flowers-online/buy-flower-online-lannabloom.png',
-      alt: 'Fresh flower bouquet from Lanna Bloom with laptop for ordering Chiang Mai flower delivery from abroad',
+      alt: 'Fresh flower bouquet from Lanna Bloom with laptop for ordering flower delivery in Thailand from abroad',
     },
     ctaLinks: [
-      { label: 'Flower delivery Chiang Mai', labelTh: 'ส่งดอกไม้เชียงใหม่', href: '/' },
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      {
+        label: 'Flower delivery Thailand',
+        labelTh: 'ส่งดอกไม้ทั่วประเทศไทย',
+        href: '/flower-delivery-thailand',
+      },
+      { label: 'Flower delivery Chiang Mai', labelTh: 'ส่งดอกไม้เชียงใหม่', href: '/' },
+      {
+        label: 'Same-day Chiang Mai',
+        labelTh: 'จัดส่งวันเดียวเชียงใหม่',
+        href: '/info/same-day-flower-delivery-chiang-mai',
+      },
+      {
+        label: 'Hotel delivery tips',
+        labelTh: 'เคล็ดลับส่งโรงแรม',
+        href: '/info/flower-delivery-to-hotels-chiang-mai',
+      },
       { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
       { label: 'Clear delivery address tips', labelTh: 'เคล็ดลับที่อยู่จัดส่ง', href: '/info/flower-delivery-address-chiang-mai' },
       {
@@ -321,6 +336,7 @@ export const articles: ArticleMeta[] = [
         labelTh: 'ดอกไม้วันเกิดจากต่างประเทศ',
         href: '/info/birthday-flowers-chiang-mai-from-abroad',
       },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },
   {
@@ -552,6 +568,17 @@ export const articles: ArticleMeta[] = [
     },
     ctaLinks: [
       { label: 'Order flowers for delivery', labelTh: 'สั่งดอกไม้จัดส่ง', href: '/catalog' },
+      {
+        label: 'Clear delivery address tips',
+        labelTh: 'เคล็ดลับที่อยู่จัดส่ง',
+        href: '/info/flower-delivery-address-chiang-mai',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },

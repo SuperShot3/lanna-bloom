@@ -20,6 +20,14 @@ import {
   LANNA_BLOOM_COUPON_TIERS,
   isLannaBloomCouponCode,
 } from '@/lib/promo/lannaBloomCoupon';
+import {
+  MOTHERS_DAY_2026_PROMO_END_YMD,
+  MOTHERS_DAY_2026_PROMO_MAX_DELIVERY_YMD_EXCLUSIVE,
+  MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB,
+  MOTHERS_DAY_2026_PROMO_PERCENT,
+  MOTHERS_DAY_2026_PROMO_START_YMD,
+  isMothersDay2026PromoCode,
+} from '@/lib/promo/mothersDay2026Promo';
 import { SHOP_TIMEZONE, shopTodayYmd } from '@/lib/shopTime';
 
 export type AdminPromoStatus = 'active' | 'inactive' | 'expired' | 'scheduled';
@@ -92,6 +100,24 @@ export function listPromoCodesForAdmin(now: Date = new Date()): AdminPromoCodeRo
         ),
         expiresLabel: `${MAY_FREE_DELIVERY_START_YMD} → ${MAY_FREE_DELIVERY_END_YMD}`,
         notes: 'Automatic campaign; not entered by customer. Beaten by a valid manual code.',
+      });
+      continue;
+    }
+
+    if (isMothersDay2026PromoCode(code)) {
+      rows.push({
+        code,
+        typeLabel: 'Percent (items)',
+        summary: `${MOTHERS_DAY_2026_PROMO_PERCENT}% off items from ฿${MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB.toLocaleString()} · delivery before ${MOTHERS_DAY_2026_PROMO_MAX_DELIVERY_YMD_EXCLUSIVE}`,
+        status: statusForYmdWindow(
+          MOTHERS_DAY_2026_PROMO_START_YMD,
+          MOTHERS_DAY_2026_PROMO_END_YMD,
+          true,
+          nowYmd
+        ),
+        expiresLabel: `${MOTHERS_DAY_2026_PROMO_START_YMD} → ${MOTHERS_DAY_2026_PROMO_END_YMD}`,
+        notes:
+          'Mother’s Day 2026 early-order; not valid for peak delivery dates (10–13 Aug). Manual code.',
       });
       continue;
     }

@@ -154,7 +154,7 @@ export function CartCheckoutView({
   mayCampaignProgressRemaining: number;
   appliedReferralCode: string | null;
   storedReferralCode: string | null;
-  referralIneligibleReason?: import('@/lib/promo/lannaBloomCoupon').LannaBloomIneligibleReason | 'not_eligible' | null;
+  referralIneligibleReason?: import('@/components/ReferralCodeBox').ReferralIneligibleReason | null;
   hasCatalogProductDiscount?: boolean;
   onReferralChange: () => void;
   mayCampaignEligible: boolean;

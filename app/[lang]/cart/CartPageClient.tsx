@@ -39,6 +39,10 @@ import {
   evaluateLannaBloomCoupon,
   isLannaBloomCouponCode,
 } from '@/lib/promo/lannaBloomCoupon';
+import {
+  evaluateMothersDay2026Promo,
+  isMothersDay2026PromoCode,
+} from '@/lib/promo/mothersDay2026Promo';
 import { hasCatalogDiscount } from '@/lib/catalogDiscount';
 import {
   isMay2026FreeDeliveryActive,
@@ -1098,6 +1102,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     deliveryFee: deliveryFeeVal,
     referralCode: referralVal?.code,
     deliveryDestination: delivery.deliveryDestination,
+    deliveryDateYmd: delivery.date || undefined,
     hasCatalogProductDiscount,
   });
   const orderDiscountVal = resolvedDiscount?.discount ?? 0;
@@ -1115,6 +1120,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (!storedReferralCode || appliedReferralCode) return null;
     if (isLannaBloomCouponCode(storedReferralCode)) {
       const elig = evaluateLannaBloomCoupon(itemsTotalVal, { hasCatalogProductDiscount });
+      return elig.ok ? null : elig.reason;
+    }
+    if (isMothersDay2026PromoCode(storedReferralCode)) {
+      const elig = evaluateMothersDay2026Promo(itemsTotalVal, {
+        deliveryDateYmd: delivery.date || undefined,
+      });
       return elig.ok ? null : elig.reason;
     }
     return 'not_eligible' as const;
