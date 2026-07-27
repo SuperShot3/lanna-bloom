@@ -65,9 +65,9 @@ export const articles: ArticleMeta[] = [
     publishedAt: '2026-07-27T00:00:00.000Z',
     featured: false,
     cover: {
-      type: 'gradient',
-      gradientCss: 'linear-gradient(135deg, #fdf8f4 0%, #f5e6d8 40%, #e8f0e8 100%)',
-      center: { kind: 'emoji', value: '🌸' },
+      type: 'image',
+      src: '/blog_images/thai-flower-names/thai-flower-names-cover.png',
+      alt: 'Dok Rak, globe amaranth, forget-me-nots, jasmine and Thai marigolds arranged together',
     },
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
