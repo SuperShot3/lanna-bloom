@@ -1123,9 +1123,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return elig.ok ? null : elig.reason;
     }
     if (isMothersDay2026PromoCode(storedReferralCode)) {
-      const elig = evaluateMothersDay2026Promo(itemsTotalVal, {
-        deliveryDateYmd: delivery.date || undefined,
-      });
+      const elig = evaluateMothersDay2026Promo(itemsTotalVal);
       return elig.ok ? null : elig.reason;
     }
     return 'not_eligible' as const;

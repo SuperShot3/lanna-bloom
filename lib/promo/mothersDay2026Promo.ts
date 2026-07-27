@@ -1,7 +1,8 @@
 /**
- * Thai Mother's Day 2026 early-order promo — MOM10.
+ * Thai Mother's Day 2026 promo — MOM10.
  * 10% off items (≥ ฿1,500) when ordering in the campaign window
- * with delivery strictly before peak (before 10 Aug 2026).
+ * (through Mother's Day 12 Aug and the day after). Delivery on peak
+ * dates (including 12–13 Aug) is allowed; peak markup still applies separately.
  */
 
 import { SHOP_TIMEZONE } from '@/lib/shopTime';
@@ -11,11 +12,8 @@ export const MOTHERS_DAY_2026_PROMO_CODE = 'MOM10';
 /** Inclusive start (Asia/Bangkok calendar). */
 export const MOTHERS_DAY_2026_PROMO_START_YMD = '2026-07-27';
 
-/** Inclusive end — last day to place an early-order (non-peak) delivery. */
-export const MOTHERS_DAY_2026_PROMO_END_YMD = '2026-08-09';
-
-/** Delivery date must be strictly before this YMD (peak starts 10 Aug). */
-export const MOTHERS_DAY_2026_PROMO_MAX_DELIVERY_YMD_EXCLUSIVE = '2026-08-10';
+/** Inclusive end — Mother's Day (12 Aug) + 1 day. */
+export const MOTHERS_DAY_2026_PROMO_END_YMD = '2026-08-13';
 
 export const MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB = 1500;
 export const MOTHERS_DAY_2026_PROMO_PERCENT = 10;
@@ -23,9 +21,7 @@ export const MOTHERS_DAY_2026_PROMO_PERCENT = 10;
 export type MothersDay2026IneligibleReason =
   | 'inactive'
   | 'expired'
-  | 'below_minimum'
-  | 'peak_delivery'
-  | 'needs_delivery_date';
+  | 'below_minimum';
 
 export type MothersDay2026Eligibility =
   | { ok: true; amount: number }
@@ -44,7 +40,7 @@ export function isMothersDay2026PromoCode(code: string | null | undefined): bool
   return code?.trim().toUpperCase() === MOTHERS_DAY_2026_PROMO_CODE;
 }
 
-/** True on 27 Jul – 9 Aug 2026 inclusive (Asia/Bangkok). */
+/** True on 27 Jul – 13 Aug 2026 inclusive (Asia/Bangkok). */
 export function isMothersDay2026PromoActive(now: Date = new Date()): boolean {
   const ymd = shopYmdForDate(now);
   return (
@@ -54,7 +50,7 @@ export function isMothersDay2026PromoActive(now: Date = new Date()): boolean {
 
 export function evaluateMothersDay2026Promo(
   itemsTotal: number,
-  options: { deliveryDateYmd?: string | null; now?: Date } = {}
+  options: { now?: Date } = {}
 ): MothersDay2026Eligibility {
   const now = options.now ?? new Date();
   const ymd = shopYmdForDate(now);
@@ -64,14 +60,6 @@ export function evaluateMothersDay2026Promo(
   }
   if (ymd > MOTHERS_DAY_2026_PROMO_END_YMD) {
     return { ok: false, reason: 'expired', amount: 0 };
-  }
-
-  const deliveryDateYmd = options.deliveryDateYmd?.trim() ?? '';
-  if (!deliveryDateYmd) {
-    return { ok: false, reason: 'needs_delivery_date', amount: 0 };
-  }
-  if (deliveryDateYmd >= MOTHERS_DAY_2026_PROMO_MAX_DELIVERY_YMD_EXCLUSIVE) {
-    return { ok: false, reason: 'peak_delivery', amount: 0 };
   }
 
   if (!Number.isFinite(itemsTotal) || itemsTotal < MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB) {
@@ -87,9 +75,8 @@ export function evaluateMothersDay2026Promo(
 
 export function mothersDay2026PromoDiscount(
   itemsTotal: number,
-  deliveryDateYmd: string | null | undefined,
   now: Date = new Date()
 ): number {
-  const result = evaluateMothersDay2026Promo(itemsTotal, { deliveryDateYmd, now });
+  const result = evaluateMothersDay2026Promo(itemsTotal, { now });
   return result.ok ? result.amount : 0;
 }

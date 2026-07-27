@@ -55,6 +55,31 @@ export type ArticleMeta = {
 
 export const articles: ArticleMeta[] = [
   {
+    slug: 'thai-flower-names-secret-messages',
+    title: 'Thai Flower Names That Sound Like Secret Messages',
+    excerpt:
+      'Discover five Thai flower names with beautiful meanings—from Dok Rak and Baan Mai Roo Roi to jasmine and marigold—and how to turn them into a personal gift message.',
+    titleTh: 'ชื่อดอกไม้ไทยที่ฟังเหมือนข้อความลับ',
+    excerptTh:
+      'รู้จักชื่อดอกไม้ไทยห้าดอกที่ความหมายสวยงาม—จากดอกรักและบานไม่รู้โรย ไปจนถึงมะลิและดาวเรือง—พร้อมไอเดียข้อความสั้น ๆ ให้ของขวัญดูเป็นส่วนตัว',
+    publishedAt: '2026-07-27T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'gradient',
+      gradientCss: 'linear-gradient(135deg, #fdf8f4 0%, #f5e6d8 40%, #e8f0e8 100%)',
+      center: { kind: 'emoji', value: '🌸' },
+    },
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      {
+        label: 'Gift card ideas',
+        labelTh: 'ไอเดียการ์ดอวยพร',
+        href: '/info/gift-card-ideas-with-flowers',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
     slug: 'thai-breakfast-chiang-mai',
     title: 'Thai Breakfast in Chiang Mai: Jok, Patongko and Local Morning Spots',
     excerpt:
@@ -261,10 +286,10 @@ export const articles: ArticleMeta[] = [
     slug: 'delivery-policy',
     title: 'Delivery Policy',
     excerpt:
-      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance (orders after 18:00 usually roll to the next day), zones and fees at checkout, peak celebration pricing on major holidays, chat confirmation after you order online, and what we need for a smooth delivery. Custom requests or extra questions? Message us on LINE or WhatsApp.',
+      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance for orders placed before 20:00 Chiang Mai time, zones and fees at checkout, peak celebration pricing on major holidays, chat confirmation after you order online, and what we need for a smooth delivery. If same-day delivery is not possible, we will contact you with the next available option. Custom requests or extra questions? Message us on LINE or WhatsApp.',
     titleTh: 'นโยบายการจัดส่ง',
     excerptTh:
-      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวัน (ออเดอร์หลัง 18:00 มักนัดวันถัดไป) โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาช่วงเทศกาลสำคัญ การยืนยันทางแชทหลังสั่งบนเว็บ และข้อมูลที่อยู่ที่ควรเตรียม ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
+      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวันสำหรับออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาช่วงเทศกาลสำคัญ การยืนยันทางแชทหลังสั่งบนเว็บ และข้อมูลที่อยู่ที่ควรเตรียม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อแจ้งทางเลือกที่เร็วที่สุด ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
     publishedAt: '2026-02-20T00:00:00.000Z',
     featured: false,
     cover: {

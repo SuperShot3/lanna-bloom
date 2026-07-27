@@ -91,20 +91,10 @@ function mom10ReasonMessage(
         t.mom10BelowMinimum ??
         'Add items to reach ฿1,500 (before delivery) to use MOM10.'
       );
-    case 'needs_delivery_date':
-      return (
-        t.mom10NeedsDeliveryDate ??
-        'Select a delivery date before 10 August to use MOM10.'
-      );
-    case 'peak_delivery':
-      return (
-        t.mom10PeakDelivery ??
-        'MOM10 is for deliveries before 10 August (outside Mother’s Day peak pricing).'
-      );
     case 'expired':
-      return t.mom10Expired ?? 'The Mother’s Day early-order promo has ended.';
+      return t.mom10Expired ?? 'The Mother’s Day promo has ended.';
     case 'inactive':
-      return t.mom10Inactive ?? 'The Mother’s Day early-order promo is not active yet.';
+      return t.mom10Inactive ?? 'The Mother’s Day promo is not active yet.';
   }
 }
 
@@ -113,8 +103,10 @@ function ineligibleMessage(
   reason: ReferralIneligibleReason,
   code: string | null
 ): string {
-  if (isMothersDay2026PromoCode(code) && reason !== 'not_eligible') {
-    return mom10ReasonMessage(t, reason as MothersDay2026IneligibleReason);
+  if (isMothersDay2026PromoCode(code) && reason !== 'not_eligible' && reason !== 'catalog_discount') {
+    if (reason === 'below_minimum' || reason === 'expired' || reason === 'inactive') {
+      return mom10ReasonMessage(t, reason);
+    }
   }
   return lannaBloomReasonMessage(t, reason as LannaBloomIneligibleReason | 'not_eligible');
 }
@@ -172,13 +164,11 @@ export function ReferralCodeBox({
     }
 
     if (isMothersDay2026PromoCode(result.code)) {
-      // Always store; cart shows ineligible reason until delivery/min are met.
+      // Always store; cart shows ineligible reason until min is met / window is open.
       storeReferral(result.code);
       setInputValue('');
       setError(null);
-      const eligibility = evaluateMothersDay2026Promo(itemSubtotal, {
-        deliveryDateYmd,
-      });
+      const eligibility = evaluateMothersDay2026Promo(itemSubtotal);
       if (
         mayCampaignEligible &&
         eligibility.ok &&

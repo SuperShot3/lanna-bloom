@@ -52,9 +52,9 @@ const baseTranslations = {
     },
     mothersDay2026Promo: {
       bannerMessage:
-        'Mother’s Day early order: 10% off flowers ฿1,500+ with code MOM10 — delivery before 10 Aug',
-      bannerMessageShort: '10% off flowers ฿1,500+ · code MOM10 · before 10 Aug',
-      bannerAlt: 'Mother’s Day early-order promo — 10% off with MOM10',
+        'Thai Mother’s Day is 12 August — 10% off flowers ฿1,500+ with code MOM10',
+      bannerMessageShort: 'Thai Mother’s Day 12 Aug · 10% off ฿1,500+ · MOM10',
+      bannerAlt: 'Thai Mother’s Day 12 August — 10% off with MOM10',
     },
     peakCelebration: {
       events: {
@@ -93,7 +93,7 @@ const baseTranslations = {
       line1: 'Delivery is included with every order.',
       line2: 'Same-day delivery is available during working hours.',
       line3: 'Delivery hours: 09:00–20:00 (no night delivery).',
-      line4: 'Orders after 20:00 will be delivered the next day.',
+      line4: 'Orders placed after 20:00 are scheduled for the next available delivery window, usually the following day.',
       ctaShopNow: 'Shop now',
     },
     preorderModal: {
@@ -411,8 +411,8 @@ const baseTranslations = {
       step3: 'DELIVERY DATE & TIME:',
       step4: 'ADD TO CART',
       deliveryDateLabel: 'Delivery Date',
-      sameDayHint: 'Same-day delivery available for orders before 6 PM.',
-      sameDayAfterCutoff: 'Orders after 6 PM usually deliver tomorrow ({date}).',
+      sameDayHint: 'Orders placed before 20:00 are often eligible for same-day delivery.',
+      sameDayAfterCutoff: 'Orders placed after 20:00 are usually scheduled for the next available delivery date ({date}).',
       city: 'Chiang Mai',
       selectDistrict: 'Select District',
       districtLabel: 'District',
@@ -632,11 +632,8 @@ const baseTranslations = {
       lannaBloomInactive: 'This coupon is not active.',
       mom10BelowMinimum:
         'Add items to reach ฿1,500 (before delivery) to use MOM10.',
-      mom10NeedsDeliveryDate: 'Select a delivery date before 10 August to use MOM10.',
-      mom10PeakDelivery:
-        'MOM10 is for deliveries before 10 August (outside Mother’s Day peak pricing).',
-      mom10Expired: 'The Mother’s Day early-order promo has ended.',
-      mom10Inactive: 'The Mother’s Day early-order promo is not active yet.',
+      mom10Expired: 'The Mother’s Day promo has ended.',
+      mom10Inactive: 'The Mother’s Day promo is not active yet.',
       stickyDeliveryFree: 'Free',
       stickyDeliverySelectArea: 'Select area',
       stickyPolicyApplies: 'Delivery & refund policies apply to all orders.',
@@ -1072,7 +1069,7 @@ const baseTranslations = {
         prepTime: 'Prep time',
         prepTimeSub: 'Typical prep time',
         cutoff: 'Same-day cutoff (optional)',
-        cutoffHint: 'Orders placed after this time will be delivered the next day.',
+        cutoffHint: 'Orders placed after this time move to the next available delivery window.',
         maxOrders: 'Max orders/day (optional)',
         samplePhotos: 'Portfolio / sample links',
         samplePhotosHint: 'Paste links to your work: Instagram, Facebook, Google Drive, website, or photo gallery. We\'ll review your examples.',
@@ -1389,7 +1386,7 @@ const baseTranslations = {
         deliveryArea: 'Delivery across Chiang Mai — Old City, Nimman, Santitham, Hang Dong, Mae Hia, San Sai, Mae Rim, and nearby areas.',
         faq: [
           { q: 'How do I get same-day delivery?', a: 'Browse the catalog, add a bouquet to your cart, select today as the delivery date, and pay online through Stripe checkout. We confirm same-day availability for your area and timing.' },
-          { q: 'Is there a cut-off time for same-day delivery?', a: 'We deliver 09:00–20:00. Orders placed before about 18:00 are usually eligible for same-day when flowers and capacity allow. Later orders are typically scheduled for the next day.' },
+          { q: 'Is there a cut-off time for same-day delivery?', a: 'We deliver 09:00–20:00. Orders placed before 20:00 Chiang Mai time are often eligible for same-day delivery when flowers and capacity allow. If same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.' },
           { q: 'Can I include a message card?', a: 'Yes. Add a free or premium message card at checkout and enter your message there.' },
           { q: 'What payment methods do you accept?', a: 'Pay securely online at checkout with card via Stripe. Apple Pay and Google Pay are available where supported.' },
         ],
@@ -1411,7 +1408,7 @@ const baseTranslations = {
           'Lanna Bloom is an online-only flower delivery service and does not accept walk-in customers.',
         sameDayTitle: 'Same-day delivery',
         sameDayText:
-          'Order by {cutoff} for same-day flower delivery in Chiang Mai. We deliver between {start} and {end}; later orders are delivered the next day.',
+          'Orders placed before {end} are often eligible for same-day flower delivery in Chiang Mai. We deliver between {start} and {end}; if same-day delivery is not possible, we will contact you to confirm the next available option.',
         cutoffTag: 'Order before',
         windowTag: 'Delivery hours',
         methodTitle: 'How we deliver',
@@ -1455,7 +1452,7 @@ const baseTranslations = {
           },
           {
             q: 'Do you offer same-day flower delivery?',
-            a: 'Yes. Order by {cutoff} for same-day delivery in Chiang Mai. Deliveries run between {start} and {end}; orders placed later are delivered the next day. We send by car or Grab, whichever is fastest.',
+            a: 'Yes. Orders placed before {end} are often eligible for same-day delivery in Chiang Mai. Deliveries run between {start} and {end}; if same-day delivery is not possible, we will contact you to confirm the next available option. We send by car or Grab, whichever is fastest.',
           },
           {
             q: 'Which areas of Chiang Mai do you deliver to?',
@@ -1520,7 +1517,7 @@ const baseTranslations = {
           'We deliver to homes, hotels, and condos across the city and nearby districts. Same-day options, clear checkout details, and English or Thai support keep the process straightforward.',
         sameDayTitle: 'Same-day delivery for last-minute moments',
         sameDayP1:
-          'Birthdays at a hotel tonight, an anniversary surprise in Nimman, or a gift you need to send while you are abroad — same-day delivery is often possible when you order by {cutoff}.',
+          'Birthdays at a hotel tonight, an anniversary surprise in Nimman, or a gift you need to send while you are abroad — same-day delivery is often possible when you order before {cutoff}, subject to bouquet availability and delivery capacity.',
         sameDayP2:
           'We deliver during our Chiang Mai service window. Order earlier for the best bouquet choice, then confirm today’s date at checkout.',
         sameDayLink: 'Same-day flower delivery in Chiang Mai',
@@ -1598,9 +1595,9 @@ const baseTranslations = {
     },
     mothersDay2026Promo: {
       bannerMessage:
-        'สั่งล่วงหน้าวันแม่: ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด MOM10 — จัดส่งก่อน 10 ส.ค.',
-      bannerMessageShort: 'ลด 10% ดอกไม้ครบ ฿1,500 · โค้ด MOM10 · ก่อน 10 ส.ค.',
-      bannerAlt: 'โปรสั่งล่วงหน้าวันแม่ — ลด 10% ด้วยโค้ด MOM10',
+        'วันแม่แห่งชาติ 12 สิงหาคม — ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด MOM10',
+      bannerMessageShort: 'วันแม่ 12 ส.ค. · ลด 10% ครบ ฿1,500 · MOM10',
+      bannerAlt: 'วันแม่แห่งชาติ 12 สิงหาคม — ลด 10% ด้วยโค้ด MOM10',
     },
     peakCelebration: {
       events: {
@@ -1639,7 +1636,7 @@ const baseTranslations = {
       line1: 'การจัดส่งรวมอยู่ในทุกออเดอร์',
       line2: 'จัดส่งวันเดียวได้ในช่วงเวลาทำการ',
       line3: 'เวลาจัดส่ง: 09:00–20:00 (ไม่จัดส่งกลางคืน)',
-      line4: 'ออเดอร์หลัง 20:00 จะจัดส่งวันถัดไป',
+      line4: 'ออเดอร์หลัง 20:00 น. จะจัดเข้าช่วงจัดส่งถัดไป โดยส่วนใหญ่เป็นวันถัดไป',
       ctaShopNow: 'เลือกช่อดอกไม้',
     },
     preorderModal: {
@@ -1953,8 +1950,8 @@ const baseTranslations = {
       step3: 'วันและเวลาจัดส่ง:',
       step4: 'เพิ่มลงตะกร้า',
       deliveryDateLabel: 'วันจัดส่ง',
-      sameDayHint: 'จัดส่งวันเดียวกันได้สำหรับออเดอร์ก่อน 18:00 น.',
-      sameDayAfterCutoff: 'ออเดอร์หลัง 18:00 น. มักจัดส่งวันถัดไป ({date})',
+      sameDayHint: 'ออเดอร์ที่สั่งก่อน 20:00 น. มักมีโอกาสจัดส่งภายในวันได้',
+      sameDayAfterCutoff: 'ออเดอร์หลัง 20:00 น. มักถูกจัดเข้าวันจัดส่งถัดไป ({date})',
       city: 'เชียงใหม่',
       selectDistrict: 'เลือกอำเภอ',
       districtLabel: 'อำเภอ',
@@ -2173,11 +2170,8 @@ const baseTranslations = {
       lannaBloomExpired: 'คูปองนี้หมดอายุแล้ว',
       lannaBloomInactive: 'คูปองนี้ยังไม่เปิดใช้งาน',
       mom10BelowMinimum: 'เพิ่มสินค้าให้ครบ ฿1,500 (ก่อนค่าส่ง) เพื่อใช้โค้ด MOM10',
-      mom10NeedsDeliveryDate: 'เลือกวันจัดส่งก่อน 10 สิงหาคมเพื่อใช้โค้ด MOM10',
-      mom10PeakDelivery:
-        'โค้ด MOM10 ใช้ได้กับการจัดส่งก่อน 10 สิงหาคมเท่านั้น (นอกช่วงราคาวันแม่)',
-      mom10Expired: 'โปรสั่งล่วงหน้าวันแม่สิ้นสุดแล้ว',
-      mom10Inactive: 'โปรสั่งล่วงหน้าวันแม่ยังไม่เปิดใช้งาน',
+      mom10Expired: 'โปรวันแม่สิ้นสุดแล้ว',
+      mom10Inactive: 'โปรวันแม่ยังไม่เปิดใช้งาน',
       stickyDeliveryFree: 'ฟรี',
       stickyDeliverySelectArea: 'เลือกพื้นที่',
       stickyPolicyApplies: 'ทุกออเดอร์เป็นไปตามนโยบายการจัดส่งและการคืนเงิน',
@@ -2610,7 +2604,7 @@ const baseTranslations = {
         prepTime: 'เวลาเตรียมงาน',
         prepTimeSub: 'เวลาเตรียมงานโดยประมาณ',
         cutoff: 'รับออเดอร์ Same-day ถึงกี่โมง (ไม่บังคับ)',
-        cutoffHint: 'ออเดอร์ที่เข้ามาหลังเวลานี้จะจัดส่งวันถัดไป',
+        cutoffHint: 'ออเดอร์ที่เข้ามาหลังเวลานี้จะถูกย้ายไปยังช่วงจัดส่งถัดไป',
         maxOrders: 'รับออเดอร์สูงสุดต่อวัน (ไม่บังคับ)',
         samplePhotos: 'ลิงก์ผลงาน / ตัวอย่าง',
         samplePhotosHint: 'วางลิงก์ผลงานของคุณ: Instagram Facebook Google Drive เว็บไซต์ หรือแกลเลอรี่รูป เราจะดูตัวอย่างของคุณ',
@@ -2926,7 +2920,7 @@ const baseTranslations = {
         deliveryArea: 'จัดส่งในเชียงใหม่ — คูเมือง นิมมาน สันติธรรม หางดง แม่เหียะ สันทราย แม่ริม และพื้นที่ใกล้เคียง',
         faq: [
           { q: 'จัดส่งวันเดียวได้อย่างไร?', a: 'เลือกช่อในแคตตาล็อก ใส่ตะกร้า เลือกวันจัดส่งเป็นวันนี้ แล้วชำระเงินออนไลน์ผ่าน Stripe เราจะยืนยันว่าจัดส่งวันเดียวได้ตามพื้นที่และเวลาของคุณ' },
-          { q: 'มีเวลาตัดสำหรับจัดส่งวันเดียวไหม?', a: 'เราจัดส่ง 09:00–20:00 ออเดอร์ก่อนประมาณ 18:00 มักเข้าเกณฑ์วันเดียวเมื่อดอกไม้และความจุพอ ออเดอร์หลังนั้นมักนัดวันถัดไป' },
+          { q: 'มีเวลาตัดสำหรับจัดส่งวันเดียวไหม?', a: 'เราจัดส่งเวลา 09:00–20:00 ออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ มักมีโอกาสจัดส่งภายในวันเมื่อดอกไม้และคิวจัดส่งพร้อม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป' },
           { q: 'ใส่การ์ดข้อความได้ไหม?', a: 'ได้ค่ะ เพิ่มการ์ดฟรีหรือพรีเมียมตอนชำระเงิน และพิมพ์ข้อความที่นั่นได้เลย' },
           { q: 'รับชำระเงินช่องทางไหนบ้าง?', a: 'ชำระเงินออนไลน์อย่างปลอดภัยที่หน้าชำระเงินด้วยบัตรผ่าน Stripe รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ' },
         ],
@@ -2948,7 +2942,7 @@ const baseTranslations = {
           'Lanna Bloom เป็นบริการจัดส่งดอกไม้ออนไลน์เท่านั้น และไม่รับลูกค้าแบบเดินเข้าร้าน',
         sameDayTitle: 'จัดส่งภายในวันเดียว',
         sameDayText:
-          'สั่งก่อน {cutoff} น. เพื่อจัดส่งดอกไม้วันเดียวในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. ออเดอร์หลังจากนั้นจะจัดส่งวันถัดไป',
+          'ออเดอร์ที่สั่งก่อน {end} น. มักมีโอกาสจัดส่งดอกไม้ภายในวันในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด',
         cutoffTag: 'สั่งก่อน',
         windowTag: 'เวลาจัดส่ง',
         methodTitle: 'วิธีจัดส่งของเรา',
@@ -2992,7 +2986,7 @@ const baseTranslations = {
           },
           {
             q: 'จัดส่งวันเดียวได้ไหม?',
-            a: 'ได้ค่ะ สั่งก่อน {cutoff} น. เพื่อจัดส่งวันเดียวในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. ออเดอร์หลังจากนั้นจะจัดส่งวันถัดไป ส่งด้วยรถยนต์หรือ Grab โดยเลือกแบบที่ถึงเร็วที่สุด',
+            a: 'ได้ค่ะ ออเดอร์ที่สั่งก่อน {end} น. มักมีโอกาสจัดส่งภายในวันในเชียงใหม่ เราจัดส่งช่วง {start}–{end} น. หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ส่งด้วยรถยนต์หรือ Grab โดยเลือกแบบที่ถึงเร็วที่สุด',
           },
           {
             q: 'จัดส่งพื้นที่ไหนในเชียงใหม่บ้าง?',
@@ -3057,7 +3051,7 @@ const baseTranslations = {
           'เราจัดส่งถึงบ้าน โรงแรม และคอนโดทั่วเมืองและอำเภอใกล้เคียง มีตัวเลือกวันเดียว รายละเอียดตอนชำระเงินที่ชัดเจน และบริการภาษาไทยหรืออังกฤษให้ขั้นตอนง่ายขึ้น',
         sameDayTitle: 'จัดส่งวันเดียวสำหรับช่วงนาทีสุดท้าย',
         sameDayP1:
-          'วันเกิดที่โรงแรมคืนนี้ เซอร์ไพรส์ครบรอบที่นิมมาน หรือของขวัญที่ต้องส่งตอนคุณอยู่ต่างประเทศ — จัดส่งวันเดียวมักทำได้เมื่อสั่งก่อน {cutoff} น.',
+          'วันเกิดที่โรงแรมคืนนี้ เซอร์ไพรส์ครบรอบที่นิมมาน หรือของขวัญที่ต้องส่งตอนคุณอยู่ต่างประเทศ — จัดส่งวันเดียวมักทำได้เมื่อสั่งก่อน {cutoff} น. โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง',
         sameDayP2:
           'เราจัดส่งในช่วงเวลาให้บริการในเชียงใหม่ สั่งเร็วจะเลือกช่อได้ดีกว่า จากนั้นยืนยันวันจัดส่งเป็นวันนี้ตอนชำระเงิน',
         sameDayLink: 'จัดส่งดอกไม้วันเดียวในเชียงใหม่',

@@ -1,6 +1,7 @@
 /**
  * Same-day delivery window in Chiang Mai (Asia/Bangkok).
- * Matches site copy: 09:00–20:00; orders after 20:00 go to the next day.
+ * Matches site copy: 09:00–20:00; orders placed before 20:00 are often eligible
+ * for same-day delivery, subject to availability and routing.
  */
 import type { Locale } from '@/lib/i18n';
 
@@ -10,8 +11,8 @@ const START_MIN = 9 * 60;
 /** Half-open: includes 09:00, excludes 20:00 (closed from 20:00). */
 const END_MIN = 20 * 60;
 
-/** Same-day order cutoff in Bangkok (18:00). Orders after this usually deliver next day. */
-export const SAME_DAY_ORDER_CUTOFF_MIN = 18 * 60;
+/** Same-day order guidance threshold in Bangkok (20:00). */
+export const SAME_DAY_ORDER_CUTOFF_MIN = 20 * 60;
 
 /** Delivery window bounds for site copy — keep wording in sync with these instead of hard-coding times. */
 export const DELIVERY_WINDOW_START_MIN = START_MIN;

@@ -186,8 +186,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     },
     eyebrow: L('Same-day in Chiang Mai', 'จัดส่งวันเดียวในเชียงใหม่'),
     directAnswer: L(
-      'Yes — order online before 18:00 for same-day flower delivery across Chiang Mai during service hours 09:00–20:00. Pay securely at checkout, then our local team prepares and delivers.',
-      'ได้ — สั่งออนไลน์ก่อน 18:00 เพื่อจัดส่งดอกไม้วันเดียวทั่วเชียงใหม่ในช่วง 09:00–20:00 จ่ายปลอดภัยตอนเช็กเอาต์ แล้วทีมท้องถิ่นจะจัดช่อและส่งให้'
+      'Yes — orders placed before 20:00 Chiang Mai time are often eligible for same-day flower delivery across Chiang Mai, subject to bouquet availability and delivery capacity. If same-day delivery is not possible, we will contact you to confirm the next available option.',
+      'ได้ — ออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ มักมีโอกาสจัดส่งดอกไม้ภายในวันได้ทั่วเชียงใหม่ โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด'
     ),
     benefits: [
       L('Same-day delivery during 09:00–20:00', 'จัดส่งวันเดียวช่วง 09:00–20:00'),
@@ -202,8 +202,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     showPaymentBadges: false,
     showSameDayBadge: true,
     serviceHoursNote: L(
-      'Service hours today: 09:00–20:00 · Order before 18:00 for same-day',
-      'เวลาให้บริการวันนี้: 09:00–20:00 · สั่งก่อน 18:00 เพื่อจัดส่งวันเดียว'
+      'Service hours today: 09:00–20:00 · Orders placed before 20:00 are often eligible for same-day',
+      'เวลาให้บริการวันนี้: 09:00–20:00 · ออเดอร์ก่อน 20:00 น. มักมีโอกาสจัดส่งภายในวัน'
     ),
     faqTitle: L('Frequently asked questions', 'คำถามที่พบบ่อย'),
     faq: [
@@ -217,8 +217,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       {
         q: L('Is there a cut-off time for same-day delivery?', 'มีเวลาตัดรอบสำหรับจัดส่งวันเดียวไหม?'),
         a: L(
-          'We deliver 09:00–20:00. Orders placed before about 18:00 are usually eligible for same-day when flowers and capacity allow. Later orders are typically scheduled for the next day.',
-          'เราจัดส่ง 09:00–20:00 ออเดอร์ก่อนประมาณ 18:00 มักเข้าเกณฑ์วันเดียวเมื่อดอกไม้และความจุพอ ออเดอร์หลังนั้นมักนัดวันถัดไป'
+          'We deliver 09:00–20:00. Orders placed before 20:00 Chiang Mai time are often eligible for same-day delivery when flowers and capacity allow. If same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.',
+          'เราจัดส่งเวลา 09:00–20:00 ออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ มักมีโอกาสจัดส่งภายในวันเมื่อดอกไม้และคิวจัดส่งพร้อม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป'
         ),
       },
       {

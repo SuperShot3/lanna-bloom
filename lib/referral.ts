@@ -199,11 +199,7 @@ export function getDiscountForCode(
       0,
       options.itemSubtotal ?? subtotal - (options.deliveryFee ?? 0)
     );
-    const amount = mothersDay2026PromoDiscount(
-      itemsTotal,
-      options.deliveryDateYmd,
-      options.now ?? new Date()
-    );
+    const amount = mothersDay2026PromoDiscount(itemsTotal, options.now ?? new Date());
     return Math.min(amount, subtotal);
   }
   const def = DISCOUNT_CODES[normalized];

@@ -22,7 +22,6 @@ import {
 } from '@/lib/promo/lannaBloomCoupon';
 import {
   MOTHERS_DAY_2026_PROMO_END_YMD,
-  MOTHERS_DAY_2026_PROMO_MAX_DELIVERY_YMD_EXCLUSIVE,
   MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB,
   MOTHERS_DAY_2026_PROMO_PERCENT,
   MOTHERS_DAY_2026_PROMO_START_YMD,
@@ -108,7 +107,7 @@ export function listPromoCodesForAdmin(now: Date = new Date()): AdminPromoCodeRo
       rows.push({
         code,
         typeLabel: 'Percent (items)',
-        summary: `${MOTHERS_DAY_2026_PROMO_PERCENT}% off items from ฿${MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB.toLocaleString()} · delivery before ${MOTHERS_DAY_2026_PROMO_MAX_DELIVERY_YMD_EXCLUSIVE}`,
+        summary: `${MOTHERS_DAY_2026_PROMO_PERCENT}% off items from ฿${MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB.toLocaleString()} · Thai Mother’s Day (12 Aug)`,
         status: statusForYmdWindow(
           MOTHERS_DAY_2026_PROMO_START_YMD,
           MOTHERS_DAY_2026_PROMO_END_YMD,
@@ -117,7 +116,7 @@ export function listPromoCodesForAdmin(now: Date = new Date()): AdminPromoCodeRo
         ),
         expiresLabel: `${MOTHERS_DAY_2026_PROMO_START_YMD} → ${MOTHERS_DAY_2026_PROMO_END_YMD}`,
         notes:
-          'Mother’s Day 2026 early-order; not valid for peak delivery dates (10–13 Aug). Manual code.',
+          'Mother’s Day 2026 promo through 13 Aug. Valid for peak delivery dates; peak markup still applies. Manual code.',
       });
       continue;
     }

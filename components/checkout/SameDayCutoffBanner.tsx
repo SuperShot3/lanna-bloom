@@ -30,7 +30,7 @@ function bannerMessage(
     case 'after-cutoff':
       return (
         tBuyNow.sameDayAfterCutoff?.replace('{date}', tomorrowDate) ??
-        'Orders after 6 PM usually deliver tomorrow'
+        'Orders placed after 20:00 are usually scheduled for the next available delivery date'
       );
     case 'closed':
       return (

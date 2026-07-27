@@ -38,9 +38,9 @@ export function MothersDayMom10PromoBanner({
   const promo = translations[lang].mothersDay2026Promo;
   const messageDesktop =
     promo?.bannerMessage ??
-    'Mother’s Day early order: 10% off flowers ฿1,500+ with code MOM10 — delivery before 10 Aug';
+    'Thai Mother’s Day is 12 August — 10% off flowers ฿1,500+ with code MOM10';
   const messageMobile =
-    promo?.bannerMessageShort ?? '10% off flowers ฿1,500+ · code MOM10 · before 10 Aug';
+    promo?.bannerMessageShort ?? 'Thai Mother’s Day 12 Aug · 10% off ฿1,500+ · MOM10';
   const ariaLabel = promo?.bannerAlt ?? messageDesktop;
 
   return (
