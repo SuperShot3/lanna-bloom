@@ -96,6 +96,13 @@
   pointer-events: none;
 }
 
+/* Desktop has arrow buttons + dots; a "swipe" hint is misleading there. */
+@media (hover: hover) and (pointer: fine) {
+  .gallery-swipe-hint {
+    display: none;
+  }
+}
+
 .gallery-nav {
   position: absolute;
   inset: 0;

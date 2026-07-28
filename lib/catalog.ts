@@ -1280,21 +1280,18 @@ export async function getHeroImageFromCatalog(): Promise<string> {
   return loadHeroImage();
 }
 
-const loadHeroCarousel = cacheSupabaseCatalog('hero-carousel', async () => {
+export type CatalogHeroCarouselSlide = {
+  src: string;
+  alt: string;
+};
 
+const loadHeroCarousel = cacheSupabaseCatalog('hero-carousel-with-alt', async () => {
   const supabase = requireSupabase();
-
   const { data, error } = await supabase
-
     .from('catalog_site_settings')
-
     .select('hero_carousel_images')
-
     .eq('id', 'default')
-
     .maybeSingle();
-
-
 
   if (error) throw new Error(error.message);
 
@@ -1304,13 +1301,15 @@ const loadHeroCarousel = cacheSupabaseCatalog('hero-carousel', async () => {
 
   return images
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    .map((img) => storedImagePublicUrl(supabase, img));
-
+    .map(
+      (img): CatalogHeroCarouselSlide => ({
+        src: storedImagePublicUrl(supabase, img),
+        alt: img.alt?.trim() ?? '',
+      })
+    );
 });
 
-
-
-export async function getHeroCarouselImagesFromCatalog(): Promise<string[]> {
+export async function getHeroCarouselImagesFromCatalog(): Promise<CatalogHeroCarouselSlide[]> {
   return loadHeroCarousel();
 }
 

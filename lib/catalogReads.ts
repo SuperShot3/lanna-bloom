@@ -17,6 +17,7 @@ import {
   getBouquetsFromCatalogPaginated,
   getHeroCarouselImagesFromCatalog,
   getHeroImageFromCatalog,
+  type CatalogHeroCarouselSlide,
   getPlushyToyByIdFromCatalog,
   getPlushyToysFilteredFromCatalog,
   getPlushyToyBySlugFromCatalog,
@@ -84,7 +85,7 @@ export async function getCatalogHeroImage(): Promise<string> {
   return getHeroImageFromCatalog();
 }
 
-export async function getCatalogHeroCarouselImages(): Promise<string[]> {
+export async function getCatalogHeroCarouselImages(): Promise<CatalogHeroCarouselSlide[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   return getHeroCarouselImagesFromCatalog();
 }

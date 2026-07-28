@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { ViewTransitions } from 'next-view-transitions';
 import { DocumentLangSync } from '@/components/DocumentLangSync';
+import { AhrefsAnalytics } from '@/components/AhrefsAnalytics';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { MicrosoftClarity } from '@/components/MicrosoftClarity';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
@@ -100,6 +101,7 @@ export default function RootLayout({
             <WebVitalsReporter />
             <SpeedInsights />
             <MicrosoftClarity />
+            <AhrefsAnalytics />
             <ViewTransitions>
               {children}
             </ViewTransitions>

@@ -51,8 +51,6 @@ export function ProductGallery({
   const active = isControlled ? activeIndex : internalActive;
   const onActiveChangeRef = useRef(onActiveChange);
   onActiveChangeRef.current = onActiveChange;
-  /** Ignore settle events caused by parent-driven scrollTo (not user swipe/button). */
-  const programmaticScrollRef = useRef(false);
   /** Embla's live snap — used for lazy slide loading before parent state catches up. */
   const [snapIndex, setSnapIndex] = useState(0);
 
@@ -127,7 +125,6 @@ export function ProductGallery({
   const scrollTo = useCallback(
     (index: number) => {
       const safeIndex = clampGalleryIndex(index, list.length);
-      programmaticScrollRef.current = true;
       reportActiveIndex(safeIndex);
       emblaApi?.scrollTo(safeIndex);
     },
@@ -146,7 +143,6 @@ export function ProductGallery({
   const setGalleryIndex = useCallback(
     (index: number) => {
       const safeIndex = clampGalleryIndex(index, list.length);
-      programmaticScrollRef.current = true;
       reportActiveIndex(safeIndex);
       emblaApi?.scrollTo(safeIndex);
     },
@@ -288,28 +284,19 @@ export function ProductGallery({
 
   useEffect(() => {
     if (!emblaApi) return;
-    const syncSnapIndex = () => {
-      setSnapIndex(emblaApi.selectedScrollSnap());
-    };
-    const onSettle = () => {
+    // `select` fires as soon as the selected snap changes (arrow click, drag
+    // release, programmatic scroll) — unlike `settle`, it is never skipped when
+    // a scroll turns out to be a no-op, so parent state cannot desync.
+    const onSelect = () => {
       const idx = emblaApi.selectedScrollSnap();
-      syncSnapIndex();
-      if (programmaticScrollRef.current) {
-        programmaticScrollRef.current = false;
-        return;
-      }
+      setSnapIndex(idx);
       if (isControlled && idx === activeIndex) return;
       reportActiveIndex(idx);
     };
-    emblaApi.on('select', syncSnapIndex);
-    emblaApi.on('settle', onSettle);
-    syncSnapIndex();
-    if (!isControlled) {
-      onSettle();
-    }
+    emblaApi.on('select', onSelect);
+    onSelect();
     return () => {
-      emblaApi.off('select', syncSnapIndex);
-      emblaApi.off('settle', onSettle);
+      emblaApi.off('select', onSelect);
     };
   }, [emblaApi, isControlled, activeIndex, reportActiveIndex]);
 
@@ -341,8 +328,9 @@ export function ProductGallery({
     const safeIndex = isControlled && activeIndex !== undefined
       ? clampGalleryIndex(activeIndex, list.length)
       : clampGalleryIndex(emblaApi.selectedScrollSnap(), list.length);
-    programmaticScrollRef.current = true;
-    emblaApi.scrollTo(safeIndex);
+    // Jump without animation: the slide contents were just swapped, so
+    // animating across them would flash unrelated images.
+    emblaApi.scrollTo(safeIndex, true);
     setSnapIndex(safeIndex);
   }, [emblaApi, imagesKey, list.length]);
 
@@ -353,7 +341,6 @@ export function ProductGallery({
       setSnapIndex(safeIndex);
       return;
     }
-    programmaticScrollRef.current = true;
     emblaApi.scrollTo(safeIndex);
     setSnapIndex(safeIndex);
   }, [emblaApi, isControlled, activeIndex, list.length]);

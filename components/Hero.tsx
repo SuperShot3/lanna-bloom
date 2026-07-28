@@ -58,16 +58,18 @@ function HeroExpressDeliveryCard({
 
 function buildHeroCarouselImages(
   heroImageUrl?: string,
-  carouselImages?: string[]
+  carouselImages?: HeroCarouselImage[]
 ): HeroCarouselImage[] {
-  const sourceImages =
-    carouselImages && carouselImages.length > 0
-      ? carouselImages
-      : heroImageUrl
-        ? [heroImageUrl]
-        : FALLBACK_HERO_IMAGES;
-
-  return sourceImages.map((src) => ({ src, alt: HERO_IMAGE_ALT }));
+  if (carouselImages && carouselImages.length > 0) {
+    return carouselImages.map((img) => ({
+      src: img.src,
+      alt: img.alt.trim() || HERO_IMAGE_ALT,
+    }));
+  }
+  if (heroImageUrl) {
+    return [{ src: heroImageUrl, alt: HERO_IMAGE_ALT }];
+  }
+  return FALLBACK_HERO_IMAGES.map((src) => ({ src, alt: HERO_IMAGE_ALT }));
 }
 
 function HeroVisualBlock({
@@ -175,7 +177,7 @@ export function Hero({
 }: {
   lang: Locale;
   heroImageUrl?: string;
-  carouselImages?: string[];
+  carouselImages?: HeroCarouselImage[];
   /** Optional page-specific H1 override (keeps same hero design). */
   titleOverride?: React.ReactNode;
   /** Optional primary CTA target for pages that show a collection section inline. */
