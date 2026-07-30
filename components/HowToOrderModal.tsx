@@ -80,7 +80,21 @@ export function HowToOrderModal({ lang, isOpen, onClose, triggerRef }: HowToOrde
         aria-label={t.howToOrderClose}
         onClick={onClose}
       >
-        <span aria-hidden>×</span>
+        <svg
+          aria-hidden
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4 4l10 10M14 4L4 14"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
       </button>
       <div className="how-to-order-modal-stage" onClick={(e) => e.stopPropagation()}>
         <Image
@@ -129,10 +143,13 @@ export function HowToOrderModal({ lang, isOpen, onClose, triggerRef }: HowToOrde
           border-radius: 999px;
           background: rgba(20, 20, 20, 0.72);
           color: #fff;
-          font-size: 2rem;
-          line-height: 1;
+          line-height: 0;
           cursor: pointer;
           transition: background 0.2s, transform 0.2s;
+        }
+        .how-to-order-modal-close svg {
+          display: block;
+          flex-shrink: 0;
         }
         .how-to-order-modal-close:hover,
         .how-to-order-modal-close:focus-visible {

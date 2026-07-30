@@ -114,11 +114,9 @@ const baseTranslations = {
       sublineNew:
         'Choose a bouquet with a clear price, select the delivery date, add your personal message, and pay securely by card—even when ordering from abroad. We deliver locally to homes, hotels, condos, hospitals, and villas across Chiang Mai.',
       deliveryMethodLine:
-        'Delivery is arranged by car or Grab, depending on the address, bouquet size, and availability.',
-      trustBenefitsLine:
-        'Same-day delivery available · Secure international payments · English & Thai support',
+        'Delivery is arranged by Car or Grab, depending on the address, bouquet size, and availability.',
       ctaBrowse: 'Shop Flower Bouquets',
-      ctaHowItWorks: 'How Delivery Works',
+      ctaHowItWorks: 'How it Works',
       howToOrderClose: 'Close',
       howToOrderInfographicAlt: 'How to order flowers from Lanna Bloom — step-by-step guide',
       shopByOccasion: 'Shop by occasion',
@@ -1209,7 +1207,7 @@ const baseTranslations = {
       refundMethod1: 'Refunds are issued to the original payment method where possible.',
       refundMethod2: 'Card refunds can take time to appear, depending on your bank/card issuer (often 5–14 business days, sometimes longer).',
       refundMethod3: 'Stripe\'s processing fees from the original transaction aren\'t returned to us when a card payment is refunded.',
-      refundMethod4: 'If you cancel an order and a refund is approved, a 6% processing fee is deducted from the refund amount for all credit card payments, to cover non-refundable card-processing costs. Cancellations for reasons not caused by Lanna Bloom follow the same rule when a card refund is issued. Once preparation or dispatch has started, full refunds may not be available. Approved refunds are typically processed within 5–10 business days, but the exact timing may vary depending on the customer\'s bank or payment provider.',
+      refundMethod4: 'Once preparation or dispatch has started, full refunds may not be available. Approved refunds are typically processed within 5–10 business days, but the exact timing may vary depending on the customer\'s bank or payment provider.',
       americanExpress: 'American Express',
       stripeSupport: 'Stripe Support',
       howToContactTitle: '9) How to contact us (fastest)',
@@ -1407,10 +1405,6 @@ const baseTranslations = {
       delivery: {
         eyebrow: 'Delivery',
         title: 'Order Flowers Online — Delivered Across Chiang Mai',
-        intro:
-          'Choose a bouquet, pay securely at checkout, and our local florists prepare it fresh for delivery to homes, hotels, condos, hospitals, and villas across Chiang Mai.',
-        onlineOnlyNote:
-          'Lanna Bloom is an online-only flower delivery service and does not accept walk-in customers.',
         sameDayTitle: 'Same-day delivery',
         sameDayText:
           'Same-day orders are accepted until {cutoff} Thailand time, subject to flower and delivery availability. Delivery may take place after {cutoff}. Working delivery hours are {start}–{end}; if same-day delivery is not possible, we will contact you to confirm the next available option.',
@@ -1418,7 +1412,7 @@ const baseTranslations = {
         windowTag: 'Delivery hours',
         methodTitle: 'How we deliver',
         methodText:
-          'Delivery is arranged by car or Grab, depending on the address, bouquet size, and availability.',
+          'Delivery is arranged by Red Car or Grab, depending on the address, bouquet size, and availability.',
         areasTitle: 'Chiang Mai delivery areas',
         areasIntro:
           'We deliver across Chiang Mai city and nearby districts — from the Old City and Nimman to Hang Dong, Mae Rim, and beyond.',
@@ -1457,7 +1451,7 @@ const baseTranslations = {
           },
           {
             q: 'Do you offer same-day flower delivery?',
-            a: 'Yes. Same-day orders are accepted until {cutoff} Thailand time, subject to flower and delivery availability. Delivery may take place after {cutoff}. Working delivery hours are {start}–{end}; if same-day delivery is not possible, we will contact you to confirm the next available option. Delivery is arranged by car or Grab, depending on the address, bouquet size, and availability.',
+            a: 'Yes. Same-day orders are accepted until {cutoff} Thailand time, subject to flower and delivery availability. Delivery may take place after {cutoff}. Working delivery hours are {start}–{end}; if same-day delivery is not possible, we will contact you to confirm the next available option. Delivery is arranged by Red Car or Grab, depending on the address, bouquet size, and availability.',
           },
           {
             q: 'Which areas of Chiang Mai do you deliver to?',
@@ -1517,44 +1511,17 @@ const baseTranslations = {
         eyebrow: 'Chiang Mai',
         title: 'Flower Delivery in Chiang Mai',
         intro:
-          'Lanna Bloom is for people ordering online in Chiang Mai — locals, visitors, and anyone sending flowers from another city or country. You choose a real bouquet, pay securely at checkout, and a local florist prepares it fresh for delivery.',
-        intro2:
-          'We deliver to homes, hotels, and condos across the city and nearby districts. Same-day options, clear checkout details, and English or Thai support keep the process straightforward.',
-        sameDayTitle: 'Same-day delivery for last-minute moments',
-        sameDayP1:
-          'Birthdays at a hotel tonight, an anniversary surprise in Nimman, or a gift you need to send while you are abroad — same-day delivery is often possible when you order before {cutoff}, subject to bouquet availability and delivery capacity. Delivery may take place after {cutoff}.',
-        sameDayP2:
-          'We deliver during our Chiang Mai service window. Order earlier for the best bouquet choice, then confirm today’s date at checkout.',
-        sameDayLink: 'Same-day flower delivery in Chiang Mai',
-        browseCatalogLink: 'Browse bouquets',
-        venuesTitle: 'Homes, hotels, and condos across the city',
+          'Order fresh bouquets online for delivery across Chiang Mai. Our local florists serve residents, visitors, and people sending gifts from elsewhere, with secure checkout available in English or Thai.',
+        venuesTitle: 'Delivery to homes, hotels, and condos',
         venuesP1:
-          'Chiang Mai deliveries often go through hotel reception, condo juristic offices, or gated villages. Add the recipient’s full name, building or hotel name, and a working phone number so the courier can coordinate on arrival.',
-        venuesP2:
-          'A Google Maps pin or share link at checkout helps when the entrance is hard to describe. For complex addresses, use custom order or contact us before you pay.',
-        hotelsLink: 'Flower delivery to hotels in Chiang Mai',
-        customOrderLink: 'Custom order',
-        areasTitle: 'Areas we know well — Old City to Mae Rim',
+          'Add the recipient’s full name, venue or building name, phone number, and a Google Maps pin when helpful. These details let the courier coordinate with hotel reception, condo staff, or gated-community security.',
+        areasTitle: 'Across Chiang Mai and nearby districts',
         areasP1:
-          'Old City and the inner city suit hotel stays and compact romantic evenings. Nimman and Suthep fit apartments, cafés, and expat neighbourhoods. Hang Dong, Mae Rim, and San Sai cover quieter villas and outskirts where a little extra timing cushion helps.',
-        areasP2:
-          'Further districts such as San Kamphaeng, Saraphi, and Doi Saket remain in our service area. Delivery fees are calculated by zone at checkout — see the delivery policy for full zone guidance.',
-        deliveryPolicyLink: 'Read our delivery policy',
-        abroadTitle: 'Sending flowers from abroad',
-        abroadP1:
-          'If you are outside Thailand, you can still order online: browse in English or Thai, pay by international card through Stripe, and leave a message card in either language. Availability and same-day depend on the destination city and Thailand local time — not your home timezone.',
-        abroadP2:
-          'Our local team handles preparation and delivery, so the recipient gets a fresh bouquet without you needing to coordinate bank transfers or long chat threads.',
+          'We regularly serve the Old City, Nimman, Suthep, Hang Dong, Mae Rim, San Sai, and surrounding districts. Delivery fees are calculated by zone and shown at checkout.',
+        relatedLinksLabel: 'Helpful delivery links',
+        deliveryAreasLink: 'View delivery areas and fees',
         abroadLink: 'Send flowers to Thailand from abroad',
-        occasionsTitle: 'Bouquets for birthdays, romance, and every occasion',
-        occasionsP1:
-          'Romantic and anniversary gifts often lean toward roses. Birthdays and congratulations suit brighter mixed bouquets. Softer tones work well for get-well or sympathy. If you are unsure, start with our birthday guide or rose and orchid collections.',
-        rosesLink: 'Rose bouquets in Chiang Mai',
-        orchidsLink: 'Orchid bouquets in Chiang Mai',
-        birthdayLink: 'Birthday flower gift guide',
-        closingCatalogCta: 'Explore the catalog',
-        closingSameDayCta: 'Same-day delivery guide',
-        refundLink: 'Refund & replacement',
+        browseCatalogLink: 'Browse bouquets',
       },
     },
   },
@@ -1663,10 +1630,8 @@ const baseTranslations = {
         'เลือกช่อดอกไม้พร้อมราคาชัดเจน เลือกวันจัดส่ง เพิ่มข้อความส่วนตัว และชำระด้วยบัตรอย่างปลอดภัย — รวมถึงเมื่อสั่งจากต่างประเทศ เราจัดส่งในพื้นที่ถึงบ้าน โรงแรม คอนโด โรงพยาบาล และวิลล่าทั่วเชียงใหม่',
       deliveryMethodLine:
         'จัดส่งด้วยรถยนต์หรือ Grab โดยขึ้นอยู่กับที่อยู่ ขนาดช่อ และความพร้อมของบริการ',
-      trustBenefitsLine:
-        'จัดส่งวันเดียวได้ · ชำระเงินต่างประเทศปลอดภัย · บริการภาษาไทยและอังกฤษ',
       ctaBrowse: 'เลือกช่อดอกไม้',
-      ctaHowItWorks: 'วิธีจัดส่ง',
+      ctaHowItWorks: 'วิธีการทำงาน',
       howToOrderClose: 'ปิด',
       howToOrderInfographicAlt: 'วิธีสั่งดอกไม้จาก Lanna Bloom — ขั้นตอนการสั่งซื้อ',
       shopByOccasion: 'เลือกตามโอกาส',
@@ -2749,7 +2714,7 @@ const baseTranslations = {
       refundMethod1: 'การคืนเงินจะคืนไปยัง วิธีชำระเงินเดิม (เมื่อทำได้)',
       refundMethod2: 'กรณีชำระด้วยบัตร ระยะเวลาที่เงินกลับเข้าบัตรขึ้นอยู่กับธนาคาร/ผู้ออกบัตร (มักใช้เวลา 5–14 วันทำการ หรือมากกว่านั้น)',
       refundMethod3: 'ค่าธรรมเนียมการประมวลผลของ Stripe จากรายการเดิม ไม่ได้ถูกคืนกลับให้ร้าน เมื่อทำการคืนเงินผ่านบัตร',
-      refundMethod4: 'หากลูกค้ายกเลิกออเดอร์และได้รับการคืนเงิน จะมีการหักค่าธรรมเนียมการประมวลผล 6% จากยอดที่คืน สำหรับการชำระด้วยบัตรเครดิตทุกประเภท เพื่อครอบคลุมค่าธรรมเนียมที่ผู้ให้บริการชำระเงินไม่คืนให้ร้าน กรณียกเลิกจากสาเหตุที่ไม่ได้เกิดจาก Lanna Bloom เมื่อคืนเงินผ่านบัตร ใช้หลักเกณฑ์เดียวกัน เมื่อเริ่มเตรียมช่อหรือเริ่มจัดส่งแล้ว อาจไม่สามารถคืนเงินเต็มจำนวนได้ การคืนเงินที่ได้รับอนุมัติมักดำเนินการภายใน 5–10 วันทำการ แต่ระยะเวลาจริงอาจแตกต่างกันไปตามธนาคารหรือผู้ให้บริการชำระเงินของลูกค้า',
+      refundMethod4: 'เมื่อเริ่มเตรียมช่อหรือเริ่มจัดส่งแล้ว อาจไม่สามารถคืนเงินเต็มจำนวนได้ การคืนเงินที่ได้รับอนุมัติมักดำเนินการภายใน 5–10 วันทำการ แต่ระยะเวลาจริงอาจแตกต่างกันไปตามธนาคารหรือผู้ให้บริการชำระเงินของลูกค้า',
       americanExpress: 'American Express',
       stripeSupport: 'Stripe Support',
       howToContactTitle: '9) ติดต่อเรา (เร็วที่สุด)',
@@ -2946,10 +2911,6 @@ const baseTranslations = {
       delivery: {
         eyebrow: 'การจัดส่ง',
         title: 'สั่งดอกไม้ออนไลน์ — จัดส่งทั่วเชียงใหม่',
-        intro:
-          'เลือกช่อดอกไม้ ชำระเงินอย่างปลอดภัยที่หน้าชำระเงิน แล้วร้านดอกไม้พาร์ทเนอร์ของเราจัดช่อสดใหม่ พร้อมจัดส่งถึงบ้าน โรงแรม คอนโด โรงพยาบาล และวิลล่าทั่วเชียงใหม่',
-        onlineOnlyNote:
-          'Lanna Bloom เป็นบริการจัดส่งดอกไม้ออนไลน์เท่านั้น และไม่รับลูกค้าแบบเดินเข้าร้าน',
         sameDayTitle: 'จัดส่งภายในวันเดียว',
         sameDayText:
           'รับออเดอร์จัดส่งวันเดียวถึง {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และการจัดส่ง อาจจัดส่งหลัง {cutoff} น. ได้ เวลาทำการจัดส่งคือ {start}–{end} น. หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด',
@@ -3056,44 +3017,17 @@ const baseTranslations = {
         eyebrow: 'เชียงใหม่',
         title: 'ส่งดอกไม้เชียงใหม่',
         intro:
-          'Lanna Bloom สำหรับคนที่ต้องการสั่งดอกไม้ออนไลน์ในเชียงใหม่ — ทั้งคนท้องถิ่น นักท่องเที่ยว และผู้ที่ส่งจากต่างจังหวัดหรือต่างประเทศ เลือกช่อจริง จ่ายปลอดภัยตอนชำระเงิน แล้วร้านดอกไม้ท้องถิ่นจัดช่อสดสำหรับวันจัดส่ง',
-        intro2:
-          'เราจัดส่งถึงบ้าน โรงแรม และคอนโดทั่วเมืองและอำเภอใกล้เคียง มีตัวเลือกวันเดียว รายละเอียดตอนชำระเงินที่ชัดเจน และบริการภาษาไทยหรืออังกฤษให้ขั้นตอนง่ายขึ้น',
-        sameDayTitle: 'จัดส่งวันเดียวสำหรับช่วงนาทีสุดท้าย',
-        sameDayP1:
-          'วันเกิดที่โรงแรมคืนนี้ เซอร์ไพรส์ครบรอบที่นิมมาน หรือของขวัญที่ต้องส่งตอนคุณอยู่ต่างประเทศ — จัดส่งวันเดียวมักทำได้เมื่อสั่งก่อน {cutoff} น. โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง อาจจัดส่งหลัง {cutoff} น. ได้',
-        sameDayP2:
-          'เราจัดส่งในช่วงเวลาให้บริการในเชียงใหม่ สั่งเร็วจะเลือกช่อได้ดีกว่า จากนั้นยืนยันวันจัดส่งเป็นวันนี้ตอนชำระเงิน',
-        sameDayLink: 'จัดส่งดอกไม้วันเดียวในเชียงใหม่',
-        browseCatalogLink: 'เลือกช่อดอกไม้',
-        venuesTitle: 'บ้าน โรงแรม และคอนโดทั่วเมือง',
+          'สั่งช่อดอกไม้สดออนไลน์พร้อมจัดส่งทั่วเชียงใหม่ ร้านดอกไม้ท้องถิ่นของเราดูแลทั้งลูกค้าในพื้นที่ นักท่องเที่ยว และผู้ที่ส่งของขวัญมาจากที่อื่น พร้อมหน้าชำระเงินที่ปลอดภัยทั้งภาษาไทยและอังกฤษ',
+        venuesTitle: 'จัดส่งถึงบ้าน โรงแรม และคอนโด',
         venuesP1:
-          'การส่งในเชียงใหม่มักผ่านแผนกต้อนรับโรงแรม นิติบุคคลคอนโด หรือหมู่บ้านมีรั้ว กรอกชื่อผู้รับเต็ม ชื่ออาคารหรือโรงแรม และเบอร์ที่ติดต่อได้ เพื่อให้พนักงานส่งประสานตอนถึง',
-        venuesP2:
-          'หมุดหรือลิงก์แชร์ Google Maps ตอนชำระเงินช่วยได้เมื่อทางเข้าอธิบายยาก ที่อยู่วุ่นวาย ใช้คำสั่งพิเศษหรือติดต่อเราก่อนจ่ายเงิน',
-        hotelsLink: 'ส่งดอกไม้ไปโรงแรมในเชียงใหม่',
-        customOrderLink: 'สั่งช่อตามใจ',
-        areasTitle: 'พื้นที่ที่เรารู้จักดี — จากคูเมืองถึงแม่ริม',
+          'กรอกชื่อผู้รับ ชื่อโรงแรมหรืออาคาร เบอร์โทร และหมุด Google Maps เมื่อจำเป็น ข้อมูลเหล่านี้ช่วยให้พนักงานส่งประสานกับแผนกต้อนรับ นิติบุคคลคอนโด หรือเจ้าหน้าที่หมู่บ้านได้สะดวก',
+        areasTitle: 'ทั่วเชียงใหม่และอำเภอใกล้เคียง',
         areasP1:
-          'คูเมืองและในเมืองเหมาะกับโรงแรมและการมอบดอกไม้ยามค่ำ นิมมานและสุเทพเหมาะกับอพาร์ตเมนต์ คาเฟ่ และย่านชาวต่างชาติ หางดง แม่ริม และสันทรายครอบคลุมวิลล่าและชานเมืองที่ควรเผื่อเวลาส่งอีกเล็กน้อย',
-        areasP2:
-          'อำเภออย่างสันกำแพง สารภี และดอยสะเก็ดยังอยู่ในพื้นที่ให้บริการ ค่าจัดส่งคำนวณตามโซนตอนชำระเงิน — ดูนโยบายจัดส่งสำหรับรายละเอียดโซนเต็ม',
-        deliveryPolicyLink: 'อ่านนโยบายการจัดส่ง',
-        abroadTitle: 'ส่งดอกไม้จากต่างประเทศ',
-        abroadP1:
-          'ถ้าคุณอยู่นอกประเทศไทย ก็สั่งออนไลน์ได้: เลือกดูเป็นภาษาอังกฤษหรือไทย จ่ายบัตรต่างประเทศผ่าน Stripe และฝากข้อความการ์ดได้ทั้งสองภาษา ความพร้อมและการจัดส่งวันเดียวขึ้นกับเมืองปลายทางและเวลาประเทศไทย — ไม่ใช่โซนเวลาบ้านคุณ',
-        abroadP2:
-          'ทีมท้องถิ่นดูแลการจัดช่อและการจัดส่ง ผู้รับได้ดอกไม้สด โดยคุณไม่ต้องโอนเงินไทยหรือคุยยาวในแชท',
+          'เราให้บริการคูเมือง นิมมาน สุเทพ หางดง แม่ริม สันทราย และพื้นที่โดยรอบเป็นประจำ ค่าจัดส่งคำนวณตามโซนและแสดงที่หน้าชำระเงิน',
+        relatedLinksLabel: 'ลิงก์ข้อมูลการจัดส่ง',
+        deliveryAreasLink: 'ดูพื้นที่และค่าจัดส่ง',
         abroadLink: 'ส่งดอกไม้ไปประเทศไทยจากต่างประเทศ',
-        occasionsTitle: 'ช่อดอกไม้สำหรับวันเกิด โรแมนติก และทุกโอกาส',
-        occasionsP1:
-          'ของขวัญโรแมนติกและครบรอบมักเป็นกุหลาบ วันเกิดและแสดงความยินดีเหมาะกับช่อมิกซ์โทนสดใส โทนอ่อนเหมาะกับเยี่ยมไข้หรือแสดงความเสียใจ หากยังไม่แน่ใจ เริ่มจากคู่มือวันเกิด หรือคอลเลกชันกุหลาบและกล้วยไม้',
-        rosesLink: 'ช่อกุหลาบในเชียงใหม่',
-        orchidsLink: 'ช่อกล้วยไม้ในเชียงใหม่',
-        birthdayLink: 'คู่มือของขวัญวันเกิด',
-        closingCatalogCta: 'ดูแคตตาล็อก',
-        closingSameDayCta: 'คู่มือจัดส่งวันเดียว',
-        refundLink: 'คืนเงินและเปลี่ยนสินค้า',
+        browseCatalogLink: 'เลือกช่อดอกไม้',
       },
     },
   },

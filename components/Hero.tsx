@@ -92,6 +92,29 @@ function HeroVisualBlock({
   );
 }
 
+function HeroDeliveryMethodLine({
+  lang,
+  className = '',
+}: {
+  lang: Locale;
+  className?: string;
+}) {
+  const t = translations[lang].hero;
+  return (
+    <p
+      className={`flex max-w-lg gap-2.5 rounded-2xl bg-[#C5A059]/10 px-3.5 py-2.5 text-sm sm:text-base text-stone-600 ${className}`.trim()}
+    >
+      <span
+        aria-hidden
+        className="flex h-[1.625em] w-[1.125em] shrink-0 items-center justify-center text-[#C5A059]"
+      >
+        <StorefrontIcon name="local-shipping" size={18} />
+      </span>
+      <span className="min-w-0 flex-1 leading-relaxed">{t.deliveryMethodLine}</span>
+    </p>
+  );
+}
+
 function HeroCtaSection({
   lang,
   primaryCtaHref,
@@ -99,6 +122,7 @@ function HeroCtaSection({
   introItemClass,
   ctaExtraClass = '',
   reviewsExtraClass = '',
+  deliveryLineExtraClass = '',
 }: {
   lang: Locale;
   primaryCtaHref: string;
@@ -106,12 +130,13 @@ function HeroCtaSection({
   introItemClass: string;
   ctaExtraClass?: string;
   reviewsExtraClass?: string;
+  deliveryLineExtraClass?: string;
 }) {
   const t = translations[lang].hero;
   return (
     <>
       <div
-        className={`${introItemClass} ${ctaExtraClass} flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8 lg:mb-8`.trim()}
+        className={`${introItemClass} ${ctaExtraClass} flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-5`.trim()}
       >
         <Link
           href={primaryCtaHref}
@@ -137,6 +162,10 @@ function HeroCtaSection({
           {t.ctaHowItWorks}
         </button>
       </div>
+      <HeroDeliveryMethodLine
+        lang={lang}
+        className={`${introItemClass} ${deliveryLineExtraClass} mb-5 sm:mb-6`.trim()}
+      />
       <GoogleReviewsBadge
         lang={lang}
         className={`${introItemClass} ${reviewsExtraClass}`.trim()}
@@ -212,12 +241,6 @@ export function Hero({
   const introItemClass = isHomeLanding ? 'home-hero-intro__item' : '';
 
   const handleHowItWorks = () => {
-    if (isHomeLanding) {
-      document
-        .getElementById('home-delivery')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
     setHowToOpen(true);
   };
 
@@ -260,17 +283,7 @@ export function Hero({
           >
             {t.sublineNew}
           </p>
-          <p
-            className={`${introItemClass} text-sm sm:text-base text-stone-500 mt-2 sm:mt-3 mb-0 max-w-lg leading-relaxed`.trim()}
-          >
-            {t.deliveryMethodLine}
-          </p>
-          <p
-            className={`${introItemClass} text-xs sm:text-sm text-stone-500 mt-2 sm:mt-3 mb-0 max-w-lg leading-relaxed`.trim()}
-          >
-            {t.trustBenefitsLine}
-          </p>
-          <div className="hidden lg:block mt-[6px]">
+          <div className="hidden lg:block mt-4 sm:mt-5">
             <HeroCtaSection
               lang={lang}
               primaryCtaHref={primaryCtaHref}
@@ -293,13 +306,12 @@ export function Hero({
             onHowItWorks={handleHowItWorks}
             introItemClass={introItemClass}
             ctaExtraClass="home-hero-intro__delay-5"
+            deliveryLineExtraClass="home-hero-intro__delay-5"
             reviewsExtraClass="home-hero-intro__delay-6"
           />
         </div>
       </div>
-      {!isHomeLanding ? (
-        <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
-      ) : null}
+      <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
       {isHomeLanding ? (
         <div
           id="hero-sentinel"

@@ -1,88 +1,39 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
-import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
-import { ROSES_HUB_PATH, ORCHIDS_HUB_PATH } from '@/lib/landingPages/collectionLandingPages';
 import { StorefrontIcon } from '@/components/icons';
 
-type LocalBlock = {
-  title: string;
-  paragraphs: string[];
-  links?: { href: string; label: string }[];
-};
-
 /**
- * Scannable Chiang Mai narrative SEO block.
- * Placed after DeliverySection — deepen local intent without rehashing cutoff chips / Why Us.
+ * Concise Chiang Mai context for the homepage's primary local search intent.
+ * Operational details live in DeliverySection, the FAQ, and dedicated guides.
  */
 export function LocalLandingSection({ lang }: { lang: Locale }) {
   const t = translations[lang].homeLanding.local;
-
-  const blocks: LocalBlock[] = [
+  const links = [
     {
-      title: t.sameDayTitle,
-      paragraphs: [fillDeliveryTimePlaceholders(t.sameDayP1), t.sameDayP2],
-      links: [
-        {
-          href: `/${lang}/info/same-day-flower-delivery-chiang-mai`,
-          label: t.sameDayLink,
-        },
-        { href: `/${lang}/catalog`, label: t.browseCatalogLink },
-      ],
+      href: `/${lang}/delivery-areas-chiang-mai`,
+      label: t.deliveryAreasLink,
+      icon: 'location-on' as const,
     },
     {
-      title: t.venuesTitle,
-      paragraphs: [t.venuesP1, t.venuesP2],
-      links: [
-        {
-          href: `/${lang}/info/flower-delivery-to-hotels-chiang-mai`,
-          label: t.hotelsLink,
-        },
-        { href: `/${lang}/custom-order`, label: t.customOrderLink },
-      ],
+      href: `/${lang}/info/buy-flowers-online-chiang-mai-thailand`,
+      label: t.abroadLink,
+      icon: 'verified' as const,
     },
     {
-      title: t.areasTitle,
-      paragraphs: [t.areasP1, t.areasP2],
-      links: [
-        {
-          href: `/${lang}/info/delivery-policy`,
-          label: t.deliveryPolicyLink,
-        },
-      ],
-    },
-    {
-      title: t.abroadTitle,
-      paragraphs: [t.abroadP1, t.abroadP2],
-      links: [
-        {
-          href: `/${lang}/info/buy-flowers-online-chiang-mai-thailand`,
-          label: t.abroadLink,
-        },
-        { href: `/${lang}/catalog`, label: t.browseCatalogLink },
-      ],
-    },
-    {
-      title: t.occasionsTitle,
-      paragraphs: [t.occasionsP1],
-      links: [
-        { href: `/${lang}${ROSES_HUB_PATH}`, label: t.rosesLink },
-        { href: `/${lang}${ORCHIDS_HUB_PATH}`, label: t.orchidsLink },
-        {
-          href: `/${lang}/info/birthday-flower-gift`,
-          label: t.birthdayLink,
-        },
-      ],
+      href: `/${lang}/catalog`,
+      label: t.browseCatalogLink,
+      icon: 'local-florist' as const,
     },
   ];
 
   return (
     <section
-      className="py-16 sm:py-20 lg:py-24"
+      className="py-14 sm:py-16 lg:py-20"
       aria-labelledby="home-local-landing-title"
       data-home-reveal
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="home-reveal-item mb-10 md:mb-14 max-w-3xl">
+        <div className="home-reveal-item mb-8 md:mb-10 max-w-3xl">
           <p className="text-xs font-semibold tracking-[0.22em] uppercase text-[#C5A059] mb-3">
             {t.eyebrow}
           </p>
@@ -92,62 +43,46 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
           >
             {t.title}
           </h2>
-          <p className="text-stone-500 leading-relaxed mb-3">{t.intro}</p>
-          <p className="text-stone-500 leading-relaxed">{t.intro2}</p>
+          <p className="text-stone-600 leading-relaxed">{t.intro}</p>
         </div>
 
-        <div className="home-reveal-stagger space-y-10 md:space-y-12 max-w-3xl">
-          {blocks.map((block) => (
-            <article key={block.title} className="home-reveal-item">
-              <h3 className="font-[family-name:var(--font-family-display)] text-xl sm:text-2xl text-[#1A3C34] mb-3 leading-snug">
-                {block.title}
-              </h3>
-              {block.paragraphs.map((p) => (
-                <p key={p.slice(0, 48)} className="text-stone-500 text-sm sm:text-base leading-relaxed mb-3 last:mb-0">
-                  {p}
-                </p>
-              ))}
-              {block.links && block.links.length > 0 ? (
-                <ul className="flex flex-wrap gap-x-5 gap-y-2 mt-4">
-                  {block.links.map((link) => (
-                    <li key={link.href + link.label}>
-                      <Link
-                        href={link.href}
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-[#1A3C34] hover:text-[#C5A059] transition-colors"
-                      >
-                        {link.label}
-                        <StorefrontIcon name="arrow-forward" size={14} />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </article>
-          ))}
+        <div className="home-reveal-stagger grid gap-4 md:grid-cols-2 max-w-4xl">
+          <article className="home-reveal-item rounded-2xl border border-stone-200 bg-stone-50/70 p-5 sm:p-6">
+            <h3 className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] mb-2 leading-snug">
+              {t.venuesTitle}
+            </h3>
+            <p className="text-stone-500 text-sm sm:text-base leading-relaxed">{t.venuesP1}</p>
+          </article>
+          <article className="home-reveal-item rounded-2xl border border-stone-200 bg-stone-50/70 p-5 sm:p-6">
+            <h3 className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] mb-2 leading-snug">
+              {t.areasTitle}
+            </h3>
+            <p className="text-stone-500 text-sm sm:text-base leading-relaxed">{t.areasP1}</p>
+          </article>
         </div>
 
-        <div className="home-reveal-item mt-12 md:mt-14 flex flex-wrap items-center gap-4 max-w-3xl">
-          <Link
-            href={`/${lang}/catalog`}
-            className="inline-flex items-center justify-center rounded-full bg-[#1A3C34] !text-white px-6 py-3 text-sm font-semibold hover:bg-[#244a40] hover:!text-white transition-colors"
-          >
-            {t.closingCatalogCta}
-          </Link>
-          <Link
-            href={`/${lang}/info/same-day-flower-delivery-chiang-mai`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1A3C34] hover:text-[#C5A059] transition-colors"
-          >
-            {t.closingSameDayCta}
-            <StorefrontIcon name="arrow-forward" size={16} />
-          </Link>
-          <Link
-            href={`/${lang}/refund-replacement`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 hover:text-[#C5A059] transition-colors"
-          >
-            {t.refundLink}
-            <StorefrontIcon name="arrow-forward" size={16} />
-          </Link>
-        </div>
+        <nav aria-label={t.relatedLinksLabel} className="home-reveal-item mt-6 max-w-4xl">
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {links.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="group flex h-full items-center gap-3 rounded-xl border border-[#1A3C34]/15 bg-white px-4 py-3.5 text-sm font-semibold text-[#1A3C34] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#C5A059] hover:bg-[#C5A059]/5 hover:text-[#8a6a2d] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] focus-visible:ring-offset-2"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A3C34]/7 text-[#1A3C34] group-hover:bg-[#C5A059]/15 group-hover:text-[#8a6a2d]">
+                    <StorefrontIcon name={link.icon} size={18} />
+                  </span>
+                  <span className="flex-1">{link.label}</span>
+                  <StorefrontIcon
+                    name="arrow-forward"
+                    size={16}
+                    className="shrink-0 transition-transform group-hover:translate-x-0.5"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </section>
   );
