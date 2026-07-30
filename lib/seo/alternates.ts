@@ -15,6 +15,17 @@ export function isSeoLocale(lang: string): lang is SeoLocale {
 }
 
 /**
+ * Robots for thin locales (ru / zh-*). SEO locales return undefined so
+ * page-level robots stay the sole source (avoids duplicate/conflicting tags).
+ */
+export function nonSeoLocaleRobots(
+  lang: string
+): NonNullable<Metadata['robots']> | undefined {
+  if (isSeoLocale(lang)) return undefined;
+  return { index: false, follow: true };
+}
+
+/**
  * Strip query/hash and normalize to an absolute canonical URL.
  * Accepts absolute URLs or site-relative paths (with or without leading slash).
  */

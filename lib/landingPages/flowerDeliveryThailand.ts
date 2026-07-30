@@ -96,16 +96,16 @@ export type FlowerDeliveryThailandCopy = {
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
   en: {
-    metaTitle: 'Flower Delivery in Thailand | Lanna Bloom',
+    metaTitle: 'Flower Delivery Fees & Areas in Chiang Mai | Lanna Bloom',
     metaDescription:
-      'Order flowers online with Lanna Bloom. Flower and gift delivery across Chiang Mai province — all districts, Old City, Nimman, Hang Dong, Mae Rim, San Sai, and more. Bouquet delivery in Phuket, Hua Hin, Koh Samui, Krabi & Ao Nang, and Pattaya.',
-    h1: 'Flower delivery in Thailand',
+      'Flower delivery across central, outer, and rural Chiang Mai — including Hang Dong, Mae Rim, San Sai, Doi Saket, Mae Taeng, Chiang Dao, Fang, and Mae Ai. Check the map for coverage and estimated fees.',
+    h1: 'Flower delivery areas and fees in Chiang Mai',
     intro:
-      'Lanna Bloom is expanding flower delivery across Thailand. Order online with secure checkout — we deliver across Chiang Mai city and province, plus selected destinations. Availability, delivery fees and same-day service depend on the destination city.',
-    areasTitle: 'Where we deliver',
+      'Lanna Bloom delivers flowers across central, outer, and rural Chiang Mai. We cover areas including Hang Dong, Mae Rim, San Sai, Doi Saket, San Kamphaeng, Saraphi, Mae Taeng, Chiang Dao, Fang, and Mae Ai — as well as city neighbourhoods such as the Old City and Nimman. Select your district on the map to check delivery coverage and see an estimated fee. For remote addresses, we confirm the route and final fee before delivery.',
+    areasTitle: 'Where we deliver in Chiang Mai',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
-      'Our home base. We deliver flowers and gifts across Chiang Mai city and all districts in Chiang Mai province, plus nearby Lamphun.',
+      'Our home base. We deliver flowers and gifts across Chiang Mai — including Hang Dong, Mae Ai, Fang, and the areas listed below — plus nearby Lamphun.',
     districtsSubtitle: 'Districts (amphoe)',
     neighborhoodsSubtitle: 'Popular areas & neighborhoods',
     chiangMaiNote:
@@ -113,22 +113,22 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     otherDestinationsTitle: 'Other Thailand destinations',
     expandingNote:
       'Bouquet-only delivery in the destinations below. Nationwide coverage is not available yet.',
-    ctaCatalog: 'Shop Chiang Mai',
+    ctaCatalog: 'Buy flowers',
     ctaChiangMaiGuide: 'Chiang Mai delivery guide',
     ctaDeliveryPolicy: 'Delivery policy',
     ctaAbroad: 'Send flowers from abroad',
   },
   th: {
-    metaTitle: 'ส่งดอกไม้ทั่วประเทศไทย | Lanna Bloom',
+    metaTitle: 'ค่าส่งและพื้นที่จัดส่งดอกไม้เชียงใหม่ | Lanna Bloom',
     metaDescription:
-      'สั่งดอกไม้ออนไลน์กับ Lanna Bloom จัดส่งดอกไม้และของขวัญทั่วจังหวัดเชียงใหม่ ครบทุกอำเภอ เมืองเก่า นิมมาน หางดง แม่ริม สันทราย และอื่นๆ รวมลำพูน จัดส่งช่อดอกไม้ในภูเก็ต หัวหิน เกาะสมุย กระบี่และอ่าวนาง และพัทยา',
-    h1: 'บริการส่งดอกไม้ในประเทศไทย',
+      'จัดส่งดอกไม้ทั้งในเมือง รอบเมือง และพื้นที่ชนบทของเชียงใหม่ รวมหางดง แม่ริม สันทราย ดอยสะเก็ด แม่แตง เชียงดาว ฝาง และแม่เอ๋ย ตรวจสอบพื้นที่และค่าส่งโดยประมาณบนแผนที่',
+    h1: 'พื้นที่จัดส่งและค่าส่งดอกไม้ในเชียงใหม่',
     intro:
-      'Lanna Bloom กำลังขยายบริการส่งดอกไม้ทั่วประเทศไทย สั่งซื้อออนไลน์ชำระเงินปลอดภัย — เราจัดส่งทั่วเมืองและจังหวัดเชียงใหม่ รวมจุดหมายที่เลือก ความพร้อม ค่าส่ง และการจัดส่งวันเดียวขึ้นกับเมืองปลายทาง',
-    areasTitle: 'พื้นที่ที่ให้บริการ',
+      'Lanna Bloom จัดส่งดอกไม้ทั้งในเมือง รอบเมือง และพื้นที่ชนบทของเชียงใหม่ ครอบคลุมหางดง แม่ริม สันทราย ดอยสะเก็ด สันกำแพง สารภี แม่แตง เชียงดาว ฝาง และแม่เอ๋ย รวมถึงย่านในเมืองอย่างเมืองเก่าและนิมมาน เลือกอำเภอบนแผนที่เพื่อตรวจสอบพื้นที่จัดส่งและดูค่าส่งโดยประมาณ สำหรับที่อยู่ห่างไกล เราจะยืนยันเส้นทางและค่าส่งสุดท้ายก่อนจัดส่ง',
+    areasTitle: 'เราจัดส่งที่ไหนในเชียงใหม่',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:
-      'ฐานให้บริการหลักของเรา จัดส่งดอกไม้และของขวัญทั่วเมืองเชียงใหม่ ครบทุกอำเภอในจังหวัดเชียงใหม่ และลำพูนใกล้เคียง',
+      'ฐานให้บริการหลักของเรา จัดส่งดอกไม้และของขวัญทั่วเชียงใหม่ รวมหางดง แม่เอ๋ย ฝาง และพื้นที่ด้านล่าง รวมลำพูนใกล้เคียง',
     districtsSubtitle: 'อำเภอ',
     neighborhoodsSubtitle: 'ย่านและพื้นที่ยอดนิยม',
     chiangMaiNote:
@@ -136,7 +136,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     otherDestinationsTitle: 'จุดหมายอื่นในประเทศไทย',
     expandingNote:
       'จัดส่งช่อดอกไม้เท่านั้นในจุดหมายด้านล่าง ยังไม่มีบริการทั่วทั้งประเทศ',
-    ctaCatalog: 'เลือกซื้อเชียงใหม่',
+    ctaCatalog: 'ซื้อดอกไม้',
     ctaChiangMaiGuide: 'คู่มือจัดส่งเชียงใหม่',
     ctaDeliveryPolicy: 'นโยบายการจัดส่ง',
     ctaAbroad: 'ส่งดอกไม้จากต่างประเทศ',

@@ -41,13 +41,11 @@ export async function generateMetadata({
   const isTh = params.lang === 'th';
   // Phase 3a: keep Chiang Mai primary title for ranking protection.
   const title = isTh
-    ? 'ซื้อดอกไม้ออนไลน์เชียงใหม่ — จัดส่งวันเดียว | Lanna Bloom'
-    : 'Buy Flowers Online in Chiang Mai — Same-Day Flower Delivery | Lanna Bloom';
-  const description = fillDeliveryTimePlaceholders(
-    isTh
-      ? 'สั่งดอกไม้ออนไลน์ในเชียงใหม่ จัดส่งวันเดียวเมื่อสั่งก่อน {cutoff} น. ช่อดอกไม้สดจัดโดยร้านดอกไม้ท้องถิ่น ชำระเงินปลอดภัย ส่งถึงบ้าน โรงแรม และคอนโด — พร้อมขยายบริการไปยังบางจุดหมายทั่วไทย'
-      : 'Order flowers online for delivery in Chiang Mai. Same-day delivery when you order by {cutoff} — fresh bouquets by local florists, secure checkout, delivery to homes, hotels, and condos. Expanding to selected destinations across Thailand.'
-  );
+    ? 'ซื้อดอกไม้ออนไลน์ในเชียงใหม่ | จัดส่งวันเดียว – Lanna Bloom'
+    : 'Buy Flowers Online in Chiang Mai | Same-Day Delivery – Lanna Bloom';
+  const description = isTh
+    ? 'ซื้อดอกไม้ออนไลน์ในเชียงใหม่ ชำระด้วยบัตรอย่างปลอดภัย เลือกช่อ ใส่ข้อความ และจัดส่งวันเดียวถึงบ้าน โรงแรม คอนโด โรงพยาบาล หรือวิลล่า'
+    : 'Buy flowers online in Chiang Mai with secure card payment. Choose a bouquet, add your message, and arrange same-day delivery to homes, hotels, condos, hospitals, or villas.';
   return {
     title,
     description,

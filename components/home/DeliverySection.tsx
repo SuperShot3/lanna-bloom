@@ -16,7 +16,8 @@ export function DeliverySection({ lang }: { lang: Locale }) {
 
   return (
     <section
-      className="py-16 sm:py-20 lg:py-24 bg-stone-50"
+      id="home-delivery"
+      className="py-16 sm:py-20 lg:py-24 bg-stone-50 scroll-mt-24"
       aria-labelledby="home-delivery-title"
       data-home-reveal
     >
@@ -104,7 +105,7 @@ export function DeliverySection({ lang }: { lang: Locale }) {
             <p className="text-stone-500 text-sm sm:text-base leading-relaxed mb-4">{t.areasIntro}</p>
             <p className="text-stone-400 text-xs sm:text-sm mb-8">{t.areasNote}</p>
             <Link
-              href={`/${lang}/flower-delivery-thailand`}
+              href={`/${lang}/delivery-areas-chiang-mai`}
               className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-[#1A3C34] hover:text-[#C5A059] transition-colors"
             >
               {t.deliveryAreasCta}

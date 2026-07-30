@@ -7,7 +7,7 @@ description: Create SEO-optimized flower shop content—info MDX articles and `/
 
 ## Purpose
 
-Produce polished, ready-to-paste blog content for the flower shop website that ranks well, reads easily, and naturally promotes products from the same website.
+Produce polished, ready-to-paste blog content that genuinely helps flower shoppers, reads easily, and uses SEO to improve discovery without writing for rankings first.
 
 Default output mode is webpage-ready content blocks for editorial entry or handoff to developers, not a long plain chat article.
 
@@ -17,12 +17,12 @@ Default output mode is webpage-ready content blocks for editorial entry or hando
 
 ## Core Rules
 
-- Write for customers first and search engines second.
+- Write for the site's real flower and gift customers. SEO supports useful content; it never determines the topic or forces wording.
 - Default language is English. Provide Thai when the user asks for Thai or bilingual.
 - Tone: warm, elegant, helpful, trustworthy, and gently sales-friendly.
 - Make the article scannable: short paragraphs, descriptive headings, useful lists.
 - Promote relevant website products as helpful recommendations, never as hard-sell ads.
-- Use the focus keyword naturally in the title, intro, one heading, and the conclusion.
+- Use the focus keyword only where it accurately describes the page and reads naturally. Do not force an exact-match placement.
 - Avoid keyword stuffing, exaggerated claims, fake guarantees, and generic filler.
 - Do not invent prices, stock, delivery times, discounts, or product availability.
 - Do not put JSON, raw schema, unexplained code, or developer-only notes **inside customer-facing prose blocks**; implementation sections may reference repo filenames and slugs when handing off a page build.
@@ -30,6 +30,24 @@ Default output mode is webpage-ready content blocks for editorial entry or hando
 - Default to **Webpage Build Mode** (section-by-section page output).
 - Do not return only one long text block unless the user explicitly asks for text-only.
 - For on-site articles and guides, reuse existing page patterns and UI primitives from this repository (guide routes under `app/[lang]/guides/`, info/MDX, catalog-driven cards, shared FAQ, global styles). Do not invent article-specific components unless the user asks for new UI.
+
+## Google People-First Quality Standard
+
+Apply these requirements before SEO optimization:
+
+- **Why:** Create the page to help Lanna Bloom's existing or intended audience complete a real goal. Do not choose topics primarily for search traffic, trends, or perceived ranking gains.
+- **Original value:** Add first-hand flower-shop experience, local Chiang Mai context, practical examples, original analysis, or a clearer decision framework. Never merely summarize or lightly rewrite competing pages.
+- **Complete enough, not long for its own sake:** Answer the reader's likely follow-up questions so they should not need another search. Use the shortest length that satisfies the intent; Google has no preferred word count.
+- **Trust first:** Verify factual claims, avoid unsupported certainty, and cite reliable primary sources for claims readers cannot reasonably verify from the page. Never invent first-hand experience, testing, customer evidence, credentials, or sources.
+- **Who:** Include an accurate byline and author/reviewer background when readers would expect it. If author details are unavailable, flag the missing requirement instead of fabricating them.
+- **How:** Record meaningful sources, review steps, first-hand evidence, and production methods. Recommend an AI/automation disclosure when automation substantially generated the content or readers would reasonably ask how it was made.
+- **Honest titles and freshness:** Use descriptive, non-sensational titles. Never change a publication/update date unless the content changed substantially.
+- **Focused publishing:** Keep topics within the site's flower, gift, occasion, recipient, delivery, and Chiang Mai expertise. Do not support scaled, low-attention publishing across unrelated topics.
+- **Page experience:** Structure content for mobile reading, accessibility, clear navigation, and unobtrusive product promotion. Content quality does not compensate for a poor overall page experience.
+- **E-E-A-T:** Use experience, expertise, authoritativeness, and especially trust as a quality lens, not as a single ranking factor. Apply stronger sourcing and expert review to health, safety, financial, legal, or other YMYL-adjacent claims.
+
+SEO is allowed after these checks when it helps search engines discover and understand an already useful page.
+Source of truth: [Google Search Central — Creating helpful, reliable, people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content).
 
 ## Webpage Build Mode (Default)
 
@@ -40,7 +58,7 @@ Unless the user asks for a different format, always deliver the blog as a publis
 - Intro block
 - Body section blocks (H2/H3 + short paragraphs)
 - Product surfaces in context (MDX `CatalogProductCard` rows **or** guide bouquet sections with `BouquetCard` + Recommended callout)
-- FAQ accordion content
+- FAQ accordion content when genuine follow-up questions benefit the reader
 - Final CTA block (messenger/contact actions **last** on guides)
 
 The goal is to make output easy to map to page sections—whether those sections live in Sanity, MDX, or a typed guide module in the repo. Keep each block clearly labeled.
@@ -117,9 +135,11 @@ Check whether these details are available before writing:
 - Secondary or related keywords
 - Website products to promote, including product name and URL when possible
 - Target location, if local SEO matters
-- Target word count (if not given, default to 800-1200 words)
+- Any practical depth constraint; otherwise derive length from the reader's intent and topic complexity
 - Language: English, Thai, or bilingual
 - Occasion, season, recipient type, or customer problem to focus on
+- Author/reviewer name, role, and relevant experience; never invent missing credentials
+- First-hand business knowledge and reliable sources available for factual or non-obvious claims
 
 If only a few details are missing, ask only for those. If the user wants a quick draft, make reasonable assumptions and clearly label them as **Assumptions** before the final output.
 
@@ -127,7 +147,7 @@ If only a few details are missing, ask only for those. If the user wants a quick
 
 - Sentences mostly under 20 words.
 - Paragraphs of 2-4 sentences.
-- Use H2 every 200-300 words for scannability.
+- Use H2/H3 headings when they clarify distinct reader questions; do not add headings to meet a numeric cadence.
 - Use bullets only when they help comparison or decision-making.
 - Bold key phrases sparingly to guide skimmers.
 - Prefer concrete advice over vague statements.
@@ -143,18 +163,19 @@ Every complete blog draft must include:
 - Focus keyword
 - 3-6 related keywords
 - Short excerpt for blog listings
-- Clear H1, H2, and H3 headings
-- At least 2 internal product callouts
+- A clear heading hierarchy: one H1, useful H2s, and H3s only where needed
+- Relevant internal product callouts only where they improve the reader's decision
 - 1-2 internal links to relevant category or pillar pages, when applicable
-- FAQ section with 3-5 practical questions
-- Image alt text suggestions for the featured image and at least 2 in-article images
+- FAQ section with 3-5 practical questions only when they add distinct value
+- Image alt text suggestions for images actually included in the brief
 - Open Graph title and description for social sharing
+- Trust/provenance notes: author or reviewer, substantive sources, first-hand basis, and AI disclosure when reasonably expected
 
-Use the focus keyword in the H1, the introduction, one H2 when natural, and the conclusion. Use related keywords in subheadings and body text. Never repeat the same keyword unnaturally.
+Use the focus keyword in prominent fields where accurate and natural; an exact match is not required in every section. Use related language to clarify the topic, never to satisfy a keyword quota.
 
 ## Product Promotion Rules
 
-- Recommend 2-5 relevant products per article.
+- Recommend only products that materially help the reader; 2-5 is a useful range for product-led guides, not a quota for every article.
 - Place product mentions where they genuinely help the reader choose flowers.
 - Use descriptive anchor text such as "romantic red rose bouquet", not "click here".
 - Give a short, specific reason why each product fits the blog topic.
@@ -280,6 +301,11 @@ Use this exact structure. Provide Thai blocks only when Thai or bilingual is req
 **Excerpt - Thai:**
 [Natural Thai summary]
 
+**Trust & Provenance:**
+- Author / reviewer: [Accurate name, role, relevant experience, and profile link—or flag as needed]
+- Sources / content basis: [Primary sources, first-hand evidence, and which claims they support]
+- AI disclosure: [Include when AI substantially generated the content or readers would reasonably expect disclosure]
+
 **Open Graph Title:**
 [Social-friendly title, can differ from SEO title]
 
@@ -304,7 +330,7 @@ Webpage Build Mode
 **Implementation Package** — choose **one** path (or both if the user asks for dual delivery):
 
 **Path A — Info article (`/info/`):**
-1. **Article Meta Draft** (for `articles.ts`): slug, title / titleTh, excerpt / excerptTh, publishedAt (ISO), featured, cover, ctaLinks (EN/TH labels + href).
+1. **Article Meta Draft** (for `articles.ts`): slug, title / titleTh, excerpt / excerptTh, publishedAt (ISO), featured, cover, ctaLinks (EN/TH labels + href), plus author/reviewer and disclosure needs for implementation.
 2. **MDX Draft - English** (`[slug].en.mdx`).
 3. **MDX Draft - Thai** (`[slug].th.mdx`) when Thai or bilingual is requested.
 
@@ -427,7 +453,7 @@ Use when the deliverable is a comparison or occasion guide with multiple real bo
 
 - Link to 1-2 category or pillar pages when relevant (for example, a "red roses" category from a Valentine's article).
 - Use descriptive anchor text matching the destination's topic.
-- Do not over-link; one link per 150-250 words is a good ceiling.
+- Do not add links to meet a density target; each link must help the reader verify a claim or continue a relevant task.
 - If destination URLs are unknown, write the anchor text clearly and add a short note like _link to the red roses category_ in brackets so the user can fill it in.
 
 ## Missing Information Questions
@@ -453,12 +479,16 @@ Before responding, verify:
 - Product surfaces use valid catalog slugs: info articles reference `CatalogProductCard` slugs; guides list slugs that match Sanity/live URLs.
 - SEO title, meta description, slug (as applicable), excerpt, focus keyword, and related keywords are present for the requested surface.
 - Open Graph title and description are present when metadata is in scope.
-- 2–4 promoted products (or sections) include specific fit reasons and match notes where the pattern calls for them.
+- Any promoted products include specific fit reasons and match notes; do not add products solely to meet a count.
 - Contact / messenger prompts appear only in the **final** CTA area on guides and info articles unless the user asked otherwise.
 - 1–2 internal category or pillar links are suggested where relevant.
 - FAQs answer real customer questions in plain language.
+- The page has a clear reader, purpose, and satisfying answer independent of search traffic.
+- Original value or first-hand expertise is explicit; borrowed facts are verified and appropriately sourced.
+- Authorship/review details and an AI/automation disclosure are included or flagged when readers would reasonably expect them.
+- Title and dates are accurate, descriptive, and not manipulated for clicks or artificial freshness.
 - Featured and in-article image alt texts are included when images are part of the brief.
-- Focus keyword appears naturally in title, intro, one heading, and conclusion where those elements exist.
+- Focus keyword placement remains natural and never overrides clarity or accuracy.
 - No invented prices, stock, delivery times, or discounts appear.
 - Customer-facing prose blocks contain no JSON, raw schema, or unexplained code fences.
 - No placeholder text remains.

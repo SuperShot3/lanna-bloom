@@ -167,7 +167,7 @@ export function Footer({ lang }: { lang: Locale }) {
               <ul className="space-y-2 text-sm text-stone-500">
                 <li>
                   <Link
-                    href={`/${lang}/flower-delivery-thailand`}
+                    href={`/${lang}/delivery-areas-chiang-mai`}
                     className="hover:text-[#C5A059] transition-colors font-medium text-stone-600"
                   >
                     {t.flowerDeliveryThailand}

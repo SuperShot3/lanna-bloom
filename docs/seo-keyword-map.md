@@ -5,7 +5,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 | Primary intent | Owner URL |
 |---|---|
 | Flower delivery Chiang Mai / buy flowers online CM | `/en` (homepage) · `/th` |
-| Flower delivery Thailand (multi-city overview) | `/en/flower-delivery-thailand` |
+| Chiang Mai delivery areas & fees (map) | `/en/delivery-areas-chiang-mai` |
 | Flower delivery {City} | `/en/{city}/flower-delivery` (active markets only) |
 | Same-day flower delivery Chiang Mai | `/en/info/same-day-flower-delivery-chiang-mai` |
 | Rose delivery Chiang Mai | `/en/collections/roses-chiang-mai` |
@@ -20,7 +20,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 ## Role split (do not duplicate)
 
 - **Abroad how-to** (`buy-flowers-online-chiang-mai-thailand`) — overseas buyers: payment, recipient details, time zones, hotels/homes, advance ordering.
-- **Thailand coverage** (`flower-delivery-thailand`) — where we deliver; fees/areas overview; links to the abroad how-to for international customers.
+- **Delivery areas & fees** (`delivery-areas-chiang-mai`) — Chiang Mai interactive map and estimated fees; coverage list; other destinations; links to the abroad how-to for international customers. Old URL `/flower-delivery-thailand` 301s here.
 - **Birthday from abroad** — birthday occasion only; link to the abroad how-to for general checkout questions.
 
 ## URL rules (current architecture)

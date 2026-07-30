@@ -25,7 +25,7 @@ const FALLBACK_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1490750967868-88cb4ec0f07c?auto=format&fit=crop&q=80&w=800&h=1000',
 ];
 
-const HERO_IMAGE_ALT = 'Beautiful boutique floral arrangement';
+const HERO_IMAGE_ALT = 'Fresh flower bouquet prepared for Chiang Mai delivery';
 
 function HeroExpressDeliveryCard({
   lang,
@@ -213,7 +213,9 @@ export function Hero({
 
   const handleHowItWorks = () => {
     if (isHomeLanding) {
-      document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .getElementById('home-delivery')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     setHowToOpen(true);
@@ -262,6 +264,11 @@ export function Hero({
             className={`${introItemClass} text-sm sm:text-base text-stone-500 mt-2 sm:mt-3 mb-0 max-w-lg leading-relaxed`.trim()}
           >
             {t.deliveryMethodLine}
+          </p>
+          <p
+            className={`${introItemClass} text-xs sm:text-sm text-stone-500 mt-2 sm:mt-3 mb-0 max-w-lg leading-relaxed`.trim()}
+          >
+            {t.trustBenefitsLine}
           </p>
           <div className="hidden lg:block mt-[6px]">
             <HeroCtaSection

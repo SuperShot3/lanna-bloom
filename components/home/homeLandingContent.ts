@@ -13,9 +13,9 @@ import {
 
 export function fillDeliveryTimePlaceholders(text: string): string {
   return text
-    .replace('{cutoff}', formatMinutesAsClockTime(SAME_DAY_ORDER_CUTOFF_MIN))
-    .replace('{start}', formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN))
-    .replace('{end}', formatMinutesAsClockTime(DELIVERY_WINDOW_END_MIN));
+    .replaceAll('{cutoff}', formatMinutesAsClockTime(SAME_DAY_ORDER_CUTOFF_MIN))
+    .replaceAll('{start}', formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN))
+    .replaceAll('{end}', formatMinutesAsClockTime(DELIVERY_WINDOW_END_MIN));
 }
 
 export type HomeFaqItem = { q: string; a: string };

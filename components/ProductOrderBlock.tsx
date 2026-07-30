@@ -212,7 +212,7 @@ export function ProductOrderBlock({
           <p>{tProduct.unavailableInDeliveryArea}</p>
           <p>
             <Link
-              href={`/${lang}/flower-delivery-thailand`}
+              href={`/${lang}/delivery-areas-chiang-mai`}
               className="order-destination-change-link"
             >
               {changeAreaLabel}

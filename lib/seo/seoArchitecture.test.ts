@@ -8,8 +8,10 @@ import {
   buildLanguageAlternates,
   cleanCanonicalUrl,
   isSeoLocale,
+  nonSeoLocaleRobots,
   SEO_LOCALES,
 } from './alternates';
+import { locales } from '@/lib/i18n';
 import {
   getActiveMarkets,
   MARKETS,
@@ -60,7 +62,53 @@ function fail(msg: string): never {
 assert.equal(isSeoLocale('en'), true);
 assert.equal(isSeoLocale('th'), true);
 assert.equal(isSeoLocale('ru'), false);
+assert.equal(isSeoLocale('zh-hk'), false);
+assert.equal(isSeoLocale('zh-sg'), false);
 assert.deepEqual([...SEO_LOCALES], ['en', 'th']);
+
+// --- Thin-locale robots (layout noindex, follow) ---
+{
+  assert.equal(nonSeoLocaleRobots('en'), undefined);
+  assert.equal(nonSeoLocaleRobots('th'), undefined);
+  for (const lang of locales) {
+    if (isSeoLocale(lang)) continue;
+    const robots = nonSeoLocaleRobots(lang);
+    assert.deepEqual(
+      robots,
+      { index: false, follow: true },
+      `${lang} must be noindex, follow`
+    );
+  }
+}
+
+// --- Hreflang never includes ru / zh-* ---
+{
+  for (const pathSuffix of ['', '/about', '/catalog', '/info/delivery-policy']) {
+    const langs = buildLanguageAlternates(pathSuffix);
+    assert.deepEqual(
+      Object.keys(langs).sort(),
+      ['en', 'th', 'x-default'].sort(),
+      `hreflang keys for ${pathSuffix || '/'}`
+    );
+    assert.ok(!('ru' in langs));
+    assert.ok(!('zh-hk' in langs));
+    assert.ok(!('zh-sg' in langs));
+  }
+  const aboutRu = buildAlternates({ lang: 'ru', pathSuffix: '/about' });
+  const aboutLangs = aboutRu.languages as Record<string, string>;
+  assert.ok(!('ru' in aboutLangs));
+  assert.ok(String(aboutRu.canonical).includes('/ru/about'));
+}
+
+// --- Sitemap locales are SEO only ---
+{
+  for (const lang of SEO_LOCALES) {
+    assert.ok(isSeoLocale(lang));
+  }
+  assert.ok(!SEO_LOCALES.includes('ru' as never));
+  assert.ok(!(SEO_LOCALES as readonly string[]).includes('zh-hk'));
+  assert.ok(!(SEO_LOCALES as readonly string[]).includes('zh-sg'));
+}
 
 // --- City status rules ---
 for (const market of MARKETS) {

@@ -50,6 +50,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/flower-delivery-thailand',
+        destination: '/:lang/delivery-areas-chiang-mai',
+        permanent: true,
+      },
       { source: '/:lang(en|th|ru)/guides', destination: '/:lang/info', permanent: true },
       {
         source: '/:lang(en|th|ru)/guides/birthday-flower-gift',

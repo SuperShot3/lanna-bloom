@@ -26,13 +26,13 @@ export async function generateMetadata({
   if (!isValidLocale(params.lang)) return { title: 'Lanna Bloom' };
   const copy = getFlowerDeliveryThailandCopy(params.lang);
   const base = getBaseUrl();
-  const canonical = `${base}/${params.lang}/flower-delivery-thailand`;
+  const canonical = `${base}/${params.lang}/delivery-areas-chiang-mai`;
   return {
     title: copy.metaTitle,
     description: copy.metaDescription,
     alternates: buildAlternates({
       lang: params.lang,
-      pathSuffix: '/flower-delivery-thailand',
+      pathSuffix: '/delivery-areas-chiang-mai',
       canonical,
     }),
     openGraph: {
@@ -65,7 +65,7 @@ function AreaPills({
   );
 }
 
-export default function FlowerDeliveryThailandPage({
+export default function DeliveryAreasChiangMaiPage({
   params,
 }: {
   params: { lang: string };
@@ -81,8 +81,8 @@ export default function FlowerDeliveryThailandPage({
   return (
     <div className="guide-page">
       <div className="container">
-        <section className="guide-hero" aria-labelledby="thailand-delivery-h1">
-          <h1 id="thailand-delivery-h1" className="guide-h1">
+        <section className="guide-hero" aria-labelledby="delivery-areas-h1">
+          <h1 id="delivery-areas-h1" className="guide-h1">
             {copy.h1}
           </h1>
           <p className="guide-intro">{copy.intro}</p>
@@ -112,8 +112,8 @@ export default function FlowerDeliveryThailandPage({
           <DeliveryDistrictMap lang={lang} />
         </section>
 
-        <section className="guide-section" aria-labelledby="thailand-areas-title">
-          <h2 id="thailand-areas-title" className="popular-title text-center">
+        <section className="guide-section" aria-labelledby="delivery-coverage-title">
+          <h2 id="delivery-coverage-title" className="popular-title text-center">
             {copy.areasTitle}
           </h2>
 

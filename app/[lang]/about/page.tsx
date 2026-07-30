@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { aboutPageCopy, DBD_BANNER_URL, DBD_VERIFY_URL } from '@/lib/aboutPageCopy';
 import type { AboutRichParagraph, AboutSegment } from '@/lib/aboutPageCopy';
 import { isValidLocale, type Locale } from '@/lib/i18n';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { AboutNewsletterSignup } from './AboutNewsletterSignup';
 import { StorefrontIcon } from '@/components/icons';
 
@@ -21,10 +22,7 @@ export async function generateMetadata({ params }: { params: { lang: string } })
   return {
     title: c.metaTitle,
     description: c.metaDescription,
-    alternates: {
-      canonical: `/${lang}/about`,
-      languages: { en: '/en/about', th: '/th/about', ru: '/ru/about' },
-    },
+    alternates: buildAlternates({ lang, pathSuffix: '/about' }),
   };
 }
 

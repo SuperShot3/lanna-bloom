@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ViewportSync } from '@/components/ViewportSync';
 import { CartProvider } from '@/contexts/CartContext';
@@ -5,9 +6,21 @@ import { CheckoutStickyHeaderProvider } from '@/contexts/CheckoutStickyHeaderCon
 import { FlowerFilterSheetOpenProvider } from '@/contexts/FlowerFilterSheetOpenContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { CurrencyDisplayProvider } from '@/contexts/CurrencyDisplayContext';
-import { locales, isValidLocale, type Locale } from '@/lib/i18n';
+import { isValidLocale, type Locale } from '@/lib/i18n';
+import { nonSeoLocaleRobots } from '@/lib/seo/alternates';
 import { MainSiteChrome } from '@/components/MainSiteChrome';
 import { FloatingFavoritesBadge } from '@/components/FloatingFavoritesBadge';
+
+/** Thin locales (ru / zh-*): noindex, follow. en/th: omit robots entirely. */
+export async function generateMetadata({
+  params,
+}: {
+  params: { lang: string };
+}): Promise<Metadata> {
+  if (!isValidLocale(params.lang)) return {};
+  const robots = nonSeoLocaleRobots(params.lang);
+  return robots ? { robots } : {};
+}
 
 /**
  * Lang layout: Header → main (page content) → Footer.

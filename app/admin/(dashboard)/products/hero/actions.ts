@@ -83,7 +83,7 @@ export async function uploadMainHeroImageAction(formData: FormData): Promise<Act
   if (gate.error) return gate;
 
   const file = formData.get('file');
-  const alt = String(formData.get('alt') || 'Homepage hero').trim() || 'Homepage hero';
+  const alt = String(formData.get('alt') || 'Fresh flower bouquet prepared for Chiang Mai delivery').trim() || 'Fresh flower bouquet prepared for Chiang Mai delivery';
   if (!file || !(file instanceof File)) return { error: 'Image file is required' };
 
   try {
@@ -124,7 +124,9 @@ export async function uploadCarouselHeroImagesBulkAction(formData: FormData): Pr
     return { error: `You can upload up to ${HERO_BULK_UPLOAD_MAX} images at once` };
   }
 
-  const alt = String(formData.get('alt') || 'Hero carousel').trim() || 'Hero carousel';
+  const alt =
+    String(formData.get('alt') || 'Flower bouquet available for Chiang Mai delivery').trim() ||
+    'Flower bouquet available for Chiang Mai delivery';
 
   try {
     const { heroCarouselImages } = await getCatalogSiteSettingsRowForAdmin();
@@ -160,7 +162,9 @@ export async function uploadCarouselHeroImageAction(formData: FormData): Promise
   if (gate.error) return gate;
 
   const file = formData.get('file');
-  const alt = String(formData.get('alt') || 'Hero carousel').trim() || 'Hero carousel';
+  const alt =
+    String(formData.get('alt') || 'Flower bouquet available for Chiang Mai delivery').trim() ||
+    'Flower bouquet available for Chiang Mai delivery';
   if (!file || !(file instanceof File)) return { error: 'Image file is required' };
 
   try {
@@ -237,7 +241,7 @@ export async function editCarouselHeroFramingAction(formData: FormData): Promise
     const record = await uploadHeroWebp(
       file,
       newStoragePath,
-      existing.alt ?? 'Hero carousel',
+      existing.alt ?? 'Flower bouquet available for Chiang Mai delivery',
       existing.sort_order ?? 0
     );
     const next = heroCarouselImages.map((img) =>
@@ -264,7 +268,7 @@ export async function editMainHeroFramingAction(formData: FormData): Promise<Act
     if (!heroImage?.storage_path) return { error: 'No fallback hero image set' };
 
     const storagePath = `site-settings/default/hero-${Date.now()}.webp`;
-    const alt = heroImage.alt?.trim() || 'Homepage hero';
+    const alt = heroImage.alt?.trim() || 'Fresh flower bouquet prepared for Chiang Mai delivery';
     const record = await uploadHeroWebp(file, storagePath, alt, 0);
     await upsertCatalogSiteSettings({ heroImage: record });
     revalidateHeroPaths();

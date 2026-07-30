@@ -186,8 +186,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     },
     eyebrow: L('Same-day in Chiang Mai', 'จัดส่งวันเดียวในเชียงใหม่'),
     directAnswer: L(
-      'Yes — orders placed before 20:00 Chiang Mai time are often eligible for same-day flower delivery across Chiang Mai, subject to bouquet availability and delivery capacity. If same-day delivery is not possible, we will contact you to confirm the next available option.',
-      'ได้ — ออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ มักมีโอกาสจัดส่งดอกไม้ภายในวันได้ทั่วเชียงใหม่ โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด'
+      'Yes — same-day orders are accepted until 20:00 Thailand time across Chiang Mai, subject to bouquet availability and delivery capacity. Delivery may take place after 20:00. If same-day delivery is not possible, we will contact you to confirm the next available option.',
+      'ได้ — รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทยทั่วเชียงใหม่ โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด'
     ),
     benefits: [
       L('Same-day delivery during 09:00–20:00', 'จัดส่งวันเดียวช่วง 09:00–20:00'),
@@ -202,8 +202,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     showPaymentBadges: false,
     showSameDayBadge: true,
     serviceHoursNote: L(
-      'Service hours today: 09:00–20:00 · Orders placed before 20:00 are often eligible for same-day',
-      'เวลาให้บริการวันนี้: 09:00–20:00 · ออเดอร์ก่อน 20:00 น. มักมีโอกาสจัดส่งภายในวัน'
+      'Service hours today: 09:00–20:00 · Same-day orders accepted until 20:00 Thailand time (delivery may finish after 20:00)',
+      'เวลาให้บริการวันนี้: 09:00–20:00 · รับออเดอร์วันเดียวถึง 20:00 น. ตามเวลาไทย (อาจจัดส่งหลัง 20:00 น.)'
     ),
     faqTitle: L('Frequently asked questions', 'คำถามที่พบบ่อย'),
     faq: [
@@ -217,8 +217,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       {
         q: L('Is there a cut-off time for same-day delivery?', 'มีเวลาตัดรอบสำหรับจัดส่งวันเดียวไหม?'),
         a: L(
-          'We deliver 09:00–20:00. Orders placed before 20:00 Chiang Mai time are often eligible for same-day delivery when flowers and capacity allow. If same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.',
-          'เราจัดส่งเวลา 09:00–20:00 ออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ มักมีโอกาสจัดส่งภายในวันเมื่อดอกไม้และคิวจัดส่งพร้อม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป'
+          'Same-day orders are accepted until 20:00 Thailand time, subject to flower and delivery availability. Delivery may take place after 20:00. Working delivery hours are 09:00–20:00; if same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.',
+          'รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และการจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ เวลาทำการจัดส่งคือ 09:00–20:00 หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป'
         ),
       },
       {

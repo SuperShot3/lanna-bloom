@@ -58,10 +58,10 @@ export const articles: ArticleMeta[] = [
     slug: 'thai-flower-names-secret-messages',
     title: 'Thai Flower Names That Sound Like Secret Messages',
     excerpt:
-      'Discover five Thai flower names with beautiful meanings—from Dok Rak and Baan Mai Roo Roi to jasmine and marigold—and how to turn them into a personal gift message.',
+      'Five Thai flower names with beautiful meanings—love, endurance, remembrance, Mother’s Day jasmine, and ceremonial marigolds—plus Chiang Mai tips for markets and gift cards.',
     titleTh: 'ชื่อดอกไม้ไทยที่ฟังเหมือนข้อความลับ',
     excerptTh:
-      'รู้จักชื่อดอกไม้ไทยห้าดอกที่ความหมายสวยงาม—จากดอกรักและบานไม่รู้โรย ไปจนถึงมะลิและดาวเรือง—พร้อมไอเดียข้อความสั้น ๆ ให้ของขวัญดูเป็นส่วนตัว',
+      'ชื่อดอกไม้ไทยห้าดอกที่ความหมายสวยงาม—ความรัก ความยืนยาว ความคิดถึง มะลิวันแม่ และดาวเรืองในพิธี—พร้อมเคล็ดลับตลาดเชียงใหม่และไอเดียข้อความบนการ์ด',
     publishedAt: '2026-07-27T00:00:00.000Z',
     featured: false,
     cover: {
@@ -339,9 +339,9 @@ export const articles: ArticleMeta[] = [
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
       {
-        label: 'Flower delivery Thailand',
-        labelTh: 'ส่งดอกไม้ทั่วประเทศไทย',
-        href: '/flower-delivery-thailand',
+        label: 'Chiang Mai areas & fees',
+        labelTh: 'พื้นที่และค่าส่งเชียงใหม่',
+        href: '/delivery-areas-chiang-mai',
       },
       { label: 'Flower delivery Chiang Mai', labelTh: 'ส่งดอกไม้เชียงใหม่', href: '/' },
       {

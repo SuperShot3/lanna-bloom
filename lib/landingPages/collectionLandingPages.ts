@@ -171,7 +171,7 @@ const rosesHubCopy = withLocaleFallback({
     intro:
       'Choose white, pink, or red rose bouquets for anniversaries, birthdays, romance, and thoughtful gifts—delivered across Chiang Mai.',
     primaryCta: 'Shop Roses',
-    deliveryNote: 'Orders placed before 20:00 are often eligible for same-day delivery, subject to availability and delivery capacity.',
+    deliveryNote: 'Same-day orders are accepted until 20:00 Thailand time, subject to availability and delivery capacity. Delivery may take place after 20:00.',
     addOnsTitle: 'Also perfect with your bouquet',
     addOnsIntro: 'Complete the gift with available teddy bears, balloons, or gift sets from our product catalog.',
     trustItems: trustItems.en,
@@ -219,7 +219,7 @@ export const roseColorLandings = [
         intro:
           'Elegant white rose bouquets for anniversaries, congratulations, sympathy, and thoughtful gifts across Chiang Mai.',
         primaryCta: 'Shop White Roses',
-        deliveryNote: 'Orders placed before 20:00 are often eligible for same-day delivery, subject to availability and delivery capacity.',
+        deliveryNote: 'Same-day orders are accepted until 20:00 Thailand time, subject to availability and delivery capacity. Delivery may take place after 20:00.',
         collectionTitle: 'White Roses Collection',
         collectionIntro:
           'A focused selection of white rose bouquets from our Sanity catalog, filtered for rose type and white color.',
@@ -278,7 +278,7 @@ export const roseColorLandings = [
         intro:
           'Sweet pink rose bouquets for birthdays, romance, thank-you gifts, and gentle celebrations delivered in Chiang Mai.',
         primaryCta: 'Shop Pink Roses',
-        deliveryNote: 'Orders placed before 20:00 are often eligible for same-day delivery, subject to availability and delivery capacity.',
+        deliveryNote: 'Same-day orders are accepted until 20:00 Thailand time, subject to availability and delivery capacity. Delivery may take place after 20:00.',
         collectionTitle: 'Pink Roses Collection',
         collectionIntro:
           'A focused selection of pink rose bouquets from our Sanity catalog, filtered for rose type and pink color.',
@@ -337,7 +337,7 @@ export const roseColorLandings = [
         intro:
           'Classic red rose bouquets for anniversaries, proposals, romantic surprises, and meaningful gifts across Chiang Mai.',
         primaryCta: 'Shop Red Roses',
-        deliveryNote: 'Orders placed before 20:00 are often eligible for same-day delivery, subject to availability and delivery capacity.',
+        deliveryNote: 'Same-day orders are accepted until 20:00 Thailand time, subject to availability and delivery capacity. Delivery may take place after 20:00.',
         collectionTitle: 'Red Roses Collection',
         collectionIntro:
           'A focused selection of red rose bouquets from our Sanity catalog, filtered for rose type and red color.',
@@ -438,7 +438,7 @@ const orchidsHubCopy = withLocaleFallback({
     intro:
       'Fresh orchid arrangements for celebrations, respect, and thoughtful gifts—delivered across Chiang Mai. Our catalog includes popular types such as Phalaenopsis (moth orchids), Dendrobium, Cymbidium, and other varieties partners arrange by season.',
     primaryCta: 'Shop Orchids',
-    deliveryNote: 'Orders placed before 20:00 are often eligible for same-day delivery, subject to availability and delivery capacity.',
+    deliveryNote: 'Same-day orders are accepted until 20:00 Thailand time, subject to availability and delivery capacity. Delivery may take place after 20:00.',
     addOnsTitle: 'Also perfect with your bouquet',
     addOnsIntro: 'Complete the gift with available teddy bears, balloons, or gift sets from our product catalog.',
     trustItems: trustItems.en,

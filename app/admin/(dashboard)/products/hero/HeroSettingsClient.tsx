@@ -162,7 +162,7 @@ export function HeroSettingsClient({ settings }: Props) {
     setLoading('carousel-bulk');
 
     const formData = new FormData();
-    formData.set('alt', 'Hero carousel');
+    formData.set('alt', 'Flower bouquet available for Chiang Mai delivery');
     for (const file of files) {
       formData.append('files', file);
     }
@@ -183,7 +183,7 @@ export function HeroSettingsClient({ settings }: Props) {
     if (crop.mode === 'upload-carousel') {
       const formData = new FormData();
       formData.set('file', file);
-      formData.set('alt', 'Hero carousel');
+      formData.set('alt', 'Flower bouquet available for Chiang Mai delivery');
       await runAction('carousel-upload', () => uploadCarouselHeroImageAction(formData));
       return;
     }
@@ -191,7 +191,7 @@ export function HeroSettingsClient({ settings }: Props) {
     if (crop.mode === 'upload-main') {
       const formData = new FormData();
       formData.set('file', file);
-      formData.set('alt', 'Homepage hero');
+      formData.set('alt', 'Fresh flower bouquet prepared for Chiang Mai delivery');
       await runAction('main-upload', () => uploadMainHeroImageAction(formData));
       return;
     }
