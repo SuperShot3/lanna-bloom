@@ -8,6 +8,7 @@ export { HomeIcon } from './HomeIcon';
 export { FacebookIcon } from './FacebookIcon';
 export { InstagramIcon } from './InstagramIcon';
 export { TikTokIcon } from './TikTokIcon';
+export { YouTubeIcon } from './YouTubeIcon';
 export { ShareIcon } from './ShareIcon';
 export { SearchIcon } from './SearchIcon';
 export { CatalogIcon } from './CatalogIcon';

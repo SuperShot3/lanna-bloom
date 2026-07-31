@@ -1,10 +1,11 @@
 'use client';
 
-import { FacebookIcon, InstagramIcon, TikTokIcon } from './icons';
+import { FacebookIcon, InstagramIcon, TikTokIcon, YouTubeIcon } from './icons';
 
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61587782069439';
 const INSTAGRAM_PAGE_URL = 'https://www.instagram.com/lannabloomchiangmai/';
 const TIKTOK_PAGE_URL = 'https://www.tiktok.com/@lannabloom_th';
+const YOUTUBE_PAGE_URL = 'https://www.youtube.com/@Lannabloom-delivery';
 
 export function SocialLinks() {
   return (
@@ -39,6 +40,16 @@ export function SocialLinks() {
       >
         <TikTokIcon size={24} className="social-icon" />
       </a>
+      <a
+        href={YOUTUBE_PAGE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="social-link social-link-youtube"
+        aria-label="Visit our YouTube channel"
+        title="YouTube"
+      >
+        <YouTubeIcon size={24} className="social-icon" />
+      </a>
       <style jsx>{`
         .social-links {
           display: flex;
@@ -61,6 +72,9 @@ export function SocialLinks() {
         }
         .social-link-tiktok {
           color: #010101;
+        }
+        .social-link-youtube {
+          color: #ff0000;
         }
         .social-link:hover {
           background: var(--accent-soft);
