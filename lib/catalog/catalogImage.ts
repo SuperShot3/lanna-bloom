@@ -3,6 +3,10 @@
 export const CATALOG_CARD_IMAGE_SIZES =
   '(max-width: 600px) 50vw, (max-width: 900px) 50vw, 33vw';
 
+/** Homepage hero carousel cards: 272 / 288 / 336 / 384 CSS px (not full viewport). */
+export const HERO_CAROUSEL_IMAGE_SIZES =
+  '(max-width: 640px) 272px, (max-width: 768px) 288px, (max-width: 1024px) 336px, 384px';
+
 export const CATALOG_PDP_HERO_SIZES = '(max-width: 600px) 100vw, 50vw';
 
 export const CATALOG_PDP_LIGHTBOX_SIZES = '100vw';

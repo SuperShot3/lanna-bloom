@@ -5,7 +5,10 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
+import {
+  catalogImageUnoptimized,
+  HERO_CAROUSEL_IMAGE_SIZES,
+} from '@/lib/catalog/catalogImage';
 
 export type HeroCarouselImage = { src: string; alt: string };
 
@@ -203,8 +206,9 @@ export function HeroFeatureCarousel({
                       'object-cover pointer-events-none',
                       isCenter && !prefersReducedMotion && 'hero-carousel-kenburns'
                     )}
-                    priority={isCenter || isAdjacent}
-                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    priority={isCenter}
+                    quality={70}
+                    sizes={HERO_CAROUSEL_IMAGE_SIZES}
                     unoptimized={catalogImageUnoptimized(image.src)}
                   />
                   {/* Soft green vignette at the base of the featured photo */}

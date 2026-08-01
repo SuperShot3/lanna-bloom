@@ -64,11 +64,6 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
             </li>
             <li>
               {isTh
-                ? 'Microsoft Clarity — ใช้เพื่อดูฮีตแมปและการบันทึกเซสชันแบบไม่แสดงรหัสผ่านหรือข้อมูลบัตร เพื่อช่วยปรับปรุงประสบการณ์การสั่งซื้อ'
-                : 'Microsoft Clarity — used for heatmaps and session recordings without passwords or card details, helping us improve the ordering experience.'}
-            </li>
-            <li>
-              {isTh
                 ? 'การจัดเก็บตะกร้าใน localStorage (จำเป็นต่อการใช้งาน)'
                 : 'Cart storage in localStorage (essential for functionality).'}
             </li>

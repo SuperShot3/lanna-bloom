@@ -10,6 +10,6 @@ export const GOOGLE_BUSINESS_RATING = Number(
 );
 
 export const GOOGLE_BUSINESS_REVIEW_COUNT = Number(
-  process.env.NEXT_PUBLIC_GOOGLE_BUSINESS_REVIEW_COUNT ?? '24'
+  process.env.NEXT_PUBLIC_GOOGLE_BUSINESS_REVIEW_COUNT ?? '26'
 );
   

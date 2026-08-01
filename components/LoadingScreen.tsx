@@ -95,9 +95,9 @@ export function LoadingScreen() {
             src="/logo_full_master.png"
             alt="Lanna Bloom"
             width={120}
-            height={100}
+            height={120}
+            sizes="120px"
             priority
-            unoptimized
           />
         </div>
         <div className="loading-screen-spinner">

@@ -3,7 +3,6 @@ import { ViewTransitions } from 'next-view-transitions';
 import { DocumentLangSync } from '@/components/DocumentLangSync';
 import { AhrefsAnalytics } from '@/components/AhrefsAnalytics';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
-import { MicrosoftClarity } from '@/components/MicrosoftClarity';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { WebVitalsReporter } from '@/components/WebVitalsReporter';
@@ -100,7 +99,6 @@ export default function RootLayout({
             <GoogleAnalytics />
             <WebVitalsReporter />
             <SpeedInsights />
-            <MicrosoftClarity />
             <AhrefsAnalytics />
             <ViewTransitions>
               {children}
