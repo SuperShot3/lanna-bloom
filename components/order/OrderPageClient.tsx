@@ -393,7 +393,7 @@ export function OrderPageClient({
           >
             <Image
               src="/logo_icon_64.png"
-              alt=""
+              alt="Lanna Bloom logo"
               width={40}
               height={40}
               className="order-redesign-logo-img"

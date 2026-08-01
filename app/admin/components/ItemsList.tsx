@@ -105,12 +105,6 @@ export function ItemsList({ items, summary, embedded }: ItemsListProps) {
                     {getItemTypeLabel(item.item_type)}
                   </span>
                 </div>
-                {item.addOns?.cardMessage?.trim() && (
-                  <div className="admin-item-card-text">
-                    <span className="admin-addon-label">Card text:</span>
-                    <span className="admin-addon-message">&quot;{item.addOns.cardMessage.trim()}&quot;</span>
-                  </div>
-                )}
                 {item.addOns?.balloonText?.trim() && (
                   <div className="admin-item-card-text">
                     <span className="admin-addon-label">Balloon text:</span>

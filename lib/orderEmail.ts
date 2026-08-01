@@ -17,6 +17,20 @@ import {
 import { buildOrderTemplateVariables } from '@/lib/email/variablesFromOrder';
 import { getDefaultSocialLinks, getEmailBrandHeaderHtml, getSocialFooterHtml } from '@/lib/email/socialFooter';
 import type { Locale } from '@/lib/i18n';
+import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
+
+function formatGiftCardsHtml(order: Order): string {
+  const messages = getOrderGiftCardMessages(order);
+  if (messages.length === 0) return '';
+  const lines = messages
+    .map((m, i) =>
+      messages.length > 1
+        ? `• Card ${i + 1}: ${escapeHtml(m)}`
+        : `• ${escapeHtml(m)}`
+    )
+    .join('<br/>');
+  return `<h2 style="font-size: 1rem;">Gift card message${messages.length > 1 ? 's' : ''}</h2><p>${lines}</p>`;
+}
 
 /** Primary + CC addresses for order admin emails, deduped. */
 function getOrderNotifyRecipientList(): string[] {
@@ -102,7 +116,6 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
       if (isSpecificWrappingPaperColor(i.addOns?.paperColor)) {
         line += ` (Wrapping paper: ${escapeHtml(getWrappingPaperColorLabel(i.addOns.paperColor, 'en'))})`;
       }
-      if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
       if (i.addOns?.balloonText) line += ` — Balloon text: ${escapeHtml(i.addOns.balloonText)}`;
       return line;
     })
@@ -114,6 +127,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
     typeof order.lineId === 'string' && order.lineId.trim()
       ? `<br/>LINE ID: ${escapeHtml(order.lineId.trim())}`
       : '';
+  const giftCardsHtml = formatGiftCardsHtml(order);
 
   const html = `
 <!DOCTYPE html>
@@ -152,6 +166,7 @@ export async function sendOrderNotificationEmail(order: Order, detailsUrl: strin
 
   <h2 style="font-size: 1rem;">Items</h2>
   <p>${itemsList}</p>
+  ${giftCardsHtml}
 
   <h2 style="font-size: 1rem;">Price summary</h2>
   <p>Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
@@ -201,7 +216,6 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
       if (isSpecificWrappingPaperColor(i.addOns?.paperColor)) {
         line += ` (Wrapping paper: ${escapeHtml(getWrappingPaperColorLabel(i.addOns.paperColor, 'en'))})`;
       }
-      if (i.addOns?.cardMessage) line += ` — Card: ${escapeHtml(i.addOns.cardMessage)}`;
       if (i.addOns?.balloonText) line += ` — Balloon text: ${escapeHtml(i.addOns.balloonText)}`;
       return line;
     })
@@ -217,6 +231,7 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
   const safeDetailsUrl = escapeHtml(detailsUrl);
   const safeDeliveryDate = escapeHtml(order.delivery.preferredTimeSlot || '—');
   const safeDeliveryAddress = escapeHtml(order.delivery.address);
+  const giftCardsHtml = formatGiftCardsHtml(order);
 
   const html = `
 <!DOCTYPE html>
@@ -249,6 +264,7 @@ export async function sendCustomerConfirmationEmail(order: Order, detailsUrl: st
     <div style="background: #faf7ef; border: 1px solid #eadfcd; border-radius: 10px; padding: 14px 16px; margin: 20px 0;">
       <h2 style="font-size: 16px; margin: 0 0 8px 0; color: #2c2415;">Order summary</h2>
       <p style="margin: 0 0 12px 0;">${itemsList}</p>
+      ${giftCardsHtml}
       <p style="margin: 0;">Bouquet: ฿${order.pricing.itemsTotal.toLocaleString()}<br/>
       Delivery fee: ฿${order.pricing.deliveryFee.toLocaleString()}${discountLine}<br/>
       <strong>Total: ฿${order.pricing.grandTotal.toLocaleString()}</strong></p>

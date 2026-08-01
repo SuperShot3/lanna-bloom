@@ -75,8 +75,10 @@ export function CartCheckoutView({
   onSurpriseDeliveryChange,
   orderingForSomeoneElse,
   onOrderingForSomeoneElseChange,
-  cardMessage,
-  onCardMessageChange,
+  giftCardMessages,
+  onGiftCardMessageChangeAt,
+  onAddGiftCardMessage,
+  onRemoveGiftCardMessage,
   noCardMessage,
   onNoCardMessageChange,
   senderFields,
@@ -135,8 +137,10 @@ export function CartCheckoutView({
   onSurpriseDeliveryChange: (v: boolean) => void;
   orderingForSomeoneElse: boolean;
   onOrderingForSomeoneElseChange: (v: boolean) => void;
-  cardMessage: string;
-  onCardMessageChange: (v: string) => void;
+  giftCardMessages: string[];
+  onGiftCardMessageChangeAt: (index: number, v: string) => void;
+  onAddGiftCardMessage: () => void;
+  onRemoveGiftCardMessage: (index: number) => void;
   noCardMessage: boolean;
   onNoCardMessageChange: (v: boolean) => void;
   senderFields: ReactNode;
@@ -324,8 +328,10 @@ export function CartCheckoutView({
         onSurpriseDeliveryChange={onSurpriseDeliveryChange}
         orderingForSomeoneElse={orderingForSomeoneElse}
         onOrderingForSomeoneElseChange={onOrderingForSomeoneElseChange}
-        cardMessage={cardMessage}
-        onCardMessageChange={onCardMessageChange}
+        giftCardMessages={giftCardMessages}
+        onGiftCardMessageChangeAt={onGiftCardMessageChangeAt}
+        onAddGiftCardMessage={onAddGiftCardMessage}
+        onRemoveGiftCardMessage={onRemoveGiftCardMessage}
         noCardMessage={noCardMessage}
         onNoCardMessageChange={onNoCardMessageChange}
         senderFields={senderFields}

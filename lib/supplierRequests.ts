@@ -11,6 +11,7 @@ import {
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
 import { zoneLabel } from '@/lib/delivery/zones';
+import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
 
 function normalizeHttpsBase(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '');
@@ -173,11 +174,14 @@ export interface SupplierPickupSnapshot {
 }
 
 export interface SupplierMessageCardSnapshot {
+  /** Order-level gift card messages (preferred). */
+  giftCardMessages?: string[];
   cards: Array<{
     itemTitle: string;
     cardType?: string | null;
     wrappingOption?: string | null;
     paperColor?: string | null;
+    /** @deprecated Prefer giftCardMessages; kept for legacy snapshots. */
     cardMessage?: string | null;
     balloonText?: string | null;
   }>;
@@ -377,12 +381,19 @@ export function buildSupplierSnapshots(
     preparation_snapshot: preparationSnapshot,
     pickup_snapshot: pickupSnapshot,
     message_card_snapshot: {
+      giftCardMessages: getOrderGiftCardMessages({
+        giftCardMessages: orderJson?.giftCardMessages,
+        items: items.map((item) => ({
+          addOns: { cardMessage: item.addOns?.cardMessage },
+        })),
+        customOrderDetails,
+      }),
       cards: items.map((item, index) => ({
         itemTitle: nullIfBlank(item.bouquet_title) ?? `รายการที่ ${index + 1}`,
         cardType: nullIfBlank(item.addOns?.cardType),
         wrappingOption: nullIfBlank(item.addOns?.wrappingOption),
         paperColor: nullIfBlank(item.addOns?.paperColor),
-        cardMessage: nullIfBlank(item.addOns?.cardMessage),
+        cardMessage: null,
         balloonText: nullIfBlank(item.addOns?.balloonText),
       })),
       customGreetingCard: nullIfBlank(customOrderDetails?.greetingCard),

@@ -14,7 +14,7 @@ export function useCheckoutRecoveryImport(
   applyForm: (form: RecoveredCartForm) => void
 ) {
   const router = useRouter();
-  const { items, hydrated, replaceItems } = useCart();
+  const { items, hydrated, replaceItems, setOrderGiftCardMessages } = useCart();
   const { showToast } = useToast();
   const t = translations[lang].cart;
   const importedRef = useRef(false);
@@ -40,6 +40,7 @@ export function useCheckoutRecoveryImport(
         const data = (await res.json()) as {
           items?: CartItem[];
           form?: RecoveredCartForm;
+          giftCardMessages?: string[];
         };
         const newItems = Array.isArray(data.items) ? data.items : [];
         const form = data.form;
@@ -60,6 +61,9 @@ export function useCheckoutRecoveryImport(
         }
 
         replaceItems(newItems);
+        if (Array.isArray(data.giftCardMessages)) {
+          setOrderGiftCardMessages(data.giftCardMessages);
+        }
         applyForm(form);
         showToast(t.checkoutRecoveryLoaded);
         router.replace(`/${lang}/cart`);
@@ -68,5 +72,15 @@ export function useCheckoutRecoveryImport(
         router.replace(`/${lang}/cart`);
       }
     })();
-  }, [applyForm, hydrated, items.length, lang, replaceItems, router, showToast, t]);
+  }, [
+    applyForm,
+    hydrated,
+    items.length,
+    lang,
+    replaceItems,
+    setOrderGiftCardMessages,
+    router,
+    showToast,
+    t,
+  ]);
 }

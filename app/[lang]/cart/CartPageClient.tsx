@@ -601,7 +601,12 @@ function cartItemsToAnalytics(
 
 export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, count: totalItemCount, removeItem, updateItem, clearCart } = useCart();
-  const { giftCardMessage, setGiftCardMessage } = useOrderGiftCardMessage();
+  const {
+    giftCardMessages,
+    setGiftCardMessageAt,
+    addGiftCardMessage,
+    removeGiftCardMessage,
+  } = useOrderGiftCardMessage();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
@@ -1351,6 +1356,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         recipientPhone: isOrderingForSomeoneElse ? recipientPhoneDigits : undefined,
         recipientPhoneCountryCode: isOrderingForSomeoneElse ? recipientCountryCode : undefined,
         surpriseDelivery: isOrderingForSomeoneElse ? surpriseDelivery : false,
+        giftCardMessages: noCardMessage ? [] : giftCardMessages,
         ...readCheckoutAnalyticsContext(),
       });
 
@@ -1953,8 +1959,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onSurpriseDeliveryChange={setSurpriseDelivery}
           orderingForSomeoneElse={isOrderingForSomeoneElse}
           onOrderingForSomeoneElseChange={setIsOrderingForSomeoneElse}
-          cardMessage={giftCardMessage}
-          onCardMessageChange={setGiftCardMessage}
+          giftCardMessages={giftCardMessages}
+          onGiftCardMessageChangeAt={setGiftCardMessageAt}
+          onAddGiftCardMessage={addGiftCardMessage}
+          onRemoveGiftCardMessage={removeGiftCardMessage}
           noCardMessage={noCardMessage}
           onNoCardMessageChange={setNoCardMessage}
           senderFields={contactFormContent('', { premium: true })}

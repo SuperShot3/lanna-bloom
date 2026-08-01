@@ -544,17 +544,29 @@ export function SupplierResponseForm({
             </p>
           </div>
           <div className="supplier-task-grid-col" aria-label={t.sectionMessage}>
-            {messageCard.cards.some(
-              (card) =>
-                card.cardMessage ||
-                card.balloonText ||
-                card.wrappingOption ||
-                isSpecificWrappingPaperColor(card.paperColor)
-            ) || messageCard.customGreetingCard ? (
+            {((messageCard.giftCardMessages?.length ?? 0) > 0 ||
+              messageCard.cards.some(
+                (card) =>
+                  card.cardMessage ||
+                  card.balloonText ||
+                  card.wrappingOption ||
+                  isSpecificWrappingPaperColor(card.paperColor)
+              ) ||
+              messageCard.customGreetingCard) ? (
               <>
+                {(messageCard.giftCardMessages ?? []).map((msg, index) => (
+                  <p
+                    key={`gift-card-${index}`}
+                    className="supplier-task-message-line"
+                  >
+                    {(messageCard.giftCardMessages?.length ?? 0) > 1
+                      ? `${t.card} ${index + 1}: ${msg}`
+                      : `${t.card}: ${msg}`}
+                  </p>
+                ))}
                 {messageCard.cards.map((card, index) => (
                   <div key={`${card.itemTitle}:${index}`} className="supplier-task-note supplier-task-message-item">
-                    {card.cardMessage && (
+                    {!messageCard.giftCardMessages?.length && card.cardMessage && (
                       <p className="supplier-task-message-line">
                         {t.card}: {card.cardMessage}
                       </p>
@@ -576,7 +588,8 @@ export function SupplierResponseForm({
                     )}
                   </div>
                 ))}
-                {messageCard.customGreetingCard && (
+                {messageCard.customGreetingCard &&
+                  !(messageCard.giftCardMessages?.length) && (
                   <p className="supplier-task-message-line">
                     {t.customCard}: {messageCard.customGreetingCard}
                   </p>

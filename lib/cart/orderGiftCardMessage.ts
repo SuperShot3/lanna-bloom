@@ -1,33 +1,36 @@
-import type { CartItem } from '@/contexts/CartContext';
-import { clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
+import {
+  GIFT_CARD_MESSAGES_MAX_COUNT,
+  clipGiftCardMessage,
+  normalizeGiftCardMessagesForPersist,
+  normalizeGiftCardMessagesForUi,
+} from '@/lib/orders/giftCardMessages';
 
-/** Index of the first bouquet line — checkout gift message UI uses this line. */
-export function findPrimaryBouquetIndex(items: CartItem[]): number {
+export {
+  GIFT_CARD_MESSAGES_MAX_COUNT,
+  clipGiftCardMessage,
+  normalizeGiftCardMessagesForPersist,
+  normalizeGiftCardMessagesForUi,
+};
+
+/** Index of the first bouquet line — gift message UI is shown when a bouquet exists. */
+export function findPrimaryBouquetIndex(
+  items: Array<{ itemType?: string }>
+): number {
   return items.findIndex((i) => (i.itemType ?? 'bouquet') === 'bouquet');
 }
 
-/** Read the order-level gift card message (primary bouquet line, else persisted draft). */
-export function readOrderGiftCardMessage(items: CartItem[], draft: string): string {
-  const idx = findPrimaryBouquetIndex(items);
-  if (idx >= 0) {
-    return items[idx].addOns.cardMessage ?? '';
-  }
-  return draft;
-}
-
+/** @deprecated Use normalizeGiftCardMessagesForUi / cart draft array. */
 export function clipOrderGiftCardMessage(message: string): string {
-  return clipCheckoutField(message, 'giftCardMessage');
+  return clipGiftCardMessage(message);
 }
 
-/** Apply message to every bouquet cart line (one card message per order). */
-export function applyOrderGiftCardMessageToItems(
-  items: CartItem[],
-  message: string
-): CartItem[] {
-  const clipped = clipOrderGiftCardMessage(message);
+/** Clear per-item card messages (order-level messages live on cart draft / order.giftCardMessages). */
+export function clearItemCardMessages<T extends { itemType?: string; addOns: { cardMessage?: string } }>(
+  items: T[]
+): T[] {
   return items.map((item) =>
     (item.itemType ?? 'bouquet') === 'bouquet'
-      ? { ...item, addOns: { ...item.addOns, cardMessage: clipped } }
+      ? { ...item, addOns: { ...item.addOns, cardMessage: '' } }
       : item
   );
 }

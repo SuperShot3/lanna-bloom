@@ -14,11 +14,13 @@ import type { Locale } from '@/lib/i18n';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getOrderBySubmissionToken } from '@/lib/orders';
 import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
+import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
 
 export type CheckoutRecoveryPayload = {
   items: CartItem[];
   form: RecoveredCartForm;
   locale: Locale;
+  giftCardMessages: string[];
 };
 
 export function normalizeRecoveryToken(raw: string | null): string | null {
@@ -91,7 +93,7 @@ function orderItemToCartItem(item: OrderItem): CartItem {
     quantity: 1,
     addOns: {
       cardType: mapCardToCart(item.addOns?.cardType ?? null),
-      cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+      cardMessage: '',
       wrappingPreference: mapWrappingToCart(item.addOns?.wrappingOption),
       paperColor: isSpecificWrappingPaperColor(item.addOns?.paperColor)
         ? item.addOns.paperColor
@@ -212,5 +214,6 @@ export async function getCheckoutRecoveryByToken(
     items,
     form: orderPayloadToCartForm(payload),
     locale,
+    giftCardMessages: getOrderGiftCardMessages(payload),
   };
 }

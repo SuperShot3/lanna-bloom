@@ -18,6 +18,7 @@ import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import { normalizeLineUserId } from '@/lib/lineUserId';
 import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
+import { normalizeGiftCardMessagesForPersist } from '@/lib/orders/giftCardMessages';
 
 function mapWrappingForStripe(
   pref: CartItem['addOns']['wrappingPreference']
@@ -59,10 +60,7 @@ export function cartItemsToStripeCheckoutItems(cartItems: CartItem[]): unknown[]
         size: item.size.optionId,
         addOns: {
           cardType,
-          cardMessage: clipCheckoutField(
-            item.addOns.cardMessage?.trim() ?? '',
-            'giftCardMessage'
-          ),
+          cardMessage: '',
           wrappingOption,
           ...(balloonText && { balloonText }),
           ...(paperColor && { paperColor }),
@@ -104,6 +102,8 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
+  /** Order-level gift card messages (max 3). */
+  giftCardMessages?: string[];
 }): Record<string, unknown> {
   const {
     lang,
@@ -129,6 +129,7 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     gclid,
     gbraid,
     wbraid,
+    giftCardMessages,
   } = params;
 
   const addressLineTrim = clipCheckoutField(
@@ -234,6 +235,11 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   if (gclid?.trim()) body.gclid = gclid.trim();
   if (gbraid?.trim()) body.gbraid = gbraid.trim();
   if (wbraid?.trim()) body.wbraid = wbraid.trim();
+
+  const persistedCards = normalizeGiftCardMessagesForPersist(giftCardMessages ?? []);
+  if (persistedCards.length > 0) {
+    body.giftCardMessages = persistedCards;
+  }
 
   return body;
 }

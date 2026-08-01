@@ -6,7 +6,8 @@ import { BouquetsCarousel } from '@/components/BouquetsCarousel';
 import { GiftsCarousel } from '@/components/GiftsCarousel';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/sanity';
-import { GiftMessageField } from '@/components/pdp/GiftMessageField';
+import { GiftCardMessagesEditor } from '@/components/GiftCardMessagesEditor';
+import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import type { WrappingPaperColorSelection } from '@/lib/wrappingPaperColors';
 
 export type CardType = 'free' | 'beautiful' | null;
@@ -14,6 +15,7 @@ export type WrappingPreference = 'none' | 'classic' | 'premium' | null;
 
 export interface AddOnsValues {
   cardType: CardType;
+  /** @deprecated Order-level giftCardMessages; kept empty for cart line compatibility. */
   cardMessage: string;
   wrappingPreference: WrappingPreference;
   /** Bouquet wrapping-paper color preference (display-only for florists). */
@@ -40,8 +42,6 @@ export function getDefaultAddOns(): AddOnsValues {
 
 export function AddOnsSection({
   lang,
-  value,
-  onChange,
   gifts = [],
   suggestedBouquets = [],
   hideGiftAddOns = false,
@@ -61,6 +61,12 @@ export function AddOnsSection({
     giftsSectionTitle?: string;
     flowersSectionTitle?: string;
   };
+  const {
+    giftCardMessages,
+    setGiftCardMessageAt,
+    addGiftCardMessage,
+    removeGiftCardMessage,
+  } = useOrderGiftCardMessage();
 
   return (
     <div className="addons-section">
@@ -80,11 +86,13 @@ export function AddOnsSection({
         </>
       ) : null}
       <div className="addons-field">
-        <GiftMessageField
+        <GiftCardMessagesEditor
           lang={lang}
-          value={value.cardMessage}
-          onChange={(cardMessage) => onChange({ ...value, cardMessage })}
-          embedded
+          messages={giftCardMessages}
+          onChangeAt={setGiftCardMessageAt}
+          onAdd={addGiftCardMessage}
+          onRemove={removeGiftCardMessage}
+          idPrefix="addons-gift-card"
         />
       </div>
       <style jsx>{`
@@ -99,40 +107,7 @@ export function AddOnsSection({
           line-height: 1.3;
         }
         .addons-field {
-          margin-bottom: 0;
-        }
-        .addons-label {
-          display: block;
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: var(--text-muted);
-          margin-bottom: 8px;
-        }
-        .addons-textarea {
-          display: block;
-          width: 100%;
-          padding: 10px 12px;
-          border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-          font-size: 0.9rem;
-          font-family: inherit;
-          color: var(--text);
-          resize: vertical;
-          min-height: 72px;
-        }
-        .addons-textarea:focus {
-          outline: none;
-          border-color: var(--accent);
-        }
-        .addons-textarea::placeholder {
-          color: var(--text-muted);
-          opacity: 0.4;
-        }
-        .addons-char-count {
-          display: block;
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-top: 4px;
+          margin-top: 16px;
         }
       `}</style>
     </div>

@@ -28,6 +28,7 @@ import {
 } from '@/lib/wrappingPaperColors';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
+import { GiftCardMessagesEditor } from '@/components/GiftCardMessagesEditor';
 import { CurrencyAmount } from '@/components/CurrencyDisplay';
 import {
   CHECKOUT_FIELD_LIMITS,
@@ -63,8 +64,10 @@ export type PremiumCheckoutFlowProps = {
   /** When true, recipient name/phone fields are shown and required. */
   orderingForSomeoneElse: boolean;
   onOrderingForSomeoneElseChange: (v: boolean) => void;
-  cardMessage: string;
-  onCardMessageChange: (v: string) => void;
+  giftCardMessages: string[];
+  onGiftCardMessageChangeAt: (index: number, v: string) => void;
+  onAddGiftCardMessage: () => void;
+  onRemoveGiftCardMessage: (index: number) => void;
   noCardMessage: boolean;
   onNoCardMessageChange: (v: boolean) => void;
   senderFields: ReactNode;
@@ -116,8 +119,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     onSurpriseDeliveryChange,
     orderingForSomeoneElse,
     onOrderingForSomeoneElseChange,
-    cardMessage,
-    onCardMessageChange,
+    giftCardMessages,
+    onGiftCardMessageChangeAt,
+    onAddGiftCardMessage,
+    onRemoveGiftCardMessage,
     noCardMessage,
     onNoCardMessageChange,
     senderFields,
@@ -154,59 +159,50 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const tBuyNow = translations[lang].buyNow;
   const [cardMessageOpen, setCardMessageOpen] = useState(false);
   const [giftMessageChipsOpen, setGiftMessageChipsOpen] = useState(true);
-  const [giftMessageDraft, setGiftMessageDraft] = useState(cardMessage);
   const [locationRequestOpen, setLocationRequestOpen] = useState(false);
   const locationRequestTriggerRef = useRef<HTMLButtonElement>(null);
   const giftMessageFocusedRef = useRef(false);
   const giftMessageTouchStartY = useRef<number | null>(null);
   const zones = getCheckoutZonesForDestination(delivery.deliveryDestination);
   const destLabel = formatDestinationLabel(deliveryProfile, lang);
-  const hasGiftMessage = !noCardMessage && cardMessage.trim().length > 0;
+  const hasGiftMessage =
+    !noCardMessage && giftCardMessages.some((m) => m.trim().length > 0);
   const giftMessageChipLabel = noCardMessage
     ? t.noCardMessage
     : hasGiftMessage
       ? (t.giftMessageComplete ?? 'Message added')
       : t.giftMessageTitle;
   const giftMessageChipActive =
-    cardMessageOpen || noCardMessage || cardMessage.trim().length > 0;
+    cardMessageOpen || noCardMessage || hasGiftMessage;
 
   const hideGiftChipsIfHasText = () => {
-    if (!noCardMessage && giftMessageDraft.trim()) {
+    if (!noCardMessage && giftCardMessages.some((m) => m.trim())) {
       setGiftMessageChipsOpen(false);
     }
   };
 
-  const syncGiftMessageDraft = (value: string) => {
-    setGiftMessageDraft(value);
-    onCardMessageChange(value);
-  };
-
   const applyGiftChip = (text: string) => {
     onNoCardMessageChange(false);
-    syncGiftMessageDraft(clipCheckoutField(text, 'giftCardMessage'));
+    onGiftCardMessageChangeAt(0, clipCheckoutField(text, 'giftCardMessage'));
     setGiftMessageChipsOpen(false);
   };
 
   const clearGiftMessage = () => {
     onNoCardMessageChange(false);
-    syncGiftMessageDraft('');
+    giftCardMessages.forEach((_, i) => onGiftCardMessageChangeAt(i, ''));
+    // Collapse to a single empty slot via remove extras then clear first
+    for (let i = giftCardMessages.length - 1; i >= 1; i--) {
+      onRemoveGiftCardMessage(i);
+    }
+    onGiftCardMessageChangeAt(0, '');
     setGiftMessageChipsOpen(true);
   };
 
   useEffect(() => {
-    if (!giftMessageFocusedRef.current) {
-      setGiftMessageDraft(cardMessage);
-    }
-  }, [cardMessage]);
-
-  useEffect(() => {
     if (cardMessageOpen) {
       setGiftMessageChipsOpen(true);
-      if (!giftMessageFocusedRef.current) {
-        setGiftMessageDraft(cardMessage);
-      }
     }
-  }, [cardMessageOpen, cardMessage]);
+  }, [cardMessageOpen]);
 
   const handleGiftMessageTouchStart = (e: TouchEvent) => {
     if (giftMessageFocusedRef.current) return;
@@ -229,7 +225,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
 
   const selectNoCardMessage = () => {
     onNoCardMessageChange(true);
-    syncGiftMessageDraft('');
+    for (let i = giftCardMessages.length - 1; i >= 1; i--) {
+      onRemoveGiftCardMessage(i);
+    }
+    onGiftCardMessageChangeAt(0, '');
     setCardMessageOpen(false);
   };
 
@@ -572,30 +571,32 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               onTouchEnd={handleGiftMessageTouchEnd}
               onTouchCancel={handleGiftMessageTouchEnd}
             >
-              <textarea
-                className="co-input co-textarea"
-                rows={3}
-                value={noCardMessage ? '' : giftMessageDraft}
-                disabled={noCardMessage}
-                onChange={(e) => {
+              <GiftCardMessagesEditor
+                lang={lang}
+                messages={noCardMessage ? [''] : giftCardMessages}
+                onChangeAt={(index, value) => {
                   onNoCardMessageChange(false);
-                  syncGiftMessageDraft(
-                    clipCheckoutField(e.target.value, 'giftCardMessage')
-                  );
+                  onGiftCardMessageChangeAt(index, value);
                 }}
-                maxLength={CHECKOUT_FIELD_LIMITS.giftCardMessage}
-                onBlur={() => {
-                  giftMessageFocusedRef.current = false;
-                  hideGiftChipsIfHasText();
+                onAdd={() => {
+                  onNoCardMessageChange(false);
+                  onAddGiftCardMessage();
                 }}
-                onFocus={() => {
+                onRemove={onRemoveGiftCardMessage}
+                disabled={noCardMessage}
+                textareaClassName="co-input co-textarea"
+                hideLabels
+                idPrefix="co-gift-card"
+                onFocusFirst={() => {
                   giftMessageFocusedRef.current = true;
                   if (!giftMessageChipsOpen) {
                     setGiftMessageChipsOpen(true);
                   }
                 }}
-                placeholder={t.giftMessagePlaceholder}
-                aria-label={t.giftMessageTitle}
+                onBlurFirst={() => {
+                  giftMessageFocusedRef.current = false;
+                  hideGiftChipsIfHasText();
+                }}
               />
               <div
                 className={`co-gift-chips-reveal${
@@ -623,7 +624,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                       type="button"
                       className="co-clear-btn co-clear-btn--chip"
                       onClick={clearGiftMessage}
-                      disabled={!noCardMessage && !giftMessageDraft.trim()}
+                      disabled={!noCardMessage && !hasGiftMessage}
                     >
                       {t.clearGiftMessage}
                     </button>

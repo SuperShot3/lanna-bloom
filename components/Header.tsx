@@ -275,7 +275,7 @@ export function Header({
             >
               <Image
                 src="/logo_icon_64.png"
-                alt=""
+                alt="Lanna Bloom logo"
                 width={40}
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"

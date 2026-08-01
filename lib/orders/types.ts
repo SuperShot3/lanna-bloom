@@ -149,6 +149,11 @@ export interface OrderPayload {
   /** When set, order came from the custom order form; details for ops and customer. */
   customOrderDetails?: CustomOrderDetails;
   /**
+   * Free gift-card messages for the order (1–3). Order-level — not duplicated onto line items.
+   * Legacy orders may only have `items[].addOns.cardMessage`; use `getOrderGiftCardMessages`.
+   */
+  giftCardMessages?: string[];
+  /**
    * Browser-generated idempotency key for this checkout attempt.
    * Stored in DB; not shown in customer UI. Omitted from persisted order_json.
    */

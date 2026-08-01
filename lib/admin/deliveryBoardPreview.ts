@@ -1,4 +1,6 @@
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
+import type { Order } from '@/lib/orders';
+import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
 
 const WINDOW_ORDER: Record<string, number> = {
   MORNING_9_12: 0,
@@ -123,21 +125,12 @@ interface LooseOrderJson {
 }
 
 export function customerCardMessagePreview(order: SupabaseOrderRow): string {
-  const json = order.order_json as LooseOrderJson | null | undefined;
-  const messages: string[] = [];
-  const items = json?.items;
-  if (Array.isArray(items)) {
-    for (const it of items) {
-      const msg = typeof it?.addOns?.cardMessage === 'string' ? it.addOns.cardMessage.trim() : '';
-      if (msg) messages.push(msg);
-    }
-  }
-  const greeting =
-    typeof json?.customOrderDetails?.greetingCard === 'string'
-      ? json.customOrderDetails.greetingCard.trim()
-      : '';
-  if (greeting) messages.push(greeting);
-  return messages.join(' / ');
+  const json = order.order_json as Partial<Order> | null | undefined;
+  return getOrderGiftCardMessages({
+    giftCardMessages: json?.giftCardMessages,
+    items: json?.items,
+    customOrderDetails: json?.customOrderDetails,
+  }).join(' / ');
 }
 
 /** True when the customer provided greeting/card text (checkout card message or custom-order message card). */

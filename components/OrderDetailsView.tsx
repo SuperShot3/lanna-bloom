@@ -18,6 +18,7 @@ import {
   getWrappingPaperColorLabel,
   isSpecificWrappingPaperColor,
 } from '@/lib/wrappingPaperColors';
+import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
 
 /** Parse preferredTimeSlot: "2025-02-15 09:00-10:00" -> { date, time } or legacy format. */
 function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
@@ -281,13 +282,19 @@ export function OrderDetailsView({
           `  ${t.wrappingPaper ?? 'Wrapping paper'}: ${getWrappingPaperColorLabel(item.addOns.paperColor, locale)}`
         );
       }
-      if (item.addOns?.cardMessage?.trim()) {
-        lines.push(`  ${t.cardMessage}: ${item.addOns.cardMessage.trim()}`);
-      }
       if (item.addOns?.balloonText?.trim()) {
         lines.push(`  ${t.balloonText ?? 'Balloon text'}: ${item.addOns.balloonText.trim()}`);
       }
     });
+    const giftCards = getOrderGiftCardMessages(order);
+    if (giftCards.length > 0) {
+      lines.push('');
+      giftCards.forEach((msg, i) => {
+        const label =
+          giftCards.length > 1 ? `${t.cardMessage} ${i + 1}` : t.cardMessage;
+        lines.push(`${label}: ${msg}`);
+      });
+    }
     lines.push('');
     lines.push(t.totalsHeading + ':');
     lines.push(`${t.bouquetPrice}: ฿${order.pricing.itemsTotal.toLocaleString()}`);
@@ -574,12 +581,6 @@ export function OrderDetailsView({
                         </span>
                       </p>
                     )}
-                    {item.addOns?.cardMessage?.trim() && (
-                      <p className="order-details-addon-row">
-                        <span className="order-details-addon-label">{t.cardMessage}:</span>
-                        <span className="order-details-addon-value">"{item.addOns.cardMessage.trim()}"</span>
-                      </p>
-                    )}
                     {item.addOns?.balloonText?.trim() && (
                       <p className="order-details-addon-row">
                         <span className="order-details-addon-label">
@@ -618,6 +619,22 @@ export function OrderDetailsView({
             </li>
           ))}
         </ul>
+        {(() => {
+          const giftCards = getOrderGiftCardMessages(order);
+          if (giftCards.length === 0) return null;
+          return (
+            <div className="order-details-item-addons" style={{ marginTop: 12 }}>
+              {giftCards.map((msg, i) => (
+                <p key={i} className="order-details-addon-row">
+                  <span className="order-details-addon-label">
+                    {giftCards.length > 1 ? `${t.cardMessage} ${i + 1}` : t.cardMessage}:
+                  </span>
+                  <span className="order-details-addon-value">&quot;{msg}&quot;</span>
+                </p>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Price summary */}

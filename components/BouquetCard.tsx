@@ -39,6 +39,7 @@ import {
   preloadCatalogImage,
 } from '@/lib/catalog/catalogImage';
 import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
+import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -88,6 +89,7 @@ export function BouquetCard({
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
   const tProduct = translations[lang].product;
+  const tReviews = translations[lang].reviews;
   const pathname = usePathname();
   const router = useRouter();
   const { addItem } = useCart();
@@ -96,6 +98,10 @@ export function BouquetCard({
     bouquet,
     checkoutProfile.destinationId
   );
+  const reviewStats = useMemo(() => getBouquetDisplayReviewStats(bouquet.id), [bouquet.id]);
+  const reviewLabel = `${reviewStats.average.toFixed(1)} · ${reviewStats.count.toLocaleString(
+    lang === 'th' ? 'th-TH' : 'en-US'
+  )} ${tReviews.reviewsCount}`;
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minBasePrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
@@ -496,13 +502,15 @@ export function BouquetCard({
                 : t.handCraftedByPartner ?? 'Hand-crafted by local partner'}
             </div>
           ) : null}
-          {isPopular && (
-            <div className="card-stars">
-              {[1, 2, 3, 4, 5].map((i) => (
-                  <StorefrontIcon key={i} name="star" filled size={16} />
-              ))}
-            </div>
-          )}
+          <div className="card-rating" aria-label={reviewLabel}>
+            <svg className="card-rating-star" viewBox="0 0 24 24" width={14} height={14} aria-hidden>
+              <path
+                fill="currentColor"
+                d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+              />
+            </svg>
+            <span className="card-rating-text">{reviewLabel}</span>
+          </div>
           <div className="card-name" title={name}>
             {name}
           </div>
@@ -515,6 +523,7 @@ export function BouquetCard({
               destinationId={checkoutProfile.destinationId}
               lang={lang}
               fromLabel={t.from}
+              amountClassName="card-price-amount"
             />
           </div>
         </div>
@@ -781,15 +790,26 @@ export function BouquetCard({
             display: none;
           }
         }
-        .card-stars {
-          display: flex;
-          gap: 2px;
-          color: #c5a059;
-          font-size: 14px;
-          margin-bottom: 6px;
+        .card-rating {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          margin-bottom: 5px;
+          min-width: 0;
+          max-width: 100%;
         }
-        .card-stars .storefront-icon {
-          font-size: 14px;
+        .card-rating-star {
+          display: block;
+          flex-shrink: 0;
+          color: #c5a059;
+        }
+        .card-rating-text {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .card-partner-badge {
           font-size: 11px;
@@ -859,10 +879,20 @@ export function BouquetCard({
           margin-bottom: 6px;
         }
         .card-price {
-          font-size: 14px;
-          font-weight: 650;
-          opacity: 0.90;
+          font-size: 17px;
+          font-weight: 700;
+          opacity: 0.95;
           color: var(--text);
+          font-variant-numeric: tabular-nums;
+          letter-spacing: 0.01em;
+        }
+        .card-price :global(.catalog-price-from) {
+          font-size: 0.82em;
+          font-weight: 500;
+          opacity: 0.85;
+        }
+        .card-price :global(.card-price-amount) {
+          font-weight: 800;
         }
 
         .card-hover-panel {
@@ -1079,7 +1109,7 @@ export function BouquetCard({
             margin-bottom: 5px;
           }
           .card-price {
-            font-size: 14px;
+            font-size: 16px;
           }
           .card-favorite {
             top: 10px;

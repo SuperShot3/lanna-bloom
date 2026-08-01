@@ -103,7 +103,7 @@ export function Footer({ lang }: { lang: Locale }) {
             <Link href={homeHref} className="flex items-center gap-2.5 mb-6">
               <Image
                 src="/logo_icon_64.png"
-                alt=""
+                alt="Lanna Bloom logo"
                 width={40}
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"

@@ -214,6 +214,11 @@ export function CatalogWithFilters({
         merged.occasion = partial.occasion || undefined;
       }
 
+      // Flower-type chips under the category bar (multi-select; empty = All)
+      if ('types' in partial) {
+        merged.types = partial.types?.length ? partial.types : undefined;
+      }
+
       const qs = buildCatalogSearchString(merged);
       startTransition(() => {
         router.push(`${pathname}${qs}`);
@@ -245,6 +250,7 @@ export function CatalogWithFilters({
         onQuickFilter={handleQuickFilter}
         onClearAll={handleClear}
         hideFilterButtonOnDesktop={showFlowerFilters}
+        flowerTypeCounts={flowerTypeCounts}
       />
       {showFlowerFilters && (
         <FlowerFilterMobileDrawer

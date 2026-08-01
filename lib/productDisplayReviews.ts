@@ -18,7 +18,7 @@ export function getBouquetDisplayReviewStats(productId: string): {
   count: number;
 } {
   const rng = mulberry32(seedFromProductId(productId));
-  const count = Math.floor(rng() * 91) + 10;
+  const count = Math.floor(rng() * 26) + 5; // 5–30
   const average = Math.round((4.5 + rng() * 0.5) * 10) / 10;
   return { average, count };
 }

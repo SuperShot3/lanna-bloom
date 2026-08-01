@@ -1,5 +1,6 @@
 import {
   CHECKOUT_FIELD_LIMITS,
+  GIFT_CARD_MESSAGES_MAX_COUNT,
   isWithinCheckoutFieldLimit,
   nationalDigitsLengthFromFullPhone,
 } from '@/lib/checkout/checkoutFieldLimits';
@@ -18,6 +19,8 @@ export function validateCheckoutFieldMaxLengths(params: {
   recipientPhoneCountryCode?: unknown;
   referralCode?: string;
   cardMessages: string[];
+  /** Optional; when set, also enforces max count of order-level gift cards. */
+  giftCardMessagesCount?: number;
 }): { ok: true } | { ok: false; message: string } {
   const {
     deliveryAddress,
@@ -31,6 +34,7 @@ export function validateCheckoutFieldMaxLengths(params: {
     recipientPhoneCountryCode,
     referralCode,
     cardMessages,
+    giftCardMessagesCount,
   } = params;
 
   if (!isWithinCheckoutFieldLimit(deliveryAddress, 'deliveryAddress')) {
@@ -80,8 +84,18 @@ export function validateCheckoutFieldMaxLengths(params: {
 
   for (const msg of cardMessages) {
     if (!isWithinCheckoutFieldLimit(msg, 'giftCardMessage')) {
-      return { ok: false, message: 'addOns.cardMessage exceeds maximum length' };
+      return { ok: false, message: 'giftCardMessages exceeds maximum length' };
     }
+  }
+
+  if (
+    giftCardMessagesCount != null &&
+    giftCardMessagesCount > GIFT_CARD_MESSAGES_MAX_COUNT
+  ) {
+    return {
+      ok: false,
+      message: `giftCardMessages exceeds maximum count of ${GIFT_CARD_MESSAGES_MAX_COUNT}`,
+    };
   }
 
   return { ok: true };

@@ -662,7 +662,7 @@ export function ProductCard({
           display: inline-flex;
           align-items: baseline;
           gap: 6px;
-          font-size: 1.02rem;
+          font-size: 1.15rem;
           color: var(--text);
           font-variant-numeric: tabular-nums;
           letter-spacing: 0.01em;
@@ -673,6 +673,14 @@ export function ProductCard({
           font-weight: 500;
         }
         .pcard-price-amount {
+          font-weight: 800;
+        }
+        .pcard-price :global(.catalog-price-from) {
+          font-size: 0.82em;
+          font-weight: 500;
+          opacity: 0.85;
+        }
+        .pcard-price :global(.pcard-price-amount) {
           font-weight: 800;
         }
         .pcard-size {
@@ -918,7 +926,7 @@ export function ProductCard({
           }
           .pcard-price {
             gap: 4px;
-            font-size: 14px;
+            font-size: 16px;
           }
           .pcard-price-from {
             font-size: 14px;

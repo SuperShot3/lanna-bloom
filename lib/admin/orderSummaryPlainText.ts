@@ -15,6 +15,7 @@ import {
   getWrappingPaperColorLabel,
   isSpecificWrappingPaperColor,
 } from '@/lib/wrappingPaperColors';
+import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
 
 export type OrderSummaryItemRow = SupabaseOrderItemRow & {
   catalogHref?: string;
@@ -167,33 +168,23 @@ export function formatAmountNa(n: number | null | undefined): string {
 }
 
 /**
- * Plain text for clipboard: card messages from line items plus optional custom-order greeting.
+ * Plain text for clipboard: order-level gift cards (deduped legacy item messages).
  */
 export function buildClipboardCardText(
   items: OrderSummaryItemRow[],
-  customGreetingCard?: string | null
+  customGreetingCard?: string | null,
+  giftCardMessages?: string[] | null
 ): string {
-  const withMsg = items.filter((i) => i.addOns?.cardMessage?.trim());
-  const fromItems: string[] = [];
-  items.forEach((item, i) => {
-    const msg = item.addOns?.cardMessage?.trim();
-    if (!msg) return;
-    if (withMsg.length > 1) {
-      const title = item.bouquet_title?.trim() || `Item ${i + 1}`;
-      fromItems.push(`${title}: ${msg}`);
-    } else {
-      fromItems.push(msg);
-    }
+  const messages = getOrderGiftCardMessages({
+    giftCardMessages: giftCardMessages ?? undefined,
+    items: items.map((i) => ({ addOns: { cardMessage: i.addOns?.cardMessage } })),
+    customOrderDetails: customGreetingCard?.trim()
+      ? { greetingCard: customGreetingCard }
+      : undefined,
   });
-  const g = customGreetingCard?.trim();
-  const blocks: string[] = [];
-  if (fromItems.length) {
-    blocks.push(fromItems.join('\n\n'));
-  }
-  if (g) {
-    blocks.push(fromItems.length > 0 ? `Custom order (message card):\n${g}` : g);
-  }
-  return blocks.join('\n\n---\n\n');
+  if (messages.length === 0) return '';
+  if (messages.length === 1) return messages[0];
+  return messages.map((m, i) => `Card ${i + 1}:\n${m}`).join('\n\n');
 }
 
 const DRIVER_FALLBACK_IF_NO_RECIPIENT_TH =
@@ -260,31 +251,21 @@ export function buildDriverNotesClipboardText(order: SupabaseOrderRow): string {
 /** Card message for clipboard; always includes status (`Missing` when empty). */
 export function buildCardTextClipboardText(
   items: OrderSummaryItemRow[],
-  customGreetingCard?: string | null
+  customGreetingCard?: string | null,
+  giftCardMessages?: string[] | null
 ): string {
-  const card = buildClipboardCardText(items, customGreetingCard).trim();
+  const card = buildClipboardCardText(items, customGreetingCard, giftCardMessages).trim();
   return card ? `Card text: ${card}` : `Card text: ${MISSING_EN}`;
 }
 
 /** Card text from board order `order_json` (no separate items query). */
 export function cardTextFromBoardOrder(order: SupabaseOrderRow): string {
-  const json = order.order_json as {
-    items?: Array<{ addOns?: { cardMessage?: string } }>;
-    customOrderDetails?: { greetingCard?: string };
-  } | null | undefined;
-  const messages: string[] = [];
-  if (Array.isArray(json?.items)) {
-    for (const it of json.items) {
-      const msg = typeof it?.addOns?.cardMessage === 'string' ? it.addOns.cardMessage.trim() : '';
-      if (msg) messages.push(msg);
-    }
-  }
-  const greeting =
-    typeof json?.customOrderDetails?.greetingCard === 'string'
-      ? json.customOrderDetails.greetingCard.trim()
-      : '';
-  if (greeting) messages.push(greeting);
-  return messages.join('\n\n');
+  const json = order.order_json as Partial<Order> | null | undefined;
+  return getOrderGiftCardMessages({
+    giftCardMessages: json?.giftCardMessages,
+    items: json?.items,
+    customOrderDetails: json?.customOrderDetails,
+  }).join('\n\n');
 }
 
 /** Preview string for delivery-board cards (empty → N/A). */
@@ -381,7 +362,12 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   const rName = recipientNameDisplay(order);
   const rPhone = recipientPhoneDisplay(order);
   const surprise = surpriseDeliveryAdminLabel(order);
-  const cardText = buildClipboardCardText(items).trim() || MISSING_EN;
+  const cardText =
+    buildClipboardCardText(
+      items,
+      orderJsonPartial(order)?.customOrderDetails?.greetingCard,
+      orderJsonPartial(order)?.giftCardMessages
+    ).trim() || MISSING_EN;
   const dest = order.delivery_destination?.trim() || delivery?.deliveryDestination?.trim() || '';
   const zoneId = order.delivery_zone?.trim() || delivery?.deliveryZoneId?.trim() || '';
   const postcode = order.postal_code?.trim() || delivery?.postalCode?.trim() || '';

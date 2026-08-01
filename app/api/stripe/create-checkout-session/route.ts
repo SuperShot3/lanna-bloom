@@ -48,6 +48,7 @@ import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckoutFieldLimits';
 import { isPreferredTimeSlotValid } from '@/lib/deliveryTimeSelection';
 import { parseDeliveryDateFromPreferredTimeSlot } from '@/lib/promo/peakCelebrationPricing';
+import { normalizeGiftCardMessagesForPersist } from '@/lib/orders/giftCardMessages';
 
 function optionalTrimmedString(raw: unknown, maxLen: number): string | undefined {
   if (typeof raw !== 'string') return undefined;
@@ -92,6 +93,10 @@ function validateStripePayload(
     return { ok: false, message: 'items must be a non-empty array' };
   }
   const cardMessages: string[] = [];
+  const giftCardMessages = normalizeGiftCardMessagesForPersist(b.giftCardMessages);
+  for (const msg of giftCardMessages) {
+    cardMessages.push(msg);
+  }
   for (const it of items) {
     const i = it as Record<string, unknown>;
     const addOns = (i.addOns as Record<string, unknown>) ?? {};
@@ -105,9 +110,7 @@ function validateStripePayload(
         message: `balloonText must be ${BALLOON_TEXT_MAX_LENGTH} characters or fewer`,
       };
     }
-    if (typeof addOns.cardMessage === 'string') {
-      cardMessages.push(addOns.cardMessage.trim());
-    }
+    // Ignore per-item cardMessage for new checkouts (order-level giftCardMessages only).
     const itemTypeRaw = i.itemType;
     const itemTypeForPaper =
       itemTypeRaw === 'product'
@@ -284,7 +287,7 @@ function validateStripePayload(
       addOns: {
         cardType:
           cardType === 'free' ? 'free' : cardType === 'beautiful' || cardType === 'premium' ? 'premium' : null,
-        cardMessage: typeof addOns.cardMessage === 'string' ? addOns.cardMessage : '',
+        cardMessage: '',
         wrappingOption:
           wrappingOption === 'standard' || wrappingOption === 'classic'
             ? 'standard'
@@ -412,6 +415,7 @@ function validateStripePayload(
     recipientPhoneCountryCode: recipientCcRaw,
     referralCode,
     cardMessages,
+    giftCardMessagesCount: giftCardMessages.length,
   });
   if (!fieldLimitCheck.ok) {
     return fieldLimitCheck;
@@ -435,6 +439,7 @@ function validateStripePayload(
       contactPreference,
       ...(wantsLineContact && lineIdNormalized ? { lineId: lineIdNormalized } : {}),
       items: cartItems,
+      ...(giftCardMessages.length > 0 ? { giftCardMessages } : {}),
       referralCode,
       referralDiscount: referralCode && referralDiscount > 0 ? referralDiscount : 0,
       submissionToken: submissionTokenRaw,
@@ -493,6 +498,7 @@ interface StripeCheckoutPayload {
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
   items: CartItemIdentifier[];
+  giftCardMessages?: string[];
   referralCode?: string;
   referralDiscount?: number;
   submissionToken: string;
@@ -683,6 +689,9 @@ export async function POST(request: NextRequest) {
       contactPreference: data.contactPreference,
       ...(data.lineId ? { lineId: data.lineId } : {}),
       items: totals.items,
+      ...(data.giftCardMessages && data.giftCardMessages.length > 0
+        ? { giftCardMessages: data.giftCardMessages }
+        : {}),
       delivery: {
         address: data.delivery.address,
         preferredTimeSlot: data.delivery.preferredTimeSlot,

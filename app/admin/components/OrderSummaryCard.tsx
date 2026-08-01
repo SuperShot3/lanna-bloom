@@ -52,7 +52,11 @@ export function OrderSummaryCard({ order, items, customGreetingCard }: OrderSumm
   const copyText = buildOrderSummaryPlainText(order, items);
   const driverMessengerText = buildDriverMessengerPlainText(order, items, customGreetingCard);
   const customerLineId = customerLineIdDisplay(order);
-  const cardTextForCopy = buildCardTextClipboardText(items, customGreetingCard);
+  const cardTextForCopy = buildCardTextClipboardText(
+    items,
+    customGreetingCard,
+    orderJson?.giftCardMessages
+  );
 
   const deliveryAddressResolved =
     order.address?.trim() ||

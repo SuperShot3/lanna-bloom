@@ -17,7 +17,7 @@ export default function ImportantDatesPage() {
           <Link href="/en" className="id-brand-link" aria-label="Back to Lanna Bloom">
             <Image
               src="/logo_icon_64.png"
-              alt=""
+              alt="Lanna Bloom logo"
               width={48}
               height={48}
               className="id-logo"

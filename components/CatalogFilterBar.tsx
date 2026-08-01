@@ -5,7 +5,11 @@ import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { CatalogFilterParams } from '@/lib/sanity';
 import type { CatalogTopCategory } from '@/lib/catalogCategories';
-import { CATALOG_TOP_CATEGORIES, CATEGORY_I18N_KEYS } from '@/lib/catalogCategories';
+import {
+  CATALOG_TOP_CATEGORIES,
+  CATEGORY_I18N_KEYS,
+  STOREFRONT_FLOWER_TYPES,
+} from '@/lib/catalogCategories';
 
 const CATEGORY_ICONS: Partial<Record<CatalogTopCategory, string>> = {
   flowers: '/icons/category_icons/flowers_icon.webp',
@@ -29,6 +33,8 @@ export interface CatalogFilterBarProps {
   onClearAll?: () => void;
   /** When true, hide the filter trigger on large screens (desktop uses sidebar) */
   hideFilterButtonOnDesktop?: boolean;
+  /** Facet counts for flower types (desktop secondary chip row) */
+  flowerTypeCounts?: Record<string, number>;
 }
 
 export function CatalogFilterBar({
@@ -40,12 +46,16 @@ export function CatalogFilterBar({
   filterParams,
   onQuickFilter,
   hideFilterButtonOnDesktop = false,
+  flowerTypeCounts,
 }: CatalogFilterBarProps) {
   const t = translations[lang].catalog;
   const [jiggleCategory, setJiggleCategory] = useState<{ key: CatalogTopCategory; id: number } | null>(null);
   const jiggleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentTopCategory = filterParams?.topCategory ?? 'flowers';
+  const showFlowerTypeRow = Boolean(onQuickFilter) && currentTopCategory === 'flowers';
+  const selectedTypes = filterParams?.types ?? [];
+  const allTypesActive = selectedTypes.length === 0;
 
   const handleTopCategoryClick = (key: CatalogTopCategory) => {
     if (jiggleTimerRef.current) {
@@ -59,6 +69,20 @@ export function CatalogFilterBar({
     }
   };
 
+  const handleAllFlowerTypes = () => {
+    if (!onQuickFilter || allTypesActive) return;
+    onQuickFilter({ types: undefined });
+  };
+
+  const handleToggleFlowerType = (ty: string) => {
+    if (!onQuickFilter) return;
+    const cur = new Set(selectedTypes);
+    if (cur.has(ty)) cur.delete(ty);
+    else cur.add(ty);
+    const next = Array.from(cur);
+    onQuickFilter({ types: next.length ? next : undefined });
+  };
+
   useEffect(() => {
     return () => {
       if (jiggleTimerRef.current) {
@@ -66,6 +90,11 @@ export function CatalogFilterBar({
       }
     };
   }, []);
+
+  const visibleFlowerTypes = STOREFRONT_FLOWER_TYPES.filter((ty) => {
+    if (selectedTypes.includes(ty)) return true;
+    return (flowerTypeCounts?.[ty] ?? 0) > 0;
+  });
 
   return (
     <div className="catalog-filter-bar">
@@ -124,6 +153,35 @@ export function CatalogFilterBar({
           })}
 
       </div>
+
+      {showFlowerTypeRow && (
+        <div className="catalog-flower-type-row" role="group" aria-label={t.filterTypes}>
+          <button
+            type="button"
+            className={`catalog-chip catalog-chip--type ${allTypesActive ? 'active' : ''}`}
+            onClick={handleAllFlowerTypes}
+            aria-pressed={allTypesActive}
+          >
+            {t.typeAll}
+          </button>
+          {visibleFlowerTypes.map((ty) => {
+            const active = selectedTypes.includes(ty);
+            const label = t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string;
+            return (
+              <button
+                key={ty}
+                type="button"
+                className={`catalog-chip catalog-chip--type ${active ? 'active' : ''}`}
+                onClick={() => handleToggleFlowerType(ty)}
+                aria-pressed={active}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <style jsx>{`
         .catalog-filter-bar {
           position: sticky;
@@ -145,6 +203,25 @@ export function CatalogFilterBar({
         }
         .catalog-filter-scroll::-webkit-scrollbar {
           display: none;
+        }
+
+        /* Desktop-only secondary row under main category chips */
+        .catalog-flower-type-row {
+          display: none;
+        }
+        @media (min-width: 1024px) {
+          .catalog-flower-type-row {
+            display: flex;
+            gap: 8px;
+            padding: 4px 20px 2px 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            align-items: center;
+          }
+          .catalog-flower-type-row::-webkit-scrollbar {
+            display: none;
+          }
         }
 
         /* Filter icon button */
@@ -263,6 +340,10 @@ export function CatalogFilterBar({
           max-width: 200px;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        .catalog-chip--type {
+          padding: 5px 12px;
+          font-size: 12px;
         }
         .catalog-chip-icon {
           width: 25px;

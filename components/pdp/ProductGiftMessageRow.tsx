@@ -2,26 +2,31 @@
 
 import { useEffect, useId, useState } from 'react';
 import { translations, type Locale } from '@/lib/i18n';
-import { GiftMessageField } from './GiftMessageField';
+import { GiftCardMessagesEditor } from '@/components/GiftCardMessagesEditor';
 import { StorefrontIcon } from '@/components/icons';
 import styles from './product-pdp.module.css';
 
 export function ProductGiftMessageRow({
   lang,
-  value,
-  onChange,
+  messages,
+  onChangeAt,
+  onAdd,
+  onRemove,
 }: {
   lang: Locale;
-  value: string;
-  onChange: (message: string) => void;
+  messages: string[];
+  onChangeAt: (index: number, message: string) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
 }) {
-  const [open, setOpen] = useState(value.length > 0);
+  const hasAny = messages.some((m) => m.trim().length > 0);
+  const [open, setOpen] = useState(hasAny);
   const panelId = useId();
   const t = translations[lang].product;
 
   useEffect(() => {
-    if (value.length > 0) setOpen(true);
-  }, [value]);
+    if (hasAny) setOpen(true);
+  }, [hasAny]);
 
   return (
     <div className={styles.giftRow}>
@@ -65,7 +70,14 @@ export function ProductGiftMessageRow({
         aria-hidden={!open}
       >
         <div className={styles.giftRowPanelInner}>
-          <GiftMessageField lang={lang} value={value} onChange={onChange} />
+          <GiftCardMessagesEditor
+            lang={lang}
+            messages={messages}
+            onChangeAt={onChangeAt}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            idPrefix="pdp-gift-card"
+          />
         </div>
       </div>
     </div>

@@ -12,8 +12,10 @@ import type { BouquetSize } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { AddOnsValues } from '@/components/AddOnsSection';
 import {
-  applyOrderGiftCardMessageToItems,
-  clipOrderGiftCardMessage,
+  GIFT_CARD_MESSAGES_MAX_COUNT,
+  clearItemCardMessages,
+  clipGiftCardMessage,
+  normalizeGiftCardMessagesForUi,
 } from '@/lib/cart/orderGiftCardMessage';
 
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
@@ -65,10 +67,16 @@ interface CartContextValue {
   clearCart: () => void;
   /** Replace all cart lines atomically (e.g. shared cart import). */
   replaceItems: (items: CartItem[]) => void;
-  /** Persisted draft when cart has no bouquet line yet (synced with PDP + checkout). */
-  orderGiftCardMessageDraft: string;
-  /** Set order-level gift card message on draft and all bouquet cart lines. */
-  setOrderGiftCardMessage: (message: string) => void;
+  /** Order-level gift card message drafts (always ≥1 slot; max 3). */
+  orderGiftCardMessages: string[];
+  /** Replace the full gift-card message list (normalized to 1–3 slots). */
+  setOrderGiftCardMessages: (messages: string[]) => void;
+  /** Update a single slot by index. */
+  setOrderGiftCardMessageAt: (index: number, message: string) => void;
+  /** Append an empty card slot when under the max. */
+  addOrderGiftCardMessage: () => void;
+  /** Remove a slot (keeps at least one empty field). */
+  removeOrderGiftCardMessage: (index: number) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -80,12 +88,13 @@ function loadFromStorage(): CartItem[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartItem[];
     if (!Array.isArray(parsed)) return [];
-    // Post-migration hardening: if a persisted cart line still points at Sanity CDN,
-    // drop the URL rather than rendering broken legacy images after cutover.
-    return parsed.map((item) => ({
-      ...item,
-      imageUrl: isLegacySanityImageUrl(item.imageUrl) ? undefined : item.imageUrl,
-    }));
+    // Drop legacy per-item card messages; gift text lives on orderGiftCardMessages.
+    return clearItemCardMessages(
+      parsed.map((item) => ({
+        ...item,
+        imageUrl: isLegacySanityImageUrl(item.imageUrl) ? undefined : item.imageUrl,
+      }))
+    );
   } catch {
     return [];
   }
@@ -100,20 +109,30 @@ function saveToStorage(items: CartItem[]) {
   }
 }
 
-function loadGiftMessageDraft(): string {
-  if (typeof window === 'undefined') return '';
+function loadGiftMessagesDraft(): string[] {
+  if (typeof window === 'undefined') return [''];
   try {
     const raw = localStorage.getItem(ORDER_GIFT_MESSAGE_KEY);
-    return typeof raw === 'string' ? clipOrderGiftCardMessage(raw) : '';
+    if (raw == null) return [''];
+    // Legacy: plain string. New: JSON string[].
+    if (raw.startsWith('[')) {
+      try {
+        return normalizeGiftCardMessagesForUi(JSON.parse(raw));
+      } catch {
+        return normalizeGiftCardMessagesForUi(raw);
+      }
+    }
+    return normalizeGiftCardMessagesForUi(raw);
   } catch {
-    return '';
+    return [''];
   }
 }
 
-function saveGiftMessageDraft(message: string) {
+function saveGiftMessagesDraft(messages: string[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(ORDER_GIFT_MESSAGE_KEY, clipOrderGiftCardMessage(message));
+    const normalized = normalizeGiftCardMessagesForUi(messages);
+    localStorage.setItem(ORDER_GIFT_MESSAGE_KEY, JSON.stringify(normalized));
   } catch {
     // ignore
   }
@@ -121,13 +140,13 @@ function saveGiftMessageDraft(message: string) {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [orderGiftCardMessageDraft, setOrderGiftCardMessageDraft] = useState('');
+  const [orderGiftCardMessages, setOrderGiftCardMessagesState] = useState<string[]>(['']);
   const [hydrated, setHydrated] = useState(false);
   const [lastAddEventId, setLastAddEventId] = useState(0);
 
   useEffect(() => {
     setItems(loadFromStorage());
-    setOrderGiftCardMessageDraft(loadGiftMessageDraft());
+    setOrderGiftCardMessagesState(loadGiftMessagesDraft());
     setHydrated(true);
   }, []);
 
@@ -138,12 +157,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    saveGiftMessageDraft(orderGiftCardMessageDraft);
-  }, [orderGiftCardMessageDraft, hydrated]);
+    saveGiftMessagesDraft(orderGiftCardMessages);
+  }, [orderGiftCardMessages, hydrated]);
 
   const addItem = useCallback((item: CartItem, quantity: number = 1) => {
     const qty = Math.max(1, Math.floor(quantity));
-    const itemWithQty = { ...item, quantity: item.quantity ?? 1 };
+    // Never stamp order gift messages onto cart lines.
+    const itemWithQty = {
+      ...item,
+      quantity: item.quantity ?? 1,
+      addOns: { ...item.addOns, cardMessage: '' },
+    };
 
     // Trigger UI attention/toast helpers even when the cart line merges.
     setLastAddEventId((id) => id + 1);
@@ -154,7 +178,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           p.bouquetId === item.bouquetId &&
           (p.itemType ?? 'bouquet') === (item.itemType ?? 'bouquet') &&
           p.size.optionId === item.size.optionId &&
-          (p.addOns.cardMessage ?? '').trim() === (item.addOns.cardMessage ?? '').trim() &&
           (p.addOns.balloonText ?? '').trim() === (item.addOns.balloonText ?? '').trim() &&
           (p.addOns.paperColor ?? null) === (item.addOns.paperColor ?? null) &&
           JSON.stringify(p.addOns.productAddOns ?? {}) ===
@@ -177,7 +200,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => {
       if (index < 0 || index >= prev.length) return prev;
       const next = [...prev];
-      next[index] = item;
+      next[index] = {
+        ...item,
+        addOns: { ...item.addOns, cardMessage: '' },
+      };
       return next;
     });
   }, []);
@@ -188,17 +214,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
-    setOrderGiftCardMessageDraft('');
+    setOrderGiftCardMessagesState(['']);
   }, []);
 
   const replaceItems = useCallback((nextItems: CartItem[]) => {
-    setItems(nextItems);
+    setItems(clearItemCardMessages(nextItems));
   }, []);
 
-  const setOrderGiftCardMessage = useCallback((message: string) => {
-    const clipped = clipOrderGiftCardMessage(message);
-    setOrderGiftCardMessageDraft(clipped);
-    setItems((prev) => applyOrderGiftCardMessageToItems(prev, clipped));
+  const setOrderGiftCardMessages = useCallback((messages: string[]) => {
+    setOrderGiftCardMessagesState(normalizeGiftCardMessagesForUi(messages));
+  }, []);
+
+  const setOrderGiftCardMessageAt = useCallback((index: number, message: string) => {
+    setOrderGiftCardMessagesState((prev) => {
+      const next = normalizeGiftCardMessagesForUi(prev);
+      if (index < 0 || index >= next.length) return next;
+      next[index] = clipGiftCardMessage(message);
+      return [...next];
+    });
+  }, []);
+
+  const addOrderGiftCardMessage = useCallback(() => {
+    setOrderGiftCardMessagesState((prev) => {
+      const next = normalizeGiftCardMessagesForUi(prev);
+      if (next.length >= GIFT_CARD_MESSAGES_MAX_COUNT) return next;
+      return [...next, ''];
+    });
+  }, []);
+
+  const removeOrderGiftCardMessage = useCallback((index: number) => {
+    setOrderGiftCardMessagesState((prev) => {
+      const next = normalizeGiftCardMessagesForUi(prev);
+      if (next.length <= 1) return [''];
+      if (index < 0 || index >= next.length) return next;
+      return next.filter((_, i) => i !== index);
+    });
   }, []);
 
   const value = useMemo<CartContextValue>(
@@ -212,8 +262,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem,
       clearCart,
       replaceItems,
-      orderGiftCardMessageDraft,
-      setOrderGiftCardMessage,
+      orderGiftCardMessages,
+      setOrderGiftCardMessages,
+      setOrderGiftCardMessageAt,
+      addOrderGiftCardMessage,
+      removeOrderGiftCardMessage,
     }),
     [
       items,
@@ -224,8 +277,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem,
       clearCart,
       replaceItems,
-      orderGiftCardMessageDraft,
-      setOrderGiftCardMessage,
+      orderGiftCardMessages,
+      setOrderGiftCardMessages,
+      setOrderGiftCardMessageAt,
+      addOrderGiftCardMessage,
+      removeOrderGiftCardMessage,
     ]
   );
 

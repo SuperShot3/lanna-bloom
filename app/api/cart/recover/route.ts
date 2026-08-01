@@ -37,7 +37,12 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(
-    { items: payload.items, form: payload.form, locale: payload.locale },
+    {
+      items: payload.items,
+      form: payload.form,
+      locale: payload.locale,
+      giftCardMessages: payload.giftCardMessages,
+    },
     { status: 200, headers: NO_STORE }
   );
 }

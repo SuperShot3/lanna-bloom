@@ -16,8 +16,12 @@ export const CHECKOUT_FIELD_LIMITS = {
   recipientName: 50,
   recipientPhoneNational: 24,
   referralCode: 24,
-  giftCardMessage: 160,
+  /** Per gift-card message (order-level; not per line item). */
+  giftCardMessage: 240,
 } as const;
+
+/** Max free gift-card messages per order (customer UI + API). */
+export const GIFT_CARD_MESSAGES_MAX_COUNT = 3;
 
 export type CheckoutFieldLimitKey = keyof typeof CHECKOUT_FIELD_LIMITS;
 

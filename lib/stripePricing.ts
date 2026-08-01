@@ -167,7 +167,7 @@ export async function computeOrderTotals(
         price: itemPrice,
         addOns: {
           cardType: item.addOns?.cardType ?? null,
-          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          cardMessage: '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
         },
         imageUrl: item.imageUrl ?? toy.imageUrl,
@@ -200,7 +200,7 @@ export async function computeOrderTotals(
         price: itemPrice,
         addOns: {
           cardType: item.addOns?.cardType ?? null,
-          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          cardMessage: '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
           ...(normalizeBalloonText(item.addOns?.balloonText) && {
             balloonText: normalizeBalloonText(item.addOns?.balloonText),
@@ -248,7 +248,7 @@ export async function computeOrderTotals(
         price: itemPrice,
         addOns: {
           cardType: item.addOns?.cardType ?? null,
-          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          cardMessage: '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
         },
         imageUrl: item.imageUrl ?? product.imageUrl,
@@ -298,7 +298,7 @@ export async function computeOrderTotals(
         price: itemPrice,
         addOns: {
           cardType: item.addOns?.cardType ?? null,
-          cardMessage: item.addOns?.cardMessage?.trim() ?? '',
+          cardMessage: '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
           ...(isSpecificWrappingPaperColor(item.addOns?.paperColor) && {
             paperColor: item.addOns.paperColor,

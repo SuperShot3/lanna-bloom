@@ -71,7 +71,12 @@ export function ProductOrderBlock({
   const [justAdded, setJustAdded] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const { addItem } = useCart();
-  const { giftCardMessage, setGiftCardMessage } = useOrderGiftCardMessage();
+  const {
+    giftCardMessages,
+    setGiftCardMessageAt,
+    addGiftCardMessage,
+    removeGiftCardMessage,
+  } = useOrderGiftCardMessage();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const tProduct = translations[lang].product;
   const availableForDestination = bouquetIsAvailableForDestination(
@@ -125,7 +130,7 @@ export function ProductOrderBlock({
           selectedSize.imageUrls?.[0] ??
           bouquet.images?.[0],
         size: { ...selectedSize, price: discountedSizePrice },
-        addOns: { ...addOns, cardMessage: giftCardMessage, paperColor: null },
+        addOns: { ...addOns, cardMessage: '', paperColor: null },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
         ...(bouquet.discountPercent != null && {
           catalogDiscountPercent: bouquet.discountPercent,
@@ -245,8 +250,10 @@ export function ProductOrderBlock({
 
       <ProductGiftMessageRow
         lang={lang}
-        value={giftCardMessage}
-        onChange={setGiftCardMessage}
+        messages={giftCardMessages}
+        onChangeAt={setGiftCardMessageAt}
+        onAdd={addGiftCardMessage}
+        onRemove={removeGiftCardMessage}
       />
 
       <div className={pdpStyles.qtyRow}>

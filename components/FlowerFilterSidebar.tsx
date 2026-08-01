@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { CatalogFilterParams } from '@/lib/sanity';
@@ -247,6 +247,46 @@ export function FlowerFilterPanel({
     setRangeHi(Math.min(PRICE_SLIDER_MAX, next));
   };
 
+  const dualRangeRef = useRef<HTMLDivElement>(null);
+
+  /** Click/tap on the track moves the nearest thumb (thumbs keep their own drag). */
+  const onDualRangePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Let native range thumbs handle their own drag.
+    if (target.closest('input[type="range"]')) return;
+
+    const el = dualRangeRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0) return;
+
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const raw = ratio * PRICE_SLIDER_MAX;
+    const snapped = Math.round(raw / PRICE_SLIDER_STEP) * PRICE_SLIDER_STEP;
+    const { lo, hi } = rangeRef.current;
+    const distLo = Math.abs(snapped - lo);
+    const distHi = Math.abs(snapped - hi);
+
+    if (distLo <= distHi) {
+      const next = Math.max(0, Math.min(snapped, hi - PRICE_SLIDER_STEP));
+      setRangeLo(next);
+      rangeRef.current = { lo: next, hi };
+    } else {
+      const next = Math.min(PRICE_SLIDER_MAX, Math.max(snapped, lo + PRICE_SLIDER_STEP));
+      setRangeHi(next);
+      rangeRef.current = { lo, hi: next };
+    }
+
+    // Commit after this pointer gesture ends (click or drag-from-track).
+    const onUp = () => {
+      commitPriceFromSlider();
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  };
+
   /** Which thumb sits on top when they overlap (so both stay draggable). */
   const minThumbOnTop = rangeLo <= PRICE_SLIDER_MAX - rangeHi;
 
@@ -301,7 +341,11 @@ export function FlowerFilterPanel({
 
       <div className="flower-filter-group">
         <p className="flower-filter-group-static-heading">{t.filterPriceRange}</p>
-        <div className="flower-dual-range">
+        <div
+          className="flower-dual-range"
+          ref={dualRangeRef}
+          onPointerDown={onDualRangePointerDown}
+        >
           <div className="flower-dual-range-track" aria-hidden />
           <div
             className="flower-dual-range-fill"
@@ -362,33 +406,36 @@ export function FlowerFilterPanel({
         </div>
       </div>
 
-      <div className="flower-filter-group">
-        <p className="flower-filter-group-static-heading">{t.filterTypes}</p>
-        <div className="flower-pill-row">
-          {STOREFRONT_FLOWER_TYPES.filter((ty) => {
-            const count = flowerTypeCounts?.[ty] ?? 0;
-            // Keep a selected type visible so it can be cleared even if facets change.
-            if (draft.types?.includes(ty)) return true;
-            return count > 0;
-          }).map((ty) => {
-            const active = draft.types?.includes(ty) ?? false;
-            const count = flowerTypeCounts?.[ty];
-            const label = t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string;
-            return (
-              <button
-                key={ty}
-                type="button"
-                className={`flower-pill ${active ? 'is-active' : ''}`}
-                onClick={() => toggleMulti('types', ty)}
-                aria-pressed={active}
-              >
-                {label}
-                {count != null ? <span className="flower-count-muted"> ({count})</span> : null}
-              </button>
-            );
-          })}
+      {/* Flower types live under main chips on desktop; keep them in the mobile sheet only */}
+      {mobileSheet ? (
+        <div className="flower-filter-group">
+          <p className="flower-filter-group-static-heading">{t.filterTypes}</p>
+          <div className="flower-pill-row">
+            {STOREFRONT_FLOWER_TYPES.filter((ty) => {
+              const count = flowerTypeCounts?.[ty] ?? 0;
+              // Keep a selected type visible so it can be cleared even if facets change.
+              if (draft.types?.includes(ty)) return true;
+              return count > 0;
+            }).map((ty) => {
+              const active = draft.types?.includes(ty) ?? false;
+              const count = flowerTypeCounts?.[ty];
+              const label = t[`type${ty.charAt(0).toUpperCase() + ty.slice(1)}` as keyof typeof t] as string;
+              return (
+                <button
+                  key={ty}
+                  type="button"
+                  className={`flower-pill ${active ? 'is-active' : ''}`}
+                  onClick={() => toggleMulti('types', ty)}
+                  aria-pressed={active}
+                >
+                  {label}
+                  {count != null ? <span className="flower-count-muted"> ({count})</span> : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="flower-filter-group flower-filter-group--swatches">
         <p className="flower-filter-group-static-heading">{t.filterColors}</p>
@@ -436,21 +483,23 @@ export function FlowerFilterPanel({
         </Collapsible>
       )}
 
-      <Collapsible title={t.filterDelivery}>
-        <ul className="flower-check-list">
-          {DELIVERY_OPTS.map((d) => {
-            const checked = draft.delivery?.includes(d) ?? false;
-            return (
-              <li key={d}>
-                <label className="flower-check-row">
-                  <input type="checkbox" checked={checked} onChange={() => toggleMulti('delivery', d)} />
-                  <span>{d === 'same_day' ? t.deliverySameDay : t.deliveryNextDay}</span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      </Collapsible>
+      {mobileSheet ? (
+        <Collapsible title={t.filterDelivery}>
+          <ul className="flower-check-list">
+            {DELIVERY_OPTS.map((d) => {
+              const checked = draft.delivery?.includes(d) ?? false;
+              return (
+                <li key={d}>
+                  <label className="flower-check-row">
+                    <input type="checkbox" checked={checked} onChange={() => toggleMulti('delivery', d)} />
+                    <span>{d === 'same_day' ? t.deliverySameDay : t.deliveryNextDay}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </Collapsible>
+      ) : null}
 
       <Collapsible title={t.filterFormat}>
         <div className="flower-pill-row">
@@ -478,23 +527,25 @@ export function FlowerFilterPanel({
         </div>
       </Collapsible>
 
-      <Collapsible title={t.filterStemBucket}>
-        <div className="flower-pill-row flower-pill-row--stem">
-          {STEM_OPTS.map(({ key, labelKey }) => {
-            const active = draft.stemBucket === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                className={`flower-pill ${active ? 'is-active' : ''}`}
-                onClick={() => toggleStem(key)}
-              >
-                {t[labelKey]} ({STEM_BUCKET_RANGES[key].min}–{STEM_BUCKET_RANGES[key].max === 9999 ? '30+' : STEM_BUCKET_RANGES[key].max})
-              </button>
-            );
-          })}
-        </div>
-      </Collapsible>
+      {mobileSheet ? (
+        <Collapsible title={t.filterStemBucket}>
+          <div className="flower-pill-row flower-pill-row--stem">
+            {STEM_OPTS.map(({ key, labelKey }) => {
+              const active = draft.stemBucket === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`flower-pill ${active ? 'is-active' : ''}`}
+                  onClick={() => toggleStem(key)}
+                >
+                  {t[labelKey]} ({STEM_BUCKET_RANGES[key].min}–{STEM_BUCKET_RANGES[key].max === 9999 ? '30+' : STEM_BUCKET_RANGES[key].max})
+                </button>
+              );
+            })}
+          </div>
+        </Collapsible>
+      ) : null}
 
       {/* Collapsible is a child component — scoped styled-jsx can miss its DOM; use global + panel prefix */}
       <style jsx global>{`
@@ -649,6 +700,7 @@ export function FlowerFilterPanel({
           width: 100%;
           height: 44px;
           margin-bottom: 10px;
+          cursor: pointer;
           --flower-range-accent: #c5a059;
           --flower-range-accent-dark: #a88b5c;
           --flower-range-track: #e8e0d8;
@@ -878,7 +930,11 @@ export function FlowerFilterSidebar(props: FlowerFilterPanelProps) {
         .flower-filter-sidebar-aside {
           width: 248px;
           flex-shrink: 0;
-          height: 100%;
+          align-self: flex-start;
+          /* Sit below sticky CatalogFilterBar (category + flower-type rows) */
+          position: sticky;
+          top: 92px;
+          max-height: calc(100vh - 92px);
           overflow-y: auto;
           scrollbar-width: thin;
           scrollbar-color: #e8e0d8 transparent;

@@ -8,7 +8,7 @@ export default function AdminLoginPage() {
       <div className="admin-login-brand">
         <Image
           src="/logo_icon_64.png"
-          alt=""
+          alt="Lanna Bloom logo"
           width={48}
           height={48}
           className="admin-login-brand-logo"
