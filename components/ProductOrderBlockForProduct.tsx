@@ -164,6 +164,7 @@ export function ProductOrderBlockForProduct({
               onChange={setAddOns}
               gifts={gifts.filter((g) => g.id !== product.id)}
               suggestedBouquets={suggestedBouquets}
+              itemLabel={name}
             />
           )}
           {isBalloon && (

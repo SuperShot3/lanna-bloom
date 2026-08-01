@@ -603,11 +603,19 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const { items, count: totalItemCount, removeItem, updateItem, clearCart } = useCart();
   const {
     giftCardMessages,
+    setGiftCardMessages,
     setGiftCardMessageAt,
     addGiftCardMessage,
     removeGiftCardMessage,
   } = useOrderGiftCardMessage();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
+
+  // Additional cards are cart-only and only when there is more than one unit.
+  useEffect(() => {
+    if (totalItemCount > 1) return;
+    if (giftCardMessages.length <= 1) return;
+    setGiftCardMessages([giftCardMessages[0] ?? '']);
+  }, [totalItemCount, giftCardMessages, setGiftCardMessages]);
   const viewCartFiredRef = useRef(false);
   const addShippingInfoFiredRef = useRef(false);
   const orderSubmitInFlightRef = useRef(false);

@@ -12,12 +12,15 @@ export function ProductGiftMessageRow({
   onChangeAt,
   onAdd,
   onRemove,
+  itemLabel,
 }: {
   lang: Locale;
   messages: string[];
   onChangeAt: (index: number, message: string) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
+  /** Current product name — shown above the single card field. */
+  itemLabel?: string;
 }) {
   const hasAny = messages.some((m) => m.trim().length > 0);
   const [open, setOpen] = useState(hasAny);
@@ -70,14 +73,18 @@ export function ProductGiftMessageRow({
         aria-hidden={!open}
       >
         <div className={styles.giftRowPanelInner}>
-          <GiftCardMessagesEditor
-            lang={lang}
-            messages={messages}
-            onChangeAt={onChangeAt}
-            onAdd={onAdd}
-            onRemove={onRemove}
-            idPrefix="pdp-gift-card"
-          />
+          <div className={styles.giftRowBody}>
+            <GiftCardMessagesEditor
+              lang={lang}
+              messages={messages.slice(0, 1)}
+              onChangeAt={onChangeAt}
+              onAdd={onAdd}
+              onRemove={onRemove}
+              allowAdditional={false}
+              itemLabels={itemLabel?.trim() ? [itemLabel.trim()] : []}
+              idPrefix="pdp-gift-card"
+            />
+          </div>
         </div>
       </div>
     </div>

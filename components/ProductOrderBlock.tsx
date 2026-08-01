@@ -254,6 +254,7 @@ export function ProductOrderBlock({
         onChangeAt={setGiftCardMessageAt}
         onAdd={addGiftCardMessage}
         onRemove={removeGiftCardMessage}
+        itemLabel={lang === 'th' ? bouquet.nameTh || bouquet.nameEn : bouquet.nameEn}
       />
 
       <div className={pdpStyles.qtyRow}>

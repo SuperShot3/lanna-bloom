@@ -6,10 +6,15 @@ export * from './types';
 export {
   GIFT_CARD_MESSAGES_MAX_COUNT,
   clipGiftCardMessage,
+  formatGiftCardEntry,
+  getOrderGiftCardDisplayLines,
+  getOrderGiftCardEntries,
   getOrderGiftCardMessages,
   giftCardMessageMaxLength,
   normalizeGiftCardMessagesForPersist,
   normalizeGiftCardMessagesForUi,
+  pairGiftCardMessagesWithItemTitles,
+  type OrderGiftCardEntry,
 } from './giftCardMessages';
 export {
   generateOrderId,

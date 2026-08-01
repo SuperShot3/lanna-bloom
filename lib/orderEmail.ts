@@ -17,19 +17,22 @@ import {
 import { buildOrderTemplateVariables } from '@/lib/email/variablesFromOrder';
 import { getDefaultSocialLinks, getEmailBrandHeaderHtml, getSocialFooterHtml } from '@/lib/email/socialFooter';
 import type { Locale } from '@/lib/i18n';
-import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
+import {
+  formatGiftCardEntry,
+  getOrderGiftCardEntries,
+} from '@/lib/orders/giftCardMessages';
 
 function formatGiftCardsHtml(order: Order): string {
-  const messages = getOrderGiftCardMessages(order);
-  if (messages.length === 0) return '';
-  const lines = messages
-    .map((m, i) =>
-      messages.length > 1
-        ? `• Card ${i + 1}: ${escapeHtml(m)}`
-        : `• ${escapeHtml(m)}`
+  const entries = getOrderGiftCardEntries(order);
+  if (entries.length === 0) return '';
+  const lines = entries
+    .map((e, i) =>
+      entries.length > 1
+        ? `• Card ${i + 1}: ${escapeHtml(formatGiftCardEntry(e))}`
+        : `• ${escapeHtml(formatGiftCardEntry(e))}`
     )
     .join('<br/>');
-  return `<h2 style="font-size: 1rem;">Gift card message${messages.length > 1 ? 's' : ''}</h2><p>${lines}</p>`;
+  return `<h2 style="font-size: 1rem;">Gift card message${entries.length > 1 ? 's' : ''}</h2><p>${lines}</p>`;
 }
 
 /** Primary + CC addresses for order admin emails, deduped. */

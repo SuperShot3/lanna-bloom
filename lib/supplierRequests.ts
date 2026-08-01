@@ -11,7 +11,10 @@ import {
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
 import { zoneLabel } from '@/lib/delivery/zones';
-import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
+import {
+  formatGiftCardEntry,
+  getOrderGiftCardEntries,
+} from '@/lib/orders/giftCardMessages';
 
 function normalizeHttpsBase(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '');
@@ -174,7 +177,7 @@ export interface SupplierPickupSnapshot {
 }
 
 export interface SupplierMessageCardSnapshot {
-  /** Order-level gift card messages (preferred). */
+  /** Order-level gift card lines (flower name + text when available). */
   giftCardMessages?: string[];
   cards: Array<{
     itemTitle: string;
@@ -381,13 +384,14 @@ export function buildSupplierSnapshots(
     preparation_snapshot: preparationSnapshot,
     pickup_snapshot: pickupSnapshot,
     message_card_snapshot: {
-      giftCardMessages: getOrderGiftCardMessages({
+      giftCardMessages: getOrderGiftCardEntries({
         giftCardMessages: orderJson?.giftCardMessages,
         items: items.map((item) => ({
+          bouquetTitle: item.bouquet_title,
           addOns: { cardMessage: item.addOns?.cardMessage },
         })),
         customOrderDetails,
-      }),
+      }).map(formatGiftCardEntry),
       cards: items.map((item, index) => ({
         itemTitle: nullIfBlank(item.bouquet_title) ?? `รายการที่ ${index + 1}`,
         cardType: nullIfBlank(item.addOns?.cardType),

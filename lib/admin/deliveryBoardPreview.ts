@@ -1,6 +1,6 @@
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import type { Order } from '@/lib/orders';
-import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
+import { getOrderGiftCardDisplayLines } from '@/lib/orders/giftCardMessages';
 
 const WINDOW_ORDER: Record<string, number> = {
   MORNING_9_12: 0,
@@ -126,7 +126,7 @@ interface LooseOrderJson {
 
 export function customerCardMessagePreview(order: SupabaseOrderRow): string {
   const json = order.order_json as Partial<Order> | null | undefined;
-  return getOrderGiftCardMessages({
+  return getOrderGiftCardDisplayLines({
     giftCardMessages: json?.giftCardMessages,
     items: json?.items,
     customOrderDetails: json?.customOrderDetails,

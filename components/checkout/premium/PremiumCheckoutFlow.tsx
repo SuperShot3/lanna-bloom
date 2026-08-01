@@ -35,6 +35,7 @@ import {
   clipCheckoutField,
 } from '@/lib/checkout/checkoutFieldLimits';
 import { DeliveryLocationRequestModal } from '@/components/checkout/DeliveryLocationRequestModal';
+import { cartUnitTitlesForGiftCards } from '@/lib/cart/giftCardItemTitles';
 
 function formatDestinationLabel(
   profile: CheckoutDeliveryProfile,
@@ -584,6 +585,10 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                 }}
                 onRemove={onRemoveGiftCardMessage}
                 disabled={noCardMessage}
+                allowAdditional={
+                  items.reduce((sum, i) => sum + (i.quantity ?? 1), 0) > 1
+                }
+                itemLabels={cartUnitTitlesForGiftCards(items, lang)}
                 textareaClassName="co-input co-textarea"
                 hideLabels
                 idPrefix="co-gift-card"
@@ -1061,6 +1066,26 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           flex-direction: column;
           gap: 14px;
           overflow: visible;
+        }
+        /* GiftCardMessagesEditor renders in a child tree — styled-jsx must be global here. */
+        .co-gift-message-card :global(.co-input) {
+          width: 100%;
+          padding: 12px 14px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          font-size: 16px;
+          font-family: inherit;
+          box-sizing: border-box;
+          background: #fff;
+          color: var(--text);
+        }
+        .co-gift-message-card :global(.co-textarea) {
+          min-height: 88px;
+          resize: vertical;
+        }
+        .co-gift-message-card :global(.co-input:disabled) {
+          opacity: 0.55;
+          cursor: not-allowed;
         }
         .co-section {
           overflow: visible;

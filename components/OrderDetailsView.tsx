@@ -18,7 +18,10 @@ import {
   getWrappingPaperColorLabel,
   isSpecificWrappingPaperColor,
 } from '@/lib/wrappingPaperColors';
-import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
+import {
+  formatGiftCardEntry,
+  getOrderGiftCardEntries,
+} from '@/lib/orders/giftCardMessages';
 
 /** Parse preferredTimeSlot: "2025-02-15 09:00-10:00" -> { date, time } or legacy format. */
 function parsePreferredTimeSlot(slot: string): { date: string; time: string } {
@@ -286,13 +289,13 @@ export function OrderDetailsView({
         lines.push(`  ${t.balloonText ?? 'Balloon text'}: ${item.addOns.balloonText.trim()}`);
       }
     });
-    const giftCards = getOrderGiftCardMessages(order);
+    const giftCards = getOrderGiftCardEntries(order);
     if (giftCards.length > 0) {
       lines.push('');
-      giftCards.forEach((msg, i) => {
+      giftCards.forEach((entry, i) => {
         const label =
           giftCards.length > 1 ? `${t.cardMessage} ${i + 1}` : t.cardMessage;
-        lines.push(`${label}: ${msg}`);
+        lines.push(`${label}: ${formatGiftCardEntry(entry)}`);
       });
     }
     lines.push('');
@@ -620,16 +623,21 @@ export function OrderDetailsView({
           ))}
         </ul>
         {(() => {
-          const giftCards = getOrderGiftCardMessages(order);
+          const giftCards = getOrderGiftCardEntries(order);
           if (giftCards.length === 0) return null;
           return (
             <div className="order-details-item-addons" style={{ marginTop: 12 }}>
-              {giftCards.map((msg, i) => (
+              {giftCards.map((entry, i) => (
                 <p key={i} className="order-details-addon-row">
                   <span className="order-details-addon-label">
-                    {giftCards.length > 1 ? `${t.cardMessage} ${i + 1}` : t.cardMessage}:
+                    {entry.itemTitle?.trim()
+                      ? entry.itemTitle.trim()
+                      : giftCards.length > 1
+                        ? `${t.cardMessage} ${i + 1}`
+                        : t.cardMessage}
+                    :
                   </span>
-                  <span className="order-details-addon-value">&quot;{msg}&quot;</span>
+                  <span className="order-details-addon-value">&quot;{entry.text}&quot;</span>
                 </p>
               ))}
             </div>

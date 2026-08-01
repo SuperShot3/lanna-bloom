@@ -45,6 +45,7 @@ export function AddOnsSection({
   gifts = [],
   suggestedBouquets = [],
   hideGiftAddOns = false,
+  itemLabel,
 }: {
   lang: Locale;
   value: AddOnsValues;
@@ -55,6 +56,8 @@ export function AddOnsSection({
   suggestedBouquets?: Bouquet[];
   /** Regional flower-only funnels: hide non-flower gift carousel */
   hideGiftAddOns?: boolean;
+  /** Current product name for the single gift-card field label. */
+  itemLabel?: string;
 }) {
   const tRaw = translations[lang].buyNow;
   const t = tRaw as {
@@ -88,10 +91,12 @@ export function AddOnsSection({
       <div className="addons-field">
         <GiftCardMessagesEditor
           lang={lang}
-          messages={giftCardMessages}
+          messages={giftCardMessages.slice(0, 1)}
           onChangeAt={setGiftCardMessageAt}
           onAdd={addGiftCardMessage}
           onRemove={removeGiftCardMessage}
+          allowAdditional={false}
+          itemLabels={itemLabel?.trim() ? [itemLabel.trim()] : []}
           idPrefix="addons-gift-card"
         />
       </div>

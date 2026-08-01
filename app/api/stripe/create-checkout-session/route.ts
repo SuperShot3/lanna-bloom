@@ -94,8 +94,8 @@ function validateStripePayload(
   }
   const cardMessages: string[] = [];
   const giftCardMessages = normalizeGiftCardMessagesForPersist(b.giftCardMessages);
-  for (const msg of giftCardMessages) {
-    cardMessages.push(msg);
+  for (const entry of giftCardMessages) {
+    cardMessages.push(entry.text);
   }
   for (const it of items) {
     const i = it as Record<string, unknown>;
@@ -498,7 +498,7 @@ interface StripeCheckoutPayload {
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
   items: CartItemIdentifier[];
-  giftCardMessages?: string[];
+  giftCardMessages?: Array<{ text: string; itemTitle?: string }>;
   referralCode?: string;
   referralDiscount?: number;
   submissionToken: string;

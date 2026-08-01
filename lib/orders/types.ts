@@ -150,9 +150,10 @@ export interface OrderPayload {
   customOrderDetails?: CustomOrderDetails;
   /**
    * Free gift-card messages for the order (1–3). Order-level — not duplicated onto line items.
-   * Legacy orders may only have `items[].addOns.cardMessage`; use `getOrderGiftCardMessages`.
+   * Each entry may include `itemTitle` (flower name) for ops. Legacy: plain strings still read.
+   * Prefer `getOrderGiftCardEntries` / `getOrderGiftCardMessages`.
    */
-  giftCardMessages?: string[];
+  giftCardMessages?: Array<string | { text: string; itemTitle?: string }>;
   /**
    * Browser-generated idempotency key for this checkout attempt.
    * Stored in DB; not shown in customer UI. Omitted from persisted order_json.

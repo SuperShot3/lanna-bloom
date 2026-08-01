@@ -18,7 +18,8 @@ import { normalizeBalloonText } from '@/lib/balloonCustomization';
 import { clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import { normalizeLineUserId } from '@/lib/lineUserId';
 import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
-import { normalizeGiftCardMessagesForPersist } from '@/lib/orders/giftCardMessages';
+import { pairGiftCardMessagesWithItemTitles } from '@/lib/orders/giftCardMessages';
+import { cartUnitTitlesForGiftCards } from '@/lib/cart/giftCardItemTitles';
 
 function mapWrappingForStripe(
   pref: CartItem['addOns']['wrappingPreference']
@@ -236,7 +237,10 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   if (gbraid?.trim()) body.gbraid = gbraid.trim();
   if (wbraid?.trim()) body.wbraid = wbraid.trim();
 
-  const persistedCards = normalizeGiftCardMessagesForPersist(giftCardMessages ?? []);
+  const persistedCards = pairGiftCardMessagesWithItemTitles(
+    giftCardMessages ?? [],
+    cartUnitTitlesForGiftCards(cartItems, lang)
+  );
   if (persistedCards.length > 0) {
     body.giftCardMessages = persistedCards;
   }

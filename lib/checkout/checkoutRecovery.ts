@@ -214,6 +214,6 @@ export async function getCheckoutRecoveryByToken(
     items,
     form: orderPayloadToCartForm(payload),
     locale,
-    giftCardMessages: getOrderGiftCardMessages(payload),
+    giftCardMessages: getOrderGiftCardMessages(payload), // texts only for cart draft
   };
 }
