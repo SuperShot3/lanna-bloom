@@ -409,6 +409,33 @@ export function buildOrderSummaryPlainText(order: SupabaseOrderRow, items: Order
   lines.push(`  Phone: ${naText(rPhone)}`);
   lines.push(`  Surprise delivery: ${surprise}`);
   lines.push('');
+  lines.push('Items');
+  if (items.length === 0) {
+    lines.push('  (none)');
+  } else {
+    for (const item of items) {
+      const title = item.bouquet_title?.trim() || 'N/A';
+      const size = item.size?.trim();
+      const typeLabel = getItemTypeLabel(item.item_type);
+      const sizePart = size ? ` · ${size}` : '';
+      lines.push(`  ${title} (${typeLabel}${sizePart}): ${formatAmountNa(item.price)}`);
+      if (item.addOns?.wrappingOption) {
+        lines.push(`    Wrapping: ${getWrappingLabel(item.addOns.wrappingOption)}`);
+      }
+      if (isSpecificWrappingPaperColor(item.addOns?.paperColor)) {
+        lines.push(
+          `    Paper color: ${getWrappingPaperColorLabel(item.addOns!.paperColor!, 'en')}`
+        );
+      }
+    }
+  }
+  lines.push(`Items total: ${formatAmountNa(order.items_total)}`);
+  lines.push(`Delivery fee: ${formatAmountNa(order.delivery_fee)}`);
+  if (order.referral_discount != null && order.referral_discount > 0) {
+    lines.push(`Discount: -${formatAmountNa(order.referral_discount)}`);
+  }
+  lines.push(`Grand total: ${formatAmountNa(order.grand_total)}`);
+  lines.push('');
   lines.push(`Order ID: ${naText(order.order_id)}`);
   lines.push(`Created: ${formatShopDateTime(order.created_at, 'N/A')}`);
 
@@ -420,9 +447,11 @@ export function buildOrderSummaryPlainTextFromBoardOrder(order: SupabaseOrderRow
   const json = order.order_json as {
     items?: Array<{
       bouquetTitle?: string;
+      size?: string;
+      price?: number;
+      itemType?: string;
       addOns?: OrderItemAddOnsDisplay;
     }>;
-    customOrderDetails?: { greetingCard?: string };
   } | null | undefined;
 
   const items: OrderSummaryItemRow[] = Array.isArray(json?.items)
@@ -430,30 +459,13 @@ export function buildOrderSummaryPlainTextFromBoardOrder(order: SupabaseOrderRow
         order_id: order.order_id,
         bouquet_id: null,
         bouquet_title: typeof it.bouquetTitle === 'string' ? it.bouquetTitle : null,
-        size: null,
-        price: null,
+        size: typeof it.size === 'string' ? it.size : null,
+        price: typeof it.price === 'number' ? it.price : null,
         image_url_snapshot: null,
+        item_type: typeof it.itemType === 'string' ? it.itemType : null,
         addOns: it.addOns,
       }))
     : [];
-
-  const greeting =
-    typeof json?.customOrderDetails?.greetingCard === 'string'
-      ? json.customOrderDetails.greetingCard
-      : null;
-
-  // Reuse summary builder; inject custom greeting as a synthetic card line when needed.
-  if (greeting?.trim() && !items.some((i) => i.addOns?.cardMessage?.trim())) {
-    items.push({
-      order_id: order.order_id,
-      bouquet_id: null,
-      bouquet_title: 'Custom order',
-      size: null,
-      price: null,
-      image_url_snapshot: null,
-      addOns: { cardMessage: greeting.trim() },
-    });
-  }
 
   return buildOrderSummaryPlainText(order, items);
 }
