@@ -1,7 +1,7 @@
 /**
  * Order-level gift card messages (1–3 free cards per order).
  * Prefer `order.giftCardMessages`; fall back to legacy per-item cardMessage (deduped).
- * Each entry may include `itemTitle` so ops know which flower the card belongs to.
+ * `itemTitle` is ops metadata (which flower the card belongs to) — never merge into message text.
  */
 
 import {
@@ -109,12 +109,12 @@ export type GiftCardMessagesSource = {
   customOrderDetails?: { greetingCard?: string | null } | null;
 };
 
-/** Display line: "Sunset Bouquet: Happy Birthday" or plain text. */
+/**
+ * Card message body only — exactly what the customer typed.
+ * Never prepend itemTitle / product names (ops labels stay separate).
+ */
 export function formatGiftCardEntry(entry: OrderGiftCardEntry): string {
-  const text = entry.text.trim();
-  const title = entry.itemTitle?.trim();
-  if (title && text) return `${title}: ${text}`;
-  return text;
+  return entry.text.trim();
 }
 
 /**
@@ -154,7 +154,7 @@ export function getOrderGiftCardMessages(order: GiftCardMessagesSource): string[
   return getOrderGiftCardEntries(order).map((e) => e.text);
 }
 
-/** Formatted lines for clipboard / previews. */
+/** Customer message texts for clipboard / previews (no product-name prefix). */
 export function getOrderGiftCardDisplayLines(order: GiftCardMessagesSource): string[] {
   return getOrderGiftCardEntries(order).map(formatGiftCardEntry);
 }

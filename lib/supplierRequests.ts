@@ -177,7 +177,7 @@ export interface SupplierPickupSnapshot {
 }
 
 export interface SupplierMessageCardSnapshot {
-  /** Order-level gift card lines (flower name + text when available). */
+  /** Order-level gift card texts (customer message only; no product-name prefix). */
   giftCardMessages?: string[];
   cards: Array<{
     itemTitle: string;

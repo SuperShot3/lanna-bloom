@@ -630,11 +630,9 @@ export function OrderDetailsView({
               {giftCards.map((entry, i) => (
                 <p key={i} className="order-details-addon-row">
                   <span className="order-details-addon-label">
-                    {entry.itemTitle?.trim()
-                      ? entry.itemTitle.trim()
-                      : giftCards.length > 1
-                        ? `${t.cardMessage} ${i + 1}`
-                        : t.cardMessage}
+                    {giftCards.length > 1
+                      ? `${t.cardMessage} ${i + 1}`
+                      : t.cardMessage}
                     :
                   </span>
                   <span className="order-details-addon-value">&quot;{entry.text}&quot;</span>

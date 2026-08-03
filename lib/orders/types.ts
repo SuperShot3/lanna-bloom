@@ -150,7 +150,8 @@ export interface OrderPayload {
   customOrderDetails?: CustomOrderDetails;
   /**
    * Free gift-card messages for the order (1–3). Order-level — not duplicated onto line items.
-   * Each entry may include `itemTitle` (flower name) for ops. Legacy: plain strings still read.
+   * `itemTitle` is ops metadata only (which bouquet the card belongs to) — never part of the
+   * printable/copyable card message body. Legacy: plain strings still read.
    * Prefer `getOrderGiftCardEntries` / `getOrderGiftCardMessages`.
    */
   giftCardMessages?: Array<string | { text: string; itemTitle?: string }>;

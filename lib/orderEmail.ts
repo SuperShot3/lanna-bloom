@@ -26,11 +26,11 @@ function formatGiftCardsHtml(order: Order): string {
   const entries = getOrderGiftCardEntries(order);
   if (entries.length === 0) return '';
   const lines = entries
-    .map((e, i) =>
-      entries.length > 1
-        ? `• Card ${i + 1}: ${escapeHtml(formatGiftCardEntry(e))}`
-        : `• ${escapeHtml(formatGiftCardEntry(e))}`
-    )
+    .map((e, i) => {
+      const msg = escapeHtml(formatGiftCardEntry(e));
+      // Customer message only — never prepend product names into the card body.
+      return entries.length > 1 ? `• Card ${i + 1}: ${msg}` : `• ${msg}`;
+    })
     .join('<br/>');
   return `<h2 style="font-size: 1rem;">Gift card message${entries.length > 1 ? 's' : ''}</h2><p>${lines}</p>`;
 }
