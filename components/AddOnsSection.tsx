@@ -5,7 +5,7 @@ import type { Locale } from '@/lib/i18n';
 import { BouquetsCarousel } from '@/components/BouquetsCarousel';
 import { GiftsCarousel } from '@/components/GiftsCarousel';
 import type { Bouquet } from '@/lib/bouquets';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { GiftCardMessagesEditor } from '@/components/GiftCardMessagesEditor';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import type { WrappingPaperColorSelection } from '@/lib/wrappingPaperColors';

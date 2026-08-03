@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
@@ -15,8 +15,7 @@ import { trackAddToCart } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
-import type { CatalogProduct } from '@/lib/sanity';
-import { getPreferredBouquetSize } from '@/lib/favorites';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
@@ -32,7 +31,6 @@ import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
 import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
-import { imageIndexForSizeIndex } from '@/lib/pdpVariantMedia';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import Link from 'next/link';
 
@@ -43,7 +41,8 @@ export function ProductOrderBlock({
   selectedImageUrl,
   selectedImageIndex,
   onSelectedImageIndexChange,
-  onSelectedSizeChange,
+  selectedSize,
+  onSizeSelect,
   gifts = [],
 }: {
   bouquet: Bouquet;
@@ -52,20 +51,11 @@ export function ProductOrderBlock({
   selectedImageUrl?: string | null;
   selectedImageIndex?: number;
   onSelectedImageIndexChange?: (index: number) => void;
-  onSelectedSizeChange?: (size: BouquetSize) => void;
+  selectedSize: BouquetSize;
+  onSizeSelect: (size: BouquetSize) => void;
   gifts?: CatalogProduct[];
 }) {
   const router = useRouter();
-  const [selectedSize, setSelectedSize] = useState<BouquetSize>(() => {
-    const preferredId = getPreferredBouquetSize(bouquet.id);
-    if (preferredId) {
-      const found = bouquet.sizes.find((s) => s.optionId === preferredId);
-      if (found) return found;
-      const legacy = bouquet.sizes.find((s) => s.key === preferredId);
-      if (legacy) return legacy;
-    }
-    return bouquet.sizes[0];
-  });
   const [addOns, setAddOns] = useState<AddOnsValues>(getDefaultAddOns);
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -100,20 +90,6 @@ export function ProductOrderBlock({
   );
   const totalPrice = unitPrice * qty;
   const lineTotalForPromo = discountedSizePrice * qty;
-
-  useEffect(() => {
-    onSelectedSizeChange?.(selectedSize);
-  }, [onSelectedSizeChange, selectedSize]);
-
-  const handleSizeSelect = (size: BouquetSize) => {
-    setSelectedSize(size);
-    if (size.imageUrls?.length) return;
-    const imageCount = bouquet.images?.length ?? 0;
-    const sizeIndex = bouquet.sizes.findIndex((candidate) => candidate.optionId === size.optionId);
-    if (sizeIndex >= 0 && onSelectedImageIndexChange && imageCount > 0) {
-      onSelectedImageIndexChange(imageIndexForSizeIndex(sizeIndex, imageCount));
-    }
-  };
 
   const addToCartCore = () => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
@@ -192,7 +168,7 @@ export function ProductOrderBlock({
         <ProductSizeCard
           sizes={bouquet.sizes}
           selected={selectedSize}
-          onSelect={handleSizeSelect}
+          onSelect={onSizeSelect}
           lang={lang}
           destinationId={checkoutProfile.destinationId}
           discountPercent={bouquet.discountPercent}
@@ -204,7 +180,7 @@ export function ProductOrderBlock({
           <SizeSelector
             sizes={bouquet.sizes}
             selected={selectedSize}
-            onSelect={handleSizeSelect}
+            onSelect={onSizeSelect}
             lang={lang}
             destinationId={checkoutProfile.destinationId}
             discountPercent={bouquet.discountPercent}

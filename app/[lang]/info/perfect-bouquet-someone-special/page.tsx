@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
-import { getBouquetBySlugFromSanity } from '@/lib/sanity';
+import { getCatalogBouquetBySlug } from '@/lib/catalogReads';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
 import { GuideFaq } from '../_components/GuideFaq';
@@ -304,7 +304,7 @@ export default async function PerfectBouquetGuidePage({
   const catalogHref = `/${lang}/catalog`;
 
   const bouquets = await Promise.all(
-    BOUQUET_SECTIONS.map((s) => getBouquetBySlugFromSanity(s.slug))
+    BOUQUET_SECTIONS.map((s) => getCatalogBouquetBySlug(s.slug))
   );
 
   return (

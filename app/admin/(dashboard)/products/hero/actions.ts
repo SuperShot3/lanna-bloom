@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { convertToWebp, validateProductImage } from '@/lib/adminProductImages';
 import { getCatalogSiteSettingsRowForAdmin } from '@/lib/catalogAdmin';
-import { importHeroFromSanity } from '@/lib/catalog/importHeroFromSanity';
 import { revalidateCatalogCacheAfterSupabaseWrite } from '@/lib/catalogRouting';
 import { buildCatalogImageRecord, uploadBufferToCatalog } from '@/lib/catalog/storage';
 import type { CatalogStoredImage } from '@/lib/catalog/types';
@@ -57,25 +56,6 @@ function normalizeCarouselOrder(images: CatalogStoredImage[]): CatalogStoredImag
   return images
     .filter((img) => img.storage_path)
     .map((img, index) => ({ ...img, sort_order: index }));
-}
-
-export async function importHeroFromSanityAction(): Promise<ActionResult> {
-  const gate = await requireHeroEditor();
-  if (gate.error) return gate;
-
-  try {
-    const supabase = getSupabaseAdmin();
-    if (!supabase) return { error: 'Catalog writes are not configured' };
-
-    const result = await importHeroFromSanity(supabase);
-    if (!result.imported) return { error: result.message };
-
-    revalidateHeroPaths();
-    return { message: result.message };
-  } catch (err) {
-    console.error('[Hero] importHeroFromSanity failed:', err);
-    return { error: err instanceof Error ? err.message : 'Import failed' };
-  }
 }
 
 export async function uploadMainHeroImageAction(formData: FormData): Promise<ActionResult> {

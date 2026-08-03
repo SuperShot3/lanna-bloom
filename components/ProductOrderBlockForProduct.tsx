@@ -15,7 +15,7 @@ import type { Locale } from '@/lib/i18n';
 import { trackAddToCart } from '@/lib/analytics';
 import { TrustBadges } from '@/components/TrustBadges';
 import type { Bouquet, BouquetSize } from '@/lib/bouquets';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';

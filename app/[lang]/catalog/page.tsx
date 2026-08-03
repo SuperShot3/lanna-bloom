@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import {
-  getBouquetsCatalogData,
-  getProductsFilteredFromSanity,
-  type CatalogProduct,
-} from '@/lib/sanity';
+  getCatalogBouquetsCatalogData,
+  getCatalogProductsFiltered,
+} from '@/lib/catalogReads';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { CatalogWithFilters } from '@/components/CatalogWithFilters';
@@ -14,7 +14,7 @@ import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { buildAlternates } from '@/lib/seo/alternates';
 
-// Revalidate catalog every 60 seconds so new flowers from Sanity appear without rebuild
+// Revalidate catalog every 60 seconds so new flowers appear without rebuild
 export const revalidate = 60;
 
 const BALLOONS_SEO = {
@@ -110,14 +110,14 @@ export default async function CatalogPage({
   let products: CatalogProduct[] = [];
 
   if (topCategory === 'flowers') {
-    const data = await getBouquetsCatalogData({
+    const data = await getCatalogBouquetsCatalogData({
       ...filterParams,
       catalogDeliveryDestination: 'CHIANG_MAI',
     });
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
   } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {
-    products = await getProductsFilteredFromSanity({
+    products = await getCatalogProductsFiltered({
       categoryKey: topCategory,
       sort: filterParams.sort || 'newest',
       catalogDeliveryDestination: 'CHIANG_MAI',

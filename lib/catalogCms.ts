@@ -243,6 +243,111 @@ export function filterCatalogImagesByVariant(
   return rows.filter((row) => !getCatalogImageVariantKey(row));
 }
 
+/**
+ * Resolve an admin-supplied image id against a row set that may have just been
+ * cloned into a new draft revision (new `id`s, `original_image_id` pointing back
+ * at the live row). Callers hold onto the pre-draft id until their next
+ * `router.refresh()`, so a plain `id` match can miss right after a draft is
+ * lazily created — fall back to `original_image_id` before giving up.
+ */
+export function findCatalogImageByAnyId(
+  images: CatalogProductImageRow[],
+  imageId: string
+): CatalogProductImageRow | undefined {
+  return (
+    images.find((image) => image.id === imageId) ??
+    images.find((image) => image.original_image_id === imageId)
+  );
+}
+
+/**
+ * Move images between the main gallery (no variant_key) and a variant scope
+ * (e.g. stem_25). Multiple images may share one variant key.
+ */
+export async function setCatalogProductImagesVariantKey(input: {
+  imageIds: string[];
+  variantKey: string | null;
+  actor?: string | null;
+}): Promise<CatalogProductImageRow[]> {
+  const supabase = requireSupabase();
+  const imageIds = Array.from(new Set(input.imageIds.map((id) => id.trim()).filter(Boolean)));
+  if (!imageIds.length) throw new Error('No images selected');
+
+  const { data: firstRows, error: firstError } = await supabase
+    .from('catalog_product_images')
+    .select('*')
+    .eq('id', imageIds[0]!)
+    .is('deleted_at', null)
+    .limit(1);
+
+  if (firstError) throw new Error(firstError.message);
+  const first = (firstRows?.[0] ?? null) as CatalogProductImageRow | null;
+  if (!first) throw new Error('Image not found');
+  if (!first.entity_id && !first.revision_id) {
+    throw new Error('Image is not attached to an entity or draft');
+  }
+
+  const allRows = first.revision_id
+    ? await getCatalogProductImagesForRevision(first.revision_id)
+    : await getCatalogProductImagesForEntity(first.entity_type, first.entity_id!);
+
+  const byId = new Map(allRows.map((row) => [row.id, row]));
+  const selected = imageIds.map((id) => byId.get(id)).filter(Boolean) as CatalogProductImageRow[];
+  if (selected.length !== imageIds.length) {
+    throw new Error('One or more images were not found for this product');
+  }
+
+  const targetKey = input.variantKey?.trim() || null;
+  const targetScope = filterCatalogImagesByVariant(allRows, targetKey);
+  const selectedSet = new Set(selected.map((row) => row.id));
+  const existingInTarget = targetScope.filter((row) => !selectedSet.has(row.id));
+  let nextSort = existingInTarget.length;
+
+  const now = new Date().toISOString();
+  const actor = cleanText(input.actor);
+  const movedPrimaryFromMain = selected.some(
+    (row) => row.is_primary && !getCatalogImageVariantKey(row) && targetKey
+  );
+
+  for (const row of selected) {
+    const metadata: JsonObject = { ...(row.metadata ?? {}) };
+    if (targetKey) {
+      metadata.variant_key = targetKey;
+    } else {
+      delete metadata.variant_key;
+    }
+
+    const { error } = await supabase
+      .from('catalog_product_images')
+      .update({
+        metadata,
+        is_primary: targetKey ? false : row.is_primary,
+        sort_order: nextSort,
+        updated_by: actor,
+        updated_at: now,
+      })
+      .eq('id', row.id)
+      .is('deleted_at', null);
+
+    if (error) throw new Error(error.message);
+    nextSort += 1;
+  }
+
+  if (movedPrimaryFromMain) {
+    const remainingMain = allRows.filter(
+      (row) => !selectedSet.has(row.id) && !getCatalogImageVariantKey(row)
+    );
+    if (remainingMain[0]) {
+      await setCatalogProductPrimaryImage(remainingMain[0].id, input.actor);
+    }
+  }
+
+  if (first.revision_id) {
+    return getCatalogProductImagesForRevision(first.revision_id);
+  }
+  return getCatalogProductImagesForEntity(first.entity_type, first.entity_id!);
+}
+
 export async function getCatalogProductImagesForEntity(
   entityType: CatalogEntityType,
   entityId: string
@@ -295,7 +400,12 @@ export async function reorderCatalogProductImages(input: {
     : await getCatalogProductImagesForEntity(input.entityType, input.entityId!);
   const scopeRows = filterCatalogImagesByVariant(allRows, input.variantKey);
   const scopeIds = new Set(scopeRows.map((row) => row.id));
-  const ordered = input.orderedIds.filter((id) => scopeIds.has(id));
+  // orderedIds may be pre-draft ids from a client that hasn't refreshed yet —
+  // resolve each through original_image_id before filtering by scope.
+  const resolvedIds = input.orderedIds
+    .map((id) => findCatalogImageByAnyId(allRows, id)?.id)
+    .filter((id): id is string => Boolean(id));
+  const ordered = resolvedIds.filter((id) => scopeIds.has(id));
   if (ordered.length !== scopeRows.length) {
     throw new Error('Invalid image order for this variant scope');
   }

@@ -1,12 +1,22 @@
-# Catalog migration runbook — Sanity → Supabase
+# Catalog migration runbook — Sanity → Supabase (historical, migration complete)
 
-Operational steps to cut over Lanna Bloom’s **product catalog** from Sanity to Supabase. Application code already reads/writes Supabase by default; this runbook covers **schema**, **data import**, **env**, and **smoke tests**.
+> **Status: migration complete and Sanity dependency fully removed.** This runbook is kept as a
+> historical record of the one-time cutover. The import/export scripts it references
+> (`scripts/archive/import-catalog-from-sanity.ts`, `scripts/archive/export-catalog.ts`,
+> `scripts/import-hero-from-sanity.ts`), the `import-catalog`/`import-hero` npm scripts, the
+> `@sanity/client` / `@sanity/image-url` packages, `lib/sanity.ts`, and all `NEXT_PUBLIC_SANITY_*` /
+> `SANITY_API_WRITE_TOKEN` env vars have since been **deleted from the codebase** — there is no
+> remaining Sanity dependency anywhere in the app, and there is no supported way to re-run this
+> import without restoring those files from git history. Do not follow the steps below to import
+> catalog data today; they no longer apply.
 
-## Prerequisites
+Operational steps that were used to cut over Lanna Bloom's **product catalog** from Sanity to Supabase. This runbook covers **schema**, **data import**, and **smoke tests** as they existed during the migration.
+
+## Prerequisites (historical)
 
 - Supabase project with **orders** already on Supabase (same `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` as production).
 - Sanity project still reachable for **one-time import** (read token).
-- Node 18+, `npm install` (includes devDependency `@sanity/client` for import only).
+- Node 18+, `npm install` (included devDependency `@sanity/client` for import only — since removed).
 
 ## What was retired
 
@@ -15,9 +25,9 @@ Operational steps to cut over Lanna Bloom’s **product catalog** from Sanity to
 | Sanity Studio (`/studio`, `sanity.config.ts`) | Admin dashboard (`/admin`) — product moderation, bouquet review |
 | Sanity runtime reads/writes in app | `lib/catalogReads.ts`, `lib/catalogWrite.ts`, Supabase tables + Storage |
 | Partner dashboard (`/[lang]/partner/dashboard`, login, products) | Redirects to home or `/[lang]/partner/apply` (application form only) |
-| `SANITY_API_WRITE_TOKEN` in production | Only needed locally/Vercel **once** for `npm run import-catalog` |
+| `SANITY_API_WRITE_TOKEN`, one-time import scripts, `@sanity/client`/`@sanity/image-url`, `lib/sanity.ts` | Fully deleted — no longer present in the repo |
 
-`lib/sanity.ts` remains as a **rename facade** (e.g. `getBouquetsFromSanity` → Supabase). Do not re-enable `CATALOG_READ_SOURCE=sanity` or `CATALOG_WRITE_SOURCE=sanity` — the app will error.
+Do not re-enable `CATALOG_READ_SOURCE=sanity` or `CATALOG_WRITE_SOURCE=sanity` — the app will error, and the code path they would have selected no longer exists.
 
 ---
 

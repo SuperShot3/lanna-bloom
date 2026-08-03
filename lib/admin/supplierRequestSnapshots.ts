@@ -7,7 +7,7 @@ import type {
 } from '@/lib/supabase/adminQueries';
 import type { OrderSummaryItemRow } from '@/lib/admin/orderSummaryPlainText';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
-import { getBouquetById, getPlushyToyById, getProductById } from '@/lib/sanity';
+import { getCatalogBouquetById, getCatalogPlushyToyById, getCatalogProductById } from '@/lib/catalogReads';
 import type { SupplierCatalogSnapshot } from '@/lib/supplierRequests';
 
 type OrderJsonItem = {
@@ -79,7 +79,7 @@ export async function buildSupplierCatalogSnapshots(
       if (!id) return [key, {}] as const;
 
       if (itemType === 'product') {
-        const product = await getProductById(id);
+        const product = await getCatalogProductById(id);
         return [
           key,
           {
@@ -90,11 +90,11 @@ export async function buildSupplierCatalogSnapshots(
       }
 
       if (itemType === 'plushyToy') {
-        const toy = await getPlushyToyById(id);
+        const toy = await getCatalogPlushyToyById(id);
         return [key, { nameTh: toy?.nameTh ?? null }] as const;
       }
 
-      const bouquet = await getBouquetById(id);
+      const bouquet = await getCatalogBouquetById(id);
       const matchedSize = bouquet?.sizes.find((size) =>
         matchesSizeLabel(size.label, item.size) ||
         matchesSizeLabel(size.labelTh, item.size) ||

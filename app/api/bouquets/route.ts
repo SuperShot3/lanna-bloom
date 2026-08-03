@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getPopularCatalogItemsFromSanityPaginated,
-  getBouquetsFromSanityPaginated,
-} from '@/lib/sanity';
+  getCatalogPopularItemsPaginated,
+  getCatalogBouquetsPaginated,
+} from '@/lib/catalogReads';
 import { DELIVERY_DESTINATIONS, type DeliveryDestinationId } from '@/lib/delivery/markets';
 
-/** Match home/catalog ISR — avoid re-fetching Sanity on every pagination request. */
+/** Match home/catalog ISR — avoid re-fetching the catalog on every pagination request. */
 export const revalidate = 60;
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
       ).includes(destRaw)
         ? (destRaw as DeliveryDestinationId)
         : 'CHIANG_MAI';
-      const bouquets = await getBouquetsFromSanityPaginated(offset, limit, destination);
+      const bouquets = await getCatalogBouquetsPaginated(offset, limit, destination);
       const hasMore = bouquets.length === limit;
       return NextResponse.json({ bouquets, hasMore });
     }
 
-    const items = await getPopularCatalogItemsFromSanityPaginated(offset, limit);
+    const items = await getCatalogPopularItemsPaginated(offset, limit);
     const hasMore = items.length === limit;
 
     return NextResponse.json({ items, hasMore });

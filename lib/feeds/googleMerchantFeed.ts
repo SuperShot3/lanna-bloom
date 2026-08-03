@@ -6,7 +6,7 @@ import {
   getProductDisplayCategory,
   type DisplayCategory,
 } from '@/lib/catalogCategories';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 
 export const FEED_BRAND = 'Lanna Bloom';
 export const FEED_DESTINATION = 'CHIANG_MAI' as const;

@@ -10,7 +10,7 @@ import {
   AdminCmsSection,
   AdminCheckboxGrid,
   PricingSectionEditor,
-  ProductImageListEditor,
+  ProductGalleryEditor,
 } from '@/app/admin/components/cms-editor';
 import { reorderImagesByIds } from '@/lib/catalogImageReorder';
 import {
@@ -39,6 +39,7 @@ import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogSh
 import { useCatalogUnsavedLeaveGuard } from '@/app/admin/(dashboard)/products/useCatalogUnsavedLeaveGuard';
 import {
   approveBouquetFromStudioAction,
+  assignBouquetImagesVariantAction,
   convertBouquetImageToWebpAction,
   deleteBouquetFromStudioAction,
   deleteBouquetImageAction,
@@ -141,6 +142,11 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
+    // Images save immediately via dedicated actions — always sync even when form is dirty.
+    setEditableImages(bouquet.editableImages ?? []);
+  }, [bouquet.editableImages]);
+
+  useEffect(() => {
     if (getBouquetPending(bouquet.id)) return;
     setNameEn(bouquet.nameEn);
     setNameTh(bouquet.nameTh);
@@ -162,7 +168,6 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     setFlowerTypes(bouquet.flowerTypes ?? []);
     setOccasion(bouquet.occasion ?? []);
     setStatus(bouquet.status);
-    setEditableImages(bouquet.editableImages ?? []);
   }, [bouquet, getBouquetPending]);
 
   const catalogHref = `/en/catalog/${bouquet.slug}`;
@@ -257,9 +262,11 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       if (result.error) {
         setEditableImages(previous);
         setError(result.error);
+      } else {
+        router.refresh();
       }
     },
-    [bouquet.id]
+    [bouquet.id, router]
   );
 
   async function handleSave() {
@@ -453,6 +460,30 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       else router.refresh();
     },
   };
+
+  async function handleAssignVariant(imageIds: string[], variantKey: string | null) {
+    setError(null);
+    setLoading('assign');
+    setEditableImages((current) =>
+      current.map((img) =>
+        imageIds.includes(img.id)
+          ? { ...img, variantKey: variantKey ?? null, isPrimary: variantKey ? false : img.isPrimary }
+          : img
+      )
+    );
+    const result = await assignBouquetImagesVariantAction({
+      bouquetId: bouquet.id,
+      imageIds,
+      variantKey,
+    });
+    setLoading(null);
+    if (result.error) {
+      setError(result.error);
+      setEditableImages(bouquet.editableImages ?? []);
+      return;
+    }
+    router.refresh();
+  }
 
   const statusClass =
     status === 'approved' ? 'is-live' : status === 'rejected' ? 'is-rejected' : 'is-pending';
@@ -663,19 +694,24 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
 
       <AdminCmsCollapsibleSection
         label="Product gallery"
-        helper="Main images shown on the product page. Size or stem overrides are set in Pricing above."
+        helper={
+          pricingType === 'stem_count'
+            ? 'Upload photos here, then assign one or more to each stem tier. Assigned images leave the main list and show on the product page when that tier is selected. Size overrides (if any) are still set in Pricing.'
+            : 'Main images shown on the product page. Size overrides are set in Pricing above.'
+        }
         className="admin-cms-collapsible-panel"
         defaultOpen
       >
-        <ProductImageListEditor
+        <ProductGalleryEditor
           images={editableImages}
-          variantKey={null}
-          disabled={!!loading}
+          stemOptions={pricingType === 'stem_count' ? stemOptions : []}
+          disabled={!!loading || savingImageOrder}
           loadingKey={loading}
-          onReorder={(ids) => imageHandlers.onReorder(null, ids)}
-          onUpload={(file, options) => imageHandlers.onUpload(null, file, options)}
+          onReorder={imageHandlers.onReorder}
+          onUpload={imageHandlers.onUpload}
+          onAssignVariant={handleAssignVariant}
           onSaveAlt={imageHandlers.onSaveAlt}
-          onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
+          onReplace={imageHandlers.onReplace}
           onEditFraming={imageHandlers.onEditFraming}
           onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}

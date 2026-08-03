@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
-import type { CatalogFilterParams } from '@/lib/sanity';
+import type { CatalogFilterParams } from '@/lib/catalogListLogic';
 import type { CatalogTopCategory } from '@/lib/catalogCategories';
 import {
   CATALOG_TOP_CATEGORIES,

@@ -4,7 +4,7 @@ Read this file before substantive work. Use topic files below for depth; use `do
 
 ## What this is
 
-**Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Bilingual storefront (`/en`, `/th`), Stripe web checkout, Supabase orders and **catalog**, admin ops. Partner **application** form only (dashboard and Sanity Studio retired).
+**Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Bilingual storefront (`/en`, `/th`), Stripe web checkout, Supabase orders, catalog, and admin data. Partner **application** form only (no partner dashboard).
 
 Production site: `lannabloom.shop`. Social links live in `README.md`.
 
@@ -59,7 +59,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 | Admin dashboard | `app/admin/(dashboard)/` |
 | Admin APIs | `app/api/admin/` |
 | Email templates / outbox | `lib/email/`, Supabase `email_templates` / `email_outbox` |
-| Catalog (Supabase) | `lib/catalogReads.ts`, `lib/catalogWrite.ts`, `lib/sanity.ts` (facade), `app/[lang]/catalog/` |
+| Catalog (Supabase) | `lib/catalogReads.ts`, `lib/catalogWrite.ts`, `lib/catalog/`, `app/[lang]/catalog/` |
 | Delivery fees (checkout + map) | `lib/delivery/zones.ts` (`getZoneFee`) — single source; map UI via `lib/delivery/amphoeDisplayFees.ts` |
 | Partner apply | `app/[lang]/partner/apply/` |
 
@@ -71,8 +71,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 |----------|---------|
 | `NEXT_PUBLIC_APP_URL` | Canonical site URL (order links, emails) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Orders, catalog, admin DB (server only) |
-| `NEXT_PUBLIC_SUPABASE_*` | Optional; legacy partner auth (portal retired) |
-| `NEXT_PUBLIC_SANITY_*`, `SANITY_API_WRITE_TOKEN` | **Import only** — one-time `npm run import-catalog` |
+| `NEXT_PUBLIC_SUPABASE_*` | Public Supabase URL/anon key (customer order pages, `next/image` allowlist) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Payments |
 | `AUTH_SECRET` | Admin NextAuth |
 | `RESEND_API_KEY`, `ORDERS_*_EMAIL` | Transactional email |
@@ -87,9 +86,9 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 4. **Analytics `purchase`** — browser on `/order/...?track_purchase=1` after thank-you resolves paid Stripe session (thank-you itself does not push `purchase`).
 5. **Content copy** — use `.cursor/skills/` writers, not new giant prompts here.
 
-## Catalog cutover
+## Catalog
 
-Product catalog (bouquets, add-ons, partners, homepage hero) lives in **Supabase**, not Sanity. One-time migration: [docs/CATALOG_MIGRATION_RUNBOOK.md](../docs/CATALOG_MIGRATION_RUNBOOK.md).
+Product catalog (bouquets, add-ons, partners, homepage hero) lives entirely in **Supabase** — see [docs/CATALOG_MIGRATION_RUNBOOK.md](../docs/CATALOG_MIGRATION_RUNBOOK.md) for schema/table details.
 
 ## Deep dive (`docs/`)
 

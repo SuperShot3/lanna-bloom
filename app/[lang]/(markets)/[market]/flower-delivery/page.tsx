@@ -7,10 +7,10 @@ import {
   marketIsRouteAvailable,
 } from '@/lib/delivery/markets';
 import {
-  getBouquetsFromSanityPaginated,
-  getHeroImageFromSanity,
-  getHeroCarouselImagesFromSanity,
-} from '@/lib/sanity';
+  getCatalogBouquetsPaginated,
+  getCatalogHeroImage,
+  getCatalogHeroCarouselImages,
+} from '@/lib/catalogReads';
 import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
 import { Hero } from '@/components/Hero';
 import { MarketBouquetsShowcase } from '@/components/MarketBouquetsShowcase';
@@ -43,9 +43,9 @@ export default async function MarketFlowerDeliveryPage({
 
   const lang = params.lang as Locale;
   const [initialBouquets, heroImageUrl, carouselImages] = await Promise.all([
-    getBouquetsFromSanityPaginated(0, 12, entry.destinationId),
-    getHeroImageFromSanity(),
-    getHeroCarouselImagesFromSanity(),
+    getCatalogBouquetsPaginated(0, 12, entry.destinationId),
+    getCatalogHeroImage(),
+    getCatalogHeroCarouselImages(),
   ]);
 
   const isTh = lang === 'th';

@@ -1,19 +1,23 @@
 # Lanna Bloom — Page Structure, UI Layout & UX
 
+> Updated to match the current app. For the authoritative, continuously-verified architecture
+> reference, read `ai_context/00_START_HERE.md` and the other `ai_context/*.md` files.
+
 ## 1. Page Structure
 
 | Route | Purpose |
 |-------|--------|
 | `/` | Redirects to `/en` (default locale) |
 | `/en`, `/th` | Home (EN / TH) |
-| `/en/catalog`, `/th/catalog` | Catalog grid; optional `?category=roses` etc. |
-| `/en/catalog/[slug]`, `/th/catalog/[slug]` | Product page (e.g. `/en/catalog/classic-roses`) |
-| `/en/partner/apply`, `/th/partner/apply` | Partner application form (Thai-first UI) |
-| `/en/partner`, `/th/partner` (or `/partner/dashboard`) | Partner dashboard (auth required; Supabase session) |
-| `/en/partner/products/new`, `/th/partner/products/new` | Add product wizard (flowers → bouquet; others → product doc) |
+| `/en/catalog`, `/th/catalog` | Catalog grid; filterable by category, flower type, occasion, etc. |
+| `/en/catalog/[slug]`, `/th/catalog/[slug]` | Product page (bouquet, plush toy, balloon, or gift) |
+| `/en/cart`, `/th/cart` | Cart and delivery details |
+| `/en/checkout/...`, `/th/checkout/...` | Stripe Checkout handoff + confirmation-pending |
+| `/en/partner/apply`, `/th/partner/apply` | Partner application form (Thai-first UI) — no login, no dashboard |
+| `/order/[orderId]` | Public order tracking page (no locale prefix; requires `?token=`) |
 | `/admin/partners/applications` | Admin: approve/reject partner applications |
 | `/admin/moderation/products` | Admin: approve/reject submitted products |
-| `/studio` (or `/studio/...`) | Sanity Studio — CMS for bouquets, partners, products |
+| `/admin` | Admin dashboard: orders, catalog, accounting, marketing, RBAC |
 
 **Language:** Content switches by URL (`/en` vs `/th`). Next.js client navigation keeps the app instant when using `<Link>`.
 
@@ -22,13 +26,13 @@
 ## 2. UI Layout Description
 
 ### Home Page
-- **Header (global):** Logo (Lanna Bloom, 60×50px; smaller when scrolled), Nav (Home | Catalog | Register as a Partner), Language switcher (EN | TH), Messenger icons (LINE, WhatsApp, Telegram). Sticky; compact “scrolled” state; burger menu on mobile when scrolled.
+- **Header (global):** Logo (Lanna Bloom, 60×50px; smaller when scrolled), Nav (Home | Catalog | Partner apply), Language switcher (EN | TH), Messenger icons (LINE, WhatsApp, Telegram). Sticky; compact “scrolled” state; burger menu on mobile when scrolled.
 - **Hero:** Centered headline + subline; primary CTA “Choose a bouquet” → catalog; trust line (e.g. same-day delivery Chiang Mai).
 - **Category grid:** 2 columns on mobile, 4 on tablet/desktop. Each tile: icon + label; links to catalog (all or filtered). Categories: All bouquets, Roses, Mixed, Mono, Flowers in a box, Romantic, Birthday, Sympathy.
 
 ### Catalog Page
 - **Title:** “Our bouquets” (or Thai equivalent).
-- **Grid:** Responsive 1 → 2 → 3 columns. Each card: image, name, “from ฿X”, “View details” → product page. Data from Sanity (ISR, revalidate 60s).
+- **Grid:** Responsive 1 → 2 → 3 columns. Each card: image, name, “from ฿X”, “View details” → product page. Data read from Supabase catalog tables (ISR, revalidate 60s).
 
 ### Product Page
 - **Breadcrumb:** Home / Catalog / [Bouquet name].
@@ -37,15 +41,15 @@
 - **Info block:** Name, description, “Composition” section.
 - **Order block:** (1) **Delivery form** — select delivery area (Chiang Mai districts) and delivery date. (2) **Size selector** — S / M / L / XL with price and description. (3) **Messenger order buttons** — Order via LINE, WhatsApp, Telegram, Facebook. Pre-filled message includes bouquet name, size, and (when provided) delivery address and date.
 
-### Partner Flow (Clarified Architecture — Supabase apps + auth; Sanity partners + products; no sync)
+### Partner Flow (current — application only, no partner login)
 - **A) Apply** — `/[lang]/partner/apply`: Form (shop name, contact, email, LINE, phone, address, district, delivery, categories, samples). Submit → Supabase `partner_applications` (status: pending).
-- **B) Admin Approval** — `/admin/partners/applications`: Approve → create Supabase auth user, create Sanity partner (with supabaseUserId), update application row.
-- **C) Dashboard** — `/[lang]/partner`: Auth required. Resolve partner by supabaseUserId. If pending → “Pending approval”. If disabled → “Account disabled”. If approved → list of bouquets, “Add bouquet”, and edit links.
-- **D) Add Product** — `/[lang]/partner/products/new`: Flowers → Sanity bouquet (existing). Non-flowers → Sanity product (moderationStatus: submitted). **E) Moderation** — `/admin/moderation/products`: Approve/Reject. **F) Catalog** — Reads only approved/live items.
+- **B) Admin Review** — `/admin/partners/applications`: Admin approves or rejects the application directly; there is no auto-created partner login/account.
+- **C) Products** — Admins add/edit catalog products (bouquets, plush toys, balloons, gifts) directly in `/admin`; there is no partner-facing product-add flow or partner dashboard.
+- **D) Moderation** — `/admin/moderation/products`: Approve/Reject submitted products. **Catalog** reads only approved/live items from Supabase.
 
 ### Header behavior
 - **Sticky** with subtle shadow; “scrolled” state: reduced height, frosted background, smaller logo (30×36px).
-- **Mobile (≤600px):** When scrolled, desktop nav is replaced by a **burger**; opening it shows full-screen overlay with Home, Catalog, Register as a Partner, language switcher, and messenger links.
+- **Mobile (≤600px):** When scrolled, desktop nav is replaced by a **burger**; opening it shows full-screen overlay with Home, Catalog, Partner apply, language switcher, and messenger links.
 
 ---
 
@@ -65,17 +69,16 @@
 | **MessengerOrderButtons** | LINE, WhatsApp, Telegram, Facebook CTAs; build pre-filled message from bouquet name, selected size, and optional delivery address/date; open in new tab. |
 | **ProductOrderBlock** | Client wrapper: DeliveryForm state, SizeSelector, MessengerOrderButtons. |
 | **SocialLinks** | Social links component (available for footer or other use). |
-| **PartnerApplyForm** | Partner application form; server action → Supabase partner_applications. |
-| **BouquetForm** | Add/Edit bouquet form (flowers); server actions create/update via Sanity. Reused for flowers category. |
-| **ProductForm** | Add product form (non-flowers); creates Sanity product doc with moderationStatus. |
+| **PartnerApplyForm** | Partner application form; server action → Supabase `partner_applications`. |
+| **BouquetForm / ProductForm (admin)** | Admin-only add/edit forms for bouquets and other product categories; server actions write directly to Supabase catalog tables via `lib/catalogWrite.ts`. |
 
 **Data / lib:**
 - **lib/i18n.ts** — Locales (EN, TH), all UI strings including partner and buyNow/delivery.
-- **lib/bouquets.ts** — Bouquet/BouquetSize types; used by front-end and Sanity mapping.
-- **lib/sanity.ts** — Sanity read client; `getBouquetsFromSanity`, `getBouquetBySlugFromSanity`, `getPartnerById`, `getBouquetsByPartnerId`, `getPartnerBySupabaseUserId`, `getProductsForModeration`, etc. Image URL builder.
-- **lib/sanityWrite.ts** — Sanity write client (server-only); `createPartner` (accepts supabaseUserId), `uploadImageToSanity`, `createBouquet`, `updateBouquet`, `createProduct`, `updateProductModerationStatus`. Requires `SANITY_API_WRITE_TOKEN`.
-- **lib/supabase/** — Supabase client; `partner_applications` CRUD; partner auth (session).
-- **lib/delivery-areas.ts** — Chiang Mai districts (EN/TH); `CITY_EN`, `CITY_TH`, `CHIANG_MAI_DISTRICTS`, postal-code search helper.
+- **lib/bouquets.ts** — Bouquet/BouquetSize types; used by front-end and catalog mapping.
+- **lib/catalogReads.ts** — Supabase catalog read layer; `getCatalogBouquets`, `getCatalogBouquetBySlug`, `getCatalogProductBySlug`, etc.
+- **lib/catalogWrite.ts** — Supabase catalog write layer (server-only, admin only); create/update bouquets, products, and site settings.
+- **lib/supabase/** — Supabase client; `partner_applications` CRUD; admin/order/catalog queries.
+- **lib/delivery/** — Delivery destinations, zones, and per-zone fees (Chiang Mai + expansion cities).
 - **lib/messenger.ts** — Build LINE/WhatsApp/Telegram/Facebook URLs with pre-filled message; central place for phone/ID/handles.
 
 ---
@@ -83,10 +86,10 @@
 ## 4. UX Logic
 
 - **Navigation:** All links are locale-aware (`/[lang]/...`). Switching language keeps the same page type (home, catalog, product, partner).
-- **Catalog:** Data from Sanity; filtered by `?category=…`. ISR with `revalidate = 60` so new/updated bouquets appear without full rebuild.
-- **Product:** User selects delivery area and date (optional), then size. “Order via …” uses current size and, when set, delivery address and date in the pre-filled message.
-- **Messenger flow:** Click “Order via LINE” (etc.) → new tab with pre-filled text (e.g. “Hello! I want to order bouquet [Name], size [Size]. Delivery: [address]. Date: [date]”). No in-app checkout; completion in messenger.
-- **Partner:** Apply → Supabase. Admin approves → create Supabase user + Sanity partner. Partner logs in, adds products directly to Sanity. Admin moderates products; only live/approved items show in catalog.
+- **Catalog:** Data from Supabase; filtered by `?category=…` and other facets. ISR with `revalidate = 60` so new/updated bouquets appear without full rebuild.
+- **Product:** User selects delivery area/zone and date, then size or product options; can add to cart and pay via Stripe Checkout, or use “Order via …” messenger buttons as a supporting contact channel.
+- **Messenger flow:** Click “Order via LINE” (etc.) → new tab with pre-filled text. This is a supporting contact channel, not the primary payment/order path (Stripe Checkout is primary).
+- **Partner:** Apply → Supabase `partner_applications`. Admin manually reviews and approves/rejects; there is no partner login, and admins manage catalog products directly. Admin moderates submitted products; only live/approved items show in catalog.
 - **Mobile-first:** Touch targets, single-column product layout on small screens, grid breakpoints, burger menu when header is scrolled.
 
 ---
@@ -102,11 +105,11 @@
 
 ---
 
-## 6. CMS & Backend (Sanity)
+## 6. CMS & Backend (Supabase)
 
-- **Studio:** Mounted at `/studio` (Next.js route `app/studio/[[...index]]/page.tsx`). Configure `sanity.config.ts` with project/dataset.
-- **Schemas:** `bouquet` (flowers; existing schema; status: `pending_review` | `approved`), `partner` (shopName, contactName, phoneNumber, lineOrWhatsapp, shopAddress, city, status, **supabaseUserId**), `product` (non-flowers; slug, nameEn/Th, categoryKey, structuredAttributes, customAttributes, images, partner ref, **moderationStatus**: submitted | live | needs_changes | rejected). Catalog reads only `moderationStatus: "live"` (products) or `status: "approved"` (bouquets).
-- **Env:** `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`; `SANITY_API_WRITE_TOKEN` for partner registration and bouquet create/update.
+- **Admin dashboard:** `/admin` (Next.js routes under `app/admin/(dashboard)/`). No separate CMS app — catalog, orders, and moderation are all managed from the same admin dashboard, gated by NextAuth + RBAC (`lib/adminRbac.ts`).
+- **Tables (Supabase):** `catalog_bouquets`, `catalog_products` and related `catalog_*` tables (slug, nameEn/Th, category, structured attributes, images, pricing, `moderation_status`/`status`: `pending_review` | `approved` for bouquets, `submitted` | `live` | `needs_changes` | `rejected` for other products), `partner_applications`, plus orders/accounting/email tables. Catalog reads only approved/live rows.
+- **Env:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server only); `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public).
 
 ---
 
@@ -115,11 +118,11 @@
 - **ISR:** Catalog and product pages use `revalidate = 60`; static params for product slugs via `generateStaticParams`; `dynamicParams = true` for new slugs.
 - **Meta:** Root layout sets default title/description; can be extended per page.
 - **Semantic HTML:** `<header>`, `<nav>`, `<main>`, `<article>`, breadcrumb `<nav>`, heading hierarchy.
-- **Images:** Next.js `Image` with `sizes`; Sanity image URLs via `lib/sanity.ts` builder.
+- **Images:** Next.js `Image` with `sizes`; images served from Supabase Storage bucket `catalog` (URLs resolved via `lib/catalogReads.ts` / `lib/catalog/`).
 
 ---
 
 ## 8. Deployment & Run
 
 - **Redirect:** `vercel.json` redirects `/` → `/en`.
-- **Run:** `npm install` then `npm run dev`. Set in `.env.local`: `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, and for partner/bouquet writes `SANITY_API_WRITE_TOKEN`. Configure messenger links/phone/IDs in `lib/messenger.ts` and `components/MessengerLinks.tsx`.
+- **Run:** `npm install` then `npm run dev`. Set in `.env.local`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and Stripe keys for checkout. Configure messenger links/phone/IDs in `lib/messenger.ts` and `components/MessengerLinks.tsx`.

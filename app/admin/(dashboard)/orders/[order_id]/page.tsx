@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { getOrderByOrderId, getOrderDeliveryChangeHistory } from '@/lib/supabase/adminQueries';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
-import { getBouquetById, getProductById } from '@/lib/sanity';
+import { getCatalogBouquetById, getCatalogProductById } from '@/lib/catalogReads';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import type { ItemWithCatalog } from '@/app/admin/components/ItemsList';
 import { OrderStatusPaymentCard } from '@/app/admin/components/OrderStatusPaymentCard';
@@ -93,11 +93,11 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
     itemsToUse.map(async (item, index) => {
       let catalogHref: string | undefined;
       if (item.bouquet_id) {
-        const bouquet = await getBouquetById(item.bouquet_id);
+        const bouquet = await getCatalogBouquetById(item.bouquet_id);
         if (bouquet) {
           catalogHref = `/en/catalog/${bouquet.slug}`;
         } else {
-          const product = await getProductById(item.bouquet_id);
+          const product = await getCatalogProductById(item.bouquet_id);
           const slug = product ? (jsonItems[index]?.bouquetSlug ?? undefined) : undefined;
           catalogHref = slug ? `/en/catalog/${slug}` : undefined;
         }

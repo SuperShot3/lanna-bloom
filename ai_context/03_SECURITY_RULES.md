@@ -18,9 +18,8 @@ Non-negotiable trust boundaries for APIs, orders, and admin.
 |--------|------|
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only. Never in client bundles or `NEXT_PUBLIC_*`. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Server-only. |
-| `SANITY_API_WRITE_TOKEN` | Server-only. |
 | `AUTH_SECRET` | Admin session signing only. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Partner portal client only; RLS must protect data. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public client key; RLS must protect data. |
 
 ## Admin access
 

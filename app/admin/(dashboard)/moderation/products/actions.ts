@@ -24,10 +24,12 @@ import {
   createCatalogProductImage,
   ensureCatalogProductImagesFromInline,
   filterCatalogImagesByVariant,
+  findCatalogImageByAnyId,
   getCatalogProductImagesForEntity,
   getCatalogProductImagesForRevision,
   moveCatalogProductImage,
   reorderCatalogProductImages,
+  setCatalogProductImagesVariantKey,
   setCatalogProductPrimaryImage,
   softDeleteCatalogProductImage,
   syncCatalogProductInlineImagesFromNormalized,
@@ -110,7 +112,7 @@ function actorFromSessionUser(user: { email?: string | null }): string | null {
 async function requireProductImageForWrite(
   productId: string,
   imageId: string
-): Promise<{ writeId: string; revisionId: string | null; usesDraft: boolean }> {
+): Promise<{ writeId: string; revisionId: string | null; usesDraft: boolean; imageId: string }> {
   const writeId = await resolveProductIdForWrite(productId);
   const product = await getCatalogProductByIdForAdmin(writeId);
   if (!product) throw new Error('Product not found');
@@ -124,10 +126,14 @@ async function requireProductImageForWrite(
   const images = revisionId
     ? await getCatalogProductImagesForRevision(revisionId)
     : await getCatalogProductImagesForEntity('product', writeId);
-  if (!images.some((image) => image.id === imageId)) {
+  // A live product's first image edit lazily creates the draft revision and
+  // clones images to new ids — the client may still hold the pre-draft id
+  // from before that happened, so fall back to original_image_id.
+  const match = findCatalogImageByAnyId(images, imageId);
+  if (!match) {
     throw new Error('Image not found for this product');
   }
-  return { writeId, revisionId, usesDraft };
+  return { writeId, revisionId, usesDraft, imageId: match.id };
 }
 
 function parseJsonArray<T>(value: string): T[] | undefined {
@@ -348,6 +354,63 @@ export async function reorderProductImagesAction(
   }
 }
 
+export async function assignProductImagesVariantAction(input: {
+  productId: string;
+  imageIds: string[];
+  variantKey: string | null;
+}): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: 'Unauthorized - Session not found' };
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const productId = input.productId.trim();
+  const imageIds = input.imageIds.map((id) => id.trim()).filter(Boolean);
+  if (!productId) return { error: 'Missing productId' };
+  if (!imageIds.length) return { error: 'Select at least one image' };
+
+  try {
+    const writeId = await resolveProductIdForWrite(productId);
+    const product = await getCatalogProductByIdForAdmin(writeId);
+    if (!product) return { error: 'Product not found' };
+    const usesDraft = productUsesDraftWorkflow(product.moderationStatus);
+    const actor = actorFromSessionUser(session.user);
+    const { revisionId } = await resolveCatalogDraftImageContext({
+      entityType: 'product',
+      entityId: writeId,
+      usesDraft,
+      actor,
+    });
+    const images = revisionId
+      ? await getCatalogProductImagesForRevision(revisionId)
+      : await getCatalogProductImagesForEntity('product', writeId);
+    // imageIds may be pre-draft ids the client held onto before this draft
+    // revision was cloned — resolve each via original_image_id before validating.
+    const resolvedImageIds = imageIds.map((id) => findCatalogImageByAnyId(images, id)?.id);
+    if (resolvedImageIds.some((id) => !id)) {
+      return { error: 'One or more images were not found for this product' };
+    }
+
+    await setCatalogProductImagesVariantKey({
+      imageIds: resolvedImageIds as string[],
+      variantKey: input.variantKey,
+      actor,
+    });
+
+    if (revisionId) {
+      revalidateProductAdminPaths(productId);
+    } else {
+      await syncCatalogProductInlineImagesFromNormalized('product', writeId);
+      await revalidateProductAdminAndCatalogPaths(productId, writeId);
+    }
+    return {};
+  } catch (err) {
+    console.error('[Moderation] assignProductImagesVariant failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to assign images' };
+  }
+}
+
 export async function uploadProductImageAction(formData: FormData): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) {
@@ -462,11 +525,14 @@ export async function convertProductImageToWebpAction(formData: FormData): Promi
   if (!productId || !imageId) return { error: 'Missing productId or imageId' };
 
   try {
-    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
     const images = revisionId
       ? await getCatalogProductImagesForRevision(revisionId)
       : await getCatalogProductImagesForEntity('product', writeId);
-    const imageRow = images.find((image) => image.id === imageId);
+    const imageRow = images.find((image) => image.id === resolvedImageId);
     if (!imageRow) return { error: 'Image not found' };
 
     const format = catalogImageFormat({
@@ -485,7 +551,7 @@ export async function convertProductImageToWebpAction(formData: FormData): Promi
 
     const actor = actorFromSessionUser(session.user);
     await updateCatalogProductImageStorage({
-      imageId,
+      imageId: resolvedImageId,
       storagePath: webp.storage_path,
       publicUrl: webp.public_url ?? '',
       metadata: {
@@ -526,11 +592,14 @@ export async function editProductImageFramingAction(formData: FormData): Promise
   if (!file || !(file instanceof File)) return { error: 'Image file is required' };
 
   try {
-    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
     const images = revisionId
       ? await getCatalogProductImagesForRevision(revisionId)
       : await getCatalogProductImagesForEntity('product', writeId);
-    const imageRow = images.find((image) => image.id === imageId);
+    const imageRow = images.find((image) => image.id === resolvedImageId);
     if (!imageRow) return { error: 'Image not found' };
 
     const format = catalogImageFormat({
@@ -550,7 +619,7 @@ export async function editProductImageFramingAction(formData: FormData): Promise
         prefix,
       });
       await updateCatalogProductImageStorage({
-        imageId,
+        imageId: resolvedImageId,
         storagePath: webp.storage_path,
         publicUrl: webp.public_url ?? '',
         metadata: {
@@ -568,7 +637,7 @@ export async function editProductImageFramingAction(formData: FormData): Promise
       });
       const { master_path: _master, source_path: _source, ...restMeta } = existingMeta;
       await updateCatalogProductImageStorage({
-        imageId,
+        imageId: resolvedImageId,
         storagePath: source.storage_path,
         publicUrl: source.public_url ?? '',
         metadata: {
@@ -606,9 +675,12 @@ export async function updateProductImageAltAction(formData: FormData): Promise<{
   if (!productId || !imageId) return { error: 'Missing productId or imageId' };
 
   try {
-    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
     await updateCatalogProductImageText({
-      imageId,
+      imageId: resolvedImageId,
       altEn: String(formData.get('altEn') || ''),
       altTh: String(formData.get('altTh') || ''),
       actor: actorFromSessionUser(session.user),
@@ -639,8 +711,11 @@ export async function setPrimaryProductImageAction(
   }
 
   try {
-    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
-    await setCatalogProductPrimaryImage(imageId, actorFromSessionUser(session.user));
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
+    await setCatalogProductPrimaryImage(resolvedImageId, actorFromSessionUser(session.user));
     if (revisionId) {
       revalidateProductAdminPaths(productId);
     } else {
@@ -668,9 +743,12 @@ export async function moveProductImageAction(
   }
 
   try {
-    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
     await moveCatalogProductImage({
-      imageId,
+      imageId: resolvedImageId,
       direction,
       actor: actorFromSessionUser(session.user),
     });
@@ -700,9 +778,12 @@ export async function deleteProductImageAction(
   }
 
   try {
-    const { writeId, revisionId } = await requireProductImageForWrite(productId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
     const actor = actorFromSessionUser(session.user);
-    await softDeleteCatalogProductImage(imageId, actor);
+    await softDeleteCatalogProductImage(resolvedImageId, actor);
     if (revisionId) {
       const remaining = await getCatalogProductImagesForRevision(revisionId);
       if (remaining.length > 0 && !remaining.some((image) => image.is_primary)) {

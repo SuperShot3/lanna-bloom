@@ -1,6 +1,8 @@
 # Lanna Bloom
 
-A mobile-first flower shop for selling bouquets online. Customers browse the catalog, add items to the cart, and place orders with delivery details; the site generates a shareable order link and a pre-filled message for LINE, WhatsApp, or Telegram.
+A mobile-first flower shop for selling bouquets online. Customers browse the catalog, add items to the cart, pay via Stripe Checkout, and get a shareable order-tracking link plus a pre-filled message for LINE, WhatsApp, or Telegram.
+
+For the current, verified architecture (source of truth for AI agents and contributors), see [`ai_context/00_START_HERE.md`](ai_context/00_START_HERE.md).
 
 # Social
 - **Facebook:** https://www.facebook.com/profile.php?id=61587782069439
@@ -9,12 +11,12 @@ A mobile-first flower shop for selling bouquets online. Customers browse the cat
 ## Features
 
 - **Two languages** — English and Thai via `/en` and `/th` URLs; language switcher in the header
-- **Catalog** — Bouquets from Sanity CMS; categories, product pages with gallery and size selector
-- **Cart & orders** — Add to cart, delivery area and date, contact info; place order → success page with order link and messenger buttons
-- **Order link** — Each order gets a public URL (e.g. `https://yoursite.com/order/LB-2026-xxxx`); stored in Vercel Blob so the link works when opened later
+- **Catalog** — Bouquets, plush toys, balloons, and gifts read from the Supabase catalog tables; categories, product pages with gallery and size selector
+- **Cart & checkout** — Add to cart, delivery area and date, contact info; Stripe Checkout is the primary payment flow, with server-side recomputed totals
+- **Order tracking** — Each order gets a public tracking URL (e.g. `https://lannabloom.shop/order/LB-2026-xxxx?token=...`); Supabase is the primary order store
 - **Messenger** — Pre-filled “order via LINE / WhatsApp / Telegram” from product page and cart; contact links in the header
-- **Sanity Studio** — CMS at `/studio` for bouquets and partners; partner registration and dashboard (add/edit bouquets when approved)
-- **Admin** — `/admin`: dashboard with orders, status updates, costs, accounting (income/expenses), and remove (RBAC with NextAuth). Money-flow reference: **docs/ACCOUNTING_AND_EXPENSES.md**.
+- **Partner applications** — `/[lang]/partner/apply`: a Thai-first application form; admins review and approve/reject applications in `/admin/partners/applications` (no self-service partner dashboard)
+- **Admin** — `/admin`: dashboard with orders, status updates, costs, accounting (income/expenses), product/catalog moderation, and remove (RBAC with NextAuth). Money-flow reference: **docs/ACCOUNTING_AND_EXPENSES.md**.
 - **Campaign Builder Assistant** — Owner-controlled wizard for planning, validating, and creating paused Google Ads Search campaigns
 
 ## Campaign Builder Assistant
@@ -31,8 +33,8 @@ For architecture, APIs, persistence, safety boundaries, known technical debt, an
 
 - **Next.js 14** (App Router)
 - **React 18**, **TypeScript**
-- **Sanity** (catalog and partner data)
-- **Vercel Blob** (order storage on Vercel)
+- **Supabase** (catalog, orders, admin data, partner applications, email outbox)
+- **Stripe Checkout** (payments)
 - **CSS** (variables, no framework)
 
 ## Getting started
@@ -50,61 +52,49 @@ Copy `.env.example` to `.env.local` and set:
 
 | Variable | Purpose |
 |---------|---------|
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity project (required for catalog and Studio) |
-| `NEXT_PUBLIC_SANITY_DATASET` | Usually `production` |
-| `SANITY_API_WRITE_TOKEN` | Sanity API token (partner registration and bouquet uploads) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase project (catalog, orders, admin data — server only) |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public Supabase URL/anon key (customer order pages, `next/image` allowlist) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Checkout and webhook |
 | `NEXT_PUBLIC_APP_URL` | Live site URL for order links (e.g. `https://www.lannabloom.shop`) |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token (required on Vercel so order links work) |
 | `AUTH_SECRET` | Required for admin login (NextAuth) |
 
-See `.env.example` for comments. For order-link troubleshooting (e.g. “Order not found”), see **docs/ORDERS_VERCEL.md**.
-
-## Sanity Studio (CMS)
-
-The app ships with Sanity Studio at **[/studio](http://localhost:3000/studio)** for managing bouquets and partners.
-
-1. Set `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, and `SANITY_API_WRITE_TOKEN` in `.env.local`.
-2. In [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **CORS origins**, add `http://localhost:3000` with **Allow credentials** (and your production URL when deployed).
-3. Run `npm run dev` and open [http://localhost:3000/studio](http://localhost:3000/studio).
-
-**Bouquet** documents: slug, name (EN/TH), description, composition, category, images, sizes (price, label, description). Only **approved** bouquets appear on the catalog. **Partner** documents are used for the partner registration flow; approve partners in Studio to give them dashboard access.
+See `.env.example` for the full list and comments. For order/catalog architecture, see `ai_context/00_START_HERE.md` and `docs/ORDERS_SUPABASE.md`.
 
 ## Orders and cart
 
-- **Cart** — `/[lang]/cart`: delivery area (Chiang Mai districts), date, contact name and phone, contact method; “Place Order” creates an order and redirects to the success page.
-- **Order link** — Generated after place order (e.g. `https://yoursite.com/order/LB-2026-xxxx`). Set `NEXT_PUBLIC_APP_URL` to your live URL so this link uses the correct domain. Stored in **Vercel Blob**; set `BLOB_READ_WRITE_TOKEN` for Production and Preview so the same store is used and the link works when opened.
-- **Admin** — Open `/admin`, sign in with email/password (seed admin users via `scripts/seed-admin.ts`). See **docs/ORDERS_VERCEL.md** for setup and “Order not found” fixes. Accounting reference: **docs/ACCOUNTING_AND_EXPENSES.md**.
+- **Cart** — `/[lang]/cart`: delivery area/zone, date, contact name and phone, contact method; checkout hands off to Stripe Checkout.
+- **Pay** — Stripe Checkout is the primary payment flow; the server recomputes totals and creates the order only after a confirmed payment.
+- **Order tracking** — After payment, the customer is redirected to a tracking link (e.g. `https://lannabloom.shop/order/LB-2026-xxxx?token=...`). Supabase is the single source of truth for orders; see `docs/ORDERS_SUPABASE.md`.
+- **Admin** — Open `/admin`, sign in with email/password (seed admin users via `scripts/seed-admin.ts`). Accounting reference: **docs/ACCOUNTING_AND_EXPENSES.md**.
 
 ## Catalog updates
 
-- **Development** — After changing bouquets in Studio, refresh the catalog page; changes appear immediately.
-- **Production** — Catalog and product pages revalidate every 60 seconds; new or updated bouquets show within about a minute. No rebuild needed for content-only changes.
+Catalog and product pages revalidate every 60 seconds (ISR); admin edits to bouquets/products/hero images in `/admin` show on the storefront within about a minute, with no rebuild needed.
 
-## Partner registration and dashboard
+## Partner applications
 
-- **Register** — `/[lang]/partner/register` (link can be hidden from the main nav). Form creates a Partner in Sanity with status `pending_review`.
-- **Dashboard** — `/[lang]/partner/dashboard/[partnerId]` (from success email/link). Approved partners can add and edit bouquets; new bouquets are `pending_review` until approved in Studio.
+- **Apply** — `/[lang]/partner/apply`: a Thai-first application form that writes to the Supabase `partner_applications` table.
+- **Admin review** — `/admin/partners/applications`: admins approve or reject applications manually. There is no partner login or self-service partner dashboard.
 
 ## Project structure
 
 ```
 app/
   [lang]/           # Locale routes (/en, /th)
-    page.tsx        # Home: Hero + CategoryGrid
+    page.tsx        # Home: Hero + PopularSection
     catalog/        # Catalog grid and product pages
-    cart/           # Cart and place order
-    checkout/confirmation-pending/
-    partner/        # Register and dashboard
-  order/[orderId]/  # Public order details page (no locale)
-  admin/orders/     # Redirects to /admin/orders
-  admin/            # Admin dashboard (orders, overview, RBAC)
-  api/orders/       # Create order, get order (checkout/confirmation-pending)
-  studio/           # Sanity Studio
+    cart/           # Cart
+    checkout/       # Stripe Checkout handoff + confirmation-pending
+    partner/apply/  # Partner application form (no dashboard)
+  order/[orderId]/  # Public order tracking page (no locale; requires ?token=)
+  admin/            # Admin dashboard (orders, catalog, accounting, RBAC)
+  api/stripe/       # Checkout session + webhook
+  api/orders/       # Public order status API
 components/         # Header, Hero, BouquetCard, ProductOrderBlock, etc.
 lib/
   i18n.ts           # Translations (EN/TH)
-  sanity.ts         # Sanity read client
-  orders.ts         # Order types and Blob/file storage
+  catalogReads.ts   # Supabase catalog read layer
+  orders/           # Order types and Supabase-backed order store
   messenger.ts      # LINE, WhatsApp, Telegram URLs and message builder
 ```
 
@@ -140,8 +130,8 @@ npm start
 ### Deploy to Vercel
 
 1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
-2. Add environment variables (see table above). For orders to work: set `BLOB_READ_WRITE_TOKEN` (Storage → Blob, attach to project; use same token for Production and Preview) and `NEXT_PUBLIC_APP_URL` (your live URL).
-3. In Sanity → API → CORS origins, add your Vercel URL (and custom domain if used) with **Allow credentials** so Studio works.
+2. Add environment variables (see table above): Supabase, Stripe, and `NEXT_PUBLIC_APP_URL` (your live URL) are required for checkout and orders to work.
+3. Run the Supabase migrations in `supabase/migrations/` against your project before first deploy.
 4. Optional: add a custom domain in Vercel and set `NEXT_PUBLIC_APP_URL` to that domain.
 
-For detailed order storage setup and “Order not found” troubleshooting, see **docs/ORDERS_VERCEL.md**.
+For order storage details, see **docs/ORDERS_SUPABASE.md**.

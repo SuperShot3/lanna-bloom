@@ -3,11 +3,11 @@ import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
 import { StorefrontIcon } from '@/components/icons';
 import {
-  getHomeFlowerTypeSectionsFromSanity,
-  getPopularBouquetsFromSanity,
-  getProductsFilteredFromSanity,
-  type CatalogProduct,
-} from '@/lib/sanity';
+  getCatalogHomeFlowerTypeSections,
+  getCatalogPopularBouquets,
+  getCatalogProductsFiltered,
+} from '@/lib/catalogReads';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -90,13 +90,13 @@ function ProductFeedRow({
 
 export async function PopularSection({ lang }: { lang: Locale }) {
   const [popularBouquets, sections, productSectionResults] = await Promise.all([
-    getPopularBouquetsFromSanity(HOME_POPULAR_ROW_LIMIT),
-    getHomeFlowerTypeSectionsFromSanity(),
+    getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT),
+    getCatalogHomeFlowerTypeSections(),
     Promise.all(
       HOME_PRODUCT_SECTIONS.map(async (section) => ({
         ...section,
         products: (
-          await getProductsFilteredFromSanity({
+          await getCatalogProductsFiltered({
             categoryKey: section.categoryKey,
             sort: 'newest',
             catalogDeliveryDestination: 'CHIANG_MAI',

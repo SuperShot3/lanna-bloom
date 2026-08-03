@@ -23,6 +23,14 @@ type Props = {
   loadingKey?: string | null;
   /** When true, every upload/replace runs through the interactive crop modal first. */
   enableCrop?: boolean;
+  /** Allow selecting multiple files in the upload picker. */
+  allowMultipleUpload?: boolean;
+  /** Hide upload controls (assign-only sections). */
+  hideUpload?: boolean;
+  /** Show checkboxes for multi-select (e.g. assign to stem tier). */
+  selectable?: boolean;
+  selectedIds?: string[];
+  onSelectedIdsChange?: (ids: string[]) => void;
   onReorder: (orderedIds: string[]) => void | Promise<void>;
   onUpload: (file: File, options?: ProductImageUploadOptions) => void | Promise<void>;
   onSaveAlt: (image: AdminCatalogProductImage) => void | Promise<void>;
@@ -31,6 +39,7 @@ type Props = {
   onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onGenerateAi?: (imageId: string, file: File) => void | Promise<void>;
+  onUnassign?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
 
@@ -43,6 +52,7 @@ function imageLoadingMessage(loadingKey: string | null | undefined): string | nu
   if (!loadingKey) return null;
   if (loadingKey === 'upload') return 'Uploading image…';
   if (loadingKey === 'replace') return 'Replacing image…';
+  if (loadingKey === 'assign') return 'Updating image assignment…';
   if (loadingKey.startsWith('convert-')) return 'Converting to WebP…';
   if (loadingKey.startsWith('framing-')) return 'Saving image framing…';
   if (loadingKey.startsWith('primary-')) return 'Setting main image…';
@@ -60,6 +70,11 @@ export function ProductImageListEditor({
   disabled,
   loadingKey,
   enableCrop,
+  allowMultipleUpload,
+  hideUpload,
+  selectable,
+  selectedIds = [],
+  onSelectedIdsChange,
   onReorder,
   onUpload,
   onSaveAlt,
@@ -68,6 +83,7 @@ export function ProductImageListEditor({
   onSetPrimary,
   onConvertToWebp,
   onGenerateAi,
+  onUnassign,
   onRemove,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,9 +104,19 @@ export function ProductImageListEditor({
   }, [images, variantKey]);
 
   const ids = scoped.map((img) => img.id);
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const uploadOptions: ProductImageUploadOptions = { convertToWebp: convertOnUpload };
   const processingMessage = imageLoadingMessage(loadingKey);
   const isProcessing = Boolean(processingMessage);
+
+  function toggleSelected(imageId: string, checked: boolean) {
+    if (!onSelectedIdsChange) return;
+    if (checked) {
+      onSelectedIdsChange(selectedIds.includes(imageId) ? selectedIds : [...selectedIds, imageId]);
+    } else {
+      onSelectedIdsChange(selectedIds.filter((id) => id !== imageId));
+    }
+  }
 
   function openEdit(image: AdminCatalogProductImage) {
     setEditingId(image.id);
@@ -158,6 +184,17 @@ export function ProductImageListEditor({
     void onUpload(file, uploadOptions);
   }
 
+  async function handleUploadFiles(files: File[]) {
+    if (!files.length) return;
+    if (enableCrop && files.length === 1) {
+      handleUploadFile(files[0]!);
+      return;
+    }
+    for (const file of files) {
+      await onUpload(file, uploadOptions);
+    }
+  }
+
   function handleReplaceFile(imageId: string, file: File) {
     if (enableCrop) {
       setPendingCrop({ mode: 'replace', imageId, file });
@@ -223,6 +260,13 @@ export function ProductImageListEditor({
         },
       });
     }
+    if (onUnassign) {
+      items.push({
+        id: 'unassign',
+        label: 'Unassign to main gallery',
+        onClick: () => void onUnassign(image.id),
+      });
+    }
     items.push({
       id: 'remove',
       label: 'Remove image',
@@ -253,6 +297,18 @@ export function ProductImageListEditor({
               id={image.id}
               title={image.altEn?.trim() || imageLabelFromPath(image.storagePath)}
               onIconClick={() => openPreview(image)}
+              leading={
+                selectable && onSelectedIdsChange ? (
+                  <label className="admin-cms-checkbox admin-cms-sortable-select">
+                    <input
+                      type="checkbox"
+                      checked={selectedSet.has(image.id)}
+                      disabled={disabled || !!loadingKey}
+                      onChange={(e) => toggleSelected(image.id, e.target.checked)}
+                    />
+                  </label>
+                ) : undefined
+              }
               icon={
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={image.url} alt="" className="admin-cms-image-thumb" />
@@ -274,36 +330,41 @@ export function ProductImageListEditor({
         </AdminSortableList>
       )}
 
-      <label className="admin-cms-checkbox">
-        <input
-          type="checkbox"
-          checked={convertOnUpload}
-          disabled={disabled || !!loadingKey}
-          onChange={(event) => setConvertOnUpload(event.target.checked)}
-        />
-        <span>Also convert to WebP on upload (up to 2400px on the longest edge)</span>
-      </label>
+      {!hideUpload ? (
+        <>
+          <label className="admin-cms-checkbox">
+            <input
+              type="checkbox"
+              checked={convertOnUpload}
+              disabled={disabled || !!loadingKey}
+              onChange={(event) => setConvertOnUpload(event.target.checked)}
+            />
+            <span>Also convert to WebP on upload (up to 2400px on the longest edge)</span>
+          </label>
 
-      <button
-        type="button"
-        className="admin-cms-btn admin-cms-btn-outline admin-cms-btn-block"
-        disabled={disabled || !!loadingKey}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        + Add image
-      </button>
+          <button
+            type="button"
+            className="admin-cms-btn admin-cms-btn-outline admin-cms-btn-block"
+            disabled={disabled || !!loadingKey}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {allowMultipleUpload ? '+ Add images' : '+ Add image'}
+          </button>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="admin-cms-sr-only"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleUploadFile(file);
-          e.target.value = '';
-        }}
-      />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple={allowMultipleUpload}
+            className="admin-cms-sr-only"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              if (files.length) void handleUploadFiles(files);
+              e.target.value = '';
+            }}
+          />
+        </>
+      ) : null}
       <input
         ref={replaceInputRef}
         type="file"

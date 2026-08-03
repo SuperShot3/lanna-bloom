@@ -15,9 +15,9 @@ import {
   type IntentLandingConfig,
 } from '@/lib/landingPages/intentLandingPages';
 import {
-  getBouquetBySlugFromSanity,
-  getPopularBouquetsFromSanity,
-} from '@/lib/sanity';
+  getCatalogBouquetBySlug,
+  getCatalogPopularBouquets,
+} from '@/lib/catalogReads';
 import type { Bouquet } from '@/lib/bouquets';
 import { infoArticleTableMdxComponents } from '@/lib/info/infoArticleTableMdxComponents';
 import { infoArticleMdxOptions } from '@/lib/info/mdxRemoteOptions';
@@ -41,7 +41,7 @@ async function loadIntentBouquets(
 
   if (config.featuredSlugs?.length) {
     const featured = await Promise.all(
-      config.featuredSlugs.map((slug) => getBouquetBySlugFromSanity(slug))
+      config.featuredSlugs.map((slug) => getCatalogBouquetBySlug(slug))
     );
     for (const b of featured) {
       if (b) byId.set(b.id, b);
@@ -49,7 +49,7 @@ async function loadIntentBouquets(
   }
 
   if (byId.size < limit) {
-    const popular = await getPopularBouquetsFromSanity(limit + 8);
+    const popular = await getCatalogPopularBouquets(limit + 8);
     for (const b of popular) {
       if (byId.size >= limit) break;
       if (!byId.has(b.id)) byId.set(b.id, b);

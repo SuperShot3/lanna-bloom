@@ -18,11 +18,11 @@ import {
 } from '@/lib/landingPages/collectionLandingPages';
 import { getBaseUrl } from '@/lib/orders';
 import {
-  getBalloonsFilteredFromSanity,
-  getBouquetsFilteredFromSanity,
-  getPlushyToysFilteredFromSanity,
-  type CatalogProduct,
-} from '@/lib/sanity';
+  getCatalogBalloonsFiltered,
+  getCatalogBouquetsFiltered,
+  getCatalogPlushyToysFiltered,
+} from '@/lib/catalogReads';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildAlternates } from '@/lib/seo/alternates';
 import styles from './CollectionLandingPage.module.css';
 
@@ -184,12 +184,12 @@ export default async function CollectionLandingPage({
   const flowerTypeLabels = flowerTypeUi(hub.flowerType, locale);
 
   const [allBouquets, plushyToys, balloons] = await Promise.all([
-    getBouquetsFilteredFromSanity({
+    getCatalogBouquetsFiltered({
       ...catalogView.filters,
       catalogDeliveryDestination: 'CHIANG_MAI',
     }),
-    getPlushyToysFilteredFromSanity({ sort: 'newest' }),
-    getBalloonsFilteredFromSanity({ sort: 'newest' }),
+    getCatalogPlushyToysFiltered({ sort: 'newest' }),
+    getCatalogBalloonsFiltered({ sort: 'newest' }),
   ]);
 
   const bouquets = hub.colorTabs ? allBouquets.slice(0, MAX_BOUQUETS) : allBouquets;

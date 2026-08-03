@@ -23,10 +23,12 @@ import {
   createCatalogProductImage,
   ensureCatalogProductImagesFromInline,
   filterCatalogImagesByVariant,
+  findCatalogImageByAnyId,
   getCatalogProductImagesForEntity,
   getCatalogProductImagesForRevision,
   moveCatalogProductImage,
   reorderCatalogProductImages,
+  setCatalogProductImagesVariantKey,
   setCatalogProductPrimaryImage,
   softDeleteCatalogProductImage,
   syncCatalogProductInlineImagesFromNormalized,
@@ -102,7 +104,7 @@ async function revalidateBouquetAdminAndCatalogPaths(
 async function requireBouquetImageForWrite(
   bouquetId: string,
   imageId: string
-): Promise<{ writeId: string; revisionId: string | null }> {
+): Promise<{ writeId: string; revisionId: string | null; imageId: string }> {
   const writeId = await resolveBouquetIdForWrite(bouquetId);
   const bouquet = await getCatalogBouquetByIdForAdmin(writeId);
   if (!bouquet) throw new Error('Bouquet not found');
@@ -116,10 +118,14 @@ async function requireBouquetImageForWrite(
   const images = revisionId
     ? await getCatalogProductImagesForRevision(revisionId)
     : await getCatalogProductImagesForEntity('bouquet', writeId);
-  if (!images.some((image) => image.id === imageId)) {
+  // A live bouquet's first image edit lazily creates the draft revision and
+  // clones images to new ids — the client may still hold the pre-draft id
+  // from before that happened, so fall back to original_image_id.
+  const match = findCatalogImageByAnyId(images, imageId);
+  if (!match) {
     throw new Error('Image not found for this bouquet');
   }
-  return { writeId, revisionId };
+  return { writeId, revisionId, imageId: match.id };
 }
 
 function parseCommaList(value: string): string[] {
@@ -286,6 +292,63 @@ export async function publishBouquetDraftAction(
   }
 }
 
+export async function assignBouquetImagesVariantAction(input: {
+  bouquetId: string;
+  imageIds: string[];
+  variantKey: string | null;
+}): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: 'Unauthorized - Session not found' };
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const bouquetId = input.bouquetId.trim();
+  const imageIds = input.imageIds.map((id) => id.trim()).filter(Boolean);
+  if (!bouquetId) return { error: 'Missing bouquetId' };
+  if (!imageIds.length) return { error: 'Select at least one image' };
+
+  try {
+    const writeId = await resolveBouquetIdForWrite(bouquetId);
+    const bouquet = await getCatalogBouquetByIdForAdmin(writeId);
+    if (!bouquet) return { error: 'Bouquet not found' };
+    const usesDraft = bouquetUsesDraftWorkflow(bouquet.status ?? 'pending_review');
+    const actor = actorFromSessionUser(session.user);
+    const { revisionId } = await resolveCatalogDraftImageContext({
+      entityType: 'bouquet',
+      entityId: writeId,
+      usesDraft,
+      actor,
+    });
+    const images = revisionId
+      ? await getCatalogProductImagesForRevision(revisionId)
+      : await getCatalogProductImagesForEntity('bouquet', writeId);
+    // imageIds may be pre-draft ids the client held onto before this draft
+    // revision was cloned — resolve each via original_image_id before validating.
+    const resolvedImageIds = imageIds.map((id) => findCatalogImageByAnyId(images, id)?.id);
+    if (resolvedImageIds.some((id) => !id)) {
+      return { error: 'One or more images were not found for this bouquet' };
+    }
+
+    await setCatalogProductImagesVariantKey({
+      imageIds: resolvedImageIds as string[],
+      variantKey: input.variantKey,
+      actor,
+    });
+
+    if (revisionId) {
+      revalidateBouquetAdminPaths(bouquetId);
+    } else {
+      await syncCatalogProductInlineImagesFromNormalized('bouquet', writeId);
+      await revalidateBouquetAdminAndCatalogPaths(bouquetId, writeId);
+    }
+    return {};
+  } catch (err) {
+    console.error('[Products] assignBouquetImagesVariant failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to assign images' };
+  }
+}
+
 export async function uploadBouquetImageAction(formData: FormData): Promise<{ error?: string }> {
   const session = await auth();
   if (!session?.user) return { error: 'Unauthorized - Session not found' };
@@ -396,11 +459,14 @@ export async function convertBouquetImageToWebpAction(formData: FormData): Promi
   if (!bouquetId || !imageId) return { error: 'Missing bouquetId or imageId' };
 
   try {
-    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+      bouquetId,
+      imageId
+    );
     const images = revisionId
       ? await getCatalogProductImagesForRevision(revisionId)
       : await getCatalogProductImagesForEntity('bouquet', writeId);
-    const imageRow = images.find((image) => image.id === imageId);
+    const imageRow = images.find((image) => image.id === resolvedImageId);
     if (!imageRow) return { error: 'Image not found' };
 
     const format = catalogImageFormat({
@@ -419,7 +485,7 @@ export async function convertBouquetImageToWebpAction(formData: FormData): Promi
 
     const actor = actorFromSessionUser(session.user);
     await updateCatalogProductImageStorage({
-      imageId,
+      imageId: resolvedImageId,
       storagePath: webp.storage_path,
       publicUrl: webp.public_url ?? '',
       metadata: {
@@ -458,11 +524,14 @@ export async function editBouquetImageFramingAction(formData: FormData): Promise
   if (!file || !(file instanceof File)) return { error: 'Image file is required' };
 
   try {
-    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+      bouquetId,
+      imageId
+    );
     const images = revisionId
       ? await getCatalogProductImagesForRevision(revisionId)
       : await getCatalogProductImagesForEntity('bouquet', writeId);
-    const imageRow = images.find((image) => image.id === imageId);
+    const imageRow = images.find((image) => image.id === resolvedImageId);
     if (!imageRow) return { error: 'Image not found' };
 
     const format = catalogImageFormat({
@@ -482,7 +551,7 @@ export async function editBouquetImageFramingAction(formData: FormData): Promise
         prefix,
       });
       await updateCatalogProductImageStorage({
-        imageId,
+        imageId: resolvedImageId,
         storagePath: webp.storage_path,
         publicUrl: webp.public_url ?? '',
         metadata: {
@@ -500,7 +569,7 @@ export async function editBouquetImageFramingAction(formData: FormData): Promise
       });
       const { master_path: _master, source_path: _source, ...restMeta } = existingMeta;
       await updateCatalogProductImageStorage({
-        imageId,
+        imageId: resolvedImageId,
         storagePath: source.storage_path,
         publicUrl: source.public_url ?? '',
         metadata: {
@@ -536,9 +605,12 @@ export async function updateBouquetImageAltAction(formData: FormData): Promise<{
   if (!bouquetId || !imageId) return { error: 'Missing bouquetId or imageId' };
 
   try {
-    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+      bouquetId,
+      imageId
+    );
     await updateCatalogProductImageText({
-      imageId,
+      imageId: resolvedImageId,
       altEn: String(formData.get('altEn') || ''),
       altTh: String(formData.get('altTh') || ''),
       actor: actorFromSessionUser(session.user),
@@ -567,8 +639,11 @@ export async function setPrimaryBouquetImageAction(
   }
 
   try {
-    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
-    await setCatalogProductPrimaryImage(imageId, actorFromSessionUser(session.user));
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+      bouquetId,
+      imageId
+    );
+    await setCatalogProductPrimaryImage(resolvedImageId, actorFromSessionUser(session.user));
     if (revisionId) {
       revalidateBouquetAdminPaths(bouquetId);
     } else {
@@ -637,9 +712,12 @@ export async function moveBouquetImageAction(
   }
 
   try {
-    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+      bouquetId,
+      imageId
+    );
     await moveCatalogProductImage({
-      imageId,
+      imageId: resolvedImageId,
       direction,
       actor: actorFromSessionUser(session.user),
     });
@@ -667,9 +745,12 @@ export async function deleteBouquetImageAction(
   }
 
   try {
-    const { writeId, revisionId } = await requireBouquetImageForWrite(bouquetId, imageId);
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+      bouquetId,
+      imageId
+    );
     const actor = actorFromSessionUser(session.user);
-    await softDeleteCatalogProductImage(imageId, actor);
+    await softDeleteCatalogProductImage(resolvedImageId, actor);
     if (revisionId) {
       const remaining = await getCatalogProductImagesForRevision(revisionId);
       if (remaining.length > 0 && !remaining.some((image) => image.is_primary)) {

@@ -3,20 +3,20 @@ import {
   logFeedSkippedProducts,
 } from '@/lib/feeds/googleMerchantFeed';
 import {
-  getBalloonsFilteredFromSanity,
-  getBouquetsFromSanity,
-  getPlushyToysFilteredFromSanity,
-} from '@/lib/sanity';
+  getCatalogBalloonsFiltered,
+  getCatalogBouquets,
+  getCatalogPlushyToysFiltered,
+} from '@/lib/catalogReads';
 
-/** Cache feed generation — catalog data is already CDN-cached in lib/sanity. */
+/** Cache feed generation — catalog data is already CDN-cached via lib/catalogReads. */
 export const revalidate = 3600;
 
 export async function GET() {
   try {
     const [bouquets, toys, balloons] = await Promise.all([
-      getBouquetsFromSanity(),
-      getPlushyToysFilteredFromSanity({ sort: 'newest' }),
-      getBalloonsFilteredFromSanity({ sort: 'newest' }),
+      getCatalogBouquets(),
+      getCatalogPlushyToysFiltered({ sort: 'newest' }),
+      getCatalogBalloonsFiltered({ sort: 'newest' }),
     ]);
 
     const { tsv, rowCount, skipped } = buildGoogleMerchantFeed({

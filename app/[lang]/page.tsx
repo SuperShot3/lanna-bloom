@@ -15,7 +15,7 @@ import {
   buildOrganizationJsonLd,
   buildWebSiteJsonLd,
 } from '@/lib/seo/siteJsonLd';
-import { getHeroImageFromSanity, getHeroCarouselImagesFromSanity } from '@/lib/sanity';
+import { getCatalogHeroImage, getCatalogHeroCarouselImages } from '@/lib/catalogReads';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { Suspense } from 'react';
@@ -68,8 +68,8 @@ export default async function HomePage({
 }) {
   const lang: Locale = isValidLocale(params.lang) ? params.lang : 'en';
   const [heroImageUrl, carouselImages] = await Promise.all([
-    getHeroImageFromSanity(),
-    getHeroCarouselImagesFromSanity(),
+    getCatalogHeroImage(),
+    getCatalogHeroCarouselImages(),
   ]);
   const faqItems = getHomeFaqItems(lang);
   const jsonLd = [

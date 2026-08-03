@@ -5,7 +5,7 @@ import { ProductGallery } from '@/components/ProductGallery';
 import { ProductShareLink } from '@/components/ProductShareLink';
 import { ProductOrderBlockForProduct } from '@/components/ProductOrderBlockForProduct';
 import type { Bouquet } from '@/lib/bouquets';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 import { computeFinalPrice } from '@/lib/partnerPricing';

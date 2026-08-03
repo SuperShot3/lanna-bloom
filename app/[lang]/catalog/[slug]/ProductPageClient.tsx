@@ -6,7 +6,7 @@ import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import { ProductAboutSection } from '@/components/pdp/ProductAboutSection';
 import { ProductShareLink } from '@/components/ProductShareLink';
 import type { Bouquet } from '@/lib/bouquets';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
@@ -15,6 +15,8 @@ import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import { getCompositionSingleLine } from '@/lib/compositionDisplay';
 import { ProductIdentityMeta } from '@/components/pdp/ProductIdentityMeta';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
+import { getPreferredBouquetSize } from '@/lib/favorites';
+import { imageIndexForSizeIndex, sizeIndexForImageIndex } from '@/lib/pdpVariantMedia';
 
 export function ProductPageClient({
   bouquet,
@@ -38,9 +40,18 @@ export function ProductPageClient({
   gifts?: CatalogProduct[];
 }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<Bouquet['sizes'][number]>(
-    () => bouquet.sizes[0]
-  );
+  const [selectedSize, setSelectedSize] = useState<Bouquet['sizes'][number]>(() => {
+    const preferredId = getPreferredBouquetSize(bouquet.id);
+    if (preferredId) {
+      const found = bouquet.sizes.find((s) => s.optionId === preferredId);
+      if (found) return found;
+      const legacy = bouquet.sizes.find((s) => s.key === preferredId);
+      if (legacy) return legacy;
+    }
+    return bouquet.sizes[0];
+  });
+  /** Shared gallery (bouquet.images) vs. a per-size photo set — only the shared gallery maps to tiers by index. */
+  const usesSharedGallery = !selectedSize.imageUrls?.length;
   const galleryImages = useMemo(() => {
     if (selectedSize.imageUrls?.length) return selectedSize.imageUrls;
     return bouquet.images ?? [];
@@ -51,9 +62,22 @@ export function ProductPageClient({
     return bouquet.imageAlts;
   }, [selectedSize.optionId, selectedSize.imageAlts, bouquet.imageAlts]);
 
-  useEffect(() => {
-    setSelectedImageIndex(0);
-  }, [selectedSize.optionId]);
+  /** Tier button click → scroll the carousel to the matching photo (or reset for a per-size gallery). */
+  const handleSizeSelect = useCallback(
+    (size: Bouquet['sizes'][number]) => {
+      setSelectedSize(size);
+      if (size.imageUrls?.length) {
+        setSelectedImageIndex(0);
+        return;
+      }
+      const imageCount = bouquet.images?.length ?? 0;
+      const sizeIndex = bouquet.sizes.findIndex((candidate) => candidate.optionId === size.optionId);
+      if (sizeIndex >= 0 && imageCount > 0) {
+        setSelectedImageIndex(imageIndexForSizeIndex(sizeIndex, imageCount));
+      }
+    },
+    [bouquet.images, bouquet.sizes]
+  );
 
   const selectedImageUrl =
     galleryImages[selectedImageIndex] ?? galleryImages[0] ?? undefined;
@@ -90,9 +114,20 @@ export function ProductPageClient({
     });
   }, [bouquet, lang]);
 
-  const handleImageIndexChange = useCallback((index: number) => {
-    setSelectedImageIndex(index);
-  }, []);
+  /** Swipe/chevron/dot navigation → select the matching tier when browsing the shared gallery. */
+  const handleImageIndexChange = useCallback(
+    (index: number) => {
+      setSelectedImageIndex(index);
+      if (!usesSharedGallery || bouquet.sizes.length <= 1) return;
+      const sizeIndex = sizeIndexForImageIndex(index, bouquet.sizes.length);
+      if (sizeIndex == null) return;
+      const matchedSize = bouquet.sizes[sizeIndex];
+      if (matchedSize && matchedSize.optionId !== selectedSize.optionId) {
+        setSelectedSize(matchedSize);
+      }
+    },
+    [usesSharedGallery, bouquet.sizes, selectedSize.optionId]
+  );
 
   return (
     <>
@@ -139,7 +174,8 @@ export function ProductPageClient({
           selectedImageUrl={selectedImageUrl}
           selectedImageIndex={selectedImageIndex}
           onSelectedImageIndexChange={handleImageIndexChange}
-          onSelectedSizeChange={setSelectedSize}
+          selectedSize={selectedSize}
+          onSizeSelect={handleSizeSelect}
           gifts={gifts}
         />
         <ProductAboutSection

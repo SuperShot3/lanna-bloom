@@ -11,15 +11,15 @@ import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
 import { ProductSimilarBouquetsSection } from '@/components/pdp/ProductSimilarBouquetsSection';
 import {
-  getBalloonBySlugFromSanity,
-  getBouquetBySlugFromSanity,
-  getBouquetsFromSanity,
-  getPlushyToyBySlugFromSanity,
-  getPopularBouquetsFromSanity,
-  getProductBySlugFromSanity,
-  getProductsFilteredFromSanity,
-  getSimilarBouquetsForBouquet,
-} from '@/lib/sanity';
+  getCatalogBalloonBySlug,
+  getCatalogBouquetBySlug,
+  getCatalogBouquets,
+  getCatalogPlushyToyBySlug,
+  getCatalogPopularBouquets,
+  getCatalogProductBySlug,
+  getCatalogProductsFiltered,
+  getCatalogSimilarBouquets,
+} from '@/lib/catalogReads';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { getMarketByPathSlug, type MarketPathSlug } from '@/lib/delivery/markets';
@@ -30,11 +30,11 @@ import {
 import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
 import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
 
-// Revalidate product pages every 60 seconds so Sanity updates appear without rebuild
+// Revalidate product pages every 60 seconds so catalog updates appear without rebuild
 export const revalidate = 60;
 
 export async function generateStaticParams() {
-  const bouquets = await getBouquetsFromSanity();
+  const bouquets = await getCatalogBouquets();
   return locales.flatMap((lang) =>
     bouquets.map((b) => ({ lang, slug: b.slug }))
   );
@@ -50,7 +50,7 @@ export async function generateMetadata({
   if (!isValidLocale(params.lang)) return {};
   if (getMarketByPathSlug(params.slug)) return {};
 
-  const bouquet = await getBouquetBySlugFromSanity(params.slug);
+  const bouquet = await getCatalogBouquetBySlug(params.slug);
   if (!bouquet) return {};
 
   const isTh = params.lang === 'th';
@@ -117,11 +117,11 @@ export default async function ProductPage({
     ? `${getBaseUrl()}/${lang}/catalog/${marketPathSlug}/${params.slug}`
     : `${getBaseUrl()}/${lang}/catalog/${params.slug}`;
 
-  const bouquet = await getBouquetBySlugFromSanity(params.slug);
+  const bouquet = await getCatalogBouquetBySlug(params.slug);
   if (bouquet) {
     const reviewStats = getBouquetDisplayReviewStats(bouquet.id);
-    const gifts = await getProductsFilteredFromSanity({ categoryKey: 'gifts' });
-    const similarBouquets = await getSimilarBouquetsForBouquet(bouquet, 3);
+    const gifts = await getCatalogProductsFiltered({ categoryKey: 'gifts' });
+    const similarBouquets = await getCatalogSimilarBouquets(bouquet, 3);
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const description = lang === 'th' ? bouquet.descriptionTh : bouquet.descriptionEn;
     const composition = lang === 'th' ? bouquet.compositionTh : bouquet.compositionEn;
@@ -169,12 +169,12 @@ export default async function ProductPage({
     );
   }
 
-  const plushyToy = await getPlushyToyBySlugFromSanity(params.slug);
+  const plushyToy = await getCatalogPlushyToyBySlug(params.slug);
   if (plushyToy) {
     const name = lang === 'th' && plushyToy.nameTh ? plushyToy.nameTh : plushyToy.nameEn;
     const description = (lang === 'th' ? plushyToy.descriptionTh : plushyToy.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
-    const suggestedBouquets = await getPopularBouquetsFromSanity(8);
+    const suggestedBouquets = await getCatalogPopularBouquets(8);
 
     return (
       <div className="product-page">
@@ -205,7 +205,7 @@ export default async function ProductPage({
     );
   }
 
-  const balloon = await getBalloonBySlugFromSanity(params.slug);
+  const balloon = await getCatalogBalloonBySlug(params.slug);
   if (balloon) {
     const name = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
     const description = (lang === 'th' ? balloon.descriptionTh : balloon.descriptionEn) || '';
@@ -215,7 +215,7 @@ export default async function ProductPage({
       marketPathSlug,
       'topCategory=balloons'
     );
-    const suggestedBouquets = await getPopularBouquetsFromSanity(8);
+    const suggestedBouquets = await getCatalogPopularBouquets(8);
 
     return (
       <div className="product-page">
@@ -246,9 +246,9 @@ export default async function ProductPage({
     );
   }
 
-  const product = await getProductBySlugFromSanity(params.slug);
+  const product = await getCatalogProductBySlug(params.slug);
   if (product) {
-    const gifts = await getProductsFilteredFromSanity({ categoryKey: 'gifts' });
+    const gifts = await getCatalogProductsFiltered({ categoryKey: 'gifts' });
     const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
     const description = (lang === 'th' ? product.descriptionTh : product.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;

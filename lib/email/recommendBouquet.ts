@@ -1,5 +1,5 @@
 import 'server-only';
-import { getBouquetById } from '@/lib/sanity';
+import { getCatalogBouquetById } from '@/lib/catalogReads';
 import { getBaseUrl } from '@/lib/orders';
 import type { Bouquet } from '@/lib/bouquets';
 
@@ -59,7 +59,7 @@ export async function getRecommendedBouquetForReminder(
   occasionType: string
 ): Promise<RecommendedBouquet> {
   const id = pickBouquetIdByRules(relationship, occasionType);
-  const b = await getBouquetById(id);
+  const b = await getCatalogBouquetById(id);
   const base = getBaseUrl().replace(/\/$/, '');
   const slug = b?.slug ?? '101-mixed-roses';
   return {

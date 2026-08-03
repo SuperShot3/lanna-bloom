@@ -1,15 +1,15 @@
 /**
  * Server-side order pricing for Stripe. Never trust client totals.
- * Fetches prices from Sanity and computes items, add-ons, delivery fee.
+ * Fetches prices from the Supabase catalog and computes items, add-ons, delivery fee.
  */
 
 import {
-  getBalloonById,
-  getBouquetById,
-  getBouquetBySlugFromSanity,
-  getPlushyToyById,
-  getProductById,
-} from '@/lib/sanity';
+  getCatalogBalloonById,
+  getCatalogBouquetById,
+  getCatalogBouquetBySlug,
+  getCatalogPlushyToyById,
+  getCatalogProductById,
+} from '@/lib/catalogReads';
 import { resolveBouquetOptionFromIdentifier } from '@/lib/bouquetOptions';
 import type { OrderCardType, OrderWrappingOption, OrderDeliveryDestinationId } from '@/lib/orders';
 import { isExpansionDestination } from '@/lib/delivery/markets';
@@ -85,7 +85,7 @@ export interface PricingDeliveryInput {
 }
 
 /**
- * Compute order totals from cart identifiers. Fetches prices from Sanity.
+ * Compute order totals from cart identifiers. Fetches prices from the Supabase catalog.
  * Never accepts price/total from client.
  */
 export async function computeOrderTotals(
@@ -145,7 +145,7 @@ export async function computeOrderTotals(
     const applyMarkup = (v: number) => applyExpansionItemMarkupThb(v, delivery.deliveryDestination);
 
     if (isPlushyToy) {
-      const toy = await getPlushyToyById(item.bouquetId);
+      const toy = await getCatalogPlushyToyById(item.bouquetId);
       if (!toy) {
         return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
       }
@@ -178,7 +178,7 @@ export async function computeOrderTotals(
       });
       itemsTotal += itemPrice;
     } else if (isBalloon) {
-      const balloon = await getBalloonById(item.bouquetId);
+      const balloon = await getCatalogBalloonById(item.bouquetId);
       if (!balloon) {
         return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
       }
@@ -214,7 +214,7 @@ export async function computeOrderTotals(
       });
       itemsTotal += itemPrice;
     } else if (isProduct) {
-      const product = await getProductById(item.bouquetId);
+      const product = await getCatalogProductById(item.bouquetId);
       if (!product) {
         return { ok: false, message: `Product not found: ${item.bouquetId}` };
       }
@@ -260,8 +260,8 @@ export async function computeOrderTotals(
       itemsTotal += itemPrice;
     } else {
       const bouquet =
-        (item.bouquetSlug ? await getBouquetBySlugFromSanity(item.bouquetSlug) : null) ??
-        (await getBouquetById(item.bouquetId));
+        (item.bouquetSlug ? await getCatalogBouquetBySlug(item.bouquetSlug) : null) ??
+        (await getCatalogBouquetById(item.bouquetId));
       if (!bouquet) {
         return { ok: false, message: `Bouquet not found: ${item.bouquetId}` };
       }

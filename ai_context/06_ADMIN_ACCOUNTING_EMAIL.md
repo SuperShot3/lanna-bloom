@@ -119,7 +119,7 @@ Order emails: `lib/orderEmail.ts`, variables from `lib/email/variablesFromOrder.
 - PDF proofs: size check only, no client compression.
 - API must reject oversize even if client skips compression.
 
-**Unrelated storage:** Vercel Blob for custom order reference images (`lib/customOrder/uploadReferenceImage.ts`); Sanity CDN for catalog images.
+**Unrelated storage:** Vercel Blob for custom order reference images (`lib/customOrder/uploadReferenceImage.ts`); Supabase Storage bucket `catalog` for catalog images.
 
 ## RBAC
 

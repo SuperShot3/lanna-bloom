@@ -94,8 +94,9 @@ function stemRowTitle(tier: CatalogStemPricingRow): string {
   return tier.labelEn?.trim() || `${tier.stemCount} stems`;
 }
 
-function stemRowSubtitle(tier: CatalogStemPricingRow): string | null {
+function stemRowSubtitle(tier: CatalogStemPricingRow, photoCount = 0): string | null {
   const parts: string[] = [`฿${tier.price ?? 0}`, `${tier.stemCount} stems`];
+  if (photoCount > 0) parts.push(`${photoCount} photo${photoCount === 1 ? '' : 's'}`);
   if (tier.labelTh?.trim()) parts.push(tier.labelTh.trim());
   return parts.join(' · ');
 }
@@ -288,8 +289,6 @@ type StemModalProps = {
   open: boolean;
   tier: CatalogStemPricingRow | null;
   index: number | null;
-  images: AdminCatalogProductImage[];
-  imageHandlers: ImageHandlers;
   onClose: () => void;
   onSave: (index: number | null, tier: CatalogStemPricingRow) => void;
 };
@@ -298,8 +297,6 @@ function StemTierEditModal({
   open,
   tier,
   index,
-  images,
-  imageHandlers,
   onClose,
   onSave,
 }: StemModalProps) {
@@ -309,11 +306,6 @@ function StemTierEditModal({
   const [price, setPrice] = useState('');
   const [preparationTime, setPreparationTime] = useState('');
   const [availability, setAvailability] = useState(true);
-  const [showImages, setShowImages] = useState(false);
-
-  const count = Math.max(1, Number(stemCount) || 1);
-  const vk = stemVariantKey(count);
-  const overrideCount = images.filter((img) => img.variantKey === vk).length;
 
   useEffect(() => {
     if (!open) return;
@@ -326,7 +318,6 @@ function StemTierEditModal({
       tier?.preparationTime != null ? String(tier.preparationTime) : ''
     );
     setAvailability(tier?.availability !== false);
-    setShowImages(false);
   }, [open, tier]);
 
   if (!open) return null;
@@ -416,26 +407,9 @@ function StemTierEditModal({
           onChange={setAvailability}
         />
       </div>
-      <details
-        className="admin-cms-modal-images"
-        open={showImages}
-        onToggle={(e) => setShowImages((e.target as HTMLDetailsElement).open)}
-      >
-        <summary>Tier images ({overrideCount}) — optional</summary>
-        <ProductImageListEditor
-          images={images}
-          variantKey={vk}
-          loadingKey={imageHandlers.loadingKey}
-          onReorder={(ids) => imageHandlers.onReorder(vk, ids)}
-          onUpload={(file, options) => imageHandlers.onUpload(vk, file, options)}
-          onSaveAlt={imageHandlers.onSaveAlt}
-          onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
-          onEditFraming={imageHandlers.onEditFraming}
-          onSetPrimary={imageHandlers.onSetPrimary}
-          onConvertToWebp={imageHandlers.onConvertToWebp}
-          onRemove={imageHandlers.onRemove}
-        />
-      </details>
+      <p className="admin-cms-empty-hint">
+        Assign photos from Product gallery below (one or more images per tier).
+      </p>
     </AdminCmsModal>
   );
 }
@@ -635,7 +609,8 @@ export function PricingSectionEditor({
                   const id = stemIds[index]!;
                   const vk = stemVariantKey(tier.stemCount);
                   const thumb = firstVariantImage(images, vk);
-                  const subtitle = stemRowSubtitle(tier);
+                  const photoCount = images.filter((img) => img.variantKey === vk).length;
+                  const subtitle = stemRowSubtitle(tier, photoCount);
                   return (
                     <AdminSortableRow
                       key={id}
@@ -730,8 +705,6 @@ export function PricingSectionEditor({
         open={editingStemIndex != null}
         tier={editingStemTier}
         index={editingStemIndex === 'new' ? null : editingStemIndex}
-        images={images}
-        imageHandlers={imageHandlers}
         onClose={() => setEditingStemIndex(null)}
         onSave={(index, tier) => {
           if (index == null) {

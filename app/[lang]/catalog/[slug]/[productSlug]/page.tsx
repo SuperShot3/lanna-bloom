@@ -5,7 +5,7 @@ import {
   getMarketByPathSlug,
   marketIsRouteAvailable,
 } from '@/lib/delivery/markets';
-import { getBouquetBySlugFromSanity } from '@/lib/sanity';
+import { getCatalogBouquetBySlug } from '@/lib/catalogReads';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
 import { resolveProductOgImage } from '@/lib/seo/productJsonLd';
@@ -22,7 +22,7 @@ export async function generateMetadata({
   const market = getMarketByPathSlug(params.slug);
   if (!market || !marketIsRouteAvailable(market)) return {};
 
-  const bouquet = await getBouquetBySlugFromSanity(params.productSlug);
+  const bouquet = await getCatalogBouquetBySlug(params.productSlug);
   const isTh = params.lang === 'th';
   const productName = bouquet
     ? isTh

@@ -263,8 +263,8 @@ Selection rules:
 - For **info** articles implemented in MDX:
   - `<CatalogProductCard slug="product-slug" />`
   - Optional: `<CatalogProductCardGrid>` wrapping multiple cards for a mid-article comparison block.
-- For **guides**, wire slugs in page data and fetch with `getBouquetBySlugFromSanity`; cards render only when data exists—Recommended links still work from copy.
-- Ensure each product slug exists in the site catalog / Sanity before using it.
+- For **guides**, wire slugs in page data and fetch with `getCatalogBouquetBySlug` (`@/lib/catalogReads`); cards render only when data exists—Recommended links still work from copy.
+- Ensure each product slug exists in the Supabase catalog before using it.
 
 ## Calls to Action
 
@@ -410,7 +410,7 @@ When the task is to ship an article or guide page on the website, prefer reusing
 
 Default behavior:
 - Map content to patterns that already exist: guide pages under `app/[lang]/guides/`, info/MDX articles under `content/info/` with `CatalogProductCard`, shared FAQ patterns, site header/footer, typography classes, and tokens from `app/globals.css` (guide-specific classes include `guide-page`, `guide-hero`, `guide-section`, `guide-bouquet-detail-*`, `guide-inline-callout`, `guide-highlights`, `guide-final-cta`, etc.).
-- Promote products using the same building blocks shoppers see elsewhere: **guide pages** use `BouquetCard` fed by `getBouquetBySlugFromSanity` and the catalog slug; **info articles** use `CatalogProductCard` in MDX. Do not ship fake tiles or one-off product markup unless no primitive exists.
+- Promote products using the same building blocks shoppers see elsewhere: **guide pages** use `BouquetCard` fed by `getCatalogBouquetBySlug` and the catalog slug; **info articles** use `CatalogProductCard` in MDX. Do not ship fake tiles or one-off product markup unless no primitive exists.
 - If the skill mentions product cards, interpret that as wiring content to real components and **exact catalog slugs**, not as permission to design arbitrary HTML/CSS per post.
 - Keep contact actions (LINE, WhatsApp, contact links, "message us") at the **bottom** of the article in the final CTA area (`MessengerOrderButtons` with `contactOnly` on guides, unless the user explicitly requests otherwise).
 

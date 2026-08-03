@@ -201,20 +201,6 @@ export function mapProductRowToCatalogProduct(
   };
 }
 
-export function bouquetPricingFromSanityDoc(doc: {
-  sizes?: CatalogBouquetPricing['sizes'];
-  singleStemOptions?: CatalogBouquetPricing['singleStemOptions'];
-  fixedVariants?: CatalogBouquetPricing['fixedVariants'];
-  customTiers?: CatalogBouquetPricing['customTiers'];
-}): CatalogBouquetPricing {
-  return {
-    sizes: doc.sizes,
-    singleStemOptions: doc.singleStemOptions,
-    fixedVariants: doc.fixedVariants,
-    customTiers: doc.customTiers,
-  };
-}
-
 export function slugFromName(name: string): string {
   return name
     .toLowerCase()

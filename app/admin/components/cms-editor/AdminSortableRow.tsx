@@ -13,6 +13,8 @@ type Props = {
   expanded?: boolean;
   menu?: ReactNode;
   badge?: ReactNode;
+  /** Optional control before the drag handle (e.g. multi-select checkbox). */
+  leading?: ReactNode;
   children?: ReactNode;
 };
 
@@ -25,6 +27,7 @@ export function AdminSortableRow({
   expanded,
   menu,
   badge,
+  leading,
   children,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -58,6 +61,11 @@ export function AdminSortableRow({
             : undefined
         }
       >
+        {leading ? (
+          <div className="admin-cms-sortable-leading" onClick={(e) => e.stopPropagation()}>
+            {leading}
+          </div>
+        ) : null}
         <button
           type="button"
           className="admin-cms-drag-handle"

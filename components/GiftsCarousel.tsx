@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { useCart } from '@/contexts/CartContext';

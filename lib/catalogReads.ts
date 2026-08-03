@@ -1,5 +1,5 @@
 /**
- * Storefront catalog reads — Supabase by default (CATALOG_READ_SOURCE=sanity for rollback).
+ * Storefront catalog reads — Supabase only. No other catalog backend is supported.
  */
 import 'server-only';
 
@@ -38,8 +38,7 @@ import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
 function catalogReadNotConfigured(): never {
   throw new Error(
-    'CATALOG_READ_SOURCE=sanity is no longer supported — catalog reads use Supabase. ' +
-      'Run npm run import-catalog and remove CATALOG_READ_SOURCE=sanity from env.'
+    'Catalog reads require Supabase — remove any non-default CATALOG_READ_SOURCE value from env.'
   );
 }
 

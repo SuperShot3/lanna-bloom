@@ -1,6 +1,6 @@
 /**
 
- * Supabase catalog read layer (storefront when CATALOG_READ_SOURCE=supabase).
+ * Supabase catalog read layer (storefront). Supabase is the only supported source.
 
  */
 
@@ -126,7 +126,7 @@ const HERO_IMAGE_FALLBACK = '/HeroImage/heroimage.webp';
 
 
 
-/** Feature flag: public storefront reads from Supabase when set. */
+/** Safety guard: storefront reads always use Supabase; no other source is supported. */
 
 export function isCatalogReadFromSupabase(): boolean {
 

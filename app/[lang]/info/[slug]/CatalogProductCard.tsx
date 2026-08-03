@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BouquetCard } from '@/components/BouquetCard';
 import { ProductCard } from '@/components/ProductCard';
-import { getBouquetBySlugFromSanity, getProductBySlugFromSanity } from '@/lib/sanity';
+import { getCatalogBouquetBySlug, getCatalogProductBySlug } from '@/lib/catalogReads';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 import styles from './article.module.css';
 
@@ -22,7 +22,7 @@ export async function CatalogProductCard({
   const viewLabel = lang === 'th' ? 'ดูในแคตตาล็อก' : 'View in catalog';
   const href = `/${lang}/catalog/${encodeURIComponent(trimmed)}`;
 
-  const product = await getProductBySlugFromSanity(trimmed);
+  const product = await getCatalogProductBySlug(trimmed);
   if (product) {
     if (variant === 'article-catalog-button') {
       const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
@@ -61,7 +61,7 @@ export async function CatalogProductCard({
     );
   }
 
-  const bouquet = await getBouquetBySlugFromSanity(trimmed);
+  const bouquet = await getCatalogBouquetBySlug(trimmed);
   if (bouquet) {
     if (variant === 'article-catalog-button') {
       const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;

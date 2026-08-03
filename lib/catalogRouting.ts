@@ -11,12 +11,12 @@ export function revalidateCatalogCacheAfterSupabaseWrite(): void {
   }
 }
 
-/** Catalog writes go to Supabase by default. Set CATALOG_WRITE_SOURCE=sanity to opt out (unsupported). */
+/** Safety guard: catalog writes always go to Supabase; no other source is supported. */
 export function isCatalogWriteToSupabase(): boolean {
   return process.env.CATALOG_WRITE_SOURCE !== 'sanity';
 }
 
-/** Admin moderation reads use Supabase unless explicitly set to Sanity (unsupported). */
+/** Safety guard: admin moderation reads always use Supabase; no other source is supported. */
 export function isCatalogAdminReadFromSupabase(): boolean {
   return process.env.CATALOG_WRITE_SOURCE !== 'sanity';
 }

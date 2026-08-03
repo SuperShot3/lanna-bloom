@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { GiftsCarousel } from '@/components/GiftsCarousel';
-import type { CatalogProduct } from '@/lib/sanity';
+import type { CatalogProduct } from '@/lib/catalog/types';
 import { translations, type Locale } from '@/lib/i18n';
 import styles from './product-pdp.module.css';
 

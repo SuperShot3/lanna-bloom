@@ -10,7 +10,7 @@ import {
   AdminCmsSection,
   AdminCheckboxGrid,
   PricingSectionEditor,
-  ProductImageListEditor,
+  ProductGalleryEditor,
 } from '@/app/admin/components/cms-editor';
 import { reorderImagesByIds } from '@/lib/catalogImageReorder';
 import {
@@ -33,6 +33,7 @@ import {
 import { confirmCatalogDeleteAction } from '@/app/admin/components/confirmDelete';
 import {
   approveProductAction,
+  assignProductImagesVariantAction,
   deleteProductAction,
   convertProductImageToWebpAction,
   deleteProductImageAction,
@@ -144,6 +145,11 @@ export function AdminProductDetailClient({ product }: Props) {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
+    // Images save immediately via dedicated actions — always sync even when form is dirty.
+    setEditableImages(product.editableImages ?? []);
+  }, [product.editableImages]);
+
+  useEffect(() => {
     if (getProductPending(product.id)) return;
     setNameEn(product.nameEn);
     setNameTh(product.nameTh ?? '');
@@ -157,7 +163,6 @@ export function AdminProductDetailClient({ product }: Props) {
     setDiscountPercent(product.discountPercent != null ? String(product.discountPercent) : '');
     setOccasion(parseOccasion(product.occasion));
     setAvailableMarkets(availableMarketsFromExcluded(product.excludedDeliveryDestinations));
-    setEditableImages(product.editableImages ?? []);
   }, [product, getProductPending]);
 
   const catalogHref = product.slug ? `/en/catalog/${product.slug}` : null;
@@ -355,9 +360,11 @@ export function AdminProductDetailClient({ product }: Props) {
       if (result.error) {
         setEditableImages(previous);
         setError(result.error);
+      } else {
+        router.refresh();
       }
     },
-    [editableImages, product.id]
+    [editableImages, product.id, router]
   );
 
   const imageHandlers = {
@@ -448,6 +455,30 @@ export function AdminProductDetailClient({ product }: Props) {
       else router.refresh();
     },
   };
+
+  async function handleAssignVariant(imageIds: string[], variantKey: string | null) {
+    setError(null);
+    setLoading('assign');
+    setEditableImages((current) =>
+      current.map((img) =>
+        imageIds.includes(img.id)
+          ? { ...img, variantKey: variantKey ?? null, isPrimary: variantKey ? false : img.isPrimary }
+          : img
+      )
+    );
+    const result = await assignProductImagesVariantAction({
+      productId: product.id,
+      imageIds,
+      variantKey,
+    });
+    setLoading(null);
+    if (result.error) {
+      setError(result.error);
+      setEditableImages(product.editableImages ?? []);
+      return;
+    }
+    router.refresh();
+  }
 
   return (
     <AdminCmsEditor>
@@ -584,19 +615,24 @@ export function AdminProductDetailClient({ product }: Props) {
 
       <AdminCmsCollapsibleSection
         label="Product gallery"
-        helper="Main images shown on the product page. Size or stem overrides are set in Pricing above."
+        helper={
+          pricingType === 'stem_count'
+            ? 'Upload photos here, then assign one or more to each stem tier. Assigned images leave the main list and show on the product page when that tier is selected.'
+            : 'Main images shown on the product page. Size overrides are set in Pricing above.'
+        }
         className="admin-cms-collapsible-panel"
         defaultOpen
       >
-        <ProductImageListEditor
+        <ProductGalleryEditor
           images={editableImages}
-          variantKey={null}
+          stemOptions={pricingType === 'stem_count' ? stemOptions : []}
           disabled={!!loading || savingImageOrder}
           loadingKey={loading}
-          onReorder={(ids) => imageHandlers.onReorder(null, ids)}
-          onUpload={(file, options) => imageHandlers.onUpload(null, file, options)}
+          onReorder={imageHandlers.onReorder}
+          onUpload={imageHandlers.onUpload}
+          onAssignVariant={handleAssignVariant}
           onSaveAlt={imageHandlers.onSaveAlt}
-          onReplace={(imageId, file, options) => imageHandlers.onReplace(imageId, file, options)}
+          onReplace={imageHandlers.onReplace}
           onEditFraming={imageHandlers.onEditFraming}
           onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}

@@ -14923,6 +14923,47 @@ a.admin-summary-key-value {
   letter-spacing: 0.04em;
 }
 
+.admin-cms-product-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-cms-gallery-assign-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius);
+  background: var(--cms-bg);
+}
+
+.admin-cms-gallery-assign-select {
+  min-width: 180px;
+  flex: 1 1 160px;
+}
+
+.admin-cms-gallery-tier-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--cms-border);
+}
+
+.admin-cms-sortable-leading {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.admin-cms-sortable-select {
+  margin: 0;
+  gap: 0;
+}
+
 .admin-cms-image-list {
   display: flex;
   flex-direction: column;

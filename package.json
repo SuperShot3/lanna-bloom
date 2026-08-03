@@ -10,10 +10,6 @@
     "test:seo": "tsx lib/seo/seoArchitecture.test.ts",
     "test:delivery-fees": "tsx lib/deliveryFees.test.ts",
     "seed-admin": "tsx scripts/seed-admin.ts",
-    "import-catalog": "tsx scripts/archive/import-catalog-from-sanity.ts",
-    "import-catalog:dry-run": "tsx scripts/archive/import-catalog-from-sanity.ts --dry-run",
-    "import-hero": "tsx scripts/import-hero-from-sanity.ts",
-    "import-hero:dry-run": "tsx scripts/import-hero-from-sanity.ts --dry-run",
     "catalog-audit-pricing": "tsx scripts/catalog-audit-pricing-kinds.ts",
     "migrate-catalog-pricing": "tsx scripts/migrate-catalog-pricing.ts",
     "migrate-catalog-pricing:dry-run": "tsx scripts/migrate-catalog-pricing.ts --dry-run"
@@ -59,8 +55,6 @@
     "web-vitals": "^6.0.0"
   },
   "devDependencies": {
-    "@sanity/client": "^6.22.0",
-    "@sanity/image-url": "^1.0.2",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/leaflet": "^1.9.21",

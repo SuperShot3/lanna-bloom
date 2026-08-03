@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
-import type { CatalogFilterParams } from '@/lib/sanity';
+import type { CatalogFilterParams } from '@/lib/catalogListLogic';
 import type { StemBucketKey } from '@/lib/bouquetOptions';
 import { STEM_BUCKET_RANGES } from '@/lib/bouquetOptions';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
