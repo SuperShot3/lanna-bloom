@@ -56,7 +56,6 @@ export function isCartFivePercentCode(code: string | null | undefined): boolean 
 
 /** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
 const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
-  'LB-DELIVERY-FREE': { type: 'free_delivery' },
   /** Standalone free delivery (any date; not tied to May campaign rules). */
   'LB-DELIVERY-FREE-2026': { type: 'free_delivery' },
   /** May 2026 auto free-delivery campaign (applied server-side when eligible; not entered by customer). */
@@ -69,15 +68,11 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
     value: 10,
     discountBase: 'items',
   },
-  VASILIY10: {
+  /** General 10% off items. */
+  'LB10-7394': {
     type: 'percent',
     value: 10,
     discountBase: 'items',
-    allowedDeliveryDestinations: ['PHUKET'],
-    affiliate: {
-      name: 'Vasiliy',
-      commissionPercent: 5,
-    },
   },
   [CART_FIVE_PERCENT_CODE]: {
     type: 'percent',
