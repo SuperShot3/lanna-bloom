@@ -1,352 +1,320 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { TrustBadges } from '@/components/TrustBadges';
 import { aboutPageCopy, DBD_BANNER_URL, DBD_VERIFY_URL } from '@/lib/aboutPageCopy';
 import type { AboutRichParagraph, AboutSegment } from '@/lib/aboutPageCopy';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { buildAlternates } from '@/lib/seo/alternates';
 import { AboutNewsletterSignup } from './AboutNewsletterSignup';
-import { StorefrontIcon } from '@/components/icons';
 
 const linkClassName =
-  'font-medium text-[#1A3C34] underline decoration-[#C5A059]/45 underline-offset-[4px] hover:decoration-[#C5A059] hover:text-[#14332c] transition-colors cursor-pointer';
-
-/** Overrides globals `a { text-decoration: none }` so Website + Partner links show underlines */
-const contactFooterLinkClass =
-  'font-medium text-[#1A3C34] !underline decoration-[#C5A059]/60 decoration-2 underline-offset-[5px] hover:decoration-[#C5A059] hover:text-[#14332c] transition-colors cursor-pointer text-base sm:text-lg';
+  'font-medium text-[#1A3C34] underline decoration-[#C5A059]/60 underline-offset-4 transition-colors hover:text-[#A47D2B] hover:decoration-[#C5A059] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] focus-visible:ring-offset-2';
 
 export async function generateMetadata({ params }: { params: { lang: string } }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return { title: 'About' };
+
   const lang = params.lang as Locale;
-  const c = aboutPageCopy[lang];
+  const copy = aboutPageCopy[lang];
+
   return {
-    title: c.metaTitle,
-    description: c.metaDescription,
+    title: copy.metaTitle,
+    description: copy.metaDescription,
     alternates: buildAlternates({ lang, pathSuffix: '/about' }),
+    openGraph: {
+      title: copy.metaTitle,
+      description: copy.metaDescription,
+      type: 'website',
+    },
   };
 }
 
 function RichParagraph({
   segments,
   locale,
-  className = '',
 }: {
   segments: AboutRichParagraph;
   locale: Locale;
-  className?: string;
 }) {
   return (
-    <p
-      className={`text-[17px] sm:text-lg leading-[1.75] text-[#2d2a26] antialiased ${className}`}
-    >
-      {segments.map((s: AboutSegment, i: number) => {
-        if (s.type === 'text') {
-          return <span key={i}>{s.text}</span>;
-        }
-        if (s.type === 'bold') {
+    <p className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+      {segments.map((segment: AboutSegment, index: number) => {
+        if (segment.type === 'text') return <span key={index}>{segment.text}</span>;
+
+        if (segment.type === 'bold') {
           return (
-            <strong key={i} className="font-semibold text-[#1A3C34]">
-              {s.text}
+            <strong key={index} className="font-semibold text-[#1A3C34]">
+              {segment.text}
             </strong>
           );
         }
-        if (s.type === 'link') {
-          const href = s.external ? s.href : `/${locale}${s.href}`;
-          if (s.external) {
-            return (
-              <a
-                key={i}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClassName}
-              >
-                {s.text}
-              </a>
-            );
-          }
-          return (
-            <Link key={i} href={href} className={linkClassName}>
-              {s.text}
-            </Link>
-          );
-        }
-        return null;
+
+        const href = segment.external ? segment.href : `/${locale}${segment.href}`;
+        return segment.external ? (
+          <a
+            key={index}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClassName}
+          >
+            {segment.text}
+          </a>
+        ) : (
+          <Link key={index} href={href} className={linkClassName}>
+            {segment.text}
+          </Link>
+        );
       })}
     </p>
   );
 }
 
-/** Readable long-form text — plain paragraph */
-function Body({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function ArticleSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <p
-      className={`text-[17px] sm:text-lg leading-[1.75] text-[#2d2a26] antialiased ${className}`}
-    >
-      {children}
-    </p>
+    <section className="border-t border-stone-200 pt-10 sm:pt-12">
+      <h2 className="text-balance font-[family-name:var(--font-family-display)] text-2xl font-semibold leading-tight tracking-tight text-[#1A3C34] sm:text-3xl">
+        {title}
+      </h2>
+      <div className="mt-5 space-y-5">{children}</div>
+    </section>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function ArticleList({ items }: { items: string[] }) {
   return (
-    <h2 className="font-[family-name:var(--font-family-display)] text-2xl sm:text-[1.625rem] font-semibold text-[#1A3C34] tracking-tight mb-5">
-      {children}
-    </h2>
-  );
-}
-
-function BulletList({ items }: { items: string[] }) {
-  return (
-    <ul className="mt-4 space-y-3 pl-1 text-[17px] sm:text-lg leading-[1.7] text-[#2d2a26] list-none">
+    <ul className="space-y-3 pl-6 text-[17px] leading-[1.75] text-stone-700 marker:text-[#C5A059] sm:text-lg">
       {items.map((item) => (
-        <li key={item} className="flex gap-3 pl-0">
-          <span
-            className="mt-[0.55em] h-1.5 w-1.5 shrink-0 rounded-full bg-[#C5A059]"
-            aria-hidden
-          />
-          <span>{item}</span>
+        <li key={item} className="pl-1">
+          {item}
         </li>
       ))}
     </ul>
   );
 }
 
-function QuickLinksSection({
-  title,
-  links,
-  locale,
-}: {
-  title: string;
-  links: { label: string; href: string }[];
-  locale: Locale;
-}) {
-  return (
-    <aside
-      className="rounded-2xl border border-[#ebe6e0] bg-white p-5 sm:p-6 shadow-[var(--shadow)]"
-      aria-label={title}
-    >
-      <h2 className="font-[family-name:var(--font-family-display)] text-lg font-semibold text-[#1A3C34] mb-4">
-        {title}
-      </h2>
-      <ul className="flex flex-col gap-2">
-        {links.map((item) => (
-          <li key={item.href + item.label}>
-            <Link
-              href={`/${locale}${item.href}`}
-              className="group flex items-center gap-2 text-[17px] leading-snug text-[#2d2a26] rounded-lg px-2 py-2 -mx-2 hover:bg-[#f9f5f0] transition-colors cursor-pointer"
-            >
-              <span className="text-[#C5A059] shrink-0 group-hover:translate-x-0.5 transition-transform">
-                <StorefrontIcon name="arrow-forward" size={20} />
-              </span>
-              <span className="font-medium text-[#1A3C34] group-hover:underline decoration-[#C5A059]/50 underline-offset-2">
-                {item.label}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </aside>
-  );
-}
-
 export default function AboutPage({ params }: { params: { lang: string } }) {
-  const { lang } = params;
-  if (!isValidLocale(lang)) notFound();
-  const locale = lang as Locale;
-  const c = aboutPageCopy[locale];
+  if (!isValidLocale(params.lang)) notFound();
+
+  const locale = params.lang as Locale;
+  const copy = aboutPageCopy[locale];
+  const isThai = locale === 'th';
 
   return (
-    <div className="min-h-[60vh] bg-[#fdfbf9]">
-      <div className="container pb-12 sm:pb-16 md:pb-20 lg:pb-24">
-        <article className="mx-auto max-w-[42rem] flow-root">
-          <header className="mb-12 sm:mb-14 text-center sm:text-left mt-6 sm:mt-8 md:mt-10 lg:mt-14 xl:mt-16">
-            <h1 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl font-semibold text-[#1A3C34] tracking-tight leading-tight mb-4">
-              {c.h1}
-            </h1>
-            <p className="text-lg sm:text-xl leading-relaxed text-stone-600 max-w-2xl mx-auto sm:mx-0">
-              {c.tagline}
-            </p>
-          </header>
+    <main className="bg-[#FDFBF8]">
+      <article className="container mx-auto max-w-[50rem] pb-24 pt-12 sm:pb-28 sm:pt-16 lg:pb-32 lg:pt-20">
+        <header>
+          <Image
+            src="/logo_full_master.png"
+            alt="Lanna Bloom"
+            width={512}
+            height={512}
+            priority
+            className="mb-7 h-28 w-28 object-contain sm:h-32 sm:w-32"
+          />
 
-          <div className="space-y-12 sm:space-y-14">
-            <section className="space-y-5">
-              {c.intro.map((para, i) => (
-                <RichParagraph key={`intro-${i}`} segments={para} locale={locale} />
-              ))}
-              <QuickLinksSection title={c.quickLinks.title} links={c.quickLinks.links} locale={locale} />
-            </section>
+          <h1 className="text-balance font-[family-name:var(--font-family-display)] text-4xl font-semibold leading-tight tracking-tight text-[#1A3C34] sm:text-5xl">
+            {copy.h1}
+          </h1>
+          <p className="mt-5 text-pretty text-xl leading-relaxed text-stone-600 sm:text-2xl">
+            {copy.tagline}
+          </p>
 
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.whatWeBelieve.title}</SectionTitle>
-              <div className="space-y-5">
-                {c.whatWeBelieve.paragraphs.map((p, i) => (
-                  <Body key={`believe-${i}`}>{p}</Body>
-                ))}
-              </div>
-              <BulletList items={c.whatWeBelieve.bullets} />
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.supportingSellers.title}</SectionTitle>
-              <div className="space-y-5">
-                {c.supportingSellers.paragraphs.map((p, i) => (
-                  <Body key={`sellers-${i}`}>{p}</Body>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.startupGrowing.title}</SectionTitle>
-              <div className="space-y-5">
-                {c.startupGrowing.paragraphs.map((p, i) => (
-                  <Body key={`startup-${i}`}>{p}</Body>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.whatWeAreBuilding.title}</SectionTitle>
-              <Body>{c.whatWeAreBuilding.intro}</Body>
-              <BulletList items={c.whatWeAreBuilding.bullets} />
-              <div className="space-y-5 pt-2">
-                {c.whatWeAreBuilding.closing.map((p, i) => (
-                  <Body key={`building-${i}`}>{p}</Body>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.whyItMatters.title}</SectionTitle>
-              <div className="space-y-5">
-                {c.whyItMatters.paragraphs.map((p, i) => (
-                  <Body key={`matters-${i}`}>{p}</Body>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.platformUpdates.title}</SectionTitle>
-              <div className="rounded-2xl border border-[#ebe6e0] bg-white p-5 sm:p-7 shadow-[var(--shadow)] space-y-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <p className="text-[17px] sm:text-lg leading-[1.75] text-[#2d2a26] flex-1 min-w-0">
-                    {c.platformUpdates.snippetIntro}
-                  </p>
-                  <div className="shrink-0 rounded-xl bg-[#f9f5f0] border border-stone-200/80 px-4 py-2.5 text-sm text-stone-700 lg:text-right">
-                    <span className="text-stone-500 font-medium">
-                      {c.platformUpdates.lastUpdatedLabel}
-                    </span>
-                    <time
-                      dateTime={c.platformUpdates.lastUpdatedIso}
-                      className="block sm:inline sm:ml-2 font-semibold text-[#1A3C34] tabular-nums"
-                    >
-                      {c.platformUpdates.lastUpdatedDisplay}
-                    </time>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-[family-name:var(--font-family-display)] text-lg font-semibold text-[#1A3C34] mb-3">
-                    {c.platformUpdates.highlightsTitle}
-                  </h3>
-                  <BulletList items={c.platformUpdates.highlights} />
-                </div>
-                <AboutNewsletterSignup
-                  copy={{
-                    newsletterTitle: c.platformUpdates.newsletterTitle,
-                    newsletterHint: c.platformUpdates.newsletterHint,
-                    emailPlaceholder: c.platformUpdates.emailPlaceholder,
-                    joinButton: c.platformUpdates.joinButton,
-                    newsletterSubscribing: c.platformUpdates.newsletterSubscribing,
-                    newsletterSuccess: c.platformUpdates.newsletterSuccess,
-                    newsletterAlreadySubscribed: c.platformUpdates.newsletterAlreadySubscribed,
-                    newsletterError: c.platformUpdates.newsletterError,
-                    newsletterInvalidEmail: c.platformUpdates.newsletterInvalidEmail,
-                  }}
-                />
-              </div>
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.lookingAhead.title}</SectionTitle>
-              <div className="space-y-5">
-                {c.lookingAhead.paragraphs.map((p, i) => (
-                  <Body key={`ahead-${i}`}>{p}</Body>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-5 pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.dbdVerification.title}</SectionTitle>
-              <div className="rounded-2xl border border-[#ebe6e0] bg-white p-5 sm:p-7 shadow-[var(--shadow)] space-y-4">
-                <div className="inline-flex rounded-lg bg-white p-1 shadow-[var(--shadow)]">
-                  <img
-                    src={DBD_BANNER_URL}
-                    alt="DBD Verified badge (Thailand Department of Business Development)"
-                    className="block h-14 w-14 object-contain sm:h-[76px] sm:w-[76px]"
-                    loading="lazy"
-                    decoding="async"
-                    width={76}
-                    height={76}
-                  />
-                </div>
-                <Body>{c.dbdVerification.explanation}</Body>
-                <a
-                  href={DBD_VERIFY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClassName}
-                >
-                  {c.dbdVerification.verifyLinkText}
-                </a>
-              </div>
-            </section>
-
-            <section className="pt-2 border-t border-stone-200/90">
-              <SectionTitle>{c.contact.title}</SectionTitle>
-              <div className="rounded-2xl bg-white p-6 sm:p-8 shadow-[var(--shadow)] border border-[#ebe6e0] space-y-5 mb-8 sm:mb-10">
-                <RichParagraph segments={c.contact.intro} locale={locale} />
-                <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-                  {c.contact.moreLinksTitle}
-                </p>
-                <ul className="flex flex-wrap gap-2">
-                  {c.contact.moreLinks.map((item) => (
-                    <li key={item.href + item.label}>
-                      <Link
-                        href={`/${locale}${item.href}`}
-                        className="inline-flex items-center rounded-full border border-stone-200 bg-[#fdfbf9] px-3 py-1.5 text-sm font-medium text-[#1A3C34] hover:border-[#C5A059]/60 hover:bg-[#f9f5f0] transition-colors cursor-pointer"
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <div className="space-y-3 pt-3 border-t border-stone-100">
-                  <p className="text-[17px] sm:text-lg leading-[1.75] text-[#2d2a26]">
-                    <span className="font-semibold text-[#1A3C34]">{c.contact.websiteLabel}</span>{' '}
-                    <a
-                      href={c.contact.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={contactFooterLinkClass}
-                    >
-                      {c.contact.websiteDisplay}
-                    </a>
-                  </p>
-                  <p className="text-[17px] sm:text-lg leading-[1.75] text-[#2d2a26]">
-                    <span className="font-semibold text-[#1A3C34]">{c.contact.partnerPortalLabel}</span>{' '}
-                    <Link
-                      href={`/${locale}/partner/login`}
-                      className={contactFooterLinkClass}
-                    >
-                      {c.contact.partnerPortalLinkText}
-                    </Link>
-                  </p>
-                </div>
-              </div>
-            </section>
+          <div className="mt-8 space-y-5">
+            {copy.intro.map((paragraph, index) => (
+              <RichParagraph key={index} segments={paragraph} locale={locale} />
+            ))}
           </div>
-        </article>
-      </div>
-    </div>
+
+          <div className="mt-7">
+            <TrustBadges lang={locale} />
+          </div>
+        </header>
+
+        <div className="mt-12 space-y-10 sm:mt-16 sm:space-y-12">
+          <ArticleSection title={copy.whatWeBelieve.title}>
+            {copy.whatWeBelieve.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+                {paragraph}
+              </p>
+            ))}
+            <ArticleList items={copy.whatWeBelieve.bullets} />
+          </ArticleSection>
+
+          <ArticleSection title={copy.supportingSellers.title}>
+            {copy.supportingSellers.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+                {paragraph}
+              </p>
+            ))}
+            <p>
+              <Link href={`/${locale}/partner/apply`} className={linkClassName}>
+                {isThai ? 'สมัครเป็นพาร์ทเนอร์กับ Lanna Bloom' : 'Apply to become a Lanna Bloom partner'}
+              </Link>
+            </p>
+          </ArticleSection>
+
+          <ArticleSection title={copy.startupGrowing.title}>
+            {copy.startupGrowing.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+                {paragraph}
+              </p>
+            ))}
+          </ArticleSection>
+
+          <ArticleSection title={copy.whatWeAreBuilding.title}>
+            <p className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+              {copy.whatWeAreBuilding.intro}
+            </p>
+            <ArticleList items={copy.whatWeAreBuilding.bullets} />
+            {copy.whatWeAreBuilding.closing.map((paragraph) => (
+              <p key={paragraph} className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+                {paragraph}
+              </p>
+            ))}
+          </ArticleSection>
+
+          <ArticleSection title={copy.platformUpdates.title}>
+            <p className="text-sm font-medium text-stone-500">
+              {copy.platformUpdates.lastUpdatedLabel}:{' '}
+              <time dateTime={copy.platformUpdates.lastUpdatedIso} className="tabular-nums text-[#1A3C34]">
+                {copy.platformUpdates.lastUpdatedDisplay}
+              </time>
+            </p>
+            <p className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+              {copy.platformUpdates.snippetIntro}
+            </p>
+            <h3 className="pt-2 font-[family-name:var(--font-family-display)] text-xl font-semibold text-[#1A3C34] sm:text-2xl">
+              {copy.platformUpdates.highlightsTitle}
+            </h3>
+            <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+              <table className="w-full border-collapse text-left">
+                <thead className="bg-[#F7F3EC]">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="w-16 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-stone-500 sm:w-20 sm:px-5"
+                    >
+                      {isThai ? 'ลำดับ' : 'No.'}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-stone-500 sm:px-5"
+                    >
+                      {isThai ? 'การปรับปรุง' : 'Improvement'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-200">
+                  {copy.platformUpdates.highlights.map((highlight, index) => (
+                    <tr key={highlight}>
+                      <td className="px-4 py-4 align-top font-mono text-sm tabular-nums text-[#A47D2B] sm:px-5">
+                        {String(index + 1).padStart(2, '0')}
+                      </td>
+                      <td className="px-4 py-4 text-[15px] leading-relaxed text-stone-700 sm:px-5 sm:text-base">
+                        {highlight}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="pt-2">
+              <Link
+                href={`/${locale}/delivery-areas-chiang-mai`}
+                className="btn-premium inline-flex items-center gap-2"
+              >
+                {isThai
+                  ? 'ดูพื้นที่และค่าจัดส่งในเชียงใหม่'
+                  : 'View Chiang Mai delivery areas and fees'}
+                <span aria-hidden>→</span>
+              </Link>
+            </p>
+
+            <div className="pt-3">
+              <AboutNewsletterSignup
+                copy={{
+                  newsletterTitle: copy.platformUpdates.newsletterTitle,
+                  newsletterHint: copy.platformUpdates.newsletterHint,
+                  emailPlaceholder: copy.platformUpdates.emailPlaceholder,
+                  joinButton: copy.platformUpdates.joinButton,
+                  newsletterSubscribing: copy.platformUpdates.newsletterSubscribing,
+                  newsletterSuccess: copy.platformUpdates.newsletterSuccess,
+                  newsletterAlreadySubscribed: copy.platformUpdates.newsletterAlreadySubscribed,
+                  newsletterError: copy.platformUpdates.newsletterError,
+                  newsletterInvalidEmail: copy.platformUpdates.newsletterInvalidEmail,
+                }}
+              />
+            </div>
+          </ArticleSection>
+
+          <ArticleSection title={copy.lookingAhead.title}>
+            {copy.lookingAhead.paragraphs.map((paragraph) => (
+              <p key={paragraph} className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+                {paragraph}
+              </p>
+            ))}
+          </ArticleSection>
+
+          <ArticleSection title={copy.dbdVerification.title}>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+              <img
+                src={DBD_BANNER_URL}
+                alt={
+                  isThai
+                    ? 'ตรารับรอง DBD กรมพัฒนาธุรกิจการค้า'
+                    : 'DBD Verified badge, Thailand Department of Business Development'
+                }
+                className="h-16 w-16 shrink-0 object-contain"
+                loading="lazy"
+                decoding="async"
+                width={64}
+                height={64}
+              />
+              <div className="space-y-4">
+                <p className="text-[17px] leading-[1.8] text-stone-700 sm:text-lg">
+                  {copy.dbdVerification.explanation}
+                </p>
+                <p>
+                  <a
+                    href={DBD_VERIFY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClassName}
+                  >
+                    {copy.dbdVerification.verifyLinkText}
+                  </a>
+                </p>
+              </div>
+            </div>
+          </ArticleSection>
+
+          <nav
+            className="mb-16 border-t border-stone-200 pt-10 sm:mb-20 lg:mb-24"
+            aria-label={copy.quickLinks.title}
+          >
+            <h2 className="font-[family-name:var(--font-family-display)] text-xl font-semibold text-[#1A3C34]">
+              {copy.quickLinks.title}
+            </h2>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-3">
+              {copy.quickLinks.links.map((item) => (
+                <li key={item.href + item.label}>
+                  <Link href={`/${locale}${item.href}`} className={linkClassName}>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </article>
+    </main>
   );
 }
