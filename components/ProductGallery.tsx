@@ -53,6 +53,9 @@ export function ProductGallery({
   onActiveChangeRef.current = onActiveChange;
   /** Embla's live snap — used for lazy slide loading before parent state catches up. */
   const [snapIndex, setSnapIndex] = useState(0);
+  /** Latest controlled activeIndex, read inside the 'select' listener without re-subscribing on every change. */
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
 
   const reportActiveIndex = useCallback(
     (index: number) => {
@@ -287,10 +290,16 @@ export function ProductGallery({
     // `select` fires as soon as the selected snap changes (arrow click, drag
     // release, programmatic scroll) — unlike `settle`, it is never skipped when
     // a scroll turns out to be a no-op, so parent state cannot desync.
+    // NOTE: `activeIndex` is intentionally NOT a dependency here — read via a ref
+    // instead. If it were a dependency, every controlled activeIndex change (e.g.
+    // a tier button click) would re-subscribe and immediately re-invoke onSelect()
+    // with Embla's *stale* scroll position (the scrollTo() below hasn't run yet),
+    // which would report that stale index straight back to the parent and cause
+    // the index (and the tier it maps to) to bounce back and forth indefinitely.
     const onSelect = () => {
       const idx = emblaApi.selectedScrollSnap();
       setSnapIndex(idx);
-      if (isControlled && idx === activeIndex) return;
+      if (isControlled && idx === activeIndexRef.current) return;
       reportActiveIndex(idx);
     };
     emblaApi.on('select', onSelect);
@@ -298,7 +307,7 @@ export function ProductGallery({
     return () => {
       emblaApi.off('select', onSelect);
     };
-  }, [emblaApi, isControlled, activeIndex, reportActiveIndex]);
+  }, [emblaApi, isControlled, reportActiveIndex]);
 
   useEffect(() => {
     if (!emblaApi) return;

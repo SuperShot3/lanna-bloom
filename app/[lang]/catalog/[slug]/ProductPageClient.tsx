@@ -39,8 +39,7 @@ export function ProductPageClient({
   reviewCount: number;
   gifts?: CatalogProduct[];
 }) {
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<Bouquet['sizes'][number]>(() => {
+  const resolveInitialSize = (): Bouquet['sizes'][number] => {
     const preferredId = getPreferredBouquetSize(bouquet.id);
     if (preferredId) {
       const found = bouquet.sizes.find((s) => s.optionId === preferredId);
@@ -49,6 +48,16 @@ export function ProductPageClient({
       if (legacy) return legacy;
     }
     return bouquet.sizes[0];
+  };
+  const [selectedSize, setSelectedSize] = useState<Bouquet['sizes'][number]>(resolveInitialSize);
+  /** Match the gallery slide to a returning visitor's saved tier preference, not always slide 0. */
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(() => {
+    const size = resolveInitialSize();
+    if (size.imageUrls?.length) return 0;
+    const imageCount = bouquet.images?.length ?? 0;
+    const sizeIndex = bouquet.sizes.findIndex((candidate) => candidate.optionId === size.optionId);
+    if (sizeIndex >= 0 && imageCount > 0) return imageIndexForSizeIndex(sizeIndex, imageCount);
+    return 0;
   });
   /** Shared gallery (bouquet.images) vs. a per-size photo set — only the shared gallery maps to tiers by index. */
   const usesSharedGallery = !selectedSize.imageUrls?.length;
