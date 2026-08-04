@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import { useSharedCartImport } from '@/hooks/useSharedCartImport';
 import { useCheckoutRecoveryImport } from '@/hooks/useCheckoutRecoveryImport';
@@ -15,6 +16,7 @@ import {
   type DeliveryFormValues,
 } from '@/components/DeliveryForm';
 import { resolveDeliverySchedule } from '@/lib/deliveryTimeSelection';
+import { resolveDeliveryConstraintNotice } from '@/lib/delivery/deliveryConstraints';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { resolveTranslation } from '@/lib/resolveTranslation';
@@ -30,7 +32,6 @@ import {
 import type { AnalyticsItem } from '@/lib/analytics';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
-import { isExpansionDestination } from '@/lib/delivery/markets';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
@@ -77,13 +78,16 @@ import {
 } from '@/lib/checkout/checkoutFieldLimits';
 import type { RecoveredCartForm } from '@/lib/checkout/recoveredCartForm';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
-import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import {
   cartPriceBreakdown,
   cartValue,
   isNonBouquetCartLine,
 } from '@/lib/cart/cartPriceBreakdown';
+import {
+  analyzeDestinationCartConflicts,
+  type DestinationCartConflictReason,
+} from '@/lib/cart/destinationCartConflicts';
 import {
   getPeakCelebrationRuleForDeliveryDate,
   peakCelebrationMinOrderShortfall,
@@ -113,34 +117,33 @@ import {
   sanitizeLineUserIdInput,
 } from '@/lib/lineUserId';
 
-function cartViolatesExpansionRules(
-  cartItems: CartItem[],
-  destinationId: OrderDeliveryDestinationId
-): boolean {
-  if (!isExpansionDestination(destinationId)) return false;
-  for (const item of cartItems) {
-    if (isNonBouquetCartLine(item)) return true;
-    if (getAddOnsTotal(item.addOns?.productAddOns ?? {}) > 0) return true;
+function conflictReasonCopy(
+  reason: DestinationCartConflictReason,
+  t: Record<string, string | undefined>,
+  lang: Locale
+): string {
+  if (reason === 'excluded_destination') {
+    return (
+      t.cartConflictExcluded ??
+      (lang === 'th'
+        ? 'จัดส่งในพื้นที่นี้ไม่ได้ — ลบรายการหรือเปลี่ยนพื้นที่'
+        : 'Not available for this region — remove or change region')
+    );
   }
-  return false;
-}
-
-function cartViolatesDestinationBouquetRules(
-  cartItems: CartItem[],
-  destinationId: OrderDeliveryDestinationId
-): boolean {
-  for (const item of cartItems) {
-    if (isNonBouquetCartLine(item)) continue;
-    if (
-      !bouquetIsAvailableForDestination(
-        { excludedDeliveryDestinations: item.excludedDeliveryDestinations },
-        destinationId
-      )
-    ) {
-      return true;
-    }
+  if (reason === 'expansion_addons') {
+    return (
+      t.cartConflictAddons ??
+      (lang === 'th'
+        ? 'พื้นที่นี้ไม่รับของแถมบนช่อดอกไม้ — ลบของแถมหรือรายการนี้'
+        : 'Add-ons are not available in this region — remove add-ons or this item')
+    );
   }
-  return false;
+  return (
+    t.cartConflictNonBouquet ??
+    (lang === 'th'
+      ? 'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — ลบรายการนี้หรือเปลี่ยนพื้นที่'
+      : 'This region delivers flower bouquets only — remove this item or change region')
+  );
 }
 
 /** Format YYYY-MM-DD to DD MMM for display (e.g. 2026-03-10 → 10 Mar). */
@@ -209,7 +212,8 @@ function buildAddOnsSummaryLines(
   return lines;
 }
 
-const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp'];
+const CONTACT_OPTIONS: ContactPreferenceOption[] = ['phone', 'line', 'whatsapp', 'telegram'];
+const DEFAULT_CONTACT_PREFERENCE: ContactPreferenceOption[] = ['phone'];
 
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
 const CART_SOCIAL_NUDGE_DISMISSED_KEY = 'lb_cart_social_nudge_dismissed';
@@ -241,19 +245,25 @@ type StoredCartForm = {
   deliveryNotes?: string;
 };
 
+function normalizeContactPreference(raw: unknown): ContactPreferenceOption[] {
+  if (!Array.isArray(raw)) return DEFAULT_CONTACT_PREFERENCE;
+  const filtered = raw.filter((o): o is ContactPreferenceOption =>
+    CONTACT_OPTIONS.includes(o as ContactPreferenceOption)
+  );
+  return filtered.length > 0 ? filtered : DEFAULT_CONTACT_PREFERENCE;
+}
+
 function loadContactPreferenceFromStorage(): ContactPreferenceOption[] {
-  if (typeof window === 'undefined') return ['whatsapp'];
+  if (typeof window === 'undefined') return DEFAULT_CONTACT_PREFERENCE;
   try {
     const raw = localStorage.getItem(CART_FORM_STORAGE_KEY);
-    if (!raw) return ['whatsapp'];
+    if (!raw) return DEFAULT_CONTACT_PREFERENCE;
     const parsed = JSON.parse(raw) as StoredCartForm;
-    if (!parsed || typeof parsed !== 'object') return ['whatsapp'];
-    if (!('contactPreference' in parsed)) return ['whatsapp'];
-    const stored = parsed.contactPreference;
-    if (!Array.isArray(stored)) return ['whatsapp'];
-    return stored.filter((o): o is ContactPreferenceOption => CONTACT_OPTIONS.includes(o));
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_CONTACT_PREFERENCE;
+    if (!('contactPreference' in parsed)) return DEFAULT_CONTACT_PREFERENCE;
+    return normalizeContactPreference(parsed.contactPreference);
   } catch {
-    return ['whatsapp'];
+    return DEFAULT_CONTACT_PREFERENCE;
   }
 }
 
@@ -307,7 +317,8 @@ const PHONE_MAX_DIGITS = CHECKOUT_FIELD_LIMITS.phoneNational;
 /** Validation helpers for accordion Save & Continue (same rules as handlePlaceOrder). */
 function isDeliveryValid(
   delivery: DeliveryFormValues,
-  _tBuyNow: Record<string, string | number>
+  _tBuyNow: Record<string, string | number>,
+  constraint?: import('@/lib/delivery/deliveryConstraints').DeliveryConstraint | null
 ): boolean {
   if (!delivery.deliveryZoneId) return false;
   if (
@@ -315,12 +326,14 @@ function isDeliveryValid(
   ) {
     return false;
   }
-  if (!isPremiumDeliveryValid(delivery)) return false;
+  if (!isPremiumDeliveryValid(delivery, constraint)) return false;
   const addressTrim =
     delivery.deliveryFormattedAddress?.trim() ?? delivery.addressLine?.trim() ?? '';
   if (addressTrim.length > CHECKOUT_FIELD_LIMITS.deliveryAddress) return false;
   if (!delivery.date || !delivery.timeSlot) return false;
-  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
+  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot, new Date(), constraint)) {
+    return false;
+  }
   return true;
 }
 
@@ -609,6 +622,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     removeGiftCardMessage,
   } = useOrderGiftCardMessage();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
+  const { constraint: deliveryConstraint, province: checkoutProvince } =
+    useProvinceDeliveryConstraint(checkoutDeliveryProfile.destinationId, items);
 
   // Additional cards are cart-only and only when there is more than one unit.
   useEffect(() => {
@@ -832,14 +847,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         timeSlot: delivery.timeSlot,
         deliveryTimeMode: delivery.deliveryTimeMode,
       },
-      todayYmd
+      todayYmd,
+      new Date(),
+      deliveryConstraint
     );
     setDelivery((prev) =>
       prev.date === date && prev.timeSlot === timeSlot && prev.deliveryTimeMode === deliveryTimeMode
         ? prev
         : { ...prev, date, timeSlot, deliveryTimeMode }
     );
-  }, [items.length, delivery.date, delivery.timeSlot]);
+  }, [items.length, delivery.date, delivery.timeSlot, deliveryConstraint]);
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -852,7 +869,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             timeSlot: prev.timeSlot,
             deliveryTimeMode: prev.deliveryTimeMode,
           },
-          todayYmd
+          todayYmd,
+          new Date(),
+          deliveryConstraint
         );
         return prev.date === date &&
           prev.timeSlot === timeSlot &&
@@ -862,7 +881,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       });
     }, 30_000);
     return () => window.clearInterval(id);
-  }, [items.length]);
+  }, [items.length, deliveryConstraint]);
 
   const { showToast } = useToast();
 
@@ -885,11 +904,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           timeSlot: next.timeSlot,
           deliveryTimeMode: next.deliveryTimeMode,
         },
-        getShopTodayYmd()
+        getShopTodayYmd(),
+        new Date(),
+        deliveryConstraint
       );
       setDelivery({ ...next, date, timeSlot, deliveryTimeMode });
     },
-    [items.length]
+    [items.length, deliveryConstraint]
   );
 
   const [placing, setPlacing] = useState(false);
@@ -933,13 +954,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         'recipientPhoneNational'
       )
     );
-    setContactPreference(
-      Array.isArray(form.contactPreference) && form.contactPreference.length > 0
-        ? form.contactPreference.filter((o): o is ContactPreferenceOption =>
-            CONTACT_OPTIONS.includes(o)
-          )
-        : ['whatsapp']
-    );
+    setContactPreference(normalizeContactPreference(form.contactPreference));
     setLineId(sanitizeLineUserIdInput(form.lineId ?? ''));
     setIsOrderingForSomeoneElse(form.isOrderingForSomeoneElse === true);
     setSurpriseDelivery(form.surpriseDelivery === true);
@@ -960,12 +975,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         (form.recipientPhoneNational ?? '').replace(/\D/g, ''),
         'recipientPhoneNational'
       ),
-      contactPreference:
-        Array.isArray(form.contactPreference) && form.contactPreference.length > 0
-          ? form.contactPreference.filter((o): o is ContactPreferenceOption =>
-              CONTACT_OPTIONS.includes(o)
-            )
-          : ['whatsapp'],
+      contactPreference: normalizeContactPreference(form.contactPreference),
       lineId: sanitizeLineUserIdInput(form.lineId ?? ''),
       isOrderingForSomeoneElse: form.isOrderingForSomeoneElse === true,
       surpriseDelivery: form.surpriseDelivery === true,
@@ -1094,11 +1104,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const cartPricing = cartPriceBreakdown(items, delivery.deliveryDestination, delivery.date);
   const itemsTotalVal = cartPricing.itemsTotal;
-  const cartExpansionInvalid = cartViolatesExpansionRules(items, delivery.deliveryDestination);
-  const cartDestinationBouquetInvalid = cartViolatesDestinationBouquetRules(
+  const destinationConflicts = analyzeDestinationCartConflicts(
     items,
-    delivery.deliveryDestination
+    delivery.deliveryDestination,
+    checkoutProvince
   );
+  const cartHasItemConflicts = destinationConflicts.length > 0;
   const hasDeliveryZone =
     !!delivery.deliveryZoneId &&
     isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId);
@@ -1189,7 +1200,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const peakMinOrderBlocked = peakMinOrderShortfall > 0;
 
   const tPremium = translations[lang].premiumCheckout;
-  const isDeliveryValidNow = isPremiumDeliveryValid(delivery);
+  const isDeliveryValidNow = isPremiumDeliveryValid(delivery, deliveryConstraint);
   const isRecipientValidNow = isPremiumRecipientValid(
     recipientName,
     recipientCountryCode,
@@ -1207,8 +1218,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     isDeliveryValidNow &&
     (!isOrderingForSomeoneElse || isRecipientValidNow) &&
     isContactValidNow &&
-    !cartExpansionInvalid &&
-    !cartDestinationBouquetInvalid &&
+    !cartHasItemConflicts &&
     !peakMinOrderBlocked;
 
   const { bouquetSubtotal: bouquetCartSubtotal, addOnsSubtotal: addOnsCartTotal, otherItemsSubtotal: otherItemsCartSubtotal } =
@@ -1223,13 +1233,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     if (!delivery.deliveryZoneId) {
       return fmt(String(tB.districtLabel ?? 'District'));
     }
-    if (cartExpansionInvalid) {
-      return t.flowerOnlyIncomplete;
-    }
-    if (cartDestinationBouquetInvalid) {
-      return String(
-        (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
-          'Some bouquets are not available for this delivery region.'
+    if (cartHasItemConflicts) {
+      return (
+        (t as { cartConflictsIncomplete?: string }).cartConflictsIncomplete ??
+        t.flowerOnlyIncomplete
       );
     }
     const addressTrim = delivery.addressLine?.trim() ?? '';
@@ -1427,8 +1434,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     await runStripeCheckoutSubmit();
   };
 
-  const getPremiumFieldIssue = () =>
-    getFirstCheckoutFieldIssue(tPremium, {
+  const getPremiumFieldIssue = () => {
+    if (deliveryConstraint && !deliveryConstraint.orderingAllowed) {
+      const msg =
+        resolveDeliveryConstraintNotice(deliveryConstraint, lang) ||
+        tPremium.pleaseChooseDeliveryDate;
+      return { sectionId: 'deliveryDate' as const, message: msg };
+    }
+    return getFirstCheckoutFieldIssue(tPremium, {
       delivery,
       customerName,
       countryCode,
@@ -1440,7 +1453,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       recipientCountryCode,
       recipientPhoneNational,
       isOrderingForSomeoneElse,
+      deliveryConstraint,
     });
+  };
 
   const handleCheckoutBottomAction = async () => {
     const issue = getPremiumFieldIssue();
@@ -1473,16 +1488,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       );
       return;
     }
-    if (cartExpansionInvalid) {
-      showCheckoutError(t.flowerOnlyIncomplete);
-      return;
-    }
-    if (cartDestinationBouquetInvalid) {
+    if (cartHasItemConflicts) {
       showCheckoutError(
-        String(
-          (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
-            'Some bouquets are not available for this delivery region.'
-        )
+        (t as { cartConflictsIncomplete?: string }).cartConflictsIncomplete ??
+          t.flowerOnlyIncomplete
       );
       return;
     }
@@ -1703,7 +1712,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               const label =
                 option === 'phone' ? t.contactPhone
                 : option === 'line' ? t.contactLine
-                : t.contactWhatsApp;
+                : option === 'whatsapp' ? t.contactWhatsApp
+                : t.contactTelegram;
               return (
                 <label
                   key={option}
@@ -1936,20 +1946,40 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             {t.deliveryAreaChangedNotice}
           </p>
         )}
-        {cartExpansionInvalid && items.length > 0 && (
-          <p className="cart-expansion-block-notice" role="alert">
-            {t.expansionOnlyNotice}
-          </p>
-        )}
-        {cartDestinationBouquetInvalid && items.length > 0 && (
-          <p className="cart-expansion-block-notice" role="alert">
-            {String(
-              (t as { destinationBouquetConflict?: string }).destinationBouquetConflict ??
+        {cartHasItemConflicts && items.length > 0 && (
+          <div className="cart-expansion-block-notice" role="alert">
+            <p className="cart-conflicts-title">
+              {(t as { cartConflictsTitle?: string }).cartConflictsTitle ??
                 (lang === 'th'
-                  ? 'มีช่อในตะกร้าที่จัดส่งในพื้นที่นี้ไม่ได้'
-                  : 'Some bouquets in your bag are not available for this delivery region.')
-            )}
-          </p>
+                  ? 'บางรายการในตะกร้าใช้กับพื้นที่จัดส่งนี้ไม่ได้'
+                  : 'Some items in your bag are not available for this delivery region')}
+            </p>
+            <ul className="cart-conflicts-list">
+              {destinationConflicts.map((c) => {
+                const name = lang === 'th' ? c.nameTh : c.nameEn;
+                const reason = conflictReasonCopy(
+                  c.reason,
+                  t as Record<string, string | undefined>,
+                  lang
+                );
+                return (
+                  <li key={`${c.index}-${c.reason}-${c.bouquetId}`}>
+                    <strong>
+                      {name}
+                      {c.sizeLabel && c.sizeLabel !== '—' ? ` (${c.sizeLabel})` : ''}
+                    </strong>
+                    <span> — {reason}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="cart-conflicts-hint">
+              {(t as { cartConflictsHint?: string }).cartConflictsHint ??
+                (lang === 'th'
+                  ? 'รายการยังอยู่ในตะกร้า — ลบหรือเปลี่ยนพื้นที่ก่อนชำระเงิน'
+                  : 'Items stay in your bag until you remove them or change region.')}
+            </p>
+          </div>
         )}
         <CartCheckoutView
           lang={lang}
@@ -1957,6 +1987,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           delivery={delivery}
           onDeliveryChange={handleDeliveryChange}
           checkoutDeliveryProfile={checkoutDeliveryProfile}
+          deliveryConstraint={deliveryConstraint}
           recipientName={recipientName}
           onRecipientNameChange={setRecipientName}
           recipientCountryCode={recipientCountryCode}
@@ -2141,6 +2172,22 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           background: #fff7ed;
           border: 1px solid #fdba74;
           color: #9a3412;
+        }
+        .cart-conflicts-title {
+          margin: 0 0 8px;
+          font-weight: 700;
+        }
+        .cart-conflicts-list {
+          margin: 0;
+          padding-left: 1.15rem;
+        }
+        .cart-conflicts-list li {
+          margin: 0 0 6px;
+        }
+        .cart-conflicts-hint {
+          margin: 10px 0 0;
+          font-size: 0.85rem;
+          opacity: 0.92;
         }
         .cart-page-header {
           display: flex;

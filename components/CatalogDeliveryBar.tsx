@@ -21,6 +21,7 @@ import {
   readMarketSession,
   writeMarketSession,
 } from '@/lib/delivery/marketSession';
+import type { PublicProvince } from '@/lib/provinces/types';
 import { CalendarIcon, StorefrontIcon } from '@/components/icons';
 
 export interface CatalogDeliveryBarProps {
@@ -64,6 +65,7 @@ export function CatalogDeliveryBar({
   const minDate = now ? getBangkokYmd(now) : '';
   const [date, setDate] = useState(() => initialDate ?? '');
   const [locationValue, setLocationValue] = useState<string>('CHIANG_MAI');
+  const [province, setProvince] = useState<PublicProvince | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -71,6 +73,31 @@ export function CatalogDeliveryBar({
     const id = window.setInterval(() => setNow(new Date()), CLOCK_TICK_MS);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const dest = locationValue.trim().toUpperCase();
+    if (!dest) {
+      setProvince(null);
+      return;
+    }
+    fetch(`/api/provinces/by-destination/${encodeURIComponent(dest)}`)
+      .then(async (res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          setProvince(null);
+          return;
+        }
+        const body = (await res.json()) as { province?: PublicProvince };
+        setProvince(body.province ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setProvince(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [locationValue]);
 
   useEffect(() => {
     if (!minDate) return;
@@ -135,7 +162,8 @@ export function CatalogDeliveryBar({
       destinationId: market.destinationId,
       pathSlug: market.pathSlug as MarketPathSlug,
     });
-    window.location.assign(`/${lang}/${market.pathSlug}/flower-delivery`);
+    // Land on market catalog (gated by province catalog_enabled when closed).
+    window.location.assign(`/${lang}/catalog/${market.pathSlug}/catalog`);
   };
 
   const isToday = Boolean(minDate) && date === minDate;
@@ -164,6 +192,17 @@ export function CatalogDeliveryBar({
   const tomorrowLabel = tomorrowDate
     ? `${t.tomorrowLabel ?? 'Tomorrow'}, ${tomorrowDate}`
     : (t.tomorrowLabel ?? 'Tomorrow');
+
+  const provinceMessage = (
+    lang === 'th' ? province?.customer_message_th : province?.customer_message_en
+  )?.trim();
+  const provinceLimitations = (
+    lang === 'th' ? province?.delivery_limitations_th : province?.delivery_limitations_en
+  )?.trim();
+  const showProvinceDeliveryInfo =
+    Boolean(province) &&
+    Boolean(provinceMessage || provinceLimitations) &&
+    (locationValue !== 'CHIANG_MAI' || province!.status !== 'same_day');
 
   return (
     <section
@@ -260,7 +299,32 @@ export function CatalogDeliveryBar({
       </div>
       {isToday && phase !== 'open' && <span className="sr-only">{sameDayBadgeLine}</span>}
 
+      {showProvinceDeliveryInfo ? (
+        <div className="catalog-delivery-province-msg" role="status">
+          {provinceMessage ? <p>{provinceMessage}</p> : null}
+          {provinceLimitations ? (
+            <p className="catalog-delivery-province-limits">{provinceLimitations}</p>
+          ) : null}
+        </div>
+      ) : null}
+
       <style jsx>{`
+        .catalog-delivery-province-msg {
+          grid-column: 1 / -1;
+          padding: 10px 14px 12px;
+          border-top: 1px solid rgba(26, 60, 52, 0.12);
+          background: rgba(197, 160, 89, 0.08);
+          color: #173a33;
+          font-size: 12.5px;
+          line-height: 1.45;
+        }
+        .catalog-delivery-province-msg p {
+          margin: 0;
+        }
+        .catalog-delivery-province-limits {
+          margin-top: 4px !important;
+          color: #5c655f;
+        }
         .catalog-delivery-card {
           display: grid;
           grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1fr) minmax(300px, 1.25fr);

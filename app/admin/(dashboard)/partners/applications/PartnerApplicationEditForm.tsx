@@ -7,9 +7,11 @@ import {
 } from './actions';
 import { CATEGORY_OPTIONS, PREP_TIME_OPTIONS } from '@/lib/partnerPortal';
 import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
+import type { ProvinceOption } from './provinceOptions';
 
 type PartnerApplicationEditFormProps = {
   application: PartnerApplicationRow;
+  provinces: ProvinceOption[];
   onSaved: (updated: PartnerApplicationRow) => void;
   onCancel: () => void;
 };
@@ -25,6 +27,7 @@ function rowToPayload(app: PartnerApplicationRow): PartnerApplicationFieldsPaylo
     facebook: app.facebook ?? '',
     address: app.address ?? '',
     district: app.district ?? '',
+    province_code: app.province_code ?? '',
     lat: app.lat != null ? String(app.lat) : '',
     lng: app.lng != null ? String(app.lng) : '',
     self_deliver: app.self_deliver === true,
@@ -72,6 +75,7 @@ function payloadToRow(
     facebook: fields.facebook.trim() || null,
     address: fields.address.trim() || null,
     district: fields.district.trim() || null,
+    province_code: fields.province_code.trim() || null,
     lat: parseNum(fields.lat),
     lng: parseNum(fields.lng),
     self_deliver: fields.self_deliver,
@@ -89,6 +93,7 @@ function payloadToRow(
 
 export function PartnerApplicationEditForm({
   application,
+  provinces,
   onSaved,
   onCancel,
 }: PartnerApplicationEditFormProps) {
@@ -205,6 +210,31 @@ export function PartnerApplicationEditForm({
 
       <fieldset className="admin-partner-edit-section">
         <legend>Location</legend>
+        <label className="admin-partner-edit-field">
+          Province
+          <select
+            className="admin-partner-reject-input"
+            value={fields.province_code}
+            onChange={(e) => updateField('province_code', e.target.value)}
+          >
+            <option value="">—</option>
+            {provinces.map((p) => (
+              <option key={p.code} value={p.code}>
+                {p.nameEn}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="admin-partner-edit-field">
+          District / sub-location
+          <input
+            type="text"
+            className="admin-partner-reject-input"
+            value={fields.district}
+            onChange={(e) => updateField('district', e.target.value)}
+            placeholder="e.g. Nimman"
+          />
+        </label>
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Address
           <textarea
@@ -212,15 +242,6 @@ export function PartnerApplicationEditForm({
             rows={2}
             value={fields.address}
             onChange={(e) => updateField('address', e.target.value)}
-          />
-        </label>
-        <label className="admin-partner-edit-field">
-          District / city
-          <input
-            type="text"
-            className="admin-partner-reject-input"
-            value={fields.district}
-            onChange={(e) => updateField('district', e.target.value)}
           />
         </label>
         <label className="admin-partner-edit-field">

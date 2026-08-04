@@ -10,6 +10,7 @@ import {
   isDeliveryTimeSlotSelectableForDate,
   isSpecificDeliveryTime,
 } from '@/lib/deliveryTimeSelection';
+import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 
 const CLOCK_TICK_MS = 30_000;
 
@@ -23,16 +24,19 @@ export function DeliveryTimeSelector({
   timeSlot,
   deliveryTimeMode = 'window',
   onChange,
+  constraint = null,
 }: {
   lang: Locale;
   date: string;
   timeSlot: string;
   deliveryTimeMode?: 'window' | 'custom';
   onChange: (timeSlot: string, mode: 'window' | 'custom') => void;
+  constraint?: DeliveryConstraint | null;
 }) {
   const t = translations[lang].premiumCheckout;
   const [now, setNow] = useState<Date | null>(null);
   const customOpen = deliveryTimeMode === 'custom';
+  const orderingBlocked = constraint != null && !constraint.orderingAllowed;
 
   useEffect(() => {
     setNow(new Date());
@@ -44,11 +48,14 @@ export function DeliveryTimeSelector({
   const specificInputValue = isSpecificDeliveryTime(timeSlot) ? timeSlot : '';
 
   const morningOk =
-    !date || isDeliveryTimeSlotSelectableForDate(date, MORNING_SLOT, liveNow);
+    !orderingBlocked &&
+    (!date || isDeliveryTimeSlotSelectableForDate(date, MORNING_SLOT, liveNow, constraint));
   const middayOk =
-    !date || isDeliveryTimeSlotSelectableForDate(date, MIDDAY_SLOT, liveNow);
+    !orderingBlocked &&
+    (!date || isDeliveryTimeSlotSelectableForDate(date, MIDDAY_SLOT, liveNow, constraint));
   const eveningOk =
-    !date || isDeliveryTimeSlotSelectableForDate(date, EVENING_SLOT, liveNow);
+    !orderingBlocked &&
+    (!date || isDeliveryTimeSlotSelectableForDate(date, EVENING_SLOT, liveNow, constraint));
 
   const selectWindow = (slot: string) => {
     onChange(slot, 'window');
@@ -94,11 +101,12 @@ export function DeliveryTimeSelector({
           selected={customOpen}
           title={t.customTimeTile}
           subtitle={t.customTimeSub}
-          onClick={openCustom}
+          onClick={() => !orderingBlocked && openCustom()}
+          className={orderingBlocked ? 'co-tile--disabled' : ''}
         />
       </div>
 
-      <OverlayReveal open={customOpen} className="delivery-time-selector__custom">
+      <OverlayReveal open={customOpen && !orderingBlocked} className="delivery-time-selector__custom">
         <div className="delivery-time-selector__custom-inner">
           <label className="delivery-time-selector__hint" htmlFor="delivery-specific-time">
             {t.specificTimeHint}
@@ -110,7 +118,8 @@ export function DeliveryTimeSelector({
             value={specificInputValue}
             onChange={(e) => handleSpecificInput(e.target.value)}
             aria-label={t.specificTimeInputLabel}
-            required={customOpen}
+            required={customOpen && !orderingBlocked}
+            disabled={orderingBlocked}
           />
         </div>
       </OverlayReveal>

@@ -130,8 +130,9 @@ export function orderPayloadToCartForm(payload: OrderPayload): RecoveredCartForm
   const hasRecipient =
     Boolean(delivery.recipientName?.trim()) || Boolean(delivery.recipientPhone?.trim());
 
-  const contactPref = (payload.contactPreference ?? ['whatsapp']).filter(
-    (o): o is ContactPreferenceOption => o === 'phone' || o === 'line' || o === 'whatsapp'
+  const contactPref = (payload.contactPreference ?? ['phone']).filter(
+    (o): o is ContactPreferenceOption =>
+      o === 'phone' || o === 'line' || o === 'whatsapp' || o === 'telegram'
   );
 
   return {
@@ -162,7 +163,7 @@ export function orderPayloadToCartForm(payload: OrderPayload): RecoveredCartForm
     recipientName: delivery.recipientName?.trim() ?? '',
     recipientCountryCode: recipientPhone.countryCode,
     recipientPhoneNational: recipientPhone.national,
-    contactPreference: contactPref.length > 0 ? contactPref : ['whatsapp'],
+    contactPreference: contactPref.length > 0 ? contactPref : ['phone'],
     lineId: payload.lineId?.trim() || undefined,
     isOrderingForSomeoneElse: hasRecipient,
     surpriseDelivery: delivery.surpriseDelivery ?? false,

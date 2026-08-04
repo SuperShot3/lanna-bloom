@@ -11,10 +11,13 @@ import {
 import { PartnerApplicationEditForm } from './PartnerApplicationEditForm';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
+import type { ProvinceOption } from './provinceOptions';
 
 type PartnerApplicationsClientProps = {
   initialApplications: PartnerApplicationRow[];
   initialStatus: string;
+  initialProvince: string;
+  provinces: ProvinceOption[];
 };
 
 const STATUS_TABS = [
@@ -65,6 +68,8 @@ function formatCategories(categories: string[] | null): string {
 export function PartnerApplicationsClient({
   initialApplications,
   initialStatus,
+  initialProvince,
+  provinces,
 }: PartnerApplicationsClientProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<PartnerApplicationRow | null>(null);
@@ -75,6 +80,13 @@ export function PartnerApplicationsClient({
   const [reissuing, setReissuing] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
+
+  const provinceNameByCode = new Map(provinces.map((p) => [p.code, p.nameEn]));
+
+  function provinceLabel(code: string | null | undefined): string {
+    if (!code) return '—';
+    return provinceNameByCode.get(code) ?? code;
+  }
 
   function openDrawer(app: PartnerApplicationRow) {
     setSelected(app);
@@ -88,8 +100,21 @@ export function PartnerApplicationsClient({
     setDrawerMode('view');
   }
 
+  function pushFilters(status: string, province: string) {
+    const params = new URLSearchParams();
+    params.set('status', status);
+    if (province && province !== 'all') {
+      params.set('province', province);
+    }
+    router.push(`/admin/partners/applications?${params.toString()}`);
+  }
+
   function handleStatusTab(status: string) {
-    router.push(`/admin/partners/applications?status=${status}`);
+    pushFilters(status, initialProvince);
+  }
+
+  function handleProvinceFilter(province: string) {
+    pushFilters(initialStatus, province);
   }
 
   async function handleApprove(app: PartnerApplicationRow) {
@@ -168,7 +193,7 @@ export function PartnerApplicationsClient({
         </div>
       </header>
 
-      <div className="admin-partner-tabs">
+      <div className="admin-partner-tabs" style={{ flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
         {STATUS_TABS.map((t) => (
           <button
             key={t.value}
@@ -179,6 +204,30 @@ export function PartnerApplicationsClient({
             {t.label}
           </button>
         ))}
+        <label
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 14,
+          }}
+        >
+          Province
+          <select
+            className="admin-partner-reject-input"
+            value={initialProvince}
+            onChange={(e) => handleProvinceFilter(e.target.value)}
+            style={{ minWidth: 180 }}
+          >
+            <option value="all">All provinces</option>
+            {provinces.map((p) => (
+              <option key={p.code} value={p.code}>
+                {p.nameEn}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="admin-partner-list">
@@ -189,6 +238,7 @@ export function PartnerApplicationsClient({
             <thead>
               <tr>
                 <th>Shop</th>
+                <th>Province</th>
                 <th>Contact</th>
                 <th>Phone</th>
                 <th>LINE</th>
@@ -205,6 +255,7 @@ export function PartnerApplicationsClient({
                 return (
                   <tr key={app.id}>
                     <td>{app.shop_name ?? '—'}</td>
+                    <td>{provinceLabel(app.province_code)}</td>
                     <td>{app.contact_name ?? '—'}</td>
                     <td>
                       {app.phone ? (
@@ -299,12 +350,15 @@ export function PartnerApplicationsClient({
               {drawerMode === 'edit' ? (
                 <PartnerApplicationEditForm
                   application={selected}
+                  provinces={provinces}
                   onSaved={handleEditSaved}
                   onCancel={() => setDrawerMode('view')}
                 />
               ) : (
                 <>
                   <dl className="admin-partner-detail">
+                    <dt>Province</dt>
+                    <dd>{provinceLabel(selected.province_code)}</dd>
                     <dt>Contact</dt>
                     <dd>{selected.contact_name ?? '—'}</dd>
                     <dt>Email</dt>

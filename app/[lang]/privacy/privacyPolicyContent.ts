@@ -1,7 +1,7 @@
 import { SUPPORT_EMAIL } from '@/lib/siteContact';
 
 export const BUSINESS_NAME = 'Lanna Bloom';
-export const LAST_UPDATED = '18.07.26';
+export const LAST_UPDATED = '04.08.26';
 
 export type PrivacyLocale = 'en' | 'th';
 
@@ -58,7 +58,6 @@ type PrivacyCopy = {
       intro: string;
       items: string[];
       example: string;
-      noSell: string;
     };
     cookies: {
       heading: string;
@@ -131,7 +130,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
     intro: `This Privacy Policy explains how ${BUSINESS_NAME} collects, uses, stores and shares personal data when you visit our website, contact us or place an order.`,
     dataUse: {
       title: 'What we do with your data',
-      intro: 'We use your details to complete and deliver your order. We do not sell your personal data.',
+      intro: 'We use your details to complete and deliver your order.',
       dataLabel: 'Data',
       purposeLabel: 'Why we collect it',
       rows: [
@@ -247,7 +246,6 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
         ],
         example:
           'For example, a florist may need the product and card-message details, while a delivery driver may need the recipient’s name, telephone number, location and delivery instructions.',
-        noSell: 'We do not sell personal data.',
       },
       cookies: {
         heading: '6. Cookies, analytics and advertising',
@@ -365,7 +363,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
     intro: `นโยบายความเป็นส่วนตัวฉบับนี้อธิบายว่า ${BUSINESS_NAME} เก็บรวบรวม ใช้ จัดเก็บ และเปิดเผยข้อมูลส่วนบุคคลอย่างไร เมื่อคุณเข้าชมเว็บไซต์ ติดต่อเรา หรือสั่งซื้อสินค้า`,
     dataUse: {
       title: 'เราใช้ข้อมูลของคุณอย่างไร',
-      intro: 'เราใช้ข้อมูลของคุณเพื่อดำเนินการและจัดส่งคำสั่งซื้อ และเราไม่ขายข้อมูลส่วนบุคคลของคุณ',
+      intro: 'เราใช้ข้อมูลของคุณเพื่อดำเนินการและจัดส่งคำสั่งซื้อ',
       dataLabel: 'ข้อมูล',
       purposeLabel: 'เหตุผลที่เก็บรวบรวม',
       rows: [
@@ -481,7 +479,6 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
         ],
         example:
           'ตัวอย่างเช่น ร้านดอกไม้อาจจำเป็นต้องทราบรายละเอียดสินค้าและข้อความในการ์ด ขณะที่พนักงานจัดส่งอาจจำเป็นต้องทราบชื่อผู้รับ เบอร์โทรศัพท์ ตำแหน่ง และคำแนะนำในการจัดส่ง',
-        noSell: 'เราไม่ขายข้อมูลส่วนบุคคล',
       },
       cookies: {
         heading: '6. คุกกี้ ระบบวิเคราะห์ข้อมูล และการโฆษณา',

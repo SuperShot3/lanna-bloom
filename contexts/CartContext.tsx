@@ -44,6 +44,11 @@ export interface CartItem {
   /** When set on catalog lines, used to validate cart vs selected delivery destination. */
   excludedDeliveryDestinations?: DeliveryDestinationId[];
   /**
+   * Catalog delivery_options at add time (same_day / next_day facets).
+   * Missing → treated as same-day capable for legacy carts.
+   */
+  deliveryOptions?: string[];
+  /**
    * Catalog discount_percent at add time (client eligibility for exclusive coupons).
    * Server recomputes from catalog — never trust this for money.
    */

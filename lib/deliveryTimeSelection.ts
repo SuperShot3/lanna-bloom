@@ -1,4 +1,5 @@
 import { addDaysToYmd, DELIVERY_SHOP_TIMEZONE, getBangkokYmd } from '@/lib/deliveryHours';
+import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 
 /** Four delivery windows from 09:00 to 20:00 (Bangkok). */
 export const DELIVERY_TIME_SLOTS = [
@@ -86,22 +87,43 @@ export function getMaxSpecificDeliveryTime(): string {
   return '19:59';
 }
 
-/** Reject calendar dates before today in Chiang Mai. */
+function constraintBlocksDate(
+  deliveryDate: string,
+  constraint?: DeliveryConstraint | null
+): boolean {
+  if (!constraint) return false;
+  if (!constraint.orderingAllowed) return true;
+  if (constraint.earliestYmd && deliveryDate < constraint.earliestYmd) return true;
+  return false;
+}
+
+/** Reject calendar dates before today in Chiang Mai (optional province/product floor). */
 export function isDeliveryDateSelectable(
   deliveryDate: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
 ): boolean {
   if (!deliveryDate || !/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) return false;
+  if (constraintBlocksDate(deliveryDate, constraint)) return false;
   return deliveryDate >= getBangkokYmd(now);
+}
+
+export function isDateAllowedUnderConstraint(
+  deliveryDate: string,
+  constraint: DeliveryConstraint | null | undefined,
+  now: Date = new Date()
+): boolean {
+  return isDeliveryDateSelectable(deliveryDate, now, constraint);
 }
 
 export function isSpecificDeliveryTimeSelectableForDate(
   deliveryDate: string,
   hm: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
 ): boolean {
   if (!deliveryDate || !hm) return false;
-  if (!isDeliveryDateSelectable(deliveryDate, now)) return false;
+  if (!isDeliveryDateSelectable(deliveryDate, now, constraint)) return false;
   const minutes = parseSpecificDeliveryTimeMinutes(hm);
   if (minutes === null) return false;
   if (minutes < SHOP_OPEN_MIN || minutes >= SHOP_CLOSE_MIN) return false;
@@ -112,13 +134,14 @@ export function isSpecificDeliveryTimeSelectableForDate(
 export function isDeliveryTimeSlotSelectableForDate(
   deliveryDate: string,
   slot: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
 ): boolean {
   if (!deliveryDate || !slot) return true;
-  if (!isDeliveryDateSelectable(deliveryDate, now)) return false;
+  if (!isDeliveryDateSelectable(deliveryDate, now, constraint)) return false;
 
   if (isSpecificDeliveryTime(slot)) {
-    return isSpecificDeliveryTimeSelectableForDate(deliveryDate, slot, now);
+    return isSpecificDeliveryTimeSelectableForDate(deliveryDate, slot, now, constraint);
   }
 
   if (!isWindowDeliveryTimeSlot(slot)) return false;
@@ -132,10 +155,11 @@ export function isDeliveryTimeSlotSelectableForDate(
 
 export function getSelectableDeliveryTimeSlotsForDate(
   deliveryDate: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
 ): DeliveryTimeSlot[] {
   return DELIVERY_TIME_SLOTS.filter((slot) =>
-    isDeliveryTimeSlotSelectableForDate(deliveryDate, slot, now)
+    isDeliveryTimeSlotSelectableForDate(deliveryDate, slot, now, constraint)
   );
 }
 
@@ -165,20 +189,37 @@ export type DeliverySchedule = {
   deliveryTimeMode?: 'window' | 'custom';
 };
 
-/** Prefer today; if no windows remain, use tomorrow with the first selectable slot. */
+/** Prefer today (or constraint floor); if no windows remain, walk forward for a slot. */
 export function getEarliestSelectableDeliverySchedule(
   todayYmd: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
 ): DeliverySchedule {
-  const todaySlots = getSelectableDeliveryTimeSlotsForDate(todayYmd, now);
-  if (todaySlots.length > 0) {
-    return { date: todayYmd, timeSlot: todaySlots[0], deliveryTimeMode: 'window' };
+  if (constraint && !constraint.orderingAllowed) {
+    const fallback = constraint.earliestYmd ?? addDaysToYmd(todayYmd, 1);
+    return {
+      date: fallback,
+      timeSlot: DELIVERY_TIME_SLOTS[0],
+      deliveryTimeMode: 'window',
+    };
   }
-  const tomorrowYmd = addDaysToYmd(todayYmd, 1);
-  const tomorrowSlots = getSelectableDeliveryTimeSlotsForDate(tomorrowYmd, now);
+
+  let startYmd = todayYmd;
+  if (constraint?.earliestYmd && constraint.earliestYmd > startYmd) {
+    startYmd = constraint.earliestYmd;
+  }
+
+  for (let i = 0; i < 14; i++) {
+    const ymd = addDaysToYmd(startYmd, i);
+    const slots = getSelectableDeliveryTimeSlotsForDate(ymd, now, constraint);
+    if (slots.length > 0) {
+      return { date: ymd, timeSlot: slots[0], deliveryTimeMode: 'window' };
+    }
+  }
+
   return {
-    date: tomorrowYmd,
-    timeSlot: tomorrowSlots[0] ?? DELIVERY_TIME_SLOTS[0],
+    date: startYmd,
+    timeSlot: DELIVERY_TIME_SLOTS[0],
     deliveryTimeMode: 'window',
   };
 }
@@ -187,27 +228,28 @@ export function getEarliestSelectableDeliverySchedule(
 export function resolveDeliverySchedule(
   schedule: { date: string; timeSlot: string; deliveryTimeMode?: 'window' | 'custom' },
   todayYmd: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
 ): DeliverySchedule {
   const { date, timeSlot, deliveryTimeMode } = schedule;
 
-  if (date && !isDeliveryDateSelectable(date, now)) {
-    return getEarliestSelectableDeliverySchedule(todayYmd, now);
+  if (date && !isDeliveryDateSelectable(date, now, constraint)) {
+    return getEarliestSelectableDeliverySchedule(todayYmd, now, constraint);
   }
 
   if (
     deliveryTimeMode === 'custom' &&
     date &&
-    isDeliveryDateSelectable(date, now) &&
+    isDeliveryDateSelectable(date, now, constraint) &&
     (!timeSlot || isSpecificDeliveryTime(timeSlot))
   ) {
-    if (timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) {
+    if (timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now, constraint)) {
       return { date, timeSlot, deliveryTimeMode: 'custom' };
     }
     return { date, timeSlot: '', deliveryTimeMode: 'custom' };
   }
 
-  if (date && timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now)) {
+  if (date && timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now, constraint)) {
     return {
       date,
       timeSlot,
@@ -215,14 +257,14 @@ export function resolveDeliverySchedule(
     };
   }
 
-  if (date && isDeliveryDateSelectable(date, now)) {
-    const slots = getSelectableDeliveryTimeSlotsForDate(date, now);
+  if (date && isDeliveryDateSelectable(date, now, constraint)) {
+    const slots = getSelectableDeliveryTimeSlotsForDate(date, now, constraint);
     if (slots.length > 0) {
       return { date, timeSlot: slots[0], deliveryTimeMode: 'window' };
     }
   }
 
-  return getEarliestSelectableDeliverySchedule(todayYmd, now);
+  return getEarliestSelectableDeliverySchedule(todayYmd, now, constraint);
 }
 
 /** Parse `"YYYY-MM-DD HH:mm"` or `"YYYY-MM-DD 09:00–12:00"` from checkout payload. */
@@ -238,8 +280,20 @@ export function parsePreferredTimeSlot(
   return { date: match[1], time };
 }
 
-export function isPreferredTimeSlotValid(value: string, now: Date = new Date()): boolean {
+export function isPreferredTimeSlotValid(
+  value: string,
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
+): boolean {
   const parsed = parsePreferredTimeSlot(value);
   if (!parsed) return false;
-  return isDeliveryTimeSlotSelectableForDate(parsed.date, parsed.time, now);
+  return isDeliveryTimeSlotSelectableForDate(parsed.date, parsed.time, now, constraint);
+}
+
+export function isPreferredTimeSlotValidUnderConstraint(
+  value: string,
+  constraint: DeliveryConstraint | null | undefined,
+  now: Date = new Date()
+): boolean {
+  return isPreferredTimeSlotValid(value, now, constraint);
 }

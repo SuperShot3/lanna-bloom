@@ -1,0 +1,106 @@
+---
+description: Lanna Bloom national Thailand expansion principles
+alwaysApply: true
+---
+
+# Lanna Bloom Thailand Expansion
+
+Lanna Bloom is expanding from a Chiang Mai flower-delivery business into Thailand's most trusted platform for people abroad to send flowers and Thai-made gifts to people in Thailand.
+
+Core principle:
+
+> We don't optimize for today's profit. We optimize for lifetime trust.
+
+## Expansion model
+
+The expansion must reuse the existing Lanna Bloom platform.
+
+Do not create separate websites, catalogs, checkout systems, admin systems, or duplicated location models for individual provinces.
+
+Opening a province should eventually require only:
+
+1. Configure the province.
+2. Define its delivery status and limitations.
+3. Connect suitable partners.
+4. Enable the supported catalog.
+5. Publish accurate customer-facing delivery information.
+6. Publish an SEO landing page when real service is available.
+
+Possible province service levels include:
+
+- Coming Soon
+- Pre-order Only
+- Next-Day Delivery
+- Same-Day Delivery
+- Temporarily Unavailable
+
+New provinces must be opened gradually. Do not assume that a new province immediately supports the complete catalog or same-day delivery.
+
+## Customer transparency
+
+The customer must clearly understand:
+
+- Whether Lanna Bloom currently delivers to the province
+- The earliest available delivery date
+- Whether advance ordering is required
+- Which products or categories are available
+- Delivery fees and limitations
+- Whether checkout is currently available
+
+Never promise nationwide same-day delivery unless it is genuinely supported.
+
+## Delivery rules
+
+Product-level and province-level delivery restrictions must work together.
+
+The strictest valid rule must determine the final customer result.
+
+Examples:
+
+- Product allows same-day, province allows next-day: show next-day.
+- Product requires 48 hours, province allows same-day: require 48 hours.
+- Province is Coming Soon: disable ordering regardless of product availability.
+
+Delivery restrictions must be validated in the customer experience and again through the existing trusted server-side checkout flow.
+
+## Existing platform boundaries
+
+Before proposing or implementing changes, inspect and reuse the current codebase.
+
+Current architectural assumptions:
+
+- Next.js App Router storefront
+- Supabase is the system of record
+- Stripe is the source of payment truth
+- Prices and orders are recomputed and validated server-side
+- Orders are created only after confirmed payment
+- Chiang Mai is the reliable core market
+- Partner applications currently use a manual admin-reviewed workflow
+- There is no partner login or partner self-service dashboard
+- Thailand coverage is expanding and is not uniform
+
+Do not:
+
+- Reintroduce Sanity
+- Create a separate partner platform without explicit approval
+- Break or weaken Stripe payment validation
+- Replace existing location logic before auditing it
+- Duplicate existing delivery-area, partner, catalog, or date-selection functionality
+- Begin later roadmap features without explicit approval
+
+## Working method
+
+Use `docs/thailand-expansion/README.md` as the overall roadmap.
+
+For every feature:
+
+1. Inspect the relevant existing implementation.
+2. Explain what can be reused.
+3. Identify duplicated or conflicting logic.
+4. Produce a plan before implementation.
+5. Implement only the approved feature.
+6. Test existing Chiang Mai behavior.
+7. Test one controlled new province.
+8. Report assumptions, risks, and remaining work.
+
+The roadmap explains the long-term direction. It is not authorization to implement all features at once.

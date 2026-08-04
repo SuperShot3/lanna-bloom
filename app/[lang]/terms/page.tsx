@@ -29,8 +29,18 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
           <h2 className="policy-heading">{isTh ? 'การสั่งซื้อและการยืนยัน' : 'Orders & confirmation'}</h2>
           <p className="policy-text">
             {isTh
-              ? 'คำสั่งซื้ออาจต้องมีการยืนยันผ่านช่องทางแชท (LINE/WhatsApp) ก่อนการชำระเงินหรือการจัดส่ง'
-              : 'Orders may require confirmation via chat (LINE/WhatsApp) before payment or delivery.'}
+              ? 'การสั่งซื้อและการชำระเงินทำผ่านเว็บไซต์ของเรา หลังชำระเงินสำเร็จ ระบบอัตโนมัติจะดำเนินการตามคำสั่งซื้อ เราไม่ยืนยันคำสั่งซื้อผ่านแชท (LINE, WhatsApp, Telegram หรือช่องทางที่คล้ายกัน)'
+              : 'Orders are placed and paid on our website. After successful payment, our automated system processes your order. We do not confirm orders by chat (LINE, WhatsApp, Telegram, or similar).'}
+          </p>
+          <p className="policy-text">
+            {isTh
+              ? 'อีเมลเป็นข้อมูลทางเลือก หากคุณให้อีเมลตอนชำระเงิน ระบบจะส่งอีเมลอัตโนมัติ เช่น การยืนยันคำสั่งซื้อและการแจ้งเมื่อจัดส่งแล้ว หากคุณไม่ให้อีเมล คุณจะไม่ได้รับอีเมลจากระบบ คุณยังสามารถติดตามสถานะคำสั่งซื้อได้ในหน้าตะกร้าสินค้า โดยกรอกเบอร์โทรศัพท์ที่ใช้ตอนสั่งซื้อ'
+              : 'Email is optional. If you provide an email at checkout, our system sends automated emails such as order confirmation and order delivered notices. If you do not provide an email, you will not receive system emails. You can still track your order on the cart page by entering the phone number used at checkout.'}
+          </p>
+          <p className="policy-text">
+            {isTh
+              ? 'เราจะติดต่อคุณเฉพาะเมื่อข้อมูลที่จำเป็นไม่ครบหรือไม่ชัดเจน โดยใช้ช่องทางที่คุณเลือกตอนชำระเงิน หากรายละเอียดคำสั่งซื้อครบถ้วนและชัดเจนแล้ว เราจะไม่ติดต่อเพื่อยืนยันคำสั่งซื้ออีก'
+              : 'We contact you only if required information is missing or unclear, using the communication method you chose at checkout. If your order details are complete and clear, we will not contact you for confirmation.'}
           </p>
         </section>
 

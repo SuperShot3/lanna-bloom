@@ -49,12 +49,43 @@ import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckout
 import { isPreferredTimeSlotValid } from '@/lib/deliveryTimeSelection';
 import { parseDeliveryDateFromPreferredTimeSlot } from '@/lib/promo/peakCelebrationPricing';
 import { normalizeGiftCardMessagesForPersist } from '@/lib/orders/giftCardMessages';
+import {
+  computeDeliveryConstraint,
+  deliveryConstraintFallbackMessageEn,
+  type CartLineDeliveryConstraintInput,
+} from '@/lib/delivery/deliveryConstraints';
+import { getProvinceByDestinationId } from '@/lib/provinces/queries';
+import {
+  getCatalogBouquetById,
+  getCatalogBouquetBySlug,
+} from '@/lib/catalogReads';
 
 function optionalTrimmedString(raw: unknown, maxLen: number): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const t = raw.trim();
   if (!t || t.length > maxLen) return undefined;
   return t;
+}
+
+async function loadCartLineDeliveryOptions(
+  items: CartItemIdentifier[]
+): Promise<CartLineDeliveryConstraintInput[]> {
+  const lines: CartLineDeliveryConstraintInput[] = [];
+  for (const item of items) {
+    const itemType = item.itemType ?? 'bouquet';
+    if (itemType !== 'bouquet') {
+      lines.push({ itemType });
+      continue;
+    }
+    const bouquet =
+      (await getCatalogBouquetById(item.bouquetId)) ??
+      (item.bouquetSlug ? await getCatalogBouquetBySlug(item.bouquetSlug) : null);
+    lines.push({
+      itemType: 'bouquet',
+      deliveryOptions: bouquet?.deliveryOptions,
+    });
+  }
+  return lines;
 }
 
 function parseCheckoutAnalyticsFields(b: Record<string, unknown>) {
@@ -231,7 +262,7 @@ function validateStripePayload(
   const contactPreference: ContactPreferenceOption[] = Array.isArray(contactPreferenceRaw)
     ? contactPreferenceRaw.filter(
         (v): v is ContactPreferenceOption =>
-          v === 'phone' || v === 'line' || v === 'whatsapp'
+          v === 'phone' || v === 'line' || v === 'whatsapp' || v === 'telegram'
       )
     : [];
   if (contactPreference.length === 0) {
@@ -544,6 +575,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
     const { data } = validation;
+
+    // Province + product delivery rules (Feature 3). Missing province row → shop-hours only.
+    const provinceLookup = await getProvinceByDestinationId(data.delivery.deliveryDestination);
+    const province = provinceLookup.ok ? provinceLookup.province : null;
+    const cartLines = await loadCartLineDeliveryOptions(data.items);
+    const deliveryConstraint = computeDeliveryConstraint({
+      province,
+      cartLines,
+    });
+    if (!deliveryConstraint.orderingAllowed) {
+      const msg =
+        deliveryConstraint.customerMessageEn?.trim() ||
+        deliveryConstraintFallbackMessageEn(deliveryConstraint.reasonCode) ||
+        'Delivery is not available for this area right now.';
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    if (
+      !isPreferredTimeSlotValid(data.delivery.preferredTimeSlot, new Date(), deliveryConstraint)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'delivery.preferredTimeSlot is not a valid selectable date and time for this delivery area',
+        },
+        { status: 400 }
+      );
+    }
 
     const serverZoneId = resolveDeliveryZoneFromPlace({
       deliveryDestination: data.delivery.deliveryDestination,

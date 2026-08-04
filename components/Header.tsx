@@ -241,7 +241,8 @@ export function Header({
       });
       setSessionMarketSlug(market.pathSlug);
       setMenuOpen(false);
-      router.push(`/${lang}/${market.pathSlug}/flower-delivery`);
+      // Land on market catalog (gated by province catalog_enabled when closed).
+      router.push(`/${lang}/catalog/${market.pathSlug}/catalog`);
     },
     [lang, router]
   );

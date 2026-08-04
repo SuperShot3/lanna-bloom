@@ -208,7 +208,7 @@ export function OrderDetailsView({
     phone: tCart.contactPhone,
     line: tCart.contactLine,
     whatsapp: tCart.contactWhatsApp,
-    telegram: 'Telegram',
+    telegram: tCart.contactTelegram,
   };
 
   const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(

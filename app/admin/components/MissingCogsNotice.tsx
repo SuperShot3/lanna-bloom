@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import Link from 'next/link';
 
 type MissingCogsOrder = { order_id: string; paid_at?: string | null; cogs_amount?: number | null };
@@ -9,47 +17,68 @@ type MissingCogsState = {
   count: number;
   orders: MissingCogsOrder[];
   loaded: boolean;
+  refresh: () => void;
 };
 
 const MissingCogsContext = createContext<MissingCogsState | null>(null);
 
 export function MissingCogsProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<MissingCogsState>({ count: 0, orders: [], loaded: false });
+  const [state, setState] = useState<Omit<MissingCogsState, 'refresh'>>({
+    count: 0,
+    orders: [],
+    loaded: false,
+  });
+  const cancelledRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const res = await fetch('/api/admin/orders/missing-cogs', { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          if (!cancelled) setState({ count: 0, orders: [], loaded: true });
-          return;
-        }
-        if (!cancelled) {
-          setState({
-            count: Number(data.count) || 0,
-            orders: Array.isArray(data.orders) ? data.orders : [],
-            loaded: true,
-          });
-        }
-      } catch {
-        if (!cancelled) setState({ count: 0, orders: [], loaded: true });
+  const run = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/orders/missing-cogs', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (!cancelledRef.current) setState({ count: 0, orders: [], loaded: true });
+        return;
       }
-    };
-    run();
-    const t = window.setInterval(run, 60_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(t);
-    };
+      if (!cancelledRef.current) {
+        setState({
+          count: Number(data.count) || 0,
+          orders: Array.isArray(data.orders) ? data.orders : [],
+          loaded: true,
+        });
+      }
+    } catch {
+      if (!cancelledRef.current) setState({ count: 0, orders: [], loaded: true });
+    }
   }, []);
 
-  return <MissingCogsContext.Provider value={state}>{children}</MissingCogsContext.Provider>;
+  useEffect(() => {
+    cancelledRef.current = false;
+    void run();
+    const t = window.setInterval(() => {
+      void run();
+    }, 60_000);
+    return () => {
+      cancelledRef.current = true;
+      window.clearInterval(t);
+    };
+  }, [run]);
+
+  const value: MissingCogsState = {
+    ...state,
+    refresh: run,
+  };
+
+  return <MissingCogsContext.Provider value={value}>{children}</MissingCogsContext.Provider>;
 }
 
 export function useMissingCogsSummary(): MissingCogsState {
-  return useContext(MissingCogsContext) ?? { count: 0, orders: [], loaded: false };
+  return (
+    useContext(MissingCogsContext) ?? {
+      count: 0,
+      orders: [],
+      loaded: false,
+      refresh: () => {},
+    }
+  );
 }
 
 export function MissingCogsNotice() {

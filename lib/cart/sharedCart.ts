@@ -88,6 +88,9 @@ export function sanitizeCartItemsForShare(items: unknown): CartItem[] {
       excludedDeliveryDestinations: Array.isArray(raw.excludedDeliveryDestinations)
         ? raw.excludedDeliveryDestinations
         : undefined,
+      deliveryOptions: Array.isArray(raw.deliveryOptions)
+        ? raw.deliveryOptions.filter((v): v is string => typeof v === 'string')
+        : undefined,
       addOns: {
         cardType: addOns.cardType ?? null,
         cardMessage: '',

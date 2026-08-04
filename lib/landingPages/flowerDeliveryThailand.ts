@@ -12,12 +12,9 @@ export type ThailandServiceArea = {
   noteTh?: string;
 };
 
-/** All Chiang Mai province amphoe plus nearby Lamphun. */
+/** Chiang Mai province amphoe only (Lamphun is its own province on the national map). */
 export function getChiangMaiDeliveryDistricts(): LocalizedLabel[] {
-  return [
-    ...CHIANG_MAI_DISTRICTS.map((d) => ({ nameEn: d.nameEn, nameTh: d.nameTh })),
-    { nameEn: 'Lamphun', nameTh: 'ลำพูน' },
-  ];
+  return CHIANG_MAI_DISTRICTS.map((d) => ({ nameEn: d.nameEn, nameTh: d.nameTh }));
 }
 
 /** Popular tambons, towns, and neighborhoods we regularly deliver to. */
@@ -42,7 +39,6 @@ export function getChiangMaiDeliveryNeighborhoods(): LocalizedLabel[] {
     { nameEn: 'Bo Sang', nameTh: 'บ่อสร้าง' },
     { nameEn: 'Luang Nuea', nameTh: 'หลวงเหนือ' },
     { nameEn: 'Yu Wa', nameTh: 'ยุวะ' },
-    { nameEn: 'Mueang Lamphun', nameTh: 'เมืองลำพูน' },
   ];
 }
 
@@ -96,46 +92,46 @@ export type FlowerDeliveryThailandCopy = {
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
   en: {
-    metaTitle: 'Flower Delivery Fees & Areas in Chiang Mai | Lanna Bloom',
+    metaTitle: 'Flower Delivery Coverage in Thailand & Chiang Mai Fees | Lanna Bloom',
     metaDescription:
-      'Flower delivery across central, outer, and rural Chiang Mai — including Hang Dong, Mae Rim, San Sai, Doi Saket, Mae Taeng, Chiang Dao, Fang, and Mae Ai. Check the map for coverage and estimated fees.',
-    h1: 'Flower delivery areas and fees in Chiang Mai',
+      'See live Thailand flower-delivery coverage by province, then check Chiang Mai district fees — Hang Dong, Mae Rim, Fang, Mae Ai, and more. Gradual expansion; nationwide same-day is not promised.',
+    h1: 'Flower delivery across Thailand — Chiang Mai fees & coverage',
     intro:
-      'Lanna Bloom delivers flowers across central, outer, and rural Chiang Mai. We cover areas including Hang Dong, Mae Rim, San Sai, Doi Saket, San Kamphaeng, Saraphi, Mae Taeng, Chiang Dao, Fang, and Mae Ai — as well as city neighbourhoods such as the Old City and Nimman. Select your district on the map to check delivery coverage and see an estimated fee. For remote addresses, we confirm the route and final fee before delivery.',
-    areasTitle: 'Where we deliver in Chiang Mai',
+      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Use the map and list below for live service status. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs across central, outer, and rural areas including Hang Dong, Mae Rim, Fang, and Mae Ai.',
+    areasTitle: 'Chiang Mai — our full-service core',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
-      'Our home base. We deliver flowers and gifts across Chiang Mai — including Hang Dong, Mae Ai, Fang, and the areas listed below — plus nearby Lamphun.',
+      'Our home base. We deliver flowers and gifts across Chiang Mai — including Hang Dong, Mae Ai, Fang, and the districts and neighborhoods listed below.',
     districtsSubtitle: 'Districts (amphoe)',
     neighborhoodsSubtitle: 'Popular areas & neighborhoods',
     chiangMaiNote:
       'Don’t see your exact street? Add your address at checkout — we deliver to hotels, condos, offices, and homes throughout the areas below.',
-    otherDestinationsTitle: 'Other Thailand destinations',
+    otherDestinationsTitle: 'Currently shoppable provinces',
     expandingNote:
-      'Bouquet-only delivery in the destinations below. Nationwide coverage is not available yet.',
+      'Only provinces where ordering is open right now. Status and categories come from live settings — we do not promise nationwide same-day delivery.',
     ctaCatalog: 'Buy flowers',
     ctaChiangMaiGuide: 'Chiang Mai delivery guide',
     ctaDeliveryPolicy: 'Delivery policy',
     ctaAbroad: 'Send flowers from abroad',
   },
   th: {
-    metaTitle: 'ค่าส่งและพื้นที่จัดส่งดอกไม้เชียงใหม่ | Lanna Bloom',
+    metaTitle: 'พื้นที่จัดส่งดอกไม้ทั่วไทย และค่าส่งเชียงใหม่ | Lanna Bloom',
     metaDescription:
-      'จัดส่งดอกไม้ทั้งในเมือง รอบเมือง และพื้นที่ชนบทของเชียงใหม่ รวมหางดง แม่ริม สันทราย ดอยสะเก็ด แม่แตง เชียงดาว ฝาง และแม่เอ๋ย ตรวจสอบพื้นที่และค่าส่งโดยประมาณบนแผนที่',
-    h1: 'พื้นที่จัดส่งและค่าส่งดอกไม้ในเชียงใหม่',
+      'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทยแบบสด แล้วตรวจสอบค่าส่งรายอำเภอในเชียงใหม่ รวมหางดง แม่ริม ฝาง และแม่เอ๋ย ขยายบริการอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+    h1: 'จัดส่งดอกไม้ทั่วไทย — ค่าส่งและพื้นที่เชียงใหม่',
     intro:
-      'Lanna Bloom จัดส่งดอกไม้ทั้งในเมือง รอบเมือง และพื้นที่ชนบทของเชียงใหม่ ครอบคลุมหางดง แม่ริม สันทราย ดอยสะเก็ด สันกำแพง สารภี แม่แตง เชียงดาว ฝาง และแม่เอ๋ย รวมถึงย่านในเมืองอย่างเมืองเก่าและนิมมาน เลือกอำเภอบนแผนที่เพื่อตรวจสอบพื้นที่จัดส่งและดูค่าส่งโดยประมาณ สำหรับที่อยู่ห่างไกล เราจะยืนยันเส้นทางและค่าส่งสุดท้ายก่อนจัดส่ง',
-    areasTitle: 'เราจัดส่งที่ไหนในเชียงใหม่',
+      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด ใช้แผนที่และรายการด้านล่างเพื่อดูสถานะบริการจริง เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ทั้งในเมือง รอบเมือง และพื้นที่ชนบท รวมหางดง แม่ริม ฝาง และแม่เอ๋ย',
+    areasTitle: 'เชียงใหม่ — ฐานบริการหลักครบวงจร',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:
-      'ฐานให้บริการหลักของเรา จัดส่งดอกไม้และของขวัญทั่วเชียงใหม่ รวมหางดง แม่เอ๋ย ฝาง และพื้นที่ด้านล่าง รวมลำพูนใกล้เคียง',
+      'ฐานให้บริการหลักของเรา จัดส่งดอกไม้และของขวัญทั่วเชียงใหม่ รวมหางดง แม่เอ๋ย ฝาง และอำเภอ/ย่านด้านล่าง',
     districtsSubtitle: 'อำเภอ',
     neighborhoodsSubtitle: 'ย่านและพื้นที่ยอดนิยม',
     chiangMaiNote:
       'ไม่เห็นถนนของคุณในรายการ? กรอกที่อยู่ตอนชำระเงินได้เลย — เราจัดส่งไปโรงแรม คอนโด ออฟฟิศ และบ้านในพื้นที่ด้านล่าง',
-    otherDestinationsTitle: 'จุดหมายอื่นในประเทศไทย',
+    otherDestinationsTitle: 'จังหวัดที่สั่งได้ตอนนี้',
     expandingNote:
-      'จัดส่งช่อดอกไม้เท่านั้นในจุดหมายด้านล่าง ยังไม่มีบริการทั่วทั้งประเทศ',
+      'แสดงเฉพาะจังหวัดที่เปิดรับออเดอร์ สถานะและหมวดสินค้ามาจากการตั้งค่าจริง — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     ctaCatalog: 'ซื้อดอกไม้',
     ctaChiangMaiGuide: 'คู่มือจัดส่งเชียงใหม่',
     ctaDeliveryPolicy: 'นโยบายการจัดส่ง',

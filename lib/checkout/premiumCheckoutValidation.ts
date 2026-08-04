@@ -1,5 +1,6 @@
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import { isDeliveryTimeSlotSelectableForDate, isSpecificDeliveryTime } from '@/lib/deliveryTimeSelection';
+import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { isSupportedZone } from '@/lib/delivery/zones';
 import type { ContactPreferenceOption } from '@/lib/orders';
@@ -59,7 +60,11 @@ export function shouldPromptForGoogleMapsLink(delivery: DeliveryFormValues): boo
   return !isValidGoogleMapsUrl(mapsUrl);
 }
 
-export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
+export function isPremiumDeliveryValid(
+  delivery: DeliveryFormValues,
+  constraint?: DeliveryConstraint | null
+): boolean {
+  if (constraint && !constraint.orderingAllowed) return false;
   if (!delivery.deliveryZoneId) return false;
   if (!isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) return false;
   if (!hasDeliveryAddressInput(delivery)) return false;
@@ -77,7 +82,9 @@ export function isPremiumDeliveryValid(delivery: DeliveryFormValues): boolean {
   if (delivery.deliveryTimeMode === 'custom' && !isSpecificDeliveryTime(delivery.timeSlot)) {
     return false;
   }
-  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) return false;
+  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot, new Date(), constraint)) {
+    return false;
+  }
   return true;
 }
 
@@ -157,6 +164,7 @@ export function getFirstCheckoutFieldIssue(
     recipientPhoneNational: string;
     /** When false, recipient name/phone are not required. */
     isOrderingForSomeoneElse: boolean;
+    deliveryConstraint?: DeliveryConstraint | null;
   }
 ): CheckoutFieldIssue | null {
   const {
@@ -171,7 +179,15 @@ export function getFirstCheckoutFieldIssue(
     recipientCountryCode,
     recipientPhoneNational,
     isOrderingForSomeoneElse,
+    deliveryConstraint = null,
   } = params;
+
+  if (deliveryConstraint && !deliveryConstraint.orderingAllowed) {
+    return {
+      sectionId: 'deliveryDate',
+      message: copy.pleaseChooseDeliveryDate,
+    };
+  }
 
   if (!delivery.deliveryZoneId || !isSupportedZone(delivery.deliveryDestination, delivery.deliveryZoneId)) {
     return { sectionId: 'delivery', message: copy.pleaseSelectDeliveryArea };
@@ -200,7 +216,14 @@ export function getFirstCheckoutFieldIssue(
   if (delivery.deliveryTimeMode === 'custom' && !isSpecificDeliveryTime(delivery.timeSlot)) {
     return { sectionId: 'deliveryTime', message: copy.pleaseChooseDeliveryTime };
   }
-  if (!isDeliveryTimeSlotSelectableForDate(delivery.date, delivery.timeSlot)) {
+  if (
+    !isDeliveryTimeSlotSelectableForDate(
+      delivery.date,
+      delivery.timeSlot,
+      new Date(),
+      deliveryConstraint
+    )
+  ) {
     return { sectionId: 'deliveryTime', message: copy.pleaseChooseDeliveryTime };
   }
 

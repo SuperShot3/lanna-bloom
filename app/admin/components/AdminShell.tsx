@@ -4,13 +4,12 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
-import { MissingCogsNotice, MissingCogsProvider } from './MissingCogsNotice';
-
 const NAV_ITEMS = [
   { href: '/admin/orders', label: 'Orders', icon: 'shopping_bag' },
   { href: '/admin/emails', label: 'Emails', icon: 'mail' },
   { href: '/admin/accounting/overview', label: 'Accounting', icon: 'account_balance_wallet' },
   { href: '/admin/partners/applications', label: 'Partners', icon: 'group' },
+  { href: '/admin/provinces', label: 'Provinces', icon: 'map' },
   { href: '/admin/products', label: 'Products', icon: 'inventory_2' },
   { href: '/admin/marketing', label: 'Marketing', icon: 'campaign' },
   { href: '/admin/reviews', label: 'Reviews & Coupons', icon: 'reviews' },
@@ -82,24 +81,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [pathname, searchParams?.toString() ?? '', router]);
 
   return (
-    <MissingCogsProvider>
-      <div className="admin-shell">
-        <MissingCogsNotice />
-        {/* Mobile overlay */}
-        <button
-          type="button"
-          aria-label="Close menu"
-          className="admin-shell-overlay"
-          data-open={sidebarOpen}
-          onClick={() => setSidebarOpen(false)}
-        />
+    <div className="admin-shell">
+      {/* Mobile overlay */}
+      <button
+        type="button"
+        aria-label="Close menu"
+        className="admin-shell-overlay"
+        data-open={sidebarOpen}
+        onClick={() => setSidebarOpen(false)}
+      />
 
-        {/* Sidebar */}
-        <aside
-          className="admin-shell-sidebar"
-          data-open={sidebarOpen}
-          data-collapsed={sidebarCollapsed}
-        >
+      {/* Sidebar */}
+      <aside
+        className="admin-shell-sidebar"
+        data-open={sidebarOpen}
+        data-collapsed={sidebarCollapsed}
+      >
           <div className="admin-shell-sidebar-header">
             <div className="admin-shell-logo">
               <span className="material-symbols-outlined admin-shell-logo-icon">dashboard</span>
@@ -245,6 +242,5 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <main className="admin-shell-content">{children}</main>
         </div>
       </div>
-    </MissingCogsProvider>
-  );
-}
+    );
+  }

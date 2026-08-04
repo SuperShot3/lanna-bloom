@@ -90,10 +90,10 @@ export interface OrderPricing {
   grandTotal: number;
 }
 
-export type ContactPreferenceOption = 'phone' | 'line' | 'whatsapp';
+export type ContactPreferenceOption = 'phone' | 'line' | 'whatsapp' | 'telegram';
 
-/** Legacy value that may still appear in stored order JSON. */
-export type ContactPreferenceStored = ContactPreferenceOption | 'telegram';
+/** Stored order JSON may include any checkout contact option. */
+export type ContactPreferenceStored = ContactPreferenceOption;
 
 /** Extra fields from the /custom-order form; stored in order_json for admin and customer view. */
 export interface CustomOrderDetails {

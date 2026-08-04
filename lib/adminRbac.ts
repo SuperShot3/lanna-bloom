@@ -20,6 +20,11 @@ export function canChangeStatus(role: string | undefined): boolean {
   return role === 'OWNER' || role === 'MANAGER';
 }
 
+/** Province config (status, messaging, catalog flags) — Feature 1 expansion. */
+export function canManageProvinces(role: string | undefined): boolean {
+  return role === 'OWNER' || role === 'MANAGER';
+}
+
 export function canRemoveOrder(role: string | undefined): boolean {
   return role === 'OWNER';
 }

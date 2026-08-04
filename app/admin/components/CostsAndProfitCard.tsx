@@ -7,6 +7,7 @@ import { computeProfit, formatThb } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
+import { useMissingCogsSummary } from '@/app/admin/components/MissingCogsNotice';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
 import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
@@ -56,6 +57,7 @@ export function CostsAndProfitCard({
   initialDeliveryExpense = null,
 }: CostsAndProfitCardProps) {
   const router = useRouter();
+  const { refresh: refreshMissingCogs } = useMissingCogsSummary();
   const receiptFlowerInputRef = useRef<HTMLInputElement>(null);
   const receiptDeliveryInputRef = useRef<HTMLInputElement>(null);
   const totalAmount = order.total_amount ?? order.grand_total ?? null;
@@ -141,10 +143,13 @@ export function CostsAndProfitCard({
   const showDeliveryExpenseBlock = deliveryNum != null && deliveryNum > 0;
 
   const profit = computeProfit(totalAmount, cogsNum, deliveryNum, paymentNum);
-  const costsSet = order.cogs_amount != null || order.delivery_cost != null || order.payment_fee != null;
+  // Partner/item costs can prefill the UI without persisting orders.cogs_amount.
+  const cogsPersisted = order.cogs_amount != null && Number(order.cogs_amount) > 0;
+  const needsConfirm = !cogsPersisted && cogsNum != null && cogsNum > 0;
+  const canSave = hasChanges || needsConfirm;
 
   const handleSave = async () => {
-    if (!hasChanges || saving) return;
+    if (!canSave || saving) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -205,6 +210,7 @@ export function CostsAndProfitCard({
         setDeliveryReceipts([]);
       }
       setTimeout(() => setMessage(null), 3000);
+      refreshMissingCogs();
       router.refresh();
     } catch (e) {
       setMessage({
@@ -523,8 +529,12 @@ export function CostsAndProfitCard({
     <section className="admin-section admin-costs-card">
       <h2 className="admin-section-title">Costs & Profit</h2>
 
-      {!costsSet && (
-        <p className="admin-costs-warning">Costs not set (profit is estimated)</p>
+      {!cogsPersisted && (
+        <p className="admin-costs-warning">
+          {needsConfirm
+            ? 'Item costs are prefilled but not saved yet — click Confirm & save COGS to clear the missing-COGS alert.'
+            : 'Costs not set (profit is estimated)'}
+        </p>
       )}
 
       {/* Items: one cost field per item */}
@@ -674,10 +684,10 @@ export function CostsAndProfitCard({
           <button
             type="button"
             onClick={handleSave}
-            disabled={!hasChanges || saving}
+            disabled={!canSave || saving}
             className="admin-btn"
           >
-            {saving ? 'Saving…' : 'Save costs'}
+            {saving ? 'Saving…' : needsConfirm ? 'Confirm & save COGS' : 'Save costs'}
           </button>
           {message && (
             <span className={message.type === 'success' ? 'admin-costs-success' : 'admin-costs-error'}>

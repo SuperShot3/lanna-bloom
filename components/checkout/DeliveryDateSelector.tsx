@@ -5,6 +5,7 @@ import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { getSelectableDeliveryTimeSlotsForDate } from '@/lib/deliveryTimeSelection';
 import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
+import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 import { DeliveryDatePicker } from '@/components/checkout/DeliveryDatePicker';
 import { SelectionTile } from '@/components/checkout/premium/SelectionTile';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
@@ -28,6 +29,8 @@ export type DeliveryDateSelectorProps = {
   onChange: (ymd: string) => void;
   className?: string;
   pickerClassName?: string;
+  /** Province/product delivery constraint (Feature 3). */
+  constraint?: DeliveryConstraint | null;
 };
 
 export function DeliveryDateSelector({
@@ -36,11 +39,22 @@ export function DeliveryDateSelector({
   onChange,
   className = '',
   pickerClassName = '',
+  constraint = null,
 }: DeliveryDateSelectorProps) {
   const t = translations[lang].premiumCheckout;
   const todayStr = getShopTodayYmd();
   const tomorrowStr = getShopTomorrowYmd();
-  const todaySelectable = getSelectableDeliveryTimeSlotsForDate(todayStr).length > 0;
+  const orderingBlocked = constraint != null && !constraint.orderingAllowed;
+  const minDate =
+    !orderingBlocked && constraint?.earliestYmd && constraint.earliestYmd > todayStr
+      ? constraint.earliestYmd
+      : todayStr;
+  const todaySelectable =
+    !orderingBlocked &&
+    getSelectableDeliveryTimeSlotsForDate(todayStr, new Date(), constraint).length > 0;
+  const tomorrowSelectable =
+    !orderingBlocked &&
+    getSelectableDeliveryTimeSlotsForDate(tomorrowStr, new Date(), constraint).length > 0;
 
   const [dateMode, setDateMode] = useState<DeliveryDateMode>(() =>
     inferDateMode(value, todayStr, tomorrowStr)
@@ -93,29 +107,33 @@ export function DeliveryDateSelector({
         />
         <SelectionTile
           compact
-          className="co-tile--date"
+          className={['co-tile--date', !tomorrowSelectable ? 'co-tile--disabled' : '']
+            .filter(Boolean)
+            .join(' ')}
           selected={dateMode === 'tomorrow'}
           title={t.tomorrowTile}
-          onClick={selectTomorrow}
+          onClick={() => tomorrowSelectable && selectTomorrow()}
         />
         <SelectionTile
           compact
-          className="co-tile--date"
+          className={['co-tile--date', orderingBlocked ? 'co-tile--disabled' : '']
+            .filter(Boolean)
+            .join(' ')}
           selected={dateMode === 'custom'}
           title={t.chooseDateTile}
-          onClick={openCustomCalendar}
+          onClick={() => !orderingBlocked && openCustomCalendar()}
         />
       </div>
 
       <OverlayReveal
-        open={calendarOpen}
+        open={calendarOpen && !orderingBlocked}
         className="delivery-date-selector__popover"
       >
         <DeliveryDatePicker
           compact
           lang={lang}
           value={pickerValue}
-          minDate={todayStr}
+          minDate={minDate}
           onChange={(ymd) => {
             setDateMode('custom');
             onChange(ymd);
@@ -150,21 +168,7 @@ export function DeliveryDateSelector({
           .delivery-date-selector__popover.ui-overlay-reveal--open
             .ui-overlay-reveal__inner
         ) {
-          padding-top: 4px;
-        }
-        @media (max-width: 400px) {
-          .delivery-date-selector__tiles {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 6px;
-          }
-          :global(.delivery-date-selector__popover.ui-overlay-reveal--open) {
-            margin-top: 10px;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          :global(.delivery-date-selector__popover.ui-overlay-reveal--open) {
-            margin-top: 12px;
-          }
+          overflow: visible;
         }
       `}</style>
     </div>

@@ -204,6 +204,9 @@ export function BouquetCard({
           size: discountedSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
+          ...(bouquet.deliveryOptions?.length
+            ? { deliveryOptions: bouquet.deliveryOptions }
+            : {}),
           ...(bouquet.discountPercent != null && {
             catalogDiscountPercent: bouquet.discountPercent,
           }),

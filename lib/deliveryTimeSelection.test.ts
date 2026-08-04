@@ -9,6 +9,7 @@ import {
   isPreferredTimeSlotValid,
   resolveDeliverySchedule,
 } from './deliveryTimeSelection';
+import type { DeliveryConstraint } from './delivery/deliveryConstraints';
 import { getBangkokYmd, getShopTodayYmd } from './deliveryHours';
 
 function assert(condition: boolean, msg: string) {
@@ -75,5 +76,39 @@ const bumped = resolveDeliverySchedule(
 );
 assert(bumped.date === '2026-07-08', 'past custom date bumps to shop today');
 assert(bumped.deliveryTimeMode === 'window', 'bumped schedule uses window mode');
+
+// Optional province constraint: next-day floor rejects today
+const nextDayConstraint: DeliveryConstraint = {
+  orderingAllowed: true,
+  earliestYmd: '2026-07-09',
+  sameDayCutoffLocal: null,
+  reasonCode: 'next_day',
+  customerMessageEn: null,
+  customerMessageTh: null,
+  deliveryLimitationsEn: null,
+  deliveryLimitationsTh: null,
+};
+assert(
+  !isDeliveryDateSelectable('2026-07-08', bangkokPastMidnight, nextDayConstraint),
+  'constraint rejects today when earliest is tomorrow'
+);
+assert(
+  isDeliveryDateSelectable('2026-07-09', bangkokPastMidnight, nextDayConstraint),
+  'constraint allows earliest date'
+);
+assert(
+  !isPreferredTimeSlotValid('2026-07-08 15:00–18:00', bangkokPastMidnight, nextDayConstraint),
+  'preferredTimeSlot today rejected under next-day constraint'
+);
+const blocked: DeliveryConstraint = {
+  ...nextDayConstraint,
+  orderingAllowed: false,
+  earliestYmd: null,
+  reasonCode: 'coming_soon',
+};
+assert(
+  !isPreferredTimeSlotValid('2026-07-10 09:00–12:00', bangkokPastMidnight, blocked),
+  'coming_soon blocks all slots'
+);
 
 console.log('deliveryTimeSelection.test.ts: all assertions passed');

@@ -16,6 +16,7 @@ import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumChecko
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
+import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 
@@ -65,6 +66,7 @@ export function CartCheckoutView({
   delivery,
   onDeliveryChange,
   checkoutDeliveryProfile,
+  deliveryConstraint = null,
   recipientName,
   onRecipientNameChange,
   recipientCountryCode,
@@ -127,6 +129,7 @@ export function CartCheckoutView({
   delivery: DeliveryFormValues;
   onDeliveryChange: (v: DeliveryFormValues) => void;
   checkoutDeliveryProfile: CheckoutDeliveryProfile;
+  deliveryConstraint?: DeliveryConstraint | null;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
   recipientCountryCode: string;
@@ -318,6 +321,7 @@ export function CartCheckoutView({
         delivery={delivery}
         onDeliveryChange={onDeliveryChange}
         deliveryProfile={checkoutDeliveryProfile}
+        deliveryConstraint={deliveryConstraint}
         recipientName={recipientName}
         onRecipientNameChange={onRecipientNameChange}
         recipientCountryCode={recipientCountryCode}
@@ -377,9 +381,15 @@ export function CartCheckoutView({
               />
               <span>
                 {t.personalDataConsentBefore}{' '}
+                <Link href={`/${lang}/terms`} className="co-personal-data-consent-link">
+                  {t.personalDataConsentTermsLink ?? 'Terms of Sale'}
+                </Link>{' '}
+                {t.personalDataConsentMiddle ??
+                  'and consent to the collection, processing, and international transfer of your personal data to complete your purchase in accordance with our'}{' '}
                 <Link href={`/${lang}/privacy`} className="co-personal-data-consent-link">
                   {t.personalDataConsentLink}
                 </Link>
+                {t.personalDataConsentAfter ? ` ${t.personalDataConsentAfter}` : ''}.
               </span>
             </label>
             <div className="co-payment-row">
@@ -465,10 +475,10 @@ export function CartCheckoutView({
                 cursor: pointer;
               }
               .co-personal-data-consent-input {
-                margin: 2px 0 0;
+                margin: 1px 0 0;
                 flex-shrink: 0;
-                width: 15px;
-                height: 15px;
+                width: 22px;
+                height: 22px;
                 accent-color: var(--primary);
               }
               .co-personal-data-consent-link {

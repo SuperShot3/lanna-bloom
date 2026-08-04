@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { AdminShell } from '../components/AdminShell';
+import { MissingCogsNotice, MissingCogsProvider } from '../components/MissingCogsNotice';
 
 function AdminShellFallback() {
   return (
@@ -13,8 +14,11 @@ function AdminShellFallback() {
 
 export function AdminDashboardShell({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<AdminShellFallback />}>
-      <AdminShell>{children}</AdminShell>
-    </Suspense>
+    <MissingCogsProvider>
+      <MissingCogsNotice />
+      <Suspense fallback={<AdminShellFallback />}>
+        <AdminShell>{children}</AdminShell>
+      </Suspense>
+    </MissingCogsProvider>
   );
 }

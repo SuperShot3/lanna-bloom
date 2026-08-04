@@ -2,13 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DeliveryDistrictMap } from '@/components/delivery/DeliveryDistrictMap';
+import { ThailandCoverageMapSection } from '@/components/delivery/ThailandCoverageMapSection';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { buildAlternates } from '@/lib/seo/alternates';
+import { listPublicProvinces } from '@/lib/provinces/queries';
+import { canEnterCatalog } from '@/lib/provinces/shopAccess';
+import { getProvinceStatusLabel } from '@/lib/provinces/statusColors';
+import {
+  catalogHrefForProvinceCode,
+  formatCoverageCategories,
+  sortProvincesForCoverageList,
+} from '@/lib/delivery/coverageDisplay';
 import {
   getChiangMaiDeliveryDistricts,
   getChiangMaiDeliveryNeighborhoods,
-  getExpansionMarketAreas,
   getFlowerDeliveryThailandCopy,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
@@ -65,7 +73,7 @@ function AreaPills({
   );
 }
 
-export default function DeliveryAreasChiangMaiPage({
+export default async function DeliveryAreasChiangMaiPage({
   params,
 }: {
   params: { lang: string };
@@ -75,8 +83,13 @@ export default function DeliveryAreasChiangMaiPage({
   const copy = getFlowerDeliveryThailandCopy(lang);
   const districts = getChiangMaiDeliveryDistricts();
   const neighborhoods = getChiangMaiDeliveryNeighborhoods();
-  const expansionAreas = getExpansionMarketAreas();
   const isTh = lang === 'th';
+  const provincesResult = await listPublicProvinces();
+  const provinces = provincesResult.ok ? provincesResult.provinces : [];
+  const shoppableProvinces = sortProvincesForCoverageList(
+    provinces.filter((p) => canEnterCatalog(p)),
+    lang
+  );
 
   return (
     <div className="guide-page">
@@ -105,9 +118,20 @@ export default function DeliveryAreasChiangMaiPage({
           </p>
         </section>
 
+        <ThailandCoverageMapSection
+          lang={lang}
+          initialProvinces={provinces}
+          title={isTh ? 'ความครอบคลุมทั่วไทย' : 'Thailand coverage'}
+          intro={
+            isTh
+              ? 'ค้นหาหรือแตะจังหวัดเพื่อดูสถานะบริการจริง — เรากำลังขยายพื้นที่อย่างค่อยเป็นค่อยไป ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ'
+              : 'Search or tap a province to see live service status. We expand gradually — nationwide same-day is not promised.'
+          }
+        />
+
         <section
           className="max-w-5xl mx-auto"
-          aria-label={isTh ? 'แผนที่พื้นที่จัดส่ง' : 'Delivery area map'}
+          aria-label={isTh ? 'แผนที่พื้นที่จัดส่งเชียงใหม่' : 'Chiang Mai delivery area map'}
         >
           <DeliveryDistrictMap lang={lang} />
         </section>
@@ -153,27 +177,32 @@ export default function DeliveryAreasChiangMaiPage({
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.chiangMaiNote}</p>
           </div>
 
-          <div className="mt-10 max-w-2xl mx-auto">
-            <h3 className="popular-title text-center text-xl sm:text-2xl mb-2">
-              {copy.otherDestinationsTitle}
-            </h3>
-            <p className="text-stone-500 text-sm text-center mb-4">{copy.expandingNote}</p>
-            <ul className="guide-highlights">
-              {expansionAreas.map((area) => (
-                <li key={area.nameEn}>
-                  <Link href={area.href(lang)} className="text-[#1A3C34] font-medium hover:text-[#C5A059]">
-                    {isTh ? area.nameTh : area.nameEn}
-                  </Link>
-                  {area.noteEn ? (
+          {shoppableProvinces.length > 0 ? (
+            <div className="mt-10 max-w-2xl mx-auto">
+              <h3 className="popular-title text-center text-xl sm:text-2xl mb-2">
+                {copy.otherDestinationsTitle}
+              </h3>
+              <p className="text-stone-500 text-sm text-center mb-4">{copy.expandingNote}</p>
+              <ul className="guide-highlights">
+                {shoppableProvinces.map((p) => (
+                  <li key={p.province_code}>
+                    <Link
+                      href={catalogHrefForProvinceCode(lang, p.province_code)}
+                      className="text-[#1A3C34] font-medium hover:text-[#C5A059]"
+                    >
+                      {isTh ? p.province_name_th : p.province_name_en}
+                    </Link>
                     <span className="text-stone-500 text-sm">
                       {' '}
-                      — {isTh ? area.noteTh : area.noteEn}
+                      — {getProvinceStatusLabel(p.status)}
+                      {' · '}
+                      {formatCoverageCategories(p, lang)}
                     </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
 
         <div className="flex justify-center pb-4">

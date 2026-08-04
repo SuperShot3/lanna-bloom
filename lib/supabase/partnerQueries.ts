@@ -13,6 +13,7 @@ export interface PartnerApplicationRow {
   facebook: string | null;
   address: string | null;
   district: string | null;
+  province_code: string | null;
   lat: number | null;
   lng: number | null;
   self_deliver: boolean | null;
@@ -33,14 +34,15 @@ export interface PartnerApplicationRow {
 
 export interface InsertPartnerApplicationInput {
   shop_name: string;
-  contact_name: string;
-  email: string;
+  contact_name?: string;
+  email?: string;
   line_id?: string;
-  phone: string;
+  phone?: string;
   address?: string;
   instagram?: string;
   facebook?: string;
   district?: string;
+  province_code?: string;
   lat?: number;
   lng?: number;
   self_deliver?: boolean;
@@ -66,14 +68,15 @@ export async function insertPartnerApplication(
     .from('partner_applications')
     .insert({
       shop_name: input.shop_name,
-      contact_name: input.contact_name,
-      email: input.email,
+      contact_name: input.contact_name ?? null,
+      email: input.email ?? null,
       line_id: input.line_id ?? null,
-      phone: input.phone,
+      phone: input.phone ?? null,
       instagram: input.instagram ?? null,
       facebook: input.facebook ?? null,
       address: input.address ?? null,
       district: input.district ?? null,
+      province_code: input.province_code ?? null,
       lat: input.lat ?? null,
       lng: input.lng ?? null,
       self_deliver: input.self_deliver ?? false,
@@ -94,8 +97,11 @@ export async function insertPartnerApplication(
   return data.id;
 }
 
-/** List partner applications, optionally filtered by status. */
-export async function listPartnerApplications(status?: string): Promise<PartnerApplicationRow[]> {
+/** List partner applications, optionally filtered by status and/or province. */
+export async function listPartnerApplications(
+  status?: string,
+  provinceCode?: string
+): Promise<PartnerApplicationRow[]> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return [];
 
@@ -106,6 +112,9 @@ export async function listPartnerApplications(status?: string): Promise<PartnerA
 
   if (status && status !== 'all') {
     query = query.eq('status', status);
+  }
+  if (provinceCode && provinceCode !== 'all') {
+    query = query.eq('province_code', provinceCode);
   }
 
   const { data, error } = await query.limit(100);
@@ -142,6 +151,7 @@ export type UpdatePartnerApplicationFieldsInput = {
   facebook?: string | null;
   address?: string | null;
   district?: string | null;
+  province_code?: string | null;
   lat?: number | null;
   lng?: number | null;
   self_deliver?: boolean | null;

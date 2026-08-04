@@ -60,6 +60,7 @@ export interface CreateCatalogPartnerInput {
   lineOrWhatsapp?: string;
   shopAddress?: string;
   city?: string;
+  provinceCode?: string;
   supabaseUserId?: string;
   legacySanityId?: string;
 }
@@ -165,6 +166,7 @@ export async function createCatalogPartner(input: CreateCatalogPartnerInput): Pr
       line_or_whatsapp: input.lineOrWhatsapp?.trim() || null,
       shop_address: input.shopAddress?.trim() || null,
       city: (input.city || 'Chiang Mai').trim(),
+      province_code: input.provinceCode?.trim() || null,
       status: input.supabaseUserId ? 'approved' : 'pending_review',
       supabase_user_id: input.supabaseUserId?.trim() || null,
       legacy_sanity_id: input.legacySanityId ?? null,
@@ -186,6 +188,9 @@ export async function syncCatalogPartnerFromApplication(
     line_id?: string | null;
     address?: string | null;
     district?: string | null;
+    province_code?: string | null;
+    /** Optional city override (e.g. province name when district is empty). */
+    city?: string | null;
   }
 ): Promise<void> {
   const supabase = requireSupabase();
@@ -197,7 +202,8 @@ export async function syncCatalogPartnerFromApplication(
       phone_number: app.phone?.trim() || '',
       line_or_whatsapp: app.line_id?.trim() || null,
       shop_address: app.address?.trim() || null,
-      city: app.district?.trim() || 'Chiang Mai',
+      city: app.city?.trim() || app.district?.trim() || 'Chiang Mai',
+      province_code: app.province_code?.trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', catalogPartnerId);

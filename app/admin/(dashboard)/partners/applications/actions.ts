@@ -3,6 +3,7 @@
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { createCatalogPartner, syncCatalogPartnerFromApplication } from '@/lib/catalogWrite';
+import { getProvinceByCode } from '@/lib/provinces/queries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import {
   getPartnerApplicationById,
@@ -15,6 +16,13 @@ import { randomBytes } from 'crypto';
 
 function generateTempPassword(): string {
   return randomBytes(16).toString('base64url').slice(0, 16);
+}
+
+async function resolveProvinceCityFallback(provinceCode: string | null | undefined): Promise<string | null> {
+  if (!provinceCode?.trim()) return null;
+  const result = await getProvinceByCode(provinceCode.trim());
+  if (!result.ok) return null;
+  return result.province.province_name_en;
 }
 
 export async function approvePartnerApplicationAction(
@@ -51,6 +59,8 @@ export async function approvePartnerApplicationAction(
   const supabaseUserId = userData?.user?.id;
   if (!supabaseUserId) return { error: 'Failed to create user' };
 
+  const provinceName = await resolveProvinceCityFallback(app.province_code);
+
   let catalogPartnerId: string;
   try {
     catalogPartnerId = await createCatalogPartner({
@@ -59,7 +69,8 @@ export async function approvePartnerApplicationAction(
       phoneNumber: app.phone ?? '',
       lineOrWhatsapp: app.line_id ?? undefined,
       shopAddress: app.address ?? undefined,
-      city: 'Chiang Mai',
+      city: app.district?.trim() || provinceName || 'Chiang Mai',
+      provinceCode: app.province_code ?? undefined,
       supabaseUserId,
     });
   } catch (err) {
@@ -180,6 +191,7 @@ export type PartnerApplicationFieldsPayload = {
   facebook: string;
   address: string;
   district: string;
+  province_code: string;
   lat: string;
   lng: string;
   self_deliver: boolean;
@@ -239,9 +251,17 @@ export async function updatePartnerApplicationFieldsAction(
   const contactName = fields.contact_name.trim();
   const email = fields.email.trim();
   const phone = fields.phone.trim();
+  const provinceCode = fields.province_code.trim();
 
   if (!shopName || !contactName || !phone) {
     return { error: 'Shop name, contact name, and phone are required' };
+  }
+
+  if (provinceCode) {
+    const provinceResult = await getProvinceByCode(provinceCode);
+    if (!provinceResult.ok) {
+      return { error: 'Invalid province' };
+    }
   }
 
   const isApproved = app.status === 'approved';
@@ -258,6 +278,7 @@ export async function updatePartnerApplicationFieldsAction(
     facebook: fields.facebook.trim() || null,
     address: fields.address.trim() || null,
     district: fields.district.trim() || null,
+    province_code: provinceCode || null,
     lat: parseOptionalCoord(fields.lat),
     lng: parseOptionalCoord(fields.lng),
     self_deliver: fields.self_deliver,
@@ -281,6 +302,7 @@ export async function updatePartnerApplicationFieldsAction(
 
   if (isApproved && app.sanity_partner_id) {
     try {
+      const provinceName = await resolveProvinceCityFallback(patch.province_code);
       await syncCatalogPartnerFromApplication(app.sanity_partner_id, {
         shop_name: patch.shop_name,
         contact_name: patch.contact_name,
@@ -288,6 +310,8 @@ export async function updatePartnerApplicationFieldsAction(
         line_id: patch.line_id,
         address: patch.address,
         district: patch.district,
+        province_code: patch.province_code,
+        city: patch.district?.trim() || provinceName || 'Chiang Mai',
       });
     } catch (err) {
       console.error('[Partner] syncCatalogPartnerFromApplication failed:', err);

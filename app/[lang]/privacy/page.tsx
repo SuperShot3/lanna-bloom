@@ -140,7 +140,6 @@ export default function PrivacyPage({ params }: { params: { lang: string } }) {
             ))}
           </ul>
           <p className="policy-text">{s.sharing.example}</p>
-          <p className="policy-text">{s.sharing.noSell}</p>
         </section>
 
         <section className="policy-section">

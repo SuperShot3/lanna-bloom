@@ -101,6 +101,15 @@ export function getMarketByPathSlug(slug: string): MarketRegistryEntry | null {
   return SLUG_TO_ENTRY[slug] ?? null;
 }
 
+/** Expansion market for a destination id, or null for Chiang Mai / unknown. */
+export function getMarketByDestinationId(
+  destinationId: string
+): MarketRegistryEntry | null {
+  const id = destinationId.trim().toUpperCase();
+  if (!id || id === 'CHIANG_MAI') return null;
+  return MARKETS.find((m) => m.destinationId === id) ?? null;
+}
+
 export function isMarketPathSlug(s: string): s is MarketPathSlug {
   return (MARKET_PATH_SLUGS as readonly string[]).includes(s);
 }

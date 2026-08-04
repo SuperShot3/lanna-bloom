@@ -1,7 +1,24 @@
 import {
+  getMarketByDestinationId,
   isMarketPathSlug,
   type MarketPathSlug,
 } from '@/lib/delivery/markets';
+import { PROVINCE_SEED_ROSTER } from '@/lib/provinces/seedRoster';
+
+/**
+ * Catalog entry for a province code via seed destination → market slug.
+ * Does not put destination_id on PublicProvince (Feature 4 / tests omit it).
+ */
+export function catalogHrefForProvinceCode(
+  lang: string,
+  provinceCode: string
+): string {
+  const seed = PROVINCE_SEED_ROSTER.find((r) => r.province_code === provinceCode);
+  const dest = seed?.destination_id;
+  if (!dest || dest === 'CHIANG_MAI') return `/${lang}/catalog`;
+  const market = getMarketByDestinationId(dest);
+  return buildMarketCatalogHref(lang, market?.pathSlug);
+}
 
 /**
  * Market home: expansion → /{lang}/{market}/flower-delivery; otherwise Chiang Mai hub.

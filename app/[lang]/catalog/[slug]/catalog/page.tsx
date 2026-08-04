@@ -8,14 +8,19 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { CatalogWithFilters } from '@/components/CatalogWithFilters';
-import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
+import { CatalogUnavailablePanel } from '@/components/CatalogUnavailablePanel';
+import { CatalogDeliveryBar } from '@/components/CatalogDeliveryBar';
+import { CATEGORY_I18N_KEYS } from '@/lib/catalogCategories';
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
 import {
   getMarketByPathSlug,
+  isExpansionDestination,
   marketIsRouteAvailable,
 } from '@/lib/delivery/markets';
 import { buildMarketPageMetadata } from '@/lib/seo/marketPageMetadata';
+import { getPublicProvinceByDestinationId } from '@/lib/provinces/queries';
+import { canEnterCatalog, categoryAllowed } from '@/lib/provinces/shopAccess';
 
 /** Always dynamic — reads searchParams for catalog filters. */
 export const dynamic = 'force-dynamic';
@@ -57,27 +62,50 @@ export default async function MarketCatalogPageViaSlug({
   const market = getMarketByPathSlug(params.slug);
   if (!market || !marketIsRouteAvailable(market)) notFound();
 
+  const provinceResult = await getPublicProvinceByDestinationId(market.destinationId);
+  const province = provinceResult.ok ? provinceResult.province : null;
+  const marketName =
+    lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn;
+
+  if (!canEnterCatalog(province)) {
+    return (
+      <div className="catalog-page">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div style={{ margin: '1.25rem auto 0', maxWidth: 1040 }}>
+            <CatalogDeliveryBar lang={lang as Locale} />
+          </div>
+          <CatalogUnavailablePanel lang={lang as Locale} marketName={marketName} province={province} />
+        </div>
+      </div>
+    );
+  }
+
   const filterParams = parseCatalogSearchParams(searchParams);
   const nameSearchQueryParam = searchParams.q;
   const nameSearchQuery = Array.isArray(nameSearchQueryParam)
     ? nameSearchQueryParam[0] ?? ''
     : nameSearchQueryParam ?? '';
   const topCategory = filterParams.topCategory || 'flowers';
+  const expansion = isExpansionDestination(market.destinationId);
+  const categoryOk = categoryAllowed(province, topCategory, {
+    isExpansionDestination: expansion,
+  });
 
   let bouquets: Bouquet[] = [];
   let allBouquetsForFacets: Bouquet[] = [];
   let products: CatalogProduct[] = [];
 
-  if (topCategory === 'flowers') {
+  if (!categoryOk) {
+    // Keep category chips; empty list triggers the existing coming-soon empty state.
+    bouquets = [];
+    products = [];
+  } else if (topCategory === 'flowers') {
     const data = await getCatalogBouquetsCatalogData({
       ...filterParams,
       catalogDeliveryDestination: market.destinationId,
     });
     bouquets = data.bouquets;
     allBouquetsForFacets = data.allBouquets;
-  } else if (PRODUCT_CATEGORIES.includes(topCategory as (typeof PRODUCT_CATEGORIES)[number])) {
-    // Expansion market restriction: keep chips visible, show coming soon (empty list).
-    products = [];
   } else {
     products = await getCatalogProductsFiltered({
       categoryKey: topCategory,

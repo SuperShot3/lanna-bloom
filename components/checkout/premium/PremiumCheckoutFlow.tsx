@@ -13,7 +13,8 @@ import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
 import { SameDayCutoffBanner } from '@/components/checkout/SameDayCutoffBanner';
-import { PeakCelebrationCheckoutNotice } from '@/components/checkout/PeakCelebrationCheckoutNotice';
+import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
+import { resolveDeliveryConstraintNotice } from '@/lib/delivery/deliveryConstraints';
 import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/SelectionTile';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
@@ -54,6 +55,8 @@ export type PremiumCheckoutFlowProps = {
   delivery: DeliveryFormValues;
   onDeliveryChange: (v: DeliveryFormValues) => void;
   deliveryProfile: CheckoutDeliveryProfile;
+  /** Province/product delivery constraint (Feature 3). */
+  deliveryConstraint?: DeliveryConstraint | null;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
   recipientCountryCode: string;
@@ -110,6 +113,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     delivery,
     onDeliveryChange,
     deliveryProfile,
+    deliveryConstraint = null,
     recipientName,
     onRecipientNameChange,
     recipientCountryCode,
@@ -421,16 +425,23 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
       >
         <h2 className="co-section-title">{t.deliveryDateTitle}</h2>
         {deliveryProfile.variant === 'chiang-mai' && <SameDayCutoffBanner lang={lang} />}
-        <PeakCelebrationCheckoutNotice
-          lang={lang}
-          deliveryDateYmd={delivery.date}
-          itemsTotal={itemsTotal}
-        />
+        {(() => {
+          const notice =
+            deliveryConstraint != null
+              ? resolveDeliveryConstraintNotice(deliveryConstraint, lang)
+              : null;
+          return notice ? (
+            <p className="co-delivery-constraint-notice" role="status">
+              {notice}
+            </p>
+          ) : null;
+        })()}
         <DeliveryDateSelector
           lang={lang}
           value={delivery.date}
           onChange={(ymd) => onDeliveryChange({ ...delivery, date: ymd })}
           pickerClassName="co-delivery-date-picker"
+          constraint={deliveryConstraint}
         />
       </section>
 
@@ -445,6 +456,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           date={delivery.date}
           timeSlot={delivery.timeSlot}
           deliveryTimeMode={delivery.deliveryTimeMode}
+          constraint={deliveryConstraint}
           onChange={(timeSlot, deliveryTimeMode) =>
             onDeliveryChange({ ...delivery, timeSlot, deliveryTimeMode })
           }
@@ -958,6 +970,17 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-weight: 600;
           margin: 0 0 12px;
           color: var(--text);
+        }
+        .co-delivery-constraint-notice {
+          margin: 0 0 12px;
+          padding: 10px 14px;
+          border-radius: 12px;
+          font-size: 14px;
+          line-height: 1.45;
+          font-weight: 500;
+          color: var(--text);
+          background: color-mix(in srgb, var(--pastel-cream) 65%, #fff);
+          border: 1px solid var(--border);
         }
         .co-section-heading-row {
           display: flex;
