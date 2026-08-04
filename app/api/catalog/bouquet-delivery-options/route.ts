@@ -17,14 +17,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing ids' }, { status: 400 });
     }
 
-    const ids = [
-      ...new Set(
+    const ids = Array.from(
+      new Set(
         raw
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean)
-      ),
-    ].slice(0, MAX_IDS);
+      )
+    ).slice(0, MAX_IDS);
 
     if (ids.length === 0) {
       return NextResponse.json({ error: 'Missing ids' }, { status: 400 });
