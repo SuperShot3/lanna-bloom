@@ -21,6 +21,7 @@ import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
+import type { CartLineDeliveryConstraintInput } from '@/lib/delivery/deliveryConstraints';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
@@ -87,10 +88,10 @@ export function ProductOrderBlockForProduct({
   const totalPrice = unitPrice * qty;
   const isPlushyToy = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
   const isBalloonProduct = product.catalogKind === 'balloon' || product.category === 'balloons';
-  const itemType =
+  const itemType: CartLineDeliveryConstraintInput['itemType'] =
     isPlushyToy ? 'plushyToy' : isBalloonProduct ? 'balloon' : 'product';
   const isBalloon = itemType === 'balloon';
-  const deliveryConstraintLines = useMemo(
+  const deliveryConstraintLines = useMemo<CartLineDeliveryConstraintInput[]>(
     () => [
       {
         itemType,
