@@ -10,7 +10,7 @@ import { getActiveMarkets } from '@/lib/delivery/markets';
 const SOCIAL_LINKS = [
   'https://www.facebook.com/profile.php?id=61587782069439',
   'https://www.instagram.com/lannabloomchiangmai/',
-  'https://www.youtube.com/@Lannabloom-delivery',
+  'https://www.youtube.com/@Lannabloom',
 ];
 
 const CONTACT_PHONE = '+66-80-331-3431';
