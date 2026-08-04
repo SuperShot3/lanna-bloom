@@ -71,8 +71,14 @@ export function AdvancePeakPromoBanner({
 
   if (!activeKey) return null;
 
-  const localeBundle = translations[lang] as Record<string, { bannerMessage?: string; bannerMessageShort?: string; bannerAlt?: string } | undefined>;
-  const promo = localeBundle[activeKey];
+  type PromoBannerCopy = {
+    bannerMessage?: string;
+    bannerMessageShort?: string;
+    bannerAlt?: string;
+  };
+  const promo = (
+    translations[lang] as unknown as Record<AdvancePeakPromoI18nKey, PromoBannerCopy | undefined>
+  )[activeKey];
   const fallback = FALLBACK_COPY[activeKey];
   const messageDesktop = promo?.bannerMessage ?? fallback.bannerMessage;
   const messageMobile = promo?.bannerMessageShort ?? fallback.bannerMessageShort;
