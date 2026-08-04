@@ -51,6 +51,10 @@ const GUIDE_COMMENT_READ_MAX = 60;
 const guideCommentVisitorCooldownStore = new Map<string, number>();
 const GUIDE_COMMENT_VISITOR_COOLDOWN_MS = 60 * 1000; // 1 minute
 
+const orderChatPostStore = new Map<string, { count: number; resetAt: number }>();
+const ORDER_CHAT_POST_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const ORDER_CHAT_POST_MAX = 20;
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -281,6 +285,23 @@ export function checkGuideCommentVisitorCooldown(visitorTokenHash: string): bool
   }
   guideCommentVisitorCooldownStore.set(key, now);
   return true;
+}
+
+/** Customer order chat POST: per IP + orderId. */
+export function checkOrderChatPostRateLimit(ip: string, orderId: string): boolean {
+  const now = Date.now();
+  const key = `${ip}:${orderId}`;
+  const entry = orderChatPostStore.get(key);
+  if (!entry) {
+    orderChatPostStore.set(key, { count: 1, resetAt: now + ORDER_CHAT_POST_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    orderChatPostStore.set(key, { count: 1, resetAt: now + ORDER_CHAT_POST_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= ORDER_CHAT_POST_MAX;
 }
 
 export function checkLoginRateLimit(ip: string): { allowed: boolean; remaining: number } {

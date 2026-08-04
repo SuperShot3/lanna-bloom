@@ -4,6 +4,8 @@ import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
 import { getOrCreateDeliveredOutboxDraft } from '@/lib/email/outbox';
 import { ORDER_STATUS } from '@/lib/orders/statusConstants';
+import { isOrderChatEnabled } from '@/lib/orderChat/enabled';
+import { clearPurgeAfter, schedulePurgeAfterDelivery } from '@/lib/orderChat/store';
 
 const VALID_ORDER_STATUSES = [...ORDER_STATUS];
 
@@ -112,6 +114,18 @@ export async function PATCH(
         customerEmail: draft.outbox.customer_email,
         missingVariables: draft.missingVariables,
       };
+    }
+  }
+
+  if (isOrderChatEnabled()) {
+    if (orderStatus === 'DELIVERED') {
+      await schedulePurgeAfterDelivery(trimmed).catch((e) => {
+        console.error('[admin/status] order chat purge schedule:', e);
+      });
+    } else if (String(previousStatus).toUpperCase() === 'DELIVERED') {
+      await clearPurgeAfter(trimmed).catch((e) => {
+        console.error('[admin/status] order chat clear purge:', e);
+      });
     }
   }
 

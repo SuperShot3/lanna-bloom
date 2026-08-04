@@ -138,6 +138,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
         ['Phone number', 'To contact you about your order or delivery'],
         ['Delivery address', 'To deliver the flowers to the correct location'],
         ['Email address', 'To send your order confirmation and essential updates'],
+        ['Order-page chat messages', 'To coordinate delivery and handle post-delivery support (temporary; deleted after delivery)'],
       ],
       sharing:
         'For delivery, we may share the recipient’s name, phone number, address and delivery instructions with our driver or delivery partner.',
@@ -161,6 +162,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
           'Telephone number',
           'Billing and delivery information',
           'Communications with our team',
+          'Temporary order-page chat messages (when that feature is enabled)',
           'Order history and customer-service records',
         ],
         recipientHeading: 'Recipient and delivery information',
@@ -211,6 +213,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
           'Share necessary delivery information with authorised team members, florists and drivers',
           'Process payments and refunds',
           'Provide customer support',
+          'Operate temporary order-page chat for delivery coordination and post-delivery support',
           'Resolve delivery, payment or quality issues',
           'Detect fraud, misuse and security problems',
           'Maintain business, accounting and transaction records',
@@ -295,7 +298,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
         ],
         differentPeriods: 'Different categories of information may be retained for different periods.',
         whenNoLongerNeeded:
-          'When information is no longer reasonably required, we will delete it, anonymise it or securely restrict its use, subject to technical and legal requirements.',
+          'When information is no longer reasonably required, we will delete it, anonymise it or securely restrict its use, subject to technical and legal requirements. Temporary order-page chat messages are kept only while the related order chat remains open and are permanently deleted about 2 hours after the order is marked delivered.',
       },
       security: {
         heading: '10. Data security',
@@ -371,6 +374,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
         ['เบอร์โทรศัพท์', 'เพื่อติดต่อเกี่ยวกับคำสั่งซื้อหรือการจัดส่ง'],
         ['ที่อยู่จัดส่ง', 'เพื่อจัดส่งดอกไม้ไปยังสถานที่ที่ถูกต้อง'],
         ['อีเมล', 'เพื่อส่งการยืนยันคำสั่งซื้อและข้อมูลสำคัญ'],
+        ['ข้อความแชทในหน้าออเดอร์', 'เพื่อประสานงานจัดส่งและช่วยเหลือหลังจัดส่ง (ชั่วคราว ลบหลังจัดส่ง)'],
       ],
       sharing:
         'เพื่อดำเนินการจัดส่ง เราอาจเปิดเผยชื่อผู้รับ เบอร์โทรศัพท์ ที่อยู่ และคำแนะนำในการจัดส่งแก่พนักงานหรือพันธมิตรด้านการจัดส่งของเรา',
@@ -394,6 +398,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
           'เบอร์โทรศัพท์',
           'ข้อมูลสำหรับออกใบเรียกเก็บเงินและการจัดส่ง',
           'ข้อความหรือการติดต่อสื่อสารกับทีมงานของเรา',
+          'ข้อความแชทชั่วคราวในหน้าออเดอร์ (เมื่อฟีเจอร์นี้เปิดใช้งาน)',
           'ประวัติคำสั่งซื้อและข้อมูลการให้บริการลูกค้า',
         ],
         recipientHeading: 'ข้อมูลของผู้รับและข้อมูลการจัดส่ง',
@@ -444,6 +449,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
           'เปิดเผยข้อมูลการจัดส่งที่จำเป็นให้แก่ทีมงาน ร้านดอกไม้ และพนักงานจัดส่งที่ได้รับอนุญาต',
           'ดำเนินการชำระเงินและคืนเงิน',
           'ให้บริการลูกค้า',
+          'ให้บริการแชทชั่วคราวในหน้าออเดอร์เพื่อประสานงานจัดส่งและช่วยเหลือหลังจัดส่ง',
           'แก้ไขปัญหาเกี่ยวกับการจัดส่ง การชำระเงิน หรือคุณภาพสินค้า',
           'ตรวจจับการฉ้อโกง การใช้งานโดยมิชอบ และปัญหาด้านความปลอดภัย',
           'จัดเก็บบันทึกทางธุรกิจ บัญชี และธุรกรรม',
@@ -525,7 +531,7 @@ export const PRIVACY_COPY: Record<PrivacyLocale, PrivacyCopy> = {
         ],
         differentPeriods: 'ข้อมูลแต่ละประเภทอาจมีระยะเวลาการเก็บรักษาที่แตกต่างกัน',
         whenNoLongerNeeded:
-          'เมื่อข้อมูลไม่มีความจำเป็นอย่างสมเหตุสมผลอีกต่อไป เราจะลบข้อมูล ทำให้ข้อมูลไม่สามารถระบุตัวบุคคลได้ หรือจำกัดการใช้งานอย่างปลอดภัย โดยเป็นไปตามข้อกำหนดทางเทคนิคและกฎหมาย',
+          'เมื่อข้อมูลไม่มีความจำเป็นอย่างสมเหตุสมผลอีกต่อไป เราจะลบข้อมูล ทำให้ข้อมูลไม่สามารถระบุตัวบุคคลได้ หรือจำกัดการใช้งานอย่างปลอดภัย โดยเป็นไปตามข้อกำหนดทางเทคนิคและกฎหมาย ข้อความแชทชั่วคราวในหน้าออเดอร์จะถูกเก็บไว้เฉพาะช่วงที่แชทของออเดอร์นั้นยังเปิดอยู่ และจะถูกลบถาวรประมาณ 2 ชั่วโมงหลังออเดอร์ถูกทำเครื่องหมายว่าจัดส่งแล้ว',
       },
       security: {
         heading: '10. ความปลอดภัยของข้อมูล',

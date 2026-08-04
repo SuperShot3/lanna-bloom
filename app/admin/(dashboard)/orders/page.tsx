@@ -9,6 +9,8 @@ import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
 import { DeliveryBoardClient } from './DeliveryBoardClient';
 import { shopTodayYmd } from '@/lib/shopTime';
 import { canAssignDriver, canChangeStatus } from '@/lib/adminRbac';
+import { isOrderChatEnabled } from '@/lib/orderChat/enabled';
+import { getBaseUrl } from '@/lib/siteUrl';
 
 interface PageProps {
   searchParams: Promise<{
@@ -75,6 +77,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       supplierSummariesByOrderId={supplierSummariesByOrderId}
       canEditStatus={canChangeStatus(role)}
       canAssignDriver={canAssignDriver(role)}
+      orderChatEnabled={isOrderChatEnabled()}
+      appBaseUrl={getBaseUrl()}
     />
   );
 }

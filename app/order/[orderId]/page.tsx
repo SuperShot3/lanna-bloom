@@ -13,9 +13,10 @@ import {
 } from '@/lib/orders/lifecycle';
 import { OrderPageClient } from '@/components/order/OrderPageClient';
 import { translations, defaultLocale } from '@/lib/i18n';
-import { OrderNotFoundBlock } from './OrderNotFoundBlock';
 import { OrderDeliveredBlock } from './OrderDeliveredBlock';
 import { CurrencyDisplayProvider } from '@/contexts/CurrencyDisplayContext';
+import { isOrderChatEnabled } from '@/lib/orderChat/enabled';
+import { getChatAvailability } from '@/lib/orderChat/store';
 
 /** Always fetch fresh data; never cache. Status comes from Supabase (admin updates). */
 export const dynamic = 'force-dynamic';
@@ -37,12 +38,17 @@ function isPaymentConfirmed(
   return false;
 }
 
+function parseChatFlag(raw: string | string[] | undefined): boolean {
+  const v = typeof raw === 'string' ? raw.trim() : Array.isArray(raw) ? raw[0]?.trim() : '';
+  return v === '1' || v === 'true';
+}
+
 export default async function OrderDetailsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ orderId: string }>;
-  searchParams?: Promise<{ token?: string | string[] }>;
+  searchParams?: Promise<{ token?: string | string[]; chat?: string | string[] }>;
 }) {
   unstable_noStore();
   const { orderId } = await params;
@@ -60,6 +66,8 @@ export default async function OrderDetailsPage({
 
   const detailsUrl = getOrderDetailsUrl(order.orderId, { token });
   const baseUrl = getBaseUrl();
+  const wantChat = parseChatFlag(sp.chat);
+  const chatFlagOn = isOrderChatEnabled();
 
   const [supabasePayment, statusHistory] = await Promise.all([
     getSupabasePaymentStatusByOrderId(order.orderId),
@@ -115,6 +123,16 @@ export default async function OrderDetailsPage({
     fulfillmentStatus === 'delivered' ||
     normalizeOrderStatus(supabasePayment?.order_status) === 'DELIVERED';
 
+  let showOrderChat = false;
+  if (chatFlagOn) {
+    if (isDelivered) {
+      const availability = await getChatAvailability(order.orderId);
+      showOrderChat = Boolean(availability?.open);
+    } else {
+      showOrderChat = true;
+    }
+  }
+
   if (isDelivered) {
     return (
       <div className="order-page">
@@ -126,6 +144,9 @@ export default async function OrderDetailsPage({
             statusTimestamps={lifecycleStatusTimestamps}
             driverAssignmentStatus={driverAssignmentStatus}
             driverName={driverName}
+            orderChatEnabled={showOrderChat}
+            publicToken={token}
+            initialChatOpen={wantChat && showOrderChat}
           />
         </div>
       </div>
@@ -156,6 +177,9 @@ export default async function OrderDetailsPage({
             driverAssignmentStatus={driverAssignmentStatus}
             driverName={driverName}
             locale={defaultLocale}
+            orderChatEnabled={showOrderChat}
+            publicToken={token}
+            initialChatOpen={wantChat && showOrderChat}
           />
         </CurrencyDisplayProvider>
       </div>

@@ -73,6 +73,7 @@ export function RefundReplacementClient({ lang }: { lang: Locale }) {
             <li>{t.whatToSendList3}</li>
             <li>{t.whatToSendList4}</li>
           </ul>
+          {t.orderChatNote ? <p className="policy-text policy-note">{t.orderChatNote}</p> : null}
         </section>
 
         <section className="policy-section">

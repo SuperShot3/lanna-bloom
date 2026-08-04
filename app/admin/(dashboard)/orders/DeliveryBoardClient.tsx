@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -72,6 +72,7 @@ import {
   type DeliveredPreviewPayload,
 } from '@/app/admin/components/DeliveredEmailPreviewModal';
 import { formatShopDateTime, shopAddDays, shopTodayYmd } from '@/lib/shopTime';
+import { AdminOpenChatButton } from '@/components/orderChat/AdminOpenChatButton';
 
 interface DeliveryBoardClientProps {
   initialOrders: SupabaseOrderRow[];
@@ -96,6 +97,8 @@ interface DeliveryBoardClientProps {
   canAssignDriver: boolean;
   /** Latest supplier_order_requests row per order (for reviewing supplier task replies). */
   supplierSummariesByOrderId: Record<string, DeliveryBoardSupplierRequestSummary>;
+  orderChatEnabled?: boolean;
+  appBaseUrl?: string;
 }
 
 const QUICK_DRIVER_NAMES = ['Pee Khai', 'Pee Vinai'] as const;
@@ -834,6 +837,8 @@ export function DeliveryBoardClient({
   canEditStatus,
   canAssignDriver,
   supplierSummariesByOrderId = {},
+  orderChatEnabled = false,
+  appBaseUrl = '',
 }: DeliveryBoardClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -866,6 +871,31 @@ export function DeliveryBoardClient({
     orderId: string;
     preview: DeliveredPreviewPayload;
   } | null>(null);
+  const [chatUnreadByOrder, setChatUnreadByOrder] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!orderChatEnabled) return;
+    let cancelled = false;
+    async function loadUnread() {
+      try {
+        const res = await fetch('/api/admin/orders/chat-unread', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = (await res.json().catch(() => null)) as {
+          byOrderId?: Record<string, number>;
+        } | null;
+        if (cancelled) return;
+        setChatUnreadByOrder(data?.byOrderId ?? {});
+      } catch {
+        /* ignore */
+      }
+    }
+    loadUnread();
+    const timer = setInterval(loadUnread, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [orderChatEnabled]);
 
   const sortedOrders = useMemo(
     () => sortOrdersForBoard(initialOrders),
@@ -1538,9 +1568,23 @@ export function DeliveryBoardClient({
                                         {deliveryNotesDisplay(o) ? 'Driver notes' : 'Driver notes N/A'}
                                       </span>
                                     </div>
-                                    <Link href={detailHref(o.order_id)} className="admin-btn admin-btn-sm admin-btn-primary">
-                                      View
-                                    </Link>
+                                    <div className="admin-delivery-card-bottom-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                      {orderChatEnabled ? (
+                                        <AdminOpenChatButton
+                                          orderId={o.order_id}
+                                          unreadCount={chatUnreadByOrder[o.order_id] ?? 0}
+                                          chatLink={
+                                            o.public_token
+                                              ? `${appBaseUrl}/order/${encodeURIComponent(o.order_id)}?token=${encodeURIComponent(o.public_token)}&chat=1`
+                                              : null
+                                          }
+                                          className="admin-btn admin-btn-sm admin-btn-outline"
+                                        />
+                                      ) : null}
+                                      <Link href={detailHref(o.order_id)} className="admin-btn admin-btn-sm admin-btn-primary">
+                                        View
+                                      </Link>
+                                    </div>
                                   </div>
                                 </div>
                               </div>

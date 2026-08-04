@@ -20,14 +20,34 @@ import {
   LANNA_BLOOM_COUPON_TIERS,
   isLannaBloomCouponCode,
 } from '@/lib/promo/lannaBloomCoupon';
-import {
-  MOTHERS_DAY_2026_PROMO_END_YMD,
-  MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB,
-  MOTHERS_DAY_2026_PROMO_PERCENT,
-  MOTHERS_DAY_2026_PROMO_START_YMD,
-  isMothersDay2026PromoCode,
-} from '@/lib/promo/mothersDay2026Promo';
+import { findAdvancePeakPromoByCode } from '@/lib/promo/advancePeakPromoCatalog';
 import { SHOP_TIMEZONE, shopTodayYmd } from '@/lib/shopTime';
+
+const ADVANCE_PEAK_ADMIN_COPY: Record<
+  string,
+  { deliveryLabel: string; notes: string }
+> = {
+  MOM10: {
+    deliveryLabel: '11–12 Aug',
+    notes:
+      'Advance-only: order by 10 Aug for delivery 11–12 Aug. No markup on advance peak deliveries. Ordering on 11–12 for those dates uses peak markup instead. Manual code.',
+  },
+  LOVE10: {
+    deliveryLabel: '12–14 Feb',
+    notes:
+      'Advance-only: order by 11 Feb for delivery 12–14 Feb. No markup on advance peak deliveries. Ordering on 12–14 for those dates uses peak markup instead. Manual code. Peak min order ฿2,000 (items + delivery).',
+  },
+  WOMEN10: {
+    deliveryLabel: '7–8 Mar',
+    notes:
+      'Advance-only: order by 6 Mar for delivery 7–8 Mar. No markup on advance peak deliveries. Ordering on 7–8 for those dates uses peak markup instead. Manual code.',
+  },
+  NY10: {
+    deliveryLabel: '30–31 Dec',
+    notes:
+      'Advance-only: order by 29 Dec for delivery 30–31 Dec. No markup on advance peak deliveries. Ordering on 30–31 for those dates uses peak markup instead. Manual code.',
+  },
+};
 
 export type AdminPromoStatus = 'active' | 'inactive' | 'expired' | 'scheduled';
 
@@ -103,20 +123,22 @@ export function listPromoCodesForAdmin(now: Date = new Date()): AdminPromoCodeRo
       continue;
     }
 
-    if (isMothersDay2026PromoCode(code)) {
+    const advancePeak = findAdvancePeakPromoByCode(code);
+    if (advancePeak) {
+      const { config } = advancePeak;
+      const copy = ADVANCE_PEAK_ADMIN_COPY[config.code];
       rows.push({
         code,
         typeLabel: 'Percent (items)',
-        summary: `${MOTHERS_DAY_2026_PROMO_PERCENT}% off items from ฿${MOTHERS_DAY_2026_PROMO_MIN_ITEMS_THB.toLocaleString()} · Thai Mother’s Day (12 Aug)`,
+        summary: `${config.percent}% off items from ฿${config.minItemsThb.toLocaleString()} · advance orders for ${copy?.deliveryLabel ?? 'peak'} delivery`,
         status: statusForYmdWindow(
-          MOTHERS_DAY_2026_PROMO_START_YMD,
-          MOTHERS_DAY_2026_PROMO_END_YMD,
+          config.orderStartYmd,
+          config.orderEndYmd,
           true,
           nowYmd
         ),
-        expiresLabel: `${MOTHERS_DAY_2026_PROMO_START_YMD} → ${MOTHERS_DAY_2026_PROMO_END_YMD}`,
-        notes:
-          'Mother’s Day 2026 promo through 13 Aug. Valid for peak delivery dates; peak markup still applies. Manual code.',
+        expiresLabel: `${config.orderStartYmd} → ${config.orderEndYmd}`,
+        notes: copy?.notes,
       });
       continue;
     }

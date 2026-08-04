@@ -31,6 +31,7 @@ import {
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
 import { phoneInternational } from '@/lib/admin/deliveryContactLinks';
 import { CurrencyAmount } from '@/components/CurrencyDisplay';
+import { CustomerOrderChat } from '@/components/orderChat/CustomerOrderChat';
 /** Align with CartContext + cart checkout (order route is outside CartProvider). */
 const CART_STORAGE_KEY = 'lanna-bloom-cart';
 const CART_FORM_STORAGE_KEY = 'lanna-bloom-cart-form';
@@ -92,6 +93,9 @@ export function OrderPageClient({
   driverName,
   addressHidden = false,
   locale = 'en',
+  orderChatEnabled = false,
+  publicToken,
+  initialChatOpen = false,
 }: {
   order: OrderCustomerView;
   orderId: string;
@@ -108,6 +112,9 @@ export function OrderPageClient({
   driverName?: string | null;
   addressHidden?: boolean;
   locale?: Locale;
+  orderChatEnabled?: boolean;
+  publicToken?: string;
+  initialChatOpen?: boolean;
 }) {
   const router = useRouter();
   const paidRef = useRef(paid);
@@ -334,6 +341,20 @@ export function OrderPageClient({
   }, [paid, orderId, router, order.stripeSessionId, order.paymentIntentId]);
 
   const [copied, setCopied] = useState(false);
+  const [chatOpen, setChatOpen] = useState(Boolean(initialChatOpen && orderChatEnabled && publicToken));
+
+  const chatLabels = {
+    cta: t.chatWithLannaBloom ?? 'Chat with Lanna Bloom',
+    title: t.chatTitle ?? 'Chat with Lanna Bloom',
+    backToOrder: t.chatBackToOrder ?? 'Order details',
+    disclaimer:
+      t.chatDisclaimer ??
+      'This chat is temporary. Message history is permanently deleted 2 hours after delivery.',
+    closed: t.chatClosed ?? 'This chat has closed. Message history was permanently deleted.',
+    placeholder: t.chatPlaceholder ?? 'Type a message…',
+    send: t.chatSend ?? 'Send',
+    sending: t.chatSending ?? 'Sending…',
+  };
 
   const { date: deliveryDate, time: preferredTime } = parsePreferredTimeSlot(
     order.delivery?.preferredTimeSlot ?? ''
@@ -418,6 +439,18 @@ export function OrderPageClient({
           <span className="order-redesign-badge badge-status">{fulfillmentLabel}</span>
         </div>
       </div>
+
+      {orderChatEnabled && publicToken ? (
+        <div className="order-chat-sticky-wrap">
+          <button
+            type="button"
+            className="order-chat-sticky-cta"
+            onClick={() => setChatOpen(true)}
+          >
+            <span aria-hidden>💬</span> {chatLabels.cta}
+          </button>
+        </div>
+      ) : null}
 
       <section className="order-redesign-panel">
           <div className="order-redesign-meta">
@@ -655,7 +688,26 @@ export function OrderPageClient({
               ))}
             </div>
           </div>
+          {orderChatEnabled && publicToken ? (
+            <button
+              type="button"
+              className="order-chat-inline-cta"
+              onClick={() => setChatOpen(true)}
+            >
+              <span aria-hidden>💬</span> {chatLabels.cta}
+            </button>
+          ) : null}
         </section>
+
+      {orderChatEnabled && publicToken ? (
+        <CustomerOrderChat
+          orderId={orderId}
+          publicToken={publicToken}
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          labels={chatLabels}
+        />
+      ) : null}
 
       <div className="order-redesign-footer">
         <button
@@ -675,6 +727,40 @@ export function OrderPageClient({
           max-width: 680px;
           margin: 0 auto;
           padding: 1rem 0 2rem;
+        }
+        .order-chat-sticky-wrap {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          margin: 0 0 12px;
+        }
+        .order-chat-sticky-cta,
+        .order-chat-inline-cta {
+          width: 100%;
+          min-height: 48px;
+          border: none;
+          border-radius: 12px;
+          background: #2f5d45;
+          color: #fff;
+          font: inherit;
+          font-size: 1rem;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(47, 93, 69, 0.25);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .order-chat-sticky-cta:hover,
+        .order-chat-inline-cta:hover {
+          background: #264d39;
+        }
+        .order-chat-inline-cta {
+          margin-top: 10px;
+          min-height: 44px;
+          font-size: 0.95rem;
+          background: #3a6b52;
         }
         .order-redesign-header {
           display: flex;

@@ -7,6 +7,7 @@ import {
   type DriverAssignmentStatus,
   type OrderStatusTimestamps,
 } from '@/components/order/OrderLifecycleStatus';
+import { CustomerOrderChat } from '@/components/orderChat/CustomerOrderChat';
 import type { Locale } from '@/lib/i18n';
 
 type OrderPageT = {
@@ -17,6 +18,14 @@ type OrderPageT = {
   goToHome: string;
   copyOrderId: string;
   copied: string;
+  chatWithLannaBloom?: string;
+  chatTitle?: string;
+  chatBackToOrder?: string;
+  chatDisclaimer?: string;
+  chatClosed?: string;
+  chatPlaceholder?: string;
+  chatSend?: string;
+  chatSending?: string;
 };
 
 export function OrderDeliveredBlock({
@@ -26,6 +35,9 @@ export function OrderDeliveredBlock({
   statusTimestamps,
   driverAssignmentStatus = 'not_assigned',
   driverName,
+  orderChatEnabled = false,
+  publicToken,
+  initialChatOpen = false,
 }: {
   orderId: string;
   t: OrderPageT;
@@ -33,8 +45,14 @@ export function OrderDeliveredBlock({
   statusTimestamps: OrderStatusTimestamps;
   driverAssignmentStatus?: DriverAssignmentStatus;
   driverName?: string | null;
+  orderChatEnabled?: boolean;
+  publicToken?: string;
+  initialChatOpen?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [chatOpen, setChatOpen] = useState(
+    Boolean(initialChatOpen && orderChatEnabled && publicToken)
+  );
 
   const copyId = () => {
     try {
@@ -44,6 +62,19 @@ export function OrderDeliveredBlock({
     } catch {
       // ignore
     }
+  };
+
+  const chatLabels = {
+    cta: t.chatWithLannaBloom ?? 'Chat with Lanna Bloom',
+    title: t.chatTitle ?? 'Chat with Lanna Bloom',
+    backToOrder: t.chatBackToOrder ?? 'Order details',
+    disclaimer:
+      t.chatDisclaimer ??
+      'This chat is temporary. Message history is permanently deleted 2 hours after delivery.',
+    closed: t.chatClosed ?? 'This chat has closed. Message history was permanently deleted.',
+    placeholder: t.chatPlaceholder ?? 'Type a message…',
+    send: t.chatSend ?? 'Send',
+    sending: t.chatSending ?? 'Sending…',
   };
 
   return (
@@ -57,6 +88,15 @@ export function OrderDeliveredBlock({
         driverName={driverName}
         locale={locale}
       />
+      {orderChatEnabled && publicToken ? (
+        <button
+          type="button"
+          className="order-delivered-chat-cta"
+          onClick={() => setChatOpen(true)}
+        >
+          <span aria-hidden>💬</span> {chatLabels.cta}
+        </button>
+      ) : null}
       <div className="order-not-found-id-block">
         <span className="order-not-found-id-label">{t.orderIdLabel}</span>
         <code className="order-not-found-id">{orderId}</code>
@@ -73,7 +113,37 @@ export function OrderDeliveredBlock({
       <Link href={`/${locale}`} className="not-found-link">
         {t.goToHome}
       </Link>
+      {orderChatEnabled && publicToken ? (
+        <CustomerOrderChat
+          orderId={orderId}
+          publicToken={publicToken}
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          labels={chatLabels}
+        />
+      ) : null}
       <style jsx>{`
+        .order-delivered-chat-cta {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          max-width: 420px;
+          margin: 0 auto 16px;
+          min-height: 48px;
+          border: none;
+          border-radius: 12px;
+          background: #2f5d45;
+          color: #fff;
+          font: inherit;
+          font-size: 1rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .order-delivered-chat-cta:hover {
+          background: #264d39;
+        }
         .order-not-found-id-block {
           margin: 16px 0;
           padding: 14px 16px;

@@ -41,9 +41,9 @@ import {
   isLannaBloomCouponCode,
 } from '@/lib/promo/lannaBloomCoupon';
 import {
-  evaluateMothersDay2026Promo,
-  isMothersDay2026PromoCode,
-} from '@/lib/promo/mothersDay2026Promo';
+  evaluateAdvancePeakCelebrationPromo,
+  isAdvancePeakCelebrationPromoCode,
+} from '@/lib/promo/advancePeakPromoCatalog';
 import { hasCatalogDiscount } from '@/lib/catalogDiscount';
 import {
   isMay2026FreeDeliveryActive,
@@ -1146,9 +1146,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       const elig = evaluateLannaBloomCoupon(itemsTotalVal, { hasCatalogProductDiscount });
       return elig.ok ? null : elig.reason;
     }
-    if (isMothersDay2026PromoCode(storedReferralCode)) {
-      const elig = evaluateMothersDay2026Promo(itemsTotalVal);
-      return elig.ok ? null : elig.reason;
+    if (isAdvancePeakCelebrationPromoCode(storedReferralCode)) {
+      const elig = evaluateAdvancePeakCelebrationPromo(storedReferralCode, itemsTotalVal, {
+        deliveryDateYmd: delivery.date || undefined,
+      });
+      return elig?.ok ? null : (elig?.reason ?? 'not_eligible');
     }
     return 'not_eligible' as const;
   })();
@@ -1195,7 +1197,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const peakMinOrderShortfall =
     delivery.date && itemsTotalVal > 0
-      ? peakCelebrationMinOrderShortfall(itemsTotalVal, delivery.date)
+      ? peakCelebrationMinOrderShortfall(itemsTotalVal, deliveryFeeVal, delivery.date)
       : 0;
   const peakMinOrderBlocked = peakMinOrderShortfall > 0;
 

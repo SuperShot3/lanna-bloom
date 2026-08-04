@@ -3,6 +3,7 @@ import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { applyPeakCelebrationMarkupThb } from '@/lib/promo/peakCelebrationPricing';
+import { shopTodayYmd } from '@/lib/shopTime';
 
 export function isNonBouquetCartLine(item: CartItem): boolean {
   return item.itemType === 'product' || item.itemType === 'plushyToy' || item.itemType === 'balloon';
@@ -22,7 +23,8 @@ export type CartPriceBreakdown = {
 export function cartPriceBreakdown(
   items: CartItem[],
   deliveryDestination: OrderDeliveryDestinationId,
-  deliveryDateYmd?: string
+  deliveryDateYmd?: string,
+  orderYmd: string = shopTodayYmd()
 ): CartPriceBreakdown {
   const peakDate = deliveryDateYmd?.trim() ?? '';
   let bouquetSubtotal = 0;
@@ -32,7 +34,7 @@ export function cartPriceBreakdown(
   for (const item of items) {
     const qty = item.quantity ?? 1;
     const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-    const basePrice = applyPeakCelebrationMarkupThb(item.size.price, peakDate);
+    const basePrice = applyPeakCelebrationMarkupThb(item.size.price, peakDate, orderYmd);
     const unitMarked = applyExpansionItemMarkupThb(basePrice + addOnsUnit, deliveryDestination);
 
     if (isNonBouquetCartLine(item)) {

@@ -286,11 +286,11 @@ export const articles: ArticleMeta[] = [
     slug: 'delivery-policy',
     title: 'Delivery Policy',
     excerpt:
-      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance for orders placed before 20:00 Chiang Mai time, zones and fees at checkout, peak celebration pricing on major holidays, chat confirmation after you order online, and what we need for a smooth delivery. If same-day delivery is not possible, we will contact you with the next available option. Custom requests or extra questions? Message us on LINE or WhatsApp.',
+      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance for orders placed before 20:00 Chiang Mai time, zones and fees at checkout, peak celebration pricing on major holidays, contact via LINE/WhatsApp or temporary order-page chat, and what we need for a smooth delivery. If same-day delivery is not possible, we will contact you with the next available option. Custom requests or extra questions? Message us on LINE or WhatsApp.',
     titleTh: 'นโยบายการจัดส่ง',
     excerptTh:
-      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวันสำหรับออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาช่วงเทศกาลสำคัญ การยืนยันทางแชทหลังสั่งบนเว็บ และข้อมูลที่อยู่ที่ควรเตรียม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อแจ้งทางเลือกที่เร็วที่สุด ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
-    publishedAt: '2026-02-20T00:00:00.000Z',
+      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวันสำหรับออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาช่วงเทศกาลสำคัญ การติดต่อผ่าน LINE/WhatsApp หรือแชทชั่วคราวในหน้าออเดอร์ และข้อมูลที่อยู่ที่ควรเตรียม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อแจ้งทางเลือกที่เร็วที่สุด ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
+    publishedAt: '2026-08-04T00:00:00.000Z',
     featured: false,
     cover: {
       type: 'gradient',
@@ -300,6 +300,7 @@ export const articles: ArticleMeta[] = [
     ctaLinks: [
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
       { label: 'Refund / Replacement / Cancellation Policy', labelTh: 'นโยบายคืนเงิน / เปลี่ยนสินค้า / ยกเลิก', href: '/refund-replacement' },
+      { label: 'Terms of Service', labelTh: 'ข้อกำหนดการให้บริการ', href: '/terms' },
     ],
   },
   {

@@ -16,10 +16,11 @@ import {
   type LannaBloomIneligibleReason,
 } from '@/lib/promo/lannaBloomCoupon';
 import {
-  evaluateMothersDay2026Promo,
-  isMothersDay2026PromoCode,
-  type MothersDay2026IneligibleReason,
-} from '@/lib/promo/mothersDay2026Promo';
+  evaluateAdvancePeakCelebrationPromo,
+  findAdvancePeakPromoByCode,
+  isAdvancePeakCelebrationPromoCode,
+  type AdvancePeakPromoIneligibleReason,
+} from '@/lib/promo/advancePeakPromoCatalog';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
@@ -30,7 +31,7 @@ import {
 
 export type ReferralIneligibleReason =
   | LannaBloomIneligibleReason
-  | MothersDay2026IneligibleReason
+  | AdvancePeakPromoIneligibleReason
   | 'not_eligible';
 
 export interface ReferralCodeBoxProps {
@@ -39,7 +40,7 @@ export interface ReferralCodeBoxProps {
   itemSubtotal: number;
   deliveryFee: number;
   deliveryDestination: OrderDeliveryDestinationId;
-  /** Selected delivery date YMD — required for MOM10 eligibility. */
+  /** Selected delivery date YMD — required for advance-peak promo eligibility. */
   deliveryDateYmd?: string;
   appliedCode: string | null;
   onApply: () => void;
@@ -81,20 +82,32 @@ function lannaBloomReasonMessage(
   }
 }
 
-function mom10ReasonMessage(
+function advancePeakReasonMessage(
   t: Record<string, string>,
-  reason: MothersDay2026IneligibleReason
+  reason: AdvancePeakPromoIneligibleReason,
+  messagePrefix: 'mom10' | 'love10' | 'women10' | 'ny10'
 ): string {
+  const key = (suffix: string) => t[`${messagePrefix}${suffix}`];
   switch (reason) {
     case 'below_minimum':
       return (
-        t.mom10BelowMinimum ??
-        'Add items to reach ฿1,500 (before delivery) to use MOM10.'
+        key('BelowMinimum') ??
+        'Add items to reach ฿1,500 (before delivery) to use this code.'
       );
     case 'expired':
-      return t.mom10Expired ?? 'The Mother’s Day promo has ended.';
+      return (
+        key('Expired') ??
+        'This code is for advance orders only. Peak-day orders use regular peak pricing.'
+      );
     case 'inactive':
-      return t.mom10Inactive ?? 'The Mother’s Day promo is not active yet.';
+      return key('Inactive') ?? 'This promo is not active yet.';
+    case 'wrong_delivery_date':
+      return (
+        key('WrongDeliveryDate') ??
+        'This code applies only for delivery in the celebration window. Choose an eligible delivery date.'
+      );
+    case 'missing_delivery_date':
+      return key('MissingDeliveryDate') ?? 'Select a delivery date to use this code.';
   }
 }
 
@@ -103,10 +116,13 @@ function ineligibleMessage(
   reason: ReferralIneligibleReason,
   code: string | null
 ): string {
-  if (isMothersDay2026PromoCode(code) && reason !== 'not_eligible' && reason !== 'catalog_discount') {
-    if (reason === 'below_minimum' || reason === 'expired' || reason === 'inactive') {
-      return mom10ReasonMessage(t, reason);
-    }
+  const advance = findAdvancePeakPromoByCode(code);
+  if (advance && reason !== 'not_eligible' && reason !== 'catalog_discount') {
+    return advancePeakReasonMessage(
+      t,
+      reason as AdvancePeakPromoIneligibleReason,
+      advance.messagePrefix
+    );
   }
   return lannaBloomReasonMessage(t, reason as LannaBloomIneligibleReason | 'not_eligible');
 }
@@ -163,15 +179,17 @@ export function ReferralCodeBox({
       }
     }
 
-    if (isMothersDay2026PromoCode(result.code)) {
-      // Always store; cart shows ineligible reason until min is met / window is open.
+    if (isAdvancePeakCelebrationPromoCode(result.code)) {
+      // Always store; cart shows ineligible reason until delivery date / min / window ok.
       storeReferral(result.code);
       setInputValue('');
       setError(null);
-      const eligibility = evaluateMothersDay2026Promo(itemSubtotal);
+      const eligibility = evaluateAdvancePeakCelebrationPromo(result.code, itemSubtotal, {
+        deliveryDateYmd,
+      });
       if (
         mayCampaignEligible &&
-        eligibility.ok &&
+        eligibility?.ok &&
         getDiscountAllocationForCode(result.code) !== 'delivery'
       ) {
         setCombineNotice(

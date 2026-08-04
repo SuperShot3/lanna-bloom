@@ -52,9 +52,27 @@ const baseTranslations = {
     },
     mothersDay2026Promo: {
       bannerMessage:
-        'Thai Mother’s Day is 12 August — 10% off flowers ฿1,500+ with code MOM10',
-      bannerMessageShort: 'Thai Mother’s Day 12 Aug · 10% off ฿1,500+ · MOM10',
-      bannerAlt: 'Thai Mother’s Day 12 August — 10% off with MOM10',
+        'Order early for Mother’s Day (11–12 Aug) — 10% off flowers ฿1,500+ with code MOM10',
+      bannerMessageShort: 'Mother’s Day 11–12 Aug · order early · 10% off · MOM10',
+      bannerAlt: 'Order early for Thai Mother’s Day — 10% off with MOM10',
+    },
+    valentines2027Promo: {
+      bannerMessage:
+        'Order early for Valentine’s (12–14 Feb) — 10% off flowers ฿1,500+ with code LOVE10',
+      bannerMessageShort: 'Valentine’s 12–14 Feb · order early · 10% off · LOVE10',
+      bannerAlt: 'Order early for Valentine’s Day — 10% off with LOVE10',
+    },
+    womensDay2027Promo: {
+      bannerMessage:
+        'Order early for Women’s Day (7–8 Mar) — 10% off flowers ฿1,500+ with code WOMEN10',
+      bannerMessageShort: 'Women’s Day 7–8 Mar · order early · 10% off · WOMEN10',
+      bannerAlt: 'Order early for International Women’s Day — 10% off with WOMEN10',
+    },
+    newYear2026Promo: {
+      bannerMessage:
+        'Order early for New Year (30–31 Dec) — 10% off flowers ฿1,500+ with code NY10',
+      bannerMessageShort: 'New Year 30–31 Dec · order early · 10% off · NY10',
+      bannerAlt: 'Order early for New Year — 10% off with NY10',
     },
     peakCelebration: {
       events: {
@@ -64,19 +82,19 @@ const baseTranslations = {
         'new-year': 'New Year',
       },
       noticeBanner:
-        '{event} peak pricing starts {start} — order early to secure your delivery date. See delivery policy.',
-      noticeBannerShort: '{event} peak pricing from {start} — order early',
+        '{event} peak pricing on {start}–{end} if you order those days — order early for regular prices. See delivery policy.',
+      noticeBannerShort: '{event} peak pricing {start}–{end} — order early',
       noticeBannerAlt: '{event} peak pricing advance notice',
       checkoutAdvanceHint:
-        'Peak celebration pricing applies for deliveries {start}–{end}. Select your delivery date to see updated prices.',
+        'Peak celebration pricing applies when you order during {start}–{end} for delivery in that window. Order early for regular prices.',
       checkoutActiveNotice:
-        '{event} peak pricing applies (+{markup}% on bouquet prices). Minimum order ฿{min}.',
+        '{event} peak pricing applies (+{markup}% on bouquet prices) when ordering during the peak window. Minimum order ฿{min} including delivery.',
       checkoutMinOrderWarning:
-        'Minimum order for {event} deliveries is ฿{min}. Add ฿{remaining} more to continue.',
+        'Minimum order for {event} deliveries is ฿{min} (items + delivery). Add ฿{remaining} more to continue.',
       minOrderError:
-        'Minimum order for {event} deliveries is ฿{min}. Add ฿{remaining} more to your cart.',
+        'Minimum order for {event} deliveries is ฿{min} (items + delivery). Add ฿{remaining} more to your cart.',
       pdpNotice:
-        'Peak celebration pricing applies on selected delivery dates around {event} ({start}–{end}).',
+        'Peak celebration pricing applies if you order during {event} ({start}–{end}) for delivery in that window. Order early for regular prices.',
       policyLinkLabel: 'Delivery policy',
     },
     cookieBanner: {
@@ -642,8 +660,40 @@ const baseTranslations = {
       lannaBloomInactive: 'This coupon is not active.',
       mom10BelowMinimum:
         'Add items to reach ฿1,500 (before delivery) to use MOM10.',
-      mom10Expired: 'The Mother’s Day promo has ended.',
+      mom10Expired:
+        'MOM10 is for advance orders only (before 11 August). Peak-day orders use regular peak pricing.',
       mom10Inactive: 'The Mother’s Day promo is not active yet.',
+      mom10WrongDeliveryDate:
+        'MOM10 applies only for delivery on 11–12 August. Choose a Mother’s Day delivery date.',
+      mom10MissingDeliveryDate:
+        'Select a delivery date (11–12 August) to use MOM10.',
+      love10BelowMinimum:
+        'Add items to reach ฿1,500 (before delivery) to use LOVE10.',
+      love10Expired:
+        'LOVE10 is for advance orders only (before 12 February). Peak-day orders use regular peak pricing.',
+      love10Inactive: 'The Valentine’s promo is not active yet.',
+      love10WrongDeliveryDate:
+        'LOVE10 applies only for delivery on 12–14 February. Choose a Valentine’s delivery date.',
+      love10MissingDeliveryDate:
+        'Select a delivery date (12–14 February) to use LOVE10.',
+      women10BelowMinimum:
+        'Add items to reach ฿1,500 (before delivery) to use WOMEN10.',
+      women10Expired:
+        'WOMEN10 is for advance orders only (before 7 March). Peak-day orders use regular peak pricing.',
+      women10Inactive: 'The Women’s Day promo is not active yet.',
+      women10WrongDeliveryDate:
+        'WOMEN10 applies only for delivery on 7–8 March. Choose a Women’s Day delivery date.',
+      women10MissingDeliveryDate:
+        'Select a delivery date (7–8 March) to use WOMEN10.',
+      ny10BelowMinimum:
+        'Add items to reach ฿1,500 (before delivery) to use NY10.',
+      ny10Expired:
+        'NY10 is for advance orders only (before 30 December). Peak-day orders use regular peak pricing.',
+      ny10Inactive: 'The New Year promo is not active yet.',
+      ny10WrongDeliveryDate:
+        'NY10 applies only for delivery on 30–31 December. Choose a New Year delivery date.',
+      ny10MissingDeliveryDate:
+        'Select a delivery date (30–31 December) to use NY10.',
       stickyDeliveryFree: 'Free',
       stickyDeliverySelectArea: 'Select area',
       stickyPolicyApplies: 'Delivery & refund policies apply to all orders.',
@@ -957,6 +1007,15 @@ const baseTranslations = {
       deliveryWindowNote: 'Delivery window is approximate (±30 min).',
       noNeedToContactUs: 'No need to contact us — we will prepare and deliver your order.',
       contactLannaBloom: 'Contact Lanna Bloom',
+      chatWithLannaBloom: 'Chat with Lanna Bloom',
+      chatTitle: 'Chat with Lanna Bloom',
+      chatBackToOrder: 'Order details',
+      chatDisclaimer:
+        'This chat is temporary. Message history is permanently deleted 2 hours after delivery.',
+      chatClosed: 'This chat has closed. Message history was permanently deleted.',
+      chatPlaceholder: 'Type a message…',
+      chatSend: 'Send',
+      chatSending: 'Sending…',
       copyAll: 'Copy all',
       makePayment: 'Make Payment',
       tabNew: 'New',
@@ -1191,10 +1250,11 @@ const baseTranslations = {
     },
     refundPolicy: {
       title: 'Refund, Replacement & Cancellation Policy',
-      lastUpdated: 'Last updated: April 13, 2026',
+      lastUpdated: 'Last updated: August 4, 2026',
       intro: 'Flowers are seasonal and perishable. This policy explains issue reporting, order cancellation, and refund handling across all delivery zones. If something isn\'t right, please tell us quickly and we will review the case as soon as possible.',
       timeLimitTitle: '1) Time limit to report an issue',
-      timeLimitText: 'To be eligible for a replacement or refund, you must contact us within 2 hours of delivery.',
+      timeLimitText:
+        'To be eligible for a replacement or refund, you must contact us within 2 hours of delivery. You can reach us on LINE or WhatsApp, or — when available — through the temporary chat on your order tracking page. That order-page chat stays open for the same 2-hour window after delivery, then its message history is permanently deleted.',
       eligibleTitle: '2) Eligible for replacement or refund',
       eligibleIntro: 'You may be eligible if the bouquet arrives:',
       eligibleList1: 'Damaged (e.g., crushed, broken stems, severe packaging damage affecting the bouquet)',
@@ -1206,13 +1266,17 @@ const baseTranslations = {
       keepBouquetNote: 'Please keep the bouquet until we confirm the outcome. If it is discarded before review, we may not be able to approve a replacement/refund.',
       whatToSendTitle: '3) What to send us (required)',
       whatToSendIntro: 'Please contact us via',
-      whatToSendIntroSuffix: 'and send:',
+      whatToSendIntroSuffix:
+        ', or use the temporary chat on your order page when it is available, and send:',
       contactOnLine: 'Contact on LINE',
       contactOnWhatsApp: 'Contact on WhatsApp',
+      contactOnOrderChat: 'temporary order-page chat',
       whatToSendList1: 'Order number or order link',
       whatToSendList2: 'Delivery date/time',
       whatToSendList3: 'Clear photos of the bouquet (and packaging if relevant)',
       whatToSendList4: 'A short note describing the issue',
+      orderChatNote:
+        'Note: the temporary order-page chat does not support photo attachments. If you need to send photos, please use LINE or WhatsApp and include your order number or order link.',
       notEligibleTitle: '4) Not eligible (important)',
       notEligibleIntro: 'Refunds/replacements may not apply if:',
       notEligible1: 'You contact us after 2 hours from delivery',
@@ -1245,7 +1309,8 @@ const baseTranslations = {
       stripeSupport: 'Stripe Support',
       howToContactTitle: '9) How to contact us (fastest)',
       howToContactIntro: 'Please message us via',
-      howToContactOutro: 'and include your order number/link and any relevant photos.',
+      howToContactOutro:
+        ', or open the temporary chat on your order tracking page when it is shown. Include your order number/link and any relevant photos. Order-page chat history is permanently deleted 2 hours after delivery.',
     },
     contact: {
       title: 'Contacts',
@@ -1600,9 +1665,27 @@ const baseTranslations = {
     },
     mothersDay2026Promo: {
       bannerMessage:
-        'วันแม่แห่งชาติ 12 สิงหาคม — ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด MOM10',
-      bannerMessageShort: 'วันแม่ 12 ส.ค. · ลด 10% ครบ ฿1,500 · MOM10',
-      bannerAlt: 'วันแม่แห่งชาติ 12 สิงหาคม — ลด 10% ด้วยโค้ด MOM10',
+        'สั่งล่วงหน้าวันแม่ (11–12 ส.ค.) — ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด MOM10',
+      bannerMessageShort: 'วันแม่ 11–12 ส.ค. · สั่งล่วงหน้า · ลด 10% · MOM10',
+      bannerAlt: 'สั่งล่วงหน้าวันแม่แห่งชาติ — ลด 10% ด้วยโค้ด MOM10',
+    },
+    valentines2027Promo: {
+      bannerMessage:
+        'สั่งล่วงหน้าวันวาเลนไทน์ (12–14 ก.พ.) — ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด LOVE10',
+      bannerMessageShort: 'วาเลนไทน์ 12–14 ก.พ. · สั่งล่วงหน้า · ลด 10% · LOVE10',
+      bannerAlt: 'สั่งล่วงหน้าวันวาเลนไทน์ — ลด 10% ด้วยโค้ด LOVE10',
+    },
+    womensDay2027Promo: {
+      bannerMessage:
+        'สั่งล่วงหน้าวันสตรีสากล (7–8 มี.ค.) — ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด WOMEN10',
+      bannerMessageShort: 'วันสตรี 7–8 มี.ค. · สั่งล่วงหน้า · ลด 10% · WOMEN10',
+      bannerAlt: 'สั่งล่วงหน้าวันสตรีสากล — ลด 10% ด้วยโค้ด WOMEN10',
+    },
+    newYear2026Promo: {
+      bannerMessage:
+        'สั่งล่วงหน้าปีใหม่ (30–31 ธ.ค.) — ลด 10% เมื่อซื้อดอกไม้ครบ ฿1,500 ใช้โค้ด NY10',
+      bannerMessageShort: 'ปีใหม่ 30–31 ธ.ค. · สั่งล่วงหน้า · ลด 10% · NY10',
+      bannerAlt: 'สั่งล่วงหน้าปีใหม่ — ลด 10% ด้วยโค้ด NY10',
     },
     peakCelebration: {
       events: {
@@ -1612,19 +1695,19 @@ const baseTranslations = {
         'new-year': 'ปีใหม่',
       },
       noticeBanner:
-        'ราคาช่วง {event} เริ่ม {start} — สั่งล่วงหน้าเพื่อจองวันจัดส่ง ดูนโยบายจัดส่ง',
-      noticeBannerShort: 'ราคาช่วง {event} ตั้งแต่ {start} — สั่งล่วงหน้า',
+        'ราคาช่วง {event} วันที่ {start}–{end} หากสั่งในวันนั้น — สั่งล่วงหน้าได้ราคาปกติ ดูนโยบายจัดส่ง',
+      noticeBannerShort: 'ราคาช่วง {event} {start}–{end} — สั่งล่วงหน้า',
       noticeBannerAlt: 'แจ้งเตือนราคาช่วง {event}',
       checkoutAdvanceHint:
-        'มีราคาช่วงเทศกาลสำหรับการจัดส่ง {start}–{end} เลือกวันที่จัดส่งเพื่อดูราคาที่อัปเดต',
+        'ราคาช่วงเทศกาลใช้เมื่อสั่งในช่วง {start}–{end} สำหรับจัดส่งในช่วงนั้น สั่งล่วงหน้าได้ราคาปกติ',
       checkoutActiveNotice:
-        'ใช้ราคาช่วง {event} (+{markup}% จากราคาช่อ) ยอดสั่งขั้นต่ำ ฿{min}',
+        'ใช้ราคาช่วง {event} (+{markup}% จากราคาช่อ) เมื่อสั่งในช่วงพีก ยอดสั่งขั้นต่ำ ฿{min} รวมค่าส่ง',
       checkoutMinOrderWarning:
-        'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} เพิ่มอีก ฿{remaining} เพื่อดำเนินการต่อ',
+        'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} (สินค้า+ค่าส่ง) เพิ่มอีก ฿{remaining} เพื่อดำเนินการต่อ',
       minOrderError:
-        'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} เพิ่มอีก ฿{remaining} ในตะกร้า',
+        'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} (สินค้า+ค่าส่ง) เพิ่มอีก ฿{remaining} ในตะกร้า',
       pdpNotice:
-        'มีราคาช่วงเทศกาลสำหรับวันจัดส่งช่วง {event} ({start}–{end})',
+        'มีราคาช่วงเทศกาลหากสั่งในช่วง {event} ({start}–{end}) สำหรับจัดส่งในวันนั้น สั่งล่วงหน้าได้ราคาปกติ',
       policyLinkLabel: 'นโยบายจัดส่ง',
     },
     cookieBanner: {
@@ -2185,8 +2268,33 @@ const baseTranslations = {
       lannaBloomExpired: 'คูปองนี้หมดอายุแล้ว',
       lannaBloomInactive: 'คูปองนี้ยังไม่เปิดใช้งาน',
       mom10BelowMinimum: 'เพิ่มสินค้าให้ครบ ฿1,500 (ก่อนค่าส่ง) เพื่อใช้โค้ด MOM10',
-      mom10Expired: 'โปรวันแม่สิ้นสุดแล้ว',
+      mom10Expired:
+        'MOM10 สำหรับสั่งล่วงหน้าเท่านั้น (ก่อน 11 ส.ค.) หากสั่งในวันพีกจะใช้ราคาช่วงเทศกาล',
       mom10Inactive: 'โปรวันแม่ยังไม่เปิดใช้งาน',
+      mom10WrongDeliveryDate:
+        'MOM10 ใช้ได้เฉพาะจัดส่งวันที่ 11–12 ส.ค. เลือกวันจัดส่งวันแม่',
+      mom10MissingDeliveryDate: 'เลือกวันจัดส่ง (11–12 ส.ค.) เพื่อใช้โค้ด MOM10',
+      love10BelowMinimum: 'เพิ่มสินค้าให้ครบ ฿1,500 (ก่อนค่าส่ง) เพื่อใช้โค้ด LOVE10',
+      love10Expired:
+        'LOVE10 สำหรับสั่งล่วงหน้าเท่านั้น (ก่อน 12 ก.พ.) หากสั่งในวันพีกจะใช้ราคาช่วงเทศกาล',
+      love10Inactive: 'โปรวันวาเลนไทน์ยังไม่เปิดใช้งาน',
+      love10WrongDeliveryDate:
+        'LOVE10 ใช้ได้เฉพาะจัดส่งวันที่ 12–14 ก.พ. เลือกวันจัดส่งวันวาเลนไทน์',
+      love10MissingDeliveryDate: 'เลือกวันจัดส่ง (12–14 ก.พ.) เพื่อใช้โค้ด LOVE10',
+      women10BelowMinimum: 'เพิ่มสินค้าให้ครบ ฿1,500 (ก่อนค่าส่ง) เพื่อใช้โค้ด WOMEN10',
+      women10Expired:
+        'WOMEN10 สำหรับสั่งล่วงหน้าเท่านั้น (ก่อน 7 มี.ค.) หากสั่งในวันพีกจะใช้ราคาช่วงเทศกาล',
+      women10Inactive: 'โปรวันสตรีสากลยังไม่เปิดใช้งาน',
+      women10WrongDeliveryDate:
+        'WOMEN10 ใช้ได้เฉพาะจัดส่งวันที่ 7–8 มี.ค. เลือกวันจัดส่งวันสตรีสากล',
+      women10MissingDeliveryDate: 'เลือกวันจัดส่ง (7–8 มี.ค.) เพื่อใช้โค้ด WOMEN10',
+      ny10BelowMinimum: 'เพิ่มสินค้าให้ครบ ฿1,500 (ก่อนค่าส่ง) เพื่อใช้โค้ด NY10',
+      ny10Expired:
+        'NY10 สำหรับสั่งล่วงหน้าเท่านั้น (ก่อน 30 ธ.ค.) หากสั่งในวันพีกจะใช้ราคาช่วงเทศกาล',
+      ny10Inactive: 'โปรปีใหม่ยังไม่เปิดใช้งาน',
+      ny10WrongDeliveryDate:
+        'NY10 ใช้ได้เฉพาะจัดส่งวันที่ 30–31 ธ.ค. เลือกวันจัดส่งปีใหม่',
+      ny10MissingDeliveryDate: 'เลือกวันจัดส่ง (30–31 ธ.ค.) เพื่อใช้โค้ด NY10',
       stickyDeliveryFree: 'ฟรี',
       stickyDeliverySelectArea: 'เลือกพื้นที่',
       stickyPolicyApplies: 'ทุกออเดอร์เป็นไปตามนโยบายการจัดส่งและการคืนเงิน',
@@ -2494,6 +2602,15 @@ const baseTranslations = {
       deliveryWindowNote: 'ช่วงเวลาจัดส่งเป็นค่าประมาณ (±30 นาที)',
       noNeedToContactUs: 'ไม่จำเป็นต้องติดต่อเรา — เราจะจัดเตรียมและจัดส่งให้คุณ',
       contactLannaBloom: 'ติดต่อ Lanna Bloom',
+      chatWithLannaBloom: 'แชทกับ Lanna Bloom',
+      chatTitle: 'แชทกับ Lanna Bloom',
+      chatBackToOrder: 'รายละเอียดออเดอร์',
+      chatDisclaimer:
+        'แชทนี้ชั่วคราว ประวัติข้อความจะถูกลบถาวรภายใน 2 ชั่วโมงหลังจัดส่ง',
+      chatClosed: 'แชทนี้ปิดแล้ว ประวัติข้อความถูกลบถาวรแล้ว',
+      chatPlaceholder: 'พิมพ์ข้อความ…',
+      chatSend: 'ส่ง',
+      chatSending: 'กำลังส่ง…',
       copyAll: 'คัดลอกทั้งหมด',
       makePayment: 'ชำระเงิน',
       tabNew: 'ใหม่',
@@ -2727,10 +2844,11 @@ const baseTranslations = {
     },
     refundPolicy: {
       title: 'นโยบายการคืนเงิน เปลี่ยนสินค้า และยกเลิก',
-      lastUpdated: 'อัปเดตล่าสุด: 13 เมษายน 2026',
+      lastUpdated: 'อัปเดตล่าสุด: 4 สิงหาคม 2026',
       intro: 'ดอกไม้เป็นสินค้าตามฤดูกาลและเน่าเสียง่าย นโยบายนี้อธิบายการแจ้งปัญหา การยกเลิกออเดอร์ และการคืนเงินสำหรับทุกโซนจัดส่งที่เปิดให้บริการ หากมีปัญหา กรุณาแจ้งเราโดยเร็ว แล้วเราจะตรวจสอบและตอบกลับให้เร็วที่สุด',
       timeLimitTitle: '1) ระยะเวลาในการแจ้งปัญหา',
-      timeLimitText: 'เพื่อให้เข้าเงื่อนไขการเปลี่ยนสินค้า/คืนเงิน กรุณาติดต่อเราภายใน 2 ชั่วโมงหลังการจัดส่งสำเร็จ',
+      timeLimitText:
+        'เพื่อให้เข้าเงื่อนไขการเปลี่ยนสินค้า/คืนเงิน กรุณาติดต่อเราภายใน 2 ชั่วโมงหลังการจัดส่งสำเร็จ คุณติดต่อได้ทาง LINE หรือ WhatsApp หรือ — เมื่อมีให้ใช้ — ผ่านแชทชั่วคราวในหน้าติดตามออเดอร์ แชทในหน้าออเดอร์จะเปิดอยู่ตลอดช่วง 2 ชั่วโมงหลังจัดส่ง จากนั้นประวัติข้อความจะถูกลบถาวร',
       eligibleTitle: '2) กรณีที่อาจเข้าเงื่อนไข (เปลี่ยนสินค้า/คืนเงิน)',
       eligibleIntro: 'อาจเข้าเงื่อนไขหากช่อที่ได้รับ:',
       eligibleList1: 'เสียหายระหว่างจัดส่ง (เช่น ช่อถูกกดทับ ก้านหักหนัก บรรจุภัณฑ์เสียหายจนกระทบช่อ)',
@@ -2742,13 +2860,17 @@ const baseTranslations = {
       keepBouquetNote: 'กรุณาเก็บช่อไว้ก่อน จนกว่าเราจะสรุปผล หากทิ้งช่อก่อนตรวจสอบ อาจไม่สามารถอนุมัติการเปลี่ยน/คืนเงินได้',
       whatToSendTitle: '3) สิ่งที่ต้องส่งให้เรา (จำเป็น)',
       whatToSendIntro: 'กรุณาติดต่อผ่าน',
-      whatToSendIntroSuffix: 'และส่ง:',
+      whatToSendIntroSuffix:
+        ' หรือใช้แชทชั่วคราวในหน้าออเดอร์เมื่อมีให้ใช้ และส่ง:',
       contactOnLine: 'Contact on LINE',
       contactOnWhatsApp: 'Contact on WhatsApp',
+      contactOnOrderChat: 'แชทชั่วคราวในหน้าออเดอร์',
       whatToSendList1: 'เลขออเดอร์ หรือ ลิงก์ออเดอร์',
       whatToSendList2: 'วัน/เวลาที่จัดส่ง',
       whatToSendList3: 'รูปถ่ายชัดเจน ของช่อ (และแพ็กเกจ หากเกี่ยวข้อง)',
       whatToSendList4: 'ข้อความสั้น ๆ อธิบายปัญหา',
+      orderChatNote:
+        'หมายเหตุ: แชทชั่วคราวในหน้าออเดอร์ยังไม่รองรับการแนบรูป หากต้องส่งรูป กรุณาใช้ LINE หรือ WhatsApp พร้อมเลขหรือลิงก์ออเดอร์',
       notEligibleTitle: '4) กรณีที่มักไม่เข้าเงื่อนไข (สำคัญ)',
       notEligibleIntro: 'การคืนเงิน/เปลี่ยนสินค้าอาจไม่ครอบคลุม หาก:',
       notEligible1: 'แจ้งหลังจาก 2 ชั่วโมง นับจากเวลาส่งสำเร็จ',
@@ -2781,7 +2903,8 @@ const baseTranslations = {
       stripeSupport: 'Stripe Support',
       howToContactTitle: '9) ติดต่อเรา (เร็วที่สุด)',
       howToContactIntro: 'กรุณาทักผ่าน',
-      howToContactOutro: 'พร้อม เลข/ลิงก์ออเดอร์ และรูปถ่ายที่เกี่ยวข้อง',
+      howToContactOutro:
+        ' หรือเปิดแชทชั่วคราวในหน้าติดตามออเดอร์เมื่อมีปุ่มแสดง พร้อมเลข/ลิงก์ออเดอร์ และรูปถ่ายที่เกี่ยวข้อง ประวัติแชทในหน้าออเดอร์จะถูกลบถาวรภายใน 2 ชั่วโมงหลังจัดส่ง',
     },
     contact: {
       title: 'ติดต่อเรา',

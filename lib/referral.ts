@@ -9,10 +9,13 @@ import {
   LANNA_BLOOM_COUPON_CODE,
 } from '@/lib/promo/lannaBloomCoupon';
 import {
-  isMothersDay2026PromoCode,
-  mothersDay2026PromoDiscount,
-  MOTHERS_DAY_2026_PROMO_CODE,
-} from '@/lib/promo/mothersDay2026Promo';
+  advancePeakCelebrationPromoDiscount,
+  isAdvancePeakCelebrationPromoCode,
+} from '@/lib/promo/advancePeakPromoCatalog';
+import { MOTHERS_DAY_2026_PROMO_CODE } from '@/lib/promo/mothersDay2026Promo';
+import { VALENTINES_2027_PROMO_CODE } from '@/lib/promo/valentines2027Promo';
+import { WOMENS_DAY_2027_PROMO_CODE } from '@/lib/promo/womensDay2027Promo';
+import { NEW_YEAR_2026_PROMO_CODE } from '@/lib/promo/newYear2026Promo';
 
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
 
@@ -64,6 +67,24 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   [LANNA_BLOOM_COUPON_CODE]: { type: 'tiered_fixed_items' },
   /** Mother's Day 2026 early-order — see lib/promo/mothersDay2026Promo.ts */
   [MOTHERS_DAY_2026_PROMO_CODE]: {
+    type: 'percent',
+    value: 10,
+    discountBase: 'items',
+  },
+  /** Valentine's 2027 early-order — see lib/promo/valentines2027Promo.ts */
+  [VALENTINES_2027_PROMO_CODE]: {
+    type: 'percent',
+    value: 10,
+    discountBase: 'items',
+  },
+  /** Women's Day 2027 early-order — see lib/promo/womensDay2027Promo.ts */
+  [WOMENS_DAY_2027_PROMO_CODE]: {
+    type: 'percent',
+    value: 10,
+    discountBase: 'items',
+  },
+  /** New Year 2026 early-order — see lib/promo/newYear2026Promo.ts */
+  [NEW_YEAR_2026_PROMO_CODE]: {
     type: 'percent',
     value: 10,
     discountBase: 'items',
@@ -155,7 +176,7 @@ export type GetDiscountForCodeOptions = {
   deliveryFee?: number;
   itemSubtotal?: number;
   deliveryDestination?: string;
-  /** Required for date-bounded codes such as MOM10. */
+  /** Required for date-bounded codes such as MOM10 / LOVE10 / WOMEN10 / NY10. */
   deliveryDateYmd?: string;
   /** When true, LANNABLOOM (and similar exclusive codes) return 0. */
   hasCatalogProductDiscount?: boolean;
@@ -189,12 +210,18 @@ export function getDiscountForCode(
     });
     return Math.min(amount, subtotal);
   }
-  if (isMothersDay2026PromoCode(normalized)) {
+  if (isAdvancePeakCelebrationPromoCode(normalized)) {
     const itemsTotal = Math.max(
       0,
       options.itemSubtotal ?? subtotal - (options.deliveryFee ?? 0)
     );
-    const amount = mothersDay2026PromoDiscount(itemsTotal, options.now ?? new Date());
+    const amount =
+      advancePeakCelebrationPromoDiscount(
+        normalized,
+        itemsTotal,
+        options.now ?? new Date(),
+        options.deliveryDateYmd
+      ) ?? 0;
     return Math.min(amount, subtotal);
   }
   const def = DISCOUNT_CODES[normalized];

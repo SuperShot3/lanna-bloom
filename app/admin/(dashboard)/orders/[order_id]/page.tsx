@@ -16,6 +16,10 @@ import { canChangeStatus, canEditCosts, canRefund, canRemoveOrder } from '@/lib/
 import { orderHasIncomeRefund } from '@/lib/accounting/incomeRefunds';
 import { getCogsExpenseByOrderId, getDeliveryExpenseSyncedFromOrderCosts } from '@/lib/expenses/expenseQueries';
 import { notFound } from 'next/navigation';
+import { getBaseUrl } from '@/lib/siteUrl';
+import { isOrderChatEnabled } from '@/lib/orderChat/enabled';
+import { getUnreadChatSummary } from '@/lib/orderChat/store';
+import { AdminOrderDetailChatActions } from '@/components/orderChat/AdminOrderDetailChatActions';
 
 interface PageProps {
   params: Promise<{ order_id: string }>;
@@ -118,6 +122,17 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
     })
   );
 
+  const orderChatOn = isOrderChatEnabled();
+  let chatUnread = 0;
+  let chatLink: string | null = null;
+  if (orderChatOn) {
+    const summary = await getUnreadChatSummary();
+    chatUnread = summary.byOrderId[order.order_id] ?? 0;
+    if (order.public_token) {
+      chatLink = `${getBaseUrl()}/order/${encodeURIComponent(order.order_id)}?token=${encodeURIComponent(String(order.public_token))}&chat=1`;
+    }
+  }
+
   return (
     <div className="admin-detail">
       <header className="admin-header admin-page-header">
@@ -142,6 +157,13 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           >
             View public page
           </Link>
+          {orderChatOn ? (
+            <AdminOrderDetailChatActions
+              orderId={order.order_id}
+              chatLink={chatLink}
+              unreadCount={chatUnread}
+            />
+          ) : null}
         </div>
       </header>
 

@@ -25,6 +25,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingGuideComments, setPendingGuideComments] = useState(0);
+  const [orderChatUnread, setOrderChatUnread] = useState(0);
   const { data: session } = useSession();
   const userEmail = session?.user?.email;
 
@@ -55,6 +56,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     loadPendingCount();
     return () => {
       cancelled = true;
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadChatUnread() {
+      try {
+        const res = await fetch('/api/admin/orders/chat-unread', { cache: 'no-store' });
+        if (!res.ok) {
+          if (!cancelled) setOrderChatUnread(0);
+          return;
+        }
+        const data = (await res.json().catch(() => null)) as { count?: unknown } | null;
+        if (cancelled) return;
+        const count = typeof data?.count === 'number' ? data.count : 0;
+        setOrderChatUnread(count > 0 ? count : 0);
+      } catch {
+        if (!cancelled) setOrderChatUnread(0);
+      }
+    }
+    loadChatUnread();
+    const timer = setInterval(loadChatUnread, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
     };
   }, [pathname]);
 
@@ -130,8 +156,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               const isActive = pathname === href || pathname.startsWith(href + '/');
               const showPendingBadge =
                 href === '/admin/info-comments' && pendingGuideComments > 0;
-              const badgeText =
-                pendingGuideComments > 99 ? '99+' : String(pendingGuideComments);
+              const showChatBadge = href === '/admin/orders' && orderChatUnread > 0;
+              const badgeCount = showPendingBadge
+                ? pendingGuideComments
+                : showChatBadge
+                  ? orderChatUnread
+                  : 0;
+              const showBadge = showPendingBadge || showChatBadge;
+              const badgeText = badgeCount > 99 ? '99+' : String(badgeCount);
               return (
                 <Link
                   key={href}
@@ -140,8 +172,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   className={`admin-shell-nav-link ${isActive ? 'active' : ''}`}
                   title={
                     sidebarCollapsed
-                      ? showPendingBadge
-                        ? `${label} (${pendingGuideComments} pending)`
+                      ? showBadge
+                        ? `${label} (${badgeCount}${showPendingBadge ? ' pending' : ' unread'})`
                         : label
                       : undefined
                   }
@@ -149,7 +181,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 >
                   <span className="admin-shell-nav-icon-wrap">
                     <span className="material-symbols-outlined admin-shell-icon">{icon}</span>
-                    {showPendingBadge && (
+                    {showBadge && (
                       <span
                         className="admin-shell-nav-badge admin-shell-nav-badge--collapsed"
                         aria-hidden
@@ -159,10 +191,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     )}
                   </span>
                   <span className="admin-shell-nav-label">{label}</span>
-                  {showPendingBadge && (
+                  {showBadge && (
                     <span
                       className="admin-shell-nav-badge"
-                      aria-label={`${pendingGuideComments} pending comments`}
+                      aria-label={
+                        showPendingBadge
+                          ? `${pendingGuideComments} pending comments`
+                          : `${orderChatUnread} unread order chats`
+                      }
                     >
                       {badgeText}
                     </span>

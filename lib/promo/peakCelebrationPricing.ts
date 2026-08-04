@@ -1,6 +1,7 @@
-import { SHOP_TIMEZONE, shopAddDays } from '@/lib/shopTime';
+import { SHOP_TIMEZONE, shopAddDays, shopTodayYmd } from '@/lib/shopTime';
 
-export const PEAK_CELEBRATION_MIN_ORDER_THB = 2000;
+export const PEAK_CELEBRATION_MIN_ORDER_THB = 1500;
+export const PEAK_CELEBRATION_VALENTINES_MIN_ORDER_THB = 2000;
 export const PEAK_CELEBRATION_NOTICE_DAYS = 7;
 
 export type PeakCelebrationId = 'valentines' | 'womens-day' | 'mothers-day' | 'new-year';
@@ -14,50 +15,54 @@ export type PeakCelebrationRule = {
   /** Display label for policy / checkout (EN defaults). */
   startLabel: string;
   endLabel: string;
-  /** Inclusive delivery window (month/day, recurring annually). */
+  /** Inclusive spike window (month/day, recurring annually). */
   window: PeakCelebrationWindow;
 };
 
-type PeakCelebrationWindow =
-  | { kind: 'range'; startMonth: number; startDay: number; endMonth: number; endDay: number }
-  | { kind: 'new-year' };
+type PeakCelebrationWindow = {
+  kind: 'range';
+  startMonth: number;
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+};
 
 export const PEAK_CELEBRATION_RULES: PeakCelebrationRule[] = [
   {
     id: 'valentines',
     nameKey: 'valentines',
     markupPercent: 30,
-    minOrderThb: PEAK_CELEBRATION_MIN_ORDER_THB,
-    startLabel: '10 February',
-    endLabel: '15 February',
-    window: { kind: 'range', startMonth: 2, startDay: 10, endMonth: 2, endDay: 15 },
+    minOrderThb: PEAK_CELEBRATION_VALENTINES_MIN_ORDER_THB,
+    startLabel: '12 February',
+    endLabel: '14 February',
+    window: { kind: 'range', startMonth: 2, startDay: 12, endMonth: 2, endDay: 14 },
   },
   {
     id: 'womens-day',
     nameKey: 'womens-day',
     markupPercent: 15,
     minOrderThb: PEAK_CELEBRATION_MIN_ORDER_THB,
-    startLabel: '6 March',
-    endLabel: '9 March',
-    window: { kind: 'range', startMonth: 3, startDay: 6, endMonth: 3, endDay: 9 },
+    startLabel: '7 March',
+    endLabel: '8 March',
+    window: { kind: 'range', startMonth: 3, startDay: 7, endMonth: 3, endDay: 8 },
   },
   {
     id: 'mothers-day',
     nameKey: 'mothers-day',
     markupPercent: 15,
     minOrderThb: PEAK_CELEBRATION_MIN_ORDER_THB,
-    startLabel: '10 August',
-    endLabel: '13 August',
-    window: { kind: 'range', startMonth: 8, startDay: 10, endMonth: 8, endDay: 13 },
+    startLabel: '11 August',
+    endLabel: '12 August',
+    window: { kind: 'range', startMonth: 8, startDay: 11, endMonth: 8, endDay: 12 },
   },
   {
     id: 'new-year',
     nameKey: 'new-year',
     markupPercent: 20,
     minOrderThb: PEAK_CELEBRATION_MIN_ORDER_THB,
-    startLabel: '29 December',
-    endLabel: '2 January',
-    window: { kind: 'new-year' },
+    startLabel: '30 December',
+    endLabel: '31 December',
+    window: { kind: 'range', startMonth: 12, startDay: 30, endMonth: 12, endDay: 31 },
   },
 ];
 
@@ -79,7 +84,7 @@ function parseYmdParts(ymd: string): { year: number; month: number; day: number 
 function isDateInRangeWindow(
   month: number,
   day: number,
-  window: Extract<PeakCelebrationWindow, { kind: 'range' }>
+  window: PeakCelebrationWindow
 ): boolean {
   const startKey = window.startMonth * 100 + window.startDay;
   const endKey = window.endMonth * 100 + window.endDay;
@@ -87,22 +92,14 @@ function isDateInRangeWindow(
   return currentKey >= startKey && currentKey <= endKey;
 }
 
-function isDateInNewYearWindow(month: number, day: number): boolean {
-  return (month === 12 && day >= 29) || (month === 1 && day <= 2);
-}
-
 export function isDateInPeakWindow(ymd: string, window: PeakCelebrationWindow): boolean {
   const parts = parseYmdParts(ymd);
   if (!parts) return false;
-  if (window.kind === 'new-year') return isDateInNewYearWindow(parts.month, parts.day);
   return isDateInRangeWindow(parts.month, parts.day, window);
 }
 
 /** Start YMD for the peak window that contains or follows the reference date. */
 export function peakWindowStartYmdForYear(rule: PeakCelebrationRule, year: number): string {
-  if (rule.window.kind === 'new-year') {
-    return `${year}-12-29`;
-  }
   const m = String(rule.window.startMonth).padStart(2, '0');
   const d = String(rule.window.startDay).padStart(2, '0');
   return `${year}-${m}-${d}`;
@@ -114,6 +111,7 @@ export function parseDeliveryDateFromPreferredTimeSlot(slot: string): string | n
   return date;
 }
 
+/** Rule whose spike window contains the delivery date (min-order gate). */
 export function getPeakCelebrationRuleForDeliveryDate(ymd: string): PeakCelebrationRule | null {
   if (!ymd) return null;
   for (const rule of PEAK_CELEBRATION_RULES) {
@@ -122,47 +120,93 @@ export function getPeakCelebrationRuleForDeliveryDate(ymd: string): PeakCelebrat
   return null;
 }
 
-export function applyPeakCelebrationMarkupThb(basePrice: number, deliveryDateYmd: string): number {
+export function getPeakCelebrationMinOrderRule(deliveryDateYmd: string): PeakCelebrationRule | null {
+  return getPeakCelebrationRuleForDeliveryDate(deliveryDateYmd);
+}
+
+/**
+ * Markup applies only when both order date and delivery date fall in the same
+ * peak spike window (order during celebration for celebration delivery).
+ */
+export function shouldApplyPeakCelebrationMarkup(
+  orderYmd: string,
+  deliveryDateYmd: string
+): boolean {
+  if (!orderYmd || !deliveryDateYmd) return false;
+  for (const rule of PEAK_CELEBRATION_RULES) {
+    if (
+      isDateInPeakWindow(orderYmd, rule.window) &&
+      isDateInPeakWindow(deliveryDateYmd, rule.window)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function getPeakCelebrationRuleForCheckout(options: {
+  orderYmd: string;
+  deliveryDateYmd: string;
+}): PeakCelebrationRule | null {
+  const { orderYmd, deliveryDateYmd } = options;
+  if (!orderYmd || !deliveryDateYmd) return null;
+  for (const rule of PEAK_CELEBRATION_RULES) {
+    if (
+      isDateInPeakWindow(orderYmd, rule.window) &&
+      isDateInPeakWindow(deliveryDateYmd, rule.window)
+    ) {
+      return rule;
+    }
+  }
+  return null;
+}
+
+/**
+ * Apply peak markup when order + delivery are both in the spike window.
+ * `orderYmd` defaults to shop today (Bangkok) when omitted.
+ */
+export function applyPeakCelebrationMarkupThb(
+  basePrice: number,
+  deliveryDateYmd: string,
+  orderYmd: string = shopTodayYmd()
+): number {
   if (!Number.isFinite(basePrice) || basePrice <= 0) return Math.max(0, Math.round(basePrice));
-  const rule = getPeakCelebrationRuleForDeliveryDate(deliveryDateYmd);
+  const rule = getPeakCelebrationRuleForCheckout({ orderYmd, deliveryDateYmd });
   if (!rule) return Math.round(basePrice);
   return Math.round(basePrice * (1 + rule.markupPercent / 100));
 }
 
-export function qualifiesPeakCelebrationMinOrder(itemsTotal: number, deliveryDateYmd: string): boolean {
-  const rule = getPeakCelebrationRuleForDeliveryDate(deliveryDateYmd);
+/** Min order uses items + delivery whenever delivery falls in a peak window. */
+export function qualifiesPeakCelebrationMinOrder(
+  itemsTotal: number,
+  deliveryFee: number,
+  deliveryDateYmd: string
+): boolean {
+  const rule = getPeakCelebrationMinOrderRule(deliveryDateYmd);
   if (!rule) return true;
-  return itemsTotal >= rule.minOrderThb;
+  const total = (Number.isFinite(itemsTotal) ? itemsTotal : 0) + (Number.isFinite(deliveryFee) ? deliveryFee : 0);
+  return total >= rule.minOrderThb;
 }
 
 export function peakCelebrationMinOrderShortfall(
   itemsTotal: number,
+  deliveryFee: number,
   deliveryDateYmd: string
 ): number {
-  const rule = getPeakCelebrationRuleForDeliveryDate(deliveryDateYmd);
+  const rule = getPeakCelebrationMinOrderRule(deliveryDateYmd);
   if (!rule) return 0;
-  return Math.max(0, rule.minOrderThb - itemsTotal);
+  const total = (Number.isFinite(itemsTotal) ? itemsTotal : 0) + (Number.isFinite(deliveryFee) ? deliveryFee : 0);
+  return Math.max(0, rule.minOrderThb - total);
 }
 
 function referenceYearForNotice(rule: PeakCelebrationRule, todayYmd: string): number {
   const parts = parseYmdParts(todayYmd);
   if (!parts) return new Date().getFullYear();
 
-  if (rule.window.kind === 'new-year') {
-    // After Jan 2, the next notice targets Dec 29 of the same calendar year.
-    if (parts.month === 1 && parts.day <= 2) return parts.year - 1;
-    return parts.year;
-  }
-
   const startYmdThisYear = peakWindowStartYmdForYear(rule, parts.year);
   if (todayYmd > startYmdThisYear) {
-    // Past this year's window — next notice is next year (except rules that don't wrap).
-    const endParts = parseYmdParts(
-      rule.window.kind === 'range'
-        ? `${parts.year}-${String(rule.window.endMonth).padStart(2, '0')}-${String(rule.window.endDay).padStart(2, '0')}`
-        : `${parts.year + 1}-01-02`
-    );
-    if (endParts && todayYmd > `${parts.year}-${String(endParts.month).padStart(2, '0')}-${String(endParts.day).padStart(2, '0')}`) {
+    const endYmdThisYear = `${parts.year}-${String(rule.window.endMonth).padStart(2, '0')}-${String(rule.window.endDay).padStart(2, '0')}`;
+    if (todayYmd > endYmdThisYear) {
       return parts.year + 1;
     }
   }

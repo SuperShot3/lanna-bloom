@@ -45,6 +45,39 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
         </section>
 
         <section className="policy-section">
+          <h2 className="policy-heading">{isTh ? 'แชทชั่วคราวในหน้าออเดอร์' : 'Temporary order-page chat'}</h2>
+          <p className="policy-text">
+            {isTh
+              ? 'เมื่อเปิดใช้งาน คุณอาจใช้แชทชั่วคราวในหน้าติดตามออเดอร์ (ลิงก์ที่มีโทเค็นส่วนตัว) เพื่อติดต่อทีม Lanna Bloom เกี่ยวกับรายละเอียดจัดส่ง การประสานงาน หรือปัญหาหลังจัดส่ง แชทนี้เป็นช่องทางสำรอง ไม่ใช่ช่องทางสั่งซื้อหรือยืนยันการชำระเงิน และไม่ได้เข้ารหัสแบบต้นทางถึงปลายทาง'
+              : 'When enabled, you may use a temporary chat on your order tracking page (the private token link) to reach the Lanna Bloom team about delivery details, coordination, or post-delivery issues. This chat is a support backup channel. It is not used to place orders or confirm payment, and it is not end-to-end encrypted.'}
+          </p>
+          <p className="policy-text">
+            {isTh
+              ? 'ประวัติข้อความจะถูกลบถาวรภายใน 2 ชั่วโมงหลังออเดอร์ถูกทำเครื่องหมายว่าจัดส่งแล้ว ซึ่งสอดคล้องกับช่วงเวลาแจ้งปัญหาในนโยบายคืนเงิน/เปลี่ยนสินค้า หลังลบแล้วจะไม่สามารถกู้คืนข้อความได้ LINE, WhatsApp และโทรศัพท์ยังคงเป็นช่องทางติดต่อหลักตามปกติ'
+              : 'Message history is permanently deleted 2 hours after the order is marked delivered, matching the issue-reporting window in our refund and replacement policy. After deletion, messages cannot be recovered. LINE, WhatsApp, and phone remain available as usual contact channels.'}
+          </p>
+          <p className="policy-text">
+            {isTh ? (
+              <>
+                รายละเอียดเพิ่มเติมเกี่ยวกับข้อมูลส่วนบุคคลในแชทนี้ดูได้ใน{' '}
+                <Link href={`/${locale}/privacy`} className="policy-link-inline">
+                  นโยบายความเป็นส่วนตัว
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                More detail on how chat messages are handled is in our{' '}
+                <Link href={`/${locale}/privacy`} className="policy-link-inline">
+                  Privacy Policy
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </section>
+
+        <section className="policy-section">
           <h2 className="policy-heading">{isTh ? 'สกุลเงินและการชำระเงิน' : 'Currency and payment'}</h2>
           <p className="policy-text">
             {isTh
