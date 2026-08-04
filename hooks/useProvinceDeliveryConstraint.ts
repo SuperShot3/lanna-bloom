@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { CartItem } from '@/contexts/CartContext';
 import {
   computeDeliveryConstraint,
+  type CartLineDeliveryConstraintInput,
   type DeliveryConstraint,
   type ProvinceConstraintInput,
 } from '@/lib/delivery/deliveryConstraints';
+import {
+  bouquetIdsForDeliveryOptionsLookup,
+  mergeCartLinesWithCatalogOptions,
+} from '@/lib/delivery/mergeCartLineDeliveryOptions';
 import type { PublicProvince } from '@/lib/provinces/types';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
@@ -24,31 +28,43 @@ function toProvinceInput(p: PublicProvince | null): ProvinceConstraintInput {
   };
 }
 
+function bouquetIdsKey(items: CartLineDeliveryConstraintInput[]): string {
+  return bouquetIdsForDeliveryOptionsLookup(items).sort().join(',');
+}
+
 /**
- * Fetches public province config for the checkout destination and merges
- * with cart product deliveryOptions into a DeliveryConstraint.
+ * Fetches public province config + catalog bouquet delivery_options for the
+ * destination/cart, then merges into a DeliveryConstraint (catalog wins).
  */
 export function useProvinceDeliveryConstraint(
   destinationId: DeliveryDestinationId | string,
-  items: CartItem[]
+  items: CartLineDeliveryConstraintInput[]
 ): {
   constraint: DeliveryConstraint;
   province: PublicProvince | null;
   loading: boolean;
 } {
+  const idsKey = bouquetIdsKey(items);
+
   const [province, setProvince] = useState<PublicProvince | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [catalogOptions, setCatalogOptions] = useState<Record<string, string[]> | null>(
+    null
+  );
+  const [provinceLoading, setProvinceLoading] = useState(() =>
+    Boolean(String(destinationId || '').trim())
+  );
+  const [catalogLoading, setCatalogLoading] = useState(() => Boolean(idsKey));
 
   useEffect(() => {
     let cancelled = false;
     const dest = String(destinationId || '').trim().toUpperCase();
     if (!dest) {
       setProvince(null);
-      setLoading(false);
+      setProvinceLoading(false);
       return;
     }
 
-    setLoading(true);
+    setProvinceLoading(true);
     fetch(`/api/provinces/by-destination/${encodeURIComponent(dest)}`)
       .then(async (res) => {
         if (cancelled) return;
@@ -67,7 +83,7 @@ export function useProvinceDeliveryConstraint(
         if (!cancelled) setProvince(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setProvinceLoading(false);
       });
 
     return () => {
@@ -75,17 +91,53 @@ export function useProvinceDeliveryConstraint(
     };
   }, [destinationId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const ids = idsKey ? idsKey.split(',').filter(Boolean) : [];
+    if (ids.length === 0) {
+      setCatalogOptions(null);
+      setCatalogLoading(false);
+      return;
+    }
+
+    setCatalogLoading(true);
+    fetch(`/api/catalog/bouquet-delivery-options?ids=${encodeURIComponent(ids.join(','))}`)
+      .then(async (res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          setCatalogOptions(null);
+          return;
+        }
+        const body = (await res.json()) as { options?: Record<string, string[]> };
+        setCatalogOptions(body.options ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setCatalogOptions(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCatalogLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
+
+  const cartLines = useMemo(
+    () => mergeCartLinesWithCatalogOptions(items, catalogOptions),
+    [items, catalogOptions]
+  );
+
   const constraint = useMemo(
     () =>
       computeDeliveryConstraint({
         province: toProvinceInput(province),
-        cartLines: items.map((item) => ({
-          itemType: item.itemType,
-          deliveryOptions: item.deliveryOptions,
-        })),
+        cartLines,
       }),
-    [province, items]
+    [province, cartLines]
   );
+
+  const loading = provinceLoading || catalogLoading;
 
   return { constraint, province, loading };
 }

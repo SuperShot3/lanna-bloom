@@ -25,7 +25,9 @@ const FALLBACK_HERO_IMAGES = [
   'https://images.unsplash.com/photo-1490750967868-88cb4ec0f07c?auto=format&fit=crop&q=80&w=800&h=1000',
 ];
 
-const HERO_IMAGE_ALT = 'Fresh flower bouquet prepared for Chiang Mai delivery';
+function heroImageAlt(city: string): string {
+  return `Fresh flower bouquet prepared for ${city} delivery`;
+}
 
 function HeroExpressDeliveryCard({
   lang,
@@ -57,19 +59,21 @@ function HeroExpressDeliveryCard({
 }
 
 function buildHeroCarouselImages(
-  heroImageUrl?: string,
-  carouselImages?: HeroCarouselImage[]
+  heroImageUrl: string | undefined,
+  carouselImages: HeroCarouselImage[] | undefined,
+  city: string
 ): HeroCarouselImage[] {
+  const fallbackAlt = heroImageAlt(city);
   if (carouselImages && carouselImages.length > 0) {
     return carouselImages.map((img) => ({
       src: img.src,
-      alt: img.alt.trim() || HERO_IMAGE_ALT,
+      alt: img.alt.trim() || fallbackAlt,
     }));
   }
   if (heroImageUrl) {
-    return [{ src: heroImageUrl, alt: HERO_IMAGE_ALT }];
+    return [{ src: heroImageUrl, alt: fallbackAlt }];
   }
-  return FALLBACK_HERO_IMAGES.map((src) => ({ src, alt: HERO_IMAGE_ALT }));
+  return FALLBACK_HERO_IMAGES.map((src) => ({ src, alt: fallbackAlt }));
 }
 
 function HeroVisualBlock({
@@ -203,6 +207,7 @@ export function Hero({
   carouselImages,
   titleOverride,
   browseCollectionHref,
+  locationName,
 }: {
   lang: Locale;
   heroImageUrl?: string;
@@ -211,8 +216,13 @@ export function Hero({
   titleOverride?: React.ReactNode;
   /** Optional primary CTA target for pages that show a collection section inline. */
   browseCollectionHref?: string;
+  /** Localized city/market name for hero copy; defaults to Chiang Mai hub. */
+  locationName?: string;
 }) {
   const t = translations[lang].hero;
+  const city = locationName ?? (lang === 'th' ? 'เชียงใหม่' : 'Chiang Mai');
+  const trustLine = t.trustLine.replace('{city}', city);
+  const sublineNew = t.sublineNew.replace('{city}', city);
   const pathname = usePathname();
   const pathParts = pathname?.split('/').filter(Boolean) ?? [];
   const maybeMarketSlug = pathParts[1];
@@ -232,7 +242,7 @@ export function Hero({
   const primaryCtaHref = browseCollectionHref ?? catalogHref;
   const [howToOpen, setHowToOpen] = useState(false);
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
-  const heroCarouselImages = buildHeroCarouselImages(imageSrc, carouselImages);
+  const heroCarouselImages = buildHeroCarouselImages(imageSrc, carouselImages, city);
   const isHomeLanding =
     !titleOverride &&
     (pathname === '/' ||
@@ -266,7 +276,7 @@ export function Hero({
             className={`${introItemClass} inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4`.trim()}
           >
             <StorefrontIcon name="verified" size={18} />
-            {t.trustLine}
+            {trustLine}
           </div>
           <h1
             className={`${introItemClass} font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words`.trim()}
@@ -281,7 +291,7 @@ export function Hero({
           <p
             className={`${introItemClass} text-base sm:text-lg text-stone-600 mb-0 max-w-lg leading-relaxed`.trim()}
           >
-            {t.sublineNew}
+            {sublineNew}
           </p>
           <div className="hidden lg:block mt-4 sm:mt-5">
             <HeroCtaSection

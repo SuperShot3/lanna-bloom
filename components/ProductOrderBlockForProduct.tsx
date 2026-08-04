@@ -20,9 +20,11 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { BALLOON_TEXT_MAX_LENGTH, normalizeBalloonText } from '@/lib/balloonCustomization';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
+import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -88,8 +90,23 @@ export function ProductOrderBlockForProduct({
   const itemType =
     isPlushyToy ? 'plushyToy' : isBalloonProduct ? 'balloon' : 'product';
   const isBalloon = itemType === 'balloon';
+  const deliveryConstraintLines = useMemo(
+    () => [
+      {
+        itemType,
+        deliveryOptions: product.deliveryOptions,
+        bouquetId: product.id,
+      },
+    ],
+    [itemType, product.deliveryOptions, product.id]
+  );
+  const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
+    useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
+  const purchaseDisabled =
+    !deliveryConstraintLoading && !deliveryConstraint.orderingAllowed;
 
   const handleAddToCart = () => {
+    if (purchaseDisabled) return;
     const balloonText = isBalloon ? normalizeBalloonText(addOns.balloonText) : undefined;
     addItem(
       {
@@ -234,10 +251,16 @@ export function ProductOrderBlockForProduct({
             <span className="order-qty-price">฿{totalPrice.toLocaleString()}</span>
           </div>
           <TrustBadges lang={lang} />
+          <ProductDeliveryTimingNotice
+            lang={lang}
+            constraint={deliveryConstraint}
+            loading={deliveryConstraintLoading}
+          />
           <button
             type="button"
             className="order-add-to-cart-btn"
             onClick={handleAddToCart}
+            disabled={purchaseDisabled}
           >
             {t.addToCart} — ฿{totalPrice.toLocaleString()}
           </button>
@@ -375,6 +398,15 @@ export function ProductOrderBlockForProduct({
         .order-add-to-cart-btn:hover {
           background: #b39868;
           transform: translateY(-1px);
+        }
+        .order-add-to-cart-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .order-add-to-cart-btn:disabled:hover {
+          background: var(--accent);
+          transform: none;
         }
         .order-add-to-cart-btn:focus-visible {
           outline: 2px solid var(--accent);

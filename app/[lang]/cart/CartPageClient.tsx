@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
@@ -622,8 +622,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     removeGiftCardMessage,
   } = useOrderGiftCardMessage();
   const checkoutDeliveryProfile = useCheckoutDeliveryProfile(lang);
-  const { constraint: deliveryConstraint, province: checkoutProvince } =
-    useProvinceDeliveryConstraint(checkoutDeliveryProfile.destinationId, items);
+  const deliveryConstraintLines = useMemo(
+    () =>
+      items.map((item) => ({
+        itemType: item.itemType,
+        deliveryOptions: item.deliveryOptions,
+        bouquetId: item.bouquetId,
+      })),
+    [items]
+  );
+  const { constraint: deliveryConstraint, province: checkoutProvince, loading: deliveryConstraintLoading } =
+    useProvinceDeliveryConstraint(checkoutDeliveryProfile.destinationId, deliveryConstraintLines);
 
   // Additional cards are cart-only and only when there is more than one unit.
   useEffect(() => {
@@ -840,6 +849,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (items.length === 0) return;
+    if (deliveryConstraintLoading) return;
     const todayYmd = getShopTodayYmd();
     const { date, timeSlot, deliveryTimeMode } = resolveDeliverySchedule(
       {
@@ -856,10 +866,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         ? prev
         : { ...prev, date, timeSlot, deliveryTimeMode }
     );
-  }, [items.length, delivery.date, delivery.timeSlot, deliveryConstraint]);
+  }, [
+    items.length,
+    delivery.date,
+    delivery.timeSlot,
+    deliveryConstraint,
+    deliveryConstraintLoading,
+  ]);
 
   useEffect(() => {
     if (items.length === 0) return;
+    if (deliveryConstraintLoading) return;
     const id = window.setInterval(() => {
       const todayYmd = getShopTodayYmd();
       setDelivery((prev) => {
@@ -881,7 +898,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       });
     }, 30_000);
     return () => window.clearInterval(id);
-  }, [items.length, deliveryConstraint]);
+  }, [items.length, deliveryConstraint, deliveryConstraintLoading]);
 
   const { showToast } = useToast();
 
@@ -898,6 +915,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         setDelivery(next);
         return;
       }
+      if (deliveryConstraintLoading) {
+        setDelivery(next);
+        return;
+      }
       const { date, timeSlot, deliveryTimeMode } = resolveDeliverySchedule(
         {
           date: next.date,
@@ -910,7 +931,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       );
       setDelivery({ ...next, date, timeSlot, deliveryTimeMode });
     },
-    [items.length, deliveryConstraint]
+    [items.length, deliveryConstraint, deliveryConstraintLoading]
   );
 
   const [placing, setPlacing] = useState(false);
@@ -1202,7 +1223,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const peakMinOrderBlocked = peakMinOrderShortfall > 0;
 
   const tPremium = translations[lang].premiumCheckout;
-  const isDeliveryValidNow = isPremiumDeliveryValid(delivery, deliveryConstraint);
+  const isDeliveryValidNow =
+    !deliveryConstraintLoading && isPremiumDeliveryValid(delivery, deliveryConstraint);
   const isRecipientValidNow = isPremiumRecipientValid(
     recipientName,
     recipientCountryCode,
@@ -1437,6 +1459,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const getPremiumFieldIssue = () => {
+    if (deliveryConstraintLoading) {
+      return {
+        sectionId: 'deliveryDate' as const,
+        message: tPremium.pleaseChooseDeliveryDate,
+      };
+    }
     if (deliveryConstraint && !deliveryConstraint.orderingAllowed) {
       const msg =
         resolveDeliveryConstraintNotice(deliveryConstraint, lang) ||
@@ -1990,6 +2018,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onDeliveryChange={handleDeliveryChange}
           checkoutDeliveryProfile={checkoutDeliveryProfile}
           deliveryConstraint={deliveryConstraint}
+          deliveryConstraintLoading={deliveryConstraintLoading}
           recipientName={recipientName}
           onRecipientNameChange={setRecipientName}
           recipientCountryCode={recipientCountryCode}

@@ -15,6 +15,8 @@ import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector
 import { SameDayCutoffBanner } from '@/components/checkout/SameDayCutoffBanner';
 import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 import { resolveDeliveryConstraintNotice } from '@/lib/delivery/deliveryConstraints';
+import { formatPdpDeliveryTiming } from '@/lib/delivery/pdpDeliveryTiming';
+import { getShopTodayYmd } from '@/lib/deliveryHours';
 import { SelectionTile, SuggestionChip } from '@/components/checkout/premium/SelectionTile';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
@@ -57,6 +59,8 @@ export type PremiumCheckoutFlowProps = {
   deliveryProfile: CheckoutDeliveryProfile;
   /** Province/product delivery constraint (Feature 3). */
   deliveryConstraint?: DeliveryConstraint | null;
+  /** True while province/catalog delivery options are still loading. */
+  deliveryConstraintLoading?: boolean;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
   recipientCountryCode: string;
@@ -114,6 +118,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     onDeliveryChange,
     deliveryProfile,
     deliveryConstraint = null,
+    deliveryConstraintLoading = false,
     recipientName,
     onRecipientNameChange,
     recipientCountryCode,
@@ -424,17 +429,39 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         className={sectionClass('deliveryDate')}
       >
         <h2 className="co-section-title">{t.deliveryDateTitle}</h2>
-        {deliveryProfile.variant === 'chiang-mai' && <SameDayCutoffBanner lang={lang} />}
+        {deliveryProfile.variant === 'chiang-mai' &&
+          !deliveryConstraintLoading &&
+          deliveryConstraint?.orderingAllowed !== false &&
+          (!deliveryConstraint?.earliestYmd ||
+            deliveryConstraint.earliestYmd <= getShopTodayYmd()) && (
+            <SameDayCutoffBanner lang={lang} />
+          )}
         {(() => {
+          if (deliveryConstraintLoading || deliveryConstraint == null) return null;
+          const timing = formatPdpDeliveryTiming(deliveryConstraint, lang);
           const notice =
-            deliveryConstraint != null
-              ? resolveDeliveryConstraintNotice(deliveryConstraint, lang)
-              : null;
-          return notice ? (
-            <p className="co-delivery-constraint-notice" role="status">
-              {notice}
-            </p>
-          ) : null;
+            timing.noticeLine ||
+            resolveDeliveryConstraintNotice(deliveryConstraint, lang);
+          const todayYmd = getShopTodayYmd();
+          const showEarliest =
+            Boolean(timing.timingLine) &&
+            Boolean(timing.earliestYmd) &&
+            (timing.earliestYmd! > todayYmd ||
+              deliveryConstraint.reasonCode !== 'ok' ||
+              !timing.orderingAllowed);
+          if (!showEarliest && !notice && !timing.cutoffLine) return null;
+          return (
+            <div
+              className="co-delivery-constraint-notice"
+              role={timing.orderingAllowed ? 'status' : 'alert'}
+            >
+              {showEarliest && timing.timingLine ? <p>{timing.timingLine}</p> : null}
+              {notice ? <p>{notice}</p> : null}
+              {timing.cutoffLine && timing.earliestYmd && timing.earliestYmd > todayYmd ? (
+                <p>{timing.cutoffLine}</p>
+              ) : null}
+            </div>
+          );
         })()}
         <DeliveryDateSelector
           lang={lang}
@@ -442,6 +469,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           onChange={(ymd) => onDeliveryChange({ ...delivery, date: ymd })}
           pickerClassName="co-delivery-date-picker"
           constraint={deliveryConstraint}
+          constraintLoading={deliveryConstraintLoading}
         />
       </section>
 
@@ -457,6 +485,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           timeSlot={delivery.timeSlot}
           deliveryTimeMode={delivery.deliveryTimeMode}
           constraint={deliveryConstraint}
+          constraintLoading={deliveryConstraintLoading}
           onChange={(timeSlot, deliveryTimeMode) =>
             onDeliveryChange({ ...delivery, timeSlot, deliveryTimeMode })
           }
@@ -981,6 +1010,12 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           color: var(--text);
           background: color-mix(in srgb, var(--pastel-cream) 65%, #fff);
           border: 1px solid var(--border);
+        }
+        .co-delivery-constraint-notice p {
+          margin: 0;
+        }
+        .co-delivery-constraint-notice p + p {
+          margin-top: 6px;
         }
         .co-section-heading-row {
           display: flex;

@@ -67,6 +67,7 @@ export function CartCheckoutView({
   onDeliveryChange,
   checkoutDeliveryProfile,
   deliveryConstraint = null,
+  deliveryConstraintLoading = false,
   recipientName,
   onRecipientNameChange,
   recipientCountryCode,
@@ -130,6 +131,7 @@ export function CartCheckoutView({
   onDeliveryChange: (v: DeliveryFormValues) => void;
   checkoutDeliveryProfile: CheckoutDeliveryProfile;
   deliveryConstraint?: DeliveryConstraint | null;
+  deliveryConstraintLoading?: boolean;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
   recipientCountryCode: string;
@@ -322,6 +324,7 @@ export function CartCheckoutView({
         onDeliveryChange={onDeliveryChange}
         deliveryProfile={checkoutDeliveryProfile}
         deliveryConstraint={deliveryConstraint}
+        deliveryConstraintLoading={deliveryConstraintLoading}
         recipientName={recipientName}
         onRecipientNameChange={onRecipientNameChange}
         recipientCountryCode={recipientCountryCode}

@@ -68,6 +68,47 @@ assert(
   'custom mode does not auto-fill morning when time is empty'
 );
 
+// Custom mode keeps invalid HH:mm so the UI can explain (before open / too soon)
+const customBeforeOpen = resolveDeliverySchedule(
+  { date: '2026-07-10', timeSlot: '08:00', deliveryTimeMode: 'custom' },
+  getShopTodayYmd(bangkokPastMidnight),
+  bangkokPastMidnight
+);
+assert(
+  customBeforeOpen.date === '2026-07-10' &&
+    customBeforeOpen.timeSlot === '08:00' &&
+    customBeforeOpen.deliveryTimeMode === 'custom',
+  'custom mode preserves before-open specific time for UI feedback'
+);
+assert(
+  !isDeliveryTimeSlotSelectableForDate('2026-07-10', '08:00', bangkokPastMidnight),
+  'before-open time remains non-selectable for checkout'
+);
+
+const customTooSoon = resolveDeliverySchedule(
+  { date: '2026-07-08', timeSlot: '10:30', deliveryTimeMode: 'custom' },
+  getShopTodayYmd(tenAmBangkok),
+  tenAmBangkok
+);
+assert(
+  customTooSoon.date === '2026-07-08' &&
+    customTooSoon.timeSlot === '10:30' &&
+    customTooSoon.deliveryTimeMode === 'custom',
+  'custom mode preserves too-soon specific time for UI feedback'
+);
+
+const customAfterHours = resolveDeliverySchedule(
+  { date: '2026-07-10', timeSlot: '20:00', deliveryTimeMode: 'custom' },
+  getShopTodayYmd(bangkokPastMidnight),
+  bangkokPastMidnight
+);
+assert(
+  customAfterHours.date === '2026-07-10' &&
+    customAfterHours.timeSlot === '20:00' &&
+    customAfterHours.deliveryTimeMode === 'custom',
+  'custom mode preserves after-hours specific time for UI feedback'
+);
+
 // Past date in custom mode bumps to earliest schedule
 const bumped = resolveDeliverySchedule(
   { date: '2026-07-07', timeSlot: '', deliveryTimeMode: 'custom' },
@@ -76,6 +117,15 @@ const bumped = resolveDeliverySchedule(
 );
 assert(bumped.date === '2026-07-08', 'past custom date bumps to shop today');
 assert(bumped.deliveryTimeMode === 'window', 'bumped schedule uses window mode');
+
+// Past date with invalid custom time still bumps (date not selectable)
+const bumpedWithTime = resolveDeliverySchedule(
+  { date: '2026-07-07', timeSlot: '08:00', deliveryTimeMode: 'custom' },
+  getShopTodayYmd(bangkokPastMidnight),
+  bangkokPastMidnight
+);
+assert(bumpedWithTime.date === '2026-07-08', 'past custom date with time bumps to shop today');
+assert(bumpedWithTime.deliveryTimeMode === 'window', 'bumped invalid custom uses window mode');
 
 // Optional province constraint: next-day floor rejects today
 const nextDayConstraint: DeliveryConstraint = {

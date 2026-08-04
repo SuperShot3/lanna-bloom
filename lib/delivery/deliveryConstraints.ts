@@ -64,6 +64,11 @@ export type CartLineDeliveryConstraintInput = {
   itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
   /** Catalog delivery_options; missing/empty on bouquets = same-day capable (legacy). */
   deliveryOptions?: string[] | null;
+  /**
+   * Optional catalog id for client-side option refresh.
+   * Ignored by computeDeliveryConstraint math itself.
+   */
+  bouquetId?: string;
 };
 
 function maxYmd(a: string, b: string): string {

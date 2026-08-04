@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test:seo": "tsx lib/seo/seoArchitecture.test.ts",
     "test:delivery-fees": "tsx lib/deliveryFees.test.ts",
-    "test:delivery-constraints": "tsx lib/delivery/deliveryConstraints.test.ts && tsx lib/deliveryTimeSelection.test.ts",
+    "test:delivery-constraints": "tsx lib/delivery/deliveryConstraints.test.ts && tsx lib/deliveryTimeSelection.test.ts && tsx lib/delivery/pdpDeliveryTiming.test.ts && tsx lib/delivery/mergeCartLineDeliveryOptions.test.ts && tsx lib/delivery/deliveryDateTileGate.test.ts",
     "test:provinces": "tsx lib/provinces/validate.test.ts && tsx lib/provinces/shopAccess.test.ts",
     "test:partner-apply": "tsx lib/partnerApplyValidate.test.ts",
     "test:cart-conflicts": "tsx lib/cart/destinationCartConflicts.test.ts",

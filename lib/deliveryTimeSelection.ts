@@ -122,13 +122,31 @@ export function isSpecificDeliveryTimeSelectableForDate(
   now: Date = new Date(),
   constraint?: DeliveryConstraint | null
 ): boolean {
-  if (!deliveryDate || !hm) return false;
-  if (!isDeliveryDateSelectable(deliveryDate, now, constraint)) return false;
+  return getSpecificDeliveryTimeInvalidReason(deliveryDate, hm, now, constraint) === null;
+}
+
+export type SpecificDeliveryTimeInvalidReason =
+  | 'date_blocked'
+  | 'before_open'
+  | 'after_hours'
+  | 'too_soon';
+
+/** Why a custom HH:mm is not allowed (null = ok). */
+export function getSpecificDeliveryTimeInvalidReason(
+  deliveryDate: string,
+  hm: string,
+  now: Date = new Date(),
+  constraint?: DeliveryConstraint | null
+): SpecificDeliveryTimeInvalidReason | null {
+  if (!deliveryDate || !hm) return 'too_soon';
+  if (!isDeliveryDateSelectable(deliveryDate, now, constraint)) return 'date_blocked';
   const minutes = parseSpecificDeliveryTimeMinutes(hm);
-  if (minutes === null) return false;
-  if (minutes < SHOP_OPEN_MIN || minutes >= SHOP_CLOSE_MIN) return false;
+  if (minutes === null) return 'too_soon';
+  if (minutes < SHOP_OPEN_MIN) return 'before_open';
+  if (minutes >= SHOP_CLOSE_MIN) return 'after_hours';
   const minMinutes = getMinSpecificDeliveryMinutesForDate(deliveryDate, now);
-  return minutes >= minMinutes;
+  if (minutes < minMinutes) return 'too_soon';
+  return null;
 }
 
 export function isDeliveryTimeSlotSelectableForDate(
@@ -243,10 +261,9 @@ export function resolveDeliverySchedule(
     isDeliveryDateSelectable(date, now, constraint) &&
     (!timeSlot || isSpecificDeliveryTime(timeSlot))
   ) {
-    if (timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now, constraint)) {
-      return { date, timeSlot, deliveryTimeMode: 'custom' };
-    }
-    return { date, timeSlot: '', deliveryTimeMode: 'custom' };
+    // Keep empty or any typed HH:mm (including currently invalid) so the UI can
+    // show why the time is wrong; checkout still rejects non-selectable slots.
+    return { date, timeSlot, deliveryTimeMode: 'custom' };
   }
 
   if (date && timeSlot && isDeliveryTimeSlotSelectableForDate(date, timeSlot, now, constraint)) {

@@ -7,6 +7,7 @@ export function SelectionTile({
   onClick,
   className = '',
   compact = false,
+  disabled = false,
 }: {
   selected: boolean;
   title: string;
@@ -15,11 +16,14 @@ export function SelectionTile({
   className?: string;
   /** Tighter padding and type for dense grids (e.g. delivery time windows). */
   compact?: boolean;
+  /** Hard-disable the control (clicks + muted look). */
+  disabled?: boolean;
 }) {
   const rootClass = [
     'co-tile',
     selected ? 'co-tile--selected' : '',
     compact ? 'co-tile--compact' : '',
+    disabled ? 'co-tile--disabled' : '',
     className,
   ]
     .filter(Boolean)
@@ -29,8 +33,13 @@ export function SelectionTile({
     <button
       type="button"
       className={rootClass}
-      onClick={onClick}
+      onClick={() => {
+        if (disabled) return;
+        onClick();
+      }}
       aria-pressed={selected}
+      aria-disabled={disabled}
+      disabled={disabled}
     >
       {selected && (
         <span className="co-tile__check" aria-hidden>
@@ -71,7 +80,7 @@ export function SelectionTile({
           min-height: 0;
           border-radius: 12px;
         }
-        .co-tile:hover {
+        .co-tile:hover:not(:disabled) {
           border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
         }
         .co-tile--selected {
@@ -83,6 +92,12 @@ export function SelectionTile({
         }
         .co-tile--compact.co-tile--selected {
           padding: 9px 9px;
+        }
+        .co-tile--disabled,
+        .co-tile:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+          box-shadow: none;
         }
         .co-tile__check {
           position: absolute;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
@@ -17,6 +17,7 @@ import { FloristCard } from '@/components/FloristCard';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
@@ -24,6 +25,7 @@ import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvaila
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
+import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
 import { ProductPeakCelebrationNotice } from '@/components/pdp/ProductPeakCelebrationNotice';
 import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
 import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
@@ -73,6 +75,21 @@ export function ProductOrderBlock({
     bouquet,
     checkoutProfile.destinationId
   );
+  const deliveryConstraintLines = useMemo(
+    () => [
+      {
+        itemType: 'bouquet' as const,
+        deliveryOptions: bouquet.deliveryOptions,
+        bouquetId: bouquet.id,
+      },
+    ],
+    [bouquet.deliveryOptions, bouquet.id]
+  );
+  const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
+    useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
+  const purchaseDisabled =
+    !availableForDestination ||
+    (!deliveryConstraintLoading && !deliveryConstraint.orderingAllowed);
   const hideGiftAddOns = checkoutProfile.variant === 'expansion';
   const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
   const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
@@ -92,6 +109,7 @@ export function ProductOrderBlock({
   const lineTotalForPromo = discountedSizePrice * qty;
 
   const addToCartCore = () => {
+    if (purchaseDisabled) return;
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const price = unitPrice;
     addItem(
@@ -135,11 +153,13 @@ export function ProductOrderBlock({
   };
 
   const handleAddToCart = () => {
+    if (purchaseDisabled) return;
     addToCartCore();
     setJustAdded(true);
   };
 
   const handleBuyNow = () => {
+    if (purchaseDisabled) return;
     addToCartCore();
     router.push(`/${lang}/cart`);
   };
@@ -209,12 +229,18 @@ export function ProductOrderBlock({
         </p>
       )}
 
+      <ProductDeliveryTimingNotice
+        lang={lang}
+        constraint={deliveryConstraint}
+        loading={deliveryConstraintLoading}
+      />
+
       <ProductPurchaseActions
         lang={lang}
         totalPrice={totalPrice}
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
-        disabled={!availableForDestination}
+        disabled={purchaseDisabled}
         justAdded={justAdded}
         catalogHref={catalogHref}
       />
@@ -284,7 +310,7 @@ export function ProductOrderBlock({
         thumbUrl={selectedImageUrl}
         totalPrice={totalPrice}
         onAddToCart={handleAddToCart}
-        disabled={!availableForDestination}
+        disabled={purchaseDisabled}
         justAdded={justAdded}
         onVisibilityChange={setStickyBarVisible}
       />

@@ -194,6 +194,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         next[matchIndex] = {
           ...existing,
           quantity: (existing.quantity ?? 1) + qty,
+          ...(item.deliveryOptions != null
+            ? { deliveryOptions: item.deliveryOptions }
+            : {}),
+          ...(item.excludedDeliveryDestinations != null
+            ? { excludedDeliveryDestinations: item.excludedDeliveryDestinations }
+            : {}),
+          ...(item.catalogDiscountPercent != null
+            ? { catalogDiscountPercent: item.catalogDiscountPercent }
+            : {}),
         };
         return next;
       }
