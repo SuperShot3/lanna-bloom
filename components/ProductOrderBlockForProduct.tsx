@@ -94,11 +94,10 @@ export function ProductOrderBlockForProduct({
     () => [
       {
         itemType,
-        deliveryOptions: product.deliveryOptions,
         bouquetId: product.id,
       },
     ],
-    [itemType, product.deliveryOptions, product.id]
+    [itemType, product.id]
   );
   const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
     useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
