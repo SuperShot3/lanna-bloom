@@ -7,6 +7,7 @@ import { FlowerFilterSheetOpenProvider } from '@/contexts/FlowerFilterSheetOpenC
 import { ToastProvider } from '@/contexts/ToastContext';
 import { CurrencyDisplayProvider } from '@/contexts/CurrencyDisplayContext';
 import { isValidLocale, type Locale } from '@/lib/i18n';
+import { notoSansCyrillic } from '@/lib/fonts';
 import { nonSeoLocaleRobots } from '@/lib/seo/alternates';
 import { MainSiteChrome } from '@/components/MainSiteChrome';
 import { FloatingFavoritesBadge } from '@/components/FloatingFavoritesBadge';
@@ -35,6 +36,8 @@ export default function LangLayout({
 }) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
+  const langShellClass =
+    lang === 'ru' ? `lang-layout ${notoSansCyrillic.variable}` : 'lang-layout';
   return (
     <CurrencyDisplayProvider>
       <CartProvider>
@@ -42,7 +45,7 @@ export default function LangLayout({
           <ToastProvider>
             <FlowerFilterSheetOpenProvider>
               <ViewportSync />
-              <div className="lang-layout">
+              <div className={langShellClass}>
                 <FloatingFavoritesBadge lang={lang as Locale} />
                 <MainSiteChrome lang={lang as Locale}>{children}</MainSiteChrome>
               </div>

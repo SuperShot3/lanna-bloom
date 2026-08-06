@@ -55,12 +55,9 @@ html {
   scrollbar-gutter: stable;
 }
 
-html[lang='ru'] body {
+/* Cyrillic stack applied on /ru lang shell (see notoSansCyrillic.variable on .lang-layout) */
+html[lang='ru'] .lang-layout {
   font-family: var(--font-sans), var(--font-sans-cyrillic), var(--font-sans-stack);
-}
-
-html.loading-lock {
-  overflow: hidden;
 }
 
 :root {
@@ -232,7 +229,9 @@ html.loading-lock {
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/arima-madurai-400.ttf') format('truetype');
+  src:
+    url('/fonts/arima-madurai-400.woff2') format('woff2'),
+    url('/fonts/arima-madurai-400.ttf') format('truetype');
 }
 
 @font-face {
@@ -240,7 +239,9 @@ html.loading-lock {
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/arima-madurai-700.ttf') format('truetype');
+  src:
+    url('/fonts/arima-madurai-700.woff2') format('woff2'),
+    url('/fonts/arima-madurai-700.ttf') format('truetype');
 }
 
 /* Material Symbols — admin only (font loaded via /vendor/material-symbols-admin.css) */
@@ -436,22 +437,6 @@ body {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-/* Hide content while loading screen is active */
-html.loading body,
-body.loading main,
-body.loading header,
-body.loading footer {
-  visibility: hidden;
-  opacity: 0;
-}
-
-/* Ensure loading screen is visible during loading */
-html.loading .loading-screen,
-body.loading .loading-screen {
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 /* Lang layout: Header → main → Footer. Flex ensures correct order and footer at bottom. */

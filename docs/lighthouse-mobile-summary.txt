@@ -7,3 +7,13 @@ Note: Run locally after deploy with:
 npx lighthouse https://www.lannabloom.shop/en --only-categories=performance --chrome-flags="--headless=new"
 
 Full JSON reports are not committed (large); regenerate as needed.
+
+---
+2026-08-04 — Performance pass (pending re-measure after deploy)
+Changes targeting mobile ~49 / desktop ~62:
+- Removed full-screen LoadingScreen + html.loading content hide (LCP gate)
+- Hero carousel starts at index 0; mounts ±1 slides; defers neighbors ~1.2s; Ken Burns after first advance
+- Server preload of first hero image via /_next/image
+- Arima Madurai served as woff2 (~50KB each vs ~115KB TTF)
+- Flag-icons CSS loaded non-blocking (media=print → all)
+- Noto Sans Cyrillic variable only on /ru lang shell

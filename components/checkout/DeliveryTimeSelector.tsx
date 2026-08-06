@@ -113,16 +113,15 @@ function buildTimeRestrictionHint({
 
 function messageForInvalidReason(
   reason: SpecificDeliveryTimeInvalidReason,
-  t: (typeof translations)['en']['premiumCheckout'],
-  minSpecificTime: string
-): string {
-  const copy = t as {
+  copy: {
     specificTimeTooSoon?: string;
     specificTimeBeforeOpen?: string;
     specificTimeAfterHours?: string;
     specificTimeDateBlocked?: string;
     specificTimeInvalid?: string;
-  };
+  },
+  minSpecificTime: string
+): string {
   switch (reason) {
     case 'before_open':
       return copy.specificTimeBeforeOpen ?? 'This time is before delivery hours. Earliest is 09:00.';

@@ -84,7 +84,7 @@ assert(
   );
   assert(t.orderingAllowed, 'next_day orderable');
   assert(t.earliestYmd === tomorrow, 'next_day earliest tomorrow');
-  assert(t.timingLine?.includes('Earliest delivery'), 'timing line en');
+  assert(Boolean(t.timingLine?.includes('Earliest delivery')), 'timing line en');
 }
 
 // Preorder default 48h

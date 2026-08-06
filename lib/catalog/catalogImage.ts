@@ -76,12 +76,16 @@ export function filterStorefrontRenderableImageUrls(urls: string[]): string[] {
 }
 
 /** Build a /_next/image URL for link preload hints. */
-export function catalogOptimizedImageUrl(src: string, width: number): string {
+export function catalogOptimizedImageUrl(
+  src: string,
+  width: number,
+  quality = 75
+): string {
   if (catalogImageUnoptimized(src)) return src;
   const params = new URLSearchParams({
     url: src,
     w: String(width),
-    q: '75',
+    q: String(quality),
   });
   return `/_next/image?${params.toString()}`;
 }

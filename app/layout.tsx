@@ -4,11 +4,10 @@ import { DocumentLangSync } from '@/components/DocumentLangSync';
 import { AhrefsAnalytics } from '@/components/AhrefsAnalytics';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
-import { LoadingScreen } from '@/components/LoadingScreen';
 import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { fontVariables, mulish } from '@/lib/fonts';
+import { mulish } from '@/lib/fonts';
 import { getBaseUrl } from '@/lib/orders';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
@@ -50,17 +49,27 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
-        <link rel="stylesheet" href="/vendor/flag-icons/css/flag-icons.min.css" />
+        {/* Non-blocking: language switcher flags; media swap after load so it does not block LCP */}
+        <link
+          id="flag-icons-css"
+          rel="stylesheet"
+          href="/vendor/flag-icons/css/flag-icons.min.css"
+          media="print"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var l=document.getElementById('flag-icons-css');if(!l)return;var a=function(){l.media='all'};l.addEventListener('load',a);if(l.sheet)a();})();`,
+          }}
+        />
+        <noscript>
+          <link rel="stylesheet" href="/vendor/flag-icons/css/flag-icons.min.css" />
+        </noscript>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 if (typeof document === 'undefined') return;
                 document.documentElement.classList.add('light');
-                document.documentElement.classList.add('loading');
-                document.addEventListener('DOMContentLoaded', function() {
-                  if (document.body) document.body.classList.add('loading');
-                });
               })();
             `,
           }}
@@ -90,11 +99,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${fontVariables} ${mulish.className}`}>
+      <body className={`${mulish.variable} ${mulish.className}`}>
         <ThemeProvider>
           <CookieConsentProvider>
             <DocumentLangSync />
-            <LoadingScreen />
             <InternalTrafficBootstrap />
             <GoogleAnalytics />
             <WebVitalsReporter />

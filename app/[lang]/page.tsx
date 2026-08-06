@@ -9,13 +9,16 @@ import { LocalLandingSection } from '@/components/home/LocalLandingSection';
 import { HomeFaq } from '@/components/home/HomeFaq';
 import { getHomeFaqItems } from '@/components/home/homeLandingContent';
 import { ExperienceSection } from '@/components/ExperienceSection';
-import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
 import {
   buildFaqPageJsonLd,
   buildOrganizationJsonLd,
   buildWebSiteJsonLd,
 } from '@/lib/seo/siteJsonLd';
 import { getCatalogHeroImage, getCatalogHeroCarouselImages } from '@/lib/catalogReads';
+import {
+  catalogOptimizedImageUrl,
+  isStorefrontRenderableImageUrl,
+} from '@/lib/catalog/catalogImage';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { Suspense } from 'react';
@@ -24,6 +27,8 @@ import { Suspense } from 'react';
 export const revalidate = 60;
 
 const OG_IMAGE_PATH = '/HeroImage/heroimage.webp';
+/** Match hero carousel mobile card width for LCP preload. */
+const HERO_LCP_PRELOAD_WIDTH = 384;
 
 export async function generateMetadata({
   params,
@@ -77,8 +82,23 @@ export default async function HomePage({
     buildWebSiteJsonLd(),
     buildFaqPageJsonLd(faqItems),
   ];
+  const lcpSrc =
+    carouselImages?.[0]?.src ||
+    heroImageUrl ||
+    (isStorefrontRenderableImageUrl(OG_IMAGE_PATH) ? OG_IMAGE_PATH : null);
+  const lcpPreloadHref = lcpSrc
+    ? catalogOptimizedImageUrl(lcpSrc, HERO_LCP_PRELOAD_WIDTH, 70)
+    : null;
   return (
     <>
+      {lcpPreloadHref ? (
+        <link
+          rel="preload"
+          as="image"
+          href={lcpPreloadHref}
+          fetchPriority="high"
+        />
+      ) : null}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

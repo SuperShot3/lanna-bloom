@@ -47,5 +47,5 @@ export function bouquetIdsForDeliveryOptionsLookup(
     const id = typeof line.bouquetId === 'string' ? line.bouquetId.trim() : '';
     if (id) ids.add(id);
   }
-  return [...ids];
+  return Array.from(ids);
 }

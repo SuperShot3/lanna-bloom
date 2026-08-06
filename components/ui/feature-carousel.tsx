@@ -43,6 +43,15 @@ function useIsMdUp() {
   return isMdUp;
 }
 
+function carouselPos(index: number, currentIndex: number, total: number): number {
+  const offset = index - currentIndex;
+  let pos = (offset + total) % total;
+  if (pos > Math.floor(total / 2)) {
+    pos = pos - total;
+  }
+  return pos;
+}
+
 export function HeroFeatureCarousel({
   images,
   className,
@@ -53,27 +62,43 @@ export function HeroFeatureCarousel({
   const prefersReducedMotion = usePrefersReducedMotion();
   const isMdUp = useIsMdUp();
   const canNavigate = images.length > 1;
-  const [currentIndex, setCurrentIndex] = React.useState(() =>
-    images.length > 0 ? Math.floor(images.length / 2) : 0
-  );
+  const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
+  /** Ken Burns only after the user has moved past the initial LCP slide. */
+  const [allowKenBurns, setAllowKenBurns] = React.useState(false);
+  /** Defer adjacent slides until after first paint so LCP image wins the network. */
+  const [neighborsReady, setNeighborsReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const ready = window.setTimeout(() => setNeighborsReady(true), 1200);
+    return () => window.clearTimeout(ready);
+  }, []);
+
+  const goTo = React.useCallback(
+    (next: number | ((prev: number) => number)) => {
+      setAllowKenBurns(true);
+      setNeighborsReady(true);
+      setCurrentIndex(next);
+    },
+    []
+  );
 
   const handleNext = React.useCallback(() => {
     if (!canNavigate) return;
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  }, [canNavigate, images.length]);
+    goTo((prev) => (prev + 1) % images.length);
+  }, [canNavigate, goTo, images.length]);
 
   const handlePrev = React.useCallback(() => {
     if (!canNavigate) return;
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  }, [canNavigate, images.length]);
+    goTo((prev) => (prev - 1 + images.length) % images.length);
+  }, [canNavigate, goTo, images.length]);
 
   const handleGoTo = React.useCallback(
     (index: number) => {
       if (!canNavigate) return;
-      setCurrentIndex(index);
+      goTo(index);
     },
-    [canNavigate]
+    [canNavigate, goTo]
   );
 
   const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
@@ -127,14 +152,16 @@ export function HeroFeatureCarousel({
   }, [autoplayActive, handleNext, currentIndex]);
 
   React.useEffect(() => {
-    if (currentIndex >= images.length && images.length > 0) {
-      setCurrentIndex(Math.floor(images.length / 2));
+    if (images.length === 0) return;
+    if (currentIndex >= images.length) {
+      setCurrentIndex(0);
     }
   }, [currentIndex, images.length]);
 
   if (images.length === 0) return null;
 
   const spreadPercent = isMdUp ? 46 : 27;
+  const total = images.length;
 
   return (
     <div className={cn('relative w-full', className)}>
@@ -157,12 +184,9 @@ export function HeroFeatureCarousel({
       >
         <div className="relative w-full h-full flex items-center justify-center [perspective:1200px]">
           {images.map((image, index) => {
-            const offset = index - currentIndex;
-            const total = images.length;
-            let pos = (offset + total) % total;
-            if (pos > Math.floor(total / 2)) {
-              pos = pos - total;
-            }
+            const pos = carouselPos(index, currentIndex, total);
+            if (Math.abs(pos) > 1) return null;
+            if (!neighborsReady && pos !== 0) return null;
 
             const isCenter = pos === 0;
             const isAdjacent = Math.abs(pos) === 1;
@@ -187,7 +211,6 @@ export function HeroFeatureCarousel({
                   filter: isCenter
                     ? 'blur(0px) saturate(1)'
                     : 'blur(2px) saturate(0.85)',
-                  visibility: Math.abs(pos) > 1 ? 'hidden' : 'visible',
                 }}
               >
                 <div
@@ -204,9 +227,12 @@ export function HeroFeatureCarousel({
                     fill
                     className={cn(
                       'object-cover pointer-events-none',
-                      isCenter && !prefersReducedMotion && 'hero-carousel-kenburns'
+                      isCenter &&
+                        allowKenBurns &&
+                        !prefersReducedMotion &&
+                        'hero-carousel-kenburns'
                     )}
-                    priority={isCenter}
+                    priority={isCenter && currentIndex === 0 && index === 0}
                     quality={70}
                     sizes={HERO_CAROUSEL_IMAGE_SIZES}
                     unoptimized={catalogImageUnoptimized(image.src)}

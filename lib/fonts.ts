@@ -13,6 +13,8 @@ export const notoSansCyrillic = Noto_Sans({
   display: 'swap',
   adjustFontFallback: true,
   variable: '--font-sans-cyrillic',
+  preload: false,
 });
 
-export const fontVariables = `${mulish.variable} ${notoSansCyrillic.variable}`;
+/** @deprecated Prefer `mulish.variable`; Cyrillic is applied only on /ru layouts. */
+export const fontVariables = mulish.variable;
