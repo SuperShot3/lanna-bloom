@@ -51,7 +51,6 @@ const WEEKDAY_LABELS_3: Record<Locale, readonly string[]> = {
   'zh-hk': ['週日', '週一', '週二', '週三', '週四', '週五', '週六'],
 };
 
-const DELIVERY_EMOJI = '📦🚚💨';
 export type DeliveryDatePickerProps = {
   value: string;
   onChange: (ymd: string) => void;
@@ -114,6 +113,7 @@ export function DeliveryDatePicker({
     startOfMonth(safeMinDate)
   );
 
+  const monthLabel = format(currentMonth, 'MMMM yyyy', { locale });
   const selectedLabel =
     selectedDate &&
     format(
@@ -141,7 +141,7 @@ export function DeliveryDatePicker({
         aria-label={
           selectedLabel
             ? `${deliveryOnLabel}: ${selectedLabel}`
-            : format(currentMonth, 'MMMM yyyy', { locale })
+            : monthLabel
         }
         className={cn(
           'flex items-center justify-between gap-1 border-b border-border/70',
@@ -166,17 +166,7 @@ export function DeliveryDatePicker({
           role="status"
           aria-live="polite"
         >
-          <span className="mr-0.5" aria-hidden>
-            {DELIVERY_EMOJI}
-          </span>
-          {selectedLabel ? (
-            <>
-              <span className="font-medium text-muted-foreground">{deliveryOnLabel}: </span>
-              <span className="font-[780] text-primary">{selectedLabel}</span>
-            </>
-          ) : (
-            <span className="font-medium text-muted-foreground">{deliveryOnLabel}</span>
-          )}
+          <span className="font-[780] text-foreground">{monthLabel}</span>
         </p>
 
         <button

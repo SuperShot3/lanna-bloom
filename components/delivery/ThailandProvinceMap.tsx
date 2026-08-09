@@ -120,6 +120,8 @@ function MapInner({
   const amphoeGeoJsonRef = useRef<{ resetStyle: (layer?: unknown) => void } | null>(null);
   const selectedAmphoeIdRef = useRef(selectedAmphoeId);
   selectedAmphoeIdRef.current = selectedAmphoeId;
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
   const onSelectAmphoeRef = useRef(onSelectAmphoe);
   onSelectAmphoeRef.current = onSelectAmphoe;
   const amphoeLayerById = useRef(
@@ -133,7 +135,14 @@ function MapInner({
     >()
   );
   const layerByCode = useRef(
-    new Map<string, { getBounds?: () => LeafletBounds; bringToFront?: () => void }>()
+    new Map<
+      string,
+      {
+        getBounds?: () => LeafletBounds;
+        bringToFront?: () => void;
+        bindTooltip?: (content: string, options?: object) => void;
+      }
+    >()
   );
   const thailandBoundsRef = useRef<LeafletBounds | null>(null);
   const cameraKeyRef = useRef<string>('');
@@ -358,6 +367,28 @@ function MapInner({
     return null;
   }
 
+  /** Clear selection when clicking ocean / empty map chrome (not province or amphoe paths). */
+  function ClearSelectionOnBackgroundClick() {
+    const map = useMap();
+    useEffect(() => {
+      const handler = (e: { originalEvent?: Event }) => {
+        const target = e.originalEvent?.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest('.leaflet-interactive')) return;
+        if (target.closest('button, a, input, textarea, select, [role="button"]')) return;
+        if (target.closest(`.${styles.zoomControls}`)) return;
+        if (target.closest(`.${styles.infoOverlay}`)) return;
+        onSelectRef.current('');
+        onSelectAmphoeRef.current(null);
+      };
+      map.on('click', handler);
+      return () => {
+        map.off('click', handler);
+      };
+    }, [map]);
+    return null;
+  }
+
   const styleFor = useCallback(
     (feature?: { properties?: { NAME_1?: string } }) => {
       const rawName = feature?.properties?.NAME_1 ?? '';
@@ -427,6 +458,7 @@ function MapInner({
         setStyle: (s: object) => void;
         getBounds?: () => LeafletBounds;
         bringToFront?: () => void;
+        bindTooltip?: (content: string, options?: object) => void;
       }
     ) => {
       const rawName = feature.properties?.NAME_1 ?? '';
@@ -437,10 +469,24 @@ function MapInner({
         if (province.province_code === selectedCode && !showAmphoes) {
           layer.bringToFront?.();
         }
+        if (!showAmphoes) {
+          const label =
+            lang === 'th' ? province.province_name_th : province.province_name_en;
+          const isSelected = province.province_code === selectedCode;
+          layer.bindTooltip?.(label, {
+            sticky: !isSelected,
+            permanent: isSelected,
+            direction: isSelected ? 'center' : 'top',
+            opacity: 0.92,
+            className: styles.provinceTooltip,
+            interactive: false,
+          });
+        }
       }
       if (showAmphoes) return;
       layer.on({
         click: () => {
+          // Select only — never toggle off by re-clicking the same province.
           if (province) onSelect(province.province_code);
         },
         mouseover: () => {
@@ -461,7 +507,7 @@ function MapInner({
         },
       });
     },
-    [byTopoName, onSelect, selectedCode, showAmphoes]
+    [byTopoName, onSelect, selectedCode, showAmphoes, lang]
   );
 
   const onEachAmphoe = useCallback(
@@ -559,6 +605,7 @@ function MapInner({
       <SyncAmphoeStyles />
       <BringSelectedProvinceForward />
       <KeepAmphoesOnTop />
+      <ClearSelectionOnBackgroundClick />
       <ZoomButtons />
     </MapContainer>
   );

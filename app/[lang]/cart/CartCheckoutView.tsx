@@ -20,6 +20,16 @@ import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 
+function formatCheckoutStickyCalendarDate(date: string, lang: Locale): string {
+  const d = new Date(`${date}T12:00:00+07:00`);
+  return d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
+    timeZone: 'Asia/Bangkok',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 function formatCheckoutStickySchedule(
   delivery: DeliveryFormValues,
   lang: Locale,
@@ -32,18 +42,11 @@ function formatCheckoutStickySchedule(
 
   const todayStr = getShopTodayYmd();
   const tomorrowStr = getShopTomorrowYmd();
+  const calendarDate = formatCheckoutStickyCalendarDate(date, lang);
   let dateLabel: string;
-  if (date === todayStr) dateLabel = todayLabel;
-  else if (date === tomorrowStr) dateLabel = tomorrowLabel;
-  else {
-    const d = new Date(`${date}T12:00:00+07:00`);
-    dateLabel = d.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
-      timeZone: 'Asia/Bangkok',
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    });
-  }
+  if (date === todayStr) dateLabel = `${todayLabel}, ${calendarDate}`;
+  else if (date === tomorrowStr) dateLabel = `${tomorrowLabel}, ${calendarDate}`;
+  else dateLabel = calendarDate;
   return `${dateLabel} · ${timeSlot}`;
 }
 
