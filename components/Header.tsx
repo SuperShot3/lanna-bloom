@@ -222,7 +222,8 @@ export function Header({
         clearMarketSession();
         setSessionMarketSlug(null);
         setMenuOpen(false);
-        router.push(`/${lang}/catalog`);
+        // Stay on cart so checkout can re-sync destination/zone in place.
+        if (!isCartPage) router.push(`/${lang}/catalog`);
         return;
       }
 
@@ -231,7 +232,7 @@ export function Header({
         clearMarketSession();
         setSessionMarketSlug(null);
         setMenuOpen(false);
-        router.push(`/${lang}/catalog`);
+        if (!isCartPage) router.push(`/${lang}/catalog`);
         return;
       }
 
@@ -242,9 +243,10 @@ export function Header({
       setSessionMarketSlug(market.pathSlug);
       setMenuOpen(false);
       // Land on market catalog (gated by province catalog_enabled when closed).
-      router.push(`/${lang}/catalog/${market.pathSlug}/catalog`);
+      // On cart, session notify refreshes checkout profile without leaving.
+      if (!isCartPage) router.push(`/${lang}/catalog/${market.pathSlug}/catalog`);
     },
-    [lang, router]
+    [isCartPage, lang, router]
   );
 
   const glassNavClass = isScrolled

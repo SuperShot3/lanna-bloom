@@ -8,9 +8,21 @@ import type { MarketPathSlug } from '@/lib/delivery/markets';
 
 export const MARKET_SESSION_STORAGE_KEY = 'lanna-bloom-delivery-market';
 
+/** Dispatched after write/clear so cart can refresh without navigation. */
+export const MARKET_SESSION_CHANGE_EVENT = 'lanna-bloom-market-session-change';
+
 export interface MarketSessionPayload {
   destinationId: DeliveryDestinationId;
   pathSlug: MarketPathSlug;
+}
+
+function notifyMarketSessionChange(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new Event(MARKET_SESSION_CHANGE_EVENT));
+  } catch {
+    // ignore
+  }
 }
 
 export function readMarketSession(): MarketSessionPayload | null {
@@ -39,6 +51,7 @@ export function writeMarketSession(payload: MarketSessionPayload): void {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(MARKET_SESSION_STORAGE_KEY, JSON.stringify(payload));
+    notifyMarketSessionChange();
   } catch {
     // ignore
   }
@@ -48,6 +61,7 @@ export function clearMarketSession(): void {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.removeItem(MARKET_SESSION_STORAGE_KEY);
+    notifyMarketSessionChange();
   } catch {
     // ignore
   }

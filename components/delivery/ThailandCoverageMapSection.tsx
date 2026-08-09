@@ -62,8 +62,6 @@ export function ThailandCoverageMapSection({
   const [selectedAmphoeId, setSelectedAmphoeId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const amphoeListRef = useRef<HTMLUListElement>(null);
-  const mapColumnRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const isTh = lang === 'th';
   const amphoeProvinceCode: AmphoeCapableProvinceCode | null =
     selectedCode && isAmphoeCapableProvince(selectedCode)
@@ -152,20 +150,10 @@ export function ThailandCoverageMapSection({
     el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedAmphoeId]);
 
-  // Clear map selection when clicking outside the map + side panel (not by re-clicking a province).
-  useEffect(() => {
-    if (!selectedCode && !selectedAmphoeId) return;
-    function onPointerDown(e: PointerEvent) {
-      const target = e.target;
-      if (!(target instanceof Node)) return;
-      if (mapColumnRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setSelectedCode(null);
-      setSelectedAmphoeId(null);
-    }
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [selectedCode, selectedAmphoeId]);
+  function clearSelection() {
+    setSelectedCode(null);
+    setSelectedAmphoeId(null);
+  }
 
   if (provinces.length === 0) return null;
 
@@ -244,6 +232,14 @@ export function ThailandCoverageMapSection({
               </Link>
             ) : null}
           </div>
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="shrink-0 -mt-0.5 -mr-1 w-9 h-9 rounded-lg text-stone-400 hover:text-[#1A3C34] hover:bg-stone-50 transition-colors text-xl leading-none"
+            aria-label={isTh ? 'ล้างการเลือก' : 'Clear selection'}
+          >
+            ×
+          </button>
         </div>
       </div>
     ) : null;
@@ -266,20 +262,26 @@ export function ThailandCoverageMapSection({
       ) : null}
 
       <div className="max-w-5xl mx-auto flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start lg:gap-6">
-        <div
-          ref={panelRef}
-          className="order-1 lg:order-2 rounded-2xl border border-stone-200/80 bg-[#FDFCF8] p-3 sm:p-4"
-        >
+        <div className="order-1 min-w-0">
+          <ThailandProvinceMap
+            mode="public"
+            provinces={provinces}
+            lang={lang}
+            selectedCode={selectedCode}
+            onSelectProvince={(code) => setSelectedCode(code || null)}
+            selectedAmphoeId={selectedAmphoeId}
+            onSelectAmphoe={setSelectedAmphoeId}
+          />
+        </div>
+
+        <div className="order-2 rounded-2xl border border-stone-200/80 bg-[#FDFCF8] p-3 sm:p-4">
           {serviceSummary}
           {showingAmphoes ? (
             <>
               <div className="flex items-center gap-2 mb-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedCode(null);
-                    setSelectedAmphoeId(null);
-                  }}
+                  onClick={clearSelection}
                   className="text-xs font-semibold text-[#C5A059] hover:text-[#1A3C34] transition-colors shrink-0"
                 >
                   {isTh ? '← จังหวัดทั้งหมด' : '← All provinces'}
@@ -419,18 +421,6 @@ export function ThailandCoverageMapSection({
               </ul>
             </>
           )}
-        </div>
-
-        <div ref={mapColumnRef} className="order-2 lg:order-1 min-w-0">
-          <ThailandProvinceMap
-            mode="public"
-            provinces={provinces}
-            lang={lang}
-            selectedCode={selectedCode}
-            onSelectProvince={(code) => setSelectedCode(code || null)}
-            selectedAmphoeId={selectedAmphoeId}
-            onSelectAmphoe={setSelectedAmphoeId}
-          />
         </div>
       </div>
     </section>

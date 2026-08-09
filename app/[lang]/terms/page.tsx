@@ -29,18 +29,28 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
           <h2 className="policy-heading">{isTh ? 'การสั่งซื้อและการยืนยัน' : 'Orders & confirmation'}</h2>
           <p className="policy-text">
             {isTh
-              ? 'การสั่งซื้อและการชำระเงินทำผ่านเว็บไซต์ของเรา หลังชำระเงินสำเร็จ ระบบอัตโนมัติจะดำเนินการตามคำสั่งซื้อ เราไม่ยืนยันคำสั่งซื้อผ่านแชท (LINE, WhatsApp, Telegram หรือช่องทางที่คล้ายกัน)'
-              : 'Orders are placed and paid on our website. After successful payment, our automated system processes your order. We do not confirm orders by chat (LINE, WhatsApp, Telegram, or similar).'}
+              ? 'การสั่งซื้อและการชำระเงินทำผ่านเว็บไซต์ของเราโดยตรง เมื่อชำระเงินสำเร็จ คำสั่งซื้อจะถูกรับและดำเนินการโดยระบบอัตโนมัติ'
+              : 'Orders are placed and paid directly through our website. Once payment is successful, your order is automatically received and processed by our system.'}
           </p>
           <p className="policy-text">
             {isTh
-              ? 'อีเมลเป็นข้อมูลทางเลือก หากคุณให้อีเมลตอนชำระเงิน ระบบจะส่งอีเมลอัตโนมัติ เช่น การยืนยันคำสั่งซื้อและการแจ้งเมื่อจัดส่งแล้ว หากคุณไม่ให้อีเมล คุณจะไม่ได้รับอีเมลจากระบบ คุณยังสามารถติดตามสถานะคำสั่งซื้อได้ในหน้าตะกร้าสินค้า โดยกรอกเบอร์โทรศัพท์ที่ใช้ตอนสั่งซื้อ'
-              : 'Email is optional. If you provide an email at checkout, our system sends automated emails such as order confirmation and order delivered notices. If you do not provide an email, you will not receive system emails. You can still track your order on the cart page by entering the phone number used at checkout.'}
+              ? 'คุณสามารถติดต่อเราได้ตลอดเวลาทาง LINE, WhatsApp, Telegram, อีเมล หรือแชทในหน้าออเดอร์ อย่างไรก็ตาม การติดต่อเราไม่จำเป็นเพื่อยืนยันคำสั่งซื้อ หากชำระเงินสำเร็จและรายละเอียดคำสั่งซื้อครบถ้วน ระบบจะดำเนินการตามคำสั่งซื้อโดยอัตโนมัติ'
+              : 'You are always welcome to contact us by LINE, WhatsApp, Telegram, email, or order chat. However, contacting us is not required to confirm your order. If payment is successful and the order details are complete, your order will be processed automatically.'}
           </p>
           <p className="policy-text">
             {isTh
-              ? 'เราจะติดต่อคุณเฉพาะเมื่อข้อมูลที่จำเป็นไม่ครบหรือไม่ชัดเจน โดยใช้ช่องทางที่คุณเลือกตอนชำระเงิน หากรายละเอียดคำสั่งซื้อครบถ้วนและชัดเจนแล้ว เราจะไม่ติดต่อเพื่อยืนยันคำสั่งซื้ออีก'
-              : 'We contact you only if required information is missing or unclear, using the communication method you chose at checkout. If your order details are complete and clear, we will not contact you for confirmation.'}
+              ? 'อีเมลเป็นข้อมูลทางเลือก หากคุณให้อีเมลตอนชำระเงิน ระบบจะส่งการอัปเดตอัตโนมัติ เช่น การยืนยันคำสั่งซื้อและการแจ้งเมื่อจัดส่งแล้ว หากคุณไม่ให้อีเมล คุณยังสามารถเข้าถึงและติดตามคำสั่งซื้อได้โดยใช้เบอร์โทรศัพท์ที่กรอกตอนชำระเงิน'
+              : 'Email is optional. If you provide an email address at checkout, our system will send automated updates such as order confirmation and delivery notifications. If you do not provide an email, you can still access and track your order using the phone number entered at checkout.'}
+          </p>
+          <p className="policy-text">
+            {isTh
+              ? 'หากข้อมูลใดขาดหายหรือไม่ชัดเจน เราจะติดต่อคุณผ่านช่องทางที่คุณเลือกตอนชำระเงิน'
+              : 'If any information is missing or unclear, we will contact you using the communication method you selected at checkout.'}
+          </p>
+          <p className="policy-text">
+            {isTh
+              ? 'หากมีคำถาม คำขอพิเศษ หรือต้องการชี้แจงอะไรหลังสั่งซื้อ สามารถติดต่อเราได้ตามสะดวก — ผ่านแชทในหน้าออเดอร์, WhatsApp, LINE, Telegram หรืออีเมล'
+              : 'If you have any questions, special requests, or would like to clarify something after placing your order, please feel free to contact us in whichever way is most convenient for you — through the order chat, WhatsApp, LINE, Telegram, or email.'}
           </p>
         </section>
 

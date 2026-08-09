@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDeliveryMarketOptional } from '@/contexts/DeliveryMarketContext';
 import {
   getMarketByPathSlug,
@@ -11,7 +11,11 @@ import {
   type DeliveryDestinationId,
   type MarketPathSlug,
 } from '@/lib/delivery/markets';
-import { readMarketSession } from '@/lib/delivery/marketSession';
+import {
+  MARKET_SESSION_CHANGE_EVENT,
+  MARKET_SESSION_STORAGE_KEY,
+  readMarketSession,
+} from '@/lib/delivery/marketSession';
 import type { Locale } from '@/lib/i18n';
 
 export type CheckoutDeliveryProfile = {
@@ -28,6 +32,20 @@ export type CheckoutDeliveryProfile = {
 export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfile {
   const pathname = usePathname() ?? '';
   const marketCtx = useDeliveryMarketOptional();
+  const [sessionVersion, setSessionVersion] = useState(0);
+
+  useEffect(() => {
+    const bump = () => setSessionVersion((v) => v + 1);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === MARKET_SESSION_STORAGE_KEY || e.key === null) bump();
+    };
+    window.addEventListener(MARKET_SESSION_CHANGE_EVENT, bump);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(MARKET_SESSION_CHANGE_EVENT, bump);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   return useMemo(() => {
     if (marketCtx) {
@@ -93,5 +111,5 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
         th: destinationDisplayName('CHIANG_MAI', 'th'),
       },
     };
-  }, [marketCtx, pathname]);
+  }, [marketCtx, pathname, sessionVersion]);
 }

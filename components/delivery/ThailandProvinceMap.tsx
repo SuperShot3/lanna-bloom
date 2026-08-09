@@ -124,6 +124,7 @@ function MapInner({
   onSelectRef.current = onSelect;
   const onSelectAmphoeRef = useRef(onSelectAmphoe);
   onSelectAmphoeRef.current = onSelectAmphoe;
+  const showAmphoesRef = useRef(false);
   const amphoeLayerById = useRef(
     new Map<
       string,
@@ -150,6 +151,7 @@ function MapInner({
     amphoeProvinceCode != null &&
     selectedCode === amphoeProvinceCode &&
     amphoeGeojson != null;
+  showAmphoesRef.current = showAmphoes;
   const amphoeDestinationId = amphoeProvinceCode
     ? destinationIdForAmphoeProvince(amphoeProvinceCode)
     : 'CHIANG_MAI';
@@ -367,7 +369,7 @@ function MapInner({
     return null;
   }
 
-  /** Clear selection when clicking ocean / empty map chrome (not province or amphoe paths). */
+  /** Empty-map tap: clear province in overview; in amphoe mode only clear district highlight. */
   function ClearSelectionOnBackgroundClick() {
     const map = useMap();
     useEffect(() => {
@@ -378,6 +380,11 @@ function MapInner({
         if (target.closest('button, a, input, textarea, select, [role="button"]')) return;
         if (target.closest(`.${styles.zoomControls}`)) return;
         if (target.closest(`.${styles.infoOverlay}`)) return;
+        if (showAmphoesRef.current) {
+          // Stay in amphoe drill-down — only drop district highlight if any.
+          if (selectedAmphoeIdRef.current) onSelectAmphoeRef.current(null);
+          return;
+        }
         onSelectRef.current('');
         onSelectAmphoeRef.current(null);
       };
