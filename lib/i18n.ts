@@ -531,7 +531,7 @@ const baseTranslations = {
       cartEmptyLink: 'Browse bouquets',
       trackOrderDivider: 'or track an order',
       browseBouquetsInstead: 'Browse bouquets instead',
-      cartFooterNote: 'Need help? Contact us via LINE or call our shop directly.',
+      cartFooterNote: 'Need help? Contact us via LINE, WhatsApp, or email.',
       deliveryAndContact: 'Delivery & contact',
       sendOrderVia: 'Send order via',
       remove: 'Remove',
@@ -619,7 +619,7 @@ const baseTranslations = {
       emailLabel: 'Email',
       emailPlaceholder: 'e.g. you@example.com',
       emailHint:
-        'Optional — for order confirmation. Check the box below if you want a one-time reminder to finish checkout.',
+        'Optional — we email your confirmation and a private order-tracking link. Check the box below if you want a one-time reminder to finish checkout.',
       checkoutRecoveryEmailConsentLabel:
         "Email me once if I don't finish checkout (optional)",
       marketingEmailConsentLabel:
@@ -708,7 +708,7 @@ const baseTranslations = {
       searchMyOrder: 'Search my order',
       trackOrderSubline: 'Enter the phone number used at checkout',
       orderLookupPlaceholder: 'Phone number or order ID (e.g. LB-2025-XXXX)',
-      orderLookupSubline: 'Enter the phone number used at checkout or your order ID',
+      orderLookupSubline: 'Check status with the phone number from checkout or your order ID',
       enterPhone: 'Phone number',
       enterNameOptional: 'Your name (optional)',
       findOrder: 'Find my order',
@@ -716,6 +716,22 @@ const baseTranslations = {
       noOrdersFoundSubline: 'Please check your phone number or order ID and try again.',
       orderIdMinLength: 'Order ID should be at least 3 characters',
       orderLookupRequired: 'Enter your phone number or order ID',
+      orderLookupSearching: 'Searching...',
+      orderLookupPreviewReceived: 'We’ve received this order.',
+      orderLookupPreviewHelper:
+        'Status preview only. Full details are in your confirmation email (private link), or contact us with your phone number or order ID.',
+      orderLookupContactUs: 'Contact us',
+      orderLookupDeliveryLabel: 'Delivery',
+      orderLookupFaqTitle: 'About order status',
+      orderLookupFaqQ1: 'Why can’t I open full order details?',
+      orderLookupFaqA1:
+        'Full details use a private link from your confirmation email, or the page shown right after checkout. Phone and order ID only show a status preview.',
+      orderLookupFaqQ2: 'I didn’t add an email',
+      orderLookupFaqA2:
+        'Use phone or order ID here for the latest status. Message us with that phone number or order ID if you need help.',
+      orderLookupFaqQ3: 'Where is my private link?',
+      orderLookupFaqA3:
+        'In the confirmation email (“View your order”). After payment, save or bookmark the order page before you leave.',
       chooseBouquet: 'Choose bouquet',
       orderStatus: 'Status',
       deliveryAreaChangedNotice:
@@ -939,7 +955,8 @@ const baseTranslations = {
       deliveryFeeLabel: 'Delivery fee',
       discountLabel: 'Discount',
       totalLabel: 'Total',
-      findOrderHint: 'Next time you visit, find your order by entering your phone number on the cart page.',
+      findOrderHint:
+        'Next time, check status with your phone or order ID on the cart or Track order page. Full details need the private link from your email or after checkout.',
     },
     checkoutSuccess: {
       orderCreated: 'Order created',
@@ -953,7 +970,8 @@ const baseTranslations = {
       deliveryFeeLabel: 'Delivery fee',
       discountLabel: 'Discount',
       totalLabel: 'Total',
-      findOrderHint: 'Next time you visit, find your order by entering your phone number on the cart page.',
+      findOrderHint:
+        'Next time, check status with your phone or order ID on the cart or Track order page. Full details need the private link from your email or after checkout.',
     },
     orderPage: {
       orderDetails: 'Order details',
@@ -2157,7 +2175,7 @@ const baseTranslations = {
       cartEmptyLink: 'เลือกช่อดอกไม้',
       trackOrderDivider: 'หรือค้นหาออเดอร์',
       browseBouquetsInstead: 'เลือกช่อดอกไม้แทน',
-      cartFooterNote: 'ต้องการความช่วยเหลือ? ติดต่อเราทาง LINE หรือ WhatsApp',
+      cartFooterNote: 'ต้องการความช่วยเหลือ? ติดต่อเราทาง LINE, WhatsApp หรืออีเมล',
       deliveryAndContact: 'การจัดส่งและติดต่อ',
       sendOrderVia: 'ส่งออเดอร์ผ่าน',
       remove: 'ลบ',
@@ -2245,7 +2263,7 @@ const baseTranslations = {
       emailLabel: 'อีเมล',
       emailPlaceholder: 'เช่น you@example.com',
       emailHint:
-        'ไม่บังคับ — สำหรับยืนยันคำสั่งซื้อ หากต้องการรับอีเมลเตือนครั้งเดียวเพื่อชำระเงินต่อ ให้ติ๊กช่องด้านล่าง',
+        'ไม่บังคับ — เราจะส่งอีเมลยืนยันพร้อมลิงก์ติดตามออเดอร์ส่วนตัว หากต้องการรับอีเมลเตือนครั้งเดียวเพื่อชำระเงินต่อ ให้ติ๊กช่องด้านล่าง',
       checkoutRecoveryEmailConsentLabel:
         'ส่งอีเมลเตือนครั้งเดียวหากยังชำระเงินไม่เสร็จ (ไม่บังคับ)',
       marketingEmailConsentLabel:
@@ -2326,7 +2344,7 @@ const baseTranslations = {
       searchMyOrder: 'ค้นหาออเดอร์ของฉัน',
       trackOrderSubline: 'กรอกเบอร์โทรศัพท์ที่ใช้เมื่อสั่งซื้อ',
       orderLookupPlaceholder: 'เบอร์โทรศัพท์หรือรหัสออเดอร์ (เช่น LB-2025-XXXX)',
-      orderLookupSubline: 'กรอกเบอร์โทรที่ใช้เมื่อสั่งซื้อหรือรหัสออเดอร์',
+      orderLookupSubline: 'ตรวจสถานะด้วยเบอร์โทรตอนสั่งซื้อหรือรหัสออเดอร์',
       enterPhone: 'เบอร์โทรศัพท์',
       enterNameOptional: 'ชื่อของคุณ (ไม่บังคับ)',
       findOrder: 'ค้นหาออเดอร์',
@@ -2334,6 +2352,22 @@ const baseTranslations = {
       noOrdersFoundSubline: 'กรุณาตรวจสอบเบอร์โทรหรือรหัสออเดอร์และลองอีกครั้ง',
       orderIdMinLength: 'รหัสออเดอร์ต้องมีอย่างน้อย 3 ตัวอักษร',
       orderLookupRequired: 'กรอกเบอร์โทรศัพท์หรือรหัสออเดอร์',
+      orderLookupSearching: 'กำลังค้นหา...',
+      orderLookupPreviewReceived: 'เราได้รับออเดอร์นี้แล้ว',
+      orderLookupPreviewHelper:
+        'แสดงเฉพาะสถานะ รายละเอียดเต็มอยู่ในอีเมลยืนยัน (ลิงก์ส่วนตัว) หรือติดต่อเราพร้อมเบอร์โทร/รหัสออเดอร์',
+      orderLookupContactUs: 'ติดต่อเรา',
+      orderLookupDeliveryLabel: 'วันจัดส่ง',
+      orderLookupFaqTitle: 'เกี่ยวกับสถานะออเดอร์',
+      orderLookupFaqQ1: 'ทำไมเปิดรายละเอียดออเดอร์เต็มไม่ได้?',
+      orderLookupFaqA1:
+        'รายละเอียดเต็มใช้ลิงก์ส่วนตัวจากอีเมลยืนยัน หรือหน้าที่แสดงทันทีหลังชำระเงิน เบอร์โทรและรหัสออเดอร์แสดงเฉพาะสถานะ',
+      orderLookupFaqQ2: 'ฉันไม่ได้ใส่อีเมล',
+      orderLookupFaqA2:
+        'ใช้เบอร์โทรหรือรหัสออเดอร์ที่นี่เพื่อดูสถานะล่าสุด หากต้องการความช่วยเหลือ แจ้งเบอร์หรือรหัสออเดอร์นั้นมาหาเรา',
+      orderLookupFaqQ3: 'ลิงก์ส่วนตัวอยู่ที่ไหน?',
+      orderLookupFaqA3:
+        'ในอีเมลยืนยัน (“ดูออเดอร์ของคุณ”) หลังชำระเงิน ให้บันทึกหรือบุ๊กมาร์กหน้าออเดอร์ก่อนออกจากหน้า',
       chooseBouquet: 'เลือกช่อดอกไม้',
       orderStatus: 'สถานะ',
       deliveryAreaChangedNotice:
@@ -2550,7 +2584,8 @@ const baseTranslations = {
       deliveryFeeLabel: 'ค่าจัดส่ง',
       discountLabel: 'ส่วนลด',
       totalLabel: 'ยอดรวม',
-      findOrderHint: 'ครั้งถัดไปที่คุณเข้ามา ค้นหาออเดอร์ได้โดยกรอกเบอร์โทรศัพท์ในหน้าตะกร้า',
+      findOrderHint:
+        'ครั้งถัดไป ตรวจสถานะด้วยเบอร์โทรหรือรหัสออเดอร์ในหน้าตะกร้าหรือหน้าติดตามออเดอร์ รายละเอียดเต็มต้องใช้ลิงก์ส่วนตัวจากอีเมลหรือหลังชำระเงิน',
     },
     checkoutSuccess: {
       orderCreated: 'สร้างออเดอร์แล้ว',
@@ -2564,7 +2599,8 @@ const baseTranslations = {
       deliveryFeeLabel: 'ค่าจัดส่ง',
       discountLabel: 'ส่วนลด',
       totalLabel: 'ยอดรวม',
-      findOrderHint: 'ครั้งถัดไปที่คุณเข้ามา ค้นหาออเดอร์ได้โดยกรอกเบอร์โทรศัพท์ในหน้าตะกร้า',
+      findOrderHint:
+        'ครั้งถัดไป ตรวจสถานะด้วยเบอร์โทรหรือรหัสออเดอร์ในหน้าตะกร้าหรือหน้าติดตามออเดอร์ รายละเอียดเต็มต้องใช้ลิงก์ส่วนตัวจากอีเมลหรือหลังชำระเงิน',
     },
     orderPage: {
       orderDetails: 'รายละเอียดออเดอร์',
@@ -3690,7 +3726,7 @@ const russianTranslations = {
     cartEmptyLink: 'Смотреть букеты',
     trackOrderDivider: 'или найти заказ',
     browseBouquetsInstead: 'Смотреть букеты',
-    cartFooterNote: 'Нужна помощь? Напишите нам в LINE или позвоните в магазин.',
+    cartFooterNote: 'Нужна помощь? Напишите нам в LINE, WhatsApp или на email.',
     deliveryAndContact: 'Доставка и контакты',
     sendOrderVia: 'Отправить заказ через',
     remove: 'Удалить',
@@ -3864,7 +3900,8 @@ const russianTranslations = {
     deliveryFeeLabel: 'Стоимость доставки',
     discountLabel: 'Скидка',
     totalLabel: 'Итого',
-    findOrderHint: 'В следующий раз найдите заказ по телефону на странице корзины.',
+    findOrderHint:
+      'В следующий раз проверьте статус по телефону или ID на странице корзины или Track order. Полные детали — только по приватной ссылке из письма или после оплаты.',
   },
   checkoutSuccess: {
     ...baseTranslations.en.checkoutSuccess,
@@ -3879,7 +3916,8 @@ const russianTranslations = {
     deliveryFeeLabel: 'Стоимость доставки',
     discountLabel: 'Скидка',
     totalLabel: 'Итого',
-    findOrderHint: 'В следующий раз найдите заказ по телефону на странице корзины.',
+    findOrderHint:
+      'В следующий раз проверьте статус по телефону или ID на странице корзины или Track order. Полные детали — только по приватной ссылке из письма или после оплаты.',
   },
   orderPage: {
     ...baseTranslations.en.orderPage,
@@ -4492,7 +4530,7 @@ const chineseSingaporeTranslations = {
     cartEmptyLink: '浏览花束',
     trackOrderDivider: '或查询订单',
     browseBouquetsInstead: '浏览花束',
-    cartFooterNote: '需要帮助？请通过 LINE 联系我们或直接致电店铺。',
+    cartFooterNote: '需要帮助？请通过 LINE、WhatsApp 或邮件联系我们。',
     deliveryAndContact: '配送与联系方式',
     sendOrderVia: '通过以下方式发送订单',
     remove: '移除',
@@ -4622,7 +4660,8 @@ const chineseSingaporeTranslations = {
     deliveryFeeLabel: '配送费',
     discountLabel: '折扣',
     totalLabel: '总计',
-    findOrderHint: '下次访问时，可在购物车页面输入电话号码查找订单。',
+    findOrderHint:
+      '下次可用电话或订单号在购物车或订单跟踪页查看状态。完整详情需确认邮件或结账后的私密链接。',
   },
   checkoutSuccess: {
     ...baseTranslations.en.checkoutSuccess,
@@ -4637,7 +4676,8 @@ const chineseSingaporeTranslations = {
     deliveryFeeLabel: '配送费',
     discountLabel: '折扣',
     totalLabel: '总计',
-    findOrderHint: '下次访问时，可在购物车页面输入电话号码查找订单。',
+    findOrderHint:
+      '下次可用电话或订单号在购物车或订单跟踪页查看状态。完整详情需确认邮件或结账后的私密链接。',
   },
   orderPage: {
     ...baseTranslations.en.orderPage,

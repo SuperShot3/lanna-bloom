@@ -47,18 +47,21 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
   const [isNoResults, setIsNoResults] = useState(false);
   const router = useRouter();
 
+  const searchingLabel = t.orderLookupSearching ?? (lang === 'th' ? 'กำลังค้นหา...' : 'Searching...');
+  const contactHref = `/${lang}/contact`;
+
   const looksLikeOrderId = (value: string): boolean => {
-    const t = value.trim();
-    if (!t) return false;
-    if (t.toUpperCase().startsWith('LB-')) return true;
-    return /[A-Za-z]/.test(t);
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    if (trimmed.toUpperCase().startsWith('LB-')) return true;
+    return /[A-Za-z]/.test(trimmed);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) {
-      setError((t as { orderLookupRequired?: string }).orderLookupRequired ?? 'Enter your phone number or order ID');
+      setError(t.orderLookupRequired ?? 'Enter your phone number or order ID');
       return;
     }
     const searchByOrderId = looksLikeOrderId(trimmed);
@@ -108,7 +111,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
       <div className="cart-track-header">
         <span className="cart-track-label">{t.searchMyOrder ?? t.trackOrder}</span>
         <span className="cart-track-sub">
-          {(t as { orderLookupSubline?: string }).orderLookupSubline ?? t.trackOrderSubline}
+          {t.orderLookupSubline ?? t.trackOrderSubline}
         </span>
       </div>
 
@@ -124,7 +127,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
               setQuery(e.target.value);
               setError(null);
             }}
-            placeholder={(t as { orderLookupPlaceholder?: string }).orderLookupPlaceholder ?? t.phoneNumberPlaceholder}
+            placeholder={t.orderLookupPlaceholder ?? t.phoneNumberPlaceholder}
             className="cart-track-phone-field"
             disabled={loading}
             required
@@ -158,7 +161,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
             </button>
 
             <button type="submit" className="cart-btn-primary" disabled={loading}>
-              {loading ? (lang === 'th' ? 'กำลังค้นหา...' : 'Searching...') : t.findOrder}
+              {loading ? searchingLabel : t.findOrder}
             </button>
           </div>
         </div>
@@ -169,30 +172,84 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           {loading && (
             <div className="cart-track-order-list-overlay" aria-hidden>
               <span className="cart-track-order-list-overlay-text">
-                {lang === 'th' ? 'กำลังค้นหา...' : 'Searching...'}
+                {searchingLabel}
               </span>
             </div>
           )}
           <ul className="cart-track-order-list">
             {orders.map((order) => (
               <li key={order.orderId}>
-                <Link
-                  href={`/order/${encodeURIComponent(order.orderId)}`}
-                  className="cart-track-order-link"
-                >
-                  <span className="cart-track-order-id">{order.orderId}</span>
-                  <span className="cart-track-order-status">
-                    {getFulfillmentLabel(order.fulfillmentStatus, tOrder)}
-                  </span>
-                  <span className="cart-track-order-date">
-                    {formatDeliveryDate(order.deliveryDate)}
-                  </span>
-                </Link>
+                <div className="cart-track-order-card">
+                  <div className="cart-track-order-meta">
+                    <span className="cart-track-order-id">{order.orderId}</span>
+                    <span className="cart-track-order-status">
+                      {getFulfillmentLabel(order.fulfillmentStatus, tOrder)}
+                    </span>
+                    <span className="cart-track-order-date">
+                      {t.orderLookupDeliveryLabel ?? 'Delivery'}: {formatDeliveryDate(order.deliveryDate)}
+                    </span>
+                  </div>
+                  <p className="cart-track-order-received">
+                    {t.orderLookupPreviewReceived ?? 'We’ve received this order.'}
+                  </p>
+                  <p className="cart-track-order-helper">
+                    {t.orderLookupPreviewHelper ??
+                      'Status preview only. Full details are in your confirmation email (private link), or contact us with your phone number or order ID.'}{' '}
+                    <Link href={contactHref} className="cart-track-order-contact">
+                      {t.orderLookupContactUs ?? 'Contact us'}
+                    </Link>
+                  </p>
+                </div>
               </li>
             ))}
           </ul>
         </div>
       )}
+
+      <details className="cart-track-faq">
+        <summary className="cart-track-faq-summary">
+          <span className="cart-track-faq-summary-label">
+            {t.orderLookupFaqTitle ?? 'About order status'}
+          </span>
+          <svg
+            className="cart-track-faq-chevron"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </summary>
+        <dl className="cart-track-faq-list">
+          <div className="cart-track-faq-item">
+            <dt>{t.orderLookupFaqQ1 ?? 'Why can’t I open full order details?'}</dt>
+            <dd>
+              {t.orderLookupFaqA1 ??
+                'Full details use a private link from your confirmation email, or the page shown right after checkout. Phone and order ID only show a status preview.'}
+            </dd>
+          </div>
+          <div className="cart-track-faq-item">
+            <dt>{t.orderLookupFaqQ2 ?? 'I didn’t add an email'}</dt>
+            <dd>
+              {t.orderLookupFaqA2 ??
+                'Use phone or order ID here for the latest status. Message us with that phone number or order ID if you need help.'}
+            </dd>
+          </div>
+          <div className="cart-track-faq-item">
+            <dt>{t.orderLookupFaqQ3 ?? 'Where is my private link?'}</dt>
+            <dd>
+              {t.orderLookupFaqA3 ??
+                'In the confirmation email (“View your order”). After payment, save or bookmark the order page before you leave.'}
+            </dd>
+          </div>
+        </dl>
+      </details>
 
       <style jsx>{`
         .cart-track-section {
@@ -341,7 +398,7 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
         }
         .cart-track-order-list-wrap {
           position: relative;
-          margin-top: 8px;
+          margin-top: 4px;
         }
         .cart-track-order-list-overlay {
           position: absolute;
@@ -365,38 +422,125 @@ export function OrderLookupSection({ lang, emptyCart }: { lang: Locale; emptyCar
           flex-direction: column;
           gap: 8px;
         }
-        .cart-track-order-link {
+        .cart-track-order-card {
           display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 18px;
+          flex-direction: column;
+          gap: 6px;
+          padding: 14px 16px;
           background: var(--bg);
           border: 1px solid var(--border);
           border-radius: var(--radius);
-          text-decoration: none;
           color: var(--text);
-          transition: border-color 0.15s, background 0.15s;
         }
-        .cart-track-order-link:hover {
-          border-color: var(--accent);
-          background: color-mix(in srgb, var(--accent) 8%, transparent);
+        .cart-track-order-meta {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px 12px;
         }
         .cart-track-order-id {
           font-weight: 600;
           font-family: var(--font-mono, monospace);
+          font-size: 14px;
         }
         .cart-track-order-status {
-          font-size: 0.85rem;
-          padding: 4px 10px;
+          font-size: 0.8rem;
+          padding: 3px 9px;
           background: var(--surface);
           border-radius: var(--radius-sm);
           color: var(--text-muted);
         }
         .cart-track-order-date {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           color: var(--text-muted);
           margin-left: auto;
+        }
+        .cart-track-order-received {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text);
+          line-height: 1.4;
+        }
+        .cart-track-order-helper {
+          margin: 0;
+          font-size: 12px;
+          color: var(--text-muted);
+          line-height: 1.45;
+        }
+        .cart-track-order-helper :global(.cart-track-order-contact) {
+          color: var(--accent);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .cart-track-order-helper :global(.cart-track-order-contact:hover) {
+          opacity: 0.9;
+        }
+        .cart-track-faq {
+          border-top: 1px solid var(--border);
+          padding-top: 14px;
+          margin-top: 0;
+        }
+        .cart-track-faq-summary {
+          list-style: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          min-height: 44px;
+          padding: 10px 12px;
+          margin: 0 -4px;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 500;
+          color: var(--text);
+          user-select: none;
+        }
+        .cart-track-faq-summary::-webkit-details-marker {
+          display: none;
+        }
+        .cart-track-faq-summary-label {
+          flex: 1;
+          line-height: 1.35;
+        }
+        .cart-track-faq-chevron {
+          flex-shrink: 0;
+          color: var(--text-muted);
+          transition: transform 0.2s ease;
+        }
+        .cart-track-faq[open] .cart-track-faq-chevron {
+          transform: rotate(180deg);
+          color: var(--accent);
+        }
+        .cart-track-faq-summary:hover {
+          background: color-mix(in srgb, var(--bg) 80%, transparent);
+        }
+        .cart-track-faq-summary:hover .cart-track-faq-chevron {
+          color: var(--accent);
+        }
+        .cart-track-faq-list {
+          margin: 4px 0 0;
+          padding: 0 4px 2px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .cart-track-faq-item {
+          margin: 0;
+        }
+        .cart-track-faq-item dt {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text);
+          margin: 0 0 4px;
+          line-height: 1.35;
+        }
+        .cart-track-faq-item dd {
+          margin: 0;
+          font-size: 13px;
+          color: var(--text-muted);
+          line-height: 1.5;
         }
       `}</style>
     </section>

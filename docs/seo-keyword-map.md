@@ -12,6 +12,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 | Orchid delivery Chiang Mai | `/en/collections/orchids-chiang-mai` |
 | Send flowers to Thailand from abroad / international card checkout | `/en/info/buy-flowers-online-chiang-mai-thailand` (same URL also covers CM-from-abroad) |
 | Birthday flowers from abroad | `/en/info/birthday-flowers-chiang-mai-from-abroad` |
+| Thai Mother’s Day flowers / send Mother’s Day flowers Chiang Mai from abroad | `/en/info/thai-mothers-day-flowers-chiang-mai-from-abroad` |
 | Hotel delivery Chiang Mai | `/en/info/flower-delivery-to-hotels-chiang-mai` |
 | Hospital delivery Chiang Mai | `/en/info/flower-delivery-to-hospitals-chiang-mai` |
 | Delivery address guidance | `/en/info/flower-delivery-address-chiang-mai` |
@@ -22,6 +23,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 - **Abroad how-to** (`buy-flowers-online-chiang-mai-thailand`) — overseas buyers: payment, recipient details, time zones, hotels/homes, advance ordering.
 - **Delivery areas & fees** (`delivery-areas-chiang-mai`) — Chiang Mai interactive map and estimated fees; coverage list; other destinations; links to the abroad how-to for international customers. Old URL `/flower-delivery-thailand` 301s here.
 - **Birthday from abroad** — birthday occasion only; link to the abroad how-to for general checkout questions.
+- **Thai Mother’s Day from abroad** — 12 August occasion, jasmine vs delivery bouquets, MOM10 timing; link to the abroad how-to for payment/Maps/checkout.
 
 ## URL rules (current architecture)
 

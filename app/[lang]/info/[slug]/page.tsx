@@ -99,6 +99,7 @@ export async function generateMetadata({
 
 export function generateStaticParams() {
   const slugs = [
+    'thai-mothers-day-flowers-chiang-mai-from-abroad',
     'thai-flower-names-secret-messages',
     'gift-card-ideas-with-flowers',
     'thai-breakfast-chiang-mai',

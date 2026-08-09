@@ -17,6 +17,7 @@ import {
 import { getCatalogHeroImage, getCatalogHeroCarouselImages } from '@/lib/catalogReads';
 import {
   catalogOptimizedImageUrl,
+  HERO_LCP_PRELOAD_WIDTH,
   isStorefrontRenderableImageUrl,
 } from '@/lib/catalog/catalogImage';
 import { getBaseUrl } from '@/lib/orders';
@@ -27,8 +28,6 @@ import { Suspense } from 'react';
 export const revalidate = 60;
 
 const OG_IMAGE_PATH = '/HeroImage/heroimage.webp';
-/** Match hero carousel mobile card width for LCP preload. */
-const HERO_LCP_PRELOAD_WIDTH = 384;
 
 export async function generateMetadata({
   params,

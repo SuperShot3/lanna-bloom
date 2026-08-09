@@ -55,6 +55,43 @@ export type ArticleMeta = {
 
 export const articles: ArticleMeta[] = [
   {
+    slug: 'thai-mothers-day-flowers-chiang-mai-from-abroad',
+    title: 'Thai Mother’s Day 2026: How to Send Flowers to Your Mom in Chiang Mai from Abroad',
+    excerpt:
+      'Thai Mother’s Day is 12 August. Timing tips, jasmine vs delivery bouquets, soft flower ideas, and how to order for Chiang Mai from overseas. For payment basics, see the general abroad guide.',
+    titleTh: 'วันแม่แห่งชาติ 2026: ส่งดอกไม้ให้แม่ในเชียงใหม่จากต่างประเทศ',
+    excerptTh:
+      'วันแม่แห่งชาติไทยตรงกับ 12 สิงหาคม เคล็ดลับเรื่องเวลา มะลิกับช่อจัดส่ง ไอเดียดอกไม้โทนนุ่ม และวิธีสั่งไปเชียงใหม่จากต่างประเทศ สำหรับการชำระเงิน ดูคู่มือต่างประเทศทั่วไป',
+    publishedAt: '2026-08-09T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/thai-flower-names/Mali.png',
+      alt: 'White jasmine garland traditionally associated with Thai Mother’s Day',
+    },
+    ctaTitle: 'Send Mother’s Day flowers',
+    ctaTitleTh: 'ส่งดอกไม้วันแม่',
+    ctaLinks: [
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+      {
+        label: 'Send flowers from abroad (general)',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ (ทั่วไป)',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      {
+        label: 'Same-day Chiang Mai',
+        labelTh: 'ส่งวันเดียวในเชียงใหม่',
+        href: '/info/same-day-flower-delivery-chiang-mai',
+      },
+      {
+        label: 'Thai flower meanings',
+        labelTh: 'ความหมายดอกไม้ไทย',
+        href: '/info/thai-flower-names-secret-messages',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+    ],
+  },
+  {
     slug: 'thai-flower-names-secret-messages',
     title: 'Thai Flower Names That Sound Like Secret Messages',
     excerpt:

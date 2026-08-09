@@ -4,12 +4,14 @@ import {
   getWhatsAppContactUrl,
   getLineContactUrl,
 } from '@/lib/messenger';
-import { trackMessengerClick } from '@/lib/analytics';
-import { LineIcon, WhatsAppIcon } from './icons';
+import { trackMessengerClick, type MessengerPageLocation } from '@/lib/analytics';
+import { EmailIcon, LineIcon, WhatsAppIcon } from './icons';
+
+const SUPPORT_EMAIL = 'support@lannabloom.shop';
 
 const MESSENGERS = [
   {
-    id: 'line',
+    id: 'line' as const,
     name: 'LINE',
     getHref: getLineContactUrl,
     ariaLabel: 'Contact us on LINE',
@@ -17,16 +19,22 @@ const MESSENGERS = [
     color: '#00B900',
   },
   {
-    id: 'whatsapp',
+    id: 'whatsapp' as const,
     name: 'WhatsApp',
     getHref: getWhatsAppContactUrl,
     ariaLabel: 'Contact us on WhatsApp',
     Icon: WhatsAppIcon,
     color: '#25D366',
   },
-] as const;
+];
 
-export function MessengerLinks() {
+export function MessengerLinks({
+  showEmail = false,
+  pageLocation = 'header',
+}: {
+  showEmail?: boolean;
+  pageLocation?: MessengerPageLocation;
+} = {}) {
   return (
     <div className="messenger-links">
       {MESSENGERS.map((m) => {
@@ -44,7 +52,7 @@ export function MessengerLinks() {
             onClick={() =>
               trackMessengerClick({
                 channel: m.id,
-                page_location: 'header',
+                page_location: pageLocation,
                 link_url: href,
               })
             }
@@ -53,6 +61,17 @@ export function MessengerLinks() {
           </a>
         );
       })}
+      {showEmail ? (
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="messenger-link"
+          aria-label={`Email ${SUPPORT_EMAIL}`}
+          title={SUPPORT_EMAIL}
+          style={{ color: 'var(--text)' }}
+        >
+          <EmailIcon size={22} className="messenger-icon" />
+        </a>
+      ) : null}
       <style jsx>{`
         .messenger-links {
           display: flex;

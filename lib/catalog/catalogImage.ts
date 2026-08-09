@@ -7,6 +7,12 @@ export const CATALOG_CARD_IMAGE_SIZES =
 export const HERO_CAROUSEL_IMAGE_SIZES =
   '(max-width: 640px) 272px, (max-width: 768px) 288px, (max-width: 1024px) 336px, 384px';
 
+/**
+ * Preload width for the LCP hero slide. Matches ~272 CSS px × 1.75–2 DPR without
+ * overshooting to deviceSizes[0] (640). Must exist in next.config imageSizes.
+ */
+export const HERO_LCP_PRELOAD_WIDTH = 512;
+
 export const CATALOG_PDP_HERO_SIZES = '(max-width: 600px) 100vw, 50vw';
 
 export const CATALOG_PDP_LIGHTBOX_SIZES = '100vw';

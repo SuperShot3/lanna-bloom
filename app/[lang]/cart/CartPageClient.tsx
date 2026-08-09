@@ -95,6 +95,7 @@ import {
 import { formatPeakCelebrationTemplate } from '@/lib/promo/peakCelebrationMessages';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
 import { CartShareButton } from '@/components/cart/CartShareButton';
+import { MessengerLinks } from '@/components/MessengerLinks';
 import {
   getWrappingPaperColorLabel,
   isSpecificWrappingPaperColor,
@@ -1600,7 +1601,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
           <OrderLookupSection lang={lang} emptyCart />
 
-          <p className="cart-footer-note">{(t.cartFooterNote ?? 'Need help? Contact us via LINE or WhatsApp.')}</p>
+          <div className="cart-footer-help">
+            <p className="cart-footer-note">
+              {(t as { cartFooterNote?: string }).cartFooterNote ??
+                'Need help? Contact us via LINE, WhatsApp, or email.'}
+            </p>
+            <MessengerLinks showEmail pageLocation="cart" />
+          </div>
         </div>
         <style jsx>{`
           .cart-page-empty {
@@ -1625,13 +1632,21 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             color: var(--text-muted);
             font-weight: 400;
           }
+          .cart-footer-help {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            margin: 28px 0 0;
+            padding: 0 10px;
+          }
           .cart-footer-note {
             text-align: center;
-            font-size: 11.5px;
+            font-size: 13px;
             color: var(--text-muted);
-            line-height: 1.6;
-            padding: 0 10px;
-            margin: 28px 0 0;
+            line-height: 1.5;
+            margin: 0;
+            max-width: 320px;
           }
         `}</style>
       </div>

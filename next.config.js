@@ -1,6 +1,20 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['next-mdx-remote', 'heic2any'],
+  // Drop unused Baseline polyfills Next always injects into the client bundle.
+  // See lib/next-modern-polyfills.js and https://github.com/vercel/next.js/issues/86785
+  webpack: (config) => {
+    const slimPolyfills = path.join(__dirname, 'lib/next-modern-polyfills.js');
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '../build/polyfills/polyfill-module': slimPolyfills,
+      'next/dist/build/polyfills/polyfill-module': slimPolyfills,
+      'next/dist/build/polyfills/polyfill-module.js': slimPolyfills,
+    };
+    return config;
+  },
   async headers() {
     // Baseline security headers (keep CSP in Report-Only initially to reduce break risk).
     // Report-Only: does not block, but surfaces violations in DevTools / Tag Assistant.
@@ -250,7 +264,8 @@ const nextConfig = {
     formats: ['image/webp'],
     minimumCacheTTL: 2592000,
     deviceSizes: [640, 750, 828, 1080, 1200],
-    imageSizes: [48, 64, 80, 96, 128, 256, 384],
+    // Include 480/512 so hero cards (~272–384 CSS px at 1.75–2x DPR) do not jump to 640.
+    imageSizes: [48, 64, 80, 96, 128, 256, 384, 480, 512],
     remotePatterns: [
       {
         protocol: 'https',

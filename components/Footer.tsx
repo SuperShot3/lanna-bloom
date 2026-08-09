@@ -115,7 +115,7 @@ export function Footer({ lang }: { lang: Locale }) {
             <p className="text-stone-500 text-sm leading-relaxed mb-6">{t.tagline}</p>
             <div className="flex gap-4 items-center flex-wrap">
               <SocialLinks />
-              <MessengerLinks />
+              <MessengerLinks pageLocation="footer" />
             </div>
           </div>
           <div>
