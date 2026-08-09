@@ -329,7 +329,7 @@ These are not ordinary blog articles.
 Example URL patterns may include:
 
 - `/en/chiang-rai-flower-delivery`
-- `/en/lamphun-flower-delivery`
+- `/en/lamphun/flower-delivery`
 - `/en/lampang-flower-delivery`
 
 Final URL architecture must be reviewed against the existing routing, canonical, locale, and hreflang implementation.

@@ -398,6 +398,7 @@ function validateStripePayload(
     'KRABI',
     'SAMUI',
     'HUA_HIN',
+    'LAMPHUN',
   ];
   const destRaw = d.deliveryDestination;
   const deliveryDestination =

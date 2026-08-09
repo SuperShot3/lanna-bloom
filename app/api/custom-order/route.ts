@@ -23,6 +23,7 @@ const DELIVERY_DESTINATIONS: DeliveryDestinationId[] = [
   'KRABI',
   'SAMUI',
   'HUA_HIN',
+  'LAMPHUN',
 ];
 
 function normalizeDigits(s: string): string {

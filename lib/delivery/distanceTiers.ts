@@ -73,27 +73,18 @@ const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
     distanceLabelEn: 'More than 20–25 km',
     distanceLabelTh: 'มากกว่า 20–25 กม.',
     typicalAreasEn:
-      'Outer Hang Dong, outer San Sai, Doi Saket town and nearby areas, northern Lamphun Province, outer San Kamphaeng',
+      'Outer Hang Dong, outer San Sai, Doi Saket town and nearby areas, outer San Kamphaeng',
     typicalAreasTh:
-      'หางดงชานนอก สันทรายชานนอก ตัวเมืองดอยสะเก็ด ลำพูนเหนือ สันกำแพงชานนอก',
+      'หางดงชานนอก สันทรายชานนอก ตัวเมืองดอยสะเก็ด สันกำแพงชานนอก',
   },
   {
-    id: 'tier-25-30',
-    distanceLabelEn: 'More than 25–30 km',
-    distanceLabelTh: 'มากกว่า 25–30 กม.',
+    id: 'tier-25-35',
+    distanceLabelEn: 'More than 25–35 km',
+    distanceLabelTh: 'มากกว่า 25–35 กม.',
     typicalAreasEn:
-      'Lamphun city area, outer Doi Saket, some Mae On approaches, distant parts of Hang Dong and San Kamphaeng',
+      'Outer Doi Saket, some Mae On approaches, distant parts of Hang Dong and San Kamphaeng, San Kamphaeng Hot Springs area, some lower Mae Rim mountain areas',
     typicalAreasTh:
-      'ตัวเมืองลำพูน ดอยสะเก็ดชานนอก แนวเข้าแม่ออน หางดงและสันกำแพงห่างไกล',
-  },
-  {
-    id: 'tier-30-35',
-    distanceLabelEn: 'More than 30–35 km',
-    distanceLabelTh: 'มากกว่า 30–35 กม.',
-    typicalAreasEn:
-      'San Kamphaeng Hot Springs area, Mae On near areas, outer Lamphun, some lower Mae Rim mountain areas',
-    typicalAreasTh:
-      'บ่อน้ำร้อนสันกำแพง แม่ออนใกล้ ลำพูนชานนอก แม่ริมเขาต่ำ',
+      'ดอยสะเก็ดชานนอก แนวเข้าแม่ออน หางดงและสันกำแพงห่างไกล บ่อน้ำร้อนสันกำแพง แม่ริมเขาต่ำ',
   },
   {
     id: 'tier-35-40',
@@ -118,9 +109,9 @@ const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
     distanceLabelEn: 'More than 45 km',
     distanceLabelTh: 'มากกว่า 45 กม.',
     typicalAreasEn:
-      'Remote Samoeng, Mae Kampong, distant Mae Taeng, mountain resorts, remote Lamphun and other unmapped destinations',
+      'Remote Samoeng, Mae Kampong, distant Mae Taeng, mountain resorts, and other unmapped destinations',
     typicalAreasTh:
-      'สะเมิงห่างไกล แม่กำปอง แม่แตงไกล รีสอร์ทบนเขา ลำพูนห่างไกลและปลายทางอื่นๆ',
+      'สะเมิงห่างไกล แม่กำปอง แม่แตงไกล รีสอร์ทบนเขา และปลายทางอื่นๆ',
     driverConfirm: true,
   },
 ];

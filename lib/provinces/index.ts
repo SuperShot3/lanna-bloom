@@ -9,6 +9,7 @@ export { PROVINCE_STATUSES, SEO_PAGE_STATUSES } from './types';
 export {
   getProvinceStatusFillColor,
   getProvinceStatusLabel,
+  getProvinceStatusLabelLocalized,
   PROVINCE_STATUS_LEGEND,
 } from './statusColors';
 export {

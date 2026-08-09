@@ -140,6 +140,15 @@ export const TERRITORY_PROFILES: TerritoryProfile[] = [
     'Expat residents, weekend visitors, hotel and villa delivery.',
     false,
   ),
+  profile(
+    'LAMPHUN',
+    'Lamphun',
+    'lamphun',
+    'home',
+    '/en/lamphun/flower-delivery',
+    'Residents and visitors near Chiang Mai corridor; next-day delivery across amphoes.',
+    false,
+  ),
 ];
 
 const BY_DESTINATION_ID: Record<string, TerritoryProfile> = Object.fromEntries(

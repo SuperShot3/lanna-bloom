@@ -49,7 +49,8 @@ export type OrderDeliveryDestinationId =
   | 'PHUKET'
   | 'KRABI'
   | 'SAMUI'
-  | 'HUA_HIN';
+  | 'HUA_HIN'
+  | 'LAMPHUN';
 
 export interface OrderDelivery {
   address: string;

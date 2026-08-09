@@ -11,8 +11,14 @@ import {
   type ProvinceConstraintInput,
 } from '@/lib/delivery/deliveryConstraints';
 import { catalogHrefForProvinceCode } from '@/lib/delivery/marketRoute';
+import {
+  getActiveMarkets,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import { getCheckoutZonesForDestination } from '@/lib/delivery/zones';
 import { canEnterCatalog, normalizeShopCategoryKey } from '@/lib/provinces/shopAccess';
 import { PROVINCE_SEED_ROSTER } from '@/lib/provinces/seedRoster';
+import { getProvinceStatusLabelLocalized } from '@/lib/provinces/statusColors';
 import type { ProvinceStatus } from '@/lib/provinces/types';
 
 export { catalogHrefForProvinceCode };
@@ -91,6 +97,142 @@ export function formatCoverageCategories(
     return lang === 'th' ? 'ดอกไม้เท่านั้น' : 'Flowers only';
   }
   return lang === 'th' ? 'ดอกไม้และของขวัญ' : 'Flowers & gifts';
+}
+
+/** Min checkout fee for a destination (excludes manual-quote zones). */
+export function minCheckoutFeeThb(destinationId: DeliveryDestinationId): number | null {
+  const fees = getCheckoutZonesForDestination(destinationId)
+    .map((z) => z.feeThb)
+    .filter((n) => Number.isFinite(n));
+  if (fees.length === 0) return null;
+  return Math.min(...fees);
+}
+
+/**
+ * Dynamic shoppable blurb: `{Status} · {Categories} · from ฿{minFee}`.
+ * Do not hardcode per-market marketing notes.
+ */
+export function formatShoppableProvinceSummary(
+  province: Pick<
+    CoverageProvinceInput,
+    'province_code' | 'status' | 'available_categories'
+  >,
+  lang: Locale,
+  opts?: { minFeeThb?: number | null }
+): string {
+  const status = getProvinceStatusLabelLocalized(province.status, lang === 'th' ? 'th' : 'en');
+  const categories = formatCoverageCategories(province, lang);
+  const minFee = opts?.minFeeThb;
+  const feePart =
+    minFee != null && Number.isFinite(minFee)
+      ? lang === 'th'
+        ? `เริ่มต้น ฿${minFee}`
+        : `from ฿${minFee}`
+      : null;
+  return feePart ? `${status} · ${categories} · ${feePart}` : `${status} · ${categories}`;
+}
+
+export type LiveProvinceForCoverage = {
+  province_code: string;
+  province_name_en: string;
+  province_name_th: string;
+  status: ProvinceStatus;
+  catalog_enabled: boolean;
+  available_categories?: string[] | null;
+  min_advance_notice_hours?: number | null;
+  same_day_cutoff_local?: string | null;
+};
+
+export type ShoppableCoverageArea = {
+  key: string;
+  destinationId: DeliveryDestinationId;
+  provinceCode: string;
+  nameEn: string;
+  nameTh: string;
+  href: string;
+  summary: string;
+};
+
+function coverageFromSeed(destinationId: DeliveryDestinationId): CoverageProvinceInput | null {
+  const seed = PROVINCE_SEED_ROSTER.find((r) => r.destination_id === destinationId);
+  if (!seed) return null;
+  return {
+    province_code: seed.province_code,
+    status: seed.status,
+    catalog_enabled: seed.catalog_enabled,
+    min_advance_notice_hours: null,
+    same_day_cutoff_local: null,
+    available_categories: null,
+  };
+}
+
+/**
+ * Resolve province coverage for a destination: live DB row by province_code (via seed),
+ * else seed roster. Join is by destination_id — never by display name.
+ */
+export function resolveProvinceForDestination(
+  destinationId: DeliveryDestinationId,
+  liveProvinces: LiveProvinceForCoverage[]
+): CoverageProvinceInput | null {
+  const seed = PROVINCE_SEED_ROSTER.find((r) => r.destination_id === destinationId);
+  if (!seed) return null;
+  const live = liveProvinces.find((p) => p.province_code === seed.province_code);
+  if (live) {
+    return {
+      province_code: live.province_code,
+      status: live.status,
+      catalog_enabled: live.catalog_enabled,
+      min_advance_notice_hours: live.min_advance_notice_hours ?? null,
+      same_day_cutoff_local: live.same_day_cutoff_local ?? null,
+      available_categories: live.available_categories ?? null,
+    };
+  }
+  return coverageFromSeed(destinationId);
+}
+
+/**
+ * Chiang Mai + active MARKETS, with dynamic summaries from province status/categories/fees.
+ */
+export function listShoppableCoverageAreas(
+  liveProvinces: LiveProvinceForCoverage[],
+  lang: Locale
+): ShoppableCoverageArea[] {
+  const entries: {
+    destinationId: DeliveryDestinationId;
+    nameEn: string;
+    nameTh: string;
+    href: (l: Locale) => string;
+  }[] = [
+    {
+      destinationId: 'CHIANG_MAI',
+      nameEn: 'Chiang Mai',
+      nameTh: 'เชียงใหม่',
+      href: (l) => `/${l}/catalog`,
+    },
+    ...getActiveMarkets().map((m) => ({
+      destinationId: m.destinationId,
+      nameEn: m.customerFacingNameEn,
+      nameTh: m.customerFacingNameTh,
+      href: (l: Locale) => `/${l}/${m.pathSlug}/flower-delivery`,
+    })),
+  ];
+
+  const out: ShoppableCoverageArea[] = [];
+  for (const entry of entries) {
+    const province = resolveProvinceForDestination(entry.destinationId, liveProvinces);
+    if (!province || !canEnterCatalog(province)) continue;
+    const minFee = minCheckoutFeeThb(entry.destinationId);
+    out.push({
+      key: entry.destinationId,
+      destinationId: entry.destinationId,
+      provinceCode: province.province_code,
+      nameEn: entry.nameEn,
+      nameTh: entry.nameTh,
+      href: entry.href(lang),
+      summary: formatShoppableProvinceSummary(province, lang, { minFeeThb: minFee }),
+    });
+  }
+  return out;
 }
 
 export type CoverageTimingDisplay = {

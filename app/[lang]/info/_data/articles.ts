@@ -671,6 +671,42 @@ export const articles: ArticleMeta[] = [
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },
+  {
+    slug: 'flower-delivery-lamphun-province',
+    title: 'Flower Delivery Across Lamphun Province: Areas, Times & Fees',
+    excerpt:
+      'Flower delivery across Lamphun’s eight amphoes: typical fees from 250 THB, same-day honesty by area, and how to order online from Thailand or abroad.',
+    titleTh: 'ส่งดอกไม้ทั่วจังหวัดลำพูน: พื้นที่ เวลา และค่าส่ง',
+    excerptTh:
+      'ส่งดอกไม้ครอบคลุม 8 อำเภอในลำพูน ค่าส่งเริ่ม 250 บาท ความพร้อมวันเดียวตามพื้นที่ และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ',
+    publishedAt: '2026-08-09T00:00:00.000Z',
+    featured: true,
+    cover: {
+      type: 'image',
+      src: '/blog_images/same-day-delivery/same-day-flower-delivery-chiang-mai.png',
+      alt: 'Fresh flower bouquet prepared for delivery across Lamphun Province, Thailand',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Lamphun flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งลำพูน',
+        href: '/lamphun/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
 ];
 
 export function getArticleBySlug(slug: string): ArticleMeta | undefined {

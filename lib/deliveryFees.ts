@@ -40,7 +40,6 @@ export const DISTRICTS: DistrictOption[] = [
   { key: 'MAE_ON', labelEn: 'Mae On', labelTh: 'อำเภอแม่ออน' },
   { key: 'SAMOENG', labelEn: 'Samoeng', labelTh: 'อำเภอสะเมิง' },
   { key: 'MAE_TAENG', labelEn: 'Mae Taeng', labelTh: 'อำเภอแม่แตง' },
-  { key: 'LAMPHUN', labelEn: 'Lamphun', labelTh: 'จังหวัดลำพูน' },
   { key: 'SAN_PA_TONG', labelEn: 'San Pa Tong', labelTh: 'อำเภอสันป่าตอง' },
   { key: 'MAE_WANG', labelEn: 'Mae Wang', labelTh: 'อำเภอแม่วาง' },
   { key: 'CHIANG_DAO', labelEn: 'Chiang Dao', labelTh: 'อำเภอเชียงดาว' },
@@ -87,8 +86,6 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
     case 'SAN_KAMPHAENG':
     case 'MAE_RIM':
       return 450;
-    case 'LAMPHUN':
-      return 650;
     case 'DOI_SAKET':
     case 'SAN_PA_TONG':
       return 550;
@@ -100,6 +97,8 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
     case 'SAMOENG':
     case 'CHIANG_DAO':
       return 950;
+    case 'LAMPHUN':
+    // Retired CM satellite — Lamphun is its own destination; treat stale carts as unknown.
     case 'FANG':
     case 'MAE_AI':
     case 'UNKNOWN':
@@ -135,20 +134,6 @@ const DISTRICT_KEYWORDS: { key: DistrictKey; patterns: string[] }[] = [
   { key: 'SAN_SAI', patterns: ['san sai', 'สันทราย', 'อ.สันทราย', 'อำเภอสันทราย'] },
   { key: 'SARAPHI', patterns: ['saraphi', 'สารภี', 'อ.สารภี', 'อำเภอสารภี'] },
   {
-    key: 'LAMPHUN',
-    patterns: [
-      'lamphun',
-      'lampoon',
-      'ลำพูน',
-      'จ.ลำพูน',
-      'จังหวัดลำพูน',
-      'mueang lamphun',
-      'เมืองลำพูน',
-      'อ.เมืองลำพูน',
-      'อำเภอเมืองลำพูน',
-    ],
-  },
-  {
     key: 'MUEANG',
     patterns: [
       'mueang',
@@ -180,6 +165,18 @@ export function detectDistrictFromAddress(addressText: string): DistrictKey | nu
     .replace(/\s+/g, ' ');
 
   if (!normalized) return null;
+
+  // Lamphun is its own destination — do not map to Chiang Mai districts.
+  const lamphunPatterns = [
+    'lamphun',
+    'lampoon',
+    'ลำพูน',
+    'จ.ลำพูน',
+    'จังหวัดลำพูน',
+  ];
+  if (lamphunPatterns.some((p) => normalized.includes(p))) {
+    return null;
+  }
 
   for (const { key, patterns } of DISTRICT_KEYWORDS) {
     for (const p of patterns) {

@@ -7,7 +7,11 @@ import {
   buildCoveragePanelDisplay,
   formatCoverageCategories,
   formatCoverageTiming,
+  formatShoppableProvinceSummary,
   isExpansionProvinceCode,
+  listShoppableCoverageAreas,
+  minCheckoutFeeThb,
+  resolveProvinceForDestination,
 } from './coverageDisplay';
 import { addDaysToYmd, getBangkokYmd } from '@/lib/deliveryHours';
 import { PREORDER_DEFAULT_ADVANCE_HOURS } from './deliveryConstraints';
@@ -183,6 +187,53 @@ assert(
   );
   assert(expansion.catalogHref === '/en/catalog/pattaya', 'Pattaya catalog href');
   assert(expansion.categoriesLine === 'Flowers only', 'expansion categories default');
+}
+
+// Shoppable summaries: join by destination_id (Pattaya → chon-buri), not display name
+{
+  const pattaya = resolveProvinceForDestination('PATTAYA', [
+    {
+      province_code: 'chon-buri',
+      province_name_en: 'Chon Buri',
+      province_name_th: 'ชลบุรี',
+      status: 'same_day',
+      catalog_enabled: true,
+      available_categories: null,
+    },
+  ]);
+  assert(pattaya?.province_code === 'chon-buri', 'PATTAYA joins Chon Buri');
+  assert(
+    formatShoppableProvinceSummary(pattaya!, 'en', { minFeeThb: 250 }) ===
+      'Same-Day · Flowers only · from ฿250',
+    'Pattaya dynamic summary'
+  );
+}
+
+{
+  const lp = resolveProvinceForDestination('LAMPHUN', []);
+  assert(lp?.province_code === 'lamphun', 'LAMPHUN seed fallback');
+  assert(lp?.status === 'next_day', 'Lamphun seed next_day');
+  assert(minCheckoutFeeThb('LAMPHUN') === 250, 'Lamphun min fee 250');
+  assert(
+    formatShoppableProvinceSummary(lp!, 'en', { minFeeThb: minCheckoutFeeThb('LAMPHUN') }) ===
+      'Next-Day · Flowers only · from ฿250',
+    'Lamphun dynamic summary'
+  );
+}
+
+{
+  const areas = listShoppableCoverageAreas([], 'en');
+  const pat = areas.find((a) => a.destinationId === 'PATTAYA');
+  const lp = areas.find((a) => a.destinationId === 'LAMPHUN');
+  const cm = areas.find((a) => a.destinationId === 'CHIANG_MAI');
+  assert(Boolean(pat), 'list includes Pattaya');
+  assert(Boolean(lp), 'list includes Lamphun');
+  assert(Boolean(cm), 'list includes Chiang Mai');
+  assert(!pat!.summary.includes('Bouquet delivery only'), 'no hardcoded bouquet blurb');
+  assert(pat!.summary.includes('Same-Day'), 'Pattaya status from seed');
+  assert(lp!.summary.includes('Next-Day'), 'Lamphun status from seed');
+  assert(lp!.summary.includes('from ฿250'), 'Lamphun min fee in summary');
+  assert(cm!.summary.includes('Flowers & gifts'), 'CM categories');
 }
 
 console.log('coverageDisplay.test.ts: ok');

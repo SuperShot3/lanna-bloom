@@ -131,6 +131,19 @@ const WIRED: ProvinceSeedRow[] = [
     customer_message_en: 'Flower delivery for Hua Hin (subject to cutoff and coverage).',
     customer_message_th: 'จัดส่งดอกไม้หัวหิน (ขึ้นกับเวลาตัดออเดอร์และความครอบคลุม)',
   },
+  {
+    province_code: 'lamphun',
+    province_name_en: 'Lamphun',
+    province_name_th: 'ลำพูน',
+    topojson_property_value: 'Lamphun',
+    destination_id: 'LAMPHUN',
+    status: 'next_day',
+    catalog_enabled: true,
+    customer_message_en:
+      'Next-day flower delivery across Lamphun province (delivery from ฿250; same-day not available).',
+    customer_message_th:
+      'จัดส่งดอกไม้วันถัดไปทั่วจังหวัดลำพูน (ค่าส่งเริ่มต้น ฿250 ไม่มีบริการวันเดียวกัน)',
+  },
 ];
 
 const COMING_SOON: ProvinceSeedRow[] = [
@@ -149,7 +162,6 @@ const COMING_SOON: ProvinceSeedRow[] = [
   comingSoon('Kanchanaburi', 'กาญจนบุรี'),
   comingSoon('Khon Kaen', 'ขอนแก่น'),
   comingSoon('Lampang', 'ลำปาง'),
-  comingSoon('Lamphun', 'ลำพูน'),
   comingSoon('Loei', 'เลย'),
   comingSoon('Lop Buri', 'ลพบุรี'),
   comingSoon('Mae Hong Son', 'แม่ฮ่องสอน'),

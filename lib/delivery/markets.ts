@@ -11,6 +11,7 @@ export const DELIVERY_DESTINATIONS = [
   'KRABI',
   'SAMUI',
   'HUA_HIN',
+  'LAMPHUN',
 ] as const;
 
 export type DeliveryDestinationId = (typeof DELIVERY_DESTINATIONS)[number];
@@ -21,6 +22,7 @@ export const EXPANSION_DESTINATION_IDS: DeliveryDestinationId[] = [
   'KRABI',
   'SAMUI',
   'HUA_HIN',
+  'LAMPHUN',
 ];
 
 export const MARKET_PATH_SLUGS = [
@@ -29,6 +31,7 @@ export const MARKET_PATH_SLUGS = [
   'krabi',
   'samui',
   'hua-hin',
+  'lamphun',
 ] as const;
 
 export type MarketPathSlug = (typeof MARKET_PATH_SLUGS)[number];
@@ -89,6 +92,13 @@ export const MARKETS: MarketRegistryEntry[] = [
     destinationId: 'HUA_HIN',
     customerFacingNameEn: 'Hua Hin',
     customerFacingNameTh: 'หัวหิน',
+    status: 'active',
+  },
+  {
+    pathSlug: 'lamphun',
+    destinationId: 'LAMPHUN',
+    customerFacingNameEn: 'Lamphun',
+    customerFacingNameTh: 'ลำพูน',
     status: 'active',
   },
 ];

@@ -3,6 +3,7 @@
  * Never hardcode fee amounts here — getZoneFee is authoritative.
  */
 
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { feeTierFillColor, formatFeeRange } from '@/lib/delivery/distanceTiers';
 import { getZoneFee } from '@/lib/delivery/zones';
 
@@ -26,10 +27,13 @@ export interface AmphoeFeeSource {
 
 const OTHER_ESTIMATE_ZONE_ID = 'cm-unknown';
 
-function feesForZoneIds(zoneIds: string[]): number[] {
+function feesForZoneIds(
+  destinationId: DeliveryDestinationId,
+  zoneIds: string[]
+): number[] {
   const fees: number[] = [];
   for (const id of zoneIds) {
-    const fee = getZoneFee('CHIANG_MAI', id);
+    const fee = getZoneFee(destinationId, id);
     if (fee != null) fees.push(fee);
   }
   return fees;
@@ -38,7 +42,10 @@ function feesForZoneIds(zoneIds: string[]): number[] {
 /**
  * Resolve display fee for an amphoe map district from checkout zones.
  */
-export function resolveAmphoeFeeDisplay(district: AmphoeFeeSource): AmphoeFeeDisplay {
+export function resolveAmphoeFeeDisplay(
+  district: AmphoeFeeSource,
+  destinationId: DeliveryDestinationId = 'CHIANG_MAI'
+): AmphoeFeeDisplay {
   const zoneIds =
     district.relatedCheckoutZoneIds?.length
       ? district.relatedCheckoutZoneIds
@@ -46,13 +53,15 @@ export function resolveAmphoeFeeDisplay(district: AmphoeFeeSource): AmphoeFeeDis
         ? [district.checkoutZoneId]
         : [];
 
-  const fees = feesForZoneIds(zoneIds);
+  const fees = feesForZoneIds(destinationId, zoneIds);
 
   if (district.manualQuote || zoneIds.length === 0 || fees.length === 0) {
     const estimate =
       fees.length > 0
         ? Math.min(...fees)
-        : getZoneFee('CHIANG_MAI', OTHER_ESTIMATE_ZONE_ID) ?? 550;
+        : destinationId === 'CHIANG_MAI'
+          ? getZoneFee('CHIANG_MAI', OTHER_ESTIMATE_ZONE_ID) ?? 550
+          : 250;
     return {
       displayKind: 'driver_confirm',
       feeFrom: estimate,
@@ -82,8 +91,11 @@ export function resolveOtherAmphoeFeeDisplay(): AmphoeFeeDisplay {
   };
 }
 
-export function amphoeMapFill(district: AmphoeFeeSource): string {
-  const resolved = resolveAmphoeFeeDisplay(district);
+export function amphoeMapFill(
+  district: AmphoeFeeSource,
+  destinationId: DeliveryDestinationId = 'CHIANG_MAI'
+): string {
+  const resolved = resolveAmphoeFeeDisplay(district, destinationId);
   return feeTierFillColor(resolved.primaryFee);
 }
 

@@ -17,21 +17,28 @@ export function getProvinceStatusFillColor(status: ProvinceStatus | string | nul
   }
 }
 
+const STATUS_LABELS: Record<ProvinceStatus, { en: string; th: string }> = {
+  same_day: { en: 'Same-Day', th: 'วันเดียวกัน' },
+  next_day: { en: 'Next-Day', th: 'วันถัดไป' },
+  preorder_only: { en: 'Pre-order Only', th: 'พรีออเดอร์เท่านั้น' },
+  temporarily_unavailable: { en: 'Temporarily Unavailable', th: 'ชั่วคราวไม่พร้อม' },
+  coming_soon: { en: 'Coming Soon', th: 'เร็วๆ นี้' },
+};
+
+/** English label (map legend / admin). Prefer getProvinceStatusLabelLocalized for storefront. */
 export function getProvinceStatusLabel(status: ProvinceStatus | string | null | undefined): string {
-  switch (status) {
-    case 'same_day':
-      return 'Same-Day';
-    case 'next_day':
-      return 'Next-Day';
-    case 'preorder_only':
-      return 'Pre-order Only';
-    case 'temporarily_unavailable':
-      return 'Temporarily Unavailable';
-    case 'coming_soon':
-      return 'Coming Soon';
-    default:
-      return 'Unknown';
+  return getProvinceStatusLabelLocalized(status, 'en');
+}
+
+export function getProvinceStatusLabelLocalized(
+  status: ProvinceStatus | string | null | undefined,
+  lang: 'en' | 'th'
+): string {
+  if (status && status in STATUS_LABELS) {
+    const labels = STATUS_LABELS[status as ProvinceStatus];
+    return lang === 'th' ? labels.th : labels.en;
   }
+  return lang === 'th' ? 'ไม่ทราบ' : 'Unknown';
 }
 
 export const PROVINCE_STATUS_LEGEND: { status: ProvinceStatus; label: string; color: string }[] = [

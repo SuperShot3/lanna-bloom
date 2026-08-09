@@ -7,7 +7,7 @@
  *   npm run validate:province -- chiang-mai --amphoe
  */
 
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { PROVINCE_SEED_ROSTER } from '../lib/provinces/seedRoster';
 import {
@@ -17,6 +17,8 @@ import {
 } from '../lib/delivery/markets';
 import { ZONES_BY_DESTINATION } from '../lib/delivery/zones';
 import { AMPHOE_MAP_DISTRICTS } from '../lib/delivery/amphoeMapData';
+import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/lamphunAmphoeMapData';
+import { isAmphoeCapableProvince } from '../lib/delivery/amphoeProvinces';
 
 type Check = { ok: boolean; label: string; detail?: string };
 
@@ -119,16 +121,67 @@ function main() {
   }
 
   if (wantAmphoe && code !== 'chiang-mai') {
-    checks.push(
-      fail(
-        'amphoe generalization',
-        'Map/coverage still hard-code chiang-mai — generalize ThailandProvinceMap + ThailandCoverageMapSection before claiming Tier C'
-      )
-    );
+    if (isAmphoeCapableProvince(code)) {
+      checks.push(
+        pass(
+          'amphoe generalization',
+          `${code} registered in amphoeProvinces + shared ThailandProvinceMap / CoverageMapSection`
+        )
+      );
+      checks.push(...validateSharedMapGates());
+    } else {
+      checks.push(
+        fail(
+          'amphoe generalization',
+          'Register province in amphoeProvinces.ts and wire map fetch before claiming Tier C'
+        )
+      );
+    }
   }
 
   printReport(code, wantAmphoe, checks);
   process.exit(checks.every((c) => c.ok) ? 0 : 1);
+}
+
+function validateSharedMapGates(): Check[] {
+  const out: Check[] = [];
+  const mapPath = path.join(
+    process.cwd(),
+    'components/delivery/ThailandProvinceMap.tsx'
+  );
+  const coveragePath = path.join(
+    process.cwd(),
+    'components/delivery/ThailandCoverageMapSection.tsx'
+  );
+  const mapSrc = readFileSync(mapPath, 'utf8');
+  const coverageSrc = readFileSync(coveragePath, 'utf8');
+
+  if (mapSrc.includes('isAmphoeCapableProvince') && mapSrc.includes('amphoeMapApiPath')) {
+    out.push(pass('ThailandProvinceMap amphoe gates', 'multi-province capable'));
+  } else {
+    out.push(
+      fail(
+        'ThailandProvinceMap amphoe gates',
+        'Expected isAmphoeCapableProvince + amphoeMapApiPath'
+      )
+    );
+  }
+
+  if (
+    coverageSrc.includes('isAmphoeCapableProvince') &&
+    coverageSrc.includes('getAmphoeDrillItems')
+  ) {
+    out.push(pass('ThailandCoverageMapSection amphoe gates', 'multi-province capable'));
+  } else {
+    out.push(
+      fail(
+        'ThailandCoverageMapSection amphoe gates',
+        'Expected isAmphoeCapableProvince + getAmphoeDrillItems'
+      )
+    );
+  }
+
+  return out;
 }
 
 function validateAmphoe(provinceCode: string, required: boolean): Check[] {
@@ -171,6 +224,19 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
         fail(
           'amphoe metadata',
           `Expected ~25 unique ampCodes in amphoeMapData; got ${withCodes.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'lamphun') {
+    const codes = LAMPHUN_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (LAMPHUN_AMPHOE_MAP_DISTRICTS.length === 8 && unique.size === 8) {
+      out.push(pass('amphoe metadata', '8 Lamphun districts, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 8 unique ampCodes in lamphunAmphoeMapData; got ${LAMPHUN_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

@@ -13,9 +13,13 @@ import {
 import { TOPOJSON_LAKE_ALIASES } from '@/lib/provinces/seedRoster';
 import { amphoeMapFill } from '@/lib/delivery/amphoeDisplayFees';
 import {
-  AMPHOE_MAP_DISTRICTS,
-  type AmphoeMapDistrict,
-} from '@/lib/delivery/amphoeMapData';
+  amphoeMapApiPath,
+  destinationIdForAmphoeProvince,
+  getAmphoeDistrictsForProvince,
+  isAmphoeCapableProvince,
+  type AmphoeCapableProvinceCode,
+  type ProvinceAmphoeDistrict,
+} from '@/lib/delivery/amphoeProvinces';
 import styles from './thailand-province-map.module.css';
 
 export type ThailandProvinceMapMode = 'admin' | 'public';
@@ -54,7 +58,6 @@ const DEFAULT_ZOOM = 5.6;
 const MIN_ZOOM = 5;
 const MAX_ZOOM = 13;
 const AMPHOE_FOCUS_ZOOM = 9;
-const CHIANG_MAI_CODE = 'chiang-mai';
 
 type TopologyLike = {
   type: string;
@@ -93,6 +96,7 @@ function MapInner({
   amphoeGeojson,
   byTopoName,
   byAmpCode,
+  amphoeProvinceCode,
   selectedCode,
   selectedAmphoeId,
   onSelect,
@@ -102,7 +106,8 @@ function MapInner({
   geojson: FeatureCollection<Geometry, { NAME_1?: string }>;
   amphoeGeojson: FeatureCollection<Geometry, AmphoeFeatureProps> | null;
   byTopoName: Map<string, ThailandProvinceMapProvince>;
-  byAmpCode: Map<string, AmphoeMapDistrict>;
+  byAmpCode: Map<string, ProvinceAmphoeDistrict>;
+  amphoeProvinceCode: AmphoeCapableProvinceCode | null;
   selectedCode: string | null;
   selectedAmphoeId: string | null;
   onSelect: (code: string) => void;
@@ -132,7 +137,16 @@ function MapInner({
   );
   const thailandBoundsRef = useRef<LeafletBounds | null>(null);
   const cameraKeyRef = useRef<string>('');
-  const showAmphoes = selectedCode === CHIANG_MAI_CODE && amphoeGeojson != null;
+  const showAmphoes =
+    amphoeProvinceCode != null &&
+    selectedCode === amphoeProvinceCode &&
+    amphoeGeojson != null;
+  const amphoeDestinationId = amphoeProvinceCode
+    ? destinationIdForAmphoeProvince(amphoeProvinceCode)
+    : 'CHIANG_MAI';
+  const amphoeDistricts = amphoeProvinceCode
+    ? getAmphoeDistrictsForProvince(amphoeProvinceCode)
+    : [];
 
   function applySoftMaxBounds(map: LeafletMapLike, padRatio: number) {
     const bounds = thailandBoundsRef.current;
@@ -180,16 +194,20 @@ function MapInner({
       if (!thailandBounds.isValid()) return;
       thailandBoundsRef.current = thailandBounds;
 
-      // Wait for CM amphoe data before moving (avoids province→amphoe jump fight).
-      if (selectedCode === CHIANG_MAI_CODE && !amphoeGeojson) {
+      // Wait for amphoe data before moving (avoids province→amphoe jump fight).
+      if (
+        amphoeProvinceCode &&
+        selectedCode === amphoeProvinceCode &&
+        !amphoeGeojson
+      ) {
         return;
       }
 
       let nextKey = 'thailand';
       if (selectedAmphoeId && showAmphoes) {
         nextKey = `amphoe:${selectedAmphoeId}`;
-      } else if (selectedCode === CHIANG_MAI_CODE && amphoeGeojson) {
-        nextKey = 'cm:amphoes';
+      } else if (amphoeProvinceCode && selectedCode === amphoeProvinceCode && amphoeGeojson) {
+        nextKey = `amphoes:${amphoeProvinceCode}`;
       } else if (selectedCode) {
         nextKey = `province:${selectedCode}`;
       }
@@ -217,7 +235,7 @@ function MapInner({
       applySoftMaxBounds(map, 0.55);
 
       if (nextKey.startsWith('amphoe:') && selectedAmphoeId && amphoeGeojson) {
-        const district = AMPHOE_MAP_DISTRICTS.find((d) => d.id === selectedAmphoeId);
+        const district = amphoeDistricts.find((d) => d.id === selectedAmphoeId);
         if (!district) return;
 
         const live = amphoeLayerById.current.get(selectedAmphoeId)?.getBounds?.();
@@ -236,7 +254,7 @@ function MapInner({
         return;
       }
 
-      if (nextKey === 'cm:amphoes' && amphoeGeojson) {
+      if (nextKey.startsWith('amphoes:') && amphoeGeojson) {
         const amphoeBounds = L.geoJSON(amphoeGeojson).getBounds() as LeafletBounds;
         if (!amphoeBounds.isValid()) return;
         map.fitBounds(amphoeBounds as never, {
@@ -285,13 +303,13 @@ function MapInner({
       getElement?: () => Element | undefined;
       _path?: Element;
     },
-    district: AmphoeMapDistrict
+    district: ProvinceAmphoeDistrict
   ) {
     const selectedId = selectedAmphoeIdRef.current;
     const selected = district.id === selectedId;
     const dimOthers = Boolean(selectedId) && !selected;
     layer.setStyle?.({
-      fillColor: amphoeMapFill(district),
+      fillColor: amphoeMapFill(district, amphoeDestinationId),
       fillOpacity: selected ? 0.96 : dimOthers ? 0.22 : 0.78,
       color: selected
         ? '#1A3C34'
@@ -311,7 +329,7 @@ function MapInner({
   function SyncAmphoeStyles() {
     useEffect(() => {
       for (const [id, layer] of Array.from(amphoeLayerById.current.entries())) {
-        const district = AMPHOE_MAP_DISTRICTS.find((d) => d.id === id);
+        const district = amphoeDistricts.find((d) => d.id === id);
         if (!district) continue;
         styleAmphoeLayer(layer, district);
       }
@@ -384,7 +402,7 @@ function MapInner({
       const selected = district != null && district.id === selectedAmphoeId;
       const dimOthers = Boolean(selectedAmphoeId) && !selected;
       return {
-        fillColor: district ? amphoeMapFill(district) : '#E8E4DC',
+        fillColor: district ? amphoeMapFill(district, amphoeDestinationId) : '#E8E4DC',
         fillOpacity: selected ? 0.96 : dimOthers ? 0.22 : 0.78,
         color: selected
           ? '#1A3C34'
@@ -398,7 +416,7 @@ function MapInner({
         lineCap: 'round' as const,
       };
     },
-    [byAmpCode, selectedAmphoeId]
+    [byAmpCode, selectedAmphoeId, amphoeDestinationId]
   );
 
   const onEachFeature = useCallback(
@@ -517,7 +535,7 @@ function MapInner({
       style={{ height: '100%', width: '100%', background: 'transparent' }}
     >
       <GeoJSON
-        key={`prov-${selectedCode ?? 'none'}-${showAmphoes ? 'cm' : 'all'}`}
+        key={`prov-${selectedCode ?? 'none'}-${showAmphoes ? amphoeProvinceCode : 'all'}`}
         data={geojson}
         style={styleFor}
         onEachFeature={onEachFeature}
@@ -527,7 +545,7 @@ function MapInner({
       />
       {showAmphoes && amphoeGeojson ? (
         <GeoJSON
-          key="chiang-mai-amphoes"
+          key={`${amphoeProvinceCode}-amphoes`}
           data={amphoeGeojson}
           style={amphoeStyleFor}
           onEachFeature={onEachAmphoe}
@@ -564,6 +582,9 @@ export function ThailandProvinceMap({
     Geometry,
     AmphoeFeatureProps
   > | null>(null);
+  const [loadedAmphoeProvince, setLoadedAmphoeProvince] = useState<AmphoeCapableProvinceCode | null>(
+    null
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [internalSelected, setInternalSelected] = useState<string | null>(null);
   const [internalAmphoeId, setInternalAmphoeId] = useState<string | null>(null);
@@ -572,6 +593,10 @@ export function ThailandProvinceMap({
   const amphoeId =
     controlledAmphoeId !== undefined ? controlledAmphoeId : internalAmphoeId;
   const isTh = lang === 'th';
+  const amphoeProvinceCode: AmphoeCapableProvinceCode | null =
+    selectedCode && isAmphoeCapableProvince(selectedCode)
+      ? (selectedCode as AmphoeCapableProvinceCode)
+      : null;
 
   const setAmphoeId = useCallback(
     (id: string | null) => {
@@ -610,16 +635,18 @@ export function ThailandProvinceMap({
   }, [isTh]);
 
   useEffect(() => {
-    if (selectedCode !== CHIANG_MAI_CODE) {
+    if (!amphoeProvinceCode) {
       if (controlledAmphoeId === undefined) setInternalAmphoeId(null);
+      setAmphoeGeojson(null);
+      setLoadedAmphoeProvince(null);
       return;
     }
-    if (amphoeGeojson) return;
+    if (loadedAmphoeProvince === amphoeProvinceCode && amphoeGeojson) return;
 
     let cancelled = false;
     async function loadAmphoes() {
       try {
-        const res = await fetch('/api/maps/chiang-mai-amphoes');
+        const res = await fetch(amphoeMapApiPath(amphoeProvinceCode!));
         if (!res.ok) throw new Error('Failed to load amphoes');
         const topology = (await res.json()) as TopologyLike;
         const { feature } = await import('topojson-client');
@@ -627,7 +654,10 @@ export function ThailandProvinceMap({
           topology as never,
           topology.objects.districts as never
         ) as unknown as FeatureCollection<Geometry, AmphoeFeatureProps>;
-        if (!cancelled) setAmphoeGeojson(fc);
+        if (!cancelled) {
+          setAmphoeGeojson(fc);
+          setLoadedAmphoeProvince(amphoeProvinceCode);
+        }
       } catch (err) {
         console.error('[ThailandProvinceMap] amphoe load failed:', err);
       }
@@ -636,7 +666,7 @@ export function ThailandProvinceMap({
     return () => {
       cancelled = true;
     };
-  }, [selectedCode, amphoeGeojson, controlledAmphoeId]);
+  }, [amphoeProvinceCode, amphoeGeojson, loadedAmphoeProvince, controlledAmphoeId]);
 
   const byTopoName = useMemo(() => {
     const map = new Map<string, ThailandProvinceMapProvince>();
@@ -649,12 +679,13 @@ export function ThailandProvinceMap({
   }, [provinces]);
 
   const byAmpCode = useMemo(() => {
-    const map = new Map<string, AmphoeMapDistrict>();
-    for (const d of AMPHOE_MAP_DISTRICTS) {
+    const map = new Map<string, ProvinceAmphoeDistrict>();
+    if (!amphoeProvinceCode) return map;
+    for (const d of getAmphoeDistrictsForProvince(amphoeProvinceCode)) {
       map.set(d.ampCode, d);
     }
     return map;
-  }, []);
+  }, [amphoeProvinceCode]);
 
   const selected = useMemo(
     () => provinces.find((p) => p.province_code === selectedCode) ?? null,
@@ -667,9 +698,13 @@ export function ThailandProvinceMap({
       if (controlledSelected === undefined) setInternalSelected(next);
       if (code) onSelectProvince?.(code);
       else onSelectProvince?.('');
-      if (next !== CHIANG_MAI_CODE) setAmphoeId(null);
+      // Keep amphoe selection only when staying on the same amphoe-capable province
+      // (admin form relies on province selection not being cleared by amphoe clicks).
+      if (!next || !isAmphoeCapableProvince(next) || next !== selectedCode) {
+        setAmphoeId(null);
+      }
     },
-    [controlledSelected, onSelectProvince, setAmphoeId]
+    [controlledSelected, onSelectProvince, setAmphoeId, selectedCode]
   );
 
   return (
@@ -682,9 +717,12 @@ export function ThailandProvinceMap({
         ) : (
           <MapInner
             geojson={geojson}
-            amphoeGeojson={amphoeGeojson}
+            amphoeGeojson={
+              loadedAmphoeProvince === amphoeProvinceCode ? amphoeGeojson : null
+            }
             byTopoName={byTopoName}
             byAmpCode={byAmpCode}
+            amphoeProvinceCode={amphoeProvinceCode}
             selectedCode={selectedCode}
             selectedAmphoeId={amphoeId}
             onSelect={handleSelect}

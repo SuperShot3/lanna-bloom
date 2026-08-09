@@ -14,11 +14,14 @@ import {
   sortProvincesForCoverageList,
 } from '@/lib/delivery/coverageDisplay';
 import { canEnterCatalog } from '@/lib/provinces/shopAccess';
-import { getChiangMaiAmphoeDrillItems } from '@/lib/delivery/chiangMaiMapDrilldown';
+import { getAmphoeDrillItems } from '@/lib/delivery/amphoeMapDrilldown';
+import {
+  destinationIdForAmphoeProvince,
+  isAmphoeCapableProvince,
+  type AmphoeCapableProvinceCode,
+} from '@/lib/delivery/amphoeProvinces';
 import { amphoeMapFill } from '@/lib/delivery/amphoeDisplayFees';
 import Link from 'next/link';
-
-const CHIANG_MAI_CODE = 'chiang-mai';
 
 const ThailandProvinceMap = dynamic(
   () =>
@@ -60,7 +63,14 @@ export function ThailandCoverageMapSection({
   const [search, setSearch] = useState('');
   const amphoeListRef = useRef<HTMLUListElement>(null);
   const isTh = lang === 'th';
-  const showingAmphoes = selectedCode === CHIANG_MAI_CODE;
+  const amphoeProvinceCode: AmphoeCapableProvinceCode | null =
+    selectedCode && isAmphoeCapableProvince(selectedCode)
+      ? (selectedCode as AmphoeCapableProvinceCode)
+      : null;
+  const showingAmphoes = amphoeProvinceCode != null;
+  const amphoeDestinationId = amphoeProvinceCode
+    ? destinationIdForAmphoeProvince(amphoeProvinceCode)
+    : 'CHIANG_MAI';
 
   useEffect(() => {
     let cancelled = false;
@@ -101,8 +111,9 @@ export function ThailandCoverageMapSection({
   );
 
   const amphoeItems = useMemo(
-    () => (showingAmphoes ? getChiangMaiAmphoeDrillItems(lang) : []),
-    [showingAmphoes, lang]
+    () =>
+      amphoeProvinceCode ? getAmphoeDrillItems(amphoeProvinceCode, lang) : [],
+    [amphoeProvinceCode, lang]
   );
 
   const filteredAmphoes = useMemo(() => {
@@ -153,7 +164,7 @@ export function ThailandCoverageMapSection({
             className="mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0"
             style={{
               background: selectedAmphoeItem
-                ? amphoeMapFill(selectedAmphoeItem.amphoe)
+                ? amphoeMapFill(selectedAmphoeItem.amphoe, amphoeDestinationId)
                 : getProvinceStatusFillColor(selectedProvince.status),
             }}
             aria-hidden
@@ -304,7 +315,7 @@ export function ThailandCoverageMapSection({
                         >
                           <span
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/80"
-                            style={{ background: amphoeMapFill(amphoe) }}
+                            style={{ background: amphoeMapFill(amphoe, amphoeDestinationId) }}
                             aria-hidden
                           />
                           <span className="min-w-0 flex-1">

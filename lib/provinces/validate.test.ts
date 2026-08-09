@@ -25,7 +25,13 @@ assert(cm!.status === 'same_day', 'chiang-mai same_day');
 assert(cm!.catalog_enabled === true, 'chiang-mai catalog on');
 
 const wired = PROVINCE_SEED_ROSTER.filter((r) => r.destination_id);
-assert(wired.length === 6, `expected 6 wired destinations, got ${wired.length}`);
+assert(wired.length === 7, `expected 7 wired destinations, got ${wired.length}`);
+
+const lp = PROVINCE_SEED_ROSTER.find((r) => r.province_code === 'lamphun');
+assert(!!lp, 'lamphun present');
+assert(lp!.destination_id === 'LAMPHUN', 'lamphun destination');
+assert(lp!.status === 'next_day', 'lamphun next_day');
+assert(lp!.catalog_enabled === true, 'lamphun catalog on');
 
 assert(slugifyProvinceName('Bangkok Metropolis') === 'bangkok', 'bangkok slug');
 assert(slugifyProvinceName('Chiang Mai') === 'chiang-mai', 'chiang-mai slug');

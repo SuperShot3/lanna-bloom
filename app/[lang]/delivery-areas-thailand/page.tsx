@@ -6,17 +6,12 @@ import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { buildAlternates } from '@/lib/seo/alternates';
 import { listPublicProvinces } from '@/lib/provinces/queries';
-import { canEnterCatalog } from '@/lib/provinces/shopAccess';
-import { getProvinceStatusLabel } from '@/lib/provinces/statusColors';
-import {
-  catalogHrefForProvinceCode,
-  formatCoverageCategories,
-  sortProvincesForCoverageList,
-} from '@/lib/delivery/coverageDisplay';
+import { listShoppableCoverageAreas } from '@/lib/delivery/coverageDisplay';
 import {
   getChiangMaiDeliveryDistricts,
   getChiangMaiDeliveryNeighborhoods,
   getFlowerDeliveryThailandCopy,
+  getLamphunDeliveryDistricts,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
 export const revalidate = 3600;
@@ -82,13 +77,11 @@ export default async function DeliveryAreasThailandPage({
   const copy = getFlowerDeliveryThailandCopy(lang);
   const districts = getChiangMaiDeliveryDistricts();
   const neighborhoods = getChiangMaiDeliveryNeighborhoods();
+  const lamphunDistricts = getLamphunDeliveryDistricts();
   const isTh = lang === 'th';
   const provincesResult = await listPublicProvinces();
   const provinces = provincesResult.ok ? provincesResult.provinces : [];
-  const shoppableProvinces = sortProvincesForCoverageList(
-    provinces.filter((p) => canEnterCatalog(p)),
-    lang
-  );
+  const shoppableAreas = listShoppableCoverageAreas(provinces, lang);
 
   return (
     <div className="guide-page">
@@ -100,11 +93,6 @@ export default async function DeliveryAreasThailandPage({
           <p className="guide-intro !mt-2 max-w-xl mx-auto text-sm sm:text-[0.95rem]">
             {copy.mapHint}
           </p>
-          <div className="mt-4 flex justify-center">
-            <Link href={`/${lang}/catalog`} className="hero-cta">
-              {copy.ctaCatalog}
-            </Link>
-          </div>
         </section>
 
         <ThailandCoverageMapSection lang={lang} initialProvinces={provinces} />
@@ -115,9 +103,6 @@ export default async function DeliveryAreasThailandPage({
           </h2>
           <p className="guide-intro max-w-2xl mx-auto text-center mt-3">{copy.intro}</p>
           <p className="guide-browse flex flex-wrap gap-4 justify-center">
-            <Link href={`/${lang}`} className="guide-browse-link">
-              {copy.ctaChiangMaiGuide}
-            </Link>
             <Link
               href={`/${lang}/info/buy-flowers-online-chiang-mai-thailand`}
               className="guide-browse-link"
@@ -140,6 +125,11 @@ export default async function DeliveryAreasThailandPage({
               <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
                 {copy.chiangMaiIntro}
               </p>
+              <div className="mt-5 flex justify-center">
+                <Link href={`/${lang}/catalog`} className="btn-premium">
+                  {copy.ctaChiangMai}
+                </Link>
+              </div>
             </div>
 
             <div className="mb-8">
@@ -159,27 +149,53 @@ export default async function DeliveryAreasThailandPage({
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.chiangMaiNote}</p>
           </div>
 
-          {shoppableProvinces.length > 0 ? (
+          <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3
+                id="lamphun-delivery-title"
+                className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl text-[#1A3C34] mb-3 leading-tight"
+              >
+                {copy.lamphunTitle}
+              </h3>
+              <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                {copy.lamphunIntro}
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Link
+                  href={`/${lang}/lamphun/flower-delivery`}
+                  className="btn-premium"
+                >
+                  {copy.ctaLamphun}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
+                {copy.districtsSubtitle}
+              </h4>
+              <AreaPills areas={lamphunDistricts} lang={lang} />
+            </div>
+
+            <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.lamphunNote}</p>
+          </div>
+
+          {shoppableAreas.length > 0 ? (
             <div className="mt-10 max-w-2xl mx-auto">
               <h3 className="popular-title text-center text-xl sm:text-2xl mb-2">
                 {copy.otherDestinationsTitle}
               </h3>
               <p className="text-stone-500 text-sm text-center mb-4">{copy.expandingNote}</p>
               <ul className="guide-highlights">
-                {shoppableProvinces.map((p) => (
-                  <li key={p.province_code}>
+                {shoppableAreas.map((area) => (
+                  <li key={area.key}>
                     <Link
-                      href={catalogHrefForProvinceCode(lang, p.province_code)}
+                      href={area.href}
                       className="text-[#1A3C34] font-medium hover:text-[#C5A059]"
                     >
-                      {isTh ? p.province_name_th : p.province_name_en}
+                      {isTh ? area.nameTh : area.nameEn}
                     </Link>
-                    <span className="text-stone-500 text-sm">
-                      {' '}
-                      — {getProvinceStatusLabel(p.status)}
-                      {' · '}
-                      {formatCoverageCategories(p, lang)}
-                    </span>
+                    <span className="text-stone-500 text-sm"> — {area.summary}</span>
                   </li>
                 ))}
               </ul>

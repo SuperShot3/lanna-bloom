@@ -769,6 +769,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       'KRABI',
       'SAMUI',
       'HUA_HIN',
+      'LAMPHUN',
     ];
     const deliveryDestination =
       typeof storedDest === 'string' && (allowed as string[]).includes(storedDest)

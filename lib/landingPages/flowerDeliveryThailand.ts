@@ -1,6 +1,7 @@
 import type { Locale } from '@/lib/i18n';
 import { CHIANG_MAI_DISTRICTS } from '@/lib/delivery-areas';
 import { getActiveMarkets } from '@/lib/delivery/markets';
+import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/lamphunAmphoeMapData';
 
 export type LocalizedLabel = { nameEn: string; nameTh: string };
 
@@ -8,13 +9,19 @@ export type ThailandServiceArea = {
   nameEn: string;
   nameTh: string;
   href: (lang: Locale) => string;
-  noteEn?: string;
-  noteTh?: string;
 };
 
 /** Chiang Mai province amphoe only (Lamphun is its own province on the national map). */
 export function getChiangMaiDeliveryDistricts(): LocalizedLabel[] {
   return CHIANG_MAI_DISTRICTS.map((d) => ({ nameEn: d.nameEn, nameTh: d.nameTh }));
+}
+
+/** Lamphun amphoes for coverage SEO + customer transparency. */
+export function getLamphunDeliveryDistricts(): LocalizedLabel[] {
+  return LAMPHUN_AMPHOE_MAP_DISTRICTS.map((d) => ({
+    nameEn: d.labelEn,
+    nameTh: d.labelTh,
+  }));
 }
 
 /** Popular tambons, towns, and neighborhoods we regularly deliver to. */
@@ -42,21 +49,18 @@ export function getChiangMaiDeliveryNeighborhoods(): LocalizedLabel[] {
   ];
 }
 
+/** Market links only — summaries come from listShoppableCoverageAreas (status/categories/fees). */
 export function getThailandServiceAreas(): ThailandServiceArea[] {
   return [
     {
       nameEn: 'Chiang Mai',
       nameTh: 'เชียงใหม่',
       href: (lang) => `/${lang}/catalog`,
-      noteEn: 'Full flower & gift catalog · same-day when available',
-      noteTh: 'ดอกไม้และของขวัญครบ · จัดส่งวันเดียวได้ตามเงื่อนไข',
     },
     ...getActiveMarkets().map((m) => ({
       nameEn: m.customerFacingNameEn,
       nameTh: m.customerFacingNameTh,
       href: (lang: Locale) => `/${lang}/${m.pathSlug}/flower-delivery`,
-      noteEn: 'Bouquet delivery only',
-      noteTh: 'จัดส่งช่อดอกไม้เท่านั้น',
     })),
   ];
 }
@@ -66,8 +70,6 @@ export function getExpansionMarketAreas(): ThailandServiceArea[] {
     nameEn: m.customerFacingNameEn,
     nameTh: m.customerFacingNameTh,
     href: (lang: Locale) => `/${lang}/${m.pathSlug}/flower-delivery`,
-    noteEn: 'Bouquet delivery only',
-    noteTh: 'จัดส่งช่อดอกไม้เท่านั้น',
   }));
 }
 
@@ -83,23 +85,27 @@ export type FlowerDeliveryThailandCopy = {
   districtsSubtitle: string;
   neighborhoodsSubtitle: string;
   chiangMaiNote: string;
+  lamphunTitle: string;
+  lamphunIntro: string;
+  lamphunNote: string;
   otherDestinationsTitle: string;
   expandingNote: string;
-  ctaCatalog: string;
-  ctaChiangMaiGuide: string;
+  ctaChiangMai: string;
   ctaDeliveryPolicy: string;
   ctaAbroad: string;
+  ctaLamphun: string;
 };
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
   en: {
     metaTitle: 'Flower Delivery Coverage in Thailand & Chiang Mai Fees | Lanna Bloom',
     metaDescription:
-      'See live Thailand flower-delivery coverage by province, then check Chiang Mai district fees — Hang Dong, Mae Rim, Fang, Mae Ai, and more. Gradual expansion; nationwide same-day is not promised.',
+      'See live Thailand flower-delivery coverage by province, then check Chiang Mai and Lamphun amphoe fees. Next-day Lamphun delivery from ฿250. Gradual expansion; nationwide same-day is not promised.',
     h1: 'Flower delivery across Thailand — Chiang Mai fees & coverage',
-    mapHint: 'Tap a province for live status. Tap Chiang Mai for district fees.',
+    mapHint:
+      'Tap a province for live status. Tap Chiang Mai or Lamphun for amphoe delivery fees.',
     intro:
-      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs across central, outer, and rural areas including Hang Dong, Mae Rim, Fang, and Mae Ai. We expand gradually — nationwide same-day is not promised.',
+      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs. Lamphun is open for next-day flower delivery across all amphoes from ฿250. We expand gradually — nationwide same-day is not promised.',
     areasTitle: 'Chiang Mai — our full-service core',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
@@ -108,22 +114,28 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     neighborhoodsSubtitle: 'Popular areas & neighborhoods',
     chiangMaiNote:
       'Don’t see your exact street? Add your address at checkout — we deliver to hotels, condos, offices, and homes throughout the areas below.',
+    lamphunTitle: 'Lamphun',
+    lamphunIntro:
+      'Next-day flower delivery across Lamphun province. Delivery from ฿250 — same-day is not available. Shop by amphoe below or on the coverage map.',
+    lamphunNote:
+      'Choose Lamphun as your delivery destination at checkout, then select your amphoe. Fees start at ฿250 for every amphoe listed.',
     otherDestinationsTitle: 'Currently shoppable provinces',
     expandingNote:
       'Only provinces where ordering is open right now. Status and categories come from live settings — we do not promise nationwide same-day delivery.',
-    ctaCatalog: 'Buy flowers',
-    ctaChiangMaiGuide: 'Chiang Mai delivery guide',
+    ctaChiangMai: 'Chiang Mai flower delivery',
     ctaDeliveryPolicy: 'Delivery policy',
     ctaAbroad: 'Send flowers from abroad',
+    ctaLamphun: 'Lamphun flower delivery',
   },
   th: {
     metaTitle: 'พื้นที่จัดส่งดอกไม้ทั่วไทย และค่าส่งเชียงใหม่ | Lanna Bloom',
     metaDescription:
-      'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทยแบบสด แล้วตรวจสอบค่าส่งรายอำเภอในเชียงใหม่ รวมหางดง แม่ริม ฝาง และแม่เอ๋ย ขยายบริการอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+      'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทยแบบสด แล้วตรวจสอบค่าส่งรายอำเภอในเชียงใหม่และลำพูน จัดส่งลำพูนวันถัดไปเริ่มต้น ฿250 — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     h1: 'จัดส่งดอกไม้ทั่วไทย — ค่าส่งและพื้นที่เชียงใหม่',
-    mapHint: 'แตะจังหวัดเพื่อดูสถานะ — แตะเชียงใหม่เพื่อดูค่าส่งรายอำเภอ',
+    mapHint:
+      'แตะจังหวัดเพื่อดูสถานะ — แตะเชียงใหม่หรือลำพูนเพื่อดูค่าส่งรายอำเภอ',
     intro:
-      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ทั้งในเมือง รอบเมือง และพื้นที่ชนบท รวมหางดง แม่ริม ฝาง และแม่เอ๋ย ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ลำพูนเปิดรับจัดส่งดอกไม้วันถัดไปทุกอำเภอเริ่มต้น ฿250 ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     areasTitle: 'เชียงใหม่ — ฐานบริการหลักครบวงจร',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:
@@ -132,13 +144,18 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     neighborhoodsSubtitle: 'ย่านและพื้นที่ยอดนิยม',
     chiangMaiNote:
       'ไม่เห็นถนนของคุณในรายการ? กรอกที่อยู่ตอนชำระเงินได้เลย — เราจัดส่งไปโรงแรม คอนโด ออฟฟิศ และบ้านในพื้นที่ด้านล่าง',
+    lamphunTitle: 'ลำพูน',
+    lamphunIntro:
+      'จัดส่งดอกไม้วันถัดไปทั่วจังหวัดลำพูน ค่าส่งเริ่มต้น ฿250 — ไม่มีบริการวันเดียวกัน เลือกอำเภอด้านล่างหรือบนแผนที่พื้นที่บริการ',
+    lamphunNote:
+      'เลือกปลายทางลำพูนตอนชำระเงิน แล้วเลือกอำเภอ ค่าส่งเริ่มต้น ฿250 สำหรับทุกอำเภอในรายการ',
     otherDestinationsTitle: 'จังหวัดที่สั่งได้ตอนนี้',
     expandingNote:
       'แสดงเฉพาะจังหวัดที่เปิดรับออเดอร์ สถานะและหมวดสินค้ามาจากการตั้งค่าจริง — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
-    ctaCatalog: 'ซื้อดอกไม้',
-    ctaChiangMaiGuide: 'คู่มือจัดส่งเชียงใหม่',
+    ctaChiangMai: 'ส่งดอกไม้เชียงใหม่',
     ctaDeliveryPolicy: 'นโยบายการจัดส่ง',
     ctaAbroad: 'ส่งดอกไม้จากต่างประเทศ',
+    ctaLamphun: 'ส่งดอกไม้ลำพูน',
   },
 };
 

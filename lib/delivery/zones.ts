@@ -52,7 +52,6 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
     { id: 'cm-hang-dong', labelEn: 'Hang Dong', labelTh: 'หางดง', feeThb: 450 },
     { id: 'cm-san-kamphaeng', labelEn: 'San Kamphaeng', labelTh: 'สันกำแพง', feeThb: 450 },
     { id: 'cm-mae-rim', labelEn: 'Mae Rim', labelTh: 'แม่ริม', feeThb: 450 },
-    { id: 'cm-lamphun', labelEn: 'Lamphun', labelTh: 'ลำพูน', feeThb: 650 },
     { id: 'cm-doi-saket', labelEn: 'Doi Saket', labelTh: 'ดอยสะเก็ด', feeThb: 550 },
     { id: 'cm-san-pa-tong', labelEn: 'San Pa Tong', labelTh: 'สันป่าตอง', feeThb: 550 },
     { id: 'cm-mae-on', labelEn: 'Mae On', labelTh: 'แม่ออน', feeThb: 750 },
@@ -110,6 +109,16 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
     { id: 'hhi-hua-don', labelEn: 'Hua Don', labelTh: 'หัวดอน', feeThb: 250 },
     { id: 'hhi-hin-lek-fai', labelEn: 'Hin Lek Fai', labelTh: 'หินเหล็กไฟ', feeThb: 300 },
     { id: 'hhi-thap-tai', labelEn: 'Thap Tai', labelTh: 'ทับใต้', feeThb: 350 },
+  ],
+  LAMPHUN: [
+    { id: 'lp-mueang-lamphun', labelEn: 'Mueang Lamphun', labelTh: 'เมืองลำพูน', feeThb: 250 },
+    { id: 'lp-pa-sang', labelEn: 'Pa Sang', labelTh: 'ป่าซาง', feeThb: 300 },
+    { id: 'lp-ban-thi', labelEn: 'Ban Thi', labelTh: 'บ้านธิ', feeThb: 300 },
+    { id: 'lp-wiang-nong-long', labelEn: 'Wiang Nong Long', labelTh: 'เวียงหนองล่อง', feeThb: 300 },
+    { id: 'lp-mae-tha', labelEn: 'Mae Tha', labelTh: 'แม่ทา', feeThb: 350 },
+    { id: 'lp-ban-hong', labelEn: 'Ban Hong', labelTh: 'บ้านโฮ่ง', feeThb: 400 },
+    { id: 'lp-li', labelEn: 'Li', labelTh: 'ลี้', feeThb: 450 },
+    { id: 'lp-thung-hua-chang', labelEn: 'Thung Hua Chang', labelTh: 'ทุ่งหัวช้าง', feeThb: 550 },
   ],
 };
 
@@ -208,7 +217,6 @@ export function legacyDistrictFromChiangMaiZone(zoneId: string): {
     'cm-hang-dong': { deliveryDistrict: 'HANG_DONG', isMueangCentral: false },
     'cm-san-kamphaeng': { deliveryDistrict: 'SAN_KAMPHAENG', isMueangCentral: false },
     'cm-mae-rim': { deliveryDistrict: 'MAE_RIM', isMueangCentral: false },
-    'cm-lamphun': { deliveryDistrict: 'LAMPHUN', isMueangCentral: false },
     'cm-doi-saket': { deliveryDistrict: 'DOI_SAKET', isMueangCentral: false },
     'cm-mae-on': { deliveryDistrict: 'MAE_ON', isMueangCentral: false },
     'cm-samoeng': { deliveryDistrict: 'SAMOENG', isMueangCentral: false },
@@ -232,13 +240,14 @@ export function chiangMaiZoneIdFromLegacyDistrict(
   if (district === 'MUEANG') {
     return isMueangCentral ? 'cm-mueang-central' : 'cm-mueang-non-central';
   }
+  // Legacy LAMPHUN was a Chiang Mai satellite zone — retired; force re-select.
+  if (district === 'LAMPHUN') return '';
   const d2z: Partial<Record<DistrictKey, string>> = {
     SARAPHI: 'cm-saraphi',
     SAN_SAI: 'cm-san-sai',
     HANG_DONG: 'cm-hang-dong',
     SAN_KAMPHAENG: 'cm-san-kamphaeng',
     MAE_RIM: 'cm-mae-rim',
-    LAMPHUN: 'cm-lamphun',
     DOI_SAKET: 'cm-doi-saket',
     MAE_ON: 'cm-mae-on',
     SAMOENG: 'cm-samoeng',

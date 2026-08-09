@@ -23,6 +23,11 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 | Zones + fees | `lib/delivery/zones.ts` → `ZONES_BY_DESTINATION` |
 | Market SEO page | `app/[lang]/(markets)/[market]/flower-delivery/` |
 | Coverage / catalog href | `lib/delivery/coverageDisplay.ts`, shop access helpers |
+| **Coverage page shoppable list** | `listShoppableCoverageAreas()` in `lib/delivery/coverageDisplay.ts` (MARKETS × province by `destination_id`) |
+| **Shoppable summary** | `formatShoppableProvinceSummary` — dynamic only; no hardcoded market blurbs |
+| **Coverage page copy** | `flowerDeliveryThailand.ts` EN/TH (`mapHint`, `intro`, meta, CTA labels) |
+| **Named amphoes / localities (SEO)** | District helper + section on `app/[lang]/delivery-areas-thailand/page.tsx` (see Lamphun / Chiang Mai) |
+| **Province shop CTA** | `btn-premium` **inside** that province section only — never in the page hero or shared browse row |
 | Public provinces API | `app/api/provinces/` |
 | Partner province list | Already from DB — `partner/apply` |
 | Sitemap market URLs | `app/sitemap.ts` |
@@ -35,13 +40,15 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 |-------|--------|
 | TopoJSON | `content/thailand-map/{province}-amphoes.topojson` |
 | Asset notes | `content/thailand-map/README.md` |
-| API route | `app/api/maps/...-amphoes/route.ts` |
-| Metadata + `ampCode` | e.g. `lib/delivery/amphoeMapData.ts` pattern |
-| Fee display | `lib/delivery/amphoeDisplayFees.ts` ← `zones.ts` |
-| Drill-down list helpers | generalize `lib/delivery/chiangMaiMapDrilldown.ts` |
+| API route | `app/api/maps/{province}-amphoes/route.ts` |
+| Metadata + `ampCode` | `lib/delivery/amphoeMapData.ts` or `{province}AmphoeMapData.ts` |
+| Province registry | `lib/delivery/amphoeProvinces.ts` |
+| Fee display | `lib/delivery/amphoeDisplayFees.ts` ← `zones.ts` + destination id |
+| Drill-down list helpers | `lib/delivery/amphoeMapDrilldown.ts` |
 | National map gates | `components/delivery/ThailandProvinceMap.tsx` |
 | Public side list | `components/delivery/ThailandCoverageMapSection.tsx` |
 | Intent embeds (if any) | `components/delivery/DeliveryDistrictMap.tsx` |
+| Coverage SEO amphoe names | Must match metadata on delivery-areas page |
 | Tests | `lib/deliveryFees.test.ts` (amphoe codes), province tests |
 
 ## Validate command
@@ -49,6 +56,7 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 ```bash
 npm run validate:province -- chiang-mai
 npm run validate:province -- chiang-mai --amphoe
+npm run validate:province -- lamphun --amphoe
 npm run validate:province -- phuket
 ```
 
@@ -56,5 +64,7 @@ npm run validate:province -- phuket
 
 1. `/admin/provinces` — select province, edit status, map highlights.
 2. `/en/delivery-areas-thailand` — color, panel, catalog CTA if shoppable.
-3. Header destination / market links (Tier B).
-4. Chiang Mai amphoe hover + click + list sync (always regression).
+3. `/en/delivery-areas-thailand` — **Currently shoppable provinces** includes the new market; amphoe/locality names visible when required; **shop CTA is inside the province section** (`btn-premium`), not the hero.
+4. Header destination / market links (Tier B).
+5. Chiang Mai amphoe hover + click + list sync (always regression).
+6. Other amphoe-capable provinces (e.g. Lamphun) still drill down correctly.
