@@ -310,7 +310,7 @@ function MapInner({
 
   function SyncAmphoeStyles() {
     useEffect(() => {
-      for (const [id, layer] of amphoeLayerById.current) {
+      for (const [id, layer] of Array.from(amphoeLayerById.current.entries())) {
         const district = AMPHOE_MAP_DISTRICTS.find((d) => d.id === id);
         if (!district) continue;
         styleAmphoeLayer(layer, district);
@@ -330,7 +330,7 @@ function MapInner({
   function KeepAmphoesOnTop() {
     useEffect(() => {
       if (!showAmphoes) return;
-      for (const layer of amphoeLayerById.current.values()) {
+      for (const layer of Array.from(amphoeLayerById.current.values())) {
         layer.bringToFront?.();
       }
       if (selectedAmphoeId) {

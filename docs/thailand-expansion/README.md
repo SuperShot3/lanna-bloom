@@ -17,6 +17,19 @@ The final operating workflow should be:
 
 The expansion should reduce operational stress and avoid promising capabilities before they are reliable.
 
+## Opening a province (operator checklist)
+
+Use the project skill **`.cursor/skills/add-thailand-province/`** when asking the agent to open or wire a province.
+
+Validate wiring locally:
+
+```bash
+npm run validate:province -- <province_code>
+npm run validate:province -- <province_code> --amphoe
+```
+
+Tiers: **A** admin status only → **B** destination + markets + zones + SEO → **C** amphoe map (generalize Chiang Mai pattern). See the skill and `reference.md` for exact files (Header, Footer, admin map, coverage page).
+
 ## Important principles
 
 - One national website
