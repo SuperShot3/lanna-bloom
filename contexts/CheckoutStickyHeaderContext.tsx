@@ -13,6 +13,8 @@ export type CheckoutStickyHeaderPayload = {
   total: number;
   itemSummary?: string | null;
   hasToyItem?: boolean;
+  /** Active checkout destination for local-time label (e.g. CHIANG_MAI, LAMPHUN). */
+  deliveryDestinationId: string;
   deliveryScheduleLine?: string | null;
   deliveryFee: number;
   deliveryFeeGross?: number;

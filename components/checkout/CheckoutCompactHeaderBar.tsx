@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import type { CheckoutStickyHeaderPayload } from '@/contexts/CheckoutStickyHeaderContext';
-import { type Locale, translations } from '@/lib/i18n';
+import { type Locale } from '@/lib/i18n';
 import { formatBangkokDate, formatBangkokTime } from '@/lib/deliveryHours';
+import {
+  destinationDisplayName,
+  parseDeliveryDestinationId,
+} from '@/lib/delivery/markets';
 
 const CLOCK_TICK_MS = 1_000;
 
@@ -21,9 +25,13 @@ export function CheckoutCompactHeaderBar({
       ? payload.deliveryFreeLabel
       : `${thb}${payload.deliveryFee.toLocaleString()}`;
 
-  const locationLabel = translations[lang].catalog.localTimeBangkok ?? 'Chiang Mai';
+  const destinationId =
+    parseDeliveryDestinationId(payload.deliveryDestinationId) ?? 'CHIANG_MAI';
+  const locationLabel = destinationDisplayName(destinationId, lang);
   const clockTitle =
-    lang === 'th' ? 'เวลาท้องถิ่น (เชียงใหม่)' : 'Local time in Chiang Mai (Asia/Bangkok)';
+    lang === 'th'
+      ? `เวลาท้องถิ่น (${locationLabel})`
+      : `Local time in ${locationLabel} (Asia/Bangkok)`;
 
   return (
     <div className="checkout-compact-header" role="region" aria-label="Order summary">
@@ -67,13 +75,13 @@ export function CheckoutCompactHeaderBar({
           </span>
         </div>
         </div>
-        <CheckoutChiangMaiClock lang={lang} locationLabel={locationLabel} title={clockTitle} />
+        <CheckoutLocalClock lang={lang} locationLabel={locationLabel} title={clockTitle} />
       </div>
     </div>
   );
 }
 
-function CheckoutChiangMaiClock({
+function CheckoutLocalClock({
   lang,
   locationLabel,
   title,
@@ -125,4 +133,3 @@ function DeliveryTruckIcon() {
     </svg>
   );
 }
-
