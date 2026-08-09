@@ -144,6 +144,7 @@ export default async function OrderDetailsPage({
             statusTimestamps={lifecycleStatusTimestamps}
             driverAssignmentStatus={driverAssignmentStatus}
             driverName={driverName}
+            deliveryNotes={order.delivery?.notes}
             orderChatEnabled={showOrderChat}
             publicToken={token}
             initialChatOpen={wantChat && showOrderChat}

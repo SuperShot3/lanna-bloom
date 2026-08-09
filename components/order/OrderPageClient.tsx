@@ -515,6 +515,7 @@ export function OrderPageClient({
             statusTimestamps={lifecycleStatusTimestamps}
             driverAssignmentStatus={driverAssignmentStatus}
             driverName={driverName}
+            deliveryNotes={order.delivery?.notes}
             locale={locale}
           />
 

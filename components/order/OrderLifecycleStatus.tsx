@@ -215,12 +215,14 @@ export function OrderLifecycleStatusSection({
   statusTimestamps,
   driverAssignmentStatus,
   driverName,
+  deliveryNotes,
   locale = 'en',
 }: {
   currentStatus: OrderLifecycleStatus;
   statusTimestamps: OrderStatusTimestamps;
   driverAssignmentStatus: DriverAssignmentStatus;
   driverName?: string | null;
+  deliveryNotes?: string | null;
   locale?: Locale;
 }) {
   const [previewStatus, setPreviewStatus] = useState<OrderLifecycleStatus | null>(null);
@@ -238,13 +240,13 @@ export function OrderLifecycleStatusSection({
   const displayState = getStepState(displayIndex, currentIndex);
   const updatedLabel = getTimestampLabel(statusTimestamps[displayStatus], displayState, locale);
   const assignedDriverName = driverName?.trim() ?? '';
+  const trimmedDeliveryNotes = deliveryNotes?.trim() ?? '';
   const driverStatusText =
     driverAssignmentStatus === 'assigned'
       ? assignedDriverName
         ? `Assigned to ${assignedDriverName}`
         : 'Driver assigned'
       : 'No driver assigned yet';
-
   const progress = useMemo(
     () =>
       STEPS.map((step, index) => ({
@@ -307,8 +309,16 @@ export function OrderLifecycleStatusSection({
         </div>
 
         <div className="order-lifecycle-driver" aria-label="Driver assignment status">
-          <span className="order-lifecycle-driver-label">Delivery driver</span>
-          <span className="order-lifecycle-driver-value">{driverStatusText}</span>
+          <div className="order-lifecycle-driver-row">
+            <span className="order-lifecycle-driver-label">Delivery driver</span>
+            <span className="order-lifecycle-driver-value">{driverStatusText}</span>
+          </div>
+          {trimmedDeliveryNotes ? (
+            <div className="order-lifecycle-driver-notes">
+              <span className="order-lifecycle-driver-label">Delivery notes</span>
+              <span className="order-lifecycle-driver-notes-value">{trimmedDeliveryNotes}</span>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -660,14 +670,19 @@ export function OrderLifecycleStatusSection({
         }
         .order-lifecycle-driver {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
+          flex-direction: column;
+          gap: 10px;
           margin-top: 14px;
           padding: 10px 12px;
           border-radius: 14px;
           background: rgba(255, 255, 255, 0.62);
           border: 1px solid rgba(235, 230, 224, 0.9);
+        }
+        .order-lifecycle-driver-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
         }
         .order-lifecycle-driver-label {
           color: var(--text-muted, #6b6560);
@@ -680,6 +695,21 @@ export function OrderLifecycleStatusSection({
           color: var(--text, #2d2a26);
           font-size: 12px;
           font-weight: 700;
+        }
+        .order-lifecycle-driver-notes {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding-top: 8px;
+          border-top: 1px solid rgba(235, 230, 224, 0.9);
+        }
+        .order-lifecycle-driver-notes-value {
+          color: var(--text, #2d2a26);
+          font-size: 12px;
+          font-weight: 500;
+          line-height: 1.45;
+          white-space: pre-wrap;
+          word-break: break-word;
         }
         .order-lifecycle-history {
           padding: 14px 16px 16px;

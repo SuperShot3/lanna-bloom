@@ -35,6 +35,7 @@ export function OrderDeliveredBlock({
   statusTimestamps,
   driverAssignmentStatus = 'not_assigned',
   driverName,
+  deliveryNotes,
   orderChatEnabled = false,
   publicToken,
   initialChatOpen = false,
@@ -45,6 +46,7 @@ export function OrderDeliveredBlock({
   statusTimestamps: OrderStatusTimestamps;
   driverAssignmentStatus?: DriverAssignmentStatus;
   driverName?: string | null;
+  deliveryNotes?: string | null;
   orderChatEnabled?: boolean;
   publicToken?: string;
   initialChatOpen?: boolean;
@@ -86,6 +88,7 @@ export function OrderDeliveredBlock({
         statusTimestamps={statusTimestamps}
         driverAssignmentStatus={driverAssignmentStatus}
         driverName={driverName}
+        deliveryNotes={deliveryNotes}
         locale={locale}
       />
       {orderChatEnabled && publicToken ? (
