@@ -9,6 +9,7 @@ import {
   getProvinceStatusFillColor,
   getProvinceStatusLabel,
 } from '@/lib/provinces/statusColors';
+import { canEnterCatalog } from '@/lib/provinces/shopAccess';
 
 const ThailandProvinceMap = dynamic(
   () =>
@@ -32,10 +33,20 @@ type Props = {
 
 type ViewMode = 'list' | 'map';
 
+/** URL `status` values: all | available | unavailable | ProvinceStatus */
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
+  { value: 'available', label: 'Available now' },
+  { value: 'unavailable', label: 'Not available' },
   ...PROVINCE_STATUSES.map((s) => ({ value: s, label: getProvinceStatusLabel(s) })),
 ];
+
+function matchesProvinceFilter(province: ProvinceRow, filter: string): boolean {
+  if (!filter || filter === 'all') return true;
+  if (filter === 'available') return canEnterCatalog(province);
+  if (filter === 'unavailable') return !canEnterCatalog(province);
+  return province.status === filter;
+}
 
 export function ProvincesAdminClient({
   initialProvinces,
@@ -57,10 +68,15 @@ export function ProvincesAdminClient({
     [provinces, selectedCode]
   );
 
-  const filteredProvinces = useMemo(() => {
-    if (!initialStatus || initialStatus === 'all') return provinces;
-    return provinces.filter((p) => p.status === initialStatus);
-  }, [provinces, initialStatus]);
+  const filteredProvinces = useMemo(
+    () => provinces.filter((p) => matchesProvinceFilter(p, initialStatus)),
+    [provinces, initialStatus]
+  );
+
+  const availableCount = useMemo(
+    () => provinces.filter((p) => canEnterCatalog(p)).length,
+    [provinces]
+  );
 
   function handleStatusTab(status: string) {
     router.push(`/admin/provinces?status=${encodeURIComponent(status)}`);
@@ -180,6 +196,11 @@ export function ProvincesAdminClient({
             onClick={() => handleStatusTab(t.value)}
           >
             {t.label}
+            {t.value === 'available' ? (
+              <span className="admin-hint" style={{ margin: 0, marginLeft: 6 }}>
+                ({availableCount})
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
