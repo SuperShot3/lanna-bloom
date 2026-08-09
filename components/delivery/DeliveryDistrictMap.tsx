@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import type { FeatureCollection, Geometry } from 'geojson';
+import 'leaflet/dist/leaflet.css';
 import type { Locale } from '@/lib/i18n';
 import {
   amphoeMapFill,
@@ -13,7 +15,7 @@ import {
 import {
   AMPHOE_MAP_DISTRICTS,
   AMPHOE_MAP_OTHER,
-  PROVINCE_OUTLINE_D,
+  type AmphoeMapDistrict,
   type AmphoeMapId,
 } from '@/lib/delivery/amphoeMapData';
 import { getDeliveryDistanceTiers } from '@/lib/delivery/distanceTiers';
@@ -25,6 +27,27 @@ interface DeliveryDistrictMapProps {
   lang: Locale;
 }
 
+type AmphoeFeatureProps = {
+  amp_code?: string;
+  amp_en?: string;
+  amp_th?: string;
+};
+
+type TopologyLike = {
+  type: string;
+  objects: { districts: unknown };
+  arcs: unknown;
+};
+
+type LeafletBounds = {
+  isValid: () => boolean;
+  pad: (bufferRatio: number) => LeafletBounds;
+};
+
+const CM_CENTER: [number, number] = [18.8, 98.9];
+const DEFAULT_ZOOM = 9;
+const MIN_ZOOM = 8;
+const MAX_ZOOM = 12;
 const COPY = {
   en: {
     title: 'Check your delivery area',
@@ -54,6 +77,8 @@ const COPY = {
     legendNear: 'Closer / lower fee',
     legendFar: 'Farther / higher fee',
     mapHint: 'Tap a district',
+    mapLoadError: 'Could not load district map',
+    mapLoading: 'Loading map…',
   },
   th: {
     title: 'ตรวจสอบพื้นที่จัดส่ง',
@@ -83,6 +108,8 @@ const COPY = {
     legendNear: 'ใกล้กว่า / ค่าส่งต่ำกว่า',
     legendFar: 'ไกลกว่า / ค่าส่งสูงกว่า',
     mapHint: 'แตะอำเภอบนแผนที่',
+    mapLoadError: 'โหลดแผนที่อำเภอไม่สำเร็จ',
+    mapLoading: 'กำลังโหลดแผนที่…',
   },
 } as const;
 
@@ -101,15 +128,220 @@ const LEGEND_SWATCHES = [
   '#a890b0',
 ] as const;
 
+function AmphoeLeafletMap({
+  geojson,
+  byAmpCode,
+  selectedId,
+  onSelect,
+  lang,
+}: {
+  geojson: FeatureCollection<Geometry, AmphoeFeatureProps>;
+  byAmpCode: Map<string, AmphoeMapDistrict>;
+  selectedId: SelectionId;
+  onSelect: (id: AmphoeMapId) => void;
+  lang: Locale;
+}) {
+  const { MapContainer, GeoJSON, useMap } = require('react-leaflet');
+  const L = require('leaflet');
+  const geoJsonRef = useRef<{ resetStyle: (layer?: unknown) => void } | null>(null);
+  const layerById = useRef(new Map<string, { getBounds?: () => LeafletBounds }>());
+
+  function ZoomButtons() {
+    const map = useMap();
+    return (
+      <div className={styles.zoomControls} role="group" aria-label="Map zoom">
+        <button type="button" className={styles.zoomBtn} aria-label="Zoom in" onClick={() => map.zoomIn()}>
+          <span aria-hidden>+</span>
+        </button>
+        <button type="button" className={styles.zoomBtn} aria-label="Zoom out" onClick={() => map.zoomOut()}>
+          <span aria-hidden>−</span>
+        </button>
+      </div>
+    );
+  }
+
+  function FitProvince() {
+    const map = useMap();
+    useEffect(() => {
+      const layer = L.geoJSON(geojson);
+      const bounds = layer.getBounds() as LeafletBounds;
+      if (!bounds.isValid()) return;
+      map.setMaxBounds(bounds.pad(0.18));
+      map.options.maxBoundsViscosity = 0.85;
+      map.fitBounds(bounds as never, { padding: [12, 12], animate: false });
+      const fittedZoom = map.getBoundsZoom(bounds as never, false);
+      if (typeof fittedZoom === 'number' && Number.isFinite(fittedZoom)) {
+        map.setMinZoom(Math.max(MIN_ZOOM, fittedZoom - 0.2));
+      }
+    }, [map]);
+    return null;
+  }
+
+  function FitSelected() {
+    const map = useMap();
+    useEffect(() => {
+      if (!selectedId || selectedId === 'other') {
+        const layer = L.geoJSON(geojson);
+        const bounds = layer.getBounds() as LeafletBounds;
+        if (bounds.isValid()) {
+          map.fitBounds(bounds as never, { padding: [12, 12], animate: true });
+        }
+        return;
+      }
+      const layer = layerById.current.get(selectedId);
+      if (layer?.getBounds) {
+        const bounds = layer.getBounds();
+        if (bounds?.isValid?.()) {
+          map.fitBounds(bounds as never, { padding: [40, 40], maxZoom: 11, animate: true });
+        }
+      }
+    }, [map, selectedId]);
+    return null;
+  }
+
+  const styleFor = useCallback(
+    (feature?: { properties?: AmphoeFeatureProps }) => {
+      const ampCode = feature?.properties?.amp_code ?? '';
+      const district = byAmpCode.get(ampCode);
+      const selected = district != null && district.id === selectedId;
+      const dimOthers = Boolean(selectedId) && selectedId !== 'other' && !selected;
+      return {
+        // Selection = edge highlight only (keep fee fill; no solid selected square)
+        fillColor: district ? amphoeMapFill(district) : '#E8E4DC',
+        fillOpacity: selected ? 0.88 : dimOthers ? 0.32 : 0.82,
+        color: selected ? '#c5a059' : '#FDFCF8',
+        weight: selected ? 3 : 1,
+        opacity: 1,
+      };
+    },
+    [byAmpCode, selectedId]
+  );
+
+  const onEachFeature = useCallback(
+    (
+      feature: { properties?: AmphoeFeatureProps },
+      layer: {
+        on: (events: Record<string, () => void>) => void;
+        setStyle: (s: object) => void;
+        getBounds?: () => LeafletBounds;
+        bindTooltip?: (content: string, options?: object) => void;
+      }
+    ) => {
+      const ampCode = feature.properties?.amp_code ?? '';
+      const district = byAmpCode.get(ampCode);
+      if (district) {
+        layerById.current.set(district.id, layer);
+        const label = lang === 'th' ? district.labelTh : district.labelEn;
+        layer.bindTooltip?.(label, {
+          sticky: true,
+          direction: 'top',
+          opacity: 0.92,
+          className: styles.mapTooltip,
+        });
+      }
+      layer.on({
+        click: () => {
+          if (district) onSelect(district.id);
+        },
+        mouseover: () => {
+          if (district?.id !== selectedId) {
+            layer.setStyle({ weight: 2, color: '#1A3C34' });
+          }
+        },
+        mouseout: () => {
+          if (geoJsonRef.current) geoJsonRef.current.resetStyle(layer);
+        },
+      });
+    },
+    [byAmpCode, lang, onSelect, selectedId]
+  );
+
+  return (
+    <MapContainer
+      center={CM_CENTER}
+      zoom={DEFAULT_ZOOM}
+      minZoom={MIN_ZOOM}
+      maxZoom={MAX_ZOOM}
+      zoomControl={false}
+      attributionControl={false}
+      dragging
+      doubleClickZoom
+      scrollWheelZoom={false}
+      className={styles.mapInner}
+      style={{ height: '100%', width: '100%', background: 'transparent' }}
+    >
+      <GeoJSON
+        key={selectedId || 'none'}
+        data={geojson}
+        style={styleFor}
+        onEachFeature={onEachFeature}
+        ref={(ref: typeof geoJsonRef.current) => {
+          geoJsonRef.current = ref;
+        }}
+      />
+      <FitProvince />
+      <FitSelected />
+      <ZoomButtons />
+    </MapContainer>
+  );
+}
+
 export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
   const locale = mapLang(lang);
   const t = COPY[locale];
   const selectId = useId();
-  const filterId = useId().replace(/:/g, '');
   const [selected, setSelected] = useState<SelectionId>('');
-  const [hovered, setHovered] = useState<AmphoeMapId | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [geojson, setGeojson] = useState<FeatureCollection<Geometry, AmphoeFeatureProps> | null>(
+    null
+  );
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const distanceTiers = useMemo(() => getDeliveryDistanceTiers(), []);
+
+  const districtsSorted = useMemo(() => {
+    const collator = new Intl.Collator(locale === 'th' ? 'th' : 'en');
+    return [...AMPHOE_MAP_DISTRICTS].sort((a, b) =>
+      collator.compare(
+        locale === 'th' ? a.labelTh : a.labelEn,
+        locale === 'th' ? b.labelTh : b.labelEn
+      )
+    );
+  }, [locale]);
+
+  const byAmpCode = useMemo(() => {
+    const map = new Map<string, AmphoeMapDistrict>();
+    for (const d of AMPHOE_MAP_DISTRICTS) map.set(d.ampCode, d);
+    return map;
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/maps/chiang-mai-amphoes');
+        if (!res.ok) throw new Error('Failed to load map');
+        const topology = (await res.json()) as TopologyLike;
+        const { feature } = await import('topojson-client');
+        const fc = feature(
+          topology as never,
+          topology.objects.districts as never
+        ) as unknown as FeatureCollection<Geometry, AmphoeFeatureProps>;
+        if (!cancelled) setGeojson(fc);
+      } catch (err) {
+        console.error('[DeliveryDistrictMap] load failed:', err);
+        if (!cancelled) setLoadError(t.mapLoadError);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [t.mapLoadError]);
 
   const activate = useCallback((id: SelectionId) => {
     setSelected(id);
@@ -130,7 +362,6 @@ export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
   })();
 
   const isDriverConfirm = feeResolved?.displayKind === 'driver_confirm';
-
   const feeDisplay = feeResolved ? formatAmphoeFeeDisplay(feeResolved, locale) : null;
 
   const infoTitle = (() => {
@@ -147,10 +378,6 @@ export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
     if (isDriverConfirm) return t.manualText;
     return lang === 'th' ? district!.typicalAreasTh : district!.typicalAreasEn;
   })();
-
-  const shadowFilter = `mapShadow-${filterId}`;
-  const glowFilter = `mapGlow-${filterId}`;
-  const softLightId = `mapLight-${filterId}`;
 
   return (
     <section className={styles.section} aria-labelledby={`${selectId}-title`}>
@@ -173,7 +400,7 @@ export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
             onChange={(e) => activate(e.target.value as SelectionId)}
           >
             <option value="">{t.selectPlaceholder}</option>
-            {AMPHOE_MAP_DISTRICTS.map((d) => (
+            {districtsSorted.map((d) => (
               <option key={d.id} value={d.id}>
                 {lang === 'th' ? d.labelTh : d.labelEn}
               </option>
@@ -227,137 +454,41 @@ export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
             <p className={styles.mapHint} aria-hidden={selected ? true : undefined}>
               {t.mapHint}
             </p>
-            <svg
-              viewBox="0 0 600 900"
-              className={styles.svg}
+            <div
+              className={styles.mapFrame}
               role="img"
               aria-label={
                 lang === 'th'
-                  ? 'แผนที่อำเภอเชียงใหม่แบบย่อสำหรับเลือกพื้นที่จัดส่ง'
-                  : 'Simplified interactive Chiang Mai district map'
+                  ? 'แผนที่อำเภอเชียงใหม่สำหรับเลือกพื้นที่จัดส่ง'
+                  : 'Interactive Chiang Mai district map'
               }
             >
-              <defs>
-                <filter id={shadowFilter} x="-12%" y="-8%" width="124%" height="120%">
-                  <feDropShadow dx="0" dy="14" stdDeviation="18" floodColor="#1a3c34" floodOpacity="0.16" />
-                  <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#1a3c34" floodOpacity="0.08" />
-                </filter>
-                <filter id={glowFilter} x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="6" result="blur" />
-                  <feColorMatrix
-                    in="blur"
-                    type="matrix"
-                    values="0 0 0 0 0.77
-                            0 0 0 0 0.63
-                            0 0 0 0 0.35
-                            0 0 0 0.55 0"
-                    result="gold"
-                  />
-                  <feMerge>
-                    <feMergeNode in="gold" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-                <radialGradient id={softLightId} cx="42%" cy="38%" r="68%">
-                  <stop offset="0%" stopColor="#fffef9" stopOpacity="0.55" />
-                  <stop offset="55%" stopColor="#f4efe6" stopOpacity="0.18" />
-                  <stop offset="100%" stopColor="#e8e0d4" stopOpacity="0" />
-                </radialGradient>
-                <linearGradient id={`${filterId}-plate`} x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#f7f3ec" />
-                  <stop offset="50%" stopColor="#f0ebe3" />
-                  <stop offset="100%" stopColor="#e8e2d8" />
-                </linearGradient>
-              </defs>
+              {!mounted || (!geojson && !loadError) ? (
+                <div className={styles.mapPlaceholder}>{t.mapLoading}</div>
+              ) : loadError || !geojson ? (
+                <div className={styles.mapPlaceholder}>{loadError ?? t.mapLoadError}</div>
+              ) : (
+                <AmphoeLeafletMap
+                  geojson={geojson}
+                  byAmpCode={byAmpCode}
+                  selectedId={selected}
+                  onSelect={(id) => activate(id)}
+                  lang={lang}
+                />
+              )}
 
-              {/* Soft map plate */}
-              <ellipse
-                className={styles.mapPlate}
-                cx="310"
-                cy="460"
-                rx="265"
-                ry="390"
-                fill={`url(#${filterId}-plate)`}
-                filter={`url(#${shadowFilter})`}
-              />
-              <ellipse
-                cx="310"
-                cy="460"
-                rx="265"
-                ry="390"
-                fill={`url(#${softLightId})`}
-                pointerEvents="none"
-              />
-
-              <g className={styles.mapBody}>
-                {AMPHOE_MAP_DISTRICTS.map((d) => {
-                  const isActive = selected === d.id;
-                  const isHover = hovered === d.id && !isActive;
-                  return (
-                    <g key={d.id}>
-                      <path
-                        id={d.id}
-                        className={[
-                          styles.district,
-                          isActive ? styles.districtActive : '',
-                          isHover ? styles.districtHover : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        fill={amphoeMapFill(d)}
-                        d={d.pathD}
-                        filter={isActive ? `url(#${glowFilter})` : undefined}
-                        onClick={() => activate(d.id)}
-                        onMouseEnter={() => setHovered(d.id)}
-                        onMouseLeave={() => setHovered(null)}
-                        onFocus={() => setHovered(d.id)}
-                        onBlur={() => setHovered(null)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            activate(d.id);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={lang === 'th' ? d.labelTh : d.labelEn}
-                        aria-pressed={isActive}
-                      />
-                      <text
-                        className={`${styles.districtLabel} ${isActive ? styles.districtLabelActive : ''}`}
-                        x={d.labelX}
-                        y={d.labelY}
-                        pointerEvents="none"
-                      >
-                        {(lang === 'th' ? d.labelLinesTh : d.labelLinesEn)?.length ? (
-                          (lang === 'th' ? d.labelLinesTh! : d.labelLinesEn!).map((line, i) => (
-                            <tspan key={line} x={d.labelX} dy={i === 0 ? 0 : d.labelLine2Dy ?? 14}>
-                              {line}
-                            </tspan>
-                          ))
-                        ) : (
-                          lang === 'th' ? d.labelTh : d.labelEn
-                        )}
-                      </text>
-                    </g>
-                  );
-                })}
-                <path className={styles.provinceOutline} d={PROVINCE_OUTLINE_D} />
-                <path className={styles.provinceRim} d={PROVINCE_OUTLINE_D} />
-              </g>
-            </svg>
-
-            {selected && feeDisplay ? (
-              <output className={styles.mobileFeeSummary} aria-live="polite">
-                <span className={styles.mobileFeeDistrict}>{infoTitle}</span>
-                {isDriverConfirm ? (
-                  <span className={styles.driverBadge}>{t.driverBadge}</span>
-                ) : null}
-                <span className={styles.mobileFeeAmount}>
-                  {isDriverConfirm ? t.feeLabelEstimate : t.feeLabel}: {feeDisplay}
-                </span>
-              </output>
-            ) : null}
+              {selected && feeDisplay ? (
+                <output className={styles.mobileFeeSummary} aria-live="polite">
+                  <span className={styles.mobileFeeDistrict}>{infoTitle}</span>
+                  {isDriverConfirm ? (
+                    <span className={styles.driverBadge}>{t.driverBadge}</span>
+                  ) : null}
+                  <span className={styles.mobileFeeAmount}>
+                    {isDriverConfirm ? t.feeLabelEstimate : t.feeLabel}: {feeDisplay}
+                  </span>
+                </output>
+              ) : null}
+            </div>
 
             <div className={styles.legend} aria-hidden="true">
               <span className={styles.legendLabel}>{t.legendNear}</span>
@@ -388,9 +519,7 @@ export function DeliveryDistrictMap({ lang }: DeliveryDistrictMapProps) {
                 <tr key={tier.id}>
                   <td>{lang === 'th' ? tier.distanceLabelTh : tier.distanceLabelEn}</td>
                   <td>
-                    {tier.feeThb != null
-                      ? `฿${tier.feeThb.toLocaleString()}`
-                      : t.manualFee}
+                    {tier.feeThb != null ? `฿${tier.feeThb.toLocaleString()}` : t.manualFee}
                   </td>
                   <td>{lang === 'th' ? tier.typicalAreasTh : tier.typicalAreasEn}</td>
                 </tr>

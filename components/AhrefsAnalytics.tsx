@@ -20,9 +20,8 @@ export function AhrefsAnalytics() {
     <Script
       id="ahrefs-analytics"
       src="https://analytics.ahrefs.com/analytics.js"
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       data-key={AHREFS_KEY}
-      async
     />
   );
 }

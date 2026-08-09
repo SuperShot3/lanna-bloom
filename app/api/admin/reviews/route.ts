@@ -1,6 +1,8 @@
+import { revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
+import { REVIEWS_CACHE_TAG } from '@/lib/reviewsDb';
 
 const MAX_NAME_LENGTH = 200;
 const MAX_COMMENT_LENGTH = 2000;
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save review' }, { status: 500 });
     }
 
+    revalidateTag(REVIEWS_CACHE_TAG);
     return NextResponse.json({ success: true, id: data?.id });
   } catch (e) {
     console.error('[api/admin/reviews] error:', e);

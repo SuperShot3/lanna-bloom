@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { BouquetCard } from '@/components/BouquetCard';
-import { ProductCard } from '@/components/ProductCard';
+import dynamic from 'next/dynamic';
 import { StorefrontIcon } from '@/components/icons';
 import {
   getCatalogHomeFlowerTypeSections,
@@ -11,6 +10,15 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+
+const BouquetCard = dynamic(
+  () => import('@/components/BouquetCard').then((m) => m.BouquetCard),
+  { ssr: true }
+);
+const ProductCard = dynamic(
+  () => import('@/components/ProductCard').then((m) => m.ProductCard),
+  { ssr: true }
+);
 
 function flowerTypeLabel(type: string, catalog: Record<string, string>): string {
   const key = `type${type.charAt(0).toUpperCase() + type.slice(1)}`;

@@ -108,7 +108,7 @@ export function Header({
     : `/${lang}/catalog`;
   const cartHref = `/${lang}/cart`;
   const aboutHref = `/${lang}/about`;
-  const deliveryAreasHref = `/${lang}/delivery-areas-chiang-mai`;
+  const deliveryAreasHref = `/${lang}/delivery-areas-thailand`;
   const infoHref = `/${lang}/info`;
   const trackOrderHref = `/${lang}/track-order`;
   const t = translations[lang].nav;
@@ -330,7 +330,7 @@ export function Header({
                 <NavItem
                   href={deliveryAreasHref}
                   label={t.deliveryAreas}
-                  active={basePath === '/delivery-areas-chiang-mai'}
+                  active={basePath === '/delivery-areas-thailand'}
                   variant="pill"
                   className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
@@ -502,7 +502,7 @@ export function Header({
                 href={deliveryAreasHref}
                 label={t.deliveryAreas}
                 icon={<MapIcon size={22} />}
-                active={basePath === '/delivery-areas-chiang-mai'}
+                active={basePath === '/delivery-areas-thailand'}
                 variant="mobile"
                 onClick={() => setMenuOpen(false)}
               />

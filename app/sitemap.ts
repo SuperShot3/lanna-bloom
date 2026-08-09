@@ -28,7 +28,7 @@ const LOCALE_PAGES: LocalePage[] = [
   { path: '/partner/apply', changeFrequency: 'monthly', priority: 0.55 },
   { path: '/custom-order', changeFrequency: 'monthly', priority: 0.65 },
   { path: '/info', changeFrequency: 'weekly', priority: 0.7 },
-  { path: '/delivery-areas-chiang-mai', changeFrequency: 'monthly', priority: 0.72 },
+  { path: '/delivery-areas-thailand', changeFrequency: 'monthly', priority: 0.72 },
 ];
 
 function articleSitemapPath(article: ArticleMeta): string {

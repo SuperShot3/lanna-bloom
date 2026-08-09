@@ -75,6 +75,7 @@ export type FlowerDeliveryThailandCopy = {
   metaTitle: string;
   metaDescription: string;
   h1: string;
+  mapHint: string;
   intro: string;
   areasTitle: string;
   chiangMaiTitle: string;
@@ -96,8 +97,9 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     metaDescription:
       'See live Thailand flower-delivery coverage by province, then check Chiang Mai district fees — Hang Dong, Mae Rim, Fang, Mae Ai, and more. Gradual expansion; nationwide same-day is not promised.',
     h1: 'Flower delivery across Thailand — Chiang Mai fees & coverage',
+    mapHint: 'Tap a province for live status. Tap Chiang Mai for district fees.',
     intro:
-      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Use the map and list below for live service status. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs across central, outer, and rural areas including Hang Dong, Mae Rim, Fang, and Mae Ai.',
+      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs across central, outer, and rural areas including Hang Dong, Mae Rim, Fang, and Mae Ai. We expand gradually — nationwide same-day is not promised.',
     areasTitle: 'Chiang Mai — our full-service core',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
@@ -119,8 +121,9 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     metaDescription:
       'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทยแบบสด แล้วตรวจสอบค่าส่งรายอำเภอในเชียงใหม่ รวมหางดง แม่ริม ฝาง และแม่เอ๋ย ขยายบริการอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     h1: 'จัดส่งดอกไม้ทั่วไทย — ค่าส่งและพื้นที่เชียงใหม่',
+    mapHint: 'แตะจังหวัดเพื่อดูสถานะ — แตะเชียงใหม่เพื่อดูค่าส่งรายอำเภอ',
     intro:
-      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด ใช้แผนที่และรายการด้านล่างเพื่อดูสถานะบริการจริง เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ทั้งในเมือง รอบเมือง และพื้นที่ชนบท รวมหางดง แม่ริม ฝาง และแม่เอ๋ย',
+      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ทั้งในเมือง รอบเมือง และพื้นที่ชนบท รวมหางดง แม่ริม ฝาง และแม่เอ๋ย ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     areasTitle: 'เชียงใหม่ — ฐานบริการหลักครบวงจร',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:

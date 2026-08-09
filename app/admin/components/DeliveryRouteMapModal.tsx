@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import 'leaflet/dist/leaflet.css';
 import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { deliveryCoordsFromOrder } from '@/lib/admin/deliveryBoardPreview';
 

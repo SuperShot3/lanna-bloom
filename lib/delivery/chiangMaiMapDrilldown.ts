@@ -1,7 +1,7 @@
 /**
  * Chiang Mai–only drill-down for the national province map.
- * Amphoe (district) list + tambon/zone-level sub-areas where we already have them.
- * No drawn amphoe GeoJSON yet — info overlay only (province shapes stay on the map).
+ * Amphoe polygons are drawn on ThailandProvinceMap when Chiang Mai is selected;
+ * this module supplies fee labels + tambon/zone sub-areas for the overlay panel.
  */
 
 import {

@@ -6,7 +6,6 @@ import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
 import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { DeliverySection } from '@/components/home/DeliverySection';
 import { LocalLandingSection } from '@/components/home/LocalLandingSection';
-import { HomeFaq } from '@/components/home/HomeFaq';
 import { getHomeFaqItems } from '@/components/home/homeLandingContent';
 import { ExperienceSection } from '@/components/ExperienceSection';
 import {
@@ -21,11 +20,21 @@ import {
   isStorefrontRenderableImageUrl,
 } from '@/lib/catalog/catalogImage';
 import { getBaseUrl } from '@/lib/orders';
-import { isValidLocale, type Locale } from '@/lib/i18n';
+import { isValidLocale, locales, type Locale } from '@/lib/i18n';
+import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 
 /** Regenerate every 60s so popular catalog items shuffle on each update */
 export const revalidate = 60;
+
+export function generateStaticParams() {
+  return locales.map((lang) => ({ lang }));
+}
+
+const HomeFaq = dynamic(
+  () => import('@/components/home/HomeFaq').then((m) => m.HomeFaq),
+  { ssr: true }
+);
 
 const OG_IMAGE_PATH = '/HeroImage/heroimage.webp';
 

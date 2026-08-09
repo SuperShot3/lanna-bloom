@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import 'leaflet/dist/leaflet.css';
 
 export interface DeliveryLocationValue {
   lat: number;

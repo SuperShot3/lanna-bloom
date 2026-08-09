@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { Locale } from '@/lib/i18n';
 import type { PublicProvince } from '@/lib/provinces/types';
@@ -9,10 +9,16 @@ import {
   getProvinceStatusLabel,
 } from '@/lib/provinces/statusColors';
 import {
+  buildCoveragePanelDisplay,
   filterProvincesBySearch,
   sortProvincesForCoverageList,
 } from '@/lib/delivery/coverageDisplay';
 import { canEnterCatalog } from '@/lib/provinces/shopAccess';
+import { getChiangMaiAmphoeDrillItems } from '@/lib/delivery/chiangMaiMapDrilldown';
+import { amphoeMapFill } from '@/lib/delivery/amphoeDisplayFees';
+import Link from 'next/link';
+
+const CHIANG_MAI_CODE = 'chiang-mai';
 
 const ThailandProvinceMap = dynamic(
   () =>
@@ -45,13 +51,16 @@ export function ThailandCoverageMapSection({
 }: {
   lang: Locale;
   initialProvinces: PublicProvince[];
-  title: string;
-  intro: string;
+  title?: string;
+  intro?: string;
 }) {
   const [provinces, setProvinces] = useState(initialProvinces);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [selectedAmphoeId, setSelectedAmphoeId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const amphoeListRef = useRef<HTMLUListElement>(null);
   const isTh = lang === 'th';
+  const showingAmphoes = selectedCode === CHIANG_MAI_CODE;
 
   useEffect(() => {
     let cancelled = false;
@@ -73,92 +82,312 @@ export function ThailandCoverageMapSection({
     };
   }, []);
 
+  useEffect(() => {
+    if (!showingAmphoes) setSelectedAmphoeId(null);
+  }, [showingAmphoes]);
+
+  useEffect(() => {
+    setSearch('');
+  }, [showingAmphoes]);
+
   const sorted = useMemo(
     () => sortProvincesForCoverageList(provinces, lang),
     [provinces, lang]
   );
 
-  const filtered = useMemo(
+  const filteredProvinces = useMemo(
     () => filterProvincesBySearch(sorted, search),
     [sorted, search]
   );
 
+  const amphoeItems = useMemo(
+    () => (showingAmphoes ? getChiangMaiAmphoeDrillItems(lang) : []),
+    [showingAmphoes, lang]
+  );
+
+  const filteredAmphoes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return amphoeItems;
+    return amphoeItems.filter(({ amphoe }) => {
+      const en = amphoe.labelEn.toLowerCase();
+      const th = amphoe.labelTh.toLowerCase();
+      return en.includes(q) || th.includes(q);
+    });
+  }, [amphoeItems, search]);
+
+  const selectedProvince = useMemo(
+    () => provinces.find((p) => p.province_code === selectedCode) ?? null,
+    [provinces, selectedCode]
+  );
+
+  const selectedCoverage = useMemo(
+    () =>
+      selectedProvince ? buildCoveragePanelDisplay(selectedProvince, lang) : null,
+    [selectedProvince, lang]
+  );
+
+  const selectedAmphoeItem = useMemo(
+    () => amphoeItems.find(({ amphoe }) => amphoe.id === selectedAmphoeId) ?? null,
+    [amphoeItems, selectedAmphoeId]
+  );
+
+  useEffect(() => {
+    if (!selectedAmphoeId || !amphoeListRef.current) return;
+    const el = amphoeListRef.current.querySelector<HTMLElement>(
+      `[data-amphoe-id="${selectedAmphoeId}"]`
+    );
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedAmphoeId]);
+
   if (provinces.length === 0) return null;
 
+  const serviceSummary =
+    selectedProvince && selectedCoverage ? (
+      <div
+        className="mb-3 rounded-xl border border-stone-200/90 bg-white px-3 py-2.5"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex items-start gap-2.5">
+          <span
+            className="mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{
+              background: selectedAmphoeItem
+                ? amphoeMapFill(selectedAmphoeItem.amphoe)
+                : getProvinceStatusFillColor(selectedProvince.status),
+            }}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#1A3C34] leading-snug">
+              <span className="font-medium text-stone-500">
+                {isTh ? 'จังหวัด: ' : 'Province: '}
+              </span>
+              {isTh
+                ? selectedProvince.province_name_th
+                : selectedProvince.province_name_en}
+            </p>
+            {selectedAmphoeItem ? (
+              <p className="text-sm font-semibold text-[#1A3C34] leading-snug mt-0.5">
+                <span className="font-medium text-stone-500">
+                  {isTh ? 'อำเภอ: ' : 'Amphoe: '}
+                </span>
+                {isTh
+                  ? selectedAmphoeItem.amphoe.labelTh
+                  : selectedAmphoeItem.amphoe.labelEn}
+              </p>
+            ) : null}
+            <p className="text-xs font-medium text-[#1A3C34] mt-1.5">
+              {getProvinceStatusLabel(selectedProvince.status)}
+              {selectedProvince.catalog_enabled
+                ? isTh
+                  ? ' · เปิดแคตตาล็อก'
+                  : ' · Catalog open'
+                : ''}
+            </p>
+            {selectedCoverage.timingLine ? (
+              <p className="text-xs text-stone-500 mt-1">{selectedCoverage.timingLine}</p>
+            ) : null}
+            {selectedCoverage.cutoffLine ? (
+              <p className="text-xs text-stone-500 mt-0.5">{selectedCoverage.cutoffLine}</p>
+            ) : null}
+            {selectedAmphoeItem ? (
+              <p className="text-xs font-semibold text-[#1A3C34] mt-1">
+                {isTh ? 'ค่าจัดส่ง: ' : 'Delivery fee: '}
+                {selectedAmphoeItem.feeLabel}
+              </p>
+            ) : null}
+            {selectedCoverage.blockedNotice ? (
+              <p className="text-xs text-stone-500 mt-1">{selectedCoverage.blockedNotice}</p>
+            ) : null}
+            {selectedCoverage.shoppable ? (
+              <Link
+                href={selectedCoverage.catalogHref}
+                className="btn-premium mt-2.5 !min-h-0 h-auto py-1.5 px-3 text-[11px] rounded-lg"
+              >
+                {isTh ? 'ดูแคตตาล็อก' : 'Browse catalog'}
+              </Link>
+            ) : selectedCoverage.showPartnerCta ? (
+              <Link
+                href={selectedCoverage.partnerApplyHref}
+                className="btn-premium mt-2.5 !min-h-0 h-auto py-1.5 px-3 text-[11px] rounded-lg"
+              >
+                {isTh ? 'สมัครพาร์ทเนอร์' : 'Partner with us'}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    ) : null;
+
   return (
-    <section className="guide-section" aria-labelledby="thailand-coverage-map-title">
-      <h2 id="thailand-coverage-map-title" className="popular-title text-center">
-        {title}
-      </h2>
-      <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto text-center mb-6">
-        {intro}
-      </p>
+    <section
+      className="guide-section"
+      aria-label={title || (isTh ? 'แผนที่ความครอบคลุมทั่วไทย' : 'Thailand coverage map')}
+      {...(title ? { 'aria-labelledby': 'thailand-coverage-map-title' } : {})}
+    >
+      {title ? (
+        <h2 id="thailand-coverage-map-title" className="popular-title text-center">
+          {title}
+        </h2>
+      ) : null}
+      {intro ? (
+        <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto text-center mb-6">
+          {intro}
+        </p>
+      ) : null}
 
       <div className="max-w-5xl mx-auto flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start lg:gap-6">
-        {/* Mobile-first: searchable list primary; map remains available */}
         <div className="order-1 lg:order-2 rounded-2xl border border-stone-200/80 bg-[#FDFCF8] p-3 sm:p-4">
-          <label className="sr-only" htmlFor="province-coverage-search">
-            {isTh ? 'ค้นหาจังหวัด' : 'Search provinces'}
-          </label>
-          <input
-            id="province-coverage-search"
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={isTh ? 'ค้นหาจังหวัด...' : 'Search province...'}
-            className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-[#1A3C34] placeholder:text-stone-400 outline-none focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]"
-            autoComplete="off"
-          />
-          <ul
-            className="mt-3 max-h-[min(42vh,320px)] lg:max-h-[min(58vh,480px)] overflow-y-auto overscroll-contain list-none m-0 p-0 divide-y divide-stone-100"
-            role="listbox"
-            aria-label={isTh ? 'รายการจังหวัด' : 'Province list'}
-          >
-            {filtered.length === 0 ? (
-              <li className="px-2 py-4 text-sm text-stone-500 text-center">
-                {isTh ? 'ไม่พบจังหวัด' : 'No provinces match'}
-              </li>
-            ) : (
-              filtered.map((p) => {
-                const active = p.province_code === selectedCode;
-                const shoppable = canEnterCatalog(p);
-                return (
-                  <li key={p.province_code} role="option" aria-selected={active}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedCode(active ? null : p.province_code)
-                      }
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 text-left rounded-lg transition-colors ${
-                        active
-                          ? 'bg-[rgba(26,60,52,0.08)]'
-                          : 'hover:bg-stone-50'
-                      }`}
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ background: getProvinceStatusFillColor(p.status) }}
-                        aria-hidden
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-medium text-[#1A3C34] truncate">
-                          {isTh ? p.province_name_th : p.province_name_en}
-                        </span>
-                        <span className="block text-xs text-stone-500 truncate">
-                          {getProvinceStatusLabel(p.status)}
-                          {shoppable
-                            ? isTh
-                              ? ' · สั่งได้'
-                              : ' · Orderable'
-                            : ''}
-                        </span>
-                      </span>
-                    </button>
+          {serviceSummary}
+          {showingAmphoes ? (
+            <>
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCode(null);
+                    setSelectedAmphoeId(null);
+                  }}
+                  className="text-xs font-semibold text-[#C5A059] hover:text-[#1A3C34] transition-colors shrink-0"
+                >
+                  {isTh ? '← จังหวัดทั้งหมด' : '← All provinces'}
+                </button>
+                <span className="text-xs text-stone-400 truncate">
+                  {isTh
+                    ? selectedProvince?.province_name_th ?? 'เชียงใหม่'
+                    : selectedProvince?.province_name_en ?? 'Chiang Mai'}
+                </span>
+              </div>
+              <label className="sr-only" htmlFor="amphoe-coverage-search">
+                {isTh ? 'ค้นหาอำเภอ' : 'Search districts'}
+              </label>
+              <input
+                id="amphoe-coverage-search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={isTh ? 'ค้นหาอำเภอ...' : 'Search district...'}
+                className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-[#1A3C34] placeholder:text-stone-400 outline-none focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]"
+                autoComplete="off"
+              />
+              <ul
+                ref={amphoeListRef}
+                className="mt-3 max-h-[min(42vh,320px)] lg:max-h-[min(58vh,480px)] overflow-y-auto overscroll-contain list-none m-0 p-0 divide-y divide-stone-100"
+                role="listbox"
+                aria-label={isTh ? 'รายการอำเภอ' : 'District list'}
+              >
+                {filteredAmphoes.length === 0 ? (
+                  <li className="px-2 py-4 text-sm text-stone-500 text-center">
+                    {isTh ? 'ไม่พบอำเภอ' : 'No districts match'}
                   </li>
-                );
-              })
-            )}
-          </ul>
+                ) : (
+                  filteredAmphoes.map(({ amphoe, feeLabel }) => {
+                    const active = amphoe.id === selectedAmphoeId;
+                    return (
+                      <li
+                        key={amphoe.id}
+                        data-amphoe-id={amphoe.id}
+                        role="option"
+                        aria-selected={active}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedAmphoeId(active ? null : amphoe.id)
+                          }
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 text-left rounded-lg transition-colors ${
+                            active
+                              ? 'bg-[rgba(26,60,52,0.08)]'
+                              : 'hover:bg-stone-50'
+                          }`}
+                        >
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/80"
+                            style={{ background: amphoeMapFill(amphoe) }}
+                            aria-hidden
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium text-[#1A3C34] truncate">
+                              {isTh ? amphoe.labelTh : amphoe.labelEn}
+                            </span>
+                            <span className="block text-xs text-stone-500 truncate">
+                              {feeLabel}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </>
+          ) : (
+            <>
+              <label className="sr-only" htmlFor="province-coverage-search">
+                {isTh ? 'ค้นหาจังหวัด' : 'Search provinces'}
+              </label>
+              <input
+                id="province-coverage-search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={isTh ? 'ค้นหาจังหวัด...' : 'Search province...'}
+                className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-[#1A3C34] placeholder:text-stone-400 outline-none focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]"
+                autoComplete="off"
+              />
+              <ul
+                className="mt-3 max-h-[min(42vh,320px)] lg:max-h-[min(58vh,480px)] overflow-y-auto overscroll-contain list-none m-0 p-0 divide-y divide-stone-100"
+                role="listbox"
+                aria-label={isTh ? 'รายการจังหวัด' : 'Province list'}
+              >
+                {filteredProvinces.length === 0 ? (
+                  <li className="px-2 py-4 text-sm text-stone-500 text-center">
+                    {isTh ? 'ไม่พบจังหวัด' : 'No provinces match'}
+                  </li>
+                ) : (
+                  filteredProvinces.map((p) => {
+                    const active = p.province_code === selectedCode;
+                    const shoppable = canEnterCatalog(p);
+                    return (
+                      <li key={p.province_code} role="option" aria-selected={active}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedCode(active ? null : p.province_code)
+                          }
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 text-left rounded-lg transition-colors ${
+                            active
+                              ? 'bg-[rgba(26,60,52,0.08)]'
+                              : 'hover:bg-stone-50'
+                          }`}
+                        >
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ background: getProvinceStatusFillColor(p.status) }}
+                            aria-hidden
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium text-[#1A3C34] truncate">
+                              {isTh ? p.province_name_th : p.province_name_en}
+                            </span>
+                            <span className="block text-xs text-stone-500 truncate">
+                              {getProvinceStatusLabel(p.status)}
+                              {shoppable
+                                ? isTh
+                                  ? ' · สั่งได้'
+                                  : ' · Orderable'
+                                : ''}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </>
+          )}
         </div>
 
         <div className="order-2 lg:order-1 min-w-0">
@@ -168,6 +397,8 @@ export function ThailandCoverageMapSection({
             lang={lang}
             selectedCode={selectedCode}
             onSelectProvince={(code) => setSelectedCode(code || null)}
+            selectedAmphoeId={selectedAmphoeId}
+            onSelectAmphoe={setSelectedAmphoeId}
           />
         </div>
       </div>

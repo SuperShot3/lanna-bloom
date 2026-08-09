@@ -110,7 +110,7 @@ export function DeliverySection({ lang }: { lang: Locale }) {
                 </div>
               </div>
               <Link
-                href={`/${lang}/delivery-areas-chiang-mai`}
+                href={`/${lang}/delivery-areas-thailand`}
                 className="shrink-0 inline-flex items-center justify-center gap-1.5 self-start sm:self-center text-sm font-semibold text-[#1A3C34] hover:text-[#C5A059] transition-colors sm:pl-2"
               >
                 {t.deliveryAreasCta}

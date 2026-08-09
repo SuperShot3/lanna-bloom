@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -10,9 +11,16 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '../build/polyfills/polyfill-module': slimPolyfills,
+      '../build/polyfills/polyfill-module.js': slimPolyfills,
       'next/dist/build/polyfills/polyfill-module': slimPolyfills,
       'next/dist/build/polyfills/polyfill-module.js': slimPolyfills,
     };
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /next[\\/]dist[\\/]build[\\/]polyfills[\\/]polyfill-module(\.js)?$/,
+        slimPolyfills
+      )
+    );
     return config;
   },
   async headers() {
@@ -68,7 +76,12 @@ const nextConfig = {
       { source: '/llm.txt', destination: '/llms.txt', permanent: true },
       {
         source: '/:lang(en|th|ru|zh-sg|zh-hk)/flower-delivery-thailand',
-        destination: '/:lang/delivery-areas-chiang-mai',
+        destination: '/:lang/delivery-areas-thailand',
+        permanent: true,
+      },
+      {
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/delivery-areas-chiang-mai',
+        destination: '/:lang/delivery-areas-thailand',
         permanent: true,
       },
       { source: '/:lang(en|th|ru)/guides', destination: '/:lang/info', permanent: true },

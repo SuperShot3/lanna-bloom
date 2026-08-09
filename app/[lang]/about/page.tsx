@@ -228,7 +228,7 @@ export default function AboutPage({ params }: { params: { lang: string } }) {
             </div>
             <p className="pt-2">
               <Link
-                href={`/${locale}/delivery-areas-chiang-mai`}
+                href={`/${locale}/delivery-areas-thailand`}
                 className="btn-premium inline-flex items-center gap-2"
               >
                 {isThai

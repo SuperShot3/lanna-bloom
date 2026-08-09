@@ -1,4 +1,4 @@
-import { getFeaturedReviewsAsync, getReviewStatsAsync } from '@/lib/reviews';
+import { getFeaturedReviews, getReviewStats } from '@/lib/reviews';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -10,15 +10,17 @@ interface ReviewsSectionProps {
   subtitle?: string;
 }
 
-export async function ReviewsSection({
+/**
+ * Homepage reviews teaser. Uses static review JSON only so the public homepage
+ * stays ISR/CDN-cacheable (no uncached Supabase on the render path).
+ */
+export function ReviewsSection({
   lang,
   title,
   subtitle,
 }: ReviewsSectionProps) {
-  const [reviews, stats] = await Promise.all([
-    getFeaturedReviewsAsync(3),
-    getReviewStatsAsync(),
-  ]);
+  const reviews = getFeaturedReviews(3);
+  const stats = getReviewStats();
   const t = translations[lang].reviews;
 
   const displayTitle = title ?? t.title;
@@ -42,6 +44,9 @@ export async function ReviewsSection({
             width={75}
             height={75}
             style={{ width: 75, height: 75 }}
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             aria-hidden
           />
           <div className="flex text-yellow-400 justify-center">

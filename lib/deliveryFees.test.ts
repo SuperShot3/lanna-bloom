@@ -75,6 +75,14 @@ assert(getCheckoutZonesForDestination('CHIANG_MAI').length === 22, 'Checkout exc
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');
 
+// Map amphoe metadata covers all OpenGIS Chiang Mai amphoes (amp_code join keys)
+assert(AMPHOE_MAP_DISTRICTS.length === 25, 'Chiang Mai map has 25 amphoes');
+const ampCodes = new Set(AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(ampCodes.size === 25, 'each amphoe has a unique OpenGIS amp_code');
+for (const d of AMPHOE_MAP_DISTRICTS) {
+  assert(/^\d{4}$/.test(d.ampCode), `${d.id} ampCode should be 4 digits`);
+}
+
 // Map amphoe display fees derive from zones.ts
 for (const d of AMPHOE_MAP_DISTRICTS) {
   const display = resolveAmphoeFeeDisplay(d);

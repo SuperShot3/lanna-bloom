@@ -49,7 +49,7 @@ export function ExploreLinksSection({ lang }: { lang: Locale }) {
             lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn
           ),
         })),
-        { href: `/${lang}/delivery-areas-chiang-mai`, label: t.thailandOverviewLink },
+        { href: `/${lang}/delivery-areas-thailand`, label: t.thailandOverviewLink },
       ],
     },
   ];

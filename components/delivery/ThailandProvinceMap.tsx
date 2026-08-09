@@ -2,16 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FeatureCollection, Geometry } from 'geojson';
+import 'leaflet/dist/leaflet.css';
 import type { Locale } from '@/lib/i18n';
-import type { ProvinceStatus, PublicProvince } from '@/lib/provinces/types';
+import type { PublicProvince } from '@/lib/provinces/types';
 import {
   getProvinceStatusFillColor,
   getProvinceStatusLabel,
   PROVINCE_STATUS_LEGEND,
 } from '@/lib/provinces/statusColors';
 import { TOPOJSON_LAKE_ALIASES } from '@/lib/provinces/seedRoster';
-import { buildCoveragePanelDisplay } from '@/lib/delivery/coverageDisplay';
-import { getChiangMaiAmphoeDrillItems } from '@/lib/delivery/chiangMaiMapDrilldown';
+import { amphoeMapFill } from '@/lib/delivery/amphoeDisplayFees';
+import {
+  AMPHOE_MAP_DISTRICTS,
+  type AmphoeMapDistrict,
+} from '@/lib/delivery/amphoeMapData';
 import styles from './thailand-province-map.module.css';
 
 export type ThailandProvinceMapMode = 'admin' | 'public';
@@ -39,24 +43,45 @@ type Props = {
   lang?: Locale;
   selectedCode?: string | null;
   onSelectProvince?: (code: string) => void;
+  /** Controlled amphoe selection (e.g. synced with the coverage side list). */
+  selectedAmphoeId?: string | null;
+  onSelectAmphoe?: (id: string | null) => void;
   className?: string;
 };
 
 const THAILAND_CENTER: [number, number] = [13.5, 101.0];
 const DEFAULT_ZOOM = 5.6;
 const MIN_ZOOM = 5;
-const MAX_ZOOM = 10;
+const MAX_ZOOM = 13;
+const AMPHOE_FOCUS_ZOOM = 9;
 const CHIANG_MAI_CODE = 'chiang-mai';
 
 type TopologyLike = {
   type: string;
-  objects: { province: unknown };
+  objects: { province?: unknown; districts?: unknown };
   arcs: unknown;
+};
+
+type AmphoeFeatureProps = {
+  amp_code?: string;
+  amp_en?: string;
+  amp_th?: string;
 };
 
 type LeafletBounds = {
   isValid: () => boolean;
   pad: (bufferRatio: number) => LeafletBounds;
+  getCenter: () => { lat: number; lng: number };
+};
+
+type LeafletMapLike = {
+  fitBounds: (bounds: unknown, options?: object) => void;
+  setView: (center: [number, number], zoom: number, options?: object) => void;
+  setMaxBounds: (bounds: unknown) => void;
+  setMinZoom: (zoom: number) => void;
+  getBoundsZoom: (bounds: unknown, inside?: boolean) => number;
+  stop: () => void;
+  options: { maxBoundsViscosity?: number };
 };
 
 function resolveTopoName(name: string): string {
@@ -65,19 +90,57 @@ function resolveTopoName(name: string): string {
 
 function MapInner({
   geojson,
+  amphoeGeojson,
   byTopoName,
+  byAmpCode,
   selectedCode,
+  selectedAmphoeId,
   onSelect,
+  onSelectAmphoe,
+  lang,
 }: {
   geojson: FeatureCollection<Geometry, { NAME_1?: string }>;
+  amphoeGeojson: FeatureCollection<Geometry, AmphoeFeatureProps> | null;
   byTopoName: Map<string, ThailandProvinceMapProvince>;
+  byAmpCode: Map<string, AmphoeMapDistrict>;
   selectedCode: string | null;
+  selectedAmphoeId: string | null;
   onSelect: (code: string) => void;
+  onSelectAmphoe: (id: string | null) => void;
+  lang: Locale;
 }) {
   const { MapContainer, GeoJSON, useMap } = require('react-leaflet');
   const L = require('leaflet');
   const geoJsonRef = useRef<{ resetStyle: (layer?: unknown) => void } | null>(null);
-  const layerByCode = useRef(new Map<string, { getBounds?: () => LeafletBounds }>());
+  const amphoeGeoJsonRef = useRef<{ resetStyle: (layer?: unknown) => void } | null>(null);
+  const selectedAmphoeIdRef = useRef(selectedAmphoeId);
+  selectedAmphoeIdRef.current = selectedAmphoeId;
+  const onSelectAmphoeRef = useRef(onSelectAmphoe);
+  onSelectAmphoeRef.current = onSelectAmphoe;
+  const amphoeLayerById = useRef(
+    new Map<
+      string,
+      {
+        getBounds?: () => LeafletBounds;
+        setStyle?: (s: object) => void;
+        bringToFront?: () => void;
+      }
+    >()
+  );
+  const layerByCode = useRef(
+    new Map<string, { getBounds?: () => LeafletBounds; bringToFront?: () => void }>()
+  );
+  const thailandBoundsRef = useRef<LeafletBounds | null>(null);
+  const cameraKeyRef = useRef<string>('');
+  const showAmphoes = selectedCode === CHIANG_MAI_CODE && amphoeGeojson != null;
+
+  function applySoftMaxBounds(map: LeafletMapLike, padRatio: number) {
+    const bounds = thailandBoundsRef.current;
+    if (!bounds?.isValid()) return;
+    // Generous pad avoids north-border amphoes fighting maxBounds (which forced zoom-out).
+    map.setMaxBounds(bounds.pad(padRatio));
+    map.options.maxBoundsViscosity = 0.6;
+  }
 
   function ZoomButtons() {
     const map = useMap();
@@ -103,47 +166,177 @@ function MapInner({
     );
   }
 
-  /** Fit Thailand once and lock panning to the country (no world view). */
-  function FitThailand() {
-    const map = useMap();
-    useEffect(() => {
-      const layer = L.geoJSON(geojson);
-      const bounds = layer.getBounds() as LeafletBounds;
-      if (!bounds.isValid()) return;
-      map.setMaxBounds(bounds.pad(0.12));
-      map.options.maxBoundsViscosity = 1.0;
-      map.fitBounds(bounds as never, { padding: [8, 8], animate: false });
-      const fittedZoom = map.getBoundsZoom(bounds as never, false);
-      if (typeof fittedZoom === 'number' && Number.isFinite(fittedZoom)) {
-        map.setMinZoom(Math.max(MIN_ZOOM, fittedZoom - 0.15));
-      }
-    }, [map]);
-    return null;
-  }
+  /**
+   * Single camera owner — replaces FitThailand / FitSelected / FitSelectedAmphoe.
+   * Priority: amphoe focus > Chiang Mai overview > province > Thailand.
+   */
+  function MapCamera() {
+    const map = useMap() as LeafletMapLike;
+    const didInitRef = useRef(false);
 
-  function FitSelected() {
-    const map = useMap();
     useEffect(() => {
-      if (!selectedCode) {
-        const layer = L.geoJSON(geojson);
-        const bounds = layer.getBounds() as LeafletBounds;
-        if (bounds.isValid()) {
-          map.fitBounds(bounds as never, { padding: [8, 8], animate: true });
+      const thailandLayer = L.geoJSON(geojson);
+      const thailandBounds = thailandLayer.getBounds() as LeafletBounds;
+      if (!thailandBounds.isValid()) return;
+      thailandBoundsRef.current = thailandBounds;
+
+      // Wait for CM amphoe data before moving (avoids province→amphoe jump fight).
+      if (selectedCode === CHIANG_MAI_CODE && !amphoeGeojson) {
+        return;
+      }
+
+      let nextKey = 'thailand';
+      if (selectedAmphoeId && showAmphoes) {
+        nextKey = `amphoe:${selectedAmphoeId}`;
+      } else if (selectedCode === CHIANG_MAI_CODE && amphoeGeojson) {
+        nextKey = 'cm:amphoes';
+      } else if (selectedCode) {
+        nextKey = `province:${selectedCode}`;
+      }
+
+      if (cameraKeyRef.current === nextKey) return;
+      cameraKeyRef.current = nextKey;
+
+      map.stop();
+
+      if (nextKey === 'thailand') {
+        applySoftMaxBounds(map, 0.18);
+        map.fitBounds(thailandBounds as never, {
+          padding: [8, 8],
+          animate: didInitRef.current,
+        });
+        didInitRef.current = true;
+        const fittedZoom = map.getBoundsZoom(thailandBounds as never, false);
+        if (Number.isFinite(fittedZoom)) {
+          map.setMinZoom(Math.max(MIN_ZOOM, fittedZoom - 0.15));
         }
         return;
       }
-      const layer = layerByCode.current.get(selectedCode);
-      if (layer?.getBounds) {
-        const bounds = layer.getBounds();
-        if (bounds?.isValid?.()) {
+
+      didInitRef.current = true;
+      applySoftMaxBounds(map, 0.55);
+
+      if (nextKey.startsWith('amphoe:') && selectedAmphoeId && amphoeGeojson) {
+        const district = AMPHOE_MAP_DISTRICTS.find((d) => d.id === selectedAmphoeId);
+        if (!district) return;
+
+        const live = amphoeLayerById.current.get(selectedAmphoeId)?.getBounds?.();
+        let bounds = live && live.isValid() ? live : null;
+        if (!bounds) {
+          const feature = amphoeGeojson.features.find(
+            (f) => String(f.properties?.amp_code ?? '') === district.ampCode
+          );
+          if (!feature) return;
+          bounds = L.geoJSON(feature).getBounds() as LeafletBounds;
+        }
+        if (!bounds.isValid()) return;
+
+        const center = bounds.getCenter();
+        map.setView([center.lat, center.lng], AMPHOE_FOCUS_ZOOM, { animate: true });
+        return;
+      }
+
+      if (nextKey === 'cm:amphoes' && amphoeGeojson) {
+        const amphoeBounds = L.geoJSON(amphoeGeojson).getBounds() as LeafletBounds;
+        if (!amphoeBounds.isValid()) return;
+        map.fitBounds(amphoeBounds as never, {
+          padding: [16, 16],
+          maxZoom: 10.5,
+          animate: true,
+        });
+        return;
+      }
+
+      if (selectedCode) {
+        const layer = layerByCode.current.get(selectedCode);
+        const bounds = layer?.getBounds?.();
+        if (bounds?.isValid()) {
           map.fitBounds(bounds as never, {
-            padding: [36, 36],
-            maxZoom: selectedCode === CHIANG_MAI_CODE ? 9 : 8,
+            padding: [28, 28],
+            maxZoom: 8.5,
             animate: true,
           });
+          return;
         }
+        // Layers may not be registered yet on first paint — retry once after paint.
+        const code = selectedCode;
+        const t = window.setTimeout(() => {
+          const retry = layerByCode.current.get(code)?.getBounds?.();
+          if (retry?.isValid()) {
+            map.fitBounds(retry as never, {
+              padding: [28, 28],
+              maxZoom: 8.5,
+              animate: true,
+            });
+          }
+        }, 50);
+        return () => window.clearTimeout(t);
       }
-    }, [map, selectedCode]);
+    }, [map, selectedCode, selectedAmphoeId, amphoeGeojson, showAmphoes]);
+
+    return null;
+  }
+
+  /** Base amphoe style from current selection — used by sync + mouseout (avoid resetStyle leaks). */
+  function styleAmphoeLayer(
+    layer: {
+      setStyle?: (s: object) => void;
+      bringToFront?: () => void;
+      getElement?: () => Element | undefined;
+      _path?: Element;
+    },
+    district: AmphoeMapDistrict
+  ) {
+    const selectedId = selectedAmphoeIdRef.current;
+    const selected = district.id === selectedId;
+    const dimOthers = Boolean(selectedId) && !selected;
+    layer.setStyle?.({
+      fillColor: amphoeMapFill(district),
+      fillOpacity: selected ? 0.96 : dimOthers ? 0.22 : 0.78,
+      color: selected
+        ? '#1A3C34'
+        : dimOthers
+          ? 'rgba(253, 252, 248, 0.3)'
+          : 'rgba(26, 60, 52, 0.18)',
+      weight: selected ? 3.75 : dimOthers ? 0.45 : 0.75,
+      opacity: 1,
+    });
+    const pathEl = layer.getElement?.() ?? layer._path;
+    if (pathEl instanceof Element) {
+      pathEl.classList.toggle(styles.amphoeSelected, selected);
+    }
+    if (selected) layer.bringToFront?.();
+  }
+
+  function SyncAmphoeStyles() {
+    useEffect(() => {
+      for (const [id, layer] of amphoeLayerById.current) {
+        const district = AMPHOE_MAP_DISTRICTS.find((d) => d.id === id);
+        if (!district) continue;
+        styleAmphoeLayer(layer, district);
+      }
+    }, [selectedAmphoeId, showAmphoes, amphoeGeojson]);
+    return null;
+  }
+
+  function BringSelectedProvinceForward() {
+    useEffect(() => {
+      if (!selectedCode || showAmphoes) return;
+      layerByCode.current.get(selectedCode)?.bringToFront?.();
+    }, [selectedCode, showAmphoes]);
+    return null;
+  }
+
+  function KeepAmphoesOnTop() {
+    useEffect(() => {
+      if (!showAmphoes) return;
+      for (const layer of amphoeLayerById.current.values()) {
+        layer.bringToFront?.();
+      }
+      if (selectedAmphoeId) {
+        amphoeLayerById.current.get(selectedAmphoeId)?.bringToFront?.();
+      }
+    }, [showAmphoes, selectedAmphoeId, amphoeGeojson]);
     return null;
   }
 
@@ -155,19 +348,57 @@ function MapInner({
       const selected = province?.province_code === selectedCode;
       const isLake = Boolean(TOPOJSON_LAKE_ALIASES[rawName]);
       const dimOthers = Boolean(selectedCode) && !selected;
+      const cmWithAmphoes = selected && showAmphoes;
       return {
         fillColor: province
           ? getProvinceStatusFillColor(province.status)
           : isLake
             ? '#A8C8D8'
             : '#E8E4DC',
-        fillOpacity: isLake ? 0.35 : selected ? 0.95 : dimOthers ? 0.28 : 0.78,
-        color: selected ? '#1A3C34' : '#FDFCF8',
-        weight: selected ? 2 : 0.9,
+        fillOpacity: isLake
+          ? 0.35
+          : cmWithAmphoes
+            ? 0.12
+            : selected
+              ? 0.95
+              : dimOthers
+                ? 0.28
+                : 0.78,
+        // Soft shared edges so neighbor white strokes do not cover the selection ring
+        color: selected ? '#1A3C34' : dimOthers ? 'rgba(253, 252, 248, 0.35)' : 'rgba(26, 60, 52, 0.18)',
+        weight: selected ? 2.75 : dimOthers ? 0.4 : 0.65,
         opacity: 1,
+        // Let amphoe paths receive hover while CM drill-down is open
+        interactive: !showAmphoes,
+        lineJoin: 'round' as const,
+        lineCap: 'round' as const,
       };
     },
-    [byTopoName, selectedCode]
+    [byTopoName, selectedCode, showAmphoes]
+  );
+
+  const amphoeStyleFor = useCallback(
+    (feature?: { properties?: AmphoeFeatureProps }) => {
+      const ampCode = String(feature?.properties?.amp_code ?? '');
+      const district = byAmpCode.get(ampCode);
+      const selected = district != null && district.id === selectedAmphoeId;
+      const dimOthers = Boolean(selectedAmphoeId) && !selected;
+      return {
+        fillColor: district ? amphoeMapFill(district) : '#E8E4DC',
+        fillOpacity: selected ? 0.96 : dimOthers ? 0.22 : 0.78,
+        color: selected
+          ? '#1A3C34'
+          : dimOthers
+            ? 'rgba(253, 252, 248, 0.3)'
+            : 'rgba(26, 60, 52, 0.18)',
+        weight: selected ? 3.75 : dimOthers ? 0.45 : 0.75,
+        opacity: 1,
+        className: selected ? styles.amphoeSelected : '',
+        lineJoin: 'round' as const,
+        lineCap: 'round' as const,
+      };
+    },
+    [byAmpCode, selectedAmphoeId]
   );
 
   const onEachFeature = useCallback(
@@ -177,6 +408,7 @@ function MapInner({
         on: (events: Record<string, () => void>) => void;
         setStyle: (s: object) => void;
         getBounds?: () => LeafletBounds;
+        bringToFront?: () => void;
       }
     ) => {
       const rawName = feature.properties?.NAME_1 ?? '';
@@ -184,24 +416,90 @@ function MapInner({
       const province = byTopoName.get(name);
       if (province) {
         layerByCode.current.set(province.province_code, layer);
+        if (province.province_code === selectedCode && !showAmphoes) {
+          layer.bringToFront?.();
+        }
       }
+      if (showAmphoes) return;
       layer.on({
         click: () => {
           if (province) onSelect(province.province_code);
         },
         mouseover: () => {
+          // Stroke-only — do not change fillColor/fillOpacity (leaks into amphoe view).
           if (province?.province_code !== selectedCode) {
-            layer.setStyle({ weight: 1.5, color: '#1A3C34' });
+            layer.setStyle({ weight: 1.4, color: 'rgba(26, 60, 52, 0.55)' });
+            layer.bringToFront?.();
           }
         },
         mouseout: () => {
           if (geoJsonRef.current) {
             geoJsonRef.current.resetStyle(layer);
           }
+          const selectedLayer = selectedCode
+            ? layerByCode.current.get(selectedCode)
+            : undefined;
+          selectedLayer?.bringToFront?.();
         },
       });
     },
-    [byTopoName, onSelect, selectedCode]
+    [byTopoName, onSelect, selectedCode, showAmphoes]
+  );
+
+  const onEachAmphoe = useCallback(
+    (
+      feature: { properties?: AmphoeFeatureProps },
+      layer: {
+        on: (events: Record<string, () => void>) => void;
+        setStyle: (s: object) => void;
+        getBounds?: () => LeafletBounds;
+        bindTooltip?: (content: string, options?: object) => void;
+        bringToFront?: () => void;
+        getElement?: () => Element | undefined;
+        _path?: Element;
+      }
+    ) => {
+      const ampCode = String(feature.properties?.amp_code ?? '');
+      const district = byAmpCode.get(ampCode);
+      if (district) {
+        amphoeLayerById.current.set(district.id, layer);
+        styleAmphoeLayer(layer, district);
+        const label = lang === 'th' ? district.labelTh : district.labelEn;
+        layer.bindTooltip?.(label, {
+          sticky: true,
+          direction: 'top',
+          opacity: 0.92,
+          className: styles.amphoeTooltip,
+        });
+      }
+      layer.on({
+        click: () => {
+          if (!district) return;
+          const selectedId = selectedAmphoeIdRef.current;
+          onSelectAmphoeRef.current(
+            district.id === selectedId ? null : district.id
+          );
+        },
+        mouseover: () => {
+          // Stroke-only hover — never change fill (fill stuck after resetStyle before).
+          const selectedId = selectedAmphoeIdRef.current;
+          if (!district || district.id === selectedId) return;
+          layer.setStyle({
+            weight: 2.25,
+            color: '#1A3C34',
+          });
+          layer.bringToFront?.();
+        },
+        mouseout: () => {
+          if (district) styleAmphoeLayer(layer, district);
+          const selectedId = selectedAmphoeIdRef.current;
+          if (selectedId) {
+            amphoeLayerById.current.get(selectedId)?.bringToFront?.();
+          }
+        },
+      });
+    },
+    [byAmpCode, lang]
   );
 
   return (
@@ -218,9 +516,8 @@ function MapInner({
       className={styles.mapInner}
       style={{ height: '100%', width: '100%', background: 'transparent' }}
     >
-      {/* No world tile layer — Thailand choropleth only */}
       <GeoJSON
-        key={selectedCode ?? 'none'}
+        key={`prov-${selectedCode ?? 'none'}-${showAmphoes ? 'cm' : 'all'}`}
         data={geojson}
         style={styleFor}
         onEachFeature={onEachFeature}
@@ -228,101 +525,24 @@ function MapInner({
           geoJsonRef.current = ref;
         }}
       />
-      <FitThailand />
-      <FitSelected />
+      {showAmphoes && amphoeGeojson ? (
+        <GeoJSON
+          key="chiang-mai-amphoes"
+          data={amphoeGeojson}
+          style={amphoeStyleFor}
+          onEachFeature={onEachAmphoe}
+          ref={(ref: typeof amphoeGeoJsonRef.current) => {
+            amphoeGeoJsonRef.current = ref;
+            if (!ref) amphoeLayerById.current.clear();
+          }}
+        />
+      ) : null}
+      <MapCamera />
+      <SyncAmphoeStyles />
+      <BringSelectedProvinceForward />
+      <KeepAmphoesOnTop />
       <ZoomButtons />
     </MapContainer>
-  );
-}
-
-function ChiangMaiDrilldown({
-  lang,
-  mode,
-}: {
-  lang: Locale;
-  mode: ThailandProvinceMapMode;
-}) {
-  const isTh = lang === 'th';
-  const items = useMemo(() => getChiangMaiAmphoeDrillItems(lang), [lang]);
-  const [amphoeId, setAmphoeId] = useState<string | null>(null);
-  const selected = items.find((i) => i.amphoe.id === amphoeId) ?? null;
-
-  return (
-    <div className={styles.cmDrill}>
-      <p className={styles.cmDrillTitle}>
-        {isTh ? 'อำเภอในเชียงใหม่' : 'Districts in Chiang Mai'}
-      </p>
-      <div className={styles.cmChipRow} role="list">
-        {items.map(({ amphoe }) => {
-          const active = amphoe.id === amphoeId;
-          return (
-            <button
-              key={amphoe.id}
-              type="button"
-              role="listitem"
-              className={`${styles.cmChip} ${active ? styles.cmChipActive : ''}`}
-              onClick={() => setAmphoeId(active ? null : amphoe.id)}
-            >
-              {isTh ? amphoe.labelTh : amphoe.labelEn}
-            </button>
-          );
-        })}
-      </div>
-
-      {selected ? (
-        <div className={styles.cmAmphoeDetail}>
-          <p className={styles.cmAmphoeMeta}>
-            <strong>{isTh ? selected.amphoe.labelTh : selected.amphoe.labelEn}</strong>
-            <span> · {selected.feeLabel}</span>
-          </p>
-          <p className={styles.infoLimits}>
-            {isTh ? selected.amphoe.typicalAreasTh : selected.amphoe.typicalAreasEn}
-          </p>
-
-          {selected.subAreas.length > 0 ? (
-            <>
-              <p className={styles.cmSubTitle}>
-                {isTh ? 'ตำบล / พื้นที่ย่อยในอำเภอนี้' : 'Sub-districts / areas in this district'}
-              </p>
-              <ul className={styles.cmSubList}>
-                {selected.subAreas.map((sub) => (
-                  <li key={sub.zoneId}>
-                    <span>{isTh ? sub.labelTh : sub.labelEn}</span>
-                    {sub.feeThb != null ? (
-                      <span className={styles.cmSubFee}>
-                        {sub.manualQuote
-                          ? isTh
-                            ? 'ยืนยันกับคนขับ'
-                            : 'Confirm with driver'
-                          : `฿${sub.feeThb}`}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className={styles.cmSubHint}>
-              {isTh
-                ? 'อำเภอนี้ใช้โซนจัดส่งเดียว — ยืนยันที่อยู่ตอนเช็กเอาต์'
-                : 'This district uses one delivery zone — confirm the address at checkout'}
-            </p>
-          )}
-
-          {mode === 'public' ? (
-            <a className={styles.infoCta} href={`/${lang}/delivery-areas-chiang-mai#chiang-mai-delivery-title`}>
-              {isTh ? 'ดูแผนที่อำเภอแบบละเอียด' : 'Open detailed district map'}
-            </a>
-          ) : null}
-        </div>
-      ) : (
-        <p className={styles.cmSubHint}>
-          {isTh
-            ? 'แตะอำเภอเพื่อดูตำบล/พื้นที่จัดส่งย่อย (เฉพาะเชียงใหม่)'
-            : 'Tap a district to see sub-district delivery areas (Chiang Mai only)'}
-        </p>
-      )}
-    </div>
   );
 }
 
@@ -332,17 +552,34 @@ export function ThailandProvinceMap({
   lang = 'en',
   selectedCode: controlledSelected,
   onSelectProvince,
+  selectedAmphoeId: controlledAmphoeId,
+  onSelectAmphoe,
   className,
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [geojson, setGeojson] = useState<FeatureCollection<Geometry, { NAME_1?: string }> | null>(
     null
   );
+  const [amphoeGeojson, setAmphoeGeojson] = useState<FeatureCollection<
+    Geometry,
+    AmphoeFeatureProps
+  > | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [internalSelected, setInternalSelected] = useState<string | null>(null);
+  const [internalAmphoeId, setInternalAmphoeId] = useState<string | null>(null);
 
   const selectedCode = controlledSelected !== undefined ? controlledSelected : internalSelected;
+  const amphoeId =
+    controlledAmphoeId !== undefined ? controlledAmphoeId : internalAmphoeId;
   const isTh = lang === 'th';
+
+  const setAmphoeId = useCallback(
+    (id: string | null) => {
+      if (controlledAmphoeId === undefined) setInternalAmphoeId(id);
+      onSelectAmphoe?.(id);
+    },
+    [controlledAmphoeId, onSelectAmphoe]
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -372,6 +609,35 @@ export function ThailandProvinceMap({
     };
   }, [isTh]);
 
+  useEffect(() => {
+    if (selectedCode !== CHIANG_MAI_CODE) {
+      if (controlledAmphoeId === undefined) setInternalAmphoeId(null);
+      return;
+    }
+    if (amphoeGeojson) return;
+
+    let cancelled = false;
+    async function loadAmphoes() {
+      try {
+        const res = await fetch('/api/maps/chiang-mai-amphoes');
+        if (!res.ok) throw new Error('Failed to load amphoes');
+        const topology = (await res.json()) as TopologyLike;
+        const { feature } = await import('topojson-client');
+        const fc = feature(
+          topology as never,
+          topology.objects.districts as never
+        ) as unknown as FeatureCollection<Geometry, AmphoeFeatureProps>;
+        if (!cancelled) setAmphoeGeojson(fc);
+      } catch (err) {
+        console.error('[ThailandProvinceMap] amphoe load failed:', err);
+      }
+    }
+    void loadAmphoes();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCode, amphoeGeojson, controlledAmphoeId]);
+
   const byTopoName = useMemo(() => {
     const map = new Map<string, ThailandProvinceMapProvince>();
     for (const p of provinces) {
@@ -381,6 +647,14 @@ export function ThailandProvinceMap({
     }
     return map;
   }, [provinces]);
+
+  const byAmpCode = useMemo(() => {
+    const map = new Map<string, AmphoeMapDistrict>();
+    for (const d of AMPHOE_MAP_DISTRICTS) {
+      map.set(d.ampCode, d);
+    }
+    return map;
+  }, []);
 
   const selected = useMemo(
     () => provinces.find((p) => p.province_code === selectedCode) ?? null,
@@ -393,26 +667,10 @@ export function ThailandProvinceMap({
       if (controlledSelected === undefined) setInternalSelected(next);
       if (code) onSelectProvince?.(code);
       else onSelectProvince?.('');
+      if (next !== CHIANG_MAI_CODE) setAmphoeId(null);
     },
-    [controlledSelected, onSelectProvince]
+    [controlledSelected, onSelectProvince, setAmphoeId]
   );
-
-  const message =
-    selected &&
-    (isTh
-      ? selected.customer_message_th || selected.customer_message_en
-      : selected.customer_message_en || selected.customer_message_th);
-
-  const limitations =
-    selected &&
-    (isTh
-      ? selected.delivery_limitations_th || selected.delivery_limitations_en
-      : selected.delivery_limitations_en || selected.delivery_limitations_th);
-
-  const coverage =
-    selected && mode === 'public'
-      ? buildCoveragePanelDisplay(selected, lang)
-      : null;
 
   return (
     <div className={`${styles.wrap} ${className ?? ''}`}>
@@ -424,13 +682,18 @@ export function ThailandProvinceMap({
         ) : (
           <MapInner
             geojson={geojson}
+            amphoeGeojson={amphoeGeojson}
             byTopoName={byTopoName}
+            byAmpCode={byAmpCode}
             selectedCode={selectedCode}
+            selectedAmphoeId={amphoeId}
             onSelect={handleSelect}
+            onSelectAmphoe={setAmphoeId}
+            lang={lang}
           />
         )}
 
-        {selected ? (
+        {mode === 'admin' && selected ? (
           <div className={styles.infoOverlay} role="status" aria-live="polite">
             <div className={styles.infoHeader}>
               <span
@@ -443,70 +706,13 @@ export function ThailandProvinceMap({
                   {isTh ? selected.province_name_th : selected.province_name_en}
                 </strong>
                 <span className={styles.infoStatus}>
-                  {getProvinceStatusLabel(selected.status as ProvinceStatus)}
-                  {selected.catalog_enabled
-                    ? isTh
-                      ? ' · เปิดดูแคตตาล็อก'
-                      : ' · Catalog open'
-                    : ''}
+                  {getProvinceStatusLabel(selected.status)}
                 </span>
               </div>
-              <button
-                type="button"
-                className={styles.infoClose}
-                aria-label={isTh ? 'ปิด' : 'Close'}
-                onClick={() => handleSelect('')}
-              >
-                ×
-              </button>
             </div>
-            {message ? <p className={styles.infoMessage}>{message}</p> : null}
-            {limitations ? <p className={styles.infoLimits}>{limitations}</p> : null}
-
-            {coverage ? (
-              <div className={styles.infoMeta}>
-                {coverage.timingLine ? (
-                  <p className={styles.infoTiming}>{coverage.timingLine}</p>
-                ) : null}
-                {coverage.cutoffLine ? (
-                  <p className={styles.infoTiming}>{coverage.cutoffLine}</p>
-                ) : null}
-                {!coverage.orderingAllowed &&
-                coverage.blockedNotice &&
-                !message ? (
-                  <p className={styles.infoTiming}>{coverage.blockedNotice}</p>
-                ) : null}
-                <p className={styles.infoCategories}>
-                  {isTh ? 'สินค้าที่จัดส่งได้: ' : 'Available: '}
-                  {coverage.categoriesLine}
-                </p>
-              </div>
-            ) : null}
-
-            {selected.province_code === CHIANG_MAI_CODE ? (
-              <ChiangMaiDrilldown lang={lang} mode={mode} />
-            ) : null}
-
-            {mode === 'public' && coverage?.shoppable ? (
-              <a className={styles.infoCta} href={coverage.catalogHref}>
-                {isTh ? 'ดูแคตตาล็อก' : 'Browse catalog'}
-              </a>
-            ) : null}
-            {mode === 'public' && coverage?.showPartnerCta ? (
-              <>
-                {!message ? (
-                  <p className={styles.infoRecruit}>{coverage.partnerFallbackMessage}</p>
-                ) : null}
-                <a className={styles.infoCta} href={coverage.partnerApplyHref}>
-                  {isTh ? 'สมัครเป็นพาร์ทเนอร์' : 'Partner with us'}
-                </a>
-              </>
-            ) : null}
-            {mode === 'admin' ? (
-              <p className={styles.infoAdminHint}>
-                Editing panel follows selection · {selected.province_code}
-              </p>
-            ) : null}
+            <p className={styles.infoAdminHint}>
+              Editing panel follows selection · {selected.province_code}
+            </p>
           </div>
         ) : null}
       </div>

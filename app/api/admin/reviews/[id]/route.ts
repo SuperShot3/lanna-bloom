@@ -1,6 +1,8 @@
+import { revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/adminRbac';
+import { REVIEWS_CACHE_TAG } from '@/lib/reviewsDb';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,5 +40,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Review not found' }, { status: 404 });
   }
 
+  revalidateTag(REVIEWS_CACHE_TAG);
   return NextResponse.json({ success: true });
 }

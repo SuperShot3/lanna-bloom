@@ -5,7 +5,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 | Primary intent | Owner URL |
 |---|---|
 | Flower delivery Chiang Mai / buy flowers online CM | `/en` (homepage) · `/th` |
-| Chiang Mai delivery areas & fees (map) | `/en/delivery-areas-chiang-mai` |
+| Chiang Mai delivery areas & fees (map) | `/en/delivery-areas-thailand` |
 | Flower delivery {City} | `/en/{city}/flower-delivery` (active markets only) |
 | Same-day flower delivery Chiang Mai | `/en/info/same-day-flower-delivery-chiang-mai` |
 | Rose delivery Chiang Mai | `/en/collections/roses-chiang-mai` |
@@ -21,7 +21,7 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 ## Role split (do not duplicate)
 
 - **Abroad how-to** (`buy-flowers-online-chiang-mai-thailand`) — overseas buyers: payment, recipient details, time zones, hotels/homes, advance ordering.
-- **Delivery areas & fees** (`delivery-areas-chiang-mai`) — Chiang Mai interactive map and estimated fees; coverage list; other destinations; links to the abroad how-to for international customers. Old URL `/flower-delivery-thailand` 301s here.
+- **Delivery areas & fees** (`delivery-areas-thailand`) — Thailand coverage map with Chiang Mai amphoe zoom and estimated fees; coverage list; other destinations; links to the abroad how-to for international customers. Old URLs `/flower-delivery-thailand` and `/delivery-areas-chiang-mai` 301 here.
 - **Birthday from abroad** — birthday occasion only; link to the abroad how-to for general checkout questions.
 - **Thai Mother’s Day from abroad** — 12 August occasion, jasmine vs delivery bouquets, MOM10 timing; link to the abroad how-to for payment/Maps/checkout.
 

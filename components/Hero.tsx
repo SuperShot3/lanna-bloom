@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Locale, locales, translations } from '@/lib/i18n';
@@ -12,8 +13,13 @@ import {
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
-import { HowToOrderModal } from '@/components/HowToOrderModal';
 import { StorefrontIcon } from '@/components/icons';
+
+const HowToOrderModal = dynamic(
+  () =>
+    import('@/components/HowToOrderModal').then((m) => m.HowToOrderModal),
+  { ssr: false }
+);
 
 const DEFAULT_HERO_IMAGE = 'public/HeroImage/heroimage.webp';
 
@@ -321,7 +327,9 @@ export function Hero({
           />
         </div>
       </div>
-      <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
+      {howToOpen ? (
+        <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />
+      ) : null}
       {isHomeLanding ? (
         <div
           id="hero-sentinel"

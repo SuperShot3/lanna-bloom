@@ -25,11 +25,42 @@
 
 .mapInner :global(.leaflet-container) {
   background: transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mapInner :global(.leaflet-tile-pane),
 .mapInner :global(.leaflet-control-attribution) {
   display: none;
+}
+
+.mapInner :global(.leaflet-interactive:focus),
+.mapInner :global(path:focus),
+.mapInner :global(.leaflet-interactive:focus-visible) {
+  outline: none !important;
+}
+
+.amphoeTooltip {
+  border: none !important;
+  border-radius: 0.4rem !important;
+  background: rgba(26, 60, 52, 0.92) !important;
+  color: #fffef9 !important;
+  font-size: 0.75rem !important;
+  font-weight: 650 !important;
+  padding: 0.3rem 0.5rem !important;
+  box-shadow: 0 4px 12px rgba(26, 60, 52, 0.25) !important;
+}
+
+.amphoeTooltip :global(.leaflet-tooltip-tip) {
+  display: none;
+}
+
+/* Cream outer halo + gold accent so the selected amphoe reads like province selection */
+.amphoeSelected {
+  filter: drop-shadow(0 0 0 2.5px #fdfcf8) drop-shadow(0 0 0 1.5px #c5a059);
+}
+
+.mapInner :global(.leaflet-overlay-pane path.leaflet-interactive) {
+  transition: fill-opacity 120ms ease, stroke-width 120ms ease, stroke 120ms ease;
 }
 
 .mapPlaceholder {
@@ -84,12 +115,13 @@
 .infoOverlay {
   position: absolute;
   left: 10px;
-  right: 10px;
+  right: auto;
   bottom: 72px;
   z-index: 500;
-  max-height: 48%;
+  width: min(340px, calc(100% - 20px));
+  max-height: min(36%, 240px);
   overflow: auto;
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 0.85rem;
   border-radius: 1rem;
   background: rgba(253, 252, 248, 0.96);
   border: 1px solid rgba(26, 60, 52, 0.1);
@@ -327,8 +359,8 @@
     left: auto;
     right: 16px;
     bottom: 16px;
-    width: min(340px, 42%);
-    max-height: 55%;
+    width: min(320px, 38%);
+    max-height: min(42%, 280px);
   }
 
   .zoomControls {

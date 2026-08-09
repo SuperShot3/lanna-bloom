@@ -232,7 +232,14 @@ export function HeroFeatureCarousel({
                         !prefersReducedMotion &&
                         'hero-carousel-kenburns'
                     )}
-                    priority={isCenter && currentIndex === 0 && index === 0}
+                    // Eager + high priority without next/image's automatic preload
+                    // (page.tsx already emits a single w=512 preload for LCP).
+                    loading={
+                      isCenter && currentIndex === 0 && index === 0 ? 'eager' : undefined
+                    }
+                    fetchPriority={
+                      isCenter && currentIndex === 0 && index === 0 ? 'high' : 'auto'
+                    }
                     quality={70}
                     sizes={HERO_CAROUSEL_IMAGE_SIZES}
                     unoptimized={catalogImageUnoptimized(image.src)}

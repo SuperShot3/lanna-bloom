@@ -110,7 +110,7 @@ After mark paid, `runStripePostPaymentSuccessHooks` (`lib/stripe/postStripePayme
 - Trust client-sent `grandTotal`, `deliveryFee`, or discount amounts for Stripe line items.
 - Expose full order JSON without `public_token`.
 - Fire GA4 `purchase` from webhook as the primary path (browser + GTM is canonical — see [05_ANALYTICS_GTM_GA4_ADS.md](05_ANALYTICS_GTM_GA4_ADS.md)).
-- Hardcode delivery fee THB on the delivery-areas-chiang-mai map or distance table separately from `zones.ts`.
+- Hardcode delivery fee THB on the delivery-areas-thailand map or distance table separately from `zones.ts`.
 
 ## Deep dive
 

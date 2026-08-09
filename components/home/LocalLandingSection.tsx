@@ -10,7 +10,7 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
   const t = translations[lang].homeLanding.local;
   const links = [
     {
-      href: `/${lang}/delivery-areas-chiang-mai`,
+      href: `/${lang}/delivery-areas-thailand`,
       label: t.deliveryAreasLink,
       icon: 'location-on' as const,
     },

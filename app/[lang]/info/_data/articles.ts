@@ -379,7 +379,7 @@ export const articles: ArticleMeta[] = [
       {
         label: 'Chiang Mai areas & fees',
         labelTh: 'พื้นที่และค่าส่งเชียงใหม่',
-        href: '/delivery-areas-chiang-mai',
+        href: '/delivery-areas-thailand',
       },
       { label: 'Flower delivery Chiang Mai', labelTh: 'ส่งดอกไม้เชียงใหม่', href: '/' },
       {
