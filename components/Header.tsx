@@ -37,6 +37,7 @@ import {
 } from '@/lib/delivery/markets';
 import {
   clearMarketSession,
+  MARKET_SESSION_CHANGE_EVENT,
   readMarketSession,
   writeMarketSession,
 } from '@/lib/delivery/marketSession';
@@ -143,7 +144,11 @@ export function Header({
     };
     load();
     window.addEventListener('focus', load);
-    return () => window.removeEventListener('focus', load);
+    window.addEventListener(MARKET_SESSION_CHANGE_EVENT, load);
+    return () => {
+      window.removeEventListener('focus', load);
+      window.removeEventListener(MARKET_SESSION_CHANGE_EVENT, load);
+    };
   }, []);
 
   useEffect(() => {

@@ -33,6 +33,8 @@ import type { AnalyticsItem } from '@/lib/analytics';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
+import { getNavMarkets, type DeliveryDestinationId } from '@/lib/delivery/markets';
+import { clearMarketSession, writeMarketSession } from '@/lib/delivery/marketSession';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
@@ -935,6 +937,22 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     },
     [items.length, deliveryConstraint, deliveryConstraintLoading]
   );
+
+  const handleDeliveryDestinationChange = useCallback((nextDestination: DeliveryDestinationId) => {
+    if (nextDestination === 'CHIANG_MAI') {
+      clearMarketSession();
+      return;
+    }
+    const market = getNavMarkets().find((m) => m.destinationId === nextDestination);
+    if (!market) {
+      clearMarketSession();
+      return;
+    }
+    writeMarketSession({
+      destinationId: market.destinationId,
+      pathSlug: market.pathSlug,
+    });
+  }, []);
 
   const [placing, setPlacing] = useState(false);
   const [referralCleared, setReferralCleared] = useState(0);
@@ -2033,6 +2051,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           delivery={delivery}
           onDeliveryChange={handleDeliveryChange}
           checkoutDeliveryProfile={checkoutDeliveryProfile}
+          onDeliveryDestinationChange={handleDeliveryDestinationChange}
           deliveryConstraint={deliveryConstraint}
           deliveryConstraintLoading={deliveryConstraintLoading}
           recipientName={recipientName}

@@ -17,6 +17,7 @@ import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { getShopTodayYmd, getShopTomorrowYmd } from '@/lib/deliveryHours';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 
@@ -69,6 +70,7 @@ export function CartCheckoutView({
   delivery,
   onDeliveryChange,
   checkoutDeliveryProfile,
+  onDeliveryDestinationChange,
   deliveryConstraint = null,
   deliveryConstraintLoading = false,
   recipientName,
@@ -133,6 +135,7 @@ export function CartCheckoutView({
   delivery: DeliveryFormValues;
   onDeliveryChange: (v: DeliveryFormValues) => void;
   checkoutDeliveryProfile: CheckoutDeliveryProfile;
+  onDeliveryDestinationChange: (destination: DeliveryDestinationId) => void;
   deliveryConstraint?: DeliveryConstraint | null;
   deliveryConstraintLoading?: boolean;
   recipientName: string;
@@ -326,6 +329,7 @@ export function CartCheckoutView({
         delivery={delivery}
         onDeliveryChange={onDeliveryChange}
         deliveryProfile={checkoutDeliveryProfile}
+        onDeliveryDestinationChange={onDeliveryDestinationChange}
         deliveryConstraint={deliveryConstraint}
         deliveryConstraintLoading={deliveryConstraintLoading}
         recipientName={recipientName}

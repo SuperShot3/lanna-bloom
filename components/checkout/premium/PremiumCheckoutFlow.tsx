@@ -22,6 +22,11 @@ import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOpt
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { TrustBadges } from '@/components/TrustBadges';
 import { getCheckoutZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
+import {
+  destinationDisplayName,
+  getNavMarkets,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import { isNonBouquetCartLine } from '@/lib/cart/cartPriceBreakdown';
@@ -57,6 +62,8 @@ export type PremiumCheckoutFlowProps = {
   delivery: DeliveryFormValues;
   onDeliveryChange: (v: DeliveryFormValues) => void;
   deliveryProfile: CheckoutDeliveryProfile;
+  /** Province/city change (writes market session; cart stays mounted). */
+  onDeliveryDestinationChange: (destination: DeliveryDestinationId) => void;
   /** Province/product delivery constraint (Feature 3). */
   deliveryConstraint?: DeliveryConstraint | null;
   /** True while province/catalog delivery options are still loading. */
@@ -117,6 +124,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     delivery,
     onDeliveryChange,
     deliveryProfile,
+    onDeliveryDestinationChange,
     deliveryConstraint = null,
     deliveryConstraintLoading = false,
     recipientName,
@@ -364,12 +372,28 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
       >
         <h2 className="co-section-title">{t.whereDeliverTitle}</h2>
         <div className="co-card co-card--pad">
-          {deliveryProfile.variant === 'expansion' && (
-            <div className="co-field">
-              <label className="co-label">{lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery area'}</label>
-              <input type="text" readOnly className="co-input" value={destLabel} />
-            </div>
-          )}
+          <div className="co-field">
+            <label className="co-label" htmlFor="checkout-delivery-province">
+              {lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery area'}{' '}
+              <span className="co-req">*</span>
+            </label>
+            <select
+              id="checkout-delivery-province"
+              className="co-input"
+              value={deliveryProfile.destinationId}
+              onChange={(e) =>
+                onDeliveryDestinationChange(e.target.value as DeliveryDestinationId)
+              }
+              aria-label={lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery area'}
+            >
+              <option value="CHIANG_MAI">{destinationDisplayName('CHIANG_MAI', lang)}</option>
+              {getNavMarkets().map((market) => (
+                <option key={market.destinationId} value={market.destinationId}>
+                  {lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="co-field">
             <label className="co-label" htmlFor="checkout-zone">
               {tBuyNow.districtLabel} <span className="co-req">*</span>
