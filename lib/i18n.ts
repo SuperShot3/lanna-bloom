@@ -136,8 +136,6 @@ const baseTranslations = {
       headlineAccent: '',
       sublineNew:
         'Choose a bouquet with a clear price, select the delivery date, add your personal message, and pay securely by card—even when ordering from abroad. We deliver locally to homes, hotels, condos, hospitals, and villas across {city}.',
-      deliveryMethodLine:
-        'Delivery is arranged by Car or Grab, depending on the address, bouquet size, and availability.',
       ctaBrowse: 'Shop Flower Bouquets',
       ctaHowItWorks: 'How it Works',
       howToOrderClose: 'Close',
@@ -1559,6 +1557,9 @@ const baseTranslations = {
         refundCta: 'Refund & replacement policy',
         deliveryAreasCta: 'View delivery areas',
         thailandCta: 'Flower delivery in other Thai cities',
+        shopCollectionCta: 'Shop the Collection',
+        sameDayNote:
+          'Accepting orders until {cutoff} Thailand time, subject to availability.',
       },
       whyUs: {
         eyebrow: 'Why us',
@@ -1789,8 +1790,6 @@ const baseTranslations = {
       headlineAccent: '',
       sublineNew:
         'เลือกช่อดอกไม้พร้อมราคาชัดเจน เลือกวันจัดส่ง เพิ่มข้อความส่วนตัว และชำระด้วยบัตรอย่างปลอดภัย — รวมถึงเมื่อสั่งจากต่างประเทศ เราจัดส่งในพื้นที่ถึงบ้าน โรงแรม คอนโด โรงพยาบาล และวิลล่าทั่ว{city}',
-      deliveryMethodLine:
-        'จัดส่งด้วยรถยนต์หรือ Grab โดยขึ้นอยู่กับที่อยู่ ขนาดช่อ และความพร้อมของบริการ',
       ctaBrowse: 'เลือกช่อดอกไม้',
       ctaHowItWorks: 'วิธีการทำงาน',
       howToOrderClose: 'ปิด',
@@ -3191,6 +3190,9 @@ const baseTranslations = {
         refundCta: 'นโยบายคืนเงินและเปลี่ยนสินค้า',
         deliveryAreasCta: 'ดูพื้นที่จัดส่ง',
         thailandCta: 'ส่งดอกไม้ในจังหวัดอื่นทั่วไทย',
+        shopCollectionCta: 'เลือกช่อดอกไม้',
+        sameDayNote:
+          'รับออเดอร์ถึง {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของบริการ',
       },
       whyUs: {
         eyebrow: 'ทำไมต้องเรา',

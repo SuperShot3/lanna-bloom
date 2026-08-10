@@ -254,14 +254,14 @@ export function Header({
     [isCartPage, lang, router]
   );
 
-  // Mobile header is mostly logo + cart/lang/menu — stay light when scrolled so content shows through.
+  // Mobile: solid-ish at top; fully invisible chrome once scrolled (controls stay).
   // Desktop keeps a denser glass so the full nav stays readable.
   const glassNavClass = isMobile
     ? isScrolled
-      ? 'bg-[rgba(253,252,248,0.28)] backdrop-blur-md border-stone-200/30 shadow-none'
-      : 'bg-[rgba(253,252,248,0.72)] backdrop-blur-xl border-stone-200/60'
+      ? 'site-header--liquid-glass'
+      : 'bg-[rgba(253,252,248,0.72)] backdrop-blur-xl border-stone-200/50'
     : isScrolled
-      ? 'bg-[rgba(253,252,248,0.88)] backdrop-blur-xl border-stone-200'
+      ? 'bg-[rgba(253,252,248,0.82)] backdrop-blur-xl border-stone-200/80'
       : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
 
   return (
@@ -275,7 +275,7 @@ export function Header({
           <CheckoutCompactHeaderBar payload={checkoutStickyPayload} lang={lang} />
         ) : null}
         <div
-          className="site-header__full max-w-7xl mx-auto h-20 flex items-center justify-between gap-2 sm:gap-4 md:grid-none"
+          className="site-header__full max-w-7xl mx-auto h-14 md:h-[76px] flex items-center justify-between gap-2 sm:gap-4 md:grid-none"
           style={{
             paddingLeft: 'max(1rem, env(safe-area-inset-left))',
             paddingRight: 'max(1rem, env(safe-area-inset-right))',

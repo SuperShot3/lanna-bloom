@@ -317,6 +317,28 @@ html[lang='ru'] .lang-layout {
   }
 }
 
+/* Mobile scrolled header — fully invisible chrome; controls stay visible */
+.site-header--liquid-glass {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header--liquid-glass {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header--liquid-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 @media (max-width: 390px) {
   img {
     max-width: 100%;
@@ -482,7 +504,7 @@ main {
   }
 
   .site-header--cart-checkout[data-header-mode='expanded'] .site-header__full {
-    max-height: 5rem;
+    max-height: 3.5rem;
     opacity: 1;
     transform: translate3d(0, 0, 0);
     pointer-events: auto;
