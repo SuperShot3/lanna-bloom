@@ -760,7 +760,7 @@ const baseTranslations = {
       personalDataConsentBefore: 'By placing your order, you agree to our',
       personalDataConsentTermsLink: 'Terms of Sale',
       personalDataConsentMiddle:
-        'and consent to the collection, processing, and international transfer of your personal data to complete your purchase in accordance with our',
+        'and acknowledge that your data will be handled in accordance with our',
       personalDataConsentLink: 'Privacy Policy',
       personalDataConsentAfter: '',
       personalDataConsentRequired: 'Please agree to continue.',
@@ -2395,7 +2395,7 @@ const baseTranslations = {
       personalDataConsentBefore: 'การกดสั่งซื้อหมายความว่าคุณยอมรับ',
       personalDataConsentTermsLink: 'ข้อกำหนดการขาย',
       personalDataConsentMiddle:
-        'และยินยอมให้เก็บรวบรวม ประมวลผล และโอนข้อมูลส่วนบุคคลข้ามประเทศเพื่อดำเนินการตามคำสั่งซื้อตาม',
+        'และรับทราบว่าข้อมูลของคุณจะได้รับการจัดการตาม',
       personalDataConsentLink: 'นโยบายความเป็นส่วนตัว',
       personalDataConsentAfter: '',
       personalDataConsentRequired: 'กรุณายอมรับเพื่อดำเนินการต่อ',
@@ -3861,7 +3861,7 @@ const russianTranslations = {
     personalDataConsentBefore: 'Оформляя заказ, вы соглашаетесь с',
     personalDataConsentTermsLink: 'Условиями продажи',
     personalDataConsentMiddle:
-      'и даёте согласие на сбор, обработку и международную передачу персональных данных для выполнения заказа в соответствии с',
+      'и подтверждаете, что ваши данные будут обрабатываться в соответствии с',
     personalDataConsentLink: 'Политикой конфиденциальности',
     personalDataConsentAfter: '',
     personalDataConsentRequired: 'Пожалуйста, подтвердите согласие, чтобы продолжить.',
@@ -4625,7 +4625,7 @@ const chineseSingaporeTranslations = {
     policyRefundLink: '退款政策',
     personalDataConsentBefore: '提交订单即表示您同意我们的',
     personalDataConsentTermsLink: '销售条款',
-    personalDataConsentMiddle: '，并同意我们为完成订单而收集、处理及进行跨境传输您的个人数据，依据',
+    personalDataConsentMiddle: '，并确认您的数据将依据',
     personalDataConsentLink: '隐私政策',
     personalDataConsentAfter: '',
     personalDataConsentRequired: '请确认同意后继续。',

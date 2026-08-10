@@ -397,7 +397,7 @@ export function CartCheckoutView({
                   {t.personalDataConsentTermsLink ?? 'Terms of Sale'}
                 </Link>{' '}
                 {t.personalDataConsentMiddle ??
-                  'and consent to the collection, processing, and international transfer of your personal data to complete your purchase in accordance with our'}{' '}
+                  'and acknowledge that your data will be handled in accordance with our'}{' '}
                 <Link href={`/${lang}/privacy`} className="co-personal-data-consent-link">
                   {t.personalDataConsentLink}
                 </Link>
