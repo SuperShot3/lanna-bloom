@@ -254,14 +254,20 @@ export function Header({
     [isCartPage, lang, router]
   );
 
-  const glassNavClass = isScrolled
-    ? 'bg-[rgba(253,252,248,0.9)] backdrop-blur-xl border-stone-200'
-    : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
+  // Mobile header is mostly logo + cart/lang/menu — stay light when scrolled so content shows through.
+  // Desktop keeps a denser glass so the full nav stays readable.
+  const glassNavClass = isMobile
+    ? isScrolled
+      ? 'bg-[rgba(253,252,248,0.28)] backdrop-blur-md border-stone-200/30 shadow-none'
+      : 'bg-[rgba(253,252,248,0.72)] backdrop-blur-xl border-stone-200/60'
+    : isScrolled
+      ? 'bg-[rgba(253,252,248,0.88)] backdrop-blur-xl border-stone-200'
+      : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
 
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,colors] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${mobilePdpScrollHeader ? 'site-header--pdp-scroll' : ''} ${hasTopPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
+        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,background-color,border-color,backdrop-filter,box-shadow] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${mobilePdpScrollHeader ? 'site-header--pdp-scroll' : ''} ${hasTopPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled}
         data-header-mode={mobileScrollHeaderCollapse ? headerCollapseMode : undefined}
       >

@@ -2,10 +2,10 @@
 
 import {
   applyCatalogDiscountThb,
+  effectiveCatalogUnitPriceWithExpansion,
   hasCatalogDiscount,
 } from '@/lib/catalogDiscount';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import type { Locale } from '@/lib/i18n';
 import { CurrencyAmount } from '@/components/CurrencyDisplay';
 
@@ -16,6 +16,7 @@ export function CatalogDiscountPrice({
   lang,
   fromLabel,
   extraThb = 0,
+  deliveryDateYmd,
   className = '',
   amountClassName = '',
 }: {
@@ -24,14 +25,22 @@ export function CatalogDiscountPrice({
   destinationId: DeliveryDestinationId;
   lang: Locale;
   fromLabel?: string;
-  /** Added after discount and before expansion (e.g. PDP add-ons). */
+  /** Added after discount and before peak/expansion (e.g. PDP add-ons). */
   extraThb?: number;
+  /** When known, peak markup follows checkout rules; otherwise spike-day browse markup. */
+  deliveryDateYmd?: string | null;
   className?: string;
   amountClassName?: string;
 }) {
   const extra = Math.max(0, extraThb);
   const discountedBase = applyCatalogDiscountThb(basePriceThb, discountPercent);
-  const displayCurrent = applyExpansionItemMarkupThb(discountedBase + extra, destinationId);
+  const priceOpts = { deliveryDateYmd, extraThb: extra };
+  const displayCurrent = effectiveCatalogUnitPriceWithExpansion(
+    basePriceThb,
+    discountPercent,
+    destinationId,
+    priceOpts
+  );
   const onSale = hasCatalogDiscount(discountPercent) && discountedBase < basePriceThb;
 
   if (!onSale) {
@@ -43,7 +52,12 @@ export function CatalogDiscountPrice({
     );
   }
 
-  const displayWas = applyExpansionItemMarkupThb(basePriceThb + extra, destinationId);
+  const displayWas = effectiveCatalogUnitPriceWithExpansion(
+    basePriceThb,
+    undefined,
+    destinationId,
+    priceOpts
+  );
 
   return (
     <span className={`catalog-price-sale ${className}`.trim()}>

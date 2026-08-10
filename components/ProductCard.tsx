@@ -16,7 +16,6 @@ import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import {
   applyCatalogDiscountThb,
   effectiveCatalogUnitPriceWithExpansion,

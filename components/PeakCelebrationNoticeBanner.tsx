@@ -5,9 +5,23 @@ import Link from 'next/link';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { formatPeakCelebrationTemplate } from '@/lib/promo/peakCelebrationMessages';
-import { getActivePeakCelebrationNotice } from '@/lib/promo/peakCelebrationPricing';
+import {
+  getActivePeakCelebrationNotice,
+  getActivePeakCelebrationSpike,
+  type PeakCelebrationRule,
+} from '@/lib/promo/peakCelebrationPricing';
 
 const TICK_MS = 60_000;
+
+type BannerMode = 'advance' | 'active';
+
+function resolveBanner(now = new Date()): { mode: BannerMode; rule: PeakCelebrationRule } | null {
+  const spike = getActivePeakCelebrationSpike(now);
+  if (spike) return { mode: 'active', rule: spike };
+  const advance = getActivePeakCelebrationNotice(now);
+  if (advance) return { mode: 'advance', rule: advance };
+  return null;
+}
 
 export function PeakCelebrationNoticeBanner({
   lang,
@@ -17,12 +31,12 @@ export function PeakCelebrationNoticeBanner({
   onActiveChange?: (active: boolean) => void;
 }) {
   const [active, setActive] = useState(false);
-  const [rule, setRule] = useState<ReturnType<typeof getActivePeakCelebrationNotice>>(null);
+  const [banner, setBanner] = useState<ReturnType<typeof resolveBanner>>(null);
 
   const sync = useCallback(() => {
-    const nextRule = getActivePeakCelebrationNotice(new Date());
-    const next = nextRule != null;
-    setRule(nextRule);
+    const nextBanner = resolveBanner(new Date());
+    const next = nextBanner != null;
+    setBanner(nextBanner);
     setActive((prev) => {
       if (prev !== next) onActiveChange?.(next);
       return next;
@@ -38,12 +52,25 @@ export function PeakCelebrationNoticeBanner({
     return () => window.clearInterval(id);
   }, [sync]);
 
-  if (!active || !rule) return null;
+  if (!active || !banner) return null;
 
   const copy = translations[lang].peakCelebration ?? translations.en.peakCelebration;
-  const messageDesktop = formatPeakCelebrationTemplate(lang, copy.noticeBanner, rule);
-  const messageMobile = formatPeakCelebrationTemplate(lang, copy.noticeBannerShort, rule);
-  const ariaLabel = formatPeakCelebrationTemplate(lang, copy.noticeBannerAlt, rule);
+  const { mode, rule } = banner;
+  const messageDesktop = formatPeakCelebrationTemplate(
+    lang,
+    mode === 'active' ? copy.noticeBannerActive : copy.noticeBanner,
+    rule
+  );
+  const messageMobile = formatPeakCelebrationTemplate(
+    lang,
+    mode === 'active' ? copy.noticeBannerActiveShort : copy.noticeBannerShort,
+    rule
+  );
+  const ariaLabel = formatPeakCelebrationTemplate(
+    lang,
+    mode === 'active' ? copy.noticeBannerActiveAlt : copy.noticeBannerAlt,
+    rule
+  );
   const policyHref = `/${lang}/info/delivery-policy#peak-celebration-pricing`;
 
   return (

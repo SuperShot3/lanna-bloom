@@ -23,7 +23,6 @@ import {
 } from '@/lib/favorites';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import {
   applyCatalogDiscountThb,

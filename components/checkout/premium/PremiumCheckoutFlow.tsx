@@ -34,10 +34,16 @@ import {
   getWrappingPaperColorLabel,
   isSpecificWrappingPaperColor,
 } from '@/lib/wrappingPaperColors';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { GiftCardMessagesEditor } from '@/components/GiftCardMessagesEditor';
 import { CurrencyAmount } from '@/components/CurrencyDisplay';
+import { formatPeakCelebrationTemplate } from '@/lib/promo/peakCelebrationMessages';
+import {
+  getPeakCelebrationRuleForOrderDay,
+  shouldApplyPeakCelebrationMarkup,
+} from '@/lib/promo/peakCelebrationPricing';
+import Link from 'next/link';
 import {
   CHECKOUT_FIELD_LIMITS,
   clipCheckoutField,
@@ -175,6 +181,13 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const t = translations[lang].premiumCheckout;
   const tCart = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
+  const peakCopy = translations[lang].peakCelebration ?? translations.en.peakCelebration;
+  const orderYmd = getShopTodayYmd();
+  const spikeRule = getPeakCelebrationRuleForOrderDay(orderYmd);
+  const deliveryDateYmd = delivery.date?.trim() || '';
+  const showPeakActiveNotice =
+    spikeRule != null &&
+    (!deliveryDateYmd || shouldApplyPeakCelebrationMarkup(orderYmd, deliveryDateYmd));
   const [cardMessageOpen, setCardMessageOpen] = useState(false);
   const [giftMessageChipsOpen, setGiftMessageChipsOpen] = useState(true);
   const [locationRequestOpen, setLocationRequestOpen] = useState(false);
@@ -284,9 +297,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             ? items.map((item, index) => {
             const name = lang === 'th' ? item.nameTh : item.nameEn;
             const qty = item.quantity ?? 1;
-            const unit =
-              item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
-            const display = applyExpansionItemMarkupThb(unit, delivery.deliveryDestination) * qty;
+            const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
+            const display =
+              effectiveCatalogUnitPriceWithExpansion(
+                item.size.price,
+                undefined,
+                delivery.deliveryDestination,
+                { deliveryDateYmd: delivery.date || undefined, extraThb: addOnsUnit }
+              ) * qty;
             const addOnSummaryLines: string[] = [];
             const balloonText =
               item.itemType === 'balloon' ? item.addOns?.balloonText?.trim() : '';
@@ -708,6 +726,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
 
       <section className="co-section co-price-section">
         <div className="co-card co-card--pad">
+          {showPeakActiveNotice && spikeRule ? (
+            <p className="co-peak-active-notice" role="status">
+              {formatPeakCelebrationTemplate(lang, peakCopy.checkoutActiveNotice, spikeRule)}{' '}
+              <Link href={`/${lang}/info/delivery-policy#peak-celebration-pricing`}>
+                {peakCopy.policyLinkLabel}
+              </Link>
+            </p>
+          ) : null}
           {bouquetSubtotal > 0 && (
             <div className="co-price-row">
               <span>{t.bouquetSubtotal}</span>
@@ -724,10 +750,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
             if (!isNonBouquetCartLine(item)) return null;
             const name = lang === 'th' ? item.nameTh : item.nameEn;
             const qty = item.quantity ?? 1;
-            const unit =
-              item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
+            const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
             const lineTotal =
-              applyExpansionItemMarkupThb(unit, delivery.deliveryDestination) * qty;
+              effectiveCatalogUnitPriceWithExpansion(
+                item.size.price,
+                undefined,
+                delivery.deliveryDestination,
+                { deliveryDateYmd: delivery.date || undefined, extraThb: addOnsUnit }
+              ) * qty;
             if (lineTotal <= 0) return null;
             return (
               <div key={`other-item-${index}`} className="co-price-row">
@@ -1505,6 +1535,22 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           gap: 12px;
           font-size: 15px;
           padding: 6px 0;
+        }
+        .co-peak-active-notice {
+          margin: 0 0 4px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          font-size: 13px;
+          line-height: 1.45;
+          color: var(--text);
+          background: color-mix(in srgb, #5c4a1f 8%, #fff);
+          border: 1px solid color-mix(in srgb, #5c4a1f 20%, var(--border));
+        }
+        .co-peak-active-notice :global(a) {
+          font-weight: 600;
+          color: color-mix(in srgb, #5c4a1f 85%, var(--primary));
+          text-decoration: underline;
+          text-underline-offset: 2px;
         }
         .co-price-row > span:first-child {
           min-width: 0;

@@ -85,6 +85,9 @@ const baseTranslations = {
         '{event} peak pricing on {start}–{end} if you order those days — order early for regular prices. See delivery policy.',
       noticeBannerShort: '{event} peak pricing {start}–{end} — order early',
       noticeBannerAlt: '{event} peak pricing advance notice',
+      noticeBannerActive: '{event} is here — send fresh flowers today',
+      noticeBannerActiveShort: '{event} — send flowers today',
+      noticeBannerActiveAlt: '{event} — send flowers today',
       checkoutAdvanceHint:
         'Peak celebration pricing applies when you order during {start}–{end} for delivery in that window. Order early for regular prices.',
       checkoutActiveNotice:
@@ -95,6 +98,8 @@ const baseTranslations = {
         'Minimum order for {event} deliveries is ฿{min} (items + delivery). Add ฿{remaining} more to your cart.',
       pdpNotice:
         'Peak celebration pricing applies if you order during {event} ({start}–{end}) for delivery in that window. Order early for regular prices.',
+      pdpNoticeActive:
+        '{event} peak pricing is active (+{markup}% on bouquet prices). The prices shown include the peak rate. Minimum order ฿{min} including delivery.',
       policyLinkLabel: 'Delivery policy',
     },
     cookieBanner: {
@@ -1733,6 +1738,9 @@ const baseTranslations = {
         'ราคาช่วง {event} วันที่ {start}–{end} หากสั่งในวันนั้น — สั่งล่วงหน้าได้ราคาปกติ ดูนโยบายจัดส่ง',
       noticeBannerShort: 'ราคาช่วง {event} {start}–{end} — สั่งล่วงหน้า',
       noticeBannerAlt: 'แจ้งเตือนราคาช่วง {event}',
+      noticeBannerActive: '{event} มาแล้ว — ส่งดอกไม้สดวันนี้',
+      noticeBannerActiveShort: '{event} — ส่งดอกไม้วันนี้',
+      noticeBannerActiveAlt: '{event} — ส่งดอกไม้วันนี้',
       checkoutAdvanceHint:
         'ราคาช่วงเทศกาลใช้เมื่อสั่งในช่วง {start}–{end} สำหรับจัดส่งในช่วงนั้น สั่งล่วงหน้าได้ราคาปกติ',
       checkoutActiveNotice:
@@ -1743,6 +1751,8 @@ const baseTranslations = {
         'ยอดสั่งขั้นต่ำสำหรับจัดส่งช่วง {event} คือ ฿{min} (สินค้า+ค่าส่ง) เพิ่มอีก ฿{remaining} ในตะกร้า',
       pdpNotice:
         'มีราคาช่วงเทศกาลหากสั่งในช่วง {event} ({start}–{end}) สำหรับจัดส่งในวันนั้น สั่งล่วงหน้าได้ราคาปกติ',
+      pdpNoticeActive:
+        'ใช้ราคาช่วง {event} อยู่ตอนนี้ (+{markup}% จากราคาช่อ) ราคาที่แสดงรวมอัตราช่วงพีกแล้ว ยอดสั่งขั้นต่ำ ฿{min} รวมค่าส่ง',
       policyLinkLabel: 'นโยบายจัดส่ง',
     },
     cookieBanner: {

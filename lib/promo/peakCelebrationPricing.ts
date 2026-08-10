@@ -176,6 +176,51 @@ export function applyPeakCelebrationMarkupThb(
   return Math.round(basePrice * (1 + rule.markupPercent / 100));
 }
 
+/** Rule whose spike window contains the order (browse) day. */
+export function getPeakCelebrationRuleForOrderDay(
+  orderYmd: string = shopTodayYmd()
+): PeakCelebrationRule | null {
+  if (!orderYmd) return null;
+  for (const rule of PEAK_CELEBRATION_RULES) {
+    if (isDateInPeakWindow(orderYmd, rule.window)) return rule;
+  }
+  return null;
+}
+
+/**
+ * Catalog/PDP/cart-line display markup.
+ * - Delivery date known → same as checkout (order + delivery both in window).
+ * - No delivery date → apply peak % when today is in a spike window (browse assumption).
+ */
+export function applyPeakCelebrationDisplayMarkupThb(
+  basePrice: number,
+  options: {
+    deliveryDateYmd?: string | null;
+    orderYmd?: string;
+  } = {}
+): number {
+  if (!Number.isFinite(basePrice) || basePrice <= 0) return Math.max(0, Math.round(basePrice));
+  const orderYmd = options.orderYmd ?? shopTodayYmd();
+  const deliveryDateYmd = options.deliveryDateYmd?.trim() ?? '';
+
+  if (deliveryDateYmd) {
+    return applyPeakCelebrationMarkupThb(basePrice, deliveryDateYmd, orderYmd);
+  }
+
+  const rule = getPeakCelebrationRuleForOrderDay(orderYmd);
+  if (!rule) return Math.round(basePrice);
+  return Math.round(basePrice * (1 + rule.markupPercent / 100));
+}
+
+/** Active spike-day rule for banners / PDP notices (not the advance-only window). */
+export function getActivePeakCelebrationSpike(now: Date = new Date()): PeakCelebrationRule | null {
+  return getPeakCelebrationRuleForOrderDay(shopYmdForDate(now));
+}
+
+export function isPeakCelebrationSpikeActive(now: Date = new Date()): boolean {
+  return getActivePeakCelebrationSpike(now) != null;
+}
+
 /** Min order uses items + delivery whenever delivery falls in a peak window. */
 export function qualifiesPeakCelebrationMinOrder(
   itemsTotal: number,

@@ -4,10 +4,13 @@
  */
 
 import {
+  applyPeakCelebrationDisplayMarkupThb,
   applyPeakCelebrationMarkupThb,
   getActivePeakCelebrationNotice,
+  getActivePeakCelebrationSpike,
   getPeakCelebrationRuleForCheckout,
   getPeakCelebrationRuleForDeliveryDate,
+  getPeakCelebrationRuleForOrderDay,
   isDateInPeakWindow,
   isPeakCelebrationNoticeActiveForDate,
   parseDeliveryDateFromPreferredTimeSlot,
@@ -16,6 +19,7 @@ import {
   qualifiesPeakCelebrationMinOrder,
   shouldApplyPeakCelebrationMarkup,
 } from './peakCelebrationPricing';
+import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 
 function assert(condition: boolean, msg: string) {
   if (!condition) throw new Error(msg);
@@ -169,6 +173,96 @@ assert(
 assert(
   applyPeakCelebrationMarkupThb(1000, '2026-12-30', '2026-12-20') === 1000,
   'advance New Year order unchanged'
+);
+
+// Display markup (browse / catalog)
+assert(
+  getPeakCelebrationRuleForOrderDay('2026-08-11')?.id === 'mothers-day',
+  'order-day rule on Aug 11'
+);
+assert(
+  getPeakCelebrationRuleForOrderDay('2026-08-10') == null,
+  'order-day rule null on Aug 10'
+);
+assert(
+  getPeakCelebrationRuleForOrderDay('2026-08-13') == null,
+  'order-day rule null on Aug 13'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, { orderYmd: '2026-08-11' }) === 1150,
+  'display +15% on Aug 11 with no delivery date'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, { orderYmd: '2026-08-12' }) === 1150,
+  'display +15% on Aug 12 with no delivery date'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, { orderYmd: '2026-08-10' }) === 1000,
+  'display unchanged on Aug 10'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, { orderYmd: '2026-08-13' }) === 1000,
+  'display unchanged on Aug 13'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, {
+    orderYmd: '2026-08-11',
+    deliveryDateYmd: '2026-08-13',
+  }) === 1000,
+  'display no markup when delivery outside peak on spike order day'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, {
+    orderYmd: '2026-08-11',
+    deliveryDateYmd: '2026-08-12',
+  }) === 1150,
+  'display +15% when order+delivery both in Mothers Day window'
+);
+assert(
+  applyPeakCelebrationDisplayMarkupThb(1000, {
+    orderYmd: '2026-08-01',
+    deliveryDateYmd: '2026-08-12',
+  }) === 1000,
+  'display no markup for advance order even with peak delivery'
+);
+
+assert(
+  effectiveCatalogUnitPriceWithExpansion(1000, undefined, 'CHIANG_MAI', {
+    orderYmd: '2026-08-11',
+  }) === 1150,
+  'catalog helper 1000 → 1150 on spike day (Chiang Mai)'
+);
+assert(
+  effectiveCatalogUnitPriceWithExpansion(1000, undefined, 'CHIANG_MAI', {
+    orderYmd: '2026-08-13',
+  }) === 1000,
+  'catalog helper back to 1000 after spike'
+);
+assert(
+  effectiveCatalogUnitPriceWithExpansion(1000, undefined, 'CHIANG_MAI', {
+    orderYmd: '2026-08-11',
+    deliveryDateYmd: '2026-08-13',
+  }) === 1000,
+  'catalog helper drops peak when non-peak delivery selected'
+);
+assert(
+  effectiveCatalogUnitPriceWithExpansion(1000, 10, 'CHIANG_MAI', {
+    orderYmd: '2026-08-11',
+  }) === 1035,
+  'catalog helper: 10% off 1000 = 900, then +15% peak = 1035'
+);
+
+assert(
+  getActivePeakCelebrationSpike(new Date('2026-08-11T12:00:00+07:00'))?.id === 'mothers-day',
+  'spike active on Aug 11 Bangkok'
+);
+assert(
+  getActivePeakCelebrationSpike(new Date('2026-08-10T12:00:00+07:00')) == null,
+  'spike inactive on Aug 10'
+);
+assert(
+  getActivePeakCelebrationSpike(new Date('2026-08-13T12:00:00+07:00')) == null,
+  'spike inactive on Aug 13'
 );
 
 // Min order: items + delivery when delivery in peak window

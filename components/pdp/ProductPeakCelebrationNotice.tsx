@@ -5,23 +5,41 @@ import Link from 'next/link';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { formatPeakCelebrationTemplate } from '@/lib/promo/peakCelebrationMessages';
-import { getActivePeakCelebrationNotice } from '@/lib/promo/peakCelebrationPricing';
+import {
+  getActivePeakCelebrationNotice,
+  getActivePeakCelebrationSpike,
+  type PeakCelebrationRule,
+} from '@/lib/promo/peakCelebrationPricing';
+
+type NoticeMode = 'advance' | 'active';
+
+function resolveNotice(now = new Date()): { mode: NoticeMode; rule: PeakCelebrationRule } | null {
+  const spike = getActivePeakCelebrationSpike(now);
+  if (spike) return { mode: 'active', rule: spike };
+  const advance = getActivePeakCelebrationNotice(now);
+  if (advance) return { mode: 'advance', rule: advance };
+  return null;
+}
 
 export function ProductPeakCelebrationNotice({ lang }: { lang: Locale }) {
   const [mounted, setMounted] = useState(false);
-  const [rule, setRule] = useState<ReturnType<typeof getActivePeakCelebrationNotice>>(null);
+  const [notice, setNotice] = useState<ReturnType<typeof resolveNotice>>(null);
 
   useEffect(() => {
     setMounted(true);
-    setRule(getActivePeakCelebrationNotice());
-    const id = window.setInterval(() => setRule(getActivePeakCelebrationNotice()), 60_000);
+    setNotice(resolveNotice());
+    const id = window.setInterval(() => setNotice(resolveNotice()), 60_000);
     return () => window.clearInterval(id);
   }, []);
 
-  if (!mounted || !rule) return null;
+  if (!mounted || !notice) return null;
 
   const copy = translations[lang].peakCelebration ?? translations.en.peakCelebration;
-  const message = formatPeakCelebrationTemplate(lang, copy.pdpNotice, rule);
+  const message = formatPeakCelebrationTemplate(
+    lang,
+    notice.mode === 'active' ? copy.pdpNoticeActive : copy.pdpNotice,
+    notice.rule
+  );
 
   return (
     <p className="pdp-peak-notice" role="status">

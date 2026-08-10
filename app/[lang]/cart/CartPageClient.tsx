@@ -80,7 +80,7 @@ import {
 } from '@/lib/checkout/checkoutFieldLimits';
 import type { RecoveredCartForm } from '@/lib/checkout/recoveredCartForm';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import {
   cartPriceBreakdown,
   cartValue,
@@ -178,11 +178,17 @@ function buildAddOnsSummaryForDisplay(
 
 function formatCartItemSizePriceLine(
   item: CartItem,
-  deliveryDestination: OrderDeliveryDestinationId
+  deliveryDestination: OrderDeliveryDestinationId,
+  deliveryDateYmd?: string
 ): string {
   const qty = item.quantity ?? 1;
-  const unitWithAddOns = item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {});
-  const unitDisplayPrice = applyExpansionItemMarkupThb(unitWithAddOns, deliveryDestination);
+  const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
+  const unitDisplayPrice = effectiveCatalogUnitPriceWithExpansion(
+    item.size.price,
+    undefined,
+    deliveryDestination,
+    { deliveryDateYmd, extraThb: addOnsUnit }
+  );
   const lineDisplayPrice = unitDisplayPrice * qty;
   const label = (item.size.label || '').trim() || '—';
   if (isNonBouquetCartLine(item)) {
@@ -595,13 +601,19 @@ const ALL_COUNTRY_CODES: CountryCodeEntry[] = [
 function cartItemsToAnalytics(
   items: CartItem[],
   lang: Locale,
-  deliveryDestination: OrderDeliveryDestinationId
+  deliveryDestination: OrderDeliveryDestinationId,
+  deliveryDateYmd?: string
 ): AnalyticsItem[] {
   return items.flatMap((item, index) => {
     const qty = item.quantity ?? 1;
-    const unitPrice = applyExpansionItemMarkupThb(
-      item.size.price + getAddOnsTotal(item.addOns?.productAddOns ?? {}),
-      deliveryDestination
+    const unitPrice = effectiveCatalogUnitPriceWithExpansion(
+      item.size.price,
+      undefined,
+      deliveryDestination,
+      {
+        deliveryDateYmd,
+        extraThb: getAddOnsTotal(item.addOns?.productAddOns ?? {}),
+      }
     );
     return Array.from({ length: qty }, (_, i) => ({
       item_id: item.bouquetId,
@@ -654,7 +666,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (items.length === 0) return;
-    const analyticsItems = cartItemsToAnalytics(items, lang, checkoutDeliveryProfile.destinationId);
+    const analyticsItems = cartItemsToAnalytics(
+      items,
+      lang,
+      checkoutDeliveryProfile.destinationId,
+      delivery.date || undefined
+    );
     const value = cartValue(items, checkoutDeliveryProfile.destinationId);
     if (!viewCartFiredRef.current) {
       viewCartFiredRef.current = true;
@@ -1104,7 +1121,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   useEffect(() => {
     if (!addShippingInfoFiredRef.current && items.length > 0 && hasDeliveryAddressInput(delivery)) {
       addShippingInfoFiredRef.current = true;
-      const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
+      const analyticsItems = cartItemsToAnalytics(
+        items,
+        lang,
+        delivery.deliveryDestination,
+        delivery.date || undefined
+      );
       trackAddShippingInfo({
         shippingTier: 'standard',
         currency: 'THB',
@@ -1389,7 +1411,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const recipientPhoneDigits =
       recipientCountryCode.replace(/\D/g, '') + recipientPhoneNational.replace(/\D/g, '');
     try {
-      const analyticsItems = cartItemsToAnalytics(items, lang, delivery.deliveryDestination);
+      const analyticsItems = cartItemsToAnalytics(
+        items,
+        lang,
+        delivery.deliveryDestination,
+        delivery.date || undefined
+      );
       trackAddPaymentInfo({
         paymentType: 'card',
         currency: 'THB',

@@ -12,7 +12,7 @@ import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
+import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 
 type BouquetsCarouselProps = {
@@ -43,8 +43,9 @@ function BouquetCarouselTile({
   const imgSrc = bouquet.images?.[0] ?? '';
   const minPrice =
     bouquet.sizes?.length > 0 ? Math.min(...bouquet.sizes.map((s) => s.price)) : 0;
-  const displayMinPrice = applyExpansionItemMarkupThb(
+  const displayMinPrice = effectiveCatalogUnitPriceWithExpansion(
     minPrice,
+    bouquet.discountPercent,
     checkoutProfile.destinationId
   );
   const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });

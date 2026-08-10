@@ -19,8 +19,7 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstraint';
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
-import { applyExpansionItemMarkupThb } from '@/lib/expansionMarkup';
-import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
+import { applyCatalogDiscountThb, effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
@@ -101,9 +100,11 @@ export function ProductOrderBlock({
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
   const discountedSizePrice = applyCatalogDiscountThb(selectedSize.price, bouquet.discountPercent);
-  const unitPrice = applyExpansionItemMarkupThb(
-    discountedSizePrice + addOnsTotal,
-    checkoutProfile.destinationId
+  const unitPrice = effectiveCatalogUnitPriceWithExpansion(
+    selectedSize.price,
+    bouquet.discountPercent,
+    checkoutProfile.destinationId,
+    { extraThb: addOnsTotal }
   );
   const totalPrice = unitPrice * qty;
   const lineTotalForPromo = discountedSizePrice * qty;
