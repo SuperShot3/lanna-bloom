@@ -10,6 +10,7 @@ import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { RefundOrderButton } from '@/app/admin/components/RefundOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
 import { DeliveryEditCard } from '@/app/admin/components/DeliveryEditCard';
+import { InternalNotesCard } from '@/app/admin/components/InternalNotesCard';
 import { OrderHistoryTimeline } from '@/app/admin/components/OrderHistoryTimeline';
 import type { CustomOrderDetails } from '@/lib/orders';
 import { canChangeStatus, canEditCosts, canRefund, canRemoveOrder } from '@/lib/adminRbac';
@@ -189,12 +190,11 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
           <p><strong>Phone:</strong> {order.driver_phone ?? '—'}</p>
         </section>
       )}
-      {order.internal_notes && (
-        <section className="admin-section">
-          <h2 className="admin-section-title">Notes</h2>
-          <p>{order.internal_notes}</p>
-        </section>
-      )}
+      <InternalNotesCard
+        orderId={order.order_id}
+        initialNotes={order.internal_notes}
+        canEdit={canChangeStatus(role)}
+      />
       <DeliveryEditCard order={order} canEdit={canChangeStatus(role)} />
       <OrderHistoryTimeline statusHistory={statusHistory} deliveryChanges={deliveryChanges} />
 

@@ -5,7 +5,7 @@ import { FacebookIcon, InstagramIcon, TikTokIcon, YouTubeIcon } from './icons';
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/profile.php?id=61587782069439';
 const INSTAGRAM_PAGE_URL = 'https://www.instagram.com/lannabloomchiangmai/';
 const TIKTOK_PAGE_URL = 'https://www.tiktok.com/@lannabloom_th';
-const YOUTUBE_PAGE_URL = 'https://www.youtube.com/@Lannabloom-delivery';
+const YOUTUBE_PAGE_URL = 'https://www.youtube.com/@Lannabloom';
 
 export function SocialLinks() {
   return (
