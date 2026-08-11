@@ -10,6 +10,7 @@ import {
   getCurrentOrderLifecycleStatus,
   getLifecycleTimestampForStatus,
 } from '@/lib/orders/lifecycle';
+import { enrichOrderItemsImages } from '@/lib/orders/enrichOrderItemImages';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,8 +113,11 @@ export async function GET(
     );
   }
 
+  const enrichedItems = await enrichOrderItemsImages(order.items ?? []);
+
   const response = {
     ...order,
+    items: enrichedItems,
     order_status: orderStatus,
     fulfillmentStatus,
     fulfillmentStatusUpdatedAt,

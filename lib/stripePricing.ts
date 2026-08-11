@@ -29,6 +29,10 @@ import {
 } from '@/lib/promo/peakCelebrationPricing';
 import { peakCelebrationMinOrderErrorMessage } from '@/lib/promo/peakCelebrationMessages';
 import { shopTodayYmd } from '@/lib/shopTime';
+import {
+  resolveBouquetLineItemImageUrl,
+  resolveProductLikeLineItemImageUrl,
+} from '@/lib/catalog/lineItemImageResolve';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -173,7 +177,7 @@ export async function computeOrderTotals(
           cardMessage: '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
         },
-        imageUrl: item.imageUrl ?? toy.imageUrl,
+        imageUrl: resolveProductLikeLineItemImageUrl(toy.imageUrl, item.imageUrl),
         bouquetSlug: item.bouquetSlug,
         itemType: 'plushyToy',
         cost: undefined,
@@ -209,7 +213,7 @@ export async function computeOrderTotals(
             balloonText: normalizeBalloonText(item.addOns?.balloonText),
           }),
         },
-        imageUrl: item.imageUrl ?? balloon.imageUrl,
+        imageUrl: resolveProductLikeLineItemImageUrl(balloon.imageUrl, item.imageUrl),
         bouquetSlug: item.bouquetSlug,
         itemType: 'balloon',
         cost: undefined,
@@ -254,7 +258,7 @@ export async function computeOrderTotals(
           cardMessage: '',
           wrappingOption: item.addOns?.wrappingOption ?? null,
         },
-        imageUrl: item.imageUrl ?? product.imageUrl,
+        imageUrl: resolveProductLikeLineItemImageUrl(product.imageUrl, item.imageUrl),
         bouquetSlug: item.bouquetSlug,
         itemType: 'product',
         cost: partnerCost,
@@ -306,7 +310,7 @@ export async function computeOrderTotals(
             paperColor: item.addOns.paperColor,
           }),
         },
-        imageUrl: item.imageUrl,
+        imageUrl: resolveBouquetLineItemImageUrl(bouquet, item.size, item.imageUrl),
         bouquetSlug: item.bouquetSlug ?? bouquet.slug,
         itemType: 'bouquet',
       });

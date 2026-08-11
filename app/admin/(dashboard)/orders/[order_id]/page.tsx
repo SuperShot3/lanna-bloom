@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { getOrderByOrderId, getOrderDeliveryChangeHistory } from '@/lib/supabase/adminQueries';
 import { itemsFromOrderJson } from '@/lib/admin/orderItemsFallback';
 import { getCatalogBouquetById, getCatalogProductById } from '@/lib/catalogReads';
+import { enrichOrderItemImageUrl } from '@/lib/orders/enrichOrderItemImages';
 import { OrderSummaryCard } from '@/app/admin/components/OrderSummaryCard';
 import type { ItemWithCatalog } from '@/app/admin/components/ItemsList';
 import { OrderStatusPaymentCard } from '@/app/admin/components/OrderStatusPaymentCard';
@@ -119,7 +120,18 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
             paperColor: jsonItem.addOns.paperColor ?? undefined,
           }
         : undefined;
-      return { ...item, catalogHref, addOns };
+      const resolvedImage = await enrichOrderItemImageUrl({
+        bouquet_id: item.bouquet_id,
+        size: item.size,
+        image_url_snapshot: item.image_url_snapshot,
+        item_type: item.item_type ?? jsonItem?.itemType ?? 'bouquet',
+      });
+      return {
+        ...item,
+        image_url_snapshot: resolvedImage ?? item.image_url_snapshot,
+        catalogHref,
+        addOns,
+      };
     })
   );
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCatalogBouquetById, getCatalogProductById } from '@/lib/catalogReads';
+import { resolveLineItemImageUrl } from '@/lib/catalog/resolveLineItemImage';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,24 +15,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const typeRaw = (searchParams.get('type') ?? '').trim();
     const id = (searchParams.get('id') ?? '').trim();
+    const size = (searchParams.get('size') ?? '').trim() || undefined;
     if (!id) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     }
 
     const type: AllowedType = isAllowedType(typeRaw) ? typeRaw : 'bouquet';
+    const imageUrl =
+      (await resolveLineItemImageUrl({
+        itemType: type,
+        id,
+        size,
+        clientImageUrl: null,
+      })) ?? null;
 
-    if (type === 'bouquet') {
-      const bouquet = await getCatalogBouquetById(id);
-      const imageUrl = bouquet?.images?.[0] ?? null;
-      return NextResponse.json({ imageUrl });
-    }
-
-    const product = await getCatalogProductById(id);
-    const imageUrl = product?.imageUrl?.trim() || null;
     return NextResponse.json({ imageUrl });
   } catch (err) {
     console.error('[API] GET /api/catalog/image failed:', err);
     return NextResponse.json({ error: 'Failed to resolve image' }, { status: 500 });
   }
 }
-

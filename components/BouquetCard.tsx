@@ -199,7 +199,7 @@ export function BouquetCard({
           slug: bouquet.slug,
           nameEn: bouquet.nameEn,
           nameTh: bouquet.nameTh,
-          imageUrl: imgSrc || bouquet.images?.[0],
+          imageUrl: selectedSize.imageUrls?.[0] || imgSrc || bouquet.images?.[0],
           size: discountedSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,

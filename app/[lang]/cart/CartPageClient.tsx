@@ -700,32 +700,41 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
     void (async () => {
       try {
-        const uniqueIds = Array.from(
+        const uniqueKeys = Array.from(
           new Map(
-            missing.map(({ item }) => [
-              `${item.itemType ?? 'bouquet'}:${item.bouquetId}`,
-              { type: item.itemType ?? 'bouquet', id: item.bouquetId },
-            ])
+            missing.map(({ item }) => {
+              const type = item.itemType ?? 'bouquet';
+              const size = item.size?.optionId ?? item.size?.label ?? '';
+              const key = `${type}:${item.bouquetId}:${size}`;
+              return [key, { type, id: item.bouquetId, size, key }];
+            })
           ).values()
         );
 
         const resolved = await Promise.all(
-          uniqueIds.map(async ({ type, id }) => {
-            const url = `/api/catalog/image?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
-            const res = await fetch(url);
-            if (!res.ok) return { type, id, imageUrl: null as string | null };
+          uniqueKeys.map(async ({ type, id, size, key }) => {
+            const params = new URLSearchParams({
+              type,
+              id,
+            });
+            if (size) params.set('size', size);
+            const res = await fetch(`/api/catalog/image?${params.toString()}`);
+            if (!res.ok) return { key, imageUrl: null as string | null };
             const data = (await res.json().catch(() => ({}))) as { imageUrl?: string | null };
-            const imageUrl = typeof data.imageUrl === 'string' && data.imageUrl.trim() ? data.imageUrl.trim() : null;
-            return { type, id, imageUrl };
+            const imageUrl =
+              typeof data.imageUrl === 'string' && data.imageUrl.trim() ? data.imageUrl.trim() : null;
+            return { key, imageUrl };
           })
         );
 
         if (cancelled) return;
 
-        const byKey = new Map(resolved.map((r) => [`${r.type}:${r.id}`, r.imageUrl]));
+        const byKey = new Map(resolved.map((r) => [r.key, r.imageUrl]));
 
         for (const { item, index } of missing) {
-          const key = `${item.itemType ?? 'bouquet'}:${item.bouquetId}`;
+          const type = item.itemType ?? 'bouquet';
+          const size = item.size?.optionId ?? item.size?.label ?? '';
+          const key = `${type}:${item.bouquetId}:${size}`;
           const imageUrl = byKey.get(key);
           if (!imageUrl) continue;
           updateItem(index, { ...item, imageUrl });

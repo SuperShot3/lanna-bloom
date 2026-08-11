@@ -74,14 +74,28 @@ export function attachVariantImagesToSellableOptions(
   if (!byVariantKey.size) return sizes;
 
   return sizes.map((opt) => {
-    let vk: string | undefined;
-    if (pricingType === 'size_based' && opt.key) {
-      vk = opt.key;
+    const candidates: string[] = [];
+    if (pricingType === 'size_based') {
+      // Fixed bouquets store CMS images under variantKey; optionId is `fixed_<variantKey>`.
+      // Classic size rows use key s/m/l/xl.
+      const optionId = opt.optionId?.trim() ?? '';
+      if (optionId.toLowerCase().startsWith('fixed_')) {
+        candidates.push(optionId.slice('fixed_'.length));
+      }
+      if (opt.key) candidates.push(opt.key);
     } else if (pricingType === 'stem_count' && opt.stemCount != null) {
-      vk = stemVariantKey(opt.stemCount);
+      candidates.push(stemVariantKey(opt.stemCount));
     }
-    if (!vk) return opt;
-    const set = byVariantKey.get(vk);
+
+    let set: VariantImageSet | undefined;
+    for (const vk of candidates) {
+      if (!vk) continue;
+      const hit = byVariantKey.get(vk);
+      if (hit?.urls.length) {
+        set = hit;
+        break;
+      }
+    }
     if (!set?.urls.length) return opt;
     return { ...opt, imageUrls: set.urls, imageAlts: set.alts };
   });

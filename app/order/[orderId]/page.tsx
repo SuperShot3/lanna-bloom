@@ -11,6 +11,7 @@ import {
   getCurrentOrderLifecycleStatus,
   getLifecycleTimestampForStatus,
 } from '@/lib/orders/lifecycle';
+import { enrichOrderItemsImages } from '@/lib/orders/enrichOrderItemImages';
 import { OrderPageClient } from '@/components/order/OrderPageClient';
 import { translations, defaultLocale } from '@/lib/i18n';
 import { OrderDeliveredBlock } from './OrderDeliveredBlock';
@@ -159,12 +160,15 @@ export default async function OrderDetailsPage({
   const canPay =
     !paid && paymentStatusUpper !== 'CANCELLED' && paymentStatusUpper !== 'ERROR';
 
+  const enrichedItems = await enrichOrderItemsImages(order.items ?? []);
+  const orderForClient = { ...order, items: enrichedItems };
+
   return (
     <div className="order-page">
       <div className="container">
         <CurrencyDisplayProvider>
           <OrderPageClient
-            order={order}
+            order={orderForClient}
             orderId={order.orderId}
             detailsUrl={detailsUrl}
             baseUrl={baseUrl}
