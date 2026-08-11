@@ -1,9 +1,10 @@
 /**
  * Enrich order line-item image URLs from catalog (size-aware).
- * Used by customer order API and admin order detail — display only, no DB writes.
+ * Used by customer order API, admin order detail, and delivery board — display only, no DB writes.
  */
 import 'server-only';
 
+import type { SupabaseOrderRow } from '@/lib/supabase/adminQueries';
 import { resolveLineItemImageUrl } from '@/lib/catalog/resolveLineItemImage';
 
 export type EnrichableOrderItemImage = {
@@ -38,6 +39,55 @@ export async function enrichOrderItemsImages<T extends EnrichableOrderItemImage>
     items.map(async (item) => {
       const imageUrl = await enrichOrderItemImageUrl(item);
       return { ...item, ...(imageUrl ? { imageUrl } : {}) };
+    })
+  );
+}
+
+type OrderJsonWithItems = {
+  items?: Array<{
+    bouquetId?: string;
+    size?: string;
+    imageUrl?: string;
+    itemType?: string;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+};
+
+/**
+ * Rewrite `order_json.items[].imageUrl` with size-aware catalog thumbs for the
+ * admin delivery board (display-only; does not persist).
+ */
+export async function enrichDeliveryBoardOrderImages(
+  orders: SupabaseOrderRow[]
+): Promise<SupabaseOrderRow[]> {
+  return Promise.all(
+    orders.map(async (order) => {
+      const json = order.order_json as OrderJsonWithItems | null | undefined;
+      const items = Array.isArray(json?.items) ? json.items : null;
+      if (!items?.length) return order;
+
+      const enrichedItems = await enrichOrderItemsImages(
+        items.map((it) => ({
+          bouquetId: it.bouquetId,
+          size: it.size,
+          imageUrl: it.imageUrl,
+          itemType: it.itemType ?? 'bouquet',
+        }))
+      );
+
+      const nextItems = items.map((it, i) => {
+        const imageUrl = enrichedItems[i]?.imageUrl;
+        return imageUrl ? { ...it, imageUrl } : it;
+      });
+
+      return {
+        ...order,
+        order_json: {
+          ...(json ?? {}),
+          items: nextItems,
+        },
+      };
     })
   );
 }

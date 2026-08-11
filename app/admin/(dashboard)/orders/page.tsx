@@ -11,6 +11,7 @@ import { shopTodayYmd } from '@/lib/shopTime';
 import { canAssignDriver, canChangeStatus } from '@/lib/adminRbac';
 import { isOrderChatEnabled } from '@/lib/orderChat/enabled';
 import { getBaseUrl } from '@/lib/siteUrl';
+import { enrichDeliveryBoardOrderImages } from '@/lib/orders/enrichOrderItemImages';
 
 interface PageProps {
   searchParams: Promise<{
@@ -56,9 +57,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     getDeliveryDestinations(),
   ]);
 
-  const supplierSummariesByOrderId = await getLatestSupplierRequestSummariesForOrders(
-    result.orders.map((o) => o.order_id)
-  );
+  const [supplierSummariesByOrderId, ordersWithCorrectThumbs] = await Promise.all([
+    getLatestSupplierRequestSummariesForOrders(result.orders.map((o) => o.order_id)),
+    enrichDeliveryBoardOrderImages(result.orders),
+  ]);
 
   const deliveryDestinations = Array.from(
     new Set([...DELIVERY_DESTINATIONS, ...destRows])
@@ -66,7 +68,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
 
   return (
     <DeliveryBoardClient
-      initialOrders={result.orders}
+      initialOrders={ordersWithCorrectThumbs}
       initialTotal={result.total}
       initialError={result.error}
       initialFilters={filters}
