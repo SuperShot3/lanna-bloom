@@ -3,9 +3,11 @@ import dynamic from 'next/dynamic';
 import { StorefrontIcon } from '@/components/icons';
 import {
   getCatalogHomeFlowerTypeSections,
+  getCatalogHomeFlowerTypeTiles,
   getCatalogPopularBouquets,
   getCatalogProductsFiltered,
 } from '@/lib/catalogReads';
+import { ShopByFlowerTypeTiles } from '@/components/home/ShopByFlowerTypeTiles';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
@@ -97,8 +99,9 @@ function ProductFeedRow({
 }
 
 export async function PopularSection({ lang }: { lang: Locale }) {
-  const [popularBouquets, sections, productSectionResults] = await Promise.all([
+  const [popularBouquets, flowerTypeTiles, sections, productSectionResults] = await Promise.all([
     getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT),
+    getCatalogHomeFlowerTypeTiles(),
     getCatalogHomeFlowerTypeSections(),
     Promise.all(
       HOME_PRODUCT_SECTIONS.map(async (section) => ({
@@ -117,7 +120,12 @@ export async function PopularSection({ lang }: { lang: Locale }) {
   const tCatalog = translations[lang].catalog;
   const productSections = productSectionResults.filter((section) => section.products.length > 0);
 
-  if (popularBouquets.length === 0 && sections.length === 0 && productSections.length === 0) {
+  if (
+    popularBouquets.length === 0 &&
+    flowerTypeTiles.length === 0 &&
+    sections.length === 0 &&
+    productSections.length === 0
+  ) {
     return null;
   }
 
@@ -145,6 +153,7 @@ export async function PopularSection({ lang }: { lang: Locale }) {
             <ShowMoreLink href={`/${lang}/catalog`} label={tHome.showMore} />
           </div>
         )}
+        <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} />
         {sections.map((section) => {
           const catalogHref = `/${lang}/catalog${buildCatalogSearchString({ types: [section.type] })}`;
           const titleTemplate = section.pottedOnly

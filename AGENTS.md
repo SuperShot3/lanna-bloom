@@ -19,3 +19,5 @@ Do not rely on assumptions or memory. Inspect the actual code before editing.
 Preserve payment, analytics, security, and order lifecycle rules.
 
 For **product or blog copy**, use the project skills (`.cursor/skills/flower-content-writer/`, `.cursor/skills/blog-content-writer/`) instead of expanding `ai_context`.
+
+For **policy, legal, and operational-rule pages**, use `.cursor/skills/clean-policy-legal-document-ui/`.

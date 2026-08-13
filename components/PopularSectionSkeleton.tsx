@@ -4,6 +4,7 @@ import { BouquetCardSkeleton } from '@/components/BouquetCardSkeleton';
 
 const SECTION_COUNT = 3;
 const CARDS_PER_SECTION = 6;
+const TILE_COUNT = 8;
 
 function TypeSectionSkeleton() {
   return (
@@ -27,10 +28,31 @@ function TypeSectionSkeleton() {
   );
 }
 
+function FlowerTypeTilesSkeleton() {
+  return (
+    <div className="mb-12 sm:mb-14 last:mb-0">
+      <div
+        className="w-56 h-10 rounded bg-stone-200 animate-pulse mb-6 sm:mb-8"
+        aria-hidden
+      />
+      <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4">
+        {Array.from({ length: TILE_COUNT }).map((_, i) => (
+          <div key={i} className="flex flex-col items-center gap-2">
+            <div className="aspect-square w-full rounded-2xl bg-stone-200 animate-pulse" />
+            <div className="h-4 w-14 rounded bg-stone-200 animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PopularSectionSkeleton() {
   return (
     <section className="pt-4 pb-12 sm:pt-5 sm:pb-14 lg:pt-6 lg:pb-16 bg-stone-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <TypeSectionSkeleton />
+        <FlowerTypeTilesSkeleton />
         {Array.from({ length: SECTION_COUNT }).map((_, i) => (
           <TypeSectionSkeleton key={i} />
         ))}

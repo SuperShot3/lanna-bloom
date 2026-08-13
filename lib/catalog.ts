@@ -14,6 +14,10 @@ import { bouquetIsPottedOnly } from '@/lib/bouquetPresentationFormats';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 
 import { PRODUCT_CATEGORIES, STOREFRONT_FLOWER_TYPES } from '@/lib/catalogCategories';
+import {
+  pickHomeFlowerTypeTiles,
+  type HomeFlowerTypeTile,
+} from '@/lib/catalog/homeFlowerTypeTiles';
 
 import {
 
@@ -709,7 +713,7 @@ export type HomeFlowerTypeSection = {
 const HOME_FLOWER_TYPE_SECTION_LIMIT = 6;
 
 /** Curated homepage flower-type order — not the full storefront facet list. */
-const HOME_FLOWER_TYPE_SECTION_ORDER = ['lily', 'rose', 'sunflower'] as const;
+const HOME_FLOWER_TYPE_SECTION_ORDER = ['lily', 'rose', 'sunflower', 'orchid'] as const;
 
 export async function getHomeFlowerTypeSectionsFromCatalog(): Promise<HomeFlowerTypeSection[]> {
 
@@ -739,7 +743,12 @@ export async function getHomeFlowerTypeSectionsFromCatalog(): Promise<HomeFlower
 
 }
 
+export type { HomeFlowerTypeTile };
 
+export async function getHomeFlowerTypeTilesFromCatalog(): Promise<HomeFlowerTypeTile[]> {
+  const ordered = await getOrderedPopularBouquetsFromCatalog();
+  return pickHomeFlowerTypeTiles(ordered, Date.now());
+}
 
 const loadPopularCatalogItemsFull = cacheSupabaseCatalog('popular-catalog-items-full', async () => {
 
