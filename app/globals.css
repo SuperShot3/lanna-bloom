@@ -6938,3 +6938,27 @@ a.btn-premium:focus-visible {
     animation: none;
   }
 }
+
+/* Compact oval pill for info-article lead CTAs (Save important dates, etc.) */
+a.btn-premium.btn-premium--article-lead {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: 9999px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+a.btn-premium.btn-premium--article-lead:hover {
+  text-decoration: none !important;
+  color: var(--accent-cta-text, #1a3c34);
+}

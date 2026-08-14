@@ -108,12 +108,13 @@ export function InfoCard({
           color: inherit;
         }
         .info-card-cover {
-          aspect-ratio: 16 / 10;
+          aspect-ratio: 16 / 9;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
           border-radius: var(--radius) var(--radius) 0 0;
+          background: var(--pastel-cream, #faf7f2);
         }
         .info-card-cover-center {
           font-size: 3rem;
@@ -122,7 +123,8 @@ export function InfoCard({
         .info-card-cover-img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
+          object-position: center;
         }
         .info-card-body {
           padding: 20px;

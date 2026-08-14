@@ -12,6 +12,7 @@ import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLink
 import { isCommercialIntentSlug } from '@/lib/landingPages/intentLandingPages';
 import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
+import { ArticleLeadCta } from './ArticleLeadCta';
 import { ArticleListenPlayer } from './ArticleListenPlayer';
 import { CatalogProductCard } from './CatalogProductCard';
 import { GuideComments } from '../_components/GuideComments';
@@ -33,20 +34,24 @@ const CONTENT_DIR = path.join(process.cwd(), 'content', 'info');
 
 /**
  * Load MDX content for an article. Tries [slug].[lang].mdx first (e.g. how-to-order-flower-delivery-chiang-mai.th.mdx),
- * then falls back to [slug].mdx for articles not yet migrated to locale-specific files.
+ * then [slug].mdx, then [slug].en.mdx so English-only articles still render on other locales.
  */
 async function getMdxContent(slug: string, lang: string): Promise<string | null> {
   const localeFile = path.join(CONTENT_DIR, `${slug}.${lang}.mdx`);
   const fallbackFile = path.join(CONTENT_DIR, `${slug}.mdx`);
+  const englishFile = path.join(CONTENT_DIR, `${slug}.en.mdx`);
   try {
-    const content = await fs.readFile(localeFile, 'utf-8');
-    return content;
+    return await fs.readFile(localeFile, 'utf-8');
   } catch {
     try {
-      const content = await fs.readFile(fallbackFile, 'utf-8');
-      return content;
+      return await fs.readFile(fallbackFile, 'utf-8');
     } catch {
-      return null;
+      if (lang === 'en') return null;
+      try {
+        return await fs.readFile(englishFile, 'utf-8');
+      } catch {
+        return null;
+      }
     }
   }
 }
@@ -99,6 +104,7 @@ export async function generateMetadata({
 
 export function generateStaticParams() {
   const slugs = [
+    'flower-reminder-important-dates',
     'thai-mothers-day-flowers-chiang-mai-from-abroad',
     'thai-flower-names-secret-messages',
     'gift-card-ideas-with-flowers',
@@ -341,6 +347,26 @@ export default async function InfoArticlePage({
       <div className={styles.articleStepsBlock}>
         <div className={styles.articleStepsBody}>{children}</div>
       </div>
+    ),
+    ArticleLeadCta: ({
+      href,
+      skipLangPrefix = false,
+      hint,
+      children,
+    }: {
+      href: string;
+      skipLangPrefix?: boolean;
+      hint?: string;
+      children: React.ReactNode;
+    }) => (
+      <ArticleLeadCta
+        href={href}
+        lang={lang}
+        skipLangPrefix={skipLangPrefix}
+        hint={hint}
+      >
+        {children}
+      </ArticleLeadCta>
     ),
   };
 

@@ -23,7 +23,7 @@ export function ArticleCta({
       <div className={styles.infoArticleCtaLinks}>
         {links.map((link, i) => {
           const label = lang === 'th' ? link.labelTh : link.label;
-          const href = `/${lang}${link.href}`;
+          const href = link.skipLangPrefix ? link.href : `/${lang}${link.href}`;
           const isPrimary = i === 0;
           return (
             <Link

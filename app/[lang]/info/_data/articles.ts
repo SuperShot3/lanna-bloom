@@ -15,6 +15,8 @@ export type ArticleCtaLink = {
   label: string;
   labelTh: string;
   href: string;
+  /** When true, use href as-is (for root routes such as /important-dates). */
+  skipLangPrefix?: boolean;
 };
 
 export type ArticleMeta = {
@@ -54,6 +56,33 @@ export type ArticleMeta = {
 };
 
 export const articles: ArticleMeta[] = [
+  {
+    slug: 'flower-reminder-important-dates',
+    title: 'Remember Important Dates With a Flower Reminder',
+    excerpt:
+      'Save a birthday, anniversary, or other date once. Lanna Bloom emails you before the day with a gentle reminder and a bouquet idea. No new account — email only.',
+    titleTh: 'บันทึกวันสำคัญ แล้วรับอีเมลเตือนเรื่องดอกไม้',
+    excerptTh:
+      'บันทึกวันเกิด วันครบรอบ หรือวันสำคัญครั้งเดียว ลานนาบลูมจะส่งอีเมลเตือนก่อนถึงวัน พร้อมไอเดียช่อดอกไม้ ไม่ต้องสมัครบัญชี — ใช้อีเมลอย่างเดียว',
+    publishedAt: '2026-08-14T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/important-dates/never_forget_important_dates.png',
+      alt: 'Laptop and phone showing Lanna Bloom important-date email reminders, with flowers and a map from abroad to Thailand',
+    },
+    ctaTitle: 'Save a date or browse bouquets',
+    ctaTitleTh: 'บันทึกวันสำคัญ หรือเลือกช่อดอกไม้',
+    ctaLinks: [
+      {
+        label: 'Save important dates',
+        labelTh: 'บันทึกวันสำคัญ',
+        href: '/important-dates',
+        skipLangPrefix: true,
+      },
+      { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
+    ],
+  },
   {
     slug: 'thai-mothers-day-flowers-chiang-mai-from-abroad',
     title: 'Thai Mother’s Day 2026: How to Send Flowers to Your Mom in Chiang Mai from Abroad',
@@ -683,7 +712,7 @@ export const articles: ArticleMeta[] = [
     featured: true,
     cover: {
       type: 'image',
-      src: '/blog_images/same-day-delivery/same-day-flower-delivery-chiang-mai.png',
+      src: '/blog_images/same-day-delivery/Same_day_delivery_lamphun_thailand.png',
       alt: 'Fresh flower bouquet prepared for delivery across Lamphun Province, Thailand',
     },
     ctaLinks: [
