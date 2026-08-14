@@ -4,7 +4,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Locale, locales, translations } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
+import { locales, translations } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
 import {
   HeroFeatureCarousel,
@@ -35,14 +36,38 @@ function heroImageAlt(city: string): string {
   return `Fresh flower bouquet prepared for ${city} delivery`;
 }
 
+type HeroDeliveryTiming = 'same_day' | 'next_day' | 'preorder_only' | 'other';
+
+function defaultCityName(lang: Locale): string {
+  if (lang === 'th') return 'เชียงใหม่';
+  if (lang === 'ru') return 'Чиангмае';
+  if (lang === 'zh-sg') return '清迈';
+  if (lang === 'zh-hk') return '清邁';
+  return 'Chiang Mai';
+}
+
 function HeroExpressDeliveryCard({
   lang,
   className,
+  timing = 'same_day',
 }: {
   lang: Locale;
   className?: string;
+  timing?: HeroDeliveryTiming;
 }) {
   const t = translations[lang].hero;
+  const title =
+    timing === 'next_day'
+      ? t.nextDayDelivery
+      : timing === 'preorder_only'
+        ? t.preorderDelivery
+        : t.expressDelivery;
+  const status =
+    timing === 'next_day'
+      ? t.nextDayAvailable
+      : timing === 'preorder_only'
+        ? t.preorderAvailable
+        : t.avgDelivery;
   return (
     <div
       className={`bg-white rounded-2xl shadow-lg border border-stone-100 max-w-sm ${className ?? ''}`.trim()}
@@ -52,13 +77,13 @@ function HeroExpressDeliveryCard({
           <StorefrontIcon name="schedule" size={18} className="leading-none" />
         </div>
         <div className="min-w-0">
-          <p className="font-bold text-xs">{t.expressDelivery}</p>
+          <p className="font-bold text-xs">{title}</p>
           <p className="text-[10px] text-stone-500 truncate">{t.expressArea}</p>
         </div>
       </div>
       <div className="flex items-center justify-between text-[10px] font-medium gap-2">
         <span className="text-[#C5A059]">{t.availableNow}</span>
-        <span className="truncate">{t.avgDelivery}</span>
+        <span className="truncate">{status}</span>
       </div>
     </div>
   );
@@ -86,16 +111,19 @@ function HeroVisualBlock({
   images,
   lang,
   className,
+  timing = 'same_day',
 }: {
   images: HeroCarouselImage[];
   lang: Locale;
   className?: string;
+  timing?: HeroDeliveryTiming;
 }) {
   return (
     <div className={`relative min-w-0 w-full ${className ?? ''}`.trim()}>
       <HeroFeatureCarousel images={images} />
       <HeroExpressDeliveryCard
         lang={lang}
+        timing={timing}
         className="absolute bottom-3 left-2 sm:bottom-5 sm:left-4 p-3 sm:p-4 max-w-[10.5rem] sm:max-w-[11.5rem] shadow-xl z-30 pointer-events-none animate-[bounce_3s_ease-in-out_infinite] lg:bottom-12 lg:-left-10 lg:p-6 lg:max-w-xs lg:shadow-2xl"
       />
     </div>
@@ -185,6 +213,7 @@ export function Hero({
   titleOverride,
   browseCollectionHref,
   locationName,
+  timing = 'same_day',
 }: {
   lang: Locale;
   heroImageUrl?: string;
@@ -195,11 +224,14 @@ export function Hero({
   browseCollectionHref?: string;
   /** Localized city/market name for hero copy; defaults to Chiang Mai hub. */
   locationName?: string;
+  /** Delivery timing shown on the floating badge; default same-day for Chiang Mai. */
+  timing?: HeroDeliveryTiming;
 }) {
   const t = translations[lang].hero;
-  const city = locationName ?? (lang === 'th' ? 'เชียงใหม่' : 'Chiang Mai');
+  const city = locationName ?? defaultCityName(lang);
   const trustLine = t.trustLine.replace('{city}', city);
   const sublineNew = t.sublineNew.replace('{city}', city);
+  const headlineNew = t.headlineNew.replace('{city}', city);
   const pathname = usePathname();
   const pathParts = pathname?.split('/').filter(Boolean) ?? [];
   const maybeMarketSlug = pathParts[1];
@@ -220,10 +252,16 @@ export function Hero({
   const [howToOpen, setHowToOpen] = useState(false);
   const imageSrc = heroImageUrl || DEFAULT_HERO_IMAGE;
   const heroCarouselImages = buildHeroCarouselImages(imageSrc, carouselImages, city);
+  const isMarketLanding =
+    pathParts.length === 3 &&
+    locales.includes(pathParts[0] as Locale) &&
+    isMarketPathSlug(pathParts[1]) &&
+    pathParts[2] === 'flower-delivery';
   const isHomeLanding =
     !titleOverride &&
     (pathname === '/' ||
-      (pathParts.length === 1 && locales.includes(pathParts[0] as Locale)));
+      (pathParts.length === 1 && locales.includes(pathParts[0] as Locale)) ||
+      isMarketLanding);
   const introClass = isHomeLanding ? 'home-hero-intro' : '';
   const introItemClass = isHomeLanding ? 'home-hero-intro__item' : '';
 
@@ -242,12 +280,12 @@ export function Hero({
   }, []);
 
   const sectionPad = isHomeLanding
-    ? 'pt-4 pb-2 sm:pt-6 sm:pb-3 md:pt-8 md:pb-4 lg:pt-10 lg:pb-5'
-    : 'pt-4 pb-6 sm:pt-6 sm:pb-8 md:pt-8 md:pb-10 lg:pt-12 lg:pb-12';
+    ? 'pt-1 pb-2 sm:pt-2 sm:pb-3 md:pt-2 md:pb-4 lg:pt-2 lg:pb-5'
+    : 'pt-1 pb-6 sm:pt-2 sm:pb-8 md:pt-2 md:pb-10 lg:pt-2 lg:pb-12';
 
   return (
     <section className={`relative overflow-x-hidden ${sectionPad}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6 md:gap-8 lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-center min-w-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6 md:gap-8 lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start min-w-0">
         <div className={`order-1 lg:order-none relative z-10 min-w-0 ${introClass}`}>
           <div
             className={`${introItemClass} inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C5A059]/10 text-[#C5A059] font-medium text-sm mb-2 sm:mb-3 md:mb-4`.trim()}
@@ -260,7 +298,7 @@ export function Hero({
           >
             {titleOverride ?? (
               <>
-                {t.headlineNew} <br />
+                {headlineNew} <br />
                 <span className="italic text-[#C5A059]">{t.headlineAccent}</span>
               </>
             )}
@@ -283,7 +321,8 @@ export function Hero({
         <HeroVisualBlock
           images={heroCarouselImages}
           lang={lang}
-          className={`order-2 lg:order-none lg:col-start-2 pt-1 pb-1 sm:pt-2 sm:pb-2 lg:pt-3 lg:pb-4 ${introItemClass} home-hero-intro__delay-4`.trim()}
+          timing={timing}
+          className={`order-2 lg:order-none lg:col-start-2 ${introItemClass} home-hero-intro__delay-4`.trim()}
         />
 
         <div className={`order-3 lg:hidden relative z-10 min-w-0 ${introClass}`}>

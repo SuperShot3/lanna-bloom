@@ -25,8 +25,6 @@ export function ProductPageClient({
   description,
   compositionHeading,
   compositionText,
-  reviewAverage,
-  reviewCount,
   gifts = [],
 }: {
   bouquet: Bouquet;
@@ -35,8 +33,6 @@ export function ProductPageClient({
   description: string;
   compositionHeading: string;
   compositionText: string;
-  reviewAverage: number;
-  reviewCount: number;
   gifts?: CatalogProduct[];
 }) {
   const resolveInitialSize = (): Bouquet['sizes'][number] => {
@@ -171,9 +167,7 @@ export function ProductPageClient({
           <ProductIdentityMeta
             lang={lang}
             featuredPopular={bouquet.featuredPopular}
-            reviewAverage={reviewAverage}
-            reviewCount={reviewCount}
-            clickable={false}
+            soldCount={bouquet.soldCount}
           />
         </div>
         <ProductOrderBlock

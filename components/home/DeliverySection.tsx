@@ -9,6 +9,7 @@ import {
 } from '@/lib/deliveryHours';
 import { StorefrontIcon } from '@/components/icons';
 import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
+import type { MarketDeliveryCopy } from '@/lib/landingPages/marketHomeLanding';
 
 function RedCarChip() {
   return (
@@ -49,10 +50,27 @@ function GrabChip() {
   );
 }
 
-export function DeliverySection({ lang }: { lang: Locale }) {
+export function DeliverySection({
+  lang,
+  catalogHref,
+  copy,
+}: {
+  lang: Locale;
+  catalogHref?: string;
+  copy?: MarketDeliveryCopy;
+}) {
   const t = translations[lang].homeLanding.delivery;
   const cutoff = formatMinutesAsClockTime(SAME_DAY_ORDER_CUTOFF_MIN);
   const window = `${formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN)}–${formatMinutesAsClockTime(DELIVERY_WINDOW_END_MIN)}`;
+  const shopHref = catalogHref ?? `/${lang}/catalog`;
+  const title = copy?.title ?? t.title;
+  const timingTitle = copy?.timingTitle ?? t.sameDayTitle;
+  const timingNote = copy?.timingNote ?? fillDeliveryTimePlaceholders(t.sameDayNote);
+  const showCutoffWindow = copy?.showCutoffWindow ?? true;
+  const methodText = copy?.methodText ?? t.methodText;
+  const showLocalCourierBrands = copy?.showLocalCourierBrands ?? true;
+  const areasTitle = copy?.areasTitle ?? t.areasTitle;
+  const areasIntro = copy?.areasIntro ?? t.areasIntro;
 
   return (
     <section
@@ -87,7 +105,7 @@ export function DeliverySection({ lang }: { lang: Locale }) {
             id="home-delivery-title"
             className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-white leading-tight text-balance drop-shadow-sm"
           >
-            {t.title}
+            {title}
           </h2>
         </div>
 
@@ -98,10 +116,11 @@ export function DeliverySection({ lang }: { lang: Locale }) {
                 <StorefrontIcon name="schedule" size={22} />
               </div>
               <h3 className="font-[family-name:var(--font-family-display)] text-2xl sm:text-3xl text-[#1A3C34] leading-snug">
-                {t.sameDayTitle}
+                {timingTitle}
               </h3>
             </div>
 
+            {showCutoffWindow ? (
             <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#3d524c] mb-1">
@@ -120,10 +139,11 @@ export function DeliverySection({ lang }: { lang: Locale }) {
                 </p>
               </div>
             </div>
+            ) : null}
 
-            <div className="border-t border-[#1A3C34]/15 pt-3">
+            <div className={`${showCutoffWindow ? 'border-t border-[#1A3C34]/15 pt-3' : ''}`.trim()}>
               <p className="text-sm text-[#1A3C34] leading-relaxed">
-                {fillDeliveryTimePlaceholders(t.sameDayNote)}
+                {timingNote}
               </p>
             </div>
           </div>
@@ -133,19 +153,21 @@ export function DeliverySection({ lang }: { lang: Locale }) {
               {t.methodTitle}
             </p>
             <div className="flex flex-wrap items-center gap-3">
+              {showLocalCourierBrands ? (
               <div className="flex items-center gap-2 shrink-0">
                 <RedCarChip />
                 <GrabChip />
               </div>
+              ) : null}
               <p className="text-sm text-[#1A3C34] leading-relaxed min-w-0 flex-1 basis-[12rem]">
-                {t.methodText}
+                {methodText}
               </p>
             </div>
           </div>
 
           <div className="home-reveal-item flex flex-col gap-3 pt-1">
             <Link
-              href={`/${lang}/catalog`}
+              href={shopHref}
               className="inline-flex w-full sm:w-auto items-center justify-center gap-2 self-start rounded-full bg-[#1A3C34] px-7 py-3.5 text-sm font-semibold !text-white hover:!text-white ring-1 ring-white/50 shadow-[0_12px_28px_-14px_rgba(26,60,52,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#234d43] hover:shadow-[0_16px_36px_-16px_rgba(26,60,52,0.75)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059]"
             >
               {t.shopCollectionCta}
@@ -177,10 +199,10 @@ export function DeliverySection({ lang }: { lang: Locale }) {
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-[family-name:var(--font-family-display)] text-lg sm:text-xl text-[#1A3C34] leading-snug mb-1">
-                    {t.areasTitle}
+                    {areasTitle}
                   </h3>
                   <p className="text-[#1A3C34] text-sm leading-relaxed">
-                    {t.areasIntro}{' '}
+                    {areasIntro}{' '}
                     <span className="text-[#3d524c]">{t.areasNote}</span>
                   </p>
                 </div>

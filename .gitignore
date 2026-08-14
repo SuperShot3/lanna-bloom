@@ -34,3 +34,6 @@ yarn-error.log*
 # rendered videos
 *.mp4
 
+# OpenGIS national GeoJSON (generate-once cache; do not commit)
+content/thailand-map/.cache/
+

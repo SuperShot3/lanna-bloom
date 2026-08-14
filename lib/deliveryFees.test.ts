@@ -131,25 +131,35 @@ const otherDisplay = resolveOtherAmphoeFeeDisplay();
 assert(otherDisplay.displayKind === 'driver_confirm', 'other is driver_confirm');
 assert(otherDisplay.feeFrom === getZoneFee('CHIANG_MAI', 'cm-unknown'), 'other estimate = cm-unknown');
 
-assert(CHON_BURI_AMPHOE_MAP_DISTRICTS.length === 1, 'Chon Buri map has Bang Lamung only');
-const bangLamung = CHON_BURI_AMPHOE_MAP_DISTRICTS[0];
-assert(bangLamung.id === 'bang-lamung', 'Bang Lamung id');
-assert(bangLamung.ampCode === '2004', 'Bang Lamung OpenGIS amp_code');
-assert(
-  bangLamung.relatedCheckoutZoneIds?.length === 7,
-  'Bang Lamung nests all 7 Pattaya checkout zones'
+assert(CHON_BURI_AMPHOE_MAP_DISTRICTS.length === 7, 'Chon Buri map has 7 Pattaya areas');
+const pattayaAmpCodes = new Set(CHON_BURI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(pattayaAmpCodes.size === 7, 'each Pattaya area has a unique amp_code');
+for (const d of CHON_BURI_AMPHOE_MAP_DISTRICTS) {
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const display = resolveAmphoeFeeDisplay(d, 'PATTAYA');
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(
+    display.feeFrom === getZoneFee('PATTAYA', d.checkoutZoneId!),
+    `${d.id} fee matches Pattaya zone`
+  );
+}
+const centralDisplay = resolveAmphoeFeeDisplay(
+  CHON_BURI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'central-pattaya')!,
+  'PATTAYA'
 );
-const bangDisplay = resolveAmphoeFeeDisplay(bangLamung, 'PATTAYA');
-assert(bangDisplay.displayKind === 'checkout', 'Bang Lamung is checkout-backed');
-assert(bangDisplay.feeFrom === 250, 'Bang Lamung feeFrom = 250');
-assert(bangDisplay.feeTo === 350, 'Bang Lamung feeTo = 350');
-assert(bangDisplay.primaryFee === 250, 'Bang Lamung primaryFee = min Pattaya zone');
+const naJomtienDisplay = resolveAmphoeFeeDisplay(
+  CHON_BURI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'na-jomtien')!,
+  'PATTAYA'
+);
+assert(centralDisplay.feeFrom === 250, 'Central Pattaya feeFrom = 250');
+assert(naJomtienDisplay.feeFrom === 350, 'Na Jomtien feeFrom = 350');
 
 const pattayaDrill = getAmphoeDrillItems('chon-buri', 'en');
-assert(pattayaDrill.length === 1, 'Chon Buri drill has Bang Lamung only');
-assert(pattayaDrill[0].subAreas.length === 7, 'nested Pattaya checkout zones');
-assert(pattayaDrill[0].feeLabel.includes('250'), 'Pattaya drill fee includes 250');
-assert(pattayaDrill[0].feeLabel.includes('350'), 'Pattaya drill fee includes 350');
+assert(pattayaDrill.length === 7, 'Chon Buri drill has 7 Pattaya areas');
+assert(
+  pattayaDrill.every((d) => d.subAreas.length === 0),
+  'Pattaya areas are first-class map districts, not nested rows'
+);
 
 const lamphunDrill = getAmphoeDrillItems('lamphun', 'en');
 assert(lamphunDrill.length === 8, 'Lamphun drill has 8 amphoes');

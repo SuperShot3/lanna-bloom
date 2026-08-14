@@ -57,7 +57,8 @@ const THAILAND_CENTER: [number, number] = [13.5, 101.0];
 const DEFAULT_ZOOM = 5.6;
 const MIN_ZOOM = 5;
 const MAX_ZOOM = 13;
-const AMPHOE_FOCUS_ZOOM = 9;
+const AMPHOE_FOCUS_MAX_ZOOM = 12;
+const AMPHOE_PROVINCE_BOUNDS_PAD = 0.4;
 
 type TopologyLike = {
   type: string;
@@ -83,6 +84,7 @@ type LeafletMapLike = {
   setMaxBounds: (bounds: unknown) => void;
   setMinZoom: (zoom: number) => void;
   getBoundsZoom: (bounds: unknown, inside?: boolean) => number;
+  getZoom: () => number;
   stop: () => void;
   options: { maxBoundsViscosity?: number };
 };
@@ -162,9 +164,23 @@ function MapInner({
   function applySoftMaxBounds(map: LeafletMapLike, padRatio: number) {
     const bounds = thailandBoundsRef.current;
     if (!bounds?.isValid()) return;
-    // Generous pad avoids north-border amphoes fighting maxBounds (which forced zoom-out).
     map.setMaxBounds(bounds.pad(padRatio));
     map.options.maxBoundsViscosity = 0.6;
+  }
+
+  function clearMaxBounds(map: LeafletMapLike) {
+    map.setMaxBounds(null);
+    map.options.maxBoundsViscosity = 0;
+  }
+
+  function applyAmphoeProvinceMaxBounds(
+    map: LeafletMapLike,
+    collection: FeatureCollection<Geometry, AmphoeFeatureProps>
+  ) {
+    const bounds = L.geoJSON(collection).getBounds() as LeafletBounds;
+    if (!bounds?.isValid()) return;
+    map.setMaxBounds(bounds.pad(AMPHOE_PROVINCE_BOUNDS_PAD));
+    map.options.maxBoundsViscosity = 0.4;
   }
 
   function ZoomButtons() {
@@ -243,11 +259,17 @@ function MapInner({
       }
 
       didInitRef.current = true;
-      applySoftMaxBounds(map, 0.55);
 
       if (nextKey.startsWith('amphoe:') && selectedAmphoeId && amphoeGeojson) {
+        const abortAmphoeFocus = () => {
+          cameraKeyRef.current = '';
+        };
+
         const district = amphoeDistricts.find((d) => d.id === selectedAmphoeId);
-        if (!district) return;
+        if (!district) {
+          abortAmphoeFocus();
+          return;
+        }
 
         const live = amphoeLayerById.current.get(selectedAmphoeId)?.getBounds?.();
         let bounds = live && live.isValid() ? live : null;
@@ -255,15 +277,34 @@ function MapInner({
           const feature = amphoeGeojson.features.find(
             (f) => String(f.properties?.amp_code ?? '') === district.ampCode
           );
-          if (!feature) return;
+          if (!feature) {
+            abortAmphoeFocus();
+            return;
+          }
           bounds = L.geoJSON(feature).getBounds() as LeafletBounds;
         }
-        if (!bounds.isValid()) return;
+        if (!bounds.isValid()) {
+          abortAmphoeFocus();
+          return;
+        }
 
+        // Country maxBounds pulls northern amphoes farther out — unlock first.
+        clearMaxBounds(map);
+
+        const padded = bounds.pad(0.08);
+        const fittedZoom = map.getBoundsZoom(padded as never, false);
+        const currentZoom = map.getZoom();
+        const targetZoom = Math.min(
+          AMPHOE_FOCUS_MAX_ZOOM,
+          Math.max(Number.isFinite(fittedZoom) ? fittedZoom : currentZoom, currentZoom)
+        );
         const center = bounds.getCenter();
-        map.setView([center.lat, center.lng], AMPHOE_FOCUS_ZOOM, { animate: true });
+        map.setView([center.lat, center.lng], targetZoom, { animate: true });
+        applyAmphoeProvinceMaxBounds(map, amphoeGeojson);
         return;
       }
+
+      applySoftMaxBounds(map, 0.55);
 
       if (nextKey.startsWith('amphoes:') && amphoeGeojson) {
         const amphoeBounds = L.geoJSON(amphoeGeojson).getBounds() as LeafletBounds;

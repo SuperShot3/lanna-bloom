@@ -649,11 +649,13 @@ export async function getBouquetsFilteredFromCatalog(params: CatalogFilterParams
 
 
 
-async function getOrderedPopularBouquetsFromCatalog(): Promise<Bouquet[]> {
+async function getOrderedPopularBouquetsFromCatalog(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<Bouquet[]> {
 
   const bouquets = (await getApprovedBouquets()).filter((b) =>
 
-    bouquetIsAvailableForDestination(b, 'CHIANG_MAI')
+    bouquetIsAvailableForDestination(b, catalogDestination)
 
   );
 
@@ -663,12 +665,14 @@ async function getOrderedPopularBouquetsFromCatalog(): Promise<Bouquet[]> {
 
 
 
-async function getFeaturedPopularBouquetsFromCatalog(): Promise<Bouquet[]> {
+async function getFeaturedPopularBouquetsFromCatalog(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<Bouquet[]> {
 
   const bouquets = (await getApprovedBouquets()).filter(
     (b) =>
       b.featuredPopular === true &&
-      bouquetIsAvailableForDestination(b, 'CHIANG_MAI')
+      bouquetIsAvailableForDestination(b, catalogDestination)
   );
 
   return orderPopularBouquetsWithFeaturedFirst(bouquets);
@@ -681,11 +685,13 @@ export async function getPopularBouquetsFromCatalogPaginated(
 
   start: number,
 
-  limit: number
+  limit: number,
+
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 
 ): Promise<Bouquet[]> {
 
-  const ordered = await getFeaturedPopularBouquetsFromCatalog();
+  const ordered = await getFeaturedPopularBouquetsFromCatalog(catalogDestination);
 
   const safeStart = Math.max(0, start);
 
@@ -715,9 +721,11 @@ const HOME_FLOWER_TYPE_SECTION_LIMIT = 6;
 /** Curated homepage flower-type order — not the full storefront facet list. */
 const HOME_FLOWER_TYPE_SECTION_ORDER = ['lily', 'rose', 'sunflower', 'orchid'] as const;
 
-export async function getHomeFlowerTypeSectionsFromCatalog(): Promise<HomeFlowerTypeSection[]> {
+export async function getHomeFlowerTypeSectionsFromCatalog(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<HomeFlowerTypeSection[]> {
 
-  const ordered = await getOrderedPopularBouquetsFromCatalog();
+  const ordered = await getOrderedPopularBouquetsFromCatalog(catalogDestination);
 
   const allowedTypes = HOME_FLOWER_TYPE_SECTION_ORDER.filter((type) =>
     (STOREFRONT_FLOWER_TYPES as readonly string[]).includes(type)
@@ -745,8 +753,10 @@ export async function getHomeFlowerTypeSectionsFromCatalog(): Promise<HomeFlower
 
 export type { HomeFlowerTypeTile };
 
-export async function getHomeFlowerTypeTilesFromCatalog(): Promise<HomeFlowerTypeTile[]> {
-  const ordered = await getOrderedPopularBouquetsFromCatalog();
+export async function getHomeFlowerTypeTilesFromCatalog(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<HomeFlowerTypeTile[]> {
+  const ordered = await getOrderedPopularBouquetsFromCatalog(catalogDestination);
   return pickHomeFlowerTypeTiles(ordered, Date.now());
 }
 

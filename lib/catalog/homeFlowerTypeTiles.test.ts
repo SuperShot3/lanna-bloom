@@ -59,4 +59,17 @@ const later = pickHomeFlowerTypeTiles(
 );
 assert.equal(later[0].imageUrl, PHOTO_B);
 
+const destinationFiltered = pickHomeFlowerTypeTiles(
+  [
+    bouquet({ id: 'rose-a', flowerTypes: ['rose'], images: [PHOTO_A] }),
+    bouquet({ id: 'lily-excluded', flowerTypes: ['lily'], images: [PLACEHOLDER] }),
+  ],
+  0
+);
+assert.deepEqual(
+  destinationFiltered.map((tile) => tile.type),
+  ['rose'],
+  'types with no storefront-safe photo (or none available for a destination) are omitted'
+);
+
 console.log('homeFlowerTypeTiles.test.ts: ok');

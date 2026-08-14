@@ -12,6 +12,14 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
+import {
+  isExpansionDestination,
+  type DeliveryDestinationId,
+} from '@/lib/delivery/markets';
+import {
+  categoryAllowed,
+  type ShopAccessProvince,
+} from '@/lib/provinces/shopAccess';
 
 const BouquetCard = dynamic(
   () => import('@/components/BouquetCard').then((m) => m.BouquetCard),
@@ -98,19 +106,38 @@ function ProductFeedRow({
   );
 }
 
-export async function PopularSection({ lang }: { lang: Locale }) {
+export async function PopularSection({
+  lang,
+  destinationId = 'CHIANG_MAI',
+  catalogHref,
+  province,
+}: {
+  lang: Locale;
+  destinationId?: DeliveryDestinationId;
+  /** Catalog listing path, e.g. `/en/catalog` or `/en/catalog/pattaya`. */
+  catalogHref?: string;
+  province?: ShopAccessProvince | null;
+}) {
+  const catalogBase = catalogHref ?? `/${lang}/catalog`;
+  const expansion = isExpansionDestination(destinationId);
+  const allowedProductSections = HOME_PRODUCT_SECTIONS.filter((section) =>
+    categoryAllowed(province ?? null, section.categoryKey, {
+      isExpansionDestination: expansion,
+    })
+  );
+
   const [popularBouquets, flowerTypeTiles, sections, productSectionResults] = await Promise.all([
-    getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT),
-    getCatalogHomeFlowerTypeTiles(),
-    getCatalogHomeFlowerTypeSections(),
+    getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT, destinationId),
+    getCatalogHomeFlowerTypeTiles(destinationId),
+    getCatalogHomeFlowerTypeSections(destinationId),
     Promise.all(
-      HOME_PRODUCT_SECTIONS.map(async (section) => ({
+      allowedProductSections.map(async (section) => ({
         ...section,
         products: (
           await getCatalogProductsFiltered({
             categoryKey: section.categoryKey,
             sort: 'newest',
-            catalogDeliveryDestination: 'CHIANG_MAI',
+            catalogDeliveryDestination: destinationId,
           })
         ).slice(0, HOME_PRODUCT_SECTION_LIMIT),
       }))
@@ -150,12 +177,12 @@ export async function PopularSection({ lang }: { lang: Locale }) {
                 ))}
               </div>
             </div>
-            <ShowMoreLink href={`/${lang}/catalog`} label={tHome.showMore} />
+            <ShowMoreLink href={catalogBase} label={tHome.showMore} />
           </div>
         )}
-        <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} />
+        <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} catalogHref={catalogBase} />
         {sections.map((section) => {
-          const catalogHref = `/${lang}/catalog${buildCatalogSearchString({ types: [section.type] })}`;
+          const sectionCatalogHref = `${catalogBase}${buildCatalogSearchString({ types: [section.type] })}`;
           const titleTemplate = section.pottedOnly
             ? tHome.flowerTypeSectionTitlePotted
             : tHome.flowerTypeSectionTitle;
@@ -183,7 +210,7 @@ export async function PopularSection({ lang }: { lang: Locale }) {
                   ))}
                 </div>
               </div>
-              <ShowMoreLink href={catalogHref} label={tHome.showMore} />
+              <ShowMoreLink href={sectionCatalogHref} label={tHome.showMore} />
             </div>
           );
         })}
@@ -191,7 +218,7 @@ export async function PopularSection({ lang }: { lang: Locale }) {
           <ProductFeedRow
             key={section.categoryKey}
             title={tHome[section.titleKey]}
-            href={`/${lang}/catalog${buildCatalogSearchString({ topCategory: section.categoryKey })}`}
+            href={`${catalogBase}${buildCatalogSearchString({ topCategory: section.categoryKey })}`}
             products={section.products}
             lang={lang}
             showMoreLabel={tHome.showMore}

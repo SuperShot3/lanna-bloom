@@ -3,7 +3,8 @@ name: add-thailand-province
 description: >-
   Open or activate a Thai province on Lanna Bloom (status-only, orderable market,
   or amphoe map drill-down). Use when adding a province, wiring destination/zones/nav,
-  enabling catalog access, or extending amphoe coverage beyond Chiang Mai.
+  enabling catalog access, extending amphoe coverage beyond Chiang Mai, or mapping
+  a city market (every checkout area must be a clickable polygon).
 ---
 
 # Add Thailand Province
@@ -34,7 +35,7 @@ npm run validate:province -- <province_code> --amphoe
 | **B — Orderable market** | Customers can shop via destination + fees + nav/SEO | Yes | Then status/catalog in admin |
 | **C — Amphoe map** | District polygons + fees on coverage map | Yes (generalize CM-only gates) | Status colors still from admin |
 
-Most new opens are **A then B**. Use **C** when amphoe drill-down is required (today: Chiang Mai + Lamphun).
+Most new opens are **A then B**. Use **C** when amphoe drill-down is required (today: Chiang Mai, Lamphun, Chon Buri / Pattaya).
 
 ## Out of scope (never do unless explicitly approved)
 
@@ -78,15 +79,32 @@ Edit in this order:
 ## Tier C — Amphoe map drill-down
 
 1. Complete Tier B for checkout fees first (amphoe fills derive from zones).
-2. Filter OpenGIS districts by province `pro_code` → `content/thailand-map/{province}-amphoes.topojson` (see [`content/thailand-map/README.md`](../../../content/thailand-map/README.md)).
-3. Add `/api/maps/...-amphoes` route (mirror Chiang Mai / Lamphun).
-4. Add amphoe metadata + `ampCode` join (mirror [`lamphunAmphoeMapData.ts`](../../../lib/delivery/lamphunAmphoeMapData.ts) / [`amphoeMapData.ts`](../../../lib/delivery/amphoeMapData.ts)).
+2. Generate amphoe TopoJSON **once** from OpenGIS (see **OpenGIS generate-once** below) → commit `content/thailand-map/{province}-amphoes.topojson` (see [`content/thailand-map/README.md`](../../../content/thailand-map/README.md)).
+3. Add `/api/maps/...-amphoes` route that **serves the committed TopoJSON** (mirror Chiang Mai / Lamphun / Chon Buri). Never fetch OpenGIS at runtime.
+4. Add amphoe metadata + `ampCode` join (mirror [`lamphunAmphoeMapData.ts`](../../../lib/delivery/lamphunAmphoeMapData.ts) / [`chonBuriAmphoeMapData.ts`](../../../lib/delivery/chonBuriAmphoeMapData.ts) / [`amphoeMapData.ts`](../../../lib/delivery/amphoeMapData.ts)).
 5. Register the province in [`lib/delivery/amphoeProvinces.ts`](../../../lib/delivery/amphoeProvinces.ts) (shared gates — do **not** hard-code a single province in the map).
 6. Wire fee display via [`amphoeDisplayFees.ts`](../../../lib/delivery/amphoeDisplayFees.ts) with the correct `destinationId`.
 7. Keep `mode="admin"` working: amphoe click must not clear province selection used by the admin edit form.
-8. Coverage page: amphoe name list for SEO must match metadata (see Tier B step 6).
+8. Coverage page: one pill list from the same district helper as map metadata (see Tier B step 6). Do **not** add a second neighborhood list that duplicates checkout zones.
 9. Run `npm run validate:province -- <code> --amphoe`.
-10. Regression: Chiang Mai **and** existing amphoe provinces (e.g. Lamphun) hover, select, zoom, list sync on public page.
+10. Regression: Chiang Mai, Lamphun, and Chon Buri (Pattaya) hover, select, zoom, list sync on public page.
+
+### City markets (required)
+
+Some destinations are a **city market**, not a full-province amphoe map (example: Pattaya → province `chon-buri`, destination `PATTAYA`). Tier C still applies, with these extra rules:
+
+- **Every checkout zone** in `ZONES_BY_DESTINATION` must be a first-class map district: **one clickable polygon + one side-list row**. Match Lamphun UX.
+- Do **not** ship one parent amphoe blob (e.g. Bang Lamung) with nested non-clickable neighborhood text.
+- `relatedCheckoutZoneIds` is for **Chiang Mai Mueang only**. It is not a substitute for missing polygons.
+- Coverage pills must come from the map district helper (e.g. `getPattayaDeliveryDistricts`), not a second neighborhood helper.
+- Do not map the rest of the province unless that market actually delivers there (Pattaya: no Si Racha / Mueang Chon Buri / rest of Sattahip).
+
+### OpenGIS generate-once
+
+- OpenGIS national `districts.geojson` / `subdistricts.geojson` is **generation-only**.
+- Download once into `content/thailand-map/.cache/` (gitignored). Reuse the cache; do not re-download on every generation.
+- Filter by `pro_code`, simplify with Mapshaper, commit **only** `{province}-amphoes.topojson`.
+- Do **not** commit the national GeoJSON. Live map APIs read the committed TopoJSON only.
 
 ---
 
@@ -113,4 +131,5 @@ After map UX changes, verify **both** admin map selection and public coverage pa
 - Chiang Mai behavior unchanged unless Tier C intentionally touches shared gates.
 - Customer messaging matches real service level (no false same-day).
 - `/en/delivery-areas-thailand` lists the province under **Currently shoppable provinces** (via `listShoppableCoverageAreas`), shows amphoe/locality names when required, and places the **shop CTA inside the province section** (not the hero).
+- City markets: every checkout zone is clickable on the map and listed once (no parent-amphoe + nested neighborhoods).
 - User knows which remaining steps are **admin-only**.

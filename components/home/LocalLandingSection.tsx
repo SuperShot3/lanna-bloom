@@ -1,13 +1,27 @@
 import Link from 'next/link';
 import { translations, type Locale } from '@/lib/i18n';
 import { StorefrontIcon } from '@/components/icons';
+import type { MarketLocalCopy } from '@/lib/landingPages/marketHomeLanding';
 
 /**
- * Concise Chiang Mai context for the homepage's primary local search intent.
+ * Concise local context for the homepage / market landing.
  * Operational details live in DeliverySection, the FAQ, and dedicated guides.
  */
-export function LocalLandingSection({ lang }: { lang: Locale }) {
+export function LocalLandingSection({
+  lang,
+  catalogHref,
+  copy,
+}: {
+  lang: Locale;
+  catalogHref?: string;
+  copy?: MarketLocalCopy;
+}) {
   const t = translations[lang].homeLanding.local;
+  const eyebrow = copy?.eyebrow ?? t.eyebrow;
+  const title = copy?.title ?? t.title;
+  const intro = copy?.intro ?? t.intro;
+  const areasTitle = copy?.areasTitle ?? t.areasTitle;
+  const areasP1 = copy?.areasP1 ?? t.areasP1;
   const links = [
     {
       href: `/${lang}/delivery-areas-thailand`,
@@ -20,7 +34,7 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
       icon: 'verified' as const,
     },
     {
-      href: `/${lang}/catalog`,
+      href: catalogHref ?? `/${lang}/catalog`,
       label: t.browseCatalogLink,
       icon: 'local-florist' as const,
     },
@@ -35,15 +49,15 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="home-reveal-item mb-8 md:mb-10 max-w-3xl">
           <p className="text-xs font-semibold tracking-[0.22em] uppercase text-[#C5A059] mb-3">
-            {t.eyebrow}
+            {eyebrow}
           </p>
           <h2
             id="home-local-landing-title"
             className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-4 leading-tight"
           >
-            {t.title}
+            {title}
           </h2>
-          <p className="text-stone-600 leading-relaxed">{t.intro}</p>
+          <p className="text-stone-600 leading-relaxed">{intro}</p>
         </div>
 
         <div className="home-reveal-stagger grid gap-4 md:grid-cols-2 max-w-4xl">
@@ -55,9 +69,9 @@ export function LocalLandingSection({ lang }: { lang: Locale }) {
           </article>
           <article className="home-reveal-item rounded-2xl border border-stone-200 bg-stone-50/70 p-5 sm:p-6">
             <h3 className="font-[family-name:var(--font-family-display)] text-xl text-[#1A3C34] mb-2 leading-snug">
-              {t.areasTitle}
+              {areasTitle}
             </h3>
-            <p className="text-stone-500 text-sm sm:text-base leading-relaxed">{t.areasP1}</p>
+            <p className="text-stone-500 text-sm sm:text-base leading-relaxed">{areasP1}</p>
           </article>
         </div>
 

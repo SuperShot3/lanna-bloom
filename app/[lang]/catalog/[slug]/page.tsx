@@ -28,7 +28,6 @@ import {
   buildMarketCatalogHref,
   buildMarketHomeHref,
 } from '@/lib/delivery/marketRoute';
-import { getBouquetDisplayReviewStats } from '@/lib/productDisplayReviews';
 import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
 
 // Revalidate product pages every 60 seconds so catalog updates appear without rebuild
@@ -120,7 +119,6 @@ export default async function ProductPage({
 
   const bouquet = await getCatalogBouquetBySlug(params.slug);
   if (bouquet) {
-    const reviewStats = getBouquetDisplayReviewStats(bouquet.id);
     const gifts = await getCatalogProductsFiltered({ categoryKey: 'gifts' });
     const similarBouquets = await getCatalogSimilarBouquets(bouquet, 3);
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
@@ -157,8 +155,6 @@ export default async function ProductPage({
               description={description}
               compositionHeading={t.composition}
               compositionText={composition}
-              reviewAverage={reviewStats.average}
-              reviewCount={reviewStats.count}
               gifts={gifts}
             />
           </div>

@@ -132,7 +132,7 @@ const baseTranslations = {
       cta: 'Choose a bouquet',
       trustLine: 'Same-Day Flower Delivery in {city}',
       badge: 'Flower delivery in Chiang Mai, Thailand',
-      headlineNew: 'Buy Flowers Online in Chiang Mai',
+      headlineNew: 'Buy Flowers Online in {city}',
       headlineAccent: '',
       sublineNew:
         'Choose a bouquet with a clear price, select the delivery date, add your personal message, and pay securely by card—even when ordering from abroad. We deliver locally to homes, hotels, condos, hospitals, and villas across {city}.',
@@ -153,6 +153,10 @@ const baseTranslations = {
       expressArea: 'Inner City',
       availableNow: 'Available Now',
       avgDelivery: 'Same-day available',
+      nextDayDelivery: 'Next-day delivery',
+      nextDayAvailable: 'Next-day available',
+      preorderDelivery: 'Advance order',
+      preorderAvailable: 'Order ahead',
     },
     home: {
       popularTitle: 'Popular picks',
@@ -372,6 +376,9 @@ const baseTranslations = {
       discountAria: 'On sale — {percent}% off',
       handCraftedBy: 'Hand-crafted by',
       handCraftedByPartner: 'Hand-crafted by local partner',
+      factHandTied: 'Hand-tied',
+      factFresh: 'Fresh',
+      soldCount: '{count} sold',
       filterDelivery: 'Delivery',
       filterFormat: 'Format',
       filterStemBucket: 'Size / stems',
@@ -1550,7 +1557,10 @@ const baseTranslations = {
       delivery: {
         eyebrow: 'Delivery',
         title: 'Order Flowers Online — Delivered Across Chiang Mai',
+        titleMarket: 'Order Flowers Online — Delivered Across {city}',
         sameDayTitle: 'Same-day delivery',
+        nextDayTitle: 'Next-day delivery',
+        preorderTitle: 'Advance order',
         sameDayText:
           'Same-day orders are accepted until {cutoff} Thailand time, subject to flower and delivery availability. Delivery may take place after {cutoff}. Working delivery hours are {start}–{end}; if same-day delivery is not possible, we will contact you to confirm the next available option.',
         cutoffTag: 'Order before',
@@ -1558,9 +1568,16 @@ const baseTranslations = {
         methodTitle: 'How we deliver',
         methodText:
           'Delivery is arranged by Red Car or Grab, depending on the address, bouquet size, and availability.',
+        methodTextLocal:
+          'Delivery is arranged by a local courier, depending on the address, bouquet size, and availability.',
         areasTitle: 'Chiang Mai delivery areas',
+        areasTitleMarket: '{city} delivery areas',
         areasIntro:
           'We deliver across Chiang Mai city and nearby districts — from the Old City and Nimman to Hang Dong, Mae Rim, and beyond.',
+        areasIntroNamed:
+          'We deliver across {city} — including {areas}.',
+        areasIntroGeneric:
+          'We deliver across {city}. Coverage depends on the address and is confirmed at checkout.',
         areasNote: 'Delivery fees are calculated by zone at checkout.',
         policyCta: 'Read our delivery policy',
         refundCta: 'Refund & replacement policy',
@@ -1569,6 +1586,10 @@ const baseTranslations = {
         shopCollectionCta: 'Shop the Collection',
         sameDayNote:
           'Accepting orders until {cutoff} Thailand time, subject to availability.',
+        nextDayNote:
+          'Same-day delivery is not available here. Next-day delivery is arranged during working hours {start}–{end} Thailand time, subject to flower and courier availability.',
+        preorderNote:
+          'This area is advance-order only. Choose an available delivery date at checkout; we will confirm timing with you.',
       },
       whyUs: {
         eyebrow: 'Why us',
@@ -1590,8 +1611,10 @@ const baseTranslations = {
       faq: {
         eyebrow: 'FAQ',
         subtitle: 'Everything about ordering, payment, and delivery in Chiang Mai.',
+        subtitleMarket: 'Everything about ordering, payment, and delivery in {city}.',
         contactCta: 'Still have a question? Contact us',
         title: 'Chiang Mai Flower Delivery FAQ',
+        titleMarket: '{city} Flower Delivery FAQ',
         items: [
           {
             q: 'How do I order flowers online in Chiang Mai?',
@@ -1638,6 +1661,64 @@ const baseTranslations = {
             a: 'For quality and delivery confirmation, we may take a photo at the delivery location when permitted — for example at reception, with the recipient, or at the door. We avoid capturing sensitive personal details where possible.',
           },
         ],
+        marketOrderItem: {
+          q: 'How do I order flowers online in {city}?',
+          a: 'Browse the catalog, choose a bouquet and size, add it to your cart, and complete secure checkout with your delivery address, date, and message card. You will receive a confirmation after payment.',
+        },
+        marketSameDayItem: {
+          q: 'Do you offer same-day flower delivery in {city}?',
+          a: 'Yes, subject to cutoff and availability. Same-day orders are accepted until {cutoff} Thailand time. Delivery may take place after {cutoff}. Working delivery hours are {start}–{end}; if same-day delivery is not possible, we will contact you to confirm the next available option.',
+        },
+        marketNextDayItem: {
+          q: 'How soon can you deliver flowers in {city}?',
+          a: 'Next-day delivery is available. Same-day delivery is not offered in {city}. Choose an available date at checkout; working delivery hours are {start}–{end} Thailand time.',
+        },
+        marketPreorderItem: {
+          q: 'How soon can you deliver flowers in {city}?',
+          a: '{city} is advance-order only. Choose an available delivery date at checkout and we will confirm timing with you.',
+        },
+        marketAreasNamed: {
+          q: 'Which areas of {city} do you deliver to?',
+          a: 'We deliver across {city} — including {areas}. The delivery fee is shown by zone at checkout.',
+        },
+        marketAreasGeneric: {
+          q: 'Which areas of {city} do you deliver to?',
+          a: 'We deliver across {city}. Coverage depends on the address and is confirmed at checkout, where the delivery fee is shown by zone.',
+        },
+        marketSharedItems: [
+          {
+            q: 'What payment methods do you accept?',
+            a: 'Pay securely at checkout with Visa, Mastercard, American Express, and other international cards through Stripe. Apple Pay and Google Pay are available where supported. PromptPay may also appear for eligible THB payments in a Thai banking app.',
+          },
+          {
+            q: 'Can I include a message card with my flowers?',
+            a: 'Yes. A message card is included — write your personal message during checkout and we deliver it with the bouquet.',
+          },
+          {
+            q: 'What happens if a flower is out of season?',
+            a: 'If a substitution is needed due to availability, we keep the same overall style, similar colors where possible, and the same or higher value.',
+          },
+          {
+            q: 'Can you deliver flowers to a hotel, condo, hospital, or villa?',
+            a: 'Yes. Add the recipient name, place name (hotel, condo, hospital, or villa), and a phone number at checkout — our courier coordinates with reception, the ward desk, or the juristic office on arrival.',
+          },
+          {
+            q: 'Can I order flowers in {city} from another country?',
+            a: 'Yes. Pay securely by card through Stripe checkout (Apple Pay and Google Pay where supported). A local florist prepares and delivers in {city} — you do not need a Thai bank account.',
+          },
+          {
+            q: 'How do I share the delivery location with a Google Maps pin?',
+            a: 'At checkout you can paste a Google Maps share link or pin for the exact drop-off. Include the recipient’s phone number so the courier can confirm access at hotels, gated residences, or offices.',
+          },
+          {
+            q: 'What if flowers arrive damaged?',
+            a: 'Contact us promptly with photos. We follow our refund and replacement policy for damaged or wilted flowers after delivery.',
+          },
+          {
+            q: 'Will I receive a photo when the flowers are delivered?',
+            a: 'For quality and delivery confirmation, we may take a photo at the delivery location when permitted — for example at reception, with the recipient, or at the door. We avoid capturing sensitive personal details where possible.',
+          },
+        ],
       },
       explore: {
         eyebrow: 'Discover',
@@ -1658,14 +1739,22 @@ const baseTranslations = {
       local: {
         eyebrow: 'Chiang Mai',
         title: 'Flower Delivery in Chiang Mai',
+        titleMarket: 'Flower Delivery in {city}',
         intro:
           'Order fresh bouquets online for delivery across Chiang Mai. Our local florists serve residents, visitors, and people sending gifts from elsewhere, with secure checkout available in English or Thai.',
+        introMarket:
+          'Order fresh bouquets online for delivery across {city}. Local florists serve residents, visitors, and people sending gifts from elsewhere, with secure checkout available in English or Thai.',
         venuesTitle: 'Delivery to homes, hotels, and condos',
         venuesP1:
           'Add the recipient’s full name, venue or building name, phone number, and a Google Maps pin when helpful. These details let the courier coordinate with hotel reception, condo staff, or gated-community security.',
         areasTitle: 'Across Chiang Mai and nearby districts',
+        areasTitleMarket: 'Across {city}',
         areasP1:
           'We regularly serve the Old City, Nimman, Suthep, Hang Dong, Mae Rim, San Sai, and surrounding districts. Delivery fees are calculated by zone and shown at checkout.',
+        areasP1Named:
+          'We regularly serve {areas}. Delivery fees are calculated by zone and shown at checkout.',
+        areasP1Generic:
+          'We deliver across {city}. Delivery fees are calculated by zone and shown at checkout.',
         relatedLinksLabel: 'Helpful delivery links',
         deliveryAreasLink: 'View delivery areas and fees',
         abroadLink: 'Send flowers to Thailand from abroad',
@@ -1795,7 +1884,7 @@ const baseTranslations = {
       cta: 'เลือกช่อดอกไม้',
       trustLine: 'จัดส่งดอกไม้วันเดียวใน{city}',
       badge: 'ส่งดอกไม้ในเชียงใหม่ ประเทศไทย',
-      headlineNew: 'ซื้อดอกไม้ออนไลน์ในเชียงใหม่',
+      headlineNew: 'ซื้อดอกไม้ออนไลน์ใน{city}',
       headlineAccent: '',
       sublineNew:
         'เลือกช่อดอกไม้พร้อมราคาชัดเจน เลือกวันจัดส่ง เพิ่มข้อความส่วนตัว และชำระด้วยบัตรอย่างปลอดภัย — รวมถึงเมื่อสั่งจากต่างประเทศ เราจัดส่งในพื้นที่ถึงบ้าน โรงแรม คอนโด โรงพยาบาล และวิลล่าทั่ว{city}',
@@ -1816,6 +1905,10 @@ const baseTranslations = {
       expressArea: 'ในเขตเมือง',
       availableNow: 'พร้อมบริการ',
       avgDelivery: 'จัดส่งวันเดียวได้',
+      nextDayDelivery: 'จัดส่งวันถัดไป',
+      nextDayAvailable: 'จัดส่งวันถัดไปได้',
+      preorderDelivery: 'สั่งล่วงหน้า',
+      preorderAvailable: 'สั่งล่วงหน้าได้',
     },
     home: {
       popularTitle: 'สินค้ายอดนิยม',
@@ -2031,6 +2124,9 @@ const baseTranslations = {
       discountAria: 'ลดราคา {percent}%',
       handCraftedBy: 'ทำด้วยมือโดย',
       handCraftedByPartner: 'ทำด้วยมือโดยพาร์ทเนอร์ท้องถิ่น',
+      factHandTied: 'จัดมือ',
+      factFresh: 'ดอกไม้สด',
+      soldCount: 'ขายแล้ว {count}',
       filterDelivery: 'การจัดส่ง',
       filterFormat: 'รูปแบบ',
       filterStemBucket: 'ขนาด / จำนวนดอก',
@@ -3192,7 +3288,10 @@ const baseTranslations = {
       delivery: {
         eyebrow: 'การจัดส่ง',
         title: 'สั่งดอกไม้ออนไลน์ — จัดส่งทั่วเชียงใหม่',
+        titleMarket: 'สั่งดอกไม้ออนไลน์ — จัดส่งทั่ว{city}',
         sameDayTitle: 'จัดส่งภายในวันเดียว',
+        nextDayTitle: 'จัดส่งวันถัดไป',
+        preorderTitle: 'สั่งล่วงหน้า',
         sameDayText:
           'รับออเดอร์จัดส่งวันเดียวถึง {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และการจัดส่ง อาจจัดส่งหลัง {cutoff} น. ได้ เวลาทำการจัดส่งคือ {start}–{end} น. หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด',
         cutoffTag: 'สั่งก่อน',
@@ -3200,9 +3299,16 @@ const baseTranslations = {
         methodTitle: 'วิธีจัดส่งของเรา',
         methodText:
           'จัดส่งด้วยรถยนต์หรือ Grab โดยขึ้นอยู่กับที่อยู่ ขนาดช่อ และความพร้อมของบริการ',
+        methodTextLocal:
+          'จัดส่งโดยพนักงานส่งในพื้นที่ โดยขึ้นอยู่กับที่อยู่ ขนาดช่อ และความพร้อมของบริการ',
         areasTitle: 'พื้นที่จัดส่งในเชียงใหม่',
+        areasTitleMarket: 'พื้นที่จัดส่งใน{city}',
         areasIntro:
           'เราจัดส่งทั่วตัวเมืองเชียงใหม่และอำเภอใกล้เคียง — ตั้งแต่คูเมืองและนิมมาน ไปจนถึงหางดง แม่ริม และพื้นที่ใกล้เคียง',
+        areasIntroNamed:
+          'เราจัดส่งทั่ว{city} รวมถึง {areas}',
+        areasIntroGeneric:
+          'เราจัดส่งทั่ว{city} ความครอบคลุมขึ้นกับที่อยู่และยืนยันที่หน้าชำระเงิน',
         areasNote: 'ค่าจัดส่งคำนวณตามโซนที่หน้าชำระเงิน',
         policyCta: 'อ่านนโยบายการจัดส่ง',
         refundCta: 'นโยบายคืนเงินและเปลี่ยนสินค้า',
@@ -3211,6 +3317,10 @@ const baseTranslations = {
         shopCollectionCta: 'เลือกช่อดอกไม้',
         sameDayNote:
           'รับออเดอร์ถึง {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของบริการ',
+        nextDayNote:
+          'พื้นที่นี้ไม่มีบริการจัดส่งวันเดียว จัดส่งวันถัดไปในช่วงเวลาทำการ {start}–{end} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และพนักงานส่ง',
+        preorderNote:
+          'พื้นที่นี้รับเฉพาะการสั่งล่วงหน้า เลือกวันที่จัดส่งได้ที่หน้าชำระเงิน แล้วเราจะยืนยันเวลากับคุณ',
       },
       whyUs: {
         eyebrow: 'ทำไมต้องเรา',
@@ -3232,8 +3342,10 @@ const baseTranslations = {
       faq: {
         eyebrow: 'คำถามที่พบบ่อย',
         subtitle: 'ทุกเรื่องเกี่ยวกับการสั่งซื้อ การชำระเงิน และการจัดส่งในเชียงใหม่',
+        subtitleMarket: 'ทุกเรื่องเกี่ยวกับการสั่งซื้อ การชำระเงิน และการจัดส่งใน{city}',
         contactCta: 'มีคำถามเพิ่มเติม? ติดต่อเรา',
         title: 'คำถามที่พบบ่อย — ส่งดอกไม้เชียงใหม่',
+        titleMarket: 'คำถามที่พบบ่อย — ส่งดอกไม้{city}',
         items: [
           {
             q: 'สั่งดอกไม้ออนไลน์ในเชียงใหม่อย่างไร?',
@@ -3280,6 +3392,64 @@ const baseTranslations = {
             a: 'เพื่อยืนยันคุณภาพและการจัดส่ง เราอาจถ่ายภาพ ณ จุดส่งเมื่อเหมาะสม เช่น ที่รีเซ็ปชัน พร้อมผู้รับ หรือหน้าประตู และจะหลีกเลี่ยงการบันทึกข้อมูลส่วนบุคคลที่ละเอียดอ่อนเมื่อทำได้',
           },
         ],
+        marketOrderItem: {
+          q: 'สั่งดอกไม้ออนไลน์ใน{city}อย่างไร?',
+          a: 'เลือกช่อดอกไม้และขนาดจากแคตตาล็อก ใส่ตะกร้า แล้วชำระเงินอย่างปลอดภัย พร้อมกรอกที่อยู่จัดส่ง วันที่ และข้อความการ์ด ระบบจะยืนยันออเดอร์หลังชำระเงิน',
+        },
+        marketSameDayItem: {
+          q: 'จัดส่งวันเดียวใน{city}ได้ไหม?',
+          a: 'ได้ค่ะ โดยขึ้นกับเวลาตัดออเดอร์และความพร้อม รับออเดอร์จัดส่งวันเดียวถึง {cutoff} น. ตามเวลาไทย อาจจัดส่งหลัง {cutoff} น. ได้ เวลาทำการจัดส่งคือ {start}–{end} น. หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด',
+        },
+        marketNextDayItem: {
+          q: 'ส่งดอกไม้ใน{city}ได้เร็วแค่ไหน?',
+          a: 'มีบริการจัดส่งวันถัดไป พื้นที่{city}ไม่มีบริการจัดส่งวันเดียว เลือกวันที่จัดส่งได้ที่หน้าชำระเงิน เวลาทำการจัดส่งคือ {start}–{end} น. ตามเวลาไทย',
+        },
+        marketPreorderItem: {
+          q: 'ส่งดอกไม้ใน{city}ได้เร็วแค่ไหน?',
+          a: '{city}รับเฉพาะการสั่งล่วงหน้า เลือกวันที่จัดส่งได้ที่หน้าชำระเงิน แล้วเราจะยืนยันเวลากับคุณ',
+        },
+        marketAreasNamed: {
+          q: 'จัดส่งพื้นที่ไหนใน{city}บ้าง?',
+          a: 'เราจัดส่งทั่ว{city} รวมถึง {areas} ค่าจัดส่งแสดงตามโซนที่หน้าชำระเงิน',
+        },
+        marketAreasGeneric: {
+          q: 'จัดส่งพื้นที่ไหนใน{city}บ้าง?',
+          a: 'เราจัดส่งทั่ว{city} ความครอบคลุมขึ้นกับที่อยู่และยืนยันที่หน้าชำระเงิน โดยค่าจัดส่งแสดงตามโซน',
+        },
+        marketSharedItems: [
+          {
+            q: 'รับชำระเงินช่องทางไหนบ้าง?',
+            a: 'ชำระอย่างปลอดภัยที่หน้าชำระเงินด้วย Visa, Mastercard, American Express และบัตรต่างประเทศอื่น ๆ ผ่าน Stripe รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ ส่วน PromptPay อาจแสดงสำหรับการชำระ THB ที่เข้าเงื่อนไขผ่านแอปธนาคารไทย',
+          },
+          {
+            q: 'ใส่การ์ดข้อความได้ไหม?',
+            a: 'ได้ค่ะ มีการ์ดข้อความให้ เขียนข้อความส่วนตัวตอนชำระเงิน เราจะจัดส่งไปพร้อมช่อดอกไม้',
+          },
+          {
+            q: 'ถ้าดอกไม้บางชนิดหมดตามฤดูกาลจะทำอย่างไร?',
+            a: 'หากจำเป็นต้องเปลี่ยนดอกไม้ตามความพร้อม เราจะรักษาสไตล์โดยรวมเดิม โทนสีใกล้เคียงเมื่อทำได้ และมูลค่าเท่าเดิมหรือสูงกว่า',
+          },
+          {
+            q: 'ส่งดอกไม้ไปโรงแรม คอนโด โรงพยาบาล หรือวิลล่าได้ไหม?',
+            a: 'ได้ค่ะ กรอกชื่อผู้รับ ชื่อสถานที่ (โรงแรม คอนโด โรงพยาบาล หรือวิลล่า) และเบอร์โทรตอนชำระเงิน พนักงานส่งจะประสานกับแผนกต้อนรับ เคาน์เตอร์วอร์ด หรือนิติบุคคลเมื่อไปถึง',
+          },
+          {
+            q: 'สั่งดอกไม้ใน{city}จากต่างประเทศได้ไหม?',
+            a: 'ได้ค่ะ ชำระบัตรอย่างปลอดภัยผ่าน Stripe (รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ) ร้านดอกไม้ในพื้นที่จัดช่อและจัดส่งใน{city} — ไม่จำเป็นต้องมีบัญชีธนาคารไทย',
+          },
+          {
+            q: 'แชร์จุดส่งด้วยหมุด Google Maps อย่างไร?',
+            a: 'ตอนชำระเงินสามารถวางลิงก์แชร์หรือหมุด Google Maps ของจุดส่งได้ชัดเจน ใส่เบอร์ผู้รับด้วย เพื่อให้พนักงานส่งยืนยันการเข้าถึงที่โรงแรม ที่พักมีรั้ว หรือสำนักงานได้',
+          },
+          {
+            q: 'ถ้าดอกไม้มาถึงแล้วเสียหายทำอย่างไร?',
+            a: 'ติดต่อเราโดยเร็วพร้อมรูปถ่าย เราดำเนินการตามนโยบายคืนเงินและเปลี่ยนสินค้าสำหรับดอกไม้เสียหายหรือเหี่ยวหลังจัดส่ง',
+          },
+          {
+            q: 'จะได้รับรูปตอนจัดส่งดอกไม้ไหม?',
+            a: 'เพื่อยืนยันคุณภาพและการจัดส่ง เราอาจถ่ายภาพ ณ จุดส่งเมื่อเหมาะสม เช่น ที่รีเซ็ปชัน พร้อมผู้รับ หรือหน้าประตู และจะหลีกเลี่ยงการบันทึกข้อมูลส่วนบุคคลที่ละเอียดอ่อนเมื่อทำได้',
+          },
+        ],
       },
       explore: {
         eyebrow: 'ค้นพบเพิ่มเติม',
@@ -3300,14 +3470,22 @@ const baseTranslations = {
       local: {
         eyebrow: 'เชียงใหม่',
         title: 'ส่งดอกไม้เชียงใหม่',
+        titleMarket: 'ส่งดอกไม้{city}',
         intro:
           'สั่งช่อดอกไม้สดออนไลน์พร้อมจัดส่งทั่วเชียงใหม่ ร้านดอกไม้ท้องถิ่นของเราดูแลทั้งลูกค้าในพื้นที่ นักท่องเที่ยว และผู้ที่ส่งของขวัญมาจากที่อื่น พร้อมหน้าชำระเงินที่ปลอดภัยทั้งภาษาไทยและอังกฤษ',
+        introMarket:
+          'สั่งช่อดอกไม้สดออนไลน์พร้อมจัดส่งทั่ว{city} ร้านดอกไม้ท้องถิ่นดูแลทั้งลูกค้าในพื้นที่ นักท่องเที่ยว และผู้ที่ส่งของขวัญมาจากที่อื่น พร้อมหน้าชำระเงินที่ปลอดภัยทั้งภาษาไทยและอังกฤษ',
         venuesTitle: 'จัดส่งถึงบ้าน โรงแรม และคอนโด',
         venuesP1:
           'กรอกชื่อผู้รับ ชื่อโรงแรมหรืออาคาร เบอร์โทร และหมุด Google Maps เมื่อจำเป็น ข้อมูลเหล่านี้ช่วยให้พนักงานส่งประสานกับแผนกต้อนรับ นิติบุคคลคอนโด หรือเจ้าหน้าที่หมู่บ้านได้สะดวก',
         areasTitle: 'ทั่วเชียงใหม่และอำเภอใกล้เคียง',
+        areasTitleMarket: 'ทั่ว{city}',
         areasP1:
           'เราให้บริการคูเมือง นิมมาน สุเทพ หางดง แม่ริม สันทราย และพื้นที่โดยรอบเป็นประจำ ค่าจัดส่งคำนวณตามโซนและแสดงที่หน้าชำระเงิน',
+        areasP1Named:
+          'เราให้บริการ{areas}เป็นประจำ ค่าจัดส่งคำนวณตามโซนและแสดงที่หน้าชำระเงิน',
+        areasP1Generic:
+          'เราจัดส่งทั่ว{city} ค่าจัดส่งคำนวณตามโซนและแสดงที่หน้าชำระเงิน',
         relatedLinksLabel: 'ลิงก์ข้อมูลการจัดส่ง',
         deliveryAreasLink: 'ดูพื้นที่และค่าจัดส่ง',
         abroadLink: 'ส่งดอกไม้ไปประเทศไทยจากต่างประเทศ',
@@ -3376,7 +3554,7 @@ const russianTranslations = {
     cta: 'Выбрать букет',
     trustLine: 'Доставка сегодня по Чиангмаю',
     badge: 'Отобранные флористы Таиланда',
-    headlineNew: 'Купить цветы онлайн в Чиангмае',
+    headlineNew: 'Купить цветы онлайн в {city}',
     sublineNew:
       'Закажите свежие цветы онлайн с быстрой доставкой на день рождения, годовщину и другие важные моменты.',
     ctaBrowse: 'Смотреть коллекцию',
@@ -3616,6 +3794,9 @@ const russianTranslations = {
     discountAria: 'Скидка {percent}%',
     handCraftedBy: 'Собрано вручную',
     handCraftedByPartner: 'Собрано локальным партнёром',
+    factHandTied: 'Собран вручную',
+    factFresh: 'Свежие',
+    soldCount: 'Продано {count}',
     filterDelivery: 'Доставка',
     filterFormat: 'Формат',
     filterStemBucket: 'Размер / стебли',
@@ -4260,7 +4441,7 @@ const chineseSingaporeTranslations = {
     cta: '选择花束',
     trustLine: '清迈当日配送',
     badge: '清迈鲜花配送 · 泰国',
-    headlineNew: '在线购买清迈鲜花',
+    headlineNew: '在线购买{city}鲜花',
     sublineNew: '在线订购新鲜花束，适合生日、纪念日和特别时刻，并快速配送。',
     ctaBrowse: '浏览系列',
     ctaHowItWorks: '运作方式',
@@ -4475,6 +4656,9 @@ const chineseSingaporeTranslations = {
     discountAria: '促销 {percent}% 折扣',
     handCraftedBy: '手工制作：',
     handCraftedByPartner: '由本地合作伙伴手工制作',
+    factHandTied: '手工扎束',
+    factFresh: '鲜花',
+    soldCount: '已售 {count}',
     filterDelivery: '配送',
     filterFormat: '形式',
     filterStemBucket: '大小 / 枝数',
@@ -4954,7 +5138,7 @@ const chineseHongKongTranslations = {
     cta: '選擇花束',
     trustLine: '清邁即日配送',
     badge: '清邁鮮花配送 · 泰國',
-    headlineNew: '網上購買清邁鮮花',
+    headlineNew: '網上購買{city}鮮花',
     sublineNew: '網上訂購新鮮花束，適合生日、紀念日和特別時刻，並快速配送。',
     ctaBrowse: '瀏覽系列',
     ctaHowItWorks: '運作方式',
@@ -5101,6 +5285,9 @@ const chineseHongKongTranslations = {
     productCardNotAvailable: '暫不可訂',
     buyInOneClick: '一鍵購買',
     popularPickBadge: '熱門',
+    factHandTied: '手工扎束',
+    factFresh: '鮮花',
+    soldCount: '已售 {count}',
     deliverySameDay: '即日',
     deliveryNextDay: '翌日',
     formatBouquet: '花束',

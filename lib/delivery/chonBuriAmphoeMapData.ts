@@ -1,20 +1,29 @@
 /**
- * Chon Buri amphoe metadata for the interactive delivery district map.
- * Geometry lives in content/thailand-map/chon-buri-amphoes.topojson (OpenGIS amp_code).
+ * Pattaya (Chon Buri) map districts for the interactive coverage map.
+ * Geometry lives in content/thailand-map/chon-buri-amphoes.topojson.
  *
- * Pattaya-only: Bang Lamung polygon + nested Pattaya checkout zones.
- * Other Chon Buri amphoes (Si Racha, Mueang Chon Buri, Sattahip, …) are not mapped.
+ * Join key is properties.amp_code:
+ *   200408 Na Kluea, 200402 Nong Prue, 200902 Na Chom Thian (OpenGIS tambons)
+ *   200491–200494 latitude slices of the Pattaya special-admin tambon (200409)
  *
+ * Other Chon Buri amphoes (Si Racha, Mueang Chon Buri, rest of Sattahip) are not mapped.
  * Fee amounts are NOT stored here — derive via amphoeDisplayFees → zones.ts.
  */
 
 import type { AmphoeFeeSource } from '@/lib/delivery/amphoeDisplayFees';
 
-export type ChonBuriAmphoeMapId = 'bang-lamung';
+export type ChonBuriAmphoeMapId =
+  | 'central-pattaya'
+  | 'north-naklua-wongamat'
+  | 'south-walking-street'
+  | 'pratumnak'
+  | 'jomtien'
+  | 'na-jomtien'
+  | 'east-nong-prue';
 
 export interface ChonBuriAmphoeMapDistrict extends AmphoeFeeSource {
   id: ChonBuriAmphoeMapId;
-  /** OpenGIS districts.geojson amp_code (join key for TopoJSON) */
+  /** Join key for TopoJSON properties.amp_code */
   ampCode: string;
   labelEn: string;
   labelTh: string;
@@ -22,27 +31,69 @@ export interface ChonBuriAmphoeMapDistrict extends AmphoeFeeSource {
   typicalAreasTh: string;
 }
 
-/** All current PATTAYA checkout zones nested under Bang Lamung. */
-export const PATTAYA_CHECKOUT_ZONE_IDS = [
-  'pat-central-pattaya',
-  'pat-north-naklua-wongamat',
-  'pat-south-walking-street',
-  'pat-pratumnak',
-  'pat-jomtien',
-  'pat-na-jomtien',
-  'pat-east-nong-prue',
-] as const;
-
 export const CHON_BURI_AMPHOE_MAP_DISTRICTS: ChonBuriAmphoeMapDistrict[] = [
   {
-    id: 'bang-lamung',
-    ampCode: '2004',
-    labelEn: 'Bang Lamung',
-    labelTh: 'บางละมุง',
-    typicalAreasEn: 'Pattaya City, Jomtien, Naklua, Nong Prue',
-    typicalAreasTh: 'ตัวเมืองพัทยา จอมเทียน นาเกลือ หนองปรือ',
+    id: 'central-pattaya',
+    ampCode: '200491',
+    labelEn: 'Central Pattaya',
+    labelTh: 'พัทยากลาง',
+    typicalAreasEn: 'Beach Road, Central Pattaya',
+    typicalAreasTh: 'ถนนพัทยาสายกลาง พัทยากลาง',
     checkoutZoneId: 'pat-central-pattaya',
-    relatedCheckoutZoneIds: [...PATTAYA_CHECKOUT_ZONE_IDS],
+  },
+  {
+    id: 'north-naklua-wongamat',
+    ampCode: '200408',
+    labelEn: 'North Pattaya / Naklua / Wongamat',
+    labelTh: 'พัทยาเหนือ / นาเกลือ / วงศ์อมาตย์',
+    typicalAreasEn: 'Naklua, Wongamat, North Pattaya',
+    typicalAreasTh: 'นาเกลือ วงศ์อมาตย์ พัทยาเหนือ',
+    checkoutZoneId: 'pat-north-naklua-wongamat',
+  },
+  {
+    id: 'south-walking-street',
+    ampCode: '200492',
+    labelEn: 'South Pattaya / Walking Street area',
+    labelTh: 'พัทยาใต้ / วอล์คกิ้งสตรีท',
+    typicalAreasEn: 'Walking Street, South Pattaya',
+    typicalAreasTh: 'วอล์คกิ้งสตรีท พัทยาใต้',
+    checkoutZoneId: 'pat-south-walking-street',
+  },
+  {
+    id: 'pratumnak',
+    ampCode: '200493',
+    labelEn: 'Pratumnak',
+    labelTh: 'พระตำหนัก',
+    typicalAreasEn: 'Pratumnak Hill',
+    typicalAreasTh: 'เขาพระตำหนัก',
+    checkoutZoneId: 'pat-pratumnak',
+  },
+  {
+    id: 'jomtien',
+    ampCode: '200494',
+    labelEn: 'Jomtien',
+    labelTh: 'จอมเทียน',
+    typicalAreasEn: 'Jomtien Beach',
+    typicalAreasTh: 'หาดจอมเทียน',
+    checkoutZoneId: 'pat-jomtien',
+  },
+  {
+    id: 'na-jomtien',
+    ampCode: '200902',
+    labelEn: 'Na Jomtien',
+    labelTh: 'นาจอมเทียน',
+    typicalAreasEn: 'Na Jomtien (listed Pattaya area)',
+    typicalAreasTh: 'นาจอมเทียน (ย่านพัทยาในรายการ)',
+    checkoutZoneId: 'pat-na-jomtien',
+  },
+  {
+    id: 'east-nong-prue',
+    ampCode: '200402',
+    labelEn: 'East Pattaya / Nong Prue',
+    labelTh: 'พัทยาตะวันออก / หนองปรือ',
+    typicalAreasEn: 'Nong Prue, East Pattaya',
+    typicalAreasTh: 'หนองปรือ พัทยาตะวันออก',
+    checkoutZoneId: 'pat-east-nong-prue',
   },
 ];
 

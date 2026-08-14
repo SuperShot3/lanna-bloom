@@ -36,6 +36,8 @@ import type { HomeFlowerTypeSection, HomeFlowerTypeTile } from '@/lib/catalog';
 import type { Bouquet } from '@/lib/bouquets';
 import type { BouquetSitemapEntry } from '@/lib/catalog';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { attachSoldCount, attachSoldCounts, getPaidSalesCountMap } from '@/lib/catalog/paidSalesCounts';
+import { attachPublicSoldCount } from '@/lib/catalog/paidSalesCountsLogic';
 
 function catalogReadNotConfigured(): never {
   throw new Error(
@@ -45,7 +47,7 @@ function catalogReadNotConfigured(): never {
 
 export async function getCatalogBouquets(): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBouquetsFromCatalog();
+  return attachSoldCounts(await getBouquetsFromCatalog());
 }
 
 export async function getCatalogBouquetSitemapEntries(): Promise<BouquetSitemapEntry[]> {
@@ -58,7 +60,7 @@ export async function getCatalogSimilarBouquets(
   limit = 3
 ): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getSimilarBouquetsFromCatalog(source, limit);
+  return attachSoldCounts(await getSimilarBouquetsFromCatalog(source, limit));
 }
 
 export async function getCatalogBouquetsPaginated(
@@ -67,17 +69,19 @@ export async function getCatalogBouquetsPaginated(
   catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBouquetsFromCatalogPaginated(start, limit, catalogDestination);
+  return attachSoldCounts(
+    await getBouquetsFromCatalogPaginated(start, limit, catalogDestination)
+  );
 }
 
 export async function getCatalogBouquetBySlug(slug: string): Promise<Bouquet | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBouquetBySlugFromCatalog(slug);
+  return attachSoldCount(await getBouquetBySlugFromCatalog(slug));
 }
 
 export async function getCatalogBouquetById(bouquetId: string): Promise<Bouquet | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBouquetByIdFromCatalog(bouquetId);
+  return attachSoldCount(await getBouquetByIdFromCatalog(bouquetId));
 }
 
 export async function getCatalogHeroImage(): Promise<string> {
@@ -92,14 +96,20 @@ export async function getCatalogHeroCarouselImages(): Promise<CatalogHeroCarouse
 
 export async function getCatalogPopularBouquetsPaginated(
   start: number,
-  limit: number
+  limit: number,
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getPopularBouquetsFromCatalogPaginated(start, limit);
+  return attachSoldCounts(
+    await getPopularBouquetsFromCatalogPaginated(start, limit, catalogDestination)
+  );
 }
 
-export async function getCatalogPopularBouquets(limit: number): Promise<Bouquet[]> {
-  return getCatalogPopularBouquetsPaginated(0, limit);
+export async function getCatalogPopularBouquets(
+  limit: number,
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<Bouquet[]> {
+  return getCatalogPopularBouquetsPaginated(0, limit, catalogDestination);
 }
 
 export async function getCatalogPopularItemsPaginated(
@@ -109,22 +119,37 @@ export async function getCatalogPopularItemsPaginated(
 ): Promise<PopularCatalogItem[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   void catalogDeliveryDestination;
-  return getPopularCatalogItemsFromCatalogPaginated(start, limit);
+  const items = await getPopularCatalogItemsFromCatalogPaginated(start, limit);
+  const counts = await getPaidSalesCountMap();
+  return items.map((entry) =>
+    entry.itemType === 'bouquet'
+      ? { itemType: 'bouquet' as const, item: attachPublicSoldCount(entry.item, counts) }
+      : { itemType: 'product' as const, item: attachPublicSoldCount(entry.item, counts) }
+  );
 }
 
-export async function getCatalogHomeFlowerTypeSections(): Promise<HomeFlowerTypeSection[]> {
+export async function getCatalogHomeFlowerTypeSections(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<HomeFlowerTypeSection[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getHomeFlowerTypeSectionsFromCatalog();
+  const sections = await getHomeFlowerTypeSectionsFromCatalog(catalogDestination);
+  const counts = await getPaidSalesCountMap();
+  return sections.map((section) => ({
+    ...section,
+    bouquets: section.bouquets.map((bouquet) => attachPublicSoldCount(bouquet, counts)),
+  }));
 }
 
-export async function getCatalogHomeFlowerTypeTiles(): Promise<HomeFlowerTypeTile[]> {
+export async function getCatalogHomeFlowerTypeTiles(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<HomeFlowerTypeTile[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getHomeFlowerTypeTilesFromCatalog();
+  return getHomeFlowerTypeTilesFromCatalog(catalogDestination);
 }
 
 export async function getCatalogBouquetsFiltered(params: CatalogFilterParams): Promise<Bouquet[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBouquetsFilteredFromCatalog(params);
+  return attachSoldCounts(await getBouquetsFilteredFromCatalog(params));
 }
 
 export async function getCatalogBouquetsCatalogData(params: CatalogFilterParams): Promise<{
@@ -132,7 +157,12 @@ export async function getCatalogBouquetsCatalogData(params: CatalogFilterParams)
   allBouquets: Bouquet[];
 }> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBouquetsCatalogDataFromCatalog(params);
+  const data = await getBouquetsCatalogDataFromCatalog(params);
+  const counts = await getPaidSalesCountMap();
+  return {
+    bouquets: data.bouquets.map((bouquet) => attachPublicSoldCount(bouquet, counts)),
+    allBouquets: data.allBouquets.map((bouquet) => attachPublicSoldCount(bouquet, counts)),
+  };
 }
 
 export async function getCatalogProductsFiltered(params: {
@@ -141,24 +171,24 @@ export async function getCatalogProductsFiltered(params: {
   catalogDeliveryDestination?: DeliveryDestinationId;
 }): Promise<CatalogProduct[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getProductsFilteredFromCatalog(params);
+  return attachSoldCounts(await getProductsFilteredFromCatalog(params));
 }
 
 export async function getCatalogProductBySlug(slug: string): Promise<CatalogProduct | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getProductBySlugFromCatalog(slug);
+  return attachSoldCount(await getProductBySlugFromCatalog(slug));
 }
 
 export async function getCatalogPlushyToysFiltered(params: {
   sort?: 'newest' | 'price_asc' | 'price_desc';
 }): Promise<CatalogProduct[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getPlushyToysFilteredFromCatalog(params);
+  return attachSoldCounts(await getPlushyToysFilteredFromCatalog(params));
 }
 
 export async function getCatalogPlushyToyBySlug(slug: string): Promise<CatalogProduct | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getPlushyToyBySlugFromCatalog(slug);
+  return attachSoldCount(await getPlushyToyBySlugFromCatalog(slug));
 }
 
 export async function getCatalogPlushyToyById(id: string) {
@@ -170,12 +200,12 @@ export async function getCatalogBalloonsFiltered(params: {
   sort?: 'newest' | 'price_asc' | 'price_desc';
 }): Promise<CatalogProduct[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBalloonsFilteredFromCatalog(params);
+  return attachSoldCounts(await getBalloonsFilteredFromCatalog(params));
 }
 
 export async function getCatalogBalloonBySlug(slug: string): Promise<CatalogProduct | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return getBalloonBySlugFromCatalog(slug);
+  return attachSoldCount(await getBalloonBySlugFromCatalog(slug));
 }
 
 export async function getCatalogBalloonById(id: string) {

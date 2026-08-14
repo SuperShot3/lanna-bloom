@@ -10,8 +10,20 @@ import type { HomeFaqItem } from '@/components/home/homeLandingContent';
  * Homepage FAQ accordion. Answers are server-rendered in the initial HTML
  * so they stay crawlable and match the FAQPage JSON-LD injected by the page.
  */
-export function HomeFaq({ lang, faq }: { lang: Locale; faq: HomeFaqItem[] }) {
+export function HomeFaq({
+  lang,
+  faq,
+  title,
+  subtitle,
+}: {
+  lang: Locale;
+  faq: HomeFaqItem[];
+  title?: string;
+  subtitle?: string;
+}) {
   const t = translations[lang].homeLanding.faq;
+  const heading = title ?? t.title;
+  const lead = subtitle ?? t.subtitle;
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggle = (index: number) => {
@@ -34,9 +46,9 @@ export function HomeFaq({ lang, faq }: { lang: Locale; faq: HomeFaqItem[] }) {
               id="home-faq-title"
               className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-4 leading-tight"
             >
-              {t.title}
+              {heading}
             </h2>
-            <p className="text-stone-500 leading-relaxed max-w-md mb-6">{t.subtitle}</p>
+            <p className="text-stone-500 leading-relaxed max-w-md mb-6">{lead}</p>
             <Link
               href={`/${lang}/contact`}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1A3C34] hover:text-[#C5A059] transition-colors"

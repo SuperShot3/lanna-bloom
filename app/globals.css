@@ -880,6 +880,99 @@ main {
   animation: partners-scroll 30s linear infinite;
 }
 
+/* Homepage “Shop by flower type” one-line auto-carousel */
+.flower-type-marquee {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.375rem;
+  cursor: grab;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 1.5rem,
+    #000 calc(100% - 1.5rem),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 1.5rem,
+    #000 calc(100% - 1.5rem),
+    transparent
+  );
+}
+.flower-type-marquee::-webkit-scrollbar {
+  display: none;
+}
+.flower-type-marquee.is-dragging {
+  cursor: grabbing;
+}
+.flower-type-marquee__track {
+  display: flex;
+  width: max-content;
+}
+.flower-type-marquee__group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-inline-end: 0.75rem;
+}
+.flower-type-marquee__tile {
+  flex: none;
+  width: 4.75rem;
+}
+
+@media (min-width: 640px) {
+  .flower-type-marquee__group {
+    gap: 1rem;
+    padding-inline-end: 1rem;
+  }
+  .flower-type-marquee__tile {
+    width: 6rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .flower-type-marquee__tile {
+    width: 7rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .flower-type-marquee {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 2rem,
+      #000 calc(100% - 2rem),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 2rem,
+      #000 calc(100% - 2rem),
+      transparent
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flower-type-marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+    padding-inline: 1rem;
+  }
+  .flower-type-marquee__dup {
+    display: none;
+  }
+}
+
 /* Hero feature carousel (HeroFeatureCarousel) */
 @keyframes hero-carousel-kenburns {
   0% {

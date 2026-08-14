@@ -30,6 +30,8 @@ export interface CatalogProduct {
   occasion?: string;
   isHit?: boolean;
   discountPercent?: number;
+  /** Paid units sold (storefront display). Set only when the public threshold is met. */
+  soldCount?: number;
 }
 
 export interface ModerationProduct {

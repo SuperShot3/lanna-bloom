@@ -3,9 +3,9 @@
 export const CATALOG_CARD_IMAGE_SIZES =
   '(max-width: 600px) 50vw, (max-width: 900px) 50vw, 33vw';
 
-/** Homepage “Shop by flower type” tiles: 4-col mobile, 8-col desktop. */
+/** Homepage “Shop by flower type” marquee tiles: 4.75rem / 6rem / 7rem. */
 export const HOME_FLOWER_TYPE_TILE_IMAGE_SIZES =
-  '(max-width: 1024px) 25vw, 12.5vw';
+  '(max-width: 640px) 76px, (max-width: 768px) 96px, 112px';
 
 /** Homepage hero carousel cards: 272 / 288 / 336 / 384 CSS px (not full viewport). */
 export const HERO_CAROUSEL_IMAGE_SIZES =

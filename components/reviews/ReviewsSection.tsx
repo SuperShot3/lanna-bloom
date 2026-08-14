@@ -8,6 +8,9 @@ interface ReviewsSectionProps {
   lang: Locale;
   title?: string;
   subtitle?: string;
+  /** When false, skip the Chiang Mai-specific quote and inner-city line. */
+  chiangMaiSpecific?: boolean;
+  locationName?: string;
 }
 
 /**
@@ -17,7 +20,8 @@ interface ReviewsSectionProps {
 export function ReviewsSection({
   lang,
   title,
-  subtitle,
+  chiangMaiSpecific = true,
+  locationName,
 }: ReviewsSectionProps) {
   const reviews = getFeaturedReviews(3);
   const stats = getReviewStats();
@@ -27,7 +31,13 @@ export function ReviewsSection({
   const featuredQuote =
     reviews[0]?.text ||
     "I ordered a bouquet for my mother's birthday and it was delivered within 45 minutes. The flowers were fresher than anything I've seen in the markets. Truly premium service.";
-  const quoteTitle = stats.count > 0 ? `"Best flower service in Chiang Mai"` : displayTitle;
+  const quoteTitle =
+    chiangMaiSpecific && stats.count > 0
+      ? `"Best flower service in Chiang Mai"`
+      : displayTitle;
+  const fastDeliveryPlace = chiangMaiSpecific
+    ? 'Chiang Mai Inner City'
+    : locationName || (lang === 'th' ? 'จัดส่งในพื้นที่' : 'Local delivery');
 
   return (
     <section
@@ -78,7 +88,7 @@ export function ReviewsSection({
             <StorefrontIcon name="bolt" size={30} />
             <div className="text-left">
               <p className="font-bold text-sm">Fast Delivery</p>
-              <p className="text-xs text-stone-400">Chiang Mai Inner City</p>
+              <p className="text-xs text-stone-400">{fastDeliveryPlace}</p>
             </div>
           </div>
           <div className="home-reveal-item flex items-center gap-3 text-[#C5A059]">

@@ -6,8 +6,8 @@ export const dynamic = 'force-static';
 export const revalidate = 86400;
 
 /**
- * Serves Chon Buri amphoe TopoJSON (OpenGIS districts, pro_code 20).
- * Bang Lamung only — Pattaya market, not the rest of Chon Buri.
+ * Serves Pattaya area TopoJSON for Chon Buri (pro_code 20).
+ * Seven clickable checkout areas — not the rest of Chon Buri.
  * Derived from https://github.com/chingchai/OpenGISData-Thailand — not the full national file.
  */
 export async function GET() {

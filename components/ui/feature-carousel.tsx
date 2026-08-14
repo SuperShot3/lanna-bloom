@@ -174,7 +174,7 @@ export function HeroFeatureCarousel({
       </div>
 
       <div
-        className="relative z-10 w-full touch-pan-y px-0 py-2 sm:px-1 sm:py-6 md:py-7 lg:py-8 min-h-[400px] sm:min-h-[390px] lg:aspect-[4/5] lg:min-h-0 lg:h-auto flex items-center justify-center overflow-x-hidden overflow-y-visible"
+        className="relative z-10 w-full touch-pan-y px-0 py-1 sm:px-1 sm:py-3 md:py-4 lg:py-4 min-h-[22.5rem] sm:min-h-[24rem] lg:aspect-[4/5] lg:min-h-0 lg:h-auto flex items-center justify-center overflow-x-hidden overflow-y-visible"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}

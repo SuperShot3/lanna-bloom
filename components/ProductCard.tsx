@@ -30,6 +30,7 @@ import {
   preloadCatalogImage,
 } from '@/lib/catalog/catalogImage';
 import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
+import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -395,6 +396,11 @@ export function ProductCard({
           ) : null}
         </div>
         <div className="pcard-body">
+          {product.soldCount != null ? (
+            <div className="pcard-proof">
+              <CatalogProofMeta lang={lang} variant="product" soldCount={product.soldCount} />
+            </div>
+          ) : null}
           <div className="pcard-name" title={name}>
             {name}
           </div>
@@ -647,6 +653,11 @@ export function ProductCard({
           justify-content: flex-start;
           min-height: 84px;
           min-width: 0;
+        }
+        .pcard-proof {
+          margin-bottom: 5px;
+          min-width: 0;
+          max-width: 100%;
         }
         .pcard-name {
           font-size: 1rem;

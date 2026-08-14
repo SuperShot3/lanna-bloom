@@ -244,17 +244,13 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
   } else if (provinceCode === 'chon-buri') {
     const codes = CHON_BURI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
     const unique = new Set(codes);
-    if (
-      CHON_BURI_AMPHOE_MAP_DISTRICTS.length === 1 &&
-      unique.size === 1 &&
-      codes[0] === '2004'
-    ) {
-      out.push(pass('amphoe metadata', '1 Bang Lamung district, unique ampCode 2004'));
+    if (CHON_BURI_AMPHOE_MAP_DISTRICTS.length === 7 && unique.size === 7) {
+      out.push(pass('amphoe metadata', '7 Pattaya areas, unique ampCode'));
     } else {
       out.push(
         fail(
           'amphoe metadata',
-          `Expected 1 unique ampCode 2004 in chonBuriAmphoeMapData; got ${CHON_BURI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size} / ${codes.join(',')}`
+          `Expected 7 unique ampCodes in chonBuriAmphoeMapData; got ${CHON_BURI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

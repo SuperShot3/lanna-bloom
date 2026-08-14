@@ -13,7 +13,6 @@ import {
   getFlowerDeliveryThailandCopy,
   getLamphunDeliveryDistricts,
   getPattayaDeliveryDistricts,
-  getPattayaDeliveryNeighborhoods,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
 export const revalidate = 3600;
@@ -81,7 +80,6 @@ export default async function DeliveryAreasThailandPage({
   const neighborhoods = getChiangMaiDeliveryNeighborhoods();
   const lamphunDistricts = getLamphunDeliveryDistricts();
   const pattayaDistricts = getPattayaDeliveryDistricts();
-  const pattayaNeighborhoods = getPattayaDeliveryNeighborhoods();
   const isTh = lang === 'th';
   const provincesResult = await listPublicProvinces();
   const provinces = provincesResult.ok ? provincesResult.provinces : [];
@@ -205,18 +203,11 @@ export default async function DeliveryAreasThailandPage({
               </div>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-6">
               <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
                 {copy.districtsSubtitle}
               </h4>
               <AreaPills areas={pattayaDistricts} lang={lang} />
-            </div>
-
-            <div className="mb-6">
-              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
-                {copy.neighborhoodsSubtitle}
-              </h4>
-              <AreaPills areas={pattayaNeighborhoods} lang={lang} />
             </div>
 
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.pattayaNote}</p>

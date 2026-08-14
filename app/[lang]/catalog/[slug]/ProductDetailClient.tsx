@@ -15,6 +15,7 @@ import { CurrencyAmount } from '@/components/CurrencyDisplay';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
+import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
 
 export function ProductDetailClient({
   product,
@@ -81,6 +82,12 @@ export function ProductDetailClient({
           <h1 className="product-title">{name}</h1>
           <ProductShareLink lang={lang} productTitle={name} />
         </div>
+        <CatalogProofMeta
+          lang={lang}
+          variant="product"
+          soldCount={product.soldCount}
+          size="pdp"
+        />
         {!showDescriptionBelowBalloonText && (
           <>
             <h2 className="product-section-heading">{translations[lang].product.descriptionHeading}</h2>

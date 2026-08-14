@@ -3,7 +3,6 @@ import { CHIANG_MAI_DISTRICTS } from '@/lib/delivery-areas';
 import { getActiveMarkets } from '@/lib/delivery/markets';
 import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/chonBuriAmphoeMapData';
 import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/lamphunAmphoeMapData';
-import { getZonesForDestination } from '@/lib/delivery/zones';
 
 export type LocalizedLabel = { nameEn: string; nameTh: string };
 
@@ -26,19 +25,11 @@ export function getLamphunDeliveryDistricts(): LocalizedLabel[] {
   }));
 }
 
-/** Pattaya map amphoe (Bang Lamung only — not the rest of Chon Buri). */
+/** Pattaya checkout areas (city market — not the rest of Chon Buri). */
 export function getPattayaDeliveryDistricts(): LocalizedLabel[] {
   return CHON_BURI_AMPHOE_MAP_DISTRICTS.map((d) => ({
     nameEn: d.labelEn,
     nameTh: d.labelTh,
-  }));
-}
-
-/** Pattaya checkout neighborhoods listed under Bang Lamung. */
-export function getPattayaDeliveryNeighborhoods(): LocalizedLabel[] {
-  return getZonesForDestination('PATTAYA').map((z) => ({
-    nameEn: z.labelEn,
-    nameTh: z.labelTh,
   }));
 }
 
@@ -127,7 +118,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     mapHint:
       'Tap a province for live status. Tap Chiang Mai, Lamphun, or Pattaya (Chon Buri) for district fees.',
     intro:
-      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs. Lamphun is open for next-day flower delivery across all amphoes from ฿250. Pattaya covers Bang Lamung and listed Pattaya areas from ฿250 — not the rest of Chon Buri. We expand gradually — nationwide same-day is not promised.',
+      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs. Lamphun is open for next-day flower delivery across all amphoes from ฿250. Pattaya covers listed Pattaya areas from ฿250 — not the rest of Chon Buri. We expand gradually — nationwide same-day is not promised.',
     areasTitle: 'Chiang Mai — our full-service core',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
@@ -143,9 +134,9 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'Choose Lamphun as your delivery destination at checkout, then select your amphoe. Fees start at ฿250 for every amphoe listed.',
     pattayaTitle: 'Pattaya',
     pattayaIntro:
-      'Flower delivery for Pattaya City and listed Pattaya areas in Bang Lamung — not province-wide Chon Buri. Delivery from ฿250. Shop below or tap Chon Buri on the coverage map, then choose your Pattaya neighborhood at checkout.',
+      'Flower delivery for listed Pattaya areas — not province-wide Chon Buri. Delivery from ฿250. Shop below or tap Chon Buri on the coverage map, then choose your Pattaya area at checkout.',
     pattayaNote:
-      'Choose Pattaya as your delivery destination at checkout, then select the neighborhood. Na Jomtien is listed as a Pattaya area. Other Chon Buri districts such as Si Racha are not on this map.',
+      'Choose Pattaya as your delivery destination at checkout, then select the area. Na Jomtien is listed as a Pattaya area. Other Chon Buri districts such as Si Racha are not on this map.',
     otherDestinationsTitle: 'Currently shoppable provinces',
     expandingNote:
       'Only provinces where ordering is open right now. Status and categories come from live settings — we do not promise nationwide same-day delivery.',
@@ -163,7 +154,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     mapHint:
       'แตะจังหวัดเพื่อดูสถานะ — แตะเชียงใหม่ ลำพูน หรือพัทยา (ชลบุรี) เพื่อดูค่าส่งรายอำเภอ',
     intro:
-      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ลำพูนเปิดรับจัดส่งดอกไม้วันถัดไปทุกอำเภอเริ่มต้น ฿250 พัทยาครอบคลุมบางละมุงและย่านพัทยาที่ระบุ เริ่มต้น ฿250 — ไม่รวมชลบุรีทั้งจังหวัด ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ลำพูนเปิดรับจัดส่งดอกไม้วันถัดไปทุกอำเภอเริ่มต้น ฿250 พัทยาครอบคลุมย่านพัทยาที่ระบุ เริ่มต้น ฿250 — ไม่รวมชลบุรีทั้งจังหวัด ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     areasTitle: 'เชียงใหม่ — ฐานบริการหลักครบวงจร',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:
@@ -179,7 +170,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'เลือกปลายทางลำพูนตอนชำระเงิน แล้วเลือกอำเภอ ค่าส่งเริ่มต้น ฿250 สำหรับทุกอำเภอในรายการ',
     pattayaTitle: 'พัทยา',
     pattayaIntro:
-      'จัดส่งดอกไม้ในตัวเมืองพัทยาและย่านพัทยาที่ระบุในอำเภอบางละมุง — ไม่ครอบคลุมทั้งจังหวัดชลบุรี ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะชลบุรีบนแผนที่พื้นที่บริการ แล้วเลือกย่านพัทยาตอนชำระเงิน',
+      'จัดส่งดอกไม้ในย่านพัทยาที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดชลบุรี ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะชลบุรีบนแผนที่พื้นที่บริการ แล้วเลือกย่านพัทยาตอนชำระเงิน',
     pattayaNote:
       'เลือกปลายทางพัทยาตอนชำระเงิน แล้วเลือกย่าน นาจอมเทียนอยู่ในรายการย่านพัทยา อำเภออื่นในชลบุรี เช่น ศรีราชา ไม่อยู่บนแผนที่นี้',
     otherDestinationsTitle: 'จังหวัดที่สั่งได้ตอนนี้',
