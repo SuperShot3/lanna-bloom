@@ -130,6 +130,8 @@ export function generateStaticParams() {
     'buy-flowers-online-chiang-mai-thailand',
     'delivery-policy',
     'flower-delivery-address-chiang-mai',
+    'flower-delivery-lamphun-province',
+    'flower-delivery-pattaya',
   ];
   const params: { lang: string; slug: string }[] = [];
   for (const lang of locales) {

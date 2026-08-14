@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getBaseUrl } from '@/lib/orders';
 import {
   buildBouquetProductJsonLd,
+  buildCatalogProductJsonLd,
   resolveProductOgImage,
 } from '@/lib/seo/productJsonLd';
 import { buildAlternates } from '@/lib/seo/alternates';
@@ -175,9 +176,18 @@ export default async function ProductPage({
     const description = (lang === 'th' ? plushyToy.descriptionTh : plushyToy.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
     const suggestedBouquets = await getCatalogPopularBouquets(8);
+    const productJsonLd = buildCatalogProductJsonLd(
+      plushyToy,
+      lang === 'th' ? 'th' : 'en',
+      pageUrl
+    );
 
     return (
       <div className="product-page">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        />
         <div className="container product-layout">
           <ProductMobileBackButton
             catalogHref={catalogHref}
@@ -216,9 +226,18 @@ export default async function ProductPage({
       'topCategory=balloons'
     );
     const suggestedBouquets = await getCatalogPopularBouquets(8);
+    const productJsonLd = buildCatalogProductJsonLd(
+      balloon,
+      lang === 'th' ? 'th' : 'en',
+      pageUrl
+    );
 
     return (
       <div className="product-page">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        />
         <div className="container product-layout">
           <ProductMobileBackButton
             catalogHref={balloonCatalogHref}
@@ -252,9 +271,18 @@ export default async function ProductPage({
     const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
     const description = (lang === 'th' ? product.descriptionTh : product.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
+    const productJsonLd = buildCatalogProductJsonLd(
+      product,
+      lang === 'th' ? 'th' : 'en',
+      pageUrl
+    );
 
     return (
       <div className="product-page">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        />
         <div className="container product-layout">
           <ProductMobileBackButton
             catalogHref={catalogHref}

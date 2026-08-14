@@ -166,7 +166,7 @@ export function formatFeedColors(colors: string[] | undefined): string {
   return colors.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join('/');
 }
 
-function taxonomyIdForDisplayCategory(category: DisplayCategory): string {
+export function taxonomyIdForDisplayCategory(category: DisplayCategory): string {
   return DISPLAY_CATEGORY_TO_TAXONOMY[category] ?? GOOGLE_TAXONOMY_ID.other;
 }
 

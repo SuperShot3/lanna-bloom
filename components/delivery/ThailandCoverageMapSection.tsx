@@ -21,6 +21,7 @@ import {
   type AmphoeCapableProvinceCode,
 } from '@/lib/delivery/amphoeProvinces';
 import { amphoeMapFill } from '@/lib/delivery/amphoeDisplayFees';
+import { formatFeeRange } from '@/lib/delivery/distanceTiers';
 import Link from 'next/link';
 
 const ThailandProvinceMap = dynamic(
@@ -119,10 +120,14 @@ export function ThailandCoverageMapSection({
   const filteredAmphoes = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return amphoeItems;
-    return amphoeItems.filter(({ amphoe }) => {
+    return amphoeItems.filter(({ amphoe, subAreas }) => {
       const en = amphoe.labelEn.toLowerCase();
       const th = amphoe.labelTh.toLowerCase();
-      return en.includes(q) || th.includes(q);
+      if (en.includes(q) || th.includes(q)) return true;
+      return subAreas.some(
+        (area) =>
+          area.labelEn.toLowerCase().includes(q) || area.labelTh.toLowerCase().includes(q)
+      );
     });
   }, [amphoeItems, search]);
 
@@ -315,7 +320,7 @@ export function ThailandCoverageMapSection({
                     {isTh ? 'ไม่พบอำเภอ' : 'No districts match'}
                   </li>
                 ) : (
-                  filteredAmphoes.map(({ amphoe, feeLabel }) => {
+                  filteredAmphoes.map(({ amphoe, feeLabel, subAreas }) => {
                     const active = amphoe.id === selectedAmphoeId;
                     return (
                       <li
@@ -349,6 +354,27 @@ export function ThailandCoverageMapSection({
                             </span>
                           </span>
                         </button>
+                        {subAreas.length > 0 ? (
+                          <ul className="list-none m-0 mt-0.5 mb-1.5 pl-6 pr-1 space-y-0.5">
+                            {subAreas.map((area) => (
+                              <li
+                                key={area.zoneId}
+                                className="flex items-baseline justify-between gap-2 px-2 py-1 text-xs text-stone-600"
+                              >
+                                <span className="min-w-0 leading-snug">
+                                  {isTh ? area.labelTh : area.labelEn}
+                                </span>
+                                <span className="shrink-0 font-medium text-[#1A3C34]">
+                                  {area.feeThb != null
+                                    ? formatFeeRange(area.feeThb, area.feeThb, isTh ? 'th' : 'en')
+                                    : isTh
+                                      ? 'ยืนยันกับคนขับ'
+                                      : 'Driver confirm'}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
                       </li>
                     );
                   })

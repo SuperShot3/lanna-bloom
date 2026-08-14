@@ -16,11 +16,21 @@ import {
   LAMPHUN_AMPHOE_MAP_DISTRICTS,
   type LamphunAmphoeMapDistrict,
 } from '@/lib/delivery/lamphunAmphoeMapData';
+import {
+  CHON_BURI_AMPHOE_MAP_DISTRICTS,
+  getChonBuriAmphoeByAmpCode,
+  getChonBuriAmphoeById,
+  type ChonBuriAmphoeMapDistrict,
+} from '@/lib/delivery/chonBuriAmphoeMapData';
 import type { AmphoeFeeSource } from '@/lib/delivery/amphoeDisplayFees';
 
-export type AmphoeCapableProvinceCode = 'chiang-mai' | 'lamphun';
+export type AmphoeCapableProvinceCode = 'chiang-mai' | 'lamphun' | 'chon-buri';
 
-export type ProvinceAmphoeDistrict = (AmphoeMapDistrict | LamphunAmphoeMapDistrict) &
+export type ProvinceAmphoeDistrict = (
+  | AmphoeMapDistrict
+  | LamphunAmphoeMapDistrict
+  | ChonBuriAmphoeMapDistrict
+) &
   AmphoeFeeSource & {
     id: string;
     ampCode: string;
@@ -28,7 +38,16 @@ export type ProvinceAmphoeDistrict = (AmphoeMapDistrict | LamphunAmphoeMapDistri
     labelTh: string;
   };
 
-const AMPHOE_CAPABLE = new Set<string>(['chiang-mai', 'lamphun']);
+const AMPHOE_CAPABLE = new Set<string>(['chiang-mai', 'lamphun', 'chon-buri']);
+
+const DESTINATION_BY_AMPHOE_PROVINCE: Record<
+  AmphoeCapableProvinceCode,
+  DeliveryDestinationId
+> = {
+  'chiang-mai': 'CHIANG_MAI',
+  lamphun: 'LAMPHUN',
+  'chon-buri': 'PATTAYA',
+};
 
 export function isAmphoeCapableProvince(code: string | null | undefined): boolean {
   return Boolean(code && AMPHOE_CAPABLE.has(code));
@@ -41,39 +60,51 @@ export function amphoeMapApiPath(provinceCode: AmphoeCapableProvinceCode): strin
 export function destinationIdForAmphoeProvince(
   provinceCode: AmphoeCapableProvinceCode
 ): DeliveryDestinationId {
-  return provinceCode === 'lamphun' ? 'LAMPHUN' : 'CHIANG_MAI';
+  return DESTINATION_BY_AMPHOE_PROVINCE[provinceCode];
 }
 
 export function getAmphoeDistrictsForProvince(
   provinceCode: AmphoeCapableProvinceCode
 ): ProvinceAmphoeDistrict[] {
-  if (provinceCode === 'lamphun') {
-    return LAMPHUN_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+  switch (provinceCode) {
+    case 'lamphun':
+      return LAMPHUN_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'chon-buri':
+      return CHON_BURI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'chiang-mai':
+      return AMPHOE_MAP_DISTRICTS.filter((d) => d.id !== 'other') as ProvinceAmphoeDistrict[];
   }
-  return AMPHOE_MAP_DISTRICTS.filter((d) => d.id !== 'other') as ProvinceAmphoeDistrict[];
 }
 
 export function getAmphoeByAmpCodeForProvince(
   provinceCode: AmphoeCapableProvinceCode,
   ampCode: string
 ): ProvinceAmphoeDistrict | undefined {
-  if (provinceCode === 'lamphun') {
-    return getLamphunAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+  switch (provinceCode) {
+    case 'lamphun':
+      return getLamphunAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+    case 'chon-buri':
+      return getChonBuriAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+    case 'chiang-mai':
+      return getAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
   }
-  return getAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
 }
 
 export function getAmphoeByIdForProvince(
   provinceCode: AmphoeCapableProvinceCode,
   id: string
 ): ProvinceAmphoeDistrict | undefined {
-  if (provinceCode === 'lamphun') {
-    return getLamphunAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+  switch (provinceCode) {
+    case 'lamphun':
+      return getLamphunAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'chon-buri':
+      return getChonBuriAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'chiang-mai':
+      return getAmphoeById(id as never) as ProvinceAmphoeDistrict | undefined;
   }
-  return getAmphoeById(id as never) as ProvinceAmphoeDistrict | undefined;
 }
 
-/** Chiang Mai “other / not listed” row — Lamphun has no equivalent. */
+/** Chiang Mai “other / not listed” row — Lamphun and Chon Buri have no equivalent. */
 export function getOtherAmphoeForProvince(
   provinceCode: AmphoeCapableProvinceCode
 ): AmphoeFeeSource | null {

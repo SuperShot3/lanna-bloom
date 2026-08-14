@@ -18,6 +18,7 @@ import {
 import { ZONES_BY_DESTINATION } from '../lib/delivery/zones';
 import { AMPHOE_MAP_DISTRICTS } from '../lib/delivery/amphoeMapData';
 import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/lamphunAmphoeMapData';
+import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/chonBuriAmphoeMapData';
 import { isAmphoeCapableProvince } from '../lib/delivery/amphoeProvinces';
 
 type Check = { ok: boolean; label: string; detail?: string };
@@ -237,6 +238,23 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
         fail(
           'amphoe metadata',
           `Expected 8 unique ampCodes in lamphunAmphoeMapData; got ${LAMPHUN_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'chon-buri') {
+    const codes = CHON_BURI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (
+      CHON_BURI_AMPHOE_MAP_DISTRICTS.length === 1 &&
+      unique.size === 1 &&
+      codes[0] === '2004'
+    ) {
+      out.push(pass('amphoe metadata', '1 Bang Lamung district, unique ampCode 2004'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 1 unique ampCode 2004 in chonBuriAmphoeMapData; got ${CHON_BURI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size} / ${codes.join(',')}`
         )
       );
     }

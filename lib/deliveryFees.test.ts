@@ -9,6 +9,8 @@ import {
   resolveOtherAmphoeFeeDisplay,
 } from './delivery/amphoeDisplayFees';
 import { AMPHOE_MAP_DISTRICTS } from './delivery/amphoeMapData';
+import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from './delivery/chonBuriAmphoeMapData';
+import { destinationIdForAmphoeProvince } from './delivery/amphoeProvinces';
 import { getDeliveryDistanceTiers } from './delivery/distanceTiers';
 import {
   detectChiangMaiZoneFromAddress,
@@ -17,6 +19,7 @@ import {
   getZoneFee,
   getZonesForDestination,
 } from './delivery/zones';
+import { getAmphoeDrillItems } from './delivery/amphoeMapDrilldown';
 
 function assert(condition: boolean, msg: string) {
   if (!condition) throw new Error(msg);
@@ -80,6 +83,13 @@ assert(getZoneFee('LAMPHUN', 'lp-thung-hua-chang') === 550, 'Lamphun Thung Hua C
 assert(getZonesForDestination('LAMPHUN').length === 8, 'Lamphun has 8 amphoe zones');
 assert(getZonesForDestination('CHIANG_MAI').length === 23, 'Chiang Mai has 23 zones');
 assert(getCheckoutZonesForDestination('CHIANG_MAI').length === 21, 'Checkout excludes manual-quote zones');
+assert(getZonesForDestination('PATTAYA').length === 7, 'Pattaya has 7 checkout zones');
+assert(getZoneFee('PATTAYA', 'pat-central-pattaya') === 250, 'Pattaya Central fee = 250');
+assert(getZoneFee('PATTAYA', 'pat-na-jomtien') === 350, 'Pattaya Na Jomtien fee = 350');
+assert(getZoneFee('PATTAYA', 'pat-east-nong-prue') === 350, 'Pattaya East / Nong Prue fee = 350');
+assert(destinationIdForAmphoeProvince('chon-buri') === 'PATTAYA', 'chon-buri amphoe destination is PATTAYA');
+assert(destinationIdForAmphoeProvince('lamphun') === 'LAMPHUN', 'lamphun amphoe destination is LAMPHUN');
+assert(destinationIdForAmphoeProvince('chiang-mai') === 'CHIANG_MAI', 'chiang-mai amphoe destination is CHIANG_MAI');
 
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');
@@ -120,6 +130,33 @@ for (const d of AMPHOE_MAP_DISTRICTS) {
 const otherDisplay = resolveOtherAmphoeFeeDisplay();
 assert(otherDisplay.displayKind === 'driver_confirm', 'other is driver_confirm');
 assert(otherDisplay.feeFrom === getZoneFee('CHIANG_MAI', 'cm-unknown'), 'other estimate = cm-unknown');
+
+assert(CHON_BURI_AMPHOE_MAP_DISTRICTS.length === 1, 'Chon Buri map has Bang Lamung only');
+const bangLamung = CHON_BURI_AMPHOE_MAP_DISTRICTS[0];
+assert(bangLamung.id === 'bang-lamung', 'Bang Lamung id');
+assert(bangLamung.ampCode === '2004', 'Bang Lamung OpenGIS amp_code');
+assert(
+  bangLamung.relatedCheckoutZoneIds?.length === 7,
+  'Bang Lamung nests all 7 Pattaya checkout zones'
+);
+const bangDisplay = resolveAmphoeFeeDisplay(bangLamung, 'PATTAYA');
+assert(bangDisplay.displayKind === 'checkout', 'Bang Lamung is checkout-backed');
+assert(bangDisplay.feeFrom === 250, 'Bang Lamung feeFrom = 250');
+assert(bangDisplay.feeTo === 350, 'Bang Lamung feeTo = 350');
+assert(bangDisplay.primaryFee === 250, 'Bang Lamung primaryFee = min Pattaya zone');
+
+const pattayaDrill = getAmphoeDrillItems('chon-buri', 'en');
+assert(pattayaDrill.length === 1, 'Chon Buri drill has Bang Lamung only');
+assert(pattayaDrill[0].subAreas.length === 7, 'nested Pattaya checkout zones');
+assert(pattayaDrill[0].feeLabel.includes('250'), 'Pattaya drill fee includes 250');
+assert(pattayaDrill[0].feeLabel.includes('350'), 'Pattaya drill fee includes 350');
+
+const lamphunDrill = getAmphoeDrillItems('lamphun', 'en');
+assert(lamphunDrill.length === 8, 'Lamphun drill has 8 amphoes');
+assert(
+  lamphunDrill.every((d) => d.subAreas.length === 0),
+  'Lamphun amphoes have no nested checkout areas'
+);
 
 const ladder = getChiangMaiZoneFeeLadder();
 const tiers = getDeliveryDistanceTiers();

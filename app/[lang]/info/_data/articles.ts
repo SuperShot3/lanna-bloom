@@ -736,6 +736,42 @@ export const articles: ArticleMeta[] = [
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },
+  {
+    slug: 'flower-delivery-pattaya',
+    title: 'Flower Delivery in Pattaya: Areas, Hotels and Fees',
+    excerpt:
+      'Flower delivery in Pattaya: zones from Central Pattaya to Jomtien and Nong Prue, fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
+    titleTh: 'ส่งดอกไม้ในพัทยา: พื้นที่ โรงแรม และค่าส่ง',
+    excerptTh:
+      'ส่งดอกไม้พัทยา: ครอบคลุมพัทยากลางถึงจอมเทียนและหนองปรือ ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรม และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ เลือกช่อได้เลย',
+    publishedAt: '2026-08-14T00:00:00.000Z',
+    featured: true,
+    cover: {
+      type: 'image',
+      src: '/blog_images/pattaya/pattaya.png',
+      alt: 'Pink lily and hydrangea bouquet on a balcony overlooking Pattaya Bay at sunset, for same-day flower delivery in Pattaya, Thailand',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Pattaya flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งพัทยา',
+        href: '/pattaya/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
 ];
 
 export function getArticleBySlug(slug: string): ArticleMeta | undefined {

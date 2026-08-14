@@ -267,6 +267,8 @@ const nextConfig = {
     return [
       { source: '/feeds/google.txt', destination: '/feeds/google-merchant-feed' },
       { source: '/feeds/google-merchant-feed.tsv', destination: '/feeds/google-merchant-feed' },
+      { source: '/openai-product-feed.csv', destination: '/feeds/openai-product-feed' },
+      { source: '/feeds/openai-product-feed.csv', destination: '/feeds/openai-product-feed' },
       ...marketCatalogRewrites,
     ];
   },
