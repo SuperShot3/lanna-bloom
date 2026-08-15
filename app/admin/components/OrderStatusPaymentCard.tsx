@@ -265,7 +265,7 @@ export function OrderStatusPaymentCard({
               <div style={{ marginTop: 10 }}>
                 <button
                   type="button"
-                  className="admin-btn admin-btn-outline admin-btn-sm"
+                  className={`admin-btn admin-btn-sm${payLinkCopied ? ' admin-btn-copied' : ' admin-btn-outline'}`}
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(payLinkUrl);
@@ -274,8 +274,18 @@ export function OrderStatusPaymentCard({
                       setPayLinkCopied(false);
                     }
                   }}
+                  aria-live="polite"
                 >
-                  {payLinkCopied ? 'Copied pay link' : 'Copy pay link'}
+                  {payLinkCopied ? (
+                    <>
+                      <span className="material-symbols-outlined" aria-hidden style={{ fontSize: 16 }}>
+                        check_circle
+                      </span>
+                      Link copied to clipboard
+                    </>
+                  ) : (
+                    'Copy pay link'
+                  )}
                 </button>
               </div>
             )}

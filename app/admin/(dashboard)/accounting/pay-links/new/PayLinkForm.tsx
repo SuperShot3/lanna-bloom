@@ -13,12 +13,14 @@ export function PayLinkForm() {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ orderId: string; reviewUrl: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setCreated(null);
     setCopied(false);
+    setCopyError(null);
     const n = parseFloat(amount);
     if (!Number.isFinite(n) || n <= 0) {
       setError('Enter a positive amount.');
@@ -58,12 +60,30 @@ export function PayLinkForm() {
 
   const copyLink = async () => {
     if (!created?.reviewUrl) return;
+    setCopyError(null);
     try {
       await navigator.clipboard.writeText(created.reviewUrl);
       setCopied(true);
+      return;
     } catch {
-      setCopied(false);
+      /* fall through to input select + execCommand */
     }
+    try {
+      const el = document.getElementById('pay-link-url');
+      if (el instanceof HTMLInputElement) {
+        el.focus();
+        el.select();
+        const ok = document.execCommand('copy');
+        if (ok) {
+          setCopied(true);
+          return;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    setCopied(false);
+    setCopyError('Could not copy automatically. Select the URL and copy it yourself.');
   };
 
   return (
@@ -91,16 +111,48 @@ export function PayLinkForm() {
       {created ? (
         <div className="admin-expenses-form">
           <p className="admin-hint" style={{ marginTop: 0 }}>
-            Pay link created for order <strong>{created.orderId}</strong>. Copy and send to the customer.
+            Pay link created for order <strong>{created.orderId}</strong>. Copy and send it to the customer.
           </p>
+          <div className="admin-pay-link-created-banner" role="status">
+            <span className="material-symbols-outlined" aria-hidden>
+              schedule
+            </span>
+            <span>
+              <strong>Not paid yet.</strong> The link is ready. This will change to Paid after the customer pays on
+              Stripe.
+            </span>
+          </div>
+          {copied ? (
+            <div className="admin-pay-link-copied-banner" role="status">
+              <span className="material-symbols-outlined" aria-hidden>
+                check_circle
+              </span>
+              <span>Link copied to clipboard. You can paste it in LINE, WhatsApp, or email.</span>
+            </div>
+          ) : null}
+          {copyError ? (
+            <div className="admin-error" role="alert">
+              <p>{copyError}</p>
+            </div>
+          ) : null}
           <div className="admin-form-group">
             <label htmlFor="pay-link-url">Customer pay URL</label>
-            <input id="pay-link-url" className="admin-input" readOnly value={created.reviewUrl} />
+            <div className="admin-pay-link-url-row">
+              <input id="pay-link-url" className="admin-input" readOnly value={created.reviewUrl} />
+              <button
+                type="button"
+                className={`admin-btn admin-btn-primary${copied ? ' admin-btn-copied' : ''}`}
+                onClick={copyLink}
+                aria-live="polite"
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  {copied ? 'check_circle' : 'content_copy'}
+                </span>
+                {copied ? 'Copied to clipboard' : 'Copy link'}
+              </button>
+            </div>
           </div>
           <div className="admin-expenses-form-actions">
-            <button type="button" className="admin-btn admin-btn-primary" onClick={copyLink}>
-              {copied ? 'Copied' : 'Copy link'}
-            </button>
             <Link href={`/admin/orders/${encodeURIComponent(created.orderId)}`} className="admin-btn admin-btn-outline">
               Open order
             </Link>
@@ -115,6 +167,7 @@ export function PayLinkForm() {
                 setCustomerEmail('');
                 setPhone('');
                 setCopied(false);
+                setCopyError(null);
               }}
             >
               Create another
