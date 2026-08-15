@@ -28,19 +28,43 @@ import {
   PHUKET_AMPHOE_MAP_DISTRICTS,
   type PhuketAmphoeMapDistrict,
 } from '@/lib/delivery/phuketAmphoeMapData';
+import {
+  getPrachuapKhiriKhanAmphoeByAmpCode,
+  getPrachuapKhiriKhanAmphoeById,
+  PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS,
+  type PrachuapKhiriKhanAmphoeMapDistrict,
+} from '@/lib/delivery/prachuapKhiriKhanAmphoeMapData';
+import {
+  getKrabiAmphoeByAmpCode,
+  getKrabiAmphoeById,
+  KRABI_AMPHOE_MAP_DISTRICTS,
+  type KrabiAmphoeMapDistrict,
+} from '@/lib/delivery/krabiAmphoeMapData';
+import {
+  getSuratThaniAmphoeByAmpCode,
+  getSuratThaniAmphoeById,
+  SURAT_THANI_AMPHOE_MAP_DISTRICTS,
+  type SuratThaniAmphoeMapDistrict,
+} from '@/lib/delivery/suratThaniAmphoeMapData';
 import type { AmphoeFeeSource } from '@/lib/delivery/amphoeDisplayFees';
 
 export type AmphoeCapableProvinceCode =
   | 'chiang-mai'
   | 'lamphun'
   | 'chon-buri'
-  | 'phuket';
+  | 'phuket'
+  | 'prachuap-khiri-khan'
+  | 'krabi'
+  | 'surat-thani';
 
 export type ProvinceAmphoeDistrict = (
   | AmphoeMapDistrict
   | LamphunAmphoeMapDistrict
   | ChonBuriAmphoeMapDistrict
   | PhuketAmphoeMapDistrict
+  | PrachuapKhiriKhanAmphoeMapDistrict
+  | KrabiAmphoeMapDistrict
+  | SuratThaniAmphoeMapDistrict
 ) &
   AmphoeFeeSource & {
     id: string;
@@ -54,6 +78,9 @@ const AMPHOE_CAPABLE = new Set<string>([
   'lamphun',
   'chon-buri',
   'phuket',
+  'prachuap-khiri-khan',
+  'krabi',
+  'surat-thani',
 ]);
 
 const DESTINATION_BY_AMPHOE_PROVINCE: Record<
@@ -64,6 +91,9 @@ const DESTINATION_BY_AMPHOE_PROVINCE: Record<
   lamphun: 'LAMPHUN',
   'chon-buri': 'PATTAYA',
   phuket: 'PHUKET',
+  'prachuap-khiri-khan': 'HUA_HIN',
+  krabi: 'KRABI',
+  'surat-thani': 'SAMUI',
 };
 
 export function isAmphoeCapableProvince(code: string | null | undefined): boolean {
@@ -90,6 +120,12 @@ export function getAmphoeDistrictsForProvince(
       return CHON_BURI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'phuket':
       return PHUKET_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'prachuap-khiri-khan':
+      return PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'krabi':
+      return KRABI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'surat-thani':
+      return SURAT_THANI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'chiang-mai':
       return AMPHOE_MAP_DISTRICTS.filter((d) => d.id !== 'other') as ProvinceAmphoeDistrict[];
   }
@@ -106,6 +142,14 @@ export function getAmphoeByAmpCodeForProvince(
       return getChonBuriAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'phuket':
       return getPhuketAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+    case 'prachuap-khiri-khan':
+      return getPrachuapKhiriKhanAmphoeByAmpCode(ampCode) as
+        | ProvinceAmphoeDistrict
+        | undefined;
+    case 'krabi':
+      return getKrabiAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+    case 'surat-thani':
+      return getSuratThaniAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'chiang-mai':
       return getAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
   }
@@ -122,12 +166,18 @@ export function getAmphoeByIdForProvince(
       return getChonBuriAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'phuket':
       return getPhuketAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'prachuap-khiri-khan':
+      return getPrachuapKhiriKhanAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'krabi':
+      return getKrabiAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'surat-thani':
+      return getSuratThaniAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'chiang-mai':
       return getAmphoeById(id as never) as ProvinceAmphoeDistrict | undefined;
   }
 }
 
-/** Chiang Mai “other / not listed” row — Lamphun, Chon Buri, and Phuket have no equivalent. */
+/** Chiang Mai “other / not listed” row — city and amphoe markets have no equivalent. */
 export function getOtherAmphoeForProvince(
   provinceCode: AmphoeCapableProvinceCode
 ): AmphoeFeeSource | null {

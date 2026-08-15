@@ -52,7 +52,7 @@ export type ArticleMeta = {
         gradientCss: string;
         center: { kind: 'emoji' | 'icon' | 'text'; value: string };
       }
-    | { type: 'image'; src: string; alt: string };
+    | { type: 'image'; src: string; alt: string; altTh?: string };
 };
 
 export const articles: ArticleMeta[] = [
@@ -712,7 +712,7 @@ export const articles: ArticleMeta[] = [
     excerptTh:
       'ส่งดอกไม้ครอบคลุม 8 อำเภอในลำพูน ค่าส่งเริ่ม 250 บาท ความพร้อมวันเดียวตามพื้นที่ และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ',
     publishedAt: '2026-08-09T00:00:00.000Z',
-    featured: true,
+    featured: false,
     cover: {
       type: 'image',
       src: '/blog_images/same-day-delivery/Same_day_delivery_lamphun_thailand.png',
@@ -775,6 +775,160 @@ export const articles: ArticleMeta[] = [
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],
   },
+  {
+    slug: 'flower-delivery-phuket',
+    title: 'Flower Delivery in Phuket: Areas, Hotels and Fees',
+    excerpt:
+      'Flower delivery in Phuket: listed areas from Town to Patong, Kata, and Mai Khao. Fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
+    titleTh: 'ส่งดอกไม้ในภูเก็ต: พื้นที่ โรงแรม และค่าส่ง',
+    excerptTh:
+      'ส่งดอกไม้ภูเก็ต: ย่านที่รองรับจากเมืองภูเก็ตถึงป่าตอง กะตะ และไม้ขาว ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรม และวิธีสั่งจากในไทยหรือต่างประเทศ เลือกช่อได้เลย',
+    publishedAt: '2026-08-15T00:00:00.000Z',
+    featured: true,
+    cover: {
+      type: 'image',
+      src: '/blog_images/phuket/phuket.png',
+      alt: 'Woman in a straw hat holding a pink and white rose and lily bouquet in front of Phuket’s Big Buddha and the Andaman Sea, for flower delivery in Phuket, Thailand',
+      altTh:
+        'ผู้หญิงสวมหมวกฟางถือช่อกุหลาบและลิลลี่ชมพูขาว ด้านหลังเป็นพระใหญ่ภูเก็ตและทะเลอันดามัน สำหรับบริการส่งดอกไม้ในภูเก็ต ประเทศไทย',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Phuket flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งภูเก็ต',
+        href: '/phuket/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'flower-delivery-hua-hin',
+    title: 'Flower Delivery in Hua Hin: Areas, Hotels and Fees',
+    excerpt:
+      'Flower delivery in Hua Hin: listed areas from the beach to Khao Takiab and Thap Tai. Fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
+    titleTh: 'ส่งดอกไม้ในหัวหิน: พื้นที่ โรงแรม และค่าส่ง',
+    excerptTh:
+      'ส่งดอกไม้หัวหิน: ย่านที่รองรับจากแนวหาดถึงเขาตะเกียบและทับใต้ ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรม และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ เลือกช่อได้เลย',
+    publishedAt: '2026-08-15T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/hua-hin/hua-hin.png',
+      alt: 'Pink lily and rose bouquet in front of Hua Hin railway station and the beach, for flower delivery in Hua Hin, Thailand',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Hua Hin flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งหัวหิน',
+        href: '/hua-hin/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'flower-delivery-samui',
+    title: 'Flower Delivery in Koh Samui: Areas, Hotels and Fees',
+    excerpt:
+      'Flower delivery in Koh Samui: listed areas from Chaweng to Lamai and Na Thon. Fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
+    titleTh: 'ส่งดอกไม้ในเกาะสมุย: พื้นที่ โรงแรม และค่าส่ง',
+    excerptTh:
+      'ส่งดอกไม้เกาะสมุย: ย่านที่รองรับจากเฉวงถึงละไมและหน้าทอน ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรม และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ เลือกช่อได้เลย',
+    publishedAt: '2026-08-15T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/samui/samui.png',
+      alt: 'Pink lily and rose bouquet on a balcony overlooking Koh Samui’s Big Buddha and the beach, for flower delivery in Samui, Thailand',
+      altTh:
+        'ช่อลิลลี่ชมพูและกุหลาบบนระเบียง ฉากหลังพระใหญ่เกาะสมุยและชายหาด สำหรับบริการส่งดอกไม้ในสมุย ประเทศไทย',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Koh Samui flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งเกาะสมุย',
+        href: '/samui/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
+    slug: 'flower-delivery-to-hospitals-phuket',
+    title: 'Flower Delivery to Hospitals in Phuket',
+    excerpt:
+      'Send flowers to Phuket hospitals including Bangkok Hospital, Mission, Vachira, Chalong, Patong, and Thalang. Patient details, drop-off tips, and how to order.',
+    titleTh: 'ส่งดอกไม้ไปโรงพยาบาลในภูเก็ต',
+    excerptTh:
+      'ส่งดอกไม้ไปโรงพยาบาลในภูเก็ต: กรุงเทพ มิชชั่น วชิระ ฉลอง ป่าตอง และถลาง ข้อมูลผู้ป่วย จุดรับของ และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ',
+    publishedAt: '2026-08-15T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/phuket/flower_delivery_phuket_hospitals.png',
+      alt: 'Pink lily and rose bouquet handed to a patient in a Phuket hospital room overlooking the sea, for flower delivery to hospitals in Phuket',
+    },
+    ctaTitle: 'Send flowers to a Phuket hospital',
+    ctaTitleTh: 'ส่งดอกไม้ไปโรงพยาบาลในภูเก็ต',
+    ctaLinks: [
+      {
+        label: 'Shop Phuket flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งภูเก็ต',
+        href: '/phuket/flower-delivery',
+      },
+      {
+        label: 'Phuket delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งภูเก็ต',
+        href: '/info/flower-delivery-phuket',
+      },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
 ];
 
 export function getArticleBySlug(slug: string): ArticleMeta | undefined {
@@ -791,6 +945,13 @@ export function getArticleTitle(article: ArticleMeta, lang: string): string {
 export function getArticleExcerpt(article: ArticleMeta, lang: string): string {
   if (lang === 'th' && article.excerptTh) return article.excerptTh;
   return article.excerpt;
+}
+
+/** Localized cover alt for hub cards, Open Graph, and JSON-LD. */
+export function getArticleCoverAlt(article: ArticleMeta, lang: string): string | undefined {
+  if (article.cover.type !== 'image') return undefined;
+  if (lang === 'th' && article.cover.altTh) return article.cover.altTh;
+  return article.cover.alt;
 }
 
 const DEFAULT_CTA: ArticleCtaLink[] = [

@@ -156,6 +156,10 @@ export function ThailandCoverageMapSection({
   }, [selectedAmphoeId]);
 
   function clearSelection() {
+    if (selectedAmphoeId) {
+      setSelectedAmphoeId(null);
+      return;
+    }
     setSelectedCode(null);
     setSelectedAmphoeId(null);
   }

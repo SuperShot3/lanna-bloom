@@ -11,7 +11,7 @@ Where code lives in the Next.js App Router monorepo.
 | `app/admin/` | Staff dashboard + login |
 | `app/api/` | Route handlers (Stripe, orders, admin, cron) |
 | `app/task/[token]/` | Supplier task (neutral links) |
-| `content/` | MDX info articles, guides |
+| `content/` | MDX info articles (`content/info/`) |
 
 Localized routes are URL-based (`/en/*`, `/th/*`). The language switcher should preserve the current path where possible.
 
@@ -24,7 +24,7 @@ Localized routes are URL-based (`/en/*`, `/th/*`). The language switcher should 
 | Product | `catalog/[slug]/` |
 | Cart | `cart/` |
 | Checkout | `checkout/complete`, `checkout/success`, `checkout/confirmation-pending` |
-| Info / SEO | `info/[slug]/`, guides |
+| Info / SEO | `info/[slug]/` (MDX; two legacy TSX comparison pages) |
 | Partner apply (public portal retired) | `partner/apply` |
 | Static pages | `refund-replacement`, etc. |
 

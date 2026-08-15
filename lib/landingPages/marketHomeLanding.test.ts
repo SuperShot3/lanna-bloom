@@ -40,6 +40,27 @@ assert.ok(
   'Phuket district list includes Patong'
 );
 
+const krabiDistricts = getMarketLandingDistricts('KRABI');
+assert.equal(krabiDistricts.length, 5, 'Krabi has 5 named checkout areas');
+assert.ok(
+  formatDistrictList(krabiDistricts, 'en').includes('Ao Nang'),
+  'Krabi district list includes Ao Nang'
+);
+
+const huaHinDistricts = getMarketLandingDistricts('HUA_HIN');
+assert.equal(huaHinDistricts.length, 6, 'Hua Hin has 6 named checkout areas');
+assert.ok(
+  formatDistrictList(huaHinDistricts, 'en').includes('Hua Hin Center'),
+  'Hua Hin district list includes Hua Hin Center'
+);
+
+const samuiDistricts = getMarketLandingDistricts('SAMUI');
+assert.equal(samuiDistricts.length, 8, 'Samui has 8 named checkout areas');
+assert.ok(
+  formatDistrictList(samuiDistricts, 'en').includes('Chaweng'),
+  'Samui district list includes Chaweng'
+);
+
 const lamphunFaq = getMarketHomeFaqItems({
   lang: 'en',
   city: 'Lamphun',

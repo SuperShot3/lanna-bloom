@@ -11,9 +11,12 @@ import {
   getChiangMaiDeliveryDistricts,
   getChiangMaiDeliveryNeighborhoods,
   getFlowerDeliveryThailandCopy,
+  getHuaHinDeliveryDistricts,
+  getKrabiDeliveryDistricts,
   getLamphunDeliveryDistricts,
   getPattayaDeliveryDistricts,
   getPhuketDeliveryDistricts,
+  getSamuiDeliveryDistricts,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
 export const revalidate = 3600;
@@ -82,6 +85,9 @@ export default async function DeliveryAreasThailandPage({
   const lamphunDistricts = getLamphunDeliveryDistricts();
   const pattayaDistricts = getPattayaDeliveryDistricts();
   const phuketDistricts = getPhuketDeliveryDistricts();
+  const huaHinDistricts = getHuaHinDeliveryDistricts();
+  const krabiDistricts = getKrabiDeliveryDistricts();
+  const samuiDistricts = getSamuiDeliveryDistricts();
   const isTh = lang === 'th';
   const provincesResult = await listPublicProvinces();
   const provinces = provincesResult.ok ? provincesResult.provinces : [];
@@ -244,6 +250,99 @@ export default async function DeliveryAreasThailandPage({
             </div>
 
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.phuketNote}</p>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3
+                id="hua-hin-delivery-title"
+                className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl text-[#1A3C34] mb-3 leading-tight"
+              >
+                {copy.huaHinTitle}
+              </h3>
+              <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                {copy.huaHinIntro}
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Link
+                  href={`/${lang}/hua-hin/flower-delivery`}
+                  className="btn-premium"
+                >
+                  {copy.ctaHuaHin}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
+                {copy.districtsSubtitle}
+              </h4>
+              <AreaPills areas={huaHinDistricts} lang={lang} />
+            </div>
+
+            <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.huaHinNote}</p>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3
+                id="krabi-delivery-title"
+                className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl text-[#1A3C34] mb-3 leading-tight"
+              >
+                {copy.krabiTitle}
+              </h3>
+              <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                {copy.krabiIntro}
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Link
+                  href={`/${lang}/krabi/flower-delivery`}
+                  className="btn-premium"
+                >
+                  {copy.ctaKrabi}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
+                {copy.districtsSubtitle}
+              </h4>
+              <AreaPills areas={krabiDistricts} lang={lang} />
+            </div>
+
+            <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.krabiNote}</p>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3
+                id="samui-delivery-title"
+                className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl text-[#1A3C34] mb-3 leading-tight"
+              >
+                {copy.samuiTitle}
+              </h3>
+              <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                {copy.samuiIntro}
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Link
+                  href={`/${lang}/samui/flower-delivery`}
+                  className="btn-premium"
+                >
+                  {copy.ctaSamui}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
+                {copy.districtsSubtitle}
+              </h4>
+              <AreaPills areas={samuiDistricts} lang={lang} />
+            </div>
+
+            <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.samuiNote}</p>
           </div>
 
           {shoppableAreas.length > 0 ? (

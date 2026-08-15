@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
+import { buildAlternates } from '@/lib/seo/alternates';
+import { getArticleBySlug, getArticleExcerpt, getArticleTitle } from '../_data/articles';
 import { getCatalogBouquetBySlug } from '@/lib/catalogReads';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
@@ -103,23 +105,29 @@ export async function generateMetadata({
   const { lang } = params;
   if (!isValidLocale(lang)) return { title: 'Lanna Bloom' };
   const base = getBaseUrl();
-  const title =
-    'Birthday Flower Gift Guide: 4 Luxury Bouquets | Lanna Bloom';
-  const description =
-    'Find a memorable birthday flower gift: compare four luxury bouquets-bold sunset, vivid citrus, timeless roses & lilies, romantic ruby-then shop online.';
+  const article = getArticleBySlug('birthday-flower-gift-guide');
+  const title = article
+    ? `${getArticleTitle(article, lang)} | Lanna Bloom`
+    : 'Birthday Flower Gift Guide: 4 Luxury Bouquets | Lanna Bloom';
+  const description = article
+    ? getArticleExcerpt(article, lang)
+    : 'Find a memorable birthday flower gift: compare four luxury bouquets-bold sunset, vivid citrus, timeless roses & lilies, romantic ruby-then shop online.';
+  const canonical = `${base}/${lang}/info/birthday-flower-gift`;
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `${base}/${lang}/info/birthday-flower-gift`,
-    },
+    alternates: buildAlternates({
+      lang,
+      pathSuffix: '/info/birthday-flower-gift',
+      canonical,
+    }),
     openGraph: {
-      title: 'New Birthday Flower Gifts Worth Sending This Year',
-      description:
-        'Four luxury birthday bouquets with personality-tap through and order in minutes.',
-      url: `${base}/${lang}/info/birthday-flower-gift`,
+      title,
+      description,
+      url: canonical,
       type: 'article',
+      publishedTime: article?.publishedAt,
     },
   };
 }

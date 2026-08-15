@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { getCatalogBouquetBySlug } from '@/lib/catalogReads';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
@@ -260,7 +261,11 @@ export async function generateMetadata({
   return {
     title: `${t.title} | Lanna Bloom`,
     description: t.description,
-    alternates: { canonical },
+    alternates: buildAlternates({
+      lang,
+      pathSuffix: '/info/perfect-bouquet-someone-special',
+      canonical,
+    }),
     openGraph: {
       title: t.ogTitle,
       description: t.ogDescription,

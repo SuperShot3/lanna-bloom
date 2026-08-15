@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ArticleMeta } from './_data/articles';
-import { getArticleTitle, getArticleExcerpt } from './_data/articles';
+import { getArticleTitle, getArticleExcerpt, getArticleCoverAlt } from './_data/articles';
 import { ShareButton } from '@/components/ShareButton';
 
 export function InfoCard({
@@ -55,7 +55,7 @@ export function InfoCard({
           {article.cover.type === 'image' && (
             <img
               src={article.cover.src}
-              alt={article.cover.alt}
+              alt={getArticleCoverAlt(article, lang) ?? ''}
               className="info-card-cover-img"
             />
           )}

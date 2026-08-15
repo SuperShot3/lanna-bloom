@@ -11,6 +11,9 @@ import {
 import { AMPHOE_MAP_DISTRICTS } from './delivery/amphoeMapData';
 import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from './delivery/chonBuriAmphoeMapData';
 import { PHUKET_AMPHOE_MAP_DISTRICTS } from './delivery/phuketAmphoeMapData';
+import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from './delivery/prachuapKhiriKhanAmphoeMapData';
+import { KRABI_AMPHOE_MAP_DISTRICTS } from './delivery/krabiAmphoeMapData';
+import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from './delivery/suratThaniAmphoeMapData';
 import { destinationIdForAmphoeProvince } from './delivery/amphoeProvinces';
 import { getDeliveryDistanceTiers } from './delivery/distanceTiers';
 import {
@@ -92,9 +95,15 @@ assert(destinationIdForAmphoeProvince('chon-buri') === 'PATTAYA', 'chon-buri amp
 assert(destinationIdForAmphoeProvince('lamphun') === 'LAMPHUN', 'lamphun amphoe destination is LAMPHUN');
 assert(destinationIdForAmphoeProvince('chiang-mai') === 'CHIANG_MAI', 'chiang-mai amphoe destination is CHIANG_MAI');
 assert(destinationIdForAmphoeProvince('phuket') === 'PHUKET', 'phuket amphoe destination is PHUKET');
+assert(destinationIdForAmphoeProvince('prachuap-khiri-khan') === 'HUA_HIN', 'prachuap amphoe destination is HUA_HIN');
+assert(destinationIdForAmphoeProvince('krabi') === 'KRABI', 'krabi amphoe destination is KRABI');
+assert(destinationIdForAmphoeProvince('surat-thani') === 'SAMUI', 'surat-thani amphoe destination is SAMUI');
 assert(getZonesForDestination('PHUKET').length === 11, 'Phuket has 11 checkout zones');
 assert(getZoneFee('PHUKET', 'hkt-phuket-town') === 250, 'Phuket Town fee = 250');
 assert(getZoneFee('PHUKET', 'hkt-mai-khao-airport-sakhu') === 550, 'Phuket Mai Khao fee = 550');
+assert(getZonesForDestination('KRABI').length === 5, 'Krabi has 5 checkout zones');
+assert(getZoneFee('KRABI', 'kbn-ao-nang-center') === 250, 'Ao Nang Center fee = 250');
+assert(getZoneFee('KRABI', 'kbn-tubkaek') === 450, 'Tubkaek fee = 450');
 
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');
@@ -209,6 +218,124 @@ const phuketMapZoneIds = PHUKET_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZoneId
 assert(
   phuketCheckoutIds.join(',') === phuketMapZoneIds.join(','),
   'every Phuket checkout zone is a clickable map district'
+);
+
+assert(PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.length === 6, 'Hua Hin map has 6 checkout areas');
+const huaHinAmpCodes = new Set(PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(huaHinAmpCodes.size === 6, 'each Hua Hin area has a unique amp_code');
+for (const d of PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS) {
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const display = resolveAmphoeFeeDisplay(d, 'HUA_HIN');
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(
+    display.feeFrom === getZoneFee('HUA_HIN', d.checkoutZoneId!),
+    `${d.id} fee matches Hua Hin zone`
+  );
+}
+const huaHinCenterDisplay = resolveAmphoeFeeDisplay(
+  PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'hua-hin-center')!,
+  'HUA_HIN'
+);
+const huaHinThapTaiDisplay = resolveAmphoeFeeDisplay(
+  PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'thap-tai')!,
+  'HUA_HIN'
+);
+assert(huaHinCenterDisplay.feeFrom === 250, 'Hua Hin Center feeFrom = 250');
+assert(huaHinThapTaiDisplay.feeFrom === 350, 'Thap Tai feeFrom = 350');
+
+const huaHinDrill = getAmphoeDrillItems('prachuap-khiri-khan', 'en');
+assert(huaHinDrill.length === 6, 'Hua Hin drill has 6 areas');
+assert(
+  huaHinDrill.every((d) => d.subAreas.length === 0),
+  'Hua Hin areas are first-class map districts, not nested rows'
+);
+const huaHinCheckoutIds = getZonesForDestination('HUA_HIN')
+  .map((z) => z.id)
+  .sort();
+const huaHinMapZoneIds = PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZoneId!).sort();
+assert(
+  huaHinCheckoutIds.join(',') === huaHinMapZoneIds.join(','),
+  'every Hua Hin checkout zone is a clickable map district'
+);
+
+assert(KRABI_AMPHOE_MAP_DISTRICTS.length === 5, 'Krabi map has 5 checkout areas');
+const krabiAmpCodes = new Set(KRABI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(krabiAmpCodes.size === 5, 'each Krabi area has a unique amp_code');
+for (const d of KRABI_AMPHOE_MAP_DISTRICTS) {
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const display = resolveAmphoeFeeDisplay(d, 'KRABI');
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(
+    display.feeFrom === getZoneFee('KRABI', d.checkoutZoneId!),
+    `${d.id} fee matches Krabi zone`
+  );
+}
+const aoNangDisplay = resolveAmphoeFeeDisplay(
+  KRABI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'ao-nang-center')!,
+  'KRABI'
+);
+const tubkaekDisplay = resolveAmphoeFeeDisplay(
+  KRABI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'tubkaek')!,
+  'KRABI'
+);
+assert(aoNangDisplay.feeFrom === 250, 'Ao Nang Center feeFrom = 250');
+assert(tubkaekDisplay.feeFrom === 450, 'Tubkaek feeFrom = 450');
+
+const krabiDrill = getAmphoeDrillItems('krabi', 'en');
+assert(krabiDrill.length === 5, 'Krabi drill has 5 areas');
+assert(
+  krabiDrill.every((d) => d.subAreas.length === 0),
+  'Krabi areas are first-class map districts, not nested rows'
+);
+const krabiCheckoutIds = getZonesForDestination('KRABI')
+  .map((z) => z.id)
+  .sort();
+const krabiMapZoneIds = KRABI_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZoneId!).sort();
+assert(
+  krabiCheckoutIds.join(',') === krabiMapZoneIds.join(','),
+  'every Krabi checkout zone is a clickable map district'
+);
+
+assert(getZonesForDestination('SAMUI').length === 8, 'Samui has 8 checkout zones');
+assert(getZoneFee('SAMUI', 'sui-chaweng') === 250, 'Samui Chaweng fee = 250');
+assert(getZoneFee('SAMUI', 'sui-hua-thanon') === 350, 'Samui Hua Thanon fee = 350');
+
+assert(SURAT_THANI_AMPHOE_MAP_DISTRICTS.length === 8, 'Samui map has 8 checkout areas');
+const samuiAmpCodes = new Set(SURAT_THANI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(samuiAmpCodes.size === 8, 'each Samui area has a unique amp_code');
+for (const d of SURAT_THANI_AMPHOE_MAP_DISTRICTS) {
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const display = resolveAmphoeFeeDisplay(d, 'SAMUI');
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(
+    display.feeFrom === getZoneFee('SAMUI', d.checkoutZoneId!),
+    `${d.id} fee matches Samui zone`
+  );
+}
+const samuiChawengDisplay = resolveAmphoeFeeDisplay(
+  SURAT_THANI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'chaweng')!,
+  'SAMUI'
+);
+const samuiHuaThanonDisplay = resolveAmphoeFeeDisplay(
+  SURAT_THANI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'hua-thanon')!,
+  'SAMUI'
+);
+assert(samuiChawengDisplay.feeFrom === 250, 'Chaweng feeFrom = 250');
+assert(samuiHuaThanonDisplay.feeFrom === 350, 'Hua Thanon feeFrom = 350');
+
+const samuiDrill = getAmphoeDrillItems('surat-thani', 'en');
+assert(samuiDrill.length === 8, 'Samui drill has 8 areas');
+assert(
+  samuiDrill.every((d) => d.subAreas.length === 0),
+  'Samui areas are first-class map districts, not nested rows'
+);
+const samuiCheckoutIds = getZonesForDestination('SAMUI')
+  .map((z) => z.id)
+  .sort();
+const samuiMapZoneIds = SURAT_THANI_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZoneId!).sort();
+assert(
+  samuiCheckoutIds.join(',') === samuiMapZoneIds.join(','),
+  'every Samui checkout zone is a clickable map district'
 );
 
 const ladder = getChiangMaiZoneFeeLadder();

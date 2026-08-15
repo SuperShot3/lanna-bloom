@@ -20,6 +20,9 @@ import { AMPHOE_MAP_DISTRICTS } from '../lib/delivery/amphoeMapData';
 import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/lamphunAmphoeMapData';
 import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/chonBuriAmphoeMapData';
 import { PHUKET_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/phuketAmphoeMapData';
+import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/prachuapKhiriKhanAmphoeMapData';
+import { KRABI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/krabiAmphoeMapData';
+import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/suratThaniAmphoeMapData';
 import { isAmphoeCapableProvince } from '../lib/delivery/amphoeProvinces';
 
 type Check = { ok: boolean; label: string; detail?: string };
@@ -265,6 +268,45 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
         fail(
           'amphoe metadata',
           `Expected 11 unique ampCodes in phuketAmphoeMapData; got ${PHUKET_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'prachuap-khiri-khan') {
+    const codes = PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.length === 6 && unique.size === 6) {
+      out.push(pass('amphoe metadata', '6 Hua Hin areas, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 6 unique ampCodes in prachuapKhiriKhanAmphoeMapData; got ${PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'krabi') {
+    const codes = KRABI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (KRABI_AMPHOE_MAP_DISTRICTS.length === 5 && unique.size === 5) {
+      out.push(pass('amphoe metadata', '5 Krabi / Ao Nang areas, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 5 unique ampCodes in krabiAmphoeMapData; got ${KRABI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'surat-thani') {
+    const codes = SURAT_THANI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (SURAT_THANI_AMPHOE_MAP_DISTRICTS.length === 8 && unique.size === 8) {
+      out.push(pass('amphoe metadata', '8 Koh Samui areas, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 8 unique ampCodes in suratThaniAmphoeMapData; got ${SURAT_THANI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

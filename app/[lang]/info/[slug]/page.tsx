@@ -8,7 +8,7 @@ import { getBaseUrl } from '@/lib/orders';
 import { getLineContactUrl } from '@/lib/messenger';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { buildAlternates } from '@/lib/seo/alternates';
-import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCtaLinks } from '../_data/articles';
+import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCoverAlt, getArticleCtaLinks } from '../_data/articles';
 import { isCommercialIntentSlug } from '@/lib/landingPages/intentLandingPages';
 import { ShareButton } from '@/components/ShareButton';
 import { ArticleCta } from './ArticleCta';
@@ -73,6 +73,10 @@ export async function generateMetadata({
   const description = getArticleExcerpt(article, lang);
   const coverImage =
     article.cover?.type === 'image' ? `${base}${article.cover.src}` : undefined;
+  const coverAlt = getArticleCoverAlt(article, lang);
+  const ogImages = coverImage
+    ? [{ url: coverImage, ...(coverAlt ? { alt: coverAlt } : {}) }]
+    : undefined;
   const pathSuffix = article.externalPath
     ? article.externalPath.replace(/\/$/, '') || ''
     : `/info/${slug}`;
@@ -91,13 +95,13 @@ export async function generateMetadata({
       url: canonical,
       type: 'article',
       publishedTime: article.publishedAt,
-      ...(coverImage ? { images: [{ url: coverImage }] } : {}),
+      ...(ogImages ? { images: ogImages } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: `${title} | Lanna Bloom`,
       description,
-      ...(coverImage ? { images: [coverImage] } : {}),
+      ...(ogImages ? { images: ogImages } : {}),
     },
   };
 }
@@ -132,6 +136,10 @@ export function generateStaticParams() {
     'flower-delivery-address-chiang-mai',
     'flower-delivery-lamphun-province',
     'flower-delivery-pattaya',
+    'flower-delivery-phuket',
+    'flower-delivery-hua-hin',
+    'flower-delivery-samui',
+    'flower-delivery-to-hospitals-phuket',
   ];
   const params: { lang: string; slug: string }[] = [];
   for (const lang of locales) {
@@ -188,16 +196,38 @@ export default async function InfoArticlePage({
     });
   };
 
+  const coverImage =
+    article.cover.type === 'image' ? `${base}${article.cover.src}` : undefined;
+  const coverAlt = getArticleCoverAlt(article, lang);
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: articleTitle,
     description: articleExcerpt,
     datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
     url: articleUrl,
+    inLanguage: lang === 'th' ? 'th-TH' : 'en',
+    ...(coverImage
+      ? {
+          image: {
+            '@type': 'ImageObject',
+            url: coverImage,
+            ...(coverAlt ? { description: coverAlt, name: coverAlt } : {}),
+          },
+        }
+      : {}),
+    author: {
+      '@type': 'Organization',
+      name: 'Lanna Bloom',
+    },
     publisher: {
       '@type': 'Organization',
       name: 'Lanna Bloom',
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': articleUrl,
     },
   };
 

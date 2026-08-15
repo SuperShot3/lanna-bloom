@@ -35,7 +35,7 @@ npm run validate:province -- <province_code> --amphoe
 | **B — Orderable market** | Customers can shop via destination + fees + nav/SEO | Yes | Then status/catalog in admin |
 | **C — Amphoe map** | District polygons + fees on coverage map | Yes (generalize CM-only gates) | Status colors still from admin |
 
-Most new opens are **A then B**. Use **C** when amphoe drill-down is required (today: Chiang Mai, Lamphun, Chon Buri / Pattaya).
+Most new opens are **A then B**. Use **C** when amphoe drill-down is required (today: Chiang Mai, Lamphun, Chon Buri / Pattaya, Phuket, Hua Hin, Krabi / Ao Nang, Koh Samui).
 
 ## Out of scope (never do unless explicitly approved)
 
@@ -44,6 +44,7 @@ Most new opens are **A then B**. Use **C** when amphoe drill-down is required (t
 - Hardcoding map fee amounts outside `zones.ts` / `amphoeDisplayFees`
 - Promising nationwide same-day delivery
 - Creating a separate map or checkout per province
+- Naming new markets in coverage-page `mapHint`, `intro`, `areasTitle`, or meta (those stay Chiang Mai–core / generic; province details belong in that market’s own section)
 
 ---
 
@@ -69,7 +70,8 @@ Edit in this order:
 6. **Coverage page content (required)** — update [`lib/landingPages/flowerDeliveryThailand.ts`](../../../lib/landingPages/flowerDeliveryThailand.ts) + [`app/[lang]/delivery-areas-thailand/page.tsx`](../../../app/[lang]/delivery-areas-thailand/page.tsx):
    - Active `MARKETS` feed `listShoppableCoverageAreas()` (join by `destination_id`).
    - Summaries are **dynamic** (`status · categories · from ฿minFee`) via `formatShoppableProvinceSummary` — do **not** hardcode market blurbs like “Bouquet delivery only”.
-   - Update customer copy (`mapHint`, `intro`, meta) so the province is named honestly (service level + fee floor).
+   - Do **not** append the new province to page-level `mapHint`, `intro`, `areasTitle`, or meta. Those stay Chiang Mai–core / generic (map: tap a province for status; intro: Chiang Mai is the core; other markets live in their own sections below). Listing every market in the intro duplicates those sections.
+   - Add **province-section copy only** (`{market}Title`, `{market}Intro`, `{market}Note`, CTA) with honest service level + fee floor.
    - If the province has named amphoes/localities for SEO, add a district helper (mirror `getLamphunDeliveryDistricts`) and a visible **province section** on the coverage page.
    - **Shop CTA placement:** put a `btn-premium` shop link **inside that province section** (title → intro → CTA → amphoe/locality list). Do **not** add province shop buttons to the page hero or the shared browse-link row. Mirror Chiang Mai (`/{lang}/catalog`) and Lamphun (`/{lang}/{slug}/flower-delivery`).
 7. **Partner apply** — already lists all DB provinces; no duplicate roster.
@@ -87,7 +89,7 @@ Edit in this order:
 7. Keep `mode="admin"` working: amphoe click must not clear province selection used by the admin edit form.
 8. Coverage page: one pill list from the same district helper as map metadata (see Tier B step 6). Do **not** add a second neighborhood list that duplicates checkout zones.
 9. Run `npm run validate:province -- <code> --amphoe`.
-10. Regression: Chiang Mai, Lamphun, and Chon Buri (Pattaya) hover, select, zoom, list sync on public page.
+10. Regression: Chiang Mai, Lamphun, Chon Buri (Pattaya), Phuket, Hua Hin, Krabi / Ao Nang, and Koh Samui hover, select, zoom, list sync on public page.
 
 ### City markets (required)
 
@@ -97,7 +99,7 @@ Some destinations are a **city market**, not a full-province amphoe map (example
 - Do **not** ship one parent amphoe blob (e.g. Bang Lamung) with nested non-clickable neighborhood text.
 - `relatedCheckoutZoneIds` is for **Chiang Mai Mueang only**. It is not a substitute for missing polygons.
 - Coverage pills must come from the map district helper (e.g. `getPattayaDeliveryDistricts`), not a second neighborhood helper.
-- Do not map the rest of the province unless that market actually delivers there (Pattaya: no Si Racha / Mueang Chon Buri / rest of Sattahip).
+- Do not map the rest of the province unless that market actually delivers there (Pattaya: no Si Racha / Mueang Chon Buri / rest of Sattahip; Ao Nang: no Koh Lanta / Ao Luek / rest of Krabi; Koh Samui: no Koh Phangan / mainland Surat Thani).
 
 ### OpenGIS generate-once
 

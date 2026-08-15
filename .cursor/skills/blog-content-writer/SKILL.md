@@ -1,6 +1,6 @@
 ---
 name: blog-content-writer
-description: Create SEO-optimized flower shop content—info MDX articles and `/guides/` bouquet guides—with natural product promotion, honest local florist expertise, highly scannable structure, and bilingual EN/TH when requested. Use for posts, guides, SEO copy, FAQs, slugs, OG fields, alt text, Sanity-ready blocks, or implementation handoffs matching `birthday-flower-gift` and info patterns.
+description: Create SEO-optimized flower shop content for `/info/` MDX articles—with natural product promotion from Popular picks and top sellers (never the same default bouquets), honest local florist expertise, highly scannable structure, and bilingual EN/TH when requested. Use for posts, guides, SEO copy, FAQs, slugs, OG fields, alt text, or implementation handoffs matching existing `content/info/` articles.
 ---
 
 # Blog Content Writer
@@ -13,7 +13,7 @@ Default output mode is webpage-ready content blocks for editorial entry or hando
 
 **Customer-facing copy blocks** (what readers see): do not include JSON, code, schema markup, or developer-only noise inside those blocks.
 
-**Implementation handoffs** (when shipping a page in this repo): may name existing files, components, and slugs so work maps cleanly to `app/[lang]/guides/` or `content/info/`—keep that material in clearly labeled implementation sections, not mixed into hero/body prose meant for shoppers.
+**Implementation handoffs** (when shipping a page in this repo): may name existing files, components, and slugs so work maps cleanly to `content/info/` and `app/[lang]/info/_data/articles.ts`—keep that material in clearly labeled implementation sections, not mixed into hero/body prose meant for shoppers.
 
 ## Primary Objectives
 
@@ -22,7 +22,7 @@ Every article must:
 - Fully answer the reader's search query.
 - Demonstrate real local flower and delivery experience (Chiang Mai specifics, not generic advice).
 - Be easy to scan on desktop and mobile.
-- Support relevant Lanna Bloom services and products naturally, never as a hard-sell ad.
+- Support relevant Lanna Bloom services and products naturally, never as a hard-sell ad. Choose products from Popular picks or top sellers (see **Product Selection**); never paste the same bouquet set into every article.
 - Avoid generic, repetitive, or obviously AI-generated writing.
 - Never invent prices, availability, delivery areas, credentials, statistics, or cultural facts.
 
@@ -31,7 +31,7 @@ Every article must:
 - Default language is English. Provide Thai when the user asks for Thai or bilingual.
 - If important information is missing, ask short questions before writing.
 - Default to **Webpage Build Mode** (section-by-section page output). Do not return only one long text block unless the user explicitly asks for text-only.
-- For on-site articles and guides, reuse existing page patterns and UI primitives from this repository (guide routes under `app/[lang]/guides/`, info/MDX, catalog-driven cards, shared FAQ, global styles). Do not invent article-specific components unless the user asks for new UI.
+- For on-site articles and guides, reuse existing page patterns and UI primitives from this repository (info/MDX under `/info/`, catalog-driven cards, shared FAQ, global styles). Do not invent article-specific components unless the user asks for new UI. Do not create new `/guides/` routes or new bespoke TSX article pages.
 - Do not put JSON, raw schema, or unexplained code inside **customer-facing prose blocks**; implementation sections may reference repo filenames and slugs when handing off a page build.
 
 ## Google People-First Quality Standard
@@ -184,7 +184,7 @@ Check whether these details are available before writing:
 - Target reader and search intent (informational, comparison, transactional)
 - Primary SEO keyword
 - Secondary or related keywords
-- Website products to promote, including product name and URL when possible
+- Website products to promote, including product name and URL when possible. If the user does not name them, look them up from **Popular picks** and **top sellers** (see **Product Selection**)—never reuse a memorized default set.
 - Target location, if local SEO matters
 - Any practical depth constraint; otherwise derive length from the reader's intent and topic complexity
 - Language: English, Thai, or bilingual
@@ -194,6 +194,30 @@ Check whether these details are available before writing:
 - Whether a genuine local-experience angle ("honest advice") or a real, active promo code applies
 
 If only a few details are missing, ask only for those. If the user wants a quick draft, make reasonable assumptions and clearly label them as **Assumptions** before the final output.
+
+## Product Selection (required before writing)
+
+Do this **before** drafting MDX. Do not pick slugs from memory, from this skill's examples, or from the last article you wrote.
+
+**Pool (in order):**
+
+1. Products the user named (still verify exact catalog slugs).
+2. **Favorites / Popular picks** — homepage "Popular picks" (`featuredPopular`). These are Lanna Bloom's staff favorites.
+3. **Top selling** — catalog items that show a public sold count (“X sold”). Prefer higher counts that still fit the topic.
+
+From that pool, choose **4–6** that match **this** article’s occasion, recipient, color, mood, or destination. Do not dump the whole popular row. Do not insert a product only to hit a count.
+
+**Never copy-paste the default destination set.** These five slugs must not appear together in a new article unless the user named them:
+
+`red-rose-romance`, `gentle-pink-rose-bouquet`, `sunflower-bouquet`, `sunny-happiness-mix`, `rustic-rose-bouquet`
+
+Any one of them may still be used when it is actually a Popular pick or top seller **and** it fits this topic.
+
+**Anti-repeat:** grep `content/info/*.mdx` for `CatalogProductCard slug=` and do not reuse the same 4–6 slugs as a recent article (especially city delivery pages). Vary the mix across articles.
+
+Lookup steps, field mapping, and matching examples: [reference.md](reference.md).
+
+Include a **Product Selection Log** in the implementation handoff (source = user / popular-pick / top-seller for each slug).
 
 ## Product Promotion Rules
 
@@ -213,14 +237,12 @@ If only a few details are missing, ask only for those. If the user wants a quick
 - Do not insert unrelated products only to increase the number of product cards.
 - Cadence: use a soft CTA after an early informational section, a product block near the middle, and one clear final CTA. Do not place "Order now" after every section.
 
-Use this **Recommended** block in editorial copy (same messaging appears in guides as `guide-inline-callout` beside the bouquet card):
+Use this **Recommended** block in editorial copy (render as a markdown blockquote in MDX):
 
 > **Recommended:** [Product Name](catalog URL or leave blank for later)
 > Why it fits: [One specific reason tied to the blog topic, occasion, or recipient.]
 
-**Guide pages:** Place this pair in the **left column** under section body copy; the live **`BouquetCard`** sits in the **right column** when the slug resolves from Sanity. Add a separate short line for editorial clarity:
-
-**Section match note:** [One sentence—who or what occasion this section targets—maps to `guide-match-note` / `sectionMatch`.]
+Then place `<CatalogProductCard slug="exact-catalog-slug" />` immediately after that callout.
 
 ## Website Product Card Elements
 
@@ -244,27 +266,17 @@ Use these editorial blocks so implementation matches the site:
 - URL (TH): [full URL for Thai or "N/A"]
 - Why this product matches this section: [One short reader-focused reason]
 
-**Bouquet guide section (guide path)** — one block per promoted bouquet:
-- **Slug:** [exact catalog slug—must match Sanity/product URL]
-- **Heading (H3):** [Section title]
-- **Paragraphs:** [2–4 short paragraphs as array items]
-- **Optional subheading + paragraphs:** [H4 + supporting lines when needed]
-- **Why it fits:** [Recommended callout line]
-- **Section match note:** [Who/when this pick fits—shown below the card row]
-- **Fallback display name (EN):** [Stable English label if CMS name unavailable]
-
 Selection rules:
-- Pull product names and URLs from the website catalog when available.
-- Match products by intent first (occasion, recipient, mood), then by flower/category.
+- Follow **Product Selection** above. Names and slugs come from the live catalog lookup, not from this skill.
+- Match products by intent first (occasion, recipient, mood), then by flower/category, **within** the Popular-pick / top-seller pool.
 - Prefer clean names without emoji in headings unless user asks to keep emoji.
 - If two products are very similar, keep only one to avoid repetitive cards.
 - Use **4-6 product sections/cards** per article as the standard range.
-- Reuse existing **`BouquetCard`** (guides) or **`CatalogProductCard`** (info MDX); do not design new card styles for a single article.
-- For **info** articles implemented in MDX:
-  - `<CatalogProductCard slug="product-slug" />`
+- Reuse existing **`CatalogProductCard`** in MDX (it already renders `BouquetCard` or `ProductCard` from the Supabase catalog). Do not design new card styles for a single article.
+- MDX usage:
+  - `<CatalogProductCard slug="exact-catalog-slug-from-lookup" />`
   - Optional: `<CatalogProductCardGrid>` wrapping multiple cards for a mid-article comparison block.
-- For **guides**, wire slugs in page data and fetch with `getCatalogBouquetBySlug` (`@/lib/catalogReads`); cards render only when data exists—Recommended links still work from copy.
-- Ensure each product slug exists in the Supabase catalog before using it.
+- Ensure each product slug exists in the Supabase catalog before using it. Verify against live product URLs (`/{lang}/catalog/[slug]`).
 
 ## Calls to Action
 
@@ -277,7 +289,7 @@ Calls to action must match the surrounding content. Examples:
 - Send flowers to Chiang Mai
 - Ask us which seasonal flowers are freshest today
 
-Follow the cadence from **Product Promotion Rules**: one soft CTA early, one product block mid-article, one clear final CTA. Avoid aggressive or repetitive sales language, and keep contact-channel actions (LINE, WhatsApp, "message us") at the **bottom** of the article in the final CTA area (`MessengerOrderButtons` with `contactOnly` on guides), unless the user explicitly requests otherwise.
+Follow the cadence from **Product Promotion Rules**: one soft CTA early, one product block mid-article, one clear final CTA. Avoid aggressive or repetitive sales language, and keep contact-channel actions (LINE, WhatsApp, "message us") for the automatic footer `ArticleCta` / `ctaLinks` unless the user explicitly requests otherwise.
 
 ## FAQ Section
 
@@ -389,18 +401,19 @@ Unless the user asks for a different format, always deliver the blog as a publis
 - Hero block
 - Direct opening answer + intro block
 - Body section blocks (H2/H3 + short paragraphs, tables, lists, honest florist advice as needed)
-- Product surfaces in context (MDX `CatalogProductCard` rows **or** guide bouquet sections with `BouquetCard` + Recommended callout)
-- FAQ accordion content when genuine follow-up questions benefit the reader
-- Final CTA block (messenger/contact actions **last** on guides)
+- Product surfaces in context (MDX `CatalogProductCard` rows + Recommended callout)
+- FAQ as H2 "FAQ" + H3 per question when genuine follow-up questions benefit the reader
+- Final CTA via `ctaLinks` / `ctaTitle` in `articles.ts` (auto-rendered; do not duplicate in MDX)
 
-The goal is to make output easy to map to page sections—whether those sections live in Sanity, MDX, or a typed guide module in the repo. Keep each block clearly labeled.
+The goal is to make output easy to map to `/info/` MDX page sections. Keep each block clearly labeled.
 
-**Pick the right ship pattern:**
+**Ship pattern (the only on-site path):**
 
-| Goal | Primary pattern |
-|------|------------------|
-| Long-form article under `/info/`, MDX body, inline catalog cards | Info article: `articles.ts` + `content/info/[slug].*.mdx` + `<CatalogProductCard slug="..." />` |
-| Occasion / comparison guide under `/guides/`, multiple real bouquets beside copy | Guide page: `app/[lang]/guides/[slug]/page.tsx` + Sanity slugs + `BouquetCard` + `GuideFaq` |
+| Goal | Pattern |
+|------|---------|
+| Any new article or guide on the website | `articles.ts` + `content/info/[slug].en.mdx` + `content/info/[slug].th.mdx` + `<CatalogProductCard slug="..." />` |
+
+Do not create new routes under `/guides/` (those URLs 301 to `/info/`). Do not add new bespoke TSX article pages. Two legacy comparison pages already exist (`/info/birthday-flower-gift`, `/info/perfect-bouquet-someone-special`); edit those in place only if the user asks to change those specific pages.
 
 Do not return only freeform chat prose when the user asks to create a page.
 
@@ -409,10 +422,10 @@ Do not return only freeform chat prose when the user asks to create a page.
 When the task is to ship an article or guide page on the website, prefer reusing existing layouts, components, and CSS patterns from this codebase. Do not introduce parallel blog-only cards, buttons, or section styles unless the user explicitly asks for a new design system.
 
 Default behavior:
-- Map content to patterns that already exist: guide pages under `app/[lang]/guides/`, info/MDX articles under `content/info/` with `CatalogProductCard`, shared FAQ patterns, site header/footer, typography classes, and tokens from `app/globals.css` (guide-specific classes include `guide-page`, `guide-hero`, `guide-section`, `guide-bouquet-detail-*`, `guide-inline-callout`, `guide-highlights`, `guide-final-cta`, etc.).
-- Promote products using the same building blocks shoppers see elsewhere: **guide pages** use `BouquetCard` fed by `getCatalogBouquetBySlug` and the catalog slug; **info articles** use `CatalogProductCard` in MDX. Do not ship fake tiles or one-off product markup unless no primitive exists.
+- Map content to patterns that already exist: info/MDX articles under `content/info/` with `CatalogProductCard`, shared FAQ patterns, site header/footer, typography classes, and tokens from `app/globals.css`.
+- Promote products with **`CatalogProductCard`** and **exact catalog slugs**. Do not ship fake tiles or one-off product markup unless no primitive exists.
 - If the skill mentions product cards, interpret that as wiring content to real components and **exact catalog slugs**, not as permission to design arbitrary HTML/CSS per post.
-- Keep contact actions (LINE, WhatsApp, contact links, "message us") at the **bottom** of the article in the final CTA area (`MessengerOrderButtons` with `contactOnly` on guides, unless the user explicitly requests otherwise).
+- Keep contact actions (LINE, WhatsApp, contact links, "message us") in the automatic footer CTA (`ctaLinks` in `articles.ts`) unless the user explicitly requests otherwise.
 
 When adding or changing code:
 - Extend existing components or page shells before creating new ones.
@@ -425,39 +438,32 @@ Exceptions:
 Anti-patterns to avoid:
 - Long bespoke CSS blocks duplicated per article when shared classes already exist.
 - Hardcoded locale paths like `/en/...` where localized links `/${lang}/...` should be used.
-- Fake product blocks that do not connect to real catalog slugs or the standard card components (`BouquetCard` on guides, `CatalogProductCard` on info MDX).
-- **Wrong slugs** (hyphens, `and`, word order): if the card does not render, the slug almost certainly does not match Sanity—verify against live product URLs before locking copy.
+- Fake product blocks that do not connect to real catalog slugs or `CatalogProductCard`.
+- **Wrong slugs** (hyphens, `and`, word order): if the card does not render, the slug almost certainly does not match the Supabase catalog—verify against live product URLs before locking copy.
 
 ### Implementation Constraints (Canonical Primitives)
 
 Use these as first-choice implementation targets:
 
-**Guides (product-led, bouquet-by-section layout)**  
-- Route: `app/[lang]/guides/*/page.tsx`  
-- Reference implementation: `app/[lang]/guides/birthday-flower-gift/page.tsx`  
-- Metadata: `generateMetadata` (title, description, canonical, Open Graph) per locale via `params.lang`  
-- Hero: `guide-hero` + `guide-eyebrow` + `guide-h1`  
-- Intro band: `guide-intro-band` + `guide-section-lede` (optional screen-reader section title)  
-- Body sections: `guide-section`, headings via `popular-title`, body via `guide-body-text`  
-- Each promoted bouquet: a block with narrative copy + optional live **`BouquetCard`** (same tile as catalog) when Sanity returns data for the slug; recommended link + "Why it fits" callout in the **text column** (`guide-inline-callout` inside `guide-bouquet-detail-copy`), layout via `guide-bouquet-detail-layout` / `guide-bouquet-detail-aside`  
-- Short "why this pick matches the section" line: `guide-match-note` below the two-column row  
-- Quick comparison list: `guide-highlights` with links to `/${locale}/catalog/[slug]`  
-- FAQ: `GuideFaq` (`app/[lang]/guides/flowers-chiang-mai/GuideFaq`) with `{ q, a }[]` items  
-- Final CTA: `guide-final-cta` + primary browse link; **`MessengerOrderButtons`** last (`contactOnly`, `pageLocation` such as `"guide"`)  
-- Data shape (conceptually): per bouquet—**slug** (canonical catalog slug), **heading** (H3), **paragraphs**, optional **subheading** / **subParagraphs**, **whyItFits** (callout), **sectionMatch** (match note), plus display fallback name if CMS name missing  
-
-**Info articles (MDX + inline cards)**  
+**Info articles (the only place to publish new posts)**  
+- Public URL: `/{lang}/info/[slug]`  
 - Route: `app/[lang]/info/[slug]/page.tsx`  
 - Registry: `app/[lang]/info/_data/articles.ts`  
 - Body: `content/info/[slug].en.mdx`, `content/info/[slug].th.mdx`  
-- Product promotion: `CatalogProductCard` in `app/[lang]/info/[slug]/CatalogProductCard.tsx`  
+- Also add the slug to `generateStaticParams` in `app/[lang]/info/[slug]/page.tsx`  
+- Operational checklist: `content/info/INFO_ARTICLES_GUIDE.md`  
+- Product promotion: `CatalogProductCard` (loads bouquets/products from Supabase)  
 - Tables: standard markdown tables, styled via `infoArticleTableMdxComponents`  
 - Other in-body primitives already wired in `page.tsx`: `ArticleFigure`, `ArticleChecklistBlock` (variants `default`/`essential`/`recommended`/`tip`), `ArticleStepsBlock`, `ArticleProductPick`, `CatalogProductCardGrid`  
-- Already automatic, do not hand-author: published date (from `publishedAt`), the "← Guides" back link, the final `ArticleCta` (fed by `ctaLinks`/`ctaTitle`), and `RelatedGuides`  
+- Already automatic, do not hand-author: published date (from `publishedAt`), the "← Guides" back link, the final `ArticleCta` (fed by `ctaLinks`/`ctaTitle`), `RelatedGuides`, and comments  
 - Intentionally not built yet, do not promise them in copy: real breadcrumbs, a jump-linked table of contents (no heading anchor IDs), a dedicated author/reviewer visual box  
+
+**Legacy (do not clone for new posts)**  
+Two comparison pages still use custom TSX instead of MDX: `/info/birthday-flower-gift` and `/info/perfect-bouquet-someone-special`. Leave them unless the user asks to edit those pages. Old `/guides/` URLs 301 here.
 
 **Shared**  
 - Shared styling baseline: `app/globals.css`  
+- Catalog source of truth: Supabase (`getCatalogBouquetBySlug` / `getCatalogProductBySlug`), not Sanity  
 
 Only create new UI primitives when the user explicitly requests new UI or no existing primitive can satisfy the requirement.
 
@@ -539,30 +545,23 @@ Use this exact structure. Provide Thai blocks only when Thai or bilingual is req
 **In-Article Image Alt Text Suggestions:**
 [2-4 descriptive alt texts in English, plus Thai when bilingual]
 
-**Product Cards / Bouquet Sections To Embed:**
-[For `/info/`: 4-6 **Product Card** blocks + MDX lines. For `/guides/`: one **Bouquet guide section** block per promoted bouquet with accurate slugs.]
+**Product Cards To Embed:**
+[4-6 **Product Card** blocks + matching MDX `<CatalogProductCard slug="exact-catalog-slug-from-lookup" />` lines.]
+
+**Product Selection Log:**
+[For each slug: name, source (`user` / `popular-pick` / `top-seller`), and why it fits this article—not the last article.]
 
 **Output Mode:**
 Webpage Build Mode
 
-**Implementation Package** — choose **one** path (or both if the user asks for dual delivery):
+**Implementation Package** — `/info/` MDX only:
 
-**Path A — Info article (`/info/`):**
 1. **Article Meta Draft** (for `articles.ts`): slug, title / titleTh, excerpt / excerptTh, publishedAt (ISO), featured, cover, ctaLinks (EN/TH labels + href), plus author/reviewer and disclosure needs for implementation.
-2. **MDX Draft - English** (`[slug].en.mdx`).
-3. **MDX Draft - Thai** (`[slug].th.mdx`) when Thai or bilingual is requested.
+2. **MDX Draft - English** (`content/info/[slug].en.mdx`).
+3. **MDX Draft - Thai** (`content/info/[slug].th.mdx`) when Thai or bilingual is requested.
+4. **Static params:** add the slug to `generateStaticParams` in `app/[lang]/info/[slug]/page.tsx`. Sitemap picks the article up from `articles.ts` automatically.
 
-**Path B — Guide page (`/guides/`):**
-1. **Route slug:** folder name under `app/[lang]/guides/[guide-slug]/`.
-2. **Metadata draft:** browser title, meta description, Open Graph title/description (align with `generateMetadata` fields).
-3. **Hero + intro:** eyebrow line, H1, intro lede (see classes in **Implementation Constraints**).
-4. **Section outline:** H2s + body for mood/education blocks as needed.
-5. **Bouquet sections:** one **Bouquet guide section** block per product (slug-accurate).
-6. **Comparison snapshot:** bullet lines with mood labels + product links (optional but matches birthday guide pattern).
-7. **FAQ:** 4-6 `GuideFaq` items (question + concise answer).
-8. **Final CTA:** closing heading, short paragraph, primary catalog link line; note that **MessengerOrderButtons** belongs at the very end.
-
-When the user asks to "create page", "create webpage," or points at `/info/` vs `/guides/`, output the matching package first, then optional editorial notes.
+When the user asks to "create page" or "create webpage," output this package first, then optional editorial notes.
 
 **Webpage Sections:**
 
@@ -585,7 +584,7 @@ When the user asks to "create page", "create webpage," or points at `/info/` vs 
 
 ### Product Card Section 1
 [Insert one Product Card block and matching MDX component line]
-[Example MDX: <CatalogProductCard slug="red-rose-romance" />]
+[MDX: <CatalogProductCard slug="exact-catalog-slug-from-lookup" />]
 
 ### Content Section 2
 - Heading (H2): [H2 Section]
@@ -602,7 +601,7 @@ When the user asks to "create page", "create webpage," or points at `/info/` vs 
 
 ### Product Card Section 2
 [Insert one Product Card block and matching MDX component line]
-[Example MDX: <CatalogProductCard slug="sunflower-bouquet" />]
+[MDX: <CatalogProductCard slug="exact-catalog-slug-from-lookup" />]
 
 ### Content Section 3
 - Heading (H2): [H2 Section comparing options, occasions, or colors when relevant]
@@ -637,56 +636,16 @@ When the user asks to "create page", "create webpage," or points at `/info/` vs 
 - Body: [Short conclusion with natural focus keyword use]
 - CTA Label: [Example: Browse Fresh Flower Bouquets]
 - CTA URL: [Relevant category/product URL]
-- Contact channel buttons: [Reserve for bottom only—on guides, `MessengerOrderButtons` after browse links]
-
----
-
-### Guide Page Variant (`/guides/`) — match `birthday-flower-gift` patterns
-
-Use when the deliverable is a comparison or occasion guide with multiple real bouquets.
-
-#### Metadata (for developer handoff)
-- Browser title, meta description, canonical path, OG title, OG description
-
-#### Hero Section
-- Eyebrow: [short line, e.g. occasion tag]
-- H1: [Guide title]
-
-#### Intro Band
-- Direct opening answer + lede: [2–3 sentences; focus keyword where natural]
-
-#### Editorial Sections (H2 + body)
-- Mood / how-to sections as needed (`popular-title` + `guide-body-text`)
-- Optional: A Chiang Mai florist's honest advice section, when genuine
-
-#### Meet the bouquets (repeat per product, 4-6 bouquets)
-- Heading (H3): [from Bouquet guide section block]
-- Body paragraphs (+ optional H4 subsection)
-- **Recommended + Why it fits** (callout; lives in text column beside card on desktop)
-- **Section match note** (one line below the layout row)
-- *Implementation:* card appears when Sanity returns bouquet for slug; copy still links to `/${lang}/catalog/[slug]`
-
-#### At-a-glance comparison (optional)
-- Short intro line + bullet list (`guide-highlights`) linking each named bouquet
-
-#### FAQ Section
-- 4–6 practical Q&As for `GuideFaq`
-
-#### Optional: Reader Offer
-[Only with a real, active promo code.]
-
-#### Final CTA Section
-- Heading + supportive copy + browse link(s)
-- LINE / WhatsApp row last (`MessengerOrderButtons`, contact-only)
+- Contact channel buttons: [Handled by footer `ArticleCta` / `ctaLinks` — do not duplicate in the MDX body]
 
 ## Missing Information Questions
 
 When details are missing, ask in this order:
 
-1. Is this for **`/info/`** (MDX article), **`/guides/`** (bouquet comparison guide), or editorial-only copy?
+1. Is this for an on-site **`/info/`** MDX article, or editorial-only copy (no page build)?
 2. What is the blog topic, or which existing post should be reproduced?
 3. What primary SEO keyword should the article target?
-4. Which website products should be promoted, and do you have their **exact catalog slugs or URLs**?
+4. Which website products should be promoted? If none are named, look up **Popular picks** and **top sellers**—do not ask this as a blocker and do not fall back to a default bouquet set.
 5. Any specific location, occasion, season, or recipient type to focus on?
 6. Should the output be English, Thai, or bilingual?
 7. Preferred article length?
@@ -696,17 +655,17 @@ When details are missing, ask in this order:
 
 Before responding, verify:
 
-- Output is ready to paste field-by-field (CMS) or section-by-section (guide handoff).
+- Output is ready to paste into `articles.ts` + `content/info/[slug].{en,th}.mdx`.
 - Output is delivered as webpage sections (Hero, Direct Opening Answer, Intro, Content, product surfaces, FAQ, Final CTA), not one long chat text.
 - There is only one H1, and every H2 has a clear purpose (many phrased as real customer questions).
 - The direct answer appears in the first two to three sentences, before the hero image.
 - The article is easy to scan: no wall of more than three or four plain paragraphs in a row; tables and lists are used where they genuinely add information.
-- For **info** webpage requests: Implementation Package Path A is complete (Article Meta + EN/TH MDX when needed).
-- For **guide** webpage requests: Implementation Package Path B includes metadata draft, all **Bouquet guide section** blocks with **correct slugs**, FAQ items, and final CTA + bottom messaging placement.
-- Product surfaces use valid catalog slugs, follow the 4-6 count as a standard range, and each has a specific fit reason and match note—no products added solely to hit a count.
+- For webpage requests: Implementation Package is complete (Article Meta + EN/TH MDX when needed + static-params slug).
+- Product surfaces use valid Supabase catalog slugs from the **Product Selection** lookup (Popular picks and/or top sellers, or user-named), follow the 4-6 count as a standard range, and each has a specific fit reason—no products added solely to hit a count.
+- Product Selection Log is present. The slug set is not the default five (`red-rose-romance` + `gentle-pink-rose-bouquet` + `sunflower-bouquet` + `sunny-happiness-mix` + `rustic-rose-bouquet`) and is not copied from a recent article.
 - SEO title, meta description, slug (as applicable), excerpt, focus keyword, and related keywords are present for the requested surface.
 - Open Graph title and description are present when metadata is in scope.
-- Contact / messenger prompts appear only in the **final** CTA area on guides and info articles unless the user asked otherwise.
+- Contact / messenger prompts are left to footer `ctaLinks` unless the user asked otherwise.
 - 1–2 internal category or pillar links are suggested where relevant.
 - The FAQ has 4-6 items, each leading with the answer in the first sentence, adding information not already repeated, and reflecting real customer concerns.
 - If included, the "Chiang Mai florist's honest advice" section makes a genuine judgment with trade-offs, and does not default to the priciest option or claim year-round availability.
@@ -720,4 +679,4 @@ Before responding, verify:
 - Customer-facing prose blocks contain no JSON, raw schema, or unexplained code fences.
 - No placeholder text remains.
 - Thai blocks are included when Thai or bilingual is requested, and they sound natural, with the same section structure as English.
-- Layout guidance matches existing guide/info patterns (including guide two-column bouquet rows and bottom `MessengerOrderButtons` when applicable), and no breadcrumbs, jump-linked TOC, or dedicated author box are promised since they aren't built yet.
+- Layout guidance matches existing `/info/` MDX patterns, and no breadcrumbs, jump-linked TOC, or dedicated author box are promised since they aren't built yet.

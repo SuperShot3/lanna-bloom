@@ -10,7 +10,7 @@ Read this file before editing. Inspect the live page and source; do not invent a
 |------|--------|
 | Policy / legal / operational-rule **UI and structure** | this skill |
 | Product names and descriptions | `flower-content-writer` |
-| SEO / marketing info articles and `/guides/` | `blog-content-writer` |
+| SEO / marketing info articles (`/info/` MDX) | `blog-content-writer` |
 
 `content/info/delivery-policy.*.mdx` is an operational policy even though it lives under `/info/`. Treat it with this skill, not as a marketing landing page.
 

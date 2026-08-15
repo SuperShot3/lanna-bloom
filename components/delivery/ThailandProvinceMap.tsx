@@ -57,7 +57,7 @@ const THAILAND_CENTER: [number, number] = [13.5, 101.0];
 const DEFAULT_ZOOM = 5.6;
 const MIN_ZOOM = 5;
 const MAX_ZOOM = 13;
-const AMPHOE_FOCUS_MAX_ZOOM = 12;
+const AMPHOE_FOCUS_MAX_ZOOM = 11;
 const AMPHOE_PROVINCE_BOUNDS_PAD = 0.4;
 
 type TopologyLike = {
@@ -291,12 +291,13 @@ function MapInner({
         // Country maxBounds pulls northern amphoes farther out — unlock first.
         clearMaxBounds(map);
 
-        const padded = bounds.pad(0.08);
+        const padded = bounds.pad(0.28);
         const fittedZoom = map.getBoundsZoom(padded as never, false);
         const currentZoom = map.getZoom();
+        const easedZoom = Number.isFinite(fittedZoom) ? fittedZoom - 0.6 : currentZoom;
         const targetZoom = Math.min(
           AMPHOE_FOCUS_MAX_ZOOM,
-          Math.max(Number.isFinite(fittedZoom) ? fittedZoom : currentZoom, currentZoom)
+          Math.max(easedZoom, currentZoom)
         );
         const center = bounds.getCenter();
         map.setView([center.lat, center.lng], targetZoom, { animate: true });
@@ -370,6 +371,7 @@ function MapInner({
           : 'rgba(26, 60, 52, 0.18)',
       weight: selected ? 3.75 : dimOthers ? 0.45 : 0.75,
       opacity: 1,
+      dashArray: selected ? '9 4 2 4' : null,
     });
     const pathEl = layer.getElement?.() ?? layer._path;
     if (pathEl instanceof Element) {
@@ -420,6 +422,7 @@ function MapInner({
         if (target.closest('.leaflet-interactive')) return;
         if (target.closest('button, a, input, textarea, select, [role="button"]')) return;
         if (target.closest(`.${styles.zoomControls}`)) return;
+        if (target.closest(`.${styles.selectionChip}`)) return;
         if (target.closest(`.${styles.infoOverlay}`)) return;
         if (showAmphoesRef.current) {
           // Stay in amphoe drill-down — only drop district highlight if any.
@@ -490,6 +493,7 @@ function MapInner({
             : 'rgba(26, 60, 52, 0.18)',
         weight: selected ? 3.75 : dimOthers ? 0.45 : 0.75,
         opacity: 1,
+        dashArray: selected ? '9 4 2 4' : undefined,
         className: selected ? styles.amphoeSelected : '',
         lineJoin: 'round' as const,
         lineCap: 'round' as const,
@@ -585,7 +589,8 @@ function MapInner({
         });
       }
       layer.on({
-        click: () => {
+        click: (e: { originalEvent?: Event }) => {
+          L.DomEvent.stopPropagation(e);
           if (!district) return;
           const selectedId = selectedAmphoeIdRef.current;
           onSelectAmphoeRef.current(
@@ -802,6 +807,32 @@ export function ThailandProvinceMap({
     [controlledSelected, onSelectProvince, setAmphoeId, selectedCode]
   );
 
+  const selectedAmphoeDistrict = useMemo(() => {
+    if (!amphoeProvinceCode || !amphoeId) return null;
+    return (
+      getAmphoeDistrictsForProvince(amphoeProvinceCode).find((d) => d.id === amphoeId) ??
+      null
+    );
+  }, [amphoeProvinceCode, amphoeId]);
+
+  function clearCurrentSelection() {
+    if (amphoeId) {
+      setAmphoeId(null);
+      return;
+    }
+    handleSelect('');
+  }
+
+  const selectionChipLabel = selectedAmphoeDistrict
+    ? isTh
+      ? selectedAmphoeDistrict.labelTh
+      : selectedAmphoeDistrict.labelEn
+    : selected
+      ? isTh
+        ? selected.province_name_th
+        : selected.province_name_en
+      : null;
+
   return (
     <div className={`${styles.wrap} ${className ?? ''}`}>
       <div className={styles.mapViewport} aria-label={isTh ? 'แผนที่จังหวัด' : 'Thailand province map'}>
@@ -825,6 +856,28 @@ export function ThailandProvinceMap({
             lang={lang}
           />
         )}
+
+        {selectionChipLabel ? (
+          <div className={styles.selectionChip}>
+            <span className={styles.selectionChipLabel}>{selectionChipLabel}</span>
+            <button
+              type="button"
+              className={styles.selectionChipClose}
+              onClick={clearCurrentSelection}
+              aria-label={
+                amphoeId
+                  ? isTh
+                    ? 'ปิดการเลือกพื้นที่'
+                    : 'Close area selection'
+                  : isTh
+                    ? 'ปิดการเลือกจังหวัด'
+                    : 'Close province selection'
+              }
+            >
+              <span aria-hidden>×</span>
+            </button>
+          </div>
+        ) : null}
 
         {mode === 'admin' && selected ? (
           <div className={styles.infoOverlay} role="status" aria-live="polite">

@@ -13,9 +13,12 @@ import {
 } from '@/components/home/homeLandingContent';
 import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
 import {
+  getHuaHinDeliveryDistricts,
+  getKrabiDeliveryDistricts,
   getLamphunDeliveryDistricts,
   getPattayaDeliveryDistricts,
   getPhuketDeliveryDistricts,
+  getSamuiDeliveryDistricts,
   type LocalizedLabel,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
@@ -29,6 +32,9 @@ export function getMarketLandingDistricts(
   if (destinationId === 'LAMPHUN') return getLamphunDeliveryDistricts();
   if (destinationId === 'PATTAYA') return getPattayaDeliveryDistricts();
   if (destinationId === 'PHUKET') return getPhuketDeliveryDistricts();
+  if (destinationId === 'HUA_HIN') return getHuaHinDeliveryDistricts();
+  if (destinationId === 'KRABI') return getKrabiDeliveryDistricts();
+  if (destinationId === 'SAMUI') return getSamuiDeliveryDistricts();
   return [];
 }
 
