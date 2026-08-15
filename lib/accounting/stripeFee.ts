@@ -22,6 +22,23 @@ export function processingFeeForIncome(
   return Math.round(grossAmount * STRIPE_FEE_RATE * 100) / 100;
 }
 
+/**
+ * Fee stored on an income row.
+ * Non-Stripe methods are always 0. Stripe uses a posted override when it is
+ * a finite number ≥ 0; otherwise the 5.3% estimate.
+ */
+export function resolveProcessingFeeForIncome(
+  grossAmount: number,
+  paymentMethod: IncomePaymentMethod,
+  override?: number | null
+): number {
+  if (paymentMethod !== 'stripe') return 0;
+  if (override != null && Number.isFinite(override) && override >= 0) {
+    return Math.round(override * 100) / 100;
+  }
+  return processingFeeForIncome(grossAmount, 'stripe');
+}
+
 export function netAfterProcessingFee(grossAmount: number, processingFee: number): number {
   return Math.round((grossAmount - processingFee) * 100) / 100;
 }

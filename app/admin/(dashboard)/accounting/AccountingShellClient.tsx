@@ -227,6 +227,16 @@ export function AccountingShellClient({
             <span className="admin-action-label-short">Pay out</span>
           </button>
           <Link
+            href="/admin/accounting/pay-links/new"
+            className="admin-btn admin-btn-outline admin-accounting-header-action"
+          >
+            <span className="material-symbols-outlined" aria-hidden>
+              link
+            </span>
+            <span className="admin-action-label-full">+ Pay link</span>
+            <span className="admin-action-label-short">Pay link</span>
+          </Link>
+          <Link
             href="/admin/accounting/income/new"
             className="admin-btn admin-btn-primary admin-accounting-header-action admin-accounting-header-action-income"
           >

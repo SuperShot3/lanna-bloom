@@ -31,6 +31,9 @@ export async function PATCH(
   const { id } = await params;
   if (!id?.trim()) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+  const existing = await getIncomeRecordById(id.trim());
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   let body: unknown;
   try {
     body = await request.json();
@@ -59,6 +62,12 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    if (existing.payment_method === 'stripe' && loc !== 'stripe') {
+      return NextResponse.json(
+        { error: 'Stripe income stays in the Stripe bucket until payout' },
+        { status: 400 }
+      );
+    }
     updateInput.money_location = loc as never;
   }
   if ('proof_file_path' in b) {
@@ -70,6 +79,22 @@ export async function PATCH(
   }
   if ('notes' in b) {
     updateInput.notes = typeof b.notes === 'string' ? b.notes.trim() || null : null;
+  }
+  if ('processing_fee_amount' in b) {
+    if (existing.payment_method !== 'stripe') {
+      return NextResponse.json(
+        { error: 'processing_fee_amount can only be set on Stripe income' },
+        { status: 400 }
+      );
+    }
+    const feeRaw =
+      typeof b.processing_fee_amount === 'number'
+        ? b.processing_fee_amount
+        : parseFloat(String(b.processing_fee_amount ?? ''));
+    if (!Number.isFinite(feeRaw) || feeRaw < 0) {
+      return NextResponse.json({ error: 'processing_fee_amount must be a number ≥ 0' }, { status: 400 });
+    }
+    updateInput.processing_fee_amount = Math.round(feeRaw * 100) / 100;
   }
 
   if (Object.keys(updateInput).length === 0) {

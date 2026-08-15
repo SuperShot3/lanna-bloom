@@ -1,6 +1,7 @@
 import 'server-only';
 import { upsertOrderIncomeRecord } from './incomeRecords';
 import type { IncomePaymentMethod, MoneyLocation } from '@/types/accounting';
+import { getBangkokYmd } from '@/lib/deliveryHours';
 
 /**
  * Maps an order's raw payment_method string to an income payment method.
@@ -50,12 +51,12 @@ export interface OrderIncomeContext {
   paidAt?: string | null;
 }
 
-/** Convert an ISO timestamp to a YYYY-MM-DD string. Returns null on invalid input. */
+/** Convert an ISO timestamp to a YYYY-MM-DD string (Asia/Bangkok). Returns null on invalid input. */
 function isoToYmd(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return getBangkokYmd(d);
 }
 
 /**
@@ -78,7 +79,7 @@ export async function upsertOrderIncome(ctx: OrderIncomeContext): Promise<void> 
     const pm = mapPaymentMethod(ctx.paymentMethod);
     const loc = mapMoneyLocation(pm);
 
-    const { created, error } = await upsertOrderIncomeRecord({
+    const { created, error, feeUpdated } = await upsertOrderIncomeRecord({
       order_id:          ctx.orderId.trim(),
       amount:            ctx.amount,
       currency:          (ctx.currency ?? 'THB').toUpperCase(),
@@ -98,6 +99,8 @@ export async function upsertOrderIncome(ctx: OrderIncomeContext): Promise<void> 
       console.error('[upsertOrderIncome] Failed for order', ctx.orderId, error);
     } else if (created) {
       console.log('[upsertOrderIncome] Income record created for order', ctx.orderId);
+    } else if (feeUpdated) {
+      console.log('[upsertOrderIncome] Stripe fee refreshed for order', ctx.orderId);
     } else {
       console.log('[upsertOrderIncome] Income record already exists for order', ctx.orderId, '— skipped');
     }

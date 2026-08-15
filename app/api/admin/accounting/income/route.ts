@@ -114,6 +114,26 @@ export async function POST(request: NextRequest) {
   const notes             = typeof b.notes === 'string' ? b.notes.trim() || null : null;
   const currency          = typeof b.currency === 'string' ? b.currency.trim() || 'THB' : 'THB';
 
+  let processing_fee_amount: number | null = null;
+  if ('processing_fee_amount' in b && b.processing_fee_amount != null && b.processing_fee_amount !== '') {
+    const feeRaw =
+      typeof b.processing_fee_amount === 'number'
+        ? b.processing_fee_amount
+        : parseFloat(String(b.processing_fee_amount));
+    if (!Number.isFinite(feeRaw) || feeRaw < 0) {
+      return NextResponse.json({ error: 'processing_fee_amount must be a number ≥ 0' }, { status: 400 });
+    }
+    if (payment_method !== 'stripe' && feeRaw !== 0) {
+      return NextResponse.json(
+        { error: 'processing_fee_amount must be 0 for non-Stripe payment methods' },
+        { status: 400 }
+      );
+    }
+    processing_fee_amount = Math.round(feeRaw * 100) / 100;
+  }
+
+  const resolvedMoneyLocation = payment_method === 'stripe' ? 'stripe' : money_location;
+
   // paid_date: day money actually arrived. Optional (DB defaults to today).
   let paid_date: string | null = null;
   if (typeof b.paid_date === 'string' && b.paid_date.trim()) {
@@ -147,7 +167,7 @@ export async function POST(request: NextRequest) {
     amount,
     currency,
     payment_method:  payment_method as never,
-    money_location:  money_location as never,
+    money_location:  resolvedMoneyLocation as never,
     income_status:   'pending',
     description,
     external_reference,
@@ -156,6 +176,7 @@ export async function POST(request: NextRequest) {
     notes,
     paid_date,
     created_by,
+    processing_fee_amount,
   });
 
   if (duplicate) {

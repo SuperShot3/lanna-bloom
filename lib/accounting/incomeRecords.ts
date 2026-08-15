@@ -1,6 +1,6 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { netAfterProcessingFee, processingFeeForIncome } from '@/lib/accounting/stripeFee';
+import { netAfterProcessingFee, processingFeeForIncome, resolveProcessingFeeForIncome } from '@/lib/accounting/stripeFee';
 import {
   incomeDocumentationComplete,
   type IncomeRecord,
@@ -622,6 +622,11 @@ export interface CreateIncomeInput {
   /** YYYY-MM-DD — when the money actually arrived. Defaults to today on the DB side. */
   paid_date?: string | null;
   created_by: string;
+  /**
+   * Stripe commission in major units. Ignored (forced to 0) for non-Stripe methods.
+   * When omitted on Stripe, uses the 5.3% estimate.
+   */
+  processing_fee_amount?: number | null;
 }
 
 export async function createIncomeRecord(
@@ -630,7 +635,12 @@ export async function createIncomeRecord(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { record: null, error: 'Supabase not configured' };
 
-  const fee = processingFeeForIncome(input.amount, input.payment_method);
+  const fee = resolveProcessingFeeForIncome(
+    input.amount,
+    input.payment_method,
+    input.processing_fee_amount
+  );
+  const moneyLocation = input.payment_method === 'stripe' ? 'stripe' : input.money_location;
 
   const { data, error } = await supabase
     .from(TABLE)
@@ -642,7 +652,7 @@ export async function createIncomeRecord(
       processing_fee_amount: fee,
       currency:          input.currency ?? 'THB',
       payment_method:    input.payment_method,
-      money_location:    input.money_location,
+      money_location:    moneyLocation,
       income_status:     input.income_status ?? 'confirmed',
       description:       input.description,
       external_reference: input.external_reference ?? null,
@@ -689,12 +699,12 @@ export interface UpsertOrderIncomeInput {
 
 /**
  * Idempotent: inserts a confirmed income record for an order.
- * If one already exists (by UNIQUE order_id), does nothing.
- * Never throws — safe to call fire-and-forget.
+ * If one already exists (by UNIQUE order_id), updates `processing_fee_amount`
+ * when a real Stripe fee is now known. Never throws — safe to call fire-and-forget.
  */
 export async function upsertOrderIncomeRecord(
   input: UpsertOrderIncomeInput
-): Promise<{ created: boolean; error?: string }> {
+): Promise<{ created: boolean; error?: string; feeUpdated?: boolean }> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return { created: false, error: 'Supabase not configured' };
 
@@ -702,9 +712,11 @@ export async function upsertOrderIncomeRecord(
     const now = new Date().toISOString();
     const hasFeeOverride =
       input.processing_fee_amount != null && Number.isFinite(Number(input.processing_fee_amount));
-    const fee = hasFeeOverride
-      ? Math.max(0, Number(input.processing_fee_amount))
-      : processingFeeForIncome(input.amount, input.payment_method);
+    const fee = resolveProcessingFeeForIncome(
+      input.amount,
+      input.payment_method,
+      hasFeeOverride ? Number(input.processing_fee_amount) : null
+    );
     const { error } = await supabase.from(TABLE).insert({
       order_id:          input.order_id,
       source_mode:       'auto_order',
@@ -727,7 +739,18 @@ export async function upsertOrderIncomeRecord(
 
     if (error) {
       if (error.code === '23505') {
-        return { created: false }; // Already exists — idempotent skip
+        if (hasFeeOverride) {
+          const { error: updErr } = await supabase
+            .from(TABLE)
+            .update({ processing_fee_amount: fee, updated_at: now })
+            .eq('order_id', input.order_id);
+          if (updErr) {
+            console.error('[incomeRecords] upsertOrderIncomeRecord fee update error:', updErr.message);
+            return { created: false, error: updErr.message };
+          }
+          return { created: false, feeUpdated: true };
+        }
+        return { created: false };
       }
       console.error('[incomeRecords] upsertOrderIncomeRecord error:', error.message);
       return { created: false, error: error.message };
@@ -749,6 +772,8 @@ export interface UpdateIncomeInput {
   proof_file_path?: string | null;
   receipt_attached?: boolean;
   notes?: string | null;
+  /** Stripe rows only. Ignored by callers for non-Stripe methods. */
+  processing_fee_amount?: number;
 }
 
 export async function updateIncomeRecord(

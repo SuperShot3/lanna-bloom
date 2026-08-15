@@ -16,6 +16,7 @@ import { getPaymentIntentStripeFeeMajor } from '@/lib/stripe/getPaymentIntentStr
 import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/checkoutDrafts';
 import { cancelCheckoutAbandonment } from '@/lib/checkout/abandonedCheckout';
 import { nudgeGa4PurchaseFallback } from '@/lib/analytics/ga4PurchaseFallback';
+import { upsertOrderIncome } from '@/lib/accounting/upsertOrderIncome';
 
 export type FulfillStripeCheckoutResult =
   | { kind: 'order_ready'; orderId: string; order: Order; didCreate: boolean }
@@ -135,6 +136,48 @@ async function markOrderPaidFromSession(params: {
   return getOrderById(params.orderId);
 }
 
+function createdByFromFulfillTrigger(
+  trigger: 'stripe_webhook' | 'sync_checkout' | 'order_status'
+): string {
+  if (trigger === 'stripe_webhook') return 'system:stripe_webhook';
+  if (trigger === 'sync_checkout') return 'system:sync_checkout';
+  return 'system:order_status';
+}
+
+/**
+ * Already-paid early returns skip mark-paid hooks, so income (and a real Stripe fee)
+ * would never be written. Still upsert here.
+ */
+async function ensureIncomeForAlreadyPaidOrder(params: {
+  stripe: Stripe;
+  order: Order;
+  paymentIntentId: string | null;
+  amountTotalMinor: number | null | undefined;
+  currency: string | undefined;
+  trigger: 'stripe_webhook' | 'sync_checkout' | 'order_status';
+}): Promise<void> {
+  const piId = params.paymentIntentId ?? params.order.paymentIntentId ?? null;
+  let fee: number | null = null;
+  if (piId) {
+    fee = await getPaymentIntentStripeFeeMajor(params.stripe, piId);
+  }
+  const amountMajor =
+    params.amountTotalMinor != null && Number.isFinite(params.amountTotalMinor)
+      ? params.amountTotalMinor / 100
+      : params.order.amountTotal ?? params.order.pricing?.grandTotal ?? 0;
+
+  await upsertOrderIncome({
+    orderId: params.order.orderId,
+    amount: amountMajor,
+    currency: params.currency ?? params.order.currency ?? 'THB',
+    paymentMethod: 'STRIPE',
+    stripePaymentIntentId: piId,
+    paidAt: params.order.paidAt ?? null,
+    createdBy: createdByFromFulfillTrigger(params.trigger),
+    stripeProcessingFeeMajor: fee,
+  });
+}
+
 /**
  * After Stripe reports a successful payment, create the order from a checkout draft (cart flow)
  * or mark an existing order paid (order-page flow). Safe to call from webhook and from sync/poll paths.
@@ -184,6 +227,14 @@ export async function fulfillPaidStripeCheckoutSession(params: {
   if (existingBySession?.status === 'paid') {
     markAbandonmentCancelled();
     nudgeGa4PurchaseFallback(existingBySession.orderId);
+    await ensureIncomeForAlreadyPaidOrder({
+      stripe: params.stripe,
+      order: existingBySession,
+      paymentIntentId,
+      amountTotalMinor: amountTotal,
+      currency,
+      trigger,
+    });
     return {
       kind: 'order_ready',
       orderId: existingBySession.orderId,
@@ -230,6 +281,14 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     if (order.status === 'paid') {
       markAbandonmentCancelled();
       nudgeGa4PurchaseFallback(order.orderId);
+      await ensureIncomeForAlreadyPaidOrder({
+        stripe: params.stripe,
+        order,
+        paymentIntentId,
+        amountTotalMinor: amountTotal,
+        currency,
+        trigger,
+      });
       return { kind: 'order_ready', orderId: order.orderId, order, didCreate: false };
     }
 
@@ -261,6 +320,14 @@ export async function fulfillPaidStripeCheckoutSession(params: {
     if (byToken?.status === 'paid') {
       markAbandonmentCancelled();
       nudgeGa4PurchaseFallback(byToken.orderId);
+      await ensureIncomeForAlreadyPaidOrder({
+        stripe: params.stripe,
+        order: byToken,
+        paymentIntentId,
+        amountTotalMinor: amountTotal,
+        currency,
+        trigger,
+      });
       return {
         kind: 'order_ready',
         orderId: byToken.orderId,
@@ -276,6 +343,14 @@ export async function fulfillPaidStripeCheckoutSession(params: {
       markAbandonmentCancelled();
       if (bySessionAgain.status === 'paid') {
         nudgeGa4PurchaseFallback(bySessionAgain.orderId);
+        await ensureIncomeForAlreadyPaidOrder({
+          stripe: params.stripe,
+          order: bySessionAgain,
+          paymentIntentId,
+          amountTotalMinor: amountTotal,
+          currency,
+          trigger,
+        });
       }
       return {
         kind: 'order_ready',
@@ -294,6 +369,14 @@ export async function fulfillPaidStripeCheckoutSession(params: {
       await deleteCheckoutDraftById(checkoutDraftId);
       markAbandonmentCancelled();
       nudgeGa4PurchaseFallback(existingByToken.orderId);
+      await ensureIncomeForAlreadyPaidOrder({
+        stripe: params.stripe,
+        order: existingByToken,
+        paymentIntentId,
+        amountTotalMinor: amountTotal,
+        currency,
+        trigger,
+      });
       return {
         kind: 'order_ready',
         orderId: existingByToken.orderId,

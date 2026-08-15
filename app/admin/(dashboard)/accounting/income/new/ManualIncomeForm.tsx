@@ -3,17 +3,35 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  INCOME_SOURCE_TYPES,
-  INCOME_PAYMENT_METHODS,
-  MONEY_LOCATIONS,
-} from '@/types/accounting';
+import { INCOME_SOURCE_TYPES, INCOME_PAYMENT_METHODS, MONEY_LOCATIONS } from '@/types/accounting';
 import { prepareProofFileForUpload, isProofPdfFile } from '@/lib/prepareProofFileForUpload';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
 import { MAX_PROOF_PDF_LABEL, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
+import {
+  netAfterProcessingFee,
+  processingFeeForIncome,
+  STRIPE_FEE_PERCENT_LABEL,
+} from '@/lib/accounting/stripeFee';
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function moneyLocationForMethod(method: string): string {
+  if (method === 'stripe') return 'stripe';
+  if (method === 'cash') return 'cash';
+  if (method === 'bank_transfer' || method === 'qr_payment') return 'bank';
+  if (method === 'other') return 'other';
+  return '';
+}
+
+function fmtThb(n: number) {
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n);
 }
 
 export function ManualIncomeForm() {
@@ -29,6 +47,9 @@ export function ManualIncomeForm() {
   const [orderId, setOrderId]             = useState('');
   const [externalRef, setExternalRef]     = useState('');
   const [notes, setNotes]                 = useState('');
+  const [stripeFee, setStripeFee]         = useState('');
+  const [fetchingFee, setFetchingFee]     = useState(false);
+  const [feeFetchMsg, setFeeFetchMsg]     = useState<string | null>(null);
 
   const [proofFile, setProofFile]         = useState<File | null>(null);
   const [proofPreview, setProofPreview]   = useState<string | null>(null);
@@ -99,14 +120,27 @@ export function ManualIncomeForm() {
     }
 
     try {
+      const gross = parseFloat(amount);
+      const isStripe = paymentMethod === 'stripe';
+      let processingFee: number | null = null;
+      if (isStripe && stripeFee.trim() !== '') {
+        const parsed = parseFloat(stripeFee);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          setError('Stripe commission must be a number ≥ 0');
+          setLoading(false);
+          return;
+        }
+        processingFee = Math.round(parsed * 100) / 100;
+      }
+
       const res = await fetch('/api/admin/accounting/income', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount:            parseFloat(amount),
+          amount:            gross,
           source_type:       sourceType,
           payment_method:    paymentMethod,
-          money_location:    moneyLocation,
+          money_location:    paymentMethod === 'stripe' ? 'stripe' : moneyLocation,
           description:       description.trim(),
           order_id:          orderId.trim() || null,
           external_reference: externalRef.trim() || null,
@@ -114,6 +148,7 @@ export function ManualIncomeForm() {
           receipt_attached:  !!proofPath,
           notes:             notes.trim() || null,
           paid_date:         date || null,
+          processing_fee_amount: isStripe ? processingFee : 0,
         }),
       });
 
@@ -135,6 +170,53 @@ export function ManualIncomeForm() {
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
+    }
+  };
+
+  const isStripe = paymentMethod === 'stripe';
+  const grossPreview = parseFloat(amount);
+  const grossOk = Number.isFinite(grossPreview) && grossPreview > 0;
+  const parsedFee = stripeFee.trim() !== '' ? parseFloat(stripeFee) : NaN;
+  const feeIsPosted = Number.isFinite(parsedFee) && parsedFee >= 0;
+  const previewFee = isStripe
+    ? feeIsPosted
+      ? parsedFee
+      : processingFeeForIncome(grossOk ? grossPreview : 0, 'stripe')
+    : 0;
+  const previewNet = grossOk ? netAfterProcessingFee(grossPreview, previewFee) : 0;
+
+  const fetchFeeFromStripe = async () => {
+    const piId = externalRef.trim();
+    if (!piId.startsWith('pi_')) {
+      setFeeFetchMsg('Enter a Stripe PaymentIntent id (pi_…) in External Reference first.');
+      return;
+    }
+    setFetchingFee(true);
+    setFeeFetchMsg(null);
+    try {
+      const res = await fetch('/api/admin/accounting/stripe-fee-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId: piId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeeFetchMsg(data.error ?? 'Could not fetch fee from Stripe');
+        return;
+      }
+      setStripeFee(String(data.fee ?? ''));
+      if (typeof data.gross === 'number' && data.gross > 0 && !amount) {
+        setAmount(String(data.gross));
+      }
+      setFeeFetchMsg(
+        data.feeEstimated
+          ? `Estimate applied (${STRIPE_FEE_PERCENT_LABEL}). Stripe did not return a live fee.`
+          : 'Live Stripe commission applied.'
+      );
+    } catch {
+      setFeeFetchMsg('Network error fetching Stripe fee');
+    } finally {
+      setFetchingFee(false);
     }
   };
 
@@ -232,12 +314,12 @@ export function ManualIncomeForm() {
               className={`admin-select${fieldErrors.paymentMethod ? ' admin-input-error' : ''}`}
               value={paymentMethod}
               onChange={(e) => {
-                setPaymentMethod(e.target.value);
-                // Auto-suggest money location
-                if (!moneyLocation) {
-                  if (e.target.value === 'stripe') setMoneyLocation('stripe');
-                  else if (e.target.value === 'cash') setMoneyLocation('cash');
-                  else if (['bank_transfer', 'qr_payment'].includes(e.target.value)) setMoneyLocation('bank');
+                const next = e.target.value;
+                setPaymentMethod(next);
+                setMoneyLocation(moneyLocationForMethod(next));
+                if (next !== 'stripe') {
+                  setStripeFee('');
+                  setFeeFetchMsg(null);
                 }
               }}
               required
@@ -258,15 +340,60 @@ export function ManualIncomeForm() {
               value={moneyLocation}
               onChange={(e) => setMoneyLocation(e.target.value)}
               required
+              disabled={isStripe}
             >
               <option value="">Where did money go?</option>
               {MONEY_LOCATIONS.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>
               ))}
             </select>
+            {isStripe && (
+              <span className="admin-hint">Locked to Stripe until you record a payout.</span>
+            )}
             {fieldErrors.moneyLocation && <span className="admin-field-error">{fieldErrors.moneyLocation}</span>}
           </div>
         </div>
+
+        {isStripe ? (
+          <div className="admin-form-group">
+            <label htmlFor="inc-fee">Stripe commission</label>
+            <div className="admin-expenses-form-row">
+              <input
+                id="inc-fee"
+                type="number"
+                className="admin-input"
+                placeholder={STRIPE_FEE_PERCENT_LABEL}
+                min="0"
+                step="0.01"
+                value={stripeFee}
+                onChange={(e) => setStripeFee(e.target.value)}
+                inputMode="decimal"
+              />
+              <button
+                type="button"
+                className="admin-btn admin-btn-outline"
+                onClick={fetchFeeFromStripe}
+                disabled={fetchingFee}
+              >
+                {fetchingFee ? 'Fetching…' : 'Fetch fee from Stripe'}
+              </button>
+            </div>
+            <span className="admin-hint">
+              Prefer the real fee from a PaymentIntent id in External Reference. Otherwise {STRIPE_FEE_PERCENT_LABEL} is stored.
+            </span>
+            {feeFetchMsg && <p className="admin-hint" style={{ marginTop: 4 }}>{feeFetchMsg}</p>}
+            {grossOk && (
+              <p className="admin-hint" style={{ marginTop: 8 }}>
+                Customer paid {fmtThb(grossPreview)} · Commission {fmtThb(previewFee)}
+                {feeIsPosted ? '' : ` (${STRIPE_FEE_PERCENT_LABEL})`} · Net {fmtThb(previewNet)}
+              </p>
+            )}
+          </div>
+        ) : paymentMethod ? (
+          <p className="admin-hint" style={{ margin: '0 0 12px' }}>
+            No Stripe commission — full amount in {paymentMethod === 'cash' ? 'cash' : paymentMethod === 'other' ? 'other' : 'bank'}.
+          </p>
+        ) : null}
 
         {/* Description */}
         <div className="admin-form-group">
@@ -304,7 +431,7 @@ export function ManualIncomeForm() {
               id="inc-ext"
               type="text"
               className="admin-input"
-              placeholder="Bank slip no., LINE ref, etc."
+              placeholder={isStripe ? 'Stripe PaymentIntent id (pi_…)' : 'Bank slip no., LINE ref, etc.'}
               value={externalRef}
               onChange={(e) => setExternalRef(e.target.value)}
             />

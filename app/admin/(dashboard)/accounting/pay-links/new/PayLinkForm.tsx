@@ -1,0 +1,216 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+
+export function PayLinkForm() {
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ orderId: string; reviewUrl: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setCreated(null);
+    setCopied(false);
+    const n = parseFloat(amount);
+    if (!Number.isFinite(n) || n <= 0) {
+      setError('Enter a positive amount.');
+      return;
+    }
+    if (!description.trim()) {
+      setError('Description is required.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/pay-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: n,
+          description: description.trim(),
+          customerName: customerName.trim() || undefined,
+          customerEmail: customerEmail.trim() || undefined,
+          phone: phone.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data.error === 'string' ? data.error : 'Failed to create pay link');
+        return;
+      }
+      setCreated({ orderId: String(data.orderId), reviewUrl: String(data.reviewUrl) });
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyLink = async () => {
+    if (!created?.reviewUrl) return;
+    try {
+      await navigator.clipboard.writeText(created.reviewUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="admin-expenses-new">
+      <header className="admin-header admin-page-header">
+        <div>
+          <Link href="/admin/accounting/pay-links" className="admin-back-link">
+            ← Back to Pay links
+          </Link>
+          <h1 className="admin-title">New pay link</h1>
+          <p className="admin-hint">
+            Extra item or service not in the store. Customer sees the description and amount, then pays on Stripe.
+          </p>
+        </div>
+      </header>
+
+      <div className="admin-accounting-notice">
+        <span className="material-symbols-outlined">info</span>
+        <span>
+          This is not a flower delivery order. Send the review URL (not a Stripe Dashboard Payment Link). Stripe
+          commission is recorded automatically when they pay.
+        </span>
+      </div>
+
+      {created ? (
+        <div className="admin-expenses-form">
+          <p className="admin-hint" style={{ marginTop: 0 }}>
+            Pay link created for order <strong>{created.orderId}</strong>. Copy and send to the customer.
+          </p>
+          <div className="admin-form-group">
+            <label htmlFor="pay-link-url">Customer review URL</label>
+            <input id="pay-link-url" className="admin-input" readOnly value={created.reviewUrl} />
+          </div>
+          <div className="admin-expenses-form-actions">
+            <button type="button" className="admin-btn admin-btn-primary" onClick={copyLink}>
+              {copied ? 'Copied' : 'Copy link'}
+            </button>
+            <Link href={`/admin/orders/${encodeURIComponent(created.orderId)}`} className="admin-btn admin-btn-outline">
+              Open order
+            </Link>
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline"
+              onClick={() => {
+                setCreated(null);
+                setAmount('');
+                setDescription('');
+                setCustomerName('');
+                setCustomerEmail('');
+                setPhone('');
+                setCopied(false);
+              }}
+            >
+              Create another
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="admin-expenses-form" noValidate>
+          {error && (
+            <div className="admin-error" role="alert">
+              <p>{error}</p>
+            </div>
+          )}
+
+          <div className="admin-expenses-form-row">
+            <div className="admin-form-group">
+              <label htmlFor="pl-amount">Amount (THB) *</label>
+              <input
+                id="pl-amount"
+                type="number"
+                className="admin-input"
+                placeholder="0.00"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                inputMode="decimal"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="admin-form-group">
+              <label htmlFor="pl-desc">Description *</label>
+              <input
+                id="pl-desc"
+                type="text"
+                className="admin-input"
+                placeholder="e.g. Extra balloons, rush fee, custom arrangement"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={200}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="admin-expenses-form-row">
+            <div className="admin-form-group">
+              <label htmlFor="pl-name">
+                Customer name <span className="admin-hint">(optional)</span>
+              </label>
+              <input
+                id="pl-name"
+                type="text"
+                className="admin-input"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                maxLength={120}
+              />
+            </div>
+            <div className="admin-form-group">
+              <label htmlFor="pl-email">
+                Email <span className="admin-hint">(optional, Stripe receipt)</span>
+              </label>
+              <input
+                id="pl-email"
+                type="email"
+                className="admin-input"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="admin-form-group">
+            <label htmlFor="pl-phone">
+              Phone <span className="admin-hint">(optional)</span>
+            </label>
+            <input
+              id="pl-phone"
+              type="tel"
+              className="admin-input"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+
+          <div className="admin-expenses-form-actions">
+            <Link href="/admin/accounting/pay-links" className="admin-btn admin-btn-outline">
+              Cancel
+            </Link>
+            <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
+              {loading ? 'Creating…' : 'Create pay link'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { timingSafeEqual } from 'crypto';
-import { getOrderById, getBaseUrl, getOrderDetailsUrl, getOrderPublicToken } from '@/lib/orders';
+import { getOrderById, getBaseUrl, getOrderDetailsUrl, getOrderPublicToken, getPayLinkUrl } from '@/lib/orders';
+import { isAdminPayLinkOrder } from '@/lib/payLinks/adminPayLink';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
@@ -146,9 +147,10 @@ export async function POST(request: NextRequest) {
 
   const stripe = createStripeServerClient(stripeConfig.secretKey);
   const baseUrl = getBaseUrl();
+  const payLink = isAdminPayLinkOrder(order);
   const metadata = buildStripeOrderMetadata({
     orderId: order.orderId,
-    source: 'lanna_bloom_order_page',
+    source: payLink ? 'lanna_bloom_pay_link' : 'lanna_bloom_order_page',
     customerEmail: order.customerEmail,
     lang,
   });
@@ -188,7 +190,9 @@ export async function POST(request: NextRequest) {
     expectedPublicToken && expectedPublicToken.trim()
       ? `${baseSuccessUrl}&token=${encodeURIComponent(publicToken.trim())}`
       : baseSuccessUrl;
-  const cancelUrl = getOrderDetailsUrl(orderId, { token: expectedPublicToken });
+  const cancelUrl = isAdminPayLinkOrder(order)
+    ? getPayLinkUrl(orderId, { token: expectedPublicToken })
+    : getOrderDetailsUrl(orderId, { token: expectedPublicToken });
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'payment',

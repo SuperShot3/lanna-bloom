@@ -39,6 +39,8 @@ interface OrderStatusPaymentCardProps {
   canEditCosts: boolean;
   initialCogsExpense?: LinkedExpenseRef;
   initialDeliveryExpense?: LinkedExpenseRef;
+  /** Public review URL for unpaid admin pay-link charges. */
+  payLinkUrl?: string | null;
 }
 
 export function OrderStatusPaymentCard({
@@ -49,6 +51,7 @@ export function OrderStatusPaymentCard({
   canEditCosts,
   initialCogsExpense = null,
   initialDeliveryExpense = null,
+  payLinkUrl = null,
 }: OrderStatusPaymentCardProps) {
   const router = useRouter();
   const [orderStatus, setOrderStatus] = useState(normalizeOrderStatus(order.order_status));
@@ -63,6 +66,7 @@ export function OrderStatusPaymentCard({
   );
   const [deliveredPreview, setDeliveredPreview] = useState<DeliveredPreviewPayload | null>(null);
   const [costsOpen, setCostsOpen] = useState(false);
+  const [payLinkCopied, setPayLinkCopied] = useState(false);
 
   const paymentMethod = (order.payment_method ?? 'BANK_TRANSFER').toUpperCase();
   const paymentStatus = (order.payment_status ?? 'NOT_PAID').toUpperCase();
@@ -256,6 +260,24 @@ export function OrderStatusPaymentCard({
               <p className="admin-muted" style={{ margin: '8px 0 0', fontSize: '0.85rem' }}>
                 Stripe updates automatically when payment completes.
               </p>
+            )}
+            {payLinkUrl && paymentStatus !== 'PAID' && (
+              <div style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-outline admin-btn-sm"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(payLinkUrl);
+                      setPayLinkCopied(true);
+                    } catch {
+                      setPayLinkCopied(false);
+                    }
+                  }}
+                >
+                  {payLinkCopied ? 'Copied pay link' : 'Copy pay link'}
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -566,7 +566,7 @@ function MapInner({
     (
       feature: { properties?: AmphoeFeatureProps },
       layer: {
-        on: (events: Record<string, () => void>) => void;
+        on: (events: Record<string, (e: { originalEvent?: Event }) => void>) => void;
         setStyle: (s: object) => void;
         getBounds?: () => LeafletBounds;
         bindTooltip?: (content: string, options?: object) => void;

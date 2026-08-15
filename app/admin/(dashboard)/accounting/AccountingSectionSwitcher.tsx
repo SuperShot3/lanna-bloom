@@ -24,6 +24,12 @@ const SECTIONS = [
     icon: 'payments',
   },
   {
+    id: 'pay-links',
+    href: '/admin/accounting/pay-links',
+    label: 'Pay links',
+    icon: 'link',
+  },
+  {
     id: 'payouts-transfers',
     href: '/admin/accounting/payouts-transfers',
     label: 'Payouts',
@@ -51,6 +57,7 @@ function accountingSectionFromPath(pathname: string): AccountingSectionId {
   if (pathname.startsWith('/admin/accounting/expenses')) return 'expenses';
   if (pathname.startsWith('/admin/accounting/payouts-transfers')) return 'payouts-transfers';
   if (pathname.startsWith('/admin/accounting/ledger')) return 'ledger';
+  if (pathname.startsWith('/admin/accounting/pay-links')) return 'pay-links';
   if (pathname.startsWith('/admin/accounting/income')) return 'income';
   return 'overview';
 }

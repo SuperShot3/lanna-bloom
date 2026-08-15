@@ -285,6 +285,64 @@ export async function POST(request: NextRequest) {
       console.log('[stripe/webhook] payment_intent.succeeded: no Checkout Session for PI', {
         paymentIntentId: pi.id,
       });
+      try {
+        if (!(await recordStripeEventIfNew(event.id, event.type))) {
+          return NextResponse.json({ received: true });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Temporary error' }, { status: 500 });
+      }
+      try {
+        const { findOrderIdByStripePaymentIntent } = await import('@/lib/accounting/incomeRefunds');
+        const existingOrderId = await findOrderIdByStripePaymentIntent(pi.id);
+        if (existingOrderId) {
+          const { upsertOrderIncome } = await import('@/lib/accounting/upsertOrderIncome');
+          const { getPaymentIntentStripeFeeMajor } = await import(
+            '@/lib/stripe/getPaymentIntentStripeFeeMajor'
+          );
+          const { amountMajorFromStripePaymentIntent } = await import(
+            '@/lib/accounting/stripePaymentIntentIncome'
+          );
+          const amount = amountMajorFromStripePaymentIntent(pi);
+          const fee = await getPaymentIntentStripeFeeMajor(stripe, pi.id);
+          await upsertOrderIncome({
+            orderId: existingOrderId,
+            amount: amount ?? 0,
+            currency: (pi.currency ?? 'thb').toUpperCase(),
+            paymentMethod: 'STRIPE',
+            stripePaymentIntentId: pi.id,
+            paidAt: typeof pi.created === 'number' ? new Date(pi.created * 1000).toISOString() : null,
+            createdBy: 'system:stripe_webhook',
+            stripeProcessingFeeMajor: fee,
+          });
+          console.log('[stripe/webhook] payment_intent.succeeded income via existing order', {
+            paymentIntentId: pi.id,
+            orderId: existingOrderId,
+          });
+        } else {
+          const { upsertStripePaymentIntentIncome } = await import(
+            '@/lib/accounting/upsertStripePaymentIntentIncome'
+          );
+          const res = await upsertStripePaymentIntentIncome({
+            stripe,
+            paymentIntent: pi,
+            createdBy: 'system:stripe_webhook',
+          });
+          console.log('[stripe/webhook] payment_intent.succeeded PI-only income', {
+            paymentIntentId: pi.id,
+            created: res.created,
+            skipped: res.skipped,
+            feeUpdated: res.feeUpdated,
+            error: res.error,
+          });
+          if (res.error) {
+            return NextResponse.json({ error: 'Income record failed' }, { status: 500 });
+          }
+        }
+      } catch (e) {
+        console.error('[stripe/webhook] PI-only income error:', e);
+        return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+      }
       return NextResponse.json({ received: true });
     }
   }

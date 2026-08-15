@@ -93,6 +93,9 @@ export interface OrderPricing {
 
 export type ContactPreferenceOption = 'phone' | 'line' | 'whatsapp' | 'telegram';
 
+/** Channel hint stored on `order_json.orderSource` (column `order_source` was dropped). */
+export type OrderSource = 'web' | 'custom_form' | 'legacy_line' | 'admin_pay_link';
+
 /** Stored order JSON may include any checkout contact option. */
 export type ContactPreferenceStored = ContactPreferenceOption;
 
@@ -146,7 +149,7 @@ export interface OrderPayload {
   gbraid?: string;
   wbraid?: string;
   /** Channel hint for admin/ops reporting. */
-  orderSource?: 'web' | 'custom_form' | 'legacy_line';
+  orderSource?: OrderSource;
   /** When set, order came from the custom order form; details for ops and customer. */
   customOrderDetails?: CustomOrderDetails;
   /**

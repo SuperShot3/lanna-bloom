@@ -33,6 +33,15 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function feeAmountFromRecord(v: unknown): number | undefined {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return undefined;
+}
+
 export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
   const router = useRouter();
   const [loadingProof, setLoadingProof] = useState(false);
@@ -44,6 +53,14 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
   const [saveMsg, setSaveMsg]           = useState<string | null>(null);
   const [deleting, setDeleting]         = useState(false);
   const [deleteError, setDeleteError]   = useState<string | null>(null);
+  const [feeInput, setFeeInput]         = useState(() => {
+    const n = feeAmountFromRecord(record.processing_fee_amount);
+    return n != null ? String(n) : '';
+  });
+  const [savedFee, setSavedFee]         = useState<number | undefined>(
+    () => feeAmountFromRecord(record.processing_fee_amount)
+  );
+  const [savingFee, setSavingFee]       = useState(false);
 
   const handleViewProof = async () => {
     setLoadingProof(true);
@@ -98,6 +115,39 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
     }
   };
 
+  const handleFeeSave = async () => {
+    setSavingFee(true);
+    setSaveMsg(null);
+    const parsed = parseFloat(feeInput);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setSaveMsg('Commission must be a number ≥ 0');
+      setSavingFee(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/accounting/income/${record.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processing_fee_amount: Math.round(parsed * 100) / 100 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveMsg(data.error ?? 'Update failed');
+      } else {
+        const next = feeAmountFromRecord(data.record?.processing_fee_amount);
+        if (next != null) {
+          setSavedFee(next);
+          setFeeInput(String(next));
+        }
+        setSaveMsg('Stripe commission updated');
+      }
+    } catch {
+      setSaveMsg('Network error');
+    } finally {
+      setSavingFee(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirmDeleteAction('Permanently delete this income record? This cannot be undone.')) return;
     setDeleting(true);
@@ -120,11 +170,12 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
   const isAutoOrder = record.source_mode === 'auto_order';
 
   const processingFee =
-    typeof record.processing_fee_amount === 'number'
-      ? record.processing_fee_amount
+    typeof savedFee === 'number'
+      ? savedFee
       : processingFeeForIncome(record.amount, record.payment_method);
   const netAfterFees = netAfterProcessingFee(record.amount, processingFee);
   const isStripe = record.payment_method === 'stripe';
+  const feeIsEstimate = typeof savedFee !== 'number';
 
   return (
     <div className="admin-expenses-detail">
@@ -140,7 +191,7 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
         <span className="admin-expenses-hero-amount">{fmt(record.amount)}</span>
         {isStripe && (
           <span className="admin-hint" style={{ display: 'block', marginTop: 4 }}>
-            Gross amount (before {STRIPE_FEE_PERCENT_LABEL} Stripe fee)
+            Customer paid (gross)
           </span>
         )}
         <span className={`admin-badge ${isAutoOrder ? 'admin-badge-auto' : 'admin-badge-manual'}`}>
@@ -156,11 +207,12 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
         <Row label="Payment Method" value={PM_LABEL[record.payment_method] ?? record.payment_method} />
         {isStripe && (
           <>
+            <Row label="Customer paid" value={fmt(record.amount)} />
             <Row
-              label={`Stripe fee (${STRIPE_FEE_PERCENT_LABEL})`}
+              label={feeIsEstimate ? `Stripe commission (${STRIPE_FEE_PERCENT_LABEL})` : 'Stripe commission'}
               value={fmt(processingFee)}
             />
-            <Row label="Net after Stripe fee" value={fmt(netAfterFees)} />
+            <Row label="Net after commission" value={fmt(netAfterFees)} />
           </>
         )}
         <Row label="Money Location" value={LOC_LABEL[record.money_location] ?? record.money_location} />
@@ -202,8 +254,8 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
           </div>
         )}
 
-        {/* Money location override (manual only) */}
-        {!isAutoOrder && (
+        {/* Money location override (manual non-Stripe only — Stripe stays in Stripe until payout) */}
+        {!isAutoOrder && !isStripe && (
           <div className="admin-accounting-status-update">
             <label htmlFor="loc-select" className="admin-hint" style={{ fontWeight: 600 }}>
               Money Location
@@ -260,9 +312,42 @@ export function IncomeDetailClient({ record }: { record: IncomeRecord }) {
           </div>
         )}
 
+        {isStripe && (
+          <div className="admin-accounting-status-update">
+            <label htmlFor="fee-input" className="admin-hint" style={{ fontWeight: 600 }}>
+              Stripe commission (THB)
+            </label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                id="fee-input"
+                type="number"
+                className="admin-input"
+                min="0"
+                step="0.01"
+                value={feeInput}
+                onChange={(e) => setFeeInput(e.target.value)}
+                inputMode="decimal"
+              />
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary admin-btn-sm"
+                onClick={handleFeeSave}
+                disabled={savingFee}
+              >
+                {savingFee ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+            <span className="admin-hint">
+              Prefer the live Stripe fee. Leave blank on new rows to store {STRIPE_FEE_PERCENT_LABEL}.
+            </span>
+            {saveMsg && <p className="admin-hint" style={{ marginTop: 4 }}>{saveMsg}</p>}
+          </div>
+        )}
+
         {isAutoOrder && (
           <p className="admin-hint">
-            This record was created automatically from an order payment. Status and amount are locked.
+            This record was created automatically from a payment. Status and amount are locked.
+            {isStripe ? ' Stripe commission can still be corrected.' : ''}
           </p>
         )}
 

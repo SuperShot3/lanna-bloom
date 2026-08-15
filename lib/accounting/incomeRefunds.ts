@@ -95,10 +95,19 @@ export async function recordStripeRefundEvent(refund: Stripe.Refund): Promise<{ 
     return { recorded: false, reason: 'missing_payment_intent' };
   }
 
-  const orderId = await findOrderIdByStripePaymentIntent(piId);
+  let orderId = await findOrderIdByStripePaymentIntent(piId);
   if (!orderId) {
-    console.warn('[incomeRefunds] No order for payment_intent', piId);
-    return { recorded: false, reason: 'order_not_found' };
+    const { findIncomeByStripePaymentIntentRef } = await import(
+      '@/lib/accounting/upsertStripePaymentIntentIncome'
+    );
+    const income = await findIncomeByStripePaymentIntentRef(piId);
+    orderId = income?.order_id ?? null;
+    if (!income) {
+      console.warn(
+        '[incomeRefunds] No order or income for payment_intent; recording refund with null order_id',
+        piId
+      );
+    }
   }
 
   const cur = (refund.currency ?? 'thb').toLowerCase();
@@ -114,36 +123,38 @@ export async function recordStripeRefundEvent(refund: Stripe.Refund): Promise<{ 
       : new Date().toISOString().slice(0, 10);
 
   // Avoid double-count when admin already recorded this refund manually.
-  const { data: existingRows, error: existingError } = await supabase
-    .from(TABLE)
-    .select('id, amount, source, stripe_refund_id')
-    .eq('order_id', orderId)
-    .eq('source', 'manual')
-    .is('stripe_refund_id', null);
+  if (orderId) {
+    const { data: existingRows, error: existingError } = await supabase
+      .from(TABLE)
+      .select('id, amount, source, stripe_refund_id')
+      .eq('order_id', orderId)
+      .eq('source', 'manual')
+      .is('stripe_refund_id', null);
 
-  if (existingError) {
-    console.error('[incomeRefunds] manual lookup error:', existingError.message);
-  } else {
-    const match = (existingRows ?? []).find((row) =>
-      amountsMatch(parseFloat(String((row as { amount?: unknown }).amount)) || 0, amountMajor)
-    ) as { id: string } | undefined;
-    if (match?.id) {
-      const { error: linkError } = await supabase
-        .from(TABLE)
-        .update({
-          stripe_refund_id: stripeRefundId,
-          source: 'stripe',
-          refunded_at: refundedAtYmd,
-        })
-        .eq('id', match.id);
-      if (linkError) {
-        if (linkError.code === '23505') {
-          return { recorded: false, reason: 'duplicate' };
+    if (existingError) {
+      console.error('[incomeRefunds] manual lookup error:', existingError.message);
+    } else {
+      const match = (existingRows ?? []).find((row) =>
+        amountsMatch(parseFloat(String((row as { amount?: unknown }).amount)) || 0, amountMajor)
+      ) as { id: string } | undefined;
+      if (match?.id) {
+        const { error: linkError } = await supabase
+          .from(TABLE)
+          .update({
+            stripe_refund_id: stripeRefundId,
+            source: 'stripe',
+            refunded_at: refundedAtYmd,
+          })
+          .eq('id', match.id);
+        if (linkError) {
+          if (linkError.code === '23505') {
+            return { recorded: false, reason: 'duplicate' };
+          }
+          console.error('[incomeRefunds] link manual refund error:', linkError.message);
+          return { recorded: false, reason: linkError.message };
         }
-        console.error('[incomeRefunds] link manual refund error:', linkError.message);
-        return { recorded: false, reason: linkError.message };
+        return { recorded: true, reason: 'linked_manual' };
       }
-      return { recorded: true, reason: 'linked_manual' };
     }
   }
 

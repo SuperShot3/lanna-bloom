@@ -19,6 +19,8 @@ import { orderHasIncomeRefund } from '@/lib/accounting/incomeRefunds';
 import { getCogsExpenseByOrderId, getDeliveryExpenseSyncedFromOrderCosts } from '@/lib/expenses/expenseQueries';
 import { notFound } from 'next/navigation';
 import { getBaseUrl } from '@/lib/siteUrl';
+import { getPayLinkUrl } from '@/lib/orders';
+import { ADMIN_PAY_LINK_SOURCE } from '@/lib/payLinks/adminPayLink';
 import { isOrderChatEnabled } from '@/lib/orderChat/enabled';
 import { getUnreadChatSummary } from '@/lib/orderChat/store';
 import { AdminOrderDetailChatActions } from '@/components/orderChat/AdminOrderDetailChatActions';
@@ -188,6 +190,14 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         canEditCosts={canEditCosts(role)}
         initialCogsExpense={cogsExpense}
         initialDeliveryExpense={deliveryExpense}
+        payLinkUrl={
+          (order.order_json as { orderSource?: string } | null | undefined)?.orderSource ===
+            ADMIN_PAY_LINK_SOURCE &&
+          order.public_token &&
+          (order.payment_status ?? '').toUpperCase() !== 'PAID'
+            ? getPayLinkUrl(order.order_id, { token: order.public_token })
+            : null
+        }
       />
       <OrderSummaryCard
         order={order}

@@ -163,7 +163,7 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
           : {}),
       },
       ...(row.order_source && {
-        orderSource: row.order_source as 'web' | 'custom_form' | 'legacy_line',
+        orderSource: row.order_source as Order['orderSource'],
       }),
     };
   }
@@ -233,8 +233,9 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       ? { lineId: looseJson.lineId.trim() }
       : {}),
     ...(row.order_source && {
-      orderSource: row.order_source as 'web' | 'custom_form' | 'legacy_line',
+      orderSource: row.order_source as Order['orderSource'],
     }),
+    ...(looseJson?.orderSource ? { orderSource: looseJson.orderSource } : {}),
   };
 }
 
@@ -368,7 +369,10 @@ export async function supabaseCreateOrder(
     .single();
 
   const publicToken = existingOrder?.public_token ?? nanoid(21);
-  const paymentMethod = order.stripeSessionId || order.paymentIntentId ? 'STRIPE' : 'BANK_TRANSFER';
+  const paymentMethod =
+    order.stripeSessionId || order.paymentIntentId || order.orderSource === 'admin_pay_link'
+      ? 'STRIPE'
+      : 'BANK_TRANSFER';
 
   const deliveryDate = order.delivery.preferredTimeSlot?.split(' ')[0];
   const deliveryWindow = deliveryWindowFromTimeSlot(order.delivery.preferredTimeSlot ?? '');
