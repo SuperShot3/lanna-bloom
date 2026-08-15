@@ -1,10 +1,11 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getOrderByIdWithPublicToken, getOrderDetailsUrl } from '@/lib/orders';
+import { getOrderByIdWithPublicToken, getOrderDetailsUrl, getPayLinkUrl } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import { isAdminPayLinkOrder } from '@/lib/payLinks/adminPayLink';
-import { PayLinkReviewClient } from './PayLinkReviewClient';
+import { createCheckoutSessionForExistingOrder } from '@/lib/stripe/createCheckoutSessionForExistingOrder';
+import styles from './pay-link.module.css';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -20,18 +21,53 @@ function tokenFromSearch(raw: string | string[] | undefined): string {
   return '';
 }
 
+function PayLinkFallback({
+  title,
+  hint,
+  href,
+  actionLabel,
+  error,
+}: {
+  title: string;
+  hint?: string;
+  href?: string;
+  actionLabel?: string;
+  error?: string;
+}) {
+  return (
+    <div className={styles.page}>
+      <main className={styles.card}>
+        <p className={styles.brand}>Lanna Bloom</p>
+        <h1 className={styles.title}>{title}</h1>
+        {error ? (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        ) : null}
+        {hint ? <p className={styles.hint}>{hint}</p> : null}
+        {href && actionLabel ? (
+          <a className={styles.pay} href={href}>
+            {actionLabel}
+          </a>
+        ) : null}
+      </main>
+    </div>
+  );
+}
+
 export default async function PayLinkPage({
   params,
   searchParams,
 }: {
   params: Promise<{ orderId: string }>;
-  searchParams?: Promise<{ token?: string | string[] }>;
+  searchParams?: Promise<{ token?: string | string[]; cancelled?: string | string[] }>;
 }) {
   noStore();
   const { orderId } = await params;
   const normalized = orderId?.trim() ?? '';
   const sp = (await searchParams) ?? {};
   const token = tokenFromSearch(sp.token);
+  const cancelled = tokenFromSearch(sp.cancelled) === '1';
   if (!normalized || !token) notFound();
 
   const order = await getOrderByIdWithPublicToken(normalized, token);
@@ -47,16 +83,44 @@ export default async function PayLinkPage({
     redirect(getOrderDetailsUrl(order.orderId, { token }));
   }
 
-  const description = order.items?.[0]?.bouquetTitle?.trim() || 'Payment';
-  const amount = order.pricing?.grandTotal ?? order.items?.[0]?.price ?? 0;
+  const payHref = getPayLinkUrl(order.orderId, { token });
+
+  if (cancelled) {
+    return (
+      <PayLinkFallback
+        title="Payment cancelled"
+        hint="You can continue to Stripe whenever you are ready."
+        href={payHref}
+        actionLabel="Continue to Stripe"
+      />
+    );
+  }
+
+  const result = await createCheckoutSessionForExistingOrder({
+    orderId: order.orderId,
+    publicToken: token,
+    lang: 'en',
+  });
+
+  if (result.ok) {
+    redirect(result.url);
+  }
+
+  if (result.status === 400 && result.error === 'Order is already paid') {
+    redirect(getOrderDetailsUrl(order.orderId, { token }));
+  }
+
+  if (result.status === 403 || result.status === 404) {
+    notFound();
+  }
 
   return (
-    <PayLinkReviewClient
-      orderId={order.orderId}
-      publicToken={token}
-      description={description}
-      amount={amount}
-      customerName={order.customerName ?? null}
+    <PayLinkFallback
+      title="Could not start payment"
+      error={result.error}
+      hint="Try again in a moment. If this keeps happening, ask Lanna Bloom to send a new link."
+      href={payHref}
+      actionLabel="Try again"
     />
   );
 }

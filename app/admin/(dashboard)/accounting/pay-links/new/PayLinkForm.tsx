@@ -75,7 +75,7 @@ export function PayLinkForm() {
           </Link>
           <h1 className="admin-title">New pay link</h1>
           <p className="admin-hint">
-            Extra item or service not in the store. Customer sees the description and amount, then pays on Stripe.
+            Extra item or service not in the store. The customer opens the URL and goes straight to Stripe.
           </p>
         </div>
       </header>
@@ -83,8 +83,8 @@ export function PayLinkForm() {
       <div className="admin-accounting-notice">
         <span className="material-symbols-outlined">info</span>
         <span>
-          This is not a flower delivery order. Send the review URL (not a Stripe Dashboard Payment Link). Stripe
-          commission is recorded automatically when they pay.
+          This is not a flower delivery order. Send this shop URL (not a Stripe Dashboard Payment Link). The customer
+          goes straight to Stripe. Commission is recorded automatically when they pay.
         </span>
       </div>
 
@@ -94,7 +94,7 @@ export function PayLinkForm() {
             Pay link created for order <strong>{created.orderId}</strong>. Copy and send to the customer.
           </p>
           <div className="admin-form-group">
-            <label htmlFor="pay-link-url">Customer review URL</label>
+            <label htmlFor="pay-link-url">Customer pay URL</label>
             <input id="pay-link-url" className="admin-input" readOnly value={created.reviewUrl} />
           </div>
           <div className="admin-expenses-form-actions">
@@ -206,8 +206,20 @@ export function PayLinkForm() {
             <Link href="/admin/accounting/pay-links" className="admin-btn admin-btn-outline">
               Cancel
             </Link>
-            <button type="submit" className="admin-btn admin-btn-primary" disabled={loading}>
-              {loading ? 'Creating…' : 'Create pay link'}
+            <button
+              type="submit"
+              className="admin-btn admin-btn-primary admin-moderation-btn-loading"
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="admin-moderation-spinner" aria-hidden />
+                  Creating…
+                </>
+              ) : (
+                'Create pay link'
+              )}
             </button>
           </div>
         </form>

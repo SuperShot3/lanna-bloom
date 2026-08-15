@@ -39,7 +39,7 @@ interface OrderStatusPaymentCardProps {
   canEditCosts: boolean;
   initialCogsExpense?: LinkedExpenseRef;
   initialDeliveryExpense?: LinkedExpenseRef;
-  /** Public review URL for unpaid admin pay-link charges. */
+  /** Public pay URL for unpaid admin pay-link charges (opens Stripe). */
   payLinkUrl?: string | null;
 }
 
