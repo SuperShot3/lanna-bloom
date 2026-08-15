@@ -1,0 +1,16 @@
+.card {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: var(--text-muted, #6b6560);
+}
+
+.pdp {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--text-muted, #6b6560) 88%, var(--text, #2d2a26));
+}

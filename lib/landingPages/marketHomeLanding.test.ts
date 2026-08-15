@@ -61,6 +61,14 @@ assert.ok(
   !lamphunFaq.some((item) => /same-day flower delivery\?/i.test(item.q)),
   'Lamphun FAQ does not ask the same-day question'
 );
+assert.ok(
+  lamphunFaq.some((item) => /delivery from/i.test(item.a) && item.a.includes('250')),
+  'Lamphun FAQ mentions delivery from min fee'
+);
+assert.ok(
+  !lamphunFaq.some((item) => item.a.includes('{amount}')),
+  'Lamphun FAQ amount placeholder filled'
+);
 
 const lamphunDelivery = buildMarketDeliveryCopy({
   lang: 'en',

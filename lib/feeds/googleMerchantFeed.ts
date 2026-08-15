@@ -1,6 +1,7 @@
 import type { Bouquet } from '@/lib/bouquets';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import { applyCatalogDiscountThb } from '@/lib/catalogDiscount';
+import { computeFinalPrice } from '@/lib/partnerPricing';
 import {
   getBouquetDisplayCategory,
   getProductDisplayCategory,
@@ -360,7 +361,10 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       continue;
     }
 
-    const priceThb = applyCatalogDiscountThb(toy.price ?? 0, toy.discountPercent);
+    const priceThb = applyCatalogDiscountThb(
+      computeFinalPrice(toy.cost ?? toy.price ?? 0, toy.commissionPercent),
+      toy.discountPercent
+    );
     if (priceThb <= 0) {
       skip(skipped, { id: sku, productType: 'plushy_toy', reason: 'missing_price' });
       continue;
@@ -429,7 +433,10 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       continue;
     }
 
-    const priceThb = applyCatalogDiscountThb(balloon.price ?? 0, balloon.discountPercent);
+    const priceThb = applyCatalogDiscountThb(
+      computeFinalPrice(balloon.cost ?? balloon.price ?? 0, balloon.commissionPercent),
+      balloon.discountPercent
+    );
     if (priceThb <= 0) {
       skip(skipped, { id: sku, productType: 'balloon', reason: 'missing_price' });
       continue;

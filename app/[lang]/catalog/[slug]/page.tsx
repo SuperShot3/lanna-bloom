@@ -6,8 +6,9 @@ import {
   buildBouquetProductJsonLd,
   buildCatalogProductJsonLd,
   resolveProductOgImage,
+  serializeJsonLd,
 } from '@/lib/seo/productJsonLd';
-import { buildAlternates } from '@/lib/seo/alternates';
+import { buildAlternates, isSeoLocale } from '@/lib/seo/alternates';
 import { ProductPageClient } from './ProductPageClient';
 import { ProductDetailClient } from './ProductDetailClient';
 import { ProductSimilarBouquetsSection } from '@/components/pdp/ProductSimilarBouquetsSection';
@@ -23,12 +24,93 @@ import {
 } from '@/lib/catalogReads';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
-import { getMarketByPathSlug, type MarketPathSlug } from '@/lib/delivery/markets';
+import {
+  getMarketByPathSlug,
+  marketIsIndexable,
+  type DeliveryDestinationId,
+  type MarketPathSlug,
+} from '@/lib/delivery/markets';
 import {
   buildMarketCatalogHref,
   buildMarketHomeHref,
 } from '@/lib/delivery/marketRoute';
 import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
+import type { CatalogProduct } from '@/lib/catalog/types';
+
+function JsonLdScript({ data }: { data: Record<string, unknown> | null }) {
+  if (!data) return null;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
+    />
+  );
+}
+
+function shouldEmitProductJsonLd(
+  lang: string,
+  marketPathSlug?: MarketPathSlug | null
+): boolean {
+  if (!isSeoLocale(lang)) return false;
+  if (!marketPathSlug) return true;
+  const market = getMarketByPathSlug(marketPathSlug);
+  return Boolean(market && marketIsIndexable(market));
+}
+
+function destinationForMarket(
+  marketPathSlug?: MarketPathSlug | null
+): DeliveryDestinationId {
+  if (!marketPathSlug) return 'CHIANG_MAI';
+  return getMarketByPathSlug(marketPathSlug)?.destinationId ?? 'CHIANG_MAI';
+}
+
+function pdpMetadata(opts: {
+  lang: string;
+  slug: string;
+  name: string;
+  description: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  images: string[];
+  imageAlt?: string;
+}): Metadata {
+  const isTh = opts.lang === 'th';
+  const title =
+    opts.seoTitle?.trim() ||
+    `${opts.name} | Flower delivery Chiang Mai | Lanna Bloom`;
+  const description =
+    opts.seoDescription?.trim() ||
+    opts.description.trim().slice(0, 160) ||
+    (isTh
+      ? `สั่ง${opts.name} พร้อมจัดส่งในเชียงใหม่`
+      : `Order ${opts.name} with flower delivery in Chiang Mai.`);
+  const canonical = `${getBaseUrl()}/${opts.lang}/catalog/${opts.slug}`;
+  const ogImage = resolveProductOgImage(opts.images, { alt: opts.imageAlt || opts.name });
+  return {
+    title,
+    description,
+    alternates: buildAlternates({
+      lang: opts.lang,
+      pathSuffix: `/catalog/${opts.slug}`,
+      canonical,
+    }),
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: 'website',
+      ...(ogImage
+        ? { images: [{ url: ogImage.url, ...(ogImage.alt ? { alt: ogImage.alt } : {}) }] }
+        : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage.url] } : {}),
+    },
+  };
+}
 
 // Revalidate product pages every 60 seconds so catalog updates appear without rebuild
 export const revalidate = 60;
@@ -50,49 +132,45 @@ export async function generateMetadata({
   if (!isValidLocale(params.lang)) return {};
   if (getMarketByPathSlug(params.slug)) return {};
 
-  const bouquet = await getCatalogBouquetBySlug(params.slug);
-  if (!bouquet) return {};
-
   const isTh = params.lang === 'th';
-  const name = isTh ? bouquet.nameTh : bouquet.nameEn;
-  const title =
-    (isTh ? bouquet.seoTitleTh : bouquet.seoTitleEn)?.trim() ||
-    `${name} | Flower delivery Chiang Mai | Lanna Bloom`;
-  const description =
-    (isTh ? bouquet.seoDescriptionTh : bouquet.seoDescriptionEn)?.trim() ||
-    (isTh ? bouquet.descriptionTh : bouquet.descriptionEn).trim().slice(0, 160) ||
-    (isTh
-      ? `สั่ง${name} พร้อมจัดส่งในเชียงใหม่`
-      : `Order ${name} with flower delivery in Chiang Mai.`);
+  const [bouquet, plushyToy, balloon, product] = await Promise.all([
+    getCatalogBouquetBySlug(params.slug),
+    getCatalogPlushyToyBySlug(params.slug),
+    getCatalogBalloonBySlug(params.slug),
+    getCatalogProductBySlug(params.slug),
+  ]);
 
-  const canonical = `${getBaseUrl()}/${params.lang}/catalog/${bouquet.slug}`;
-  const ogImage = resolveProductOgImage(bouquet.images, {
-    alt: bouquet.imageAlts?.[0] || name,
-  });
-  return {
-    title,
-    description,
-    alternates: buildAlternates({
+  if (bouquet) {
+    const name = isTh ? bouquet.nameTh : bouquet.nameEn;
+    return pdpMetadata({
       lang: params.lang,
-      pathSuffix: `/catalog/${bouquet.slug}`,
-      canonical,
-    }),
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      type: 'website',
-      ...(ogImage
-        ? { images: [{ url: ogImage.url, ...(ogImage.alt ? { alt: ogImage.alt } : {}) }] }
-        : {}),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      ...(ogImage ? { images: [ogImage.url] } : {}),
-    },
-  };
+      slug: bouquet.slug,
+      name,
+      description: isTh ? bouquet.descriptionTh : bouquet.descriptionEn,
+      seoTitle: isTh ? bouquet.seoTitleTh : bouquet.seoTitleEn,
+      seoDescription: isTh ? bouquet.seoDescriptionTh : bouquet.seoDescriptionEn,
+      images: bouquet.images,
+      imageAlt: bouquet.imageAlts?.[0] || name,
+    });
+  }
+
+  const catalogProduct: CatalogProduct | null = plushyToy ?? balloon ?? product;
+  if (!catalogProduct) return {};
+
+  const name =
+    isTh && catalogProduct.nameTh?.trim()
+      ? catalogProduct.nameTh
+      : catalogProduct.nameEn;
+  const description =
+    (isTh ? catalogProduct.descriptionTh : catalogProduct.descriptionEn) || '';
+  return pdpMetadata({
+    lang: params.lang,
+    slug: catalogProduct.slug,
+    name,
+    description,
+    images: catalogProduct.images,
+    imageAlt: catalogProduct.imageAlts?.[0] || name,
+  });
 }
 
 export default async function ProductPage({
@@ -116,6 +194,9 @@ export default async function ProductPage({
   const pageUrl = marketPathSlug
     ? `${getBaseUrl()}/${lang}/catalog/${marketPathSlug}/${params.slug}`
     : `${getBaseUrl()}/${lang}/catalog/${params.slug}`;
+  const destinationId = destinationForMarket(marketPathSlug);
+  const emitJsonLd = shouldEmitProductJsonLd(lang, marketPathSlug);
+  const schemaLang = lang === 'th' ? 'th' : 'en';
 
   const bouquet = await getCatalogBouquetBySlug(params.slug);
   if (bouquet) {
@@ -126,18 +207,13 @@ export default async function ProductPage({
     const composition = lang === 'th' ? bouquet.compositionTh : bouquet.compositionEn;
     const t = translations[lang as Locale].product;
     const nav = translations[lang as Locale].nav;
-    const productJsonLd = buildBouquetProductJsonLd(
-      bouquet,
-      lang === 'th' ? 'th' : 'en',
-      pageUrl
-    );
+    const productJsonLd = emitJsonLd
+      ? buildBouquetProductJsonLd(bouquet, schemaLang, pageUrl, { destinationId })
+      : null;
 
     return (
       <div className="product-page">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-        />
+        <JsonLdScript data={productJsonLd} />
         <div className="container product-layout">
           <ProductMobileBackButton catalogHref={catalogHref} label={t.backToCatalog} />
           <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -172,18 +248,13 @@ export default async function ProductPage({
     const description = (lang === 'th' ? plushyToy.descriptionTh : plushyToy.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
     const suggestedBouquets = await getCatalogPopularBouquets(8);
-    const productJsonLd = buildCatalogProductJsonLd(
-      plushyToy,
-      lang === 'th' ? 'th' : 'en',
-      pageUrl
-    );
+    const productJsonLd = emitJsonLd
+      ? buildCatalogProductJsonLd(plushyToy, schemaLang, pageUrl, { destinationId })
+      : null;
 
     return (
       <div className="product-page">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-        />
+        <JsonLdScript data={productJsonLd} />
         <div className="container product-layout">
           <ProductMobileBackButton
             catalogHref={catalogHref}
@@ -222,18 +293,13 @@ export default async function ProductPage({
       'topCategory=balloons'
     );
     const suggestedBouquets = await getCatalogPopularBouquets(8);
-    const productJsonLd = buildCatalogProductJsonLd(
-      balloon,
-      lang === 'th' ? 'th' : 'en',
-      pageUrl
-    );
+    const productJsonLd = emitJsonLd
+      ? buildCatalogProductJsonLd(balloon, schemaLang, pageUrl, { destinationId })
+      : null;
 
     return (
       <div className="product-page">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-        />
+        <JsonLdScript data={productJsonLd} />
         <div className="container product-layout">
           <ProductMobileBackButton
             catalogHref={balloonCatalogHref}
@@ -267,18 +333,13 @@ export default async function ProductPage({
     const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;
     const description = (lang === 'th' ? product.descriptionTh : product.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
-    const productJsonLd = buildCatalogProductJsonLd(
-      product,
-      lang === 'th' ? 'th' : 'en',
-      pageUrl
-    );
+    const productJsonLd = emitJsonLd
+      ? buildCatalogProductJsonLd(product, schemaLang, pageUrl, { destinationId })
+      : null;
 
     return (
       <div className="product-page">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-        />
+        <JsonLdScript data={productJsonLd} />
         <div className="container product-layout">
           <ProductMobileBackButton
             catalogHref={catalogHref}

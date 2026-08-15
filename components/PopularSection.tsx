@@ -4,10 +4,12 @@ import { StorefrontIcon } from '@/components/icons';
 import {
   getCatalogHomeFlowerTypeSections,
   getCatalogHomeFlowerTypeTiles,
+  getCatalogHomeOccasionTiles,
   getCatalogPopularBouquets,
   getCatalogProductsFiltered,
 } from '@/lib/catalogReads';
 import { ShopByFlowerTypeTiles } from '@/components/home/ShopByFlowerTypeTiles';
+import { ShopByOccasionTiles } from '@/components/home/ShopByOccasionTiles';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
@@ -126,8 +128,9 @@ export async function PopularSection({
     })
   );
 
-  const [popularBouquets, flowerTypeTiles, sections, productSectionResults] = await Promise.all([
+  const [popularBouquets, occasionTiles, flowerTypeTiles, sections, productSectionResults] = await Promise.all([
     getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT, destinationId),
+    getCatalogHomeOccasionTiles(destinationId),
     getCatalogHomeFlowerTypeTiles(destinationId),
     getCatalogHomeFlowerTypeSections(destinationId),
     Promise.all(
@@ -149,6 +152,7 @@ export async function PopularSection({
 
   if (
     popularBouquets.length === 0 &&
+    occasionTiles.length === 0 &&
     flowerTypeTiles.length === 0 &&
     sections.length === 0 &&
     productSections.length === 0
@@ -180,6 +184,7 @@ export async function PopularSection({
             <ShowMoreLink href={catalogBase} label={tHome.showMore} />
           </div>
         )}
+        <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
         <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} catalogHref={catalogBase} />
         {sections.map((section) => {
           const sectionCatalogHref = `${catalogBase}${buildCatalogSearchString({ types: [section.type] })}`;

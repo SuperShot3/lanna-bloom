@@ -18,6 +18,10 @@ import {
   pickHomeFlowerTypeTiles,
   type HomeFlowerTypeTile,
 } from '@/lib/catalog/homeFlowerTypeTiles';
+import {
+  pickHomeOccasionTiles,
+  type HomeOccasionTile,
+} from '@/lib/catalog/homeOccasionTiles';
 
 import {
 
@@ -378,6 +382,7 @@ export async function getBouquetsFromCatalog(): Promise<Bouquet[]> {
 
 
 export type BouquetSitemapEntry = { slug: string; updatedAt: string };
+export type CatalogProductSitemapEntry = { slug: string; updatedAt: string };
 
 
 
@@ -405,6 +410,20 @@ export async function getBouquetSitemapEntriesFromCatalog(): Promise<BouquetSite
 
   return entries.sort((a, b) => a.slug.localeCompare(b.slug));
 
+}
+
+/** Lightweight slug + updated_at for sitemap (live catalog products only). */
+export async function getProductSitemapEntriesFromCatalog(): Promise<CatalogProductSitemapEntry[]> {
+  const rows = await fetchLiveProductRows();
+  const seen = new Set<string>();
+  const entries: CatalogProductSitemapEntry[] = [];
+  for (const row of rows) {
+    const slug = row.slug_en?.trim();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    entries.push({ slug, updatedAt: row.updated_at });
+  }
+  return entries.sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
 
@@ -751,13 +770,20 @@ export async function getHomeFlowerTypeSectionsFromCatalog(
 
 }
 
-export type { HomeFlowerTypeTile };
+export type { HomeFlowerTypeTile, HomeOccasionTile };
 
 export async function getHomeFlowerTypeTilesFromCatalog(
   catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<HomeFlowerTypeTile[]> {
   const ordered = await getOrderedPopularBouquetsFromCatalog(catalogDestination);
   return pickHomeFlowerTypeTiles(ordered, Date.now());
+}
+
+export async function getHomeOccasionTilesFromCatalog(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<HomeOccasionTile[]> {
+  const ordered = await getOrderedPopularBouquetsFromCatalog(catalogDestination);
+  return pickHomeOccasionTiles(ordered, Date.now());
 }
 
 const loadPopularCatalogItemsFull = cacheSupabaseCatalog('popular-catalog-items-full', async () => {

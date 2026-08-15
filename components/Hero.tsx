@@ -135,21 +135,17 @@ function HeroCtaSection({
   primaryCtaHref,
   onHowItWorks,
   introItemClass,
-  ctaExtraClass = '',
-  reviewsExtraClass = '',
 }: {
   lang: Locale;
   primaryCtaHref: string;
   onHowItWorks: () => void;
   introItemClass: string;
-  ctaExtraClass?: string;
-  reviewsExtraClass?: string;
 }) {
   const t = translations[lang].hero;
   return (
     <>
       <div
-        className={`${introItemClass} ${ctaExtraClass} flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-5`.trim()}
+        className={`${introItemClass} flex flex-wrap gap-3 sm:gap-4 mb-4 sm:mb-5`.trim()}
       >
         <Link
           href={primaryCtaHref}
@@ -175,10 +171,7 @@ function HeroCtaSection({
           {t.ctaHowItWorks}
         </button>
       </div>
-      <GoogleReviewsBadge
-        lang={lang}
-        className={`${introItemClass} ${reviewsExtraClass}`.trim()}
-      />
+      <GoogleReviewsBadge lang={lang} className={introItemClass} />
       <style jsx>{`
         @media (hover: none) and (pointer: coarse) {
           .hero-cta--premium .hero-cta__sheen {
@@ -308,7 +301,7 @@ export function Hero({
           >
             {sublineNew}
           </p>
-          <div className="hidden lg:block mt-4 sm:mt-5">
+          <div className="mt-4 sm:mt-5">
             <HeroCtaSection
               lang={lang}
               primaryCtaHref={primaryCtaHref}
@@ -324,17 +317,6 @@ export function Hero({
           timing={timing}
           className={`order-2 lg:order-none lg:col-start-2 ${introItemClass} home-hero-intro__delay-4`.trim()}
         />
-
-        <div className={`order-3 lg:hidden relative z-10 min-w-0 ${introClass}`}>
-          <HeroCtaSection
-            lang={lang}
-            primaryCtaHref={primaryCtaHref}
-            onHowItWorks={handleHowItWorks}
-            introItemClass={introItemClass}
-            ctaExtraClass="home-hero-intro__delay-5"
-            reviewsExtraClass="home-hero-intro__delay-6"
-          />
-        </div>
       </div>
       {howToOpen ? (
         <HowToOrderModal lang={lang} isOpen={howToOpen} onClose={() => setHowToOpen(false)} />

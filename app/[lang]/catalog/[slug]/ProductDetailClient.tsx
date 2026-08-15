@@ -13,9 +13,14 @@ import { applyCatalogDiscountThb, hasCatalogDiscount } from '@/lib/catalogDiscou
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import { CurrencyAmount } from '@/components/CurrencyDisplay';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
+import {
+  isMay2026FreeDeliveryActive,
+  qualifiesForMay2026FreeDelivery,
+} from '@/lib/promo/campaigns';
 
 export function ProductDetailClient({
   product,
@@ -39,6 +44,8 @@ export function ProductDetailClient({
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const finalPrice = computeFinalPrice(product.cost ?? product.price, product.commissionPercent);
   const discountedPrice = applyCatalogDiscountThb(finalPrice, product.discountPercent);
+  const hideDeliveryFromFee =
+    isMay2026FreeDeliveryActive() && qualifiesForMay2026FreeDelivery(discountedPrice);
   const isPlushyToy = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
   const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
   const isStandaloneAddOn = isPlushyToy || isBalloon;
@@ -122,6 +129,13 @@ export function ProductDetailClient({
           ) : (
             <CurrencyAmount thb={finalPrice} lang={lang} className="product-price" />
           )}
+          {!hideDeliveryFromFee ? (
+            <DeliveryFromFeeHint
+              lang={lang}
+              destinationId={checkoutProfile.destinationId}
+              variant="pdp"
+            />
+          ) : null}
         </div>
         <ProductOrderBlockForProduct
           product={product}

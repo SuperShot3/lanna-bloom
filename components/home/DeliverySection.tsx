@@ -10,6 +10,8 @@ import {
 import { StorefrontIcon } from '@/components/icons';
 import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
 import type { MarketDeliveryCopy } from '@/lib/landingPages/marketHomeLanding';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
 
 function RedCarChip() {
   return (
@@ -54,10 +56,12 @@ export function DeliverySection({
   lang,
   catalogHref,
   copy,
+  destinationId = 'CHIANG_MAI',
 }: {
   lang: Locale;
   catalogHref?: string;
   copy?: MarketDeliveryCopy;
+  destinationId?: DeliveryDestinationId;
 }) {
   const t = translations[lang].homeLanding.delivery;
   const cutoff = formatMinutesAsClockTime(SAME_DAY_ORDER_CUTOFF_MIN);
@@ -71,6 +75,7 @@ export function DeliverySection({
   const showLocalCourierBrands = copy?.showLocalCourierBrands ?? true;
   const areasTitle = copy?.areasTitle ?? t.areasTitle;
   const areasIntro = copy?.areasIntro ?? t.areasIntro;
+  const areasNote = fillDeliveryFeeAmountPlaceholder(t.areasNote, destinationId, lang);
 
   return (
     <section
@@ -203,7 +208,7 @@ export function DeliverySection({
                   </h3>
                   <p className="text-[#1A3C34] text-sm leading-relaxed">
                     {areasIntro}{' '}
-                    <span className="text-[#3d524c]">{t.areasNote}</span>
+                    <span className="text-[#3d524c]">{areasNote}</span>
                   </p>
                 </div>
               </div>

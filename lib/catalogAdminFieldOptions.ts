@@ -46,10 +46,12 @@ export const ADMIN_FLOWER_TYPE_OPTIONS = [
 export const ADMIN_OCCASION_OPTIONS = [
   { value: 'birthday', label: 'Birthday' },
   { value: 'anniversary', label: 'Anniversary' },
+  { value: 'wedding', label: 'Wedding' },
   { value: 'romantic', label: 'Romantic' },
-  { value: 'sympathy', label: 'Sympathy' },
-  { value: 'congrats', label: 'Congratulations' },
+  { value: 'apology', label: 'Apology' },
   { value: 'get_well', label: 'Get well' },
+  { value: 'congrats', label: 'Congratulations' },
+  { value: 'sympathy', label: 'Sympathy' },
 ] as const;
 
 export const ADMIN_PRICING_TYPE_OPTIONS: { value: PricingType; label: string; helper?: string }[] = [

@@ -15,7 +15,7 @@ import {
   getActiveMarkets,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
-import { getCheckoutZonesForDestination } from '@/lib/delivery/zones';
+import { getCheckoutZonesForDestination, getZoneFee } from '@/lib/delivery/zones';
 import { canEnterCatalog, normalizeShopCategoryKey } from '@/lib/provinces/shopAccess';
 import { PROVINCE_SEED_ROSTER } from '@/lib/provinces/seedRoster';
 import { getProvinceStatusLabelLocalized } from '@/lib/provinces/statusColors';
@@ -102,10 +102,32 @@ export function formatCoverageCategories(
 /** Min checkout fee for a destination (excludes manual-quote zones). */
 export function minCheckoutFeeThb(destinationId: DeliveryDestinationId): number | null {
   const fees = getCheckoutZonesForDestination(destinationId)
-    .map((z) => z.feeThb)
-    .filter((n) => Number.isFinite(n));
+    .map((z) => getZoneFee(destinationId, z.id))
+    .filter((n): n is number => n != null && Number.isFinite(n));
   if (fees.length === 0) return null;
   return Math.min(...fees);
+}
+
+/** Formatted min checkout fee for customer copy, or null when the destination has no zones. */
+export function formatMinCheckoutFeeLabel(
+  destinationId: DeliveryDestinationId,
+  lang: Locale
+): string | null {
+  const min = minCheckoutFeeThb(destinationId);
+  if (min == null) return null;
+  const grouped = min.toLocaleString(lang === 'th' ? 'th-TH' : 'en-US');
+  return `฿${grouped}`;
+}
+
+/** Replace `{amount}` with the destination’s formatted min delivery fee. */
+export function fillDeliveryFeeAmountPlaceholder(
+  template: string,
+  destinationId: DeliveryDestinationId,
+  lang: Locale
+): string {
+  const amount = formatMinCheckoutFeeLabel(destinationId, lang);
+  if (!amount) return template.replaceAll('{amount}', '').replace(/\s{2,}/g, ' ').trim();
+  return template.replaceAll('{amount}', amount);
 }
 
 /**

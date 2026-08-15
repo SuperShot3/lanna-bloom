@@ -129,7 +129,9 @@ export default async function CatalogPage({
   const occasionSlugToKey: Record<string, { title: keyof typeof t; desc: keyof typeof t }> = {
     birthday: { title: 'occasionTitleBirthday', desc: 'occasionDescBirthday' },
     anniversary: { title: 'occasionTitleAnniversary', desc: 'occasionDescAnniversary' },
+    wedding: { title: 'occasionTitleWedding', desc: 'occasionDescWedding' },
     romantic: { title: 'occasionTitleRomantic', desc: 'occasionDescRomantic' },
+    apology: { title: 'occasionTitleApology', desc: 'occasionDescApology' },
     sympathy: { title: 'occasionTitleSympathy', desc: 'occasionDescSympathy' },
     congrats: { title: 'occasionTitleCongrats', desc: 'occasionDescCongrats' },
     get_well: { title: 'occasionTitleGetWell', desc: 'occasionDescGetWell' },

@@ -140,7 +140,7 @@ export default async function MarketFlowerDeliveryPage({
         />
       </Suspense>
       <ExperienceSection lang={lang} />
-      <DeliverySection lang={lang} catalogHref={catalogHref} copy={deliveryCopy} />
+      <DeliverySection lang={lang} catalogHref={catalogHref} copy={deliveryCopy} destinationId={entry.destinationId} />
       <ReviewsSection
         lang={lang}
         chiangMaiSpecific={false}

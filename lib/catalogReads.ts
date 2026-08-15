@@ -13,6 +13,7 @@ import {
   getBouquetsFilteredFromCatalog,
   getBouquetsFromCatalog,
   getBouquetSitemapEntriesFromCatalog,
+  getProductSitemapEntriesFromCatalog,
   getSimilarBouquetsFromCatalog,
   getBouquetsFromCatalogPaginated,
   getHeroCarouselImagesFromCatalog,
@@ -25,6 +26,7 @@ import {
   getPopularCatalogItemsFromCatalogPaginated,
   getHomeFlowerTypeSectionsFromCatalog,
   getHomeFlowerTypeTilesFromCatalog,
+  getHomeOccasionTilesFromCatalog,
   getProductByIdFromCatalog,
   getProductBySlugFromCatalog,
   getProductsFilteredFromCatalog,
@@ -32,9 +34,9 @@ import {
 } from '@/lib/catalog';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import type { CatalogFilterParams, PopularCatalogItem } from '@/lib/catalogListLogic';
-import type { HomeFlowerTypeSection, HomeFlowerTypeTile } from '@/lib/catalog';
+import type { HomeFlowerTypeSection, HomeFlowerTypeTile, HomeOccasionTile } from '@/lib/catalog';
 import type { Bouquet } from '@/lib/bouquets';
-import type { BouquetSitemapEntry } from '@/lib/catalog';
+import type { BouquetSitemapEntry, CatalogProductSitemapEntry } from '@/lib/catalog';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { attachSoldCount, attachSoldCounts, getPaidSalesCountMap } from '@/lib/catalog/paidSalesCounts';
 import { attachPublicSoldCount } from '@/lib/catalog/paidSalesCountsLogic';
@@ -53,6 +55,11 @@ export async function getCatalogBouquets(): Promise<Bouquet[]> {
 export async function getCatalogBouquetSitemapEntries(): Promise<BouquetSitemapEntry[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   return getBouquetSitemapEntriesFromCatalog();
+}
+
+export async function getCatalogProductSitemapEntries(): Promise<CatalogProductSitemapEntry[]> {
+  if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
+  return getProductSitemapEntriesFromCatalog();
 }
 
 export async function getCatalogSimilarBouquets(
@@ -145,6 +152,13 @@ export async function getCatalogHomeFlowerTypeTiles(
 ): Promise<HomeFlowerTypeTile[]> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
   return getHomeFlowerTypeTilesFromCatalog(catalogDestination);
+}
+
+export async function getCatalogHomeOccasionTiles(
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<HomeOccasionTile[]> {
+  if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
+  return getHomeOccasionTilesFromCatalog(catalogDestination);
 }
 
 export async function getCatalogBouquetsFiltered(params: CatalogFilterParams): Promise<Bouquet[]> {

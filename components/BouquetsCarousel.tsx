@@ -14,6 +14,7 @@ import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
+import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 
 type BouquetsCarouselProps = {
   bouquets: Bouquet[];
@@ -109,6 +110,11 @@ function BouquetCarouselTile({
           <p className={priceClass}>
             {lang === 'th' ? 'เริ่มต้น ' : 'From '}฿{displayMinPrice.toLocaleString()}
           </p>
+          <DeliveryFromFeeHint
+            lang={lang}
+            destinationId={checkoutProfile.destinationId}
+            variant="card"
+          />
         </div>
       </Link>
     </div>

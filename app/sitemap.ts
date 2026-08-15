@@ -1,7 +1,10 @@
 // app/sitemap.ts
 import type { MetadataRoute } from 'next';
 import { getBaseUrl } from '@/lib/orders';
-import { getCatalogBouquetSitemapEntries } from '@/lib/catalogReads';
+import {
+  getCatalogBouquetSitemapEntries,
+  getCatalogProductSitemapEntries,
+} from '@/lib/catalogReads';
 import { articles } from '@/app/[lang]/info/_data/articles';
 import type { ArticleMeta } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
@@ -87,13 +90,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const bouquets = await getCatalogBouquetSitemapEntries();
+    const [bouquets, products] = await Promise.all([
+      getCatalogBouquetSitemapEntries(),
+      getCatalogProductSitemapEntries(),
+    ]);
     for (const lang of SEO_LOCALES) {
       for (const bouquet of bouquets) {
         pushEntry(entries, `${base}/${lang}/catalog/${bouquet.slug}`, {
           changeFrequency: 'weekly',
           priority: 0.8,
           lastModified: bouquet.updatedAt,
+        });
+      }
+      for (const product of products) {
+        pushEntry(entries, `${base}/${lang}/catalog/${product.slug}`, {
+          changeFrequency: 'weekly',
+          priority: 0.75,
+          lastModified: product.updatedAt,
         });
       }
     }

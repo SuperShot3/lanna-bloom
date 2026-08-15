@@ -31,6 +31,7 @@ import {
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { StorefrontIcon } from '@/components/icons';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
+import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import {
   catalogImageUnoptimized,
   CATALOG_CARD_IMAGE_SIZES,
@@ -39,6 +40,11 @@ import {
 } from '@/lib/catalog/catalogImage';
 import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
 import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
+import {
+  catalogCardImageForSize,
+  galleryIndexForSize,
+  sizeIndexForGalleryIndex,
+} from '@/lib/pdpVariantMedia';
 
 function defaultOptionIdForBouquet(bouquet: Bouquet): string {
   const sizes = bouquet.sizes ?? [];
@@ -108,8 +114,25 @@ export function BouquetCard({
   );
   const href = buildCatalogItemHref({ lang, slug: bouquet.slug, pathname });
   const images = bouquet.images?.length ? bouquet.images : [];
-  const [imageIndex, setImageIndex] = useState(0);
-  const imgSrc = images[imageIndex] ?? images[0] ?? '';
+  const sizes = bouquet.sizes ?? [];
+  const hasMultipleSizes = sizes.length > 1;
+  const defaultOid = useMemo(() => defaultOptionIdForBouquet(bouquet), [bouquet]);
+  const [selectedOptionId, setSelectedOptionId] = useState<string>(defaultOid);
+  const [imageIndex, setImageIndex] = useState(() => {
+    const sizeIndex = sizes.findIndex((s) => s.optionId === defaultOid);
+    return galleryIndexForSize(sizeIndex >= 0 ? sizeIndex : 0, images.length);
+  });
+  const selectedSize: BouquetSize | undefined =
+    sizes.find((s) => s.optionId === selectedOptionId) ?? sizes[0];
+  const selectedSizeIndex = selectedSize
+    ? sizes.findIndex((s) => s.optionId === selectedSize.optionId)
+    : 0;
+  const mappedCardImage = catalogCardImageForSize({
+    images,
+    sizeIndex: selectedSizeIndex >= 0 ? selectedSizeIndex : 0,
+    sizeImageUrls: selectedSize?.imageUrls,
+  });
+  const imgSrc = selectedSize?.imageUrls?.[0] || images[imageIndex] || mappedCardImage.url || '';
   const imgAlt = bouquet.imageAlts?.[imageIndex]?.trim() || bouquet.imageAlts?.[0]?.trim() || name;
   const handlePdpImagePreload = useCallback(() => {
     if (imgSrc) preloadCatalogImage(imgSrc, CATALOG_PDP_PRELOAD_WIDTH);
@@ -119,11 +142,7 @@ export function BouquetCard({
   const expandablePanel = showHoverPanel && !simpleActions;
   const showPanel = expandablePanel;
 
-  const sizes = bouquet.sizes ?? [];
-  const hasMultipleSizes = sizes.length > 1;
-  const defaultOid = useMemo(() => defaultOptionIdForBouquet(bouquet), [bouquet]);
   const [hovered, setHovered] = useState(false);
-  const [selectedOptionId, setSelectedOptionId] = useState<string>(defaultOid);
   const [justAdded, setJustAdded] = useState(false);
   const [actionsPinned, setActionsPinned] = useState(false);
   const [showMobileActions, setShowMobileActions] = useState(false);
@@ -132,7 +151,9 @@ export function BouquetCard({
 
   useEffect(() => {
     setSelectedOptionId(defaultOid);
-  }, [defaultOid]);
+    const sizeIndex = (bouquet.sizes ?? []).findIndex((s) => s.optionId === defaultOid);
+    setImageIndex(galleryIndexForSize(sizeIndex >= 0 ? sizeIndex : 0, images.length));
+  }, [bouquet.sizes, defaultOid, images.length]);
 
   useEffect(() => {
     if (!expandablePanel) return;
@@ -175,9 +196,6 @@ export function BouquetCard({
     };
   }, [bouquet.id]);
 
-  const selectedSize: BouquetSize | undefined =
-    bouquet.sizes?.find((s) => s.optionId === selectedOptionId) ?? bouquet.sizes?.[0];
-
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       if (!selectedSize || selectedSize.availability === false) return;
@@ -194,7 +212,7 @@ export function BouquetCard({
           slug: bouquet.slug,
           nameEn: bouquet.nameEn,
           nameTh: bouquet.nameTh,
-          imageUrl: selectedSize.imageUrls?.[0] || imgSrc || bouquet.images?.[0],
+          imageUrl: mappedCardImage.url || imgSrc || bouquet.images?.[0],
           size: discountedSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
@@ -237,7 +255,7 @@ export function BouquetCard({
         router.push(`/${lang}/cart`);
       }
     },
-    [addItem, bouquet, checkoutProfile.destinationId, imgSrc, lang, router, selectedSize]
+    [addItem, bouquet, checkoutProfile.destinationId, imgSrc, lang, mappedCardImage.url, router, selectedSize]
   );
 
   const touchStartX = useRef<number | null>(null);
@@ -245,13 +263,39 @@ export function BouquetCard({
   const mouseStartX = useRef<number | null>(null);
   const mouseUpListenerRef = useRef<((e: MouseEvent) => void) | null>(null);
 
+  const applyGalleryIndex = useCallback(
+    (nextIndex: number) => {
+      setImageIndex(nextIndex);
+      if (sizes.length <= 1 || images.length <= 0) return;
+      const nextSizeIndex = sizeIndexForGalleryIndex(
+        nextIndex,
+        sizes.length,
+        images.length,
+        selectedSizeIndex >= 0 ? selectedSizeIndex : null
+      );
+      if (nextSizeIndex == null) return;
+      const nextId = sizes[nextSizeIndex]?.optionId;
+      if (nextId && nextId !== selectedOptionId) setSelectedOptionId(nextId);
+    },
+    [images.length, selectedOptionId, selectedSizeIndex, sizes]
+  );
+
+  const selectSizeOption = useCallback(
+    (optionId: string) => {
+      setSelectedOptionId(optionId);
+      const sizeIndex = sizes.findIndex((s) => s.optionId === optionId);
+      setImageIndex(galleryIndexForSize(sizeIndex >= 0 ? sizeIndex : 0, images.length));
+    },
+    [images.length, sizes]
+  );
+
   const goPrev = useCallback(() => {
-    setImageIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
-  }, [images.length]);
+    applyGalleryIndex(imageIndex <= 0 ? images.length - 1 : imageIndex - 1);
+  }, [applyGalleryIndex, imageIndex, images.length]);
 
   const goNext = useCallback(() => {
-    setImageIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
-  }, [images.length]);
+    applyGalleryIndex(imageIndex >= images.length - 1 ? 0 : imageIndex + 1);
+  }, [applyGalleryIndex, imageIndex, images.length]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -517,6 +561,11 @@ export function BouquetCard({
               amountClassName="card-price-amount"
             />
           </div>
+          <DeliveryFromFeeHint
+            lang={lang}
+            destinationId={checkoutProfile.destinationId}
+            variant="card"
+          />
         </div>
       </PrefetchLink>
 
@@ -612,7 +661,7 @@ export function BouquetCard({
                         className="card-hover-radio"
                         name={radioName}
                         checked={isChecked}
-                        onChange={() => setSelectedOptionId(s.optionId)}
+                        onChange={() => selectSizeOption(s.optionId)}
                       />
                       <span className="card-hover-label-text">
                         {optionDisplayLabel(s, lang)}

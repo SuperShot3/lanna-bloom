@@ -21,7 +21,12 @@ import { useProvinceDeliveryConstraint } from '@/hooks/useProvinceDeliveryConstr
 import { useOrderGiftCardMessage } from '@/hooks/useOrderGiftCardMessage';
 import { applyCatalogDiscountThb, effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
+import {
+  isMay2026FreeDeliveryActive,
+  qualifiesForMay2026FreeDelivery,
+} from '@/lib/promo/campaigns';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
+import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
@@ -108,6 +113,8 @@ export function ProductOrderBlock({
   );
   const totalPrice = unitPrice * qty;
   const lineTotalForPromo = discountedSizePrice * qty;
+  const hideDeliveryFromFee =
+    isMay2026FreeDeliveryActive() && qualifiesForMay2026FreeDelivery(lineTotalForPromo);
 
   const addToCartCore = () => {
     if (purchaseDisabled) return;
@@ -181,6 +188,13 @@ export function ProductOrderBlock({
           className={pdpStyles.pdpUnitPrice}
           amountClassName={pdpStyles.pdpUnitPriceAmount}
         />
+        {!hideDeliveryFromFee ? (
+          <DeliveryFromFeeHint
+            lang={lang}
+            destinationId={checkoutProfile.destinationId}
+            variant="pdp"
+          />
+        ) : null}
         <ProductDeliveryBenefitBadge
           lang={lang}
           lineTotalThb={lineTotalForPromo}

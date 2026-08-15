@@ -57,6 +57,7 @@ export function PopularSectionSkeleton() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <TypeSectionSkeleton />
         <FlowerTypeTilesSkeleton />
+        <FlowerTypeTilesSkeleton />
         {Array.from({ length: SECTION_COUNT }).map((_, i) => (
           <TypeSectionSkeleton key={i} />
         ))}

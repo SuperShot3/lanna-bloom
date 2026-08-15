@@ -4,6 +4,7 @@
  * constants so the times are never hard-coded twice.
  */
 import { translations, type Locale } from '@/lib/i18n';
+import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
 import {
   SAME_DAY_ORDER_CUTOFF_MIN,
   DELIVERY_WINDOW_START_MIN,
@@ -25,6 +26,10 @@ export function getHomeFaqItems(lang: Locale): HomeFaqItem[] {
   const faq = translations[lang].homeLanding.faq;
   return faq.items.map((item) => ({
     q: item.q,
-    a: fillDeliveryTimePlaceholders(item.a),
+    a: fillDeliveryFeeAmountPlaceholder(
+      fillDeliveryTimePlaceholders(item.a),
+      'CHIANG_MAI',
+      lang
+    ),
   }));
 }

@@ -137,18 +137,22 @@ export const CATALOG_OCCASION_CHIPS: {
   value: string;
   labelKey:
     | 'occasionAny'
-    | 'occasionRomantic'
     | 'occasionBirthday'
     | 'occasionAnniversary'
-    | 'occasionSympathy'
+    | 'occasionWedding'
+    | 'occasionRomantic'
+    | 'occasionApology'
+    | 'occasionGetWell'
     | 'occasionCongrats'
-    | 'occasionGetWell';
+    | 'occasionSympathy';
 }[] = [
   { value: '', labelKey: 'occasionAny' },
-  { value: 'romantic', labelKey: 'occasionRomantic' },
   { value: 'birthday', labelKey: 'occasionBirthday' },
   { value: 'anniversary', labelKey: 'occasionAnniversary' },
-  { value: 'sympathy', labelKey: 'occasionSympathy' },
-  { value: 'congrats', labelKey: 'occasionCongrats' },
+  { value: 'wedding', labelKey: 'occasionWedding' },
+  { value: 'romantic', labelKey: 'occasionRomantic' },
+  { value: 'apology', labelKey: 'occasionApology' },
   { value: 'get_well', labelKey: 'occasionGetWell' },
+  { value: 'congrats', labelKey: 'occasionCongrats' },
+  { value: 'sympathy', labelKey: 'occasionSympathy' },
 ];

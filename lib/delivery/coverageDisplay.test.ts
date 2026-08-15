@@ -5,8 +5,10 @@
 
 import {
   buildCoveragePanelDisplay,
+  fillDeliveryFeeAmountPlaceholder,
   formatCoverageCategories,
   formatCoverageTiming,
+  formatMinCheckoutFeeLabel,
   formatShoppableProvinceSummary,
   isExpansionProvinceCode,
   listShoppableCoverageAreas,
@@ -234,6 +236,29 @@ assert(
   assert(lp!.summary.includes('Next-Day'), 'Lamphun status from seed');
   assert(lp!.summary.includes('from ฿250'), 'Lamphun min fee in summary');
   assert(cm!.summary.includes('Flowers & gifts'), 'CM categories');
+}
+
+{
+  assert(minCheckoutFeeThb('CHIANG_MAI') === 250, 'Chiang Mai min fee 250');
+  assert(minCheckoutFeeThb('PATTAYA') === 250, 'Pattaya min fee 250');
+  const cmAmount = formatMinCheckoutFeeLabel('CHIANG_MAI', 'en');
+  assert(Boolean(cmAmount && cmAmount.includes('250')), 'formatted CM min includes 250');
+  assert(Boolean(cmAmount && cmAmount.includes('฿')), 'formatted CM min uses baht sign');
+  const cardCopy = fillDeliveryFeeAmountPlaceholder(
+    'Delivery from {amount}',
+    'CHIANG_MAI',
+    'en'
+  );
+  assert(cardCopy.includes('Delivery from'), 'card copy prefix');
+  assert(cardCopy.includes('250'), 'card copy amount');
+  assert(!cardCopy.includes('{amount}'), 'placeholder filled');
+  const thCopy = fillDeliveryFeeAmountPlaceholder(
+    'ค่าจัดส่งเริ่มต้น {amount}',
+    'LAMPHUN',
+    'th'
+  );
+  assert(thCopy.includes('ค่าจัดส่งเริ่มต้น'), 'Thai card copy prefix');
+  assert(thCopy.includes('250'), 'Thai card copy amount');
 }
 
 console.log('coverageDisplay.test.ts: ok');

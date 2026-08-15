@@ -11,6 +11,7 @@ import {
   fillDeliveryTimePlaceholders,
   type HomeFaqItem,
 } from '@/components/home/homeLandingContent';
+import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
 import {
   getLamphunDeliveryDistricts,
   getPattayaDeliveryDistricts,
@@ -180,6 +181,10 @@ export function getMarketHomeFaqItems(params: {
 
   return raw.map((item) => ({
     q: fillCityPlaceholders(item.q, city, areas),
-    a: fillDeliveryTimePlaceholders(fillCityPlaceholders(item.a, city, areas)),
+    a: fillDeliveryFeeAmountPlaceholder(
+      fillDeliveryTimePlaceholders(fillCityPlaceholders(item.a, city, areas)),
+      destinationId,
+      lang
+    ),
   }));
 }

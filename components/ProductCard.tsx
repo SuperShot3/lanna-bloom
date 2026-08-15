@@ -23,6 +23,7 @@ import {
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { StorefrontIcon } from '@/components/icons';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
+import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import {
   catalogImageUnoptimized,
   CATALOG_CARD_IMAGE_SIZES,
@@ -31,6 +32,11 @@ import {
 } from '@/lib/catalog/catalogImage';
 import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
 import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
+import {
+  catalogCardImageForSize,
+  galleryIndexForSize,
+  sizeIndexForGalleryIndex,
+} from '@/lib/pdpVariantMedia';
 
 const SWIPE_THRESHOLD_PX = 50;
 
@@ -82,17 +88,30 @@ export function ProductCard({
     return raw.filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
   }, [product.images]);
 
-  const [imageIndex, setImageIndex] = useState(0);
-  useEffect(() => {
-    setImageIndex(0);
-  }, [product.id]);
-
-  const imgSrc = isStandaloneProduct
-    ? (images[imageIndex] ?? images[0] ?? '')
-    : (product.images?.[0] ?? '');
-  const imgAlt = isStandaloneProduct
-    ? (product.imageAlts?.[imageIndex]?.trim() || product.imageAlts?.[0]?.trim() || name)
-    : (product.imageAlts?.[0]?.trim() || name);
+  const defaultOid = availableSizes[availableSizes.length - 1]?.optionId ?? 'product_default';
+  const [selectedOptionId, setSelectedOptionId] = useState(defaultOid);
+  const [imageIndex, setImageIndex] = useState(() => {
+    const sizeIndex = availableSizes.findIndex((s) => s.optionId === defaultOid);
+    return galleryIndexForSize(sizeIndex >= 0 ? sizeIndex : 0, images.length);
+  });
+  const selectedSize =
+    availableSizes.find((s) => s.optionId === selectedOptionId) ?? availableSizes[0];
+  const selectedSizeIndex = selectedSize
+    ? availableSizes.findIndex((s) => s.optionId === selectedSize.optionId)
+    : 0;
+  const mappedCardImage = catalogCardImageForSize({
+    images,
+    sizeIndex: selectedSizeIndex >= 0 ? selectedSizeIndex : 0,
+    sizeImageUrls: selectedSize?.imageUrls,
+  });
+  const imgSrc =
+    selectedSize?.imageUrls?.[0] ||
+    images[imageIndex] ||
+    mappedCardImage.url ||
+    product.images?.[0] ||
+    '';
+  const imgAlt =
+    product.imageAlts?.[imageIndex]?.trim() || product.imageAlts?.[0]?.trim() || name;
   const handlePdpImagePreload = useCallback(() => {
     if (imgSrc) preloadCatalogImage(imgSrc, CATALOG_PDP_PRELOAD_WIDTH);
   }, [imgSrc]);
@@ -103,13 +122,39 @@ export function ProductCard({
   const mouseStartX = useRef<number | null>(null);
   const mouseUpListenerRef = useRef<((e: MouseEvent) => void) | null>(null);
 
+  const applyGalleryIndex = useCallback(
+    (nextIndex: number) => {
+      setImageIndex(nextIndex);
+      if (availableSizes.length <= 1 || images.length <= 0) return;
+      const nextSizeIndex = sizeIndexForGalleryIndex(
+        nextIndex,
+        availableSizes.length,
+        images.length,
+        selectedSizeIndex >= 0 ? selectedSizeIndex : null
+      );
+      if (nextSizeIndex == null) return;
+      const nextId = availableSizes[nextSizeIndex]?.optionId;
+      if (nextId && nextId !== selectedOptionId) setSelectedOptionId(nextId);
+    },
+    [availableSizes, images.length, selectedOptionId, selectedSizeIndex]
+  );
+
+  const selectSizeOption = useCallback(
+    (optionId: string) => {
+      setSelectedOptionId(optionId);
+      const sizeIndex = availableSizes.findIndex((s) => s.optionId === optionId);
+      setImageIndex(galleryIndexForSize(sizeIndex >= 0 ? sizeIndex : 0, images.length));
+    },
+    [availableSizes, images.length]
+  );
+
   const goPrevImage = useCallback(() => {
-    setImageIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
-  }, [images.length]);
+    applyGalleryIndex(imageIndex <= 0 ? images.length - 1 : imageIndex - 1);
+  }, [applyGalleryIndex, imageIndex, images.length]);
 
   const goNextImage = useCallback(() => {
-    setImageIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
-  }, [images.length]);
+    applyGalleryIndex(imageIndex >= images.length - 1 ? 0 : imageIndex + 1);
+  }, [applyGalleryIndex, imageIndex, images.length]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -171,9 +216,6 @@ export function ProductCard({
   }, []);
 
   const [hovered, setHovered] = useState(false);
-  const [selectedOptionId, setSelectedOptionId] = useState(
-    () => availableSizes[availableSizes.length - 1]?.optionId ?? 'product_default'
-  );
   const [justAdded, setJustAdded] = useState(false);
   const [actionsPinned, setActionsPinned] = useState(false);
   const [showMobileActions, setShowMobileActions] = useState(false);
@@ -205,12 +247,11 @@ export function ProductCard({
   }, [expandablePanel]);
 
   useEffect(() => {
-    if (!hasMultipleSizes) return;
-    setSelectedOptionId(availableSizes[availableSizes.length - 1]?.optionId ?? 'product_default');
-  }, [availableSizes, hasMultipleSizes, product.id]);
-
-  const selectedSize =
-    availableSizes.find((s) => s.optionId === selectedOptionId) ?? availableSizes[0];
+    const nextOid = availableSizes[availableSizes.length - 1]?.optionId ?? 'product_default';
+    setSelectedOptionId(nextOid);
+    const sizeIndex = availableSizes.findIndex((s) => s.optionId === nextOid);
+    setImageIndex(galleryIndexForSize(sizeIndex >= 0 ? sizeIndex : 0, images.length));
+  }, [availableSizes, images.length, product.id]);
 
   const handleLinkClick = () => {
     const item: AnalyticsItem = {
@@ -271,7 +312,7 @@ export function ProductCard({
           slug: product.slug,
           nameEn: product.nameEn,
           nameTh: product.nameTh ?? product.nameEn,
-          imageUrl: imgSrc || undefined,
+          imageUrl: mappedCardImage.url || imgSrc || undefined,
           size: cartSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: product.excludedDeliveryDestinations,
@@ -312,6 +353,7 @@ export function ProductCard({
       finalPrice,
       hasMultipleSizes,
       imgSrc,
+      mappedCardImage.url,
       isBalloon,
       isPlushyToys,
       lang,
@@ -414,6 +456,11 @@ export function ProductCard({
               amountClassName="pcard-price-amount"
             />
           </div>
+          <DeliveryFromFeeHint
+            lang={lang}
+            destinationId={checkoutProfile.destinationId}
+            variant="card"
+          />
           {isStandaloneProduct && sizeLabel ? <div className="pcard-size">Size: {sizeLabel}</div> : null}
         </div>
       </Link>
@@ -482,7 +529,7 @@ export function ProductCard({
                           className="pcard-radio"
                           name={radioName}
                           checked={isChecked}
-                          onChange={() => setSelectedOptionId(row.optionId)}
+                          onChange={() => selectSizeOption(row.optionId)}
                         />
                         <span className="pcard-label-text">
                           {optionDisplayLabel(row, lang)}

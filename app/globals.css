@@ -1049,12 +1049,6 @@ main {
   .home-hero-intro__delay-4 {
     animation-delay: 210ms;
   }
-  .home-hero-intro__delay-5 {
-    animation-delay: 280ms;
-  }
-  .home-hero-intro__delay-6 {
-    animation-delay: 350ms;
-  }
 
   html.home-reveal-ready [data-home-reveal]:not(.is-revealed) .home-reveal-item {
     opacity: 0;
