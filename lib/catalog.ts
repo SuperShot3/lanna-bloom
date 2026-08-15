@@ -780,10 +780,9 @@ export async function getHomeFlowerTypeTilesFromCatalog(
 }
 
 export async function getHomeOccasionTilesFromCatalog(
-  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+  _catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<HomeOccasionTile[]> {
-  const ordered = await getOrderedPopularBouquetsFromCatalog(catalogDestination);
-  return pickHomeOccasionTiles(ordered, Date.now());
+  return pickHomeOccasionTiles();
 }
 
 const loadPopularCatalogItemsFull = cacheSupabaseCatalog('popular-catalog-items-full', async () => {

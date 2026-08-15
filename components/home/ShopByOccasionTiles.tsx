@@ -31,6 +31,7 @@ export function ShopByOccasionTiles({
     imageUrl: tile.imageUrl,
     label: occasionTileLabel(tile.occasion, tCatalog),
     href: `${catalogBase}${buildCatalogSearchString({ occasion: tile.occasion })}`,
+    imageAspectClass: 'aspect-[3/4]',
   }));
 
   return (
