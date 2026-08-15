@@ -19,6 +19,7 @@ import { ZONES_BY_DESTINATION } from '../lib/delivery/zones';
 import { AMPHOE_MAP_DISTRICTS } from '../lib/delivery/amphoeMapData';
 import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/lamphunAmphoeMapData';
 import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/chonBuriAmphoeMapData';
+import { PHUKET_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/phuketAmphoeMapData';
 import { isAmphoeCapableProvince } from '../lib/delivery/amphoeProvinces';
 
 type Check = { ok: boolean; label: string; detail?: string };
@@ -251,6 +252,19 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
         fail(
           'amphoe metadata',
           `Expected 7 unique ampCodes in chonBuriAmphoeMapData; got ${CHON_BURI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'phuket') {
+    const codes = PHUKET_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (PHUKET_AMPHOE_MAP_DISTRICTS.length === 11 && unique.size === 11) {
+      out.push(pass('amphoe metadata', '11 Phuket areas, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 11 unique ampCodes in phuketAmphoeMapData; got ${PHUKET_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

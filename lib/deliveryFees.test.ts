@@ -10,6 +10,7 @@ import {
 } from './delivery/amphoeDisplayFees';
 import { AMPHOE_MAP_DISTRICTS } from './delivery/amphoeMapData';
 import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from './delivery/chonBuriAmphoeMapData';
+import { PHUKET_AMPHOE_MAP_DISTRICTS } from './delivery/phuketAmphoeMapData';
 import { destinationIdForAmphoeProvince } from './delivery/amphoeProvinces';
 import { getDeliveryDistanceTiers } from './delivery/distanceTiers';
 import {
@@ -90,6 +91,10 @@ assert(getZoneFee('PATTAYA', 'pat-east-nong-prue') === 350, 'Pattaya East / Nong
 assert(destinationIdForAmphoeProvince('chon-buri') === 'PATTAYA', 'chon-buri amphoe destination is PATTAYA');
 assert(destinationIdForAmphoeProvince('lamphun') === 'LAMPHUN', 'lamphun amphoe destination is LAMPHUN');
 assert(destinationIdForAmphoeProvince('chiang-mai') === 'CHIANG_MAI', 'chiang-mai amphoe destination is CHIANG_MAI');
+assert(destinationIdForAmphoeProvince('phuket') === 'PHUKET', 'phuket amphoe destination is PHUKET');
+assert(getZonesForDestination('PHUKET').length === 11, 'Phuket has 11 checkout zones');
+assert(getZoneFee('PHUKET', 'hkt-phuket-town') === 250, 'Phuket Town fee = 250');
+assert(getZoneFee('PHUKET', 'hkt-mai-khao-airport-sakhu') === 550, 'Phuket Mai Khao fee = 550');
 
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');
@@ -166,6 +171,44 @@ assert(lamphunDrill.length === 8, 'Lamphun drill has 8 amphoes');
 assert(
   lamphunDrill.every((d) => d.subAreas.length === 0),
   'Lamphun amphoes have no nested checkout areas'
+);
+
+assert(PHUKET_AMPHOE_MAP_DISTRICTS.length === 11, 'Phuket map has 11 checkout areas');
+const phuketAmpCodes = new Set(PHUKET_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(phuketAmpCodes.size === 11, 'each Phuket area has a unique amp_code');
+for (const d of PHUKET_AMPHOE_MAP_DISTRICTS) {
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const display = resolveAmphoeFeeDisplay(d, 'PHUKET');
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(
+    display.feeFrom === getZoneFee('PHUKET', d.checkoutZoneId!),
+    `${d.id} fee matches Phuket zone`
+  );
+}
+const phuketTownDisplay = resolveAmphoeFeeDisplay(
+  PHUKET_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'phuket-town')!,
+  'PHUKET'
+);
+const phuketAirportDisplay = resolveAmphoeFeeDisplay(
+  PHUKET_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'mai-khao-airport-sakhu')!,
+  'PHUKET'
+);
+assert(phuketTownDisplay.feeFrom === 250, 'Phuket Town feeFrom = 250');
+assert(phuketAirportDisplay.feeFrom === 550, 'Mai Khao / Airport feeFrom = 550');
+
+const phuketDrill = getAmphoeDrillItems('phuket', 'en');
+assert(phuketDrill.length === 11, 'Phuket drill has 11 areas');
+assert(
+  phuketDrill.every((d) => d.subAreas.length === 0),
+  'Phuket areas are first-class map districts, not nested rows'
+);
+const phuketCheckoutIds = getZonesForDestination('PHUKET')
+  .map((z) => z.id)
+  .sort();
+const phuketMapZoneIds = PHUKET_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZoneId!).sort();
+assert(
+  phuketCheckoutIds.join(',') === phuketMapZoneIds.join(','),
+  'every Phuket checkout zone is a clickable map district'
 );
 
 const ladder = getChiangMaiZoneFeeLadder();

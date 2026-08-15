@@ -3,6 +3,7 @@ import { CHIANG_MAI_DISTRICTS } from '@/lib/delivery-areas';
 import { getActiveMarkets } from '@/lib/delivery/markets';
 import { CHON_BURI_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/chonBuriAmphoeMapData';
 import { LAMPHUN_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/lamphunAmphoeMapData';
+import { PHUKET_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/phuketAmphoeMapData';
 
 export type LocalizedLabel = { nameEn: string; nameTh: string };
 
@@ -28,6 +29,14 @@ export function getLamphunDeliveryDistricts(): LocalizedLabel[] {
 /** Pattaya checkout areas (city market — not the rest of Chon Buri). */
 export function getPattayaDeliveryDistricts(): LocalizedLabel[] {
   return CHON_BURI_AMPHOE_MAP_DISTRICTS.map((d) => ({
+    nameEn: d.labelEn,
+    nameTh: d.labelTh,
+  }));
+}
+
+/** Phuket listed checkout areas (city market — island tambons, not amphoe blobs). */
+export function getPhuketDeliveryDistricts(): LocalizedLabel[] {
+  return PHUKET_AMPHOE_MAP_DISTRICTS.map((d) => ({
     nameEn: d.labelEn,
     nameTh: d.labelTh,
   }));
@@ -100,6 +109,9 @@ export type FlowerDeliveryThailandCopy = {
   pattayaTitle: string;
   pattayaIntro: string;
   pattayaNote: string;
+  phuketTitle: string;
+  phuketIntro: string;
+  phuketNote: string;
   otherDestinationsTitle: string;
   expandingNote: string;
   ctaChiangMai: string;
@@ -107,18 +119,19 @@ export type FlowerDeliveryThailandCopy = {
   ctaAbroad: string;
   ctaLamphun: string;
   ctaPattaya: string;
+  ctaPhuket: string;
 };
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
   en: {
     metaTitle: 'Flower Delivery Coverage in Thailand & Chiang Mai Fees | Lanna Bloom',
     metaDescription:
-      'See live Thailand flower-delivery coverage by province, then check Chiang Mai, Lamphun, and Pattaya district fees. Pattaya areas from ฿250. Gradual expansion; nationwide same-day is not promised.',
+      'See live Thailand flower-delivery coverage by province, then check Chiang Mai, Lamphun, Pattaya, and Phuket district fees. Listed Pattaya and Phuket areas from ฿250. Gradual expansion; nationwide same-day is not promised.',
     h1: 'Flower delivery across Thailand — Chiang Mai fees & coverage',
     mapHint:
-      'Tap a province for live status. Tap Chiang Mai, Lamphun, or Pattaya (Chon Buri) for district fees.',
+      'Tap a province for live status. Tap Chiang Mai, Lamphun, Pattaya (Chon Buri), or Phuket for district fees.',
     intro:
-      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs. Lamphun is open for next-day flower delivery across all amphoes from ฿250. Pattaya covers listed Pattaya areas from ฿250 — not the rest of Chon Buri. We expand gradually — nationwide same-day is not promised.',
+      'Lanna Bloom is expanding flower and gift delivery across Thailand, province by province. Chiang Mai remains our reliable full-service home base — select a district on the fee map for estimated delivery costs. Lamphun is open for next-day flower delivery across all amphoes from ฿250. Pattaya covers listed Pattaya areas from ฿250 — not the rest of Chon Buri. Phuket covers listed island areas from ฿250. We expand gradually — nationwide same-day is not promised.',
     areasTitle: 'Chiang Mai — our full-service core',
     chiangMaiTitle: 'Chiang Mai',
     chiangMaiIntro:
@@ -137,6 +150,11 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'Flower delivery for listed Pattaya areas — not province-wide Chon Buri. Delivery from ฿250. Shop below or tap Chon Buri on the coverage map, then choose your Pattaya area at checkout.',
     pattayaNote:
       'Choose Pattaya as your delivery destination at checkout, then select the area. Na Jomtien is listed as a Pattaya area. Other Chon Buri districts such as Si Racha are not on this map.',
+    phuketTitle: 'Phuket',
+    phuketIntro:
+      'Flower delivery for listed Phuket areas from ฿250 — subject to cutoff and coverage. Shop below or tap Phuket on the coverage map, then choose your area at checkout.',
+    phuketNote:
+      'Choose Phuket as your delivery destination at checkout, then select the area. Fees start at ฿250 in Phuket Town and Kathu; remote east and airport areas are higher.',
     otherDestinationsTitle: 'Currently shoppable provinces',
     expandingNote:
       'Only provinces where ordering is open right now. Status and categories come from live settings — we do not promise nationwide same-day delivery.',
@@ -145,16 +163,17 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaAbroad: 'Send flowers from abroad',
     ctaLamphun: 'Lamphun flower delivery',
     ctaPattaya: 'Pattaya flower delivery',
+    ctaPhuket: 'Phuket flower delivery',
   },
   th: {
     metaTitle: 'พื้นที่จัดส่งดอกไม้ทั่วไทย และค่าส่งเชียงใหม่ | Lanna Bloom',
     metaDescription:
-      'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทยแบบสด แล้วตรวจสอบค่าส่งรายอำเภอในเชียงใหม่ ลำพูน และพัทยา พื้นที่พัทยาเริ่มต้น ฿250 — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+      'ดูสถานะจัดส่งดอกไม้รายจังหวัดทั่วไทยแบบสด แล้วตรวจสอบค่าส่งรายอำเภอในเชียงใหม่ ลำพูน พัทยา และภูเก็ต พื้นที่พัทยาและภูเก็ตที่ระบุเริ่มต้น ฿250 — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     h1: 'จัดส่งดอกไม้ทั่วไทย — ค่าส่งและพื้นที่เชียงใหม่',
     mapHint:
-      'แตะจังหวัดเพื่อดูสถานะ — แตะเชียงใหม่ ลำพูน หรือพัทยา (ชลบุรี) เพื่อดูค่าส่งรายอำเภอ',
+      'แตะจังหวัดเพื่อดูสถานะ — แตะเชียงใหม่ ลำพูน พัทยา (ชลบุรี) หรือภูเก็ต เพื่อดูค่าส่งรายอำเภอ',
     intro:
-      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ลำพูนเปิดรับจัดส่งดอกไม้วันถัดไปทุกอำเภอเริ่มต้น ฿250 พัทยาครอบคลุมย่านพัทยาที่ระบุ เริ่มต้น ฿250 — ไม่รวมชลบุรีทั้งจังหวัด ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
+      'Lanna Bloom กำลังขยายบริการจัดส่งดอกไม้และของขวัญทั่วไทยทีละจังหวัด เชียงใหม่ยังเป็นฐานบริการหลักที่ครบวงจร — เลือกอำเภอบนแผนที่ค่าส่งเพื่อดูค่าจัดส่งโดยประมาณ ลำพูนเปิดรับจัดส่งดอกไม้วันถัดไปทุกอำเภอเริ่มต้น ฿250 พัทยาครอบคลุมย่านพัทยาที่ระบุ เริ่มต้น ฿250 — ไม่รวมชลบุรีทั้งจังหวัด ภูเก็ตครอบคลุมย่านบนเกาะที่ระบุ เริ่มต้น ฿250 ขยายอย่างค่อยเป็นค่อยไป — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
     areasTitle: 'เชียงใหม่ — ฐานบริการหลักครบวงจร',
     chiangMaiTitle: 'เชียงใหม่',
     chiangMaiIntro:
@@ -173,6 +192,11 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'จัดส่งดอกไม้ในย่านพัทยาที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดชลบุรี ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะชลบุรีบนแผนที่พื้นที่บริการ แล้วเลือกย่านพัทยาตอนชำระเงิน',
     pattayaNote:
       'เลือกปลายทางพัทยาตอนชำระเงิน แล้วเลือกย่าน นาจอมเทียนอยู่ในรายการย่านพัทยา อำเภออื่นในชลบุรี เช่น ศรีราชา ไม่อยู่บนแผนที่นี้',
+    phuketTitle: 'ภูเก็ต',
+    phuketIntro:
+      'จัดส่งดอกไม้ในย่านภูเก็ตที่ระบุ เริ่มต้น ฿250 — ขึ้นกับเวลาตัดออเดอร์และความครอบคลุม เลือกด้านล่างหรือแตะภูเก็ตบนแผนที่พื้นที่บริการ แล้วเลือกย่านตอนชำระเงิน',
+    phuketNote:
+      'เลือกปลายทางภูเก็ตตอนชำระเงิน แล้วเลือกย่าน ค่าส่งเริ่มต้น ฿250 ในเมืองภูเก็ตและกะทู้ พื้นที่ตะวันออกห่างไกลและสนามบินสูงกว่า',
     otherDestinationsTitle: 'จังหวัดที่สั่งได้ตอนนี้',
     expandingNote:
       'แสดงเฉพาะจังหวัดที่เปิดรับออเดอร์ สถานะและหมวดสินค้ามาจากการตั้งค่าจริง — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
@@ -181,6 +205,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaAbroad: 'ส่งดอกไม้จากต่างประเทศ',
     ctaLamphun: 'ส่งดอกไม้ลำพูน',
     ctaPattaya: 'ส่งดอกไม้พัทยา',
+    ctaPhuket: 'ส่งดอกไม้ภูเก็ต',
   },
 };
 

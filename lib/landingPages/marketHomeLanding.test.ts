@@ -33,6 +33,13 @@ assert.ok(
   'Pattaya district list includes Pattaya'
 );
 
+const phuketDistricts = getMarketLandingDistricts('PHUKET');
+assert.equal(phuketDistricts.length, 11, 'Phuket has 11 named checkout areas');
+assert.ok(
+  formatDistrictList(phuketDistricts, 'en').includes('Patong'),
+  'Phuket district list includes Patong'
+);
+
 const lamphunFaq = getMarketHomeFaqItems({
   lang: 'en',
   city: 'Lamphun',

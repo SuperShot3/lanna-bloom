@@ -479,6 +479,24 @@ body {
   max-width: 100%;
   overflow-x: clip; /* clip allows position:sticky to work in descendants */
   box-sizing: border-box;
+  /* Fixed header height (+ 1px border). Sticky catalog chrome pins below this. */
+  --site-header-stack: calc(3.5rem + 1px);
+}
+
+@media (min-width: 768px) {
+  .main-content-wrap {
+    --site-header-stack: calc(76px + 1px);
+  }
+}
+
+.main-content-wrap.has-top-promo {
+  --site-header-stack: calc(3.5rem + 1px + 2.25rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 768px) {
+  .main-content-wrap.has-top-promo {
+    --site-header-stack: calc(76px + 1px + 2.25rem + env(safe-area-inset-top, 0px));
+  }
 }
 
 main {

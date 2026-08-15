@@ -15,6 +15,7 @@ import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay
 import {
   getLamphunDeliveryDistricts,
   getPattayaDeliveryDistricts,
+  getPhuketDeliveryDistricts,
   type LocalizedLabel,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
@@ -27,6 +28,7 @@ export function getMarketLandingDistricts(
 ): LocalizedLabel[] {
   if (destinationId === 'LAMPHUN') return getLamphunDeliveryDistricts();
   if (destinationId === 'PATTAYA') return getPattayaDeliveryDistricts();
+  if (destinationId === 'PHUKET') return getPhuketDeliveryDistricts();
   return [];
 }
 

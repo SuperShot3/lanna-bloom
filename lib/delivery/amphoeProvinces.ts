@@ -22,14 +22,25 @@ import {
   getChonBuriAmphoeById,
   type ChonBuriAmphoeMapDistrict,
 } from '@/lib/delivery/chonBuriAmphoeMapData';
+import {
+  getPhuketAmphoeByAmpCode,
+  getPhuketAmphoeById,
+  PHUKET_AMPHOE_MAP_DISTRICTS,
+  type PhuketAmphoeMapDistrict,
+} from '@/lib/delivery/phuketAmphoeMapData';
 import type { AmphoeFeeSource } from '@/lib/delivery/amphoeDisplayFees';
 
-export type AmphoeCapableProvinceCode = 'chiang-mai' | 'lamphun' | 'chon-buri';
+export type AmphoeCapableProvinceCode =
+  | 'chiang-mai'
+  | 'lamphun'
+  | 'chon-buri'
+  | 'phuket';
 
 export type ProvinceAmphoeDistrict = (
   | AmphoeMapDistrict
   | LamphunAmphoeMapDistrict
   | ChonBuriAmphoeMapDistrict
+  | PhuketAmphoeMapDistrict
 ) &
   AmphoeFeeSource & {
     id: string;
@@ -38,7 +49,12 @@ export type ProvinceAmphoeDistrict = (
     labelTh: string;
   };
 
-const AMPHOE_CAPABLE = new Set<string>(['chiang-mai', 'lamphun', 'chon-buri']);
+const AMPHOE_CAPABLE = new Set<string>([
+  'chiang-mai',
+  'lamphun',
+  'chon-buri',
+  'phuket',
+]);
 
 const DESTINATION_BY_AMPHOE_PROVINCE: Record<
   AmphoeCapableProvinceCode,
@@ -47,6 +63,7 @@ const DESTINATION_BY_AMPHOE_PROVINCE: Record<
   'chiang-mai': 'CHIANG_MAI',
   lamphun: 'LAMPHUN',
   'chon-buri': 'PATTAYA',
+  phuket: 'PHUKET',
 };
 
 export function isAmphoeCapableProvince(code: string | null | undefined): boolean {
@@ -71,6 +88,8 @@ export function getAmphoeDistrictsForProvince(
       return LAMPHUN_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'chon-buri':
       return CHON_BURI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'phuket':
+      return PHUKET_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'chiang-mai':
       return AMPHOE_MAP_DISTRICTS.filter((d) => d.id !== 'other') as ProvinceAmphoeDistrict[];
   }
@@ -85,6 +104,8 @@ export function getAmphoeByAmpCodeForProvince(
       return getLamphunAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'chon-buri':
       return getChonBuriAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+    case 'phuket':
+      return getPhuketAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'chiang-mai':
       return getAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
   }
@@ -99,12 +120,14 @@ export function getAmphoeByIdForProvince(
       return getLamphunAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'chon-buri':
       return getChonBuriAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'phuket':
+      return getPhuketAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'chiang-mai':
       return getAmphoeById(id as never) as ProvinceAmphoeDistrict | undefined;
   }
 }
 
-/** Chiang Mai “other / not listed” row — Lamphun and Chon Buri have no equivalent. */
+/** Chiang Mai “other / not listed” row — Lamphun, Chon Buri, and Phuket have no equivalent. */
 export function getOtherAmphoeForProvince(
   provinceCode: AmphoeCapableProvinceCode
 ): AmphoeFeeSource | null {

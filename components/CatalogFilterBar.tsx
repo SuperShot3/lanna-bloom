@@ -185,7 +185,7 @@ export function CatalogFilterBar({
       <style jsx>{`
         .catalog-filter-bar {
           position: sticky;
-          top: 0;
+          top: var(--site-header-stack, 3.5rem);
           z-index: 100;
           background: var(--bg);
           border-bottom: 1px solid var(--border);

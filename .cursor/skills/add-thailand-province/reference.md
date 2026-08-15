@@ -64,6 +64,7 @@ npm run validate:province -- chiang-mai --amphoe
 npm run validate:province -- lamphun --amphoe
 npm run validate:province -- chon-buri --amphoe
 npm run validate:province -- phuket
+npm run validate:province -- phuket --amphoe
 ```
 
 ## Smoke tests after launch

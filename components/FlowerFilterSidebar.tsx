@@ -931,10 +931,10 @@ export function FlowerFilterSidebar(props: FlowerFilterPanelProps) {
           width: 248px;
           flex-shrink: 0;
           align-self: flex-start;
-          /* Sit below sticky CatalogFilterBar (category + flower-type rows) */
+          /* Sit below sticky CatalogFilterBar (header stack + category + flower-type rows) */
           position: sticky;
-          top: 92px;
-          max-height: calc(100vh - 92px);
+          top: calc(var(--site-header-stack, 76px) + 92px);
+          max-height: calc(100vh - var(--site-header-stack, 76px) - 92px);
           overflow-y: auto;
           scrollbar-width: thin;
           scrollbar-color: #e8e0d8 transparent;
