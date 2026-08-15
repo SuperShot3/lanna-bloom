@@ -38,7 +38,6 @@ type Props = {
   onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
   onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
-  onGenerateAi?: (imageId: string, file: File) => void | Promise<void>;
   onUnassign?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
@@ -82,7 +81,6 @@ export function ProductImageListEditor({
   onEditFraming,
   onSetPrimary,
   onConvertToWebp,
-  onGenerateAi,
   onUnassign,
   onRemove,
 }: Props) {
@@ -248,16 +246,6 @@ export function ProductImageListEditor({
         id: 'convert-webp',
         label: 'Convert to WebP',
         onClick: () => void onConvertToWebp(image.id),
-      });
-    }
-    if (onGenerateAi) {
-      items.push({
-        id: 'ai',
-        label: 'Generate AI image',
-        onClick: () => {
-          setReplaceImageId(image.id);
-          replaceInputRef.current?.click();
-        },
       });
     }
     if (onUnassign) {

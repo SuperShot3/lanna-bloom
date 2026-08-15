@@ -25,8 +25,7 @@ function isConfigurationError(error: unknown): boolean {
  *
  * Accepts an image that the admin has already cropped client-side, produces the
  * WebP + PNG master variants, uploads them to the `catalog` Supabase Storage bucket,
- * and returns the same `{ variants, previews }` shape as `/enhance-image` so the
- * client wizard can use a single rendering path.
+ * and returns `{ variants, previews }` for the admin create wizard.
  */
 export async function POST(request: NextRequest) {
   const authResult = await requireRole(['OWNER', 'MANAGER']);

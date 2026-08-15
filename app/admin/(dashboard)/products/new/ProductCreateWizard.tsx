@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BOUQUET_PRESENTATION_FORMAT_OPTIONS } from '@/lib/bouquetPresentationFormats';
 import { PRODUCT_CATEGORIES, PRODUCT_CATEGORY_LABEL, type ProductCategory } from '@/lib/catalogCategories';
 import {
@@ -9,12 +9,6 @@ import {
   destinationDisplayName,
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
-import {
-  DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT,
-  DEFAULT_PRODUCT_IMAGE_ENHANCEMENT_RULES,
-  DEFAULT_SAFE_PRESENTATION_PRESETS,
-  type SafePresentationPresetKey,
-} from '@/lib/adminProductAiRules';
 import { AdminCheckboxGrid, AdminImageCropModal } from '@/app/admin/components/cms-editor';
 import {
   ADMIN_COLOR_OPTIONS,
@@ -27,22 +21,11 @@ import type { PricingType } from '@/lib/catalog/pricing';
 import { useToast } from '@/contexts/ToastContext';
 import { ProductCreateImagesStep } from './ProductCreateImagesStep';
 import {
-  type AiOptionCount,
-  type GenerationSession,
-  type ImageCandidate,
   type ImageDraft,
   type ImageVariant,
   hasReadyWebp,
   parseVariants,
 } from './productCreateImageTypes';
-
-function isCandidateInFlight(candidate: ImageCandidate): boolean {
-  return (
-    candidate.status === 'preparing' ||
-    candidate.status === 'generating' ||
-    candidate.status === 'queued'
-  );
-}
 
 type ProductImageAnalysis = {
   productFormat: string;
@@ -85,10 +68,6 @@ type SavedProduct = {
 type Hints = {
   itemCategory: 'flowers' | ProductCategory;
   productType: string;
-  occasion: string;
-  colors: string;
-  price: string;
-  size: string;
   notes: string;
 };
 
@@ -100,10 +79,9 @@ type TextGenerationHistoryEntry = {
   account: string;
 };
 
-type WizardStep = 'images' | 'text' | 'review';
+type WizardStep = 'images' | 'copy';
 
 type LoadingState =
-  | { kind: 'images' }
   | { kind: 'draft' }
   | { kind: 'publish' }
   | null;
@@ -129,31 +107,21 @@ const emptyDraft: ProductDraftCopy = {
 const emptyHints: Hints = {
   itemCategory: 'flowers',
   productType: 'bouquet',
-  occasion: '',
-  colors: '',
-  price: '',
-  size: '',
   notes: '',
 };
 
-const stepOrder: WizardStep[] = ['images', 'text', 'review'];
+const stepOrder: WizardStep[] = ['images', 'copy'];
 
 const stepCopy: Record<WizardStep, { eyebrow: string; label: string; description: string }> = {
   images: {
     eyebrow: 'Step 1',
     label: 'Images',
-    description:
-      'Upload a photo to use as the product image, then continue to text. AI image alternatives are optional.',
+    description: 'Upload a photo to use as the product image, then continue to copy.',
   },
-  text: {
+  copy: {
     eyebrow: 'Step 2',
-    label: 'Text',
-    description: 'Use the main product image to generate bilingual copy you can edit before saving.',
-  },
-  review: {
-    eyebrow: 'Step 3',
-    label: 'Review & save',
-    description: 'Confirm price, tags, markets, and save the product for owner/admin review.',
+    label: 'Copy & save',
+    description: 'Generate bilingual copy, set price and tags, then save the product for review.',
   },
 };
 
@@ -275,11 +243,6 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const { showToast } = useToast();
   const [activeStep, setActiveStep] = useState<WizardStep>('images');
   const [imageDrafts, setImageDrafts] = useState<ImageDraftWithAnalysis[]>([]);
-  const [generationSession, setGenerationSession] = useState<GenerationSession | null>(null);
-  const [optionalAiSource, setOptionalAiSource] = useState<{ file: File; preview: string } | null>(
-    null
-  );
-  const [aiOptionCount, setAiOptionCount] = useState<AiOptionCount>(2);
   const [imageStatusLine, setImageStatusLine] = useState('');
   const [preparingImageCount, setPreparingImageCount] = useState(0);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
@@ -287,13 +250,6 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const isPreparingOriginal = preparingImageCount > 0;
   const pendingCropFile = cropQueue[0] ?? null;
   const cropQueueIndex = cropBatchSize > 0 ? cropBatchSize - cropQueue.length + 1 : 1;
-  const [basePreservationPrompt, setBasePreservationPrompt] = useState<string>(
-    DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT
-  );
-  const [presentationPresets, setPresentationPresets] = useState<Record<SafePresentationPresetKey, string>>(
-    () => ({ ...DEFAULT_SAFE_PRESENTATION_PRESETS })
-  );
-  const [showRules, setShowRules] = useState(false);
 
   const [hints, setHints] = useState<Hints>(emptyHints);
   const [analysis, setAnalysis] = useState<ProductImageAnalysis | null>(null);
@@ -319,51 +275,23 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const primaryDraft = useMemo(() => imageDrafts.find((d) => d.isPrimary), [imageDrafts]);
   const readyDrafts = imageDrafts.filter((d) => hasReadyWebp(d));
   const hasPrimaryReady = readyDrafts.some((d) => d.isPrimary);
-  const isImageGenerationInFlight = Boolean(
-    generationSession?.candidates.some((candidate) => isCandidateInFlight(candidate))
-  );
+  const isFlowerProduct = hints.itemCategory === 'flowers';
+  const itemCategoryLabel = getAdminItemCategoryLabel(hints.itemCategory);
 
   const stepCompletion: Record<WizardStep, boolean> = {
     images: hasPrimaryReady,
-    text: Boolean(draft.nameEn.trim()),
-    review: Boolean(savedProduct),
+    copy: Boolean(savedProduct),
   };
+
+  const canContinueFromImages = useMemo(
+    () => hasPrimaryReady && imageDrafts.length > 0 && imageDrafts.every((row) => hasReadyWebp(row)),
+    [hasPrimaryReady, imageDrafts]
+  );
 
   const canSaveForReview = useMemo(
     () => Boolean(draft.nameEn.trim() && hasPositivePrice(price) && hasPrimaryReady),
     [draft.nameEn, price, hasPrimaryReady]
   );
-
-  const canContinueFromImages = useMemo(() => {
-    // Default path: original photo already attached to the gallery.
-    const draftsReady =
-      hasPrimaryReady && imageDrafts.length > 0 && imageDrafts.every((row) => hasReadyWebp(row));
-    if (draftsReady) return true;
-
-    // Optional AI path: a selected ready candidate can also unlock continue.
-    return Boolean(
-      generationSession?.candidates.some(
-        (candidate) => candidate.selected && hasReadyWebp(candidate)
-      )
-    );
-  }, [generationSession, hasPrimaryReady, imageDrafts]);
-
-  const occasionHintValues = useMemo(() => splitList(hints.occasion), [hints.occasion]);
-  const colorHintValues = useMemo(() => splitList(hints.colors), [hints.colors]);
-  const isFlowerProduct = hints.itemCategory === 'flowers';
-  const itemCategoryLabel = getAdminItemCategoryLabel(hints.itemCategory);
-
-  const activeStepRef = useRef(activeStep);
-  const notifiedReadyCandidateIdsRef = useRef<Set<string>>(new Set());
-  const optionalAiSourceRef = useRef(optionalAiSource);
-
-  useEffect(() => {
-    activeStepRef.current = activeStep;
-  }, [activeStep]);
-
-  useEffect(() => {
-    optionalAiSourceRef.current = optionalAiSource;
-  }, [optionalAiSource]);
 
   useEffect(() => {
     setTextGenerationHistory(readTextGenerationHistory());
@@ -383,29 +311,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const candidates = generationSession?.candidates ?? [];
-    candidates.forEach((candidate) => {
-      if (candidate.kind !== 'ai' || candidate.status !== 'ready' || !hasReadyWebp(candidate)) return;
-      if (notifiedReadyCandidateIdsRef.current.has(candidate.id)) return;
-      notifiedReadyCandidateIdsRef.current.add(candidate.id);
-      if (activeStepRef.current !== 'images') {
-        const slotLabel = candidate.aiSlot != null ? ` ${candidate.aiSlot}` : '';
-        showToast(`AI option${slotLabel} is ready. Open Images to add it to the gallery.`);
-      }
-    });
-  }, [generationSession, showToast]);
-
   function updateHint(key: keyof Hints, value: string) {
     setHints((current) => ({ ...current, [key]: value }));
-  }
-
-  function setColorHints(values: string[]) {
-    updateHint('colors', values.join(', '));
-  }
-
-  function setOccasionHints(values: string[]) {
-    updateHint('occasion', values.join(', '));
   }
 
   function toggleAvailableDeliveryDestination(value: DeliveryDestinationId) {
@@ -474,9 +381,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   }
 
   function setPrimary(imageId: string) {
-    setImageDrafts((current) =>
-      current.map((d) => ({ ...d, isPrimary: d.id === imageId }))
-    );
+    setImageDrafts((current) => current.map((d) => ({ ...d, isPrimary: d.id === imageId })));
     setSavedProduct(null);
   }
 
@@ -491,7 +396,6 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         }
       }
       const next = current.filter((d) => d.id !== imageId);
-      // Ensure exactly one primary remains if any are ready.
       const hasPrimary = next.some((d) => d.isPrimary);
       if (!hasPrimary && next.length) {
         next[0] = { ...next[0], isPrimary: true };
@@ -512,34 +416,6 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       }
       return [...current, ...nextFiles];
     });
-  }
-
-  function clearOptionalAiSource() {
-    if (optionalAiSourceRef.current?.preview) {
-      try {
-        URL.revokeObjectURL(optionalAiSourceRef.current.preview);
-      } catch {
-        // ignore
-      }
-    }
-    optionalAiSourceRef.current = null;
-    setOptionalAiSource(null);
-  }
-
-  function cancelGenerationSession() {
-    if (generationSession?.sourcePreview) {
-      const sharedWithOptional =
-        optionalAiSource?.preview && generationSession.sourcePreview === optionalAiSource.preview;
-      if (!sharedWithOptional) {
-        try {
-          URL.revokeObjectURL(generationSession.sourcePreview);
-        } catch {
-          // ignore
-        }
-      }
-    }
-    setGenerationSession(null);
-    setImageStatusLine('');
   }
 
   function beginPreparingImages(count: number) {
@@ -566,30 +442,40 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     });
   }
 
+  async function prepareCandidateFile(
+    file: File,
+    alt: string
+  ): Promise<{ variants: ImageVariant[]; serverPreview?: string } | { error: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('alt', alt);
+    const response = await fetch('/api/admin/products/prepare-image', { method: 'POST', body: formData });
+    const payload = await readJsonResponse(response);
+    if (!response.ok) {
+      return { error: String(payload.error ?? 'Failed to prepare image.') };
+    }
+    const previews = payload.previews as { webp?: string } | undefined;
+    return {
+      variants: parseVariants(payload.variants),
+      serverPreview: previews?.webp,
+    };
+  }
+
   async function attachOriginalAsProductImage(file: File, options?: { silent?: boolean }) {
     setError('');
     setSavedProduct(null);
     beginPreparingImages(1);
 
     const localPreview = URL.createObjectURL(file);
-    let keptPreviewForAi = false;
-    if (!optionalAiSourceRef.current) {
-      const source = { file, preview: localPreview };
-      optionalAiSourceRef.current = source;
-      setOptionalAiSource(source);
-      keptPreviewForAi = true;
-    }
 
     try {
       const alt = draft.altEn || draft.nameEn || file.name;
       const result = await prepareCandidateFile(file, alt);
       if ('error' in result) {
-        if (!keptPreviewForAi) {
-          try {
-            URL.revokeObjectURL(localPreview);
-          } catch {
-            // ignore
-          }
+        try {
+          URL.revokeObjectURL(localPreview);
+        } catch {
+          // ignore
         }
         showToast(result.error || 'Failed to prepare a product photo.', { variant: 'error' });
         if (!options?.silent) {
@@ -609,12 +495,11 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             variants: result.variants,
             serverPreview: result.serverPreview,
             isPrimary: !hasPrimary,
-            enhanced: false,
           },
         ];
       });
 
-      if (!keptPreviewForAi && result.serverPreview) {
+      if (result.serverPreview) {
         try {
           URL.revokeObjectURL(localPreview);
         } catch {
@@ -626,12 +511,10 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         showToast('Photo added to the product gallery. You can generate text next.');
       }
     } catch {
-      if (!keptPreviewForAi) {
-        try {
-          URL.revokeObjectURL(localPreview);
-        } catch {
-          // ignore
-        }
+      try {
+        URL.revokeObjectURL(localPreview);
+      } catch {
+        // ignore
       }
       showToast('Could not prepare a product photo. Check your connection and try again.', {
         variant: 'error',
@@ -686,371 +569,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setCropBatchSize(0);
   }
 
-  function updateSessionCandidates(
-    updater: (candidates: ImageCandidate[]) => ImageCandidate[]
-  ) {
-    setGenerationSession((current) => {
-      if (!current) return current;
-      const candidates = updater(current.candidates);
-      const allSettled = candidates.every(
-        (candidate) => candidate.status === 'ready' || candidate.status === 'error'
-      );
-      const anyInFlight = candidates.some(
-        (candidate) =>
-          candidate.status === 'preparing' ||
-          candidate.status === 'generating' ||
-          candidate.status === 'queued'
-      );
-      return {
-        ...current,
-        candidates,
-        phase: allSettled && !anyInFlight ? 'select' : current.phase === 'configure' ? 'generating' : current.phase,
-        statusLine: current.statusLine,
-      };
-    });
-  }
-
-  function refreshImageStatusLine(candidates: ImageCandidate[], aiTotal: number) {
-    const original = candidates.find((candidate) => candidate.kind === 'original');
-    if (original?.status === 'preparing') {
-      setImageStatusLine('Preparing original photo...');
-      return;
-    }
-    const generatingAi = candidates.find(
-      (candidate) => candidate.kind === 'ai' && candidate.status === 'generating'
-    );
-    if (generatingAi?.aiSlot) {
-      setImageStatusLine(`Creating AI option ${generatingAi.aiSlot} of ${aiTotal}...`);
-      return;
-    }
-    const optimizing = candidates.find(
-      (candidate) =>
-        (candidate.status === 'preparing' || candidate.status === 'generating') && candidate.kind === 'ai'
-    );
-    if (optimizing) {
-      setImageStatusLine('Optimizing for website...');
-      return;
-    }
-    const allSettled = candidates.every(
-      (candidate) => candidate.status === 'ready' || candidate.status === 'error'
-    );
-    if (allSettled) {
-      setImageStatusLine('Ready');
-      return;
-    }
-    setImageStatusLine('Optimizing for website...');
-  }
-
-  async function prepareCandidateFile(
-    file: File,
-    alt: string
-  ): Promise<{ variants: ImageVariant[]; serverPreview?: string } | { error: string }> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('alt', alt);
-    const response = await fetch('/api/admin/products/prepare-image', { method: 'POST', body: formData });
-    const payload = await readJsonResponse(response);
-    if (!response.ok) {
-      return { error: String(payload.error ?? 'Failed to prepare image.') };
-    }
-    const previews = payload.previews as { webp?: string } | undefined;
-    return {
-      variants: parseVariants(payload.variants),
-      serverPreview: previews?.webp,
-    };
-  }
-
-  async function enhanceCandidateFile(
-    file: File,
-    alt: string,
-    prompt: { basePrompt: string; presentationPreset: string },
-    approvedAnalysis?: ProductImageAnalysis | null
-  ): Promise<{ variants: ImageVariant[]; serverPreview?: string } | { error: string }> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('alt', alt);
-    formData.append('basePrompt', prompt.basePrompt);
-    formData.append('presentationPreset', prompt.presentationPreset);
-    if (approvedAnalysis) {
-      formData.append('approvedAnalysis', JSON.stringify(approvedAnalysis));
-    } else if (analysis) {
-      formData.append('approvedAnalysis', JSON.stringify(analysis));
-    }
-    const response = await fetch('/api/admin/products/enhance-image', { method: 'POST', body: formData });
-    const payload = await readJsonResponse(response);
-    if (!response.ok) {
-      return { error: String(payload.error ?? 'Failed to create AI image.') };
-    }
-    const previews = payload.previews as { webp?: string } | undefined;
-    return {
-      variants: parseVariants(payload.variants),
-      serverPreview: previews?.webp,
-    };
-  }
-
-  function buildAiOnlyCandidates(count: AiOptionCount, source: GenerationSession): ImageCandidate[] {
-    return Array.from({ length: count }, (_, index) => ({
-      id: createId(),
-      kind: 'ai' as const,
-      aiSlot: index + 1,
-      file: source.sourceFile,
-      localPreview: source.sourcePreview,
-      status: 'generating' as const,
-      enhanced: true,
-      selected: false,
-      isMain: false,
-    }));
-  }
-
-  async function runCandidatePrepare(candidateId: string, source: GenerationSession) {
-    const alt = draft.altEn || draft.nameEn || source.sourceFile.name;
-    setImageStatusLine('Preparing original photo...');
-    const result = await prepareCandidateFile(source.sourceFile, alt);
-    if ('error' in result) {
-      showToast(result.error || 'Failed to prepare the original photo.', { variant: 'error' });
-    }
-    updateSessionCandidates((candidates) =>
-      candidates.map((candidate) => {
-        if (candidate.id !== candidateId) return candidate;
-        if ('error' in result) {
-          return { ...candidate, status: 'error' as const, error: result.error };
-        }
-        return {
-          ...candidate,
-          status: 'ready' as const,
-          error: undefined,
-          variants: result.variants,
-          serverPreview: result.serverPreview,
-        };
-      })
-    );
-  }
-
-  async function runCandidateEnhance(
-    candidateId: string,
-    source: GenerationSession,
-    aiSlot: number,
-    aiTotal: number
-  ) {
-    const alt = draft.altEn || draft.nameEn || source.sourceFile.name;
-    setImageStatusLine(`Creating AI option ${aiSlot} of ${aiTotal}...`);
-    const presetKey = (aiSlot as SafePresentationPresetKey) in presentationPresets ? (aiSlot as SafePresentationPresetKey) : 2;
-    const result = await enhanceCandidateFile(
-      source.sourceFile,
-      alt,
-      {
-        basePrompt: basePreservationPrompt,
-        presentationPreset: presentationPresets[presetKey],
-      },
-      analysis
-    );
-    if ('error' in result) {
-      showToast(`AI option ${aiSlot} failed: ${result.error}`, { variant: 'error' });
-    }
-    updateSessionCandidates((candidates) => {
-      const next = candidates.map((candidate) => {
-        if (candidate.id !== candidateId) return candidate;
-        if ('error' in result) {
-          return { ...candidate, status: 'error' as const, error: result.error };
-        }
-        return {
-          ...candidate,
-          status: 'ready' as const,
-          error: undefined,
-          variants: result.variants,
-          serverPreview: result.serverPreview,
-        };
-      });
-      refreshImageStatusLine(next, aiTotal);
-      return next;
-    });
-  }
-
-  function startOptionalAiGeneration() {
-    const source = optionalAiSource;
-    if (!source) {
-      setError('Add a product photo first, then you can create optional AI alternatives.');
-      return;
-    }
-    if (!hasPrimaryReady) {
-      setError('Wait for the original photo to finish preparing before creating AI alternatives.');
-      return;
-    }
-
-    setError('');
-    const sessionBase: GenerationSession = {
-      sourceFile: source.file,
-      sourcePreview: source.preview,
-      aiOptionCount,
-      phase: 'generating',
-      statusLine: `Creating AI option 1 of ${aiOptionCount}…`,
-      candidates: [],
-    };
-    const candidates = buildAiOnlyCandidates(aiOptionCount, sessionBase);
-    sessionBase.candidates = candidates;
-    setGenerationSession(sessionBase);
-    setImageStatusLine(`Creating AI option 1 of ${aiOptionCount}…`);
-
-    const tasks = candidates
-      .filter((candidate) => candidate.aiSlot)
-      .map((candidate) =>
-        runCandidateEnhance(candidate.id, sessionBase, candidate.aiSlot!, candidates.length)
-      );
-
-    void Promise.all(tasks)
-      .then(() => {
-        setGenerationSession((current) =>
-          current
-            ? {
-                ...current,
-                phase: 'select',
-                statusLine: 'Ready',
-              }
-            : current
-        );
-        setImageStatusLine('Ready');
-      })
-      .catch(() => {
-        showToast('Could not finish creating AI images. Check your connection and try again.', {
-          variant: 'error',
-        });
-      });
-  }
-
-  function toggleCandidateSelection(candidateId: string) {
-    updateSessionCandidates((candidates) => {
-      const target = candidates.find((candidate) => candidate.id === candidateId);
-      if (!target || !hasReadyWebp(target)) return candidates;
-
-      const willSelect = !target.selected;
-      let next = candidates.map((candidate) =>
-        candidate.id === candidateId ? { ...candidate, selected: willSelect } : candidate
-      );
-
-      const selectedReady = next.filter((candidate) => candidate.selected && hasReadyWebp(candidate));
-      if (willSelect && selectedReady.length === 1) {
-        next = next.map((candidate) => ({
-          ...candidate,
-          isMain: candidate.id === candidateId,
-        }));
-      } else if (!willSelect && target.isMain) {
-        const fallback = selectedReady[0];
-        next = next.map((candidate) => ({
-          ...candidate,
-          isMain: fallback ? candidate.id === fallback.id : false,
-        }));
-      }
-      return next;
-    });
-    setSavedProduct(null);
-  }
-
-  function setCandidateMain(candidateId: string) {
-    updateSessionCandidates((candidates) =>
-      candidates.map((candidate) => ({
-        ...candidate,
-        isMain: candidate.id === candidateId,
-        selected: candidate.id === candidateId ? true : candidate.selected,
-      }))
-    );
-    setSavedProduct(null);
-  }
-
-  function retryCandidate(candidateId: string) {
-    if (!generationSession) return;
-    const candidate = generationSession.candidates.find((row) => row.id === candidateId);
-    if (!candidate) return;
-
-    setError('');
-    updateSessionCandidates((candidates) =>
-      candidates.map((row) =>
-        row.id === candidateId
-          ? {
-              ...row,
-              status: row.kind === 'original' ? 'preparing' : 'generating',
-              error: undefined,
-            }
-          : row
-      )
-    );
-
-    if (candidate.kind === 'original') {
-      void runCandidatePrepare(candidateId, generationSession);
-    } else if (candidate.aiSlot) {
-      const aiTotal = generationSession.candidates.filter((row) => row.kind === 'ai').length;
-      void runCandidateEnhance(candidateId, generationSession, candidate.aiSlot, aiTotal);
-    }
-  }
-
-  function commitSelectedCandidates(options?: { keepPending?: boolean }): boolean {
-    if (!generationSession) return true;
-    const selected = generationSession.candidates.filter(
-      (candidate) => candidate.selected && hasReadyWebp(candidate)
-    );
-    if (!selected.length) {
-      setError('Select at least one image with a ready WebP version for the product gallery.');
-      return false;
-    }
-
-    const selectedIds = new Set(selected.map((candidate) => candidate.id));
-    const remaining = generationSession.candidates.filter(
-      (candidate) => !selectedIds.has(candidate.id)
-    );
-    const hasPending = remaining.some((candidate) => isCandidateInFlight(candidate));
-
-    setImageDrafts((current) => {
-      const explicitMain = selected.find((candidate) => candidate.isMain) ?? null;
-      let next = [...current];
-      // Only steal Main when the user explicitly marked an AI option as Main.
-      if (explicitMain) {
-        next = next.map((draft) => ({ ...draft, isPrimary: false }));
-      }
-      selected.forEach((candidate) => {
-        next.push({
-          id: createId(),
-          file: candidate.file,
-          localPreview: candidate.serverPreview ?? candidate.localPreview,
-          variants: candidate.variants ?? [],
-          serverPreview: candidate.serverPreview,
-          isPrimary: explicitMain ? candidate.id === explicitMain.id : false,
-          enhanced: candidate.enhanced,
-        });
-      });
-      if (!next.some((draft) => draft.isPrimary) && next.length) {
-        next[0] = { ...next[0], isPrimary: true };
-      }
-      return next;
-    });
-
-    if (options?.keepPending && remaining.length > 0) {
-      setGenerationSession({
-        ...generationSession,
-        candidates: remaining,
-        phase: hasPending ? 'generating' : 'select',
-        statusLine: hasPending ? generationSession.statusLine || 'Creating AI options…' : 'Ready',
-      });
-      if (!hasPending) setImageStatusLine('Ready');
-      return true;
-    }
-
-    cancelGenerationSession();
-    return true;
-  }
-
   function handleImagesContinue() {
-    const sessionHasReadySelection = Boolean(
-      generationSession?.candidates.some(
-        (candidate) => candidate.selected && hasReadyWebp(candidate)
-      )
-    );
-
-    // Commit any selected optional AI images; keep unfinished AI work in the background.
-    if (generationSession && sessionHasReadySelection) {
-      if (!commitSelectedCandidates({ keepPending: true })) return;
-    }
-
-    if (!hasPrimaryReady && !sessionHasReadySelection) {
-      setError('Add a product photo first. The original image is enough to continue to text.');
+    if (!hasPrimaryReady) {
+      setError('Add a product photo first. The original image is enough to continue to copy.');
       return;
     }
 
@@ -1060,15 +581,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     }
 
     setError('');
-    if (isImageGenerationInFlight) {
-      showToast('Continuing to text. Optional AI images can finish in the background.');
-    }
-    setActiveStep('text');
-  }
-
-  function handleAiOptionCountChange(count: AiOptionCount) {
-    setAiOptionCount(count);
-    setGenerationSession((current) => (current ? { ...current, aiOptionCount: count } : current));
+    setActiveStep('copy');
   }
 
   async function requestDraft() {
@@ -1083,7 +596,17 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setLoading({ kind: 'draft' });
     const formData = new FormData();
     formData.append('file', reference.file);
-    formData.append('hints', JSON.stringify(hints));
+    formData.append(
+      'hints',
+      JSON.stringify({
+        itemCategory: hints.itemCategory,
+        productType: hints.productType,
+        occasion: occasionTags.join(', '),
+        colors: colorTags.join(', '),
+        price,
+        notes: hints.notes,
+      })
+    );
 
     try {
       const response = await fetch('/api/admin/products/ai-draft', {
@@ -1102,10 +625,14 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       setAnalysis(nextAnalysis);
       setDraft(nextDraft);
       recordTextGeneration(nextDraft);
-      setPresentationCsv(isFlowerProduct ? presentationFormatFromAnalysis(nextAnalysis) : '');
-      if (!price && hints.price) setPrice(hints.price);
+      if (isFlowerProduct) {
+        const format = presentationFormatFromAnalysis(nextAnalysis);
+        setPresentationCsv(format);
+        setHints((current) => ({ ...current, productType: format }));
+      } else {
+        setPresentationCsv('');
+      }
 
-      // Cache analysis on the reference draft so a later AI enhance can reuse it.
       setImageDrafts((current) =>
         current.map((d) => (d.id === reference.id ? { ...d, analysis: nextAnalysis } : d))
       );
@@ -1197,10 +724,6 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       }
     });
     setImageDrafts([]);
-    cancelGenerationSession();
-    clearOptionalAiSource();
-    notifiedReadyCandidateIdsRef.current.clear();
-    setAiOptionCount(2);
     setImageStatusLine('');
     setPreparingImageCount(0);
     setCropQueue([]);
@@ -1217,17 +740,10 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setAvailableDeliveryDestinations([...DELIVERY_DESTINATIONS]);
     setFeaturedPopular(false);
     setPricingType('single_price');
-    setBasePreservationPrompt(DEFAULT_BASE_PRODUCT_PRESERVATION_PROMPT);
-    setPresentationPresets({ ...DEFAULT_SAFE_PRESENTATION_PRESETS });
-    setShowRules(false);
     setLoading(null);
     setError('');
     setSavedProduct(null);
     setActiveStep('images');
-  }
-
-  function handlePresentationPresetChange(preset: SafePresentationPresetKey, value: string) {
-    setPresentationPresets((current) => ({ ...current, [preset]: value }));
   }
 
   return (
@@ -1309,25 +825,9 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           {activeStep === 'images' ? (
             <ProductCreateImagesStep
               imageDrafts={imageDrafts}
-              generationSession={generationSession}
-              optionalAiSourcePreview={optionalAiSource?.preview ?? null}
-              aiOptionCount={aiOptionCount}
-              basePreservationPrompt={basePreservationPrompt}
-              presentationPresets={presentationPresets}
-              showRules={showRules}
               isBusy={isPreparingOriginal}
-              isGenerating={isImageGenerationInFlight}
               statusLine={imageStatusLine}
-              onAiOptionCountChange={handleAiOptionCountChange}
-              onBasePreservationPromptChange={setBasePreservationPrompt}
-              onPresentationPresetChange={handlePresentationPresetChange}
-              onShowRulesChange={setShowRules}
               onAddFiles={enqueueCropFiles}
-              onCancelSession={cancelGenerationSession}
-              onCreateOptionalAiImages={startOptionalAiGeneration}
-              onToggleCandidate={toggleCandidateSelection}
-              onSetCandidateMain={setCandidateMain}
-              onRetryCandidate={retryCandidate}
               onSetDraftPrimary={setPrimary}
               onRemoveDraft={removeDraft}
               canContinue={canContinueFromImages}
@@ -1335,38 +835,15 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             />
           ) : null}
 
-          {activeStep === 'text' ? (
-            <TextStep
+          {activeStep === 'copy' ? (
+            <CopySaveStep
               primaryDraft={primaryDraft ?? imageDrafts[0] ?? null}
+              readyDraftsCount={readyDrafts.length}
               hints={hints}
               isFlowerProduct={isFlowerProduct}
               itemCategoryLabel={itemCategoryLabel}
-              occasionHintValues={occasionHintValues}
-              colorHintValues={colorHintValues}
-              onColorHintsChange={setColorHints}
               draft={draft}
               analysis={analysis}
-              loading={loading}
-              imageGenerationInFlight={isImageGenerationInFlight}
-              onChangeHint={updateHint}
-              onOccasionHintsChange={setOccasionHints}
-              onChangeItemCategory={updateItemCategory}
-              onChangeProductType={updateProductType}
-              onChangeDraft={updateDraft}
-              onChangeAnalysis={updateAnalysis}
-              onGenerateText={requestDraft}
-              onBack={() => setActiveStep('images')}
-              onContinue={() => {
-                setColorTags((current) => (current.length ? current : [...colorHintValues]));
-                setOccasionTags((current) => (current.length ? current : [...occasionHintValues]));
-                setActiveStep('review');
-              }}
-            />
-          ) : null}
-
-          {activeStep === 'review' ? (
-            <ReviewStep
-              draft={draft}
               price={price}
               setPrice={setPrice}
               colorTags={colorTags}
@@ -1375,24 +852,23 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               setFlowerTypes={setFlowerTypes}
               occasionTags={occasionTags}
               setOccasionTags={setOccasionTags}
-              presentationCsv={presentationCsv}
-              setPresentationCsv={setPresentationCsv}
               deliveryOptions={deliveryOptions}
               setDeliveryOptions={setDeliveryOptions}
-              isFlowerProduct={isFlowerProduct}
-              hints={hints}
-              onChangeItemCategory={updateItemCategory}
               availableDeliveryDestinations={availableDeliveryDestinations}
               onToggleDeliveryDestination={toggleAvailableDeliveryDestination}
               featuredPopular={featuredPopular}
               setFeaturedPopular={setFeaturedPopular}
               pricingType={pricingType}
               setPricingType={setPricingType}
-              primaryDraft={primaryDraft ?? imageDrafts[0] ?? null}
-              readyDraftsCount={readyDrafts.length}
               loading={loading}
               canSaveForReview={canSaveForReview}
-              onBack={() => setActiveStep('text')}
+              onChangeHint={updateHint}
+              onChangeItemCategory={updateItemCategory}
+              onChangeProductType={updateProductType}
+              onChangeDraft={updateDraft}
+              onChangeAnalysis={updateAnalysis}
+              onGenerateText={requestDraft}
+              onBack={() => setActiveStep('images')}
               onSave={saveProductForReview}
             />
           ) : null}
@@ -1451,60 +927,86 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   );
 }
 
-type TextStepProps = {
+type CopySaveStepProps = {
   primaryDraft: ImageDraft | null;
+  readyDraftsCount: number;
   hints: Hints;
   isFlowerProduct: boolean;
   itemCategoryLabel: string;
-  occasionHintValues: string[];
-  colorHintValues: string[];
-  onColorHintsChange: (values: string[]) => void;
   draft: ProductDraftCopy;
   analysis: ProductImageAnalysis | null;
+  price: string;
+  setPrice: (value: string) => void;
+  colorTags: string[];
+  setColorTags: (value: string[]) => void;
+  flowerTypes: string[];
+  setFlowerTypes: (value: string[]) => void;
+  occasionTags: string[];
+  setOccasionTags: (value: string[]) => void;
+  deliveryOptions: string[];
+  setDeliveryOptions: (value: string[]) => void;
+  availableDeliveryDestinations: DeliveryDestinationId[];
+  onToggleDeliveryDestination: (value: DeliveryDestinationId) => void;
+  featuredPopular: boolean;
+  setFeaturedPopular: (value: boolean) => void;
+  pricingType: PricingType;
+  setPricingType: (value: PricingType) => void;
   loading: LoadingState;
-  imageGenerationInFlight: boolean;
+  canSaveForReview: boolean;
   onChangeHint: (key: keyof Hints, value: string) => void;
-  onOccasionHintsChange: (values: string[]) => void;
   onChangeItemCategory: (value: string) => void;
   onChangeProductType: (value: string) => void;
   onChangeDraft: (key: keyof ProductDraftCopy, value: string) => void;
   onChangeAnalysis: (key: keyof ProductImageAnalysis, value: string) => void;
   onGenerateText: () => Promise<void>;
   onBack: () => void;
-  onContinue: () => void;
+  onSave: () => Promise<void>;
 };
 
-function TextStep({
+function CopySaveStep({
   primaryDraft,
+  readyDraftsCount,
   hints,
   isFlowerProduct,
   itemCategoryLabel,
-  occasionHintValues,
-  colorHintValues,
-  onColorHintsChange,
   draft,
   analysis,
+  price,
+  setPrice,
+  colorTags,
+  setColorTags,
+  flowerTypes,
+  setFlowerTypes,
+  occasionTags,
+  setOccasionTags,
+  deliveryOptions,
+  setDeliveryOptions,
+  availableDeliveryDestinations,
+  onToggleDeliveryDestination,
+  featuredPopular,
+  setFeaturedPopular,
+  pricingType,
+  setPricingType,
   loading,
-  imageGenerationInFlight,
+  canSaveForReview,
   onChangeHint,
-  onOccasionHintsChange,
   onChangeItemCategory,
   onChangeProductType,
   onChangeDraft,
   onChangeAnalysis,
   onGenerateText,
   onBack,
-  onContinue,
-}: TextStepProps) {
+  onSave,
+}: CopySaveStepProps) {
   const isBusy = Boolean(loading);
 
   return (
     <section className="admin-product-create-step-panel">
       <header className="admin-product-create-step-header">
         <div>
-          <span className="admin-product-create-eyebrow">{stepCopy.text.eyebrow}</span>
-          <h3>{stepCopy.text.label}</h3>
-          <p>{stepCopy.text.description}</p>
+          <span className="admin-product-create-eyebrow">{stepCopy.copy.eyebrow}</span>
+          <h3>{stepCopy.copy.label}</h3>
+          <p>{stepCopy.copy.description}</p>
         </div>
         {primaryDraft ? (
           <div className="admin-product-create-step-thumb">
@@ -1515,19 +1017,12 @@ function TextStep({
         ) : null}
       </header>
 
-      {imageGenerationInFlight ? (
-        <p className="admin-hint" role="status">
-          AI image options are still generating in the background. You can generate text now, or go
-          back to Images when they finish.
-        </p>
-      ) : null}
-
       <section className="admin-product-create-grid">
         <div className="admin-product-create-card">
           <div>
             <div className="admin-product-create-step">Hints</div>
             <p className="admin-product-create-card-hint">
-              These hints help the AI write more accurate product copy.
+              These details guide AI copy and are saved on the product. Color and occasion are selected once.
             </p>
           </div>
           <div className="admin-product-create-two">
@@ -1546,19 +1041,19 @@ function TextStep({
               </select>
             </label>
             <label className="admin-form-group">
-              <span>Target price</span>
+              <span>Price THB</span>
               <input
                 className="admin-input"
                 inputMode="decimal"
-                value={hints.price}
-                onChange={(event) => onChangeHint('price', event.target.value)}
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
               />
               <small>Product price only. Exclude delivery.</small>
             </label>
           </div>
           {isFlowerProduct ? (
             <label className="admin-form-group">
-              <span>Bouquet presentation hint</span>
+              <span>Bouquet presentation</span>
               <select
                 className="admin-input"
                 value={hints.productType}
@@ -1578,27 +1073,27 @@ function TextStep({
             </p>
           )}
           <fieldset className="admin-form-group admin-product-create-occasion-hints">
-            <legend>Occasion hint</legend>
+            <legend>Occasion</legend>
             <p className="admin-product-create-card-hint">
-              Select occasions to guide AI copy. These are chosen by you, not inferred as free text.
+              Guides AI copy and becomes the catalog occasion filters.
             </p>
             <AdminCheckboxGrid
-              idPrefix="create-occasion-hints"
+              idPrefix="create-occasion-tags"
               options={[...ADMIN_OCCASION_OPTIONS]}
-              selected={occasionHintValues}
-              onChange={onOccasionHintsChange}
+              selected={occasionTags}
+              onChange={setOccasionTags}
             />
           </fieldset>
           <fieldset className="admin-form-group admin-product-create-occasion-hints">
-            <legend>Color hint</legend>
+            <legend>Colors</legend>
             <p className="admin-product-create-card-hint">
-              Select colors to guide AI copy. These are chosen by you, not inferred as free text.
+              Guides AI copy and becomes the catalog color filters.
             </p>
             <AdminCheckboxGrid
-              idPrefix="create-color-hints"
+              idPrefix="create-color-tags"
               options={[...ADMIN_COLOR_OPTIONS]}
-              selected={colorHintValues}
-              onChange={onColorHintsChange}
+              selected={colorTags}
+              onChange={setColorTags}
             />
           </fieldset>
           <label className="admin-form-group">
@@ -1734,151 +1229,21 @@ function TextStep({
         </details>
       ) : null}
 
-      <div className="admin-product-create-step-actions">
-        <button type="button" className="admin-btn admin-btn-outline" onClick={onBack}>
-          ← Back to images
-        </button>
-        <button
-          type="button"
-          className="admin-btn admin-btn-primary"
-          disabled={!draft.nameEn.trim()}
-          onClick={onContinue}
-        >
-          Continue to review →
-        </button>
-      </div>
-    </section>
-  );
-}
-
-type ReviewStepProps = {
-  draft: ProductDraftCopy;
-  price: string;
-  setPrice: (value: string) => void;
-  colorTags: string[];
-  setColorTags: (value: string[]) => void;
-  flowerTypes: string[];
-  setFlowerTypes: (value: string[]) => void;
-  occasionTags: string[];
-  setOccasionTags: (value: string[]) => void;
-  presentationCsv: string;
-  setPresentationCsv: (value: string) => void;
-  deliveryOptions: string[];
-  setDeliveryOptions: (value: string[]) => void;
-  isFlowerProduct: boolean;
-  hints: Hints;
-  onChangeItemCategory: (value: string) => void;
-  availableDeliveryDestinations: DeliveryDestinationId[];
-  onToggleDeliveryDestination: (value: DeliveryDestinationId) => void;
-  featuredPopular: boolean;
-  setFeaturedPopular: (value: boolean) => void;
-  pricingType: PricingType;
-  setPricingType: (value: PricingType) => void;
-  primaryDraft: ImageDraft | null;
-  readyDraftsCount: number;
-  loading: LoadingState;
-  canSaveForReview: boolean;
-  onBack: () => void;
-  onSave: () => Promise<void>;
-};
-
-function ReviewStep({
-  draft,
-  price,
-  setPrice,
-  colorTags,
-  setColorTags,
-  flowerTypes,
-  setFlowerTypes,
-  occasionTags,
-  setOccasionTags,
-  presentationCsv,
-  setPresentationCsv,
-  deliveryOptions,
-  setDeliveryOptions,
-  isFlowerProduct,
-  hints,
-  onChangeItemCategory,
-  availableDeliveryDestinations,
-  onToggleDeliveryDestination,
-  featuredPopular,
-  setFeaturedPopular,
-  pricingType,
-  setPricingType,
-  primaryDraft,
-  readyDraftsCount,
-  loading,
-  canSaveForReview,
-  onBack,
-  onSave,
-}: ReviewStepProps) {
-  return (
-    <section className="admin-product-create-step-panel">
-      <header className="admin-product-create-step-header">
-        <div>
-          <span className="admin-product-create-eyebrow">{stepCopy.review.eyebrow}</span>
-          <h3>{stepCopy.review.label}</h3>
-          <p>{stepCopy.review.description}</p>
-        </div>
-      </header>
-
       <div className="admin-product-create-card">
-        {primaryDraft ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            className="admin-product-create-image"
-            src={primaryDraft.serverPreview || primaryDraft.localPreview}
-            alt="Main product preview"
-          />
-        ) : (
-          <p className="admin-hint">No main image. Go back to step 1 to add one.</p>
-        )}
-        <p className="admin-product-create-card-hint">
-          {readyDraftsCount} image{readyDraftsCount === 1 ? '' : 's'} ready to publish.
-        </p>
-
-        <div className="admin-product-create-two">
-          <label className="admin-form-group">
-            <span>Price THB</span>
-            <input
-              className="admin-input"
-              inputMode="decimal"
-              value={price}
-              onChange={(event) => setPrice(event.target.value)}
-            />
-          </label>
-          <label className="admin-form-group">
-            <span>{isFlowerProduct ? 'Presentation formats' : 'Item category'}</span>
-            {isFlowerProduct ? (
-              <input
-                className="admin-input"
-                value={presentationCsv}
-                onChange={(event) => setPresentationCsv(event.target.value)}
-              />
-            ) : (
-              <select
-                className="admin-input"
-                value={hints.itemCategory}
-                onChange={(event) => onChangeItemCategory(event.target.value)}
-              >
-                {adminItemCategoryOptions
-                  .filter((option) => option.value !== 'flowers')
-                  .map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-              </select>
-            )}
-          </label>
+        <div>
+          <div className="admin-product-create-step">Catalog & delivery</div>
+          <p className="admin-product-create-card-hint">
+            {readyDraftsCount} image{readyDraftsCount === 1 ? '' : 's'} ready to save.
+            {isFlowerProduct ? ' Fine-tune sizes and prices after saving on the review page.' : ''}
+          </p>
         </div>
+
         <fieldset className="admin-form-group">
           <legend>Pricing options</legend>
           {isFlowerProduct ? (
             <>
               <p className="admin-product-create-card-hint">
-                Choose how customers pick a variant on the product page. You can fine-tune sizes and
-                prices after saving on the bouquet review page.
+                Choose how customers pick a variant on the product page.
               </p>
               <div className="admin-product-create-choice-grid">
                 {ADMIN_PRICING_TYPE_OPTIONS.map((option) => (
@@ -1904,23 +1269,12 @@ function ReviewStep({
             </p>
           )}
         </fieldset>
-        <fieldset className="admin-form-group admin-product-create-occasion-hints">
-          <legend>Color tags</legend>
-          <p className="admin-product-create-card-hint">
-            Select catalog color filters for this product. Not filled by AI — choose them here.
-          </p>
-          <AdminCheckboxGrid
-            idPrefix="create-color-tags"
-            options={[...ADMIN_COLOR_OPTIONS]}
-            selected={colorTags}
-            onChange={setColorTags}
-          />
-        </fieldset>
+
         {isFlowerProduct ? (
           <fieldset className="admin-form-group admin-product-create-occasion-hints">
             <legend>Flower tags</legend>
             <p className="admin-product-create-card-hint">
-              Select the flower types visible in this product. These are not filled by AI — choose them here.
+              Select the flower types visible in this product.
             </p>
             <AdminCheckboxGrid
               idPrefix="create-flower-types"
@@ -1930,18 +1284,7 @@ function ReviewStep({
             />
           </fieldset>
         ) : null}
-        <fieldset className="admin-form-group admin-product-create-occasion-hints">
-          <legend>Occasion tags</legend>
-          <p className="admin-product-create-card-hint">
-            Select catalog occasion filters for this product. Not filled by AI — choose them here.
-          </p>
-          <AdminCheckboxGrid
-            idPrefix="create-occasion-tags"
-            options={[...ADMIN_OCCASION_OPTIONS]}
-            selected={occasionTags}
-            onChange={setOccasionTags}
-          />
-        </fieldset>
+
         <fieldset className="admin-form-group admin-product-create-occasion-hints">
           <legend>Available provinces / markets</legend>
           <div className="admin-product-create-choice-grid">
@@ -1958,13 +1301,11 @@ function ReviewStep({
           </div>
           <small>Uncheck destinations where this product should not be sold.</small>
         </fieldset>
+
         {isFlowerProduct ? (
           <>
             <fieldset className="admin-form-group admin-product-create-occasion-hints">
               <legend>Delivery options</legend>
-              <p className="admin-product-create-card-hint">
-                Choose which delivery speeds apply to this product. These are not set by AI.
-              </p>
               <AdminCheckboxGrid
                 idPrefix="create-delivery-options"
                 options={[...ADMIN_DELIVERY_SPEED_OPTIONS]}
@@ -1982,6 +1323,7 @@ function ReviewStep({
             </label>
           </>
         ) : null}
+
         <div className="admin-product-create-preview">
           <strong>{draft.nameEn || 'Product name'}</strong>
           <span>{price ? `THB ${price}` : 'Set a price before saving'}</span>
@@ -1991,7 +1333,7 @@ function ReviewStep({
 
       <div className="admin-product-create-step-actions">
         <button type="button" className="admin-btn admin-btn-outline" onClick={onBack}>
-          ← Back to text
+          ← Back to images
         </button>
         <button
           className="admin-btn admin-btn-primary"

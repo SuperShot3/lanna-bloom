@@ -37,6 +37,7 @@ import {
 import { confirmCatalogDeleteAction } from '@/app/admin/components/confirmDelete';
 import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogShelfDirtyContext';
 import { useCatalogUnsavedLeaveGuard } from '@/app/admin/(dashboard)/products/useCatalogUnsavedLeaveGuard';
+import { GPT_ITEM_CARD_LABEL, GPT_ITEM_CARD_URL } from '@/lib/adminGptItemCard';
 import {
   approveBouquetFromStudioAction,
   assignBouquetImagesVariantAction,
@@ -52,9 +53,6 @@ import {
   updateBouquetImageAltAction,
   uploadBouquetImageAction,
 } from '../actions';
-
-const GPT_ITEM_CARD_URL =
-  'https://chatgpt.com/g/g-6a1819eb5c9081919d025d2329c63bdb-kartochka-tovara';
 
 const STATUS_LABELS: Record<BouquetStatus, string> = {
   pending_review: 'Pending review',
@@ -612,7 +610,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Create item card (GPT)
+            {GPT_ITEM_CARD_LABEL}
           </a>
           <button
             type="button"

@@ -185,7 +185,6 @@ export async function PopularSection({
           </div>
         )}
         <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
-        <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} catalogHref={catalogBase} />
         {sections.map((section) => {
           const sectionCatalogHref = `${catalogBase}${buildCatalogSearchString({ types: [section.type] })}`;
           const titleTemplate = section.pottedOnly
@@ -219,6 +218,7 @@ export async function PopularSection({
             </div>
           );
         })}
+        <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} catalogHref={catalogBase} />
         {productSections.map((section) => (
           <ProductFeedRow
             key={section.categoryKey}

@@ -1,13 +1,7 @@
 import 'server-only';
 
-import OpenAI, { toFile } from 'openai';
-import sharp from 'sharp';
+import OpenAI from 'openai';
 import { fileToDataUrl } from './adminProductImages';
-import {
-  BASE_PRODUCT_PRESERVATION_PROMPT,
-  SAFE_PRESENTATION_PRESETS,
-  DEFAULT_PRODUCT_IMAGE_ENHANCEMENT_RULES,
-} from './adminProductAiRules';
 
 export type ProductImageAnalysis = {
   productFormat: string;
@@ -54,8 +48,6 @@ Use phrases such as flower delivery in Chiang Mai, same-day flower delivery, bir
 romantic bouquet, balloon delivery, plush toy gift, or gift delivery only when they are accurate.
 Avoid keyword stuffing, unsupported claims, invented flowers/items, and direct publishing language.
 `;
-
-const IMAGE_ENHANCEMENT_RULES = DEFAULT_PRODUCT_IMAGE_ENHANCEMENT_RULES;
 
 function getClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -118,22 +110,6 @@ function normalizeDraft(value: Partial<ProductDraftCopy>): ProductDraftCopy {
     seoKeywords: toStringArray(value.seoKeywords),
     searchPhrases: toStringArray(value.searchPhrases),
   };
-}
-
-async function normalizeImageForOpenAiEdit(file: File): Promise<Buffer> {
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  return sharp(buffer, { limitInputPixels: 40_000_000 })
-    .rotate()
-    .resize(1024, 1024, {
-      fit: 'contain',
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-      withoutEnlargement: false,
-    })
-    .flatten({ background: { r: 255, g: 255, b: 255 } })
-    .toColorspace('srgb')
-    .png({ compressionLevel: 9 })
-    .toBuffer();
 }
 
 export async function analyzeProductImage(
@@ -203,43 +179,4 @@ export async function generateProductDescription(
   return normalizeDraft(
     parseJsonObject<Partial<ProductDraftCopy>>(completion.choices[0]?.message?.content, {})
   );
-}
-
-export async function enhanceProductImage(
-  file: File,
-  approvedAnalysis: ProductImageAnalysis,
-  input?: {
-    basePrompt?: string;
-    presentationPreset?: string;
-    /** Deprecated: legacy single prompt used before base+preset prompts existed. */
-    imageRules?: string;
-  }
-): Promise<File> {
-  const legacyRules = input?.imageRules?.trim() ? input.imageRules.trim() : '';
-  const basePrompt = (input?.basePrompt ?? '').trim() || legacyRules || BASE_PRODUCT_PRESERVATION_PROMPT;
-  const presentationPreset =
-    (input?.presentationPreset ?? '').trim() || SAFE_PRESENTATION_PRESETS[2];
-  const effectiveRules = `${basePrompt}\n\n${presentationPreset}`.trim() || IMAGE_ENHANCEMENT_RULES;
-  const client = getClient();
-  const normalizedPng = await normalizeImageForOpenAiEdit(file);
-  const uploadable = await toFile(normalizedPng, 'product-source.png', {
-    type: 'image/png',
-  });
-
-  const response = await client.images.edit({
-    model: process.env.OPENAI_PRODUCT_IMAGE_MODEL?.trim() || 'gpt-image-1',
-    image: uploadable,
-    prompt:
-      `${effectiveRules}\n\nVisible product analysis to preserve:\n${JSON.stringify(approvedAnalysis, null, 2)}`,
-    size: '1024x1024',
-  });
-
-  const b64 = response.data?.[0]?.b64_json;
-  if (!b64) {
-    throw new Error('OpenAI did not return an enhanced image');
-  }
-
-  return new File([new Uint8Array(Buffer.from(b64, 'base64'))], 'enhanced-product.png', {
-    type: 'image/png',
-  });
 }
