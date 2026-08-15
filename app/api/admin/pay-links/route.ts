@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
+import { nanoid } from 'nanoid';
 import { requireRole } from '@/lib/adminRbac';
-import { createOrder, getOrderPublicToken, getPayLinkUrl } from '@/lib/orders';
+import { getPayLinkUrl } from '@/lib/orders';
 import {
   buildAdminPayLinkOrderPayload,
   validateAdminPayLinkInput,
 } from '@/lib/payLinks/adminPayLink';
 import { listAdminPayLinks } from '@/lib/payLinks/listAdminPayLinks';
+import { insertCheckoutDraft } from '@/lib/checkout/checkoutDrafts';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,13 +47,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const payload = buildAdminPayLinkOrderPayload(parsed.value);
-    const { order } = await createOrder(payload);
-    const token = await getOrderPublicToken(order.orderId);
-    const reviewUrl = getPayLinkUrl(order.orderId, { token });
+    const payload = {
+      ...buildAdminPayLinkOrderPayload(parsed.value),
+      submissionToken: randomUUID(),
+      payLinkPublicToken: nanoid(21),
+    };
+    const { id: draftId } = await insertCheckoutDraft(payload);
+    const reviewUrl = getPayLinkUrl(draftId, { token: payload.payLinkPublicToken });
     return NextResponse.json(
       {
-        orderId: order.orderId,
+        draftId,
         reviewUrl,
         amount: parsed.value.amount,
         description: parsed.value.description,

@@ -40,4 +40,4 @@ export {
 } from './orders/router';
 
 /** Base URL and public order / pay-link URLs. */
-export { getBaseUrl, getOrderDetailsUrl, getPayLinkUrl } from './orders/publicUrls';
+export { getBaseUrl, getOrderDetailsUrl, getPayLinkUrl, getPayLinkStripeSuccessUrl } from './orders/publicUrls';

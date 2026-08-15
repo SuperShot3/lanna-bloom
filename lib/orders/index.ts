@@ -29,4 +29,4 @@ export {
   deleteOrder,
   listOrders,
 } from './router';
-export { getBaseUrl, getOrderDetailsUrl, getPayLinkUrl } from './publicUrls';
+export { getBaseUrl, getOrderDetailsUrl, getPayLinkUrl, getPayLinkStripeSuccessUrl } from './publicUrls';

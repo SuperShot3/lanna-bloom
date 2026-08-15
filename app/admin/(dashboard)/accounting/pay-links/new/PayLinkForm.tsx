@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { PAY_LINK_TTL_MINUTES } from '@/lib/payLinks/adminPayLink';
 
 export function PayLinkForm() {
   const [amount, setAmount] = useState('');
@@ -11,7 +12,7 @@ export function PayLinkForm() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{ orderId: string; reviewUrl: string } | null>(null);
+  const [created, setCreated] = useState<{ draftId: string; reviewUrl: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
 
@@ -50,7 +51,7 @@ export function PayLinkForm() {
         setError(fromApi || `Failed to create pay link (${res.status})`);
         return;
       }
-      setCreated({ orderId: String(data.orderId), reviewUrl: String(data.reviewUrl) });
+      setCreated({ draftId: String(data.draftId), reviewUrl: String(data.reviewUrl) });
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -96,6 +97,7 @@ export function PayLinkForm() {
           <h1 className="admin-title">New pay link</h1>
           <p className="admin-hint">
             Extra item or service not in the store. The customer opens the URL and goes straight to Stripe.
+            They have {PAY_LINK_TTL_MINUTES} minutes to pay. After that the link is disabled. An order is created only after they pay.
           </p>
         </div>
       </header>
@@ -103,23 +105,23 @@ export function PayLinkForm() {
       <div className="admin-accounting-notice">
         <span className="material-symbols-outlined">info</span>
         <span>
-          This is not a flower delivery order. Send this shop URL (not a Stripe Dashboard Payment Link). The customer
-          goes straight to Stripe. Commission is recorded automatically when they pay.
+          This is not a flower delivery order. Send this shop URL. The customer must pay within{' '}
+          {PAY_LINK_TTL_MINUTES} minutes. After they pay, the link shows a thank-you page and cannot be used again.
         </span>
       </div>
 
       {created ? (
         <div className="admin-expenses-form">
           <p className="admin-hint" style={{ marginTop: 0 }}>
-            Pay link created for order <strong>{created.orderId}</strong>. Copy and send it to the customer.
+            Pay link ready. Copy and send it now. The customer must pay within {PAY_LINK_TTL_MINUTES} minutes.
           </p>
           <div className="admin-pay-link-created-banner" role="status">
             <span className="material-symbols-outlined" aria-hidden>
               schedule
             </span>
             <span>
-              <strong>Not paid yet.</strong> The link is ready. This will change to Paid after the customer pays on
-              Stripe.
+              <strong>Valid for {PAY_LINK_TTL_MINUTES} minutes.</strong> After they pay, the same URL shows a
+              thank-you page and cannot be charged again.
             </span>
           </div>
           {copied ? (
@@ -153,8 +155,8 @@ export function PayLinkForm() {
             </div>
           </div>
           <div className="admin-expenses-form-actions">
-            <Link href={`/admin/orders/${encodeURIComponent(created.orderId)}`} className="admin-btn admin-btn-outline">
-              Open order
+            <Link href="/admin/accounting/pay-links" className="admin-btn admin-btn-outline">
+              View pay links
             </Link>
             <button
               type="button"

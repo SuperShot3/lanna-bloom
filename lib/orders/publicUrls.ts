@@ -10,7 +10,7 @@ export function getOrderDetailsUrl(orderId: string, options?: { token?: string |
   return `${base}?${qs}`;
 }
 
-/** Opens Stripe Checkout for an admin pay-link charge (`/pay/{orderId}?token=`). */
+/** Opens Stripe Checkout for an admin pay-link (`/pay/{id}?token=`). Draft ids until paid; then order ids. */
 export function getPayLinkUrl(
   orderId: string,
   options?: { token?: string | null; cancelled?: boolean }
@@ -22,4 +22,11 @@ export function getPayLinkUrl(
   if (options?.cancelled) params.set('cancelled', '1');
   const qs = params.toString();
   return qs ? `${base}?${qs}` : base;
+}
+
+/** Stripe success_url — `{CHECKOUT_SESSION_ID}` must stay unencoded so Stripe can substitute it. */
+export function getPayLinkStripeSuccessUrl(linkId: string, token: string): string {
+  const base = getPayLinkUrl(linkId, { token });
+  const join = base.includes('?') ? '&' : '?';
+  return `${base}${join}session_id={CHECKOUT_SESSION_ID}`;
 }

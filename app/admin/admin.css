@@ -6390,6 +6390,12 @@ a.admin-summary-key-value {
   color: #047857;
   border: 1px solid #34d399;
 }
+.admin-pay-link-badge--expired,
+.admin-pay-link-badge--disabled {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
 .admin-table tbody tr.admin-pay-link-row--unpaid {
   background: #fffbeb;
 }
@@ -6401,6 +6407,9 @@ a.admin-summary-key-value {
 }
 .admin-table tbody tr.admin-pay-link-row--paid:hover {
   background: #bbf7d0;
+}
+.admin-table tbody tr.admin-pay-link-row--expired {
+  background: #f9fafb;
 }
 .admin-pay-link-created-banner {
   display: flex;

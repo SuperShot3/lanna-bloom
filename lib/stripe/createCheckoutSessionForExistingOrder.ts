@@ -2,8 +2,20 @@ import 'server-only';
 
 import { timingSafeEqual } from 'crypto';
 import Stripe from 'stripe';
-import { getOrderById, getBaseUrl, getOrderDetailsUrl, getOrderPublicToken, getPayLinkUrl } from '@/lib/orders';
-import { isAdminPayLinkOrder } from '@/lib/payLinks/adminPayLink';
+import {
+  getOrderById,
+  getBaseUrl,
+  getOrderDetailsUrl,
+  getOrderPublicToken,
+  getPayLinkUrl,
+  getPayLinkStripeSuccessUrl,
+} from '@/lib/orders';
+import {
+  isAdminPayLinkOrder,
+  PAY_LINK_STRIPE_EXPIRES_MINUTES,
+  payLinkUnusableReason,
+  STRIPE_PAY_LINK_SOURCE,
+} from '@/lib/payLinks/adminPayLink';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
@@ -30,15 +42,6 @@ function tokensEqual(a: string, b: string): boolean {
   const bBuf = Buffer.from(bb, 'utf8');
   if (aBuf.length !== bBuf.length) return false;
   return timingSafeEqual(aBuf, bBuf);
-}
-
-function bangkokYmd(): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
 }
 
 async function persistOrderAnalyticsContext(
@@ -106,9 +109,12 @@ export async function createCheckoutSessionForExistingOrder(params: {
   const stripe = createStripeServerClient(stripeConfig.secretKey);
   const baseUrl = getBaseUrl();
   const payLink = isAdminPayLinkOrder(order);
+  if (payLink && payLinkUnusableReason(order, order.createdAt)) {
+    return { ok: false, status: 410, error: 'This payment link is no longer active' };
+  }
   const metadata = buildStripeOrderMetadata({
     orderId: order.orderId,
-    source: payLink ? 'lanna_bloom_pay_link' : 'lanna_bloom_order_page',
+    source: payLink ? STRIPE_PAY_LINK_SOURCE : 'lanna_bloom_order_page',
     customerEmail: order.customerEmail,
     lang,
   });
@@ -143,11 +149,11 @@ export async function createCheckoutSessionForExistingOrder(params: {
     discountAllocation: order.referralCode ? getDiscountAllocationForCode(order.referralCode) : 'all',
   });
 
-  const baseSuccessUrl = stripeOrderSuccessUrl(baseUrl, orderId);
-  const successUrl =
-    expectedPublicToken && expectedPublicToken.trim()
-      ? `${baseSuccessUrl}&token=${encodeURIComponent(publicToken.trim())}`
-      : baseSuccessUrl;
+  const successUrl = payLink
+    ? getPayLinkStripeSuccessUrl(orderId, expectedPublicToken)
+    : expectedPublicToken && expectedPublicToken.trim()
+      ? `${stripeOrderSuccessUrl(baseUrl, orderId)}&token=${encodeURIComponent(publicToken.trim())}`
+      : stripeOrderSuccessUrl(baseUrl, orderId);
   const cancelUrl = payLink
     ? getPayLinkUrl(orderId, { token: expectedPublicToken, cancelled: true })
     : getOrderDetailsUrl(orderId, { token: expectedPublicToken });
@@ -161,11 +167,14 @@ export async function createCheckoutSessionForExistingOrder(params: {
     cancel_url: cancelUrl,
     metadata,
     payment_intent_data: { metadata },
+    ...(payLink
+      ? { expires_at: Math.floor(Date.now() / 1000) + PAY_LINK_STRIPE_EXPIRES_MINUTES * 60 }
+      : {}),
   };
 
   const fingerprint = stripeIdempotencyFingerprint(sessionParams);
   const idempotencyKey = payLink
-    ? `pay-link-${orderId}-${fingerprint}-${bangkokYmd()}`
+    ? `pay-link-${orderId}`
     : `order-page-${orderId}-${fingerprint}`;
 
   let session: Stripe.Checkout.Session;

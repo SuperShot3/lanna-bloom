@@ -6,8 +6,11 @@ import assert from 'node:assert/strict';
 import {
   ADMIN_PAY_LINK_BOUQUET_ID,
   ADMIN_PAY_LINK_SOURCE,
+  PAY_LINK_TTL_MS,
   buildAdminPayLinkOrderPayload,
   isAdminPayLinkOrder,
+  isPayLinkTimeExpired,
+  payLinkUnusableReason,
   validateAdminPayLinkInput,
 } from './adminPayLink';
 import { deliveryDateFromPreferredTimeSlot } from '../orders/deliveryFields';
@@ -57,7 +60,8 @@ assert.equal(payload.items[0].bouquetId, ADMIN_PAY_LINK_BOUQUET_ID);
 assert.equal(payload.items[0].bouquetTitle, 'Rush delivery surcharge');
 assert.equal(payload.items[0].price, 2500);
 assert.equal(payload.items[0].size, '—');
-assert.equal('deliveryDestination' in payload.delivery && payload.delivery.deliveryDestination != null, false);
+assert.equal(payload.submissionToken, undefined);
+assert.equal(payload.payLinkPublicToken, undefined);
 
 assert.equal(isAdminPayLinkOrder({ orderSource: 'admin_pay_link' }), true);
 assert.equal(isAdminPayLinkOrder({ order_json: { orderSource: 'admin_pay_link' } }), true);
@@ -69,5 +73,16 @@ assert.equal(deliveryDateFromPreferredTimeSlot('   '), null);
 assert.equal(deliveryDateFromPreferredTimeSlot('09:00–12:00'), null);
 assert.equal(deliveryDateFromPreferredTimeSlot('2026-08-15 09:00–12:00'), '2026-08-15');
 assert.equal(deliveryDateFromPreferredTimeSlot('2026-08-15'), '2026-08-15');
+
+const created = '2026-08-15T10:00:00.000Z';
+const t0 = Date.parse(created);
+assert.equal(isPayLinkTimeExpired(created, t0 + PAY_LINK_TTL_MS - 1), false);
+assert.equal(isPayLinkTimeExpired(created, t0 + PAY_LINK_TTL_MS), true);
+assert.equal(payLinkUnusableReason({}, created, t0 + 60_000), null);
+assert.equal(payLinkUnusableReason({}, created, t0 + PAY_LINK_TTL_MS), 'expired');
+assert.equal(
+  payLinkUnusableReason({ payLinkDisabledAt: '2026-08-15T10:01:00.000Z' }, created, t0 + 1000),
+  'disabled'
+);
 
 console.log('adminPayLink.test.ts: ok');

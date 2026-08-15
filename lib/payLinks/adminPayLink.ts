@@ -3,6 +3,52 @@ import type { OrderPayload } from '@/lib/orders/types';
 export const ADMIN_PAY_LINK_SOURCE = 'admin_pay_link' as const;
 export const ADMIN_PAY_LINK_BOUQUET_ID = 'pay-link';
 export const ADMIN_PAY_LINK_DESCRIPTION_MAX = 200;
+/** Customer must pay within this window. After that the shop URL is disabled. */
+export const PAY_LINK_TTL_MINUTES = 15;
+export const PAY_LINK_TTL_MS = PAY_LINK_TTL_MINUTES * 60 * 1000;
+/**
+ * Stripe Checkout `expires_at` cannot be shorter than 30 minutes.
+ * We still disable the shop URL at 15 minutes and expire the Stripe session via API.
+ */
+export const PAY_LINK_STRIPE_EXPIRES_MINUTES = 30;
+export const STRIPE_PAY_LINK_SOURCE = 'lanna_bloom_pay_link' as const;
+
+export function isPayLinkTimeExpired(
+  createdAt: string | null | undefined,
+  nowMs: number = Date.now()
+): boolean {
+  const t = createdAt ? Date.parse(createdAt) : NaN;
+  if (!Number.isFinite(t)) return false;
+  return nowMs - t >= PAY_LINK_TTL_MS;
+}
+
+export function isPayLinkManuallyDisabled(payload: {
+  payLinkDisabledAt?: string | null;
+}): boolean {
+  return Boolean(payload.payLinkDisabledAt?.trim());
+}
+
+export function payLinkUnusableReason(
+  payload: { payLinkDisabledAt?: string | null },
+  createdAt: string | null | undefined,
+  nowMs: number = Date.now()
+): 'disabled' | 'expired' | null {
+  if (isPayLinkManuallyDisabled(payload)) return 'disabled';
+  if (isPayLinkTimeExpired(createdAt, nowMs)) return 'expired';
+  return null;
+}
+
+export type PayLinkReceipt = {
+  amount: number;
+  description: string;
+  orderId?: string;
+};
+
+export function payLinkDescriptionFromItems(items: Array<{ bouquetTitle?: string }> | undefined): string {
+  const title = items?.[0]?.bouquetTitle;
+  if (typeof title === 'string' && title.trim()) return title.trim();
+  return 'Pay link';
+}
 
 export type AdminPayLinkInput = {
   amount: number;

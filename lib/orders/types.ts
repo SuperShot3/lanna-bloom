@@ -164,6 +164,12 @@ export interface OrderPayload {
    * Stored in DB; not shown in customer UI. Omitted from persisted order_json.
    */
   submissionToken?: string;
+  /** Secret in `/pay/{draftId}?token=` for admin pay links (kept on order_json after payment). */
+  payLinkPublicToken?: string;
+  /** ISO timestamp when admin (or expiry job) disabled this unpaid pay-link draft. */
+  payLinkDisabledAt?: string;
+  /** Latest Stripe Checkout Session id for this pay-link draft (so we can expire it). */
+  payLinkStripeSessionId?: string;
 }
 
 export type OrderPaymentStatus = 'pending_payment' | 'paid' | 'payment_failed';

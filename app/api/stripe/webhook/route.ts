@@ -226,7 +226,10 @@ export async function POST(request: NextRequest) {
         typeof session.metadata?.checkout_draft_id === 'string'
           ? session.metadata.checkout_draft_id.trim()
           : '';
-      if (draftId) {
+      const payLinkSession = (session.metadata?.source ?? '').trim() === 'lanna_bloom_pay_link';
+      // Cart drafts are disposable. Pay-link drafts stay so the original URL can show
+      // "already paid" or "this link is no longer active" instead of a 404.
+      if (draftId && !payLinkSession) {
         await deleteCheckoutDraftById(draftId).catch(() => {});
       }
       return NextResponse.json({ received: true });
