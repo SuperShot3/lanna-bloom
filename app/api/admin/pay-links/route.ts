@@ -58,7 +58,20 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (e) {
+    const message =
+      e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string'
+        ? (e as { message: string }).message
+        : e instanceof Error
+          ? e.message
+          : 'Failed to create pay link';
+    const details =
+      e && typeof e === 'object' && 'details' in e && typeof (e as { details?: unknown }).details === 'string'
+        ? (e as { details: string }).details
+        : undefined;
     console.error('[pay-links] create failed:', e);
-    return NextResponse.json({ error: 'Failed to create pay link' }, { status: 500 });
+    return NextResponse.json(
+      { error: details ? `${message} (${details})` : message },
+      { status: 500 }
+    );
   }
 }

@@ -44,7 +44,8 @@ export function PayLinkForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to create pay link');
+        const fromApi = typeof data.error === 'string' ? data.error.trim() : '';
+        setError(fromApi || `Failed to create pay link (${res.status})`);
         return;
       }
       setCreated({ orderId: String(data.orderId), reviewUrl: String(data.reviewUrl) });

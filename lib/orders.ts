@@ -39,23 +39,5 @@ export {
   listOrders,
 } from './orders/router';
 
-/** Base URL for public links. Never returns localhost when running on Vercel. */
-export { getBaseUrl } from '@/lib/siteUrl';
-import { getBaseUrl } from '@/lib/siteUrl';
-
-export function getOrderDetailsUrl(orderId: string, options?: { token?: string | null }): string {
-  const base = `${getBaseUrl()}/order/${encodeURIComponent(orderId)}`;
-  const token = options?.token?.trim();
-  if (!token) return base;
-  const qs = new URLSearchParams({ token }).toString();
-  return `${base}?${qs}`;
-}
-
-/** Customer review + pay page for admin-created amount/description charges. */
-export function getPayLinkUrl(orderId: string, options?: { token?: string | null }): string {
-  const base = `${getBaseUrl()}/pay/${encodeURIComponent(orderId)}`;
-  const token = options?.token?.trim();
-  if (!token) return base;
-  const qs = new URLSearchParams({ token }).toString();
-  return `${base}?${qs}`;
-}
+/** Base URL and public order / pay-link URLs. */
+export { getBaseUrl, getOrderDetailsUrl, getPayLinkUrl } from './orders/publicUrls';

@@ -28,7 +28,15 @@ const SLOT_TO_WINDOW: Record<string, DeliveryWindow> = {
   '18:00–20:00': 'EVENING_18_20',
 };
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+export const DELIVERY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_RE = DELIVERY_DATE_RE;
+
+/** YYYY-MM-DD from a preferredTimeSlot like `2026-08-15 09:00–12:00`. Empty/invalid → null (never `''`). */
+export function deliveryDateFromPreferredTimeSlot(slot: string | null | undefined): string | null {
+  const datePart = (slot ?? '').trim().split(/\s+/)[0] ?? '';
+  return DATE_RE.test(datePart) ? datePart : null;
+}
+
 const MAX_ADDRESS_LEN = 500;
 const MAX_NOTES_LEN = 1000;
 const MAX_NAME_LEN = 120;

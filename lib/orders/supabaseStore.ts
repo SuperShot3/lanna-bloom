@@ -9,6 +9,7 @@ import { createSupabaseAnonWithOrderToken, getSupabaseAdmin } from '@/lib/supaba
 import type { Order, OrderPayload } from './types';
 import {
   buildDeliveryUpdatePayload,
+  deliveryDateFromPreferredTimeSlot,
   deliveryWindowFromTimeSlot,
   isDeliveryWindow,
   preferredTimeSlotFromParts,
@@ -374,8 +375,9 @@ export async function supabaseCreateOrder(
       ? 'STRIPE'
       : 'BANK_TRANSFER';
 
-  const deliveryDate = order.delivery.preferredTimeSlot?.split(' ')[0];
-  const deliveryWindow = deliveryWindowFromTimeSlot(order.delivery.preferredTimeSlot ?? '');
+  const preferredSlot = order.delivery.preferredTimeSlot?.trim() ?? '';
+  const deliveryDate = deliveryDateFromPreferredTimeSlot(preferredSlot);
+  const deliveryWindow = deliveryWindowFromTimeSlot(preferredSlot);
 
   const orderStatus = 'NEW';
   const paymentStatus = status === 'paid' ? 'PAID' : status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
@@ -388,7 +390,7 @@ export async function supabaseCreateOrder(
     customer_email: order.customerEmail ?? null,
     phone: order.phone ?? null,
     phone_country_code: order.phoneCountryCode ?? null,
-    address: order.delivery.address ?? null,
+    address: order.delivery.address?.trim() || null,
     delivery_destination: order.delivery.deliveryDestination ?? null,
     delivery_zone: order.delivery.deliveryZoneId ?? null,
     postal_code: order.delivery.postalCode ?? null,
@@ -593,8 +595,9 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
 
   const publicToken = existingOrder?.public_token ?? nanoid(21);
   const paymentMethod = order.stripeSessionId || order.paymentIntentId ? 'STRIPE' : 'BANK_TRANSFER';
-  const deliveryDate = order.delivery.preferredTimeSlot?.split(' ')[0];
-  const deliveryWindow = deliveryWindowFromTimeSlot(order.delivery.preferredTimeSlot ?? '');
+  const preferredSlot = order.delivery.preferredTimeSlot?.trim() ?? '';
+  const deliveryDate = deliveryDateFromPreferredTimeSlot(preferredSlot);
+  const deliveryWindow = deliveryWindowFromTimeSlot(preferredSlot);
   const orderStatus = 'NEW';
   const paymentStatus = order.status === 'paid' ? 'PAID' : order.status === 'payment_failed' ? 'ERROR' : 'NOT_PAID';
 
@@ -606,7 +609,7 @@ export async function supabaseUpsertOrder(order: Order): Promise<void> {
     customer_email: order.customerEmail ?? null,
     phone: order.phone ?? null,
     phone_country_code: order.phoneCountryCode ?? null,
-    address: order.delivery.address ?? null,
+    address: order.delivery.address?.trim() || null,
     delivery_destination: order.delivery.deliveryDestination ?? null,
     delivery_zone: order.delivery.deliveryZoneId ?? null,
     postal_code: order.delivery.postalCode ?? null,

@@ -10,6 +10,7 @@ import {
   isAdminPayLinkOrder,
   validateAdminPayLinkInput,
 } from './adminPayLink';
+import { deliveryDateFromPreferredTimeSlot } from '../orders/deliveryFields';
 
 const badAmount = validateAdminPayLinkInput({ amount: 0, description: 'Extra balloons' });
 assert.equal(badAmount.ok, false);
@@ -62,5 +63,11 @@ assert.equal(isAdminPayLinkOrder({ orderSource: 'admin_pay_link' }), true);
 assert.equal(isAdminPayLinkOrder({ order_json: { orderSource: 'admin_pay_link' } }), true);
 assert.equal(isAdminPayLinkOrder({ orderSource: 'web' }), false);
 assert.equal(isAdminPayLinkOrder({ order_json: { orderSource: 'web' } }), false);
+
+assert.equal(deliveryDateFromPreferredTimeSlot(''), null);
+assert.equal(deliveryDateFromPreferredTimeSlot('   '), null);
+assert.equal(deliveryDateFromPreferredTimeSlot('09:00–12:00'), null);
+assert.equal(deliveryDateFromPreferredTimeSlot('2026-08-15 09:00–12:00'), '2026-08-15');
+assert.equal(deliveryDateFromPreferredTimeSlot('2026-08-15'), '2026-08-15');
 
 console.log('adminPayLink.test.ts: ok');
