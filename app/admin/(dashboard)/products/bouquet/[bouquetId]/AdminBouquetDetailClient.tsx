@@ -698,8 +698,6 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         onDiscountPercentChange={setDiscountPercent}
         featuredPopular={featuredPopular}
         onFeaturedPopularChange={setFeaturedPopular}
-        contactBeforeOrder={contactBeforeOrder}
-        onContactBeforeOrderChange={setContactBeforeOrder}
       />
 
       <AdminCmsCollapsibleSection
@@ -737,6 +735,17 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
             selected={deliveryOptions}
             onChange={setDeliveryOptions}
           />
+          <label className="admin-cms-checkbox">
+            <input
+              type="checkbox"
+              checked={contactBeforeOrder}
+              onChange={(e) => setContactBeforeOrder(e.target.checked)}
+            />
+            <span>Contact before order</span>
+          </label>
+          <p className="admin-cms-empty-hint">
+            Customers cannot add this to cart. They must contact you on LINE, WhatsApp, or email first.
+          </p>
         </AdminCmsCollapsibleSection>
 
         <AdminCmsCollapsibleSection

@@ -620,8 +620,6 @@ export function AdminProductDetailClient({ product }: Props) {
         featuredPopular={false}
         onFeaturedPopularChange={() => {}}
         showFeaturedPopular={false}
-        contactBeforeOrder={contactBeforeOrder}
-        onContactBeforeOrderChange={setContactBeforeOrder}
       />
 
       <AdminCmsCollapsibleSection
@@ -650,6 +648,20 @@ export function AdminProductDetailClient({ product }: Props) {
           onRemove={imageHandlers.onRemove}
         />
       </AdminCmsCollapsibleSection>
+
+      <AdminCmsSection label="Delivery speed">
+        <label className="admin-cms-checkbox">
+          <input
+            type="checkbox"
+            checked={contactBeforeOrder}
+            onChange={(e) => setContactBeforeOrder(e.target.checked)}
+          />
+          <span>Contact before order</span>
+        </label>
+        <p className="admin-cms-empty-hint">
+          Customers cannot add this to cart. They must contact you on LINE, WhatsApp, or email first.
+        </p>
+      </AdminCmsSection>
 
       <AdminCmsSection
         label="Available in these delivery markets"

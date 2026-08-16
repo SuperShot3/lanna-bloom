@@ -1321,6 +1321,14 @@ function CopySaveStep({
                 selected={deliveryOptions}
                 onChange={setDeliveryOptions}
               />
+              <label className="admin-product-create-checkbox">
+                <input
+                  type="checkbox"
+                  checked={contactBeforeOrder}
+                  onChange={(event) => setContactBeforeOrder(event.target.checked)}
+                />
+                Contact before order — customers must message LINE, WhatsApp, or email first
+              </label>
             </fieldset>
             <label className="admin-product-create-checkbox">
               <input
@@ -1331,16 +1339,16 @@ function CopySaveStep({
               Show as popular on homepage
             </label>
           </>
-        ) : null}
-
-        <label className="admin-product-create-checkbox">
-          <input
-            type="checkbox"
-            checked={contactBeforeOrder}
-            onChange={(event) => setContactBeforeOrder(event.target.checked)}
-          />
-          Contact before order — customers must message LINE, WhatsApp, or email first
-        </label>
+        ) : (
+          <label className="admin-product-create-checkbox">
+            <input
+              type="checkbox"
+              checked={contactBeforeOrder}
+              onChange={(event) => setContactBeforeOrder(event.target.checked)}
+            />
+            Contact before order — customers must message LINE, WhatsApp, or email first
+          </label>
+        )}
 
         <div className="admin-product-create-preview">
           <strong>{draft.nameEn || 'Product name'}</strong>

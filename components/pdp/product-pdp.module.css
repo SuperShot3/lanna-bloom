@@ -839,6 +839,7 @@
   line-height: 1.55;
   color: var(--text);
   margin: 0;
+  white-space: pre-line;
 }
 
 .aboutDescClamped {
