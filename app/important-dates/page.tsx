@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import { ImportantDatesForm } from './ImportantDatesForm';
 import './important-dates.css';
 
@@ -16,7 +17,7 @@ export default function ImportantDatesPage() {
         <p style={{ textAlign: 'center', marginBottom: 16 }}>
           <Link href="/en" className="id-brand-link" aria-label="Back to Lanna Bloom">
             <Image
-              src="/logo_icon_64.png"
+              src={BRAND_LOGO_SRC}
               alt="Lanna Bloom logo"
               width={48}
               height={48}

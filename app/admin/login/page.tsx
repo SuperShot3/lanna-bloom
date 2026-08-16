@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Suspense } from 'react';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import { AdminLoginForm } from './AdminLoginForm';
 
 export default function AdminLoginPage() {
@@ -7,7 +8,7 @@ export default function AdminLoginPage() {
     <div className="admin-login">
       <div className="admin-login-brand">
         <Image
-          src="/logo_icon_64.png"
+          src={BRAND_LOGO_SRC}
           alt="Lanna Bloom logo"
           width={48}
           height={48}

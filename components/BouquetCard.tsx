@@ -102,6 +102,11 @@ export function BouquetCard({
     bouquet,
     checkoutProfile.destinationId
   );
+  const contactBeforeOrder = bouquet.contactBeforeOrder === true;
+  const cartBlocked = contactBeforeOrder || !availableForDestination;
+  const cartBlockedTitle = contactBeforeOrder
+    ? t.contactToOrderBadge ?? 'Contact to order'
+    : tProduct.unavailableInDeliveryArea;
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minBasePrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
@@ -199,6 +204,7 @@ export function BouquetCard({
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       if (!selectedSize || selectedSize.availability === false) return;
+      if (bouquet.contactBeforeOrder === true) return;
       if (!bouquetIsAvailableForDestination(bouquet, checkoutProfile.destinationId)) return;
       const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
       const discountedSize = {
@@ -484,7 +490,9 @@ export function BouquetCard({
           onMouseDown={canSwipe ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
-          {bouquet.featuredPopular ? (
+          {contactBeforeOrder ? (
+            <span className="card-contact-order">{t.contactToOrderBadge ?? 'Contact to order'}</span>
+          ) : bouquet.featuredPopular ? (
             <span className="card-popular-pick" aria-label={t.popularPickAria}>
               <StorefrontIcon name="local-fire-department" filled size={22} className="card-popular-pick__icon" />
             </span>
@@ -578,8 +586,8 @@ export function BouquetCard({
           <button
             type="button"
             className="card-simple-buy"
-            disabled={!availableForDestination}
-            title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+            disabled={cartBlocked}
+            title={cartBlocked ? cartBlockedTitle : undefined}
             onClick={() => pushToCart('checkout')}
           >
             <StorefrontIcon name="bolt" filled size={18} />
@@ -588,8 +596,8 @@ export function BouquetCard({
           <button
             type="button"
             className="card-simple-cart"
-            disabled={!availableForDestination && !justAdded}
-            title={!availableForDestination && !justAdded ? tProduct.unavailableInDeliveryArea : undefined}
+            disabled={cartBlocked && !justAdded}
+            title={cartBlocked && !justAdded ? cartBlockedTitle : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
@@ -607,8 +615,8 @@ export function BouquetCard({
           <button
             type="button"
             className="card-mobile-buy"
-            disabled={!availableForDestination}
-            title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+            disabled={cartBlocked}
+            title={cartBlocked ? cartBlockedTitle : undefined}
             onClick={() => pushToCart('checkout')}
           >
             <StorefrontIcon name="bolt" filled size={18} />
@@ -617,8 +625,8 @@ export function BouquetCard({
           <button
             type="button"
             className="card-mobile-cart"
-            disabled={!availableForDestination && !justAdded}
-            title={!availableForDestination && !justAdded ? tProduct.unavailableInDeliveryArea : undefined}
+            disabled={cartBlocked && !justAdded}
+            title={cartBlocked && !justAdded ? cartBlockedTitle : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
@@ -700,8 +708,8 @@ export function BouquetCard({
                 <button
                   type="button"
                   className="card-hover-btn-cart"
-                  disabled={!availableForDestination}
-                  title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+                  disabled={cartBlocked}
+                  title={cartBlocked ? cartBlockedTitle : undefined}
                   onClick={() => pushToCart('stay')}
                 >
                   {tCart.addToCart}
@@ -709,8 +717,8 @@ export function BouquetCard({
                 <button
                   type="button"
                   className="card-hover-buy-1"
-                  disabled={!availableForDestination}
-                  title={!availableForDestination ? tProduct.unavailableInDeliveryArea : undefined}
+                  disabled={cartBlocked}
+                  title={cartBlocked ? cartBlockedTitle : undefined}
                   onClick={() => pushToCart('checkout')}
                 >
                   {t.buyInOneClick}
@@ -775,6 +783,22 @@ export function BouquetCard({
         }
         .card-image-wrap-compact {
           aspect-ratio: 1;
+        }
+        .card-contact-order {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 2;
+          display: inline-block;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          background: #fff5f0;
+          color: #7c2d12;
+          border: 1px solid #e8c4b8;
+          pointer-events: none;
         }
         .card-popular-pick {
           position: absolute;

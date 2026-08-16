@@ -1,4 +1,5 @@
 import { getBaseUrl } from '@/lib/orders';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import {
   DEFAULT_FACEBOOK_URL,
   DEFAULT_GOOGLE_MAPS_URL,
@@ -9,12 +10,11 @@ import {
 import { escapeHtml } from './escape';
 
 /**
- * Public path for email logo. Prefer a real PNG in `public/`; `logo_icon_64` is not always committed,
- * so we default to the PWA touch icon (always in repo; works in admin iframe preview + Resend).
+ * Public path for email logo. Defaults to the same rose mark used on the storefront.
  * Override with `EMAIL_BRAND_LOGO_PATH` (path only) or `EMAIL_BRAND_LOGO_URL` (full URL).
  */
 export function getEmailBrandLogoPath(): string {
-  return process.env.EMAIL_BRAND_LOGO_PATH?.trim() || '/favicon_io/apple-touch-icon.png';
+  return process.env.EMAIL_BRAND_LOGO_PATH?.trim() || BRAND_LOGO_SRC;
 }
 
 /**

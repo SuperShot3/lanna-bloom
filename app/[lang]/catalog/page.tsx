@@ -13,6 +13,11 @@ import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { buildAlternates } from '@/lib/seo/alternates';
+import {
+  openGraphLocale,
+  websiteOpenGraph,
+  websiteTwitter,
+} from '@/lib/seo/shareMetadata';
 
 // Revalidate catalog every 60 seconds so new flowers appear without rebuild
 export const revalidate = 60;
@@ -28,6 +33,11 @@ const BALLOONS_SEO = {
     description:
       'สั่งบอลลูนวันเกิด เซอร์ไพรส์ หรือเสริมช่อดอกไม้ พร้อมจัดส่งของขวัญในเชียงใหม่ มีบอลลูน ตุ๊กตา และของขวัญจาก Lanna Bloom',
   },
+  'zh-hk': {
+    title: '清邁氣球配送 | Lanna Bloom',
+    description:
+      '訂購生日氣球、驚喜佈置、鮮花加購及禮品，送遞至清邁。可與鮮花、毛絨玩具及禮品一併選購。',
+  },
 } as const;
 
 const CATALOG_SEO = {
@@ -41,7 +51,21 @@ const CATALOG_SEO = {
     description:
       'เลือกช่อดอกไม้ บอลลูน ตุ๊กตา และของขวัญสำหรับจัดส่งในเชียงใหม่ สั่งออนไลน์ชำระเงินปลอดภัยกับ Lanna Bloom',
   },
+  'zh-hk': {
+    title: '花束與禮品 | 網上訂購 | Lanna Bloom',
+    description:
+      '瀏覽花束、氣球、毛絨玩具及禮品，送遞至清邁。於 Lanna Bloom 網上安全結帳。',
+  },
 } as const;
+
+function catalogSeoForLang(
+  locale: Locale,
+  seo: typeof CATALOG_SEO | typeof BALLOONS_SEO
+): { title: string; description: string } {
+  if (locale === 'th') return seo.th;
+  if (locale === 'zh-hk') return seo['zh-hk'];
+  return seo.en;
+}
 
 export async function generateMetadata({
   params,
@@ -52,13 +76,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return { title: 'Lanna Bloom' };
   const locale = params.lang as Locale;
-  const isTh = locale === 'th';
   const filterParams = parseCatalogSearchParams(searchParams);
   const canonical = `${getBaseUrl()}/${locale}/catalog`;
-  const seo =
-    filterParams.topCategory === 'balloons'
-      ? BALLOONS_SEO[isTh ? 'th' : 'en']
-      : CATALOG_SEO[isTh ? 'th' : 'en'];
+  const seo = catalogSeoForLang(
+    locale,
+    filterParams.topCategory === 'balloons' ? BALLOONS_SEO : CATALOG_SEO
+  );
 
   return {
     title: seo.title,
@@ -68,14 +91,16 @@ export async function generateMetadata({
       pathSuffix: '/catalog',
       canonical,
     }),
-    openGraph: {
+    openGraph: websiteOpenGraph({
       title: seo.title,
       description: seo.description,
       url: canonical,
-      siteName: 'Lanna Bloom',
-      locale: isTh ? 'th_TH' : 'en_US',
-      type: 'website',
-    },
+      locale: openGraphLocale(locale),
+    }),
+    twitter: websiteTwitter({
+      title: seo.title,
+      description: seo.description,
+    }),
   };
 }
 

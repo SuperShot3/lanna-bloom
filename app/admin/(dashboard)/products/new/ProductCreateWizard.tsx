@@ -265,6 +265,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     ...DELIVERY_DESTINATIONS,
   ]);
   const [featuredPopular, setFeaturedPopular] = useState(false);
+  const [contactBeforeOrder, setContactBeforeOrder] = useState(false);
   const [pricingType, setPricingType] = useState<PricingType>('single_price');
 
   const [loading, setLoading] = useState<LoadingState>(null);
@@ -693,6 +694,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             (destination) => !availableDeliveryDestinations.includes(destination)
           ),
           featuredPopular,
+          contactBeforeOrder,
           pricingType: isFlowerProduct ? pricingType : 'single_price',
         }),
       });
@@ -739,6 +741,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setDeliveryOptions(['same_day', 'next_day']);
     setAvailableDeliveryDestinations([...DELIVERY_DESTINATIONS]);
     setFeaturedPopular(false);
+    setContactBeforeOrder(false);
     setPricingType('single_price');
     setLoading(null);
     setError('');
@@ -858,6 +861,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               onToggleDeliveryDestination={toggleAvailableDeliveryDestination}
               featuredPopular={featuredPopular}
               setFeaturedPopular={setFeaturedPopular}
+              contactBeforeOrder={contactBeforeOrder}
+              setContactBeforeOrder={setContactBeforeOrder}
               pricingType={pricingType}
               setPricingType={setPricingType}
               loading={loading}
@@ -949,6 +954,8 @@ type CopySaveStepProps = {
   onToggleDeliveryDestination: (value: DeliveryDestinationId) => void;
   featuredPopular: boolean;
   setFeaturedPopular: (value: boolean) => void;
+  contactBeforeOrder: boolean;
+  setContactBeforeOrder: (value: boolean) => void;
   pricingType: PricingType;
   setPricingType: (value: PricingType) => void;
   loading: LoadingState;
@@ -985,6 +992,8 @@ function CopySaveStep({
   onToggleDeliveryDestination,
   featuredPopular,
   setFeaturedPopular,
+  contactBeforeOrder,
+  setContactBeforeOrder,
   pricingType,
   setPricingType,
   loading,
@@ -1323,6 +1332,15 @@ function CopySaveStep({
             </label>
           </>
         ) : null}
+
+        <label className="admin-product-create-checkbox">
+          <input
+            type="checkbox"
+            checked={contactBeforeOrder}
+            onChange={(event) => setContactBeforeOrder(event.target.checked)}
+          />
+          Contact before order — customers must message LINE, WhatsApp, or email first
+        </label>
 
         <div className="admin-product-create-preview">
           <strong>{draft.nameEn || 'Product name'}</strong>

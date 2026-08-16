@@ -9,7 +9,7 @@ import { translations } from '@/lib/i18n';
 export function CookieConsentBanner({ lang }: { lang: Locale }) {
   const { status, hydrated, accept } = useCookieConsent();
   const visible = hydrated && status !== 'accepted';
-  const t = lang === 'th' ? translations.th.cookieBanner : translations.en.cookieBanner;
+  const t = translations[lang].cookieBanner;
 
   useEffect(() => {
     if (typeof document === 'undefined') return;

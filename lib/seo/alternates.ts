@@ -1,21 +1,35 @@
 /**
- * Shared SEO alternates helpers — self-canonical + en/th hreflang.
+ * Shared SEO alternates helpers — self-canonical + storefront hreflang.
  * Canonicals never include query params (utm_*, srsltid, etc.).
  */
 import type { Metadata } from 'next';
-import { getBaseUrl } from '@/lib/siteUrl';
+import { getBaseUrl, isLocalHostname } from '@/lib/siteUrl';
 import type { Locale } from '@/lib/i18n';
 
 /** Storefront locales that participate in SEO (sitemap + hreflang). */
-export const SEO_LOCALES = ['en', 'th'] as const;
+export const SEO_LOCALES = ['en', 'th', 'zh-hk'] as const;
 export type SeoLocale = (typeof SEO_LOCALES)[number];
+
+/** Info articles stay EN/TH only — zh-hk articles are English fallbacks, not indexed. */
+export const ARTICLE_SEO_LOCALES = ['en', 'th'] as const;
+export type ArticleSeoLocale = (typeof ARTICLE_SEO_LOCALES)[number];
 
 export function isSeoLocale(lang: string): lang is SeoLocale {
   return (SEO_LOCALES as readonly string[]).includes(lang);
 }
 
+export function isArticleSeoLocale(lang: string): lang is ArticleSeoLocale {
+  return (ARTICLE_SEO_LOCALES as readonly string[]).includes(lang);
+}
+
+/** HTML hreflang code for a storefront locale (`zh-hk` URL → `zh-HK`). */
+export function hreflangForLocale(lang: string): string {
+  if (lang === 'zh-hk') return 'zh-HK';
+  return lang;
+}
+
 /**
- * Robots for thin locales (ru / zh-*). SEO locales return undefined so
+ * Robots for thin locales (ru / zh-sg). SEO locales return undefined so
  * page-level robots stay the sole source (avoids duplicate/conflicting tags).
  */
 export function nonSeoLocaleRobots(
@@ -23,6 +37,16 @@ export function nonSeoLocaleRobots(
 ): NonNullable<Metadata['robots']> | undefined {
   if (isSeoLocale(lang)) return undefined;
   return { index: false, follow: true };
+}
+
+/** noindex untranslated article locales; respect per-article noindex. */
+export function articlePageRobots(
+  lang: string,
+  articleNoindex?: boolean
+): NonNullable<Metadata['robots']> | undefined {
+  if (articleNoindex) return { index: false, follow: false };
+  if (!isArticleSeoLocale(lang)) return { index: false, follow: true };
+  return undefined;
 }
 
 /**
@@ -37,6 +61,9 @@ export function cleanCanonicalUrl(urlOrPath: string): string {
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
     try {
       const u = new URL(raw);
+      if (u.protocol === 'http:' && !isLocalHostname(u.hostname)) {
+        u.protocol = 'https:';
+      }
       return `${u.origin}${u.pathname.replace(/\/$/, '') || '/'}`;
     } catch {
       return raw.split('?')[0].split('#')[0];
@@ -66,16 +93,18 @@ export function localePath(lang: SeoLocale | Locale, pathSuffix = ''): string {
   return `/${lang}${clean === '/' ? '' : clean}`;
 }
 
-/** Build en/th (+ x-default→en) language map for a path suffix shared across locales. */
-export function buildLanguageAlternates(pathSuffix = ''): Record<string, string> {
+/** Language map for a path suffix shared across the given locales. */
+export function buildLanguageAlternates(
+  pathSuffix = '',
+  locales: readonly string[] = SEO_LOCALES
+): Record<string, string> {
   const base = getBaseUrl().replace(/\/$/, '');
-  const enPath = localePath('en', pathSuffix);
-  const thPath = localePath('th', pathSuffix);
-  return {
-    en: `${base}${enPath}`,
-    th: `${base}${thPath}`,
-    'x-default': `${base}${enPath}`,
-  };
+  const languages: Record<string, string> = {};
+  for (const lang of locales) {
+    languages[hreflangForLocale(lang)] = `${base}${localePath(lang as Locale, pathSuffix)}`;
+  }
+  languages['x-default'] = `${base}${localePath('en', pathSuffix)}`;
+  return languages;
 }
 
 export function buildAlternates(params: {
@@ -84,8 +113,11 @@ export function buildAlternates(params: {
   pathSuffix?: string;
   /** Full absolute or relative canonical override (query params stripped). */
   canonical?: string;
+  /** Locales to advertise in hreflang. Defaults to storefront SEO locales. */
+  languageLocales?: readonly string[];
 }): NonNullable<Metadata['alternates']> {
   const pathSuffix = params.pathSuffix ?? '';
+  const languageLocales = params.languageLocales ?? SEO_LOCALES;
   const canonical =
     params.canonical != null
       ? cleanCanonicalUrl(params.canonical)
@@ -93,6 +125,22 @@ export function buildAlternates(params: {
 
   return {
     canonical,
-    languages: buildLanguageAlternates(pathSuffix),
+    languages: buildLanguageAlternates(pathSuffix, languageLocales),
   };
+}
+
+/**
+ * Info article / hub alternates: EN+TH hreflang only.
+ * Non-article locales canonicalise to English so untranslated copies are not indexed.
+ */
+export function buildArticleAlternates(params: {
+  lang: Locale | string;
+  pathSuffix: string;
+}): NonNullable<Metadata['alternates']> {
+  const canonicalLang = isArticleSeoLocale(params.lang) ? params.lang : 'en';
+  return buildAlternates({
+    lang: canonicalLang,
+    pathSuffix: params.pathSuffix,
+    languageLocales: ARTICLE_SEO_LOCALES,
+  });
 }

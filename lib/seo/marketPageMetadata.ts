@@ -3,11 +3,17 @@ import type { Locale } from '@/lib/i18n';
 import type { MarketRegistryEntry } from '@/lib/delivery/markets';
 import { marketIsIndexable } from '@/lib/delivery/markets';
 import { buildAlternates } from '@/lib/seo/alternates';
+import {
+  defaultShareImages,
+  openGraphLocale,
+  websiteOpenGraph,
+  websiteTwitter,
+} from '@/lib/seo/shareMetadata';
 
 export type MarketSeoKind = 'landing' | 'catalog' | 'product';
 
-function placeName(market: MarketRegistryEntry, isTh: boolean): string {
-  return isTh ? market.customerFacingNameTh : market.customerFacingNameEn;
+function placeName(market: MarketRegistryEntry, lang: Locale): string {
+  return lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn;
 }
 
 function pathSuffixForKind(params: {
@@ -29,48 +35,78 @@ function copyForKind(params: {
   kind: MarketSeoKind;
   market: MarketRegistryEntry;
   place: string;
-  isTh: boolean;
+  lang: Locale;
   productName?: string;
 }): { title: string; description: string } {
-  const { kind, market, place, isTh, productName } = params;
-  const bouquetOnly = isTh ? ' (ช่อดอกไม้เท่านั้น)' : ' (bouquet delivery only)';
+  const { kind, market, place, lang, productName } = params;
+  const bouquetOnly =
+    lang === 'th'
+      ? ' (ช่อดอกไม้เท่านั้น)'
+      : lang === 'zh-hk'
+        ? '（只提供花束配送）'
+        : ' (bouquet delivery only)';
 
   if (kind === 'landing') {
-    const overrideTitle = isTh ? market.seoTitleTh : market.seoTitleEn;
-    const overrideDesc = isTh ? market.metaDescriptionTh : market.metaDescriptionEn;
+    if (lang === 'zh-hk') {
+      return {
+        title: `鮮花配送 ${place} | Lanna Bloom`,
+        description: `新鮮花束送遞至${place}${bouquetOnly}。網上選購花束，安全結帳。`,
+      };
+    }
+    const overrideTitle = lang === 'th' ? market.seoTitleTh : market.seoTitleEn;
+    const overrideDesc =
+      lang === 'th' ? market.metaDescriptionTh : market.metaDescriptionEn;
     return {
       title:
         overrideTitle?.trim() ||
-        (isTh
+        (lang === 'th'
           ? `ส่งดอกไม้ ${place} | Lanna Bloom`
           : `Flower delivery ${place} | Lanna Bloom`),
       description:
         overrideDesc?.trim() ||
-        (isTh
+        (lang === 'th'
           ? `ช่อดอกไม้สด จัดส่ง${place}${bouquetOnly} เลือกช่อออนไลน์ ชำระเงินปลอดภัย`
           : `Fresh flower bouquets delivered in ${place}${bouquetOnly}. Order online with secure checkout.`),
     };
   }
 
   if (kind === 'catalog') {
+    if (lang === 'zh-hk') {
+      return {
+        title: `${place}鮮花目錄 | Lanna Bloom`,
+        description: `瀏覽送遞至${place}的花束${bouquetOnly}。於 Lanna Bloom 網上安全結帳。`,
+      };
+    }
     return {
-      title: isTh
-        ? `แคตตาล็อกดอกไม้ ${place} | Lanna Bloom`
-        : `${place} flower catalog | Lanna Bloom`,
-      description: isTh
-        ? `เลือกช่อดอกไม้สำหรับจัดส่ง${place}${bouquetOnly} สั่งออนไลน์ชำระเงินปลอดภัยกับ Lanna Bloom`
-        : `Browse flower bouquets for delivery in ${place}${bouquetOnly}. Order online with secure checkout from Lanna Bloom.`,
+      title:
+        lang === 'th'
+          ? `แคตตาล็อกดอกไม้ ${place} | Lanna Bloom`
+          : `${place} flower catalog | Lanna Bloom`,
+      description:
+        lang === 'th'
+          ? `เลือกช่อดอกไม้สำหรับจัดส่ง${place}${bouquetOnly} สั่งออนไลน์ชำระเงินปลอดภัยกับ Lanna Bloom`
+          : `Browse flower bouquets for delivery in ${place}${bouquetOnly}. Order online with secure checkout from Lanna Bloom.`,
     };
   }
 
-  const name = productName?.trim() || (isTh ? 'ช่อดอกไม้' : 'Bouquet');
+  const name =
+    productName?.trim() ||
+    (lang === 'th' ? 'ช่อดอกไม้' : lang === 'zh-hk' ? '花束' : 'Bouquet');
+  if (lang === 'zh-hk') {
+    return {
+      title: `${name} | 鮮花配送 ${place} | Lanna Bloom`,
+      description: `訂購${name}，送遞至${place}${bouquetOnly}`,
+    };
+  }
   return {
-    title: isTh
-      ? `${name} | ส่งดอกไม้ ${place} | Lanna Bloom`
-      : `${name} | Flower delivery ${place} | Lanna Bloom`,
-    description: isTh
-      ? `สั่ง${name} พร้อมจัดส่งใน${place}${bouquetOnly}`
-      : `Order ${name} with flower delivery in ${place}${bouquetOnly}.`,
+    title:
+      lang === 'th'
+        ? `${name} | ส่งดอกไม้ ${place} | Lanna Bloom`
+        : `${name} | Flower delivery ${place} | Lanna Bloom`,
+    description:
+      lang === 'th'
+        ? `สั่ง${name} พร้อมจัดส่งใน${place}${bouquetOnly}`
+        : `Order ${name} with flower delivery in ${place}${bouquetOnly}.`,
   };
 }
 
@@ -87,13 +123,12 @@ export function buildMarketPageMetadata(params: {
   /** Absolute product image for OG/Twitter (market PDPs). */
   ogImage?: { url: string; alt?: string };
 }): Metadata {
-  const isTh = params.lang === 'th';
-  const place = placeName(params.market, isTh);
+  const place = placeName(params.market, params.lang);
   const { title, description } = copyForKind({
     kind: params.kind,
     market: params.market,
     place,
-    isTh,
+    lang: params.lang,
     productName: params.productName,
   });
   const pathSuffix = pathSuffixForKind({
@@ -118,22 +153,25 @@ export function buildMarketPageMetadata(params: {
       ? {}
       : { robots: { index: false, follow: true } }),
     alternates,
-    openGraph: {
+    openGraph: websiteOpenGraph({
       title,
       description,
-      url: canonical,
-      siteName: 'Lanna Bloom',
-      locale: isTh ? 'th_TH' : 'en_US',
-      type: 'website',
-      ...(ogImage
-        ? { images: [{ url: ogImage.url, ...(ogImage.alt ? { alt: ogImage.alt } : {}) }] }
-        : {}),
-    },
-    twitter: {
-      card: 'summary_large_image',
+      url: canonical ?? String(alternates.canonical ?? ''),
+      locale: openGraphLocale(params.lang),
+      images: ogImage
+        ? [
+            {
+              url: ogImage.url,
+              secureUrl: ogImage.url,
+              ...(ogImage.alt ? { alt: ogImage.alt } : {}),
+            },
+          ]
+        : defaultShareImages(),
+    }),
+    twitter: websiteTwitter({
       title,
       description,
-      ...(ogImage ? { images: [ogImage.url] } : {}),
-    },
+      imageUrl: ogImage?.url,
+    }),
   };
 }

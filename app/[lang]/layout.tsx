@@ -7,12 +7,12 @@ import { FlowerFilterSheetOpenProvider } from '@/contexts/FlowerFilterSheetOpenC
 import { ToastProvider } from '@/contexts/ToastContext';
 import { CurrencyDisplayProvider } from '@/contexts/CurrencyDisplayContext';
 import { isValidLocale, type Locale } from '@/lib/i18n';
-import { notoSansCyrillic } from '@/lib/fonts';
+import { notoSansCyrillic, notoSansTc } from '@/lib/fonts';
 import { nonSeoLocaleRobots } from '@/lib/seo/alternates';
 import { MainSiteChrome } from '@/components/MainSiteChrome';
 import { FloatingFavoritesBadge } from '@/components/FloatingFavoritesBadge';
 
-/** Thin locales (ru / zh-*): noindex, follow. en/th: omit robots entirely. */
+/** Thin locales (ru / zh-sg): noindex, follow. SEO locales omit robots here. */
 export async function generateMetadata({
   params,
 }: {
@@ -37,7 +37,11 @@ export default function LangLayout({
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
   const langShellClass =
-    lang === 'ru' ? `lang-layout ${notoSansCyrillic.variable}` : 'lang-layout';
+    lang === 'ru'
+      ? `lang-layout ${notoSansCyrillic.variable}`
+      : lang === 'zh-hk'
+        ? `lang-layout ${notoSansTc.variable}`
+        : 'lang-layout';
   return (
     <CurrencyDisplayProvider>
       <CartProvider>

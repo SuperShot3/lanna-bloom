@@ -126,6 +126,9 @@ export function AdminProductDetailClient({ product }: Props) {
       pending?.discountPercent ??
       (product.discountPercent != null ? String(product.discountPercent) : '')
   );
+  const [contactBeforeOrder, setContactBeforeOrder] = useState(
+    () => pending?.contactBeforeOrder ?? product.contactBeforeOrder === true
+  );
   const [occasion, setOccasion] = useState<string[]>(
     () => pending?.occasion ?? parseOccasion(product.occasion)
   );
@@ -159,6 +162,7 @@ export function AdminProductDetailClient({ product }: Props) {
     setSizeRows(next.sizeRows);
     setStemOptions(next.stemOptions);
     setDiscountPercent(product.discountPercent != null ? String(product.discountPercent) : '');
+    setContactBeforeOrder(product.contactBeforeOrder === true);
     setOccasion(parseOccasion(product.occasion));
     setAvailableMarkets(availableMarketsFromExcluded(product.excludedDeliveryDestinations));
   }, [product, getProductPending]);
@@ -175,6 +179,7 @@ export function AdminProductDetailClient({ product }: Props) {
       descriptionTh: product.descriptionTh ?? '',
       pricing: initialProductPricingState(product),
       discountPercent: product.discountPercent != null ? String(product.discountPercent) : '',
+      contactBeforeOrder: product.contactBeforeOrder === true,
       occasion: parseOccasion(product.occasion).join('|'),
       markets: availableMarketsFromExcluded(product.excludedDeliveryDestinations).join('|'),
     }),
@@ -193,6 +198,7 @@ export function AdminProductDetailClient({ product }: Props) {
       JSON.stringify(sizeRows) !== JSON.stringify(savedPricing.sizeRows) ||
       JSON.stringify(stemOptions) !== JSON.stringify(savedPricing.stemOptions) ||
       discountPercent !== savedSnapshot.discountPercent ||
+      contactBeforeOrder !== savedSnapshot.contactBeforeOrder ||
       occasion.join('|') !== savedSnapshot.occasion ||
       availableMarkets.join('|') !== savedSnapshot.markets
     );
@@ -206,6 +212,7 @@ export function AdminProductDetailClient({ product }: Props) {
     sizeRows,
     stemOptions,
     discountPercent,
+    contactBeforeOrder,
     occasion,
     availableMarkets,
     savedSnapshot,
@@ -233,6 +240,7 @@ export function AdminProductDetailClient({ product }: Props) {
       sizeRows,
       stemOptions,
       discountPercent,
+      contactBeforeOrder,
       occasion,
       availableMarkets,
     });
@@ -249,6 +257,7 @@ export function AdminProductDetailClient({ product }: Props) {
     sizeRows,
     stemOptions,
     discountPercent,
+    contactBeforeOrder,
     occasion,
     availableMarkets,
   ]);
@@ -271,6 +280,7 @@ export function AdminProductDetailClient({ product }: Props) {
     formData.set('sizeRows', JSON.stringify(sizeRows));
     formData.set('stemOptions', JSON.stringify(stemOptions));
     formData.set('discountPercent', discountPercent);
+    formData.set('contactBeforeOrder', contactBeforeOrder ? 'true' : 'false');
     formData.set('occasion', JSON.stringify(occasion));
     formData.set(
       'excludedDeliveryDestinations',
@@ -609,6 +619,9 @@ export function AdminProductDetailClient({ product }: Props) {
         onDiscountPercentChange={setDiscountPercent}
         featuredPopular={false}
         onFeaturedPopularChange={() => {}}
+        showFeaturedPopular={false}
+        contactBeforeOrder={contactBeforeOrder}
+        onContactBeforeOrderChange={setContactBeforeOrder}
       />
 
       <AdminCmsCollapsibleSection

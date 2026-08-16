@@ -45,7 +45,7 @@ The sitemap reads this registry automatically. You do not need to edit `app/site
 
 **File:** `content/info/your-article-slug.en.mdx`
 
-The page title is taken from the registry, so start with intro text. Use `##` and `###` headings. Promote products with `<CatalogProductCard slug="exact-catalog-slug" />`.
+The page title is taken from the registry, so start with intro text. Use `##` and `###` headings in the body. FAQ questions must be like a button: the user clicks the question and the answer unfolds. Write `## FAQ` plus one `<details>`/`<summary>` per question — do not use always-open `###` FAQ questions. Promote products with `<CatalogProductCard slug="exact-catalog-slug" />`.
 
 ---
 

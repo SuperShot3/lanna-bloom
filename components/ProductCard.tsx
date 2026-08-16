@@ -68,6 +68,8 @@ export function ProductCard({
   const isPlushyToys = product.catalogKind === 'plushyToy' || product.category === 'plushy_toys';
   const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
   const isStandaloneProduct = isPlushyToys || isBalloon;
+  const contactBeforeOrder = product.contactBeforeOrder === true;
+  const cartBlockedTitle = t.contactToOrderBadge ?? 'Contact to order';
   const sizeLabel = (product.sizeLabel || '').trim();
   const availableSizes = useMemo(
     () => (product.sizes ?? []).filter((s) => s.availability !== false),
@@ -284,6 +286,7 @@ export function ProductCard({
 
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
+      if (product.contactBeforeOrder === true) return;
       const itemType = isBalloon ? 'balloon' : isPlushyToys ? 'plushyToy' : 'product';
       const cartSize = hasMultipleSizes && selectedSize
         ? {
@@ -395,7 +398,11 @@ export function ProductCard({
           onMouseDown={canSwipeStandaloneImages ? handleMouseDown : undefined}
           aria-label={canSwipeStandaloneImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
         >
-          {product.isHit ? <span className="pcard-hit">{t.hitBadge}</span> : null}
+          {contactBeforeOrder ? (
+            <span className="pcard-contact-order">{cartBlockedTitle}</span>
+          ) : product.isHit ? (
+            <span className="pcard-hit">{t.hitBadge}</span>
+          ) : null}
           <CatalogDiscountBadge
             discountPercent={product.discountPercent}
             ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
@@ -471,13 +478,21 @@ export function ProductCard({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <button type="button" className="pcard-simple-buy" onClick={() => pushToCart('checkout')}>
+          <button
+            type="button"
+            className="pcard-simple-buy"
+            disabled={contactBeforeOrder}
+            title={contactBeforeOrder ? cartBlockedTitle : undefined}
+            onClick={() => pushToCart('checkout')}
+          >
             <StorefrontIcon name="bolt" filled size={18} />
             <span>{t.buyInOneClick}</span>
           </button>
           <button
             type="button"
             className="pcard-simple-cart"
+            disabled={contactBeforeOrder && !justAdded}
+            title={contactBeforeOrder && !justAdded ? cartBlockedTitle : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
@@ -492,13 +507,21 @@ export function ProductCard({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <button type="button" className="pcard-mobile-buy" onClick={() => pushToCart('checkout')}>
+          <button
+            type="button"
+            className="pcard-mobile-buy"
+            disabled={contactBeforeOrder}
+            title={contactBeforeOrder ? cartBlockedTitle : undefined}
+            onClick={() => pushToCart('checkout')}
+          >
             <StorefrontIcon name="bolt" filled size={18} />
             <span>{t.buyInOneClick}</span>
           </button>
           <button
             type="button"
             className="pcard-mobile-cart"
+            disabled={contactBeforeOrder && !justAdded}
+            title={contactBeforeOrder && !justAdded ? cartBlockedTitle : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
@@ -572,11 +595,19 @@ export function ProductCard({
               <button
                 type="button"
                 className={`pcard-btn-cart ${isStandaloneProduct ? 'pcard-btn-cart--plushy' : ''}`}
+                disabled={contactBeforeOrder}
+                title={contactBeforeOrder ? cartBlockedTitle : undefined}
                 onClick={() => pushToCart('stay')}
               >
                 {tCart.addToCart}
               </button>
-              <button type="button" className="pcard-buy-1" onClick={() => pushToCart('checkout')}>
+              <button
+                type="button"
+                className="pcard-buy-1"
+                disabled={contactBeforeOrder}
+                title={contactBeforeOrder ? cartBlockedTitle : undefined}
+                onClick={() => pushToCart('checkout')}
+              >
                 {t.buyInOneClick}
               </button>
             </>
@@ -633,6 +664,22 @@ export function ProductCard({
           letter-spacing: 0.02em;
           background: var(--pastel-mint);
           color: var(--primary);
+        }
+        .pcard-contact-order {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 2;
+          display: inline-block;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          background: #fff5f0;
+          color: #7c2d12;
+          border: 1px solid #e8c4b8;
+          pointer-events: none;
         }
         .pcard-toy-icon {
           position: absolute;

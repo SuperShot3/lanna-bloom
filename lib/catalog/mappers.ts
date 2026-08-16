@@ -136,6 +136,7 @@ export function mapBouquetRowToBouquet(
       : undefined,
     status: row.status,
     featuredPopular: row.featured_popular,
+    contactBeforeOrder: row.contact_before_order === true,
     discountPercent: normalizeCatalogDiscountPercent(row.discount_percent ?? undefined),
     seoTitleEn: row.seo_title_en,
     seoTitleTh: row.seo_title_th,
@@ -198,6 +199,7 @@ export function mapProductRowToCatalogProduct(
     preparationTime: row.structured_attributes?.preparationTime,
     occasion: row.structured_attributes?.occasion,
     discountPercent: normalizeCatalogDiscountPercent(row.discount_percent ?? undefined),
+    contactBeforeOrder: row.contact_before_order === true,
   };
 }
 

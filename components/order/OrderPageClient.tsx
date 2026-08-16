@@ -7,6 +7,7 @@ import { getContactPhoneDisplay, getContactPhoneTelUrl, getLineContactUrl, getWh
 import { LineIcon, WhatsAppIcon, HomeIcon, PhoneIcon, EmailIcon } from '@/components/icons';
 import { flowerDeliverySubtitleLabel } from '@/lib/delivery/markets';
 import { translations } from '@/lib/i18n';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import type { OrderCustomerView } from '@/lib/orders';
 import type { Locale } from '@/lib/i18n';
 import { SUPPORT_EMAIL } from '@/lib/siteContact';
@@ -413,7 +414,7 @@ export function OrderPageClient({
             aria-label={t.goToHome}
           >
             <Image
-              src="/logo_icon_64.png"
+              src={BRAND_LOGO_SRC}
               alt="Lanna Bloom logo"
               width={40}
               height={40}

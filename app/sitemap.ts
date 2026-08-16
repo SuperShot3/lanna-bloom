@@ -9,7 +9,7 @@ import { articles } from '@/app/[lang]/info/_data/articles';
 import type { ArticleMeta } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
 import { getActiveMarkets } from '@/lib/delivery/markets';
-import { SEO_LOCALES } from '@/lib/seo/alternates';
+import { isArticleSeoLocale, SEO_LOCALES } from '@/lib/seo/alternates';
 
 type SitemapChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>;
 
@@ -55,9 +55,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries = new Map<string, MetadataRoute.Sitemap[number]>();
   const activeMarkets = getActiveMarkets();
 
-  // Storefront SEO: en + th only (ru/zh locales are thin)
+  // Storefront SEO: en + th + zh-hk (ru / zh-sg stay thin). Articles: en + th only.
   for (const lang of SEO_LOCALES) {
     for (const page of LOCALE_PAGES) {
+      if (page.path === '/info' && !isArticleSeoLocale(lang)) continue;
       pushEntry(entries, `${base}/${lang}${page.path}`, {
         changeFrequency: page.changeFrequency,
         priority: page.priority,
@@ -79,6 +80,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     for (const article of articles) {
+      if (!isArticleSeoLocale(lang)) continue;
       if (article.excludeFromSitemap) continue;
       if (article.noindex) continue;
       pushEntry(entries, `${base}/${lang}${articleSitemapPath(article)}`, {

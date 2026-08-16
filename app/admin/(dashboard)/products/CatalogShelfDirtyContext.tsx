@@ -28,6 +28,7 @@ export type CatalogProductPendingEdit = {
   discountPercent: string;
   occasion: string[];
   availableMarkets: DeliveryDestinationId[];
+  contactBeforeOrder: boolean;
 };
 
 export type CatalogBouquetPendingEdit = {
@@ -43,6 +44,7 @@ export type CatalogBouquetPendingEdit = {
   stemOptions: CatalogStemPricingRow[];
   discountPercent: string;
   featuredPopular: boolean;
+  contactBeforeOrder: boolean;
   deliveryOptions: string[];
   availableMarkets: DeliveryDestinationId[];
   presentationFormats: string[];

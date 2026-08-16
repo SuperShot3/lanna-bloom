@@ -24,7 +24,7 @@ function bouquet(partial: Partial<Bouquet> & Pick<Bouquet, 'id' | 'flowerTypes' 
     descriptionTh: '',
     imageAlts: [],
     sizes: [],
-    status: 'live',
+    status: 'approved',
     featuredPopular: false,
     colors: [],
     pricingType: 'single_price',

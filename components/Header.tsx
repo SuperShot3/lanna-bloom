@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { Locale, locales, translations } from '@/lib/i18n';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
@@ -288,7 +289,7 @@ export function Header({
               aria-label={t.home}
             >
               <Image
-                src="/logo_icon_64.png"
+                src={BRAND_LOGO_SRC}
                 alt="Lanna Bloom logo"
                 width={40}
                 height={40}

@@ -4,7 +4,7 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { computeFinalPrice } from '@/lib/partnerPricing';
-import { getBaseUrl } from '@/lib/siteUrl';
+import { getBaseUrl, upgradeToHttps } from '@/lib/siteUrl';
 
 const BRAND = {
   '@type': 'Brand',
@@ -74,10 +74,12 @@ export function resolveProductOgImage(
   for (const raw of images) {
     const url = raw?.trim();
     if (!url || url.startsWith('data:')) continue;
-    const absolute =
-      url.startsWith('http://') || url.startsWith('https://')
-        ? url
-        : `${base}${url.startsWith('/') ? url : `/${url}`}`;
+    const resolved = url.startsWith('//') ? `https:${url}` : url;
+    const absolute = upgradeToHttps(
+      resolved.startsWith('http://') || resolved.startsWith('https://')
+        ? resolved
+        : `${base}${resolved.startsWith('/') ? resolved : `/${resolved}`}`
+    );
     if (!absolute.startsWith('http://') && !absolute.startsWith('https://')) continue;
     const alt = options?.alt?.trim();
     return alt ? { url: absolute, alt } : { url: absolute };

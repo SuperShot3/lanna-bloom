@@ -23,16 +23,17 @@ const LABELS: Record<Locale, string> = {
   'zh-hk': 'Chinese (Hong Kong)',
 };
 
-/** Visible switcher options — SEO locales only (ru / zh-* stay reachable by URL). */
+/** Visible switcher options — SEO locales (ru / zh-sg stay reachable by URL). */
 const LANGUAGE_OPTIONS: { locale: Locale; label: string; region?: string }[] = [
   { locale: 'en', label: 'English' },
   { locale: 'th', label: 'ภาษาไทย' },
+  { locale: 'zh-hk', label: '繁體中文', region: '香港' },
 ];
 
-const SWITCHER_QUEUE: Locale[] = ['th', 'en'];
+const SWITCHER_QUEUE: Locale[] = ['th', 'en', 'zh-hk'];
 const NEXT_LANG: Record<Locale, Locale> = {
   en: 'th',
-  th: 'en',
+  th: 'zh-hk',
   ru: 'en',
   'zh-sg': 'en',
   'zh-hk': 'en',

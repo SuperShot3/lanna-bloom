@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
-import { buildAlternates } from '@/lib/seo/alternates';
+import { articlePageRobots, buildArticleAlternates } from '@/lib/seo/alternates';
 import { getArticleBySlug, getArticleExcerpt, getArticleTitle } from '../_data/articles';
 import { getCatalogBouquetBySlug } from '@/lib/catalogReads';
 import { BouquetCard } from '@/components/BouquetCard';
@@ -112,16 +112,21 @@ export async function generateMetadata({
   const description = article
     ? getArticleExcerpt(article, lang)
     : 'Find a memorable birthday flower gift: compare four luxury bouquets-bold sunset, vivid citrus, timeless roses & lilies, romantic ruby-then shop online.';
-  const canonical = `${base}/${lang}/info/birthday-flower-gift`;
+  const alternates = buildArticleAlternates({
+    lang,
+    pathSuffix: '/info/birthday-flower-gift',
+  });
+  const canonical =
+    typeof alternates.canonical === 'string'
+      ? alternates.canonical
+      : `${base}/${lang}/info/birthday-flower-gift`;
+  const robots = articlePageRobots(lang);
 
   return {
     title,
     description,
-    alternates: buildAlternates({
-      lang,
-      pathSuffix: '/info/birthday-flower-gift',
-      canonical,
-    }),
+    ...(robots ? { robots } : {}),
+    alternates,
     openGraph: {
       title,
       description,

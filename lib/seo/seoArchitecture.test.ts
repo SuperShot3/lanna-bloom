@@ -4,9 +4,13 @@
  */
 import assert from 'node:assert/strict';
 import {
+  ARTICLE_SEO_LOCALES,
+  articlePageRobots,
   buildAlternates,
+  buildArticleAlternates,
   buildLanguageAlternates,
   cleanCanonicalUrl,
+  isArticleSeoLocale,
   isSeoLocale,
   nonSeoLocaleRobots,
   SEO_LOCALES,
@@ -40,6 +44,11 @@ function fail(msg: string): never {
 }
 
 {
+  const upgraded = cleanCanonicalUrl('http://www.lannabloom.shop/en/catalog');
+  assert.equal(upgraded, 'https://www.lannabloom.shop/en/catalog');
+}
+
+{
   const alt = buildAlternates({
     lang: 'en',
     pathSuffix: '/phuket/flower-delivery',
@@ -50,6 +59,7 @@ function fail(msg: string): never {
   const langs = alt.languages as Record<string, string>;
   assert.ok(langs.en.includes('/en/phuket/flower-delivery'));
   assert.ok(langs.th.includes('/th/phuket/flower-delivery'));
+  assert.ok(langs['zh-HK'].includes('/zh-hk/phuket/flower-delivery'));
   assert.equal(langs['x-default'], langs.en);
 }
 
@@ -57,19 +67,23 @@ function fail(msg: string): never {
   const langs = buildLanguageAlternates('/collections/roses-chiang-mai');
   assert.ok(langs.en.includes('/en/collections/roses-chiang-mai'));
   assert.ok(langs.th.includes('/th/collections/roses-chiang-mai'));
+  assert.ok(langs['zh-HK'].includes('/zh-hk/collections/roses-chiang-mai'));
 }
 
 assert.equal(isSeoLocale('en'), true);
 assert.equal(isSeoLocale('th'), true);
+assert.equal(isSeoLocale('zh-hk'), true);
 assert.equal(isSeoLocale('ru'), false);
-assert.equal(isSeoLocale('zh-hk'), false);
 assert.equal(isSeoLocale('zh-sg'), false);
-assert.deepEqual([...SEO_LOCALES], ['en', 'th']);
+assert.deepEqual([...SEO_LOCALES], ['en', 'th', 'zh-hk']);
+assert.deepEqual([...ARTICLE_SEO_LOCALES], ['en', 'th']);
+assert.equal(isArticleSeoLocale('zh-hk'), false);
 
 // --- Thin-locale robots (layout noindex, follow) ---
 {
   assert.equal(nonSeoLocaleRobots('en'), undefined);
   assert.equal(nonSeoLocaleRobots('th'), undefined);
+  assert.equal(nonSeoLocaleRobots('zh-hk'), undefined);
   for (const lang of locales) {
     if (isSeoLocale(lang)) continue;
     const robots = nonSeoLocaleRobots(lang);
@@ -81,13 +95,13 @@ assert.deepEqual([...SEO_LOCALES], ['en', 'th']);
   }
 }
 
-// --- Hreflang never includes ru / zh-* ---
+// --- Storefront hreflang includes zh-HK, never ru / zh-sg ---
 {
-  for (const pathSuffix of ['', '/about', '/catalog', '/info/delivery-policy']) {
+  for (const pathSuffix of ['', '/about', '/catalog']) {
     const langs = buildLanguageAlternates(pathSuffix);
     assert.deepEqual(
       Object.keys(langs).sort(),
-      ['en', 'th', 'x-default'].sort(),
+      ['en', 'th', 'x-default', 'zh-HK'].sort(),
       `hreflang keys for ${pathSuffix || '/'}`
     );
     assert.ok(!('ru' in langs));
@@ -98,6 +112,28 @@ assert.deepEqual([...SEO_LOCALES], ['en', 'th']);
   const aboutLangs = aboutRu.languages as Record<string, string>;
   assert.ok(!('ru' in aboutLangs));
   assert.ok(String(aboutRu.canonical).includes('/ru/about'));
+  assert.ok(aboutLangs['zh-HK']?.includes('/zh-hk/about'));
+}
+
+// --- Articles: EN/TH hreflang only; zh-hk canonicalises to English and is noindex ---
+{
+  const articleAlt = buildArticleAlternates({
+    lang: 'zh-hk',
+    pathSuffix: '/info/delivery-policy',
+  });
+  const langs = articleAlt.languages as Record<string, string>;
+  assert.deepEqual(Object.keys(langs).sort(), ['en', 'th', 'x-default'].sort());
+  assert.ok(!('zh-HK' in langs));
+  assert.ok(String(articleAlt.canonical).endsWith('/en/info/delivery-policy'));
+  assert.deepEqual(articlePageRobots('zh-hk'), { index: false, follow: true });
+  assert.equal(articlePageRobots('en'), undefined);
+  assert.deepEqual(articlePageRobots('en', true), { index: false, follow: false });
+
+  const enArticle = buildArticleAlternates({
+    lang: 'en',
+    pathSuffix: '/info/delivery-policy',
+  });
+  assert.ok(String(enArticle.canonical).endsWith('/en/info/delivery-policy'));
 }
 
 // --- Sitemap locales are SEO only ---
@@ -106,7 +142,7 @@ assert.deepEqual([...SEO_LOCALES], ['en', 'th']);
     assert.ok(isSeoLocale(lang));
   }
   assert.ok(!SEO_LOCALES.includes('ru' as never));
-  assert.ok(!(SEO_LOCALES as readonly string[]).includes('zh-hk'));
+  assert.ok((SEO_LOCALES as readonly string[]).includes('zh-hk'));
   assert.ok(!(SEO_LOCALES as readonly string[]).includes('zh-sg'));
 }
 
@@ -162,7 +198,7 @@ function assertMarketMetadataCity(market: MarketRegistryEntry) {
       assert.equal(robots?.index, false, `${market.pathSlug} should be noindex`);
     }
     const langs = meta.alternates?.languages as Record<string, string> | undefined;
-    assert.ok(langs?.en && langs?.th, `${market.pathSlug} missing hreflang`);
+    assert.ok(langs?.en && langs?.th && langs?.['zh-HK'], `${market.pathSlug} missing hreflang`);
   }
 }
 
@@ -239,6 +275,10 @@ for (const market of getActiveMarkets()) {
       alt: 'Roses',
     })?.url,
     'https://lannabloom.shop/HeroImage/heroimage.webp'
+  );
+  assert.equal(
+    resolveProductOgImage(['http://cdn.example.com/bouquet.webp'])?.url,
+    'https://cdn.example.com/bouquet.webp'
   );
   assert.equal(resolveProductOgImage(['data:image/svg+xml,x']), undefined);
 }

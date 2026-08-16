@@ -30,6 +30,8 @@ export interface CatalogProduct {
   occasion?: string;
   isHit?: boolean;
   discountPercent?: number;
+  /** CMS: customers must contact before ordering; add-to-cart and checkout are blocked. */
+  contactBeforeOrder?: boolean;
   /** Paid units sold (storefront display). Set only when the public threshold is met. */
   soldCount?: number;
 }
@@ -75,6 +77,7 @@ export interface AdminBouquetDetail {
   compositionTh: string;
   status: BouquetStatus;
   featuredPopular: boolean;
+  contactBeforeOrder: boolean;
   discountPercent?: number;
   pricingType: PricingType;
   pricing: CatalogBouquetPricing;
@@ -108,6 +111,7 @@ export interface AdminProductDetail {
   pricing: CatalogBouquetPricing;
   sizes: BouquetSellableOption[];
   discountPercent?: number;
+  contactBeforeOrder: boolean;
   cost?: number;
   moderationStatus: string;
   commissionPercent?: number;
@@ -372,6 +376,7 @@ export type CatalogBouquetRow = {
   pricing: CatalogBouquetPricing;
   status: BouquetStatus;
   featured_popular: boolean;
+  contact_before_order: boolean;
   discount_percent: number | null;
   delivery_options: string[];
   excluded_delivery_destinations: DeliveryDestinationId[];
@@ -410,6 +415,7 @@ export type CatalogProductRow = {
   moderation_status: 'submitted' | 'live' | 'needs_changes' | 'rejected';
   admin_note: string | null;
   discount_percent: number | null;
+  contact_before_order: boolean;
   excluded_delivery_destinations: DeliveryDestinationId[];
   images: CatalogStoredImage[];
   structured_attributes: { preparationTime?: number; occasion?: string; sizeLabel?: string };

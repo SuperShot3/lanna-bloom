@@ -1091,6 +1091,8 @@ type StripeProductPricing = {
 
   imageUrl?: string;
 
+  contactBeforeOrder?: boolean;
+
 };
 
 
@@ -1159,6 +1161,8 @@ function mapRowToStripeProductPricing(
 
     imageUrl: product.images[0],
 
+    contactBeforeOrder: product.contactBeforeOrder === true,
+
   };
 
 }
@@ -1188,6 +1192,8 @@ export async function getProductByIdFromCatalog(productId: string): Promise<{
   discountPercent?: number;
 
   moderationStatus: string;
+
+  contactBeforeOrder?: boolean;
 
   imageUrl?: string;
 
@@ -1234,6 +1240,8 @@ export async function getProductByIdFromCatalog(productId: string): Promise<{
     discountPercent: product.discountPercent,
 
     moderationStatus: row.moderation_status,
+
+    contactBeforeOrder: product.contactBeforeOrder === true,
 
     imageUrl: product.images[0],
 

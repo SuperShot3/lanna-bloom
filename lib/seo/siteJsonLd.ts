@@ -5,6 +5,7 @@
  * physical location, so no Florist/LocalBusiness schema and no street address.
  */
 import { getBaseUrl } from '@/lib/siteUrl';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import { getActiveMarkets } from '@/lib/delivery/markets';
 
 const SOCIAL_LINKS = [
@@ -27,7 +28,7 @@ export function buildOrganizationJsonLd(): Record<string, unknown> {
     '@id': organizationId(base),
     name: 'Lanna Bloom',
     url: `${base}/en`,
-    logo: `${base}/favicon_io/apple-touch-icon.png`,
+    logo: `${base}${BRAND_LOGO_SRC}`,
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: CONTACT_PHONE,

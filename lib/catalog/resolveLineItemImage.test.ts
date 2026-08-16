@@ -60,6 +60,8 @@ function bouquetFixture(): Bouquet {
     nameTh: 'กล้วยไม้',
     descriptionEn: '',
     descriptionTh: '',
+    compositionEn: '',
+    compositionTh: '',
     images: [IMG_4, IMG_YELLOW, IMG_PINK],
     imageAlts: ['4', 'yellow', 'pink'],
     sizes: [
@@ -67,7 +69,7 @@ function bouquetFixture(): Bouquet {
       { optionId: 'fixed_yellow', key: 'm', label: 'Yellow Orchids', price: 1200 },
       { optionId: 'fixed_pink', key: 'l', label: 'Pink Orchids', price: 1200 },
     ],
-    status: 'live',
+    status: 'approved',
     featuredPopular: false,
     colors: [],
     flowerTypes: [],

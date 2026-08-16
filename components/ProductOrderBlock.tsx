@@ -30,6 +30,7 @@ import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
+import { ProductContactBeforeOrderNotice } from '@/components/pdp/ProductContactBeforeOrderNotice';
 import { ProductPeakCelebrationNotice } from '@/components/pdp/ProductPeakCelebrationNotice';
 import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
 import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
@@ -91,7 +92,9 @@ export function ProductOrderBlock({
   );
   const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
     useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
+  const contactBeforeOrder = bouquet.contactBeforeOrder === true;
   const purchaseDisabled =
+    contactBeforeOrder ||
     !availableForDestination ||
     (!deliveryConstraintLoading && !deliveryConstraint.orderingAllowed);
   const hideGiftAddOns = checkoutProfile.variant === 'expansion';
@@ -177,7 +180,7 @@ export function ProductOrderBlock({
   }, [selectedSize.optionId, quantity]);
 
   return (
-    <div className={`order-block ${stickyBarVisible ? 'order-block--sticky-pad' : ''}`}>
+    <div className={`order-block ${!contactBeforeOrder && stickyBarVisible ? 'order-block--sticky-pad' : ''}`}>
       <div className={pdpStyles.pdpPriceRow}>
         <CatalogDiscountPrice
           basePriceThb={selectedSize.price}
@@ -250,15 +253,23 @@ export function ProductOrderBlock({
         loading={deliveryConstraintLoading}
       />
 
-      <ProductPurchaseActions
-        lang={lang}
-        totalPrice={totalPrice}
-        onAddToCart={handleAddToCart}
-        onBuyNow={handleBuyNow}
-        disabled={purchaseDisabled}
-        justAdded={justAdded}
-        catalogHref={catalogHref}
-      />
+      {contactBeforeOrder ? (
+        <ProductContactBeforeOrderNotice
+          lang={lang}
+          productName={productTitle}
+          sizeLabel={selectedSize.label}
+        />
+      ) : (
+        <ProductPurchaseActions
+          lang={lang}
+          totalPrice={totalPrice}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
+          disabled={purchaseDisabled}
+          justAdded={justAdded}
+          catalogHref={catalogHref}
+        />
+      )}
 
       <ProductTrustStrip
         lang={lang}
@@ -319,16 +330,18 @@ export function ProductOrderBlock({
         </div>
       )}
 
-      <ProductStickyPurchaseBar
-        lang={lang}
-        productTitle={productTitle}
-        thumbUrl={selectedImageUrl}
-        totalPrice={totalPrice}
-        onAddToCart={handleAddToCart}
-        disabled={purchaseDisabled}
-        justAdded={justAdded}
-        onVisibilityChange={setStickyBarVisible}
-      />
+      {!contactBeforeOrder ? (
+        <ProductStickyPurchaseBar
+          lang={lang}
+          productTitle={productTitle}
+          thumbUrl={selectedImageUrl}
+          totalPrice={totalPrice}
+          onAddToCart={handleAddToCart}
+          disabled={purchaseDisabled}
+          justAdded={justAdded}
+          onVisibilityChange={setStickyBarVisible}
+        />
+      ) : null}
 
       <style jsx>{`
         .order-destination-block-notice {

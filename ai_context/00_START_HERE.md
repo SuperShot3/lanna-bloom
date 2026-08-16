@@ -4,7 +4,7 @@ Read this file before substantive work. Use topic files below for depth; use `do
 
 ## What this is
 
-**Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Bilingual storefront (`/en`, `/th`), Stripe web checkout, Supabase orders, catalog, and admin data. Partner **application** form only (no partner dashboard).
+**Lanna Bloom** — mobile-first flower and gift delivery (Chiang Mai focus). Storefront locales English, Thai, and Traditional Chinese Hong Kong (`/en`, `/th`, `/zh-hk`), Stripe web checkout, Supabase orders, catalog, and admin data. Partner **application** form only (no partner dashboard).
 
 Production site: `lannabloom.shop`. Social links live in `README.md`.
 
@@ -12,7 +12,7 @@ Production site: `lannabloom.shop`. Social links live in `README.md`.
 
 | Area | Current behavior |
 |------|------------------|
-| Locales | URL-based English and Thai routes (`/en/*`, `/th/*`); language switcher preserves the current path where possible. SEO sitemap/hreflang use **en+th** — see [docs/seo-keyword-map.md](../docs/seo-keyword-map.md) |
+| Locales | URL-based storefront (`/en/*`, `/th/*`, `/zh-hk/*`); language switcher preserves the current path where possible. SEO sitemap/hreflang use **en+th+zh-hk** for storefront pages. Info articles stay **en+th** only (zh-hk articles are English fallbacks, noindex). `ru` / `zh-sg` remain URL-only and noindex — see [docs/seo-keyword-map.md](../docs/seo-keyword-map.md) |
 | Browse | Localized storefront and catalog read approved products from Supabase catalog tables |
 | Product / cart | Product pages support size selection; cart collects delivery area/date and customer contact details |
 | Pay | Primary web flow is Stripe Checkout; server recomputes totals and creates orders after confirmed payment |

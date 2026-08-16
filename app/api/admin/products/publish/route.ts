@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
         occasion: stringArrayField(b, 'occasion'),
         excludedDeliveryDestinations,
         customAttributes,
+        contactBeforeOrder: b.contactBeforeOrder === true,
         createdBy,
         createdAt,
       });
@@ -175,6 +176,7 @@ export async function POST(request: NextRequest) {
       deliveryOptions: stringArrayField(b, 'deliveryOptions'),
       excludedDeliveryDestinations,
       featuredPopular: b.featuredPopular === true,
+      contactBeforeOrder: b.contactBeforeOrder === true,
       pricingType,
       createdBy,
       createdAt,

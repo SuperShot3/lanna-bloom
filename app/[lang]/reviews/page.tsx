@@ -6,6 +6,11 @@ import { isValidLocale, type Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import type { Metadata } from 'next';
 import { getBaseUrl } from '@/lib/orders';
+import {
+  openGraphLocale,
+  websiteOpenGraph,
+  websiteTwitter,
+} from '@/lib/seo/shareMetadata';
 import styles from '@/components/reviews/reviews.module.css';
 
 export async function generateMetadata({
@@ -22,14 +27,13 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical },
-    openGraph: {
+    openGraph: websiteOpenGraph({
       title,
       description,
       url: canonical,
-      siteName: 'Lanna Bloom',
-      locale: locale === 'th' ? 'th_TH' : 'en_US',
-      type: 'website',
-    },
+      locale: openGraphLocale(locale),
+    }),
+    twitter: websiteTwitter({ title, description }),
   };
 }
 

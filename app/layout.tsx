@@ -9,9 +9,22 @@ import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { mulish } from '@/lib/fonts';
 import { getBaseUrl } from '@/lib/orders';
+import {
+  BRAND_APPLE_TOUCH,
+  BRAND_FAVICON_16,
+  BRAND_FAVICON_32,
+  BRAND_FAVICON_ICO,
+  BRAND_WEB_MANIFEST,
+} from '@/lib/brandLogo';
+import { websiteOpenGraph, websiteTwitter } from '@/lib/seo/shareMetadata';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
+const SITE_TITLE = 'Lanna Bloom | Flower & gift delivery Chiang Mai';
+const SITE_DESCRIPTION =
+  'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available. Bouquet delivery in selected Thailand destinations.';
+const SITE_OG_DESCRIPTION =
+  'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available.';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -20,25 +33,30 @@ export const viewport: Viewport = {
   themeColor: '#FDFCF8',
 };
 
+const siteOrigin = getBaseUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL(getBaseUrl()),
-  title: 'Lanna Bloom | Flower & gift delivery Chiang Mai',
-  description:
-    'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available. Bouquet delivery in selected Thailand destinations.',
+  metadataBase: new URL(siteOrigin),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   icons: {
     icon: [
-      { url: '/favicon_io/favicon.ico', sizes: 'any' },
-      { url: '/favicon_io/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon_io/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: BRAND_FAVICON_ICO, sizes: 'any' },
+      { url: BRAND_FAVICON_32, sizes: '32x32', type: 'image/png' },
+      { url: BRAND_FAVICON_16, sizes: '16x16', type: 'image/png' },
     ],
-    apple: '/favicon_io/apple-touch-icon.png',
+    apple: BRAND_APPLE_TOUCH,
   },
-  manifest: '/favicon_io/site.webmanifest',
-  openGraph: {
-    title: 'Lanna Bloom | Flower & gift delivery Chiang Mai',
-    description:
-      'Premium flower and gift delivery in Chiang Mai, Thailand. Order online with secure checkout — same-day delivery when available.',
-  },
+  manifest: BRAND_WEB_MANIFEST,
+  openGraph: websiteOpenGraph({
+    title: SITE_TITLE,
+    description: SITE_OG_DESCRIPTION,
+    url: siteOrigin,
+  }),
+  twitter: websiteTwitter({
+    title: SITE_TITLE,
+    description: SITE_OG_DESCRIPTION,
+  }),
 };
 
 export default function RootLayout({

@@ -232,6 +232,10 @@ export async function updateProductByAdminAction(formData: FormData): Promise<{ 
   );
   if (excluded) input.excludedDeliveryDestinations = excluded;
 
+  if (formData.has('contactBeforeOrder')) {
+    input.contactBeforeOrder = formData.get('contactBeforeOrder') === 'true';
+  }
+
   if (formData.get('useAdminOverrides') === 'true') {
     input.adminOverrides = {
       nameEn: (String(formData.get('nameEn') ?? '') || '').trim() || null,
@@ -268,6 +272,7 @@ export async function updateProductByAdminAction(formData: FormData): Promise<{ 
           ...(input.excludedDeliveryDestinations != null && {
             excludedDeliveryDestinations: input.excludedDeliveryDestinations,
           }),
+          ...(input.contactBeforeOrder != null && { contactBeforeOrder: input.contactBeforeOrder }),
         },
       });
       revalidateProductAdminPaths(productId);

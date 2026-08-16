@@ -114,6 +114,9 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
   const [featuredPopular, setFeaturedPopular] = useState(
     () => pending?.featuredPopular ?? bouquet.featuredPopular
   );
+  const [contactBeforeOrder, setContactBeforeOrder] = useState(
+    () => pending?.contactBeforeOrder ?? bouquet.contactBeforeOrder === true
+  );
   const [deliveryOptions, setDeliveryOptions] = useState<string[]>(
     () => pending?.deliveryOptions ?? bouquet.deliveryOptions ?? []
   );
@@ -159,6 +162,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     setStemOptions(next.stemOptions);
     setDiscountPercent(bouquet.discountPercent != null ? String(bouquet.discountPercent) : '');
     setFeaturedPopular(bouquet.featuredPopular);
+    setContactBeforeOrder(bouquet.contactBeforeOrder === true);
     setDeliveryOptions(bouquet.deliveryOptions ?? []);
     setAvailableMarkets(availableMarketsFromExcluded(bouquet.excludedDeliveryDestinations));
     setPresentationFormats(bouquet.presentationFormats ?? []);
@@ -187,6 +191,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         stemOptions,
         discountPercent,
         featuredPopular,
+        contactBeforeOrder,
         deliveryOptions,
         availableMarkets,
         presentationFormats,
@@ -207,6 +212,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       stemOptions,
       discountPercent,
       featuredPopular,
+      contactBeforeOrder,
       deliveryOptions,
       availableMarkets,
       presentationFormats,
@@ -231,6 +237,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         stemOptions: serverPricing.stemOptions,
         discountPercent: bouquet.discountPercent != null ? String(bouquet.discountPercent) : '',
         featuredPopular: bouquet.featuredPopular,
+        contactBeforeOrder: bouquet.contactBeforeOrder === true,
         deliveryOptions: bouquet.deliveryOptions ?? [],
         availableMarkets: availableMarketsFromExcluded(bouquet.excludedDeliveryDestinations),
         presentationFormats: bouquet.presentationFormats ?? [],
@@ -286,6 +293,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     formData.set('stemOptions', JSON.stringify(stemOptions));
     formData.set('discountPercent', discountPercent);
     formData.set('featuredPopular', featuredPopular ? 'true' : 'false');
+    formData.set('contactBeforeOrder', contactBeforeOrder ? 'true' : 'false');
     formData.set(
       'excludedDeliveryDestinations',
       JSON.stringify(excludedMarketsFromAvailable(availableMarkets))
@@ -504,6 +512,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       stemOptions,
       discountPercent,
       featuredPopular,
+      contactBeforeOrder,
       deliveryOptions,
       availableMarkets,
       presentationFormats,
@@ -527,6 +536,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     stemOptions,
     discountPercent,
     featuredPopular,
+    contactBeforeOrder,
     deliveryOptions,
     availableMarkets,
     presentationFormats,
@@ -688,6 +698,8 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         onDiscountPercentChange={setDiscountPercent}
         featuredPopular={featuredPopular}
         onFeaturedPopularChange={setFeaturedPopular}
+        contactBeforeOrder={contactBeforeOrder}
+        onContactBeforeOrderChange={setContactBeforeOrder}
       />
 
       <AdminCmsCollapsibleSection

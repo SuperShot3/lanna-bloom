@@ -60,6 +60,11 @@ html[lang='ru'] .lang-layout {
   font-family: var(--font-sans), var(--font-sans-cyrillic), var(--font-sans-stack);
 }
 
+/* Traditional Chinese stack on /zh-hk (see notoSansTc.variable on .lang-layout) */
+html[lang='zh-Hant'] .lang-layout {
+  font-family: var(--font-sans), var(--font-sans-tc), var(--font-sans-stack);
+}
+
 :root {
   --bg: #fdfbf9;
   --surface: #ffffff;

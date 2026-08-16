@@ -25,6 +25,7 @@ import type { CartLineDeliveryConstraintInput } from '@/lib/delivery/deliveryCon
 import { applyCatalogDiscountThb, effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
+import { ProductContactBeforeOrderNotice } from '@/components/pdp/ProductContactBeforeOrderNotice';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -103,8 +104,10 @@ export function ProductOrderBlockForProduct({
   );
   const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
     useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
+  const contactBeforeOrder = product.contactBeforeOrder === true;
   const purchaseDisabled =
-    !deliveryConstraintLoading && !deliveryConstraint.orderingAllowed;
+    contactBeforeOrder ||
+    (!deliveryConstraintLoading && !deliveryConstraint.orderingAllowed);
 
   const handleAddToCart = () => {
     if (purchaseDisabled) return;
@@ -257,14 +260,22 @@ export function ProductOrderBlockForProduct({
             constraint={deliveryConstraint}
             loading={deliveryConstraintLoading}
           />
-          <button
-            type="button"
-            className="order-add-to-cart-btn"
-            onClick={handleAddToCart}
-            disabled={purchaseDisabled}
-          >
-            {t.addToCart} — ฿{totalPrice.toLocaleString()}
-          </button>
+          {contactBeforeOrder ? (
+            <ProductContactBeforeOrderNotice
+              lang={lang}
+              productName={name}
+              sizeLabel={selectedSize.label}
+            />
+          ) : (
+            <button
+              type="button"
+              className="order-add-to-cart-btn"
+              onClick={handleAddToCart}
+              disabled={purchaseDisabled}
+            >
+              {t.addToCart} — ฿{totalPrice.toLocaleString()}
+            </button>
+          )}
         </>
       )}
       <style jsx>{`

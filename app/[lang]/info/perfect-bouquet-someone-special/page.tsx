@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
-import { buildAlternates } from '@/lib/seo/alternates';
+import { articlePageRobots, buildArticleAlternates } from '@/lib/seo/alternates';
 import { getCatalogBouquetBySlug } from '@/lib/catalogReads';
 import { BouquetCard } from '@/components/BouquetCard';
 import { MessengerOrderButtons } from '@/components/MessengerOrderButtons';
@@ -256,16 +256,21 @@ export async function generateMetadata({
   const copyLocale = getCopyLocale(locale);
   const t = COPY[copyLocale];
   const base = getBaseUrl();
-  const canonical = `${base}/${lang}/info/perfect-bouquet-someone-special`;
+  const alternates = buildArticleAlternates({
+    lang,
+    pathSuffix: '/info/perfect-bouquet-someone-special',
+  });
+  const canonical =
+    typeof alternates.canonical === 'string'
+      ? alternates.canonical
+      : `${base}/${lang}/info/perfect-bouquet-someone-special`;
+  const robots = articlePageRobots(lang);
 
   return {
     title: `${t.title} | Lanna Bloom`,
     description: t.description,
-    alternates: buildAlternates({
-      lang,
-      pathSuffix: '/info/perfect-bouquet-someone-special',
-      canonical,
-    }),
+    ...(robots ? { robots } : {}),
+    alternates,
     openGraph: {
       title: t.ogTitle,
       description: t.ogDescription,

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { translations } from '@/lib/i18n';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import type { Locale } from '@/lib/i18n';
 import {
   getActiveMarkets,
@@ -102,7 +103,7 @@ export function Footer({ lang }: { lang: Locale }) {
           <div>
             <Link href={homeHref} className="flex items-center gap-2.5 mb-6">
               <Image
-                src="/logo_icon_64.png"
+                src={BRAND_LOGO_SRC}
                 alt="Lanna Bloom logo"
                 width={40}
                 height={40}

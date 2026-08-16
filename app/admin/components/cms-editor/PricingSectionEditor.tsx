@@ -55,6 +55,9 @@ type Props = {
   onDiscountPercentChange: (value: string) => void;
   featuredPopular: boolean;
   onFeaturedPopularChange: (value: boolean) => void;
+  showFeaturedPopular?: boolean;
+  contactBeforeOrder: boolean;
+  onContactBeforeOrderChange: (value: boolean) => void;
 };
 
 const PRICING_TYPE_OPTIONS: { value: PricingType; label: string }[] = [
@@ -429,6 +432,9 @@ export function PricingSectionEditor({
   onDiscountPercentChange,
   featuredPopular,
   onFeaturedPopularChange,
+  showFeaturedPopular = true,
+  contactBeforeOrder,
+  onContactBeforeOrderChange,
 }: Props) {
   const [editingSizeKey, setEditingSizeKey] = useState<SizeKey | 'new' | null>(null);
   const [editingStemIndex, setEditingStemIndex] = useState<number | 'new' | null>(null);
@@ -681,14 +687,27 @@ export function PricingSectionEditor({
           onChange={(e) => onDiscountPercentChange(e.target.value)}
         />
       </label>
+      {showFeaturedPopular ? (
+        <label className="admin-cms-checkbox">
+          <input
+            type="checkbox"
+            checked={featuredPopular}
+            onChange={(e) => onFeaturedPopularChange(e.target.checked)}
+          />
+          <span>Popular pick (homepage badge)</span>
+        </label>
+      ) : null}
       <label className="admin-cms-checkbox">
         <input
           type="checkbox"
-          checked={featuredPopular}
-          onChange={(e) => onFeaturedPopularChange(e.target.checked)}
+          checked={contactBeforeOrder}
+          onChange={(e) => onContactBeforeOrderChange(e.target.checked)}
         />
-        <span>Popular pick (homepage badge)</span>
+        <span>Contact before order</span>
       </label>
+      <p className="admin-cms-empty-hint">
+        Customers cannot add this to cart. They must contact you on LINE, WhatsApp, or email first.
+      </p>
 
       <BouquetSizeEditModal
         open={editingSizeKey != null}

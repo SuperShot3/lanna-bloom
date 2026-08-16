@@ -7,6 +7,13 @@ import { aboutPageCopy, DBD_BANNER_URL, DBD_VERIFY_URL } from '@/lib/aboutPageCo
 import type { AboutRichParagraph, AboutSegment } from '@/lib/aboutPageCopy';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { buildAlternates } from '@/lib/seo/alternates';
+import {
+  openGraphLocale,
+  websiteOpenGraph,
+  websiteTwitter,
+} from '@/lib/seo/shareMetadata';
+import { getBaseUrl } from '@/lib/siteUrl';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import { AboutNewsletterSignup } from './AboutNewsletterSignup';
 
 const linkClassName =
@@ -18,15 +25,26 @@ export async function generateMetadata({ params }: { params: { lang: string } })
   const lang = params.lang as Locale;
   const copy = aboutPageCopy[lang];
 
+  const alternates = buildAlternates({ lang, pathSuffix: '/about' });
+  const canonical =
+    typeof alternates.canonical === 'string'
+      ? alternates.canonical
+      : `${getBaseUrl()}/${lang}/about`;
+
   return {
     title: copy.metaTitle,
     description: copy.metaDescription,
-    alternates: buildAlternates({ lang, pathSuffix: '/about' }),
-    openGraph: {
+    alternates,
+    openGraph: websiteOpenGraph({
       title: copy.metaTitle,
       description: copy.metaDescription,
-      type: 'website',
-    },
+      url: canonical,
+      locale: openGraphLocale(lang),
+    }),
+    twitter: websiteTwitter({
+      title: copy.metaTitle,
+      description: copy.metaDescription,
+    }),
   };
 }
 
@@ -112,7 +130,7 @@ export default function AboutPage({ params }: { params: { lang: string } }) {
       <article className="container mx-auto max-w-[50rem] pb-24 pt-12 sm:pb-28 sm:pt-16 lg:pb-32 lg:pt-20">
         <header>
           <Image
-            src="/logo_full_master.png"
+            src={BRAND_LOGO_SRC}
             alt="Lanna Bloom"
             width={512}
             height={512}

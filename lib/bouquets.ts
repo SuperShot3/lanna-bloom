@@ -39,6 +39,8 @@ export interface Bouquet {
   status?: BouquetStatus;
   /** CMS: pin to top of homepage Popular feed + show badge (catalog sort unchanged). */
   featuredPopular?: boolean;
+  /** CMS: customers must contact before ordering; add-to-cart and checkout are blocked. */
+  contactBeforeOrder?: boolean;
   /** CMS sale discount (1–90%). Applied at checkout; shows badge when set. */
   discountPercent?: number;
   /** Paid units sold (storefront display). Set only when the public threshold is met. */

@@ -1,6 +1,6 @@
 ---
 name: blog-content-writer
-description: Create SEO-optimized flower shop content for `/info/` MDX articles—with natural product promotion from Popular picks and top sellers (never the same default bouquets), honest local florist expertise, highly scannable structure, and bilingual EN/TH when requested. Use for posts, guides, SEO copy, FAQs, slugs, OG fields, alt text, or implementation handoffs matching existing `content/info/` articles.
+description: Create SEO-optimized flower shop content for `/info/` MDX articles—with natural product promotion from Popular picks and top sellers (never the same default bouquets), honest local florist expertise, highly scannable structure, click-to-unfold FAQ buttons (never always-open H3 Q&A), and bilingual EN/TH when requested. Use for posts, guides, SEO copy, FAQs, slugs, OG fields, alt text, or implementation handoffs matching existing `content/info/` articles.
 ---
 
 # Blog Content Writer
@@ -31,7 +31,8 @@ Every article must:
 - Default language is English. Provide Thai when the user asks for Thai or bilingual.
 - If important information is missing, ask short questions before writing.
 - Default to **Webpage Build Mode** (section-by-section page output). Do not return only one long text block unless the user explicitly asks for text-only.
-- For on-site articles and guides, reuse existing page patterns and UI primitives from this repository (info/MDX under `/info/`, catalog-driven cards, shared FAQ, global styles). Do not invent article-specific components unless the user asks for new UI. Do not create new `/guides/` routes or new bespoke TSX article pages.
+- For on-site articles and guides, reuse existing page patterns and UI primitives from this repository (info/MDX under `/info/`, catalog-driven cards, native FAQ `<details>`/`<summary>`, global styles). Do not invent article-specific components unless the user asks for new UI. Do not create new `/guides/` routes or new bespoke TSX article pages.
+- FAQ questions must be like a button: the user clicks the question and the answer unfolds. Never show FAQ as always-open headings with answers already visible (see **FAQ Section**).
 - Do not put JSON, raw schema, or unexplained code inside **customer-facing prose blocks**; implementation sections may reference repo filenames and slugs when handing off a page build.
 
 ## Google People-First Quality Standard
@@ -56,7 +57,7 @@ Source of truth: [Google Search Central — Creating helpful, reliable, people-f
 
 - Use only **one H1**. It must clearly describe the main search intent—no vague or overly creative titles that hide the subject.
 - Write H2 headings that can be understood independently, out of context. Whenever possible, phrase them as real customer questions or specific topics (for example "Can hotels accept flowers before check-in?" rather than "Delivery considerations").
-- Use H3 headings only for subsections, practical recommendations, or contextual calls to action—never to hit a heading-count target.
+- Use H3 headings only for subsections, practical recommendations, or contextual calls to action—never to hit a heading-count target. Never use H3 for FAQ questions (see **FAQ Section**).
 
 ## Opening Section
 
@@ -85,7 +86,7 @@ After the direct answer, place the hero image (`ArticleFigure`), then expand the
   - A Chiang Mai florist's honest advice (plain H2 section)
   - Images (`ArticleFigure`)
   - Product cards (`ArticleProductPick` + `CatalogProductCard`, or `CatalogProductCardGrid`)
-  - FAQs (H2 "FAQ" + H3 per question)
+  - FAQs (H2 "FAQ" + click-to-unfold `<details>`/`<summary>` per question — see **FAQ Section**)
   - Calls to action
 - Bold only the most important decision-making phrases. Do not bold entire paragraphs or repeatedly bold keywords for SEO.
 - Use H2/H3 headings when they clarify distinct reader questions; do not add headings to meet a numeric cadence.
@@ -109,7 +110,7 @@ Use the elements below when they genuinely help the reader—do not force every 
 13. **Relevant product recommendations** — `ArticleProductPick` + `CatalogProductCard`, or a `CatalogProductCardGrid` mid-article block (see **Product Promotion Rules**).
 14. **Chiang Mai delivery information** — link to `delivery-policy` or `flower-delivery-address-chiang-mai` rather than restating policy details.
 15. **Final CTA** — hand off `ctaLinks`/`ctaTitle` for the auto-rendered `ArticleCta`; don't hand-author a duplicate CTA block inside the MDX body unless it is intentionally different from the standard footer CTA.
-16. **FAQ** — H2 "FAQ" + H3 per question (see **FAQ Section**).
+16. **FAQ** — H2 "FAQ" + one `<details>`/`<summary>` per question (see **FAQ Section**). Never H3 questions.
 17. **Optional reader offer** — only a real, active promo code (see **Optional Reader Offer**).
 18. **Sources** — plain H2 "Sources" + link list, only when a claim needs citation.
 19. **Related articles** — already automatic via `RelatedGuides`; do not author manually.
@@ -293,6 +294,53 @@ Follow the cadence from **Product Promotion Rules**: one soft CTA early, one pro
 
 ## FAQ Section
 
+### What this must look like (required)
+
+This is the FAQ UI. Do not substitute another pattern.
+
+1. The reader sees a list of **questions only**. Answers are hidden.
+2. Each question must be **like a button**.
+3. The user **clicks the question**.
+4. The **answer unfolds** under that question.
+5. Clicking again collapses the answer. Other answers stay closed unless the user opens them.
+6. Every item starts **closed**. Never pre-open an answer.
+
+**Wanted**
+
+> Question (button) → click → answer unfolds.
+
+**Not wanted (forbidden)**
+
+> Heading + answer already visible on the page (the old H2 "FAQ" + H3 question style).
+
+Do not ship FAQ as always-open `###` headings. Do not invent a new accordion component. Do not clone `GuideFaq` into MDX. Do not put FAQ JSON or schema markup in the article body.
+
+### How to write it in MDX
+
+Use native HTML so the question is the clickable control and the answer stays collapsed until click:
+
+```mdx
+## FAQ
+
+<details>
+<summary>Can hotels accept flowers before check-in?</summary>
+
+Sometimes yes. Many Chiang Mai hotels ask deliveries to go through reception first. Give the guest’s registered name and a reachable phone number.
+
+</details>
+```
+
+- One section heading only: English `## FAQ`, Thai `## คำถามที่พบบ่อย` (or the existing Thai FAQ heading).
+- One `<details>` per question. Do not nest `<details>`.
+- `<summary>` = the button. Put **only the question** inside it.
+- The answer goes after `</summary>`, still inside `<details>`.
+- Never add the `open` attribute (that would show the answer before click).
+- Never use `### Question` for FAQ items. Never put H3 inside FAQ items.
+
+Thai articles use the same `<details>`/`<summary>` pattern with Thai question and answer text.
+
+### Copy rules
+
 Add **4-6 FAQs** when they answer genuine secondary questions. Each answer should:
 
 - Give the answer in the first sentence.
@@ -402,7 +450,7 @@ Unless the user asks for a different format, always deliver the blog as a publis
 - Direct opening answer + intro block
 - Body section blocks (H2/H3 + short paragraphs, tables, lists, honest florist advice as needed)
 - Product surfaces in context (MDX `CatalogProductCard` rows + Recommended callout)
-- FAQ as H2 "FAQ" + H3 per question when genuine follow-up questions benefit the reader
+- FAQ as H2 "FAQ" plus click-to-unfold `<details>`/`<summary>` items when genuine follow-up questions benefit the reader (never H3 questions)
 - Final CTA via `ctaLinks` / `ctaTitle` in `articles.ts` (auto-rendered; do not duplicate in MDX)
 
 The goal is to make output easy to map to `/info/` MDX page sections. Keep each block clearly labeled.
@@ -422,7 +470,7 @@ Do not return only freeform chat prose when the user asks to create a page.
 When the task is to ship an article or guide page on the website, prefer reusing existing layouts, components, and CSS patterns from this codebase. Do not introduce parallel blog-only cards, buttons, or section styles unless the user explicitly asks for a new design system.
 
 Default behavior:
-- Map content to patterns that already exist: info/MDX articles under `content/info/` with `CatalogProductCard`, shared FAQ patterns, site header/footer, typography classes, and tokens from `app/globals.css`.
+- Map content to patterns that already exist: info/MDX articles under `content/info/` with `CatalogProductCard`, native FAQ `<details>`/`<summary>`, site header/footer, typography classes, and tokens from `app/globals.css`.
 - Promote products with **`CatalogProductCard`** and **exact catalog slugs**. Do not ship fake tiles or one-off product markup unless no primitive exists.
 - If the skill mentions product cards, interpret that as wiring content to real components and **exact catalog slugs**, not as permission to design arbitrary HTML/CSS per post.
 - Keep contact actions (LINE, WhatsApp, contact links, "message us") in the automatic footer CTA (`ctaLinks` in `articles.ts`) unless the user explicitly requests otherwise.
@@ -455,6 +503,7 @@ Use these as first-choice implementation targets:
 - Product promotion: `CatalogProductCard` (loads bouquets/products from Supabase)  
 - Tables: standard markdown tables, styled via `infoArticleTableMdxComponents`  
 - Other in-body primitives already wired in `page.tsx`: `ArticleFigure`, `ArticleChecklistBlock` (variants `default`/`essential`/`recommended`/`tip`), `ArticleStepsBlock`, `ArticleProductPick`, `CatalogProductCardGrid`  
+- FAQ: native MDX `<details>`/`<summary>` under H2 "FAQ" (click-to-unfold). Do not use H3 questions. Do not clone `GuideFaq` into MDX unless the user asks to wire that UI.  
 - Already automatic, do not hand-author: published date (from `publishedAt`), the "← Guides" back link, the final `ArticleCta` (fed by `ctaLinks`/`ctaTitle`), `RelatedGuides`, and comments  
 - Intentionally not built yet, do not promise them in copy: real breadcrumbs, a jump-linked table of contents (no heading anchor IDs), a dedicated author/reviewer visual box  
 
@@ -480,7 +529,7 @@ Every complete blog draft must include:
 - A clear heading hierarchy: one H1, useful H2s, and H3s only where needed
 - Relevant internal product callouts only where they improve the reader's decision
 - 1-2 internal links to relevant category or pillar pages, when applicable
-- FAQ section with 4-6 practical questions only when they add distinct value
+- FAQ section with 4-6 practical click-to-unfold questions (`<details>`/`<summary>`) only when they add distinct value
 - Image alt text suggestions for images actually included in the brief
 - Open Graph title and description for social sharing
 - Trust/provenance notes: author or reviewer, substantive sources, first-hand basis, and AI disclosure when reasonably expected
@@ -612,18 +661,39 @@ When the user asks to "create page" or "create webpage," output this package fir
 [✗ Mistake — why it matters, repeated for each mistake worth flagging.]
 
 ### FAQ Section
+- Reader experience (required): questions look like buttons; user clicks; answer unfolds; all start closed; answers are not visible until click.
+- Heading (H2): FAQ (Thai: คำถามที่พบบ่อย)
+- MDX: one `<details>` per question; `<summary>` is the clickable question button; answer inside `<details>`; no `open` attribute. Never use H3 for FAQ questions.
 
-### [Question 1 a real customer asks]
+```mdx
+<details>
+<summary>[Question 1 a real customer asks]</summary>
+
 [Clear, direct answer in the first sentence, 40-80 words total.]
 
-### [Question 2]
+</details>
+
+<details>
+<summary>[Question 2]</summary>
+
 [Clear answer.]
 
-### [Question 3]
+</details>
+
+<details>
+<summary>[Question 3]</summary>
+
 [Clear answer.]
 
-### [Question 4]
+</details>
+
+<details>
+<summary>[Question 4]</summary>
+
 [Clear answer.]
+
+</details>
+```
 
 ### Optional: Reader Offer
 [Only with a real, active promo code—benefit, minimum order, code, expiry, stackability, delivery-fee inclusion.]
@@ -667,7 +737,7 @@ Before responding, verify:
 - Open Graph title and description are present when metadata is in scope.
 - Contact / messenger prompts are left to footer `ctaLinks` unless the user asked otherwise.
 - 1–2 internal category or pillar links are suggested where relevant.
-- The FAQ has 4-6 items, each leading with the answer in the first sentence, adding information not already repeated, and reflecting real customer concerns.
+- The FAQ matches the required UI: each question is like a button; the user clicks; the answer unfolds; items start closed; no always-open H3 Q&A. Implemented as 4-6 `<details>`/`<summary>` items. Each answer leads in the first sentence, adds information not already repeated, and reflects real customer concerns.
 - If included, the "Chiang Mai florist's honest advice" section makes a genuine judgment with trade-offs, and does not default to the priciest option or claim year-round availability.
 - The page has a clear reader, purpose, and satisfying answer independent of search traffic.
 - Original value or first-hand expertise is explicit; borrowed facts are verified, appropriately sourced, and cultural/symbolic claims use hedged language rather than stated as universal fact.

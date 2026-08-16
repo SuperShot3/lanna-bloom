@@ -1,4 +1,4 @@
-import { Mulish, Noto_Sans } from 'next/font/google';
+import { Mulish, Noto_Sans, Noto_Sans_TC } from 'next/font/google';
 
 export const mulish = Mulish({
   subsets: ['latin', 'latin-ext'],
@@ -13,6 +13,16 @@ export const notoSansCyrillic = Noto_Sans({
   display: 'swap',
   adjustFontFallback: true,
   variable: '--font-sans-cyrillic',
+  preload: false,
+});
+
+/** Traditional Chinese for /zh-hk routes. */
+export const notoSansTc = Noto_Sans_TC({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
+  adjustFontFallback: true,
+  variable: '--font-sans-tc',
   preload: false,
 });
 

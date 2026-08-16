@@ -124,7 +124,13 @@ const trustItems = {
     { title: 'มีการ์ดข้อความ', text: 'เพิ่มข้อความส่วนตัวได้ตอนสั่งซื้อ' },
     { title: 'สั่งซื้อง่าย', text: 'รวดเร็ว พร้อมตะกร้าสินค้าที่ใช้งานได้จริง' },
   ],
-} satisfies Record<'en' | 'th', CollectionLandingCopy['trustItems']>;
+  'zh-hk': [
+    { title: '即日配送', text: '營業時間內送達清邁各地。' },
+    { title: '信用卡付款', text: '安全結帳，訂單資料清晰。' },
+    { title: '附訊息卡', text: '結帳時加上個人短訊。' },
+    { title: '簡易結帳', text: '快速訂購，購物車即時更新。' },
+  ],
+} satisfies Record<'en' | 'th' | 'zh-hk', CollectionLandingCopy['trustItems']>;
 
 const commonFaq = {
   en: [
@@ -155,10 +161,32 @@ const commonFaq = {
       a: 'ได้ คุณสามารถเพิ่มข้อความส่วนตัวตอนเช็คเอาต์ และเราจะจัดส่งไปพร้อมช่อดอกไม้',
     },
   ],
-} satisfies Record<'en' | 'th', CollectionLandingCopy['faq']>;
+  'zh-hk': [
+    {
+      q: '清邁有即日玫瑰配送嗎？',
+      a: '有。營業時間內，所選花束有貨即可即日送達清邁。',
+    },
+    {
+      q: '可以加購毛絨玩具、氣球或禮品套裝嗎？',
+      a: '可以。現有加購商品來自目錄，可與花束一併加入購物車。',
+    },
+    {
+      q: '可以附上訊息卡嗎？',
+      a: '可以。請於結帳時加上個人訊息，我們會連同花束送達。',
+    },
+  ],
+} satisfies Record<'en' | 'th' | 'zh-hk', CollectionLandingCopy['faq']>;
 
-function withLocaleFallback<T>(copy: Record<'en' | 'th', T>): Record<Locale, T> {
-  return { ...copy, ru: copy.en, 'zh-sg': copy.en, 'zh-hk': copy.en };
+function withLocaleFallback<T>(
+  copy: { en: T; th: T } & Partial<Record<Locale, T>>
+): Record<Locale, T> {
+  return {
+    en: copy.en,
+    th: copy.th,
+    ru: copy.ru ?? copy.en,
+    'zh-sg': copy['zh-sg'] ?? copy.en,
+    'zh-hk': copy['zh-hk'] ?? copy.en,
+  };
 }
 
 const rosesHubCopy = withLocaleFallback({
@@ -199,6 +227,26 @@ const rosesHubCopy = withLocaleFallback({
       'เราจัดส่งในตัวเมืองเชียงใหม่และอำเภอใกล้เคียง เวลาจัดส่งขึ้นอยู่กับสินค้า เส้นทาง และรายละเอียดตอนเช็คเอาต์',
     faqTitle: 'คำถามที่พบบ่อย',
     faq: commonFaq.th,
+  },
+  'zh-hk': {
+    seoTitle: '清邁玫瑰花束 | Lanna Bloom',
+    seoDescription:
+      '在清邁訂購玫瑰花束，可即日配送。選擇白、粉或紅玫瑰，加購毛絨玩具或氣球，並安全結帳。',
+    h1: '清邁玫瑰花束',
+    eyebrow: '新鮮玫瑰。用心手工製作。',
+    intro:
+      '選擇白、粉或紅玫瑰花束，適合紀念日、生日、浪漫時刻及貼心禮物——送達清邁各地。',
+    primaryCta: '選購玫瑰',
+    deliveryNote:
+      '即日訂單接受至泰國時間 20:00，視供應及配送運力而定。配送可能於 20:00 後完成。',
+    addOnsTitle: '與花束一起更完美',
+    addOnsIntro: '以現有毛絨玩具、氣球或禮品套裝為禮物加分。',
+    trustItems: trustItems['zh-hk'],
+    deliveryTitle: '清邁配送',
+    deliveryText:
+      '我們送達清邁市區及附近地區。配送時間視花束供應、路線及結帳資料而定。',
+    faqTitle: '常見問題',
+    faq: commonFaq['zh-hk'],
   },
 }) satisfies Record<'en' | 'th', RosesHubCopy>;
 
@@ -260,6 +308,30 @@ export const roseColorLandings = [
         emptyText:
           'ตอนนี้ยังไม่พบช่อกุหลาบขาวที่อนุมัติแล้วใน Sanity โปรดดูช่อกุหลาบทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
       },
+      'zh-hk': {
+        seoTitle: '清邁白玫瑰 | Lanna Bloom',
+        seoDescription:
+          '在清邁訂購白玫瑰花束，可即日配送。優雅白玫瑰、精選加購、安全結帳及訊息卡。',
+        h1: '清邁白玫瑰',
+        eyebrow: '新鮮玫瑰。用心手工製作。',
+        intro:
+          '優雅白玫瑰花束，適合紀念日、祝賀、慰問及貼心禮物，送達清邁各地。',
+        primaryCta: '選購白玫瑰',
+        deliveryNote:
+          '即日訂單接受至泰國時間 20:00，視供應及配送運力而定。配送可能於 20:00 後完成。',
+        collectionTitle: '白玫瑰系列',
+        collectionIntro: '目錄中以玫瑰及白色篩選的白玫瑰花束精選。',
+        addOnsTitle: '與花束一起更完美',
+        addOnsIntro: '以現有毛絨玩具、氣球或禮品套裝為禮物加分。',
+        trustItems: trustItems['zh-hk'],
+        deliveryTitle: '清邁配送',
+        deliveryText:
+          '我們送達清邁市區及附近地區。配送時間視花束供應、路線及結帳資料而定。',
+        faqTitle: '常見問題',
+        faq: commonFaq['zh-hk'],
+        emptyTitle: '白玫瑰正在更新',
+        emptyText: '暫時未找到已上架的白玫瑰花束。請先瀏覽所有玫瑰。',
+      },
     }),
   },
   {
@@ -318,6 +390,30 @@ export const roseColorLandings = [
         emptyTitle: 'กำลังอัปเดตกุหลาบชมพู',
         emptyText:
           'ตอนนี้ยังไม่พบช่อกุหลาบชมพูที่อนุมัติแล้วใน Sanity โปรดดูช่อกุหลาบทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
+      },
+      'zh-hk': {
+        seoTitle: '清邁粉玫瑰 | Lanna Bloom',
+        seoDescription:
+          '選購清邁粉玫瑰花束，可即日配送。甜美粉玫瑰適合生日、浪漫、感謝及慶祝。',
+        h1: '清邁粉玫瑰',
+        eyebrow: '柔和色調。新鮮本地花材。',
+        intro:
+          '甜美粉玫瑰花束，適合生日、浪漫、感謝及溫柔慶祝，送達清邁。',
+        primaryCta: '選購粉玫瑰',
+        deliveryNote:
+          '即日訂單接受至泰國時間 20:00，視供應及配送運力而定。配送可能於 20:00 後完成。',
+        collectionTitle: '粉玫瑰系列',
+        collectionIntro: '目錄中以玫瑰及粉色篩選的粉玫瑰花束精選。',
+        addOnsTitle: '與花束一起更完美',
+        addOnsIntro: '以現有毛絨玩具、氣球或禮品套裝為禮物加分。',
+        trustItems: trustItems['zh-hk'],
+        deliveryTitle: '清邁配送',
+        deliveryText:
+          '我們送達清邁市區及附近地區。配送時間視花束供應、路線及結帳資料而定。',
+        faqTitle: '常見問題',
+        faq: commonFaq['zh-hk'],
+        emptyTitle: '粉玫瑰正在更新',
+        emptyText: '暫時未找到已上架的粉玫瑰花束。請先瀏覽所有玫瑰。',
       },
     }),
   },
@@ -378,6 +474,30 @@ export const roseColorLandings = [
         emptyText:
           'ตอนนี้ยังไม่พบช่อกุหลาบแดงที่อนุมัติแล้วใน Sanity โปรดดูช่อกุหลาบทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
       },
+      'zh-hk': {
+        seoTitle: '清邁紅玫瑰 | Lanna Bloom',
+        seoDescription:
+          '在清邁訂購紅玫瑰花束，可即日配送。浪漫紅玫瑰適合紀念日、求婚及特別時刻。',
+        h1: '清邁紅玫瑰',
+        eyebrow: '浪漫玫瑰。美麗送達。',
+        intro:
+          '經典紅玫瑰花束，適合紀念日、求婚、浪漫驚喜及有意義的禮物，送達清邁各地。',
+        primaryCta: '選購紅玫瑰',
+        deliveryNote:
+          '即日訂單接受至泰國時間 20:00，視供應及配送運力而定。配送可能於 20:00 後完成。',
+        collectionTitle: '紅玫瑰系列',
+        collectionIntro: '目錄中以玫瑰及紅色篩選的紅玫瑰花束精選。',
+        addOnsTitle: '與花束一起更完美',
+        addOnsIntro: '以現有毛絨玩具、氣球或禮品套裝為禮物加分。',
+        trustItems: trustItems['zh-hk'],
+        deliveryTitle: '清邁配送',
+        deliveryText:
+          '我們送達清邁市區及附近地區。配送時間視花束供應、路線及結帳資料而定。',
+        faqTitle: '常見問題',
+        faq: commonFaq['zh-hk'],
+        emptyTitle: '紅玫瑰正在更新',
+        emptyText: '暫時未找到已上架的紅玫瑰花束。請先瀏覽所有玫瑰。',
+      },
     }),
   },
 ] satisfies RoseColorLandingConfig[];
@@ -426,7 +546,21 @@ const orchidFaq = {
       a: 'ได้ คุณสามารถเพิ่มข้อความส่วนตัวตอนเช็คเอาต์ และเราจะจัดส่งไปพร้อมช่อดอกไม้',
     },
   ],
-} satisfies Record<'en' | 'th', CollectionLandingCopy['faq']>;
+  'zh-hk': [
+    {
+      q: '清邁有即日蘭花配送嗎？',
+      a: '有。營業時間內，所選蘭花擺設有貨即可即日送達清邁。',
+    },
+    {
+      q: '可以加購毛絨玩具、氣球或禮品套裝嗎？',
+      a: '可以。現有加購商品來自目錄，可與花束一併加入購物車。',
+    },
+    {
+      q: '可以附上訊息卡嗎？',
+      a: '可以。請於結帳時加上個人訊息，我們會連同花束送達。',
+    },
+  ],
+} satisfies Record<'en' | 'th' | 'zh-hk', CollectionLandingCopy['faq']>;
 
 const orchidsHubCopy = withLocaleFallback({
   en: {
@@ -572,6 +706,70 @@ const orchidsHubCopy = withLocaleFallback({
     emptyTitle: 'กำลังอัปเดตกล้วยไม้',
     emptyText:
       'ตอนนี้ยังไม่พบกล้วยไม้ที่อนุมัติแล้วใน Sanity โปรดดูแคตตาล็อกทั้งหมดระหว่างรออัปเดตคอลเลกชัน',
+  },
+  'zh-hk': {
+    seoTitle: '清邁蘭花 | Lanna Bloom',
+    seoDescription:
+      '在清邁訂購蘭花，可即日配送。蝴蝶蘭、石斛蘭、蕙蘭等——適合慶祝、致敬及優雅禮物。',
+    h1: '清邁蘭花',
+    eyebrow: '優雅蘭花。用心製作。',
+    intro:
+      '新鮮蘭花擺設，適合慶祝、致敬及貼心禮物——送達清邁各地。目錄包括蝴蝶蘭、石斛蘭、蕙蘭及其他按季節安排的品種。',
+    primaryCta: '選購蘭花',
+    deliveryNote:
+      '即日訂單接受至泰國時間 20:00，視供應及配送運力而定。配送可能於 20:00 後完成。',
+    addOnsTitle: '與花束一起更完美',
+    addOnsIntro: '以現有毛絨玩具、氣球或禮品套裝為禮物加分。',
+    trustItems: trustItems['zh-hk'],
+    deliveryTitle: '清邁配送',
+    deliveryText:
+      '我們送達清邁市區及附近地區。配送時間視花束供應、路線及結帳資料而定。',
+    faqTitle: '常見問題',
+    faq: orchidFaq['zh-hk'],
+    typesTitle: '常見蘭花品種',
+    typesIntro:
+      '花藝師及商品名稱常使用植物學名或英文俗名。以下是清邁花束及禮品中常見的蘭花：',
+    orchidTypes: [
+      {
+        name: '蝴蝶蘭（Phalaenopsis）',
+        aliases: 'Moth orchid, butterfly orchid',
+        description: '泰國最受歡迎的送禮蘭花——弧形花穗優雅、花期長，適合家居或辦公室。',
+      },
+      {
+        name: '石斛蘭（Dendrobium）',
+        aliases: 'Singapore orchid（市場常用名）',
+        description: '纖細花莖上簇生花朵；常用於現代花束、祝賀禮物及熱帶擺設。',
+      },
+      {
+        name: '蕙蘭（Cymbidium）',
+        aliases: 'Boat orchid',
+        description: '花朵較大、質感蠟質、花莖堅挺——常選作高級花束及正式慶典。',
+      },
+      {
+        name: '萬代蘭（Vanda）',
+        aliases: 'Singapore orchid（地區用法不一）',
+        description: '大膽熱帶蘭花，花朵張開、色彩鮮明——適合當代設計中的搶眼色彩。',
+      },
+      {
+        name: '文心蘭（Oncidium）',
+        aliases: 'Dancing Lady orchid',
+        description: '分枝花穗上有許多小花——為混合蘭花擺設增添層次與動態。',
+      },
+      {
+        name: '嘉德麗亞蘭（Cattleya）',
+        aliases: 'Corsage orchid',
+        description: '經典華麗花朵，感覺奢華——有時作為特別場合的焦點花。',
+      },
+      {
+        name: '拖鞋蘭（Paphiopedilum）',
+        aliases: "Lady's Slipper orchid",
+        description: '獨特袋狀花朵——適合追求獨特造型的高端蘭花禮物。',
+      },
+    ],
+    collectionTitle: '清邁蘭花',
+    collectionIntro: '目錄中所有可送達清邁的蘭花擺設——瀏覽款式並網上訂購。',
+    emptyTitle: '蘭花正在更新',
+    emptyText: '暫時未找到已上架的蘭花商品。請先瀏覽完整目錄。',
   },
 }) satisfies Record<'en' | 'th', CollectionHubCopy>;
 

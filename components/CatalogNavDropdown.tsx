@@ -19,8 +19,8 @@ import { cn } from '@/lib/utils';
 /** Short catalog nav — only categories we currently sell. */
 const CATALOG_NAV_ITEMS = [
   { id: 'flowers', label: (lang: Locale) => translations[lang].catalog.topCategoryFlowers },
-  { id: 'roses', label: (lang: Locale) => lang === 'th' ? 'ช่อกุหลาบ' : 'Rose Bouquets' },
-  { id: 'orchids', label: (lang: Locale) => lang === 'th' ? 'ช่อกล้วยไม้' : 'Orchid Arrangements' },
+  { id: 'roses', label: (lang: Locale) => translations[lang].catalog.navRoseBouquets },
+  { id: 'orchids', label: (lang: Locale) => translations[lang].catalog.navOrchidArrangements },
   { id: 'toys', label: (lang: Locale) => translations[lang].catalog.topCategoryPlushyToys },
   { id: 'balloons', label: (lang: Locale) => translations[lang].catalog.topCategoryBalloons },
   { id: 'candy', label: (lang: Locale) => translations[lang].home.productSectionSweets },

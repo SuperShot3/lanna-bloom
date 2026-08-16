@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { locales, type Locale } from '@/lib/i18n';
+import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 type PartnerNavProps = {
@@ -24,7 +25,7 @@ export function PartnerNav({ lang, current }: PartnerNavProps) {
       <div className="partner-nav-inner">
         <Link href={`/${lang}`} className="partner-nav-logo">
           <Image
-            src="/favicon.svg"
+            src={BRAND_LOGO_SRC}
             alt="Lanna Bloom logo"
             width={32}
             height={32}

@@ -40,6 +40,7 @@ export type CatalogProductDraftPayload = {
   discountPercent?: number | null;
   occasion?: string[];
   excludedDeliveryDestinations?: string[];
+  contactBeforeOrder?: boolean;
 };
 
 export type CatalogBouquetDraftPayload = {
@@ -50,6 +51,7 @@ export type CatalogBouquetDraftPayload = {
   compositionEn?: string;
   compositionTh?: string;
   featuredPopular?: boolean;
+  contactBeforeOrder?: boolean;
   colors?: string[];
   flowerTypes?: string[];
   occasion?: string[];
@@ -362,6 +364,9 @@ function parseProductDraftPayload(payload: Record<string, unknown>): UpdateCatal
   if (Array.isArray(payload.excludedDeliveryDestinations)) {
     input.excludedDeliveryDestinations = payload.excludedDeliveryDestinations as UpdateCatalogProductByAdminInput['excludedDeliveryDestinations'];
   }
+  if (typeof payload.contactBeforeOrder === 'boolean') {
+    input.contactBeforeOrder = payload.contactBeforeOrder;
+  }
   return input;
 }
 
@@ -374,6 +379,9 @@ function parseBouquetDraftPayload(payload: Record<string, unknown>): UpdateCatal
   if (typeof payload.compositionEn === 'string') input.compositionEn = payload.compositionEn;
   if (typeof payload.compositionTh === 'string') input.compositionTh = payload.compositionTh;
   if (typeof payload.featuredPopular === 'boolean') input.featuredPopular = payload.featuredPopular;
+  if (typeof payload.contactBeforeOrder === 'boolean') {
+    input.contactBeforeOrder = payload.contactBeforeOrder;
+  }
   if (Array.isArray(payload.colors)) input.colors = payload.colors.map((v) => String(v)).filter(Boolean);
   if (Array.isArray(payload.flowerTypes)) {
     input.flowerTypes = payload.flowerTypes.map((v) => String(v)).filter(Boolean);
@@ -495,6 +503,7 @@ export function applyProductDraftToDetail<T extends Record<string, unknown>>(
     ...(Array.isArray(p.excludedDeliveryDestinations) && {
       excludedDeliveryDestinations: p.excludedDeliveryDestinations,
     }),
+    ...(typeof p.contactBeforeOrder === 'boolean' && { contactBeforeOrder: p.contactBeforeOrder }),
   };
 }
 
@@ -518,6 +527,7 @@ export function applyBouquetDraftToDetail<T extends Record<string, unknown>>(
     ...(typeof p.compositionEn === 'string' && { compositionEn: p.compositionEn }),
     ...(typeof p.compositionTh === 'string' && { compositionTh: p.compositionTh }),
     ...(typeof p.featuredPopular === 'boolean' && { featuredPopular: p.featuredPopular }),
+    ...(typeof p.contactBeforeOrder === 'boolean' && { contactBeforeOrder: p.contactBeforeOrder }),
     ...(Array.isArray(p.colors) && { colors: p.colors }),
     ...(Array.isArray(p.flowerTypes) && { flowerTypes: p.flowerTypes }),
     ...(Array.isArray(p.occasion) && { occasion: p.occasion }),

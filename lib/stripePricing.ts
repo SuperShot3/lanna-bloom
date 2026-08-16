@@ -33,6 +33,10 @@ import {
   resolveBouquetLineItemImageUrl,
   resolveProductLikeLineItemImageUrl,
 } from '@/lib/catalog/lineItemImageResolve';
+import {
+  CONTACT_BEFORE_ORDER_CHECKOUT_MESSAGE,
+  contactBeforeOrderBlocksCheckout,
+} from '@/lib/catalog/contactBeforeOrder';
 
 /** Premium/beautiful card add-on price (THB). Must match AddOnsSection.CARD_BEAUTIFUL_PRICE_THB. */
 const CARD_BEAUTIFUL_PRICE_THB = 20;
@@ -156,6 +160,9 @@ export async function computeOrderTotals(
       if (!toy) {
         return { ok: false, message: `Plushy toy not found: ${item.bouquetId}` };
       }
+      if (contactBeforeOrderBlocksCheckout(toy)) {
+        return { ok: false, message: CONTACT_BEFORE_ORDER_CHECKOUT_MESSAGE };
+      }
       if (hasCatalogDiscount(toy.discountPercent)) hasCatalogProductDiscount = true;
       const finalPrice = applyCatalogDiscountThb(toy.price, toy.discountPercent);
       let itemPrice = applyPeak(finalPrice);
@@ -188,6 +195,9 @@ export async function computeOrderTotals(
       const balloon = await getCatalogBalloonById(item.bouquetId);
       if (!balloon) {
         return { ok: false, message: `Balloon not found: ${item.bouquetId}` };
+      }
+      if (contactBeforeOrderBlocksCheckout(balloon)) {
+        return { ok: false, message: CONTACT_BEFORE_ORDER_CHECKOUT_MESSAGE };
       }
       if (hasCatalogDiscount(balloon.discountPercent)) hasCatalogProductDiscount = true;
       const finalPrice = applyCatalogDiscountThb(balloon.price, balloon.discountPercent);
@@ -224,6 +234,9 @@ export async function computeOrderTotals(
       const product = await getCatalogProductById(item.bouquetId);
       if (!product) {
         return { ok: false, message: `Product not found: ${item.bouquetId}` };
+      }
+      if (contactBeforeOrderBlocksCheckout(product)) {
+        return { ok: false, message: CONTACT_BEFORE_ORDER_CHECKOUT_MESSAGE };
       }
       if (product.moderationStatus !== 'live') {
         return { ok: false, message: `Product is not available: ${product.nameEn}` };
@@ -271,6 +284,9 @@ export async function computeOrderTotals(
         (await getCatalogBouquetById(item.bouquetId));
       if (!bouquet) {
         return { ok: false, message: `Bouquet not found: ${item.bouquetId}` };
+      }
+      if (contactBeforeOrderBlocksCheckout(bouquet)) {
+        return { ok: false, message: CONTACT_BEFORE_ORDER_CHECKOUT_MESSAGE };
       }
 
       if (!bouquetIsAvailableForDestination(bouquet, delivery.deliveryDestination)) {

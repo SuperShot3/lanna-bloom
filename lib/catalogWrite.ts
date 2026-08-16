@@ -317,6 +317,7 @@ export type UpdateCatalogBouquetByAdminInput = {
   compositionEn?: string;
   compositionTh?: string;
   featuredPopular?: boolean;
+  contactBeforeOrder?: boolean;
   discountPercent?: number | null;
   pricingType?: import('@/lib/catalog/pricing').PricingType;
   singlePrice?: number;
@@ -357,6 +358,7 @@ export async function updateCatalogBouquetByAdmin(
   if (input.compositionEn != null) patch.composition_en = input.compositionEn.trim();
   if (input.compositionTh != null) patch.composition_th = input.compositionTh.trim();
   if (input.featuredPopular != null) patch.featured_popular = input.featuredPopular;
+  if (input.contactBeforeOrder != null) patch.contact_before_order = input.contactBeforeOrder;
   if (input.colors != null) patch.colors = input.colors;
   if (input.flowerTypes != null) patch.flower_types = input.flowerTypes;
   if (input.occasion != null) patch.occasion = input.occasion;
@@ -499,6 +501,7 @@ export type CreateAdminCatalogBouquetInput = {
   deliveryOptions?: string[];
   excludedDeliveryDestinations?: string[];
   featuredPopular?: boolean;
+  contactBeforeOrder?: boolean;
   pricingType?: PricingType;
   createdBy?: string;
   createdAt?: string;
@@ -546,6 +549,7 @@ export type CreateAdminCatalogProductInput = {
   occasion?: string[];
   excludedDeliveryDestinations?: string[];
   customAttributes?: Array<{ key: string; value: string }>;
+  contactBeforeOrder?: boolean;
   createdBy?: string;
   createdAt?: string;
 };
@@ -561,6 +565,7 @@ export type UpdateCatalogProductByAdminInput = {
   discountPercent?: number | null;
   occasion?: string[];
   excludedDeliveryDestinations?: DeliveryDestinationId[];
+  contactBeforeOrder?: boolean;
   adminOverrides?: {
     nameEn?: string | null;
     nameTh?: string | null;
@@ -672,6 +677,7 @@ export async function createAdminReviewBouquetInCatalog(
       pricing,
       status: 'pending_review',
       featured_popular: input.featuredPopular === true,
+      contact_before_order: input.contactBeforeOrder === true,
       delivery_options: input.deliveryOptions ?? [],
       excluded_delivery_destinations: input.excludedDeliveryDestinations ?? [],
       presentation_formats: input.presentationFormats ?? [],
@@ -725,6 +731,7 @@ export async function createAdminReviewProductInCatalog(
       cost: price,
       commission_percent: 0,
       moderation_status: 'submitted',
+      contact_before_order: input.contactBeforeOrder === true,
       excluded_delivery_destinations: input.excludedDeliveryDestinations ?? [],
       images,
       structured_attributes: occasion ? { occasion } : {},
@@ -819,6 +826,9 @@ export async function updateCatalogProductByAdmin(
     }),
     ...(input.excludedDeliveryDestinations != null && {
       excluded_delivery_destinations: input.excludedDeliveryDestinations,
+    }),
+    ...(input.contactBeforeOrder != null && {
+      contact_before_order: input.contactBeforeOrder,
     }),
     ...(input.occasion != null && { structured_attributes: structured }),
     ...(input.adminOverrides != null && { admin_overrides: input.adminOverrides }),

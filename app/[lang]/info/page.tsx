@@ -3,6 +3,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBaseUrl } from '@/lib/orders';
 import { isValidLocale, type Locale } from '@/lib/i18n';
+import { articlePageRobots, buildArticleAlternates } from '@/lib/seo/alternates';
+import {
+  openGraphLocale,
+  websiteOpenGraph,
+  websiteTwitter,
+} from '@/lib/seo/shareMetadata';
 import { getInfoHubGuides } from './_data/articles';
 import { InfoCard } from './InfoCard';
 import { WeekdayClusterHub } from './WeekdayClusterHub';
@@ -18,21 +24,31 @@ export async function generateMetadata({
   const { lang } = params;
   if (!isValidLocale(lang)) return { title: 'Lanna Bloom' };
   const locale = lang as Locale;
-  const title =
-    locale === 'en'
-      ? 'Guides & Info | Lanna Bloom'
-      : 'คู่มือและข้อมูล | Lanna Bloom';
-  const description =
-    locale === 'en'
-      ? 'Flower delivery guides, same-day delivery info, and tips for ordering bouquets in Chiang Mai.'
-      : 'คู่มือการจัดส่งดอกไม้ ข้อมูลจัดส่งวันเดียว และเคล็ดลับการสั่งช่อดอกไม้ในเชียงใหม่';
-  const base = getBaseUrl();
+  const isTh = locale === 'th';
+  const title = isTh
+    ? 'คู่มือและข้อมูล | Lanna Bloom'
+    : 'Guides & Info | Lanna Bloom';
+  const description = isTh
+    ? 'คู่มือการจัดส่งดอกไม้ ข้อมูลจัดส่งวันเดียว และเคล็ดลับการสั่งช่อดอกไม้ในเชียงใหม่'
+    : 'Flower delivery guides, same-day delivery info, and tips for ordering bouquets in Chiang Mai.';
+  const robots = articlePageRobots(lang);
+  const alternates = buildArticleAlternates({ lang, pathSuffix: '/info' });
+  const canonical =
+    typeof alternates.canonical === 'string'
+      ? alternates.canonical
+      : `${getBaseUrl()}/${lang}/info`;
   return {
     title,
     description,
-    alternates: {
-      canonical: `${base}/${lang}/info`,
-    },
+    ...(robots ? { robots } : {}),
+    alternates,
+    openGraph: websiteOpenGraph({
+      title,
+      description,
+      url: canonical,
+      locale: openGraphLocale(locale),
+    }),
+    twitter: websiteTwitter({ title, description }),
   };
 }
 
@@ -53,22 +69,22 @@ export default async function InfoHubPage({
   const catalogHref = `/${lang}/catalog`;
 
   const t =
-    locale === 'en'
+    locale === 'th'
       ? {
-          h1: 'Guides & Info',
-          intro:
-            'Flower delivery guides, same-day delivery info, and tips for ordering bouquets in Chiang Mai.',
-          browseBouquets: 'Browse bouquets',
-          allGuides: 'All guides',
-          weekdaySeries: 'Thai weekday flowers',
-        }
-      : {
           h1: 'คู่มือและข้อมูล',
           intro:
             'คู่มือการจัดส่งดอกไม้ ข้อมูลจัดส่งวันเดียว และเคล็ดลับการสั่งช่อดอกไม้ในเชียงใหม่',
           browseBouquets: 'เลือกช่อดอกไม้',
           allGuides: 'คู่มือทั้งหมด',
           weekdaySeries: 'ดอกไม้ตามวันเกิด',
+        }
+      : {
+          h1: 'Guides & Info',
+          intro:
+            'Flower delivery guides, same-day delivery info, and tips for ordering bouquets in Chiang Mai.',
+          browseBouquets: 'Browse bouquets',
+          allGuides: 'All guides',
+          weekdaySeries: 'Thai weekday flowers',
         };
 
   const guides = getInfoHubGuides();

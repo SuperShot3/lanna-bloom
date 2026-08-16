@@ -7,7 +7,8 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getBaseUrl } from '@/lib/orders';
 import { getLineContactUrl } from '@/lib/messenger';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
-import { buildAlternates } from '@/lib/seo/alternates';
+import { articlePageRobots, buildArticleAlternates } from '@/lib/seo/alternates';
+import { defaultShareImages, websiteTwitter } from '@/lib/seo/shareMetadata';
 import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCoverAlt, getArticleCtaLinks } from '../_data/articles';
 import { isCommercialIntentSlug } from '@/lib/landingPages/intentLandingPages';
 import { ShareButton } from '@/components/ShareButton';
@@ -66,9 +67,14 @@ export async function generateMetadata({
   const article = getArticleBySlug(slug);
   if (!article) return { title: 'Lanna Bloom' };
   const base = getBaseUrl();
-  const canonical = article.externalPath
-    ? `${base}/${lang}${article.externalPath}`
-    : `${base}/${lang}/info/${slug}`;
+  const pathSuffix = article.externalPath
+    ? article.externalPath.replace(/\/$/, '') || ''
+    : `/info/${slug}`;
+  const alternates = buildArticleAlternates({ lang, pathSuffix });
+  const canonical =
+    typeof alternates.canonical === 'string'
+      ? alternates.canonical
+      : `${base}/${lang}${pathSuffix}`;
   const title = getArticleTitle(article, lang);
   const description = getArticleExcerpt(article, lang);
   const coverImage =
@@ -76,33 +82,26 @@ export async function generateMetadata({
   const coverAlt = getArticleCoverAlt(article, lang);
   const ogImages = coverImage
     ? [{ url: coverImage, ...(coverAlt ? { alt: coverAlt } : {}) }]
-    : undefined;
-  const pathSuffix = article.externalPath
-    ? article.externalPath.replace(/\/$/, '') || ''
-    : `/info/${slug}`;
+    : defaultShareImages();
+  const robots = articlePageRobots(lang, article.noindex);
   return {
     title: `${title} | Lanna Bloom`,
     description,
-    ...(article.noindex ? { robots: { index: false, follow: false } } : {}),
-    alternates: buildAlternates({
-      lang,
-      pathSuffix,
-      canonical,
-    }),
+    ...(robots ? { robots } : {}),
+    alternates,
     openGraph: {
       title: `${title} | Lanna Bloom`,
       description,
       url: canonical,
       type: 'article',
       publishedTime: article.publishedAt,
-      ...(ogImages ? { images: ogImages } : {}),
+      images: ogImages,
     },
-    twitter: {
-      card: 'summary_large_image',
+    twitter: websiteTwitter({
       title: `${title} | Lanna Bloom`,
       description,
-      ...(ogImages ? { images: ogImages } : {}),
-    },
+      imageUrl: coverImage ?? undefined,
+    }),
   };
 }
 

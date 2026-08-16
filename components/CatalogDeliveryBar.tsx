@@ -9,6 +9,7 @@ import {
   getSameDayDeliveryPhaseBangkok,
   getTomorrowBangkokDisplayDate,
   formatBangkokTime,
+  intlLocaleForLang,
 } from '@/lib/deliveryHours';
 import {
   getNavMarkets,
@@ -38,7 +39,7 @@ const DELIVERY_END_TIME = '20:00';
 
 function formatDeliveryDate(ymd: string, lang: Locale): string {
   const date = new Date(`${ymd}T12:00:00+07:00`);
-  return date.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', {
+  return date.toLocaleDateString(intlLocaleForLang(lang), {
     timeZone: 'Asia/Bangkok',
     weekday: 'short',
     day: 'numeric',
@@ -218,13 +219,13 @@ export function CatalogDeliveryBar({
           />
           <label className="catalog-delivery-location-wrap">
             <span className="sr-only">
-              {lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery location'}
+              {t.chooseDeliveryLocation}
             </span>
             <select
               className="catalog-delivery-location-select"
               value={locationValue}
               onChange={handleLocationChange}
-              aria-label={lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery location'}
+              aria-label={t.chooseDeliveryLocation}
             >
               <option value="CHIANG_MAI">Chiang Mai</option>
               {getNavMarkets().map((m) => (
@@ -237,16 +238,12 @@ export function CatalogDeliveryBar({
         </div>
         <div
           className="catalog-delivery-clock"
-          title={
-            lang === 'th'
-              ? 'เวลาท้องถิ่น (เชียงใหม่)'
-              : 'Local time (Asia/Bangkok)'
-          }
+          title={t.localTimeTitle}
         >
           <time dateTime={now?.toISOString()} suppressHydrationWarning>
             {now ? formatBangkokTime(now, lang) : '--:--'}
           </time>
-          <span>{lang === 'th' ? 'เวลาท้องถิ่น' : 'local'}</span>
+          <span>{t.localTimeLabel}</span>
         </div>
       </div>
 

@@ -24,6 +24,11 @@ import {
 } from '@/lib/catalogReads';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildAlternates } from '@/lib/seo/alternates';
+import {
+  openGraphLocale,
+  websiteOpenGraph,
+  websiteTwitter,
+} from '@/lib/seo/shareMetadata';
 import styles from './CollectionLandingPage.module.css';
 
 export const revalidate = 60;
@@ -139,14 +144,16 @@ export async function generateMetadata({
       pathSuffix: hub.canonicalPath,
       canonical,
     }),
-    openGraph: {
+    openGraph: websiteOpenGraph({
       title: copy.seoTitle,
       description: copy.seoDescription,
       url: canonical,
-      siteName: 'Lanna Bloom',
-      locale: locale === 'th' ? 'th_TH' : 'en_US',
-      type: 'website',
-    },
+      locale: openGraphLocale(locale),
+    }),
+    twitter: websiteTwitter({
+      title: copy.seoTitle,
+      description: copy.seoDescription,
+    }),
   };
 }
 
