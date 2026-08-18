@@ -16,6 +16,7 @@ import {
   ADMIN_FLOWER_TYPE_OPTIONS,
   ADMIN_OCCASION_OPTIONS,
   ADMIN_PRICING_TYPE_OPTIONS,
+  exclusiveDeliverySpeedOnChange,
 } from '@/lib/catalogAdminFieldOptions';
 import type { PricingType } from '@/lib/catalog/pricing';
 import { useToast } from '@/contexts/ToastContext';
@@ -260,7 +261,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
   const [flowerTypes, setFlowerTypes] = useState<string[]>([]);
   const [occasionTags, setOccasionTags] = useState<string[]>([]);
   const [presentationCsv, setPresentationCsv] = useState('bouquet');
-  const [deliveryOptions, setDeliveryOptions] = useState<string[]>(['same_day', 'next_day']);
+  const [deliveryOptions, setDeliveryOptions] = useState<string[]>(['same_day']);
   const [availableDeliveryDestinations, setAvailableDeliveryDestinations] = useState<DeliveryDestinationId[]>([
     ...DELIVERY_DESTINATIONS,
   ]);
@@ -738,7 +739,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setFlowerTypes([]);
     setOccasionTags([]);
     setPresentationCsv('bouquet');
-    setDeliveryOptions(['same_day', 'next_day']);
+    setDeliveryOptions(['same_day']);
     setAvailableDeliveryDestinations([...DELIVERY_DESTINATIONS]);
     setFeaturedPopular(false);
     setContactBeforeOrder(false);
@@ -1315,17 +1316,26 @@ function CopySaveStep({
           <>
             <fieldset className="admin-form-group admin-product-create-occasion-hints">
               <legend>Delivery options</legend>
+              <small>Choose only one: same day, next day, or contact before order.</small>
               <AdminCheckboxGrid
                 idPrefix="create-delivery-options"
                 options={[...ADMIN_DELIVERY_SPEED_OPTIONS]}
                 selected={deliveryOptions}
-                onChange={setDeliveryOptions}
+                onChange={(next) => {
+                  const exclusive = exclusiveDeliverySpeedOnChange(deliveryOptions, next);
+                  setDeliveryOptions(exclusive);
+                  if (exclusive.length > 0) setContactBeforeOrder(false);
+                }}
               />
               <label className="admin-product-create-checkbox">
                 <input
                   type="checkbox"
                   checked={contactBeforeOrder}
-                  onChange={(event) => setContactBeforeOrder(event.target.checked)}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setContactBeforeOrder(checked);
+                    if (checked) setDeliveryOptions([]);
+                  }}
                 />
                 Contact before order — customers must message LINE, WhatsApp, or email first
               </label>

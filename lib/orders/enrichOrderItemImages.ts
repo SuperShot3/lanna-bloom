@@ -22,13 +22,18 @@ export async function enrichOrderItemImageUrl(
 ): Promise<string | undefined> {
   const id = (item.bouquetId ?? item.bouquet_id ?? '').trim();
   const client = item.imageUrl ?? item.image_url_snapshot ?? undefined;
-  const resolved = await resolveLineItemImageUrl({
-    itemType: item.itemType ?? item.item_type ?? 'bouquet',
-    id,
-    size: item.size,
-    clientImageUrl: client,
-  });
-  return resolved ?? (client?.trim() || undefined);
+  try {
+    const resolved = await resolveLineItemImageUrl({
+      itemType: item.itemType ?? item.item_type ?? 'bouquet',
+      id,
+      size: item.size,
+      clientImageUrl: client,
+    });
+    return resolved ?? (client?.trim() || undefined);
+  } catch (err) {
+    console.error('[enrichOrderItemImageUrl] catalog lookup failed:', err, { id });
+    return client?.trim() || undefined;
+  }
 }
 
 /** Map order.items[] replacing imageUrl with catalog-resolved thumbs. */

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getContactPhoneDisplay, getContactPhoneTelUrl, getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
 import { LineIcon, WhatsAppIcon, HomeIcon, PhoneIcon, EmailIcon } from '@/components/icons';
 import { flowerDeliverySubtitleLabel } from '@/lib/delivery/markets';
+import { isStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { translations } from '@/lib/i18n';
 import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import type { OrderCustomerView } from '@/lib/orders';
@@ -618,7 +619,9 @@ export function OrderPageClient({
           {(order.items ?? []).map((item, i) => (
             <div key={i} className="order-redesign-item-row">
               <div className="order-redesign-item-img">
-                {item.imageUrl && !isLegacySanityImageUrl(item.imageUrl) ? (
+                {item.imageUrl &&
+                !isLegacySanityImageUrl(item.imageUrl) &&
+                isStorefrontRenderableImageUrl(item.imageUrl) ? (
                   <Image
                     src={item.imageUrl}
                     alt=""
@@ -660,7 +663,7 @@ export function OrderPageClient({
             </div>
           </div>
 
-          {(order.customerName || order.phone) && (
+          {(order.customerName || order.phone || order.customerEmail) && (
             <>
               <div className="order-redesign-section-title">{t.sender}</div>
               <div className="order-redesign-meta-card">

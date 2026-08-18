@@ -61,6 +61,7 @@ import {
 } from '@/lib/catalog/mappers';
 
 import { filterStorefrontCatalogStoredImages, isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
+import { isCatalogUuid, isInvalidUuidQueryError } from '@/lib/catalog/ids';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
 
 import type {
@@ -598,47 +599,55 @@ export async function getBouquetByLegacySanityId(legacyId: string): Promise<Bouq
 
 export async function getBouquetByIdFromCatalog(bouquetId: string): Promise<Bouquet | null> {
 
+  const id = bouquetId.trim();
+
+  if (!id) return null;
+
   const supabase = requireSupabase();
 
-  const { data, error } = await supabase
+  if (isCatalogUuid(id)) {
 
-    .from('catalog_bouquets')
+    const { data, error } = await supabase
 
-    .select('*')
-
-    .eq('id', bouquetId)
-
-    .maybeSingle();
-
-
-
-  if (error) throw new Error(error.message);
-
-  if (!data) return getBouquetByLegacySanityId(bouquetId);
-
-  const row = data as CatalogBouquetRow;
-
-
-
-  let partner: CatalogPartnerRow | null = null;
-
-  if (row.partner_id) {
-
-    const { data: p } = await supabase
-
-      .from('catalog_partners')
+      .from('catalog_bouquets')
 
       .select('*')
 
-      .eq('id', row.partner_id)
+      .eq('id', id)
 
       .maybeSingle();
 
-    partner = (p as CatalogPartnerRow) ?? null;
+    if (error && !isInvalidUuidQueryError(error)) throw new Error(error.message);
+
+    if (data) {
+
+      const row = data as CatalogBouquetRow;
+
+      let partner: CatalogPartnerRow | null = null;
+
+      if (row.partner_id) {
+
+        const { data: p } = await supabase
+
+          .from('catalog_partners')
+
+          .select('*')
+
+          .eq('id', row.partner_id)
+
+          .maybeSingle();
+
+        partner = (p as CatalogPartnerRow) ?? null;
+
+      }
+
+      return mapBouquetRowWithImages(supabase, row, partner);
+
+    }
 
   }
 
-  return mapBouquetRowWithImages(supabase, row, partner);
+  return getBouquetByLegacySanityId(id);
 
 }
 
@@ -1099,23 +1108,29 @@ type StripeProductPricing = {
 
 async function fetchProductRowById(productId: string): Promise<CatalogProductRow | null> {
 
+  const id = productId.trim();
+
+  if (!id) return null;
+
   const supabase = requireSupabase();
 
-  const { data, error } = await supabase
+  if (isCatalogUuid(id)) {
 
-    .from('catalog_products')
+    const { data, error } = await supabase
 
-    .select('*')
+      .from('catalog_products')
 
-    .eq('id', productId)
+      .select('*')
 
-    .maybeSingle();
+      .eq('id', id)
 
-  if (error) throw new Error(error.message);
+      .maybeSingle();
 
-  if (data) return data as CatalogProductRow;
+    if (error && !isInvalidUuidQueryError(error)) throw new Error(error.message);
 
+    if (data) return data as CatalogProductRow;
 
+  }
 
   const { data: legacy, error: legacyErr } = await supabase
 
@@ -1123,7 +1138,7 @@ async function fetchProductRowById(productId: string): Promise<CatalogProductRow
 
     .select('*')
 
-    .eq('legacy_sanity_id', productId)
+    .eq('legacy_sanity_id', id)
 
     .maybeSingle();
 

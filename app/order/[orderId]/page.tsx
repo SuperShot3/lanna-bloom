@@ -157,8 +157,7 @@ export default async function OrderDetailsPage({
 
   /** Website checkout is Stripe-only; unpaid here means not yet paid or legacy unpaid rows. */
   const paymentStatusUpper = (supabasePayment?.payment_status ?? 'NOT_PAID').toUpperCase();
-  const canPay =
-    !paid && paymentStatusUpper !== 'CANCELLED' && paymentStatusUpper !== 'ERROR';
+  const canPay = !paid && paymentStatusUpper !== 'CANCELLED';
 
   const enrichedItems = await enrichOrderItemsImages(order.items ?? []);
   const orderForClient = { ...order, items: enrichedItems };

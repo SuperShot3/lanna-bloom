@@ -14,6 +14,7 @@ import {
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/catalogCategories';
 import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
 import type { PricingType } from '@/lib/catalog/pricing';
+import { exclusiveDeliveryMode } from '@/lib/catalogAdminFieldOptions';
 
 export const runtime = 'nodejs';
 
@@ -158,6 +159,10 @@ export async function POST(request: NextRequest) {
     }
 
     const pricingType = parsePricingType(b.pricingType) ?? 'single_price';
+    const deliveryMode = exclusiveDeliveryMode({
+      deliveryOptions: stringArrayField(b, 'deliveryOptions'),
+      contactBeforeOrder: b.contactBeforeOrder === true,
+    });
 
     const result = await createAdminReviewBouquetInCatalog({
       nameEn,
@@ -173,10 +178,10 @@ export async function POST(request: NextRequest) {
       flowerTypes: stringArrayField(b, 'flowerTypes'),
       occasion: stringArrayField(b, 'occasion'),
       presentationFormats: stringArrayField(b, 'presentationFormats'),
-      deliveryOptions: stringArrayField(b, 'deliveryOptions'),
+      deliveryOptions: deliveryMode.deliveryOptions,
       excludedDeliveryDestinations,
       featuredPopular: b.featuredPopular === true,
-      contactBeforeOrder: b.contactBeforeOrder === true,
+      contactBeforeOrder: deliveryMode.contactBeforeOrder,
       pricingType,
       createdBy,
       createdAt,

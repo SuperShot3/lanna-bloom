@@ -62,9 +62,9 @@ export function isStorefrontRenderableImageUrl(src: string | undefined | null): 
     if (protocol !== 'https:' && protocol !== 'http:') return false;
     const host = hostname.toLowerCase();
     if (host === 'images.unsplash.com') return true;
-    if (isSanityCdnHostname(host)) return true;
+    if (isSanityCdnHostname(host)) return false;
     if (isSupabaseStorageHostname(host)) {
-      return pathname.includes('/storage/v1/object/');
+      return pathname.includes('/storage/v1/object/public/');
     }
     return false;
   } catch {

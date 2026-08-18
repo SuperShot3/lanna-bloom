@@ -15,6 +15,36 @@ export const ADMIN_DELIVERY_SPEED_OPTIONS = [
   { value: 'next_day', label: 'Next day' },
 ] as const;
 
+const DELIVERY_SPEED_VALUES: readonly string[] = ADMIN_DELIVERY_SPEED_OPTIONS.map((o) => o.value);
+
+/** Keep at most one of same_day / next_day. */
+export function exclusiveDeliverySpeedOptions(selected: string[]): string[] {
+  const matched = selected.filter((v) => DELIVERY_SPEED_VALUES.includes(v));
+  if (matched.length <= 1) return matched;
+  return [matched[matched.length - 1]];
+}
+
+/** Checkbox-grid change: newly checked speed replaces any previous speed. */
+export function exclusiveDeliverySpeedOnChange(previous: string[], next: string[]): string[] {
+  const added = next.filter((v) => !previous.includes(v));
+  if (added.length > 0) return exclusiveDeliverySpeedOptions(added);
+  return exclusiveDeliverySpeedOptions(next);
+}
+
+/** Same day, next day, and contact-before-order are mutually exclusive. */
+export function exclusiveDeliveryMode(input: {
+  deliveryOptions?: string[];
+  contactBeforeOrder?: boolean;
+}): { deliveryOptions: string[]; contactBeforeOrder: boolean } {
+  const deliveryOptions = (input.deliveryOptions ?? []).filter((v) =>
+    DELIVERY_SPEED_VALUES.includes(v)
+  );
+  if (input.contactBeforeOrder) {
+    return { deliveryOptions: [], contactBeforeOrder: true };
+  }
+  return { deliveryOptions, contactBeforeOrder: false };
+}
+
 export const ADMIN_COLOR_OPTIONS = [
   { value: 'red', label: 'Red' },
   { value: 'pink', label: 'Pink' },

@@ -135,6 +135,8 @@ function rowToOrder(row: SupabaseOrderRow, items: SupabaseOrderItemRow[]): Order
       orderId: row.order_id,
       marketingEmailConsent:
         row.marketing_email_consent === true || json.marketingEmailConsent === true,
+      customerName: row.customer_name?.trim() || json.customerName,
+      customerEmail: row.customer_email?.trim() || json.customerEmail,
       phone: row.phone ?? json.phone,
       phoneCountryCode: phoneCc || json.phoneCountryCode,
       createdAt: row.created_at ?? json.createdAt ?? new Date().toISOString(),

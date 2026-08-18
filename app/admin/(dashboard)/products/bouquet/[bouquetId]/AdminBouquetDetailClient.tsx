@@ -33,6 +33,7 @@ import {
   ADMIN_OCCASION_OPTIONS,
   availableMarketsFromExcluded,
   excludedMarketsFromAvailable,
+  exclusiveDeliverySpeedOnChange,
 } from '@/lib/catalogAdminFieldOptions';
 import { confirmCatalogDeleteAction } from '@/app/admin/components/confirmDelete';
 import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogShelfDirtyContext';
@@ -728,18 +729,29 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       </AdminCmsCollapsibleSection>
 
       <div className="admin-cms-collapsible-stack">
-        <AdminCmsCollapsibleSection label="Delivery speed">
+        <AdminCmsCollapsibleSection
+          label="Delivery speed"
+          helper="Choose only one: same day, next day, or contact before order."
+        >
           <AdminCheckboxGrid
             idPrefix="delivery-speed"
             options={[...ADMIN_DELIVERY_SPEED_OPTIONS]}
             selected={deliveryOptions}
-            onChange={setDeliveryOptions}
+            onChange={(next) => {
+              const exclusive = exclusiveDeliverySpeedOnChange(deliveryOptions, next);
+              setDeliveryOptions(exclusive);
+              if (exclusive.length > 0) setContactBeforeOrder(false);
+            }}
           />
           <label className="admin-cms-checkbox">
             <input
               type="checkbox"
               checked={contactBeforeOrder}
-              onChange={(e) => setContactBeforeOrder(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setContactBeforeOrder(checked);
+                if (checked) setDeliveryOptions([]);
+              }}
             />
             <span>Contact before order</span>
           </label>

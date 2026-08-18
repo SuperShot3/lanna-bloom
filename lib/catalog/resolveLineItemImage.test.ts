@@ -80,6 +80,10 @@ function bouquetFixture(): Bouquet {
 assert.equal(isUsableLineItemImageUrl(IMG_YELLOW), true);
 assert.equal(isUsableLineItemImageUrl('data:image/svg+xml,No%20image'), false);
 assert.equal(isUsableLineItemImageUrl('https://cdn.sanity.io/images/x.jpg'), false);
+assert.equal(
+  isUsableLineItemImageUrl('https://xxx.supabase.co/storage/v1/object/sign/catalog/x.webp'),
+  false
+);
 
 const bouquet = bouquetFixture();
 

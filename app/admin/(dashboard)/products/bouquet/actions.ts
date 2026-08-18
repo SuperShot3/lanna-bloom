@@ -50,6 +50,7 @@ import {
   type UpdateCatalogBouquetByAdminInput,
 } from '@/lib/catalogWrite';
 import { catalogImageFormat } from '@/lib/catalog/storefrontImages';
+import { exclusiveDeliveryMode } from '@/lib/catalogAdminFieldOptions';
 import { canChangeStatus } from '@/lib/adminRbac';
 
 function shouldConvertOnUpload(formData: FormData): boolean {
@@ -172,6 +173,13 @@ export async function updateBouquetByAdminAction(formData: FormData): Promise<{ 
     presentationFormats: parseCommaList(String(formData.get('presentationFormats') ?? '')),
     deliveryOptions: parseCommaList(String(formData.get('deliveryOptions') ?? '')),
   };
+
+  const deliveryMode = exclusiveDeliveryMode({
+    deliveryOptions: input.deliveryOptions,
+    contactBeforeOrder: input.contactBeforeOrder,
+  });
+  input.deliveryOptions = deliveryMode.deliveryOptions;
+  input.contactBeforeOrder = deliveryMode.contactBeforeOrder;
 
   const pricingTypeRaw = String(formData.get('pricingType') ?? '').trim() as PricingType;
   if (!PRICING_TYPES.has(pricingTypeRaw)) {
