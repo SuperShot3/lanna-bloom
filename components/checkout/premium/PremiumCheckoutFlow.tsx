@@ -849,7 +849,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-size: 16px;
           font-family: inherit;
           box-sizing: border-box;
-          background: #fff;
+          background: var(--surface);
           color: var(--text);
         }
         .premium-checkout .co-sender-fields .co-input:focus {
@@ -864,7 +864,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           border: 1px solid var(--border);
           border-radius: 12px;
           overflow: hidden;
-          background: #fff;
+          background: var(--surface);
         }
         .premium-checkout .co-sender-fields .co-phone-row:focus-within {
           border-color: var(--accent);
@@ -915,7 +915,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           padding: 8px 14px;
           border-radius: 999px;
           border: 2px solid var(--border);
-          background: color-mix(in srgb, var(--pastel-cream) 80%, #fff);
+          background: var(--surface);
           font-size: 13px;
           font-weight: 500;
           color: var(--text);
@@ -954,7 +954,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           height: 16px;
           border: 1.5px solid var(--border);
           border-radius: 4px;
-          background: #fff;
+          background: var(--surface);
           box-sizing: border-box;
           transition: border-color 0.15s, background 0.15s;
         }
@@ -971,7 +971,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           justify-content: center;
           font-size: 11px;
           font-weight: 700;
-          color: #fff;
+          color: var(--accent-cta-text);
           line-height: 1;
         }
         .premium-checkout .co-sender-fields .cart-contact-chip-label {
@@ -1062,7 +1062,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           line-height: 1.45;
           font-weight: 500;
           color: var(--text);
-          background: color-mix(in srgb, var(--pastel-cream) 65%, #fff);
+          background: var(--surface);
           border: 1px solid var(--border);
         }
         .co-delivery-constraint-notice p {
@@ -1134,7 +1134,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           padding: 8px 14px;
           border-radius: 999px;
           border: 1px solid var(--border);
-          background: color-mix(in srgb, var(--pastel-cream) 80%, #fff);
+          background: var(--surface);
           color: var(--text-muted);
           font-weight: 500;
           transition:
@@ -1146,7 +1146,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           color: var(--primary);
           font-weight: 600;
           border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
-          background: color-mix(in srgb, var(--pastel-mint) 50%, #fff);
+          background: var(--pastel-mint);
         }
         .co-clear-btn--chip:hover:not(:disabled) {
           border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
@@ -1167,7 +1167,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           }
         }
         .co-card {
-          background: #fff;
+          background: var(--surface);
           border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
           border-radius: 16px;
           box-shadow: 0 2px 12px rgba(26, 60, 52, 0.04);
@@ -1188,7 +1188,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-size: 16px;
           font-family: inherit;
           box-sizing: border-box;
-          background: #fff;
+          background: var(--surface);
           color: var(--text);
         }
         .co-gift-message-card :global(.co-textarea) {
@@ -1252,7 +1252,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           background: linear-gradient(
             90deg,
             var(--pastel-cream) 25%,
-            color-mix(in srgb, var(--pastel-cream) 60%, #fff) 50%,
+            var(--surface) 50%,
             var(--pastel-cream) 75%
           );
           background-size: 200% 100%;
@@ -1315,7 +1315,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           border: 1px solid var(--border);
           border-radius: 10px;
           overflow: hidden;
-          background: #fff;
+          background: var(--surface);
           width: fit-content;
         }
         .co-qty-stepper__btn {
@@ -1396,8 +1396,8 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-size: 16px;
           font-family: inherit;
           box-sizing: border-box;
-          background: #fff;
-        }
+          background: var(--surface);
+          color: var(--text);
         .co-textarea {
           min-height: 88px;
           resize: vertical;
@@ -1543,7 +1543,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           font-size: 13px;
           line-height: 1.45;
           color: var(--text);
-          background: color-mix(in srgb, #5c4a1f 8%, #fff);
+          background: color-mix(in srgb, #5c4a1f 18%, var(--surface));
           border: 1px solid color-mix(in srgb, #5c4a1f 20%, var(--border));
         }
         .co-peak-active-notice :global(a) {

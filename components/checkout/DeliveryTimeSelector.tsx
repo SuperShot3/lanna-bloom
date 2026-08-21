@@ -361,7 +361,7 @@ export function DeliveryTimeSelector({
           line-height: 1.45;
           font-weight: 500;
           color: var(--text);
-          background: color-mix(in srgb, var(--pastel-cream) 65%, #fff);
+          background: var(--surface);
           border: 1px solid var(--border);
         }
         .delivery-time-selector__tiles {
@@ -412,7 +412,7 @@ export function DeliveryTimeSelector({
           border-radius: 10px;
           font-size: 15px;
           font-family: inherit;
-          background: #fff;
+          background: var(--surface);
           box-sizing: border-box;
           color: var(--text);
           transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
@@ -427,7 +427,7 @@ export function DeliveryTimeSelector({
         .delivery-time-selector__input::-webkit-datetime-edit-minute-field:focus,
         .delivery-time-selector__input::-webkit-datetime-edit-second-field:focus,
         .delivery-time-selector__input::-webkit-datetime-edit-ampm-field:focus {
-          background: color-mix(in srgb, var(--accent-soft) 85%, #fff);
+          background: var(--accent-soft);
           color: var(--text);
           outline: none;
           border-radius: 4px;

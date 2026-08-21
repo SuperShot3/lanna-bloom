@@ -608,7 +608,7 @@ export function CartCheckoutView({
                 border: none;
                 border-radius: 12px;
                 background: var(--primary);
-                color: #fff;
+                color: var(--primary-foreground);
                 font-size: 16px;
                 font-weight: 600;
                 font-family: inherit;

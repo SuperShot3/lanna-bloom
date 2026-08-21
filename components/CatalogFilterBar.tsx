@@ -12,9 +12,9 @@ import {
 } from '@/lib/catalogCategories';
 
 const CATEGORY_ICONS: Partial<Record<CatalogTopCategory, string>> = {
-  flowers: '/icons/category_icons/flowers_icon.webp',
-  plushy_toys: '/icons/category_icons/teadybear_category_icon.webp',
-  balloons: '/icons/category_icons/Ballons_category_icon.webp',
+  flowers: '/icons/category_icons/flowers_icon.webp?v=2',
+  plushy_toys: '/icons/category_icons/teadybear_category_icon.webp?v=2',
+  balloons: '/icons/category_icons/Ballons_category_icon.webp?v=2',
 };
 
 export interface CatalogFilterBarProps {
@@ -304,6 +304,7 @@ export function CatalogFilterBar({
           display: flex;
           align-items: center;
           gap: 5px;
+          isolation: isolate;
           border: 1.5px solid var(--border);
           background: var(--surface);
           border-radius: 100px;

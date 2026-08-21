@@ -68,7 +68,7 @@ export function SelectionTile({
           min-height: 72px;
           border-radius: 14px;
           border: 1.5px solid var(--border);
-          background: #fff;
+          background: var(--surface);
           cursor: pointer;
           font-family: inherit;
           text-align: left;
@@ -173,7 +173,7 @@ export function SuggestionChip({
           padding: 8px 14px;
           border-radius: 999px;
           border: 1px solid var(--border);
-          background: color-mix(in srgb, var(--pastel-cream) 80%, #fff);
+          background: var(--surface);
           font-size: 13px;
           font-weight: 500;
           color: var(--text);

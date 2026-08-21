@@ -137,7 +137,7 @@ export function GoogleMapsLinkPromptModal({
         }
         .maps-prompt-card {
           position: relative;
-          background: color-mix(in srgb, var(--pastel-cream) 35%, #fffdf9);
+          background: var(--surface);
           border-radius: 18px;
           box-shadow: var(--shadow-hover);
           max-width: 420px;
@@ -228,7 +228,7 @@ export function GoogleMapsLinkPromptModal({
         .maps-prompt-btn--primary {
           border: none;
           background: var(--primary);
-          color: #fff;
+          color: var(--primary-foreground);
         }
         .maps-prompt-btn--primary:hover,
         .maps-prompt-btn--primary:focus-visible {
@@ -239,7 +239,7 @@ export function GoogleMapsLinkPromptModal({
         }
         .maps-prompt-btn--secondary {
           border: 1px solid var(--border);
-          background: #fff;
+          background: var(--surface);
           color: var(--text);
         }
         .maps-prompt-btn--secondary:hover,

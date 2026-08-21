@@ -97,7 +97,7 @@ export function RecipientOptInToggle({
           padding: 10px 18px;
           border-radius: 999px;
           border: 1.5px solid var(--border);
-          background: color-mix(in srgb, var(--pastel-cream) 75%, #fff);
+          background: var(--surface);
           font-size: 15px;
           font-weight: 600;
           font-family: inherit;

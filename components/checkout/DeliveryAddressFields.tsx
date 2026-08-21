@@ -224,7 +224,7 @@ export function DeliveryAddressFields({
           font-size: 16px;
           font-family: inherit;
           color: var(--text);
-          background: #fff;
+          background: var(--surface);
           box-sizing: border-box;
           transition:
             border-color 0.2s ease,
@@ -242,7 +242,7 @@ export function DeliveryAddressFields({
           border: 1px solid var(--border);
           border-radius: 14px;
           overflow: hidden;
-          background: #fff;
+          background: var(--surface);
         }
         .co-maps-link-row:focus-within {
           border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
@@ -275,7 +275,7 @@ export function DeliveryAddressFields({
           padding: 0;
           border: none;
           border-left: 1px solid var(--border);
-          background: color-mix(in srgb, var(--pastel-cream) 70%, #fff);
+          background: var(--pastel-cream);
           text-decoration: none;
           cursor: pointer;
           touch-action: manipulation;

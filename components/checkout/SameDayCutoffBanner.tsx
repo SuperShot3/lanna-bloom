@@ -79,17 +79,17 @@ export function SameDayCutoffBanner({ lang }: { lang: Locale }) {
         }
         .co-same-day-banner--open {
           color: color-mix(in srgb, var(--primary) 85%, var(--text));
-          background: color-mix(in srgb, var(--pastel-cream) 80%, #fff);
+          background: var(--surface);
           border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
         }
         .co-same-day-banner--warn {
           color: var(--text);
-          background: color-mix(in srgb, var(--pastel-cream) 65%, #fff);
+          background: var(--surface);
           border: 1px solid var(--border);
         }
         .co-same-day-banner--closed {
           color: var(--text-muted);
-          background: color-mix(in srgb, var(--border) 35%, #fff);
+          background: var(--muted);
           border: 1px solid var(--border);
         }
       `}</style>

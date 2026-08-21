@@ -107,7 +107,7 @@ export function CheckoutBottomAction({
           right: 0;
           z-index: 60;
           padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
-          background: rgba(255, 252, 248, 0.86);
+          background: color-mix(in srgb, var(--bg) 90%, transparent);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -169,8 +169,8 @@ export function CheckoutBottomAction({
           font-weight: 600;
           font-family: inherit;
           cursor: pointer;
-          background: color-mix(in srgb, var(--primary) 88%, #000);
-          color: #fff;
+          background: var(--primary);
+          color: var(--primary-foreground);
           transition: transform 0.15s, opacity 0.2s;
         }
         .checkout-bottom-action__btn--pay {

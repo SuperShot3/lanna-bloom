@@ -2223,7 +2223,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           padding: 12px 0 48px;
         }
         .cart-page--premium {
-          background: color-mix(in srgb, var(--pastel-cream) 50%, #fffdf9);
+          background: var(--bg);
           min-height: 100vh;
           padding-bottom: 16px;
         }
@@ -2271,9 +2271,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           color: var(--text);
         }
         .cart-expansion-block-notice {
-          background: #fff7ed;
+          background: color-mix(in srgb, #fdba74 18%, var(--surface));
           border: 1px solid #fdba74;
-          color: #9a3412;
+          color: color-mix(in srgb, #9a3412 35%, var(--text));
         }
         .cart-conflicts-title {
           margin: 0 0 8px;
@@ -2615,7 +2615,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         .cart-delivery :global(.buy-now-form) {
           margin-top: 0;
-          background: #fff;
+          background: var(--surface);
         }
         .cart-section-title {
           font-size: 1.1rem;
@@ -2648,8 +2648,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           padding: 10px 16px;
           font-size: 0.9rem;
           font-weight: 700;
-          color: #fff;
-          background: var(--accent);
+          color: var(--accent-cta-text);
           border: none;
           border-radius: var(--radius-sm);
           cursor: pointer;
@@ -2958,7 +2957,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           justify-content: center;
           font-size: 11px;
           font-weight: 700;
-          color: #fff;
+          color: var(--accent-cta-text);
           line-height: 1;
         }
         .cart-contact-chip-label {
@@ -3283,7 +3282,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             justify-content: center;
             font-size: 11px;
             font-weight: 700;
-            color: #fff;
+            color: var(--accent-cta-text);
             line-height: 1;
           }
           .cart-accordion-body-contact .cart-contact-chip-label {
@@ -3294,7 +3293,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             padding: 14px 20px;
             font-size: 1rem;
             font-weight: 700;
-            color: #fff;
+            color: var(--accent-cta-text);
             background: var(--accent);
             border: none;
             border-radius: 8px;
@@ -3335,7 +3334,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           .cart-delivery .cart-place-order {
             margin-top: 0;
             padding: 12px 16px 16px;
-            background: #fff;
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
           }
@@ -3558,7 +3557,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             justify-content: center;
             font-size: 9px;
             font-weight: 700;
-            color: #fff;
+            color: var(--accent-cta-text);
             line-height: 1;
           }
           .cart-delivery .cart-required {
@@ -3637,29 +3636,29 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             width: 100% !important;
             padding: 12px 14px !important;
             font-size: 1rem !important;
-            border: 1px solid #ebe6e0 !important;
+            border: 1px solid var(--border) !important;
             border-radius: 8px !important;
-            background: #ffffff !important;
-            color: #2d2a26 !important;
+            background: var(--surface) !important;
+            color: var(--text) !important;
             min-height: 48px !important;
             box-sizing: border-box !important;
           }
           .cart-mobile-contact-fields .cart-phone-row {
             display: flex !important;
             align-items: stretch !important;
-            border: 1px solid #ebe6e0 !important;
+            border: 1px solid var(--border) !important;
             border-radius: 8px !important;
-            background: #ffffff !important;
+            background: var(--surface) !important;
             min-height: 48px !important;
           }
           .cart-mobile-contact-fields .cart-phone-country-select {
             padding: 10px 8px !important;
             font-size: 0.875rem !important;
             border: none !important;
-            border-right: 1px solid #ebe6e0 !important;
+            border-right: 1px solid var(--border) !important;
             border-radius: 8px 0 0 8px !important;
-            background: #f9f5f0 !important;
-            color: #2d2a26 !important;
+            background: var(--pastel-cream) !important;
+            color: var(--text) !important;
             min-height: 48px !important;
             flex: 0 1 7rem !important;
             min-width: 0 !important;
@@ -3746,7 +3745,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             justify-content: center !important;
             font-size: 9px !important;
             font-weight: 700 !important;
-            color: #fff !important;
+            color: var(--accent-cta-text) !important;
             line-height: 1 !important;
           }
           .cart-mobile-contact-fields .cart-ordering-for-else .cart-ordering-for-else-text {

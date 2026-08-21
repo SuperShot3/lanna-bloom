@@ -524,7 +524,7 @@ export function StickyCheckoutBar({
           width: 100%;
           max-width: 420px;
           z-index: 50;
-          background: rgba(253, 252, 248, 0.92);
+          background: color-mix(in srgb, var(--bg) 92%, transparent);
           backdrop-filter: blur(16px) saturate(180%);
           -webkit-backdrop-filter: blur(16px) saturate(180%);
           border-radius: 18px 18px 0 0;
@@ -646,7 +646,7 @@ export function StickyCheckoutBar({
           font-family: inherit;
         }
         .sticky-checkout-bar__date-change:hover {
-          background: #d4e6df;
+          background: var(--muted);
         }
         .sticky-checkout-bar__bottom-row {
           display: flex;
@@ -787,7 +787,7 @@ export function StickyCheckoutBar({
           font-family: inherit;
           font-size: 15px;
           font-weight: 700;
-          color: #fff;
+          color: var(--primary-foreground);
           box-shadow: 0 3px 12px rgba(156, 163, 175, 0.3);
           transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
           white-space: nowrap;
@@ -801,7 +801,7 @@ export function StickyCheckoutBar({
           box-shadow: 0 3px 12px rgba(26, 60, 52, 0.3);
         }
         .sticky-checkout-bar__btn-order--ready:hover:not(:disabled) {
-          background: #153029;
+          filter: brightness(0.92);
         }
         .sticky-checkout-bar__btn-order--locked:not(.sticky-checkout-bar__btn-order--loading) {
           opacity: 0.75;
@@ -973,14 +973,11 @@ export function StickyCheckoutBar({
           border-radius: 12px;
           border: none;
           background: var(--primary);
-          color: #fff;
-          font-size: 16px;
-          font-weight: 700;
-          cursor: pointer;
+          color: var(--primary-foreground);
           font-family: inherit;
         }
         .sticky-checkout-bar__sheet-save:hover {
-          background: #153029;
+          filter: brightness(0.92);
         }
       `}</style>
     </div>

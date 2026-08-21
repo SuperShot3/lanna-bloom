@@ -108,7 +108,7 @@ export function CartShareButton({
           box-sizing: border-box;
           border: 1px solid var(--border);
           border-radius: var(--radius-sm);
-          background: #fff;
+          background: var(--surface);
           color: var(--text);
           cursor: pointer;
           transition:
