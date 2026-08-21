@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { AdminImageLightbox } from '@/app/admin/components/AdminImageLightbox';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { formatThb } from '@/lib/costsUtils';
 import type {
@@ -34,6 +36,7 @@ export function ItemPurchaseHistoryPanel({
 }: ItemPurchaseHistoryPanelProps) {
   const summary = data?.summary;
   const rows = data?.rows ?? [];
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   return (
     <OverlayReveal open={open} className="admin-costs-history-reveal">
@@ -49,17 +52,18 @@ export function ItemPurchaseHistoryPanel({
             {' · '}
             Range {formatThb(summary.min)}–{formatThb(summary.max)}
             {' · '}
-            {summary.count} past {summary.count === 1 ? 'purchase' : 'purchases'}
+            {summary.count} {summary.count === 1 ? 'purchase' : 'purchases'}
           </p>
         ) : null}
         {!loading && !error && rows.length === 0 ? (
-          <p className="admin-hint">No past purchase costs for this item yet.</p>
+          <p className="admin-hint">No purchase costs for this item yet. Save a line cost to add this order.</p>
         ) : null}
         {rows.length > 0 ? (
           <div className="admin-expenses-table-wrap">
             <table className="admin-expenses-table">
               <thead>
                 <tr>
+                  <th>Photo</th>
                   <th>Date</th>
                   <th className="admin-expenses-col-amount">Cost</th>
                   <th>Shop</th>
@@ -71,6 +75,22 @@ export function ItemPurchaseHistoryPanel({
               <tbody>
                 {rows.map((row, idx) => (
                   <tr key={`${row.order_id}-${row.size ?? ''}-${row.cost}-${idx}`}>
+                    <td>
+                      {row.purchase_photo_url ? (
+                        <button
+                          type="button"
+                          className="admin-cogs-photo-thumb admin-costs-history-photo"
+                          onClick={() => setLightboxSrc(row.purchase_photo_url)}
+                          aria-label="View purchase photo"
+                          title="View large image"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- signed ops photo */}
+                          <img src={row.purchase_photo_url} alt="" />
+                        </button>
+                      ) : (
+                        <span className="admin-hint">—</span>
+                      )}
+                    </td>
                     <td>{formatHistoryDate(row.paid_at)}</td>
                     <td className="admin-expenses-amount">{formatThb(row.cost)}</td>
                     <td>{row.shop_name ?? '—'}</td>
@@ -81,15 +101,19 @@ export function ItemPurchaseHistoryPanel({
                       ) : null}
                     </td>
                     <td>
-                      <Link
-                        href={`/admin/orders/${encodeURIComponent(row.order_id)}`}
-                        className="admin-link"
-                      >
-                        {row.order_id}
-                      </Link>
+                      {row.is_current_order ? (
+                        <span>This order</span>
+                      ) : (
+                        <Link
+                          href={`/admin/orders/${encodeURIComponent(row.order_id)}`}
+                          className="admin-link"
+                        >
+                          {row.order_id}
+                        </Link>
+                      )}
                     </td>
                     <td>
-                      {canApply ? (
+                      {canApply && !row.is_current_order ? (
                         <button
                           type="button"
                           className="admin-btn admin-btn-sm admin-btn-outline"
@@ -106,6 +130,13 @@ export function ItemPurchaseHistoryPanel({
               </tbody>
             </table>
           </div>
+        ) : null}
+        {lightboxSrc ? (
+          <AdminImageLightbox
+            src={lightboxSrc}
+            alt="Purchase photo"
+            onClose={() => setLightboxSrc(null)}
+          />
         ) : null}
       </div>
     </OverlayReveal>

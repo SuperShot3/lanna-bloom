@@ -1,11 +1,15 @@
 import 'server-only';
 
-import { getSupabaseAdmin } from '@/lib/supabase/server';
+import {
+  createOrderItemPhotoSignedUrl,
+  ORDER_ITEM_PHOTO_PREFIX,
+} from '@/lib/admin/itemPurchasePhoto';
 import type {
   ItemPurchaseHistoryResponse,
   ItemPurchaseHistoryRow,
   ItemPurchaseHistorySummary,
 } from '@/lib/admin/itemPurchaseHistoryTypes';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 const HISTORY_FETCH_LIMIT = 60;
 const HISTORY_RETURN_LIMIT = 20;
@@ -25,6 +29,7 @@ type HistoryQueryRow = {
   cost?: number | string | null;
   source_shop_id?: string | null;
   source_shop_name?: string | null;
+  purchase_photo_path?: string | null;
   orders?: NestedOrder | NestedOrder[] | null;
 };
 
@@ -94,10 +99,29 @@ function paidAtMs(paidAt: string | null): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+function isOpsPhotoPath(path: string): boolean {
+  return path.startsWith(`${ORDER_ITEM_PHOTO_PREFIX}/`);
+}
+
+async function signedPhotoUrlsByPath(paths: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(paths.filter((p) => isOpsPhotoPath(p)))];
+  const entries = await Promise.all(
+    unique.map(async (path) => {
+      const signed = await createOrderItemPhotoSignedUrl(path);
+      return signed.ok ? ([path, signed.signedUrl] as const) : null;
+    })
+  );
+  const map = new Map<string, string>();
+  for (const entry of entries) {
+    if (entry) map.set(entry[0], entry[1]);
+  }
+  return map;
+}
+
 export async function fetchItemPurchaseHistory(params: {
   bouquetId: string;
   size?: string | null;
-  excludeOrderId?: string | null;
+  currentOrderId?: string | null;
 }): Promise<{ ok: true; data: ItemPurchaseHistoryResponse } | { ok: false; error: string; status: number }> {
   const bouquetId = params.bouquetId.trim();
   if (!bouquetId) {
@@ -109,10 +133,10 @@ export async function fetchItemPurchaseHistory(params: {
     return { ok: false, error: 'Supabase not configured', status: 503 };
   }
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('order_items')
     .select(
-      'order_id, size, cost, source_shop_id, source_shop_name, orders!inner(paid_at, created_at, payment_status, order_status, confirmed_shop_id, confirmed_supplier_shop_name)'
+      'order_id, size, cost, source_shop_id, source_shop_name, purchase_photo_path, orders!inner(paid_at, created_at, payment_status, order_status, confirmed_shop_id, confirmed_supplier_shop_name)'
     )
     .eq('bouquet_id', bouquetId)
     .gt('cost', 0)
@@ -120,20 +144,19 @@ export async function fetchItemPurchaseHistory(params: {
     .neq('orders.order_status', 'CANCELLED')
     .limit(HISTORY_FETCH_LIMIT);
 
-  const exclude = params.excludeOrderId?.trim();
-  if (exclude) {
-    query = query.neq('order_id', exclude);
-  }
-
-  const { data, error } = await query;
   if (error) {
     return { ok: false, error: error.message, status: 500 };
   }
 
   const requestedSize = trimOrNull(params.size);
+  const currentOrderId = trimOrNull(params.currentOrderId);
+  const rawRows = (data ?? []) as HistoryQueryRow[];
+  const photoUrls = await signedPhotoUrlsByPath(
+    rawRows.map((row) => trimOrNull(row.purchase_photo_path)).filter((p): p is string => Boolean(p))
+  );
 
   const mapped: ItemPurchaseHistoryRow[] = [];
-  for (const raw of (data ?? []) as HistoryQueryRow[]) {
+  for (const raw of rawRows) {
     const cost = parseCost(raw.cost);
     const orderId = trimOrNull(raw.order_id);
     if (cost == null || !orderId) continue;
@@ -141,6 +164,7 @@ export async function fetchItemPurchaseHistory(params: {
     const shop = resolveShop(raw, order);
     const size = trimOrNull(raw.size);
     const paidAt = trimOrNull(order?.paid_at) ?? trimOrNull(order?.created_at);
+    const photoPath = trimOrNull(raw.purchase_photo_path);
     mapped.push({
       order_id: orderId,
       paid_at: paidAt,
@@ -149,6 +173,8 @@ export async function fetchItemPurchaseHistory(params: {
       shop_id: shop.shop_id,
       shop_name: shop.shop_name,
       same_size: requestedSize == null || size === requestedSize,
+      is_current_order: currentOrderId != null && orderId === currentOrderId,
+      purchase_photo_url: photoPath ? photoUrls.get(photoPath) ?? null : null,
     });
   }
 

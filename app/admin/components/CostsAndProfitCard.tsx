@@ -206,16 +206,20 @@ export function CostsAndProfitCard({
     setItemCosts((prev) => ({ ...prev, [onlyId]: raw }));
   };
 
-  const loadItemHistory = useCallback(async (bouquetId: string, size: string | null | undefined) => {
+  const loadItemHistory = useCallback(async (
+    bouquetId: string,
+    size: string | null | undefined,
+    options?: { force?: boolean }
+  ) => {
     const key = historyCacheKey(bouquetId, size);
-    if (historyFetchedRef.current.has(key)) return;
+    if (!options?.force && historyFetchedRef.current.has(key)) return;
     historyFetchedRef.current.add(key);
     setHistoryByKey((prev) => ({ ...prev, [key]: 'loading' }));
     try {
       const q = new URLSearchParams({ bouquet_id: bouquetId.trim() });
       const sizeTrim = (size ?? '').trim();
       if (sizeTrim) q.set('size', sizeTrim);
-      q.set('exclude_order_id', order.order_id);
+      q.set('current_order_id', order.order_id);
       const res = await fetch(`/api/admin/orders/item-purchase-history?${q.toString()}`, {
         cache: 'no-store',
       });
@@ -234,6 +238,14 @@ export function CostsAndProfitCard({
       setHistoryByKey((prev) => ({ ...prev, [key]: { error: 'Network error loading history' } }));
     }
   }, [order.order_id]);
+
+  const refreshItemHistory = useCallback(() => {
+    for (const it of items) {
+      const bid = it.bouquet_id?.trim();
+      if (!bid) continue;
+      void loadItemHistory(bid, it.size, { force: true });
+    }
+  }, [items, loadItemHistory]);
 
   useEffect(() => {
     for (const it of items) {
@@ -348,6 +360,7 @@ export function CostsAndProfitCard({
       }
       setTimeout(() => setMessage(null), 3000);
       refreshMissingCogs();
+      refreshItemHistory();
       router.refresh();
     } catch (e) {
       setMessage({
@@ -712,10 +725,11 @@ export function CostsAndProfitCard({
                   const histState = histKey ? historyByKey[histKey] : undefined;
                   const histData =
                     histState && histState !== 'loading' && !('error' in histState) ? histState : null;
+                  const lastOther = histData?.rows.find((row) => !row.is_current_order);
                   const lastHint =
-                    !value && histData?.summary.last_cost != null
-                      ? `Last: ${formatThb(histData.summary.last_cost)}${
-                          histData.summary.last_shop_name ? ` at ${histData.summary.last_shop_name}` : ''
+                    !value && lastOther
+                      ? `Last: ${formatThb(lastOther.cost)}${
+                          lastOther.shop_name ? ` at ${lastOther.shop_name}` : ''
                         }`
                       : null;
                   const historyOpen = Boolean(histKey) && openHistoryKey === histKey;
@@ -734,6 +748,9 @@ export function CostsAndProfitCard({
                             catalogImageUrl={it.image_url_snapshot}
                             purchasePhotoPath={it.purchase_photo_path}
                             canEdit={canEditItem}
+                            onPhotoChange={bouquetId ? () => {
+                              void loadItemHistory(bouquetId, it.size, { force: true });
+                            } : undefined}
                           />
                         </td>
                         <td>{title}{size}</td>
@@ -757,11 +774,7 @@ export function CostsAndProfitCard({
                                     setItemCosts((prev) => ({ ...prev, [String(it.id)]: String(Math.round(n * 100) / 100) }));
                                   }
                                 }}
-                                placeholder={
-                                  histData?.summary.last_cost != null
-                                    ? String(histData.summary.last_cost)
-                                    : '0'
-                                }
+                                placeholder={lastOther != null ? String(lastOther.cost) : '0'}
                                 aria-label={`Cost for ${title}${size}`}
                               />
                               {lastHint ? <span className="admin-costs-last-hint">{lastHint}</span> : null}

@@ -207,9 +207,9 @@ export const articles: ArticleMeta[] = [
     featured: false,
     cover: {
       type: 'image',
-      src: '/blog_images/plush-toys/teddy-bear-gift-chiang-mai.webp',
-      alt: 'Brown teddy bear gift with a ribbon, a plush add-on for flower delivery in Chiang Mai',
-      altTh: 'ตุ๊กตาหมีสีน้ำตาลผูกโบว์ ของเล่นนุ่มสำหรับส่งคู่ดอกไม้ในเชียงใหม่',
+      src: '/blog_images/plush-toys/plushy-toys-lanna-bloom.png',
+      alt: 'Teddy bears nestled in a peach rose bouquet, Lanna Bloom plush toys with flowers in Chiang Mai',
+      altTh: 'ตุ๊กตาหมีในช่อกุหลาบโทนพีช ของเล่นนุ่มคู่ดอกไม้ Lanna Bloom ในเชียงใหม่',
     },
     ctaTitle: 'Send flowers with a teddy bear',
     ctaTitleTh: 'ส่งดอกไม้พร้อมตุ๊กตาหมี',

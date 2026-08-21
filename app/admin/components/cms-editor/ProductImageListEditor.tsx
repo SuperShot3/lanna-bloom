@@ -56,7 +56,6 @@ function imageLoadingMessage(loadingKey: string | null | undefined): string | nu
   if (loadingKey.startsWith('convert-')) return 'Converting to WebP…';
   if (loadingKey.startsWith('framing-')) return 'Saving image framing…';
   if (loadingKey.startsWith('primary-')) return 'Setting main image…';
-  if (loadingKey.startsWith('ai-')) return 'Updating AI image label…';
   return null;
 }
 
@@ -322,7 +321,6 @@ export function ProductImageListEditor({
                       <input
                         type="checkbox"
                         checked={image.sourceType === 'ai_generated'}
-                        disabled={disabled || !!loadingKey}
                         onChange={(e) => void onToggleAiGenerated(image.id, e.target.checked)}
                       />
                       <span>AI generated</span>

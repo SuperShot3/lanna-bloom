@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { AdminImageLightbox } from '@/app/admin/components/AdminImageLightbox';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
@@ -14,6 +14,7 @@ interface ItemCogsPhotoProps {
   catalogImageUrl?: string | null;
   purchasePhotoPath?: string | null;
   canEdit: boolean;
+  onPhotoChange?: () => void;
 }
 
 export function ItemCogsPhoto({
@@ -23,54 +24,20 @@ export function ItemCogsPhoto({
   catalogImageUrl,
   purchasePhotoPath,
   canEdit,
+  onPhotoChange,
 }: ItemCogsPhotoProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [path, setPath] = useState(purchasePhotoPath?.trim() || null);
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [photoFailed, setPhotoFailed] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const catalog = catalogImageUrl?.trim() || null;
-  const displaySrc = signedUrl || (!path || photoFailed ? catalog : null);
-  const waitingForSigned = Boolean(path) && !signedUrl && !photoFailed;
   const id = itemId != null ? String(itemId) : '';
   const canUpload = canEdit && Boolean(id);
 
-  const loadSignedUrl = useCallback(async () => {
-    if (!id || !path) {
-      setSignedUrl(null);
-      setPhotoFailed(false);
-      return;
-    }
-    try {
-      const res = await fetch(
-        `/api/admin/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(id)}/purchase-photo`,
-        { cache: 'no-store' }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setSignedUrl(null);
-        setPhotoFailed(true);
-        return;
-      }
-      if (typeof data.signedUrl === 'string') {
-        setPhotoFailed(false);
-        setSignedUrl(data.signedUrl);
-      }
-    } catch {
-      setSignedUrl(null);
-      setPhotoFailed(true);
-    }
-  }, [id, orderId, path]);
-
-  useEffect(() => {
-    void loadSignedUrl();
-  }, [loadSignedUrl]);
-
   const openLarge = () => {
-    if (!displaySrc) return;
-    setLightboxSrc(displaySrc);
+    if (!catalog) return;
+    setLightboxSrc(catalog);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,10 +64,7 @@ export function ItemCogsPhoto({
         return;
       }
       if (typeof data.path === 'string') setPath(data.path);
-      if (typeof data.signedUrl === 'string') {
-        setPhotoFailed(false);
-        setSignedUrl(data.signedUrl);
-      }
+      onPhotoChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -124,7 +88,7 @@ export function ItemCogsPhoto({
         return;
       }
       setPath(null);
-      setSignedUrl(null);
+      onPhotoChange?.();
     } catch {
       setError('Remove failed');
     } finally {
@@ -134,20 +98,20 @@ export function ItemCogsPhoto({
 
   return (
     <div className="admin-cogs-photo">
-      {displaySrc ? (
+      {catalog ? (
         <button
           type="button"
           className="admin-cogs-photo-thumb"
           onClick={openLarge}
-          aria-label={`View large photo of ${title}`}
-          title="View large image"
+          aria-label={`View catalog photo of ${title}`}
+          title="View catalog image"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- catalog snapshots and signed URLs */}
-          <img src={displaySrc} alt="" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- catalog snapshots */}
+          <img src={catalog} alt="" />
         </button>
       ) : (
         <div className="admin-cogs-photo-empty" aria-hidden>
-          {waitingForSigned ? '…' : 'No photo'}
+          No photo
         </div>
       )}
       {canUpload ? (
@@ -168,7 +132,7 @@ export function ItemCogsPhoto({
             disabled={busy}
             onClick={() => inputRef.current?.click()}
           >
-            {busy ? '…' : path ? 'Replace' : 'Add photo'}
+            {busy ? '…' : path ? 'Replace photo' : 'Add photo'}
           </button>
           {path ? (
             <button
@@ -184,6 +148,7 @@ export function ItemCogsPhoto({
           ) : null}
         </div>
       ) : null}
+      {path ? <p className="admin-cogs-photo-status">Photo saved for history</p> : null}
       {error ? <p className="admin-costs-error">{error}</p> : null}
       {lightboxSrc ? (
         <AdminImageLightbox src={lightboxSrc} alt={title} onClose={() => setLightboxSrc(null)} />

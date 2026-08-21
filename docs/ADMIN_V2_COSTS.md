@@ -27,7 +27,9 @@ Per-line item costs and wholesale source live on `order_items`:
 
 `source_shop_*` is the **buy-from** shop for COGS. It is separate from `orders.confirmed_shop_id` (who prepares / picks up the order). Shop is optional so Chiang Mai cost entry is not blocked.
 
-Each item row can show a small thumb (catalog snapshot, or an iPhone photo you attach). Click the thumb to open a full-size viewer. Uploaded photos are compressed like receipts (~150 KB) and stored under `order-item-photos/` in the `receipts` bucket — not catalog product images.
+The item **Photo** column always shows the catalog snapshot (`image_url_snapshot`). An optional iPhone ops photo is stored on that order line (`purchase_photo_path`) and appears on the matching **History** row — it does not replace the catalog image. Click either thumb to open a full-size viewer. Uploaded photos are compressed like receipts (~150 KB) and stored under `order-item-photos/` in the `receipts` bucket — not catalog product images.
+
+**History** lists paid, non-cancelled purchases of the same catalog product (`bouquet_id`), same size first. After you save a line cost, this order is included and labeled **This order**. History is item-level `order_items.cost` (Extra costs **COGS (฿)** alone on a multi-item order does not create a row).
 
 ## Migration
 
@@ -47,10 +49,11 @@ If columns are missing, run in Supabase SQL Editor:
 - **Body:** `{ cogs_amount?: number | null, delivery_cost?: number | null, payment_fee?: number | null, item_costs?: Array<{ id, cost, source_shop_id? }> }`
 - **Validation:** Cost numeric >= 0, max 2 decimal places. `source_shop_id` must be a catalog partner id or empty/null (clears the shop). Shop name is snapshotted server-side from `catalog_partners`.
 
-**GET** `/api/admin/orders/item-purchase-history?bouquet_id=&size=&exclude_order_id=`
+**GET** `/api/admin/orders/item-purchase-history?bouquet_id=&size=&current_order_id=`
 
-- Past paid `order_items.cost` for the same catalog id (same size first).
+- Paid `order_items.cost` for the same catalog id (same size first), including the current order after its line cost is saved.
 - Shop = item `source_shop_*` when set, else the order’s confirmed supplier.
+- Ops photo signed URL is returned on each row when `purchase_photo_path` is set.
 
 **POST / GET / DELETE** `/api/admin/orders/[order_id]/items/[item_id]/purchase-photo`
 

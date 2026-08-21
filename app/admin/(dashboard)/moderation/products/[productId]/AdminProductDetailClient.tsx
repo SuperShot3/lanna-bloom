@@ -456,7 +456,8 @@ export function AdminProductDetailClient({ product }: Props) {
       else router.refresh();
     },
     onToggleAiGenerated: async (imageId: string, aiGenerated: boolean) => {
-      const previous = editableImages;
+      const previousSourceType = editableImages.find((img) => img.id === imageId)?.sourceType;
+      setError(null);
       setEditableImages((current) =>
         current.map((img) =>
           img.id === imageId
@@ -464,18 +465,20 @@ export function AdminProductDetailClient({ product }: Props) {
             : img
         )
       );
-      setLoading(`ai-${imageId}`);
       const formData = new FormData();
       formData.set('productId', product.id);
       formData.set('imageId', imageId);
       formData.set('sourceType', aiGenerated ? 'ai_generated' : 'uploaded');
       const result = await updateProductImageSourceTypeAction(formData);
-      setLoading(null);
       if (result.error) {
-        setEditableImages(previous);
+        setEditableImages((current) =>
+          current.map((img) =>
+            img.id === imageId
+              ? { ...img, sourceType: previousSourceType ?? 'uploaded' }
+              : img
+          )
+        );
         setError(result.error);
-      } else {
-        router.refresh();
       }
     },
     onRemove: async (imageId: string) => {

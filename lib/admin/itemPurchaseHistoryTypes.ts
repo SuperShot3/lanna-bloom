@@ -6,6 +6,8 @@ export type ItemPurchaseHistoryRow = {
   shop_id: string | null;
   shop_name: string | null;
   same_size: boolean;
+  is_current_order: boolean;
+  purchase_photo_url: string | null;
 };
 
 export type ItemPurchaseHistorySummary = {
