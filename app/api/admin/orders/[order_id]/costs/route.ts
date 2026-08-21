@@ -245,8 +245,15 @@ export async function PATCH(
         return NextResponse.json({ error: allItemsErr.message }, { status: 500 });
       }
       const sum = (allItems ?? []).reduce((s, r) => s + (parseFloat(String(r.cost)) || 0), 0);
-      nextCogs = Math.round(sum * 100) / 100;
-      updatePayload.cogs_amount = nextCogs;
+      const roundedSum = Math.round(sum * 100) / 100;
+      // Per-item costs win when they add up to a real total. Otherwise keep a manually typed COGS.
+      if (roundedSum > 0) {
+        nextCogs = roundedSum;
+        updatePayload.cogs_amount = nextCogs;
+      } else if (hasCogs && cogs_amount != null && cogs_amount > 0) {
+        nextCogs = cogs_amount;
+        updatePayload.cogs_amount = nextCogs;
+      }
     }
     const nextDelivery = hasDelivery ? (delivery_cost ?? null) : (existingOrder.delivery_cost ?? null);
     const roundedCogs = Math.round((Number(nextCogs) || 0) * 100) / 100;

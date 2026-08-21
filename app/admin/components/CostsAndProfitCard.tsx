@@ -48,7 +48,7 @@ function toInputValue(n: number | null | undefined): string {
 }
 
 function parseInput(s: string): number | null {
-  const t = s.trim();
+  const t = s.trim().replace(',', '.');
   if (t === '') return null;
   const n = parseFloat(t);
   if (Number.isNaN(n) || n < 0) return null;
@@ -186,7 +186,25 @@ export function CostsAndProfitCard({
   }, [items, itemCosts]);
 
   const usingPerItem = items.some((it) => it.id != null);
-  const effectiveCogsNum = usingPerItem ? computedCogsFromItems : parseInput(cogs);
+  const effectiveCogsNum =
+    usingPerItem && (computedCogsFromItems ?? 0) > 0
+      ? computedCogsFromItems
+      : parseInput(cogs);
+
+  useEffect(() => {
+    if (!usingPerItem) return;
+    if (computedCogsFromItems != null && computedCogsFromItems > 0) {
+      setCogs(toInputValue(computedCogsFromItems));
+    }
+  }, [computedCogsFromItems, usingPerItem]);
+
+  const applyManualCogs = (raw: string) => {
+    setCogs(raw);
+    const withIds = items.filter((it) => it.id != null);
+    if (withIds.length !== 1) return;
+    const onlyId = String(withIds[0].id);
+    setItemCosts((prev) => ({ ...prev, [onlyId]: raw }));
+  };
 
   const loadItemHistory = useCallback(async (bouquetId: string, size: string | null | undefined) => {
     const key = historyCacheKey(bouquetId, size);
@@ -724,9 +742,9 @@ export function CostsAndProfitCard({
                           {canEditItem ? (
                             <>
                               <input
-                                type="number"
-                                min={0}
-                                step={0.01}
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 className="admin-input"
                                 style={{ maxWidth: 140 }}
                                 value={value}
@@ -734,7 +752,7 @@ export function CostsAndProfitCard({
                                 onBlur={(e) => {
                                   const v = e.target.value.trim();
                                   if (v === '') return;
-                                  const n = parseFloat(v);
+                                  const n = parseFloat(v.replace(',', '.'));
                                   if (!Number.isNaN(n) && n >= 0) {
                                     setItemCosts((prev) => ({ ...prev, [String(it.id)]: String(Math.round(n * 100) / 100) }));
                                   }
@@ -829,7 +847,8 @@ export function CostsAndProfitCard({
           </div>
           {usingPerItem && (
             <p className="admin-hint" style={{ marginTop: 8 }}>
-              Total COGS is calculated automatically from item costs. Shop is optional. Tap a photo to view it large.
+              Total COGS is calculated from item costs when those are filled. You can also type COGS
+              below by hand. Shop is optional. Tap a photo to view it large.
             {partnerShops.length === 0
               ? ' Partner list is empty — add shops under Partners.'
               : ''}
@@ -844,6 +863,35 @@ export function CostsAndProfitCard({
           Extra costs
         </h3>
         <div className="admin-costs-grid">
+          <div className="admin-costs-input-group">
+            <label htmlFor="cogs-amount">COGS (฿)</label>
+            {canEdit ? (
+              <input
+                id="cogs-amount"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={cogs}
+                onChange={(e) => applyManualCogs(e.target.value)}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v === '') {
+                    applyManualCogs('');
+                    return;
+                  }
+                  const n = parseFloat(v.replace(',', '.'));
+                  if (!Number.isNaN(n) && n >= 0) {
+                    applyManualCogs(String(Math.round(n * 100) / 100));
+                  }
+                }}
+                placeholder="0"
+                className="admin-input"
+                aria-label="Cost of goods paid"
+              />
+            ) : (
+              <p>{cogs || '—'}</p>
+            )}
+          </div>
           <div className="admin-costs-input-group">
             <label htmlFor="delivery-cost">Delivery (฿)</label>
             {canEdit ? (
