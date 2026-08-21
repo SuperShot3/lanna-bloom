@@ -197,21 +197,28 @@ export const articles: ArticleMeta[] = [
   },
   {
     slug: 'plush-toys-teddy-bears-chiang-mai',
-    title: 'Plush Toys and Teddy Bears Now Available at Lanna Bloom in Chiang Mai',
+    title: 'Teddy Bears and Plush Toys with Flowers in Chiang Mai',
     excerpt:
-      'Add a teddy bear or plush toy to selected flower orders in Chiang Mai—an easy way to make bouquets feel warmer, more personal, and more complete for birthdays, romance, get-well wishes, and long-distance gifts.',
-    titleTh: 'ตุ๊กตานุ่มและหมีเท็ดดี้ที่ Lanna Bloom เชียงใหม่',
+      'Send a teddy bear or plush toy with flowers in Chiang Mai. Compare sizes at Lanna Bloom, pick a cuddly add-on, and order a complete gift online.',
+    titleTh: 'ตุ๊กตาหมีและของเล่นนุ่มคู่ดอกไม้ในเชียงใหม่',
     excerptTh:
-      'เพิ่มหมีเท็ดดี้หรือตุ๊กตานุ่มในบางออเดอร์ดอกไม้ในเชียงใหม่—วิธีง่าย ๆ ที่ทำให้ช่อดอกไม้ดูอบอุ่น เป็นส่วนตัว และครบมากขึ้น ไม่ว่าจะวันเกิด โรแมนติก อวยหายป่วย หรือของขวัญจากระยะไกล',
+      'ส่งตุ๊กตาหมีหรือของเล่นนุ่มคู่ดอกไม้ในเชียงใหม่ เปรียบเทียบขนาดที่มีที่ Lanna Bloom แล้วสั่งของขวัญครบในออเดอร์เดียว',
     publishedAt: '2026-04-10T00:00:00.000Z',
     featured: false,
     cover: {
-      type: 'gradient',
-      gradientCss:
-        'linear-gradient(135deg, #fff8f5 0%, #fce4ec 45%, #e8eaf6 100%)',
-      center: { kind: 'emoji', value: '🧸' },
+      type: 'image',
+      src: '/blog_images/plush-toys/teddy-bear-gift-chiang-mai.webp',
+      alt: 'Brown teddy bear gift with a ribbon, a plush add-on for flower delivery in Chiang Mai',
+      altTh: 'ตุ๊กตาหมีสีน้ำตาลผูกโบว์ ของเล่นนุ่มสำหรับส่งคู่ดอกไม้ในเชียงใหม่',
     },
+    ctaTitle: 'Send flowers with a teddy bear',
+    ctaTitleTh: 'ส่งดอกไม้พร้อมตุ๊กตาหมี',
     ctaLinks: [
+      {
+        label: 'Browse plush toys',
+        labelTh: 'ดูตุ๊กตานุ่ม',
+        href: '/catalog?topCategory=plushy_toys',
+      },
       { label: 'Browse bouquets', labelTh: 'เลือกช่อดอกไม้', href: '/catalog' },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],

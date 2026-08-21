@@ -37,6 +37,7 @@ type ImageHandlers = {
   onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
   onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
+  onToggleAiGenerated?: (imageId: string, aiGenerated: boolean) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
 
@@ -279,6 +280,7 @@ function BouquetSizeEditModal({
           onEditFraming={imageHandlers.onEditFraming}
           onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}
+          onToggleAiGenerated={imageHandlers.onToggleAiGenerated}
           onRemove={imageHandlers.onRemove}
         />
       </details>

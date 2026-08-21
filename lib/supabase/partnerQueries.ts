@@ -54,6 +54,7 @@ export interface InsertPartnerApplicationInput {
   max_orders_per_day?: number;
   sample_photo_urls?: string[];
   experience_note?: string;
+  admin_note?: string;
   status?: 'pending' | 'draft';
 }
 
@@ -88,6 +89,7 @@ export async function insertPartnerApplication(
       max_orders_per_day: input.max_orders_per_day ?? null,
       sample_photo_urls: input.sample_photo_urls ?? null,
       experience_note: input.experience_note ?? null,
+      admin_note: input.admin_note ?? null,
       status: input.status ?? 'pending',
     })
     .select('id')

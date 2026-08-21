@@ -7,8 +7,10 @@ import { getProvinceByCode } from '@/lib/provinces/queries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import {
   getPartnerApplicationById,
+  insertPartnerApplication,
   updatePartnerApplication,
   deletePartnerApplication,
+  type PartnerApplicationRow,
   type UpdatePartnerApplicationFieldsInput,
 } from '@/lib/supabase/partnerQueries';
 import { canChangeStatus } from '@/lib/adminRbac';
@@ -324,4 +326,92 @@ export async function updatePartnerApplicationFieldsAction(
 
   revalidatePath('/admin/partners/applications');
   return {};
+}
+
+export async function createPartnerApplicationAction(
+  fields: PartnerApplicationFieldsPayload,
+  options?: { approveImmediately?: boolean }
+): Promise<{ error?: string; application?: PartnerApplicationRow; tempPassword?: string }> {
+  const session = await auth();
+  if (!session?.user || !canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const shopName = fields.shop_name.trim();
+  const contactName = fields.contact_name.trim();
+  const email = fields.email.trim();
+  const phone = fields.phone.trim();
+  const provinceCode = fields.province_code.trim();
+  const approveImmediately = options?.approveImmediately === true;
+
+  if (!shopName || !contactName || !phone) {
+    return { error: 'Shop name, contact name, and phone are required' };
+  }
+
+  if (!provinceCode) {
+    return { error: 'Province is required' };
+  }
+
+  const provinceResult = await getProvinceByCode(provinceCode);
+  if (!provinceResult.ok) {
+    return { error: 'Invalid province' };
+  }
+
+  if (approveImmediately && !email) {
+    return { error: 'Email is required to approve and create a partner login' };
+  }
+
+  let applicationId: string;
+  try {
+    applicationId = await insertPartnerApplication({
+      shop_name: shopName,
+      contact_name: contactName,
+      email: email || undefined,
+      phone,
+      line_id: fields.line_id.trim() || undefined,
+      instagram: fields.instagram.trim() || undefined,
+      facebook: fields.facebook.trim() || undefined,
+      address: fields.address.trim() || undefined,
+      district: fields.district.trim() || undefined,
+      province_code: provinceCode,
+      lat: parseOptionalCoord(fields.lat) ?? undefined,
+      lng: parseOptionalCoord(fields.lng) ?? undefined,
+      self_deliver: fields.self_deliver,
+      delivery_zones: fields.delivery_zones.trim() || undefined,
+      delivery_fee_note: fields.delivery_fee_note.trim() || undefined,
+      categories: parseCategories(fields.categories),
+      prep_time: fields.prep_time.trim() || undefined,
+      cutoff_time: fields.cutoff_time.trim() || undefined,
+      max_orders_per_day: parseOptionalNumber(fields.max_orders_per_day) ?? undefined,
+      sample_photo_urls: parseSamplePhotoUrls(fields.sample_photo_urls),
+      experience_note: fields.experience_note.trim() || undefined,
+      admin_note: fields.admin_note.trim() || undefined,
+      status: 'pending',
+    });
+  } catch (err) {
+    console.error('[Partner] createPartnerApplication failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to create partner' };
+  }
+
+  if (approveImmediately) {
+    const approveResult = await approvePartnerApplicationAction(applicationId);
+    if (approveResult.error) {
+      const application = await getPartnerApplicationById(applicationId);
+      revalidatePath('/admin/partners/applications');
+      return {
+        error: `Saved as pending, but approval failed: ${approveResult.error}`,
+        application: application ?? undefined,
+      };
+    }
+    const application = await getPartnerApplicationById(applicationId);
+    revalidatePath('/admin/partners/applications');
+    return {
+      application: application ?? undefined,
+      tempPassword: approveResult.tempPassword,
+    };
+  }
+
+  const application = await getPartnerApplicationById(applicationId);
+  revalidatePath('/admin/partners/applications');
+  return { application: application ?? undefined };
 }

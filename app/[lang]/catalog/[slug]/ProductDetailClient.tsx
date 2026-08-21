@@ -78,6 +78,8 @@ export function ProductDetailClient({
         <ProductGallery
           images={images}
           imageAlts={product.imageAlts}
+          imageAiGenerated={product.imageAiGenerated}
+          aiImageAriaLabel={translations[lang].catalog.aiImageAria ?? 'AI-generated image'}
           name={name}
           productId={product.id}
           activeIndex={selectedImageIndex}

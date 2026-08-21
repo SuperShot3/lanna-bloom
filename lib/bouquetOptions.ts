@@ -16,6 +16,8 @@ export interface BouquetSellableOption {
   /** Optional per-option gallery; falls back to bouquet.images when empty */
   imageUrls?: string[];
   imageAlts?: string[];
+  /** Parallel to `imageUrls` — true when that photo is AI-generated. */
+  imageAiGenerated?: boolean[];
   price: number;
   /** Shopper-facing label (default EN or shared) */
   label: string;

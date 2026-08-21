@@ -21,6 +21,7 @@ import {
   effectiveCatalogUnitPriceWithExpansion,
 } from '@/lib/catalogDiscount';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
+import { CatalogAiImageBadge } from '@/components/CatalogAiImageBadge';
 import { StorefrontIcon } from '@/components/icons';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
@@ -114,6 +115,9 @@ export function ProductCard({
     '';
   const imgAlt =
     product.imageAlts?.[imageIndex]?.trim() || product.imageAlts?.[0]?.trim() || name;
+  const currentImageIsAi = selectedSize?.imageUrls?.length
+    ? selectedSize.imageAiGenerated?.[0] === true
+    : product.imageAiGenerated?.[imageIndex] === true;
   const handlePdpImagePreload = useCallback(() => {
     if (imgSrc) preloadCatalogImage(imgSrc, CATALOG_PDP_PRELOAD_WIDTH);
   }, [imgSrc]);
@@ -406,6 +410,10 @@ export function ProductCard({
           <CatalogDiscountBadge
             discountPercent={product.discountPercent}
             ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
+          />
+          <CatalogAiImageBadge
+            visible={currentImageIsAi}
+            ariaLabel={t.aiImageAria ?? 'AI-generated image'}
           />
           {isPlushyToys ? (
             <span className="pcard-toy-icon" aria-hidden>

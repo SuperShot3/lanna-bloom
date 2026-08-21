@@ -33,6 +33,7 @@ import {
   setCatalogProductPrimaryImage,
   softDeleteCatalogProductImage,
   syncCatalogProductInlineImagesFromNormalized,
+  updateCatalogProductImageSourceType,
   updateCatalogProductImageStorage,
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
@@ -663,6 +664,47 @@ export async function editProductImageFramingAction(formData: FormData): Promise
   } catch (err) {
     console.error('[Moderation] editProductImageFraming failed:', err);
     return { error: err instanceof Error ? err.message : 'Failed to save image framing' };
+  }
+}
+
+export async function updateProductImageSourceTypeAction(
+  formData: FormData
+): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session?.user) {
+    return { error: 'Unauthorized - Session not found' };
+  }
+  if (!canChangeStatus((session.user as { role?: string }).role)) {
+    return { error: 'Forbidden' };
+  }
+
+  const productId = String(formData.get('productId') || '').trim();
+  const imageId = String(formData.get('imageId') || '').trim();
+  const sourceTypeRaw = String(formData.get('sourceType') || '').trim();
+  const sourceType = sourceTypeRaw === 'ai_generated' ? 'ai_generated' : sourceTypeRaw === 'uploaded' ? 'uploaded' : null;
+  if (!productId || !imageId) return { error: 'Missing productId or imageId' };
+  if (!sourceType) return { error: 'Invalid sourceType' };
+
+  try {
+    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+      productId,
+      imageId
+    );
+    await updateCatalogProductImageSourceType({
+      imageId: resolvedImageId,
+      sourceType,
+      actor: actorFromSessionUser(session.user),
+    });
+    if (revisionId) {
+      revalidateProductAdminPaths(productId);
+    } else {
+      await syncCatalogProductInlineImagesFromNormalized('product', writeId);
+      await revalidateProductAdminAndCatalogPaths(productId, writeId);
+    }
+    return {};
+  } catch (err) {
+    console.error('[Moderation] updateProductImageSourceType failed:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to update AI image label' };
   }
 }
 

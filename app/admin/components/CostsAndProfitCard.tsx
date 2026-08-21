@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { computeProfit, formatThb } from '@/lib/costsUtils';
@@ -8,9 +8,21 @@ import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/admi
 import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { useMissingCogsSummary } from '@/app/admin/components/MissingCogsNotice';
+import { ItemPurchaseHistoryPanel } from '@/app/admin/components/ItemPurchaseHistoryPanel';
+import { ItemCogsPhoto } from '@/app/admin/components/ItemCogsPhoto';
+import {
+  findPartnerShop,
+  findPartnerShopByName,
+  useCatalogPartnerShops,
+} from '@/app/admin/components/useCatalogPartnerShops';
 import { compressReceiptImageForUpload } from '@/lib/receiptImageCompress';
 import { isReceiptImageFile } from '@/lib/isReceiptImageFile';
 import { MAX_RECEIPT_UPLOAD_BYTES, MAX_RECEIPT_UPLOAD_LABEL } from '@/lib/receiptUploadLimits';
+import type { CatalogPartnerShop } from '@/lib/admin/catalogPartnerShopTypes';
+import type {
+  ItemPurchaseHistoryResponse,
+  ItemPurchaseHistoryRow,
+} from '@/lib/admin/itemPurchaseHistoryTypes';
 const DELETE_RECEIPT_CONFIRM =
   'Are you sure you want to delete this receipt? This cannot be undone.';
 
@@ -49,6 +61,24 @@ function receiptFileName(path: string | null): string | null {
   return decodeURIComponent(raw);
 }
 
+function historyCacheKey(bouquetId: string, size: string | null | undefined): string {
+  return `${bouquetId.trim()}::${(size ?? '').trim()}`;
+}
+
+function defaultSourceShopId(
+  item: SupabaseOrderItemRow,
+  order: SupabaseOrderRow,
+  shops: CatalogPartnerShop[]
+): string {
+  const saved = item.source_shop_id?.trim();
+  if (saved) return saved;
+  const confirmed = order.confirmed_shop_id?.trim();
+  if (confirmed) return confirmed;
+  const match = findPartnerShopByName(shops, order.confirmed_supplier_shop_name);
+  if (match) return match.id;
+  return '';
+}
+
 export function CostsAndProfitCard({
   order,
   items = [],
@@ -57,6 +87,7 @@ export function CostsAndProfitCard({
   initialDeliveryExpense = null,
 }: CostsAndProfitCardProps) {
   const router = useRouter();
+  const partnerShops = useCatalogPartnerShops();
   const { refresh: refreshMissingCogs } = useMissingCogsSummary();
   const receiptFlowerInputRef = useRef<HTMLInputElement>(null);
   const receiptDeliveryInputRef = useRef<HTMLInputElement>(null);
@@ -110,6 +141,38 @@ export function CostsAndProfitCard({
   }, [items]);
   const [itemCosts, setItemCosts] = useState<Record<string, string>>(itemCostStateInit);
 
+  const itemShopStateInit = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const it of items) {
+      const id = it.id;
+      if (id == null) continue;
+      map[String(id)] = defaultSourceShopId(it, order, partnerShops);
+    }
+    return map;
+  }, [items, order, partnerShops]);
+  const [itemShops, setItemShops] = useState<Record<string, string>>(itemShopStateInit);
+  useEffect(() => {
+    setItemShops((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const it of items) {
+        if (it.id == null) continue;
+        const id = String(it.id);
+        if (next[id]) continue;
+        const fallback = defaultSourceShopId(it, order, partnerShops);
+        if (!fallback) continue;
+        next[id] = fallback;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [items, order, partnerShops]);
+  const [openHistoryKey, setOpenHistoryKey] = useState<string | null>(null);
+  const [historyByKey, setHistoryByKey] = useState<
+    Record<string, ItemPurchaseHistoryResponse | { error: string } | 'loading'>
+  >({});
+  const historyFetchedRef = useRef<Set<string>>(new Set());
+
   const computedCogsFromItems = useMemo(() => {
     const withIds = items.filter((it) => it.id != null);
     if (withIds.length === 0) return null;
@@ -125,6 +188,54 @@ export function CostsAndProfitCard({
   const usingPerItem = items.some((it) => it.id != null);
   const effectiveCogsNum = usingPerItem ? computedCogsFromItems : parseInput(cogs);
 
+  const loadItemHistory = useCallback(async (bouquetId: string, size: string | null | undefined) => {
+    const key = historyCacheKey(bouquetId, size);
+    if (historyFetchedRef.current.has(key)) return;
+    historyFetchedRef.current.add(key);
+    setHistoryByKey((prev) => ({ ...prev, [key]: 'loading' }));
+    try {
+      const q = new URLSearchParams({ bouquet_id: bouquetId.trim() });
+      const sizeTrim = (size ?? '').trim();
+      if (sizeTrim) q.set('size', sizeTrim);
+      q.set('exclude_order_id', order.order_id);
+      const res = await fetch(`/api/admin/orders/item-purchase-history?${q.toString()}`, {
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        historyFetchedRef.current.delete(key);
+        setHistoryByKey((prev) => ({
+          ...prev,
+          [key]: { error: typeof data.error === 'string' ? data.error : 'Failed to load history' },
+        }));
+        return;
+      }
+      setHistoryByKey((prev) => ({ ...prev, [key]: data as ItemPurchaseHistoryResponse }));
+    } catch {
+      historyFetchedRef.current.delete(key);
+      setHistoryByKey((prev) => ({ ...prev, [key]: { error: 'Network error loading history' } }));
+    }
+  }, [order.order_id]);
+
+  useEffect(() => {
+    for (const it of items) {
+      const bid = it.bouquet_id?.trim();
+      if (!bid) continue;
+      void loadItemHistory(bid, it.size);
+    }
+  }, [items, loadItemHistory]);
+
+  const applyHistoryRow = (itemId: string, row: ItemPurchaseHistoryRow) => {
+    setItemCosts((prev) => ({ ...prev, [itemId]: String(row.cost) }));
+    const byId = findPartnerShop(partnerShops, row.shop_id);
+    if (byId) {
+      setItemShops((prev) => ({ ...prev, [itemId]: byId.id }));
+      return;
+    }
+    const byName = findPartnerShopByName(partnerShops, row.shop_name);
+    if (byName) setItemShops((prev) => ({ ...prev, [itemId]: byName.id }));
+  };
+
   const displayCogs = effectiveCogsNum ?? 0;
 
   const initialCogs = toInputValue(effectiveInitialCogs);
@@ -135,7 +246,8 @@ export function CostsAndProfitCard({
     cogs !== initialCogs ||
     deliveryCost !== initialDelivery ||
     paymentFee !== initialPayment ||
-    (usingPerItem && JSON.stringify(itemCosts) !== JSON.stringify(itemCostStateInit));
+    (usingPerItem && JSON.stringify(itemCosts) !== JSON.stringify(itemCostStateInit)) ||
+    (usingPerItem && JSON.stringify(itemShops) !== JSON.stringify(itemShopStateInit));
 
   const cogsNum = effectiveCogsNum;
   const deliveryNum = parseInput(deliveryCost);
@@ -165,10 +277,17 @@ export function CostsAndProfitCard({
       if (usingPerItem) {
         const payload = items
           .filter((it) => it.id != null)
-          .map((it) => ({
-            id: it.id,
-            cost: parseInput(itemCosts[String(it.id)] ?? ''),
-          }));
+          .map((it) => {
+            const rawShop = (itemShops[String(it.id)] ?? '').trim();
+            const entry: { id: typeof it.id; cost: number | null; source_shop_id?: string | null } = {
+              id: it.id,
+              cost: parseInput(itemCosts[String(it.id)] ?? ''),
+            };
+            if (!rawShop || findPartnerShop(partnerShops, rawShop)) {
+              entry.source_shop_id = rawShop || null;
+            }
+            return entry;
+          });
         body.item_costs = payload;
       }
 
@@ -553,9 +672,12 @@ export function CostsAndProfitCard({
             >
               <thead>
                 <tr>
+                  <th>Photo</th>
                   <th>Item</th>
                   <th className="admin-expenses-col-amount">Sell price</th>
                   <th className="admin-expenses-col-amount">Cost</th>
+                  <th>Bought from</th>
+                  <th>History</th>
                 </tr>
               </thead>
               <tbody>
@@ -566,36 +688,140 @@ export function CostsAndProfitCard({
                   const rowKey = it.id != null ? String(it.id) : `${it.bouquet_id ?? 'x'}-${idx}`;
                   const canEditItem = canEdit && it.id != null;
                   const value = it.id != null ? (itemCosts[String(it.id)] ?? '') : '';
+                  const shopValue = it.id != null ? (itemShops[String(it.id)] ?? '') : '';
+                  const bouquetId = it.bouquet_id?.trim() ?? '';
+                  const histKey = bouquetId ? historyCacheKey(bouquetId, it.size) : '';
+                  const histState = histKey ? historyByKey[histKey] : undefined;
+                  const histData =
+                    histState && histState !== 'loading' && !('error' in histState) ? histState : null;
+                  const lastHint =
+                    !value && histData?.summary.last_cost != null
+                      ? `Last: ${formatThb(histData.summary.last_cost)}${
+                          histData.summary.last_shop_name ? ` at ${histData.summary.last_shop_name}` : ''
+                        }`
+                      : null;
+                  const historyOpen = Boolean(histKey) && openHistoryKey === histKey;
+                  const extraShop =
+                    shopValue && !findPartnerShop(partnerShops, shopValue)
+                      ? { id: shopValue, name: it.source_shop_name?.trim() || shopValue }
+                      : null;
                   return (
-                    <tr key={rowKey}>
-                      <td>{title}{size}</td>
-                      <td className="admin-expenses-amount">{sell != null ? formatThb(sell) : '—'}</td>
-                      <td className="admin-expenses-amount">
-                        {canEditItem ? (
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            className="admin-input"
-                            style={{ maxWidth: 140 }}
-                            value={value}
-                            onChange={(e) => setItemCosts((prev) => ({ ...prev, [String(it.id)]: e.target.value }))}
-                            onBlur={(e) => {
-                              const v = e.target.value.trim();
-                              if (v === '') return;
-                              const n = parseFloat(v);
-                              if (!Number.isNaN(n) && n >= 0) {
-                                setItemCosts((prev) => ({ ...prev, [String(it.id)]: String(Math.round(n * 100) / 100) }));
-                              }
-                            }}
-                            placeholder="0"
-                            aria-label={`Cost for ${title}${size}`}
+                    <Fragment key={rowKey}>
+                      <tr>
+                        <td>
+                          <ItemCogsPhoto
+                            orderId={order.order_id}
+                            itemId={it.id}
+                            title={`${title}${size}`}
+                            catalogImageUrl={it.image_url_snapshot}
+                            purchasePhotoPath={it.purchase_photo_path}
+                            canEdit={canEditItem}
                           />
-                        ) : (
-                          formatThb(it.cost ?? null)
-                        )}
-                      </td>
-                    </tr>
+                        </td>
+                        <td>{title}{size}</td>
+                        <td className="admin-expenses-amount">{sell != null ? formatThb(sell) : '—'}</td>
+                        <td className="admin-expenses-amount">
+                          {canEditItem ? (
+                            <>
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                className="admin-input"
+                                style={{ maxWidth: 140 }}
+                                value={value}
+                                onChange={(e) => setItemCosts((prev) => ({ ...prev, [String(it.id)]: e.target.value }))}
+                                onBlur={(e) => {
+                                  const v = e.target.value.trim();
+                                  if (v === '') return;
+                                  const n = parseFloat(v);
+                                  if (!Number.isNaN(n) && n >= 0) {
+                                    setItemCosts((prev) => ({ ...prev, [String(it.id)]: String(Math.round(n * 100) / 100) }));
+                                  }
+                                }}
+                                placeholder={
+                                  histData?.summary.last_cost != null
+                                    ? String(histData.summary.last_cost)
+                                    : '0'
+                                }
+                                aria-label={`Cost for ${title}${size}`}
+                              />
+                              {lastHint ? <span className="admin-costs-last-hint">{lastHint}</span> : null}
+                            </>
+                          ) : (
+                            formatThb(it.cost ?? null)
+                          )}
+                        </td>
+                        <td>
+                          {canEditItem ? (
+                            <>
+                              <select
+                                className="admin-input admin-costs-shop-select"
+                                value={shopValue}
+                                onChange={(e) =>
+                                  setItemShops((prev) => ({ ...prev, [String(it.id)]: e.target.value }))
+                                }
+                                aria-label={`Bought from for ${title}${size}`}
+                              >
+                                <option value="">Select shop</option>
+                                {extraShop ? (
+                                  <option value={extraShop.id}>{extraShop.name}</option>
+                                ) : null}
+                                {partnerShops.map((shop) => (
+                                  <option key={shop.id} value={shop.id}>
+                                    {shop.name}
+                                  </option>
+                                ))}
+                              </select>
+                              {!shopValue ? (
+                                <span className="admin-costs-last-hint">Shop not set</span>
+                              ) : null}
+                            </>
+                          ) : (
+                            it.source_shop_name?.trim() ||
+                            order.confirmed_supplier_shop_name?.trim() ||
+                            '—'
+                          )}
+                        </td>
+                        <td>
+                          {bouquetId ? (
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-sm admin-btn-outline"
+                              onClick={() => {
+                                void loadItemHistory(bouquetId, it.size);
+                                setOpenHistoryKey((prev) => (prev === histKey ? null : histKey));
+                              }}
+                            >
+                              {historyOpen ? 'Hide' : 'History'}
+                            </button>
+                          ) : (
+                            <span className="admin-hint">No catalog id</span>
+                          )}
+                        </td>
+                      </tr>
+                      {bouquetId ? (
+                        <tr>
+                          <td colSpan={6} style={{ padding: historyOpen ? undefined : 0, borderBottom: historyOpen ? undefined : 'none' }}>
+                            <ItemPurchaseHistoryPanel
+                              open={historyOpen}
+                              loading={histState === 'loading'}
+                              error={
+                                histState && histState !== 'loading' && 'error' in histState
+                                  ? histState.error
+                                  : null
+                              }
+                              data={histData}
+                              canApply={canEditItem}
+                              onApply={(row) => {
+                                if (it.id == null) return;
+                                applyHistoryRow(String(it.id), row);
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -603,7 +829,10 @@ export function CostsAndProfitCard({
           </div>
           {usingPerItem && (
             <p className="admin-hint" style={{ marginTop: 8 }}>
-              Total COGS is calculated automatically from item costs.
+              Total COGS is calculated automatically from item costs. Shop is optional. Tap a photo to view it large.
+            {partnerShops.length === 0
+              ? ' Partner list is empty — add shops under Partners.'
+              : ''}
             </p>
           )}
         </div>

@@ -67,6 +67,11 @@ export function ProductPageClient({
     return bouquet.imageAlts;
   }, [selectedSize.optionId, selectedSize.imageAlts, bouquet.imageAlts]);
 
+  const galleryAiGenerated = useMemo(() => {
+    if (selectedSize.imageUrls?.length) return selectedSize.imageAiGenerated;
+    return bouquet.imageAiGenerated;
+  }, [selectedSize.optionId, selectedSize.imageUrls, selectedSize.imageAiGenerated, bouquet.imageAiGenerated]);
+
   /** Tier button click → scroll the carousel to the matching photo (or reset for a per-size gallery). */
   const handleSizeSelect = useCallback(
     (size: Bouquet['sizes'][number]) => {
@@ -144,6 +149,8 @@ export function ProductPageClient({
         <ProductGallery
           images={galleryImages}
           imageAlts={galleryAlts}
+          imageAiGenerated={galleryAiGenerated}
+          aiImageAriaLabel={translations[lang].catalog.aiImageAria ?? 'AI-generated image'}
           name={name}
           productId={bouquet.id}
           activeIndex={selectedImageIndex}

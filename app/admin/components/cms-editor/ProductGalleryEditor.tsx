@@ -34,6 +34,7 @@ type Props = {
   onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
   onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
+  onToggleAiGenerated?: (imageId: string, aiGenerated: boolean) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
 
@@ -61,6 +62,7 @@ export function ProductGalleryEditor({
   onEditFraming,
   onSetPrimary,
   onConvertToWebp,
+  onToggleAiGenerated,
   onRemove,
 }: Props) {
   const targets = useMemo(() => stemAssignTargets(stemOptions), [stemOptions]);
@@ -148,6 +150,7 @@ export function ProductGalleryEditor({
         onEditFraming={onEditFraming}
         onSetPrimary={onSetPrimary}
         onConvertToWebp={onConvertToWebp}
+        onToggleAiGenerated={onToggleAiGenerated}
         onRemove={onRemove}
       />
 
@@ -171,6 +174,7 @@ export function ProductGalleryEditor({
                   onReplace={onReplace}
                   onEditFraming={onEditFraming}
                   onConvertToWebp={onConvertToWebp}
+                  onToggleAiGenerated={onToggleAiGenerated}
                   onRemove={onRemove}
                   onUnassign={(imageId) => onAssignVariant([imageId], null)}
                 />
@@ -203,6 +207,7 @@ export function ProductGalleryEditor({
                   onReplace={onReplace}
                   onEditFraming={onEditFraming}
                   onConvertToWebp={onConvertToWebp}
+                  onToggleAiGenerated={onToggleAiGenerated}
                   onRemove={onRemove}
                   onUnassign={(imageId) => onAssignVariant([imageId], null)}
                 />

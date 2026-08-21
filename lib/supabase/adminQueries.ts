@@ -98,6 +98,11 @@ export interface SupabaseOrderItemRow {
   cost?: number | null;
   /** Platform commission (for products) */
   commission_amount?: number | null;
+  /** Wholesale shop this line was bought from (COGS source; not fulfillment). */
+  source_shop_id?: string | null;
+  source_shop_name?: string | null;
+  /** Ops photo of what was bought for this line (storage path in receipts bucket). */
+  purchase_photo_path?: string | null;
 }
 
 /** Add-on data for display (from order_json when available). */

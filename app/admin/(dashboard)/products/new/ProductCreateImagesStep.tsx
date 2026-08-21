@@ -11,6 +11,7 @@ type Props = {
   onAddFiles: (files: File[]) => void;
   onSetDraftPrimary: (imageId: string) => void;
   onRemoveDraft: (imageId: string) => void;
+  onToggleAiGenerated: (imageId: string, aiGenerated: boolean) => void;
   canContinue: boolean;
   onContinue: () => void;
 };
@@ -22,6 +23,7 @@ export function ProductCreateImagesStep({
   onAddFiles,
   onSetDraftPrimary,
   onRemoveDraft,
+  onToggleAiGenerated,
   canContinue,
   onContinue,
 }: Props) {
@@ -95,6 +97,7 @@ export function ProductCreateImagesStep({
                 canSetPrimary={imageDrafts.length > 1}
                 onSetPrimary={() => onSetDraftPrimary(image.id)}
                 onRemove={() => onRemoveDraft(image.id)}
+                onToggleAiGenerated={(aiGenerated) => onToggleAiGenerated(image.id, aiGenerated)}
               />
             ))}
           </div>
@@ -140,6 +143,7 @@ function CommittedImageCard({
   canSetPrimary,
   onSetPrimary,
   onRemove,
+  onToggleAiGenerated,
 }: {
   image: ImageDraft;
   index: number;
@@ -147,6 +151,7 @@ function CommittedImageCard({
   canSetPrimary: boolean;
   onSetPrimary: () => void;
   onRemove: () => void;
+  onToggleAiGenerated: (aiGenerated: boolean) => void;
 }) {
   const webpVariant = image.variants.find((variant) => variant.format === 'webp');
   const pngVariant = image.variants.find((variant) => variant.format === 'png_master');
@@ -174,6 +179,15 @@ function CommittedImageCard({
       </div>
       <div className="admin-product-create-image-card-meta">
         <span>#{index + 1} · WebP ready</span>
+        <label className="admin-cms-checkbox">
+          <input
+            type="checkbox"
+            checked={image.aiGenerated === true}
+            disabled={isBusy}
+            onChange={(event) => onToggleAiGenerated(event.target.checked)}
+          />
+          <span>AI generated</span>
+        </label>
       </div>
       <div className="admin-product-create-image-card-actions">
         {!image.isPrimary && canSetPrimary ? (

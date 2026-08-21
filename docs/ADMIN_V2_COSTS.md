@@ -16,21 +16,46 @@ Full accounting behavior (income vs expenses, money buckets): [ACCOUNTING_AND_EX
 | `total_amount` | numeric(12,2) | Order total (display only; fallback: `grand_total`) |
 | `updated_at` | timestamptz | Last cost update timestamp |
 
+Per-line item costs and wholesale source live on `order_items`:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `cost` | numeric(12,2) | What Lanna Bloom paid for this line |
+| `source_shop_id` | text | Catalog partner id (`catalog_partners.id`) |
+| `source_shop_name` | text | Snapshot of the partner shop name at save time |
+| `purchase_photo_path` | text | Optional ops photo of this purchase (storage path) |
+
+`source_shop_*` is the **buy-from** shop for COGS. It is separate from `orders.confirmed_shop_id` (who prepares / picks up the order). Shop is optional so Chiang Mai cost entry is not blocked.
+
+Each item row can show a small thumb (catalog snapshot, or an iPhone photo you attach). Click the thumb to open a full-size viewer. Uploaded photos are compressed like receipts (~150 KB) and stored under `order-item-photos/` in the `receipts` bucket — not catalog product images.
+
 ## Migration
 
 If columns are missing, run in Supabase SQL Editor:
 
 ```sql
 -- See supabase/migrations/20250218000000_add_order_cost_columns.sql
+-- Per-item source shop: supabase/migrations/20260821120000_order_items_source_shop.sql
+-- Per-item purchase photo: supabase/migrations/20260821130000_order_items_purchase_photo.sql
 ```
 
 ## API
 
 **PATCH** `/api/admin/orders/[order_id]/costs`
 
-- **Auth:** Same as admin (cookie or `x-admin-secret` header)
-- **Body:** `{ cogs_amount?: number | null, delivery_cost?: number | null, payment_fee?: number | null }`
-- **Validation:** Numeric >= 0, max 2 decimal places
+- **Auth:** Admin session (`OWNER` or `MANAGER`)
+- **Body:** `{ cogs_amount?: number | null, delivery_cost?: number | null, payment_fee?: number | null, item_costs?: Array<{ id, cost, source_shop_id? }> }`
+- **Validation:** Cost numeric >= 0, max 2 decimal places. `source_shop_id` must be a catalog partner id or empty/null (clears the shop). Shop name is snapshotted server-side from `catalog_partners`.
+
+**GET** `/api/admin/orders/item-purchase-history?bouquet_id=&size=&exclude_order_id=`
+
+- Past paid `order_items.cost` for the same catalog id (same size first).
+- Shop = item `source_shop_*` when set, else the order’s confirmed supplier.
+
+**POST / GET / DELETE** `/api/admin/orders/[order_id]/items/[item_id]/purchase-photo`
+
+- Attach, view (signed URL), or remove the ops photo for that line.
+- Auth: `OWNER` or `MANAGER`. Max size matches receipt uploads.
 
 ## Env vars
 

@@ -6570,6 +6570,13 @@ a.btn-pill:focus-visible {
   flex-shrink: 0;
 }
 
+.admin-cms-ai-toggle {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: var(--cms-text-muted);
+  white-space: nowrap;
+}
+
 .admin-cms-badge-format {
   font-size: 0.625rem;
   font-weight: 600;

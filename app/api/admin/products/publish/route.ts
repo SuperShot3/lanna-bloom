@@ -45,6 +45,7 @@ function parseImages(value: unknown): CatalogWriteImageInput[] {
       alt: typeof row.alt === 'string' ? row.alt.trim() : undefined,
       format,
       isPrimary: row.isPrimary === true,
+      sourceType: row.sourceType === 'ai_generated' ? 'ai_generated' : 'uploaded',
     };
     if (!isStorefrontCatalogImage({ storage_path: assetId, format })) return images;
     images.push(candidate);

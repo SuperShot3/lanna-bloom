@@ -1,6 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  marketingSourceLabel,
+  normalizeAudienceEmail,
+  type MarketingAudienceRow,
+} from '@/lib/email/marketingAudience';
 
 type TemplateRow = {
   id: string;
@@ -25,6 +30,8 @@ type OutboxRow = {
   subject: string;
 };
 
+type OutboxFilter = 'all' | 'marketing';
+
 type ReminderItem = {
   id: string;
   customer_name: string;
@@ -47,6 +54,7 @@ export function EmailControlCenterClient() {
   const [tab, setTab] = useState<Tab>('templates');
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [outbox, setOutbox] = useState<OutboxRow[]>([]);
+  const [audience, setAudience] = useState<MarketingAudienceRow[]>([]);
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [editing, setEditing] = useState<TemplateRow | null>(null);
@@ -54,10 +62,11 @@ export function EmailControlCenterClient() {
   const load = useCallback(async () => {
     setLoadErr(null);
     try {
-      const [t, o, r] = await Promise.all([
+      const [t, o, r, a] = await Promise.all([
         fetch('/api/admin/emails/templates', { cache: 'no-store' }),
         fetch('/api/admin/emails/outbox', { cache: 'no-store' }),
         fetch('/api/admin/emails/reminders', { cache: 'no-store' }),
+        fetch('/api/admin/emails/audience', { cache: 'no-store' }),
       ]);
       if (!t.ok) throw new Error('Templates failed');
       if (!o.ok) throw new Error('Outbox failed');
@@ -68,6 +77,12 @@ export function EmailControlCenterClient() {
       setTemplates(tj.items);
       setOutbox(oj.items);
       setReminders(rj.items);
+      if (a.ok) {
+        const aj = (await a.json()) as { items: MarketingAudienceRow[] };
+        setAudience(aj.items ?? []);
+      } else {
+        setAudience([]);
+      }
     } catch (e) {
       setLoadErr(e instanceof Error ? e.message : 'Load error');
     }
@@ -82,7 +97,9 @@ export function EmailControlCenterClient() {
       <header className="admin-header admin-page-header">
         <div>
           <h1 className="admin-title">Email &amp; Reminder Control Center</h1>
-          <p className="admin-hint">Templates, previews, outbox, and important-date reminders</p>
+          <p className="admin-hint">
+            Templates, previews, outbox, marketing opt-ins, and important-date reminders
+          </p>
         </div>
         <div className="admin-header-actions">
           <button type="button" className="admin-btn admin-btn-outline" onClick={() => void load()}>
@@ -168,6 +185,7 @@ export function EmailControlCenterClient() {
       {tab === 'outbox' && (
         <OutboxTab
           rows={outbox}
+          audience={audience}
           onAction={() => void load()}
         />
       )}
@@ -447,101 +465,236 @@ function PreviewTab({
   );
 }
 
-function OutboxTab({ rows, onAction }: { rows: OutboxRow[]; onAction: () => void }) {
-  const [detail, setDetail] = useState<{ id: string; html_body: string; subject: string } | null>(null);
+function OutboxTab({
+  rows,
+  audience,
+  onAction,
+}: {
+  rows: OutboxRow[];
+  audience: MarketingAudienceRow[];
+  onAction: () => void;
+}) {
+  const [detail, setDetail] = useState<{ id: string; html_body: string; subject: string } | null>(
+    null
+  );
+  const [filter, setFilter] = useState<OutboxFilter>('all');
+
+  const optedInEmails = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of audience) set.add(row.email);
+    return set;
+  }, [audience]);
+
+  const outboxHasConsent = (email: string) =>
+    optedInEmails.has(normalizeAudienceEmail(email));
 
   const doSend = async (id: string) => {
-    const res = await fetch(`/api/admin/emails/outbox/${encodeURIComponent(id)}/send`, { method: 'POST' });
+    const res = await fetch(`/api/admin/emails/outbox/${encodeURIComponent(id)}/send`, {
+      method: 'POST',
+    });
     if (res.ok) onAction();
   };
   const doCancel = async (id: string) => {
-    const res = await fetch(`/api/admin/emails/outbox/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
+    const res = await fetch(`/api/admin/emails/outbox/${encodeURIComponent(id)}/cancel`, {
+      method: 'POST',
+    });
     if (res.ok) onAction();
   };
   const open = async (id: string) => {
-    const res = await fetch(`/api/admin/emails/outbox/${encodeURIComponent(id)}`, { cache: 'no-store' });
-    const d = (await res.json().catch(() => ({}))) as { outbox?: { html_body: string; subject: string } };
+    const res = await fetch(`/api/admin/emails/outbox/${encodeURIComponent(id)}`, {
+      cache: 'no-store',
+    });
+    const d = (await res.json().catch(() => ({}))) as {
+      outbox?: { html_body: string; subject: string };
+    };
     if (d.outbox) setDetail({ id, html_body: d.outbox.html_body, subject: d.outbox.subject });
   };
 
   return (
     <section className="admin-section">
-      <h2 className="admin-section-title">Outbox &amp; sent</h2>
-      <div className="admin-orders" style={{ overflowX: 'auto' }}>
-        <table className="admin-table" style={{ width: '100%', minWidth: 720 }}>
-          <thead>
-            <tr>
-              <th>Created</th>
-              <th>Email</th>
-              <th>Order</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Sent</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={{ fontSize: '0.85rem' }}>{r.created_at?.slice(0, 19) ?? '—'}</td>
-                <td style={{ fontSize: '0.88rem' }}>{r.customer_email}</td>
-                <td>
-                  {r.order_id ? (
-                    <a href={`/admin/orders/${encodeURIComponent(r.order_id)}`} className="admin-link">
-                      {r.order_id}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td>
-                  <code style={{ fontSize: '0.8rem' }}>{r.email_type}</code>
-                </td>
-                <td>
-                  <span className="admin-badge">{r.status}</span>
-                </td>
-                <td style={{ fontSize: '0.85rem' }}>{r.sent_at?.slice(0, 19) ?? '—'}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-sm admin-btn-outline"
-                    onClick={() => void open(r.id)}
-                  >
-                    Preview
-                  </button>{' '}
-                  {(r.status === 'failed' || r.status === 'draft' || r.status === 'scheduled') && (
-                    <>
+      <div className="admin-mail-outbox-toolbar">
+        <div>
+          <h2 className="admin-section-title" style={{ marginBottom: 4 }}>
+            Outbox &amp; sent
+          </h2>
+          <p className="admin-hint" style={{ margin: 0 }}>
+            {audience.length} {audience.length === 1 ? 'person has' : 'people have'} allowed
+            marketing email (checkout or newsletter).
+          </p>
+        </div>
+        <a
+          href="/api/admin/emails/audience/export"
+          className="admin-btn admin-btn-outline admin-btn-sm"
+          download
+        >
+          <span className="material-symbols-outlined" aria-hidden style={{ fontSize: 18 }}>
+            download
+          </span>
+          Export marketing list
+        </a>
+      </div>
+
+      <div className="admin-mail-tabs" style={{ marginBottom: 14 }}>
+        <button
+          type="button"
+          className={filter === 'all' ? 'admin-mail-tab--active' : undefined}
+          onClick={() => setFilter('all')}
+        >
+          All messages
+        </button>
+        <button
+          type="button"
+          className={filter === 'marketing' ? 'admin-mail-tab--active' : undefined}
+          onClick={() => setFilter('marketing')}
+        >
+          Marketing yes ({audience.length})
+        </button>
+      </div>
+
+      {filter === 'marketing' ? (
+        <div className="admin-orders" style={{ overflowX: 'auto' }}>
+          <table className="admin-table" style={{ width: '100%', minWidth: 720 }}>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Source</th>
+                <th>Last order</th>
+              </tr>
+            </thead>
+            <tbody>
+              {audience.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="admin-hint">
+                    No checkout or newsletter marketing opt-ins yet.
+                  </td>
+                </tr>
+              ) : (
+                audience.map((row) => (
+                  <tr key={row.email}>
+                    <td style={{ fontSize: '0.88rem' }}>
+                      <span className="admin-mail-consent-cell">
+                        <MarketingConsentIcon />
+                        {row.email}
+                      </span>
+                    </td>
+                    <td>{row.customerName ?? '—'}</td>
+                    <td style={{ fontSize: '0.88rem' }}>{marketingSourceLabel(row)}</td>
+                    <td>
+                      {row.lastOrderId ? (
+                        <a
+                          href={`/admin/orders/${encodeURIComponent(row.lastOrderId)}`}
+                          className="admin-link"
+                        >
+                          {row.lastOrderId}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                      {row.lastOrderAt ? (
+                        <div style={{ fontSize: '0.8rem' }}>{row.lastOrderAt.slice(0, 10)}</div>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="admin-orders" style={{ overflowX: 'auto' }}>
+          <table className="admin-table" style={{ width: '100%', minWidth: 720 }}>
+            <thead>
+              <tr>
+                <th>Created</th>
+                <th>Email</th>
+                <th>Order</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Sent</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const consented = outboxHasConsent(r.customer_email);
+                return (
+                  <tr key={r.id}>
+                    <td style={{ fontSize: '0.85rem' }}>{r.created_at?.slice(0, 19) ?? '—'}</td>
+                    <td style={{ fontSize: '0.88rem' }}>
+                      <span className="admin-mail-consent-cell">
+                        {consented ? <MarketingConsentIcon /> : null}
+                        {r.customer_email}
+                      </span>
+                    </td>
+                    <td>
+                      {r.order_id ? (
+                        <a
+                          href={`/admin/orders/${encodeURIComponent(r.order_id)}`}
+                          className="admin-link"
+                        >
+                          {r.order_id}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td>
+                      <code style={{ fontSize: '0.8rem' }}>{r.email_type}</code>
+                    </td>
+                    <td>
+                      <span className="admin-badge">{r.status}</span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>{r.sent_at?.slice(0, 19) ?? '—'}</td>
+                    <td>
                       <button
                         type="button"
-                        className="admin-btn admin-btn-sm"
-                        onClick={() => void doSend(r.id)}
+                        className="admin-btn admin-btn-sm admin-btn-outline"
+                        onClick={() => void open(r.id)}
                       >
-                        {r.status === 'failed' ? 'Resend' : 'Send'}
+                        Preview
                       </button>{' '}
-                    </>
-                  )}
-                  {(r.status === 'draft' || r.status === 'scheduled') && (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-sm admin-btn-outline"
-                      onClick={() => void doCancel(r.id)}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                      {(r.status === 'failed' ||
+                        r.status === 'draft' ||
+                        r.status === 'scheduled') && (
+                        <>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-sm"
+                            onClick={() => void doSend(r.id)}
+                          >
+                            {r.status === 'failed' ? 'Resend' : 'Send'}
+                          </button>{' '}
+                        </>
+                      )}
+                      {(r.status === 'draft' || r.status === 'scheduled') && (
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-sm admin-btn-outline"
+                          onClick={() => void doCancel(r.id)}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
       {detail && (
-        <div className="admin-modal-backdrop" role="dialog" aria-modal onClick={() => setDetail(null)}>
-          <div
-            className="admin-modal admin-modal-wide"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="admin-section-title" style={{ marginTop: 0 }}>{detail.subject}</h2>
+        <div
+          className="admin-modal-backdrop"
+          role="dialog"
+          aria-modal
+          onClick={() => setDetail(null)}
+        >
+          <div className="admin-modal admin-modal-wide" onClick={(e) => e.stopPropagation()}>
+            <h2 className="admin-section-title" style={{ marginTop: 0 }}>
+              {detail.subject}
+            </h2>
             <iframe
               title="Outbox"
               className="admin-mail-iframe"
@@ -549,7 +702,11 @@ function OutboxTab({ rows, onAction }: { rows: OutboxRow[]; onAction: () => void
               srcDoc={detail.html_body}
             />
             <div className="admin-mail-actions" style={{ marginTop: 8 }}>
-              <button type="button" className="admin-btn admin-btn-outline" onClick={() => setDetail(null)}>
+              <button
+                type="button"
+                className="admin-btn admin-btn-outline"
+                onClick={() => setDetail(null)}
+              >
                 Close
               </button>
             </div>
@@ -557,6 +714,20 @@ function OutboxTab({ rows, onAction }: { rows: OutboxRow[]; onAction: () => void
         </div>
       )}
     </section>
+  );
+}
+
+function MarketingConsentIcon() {
+  return (
+    <span
+      className="admin-mail-consent-icon"
+      title="Allowed marketing email"
+      aria-label="Allowed marketing email"
+    >
+      <span className="material-symbols-outlined" aria-hidden>
+        campaign
+      </span>
+    </span>
   );
 }
 

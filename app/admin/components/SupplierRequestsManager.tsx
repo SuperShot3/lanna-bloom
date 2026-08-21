@@ -1,14 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SupplierOrderRequestRow } from '@/lib/supabase/adminQueries';
-import {
-  SUPPLIER_SHOPS,
-  supplierResponseLabelEnglish,
-  supplierStatusLabelEnglish,
-} from '@/lib/supplierRequests';
+import { supplierResponseLabelEnglish, supplierStatusLabelEnglish } from '@/lib/supplierRequests';
+import { useCatalogPartnerShops } from '@/app/admin/components/useCatalogPartnerShops';
 
 interface SupplierRequestsManagerProps {
   orderId: string;
@@ -37,9 +34,15 @@ export function SupplierRequestsManager({
   supplierBaseUrl,
 }: SupplierRequestsManagerProps) {
   const router = useRouter();
-  const [shopId, setShopId] = useState<string>(SUPPLIER_SHOPS[0]?.id ?? '');
+  const partnerShops = useCatalogPartnerShops();
+  const [shopId, setShopId] = useState<string>('');
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (shopId) return;
+    if (partnerShops[0]?.id) setShopId(partnerShops[0].id);
+  }, [partnerShops, shopId]);
 
   const activeRequest = useMemo(
     () =>
@@ -53,6 +56,10 @@ export function SupplierRequestsManager({
 
   async function createRequest() {
     if (!canManage || busyKey) return;
+    if (!shopId) {
+      setMessage({ type: 'error', text: 'Select a partner first' });
+      return;
+    }
     setBusyKey('create');
     setMessage(null);
     try {
@@ -147,10 +154,13 @@ export function SupplierRequestsManager({
             <select
               className="admin-select"
               value={shopId}
-              disabled={Boolean(activeRequest) || busyKey === 'create'}
+              disabled={Boolean(activeRequest) || busyKey === 'create' || partnerShops.length === 0}
               onChange={(event) => setShopId(event.target.value)}
             >
-              {SUPPLIER_SHOPS.map((shop) => (
+              {partnerShops.length === 0 ? (
+                <option value="">No partners yet</option>
+              ) : null}
+              {partnerShops.map((shop) => (
                 <option key={shop.id} value={shop.id}>
                   {shop.name}
                 </option>
@@ -161,10 +171,13 @@ export function SupplierRequestsManager({
             type="button"
             className="admin-btn admin-btn-primary"
             onClick={createRequest}
-            disabled={Boolean(activeRequest) || busyKey === 'create'}
+            disabled={Boolean(activeRequest) || busyKey === 'create' || !shopId}
           >
             {busyKey === 'create' ? 'Creating…' : 'Create link'}
           </button>
+          {partnerShops.length === 0 && (
+            <p className="admin-hint">No partners found. Add them under Partners first.</p>
+          )}
           {activeRequest && (
             <p className="admin-hint">An active request already exists. Disable it before creating a new link.</p>
           )}

@@ -387,6 +387,13 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     setSavedProduct(null);
   }
 
+  function toggleDraftAiGenerated(imageId: string, aiGenerated: boolean) {
+    setImageDrafts((current) =>
+      current.map((d) => (d.id === imageId ? { ...d, aiGenerated } : d))
+    );
+    setSavedProduct(null);
+  }
+
   function removeDraft(imageId: string) {
     setImageDrafts((current) => {
       const target = current.find((d) => d.id === imageId);
@@ -497,6 +504,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
             variants: result.variants,
             serverPreview: result.serverPreview,
             isPrimary: !hasPrimary,
+            aiGenerated: false,
           },
         ];
       });
@@ -661,7 +669,13 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
     const primaryId = primaryDraft?.id ?? readyDrafts[0]?.id ?? null;
     const altFallback = draft.altEn || draft.nameEn;
-    const imagesPayload: Array<{ assetId: string; alt?: string; format?: string; isPrimary: boolean }> = [];
+    const imagesPayload: Array<{
+      assetId: string;
+      alt?: string;
+      format?: string;
+      isPrimary: boolean;
+      sourceType?: 'uploaded' | 'ai_generated';
+    }> = [];
 
     readyDrafts.forEach((d) => {
       (d.variants ?? []).forEach((variant) => {
@@ -671,6 +685,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
           alt: variant.alt || altFallback,
           format: 'webp',
           isPrimary: d.id === primaryId,
+          sourceType: d.aiGenerated ? 'ai_generated' : 'uploaded',
         });
       });
     });
@@ -834,6 +849,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
               onAddFiles={enqueueCropFiles}
               onSetDraftPrimary={setPrimary}
               onRemoveDraft={removeDraft}
+              onToggleAiGenerated={toggleDraftAiGenerated}
               canContinue={canContinueFromImages}
               onContinue={handleImagesContinue}
             />

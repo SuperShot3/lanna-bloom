@@ -45,6 +45,7 @@ import {
   unpublishProductAction,
   updateProductByAdminAction,
   updateProductImageAltAction,
+  updateProductImageSourceTypeAction,
   uploadProductImageAction,
 } from '../actions';
 
@@ -454,6 +455,29 @@ export function AdminProductDetailClient({ product }: Props) {
       if (result.error) setError(result.error);
       else router.refresh();
     },
+    onToggleAiGenerated: async (imageId: string, aiGenerated: boolean) => {
+      const previous = editableImages;
+      setEditableImages((current) =>
+        current.map((img) =>
+          img.id === imageId
+            ? { ...img, sourceType: aiGenerated ? 'ai_generated' : 'uploaded' }
+            : img
+        )
+      );
+      setLoading(`ai-${imageId}`);
+      const formData = new FormData();
+      formData.set('productId', product.id);
+      formData.set('imageId', imageId);
+      formData.set('sourceType', aiGenerated ? 'ai_generated' : 'uploaded');
+      const result = await updateProductImageSourceTypeAction(formData);
+      setLoading(null);
+      if (result.error) {
+        setEditableImages(previous);
+        setError(result.error);
+      } else {
+        router.refresh();
+      }
+    },
     onRemove: async (imageId: string) => {
       if (!window.confirm('Remove this image?')) return;
       setLoading(`delete-${imageId}`);
@@ -645,6 +669,7 @@ export function AdminProductDetailClient({ product }: Props) {
           onEditFraming={imageHandlers.onEditFraming}
           onSetPrimary={imageHandlers.onSetPrimary}
           onConvertToWebp={imageHandlers.onConvertToWebp}
+          onToggleAiGenerated={imageHandlers.onToggleAiGenerated}
           onRemove={imageHandlers.onRemove}
         />
       </AdminCmsCollapsibleSection>

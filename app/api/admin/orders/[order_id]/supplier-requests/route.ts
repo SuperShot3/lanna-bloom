@@ -3,10 +3,10 @@ import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
+import { findCatalogPartnerShop } from '@/lib/admin/catalogPartnerShops';
 import {
   buildSupplierRequestUrl,
   buildSupplierSnapshots,
-  findSupplierShop,
   generateSupplierPublicToken,
   SUPPLIER_ACTIVE_STATUSES,
 } from '@/lib/supplierRequests';
@@ -57,9 +57,9 @@ export async function POST(
     body && typeof body === 'object' && 'shop_id' in body
       ? String((body as { shop_id?: unknown }).shop_id ?? '').trim()
       : '';
-  const shop = findSupplierShop(shopId);
+  const shop = await findCatalogPartnerShop(shopId);
   if (!shop) {
-    return jsonNoStore({ error: 'Invalid shop_id' }, { status: 400 });
+    return jsonNoStore({ error: 'Invalid shop_id: must be a catalog partner' }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();

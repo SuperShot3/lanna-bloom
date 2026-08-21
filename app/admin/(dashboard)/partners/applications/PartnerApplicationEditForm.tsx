@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import {
+  createPartnerApplicationAction,
   updatePartnerApplicationFieldsAction,
   type PartnerApplicationFieldsPayload,
 } from './actions';
@@ -10,11 +11,38 @@ import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
 import type { ProvinceOption } from './provinceOptions';
 
 type PartnerApplicationEditFormProps = {
-  application: PartnerApplicationRow;
+  application?: PartnerApplicationRow | null;
   provinces: ProvinceOption[];
-  onSaved: (updated: PartnerApplicationRow) => void;
+  onSaved: (updated: PartnerApplicationRow, extra?: { tempPassword?: string }) => void;
   onCancel: () => void;
 };
+
+function emptyPayload(): PartnerApplicationFieldsPayload {
+  return {
+    shop_name: '',
+    contact_name: '',
+    email: '',
+    phone: '',
+    line_id: '',
+    instagram: '',
+    facebook: '',
+    address: '',
+    district: '',
+    province_code: '',
+    lat: '',
+    lng: '',
+    self_deliver: false,
+    delivery_zones: '',
+    delivery_fee_note: '',
+    categories: '',
+    prep_time: '',
+    cutoff_time: '',
+    max_orders_per_day: '',
+    sample_photo_urls: '',
+    experience_note: '',
+    admin_note: '',
+  };
+}
 
 function rowToPayload(app: PartnerApplicationRow): PartnerApplicationFieldsPayload {
   return {
@@ -97,13 +125,15 @@ export function PartnerApplicationEditForm({
   onSaved,
   onCancel,
 }: PartnerApplicationEditFormProps) {
+  const isCreate = !application;
   const [fields, setFields] = useState<PartnerApplicationFieldsPayload>(() =>
-    rowToPayload(application)
+    application ? rowToPayload(application) : emptyPayload()
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [approveImmediately, setApproveImmediately] = useState(true);
 
-  const isApproved = application.status === 'approved';
+  const isApproved = application?.status === 'approved';
 
   function updateField<K extends keyof PartnerApplicationFieldsPayload>(
     key: K,
@@ -116,6 +146,23 @@ export function PartnerApplicationEditForm({
     e.preventDefault();
     setError(null);
     setSaving(true);
+
+    if (!application) {
+      const result = await createPartnerApplicationAction(fields, { approveImmediately });
+      setSaving(false);
+      if (result.error && !result.application) {
+        setError(result.error);
+        return;
+      }
+      if (result.application) {
+        if (result.error) {
+          alert(result.error);
+        }
+        onSaved(result.application, { tempPassword: result.tempPassword });
+      }
+      return;
+    }
+
     const result = await updatePartnerApplicationFieldsAction(application.id, fields);
     setSaving(false);
     if (result.error) {
@@ -156,13 +203,13 @@ export function PartnerApplicationEditForm({
           />
         </label>
         <label className="admin-partner-edit-field">
-          Email <span aria-hidden="true">*</span>
+          Email {(!isApproved && (!isCreate || approveImmediately)) && <span aria-hidden="true">*</span>}
           <input
             type="email"
             className="admin-partner-reject-input"
             value={fields.email}
             onChange={(e) => updateField('email', e.target.value)}
-            required={!isApproved}
+            required={!isApproved && (!isCreate || approveImmediately)}
             disabled={isApproved}
             title={isApproved ? 'Email cannot be changed after approval' : undefined}
           />
@@ -211,11 +258,12 @@ export function PartnerApplicationEditForm({
       <fieldset className="admin-partner-edit-section">
         <legend>Location</legend>
         <label className="admin-partner-edit-field">
-          Province
+          Province {isCreate && <span aria-hidden="true">*</span>}
           <select
             className="admin-partner-reject-input"
             value={fields.province_code}
             onChange={(e) => updateField('province_code', e.target.value)}
+            required={isCreate}
           >
             <option value="">—</option>
             {provinces.map((p) => (
@@ -378,9 +426,37 @@ export function PartnerApplicationEditForm({
         </label>
       </fieldset>
 
+      {isCreate && (
+        <label className="admin-partner-edit-checkbox">
+          <input
+            type="checkbox"
+            checked={approveImmediately}
+            onChange={(e) => setApproveImmediately(e.target.checked)}
+          />
+          <span>
+            Approve immediately (create login and catalog partner)
+            {approveImmediately && (
+              <span className="admin-partner-edit-hint" style={{ display: 'block', marginTop: 4 }}>
+                Email is required. The login password will be shown after save — send it to the partner via LINE.
+              </span>
+            )}
+          </span>
+        </label>
+      )}
+
       <div className="admin-partner-actions">
         <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}>
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving
+            ? isCreate
+              ? approveImmediately
+                ? 'Adding…'
+                : 'Saving…'
+              : 'Saving…'
+            : isCreate
+              ? approveImmediately
+                ? 'Add and approve'
+                : 'Save as pending'
+              : 'Save changes'}
         </button>
         <button
           type="button"

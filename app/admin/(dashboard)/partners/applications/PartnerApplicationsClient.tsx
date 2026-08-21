@@ -73,7 +73,7 @@ export function PartnerApplicationsClient({
 }: PartnerApplicationsClientProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<PartnerApplicationRow | null>(null);
-  const [drawerMode, setDrawerMode] = useState<'view' | 'edit'>('view');
+  const [drawerMode, setDrawerMode] = useState<'view' | 'edit' | 'create'>('view');
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -86,6 +86,13 @@ export function PartnerApplicationsClient({
   function provinceLabel(code: string | null | undefined): string {
     if (!code) return '—';
     return provinceNameByCode.get(code) ?? code;
+  }
+
+  function openCreateDrawer() {
+    setSelected(null);
+    setDrawerMode('create');
+    setTempPassword(null);
+    setRejectNote('');
   }
 
   function openDrawer(app: PartnerApplicationRow) {
@@ -176,9 +183,12 @@ export function PartnerApplicationsClient({
     }
   }
 
-  function handleEditSaved(updated: PartnerApplicationRow) {
+  function handleEditSaved(updated: PartnerApplicationRow, extra?: { tempPassword?: string }) {
     setSelected(updated);
     setDrawerMode('view');
+    if (extra?.tempPassword) {
+      setTempPassword(extra.tempPassword);
+    }
     router.refresh();
   }
 
@@ -190,6 +200,15 @@ export function PartnerApplicationsClient({
         <div>
           <h1 className="admin-title">Partner Applications</h1>
           <p className="admin-hint">Review and manage vendor shop registrations from Supabase</p>
+        </div>
+        <div className="admin-header-actions">
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary"
+            onClick={openCreateDrawer}
+          >
+            + Add partner
+          </button>
         </div>
       </header>
 
@@ -326,13 +345,17 @@ export function PartnerApplicationsClient({
         )}
       </div>
 
-      {selected && (
+      {(selected || drawerMode === 'create') && (
         <div className="admin-partner-drawer-overlay" onClick={closeDrawer}>
           <div className="admin-partner-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="admin-partner-drawer-header">
-              <h2>{selected.shop_name ?? 'Application'}</h2>
+              <h2>
+                {drawerMode === 'create'
+                  ? 'Add partner'
+                  : selected?.shop_name ?? 'Application'}
+              </h2>
               <div className="admin-partner-drawer-header-actions">
-                {drawerMode === 'view' && (
+                {drawerMode === 'view' && selected && (
                   <button
                     type="button"
                     className="admin-btn admin-btn-outline admin-btn-sm"
@@ -347,14 +370,20 @@ export function PartnerApplicationsClient({
               </div>
             </div>
             <div className="admin-partner-drawer-body">
-              {drawerMode === 'edit' ? (
+              {drawerMode === 'create' || (drawerMode === 'edit' && selected) ? (
                 <PartnerApplicationEditForm
-                  application={selected}
+                  application={drawerMode === 'create' ? null : selected}
                   provinces={provinces}
                   onSaved={handleEditSaved}
-                  onCancel={() => setDrawerMode('view')}
+                  onCancel={() => {
+                    if (drawerMode === 'create') {
+                      closeDrawer();
+                      return;
+                    }
+                    setDrawerMode('view');
+                  }}
                 />
-              ) : (
+              ) : selected ? (
                 <>
                   <dl className="admin-partner-detail">
                     <dt>Province</dt>
@@ -544,7 +573,7 @@ export function PartnerApplicationsClient({
                     </button>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

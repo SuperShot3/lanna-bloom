@@ -50,14 +50,6 @@ function resolveSupplierRequestBaseUrl(): string {
 
 export const SUPPLIER_REQUEST_BASE_URL = resolveSupplierRequestBaseUrl();
 
-export const SUPPLIER_SHOPS = [
-  { id: 'mod_dam', name: 'Mod Dam' },
-  { id: 'kaset', name: 'Kaset' },
-  { id: 'toi', name: 'Toi' },
-] as const;
-
-export type SupplierShopId = (typeof SUPPLIER_SHOPS)[number]['id'];
-
 export type SupplierRequestStatus =
   | 'LINK_CREATED'
   | 'LINK_SENT'
@@ -202,10 +194,6 @@ export interface SupplierSnapshotBundle {
   preparation_snapshot: SupplierPreparationSnapshot;
   pickup_snapshot: SupplierPickupSnapshot;
   message_card_snapshot: SupplierMessageCardSnapshot;
-}
-
-export function findSupplierShop(shopId: string) {
-  return SUPPLIER_SHOPS.find((shop) => shop.id === shopId);
 }
 
 export function generateSupplierPublicToken(): string {

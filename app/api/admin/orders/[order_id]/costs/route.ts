@@ -9,6 +9,7 @@ import {
 } from '@/lib/expenses/expenseQueries';
 import { mergeBillTracking, resolveBillLinesTarget } from '@/lib/expenses/billTracking';
 import { parseExpenseBillTrackingJson } from '@/types/expenses';
+import { findCatalogPartnerShop } from '@/lib/admin/catalogPartnerShops';
 
 function trimExpenseNotes(n: unknown): string {
   return typeof n === 'string' ? n.trim() : '';
@@ -54,10 +55,25 @@ function parseCost(value: unknown): { value: number | null; invalid: boolean } {
   return { value: null, invalid: true };
 }
 
-function parseItemCosts(value: unknown): { items: Array<{ id: string; cost: number | null }> | null; invalid: boolean } {
+type ParsedItemCost = {
+  id: string;
+  cost: number | null;
+  /** undefined = leave existing shop columns unchanged */
+  sourceShopId?: string | null;
+};
+
+function parseSourceShopId(value: unknown): { value: string | null; invalid: boolean } {
+  if (value == null) return { value: null, invalid: false };
+  if (typeof value !== 'string') return { value: null, invalid: true };
+  const trimmed = value.trim();
+  if (trimmed === '') return { value: null, invalid: false };
+  return { value: trimmed, invalid: false };
+}
+
+function parseItemCosts(value: unknown): { items: ParsedItemCost[] | null; invalid: boolean } {
   if (value == null) return { items: null, invalid: false };
   if (!Array.isArray(value)) return { items: null, invalid: true };
-  const items: Array<{ id: string; cost: number | null }> = [];
+  const items: ParsedItemCost[] = [];
   for (const it of value) {
     if (!it || typeof it !== 'object') return { items: null, invalid: true };
     const obj = it as Record<string, unknown>;
@@ -69,7 +85,13 @@ function parseItemCosts(value: unknown): { items: Array<{ id: string; cost: numb
     if (!id) return { items: null, invalid: true };
     const c = parseCost(obj.cost);
     if (c.invalid) return { items: null, invalid: true };
-    items.push({ id, cost: c.value });
+    const parsed: ParsedItemCost = { id, cost: c.value };
+    if ('source_shop_id' in obj) {
+      const shop = parseSourceShopId(obj.source_shop_id);
+      if (shop.invalid) return { items: null, invalid: true };
+      parsed.sourceShopId = shop.value;
+    }
+    items.push(parsed);
   }
   return { items, invalid: false };
 }
@@ -116,9 +138,15 @@ export async function PATCH(
   const paymentResult = hasPayment ? parseCost(b.payment_fee) : null;
   const itemCostsResult = hasItemCosts ? parseItemCosts(b.item_costs) : null;
 
-  if (cogsResult?.invalid || deliveryResult?.invalid || paymentResult?.invalid || itemCostsResult?.invalid) {
+  if (cogsResult?.invalid || deliveryResult?.invalid || paymentResult?.invalid) {
     return NextResponse.json(
       { error: 'Invalid value: only numeric values >= 0 allowed (max 2 decimal places)' },
+      { status: 400 }
+    );
+  }
+  if (itemCostsResult?.invalid) {
+    return NextResponse.json(
+      { error: 'Invalid item_costs: cost must be numeric >= 0, and source_shop_id must be a catalog partner or empty' },
       { status: 400 }
     );
   }
@@ -170,10 +198,42 @@ export async function PATCH(
           return NextResponse.json({ error: 'Invalid item id for this order' }, { status: 400 });
         }
       }
+      const partnerById = new Map<string, { id: string; name: string }>();
       for (const it of itemCostsResult.items) {
+        if (!it.sourceShopId) continue;
+        if (partnerById.has(it.sourceShopId)) continue;
+        const shop = await findCatalogPartnerShop(it.sourceShopId);
+        if (!shop) {
+          return NextResponse.json(
+            { error: 'Invalid source_shop_id: must be a catalog partner' },
+            { status: 400 }
+          );
+        }
+        partnerById.set(it.sourceShopId, shop);
+      }
+      for (const it of itemCostsResult.items) {
+        const itemUpdate: { cost: number | null; source_shop_id?: string | null; source_shop_name?: string | null } = {
+          cost: it.cost,
+        };
+        if (it.sourceShopId !== undefined) {
+          if (!it.sourceShopId) {
+            itemUpdate.source_shop_id = null;
+            itemUpdate.source_shop_name = null;
+          } else {
+            const shop = partnerById.get(it.sourceShopId);
+            if (!shop) {
+              return NextResponse.json(
+                { error: 'Invalid source_shop_id: must be a catalog partner' },
+                { status: 400 }
+              );
+            }
+            itemUpdate.source_shop_id = shop.id;
+            itemUpdate.source_shop_name = shop.name;
+          }
+        }
         await supabase
           .from('order_items')
-          .update({ cost: it.cost, })
+          .update(itemUpdate)
           .eq('order_id', order_id.trim())
           .eq('id', it.id);
       }

@@ -25,6 +25,8 @@ export interface CatalogProduct {
   commissionPercent?: number;
   images: string[];
   imageAlts?: string[];
+  /** Parallel to `images` — true when that gallery photo is AI-generated. */
+  imageAiGenerated?: boolean[];
   excludedDeliveryDestinations?: DeliveryDestinationId[];
   preparationTime?: number;
   occasion?: string;
@@ -161,6 +163,7 @@ export type CatalogStoredImage = {
   format?: 'webp' | 'png_master' | 'source';
   is_primary?: boolean;
   sort_order?: number;
+  source_type?: CatalogImageSourceType;
 };
 
 export type CatalogEntityType = 'bouquet' | 'product';

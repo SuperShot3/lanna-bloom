@@ -28,6 +28,8 @@ export interface Bouquet {
   presentationFormats?: string[];
   images: string[];
   imageAlts?: string[];
+  /** Parallel to `images` — true when that gallery photo is AI-generated. */
+  imageAiGenerated?: boolean[];
   /** Unified sellable lines — always non-empty after map */
   sizes: BouquetSellableOption[];
   partnerId?: string;

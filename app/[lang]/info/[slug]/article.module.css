@@ -930,3 +930,55 @@
   background: var(--day-color, var(--accent));
   flex-shrink: 0;
 }
+
+/* Native FAQ: question is a button; answer stays collapsed until click */
+.infoArticleBody :global(details) {
+  margin: 0 0 0.65em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.infoArticleBody :global(details > summary) {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  color: var(--text);
+  padding: 0.95em 1.1em;
+  line-height: 1.45;
+}
+
+.infoArticleBody :global(details > summary::-webkit-details-marker),
+.infoArticleBody :global(details > summary::marker) {
+  display: none;
+}
+
+.infoArticleBody :global(details > summary::after) {
+  content: '';
+  float: right;
+  width: 0.45em;
+  height: 0.45em;
+  margin-top: 0.45em;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+}
+
+.infoArticleBody :global(details[open] > summary::after) {
+  margin-top: 0.55em;
+  transform: rotate(225deg);
+}
+
+.infoArticleBody :global(details[open] > summary) {
+  border-bottom: 1px solid var(--border);
+}
+
+.infoArticleBody :global(details > :not(summary)) {
+  padding: 0.15em 1.1em 0;
+}
+
+.infoArticleBody :global(details > .info-article-p:last-child) {
+  padding-bottom: 1em;
+}

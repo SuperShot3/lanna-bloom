@@ -30,5 +30,8 @@ export function itemsFromOrderJson(
           : 'bouquet') as 'bouquet' | 'product' | 'plushyToy' | 'balloon',
     cost: it.cost ?? null,
     commission_amount: it.commissionAmount ?? null,
+    source_shop_id: null,
+    source_shop_name: null,
+    purchase_photo_path: null,
   }));
 }

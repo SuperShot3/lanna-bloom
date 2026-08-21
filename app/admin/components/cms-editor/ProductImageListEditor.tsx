@@ -38,6 +38,7 @@ type Props = {
   onEditFraming?: (imageId: string, file: File) => void | Promise<void>;
   onSetPrimary?: (imageId: string) => void | Promise<void>;
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
+  onToggleAiGenerated?: (imageId: string, aiGenerated: boolean) => void | Promise<void>;
   onUnassign?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
 };
@@ -55,6 +56,7 @@ function imageLoadingMessage(loadingKey: string | null | undefined): string | nu
   if (loadingKey.startsWith('convert-')) return 'Converting to WebP…';
   if (loadingKey.startsWith('framing-')) return 'Saving image framing…';
   if (loadingKey.startsWith('primary-')) return 'Setting main image…';
+  if (loadingKey.startsWith('ai-')) return 'Updating AI image label…';
   return null;
 }
 
@@ -81,6 +83,7 @@ export function ProductImageListEditor({
   onEditFraming,
   onSetPrimary,
   onConvertToWebp,
+  onToggleAiGenerated,
   onUnassign,
   onRemove,
 }: Props) {
@@ -310,6 +313,21 @@ export function ProductImageListEditor({
                     {catalogImageFormatLabel(image)}
                   </span>
                   {image.isPrimary ? <span className="admin-cms-badge-main">Main image</span> : null}
+                  {onToggleAiGenerated ? (
+                    <label
+                      className="admin-cms-checkbox admin-cms-ai-toggle"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={image.sourceType === 'ai_generated'}
+                        disabled={disabled || !!loadingKey}
+                        onChange={(e) => void onToggleAiGenerated(image.id, e.target.checked)}
+                      />
+                      <span>AI generated</span>
+                    </label>
+                  ) : null}
                 </span>
               }
               menu={<AdminRowMenu items={menuItems(image, index)} ariaLabel="Image actions" />}

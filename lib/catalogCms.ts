@@ -7,6 +7,7 @@
 import 'server-only';
 
 import { slugFromName } from '@/lib/catalog/mappers';
+import { parseCatalogImageSourceType } from '@/lib/catalog/imageAiGenerated';
 import { isStorefrontCatalogImage } from '@/lib/catalog/storefrontImages';
 import { catalogPublicUrl } from '@/lib/catalog/storage';
 import type {
@@ -57,6 +58,7 @@ function imageRowToStoredImage(
     format: format === 'webp' || format === 'png_master' || format === 'source' ? format : undefined,
     is_primary: row.is_primary,
     sort_order: row.sort_order,
+    source_type: parseCatalogImageSourceType(row.source_type),
   };
 }
 
@@ -477,7 +479,7 @@ export async function ensureCatalogProductImagesFromInline(
     revision_id: null,
     storage_path: image.storage_path.trim(),
     public_url: image.public_url ?? catalogPublicUrl(supabase, image.storage_path.trim()),
-    source_type: 'migrated_from_sanity' as CatalogImageSourceType,
+    source_type: parseCatalogImageSourceType(image.source_type) ?? 'migrated_from_sanity',
     alt_en: cleanText(image.alt),
     alt_th: null,
     is_primary: index === primaryIndex,
@@ -600,6 +602,28 @@ export async function updateCatalogProductImageStorage(input: {
     .single();
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to update catalog image');
+  return data as CatalogProductImageRow;
+}
+
+export async function updateCatalogProductImageSourceType(input: {
+  imageId: string;
+  sourceType: Extract<CatalogImageSourceType, 'uploaded' | 'ai_generated'>;
+  actor?: string | null;
+}): Promise<CatalogProductImageRow> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('catalog_product_images')
+    .update({
+      source_type: input.sourceType,
+      updated_by: cleanText(input.actor),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.imageId)
+    .is('deleted_at', null)
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Failed to update catalog image source');
   return data as CatalogProductImageRow;
 }
 

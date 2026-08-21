@@ -13,6 +13,7 @@ export type ImageDraft = {
   variants: ImageVariant[];
   serverPreview?: string;
   isPrimary: boolean;
+  aiGenerated?: boolean;
 };
 
 export function parseVariants(value: unknown): ImageVariant[] {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Image from 'next/image';
 import './ProductGallery.css';
+import { CatalogAiImageBadge } from '@/components/CatalogAiImageBadge';
 import { clampGalleryIndex } from '@/lib/pdpVariantMedia';
 import {
   catalogImageUnoptimized,
@@ -30,6 +31,8 @@ function touchDistance(
 export function ProductGallery({
   images,
   imageAlts,
+  imageAiGenerated,
+  aiImageAriaLabel,
   name,
   productId,
   activeIndex,
@@ -38,6 +41,8 @@ export function ProductGallery({
 }: {
   images: string[];
   imageAlts?: string[];
+  imageAiGenerated?: boolean[];
+  aiImageAriaLabel?: string;
   name: string;
   /** Sanity document id - used for shared element view-transition-name */
   productId?: string;
@@ -396,6 +401,10 @@ export function ProductGallery({
             {active + 1} / {list.length}
           </span>
         ) : null}
+        <CatalogAiImageBadge
+          visible={imageAiGenerated?.[active] === true}
+          ariaLabel={aiImageAriaLabel ?? 'AI-generated image'}
+        />
         {list.length > 1 && (
           <span className="gallery-swipe-hint" aria-hidden>
             Swipe to change

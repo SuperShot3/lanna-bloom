@@ -7,7 +7,11 @@ import { randomUUID } from 'crypto';
 import type { BouquetStatus } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
-import type { CatalogBouquetPricing, CatalogStoredImage } from '@/lib/catalog/types';
+import type {
+  CatalogBouquetPricing,
+  CatalogImageSourceType,
+  CatalogStoredImage,
+} from '@/lib/catalog/types';
 import { CATALOG_SYSTEM_PARTNER_LEGACY_ID } from '@/lib/catalog/types';
 import { slugFromName } from '@/lib/catalog/mappers';
 import {
@@ -482,6 +486,7 @@ export type CatalogWriteImageInput = {
   alt?: string;
   format?: 'webp' | 'png_master' | 'source';
   isPrimary?: boolean;
+  sourceType?: CatalogImageSourceType;
 };
 
 export type CreateAdminCatalogBouquetInput = {
@@ -596,6 +601,7 @@ function writeImagesToStored(
       is_primary: image.isPrimary === true,
       alt: image.alt?.trim() || undefined,
       sort_order: index,
+      source_type: image.sourceType === 'ai_generated' ? 'ai_generated' : 'uploaded',
     })
   );
 }
