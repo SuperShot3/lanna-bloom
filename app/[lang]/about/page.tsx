@@ -126,7 +126,7 @@ export default function AboutPage({ params }: { params: { lang: string } }) {
   const isThai = locale === 'th';
 
   return (
-    <main className="bg-[#FDFBF8]">
+    <main className="bg-[var(--bg)]">
       <article className="container mx-auto max-w-[50rem] pb-24 pt-12 sm:pb-28 sm:pt-16 lg:pb-32 lg:pt-20">
         <header>
           <Image
@@ -214,7 +214,7 @@ export default function AboutPage({ params }: { params: { lang: string } }) {
             </h3>
             <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
               <table className="w-full border-collapse text-left">
-                <thead className="bg-[#F7F3EC]">
+                <thead className="bg-[var(--muted)]">
                   <tr>
                     <th
                       scope="col"

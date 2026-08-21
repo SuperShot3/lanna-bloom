@@ -261,7 +261,7 @@
   padding: 16px 18px;
   border-radius: calc(var(--radius) + 2px);
   border: 1px solid rgba(197, 160, 89, 0.22);
-  background: linear-gradient(180deg, rgba(250, 247, 242, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background: var(--surface);
   box-sizing: border-box;
 }
 
@@ -402,18 +402,18 @@
   padding: 18px 18px 16px;
   border-radius: 14px;
   border: 1px solid rgba(197, 160, 89, 0.22);
-  background: linear-gradient(180deg, rgba(250, 247, 242, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: var(--surface);
   box-sizing: border-box;
 }
 
 .articleChecklistBlock[data-variant='recommended'] {
   border-color: rgba(26, 60, 52, 0.16);
-  background: linear-gradient(180deg, rgba(244, 248, 246, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: var(--pastel-mint);
 }
 
 .articleChecklistBlock[data-variant='tip'] {
   border-color: rgba(197, 160, 89, 0.18);
-  background: linear-gradient(180deg, rgba(255, 251, 245, 0.98) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: var(--pastel-cream);
 }
 
 .articleChecklistBlockHeader {
@@ -477,7 +477,7 @@
   padding: 11px 13px;
   border-radius: 11px;
   border: 1px solid rgba(45, 42, 38, 0.08);
-  background: rgba(255, 255, 255, 0.88);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   color: var(--text);
   line-height: 1.55;
 }
@@ -527,7 +527,7 @@
   padding: 18px 18px 14px;
   border-radius: 14px;
   border: 1px solid rgba(45, 42, 38, 0.1);
-  background: rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
 }
 
 .articleStepsBody :global(ol) {
@@ -551,7 +551,7 @@
   padding: 12px 14px;
   border-radius: 11px;
   border: 1px solid rgba(45, 42, 38, 0.08);
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: var(--text);
   line-height: 1.55;
 }
@@ -874,7 +874,7 @@
   padding: 16px 18px;
   border-radius: calc(var(--radius) + 2px);
   border: 1px solid rgba(45, 42, 38, 0.1);
-  background: linear-gradient(180deg, rgba(250, 247, 242, 0.95) 0%, rgba(255, 255, 255, 0.92) 100%);
+  background: var(--surface);
 }
 
 .weekdayClusterNavLabel {
@@ -903,7 +903,7 @@
   padding: 5px 11px;
   border-radius: 9999px;
   border: 1px solid rgba(45, 42, 38, 0.1);
-  background: #fff;
+  background: var(--surface);
   color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 500;

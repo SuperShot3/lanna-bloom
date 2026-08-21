@@ -76,8 +76,8 @@ export function AboutNewsletterSignup({ copy }: { copy: AboutNewsletterCopy }) {
   };
 
   return (
-    <div className="rounded-xl border border-stone-200/90 bg-[#fdfbf9] p-4 sm:p-5">
-      <h3 className="font-[family-name:var(--font-family-display)] text-lg font-semibold text-[#1A3C34] mb-2">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4 sm:p-5">
+      <h3 className="font-[family-name:var(--font-family-display)] text-lg font-semibold text-[var(--text)] mb-2">
         {copy.newsletterTitle}
       </h3>
       <p className="text-sm text-stone-600 leading-relaxed mb-4">{copy.newsletterHint}</p>
@@ -105,12 +105,12 @@ export function AboutNewsletterSignup({ copy }: { copy: AboutNewsletterCopy }) {
             required
             aria-invalid={message === 'error' || message === 'invalid'}
             aria-describedby={message ? 'about-newsletter-message' : undefined}
-            className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-stone-200 bg-white focus:ring-[#C5A059] focus:border-[#C5A059] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:ring-[#C5A059] focus:border-[#C5A059] disabled:opacity-60 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-2.5 bg-[#1A3C34] text-white text-sm rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+            className="px-5 py-2.5 bg-[var(--primary)] text-[var(--primary-foreground)] text-sm rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed shrink-0 cursor-pointer"
           >
             {loading ? copy.newsletterSubscribing : copy.joinButton}
           </button>
@@ -121,7 +121,7 @@ export function AboutNewsletterSignup({ copy }: { copy: AboutNewsletterCopy }) {
             role="status"
             aria-live="polite"
             className={`text-sm ${
-              message === 'success' || message === 'already' ? 'text-[#1A3C34]' : 'text-red-600'
+              message === 'success' || message === 'already' ? 'text-[var(--text)]' : 'text-red-600'
             }`}
           >
             {message === 'success' && copy.newsletterSuccess}

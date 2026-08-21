@@ -550,7 +550,7 @@ export function FlowerFilterPanel({
       {/* Collapsible is a child component — scoped styled-jsx can miss its DOM; use global + panel prefix */}
       <style jsx global>{`
         .flower-filter-panel .flower-filter-group {
-          border-bottom: 1px solid #ede6df;
+          border-bottom: 1px solid var(--border);
           padding-bottom: 12px;
           margin-bottom: 12px;
         }
@@ -572,7 +572,7 @@ export function FlowerFilterPanel({
           padding: 8px 0;
           font-size: 13px;
           font-weight: 500;
-          color: #2c2420;
+          color: var(--text);
           text-align: left;
         }
         .flower-filter-panel .flower-filter-group-title {
@@ -610,7 +610,7 @@ export function FlowerFilterPanel({
           padding: 8px 0 10px;
           font-size: 13px;
           font-weight: 500;
-          color: #2c2420;
+          color: var(--text);
         }
         .flower-filter-panel .flower-filter-group--swatches {
           padding-bottom: 8px;
@@ -624,8 +624,8 @@ export function FlowerFilterPanel({
         .flower-filter-panel {
           width: 248px;
           flex-shrink: 0;
-          background: #fdf9f4;
-          border: 1px solid #e8e0d8;
+          background: var(--bg);
+          border: 1px solid var(--border);
           border-radius: 20px;
           padding: 24px;
           box-sizing: border-box;
@@ -648,11 +648,11 @@ export function FlowerFilterPanel({
           margin: 0;
           font-size: 15px;
           font-weight: 600;
-          color: #2c2420;
+          color: var(--text);
         }
         .flower-filter-clear-all {
           font-size: 12px;
-          color: #8a7a72;
+          color: var(--text-muted);
           background: none;
           border: none;
           cursor: pointer;
@@ -667,7 +667,7 @@ export function FlowerFilterPanel({
         .flower-filter-active-label {
           font-size: 11px;
           font-weight: 500;
-          color: #5c4a3a;
+          color: var(--text-muted);
           margin: 0 0 8px;
         }
         .flower-filter-pills {
@@ -681,10 +681,10 @@ export function FlowerFilterPanel({
           gap: 4px;
           padding: 4px 10px;
           border-radius: 999px;
-          background: #fff;
-          border: 1px solid #e8e0d8;
+          background: var(--surface);
+          border: 1px solid var(--border);
           font-size: 12px;
-          color: #5c4a3a;
+          color: var(--text-muted);
         }
         .flower-filter-pill-x {
           border: none;
@@ -693,7 +693,7 @@ export function FlowerFilterPanel({
           font-size: 14px;
           line-height: 1;
           padding: 0 2px;
-          color: #5c4a3a;
+          color: var(--text-muted);
         }
         .flower-dual-range {
           position: relative;
@@ -703,7 +703,7 @@ export function FlowerFilterPanel({
           cursor: pointer;
           --flower-range-accent: #c5a059;
           --flower-range-accent-dark: #a88b5c;
-          --flower-range-track: #e8e0d8;
+          --flower-range-track: var(--border);
         }
         .flower-dual-range-track {
           position: absolute;
@@ -752,7 +752,7 @@ export function FlowerFilterPanel({
           height: 20px;
           border-radius: 50%;
           background: var(--flower-range-accent);
-          border: 2px solid #fdf9f4;
+          border: 2px solid var(--bg);
           box-shadow: 0 1px 4px rgba(44, 36, 32, 0.25);
           cursor: grab;
           /* WebKit: align thumb center with 6px track (thumb was sitting low) */
@@ -772,7 +772,7 @@ export function FlowerFilterPanel({
           height: 20px;
           border-radius: 50%;
           background: var(--flower-range-accent);
-          border: 2px solid #fdf9f4;
+          border: 2px solid var(--bg);
           box-shadow: 0 1px 4px rgba(44, 36, 32, 0.25);
           cursor: grab;
           /* Match WebKit vertical alignment on 6px track */
@@ -791,20 +791,20 @@ export function FlowerFilterPanel({
         }
         .flower-filter-baht {
           font-size: 13px;
-          color: #5c4a3a;
+          color: var(--text-muted);
         }
         .flower-filter-dash {
-          color: #5c4a3a;
+          color: var(--text-muted);
         }
         .flower-filter-input {
           flex: 1;
           min-width: 0;
           padding: 8px 10px;
-          border: 1px solid #e8e0d8;
+          border: 1px solid var(--border);
           border-radius: 8px;
           font-size: 13px;
-          color: #5c4a3a;
-          background: #fff;
+          color: var(--text-muted);
+          background: var(--surface);
         }
         .flower-swatch-grid {
           display: flex;
@@ -824,12 +824,12 @@ export function FlowerFilterPanel({
           width: 22px;
           height: 22px;
           border-radius: 50%;
-          border: 2px solid #e8e0d8;
+          border: 2px solid var(--border);
           cursor: pointer;
           padding: 0;
         }
         .flower-swatch.is-active {
-          outline: 2px solid #2c2420;
+          outline: 2px solid var(--text);
           outline-offset: 1px;
         }
         .flower-swatch-tip {
@@ -839,8 +839,8 @@ export function FlowerFilterPanel({
           transform: translateX(-50%);
           margin-bottom: 6px;
           padding: 4px 8px;
-          background: #2c2420;
-          color: #fff;
+          background: var(--text);
+          color: var(--bg);
           font-size: 11px;
           border-radius: 6px;
           white-space: nowrap;
@@ -862,18 +862,18 @@ export function FlowerFilterPanel({
           align-items: center;
           gap: 8px;
           font-size: 13px;
-          color: #5c4a3a;
+          color: var(--text-muted);
           cursor: pointer;
           margin-bottom: 8px;
         }
         .flower-check-row input[type='checkbox'] {
-          accent-color: #2c2420;
+          accent-color: var(--text);
           width: 16px;
           height: 16px;
         }
         .flower-count-muted {
           font-size: 12px;
-          color: #a8988c;
+          color: var(--text-muted);
         }
         .flower-pill-row {
           display: flex;
@@ -896,12 +896,12 @@ export function FlowerFilterPanel({
           align-items: stretch;
         }
         .flower-pill {
-          border: 1px solid #e8e0d8;
-          background: #fff;
+          border: 1px solid var(--border);
+          background: var(--surface);
           border-radius: 999px;
           padding: 8px 12px;
           font-size: 12px;
-          color: #5c4a3a;
+          color: var(--text-muted);
           cursor: pointer;
           text-align: left;
         }
@@ -915,7 +915,7 @@ export function FlowerFilterPanel({
         .flower-pill.is-active {
           background: #f2c4c0;
           border-color: #e8a89e;
-          color: #5c4a3a;
+          color: var(--text-muted);
         }
       `}</style>
     </div>
@@ -937,7 +937,7 @@ export function FlowerFilterSidebar(props: FlowerFilterPanelProps) {
           max-height: calc(100vh - var(--site-header-stack, 76px) - 92px);
           overflow-y: auto;
           scrollbar-width: thin;
-          scrollbar-color: #e8e0d8 transparent;
+          scrollbar-color: var(--border) transparent;
           border-radius: 20px;
         }
         .flower-filter-sidebar-aside::-webkit-scrollbar {
@@ -947,7 +947,7 @@ export function FlowerFilterSidebar(props: FlowerFilterPanelProps) {
           background: transparent;
         }
         .flower-filter-sidebar-aside::-webkit-scrollbar-thumb {
-          background: #e8e0d8;
+          background: var(--border);
           border-radius: 999px;
         }
       `}</style>
@@ -1040,7 +1040,7 @@ export function FlowerFilterMobileDrawer({
           display: flex;
           flex-direction: column;
           max-height: min(78vh, 560px);
-          background: #fdf9f4;
+          background: var(--bg);
           border-radius: 20px 20px 0 0;
           box-shadow: 0 -10px 40px rgba(44, 36, 32, 0.18);
           overflow: hidden;
@@ -1057,14 +1057,14 @@ export function FlowerFilterMobileDrawer({
         }
         .flower-m-sheet-chrome {
           flex-shrink: 0;
-          background: #fdf9f4;
-          border-bottom: 1px solid #e8e0d8;
+          background: var(--bg);
+          border-bottom: 1px solid var(--border);
         }
         .flower-m-sheet-handle {
           width: 40px;
           height: 4px;
           border-radius: 999px;
-          background: #c9bfb4;
+          background: var(--border);
           margin: 10px auto 6px;
         }
         .flower-m-toolbar {
@@ -1079,25 +1079,25 @@ export function FlowerFilterMobileDrawer({
           width: 44px;
           height: 44px;
           border: none;
-          background: rgba(232, 224, 216, 0.55);
+          background: color-mix(in srgb, var(--muted) 70%, transparent);
           border-radius: 12px;
           font-size: 26px;
           line-height: 1;
           cursor: pointer;
-          color: #2c2420;
+          color: var(--text);
           display: flex;
           align-items: center;
           justify-content: center;
           justify-self: start;
         }
         .flower-m-close:active {
-          background: rgba(232, 224, 216, 0.95);
+          background: var(--muted);
         }
         .flower-m-toolbar-title {
           margin: 0;
           font-size: 16px;
           font-weight: 600;
-          color: #2c2420;
+          color: var(--text);
           text-align: center;
           line-height: 1.25;
           padding: 0 4px;
@@ -1114,7 +1114,7 @@ export function FlowerFilterMobileDrawer({
           flex-shrink: 0;
           font-size: 12px;
           font-weight: 500;
-          color: #8a7a72;
+          color: var(--text-muted);
           background: none;
           border: none;
           cursor: pointer;
@@ -1124,7 +1124,7 @@ export function FlowerFilterMobileDrawer({
           max-width: min(36vw, 120px);
         }
         .flower-m-toolbar-clear:active {
-          color: #5c4a3a;
+          color: var(--text-muted);
         }
         .flower-m-scroll {
           flex: 1;

@@ -254,6 +254,9 @@ export function CatalogFilterBar({
             0 6px 18px -14px rgba(44, 36, 32, 0.35);
           transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s, transform 0.15s;
         }
+        :global(html.dark) .catalog-filter-icon-btn {
+          box-shadow: 0 6px 18px -14px rgba(0, 0, 0, 0.45);
+        }
         .catalog-filter-icon-btn svg {
           flex-shrink: 0;
         }
@@ -265,6 +268,9 @@ export function CatalogFilterBar({
             0 2px 0 rgba(168, 139, 92, 0.32),
             0 10px 24px -14px rgba(45, 42, 38, 0.42);
           transform: translateY(-2px);
+        }
+        :global(html.dark) .catalog-filter-icon-btn:hover {
+          box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.5);
         }
         .catalog-filter-icon-btn:active {
           transform: translateY(0) scale(0.98);
@@ -352,6 +358,9 @@ export function CatalogFilterBar({
           object-fit: contain;
           background: transparent;
           mix-blend-mode: multiply;
+        }
+        :global(html.dark) .catalog-chip-icon {
+          mix-blend-mode: normal;
         }
         .catalog-chip-icon--jiggle {
           animation: catalog-chip-icon-jiggle 0.35s ease-in-out;

@@ -1036,11 +1036,11 @@ export function BouquetCard({
         .card-simple-buy {
           border: 1px solid rgba(26, 60, 52, 0.18);
           background: var(--primary);
-          color: #fff;
+          color: var(--primary-foreground);
         }
         .card-simple-cart {
           border: 1px solid rgba(197, 160, 89, 0.5);
-          background: #fff;
+          background: var(--surface);
           color: var(--text);
         }
         .card-simple-actions button:focus-visible {
@@ -1216,11 +1216,11 @@ export function BouquetCard({
           .card-mobile-buy {
             border: 1px solid rgba(26, 60, 52, 0.18);
             background: var(--primary);
-            color: #fff;
+            color: var(--primary-foreground);
           }
           .card-mobile-cart {
             border: 1px solid rgba(197, 160, 89, 0.5);
-            background: #fff;
+            background: var(--surface);
             color: var(--text);
           }
           .card-mobile-actions button:focus-visible {

@@ -190,10 +190,10 @@ html.dark {
 html.dark .lang-layout :is([class*='text-[#1A3C34]'], [class*='text-[#1a3c34]']) {
   color: var(--text);
 }
-html.dark .lang-layout :is([class*='bg-[#FDFCF8]'], [class*='bg-[#fdfcf8]']) {
+html.dark .lang-layout :is([class*='bg-[#FDFCF8]'], [class*='bg-[#fdfcf8]'], [class*='bg-[#FDFBF8]'], [class*='bg-[#fdfbf8]'], [class*='bg-[#fdfbf9]']) {
   background-color: var(--bg);
 }
-html.dark .lang-layout :is([class*='bg-[#F9F5F0]'], [class*='bg-[#f9f5f0]']) {
+html.dark .lang-layout :is([class*='bg-[#F9F5F0]'], [class*='bg-[#f9f5f0]'], [class*='bg-[#F7F3EC]'], [class*='bg-[#f7f3ec]']) {
   background-color: var(--pastel-cream);
 }
 html.dark .lang-layout [class*='bg-white'] {

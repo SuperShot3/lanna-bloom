@@ -309,9 +309,9 @@ export function CatalogDeliveryBar({
         .catalog-delivery-province-msg {
           grid-column: 1 / -1;
           padding: 10px 14px 12px;
-          border-top: 1px solid rgba(26, 60, 52, 0.12);
+          border-top: 1px solid var(--border);
           background: rgba(197, 160, 89, 0.08);
-          color: #173a33;
+          color: var(--text);
           font-size: 12.5px;
           line-height: 1.45;
         }
@@ -320,7 +320,7 @@ export function CatalogDeliveryBar({
         }
         .catalog-delivery-province-limits {
           margin-top: 4px !important;
-          color: #5c655f;
+          color: var(--text-muted);
         }
         .catalog-delivery-card {
           display: grid;
@@ -330,10 +330,10 @@ export function CatalogDeliveryBar({
           max-width: 1040px;
           margin: 0 auto;
           overflow: hidden;
-          border: 1px solid rgba(26, 60, 52, 0.13);
+          border: 1px solid var(--border);
           border-radius: 13px;
-          background: #fff;
-          box-shadow: 0 12px 30px rgba(26, 60, 52, 0.1);
+          background: var(--surface);
+          box-shadow: var(--shadow);
         }
 
         .catalog-delivery-row {
@@ -350,7 +350,7 @@ export function CatalogDeliveryBar({
 
         .catalog-delivery-date-row {
           border: 0;
-          border-left: 1px solid rgba(26, 60, 52, 0.12);
+          border-left: 1px solid var(--border);
           background: transparent;
           font: inherit;
           text-align: left;
@@ -386,7 +386,7 @@ export function CatalogDeliveryBar({
 
         .catalog-delivery-location,
         .catalog-delivery-date-value {
-          color: #1f2933;
+          color: var(--text);
           font-size: 13px;
           font-weight: 700;
           line-height: 1.25;
@@ -397,9 +397,9 @@ export function CatalogDeliveryBar({
           align-items: center;
           min-width: 0;
           max-width: 220px;
-          border: 1px solid rgba(26, 60, 52, 0.16);
+          border: 1px solid var(--border);
           border-radius: 999px;
-          background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+          background: var(--bg);
           padding: 3px 12px 3px 10px;
           box-shadow: 0 1px 4px rgba(26, 60, 52, 0.08);
           transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -415,7 +415,7 @@ export function CatalogDeliveryBar({
         .catalog-delivery-location-select {
           border: 0;
           background: transparent;
-          color: #173a33;
+          color: var(--text);
           font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.015em;
@@ -439,12 +439,12 @@ export function CatalogDeliveryBar({
         .catalog-delivery-location-select option {
           font-size: 13px;
           font-weight: 600;
-          color: #173a33;
+          color: var(--text);
         }
 
         .catalog-delivery-clock,
         .catalog-delivery-muted {
-          color: #6b7280;
+          color: var(--text-muted);
           font-size: 12px;
           line-height: 1.25;
         }
@@ -457,7 +457,7 @@ export function CatalogDeliveryBar({
         }
 
         .catalog-delivery-clock time {
-          color: #1f2933;
+          color: var(--text);
           font-size: 15px;
           font-weight: 800;
           letter-spacing: 0.01em;
@@ -477,7 +477,7 @@ export function CatalogDeliveryBar({
           grid-template-columns: 1fr;
           gap: 1px;
           padding: 5px 14px;
-          border-left: 1px solid rgba(26, 60, 52, 0.12);
+          border-left: 1px solid var(--border);
         }
 
         .catalog-delivery-status-row {
@@ -517,18 +517,18 @@ export function CatalogDeliveryBar({
         }
 
         .catalog-delivery-pill-open {
-          background: #eef7e8;
-          color: #4f7f25;
+          background: color-mix(in srgb, #6cab3f 22%, var(--surface));
+          color: color-mix(in srgb, #6cab3f 55%, var(--text));
         }
 
         .catalog-delivery-pill-closed {
-          background: #fff0f2;
-          color: #a4414a;
+          background: color-mix(in srgb, #ef4d55 18%, var(--surface));
+          color: color-mix(in srgb, #ef4d55 45%, var(--text));
         }
 
         .catalog-delivery-pill-pending {
-          background: #fff7df;
-          color: #8a6420;
+          background: color-mix(in srgb, #d8a444 20%, var(--surface));
+          color: color-mix(in srgb, #d8a444 50%, var(--text));
         }
 
         .catalog-delivery-status-row .catalog-delivery-muted {
@@ -539,7 +539,7 @@ export function CatalogDeliveryBar({
         }
 
         .catalog-delivery-today-label {
-          color: #1f2933;
+          color: var(--text);
           font-weight: 800;
         }
 
@@ -550,7 +550,7 @@ export function CatalogDeliveryBar({
           }
 
           .catalog-delivery-row {
-            border-bottom: 1px solid rgba(26, 60, 52, 0.12);
+            border-bottom: 1px solid var(--border);
           }
 
           .catalog-delivery-date-row {
