@@ -78,7 +78,7 @@ export function mergeMarketingAudience(
     }
   }
 
-  return [...byEmail.values()].sort((a, b) => {
+  return Array.from(byEmail.values()).sort((a, b) => {
     if (a.lastOrderAt && b.lastOrderAt) {
       return a.lastOrderAt < b.lastOrderAt ? 1 : a.lastOrderAt > b.lastOrderAt ? -1 : a.email.localeCompare(b.email);
     }
