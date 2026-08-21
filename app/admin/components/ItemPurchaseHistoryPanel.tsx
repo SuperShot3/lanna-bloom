@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AdminImageLightbox } from '@/app/admin/components/AdminImageLightbox';
+import { ItemHistoryPhotoActions } from '@/app/admin/components/ItemHistoryPhotoActions';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { formatThb } from '@/lib/costsUtils';
 import type {
@@ -24,6 +25,25 @@ interface ItemPurchaseHistoryPanelProps {
   data: ItemPurchaseHistoryResponse | null;
   canApply: boolean;
   onApply: (row: ItemPurchaseHistoryRow) => void;
+  currentOrderId: string;
+  currentItemId?: string | null;
+  currentSize?: string | null;
+  canEditPhoto?: boolean;
+  onPhotoChange?: () => void;
+}
+
+function currentOrderStub(orderId: string, size: string | null): ItemPurchaseHistoryRow {
+  return {
+    order_id: orderId,
+    paid_at: null,
+    cost: 0,
+    size,
+    shop_id: null,
+    shop_name: null,
+    same_size: true,
+    is_current_order: true,
+    purchase_photo_url: null,
+  };
 }
 
 export function ItemPurchaseHistoryPanel({
@@ -33,10 +53,22 @@ export function ItemPurchaseHistoryPanel({
   data,
   canApply,
   onApply,
+  currentOrderId,
+  currentItemId,
+  currentSize,
+  canEditPhoto = false,
+  onPhotoChange,
 }: ItemPurchaseHistoryPanelProps) {
   const summary = data?.summary;
-  const rows = data?.rows ?? [];
+  const apiRows = data?.rows ?? [];
+  const rows = useMemo(() => {
+    if (apiRows.some((row) => row.is_current_order)) return apiRows;
+    if (!canEditPhoto) return apiRows;
+    return [currentOrderStub(currentOrderId, currentSize?.trim() || null), ...apiRows];
+  }, [apiRows, canEditPhoto, currentOrderId, currentSize]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const photoItemId = currentItemId?.trim() || '';
+  const canUpload = canEditPhoto && Boolean(photoItemId);
 
   return (
     <OverlayReveal open={open} className="admin-costs-history-reveal">
@@ -55,8 +87,13 @@ export function ItemPurchaseHistoryPanel({
             {summary.count} {summary.count === 1 ? 'purchase' : 'purchases'}
           </p>
         ) : null}
-        {!loading && !error && rows.length === 0 ? (
+        {!loading && !error && apiRows.length === 0 && !canUpload ? (
           <p className="admin-hint">No purchase costs for this item yet. Save a line cost to add this order.</p>
+        ) : null}
+        {!loading && !error && apiRows.length === 0 && canUpload ? (
+          <p className="admin-hint" style={{ marginBottom: 8 }}>
+            Save a line cost to record this purchase. You can add a photo on this order’s row.
+          </p>
         ) : null}
         {rows.length > 0 ? (
           <div className="admin-expenses-table-wrap">
@@ -73,60 +110,74 @@ export function ItemPurchaseHistoryPanel({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, idx) => (
-                  <tr key={`${row.order_id}-${row.size ?? ''}-${row.cost}-${idx}`}>
-                    <td>
-                      {row.purchase_photo_url ? (
-                        <button
-                          type="button"
-                          className="admin-cogs-photo-thumb admin-costs-history-photo"
-                          onClick={() => setLightboxSrc(row.purchase_photo_url)}
-                          aria-label="View purchase photo"
-                          title="View large image"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element -- signed ops photo */}
-                          <img src={row.purchase_photo_url} alt="" />
-                        </button>
-                      ) : (
-                        <span className="admin-hint">—</span>
-                      )}
-                    </td>
-                    <td>{formatHistoryDate(row.paid_at)}</td>
-                    <td className="admin-expenses-amount">{formatThb(row.cost)}</td>
-                    <td>{row.shop_name ?? '—'}</td>
-                    <td>
-                      {row.size ?? '—'}
-                      {!row.same_size ? (
-                        <span className="admin-hint"> · other size</span>
-                      ) : null}
-                    </td>
-                    <td>
-                      {row.is_current_order ? (
-                        <span>This order</span>
-                      ) : (
-                        <Link
-                          href={`/admin/orders/${encodeURIComponent(row.order_id)}`}
-                          className="admin-link"
-                        >
-                          {row.order_id}
-                        </Link>
-                      )}
-                    </td>
-                    <td>
-                      {canApply && !row.is_current_order ? (
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-sm admin-btn-outline"
-                          onClick={() => onApply(row)}
-                        >
-                          Use
-                        </button>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((row, idx) => {
+                  const showCost = row.is_current_order && row.cost <= 0 ? null : row.cost;
+                  return (
+                    <tr key={`${row.order_id}-${row.size ?? ''}-${row.cost}-${idx}`}>
+                      <td>
+                        <div className="admin-costs-history-photo-cell">
+                          {row.purchase_photo_url ? (
+                            <button
+                              type="button"
+                              className="admin-cogs-photo-thumb admin-costs-history-photo"
+                              onClick={() => setLightboxSrc(row.purchase_photo_url)}
+                              aria-label="View purchase photo"
+                              title="View large image"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element -- signed ops photo */}
+                              <img src={row.purchase_photo_url} alt="" />
+                            </button>
+                          ) : (
+                            <span className="admin-hint">—</span>
+                          )}
+                          {row.is_current_order && canUpload ? (
+                            <ItemHistoryPhotoActions
+                              orderId={currentOrderId}
+                              itemId={photoItemId}
+                              title="this order"
+                              hasPhoto={Boolean(row.purchase_photo_url)}
+                              onPhotoChange={onPhotoChange}
+                            />
+                          ) : null}
+                        </div>
+                      </td>
+                      <td>{formatHistoryDate(row.paid_at)}</td>
+                      <td className="admin-expenses-amount">{formatThb(showCost)}</td>
+                      <td>{row.shop_name ?? '—'}</td>
+                      <td>
+                        {row.size ?? '—'}
+                        {!row.same_size ? (
+                          <span className="admin-hint"> · other size</span>
+                        ) : null}
+                      </td>
+                      <td>
+                        {row.is_current_order ? (
+                          <span>This order</span>
+                        ) : (
+                          <Link
+                            href={`/admin/orders/${encodeURIComponent(row.order_id)}`}
+                            className="admin-link"
+                          >
+                            {row.order_id}
+                          </Link>
+                        )}
+                      </td>
+                      <td>
+                        {canApply && !row.is_current_order ? (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-sm admin-btn-outline"
+                            onClick={() => onApply(row)}
+                          >
+                            Use
+                          </button>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

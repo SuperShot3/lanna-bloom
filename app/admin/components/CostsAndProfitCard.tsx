@@ -10,6 +10,7 @@ import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import { useMissingCogsSummary } from '@/app/admin/components/MissingCogsNotice';
 import { ItemPurchaseHistoryPanel } from '@/app/admin/components/ItemPurchaseHistoryPanel';
 import { ItemCogsPhoto } from '@/app/admin/components/ItemCogsPhoto';
+import { ItemHistoryPhotoActions } from '@/app/admin/components/ItemHistoryPhotoActions';
 import {
   findPartnerShop,
   findPartnerShopByName,
@@ -742,16 +743,17 @@ export function CostsAndProfitCard({
                       <tr>
                         <td>
                           <ItemCogsPhoto
-                            orderId={order.order_id}
-                            itemId={it.id}
                             title={`${title}${size}`}
                             catalogImageUrl={it.image_url_snapshot}
-                            purchasePhotoPath={it.purchase_photo_path}
-                            canEdit={canEditItem}
-                            onPhotoChange={bouquetId ? () => {
-                              void loadItemHistory(bouquetId, it.size, { force: true });
-                            } : undefined}
                           />
+                          {!bouquetId && canEditItem && it.id != null ? (
+                            <ItemHistoryPhotoActions
+                              orderId={order.order_id}
+                              itemId={String(it.id)}
+                              title={`${title}${size}`}
+                              hasPhoto={Boolean(it.purchase_photo_path)}
+                            />
+                          ) : null}
                         </td>
                         <td>{title}{size}</td>
                         <td className="admin-expenses-amount">{sell != null ? formatThb(sell) : '—'}</td>
@@ -848,6 +850,17 @@ export function CostsAndProfitCard({
                                 if (it.id == null) return;
                                 applyHistoryRow(String(it.id), row);
                               }}
+                              currentOrderId={order.order_id}
+                              currentItemId={it.id != null ? String(it.id) : null}
+                              currentSize={it.size}
+                              canEditPhoto={canEditItem}
+                              onPhotoChange={
+                                bouquetId
+                                  ? () => {
+                                      void loadItemHistory(bouquetId, it.size, { force: true });
+                                    }
+                                  : undefined
+                              }
                             />
                           </td>
                         </tr>
@@ -861,7 +874,7 @@ export function CostsAndProfitCard({
           {usingPerItem && (
             <p className="admin-hint" style={{ marginTop: 8 }}>
               Total COGS is calculated from item costs when those are filled. You can also type COGS
-              below by hand. Shop is optional. Tap a photo to view it large.
+              below by hand. Shop is optional. Add a purchase photo on this order’s History row.
             {partnerShops.length === 0
               ? ' Partner list is empty — add shops under Partners.'
               : ''}

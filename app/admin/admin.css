@@ -2689,12 +2689,12 @@ a.admin-summary-key-value {
   flex-wrap: wrap;
   gap: 4px;
 }
-.admin-cogs-photo-status {
-  margin: 0;
-  font-size: 0.7rem;
-  line-height: 1.3;
-  color: var(--text-muted);
-  max-width: 120px;
+.admin-costs-history-photo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 108px;
 }
 .admin-costs-history-photo {
   width: 40px;

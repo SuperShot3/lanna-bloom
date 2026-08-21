@@ -27,7 +27,7 @@ Per-line item costs and wholesale source live on `order_items`:
 
 `source_shop_*` is the **buy-from** shop for COGS. It is separate from `orders.confirmed_shop_id` (who prepares / picks up the order). Shop is optional so Chiang Mai cost entry is not blocked.
 
-The item **Photo** column always shows the catalog snapshot (`image_url_snapshot`). An optional iPhone ops photo is stored on that order line (`purchase_photo_path`) and appears on the matching **History** row — it does not replace the catalog image. Click either thumb to open a full-size viewer. Uploaded photos are compressed like receipts (~150 KB) and stored under `order-item-photos/` in the `receipts` bucket — not catalog product images.
+The item **Photo** column always shows the catalog snapshot (`image_url_snapshot`). Add / replace / remove the iPhone ops photo on **this order’s History row**. That file is stored on the line (`purchase_photo_path`) and shown in History — it does not replace the catalog image. Click either thumb to open a full-size viewer. Uploaded photos are compressed like receipts (~150 KB) and stored under `order-item-photos/` in the `receipts` bucket — not catalog product images.
 
 **History** lists paid, non-cancelled purchases of the same catalog product (`bouquet_id`), same size first. After you save a line cost, this order is included and labeled **This order**. History is item-level `order_items.cost` (Extra costs **COGS (฿)** alone on a multi-item order does not create a row).
 
