@@ -27,6 +27,7 @@ function emptyPayload(): PartnerApplicationFieldsPayload {
     instagram: '',
     facebook: '',
     address: '',
+    google_maps_url: '',
     district: '',
     province_code: '',
     lat: '',
@@ -54,6 +55,7 @@ function rowToPayload(app: PartnerApplicationRow): PartnerApplicationFieldsPaylo
     instagram: app.instagram ?? '',
     facebook: app.facebook ?? '',
     address: app.address ?? '',
+    google_maps_url: app.google_maps_url ?? '',
     district: app.district ?? '',
     province_code: app.province_code ?? '',
     lat: app.lat != null ? String(app.lat) : '',
@@ -96,12 +98,13 @@ function payloadToRow(
     ...app,
     shop_name: fields.shop_name.trim() || null,
     contact_name: fields.contact_name.trim() || null,
-    email: app.status === 'approved' ? app.email : fields.email.trim() || null,
+    email: fields.email.trim() || null,
     phone: fields.phone.trim() || null,
     line_id: fields.line_id.trim() || null,
     instagram: fields.instagram.trim() || null,
     facebook: fields.facebook.trim() || null,
     address: fields.address.trim() || null,
+    google_maps_url: fields.google_maps_url.trim() || null,
     district: fields.district.trim() || null,
     province_code: fields.province_code.trim() || null,
     lat: parseNum(fields.lat),
@@ -132,8 +135,6 @@ export function PartnerApplicationEditForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [approveImmediately, setApproveImmediately] = useState(true);
-
-  const isApproved = application?.status === 'approved';
 
   function updateField<K extends keyof PartnerApplicationFieldsPayload>(
     key: K,
@@ -203,15 +204,13 @@ export function PartnerApplicationEditForm({
           />
         </label>
         <label className="admin-partner-edit-field">
-          Email {(!isApproved && (!isCreate || approveImmediately)) && <span aria-hidden="true">*</span>}
+          Email
           <input
             type="email"
             className="admin-partner-reject-input"
             value={fields.email}
             onChange={(e) => updateField('email', e.target.value)}
-            required={!isApproved && (!isCreate || approveImmediately)}
-            disabled={isApproved}
-            title={isApproved ? 'Email cannot be changed after approval' : undefined}
+            placeholder="Optional"
           />
         </label>
         <label className="admin-partner-edit-field">
@@ -223,6 +222,7 @@ export function PartnerApplicationEditForm({
             onChange={(e) => updateField('phone', e.target.value)}
             required
           />
+          <span className="admin-partner-edit-hint">Used as the partner login</span>
         </label>
         <label className="admin-partner-edit-field">
           LINE ID
@@ -290,7 +290,19 @@ export function PartnerApplicationEditForm({
             rows={2}
             value={fields.address}
             onChange={(e) => updateField('address', e.target.value)}
+            placeholder="Street address"
           />
+        </label>
+        <label className="admin-partner-edit-field admin-partner-edit-field--full">
+          Google Maps link
+          <input
+            type="url"
+            className="admin-partner-reject-input"
+            value={fields.google_maps_url}
+            onChange={(e) => updateField('google_maps_url', e.target.value)}
+            placeholder="https://maps.app.goo.gl/..."
+          />
+          <span className="admin-partner-edit-hint">Paste the share link from Google Maps</span>
         </label>
         <label className="admin-partner-edit-field">
           Latitude
@@ -437,7 +449,7 @@ export function PartnerApplicationEditForm({
             Approve immediately (create login and catalog partner)
             {approveImmediately && (
               <span className="admin-partner-edit-hint" style={{ display: 'block', marginTop: 4 }}>
-                Email is required. The login password will be shown after save — send it to the partner via LINE.
+                Phone is the login. Email is optional.
               </span>
             )}
           </span>

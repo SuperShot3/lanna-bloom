@@ -12,6 +12,7 @@ export interface PartnerApplicationRow {
   instagram: string | null;
   facebook: string | null;
   address: string | null;
+  google_maps_url: string | null;
   district: string | null;
   province_code: string | null;
   lat: number | null;
@@ -39,6 +40,7 @@ export interface InsertPartnerApplicationInput {
   line_id?: string;
   phone?: string;
   address?: string;
+  google_maps_url?: string;
   instagram?: string;
   facebook?: string;
   district?: string;
@@ -76,6 +78,7 @@ export async function insertPartnerApplication(
       instagram: input.instagram ?? null,
       facebook: input.facebook ?? null,
       address: input.address ?? null,
+      google_maps_url: input.google_maps_url ?? null,
       district: input.district ?? null,
       province_code: input.province_code ?? null,
       lat: input.lat ?? null,
@@ -152,6 +155,7 @@ export type UpdatePartnerApplicationFieldsInput = {
   instagram?: string | null;
   facebook?: string | null;
   address?: string | null;
+  google_maps_url?: string | null;
   district?: string | null;
   province_code?: string | null;
   lat?: number | null;

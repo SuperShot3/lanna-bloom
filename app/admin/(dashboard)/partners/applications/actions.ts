@@ -13,7 +13,13 @@ import {
   type PartnerApplicationRow,
   type UpdatePartnerApplicationFieldsInput,
 } from '@/lib/supabase/partnerQueries';
+import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import { canChangeStatus } from '@/lib/adminRbac';
+import {
+  displayPartnerLoginPhone,
+  isPartnerPhoneLoginEmail,
+  partnerAuthEmailFromPhone,
+} from '@/lib/partnerLogin';
 import { randomBytes } from 'crypto';
 
 function generateTempPassword(): string {
@@ -39,22 +45,37 @@ export async function approvePartnerApplicationAction(
   if (!app) return { error: 'Application not found' };
   if (app.status !== 'pending') return { error: 'Application already processed' };
 
-  const email = app.email?.trim();
-  if (!email) return { error: 'Application has no email' };
+  const phone = app.phone?.trim();
+  if (!phone) return { error: 'Phone is required to create a partner login' };
+
+  const loginEmail = partnerAuthEmailFromPhone(phone);
+  if (!loginEmail) {
+    return { error: 'Enter a valid phone number to use as the partner login' };
+  }
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return { error: 'Supabase not configured' };
 
   const tempPassword = generateTempPassword();
+  const contactEmail = app.email?.trim() || undefined;
 
   const { data: userData, error: createUserError } = await supabase.auth.admin.createUser({
-    email,
+    email: loginEmail,
     password: tempPassword,
     email_confirm: true,
+    user_metadata: {
+      partner_login: 'phone',
+      partner_login_phone: displayPartnerLoginPhone(phone),
+      contact_email: contactEmail ?? null,
+    },
   });
 
   if (createUserError) {
     console.error('[Partner] createUser failed:', createUserError);
+    const msg = createUserError.message.toLowerCase();
+    if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+      return { error: 'A partner login already exists for this phone number' };
+    }
     return { error: createUserError.message };
   }
 
@@ -192,6 +213,7 @@ export type PartnerApplicationFieldsPayload = {
   instagram: string;
   facebook: string;
   address: string;
+  google_maps_url: string;
   district: string;
   province_code: string;
   lat: string;
@@ -237,6 +259,26 @@ function parseOptionalCoord(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const MAX_PARTNER_MAPS_URL_LEN = 1000;
+
+function parseOptionalGoogleMapsUrl(
+  raw: string
+): { ok: true; url: string | null } | { ok: false; error: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: true, url: null };
+  if (trimmed.length > MAX_PARTNER_MAPS_URL_LEN) {
+    return { ok: false, error: 'Google Maps link is too long' };
+  }
+  if (!isValidGoogleMapsUrl(trimmed)) {
+    return {
+      ok: false,
+      error: 'Enter a valid Google Maps link (maps.app.goo.gl or google.com/maps)',
+    };
+  }
+  const withScheme = /^[a-zA-Z][a-zA-Z+\-.]*:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return { ok: true, url: withScheme };
+}
+
 export async function updatePartnerApplicationFieldsAction(
   applicationId: string,
   fields: PartnerApplicationFieldsPayload
@@ -259,6 +301,9 @@ export async function updatePartnerApplicationFieldsAction(
     return { error: 'Shop name, contact name, and phone are required' };
   }
 
+  const mapsUrl = parseOptionalGoogleMapsUrl(fields.google_maps_url);
+  if (!mapsUrl.ok) return { error: mapsUrl.error };
+
   if (provinceCode) {
     const provinceResult = await getProvinceByCode(provinceCode);
     if (!provinceResult.ok) {
@@ -267,18 +312,17 @@ export async function updatePartnerApplicationFieldsAction(
   }
 
   const isApproved = app.status === 'approved';
-  if (!isApproved && !email) {
-    return { error: 'Email is required' };
-  }
 
   const patch: UpdatePartnerApplicationFieldsInput = {
     shop_name: shopName,
     contact_name: contactName,
+    email: email || null,
     phone,
     line_id: fields.line_id.trim() || null,
     instagram: fields.instagram.trim() || null,
     facebook: fields.facebook.trim() || null,
     address: fields.address.trim() || null,
+    google_maps_url: mapsUrl.url,
     district: fields.district.trim() || null,
     province_code: provinceCode || null,
     lat: parseOptionalCoord(fields.lat),
@@ -295,8 +339,40 @@ export async function updatePartnerApplicationFieldsAction(
     admin_note: fields.admin_note.trim() || null,
   };
 
-  if (!isApproved) {
-    patch.email = email;
+  if (isApproved && app.user_id && phone !== (app.phone ?? '').trim()) {
+    const loginEmail = partnerAuthEmailFromPhone(phone);
+    if (!loginEmail) {
+      return { error: 'Enter a valid phone number to use as the partner login' };
+    }
+    const supabase = getSupabaseAdmin();
+    if (!supabase) return { error: 'Supabase not configured' };
+
+    const { data: userData, error: getUserError } = await supabase.auth.admin.getUserById(app.user_id);
+    if (getUserError) {
+      console.error('[Partner] getUserById failed:', getUserError);
+      return { error: 'Failed to load partner login' };
+    }
+    const currentAuthEmail = userData.user?.email ?? '';
+    if (isPartnerPhoneLoginEmail(currentAuthEmail) && currentAuthEmail !== loginEmail) {
+      const { error: updateAuthError } = await supabase.auth.admin.updateUserById(app.user_id, {
+        email: loginEmail,
+        email_confirm: true,
+        user_metadata: {
+          ...(userData.user?.user_metadata ?? {}),
+          partner_login: 'phone',
+          partner_login_phone: displayPartnerLoginPhone(phone),
+          contact_email: email || null,
+        },
+      });
+      if (updateAuthError) {
+        console.error('[Partner] updateUserById email failed:', updateAuthError);
+        const msg = updateAuthError.message.toLowerCase();
+        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+          return { error: 'A partner login already exists for this phone number' };
+        }
+        return { error: updateAuthError.message };
+      }
+    }
   }
 
   const ok = await updatePartnerApplication(applicationId, patch);
@@ -352,13 +428,16 @@ export async function createPartnerApplicationAction(
     return { error: 'Province is required' };
   }
 
+  const mapsUrl = parseOptionalGoogleMapsUrl(fields.google_maps_url);
+  if (!mapsUrl.ok) return { error: mapsUrl.error };
+
   const provinceResult = await getProvinceByCode(provinceCode);
   if (!provinceResult.ok) {
     return { error: 'Invalid province' };
   }
 
-  if (approveImmediately && !email) {
-    return { error: 'Email is required to approve and create a partner login' };
+  if (approveImmediately && !partnerAuthEmailFromPhone(phone)) {
+    return { error: 'Enter a valid phone number to use as the partner login' };
   }
 
   let applicationId: string;
@@ -372,6 +451,7 @@ export async function createPartnerApplicationAction(
       instagram: fields.instagram.trim() || undefined,
       facebook: fields.facebook.trim() || undefined,
       address: fields.address.trim() || undefined,
+      google_maps_url: mapsUrl.url || undefined,
       district: fields.district.trim() || undefined,
       province_code: provinceCode,
       lat: parseOptionalCoord(fields.lat) ?? undefined,

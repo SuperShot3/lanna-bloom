@@ -11,6 +11,7 @@ import {
 import { PartnerApplicationEditForm } from './PartnerApplicationEditForm';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
 import type { PartnerApplicationRow } from '@/lib/supabase/partnerQueries';
+import { displayPartnerLoginPhone } from '@/lib/partnerLogin';
 import type { ProvinceOption } from './provinceOptions';
 
 type PartnerApplicationsClientProps = {
@@ -51,6 +52,10 @@ function facebookHref(fb: string): string {
 }
 
 function mapsHref(app: PartnerApplicationRow): string | null {
+  const explicit = app.google_maps_url?.trim();
+  if (explicit) {
+    return /^[a-zA-Z][a-zA-Z+\-.]*:\/\//.test(explicit) ? explicit : `https://${explicit}`;
+  }
   if (app.lat != null && app.lng != null) {
     return `https://maps.google.com/?q=${app.lat},${app.lng}`;
   }
@@ -439,16 +444,16 @@ export function PartnerApplicationsClient({
                       </>
                     )}
                     <dt>Address</dt>
+                    <dd>{selected.address ?? '—'}</dd>
+                    <dt>Google Maps</dt>
                     <dd>
-                      {selected.address ? (
-                        selectedMapsUrl ? (
-                          <a href={selectedMapsUrl} target="_blank" rel="noopener noreferrer">
-                            {selected.address}
-                          </a>
-                        ) : (
-                          selected.address
-                        )
-                      ) : '—'}
+                      {selectedMapsUrl ? (
+                        <a href={selectedMapsUrl} target="_blank" rel="noopener noreferrer">
+                          Open map
+                        </a>
+                      ) : (
+                        '—'
+                      )}
                     </dd>
                     <dt>District</dt>
                     <dd>{selected.district ?? '—'}</dd>
@@ -517,9 +522,20 @@ export function PartnerApplicationsClient({
                   )}
                   {(tempPassword || (selected.status === 'approved' && selected.temp_password)) && (
                     <div className="admin-partner-temp-password">
-                      <strong>Partner login password:</strong>{' '}
-                      <code>{tempPassword ?? selected.temp_password ?? ''}</code>
-                      <span className="admin-partner-temp-password-hint">Send to partner via LINE</span>
+                      <strong>Partner login</strong>
+                      {selected.phone && (
+                        <div>
+                          Phone:{' '}
+                          <code>{displayPartnerLoginPhone(selected.phone)}</code>
+                        </div>
+                      )}
+                      <div>
+                        Password:{' '}
+                        <code>{tempPassword ?? selected.temp_password ?? ''}</code>
+                      </div>
+                      <span className="admin-partner-temp-password-hint">
+                        Send the phone number and password to the partner via LINE
+                      </span>
                     </div>
                   )}
                   {selected.status === 'pending' && (

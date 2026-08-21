@@ -2866,6 +2866,13 @@ a.admin-summary-key-value {
   margin-bottom: 16px;
   font-size: 0.9rem;
 }
+.admin-partner-temp-password strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.admin-partner-temp-password div {
+  margin-top: 4px;
+}
 .admin-partner-temp-password code {
   font-family: ui-monospace, monospace;
   background: rgba(0,0,0,0.06);
