@@ -263,6 +263,7 @@
 }
 
 .thumb {
+  position: relative;
   flex-shrink: 0;
   width: 68px;
   height: 68px;
@@ -362,6 +363,7 @@
 }
 
 .gallery-lightbox-stage {
+  position: relative;
   width: min(96vw, 760px);
   max-height: 82vh;
   display: flex;

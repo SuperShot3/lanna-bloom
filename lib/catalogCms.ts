@@ -627,6 +627,29 @@ export async function updateCatalogProductImageSourceType(input: {
   return data as CatalogProductImageRow;
 }
 
+/** Persist the AI flag on this image (and its live original, if this is a draft clone), then sync storefront jsonb. */
+export async function updateCatalogProductImageSourceTypeAndSync(input: {
+  imageId: string;
+  sourceType: Extract<CatalogImageSourceType, 'uploaded' | 'ai_generated'>;
+  entityType: CatalogEntityType;
+  entityId: string;
+  actor?: string | null;
+}): Promise<void> {
+  const updated = await updateCatalogProductImageSourceType({
+    imageId: input.imageId,
+    sourceType: input.sourceType,
+    actor: input.actor,
+  });
+  if (updated.original_image_id && updated.original_image_id !== updated.id) {
+    await updateCatalogProductImageSourceType({
+      imageId: updated.original_image_id,
+      sourceType: input.sourceType,
+      actor: input.actor,
+    });
+  }
+  await syncCatalogProductInlineImagesFromNormalized(input.entityType, input.entityId);
+}
+
 export async function updateCatalogProductImageText(input: {
   imageId: string;
   altEn?: string | null;

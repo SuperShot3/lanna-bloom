@@ -32,7 +32,7 @@ import {
   setCatalogProductPrimaryImage,
   softDeleteCatalogProductImage,
   syncCatalogProductInlineImagesFromNormalized,
-  updateCatalogProductImageSourceType,
+  updateCatalogProductImageSourceTypeAndSync,
   updateCatalogProductImageStorage,
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
@@ -621,21 +621,18 @@ export async function updateBouquetImageSourceTypeAction(
   if (!sourceType) return { error: 'Invalid sourceType' };
 
   try {
-    const { writeId, revisionId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
+    const { writeId, imageId: resolvedImageId } = await requireBouquetImageForWrite(
       bouquetId,
       imageId
     );
-    await updateCatalogProductImageSourceType({
+    await updateCatalogProductImageSourceTypeAndSync({
       imageId: resolvedImageId,
       sourceType,
+      entityType: 'bouquet',
+      entityId: writeId,
       actor: actorFromSessionUser(session.user),
     });
-    if (revisionId) {
-      revalidateBouquetAdminPaths(bouquetId);
-    } else {
-      await syncCatalogProductInlineImagesFromNormalized('bouquet', writeId);
-      await revalidateBouquetAdminAndCatalogPaths(bouquetId, writeId);
-    }
+    await revalidateBouquetAdminAndCatalogPaths(bouquetId, writeId);
     return {};
   } catch (err) {
     console.error('[Products] updateBouquetImageSourceType failed:', err);

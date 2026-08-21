@@ -5,6 +5,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Image from 'next/image';
 import './ProductGallery.css';
 import { CatalogAiImageBadge } from '@/components/CatalogAiImageBadge';
+import { isImageUrlAiGenerated } from '@/lib/catalog/imageAiGenerated';
 import { clampGalleryIndex } from '@/lib/pdpVariantMedia';
 import {
   catalogImageUnoptimized,
@@ -391,6 +392,10 @@ export function ProductGallery({
                   ) : (
                     <div className="gallery-image gallery-image-placeholder" aria-hidden />
                   )}
+                  <CatalogAiImageBadge
+                    visible={isImageUrlAiGenerated(src, [{ images: list, imageAiGenerated }])}
+                    ariaLabel={aiImageAriaLabel ?? 'AI-generated image'}
+                  />
                 </div>
               </div>
             ))}
@@ -401,10 +406,6 @@ export function ProductGallery({
             {active + 1} / {list.length}
           </span>
         ) : null}
-        <CatalogAiImageBadge
-          visible={imageAiGenerated?.[active] === true}
-          ariaLabel={aiImageAriaLabel ?? 'AI-generated image'}
-        />
         {list.length > 1 && (
           <span className="gallery-swipe-hint" aria-hidden>
             Swipe to change
@@ -483,6 +484,11 @@ export function ProductGallery({
                   loading="lazy"
                   unoptimized={catalogImageUnoptimized(src)}
                 />
+                <CatalogAiImageBadge
+                  visible={isImageUrlAiGenerated(src, [{ images: list, imageAiGenerated }])}
+                  ariaLabel={aiImageAriaLabel ?? 'AI-generated image'}
+                  compact
+                />
               </button>
             ))}
         </div>
@@ -522,6 +528,10 @@ export function ProductGallery({
               style={{
                 transform: `translate(${lightboxOffset.x}px, ${lightboxOffset.y}px) scale(${lightboxScale})`,
               }}
+            />
+            <CatalogAiImageBadge
+              visible={isImageUrlAiGenerated(list[lightboxIndex], [{ images: list, imageAiGenerated }])}
+              ariaLabel={aiImageAriaLabel ?? 'AI-generated image'}
             />
           </div>
           {list.length > 1 ? (

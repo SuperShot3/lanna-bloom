@@ -6,6 +6,7 @@ import {
   catalogImageSourceTypeFromFlag,
   imageAiGeneratedFlags,
   isCatalogImageAiGenerated,
+  isImageUrlAiGenerated,
   parseCatalogImageSourceType,
 } from './imageAiGenerated';
 
@@ -29,5 +30,27 @@ assert.deepEqual(imageAiGeneratedFlags(['uploaded', 'ai_generated', 'migrated_fr
   true,
   false,
 ]);
+
+assert.equal(
+  isImageUrlAiGenerated('https://cdn.example/ai.webp', [
+    { images: ['https://cdn.example/photo.webp', 'https://cdn.example/ai.webp'], imageAiGenerated: [false, true] },
+  ]),
+  true
+);
+assert.equal(
+  isImageUrlAiGenerated('https://cdn.example/photo.webp', [
+    { images: ['https://cdn.example/photo.webp', 'https://cdn.example/ai.webp'], imageAiGenerated: [false, true] },
+  ]),
+  false
+);
+assert.equal(
+  isImageUrlAiGenerated('https://cdn.example/ai.webp', [
+    { images: ['https://cdn.example/ai.webp'], imageAiGenerated: [true] },
+    { images: ['https://cdn.example/ai.webp', 'https://cdn.example/photo.webp'], imageAiGenerated: [true, false] },
+  ]),
+  true
+);
+assert.equal(isImageUrlAiGenerated('https://cdn.example/missing.webp', [{ images: ['https://cdn.example/a.webp'], imageAiGenerated: [true] }]), false);
+assert.equal(isImageUrlAiGenerated('https://cdn.example/a.webp', [{ images: ['https://cdn.example/a.webp'] }]), false);
 
 console.log('imageAiGenerated tests passed');

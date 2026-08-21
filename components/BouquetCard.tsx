@@ -30,6 +30,7 @@ import {
 } from '@/lib/catalogDiscount';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { CatalogAiImageBadge } from '@/components/CatalogAiImageBadge';
+import { isImageUrlAiGenerated } from '@/lib/catalog/imageAiGenerated';
 import { StorefrontIcon } from '@/components/icons';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
 import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
@@ -140,9 +141,10 @@ export function BouquetCard({
   });
   const imgSrc = selectedSize?.imageUrls?.[0] || images[imageIndex] || mappedCardImage.url || '';
   const imgAlt = bouquet.imageAlts?.[imageIndex]?.trim() || bouquet.imageAlts?.[0]?.trim() || name;
-  const currentImageIsAi = selectedSize?.imageUrls?.length
-    ? selectedSize.imageAiGenerated?.[0] === true
-    : bouquet.imageAiGenerated?.[imageIndex] === true;
+  const currentImageIsAi = isImageUrlAiGenerated(imgSrc, [
+    { images: selectedSize?.imageUrls, imageAiGenerated: selectedSize?.imageAiGenerated },
+    { images, imageAiGenerated: bouquet.imageAiGenerated },
+  ]);
   const handlePdpImagePreload = useCallback(() => {
     if (imgSrc) preloadCatalogImage(imgSrc, CATALOG_PDP_PRELOAD_WIDTH);
   }, [imgSrc]);
@@ -505,11 +507,6 @@ export function BouquetCard({
             discountPercent={bouquet.discountPercent}
             ariaLabel={t.discountAria ?? 'On sale — {percent}% off'}
           />
-          <CatalogAiImageBadge
-            visible={currentImageIsAi}
-            ariaLabel={t.aiImageAria ?? 'AI-generated image'}
-            offsetForFavorite={showFavorite}
-          />
           {showFavorite && (
             <button
               type="button"
@@ -536,6 +533,11 @@ export function BouquetCard({
                 unoptimized={catalogImageUnoptimized(imgSrc)}
                 draggable={false}
                 style={{ pointerEvents: 'none' }}
+              />
+              <CatalogAiImageBadge
+                visible={currentImageIsAi}
+                ariaLabel={t.aiImageAria ?? 'AI-generated image'}
+                placement="bottom-right"
               />
             </div>
           ) : (

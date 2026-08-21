@@ -9,7 +9,7 @@ import {
 } from '@/lib/catalog/bouquetImages';
 import { buildSellableOptions, primaryCatalogPriceFromPricing, resolvePricingType } from '@/lib/catalog/pricing';
 import type { CatalogProduct } from '@/lib/catalog/types';
-import { filterStorefrontRenderableImageUrls } from '@/lib/catalog/catalogImage';
+import { isStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { isCatalogImageAiGenerated } from '@/lib/catalog/imageAiGenerated';
 import { filterStorefrontCatalogStoredImages } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
@@ -38,20 +38,13 @@ function imageUrlsFromStored(
   const aiGenerated: boolean[] = [];
   for (const img of sorted) {
     if (!img.storage_path) continue;
-    urls.push(storedImagePublicUrl(supabase, img));
+    const url = storedImagePublicUrl(supabase, img);
+    if (!isStorefrontRenderableImageUrl(url)) continue;
+    urls.push(url);
     alts.push(img.alt?.trim() ?? '');
     aiGenerated.push(isCatalogImageAiGenerated(img.source_type));
   }
-  const safeUrls = filterStorefrontRenderableImageUrls(urls);
-  const safeAlts = safeUrls.map((url) => {
-    const index = urls.indexOf(url);
-    return index >= 0 ? alts[index] ?? '' : '';
-  });
-  const safeAi = safeUrls.map((url) => {
-    const index = urls.indexOf(url);
-    return index >= 0 ? aiGenerated[index] ?? false : false;
-  });
-  return { urls: safeUrls, alts: safeAlts, aiGenerated: safeAi };
+  return { urls, alts, aiGenerated };
 }
 
 function withFallbackImageAlts(imageUrls: string[], imageAlts: string[], fallbackText: string): string[] {

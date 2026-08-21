@@ -33,7 +33,7 @@ import {
   setCatalogProductPrimaryImage,
   softDeleteCatalogProductImage,
   syncCatalogProductInlineImagesFromNormalized,
-  updateCatalogProductImageSourceType,
+  updateCatalogProductImageSourceTypeAndSync,
   updateCatalogProductImageStorage,
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
@@ -686,21 +686,18 @@ export async function updateProductImageSourceTypeAction(
   if (!sourceType) return { error: 'Invalid sourceType' };
 
   try {
-    const { writeId, revisionId, imageId: resolvedImageId } = await requireProductImageForWrite(
+    const { writeId, imageId: resolvedImageId } = await requireProductImageForWrite(
       productId,
       imageId
     );
-    await updateCatalogProductImageSourceType({
+    await updateCatalogProductImageSourceTypeAndSync({
       imageId: resolvedImageId,
       sourceType,
+      entityType: 'product',
+      entityId: writeId,
       actor: actorFromSessionUser(session.user),
     });
-    if (revisionId) {
-      revalidateProductAdminPaths(productId);
-    } else {
-      await syncCatalogProductInlineImagesFromNormalized('product', writeId);
-      await revalidateProductAdminAndCatalogPaths(productId, writeId);
-    }
+    await revalidateProductAdminAndCatalogPaths(productId, writeId);
     return {};
   } catch (err) {
     console.error('[Moderation] updateProductImageSourceType failed:', err);
