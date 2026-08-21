@@ -104,7 +104,7 @@ function isOpsPhotoPath(path: string): boolean {
 }
 
 async function signedPhotoUrlsByPath(paths: string[]): Promise<Map<string, string>> {
-  const unique = [...new Set(paths.filter((p) => isOpsPhotoPath(p)))];
+  const unique = Array.from(new Set(paths.filter((p) => isOpsPhotoPath(p))));
   const entries = await Promise.all(
     unique.map(async (path) => {
       const signed = await createOrderItemPhotoSignedUrl(path);
