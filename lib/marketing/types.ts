@@ -1,3 +1,5 @@
+import type { FirstPartyAttributionReport } from '@/lib/attribution/types';
+
 export type MarketingConfidence = 'low' | 'medium' | 'high';
 export type MarketingRiskLevel = 'low' | 'medium' | 'high';
 
@@ -126,6 +128,7 @@ export interface DiagnosticsReport {
     googleAds: boolean;
     supabase: boolean;
   };
+  firstParty: FirstPartyAttributionReport;
 }
 
 export interface FunnelReport {
@@ -193,9 +196,17 @@ export interface MarketingRecommendation {
   updatedAt: string;
 }
 
+export interface MarketingGoogleAdsOAuthStatus {
+  ready: boolean;
+  redirectUri: string;
+  connectedAt: string | null;
+  connectedByEmail: string | null;
+}
+
 export interface MarketingConfigStatus {
   googleAds: boolean;
   ga4: boolean;
   llm: boolean;
   supabase: boolean;
+  googleAdsOAuth?: MarketingGoogleAdsOAuthStatus;
 }

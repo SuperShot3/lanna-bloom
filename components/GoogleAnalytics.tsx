@@ -3,7 +3,7 @@
 import Script from 'next/script';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { captureAdClickIdsFromUrl } from '@/lib/analytics/captureAnalyticsContext';
+import { touchAttributionSession } from '@/lib/analytics/captureAnalyticsContext';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim();
 const SHOULD_LOAD_ANALYTICS = process.env.NODE_ENV === 'production' && Boolean(GTM_ID);
@@ -17,7 +17,8 @@ export function GoogleAnalytics() {
   const pathname = usePathname();
 
   useEffect(() => {
-    captureAdClickIdsFromUrl();
+    if (pathname?.startsWith('/admin')) return;
+    touchAttributionSession();
   }, [pathname]);
 
   if (pathname?.startsWith('/admin')) return null;

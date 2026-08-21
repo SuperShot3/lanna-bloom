@@ -144,7 +144,7 @@ export function LanguageSwitcher({
               <ul
                 role="listbox"
                 aria-label="Language"
-                className="fixed z-[120] min-w-[170px] overflow-hidden rounded-[10px] border border-[#ede8e2] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.1)] max-h-[min(70vh,420px)] overflow-y-auto touch-pan-y"
+                className="fixed z-[120] min-w-[170px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_8px_32px_rgba(0,0,0,0.1)] max-h-[min(70vh,420px)] overflow-y-auto touch-pan-y"
                 style={{ top: menuPosition.top, right: menuPosition.right }}
               >
                 {LANGUAGE_OPTIONS.map((opt) => {
@@ -156,8 +156,8 @@ export function LanguageSwitcher({
                         scroll={false}
                         className={`flex w-full items-center justify-between gap-2.5 px-4 py-[11px] text-left text-[13px] transition-colors ${
                           isActive
-                            ? 'border-l-2 border-[#1A3C34] bg-[#f0f5f2] text-[#1A3C34]'
-                            : 'border-l-2 border-transparent text-stone-500 hover:bg-[#f5f1ec] active:bg-[#f5f1ec]'
+                            ? 'border-l-2 border-[var(--text)] bg-[var(--pastel-mint)] text-[var(--text)]'
+                            : 'border-l-2 border-transparent text-[var(--text-muted)] hover:bg-[var(--pastel-cream)] active:bg-[var(--pastel-cream)]'
                         }`}
                         aria-current={isActive ? 'page' : undefined}
                         onClick={() => {
@@ -168,7 +168,7 @@ export function LanguageSwitcher({
                       >
                         <span>{opt.label}</span>
                         {opt.region && (
-                          <span className="rounded-[3px] bg-[#ede8e2] px-[5px] py-px text-[10px] text-stone-400">
+                          <span className="rounded-[3px] bg-[var(--muted)] px-[5px] py-px text-[10px] text-[var(--text-muted)]">
                             {opt.region}
                           </span>
                         )}
@@ -186,7 +186,7 @@ export function LanguageSwitcher({
       <div ref={anchorRef} className={`relative shrink-0 ${open ? 'z-[130]' : ''}`}>
         <button
           type="button"
-          className="relative z-[1] flex touch-manipulation cursor-pointer items-center gap-1 px-0 py-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors min-h-11 min-w-11 [-webkit-tap-highlight-color:transparent]"
+          className="relative z-[1] flex touch-manipulation cursor-pointer items-center gap-1 px-0 py-0 text-[var(--text)] hover:text-[#C5A059] transition-colors min-h-11 min-w-11 [-webkit-tap-highlight-color:transparent]"
           onPointerDown={(e) => {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
             e.stopPropagation();
@@ -207,7 +207,7 @@ export function LanguageSwitcher({
           </span>
           <span className="pointer-events-none hidden md:flex items-center gap-1">
             <Languages className="h-[18px] w-[18px] shrink-0" aria-hidden />
-            <span className="text-[11px] text-stone-500 max-w-[88px] truncate">
+            <span className="text-[11px] text-[var(--text-muted)] max-w-[88px] truncate">
               {activeDisplayLabel(currentLang)}
             </span>
           </span>
@@ -266,7 +266,7 @@ export function LanguageSwitcher({
             border-color: var(--accent-soft);
           }
           .lang-flag--row {
-            background: #fff;
+            background: var(--surface);
             box-shadow: 0 1px 4px rgba(26, 60, 52, 0.08);
           }
           .lang-flag-icon {

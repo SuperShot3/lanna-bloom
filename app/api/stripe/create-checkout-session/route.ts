@@ -48,6 +48,7 @@ import { CHECKOUT_FIELD_LIMITS } from '@/lib/checkout/checkoutFieldLimits';
 import { validateCheckoutFieldMaxLengths } from '@/lib/checkout/validateCheckoutFieldLimits';
 import { isPreferredTimeSlotValid } from '@/lib/deliveryTimeSelection';
 import { parseDeliveryDateFromPreferredTimeSlot } from '@/lib/promo/peakCelebrationPricing';
+import { resolveAndPersistAttribution, resolvedClickIds, applyAttributionCookiesToResponse } from '@/lib/attribution/resolve';
 import { normalizeGiftCardMessagesForPersist } from '@/lib/orders/giftCardMessages';
 import {
   computeDeliveryConstraint,
@@ -94,6 +95,18 @@ function parseCheckoutAnalyticsFields(b: Record<string, unknown>) {
   const gclid = optionalTrimmedString(b.gclid, 256);
   const gbraid = optionalTrimmedString(b.gbraid, 256);
   const wbraid = optionalTrimmedString(b.wbraid, 256);
+  const visitor_id = optionalTrimmedString(b.visitor_id, 64);
+  const utm_source = optionalTrimmedString(b.utm_source, 200);
+  const utm_medium = optionalTrimmedString(b.utm_medium, 200);
+  const utm_campaign = optionalTrimmedString(b.utm_campaign, 200);
+  const utm_content = optionalTrimmedString(b.utm_content, 200);
+  const utm_term = optionalTrimmedString(b.utm_term, 200);
+  const campaign_id = optionalTrimmedString(b.campaign_id, 200);
+  const adgroup_id = optionalTrimmedString(b.adgroup_id, 200);
+  const keyword = optionalTrimmedString(b.keyword, 200);
+  const device = optionalTrimmedString(b.device, 64);
+  const network = optionalTrimmedString(b.network, 64);
+  const matchtype = optionalTrimmedString(b.matchtype, 64);
   if (ga_client_id && !/^\d+\.\d+$/.test(ga_client_id)) {
     return { ok: false as const, message: 'ga_client_id has invalid format' };
   }
@@ -105,6 +118,18 @@ function parseCheckoutAnalyticsFields(b: Record<string, unknown>) {
       ...(gclid ? { gclid } : {}),
       ...(gbraid ? { gbraid } : {}),
       ...(wbraid ? { wbraid } : {}),
+      ...(visitor_id ? { visitor_id } : {}),
+      ...(utm_source ? { utm_source } : {}),
+      ...(utm_medium ? { utm_medium } : {}),
+      ...(utm_campaign ? { utm_campaign } : {}),
+      ...(utm_content ? { utm_content } : {}),
+      ...(utm_term ? { utm_term } : {}),
+      ...(campaign_id ? { campaign_id } : {}),
+      ...(adgroup_id ? { adgroup_id } : {}),
+      ...(keyword ? { keyword } : {}),
+      ...(device ? { device } : {}),
+      ...(network ? { network } : {}),
+      ...(matchtype ? { matchtype } : {}),
     },
   };
 }
@@ -539,6 +564,18 @@ interface StripeCheckoutPayload {
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
+  visitor_id?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  campaign_id?: string;
+  adgroup_id?: string;
+  keyword?: string;
+  device?: string;
+  network?: string;
+  matchtype?: string;
   delivery: {
     address: string;
     preferredTimeSlot: string;
@@ -737,6 +774,28 @@ export async function POST(request: NextRequest) {
         data.lang === 'th' ? 'th' : 'en'
       ) ?? undefined;
 
+    const resolvedAttribution = await resolveAndPersistAttribution({
+      cookies: request.cookies,
+      hints: {
+        visitor_id: data.visitor_id,
+        gclid: data.gclid,
+        gbraid: data.gbraid,
+        wbraid: data.wbraid,
+        utm_source: data.utm_source,
+        utm_medium: data.utm_medium,
+        utm_campaign: data.utm_campaign,
+        utm_content: data.utm_content,
+        utm_term: data.utm_term,
+        campaign_id: data.campaign_id,
+        adgroup_id: data.adgroup_id,
+        keyword: data.keyword,
+        device: data.device,
+        network: data.network,
+        matchtype: data.matchtype,
+      },
+    });
+    const attrFields = resolvedClickIds(resolvedAttribution);
+
     const orderPayload: OrderPayload = {
       customerName: data.customerName,
       phone: data.phone,
@@ -800,9 +859,10 @@ export async function POST(request: NextRequest) {
       submissionToken: data.submissionToken,
       ...(data.ga_client_id ? { ga_client_id: data.ga_client_id } : {}),
       ...(data.ga_session_id ? { ga_session_id: data.ga_session_id } : {}),
-      ...(data.gclid ? { gclid: data.gclid } : {}),
-      ...(data.gbraid ? { gbraid: data.gbraid } : {}),
-      ...(data.wbraid ? { wbraid: data.wbraid } : {}),
+      ...(attrFields.gclid ? { gclid: attrFields.gclid } : data.gclid ? { gclid: data.gclid } : {}),
+      ...(attrFields.gbraid ? { gbraid: attrFields.gbraid } : data.gbraid ? { gbraid: data.gbraid } : {}),
+      ...(attrFields.wbraid ? { wbraid: attrFields.wbraid } : data.wbraid ? { wbraid: data.wbraid } : {}),
+      ...(attrFields.attribution_id ? { attribution_id: attrFields.attribution_id } : {}),
     };
 
     const { id: checkoutDraftId } = await upsertCheckoutDraft({
@@ -883,10 +943,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const checkoutResponse = NextResponse.json({
       sessionId: session.id,
       url: session.url,
     });
+    if (resolvedAttribution) {
+      applyAttributionCookiesToResponse(checkoutResponse, resolvedAttribution);
+    }
+    return checkoutResponse;
   } catch (e) {
     console.error('[stripe/create-checkout-session] error:', e);
     return NextResponse.json(

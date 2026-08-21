@@ -25,8 +25,8 @@ export function CurrencySelector({
 
   const selectClassName =
     variant === 'mobile'
-      ? 'h-11 w-full cursor-pointer rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
-      : 'h-9 cursor-pointer rounded-full border border-stone-200 bg-white/80 px-2 text-xs font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20';
+      ? 'h-11 w-full cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--text)] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
+      : 'h-9 cursor-pointer rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_80%,transparent)] px-2 text-xs font-semibold text-[var(--text)] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20';
 
   return (
     <label className={className}>

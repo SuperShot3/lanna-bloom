@@ -148,6 +148,8 @@ export interface OrderPayload {
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
+  /** FK to attribution_sessions when first-party capture resolved a session. */
+  attribution_id?: string;
   /** Channel hint for admin/ops reporting. */
   orderSource?: OrderSource;
   /** When set, order came from the custom order form; details for ops and customer. */

@@ -12,6 +12,7 @@ import type {
 } from '@/lib/marketing/types';
 import { CampaignBuilderTab } from './CampaignBuilderTab';
 import { DiagnosticsPanel, FunnelBar } from './MarketingDiagnostics';
+import { GoogleAdsReconnectBlock } from '@/app/admin/components/GoogleAdsReconnectBlock';
 import dashStyles from './MarketingDashboard.module.css';
 import styles from './MarketingDiagnostics.module.css';
 
@@ -118,6 +119,9 @@ export function MarketingDashboardClient() {
   const [recommendations, setRecommendations] = useState<MarketingRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorHint, setErrorHint] = useState<string | null>(null);
+  const [canReconnectAds, setCanReconnectAds] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [wasteFilterKeywords, setWasteFilterKeywords] = useState(false);
   const [wasteFilterSearchTerms, setWasteFilterSearchTerms] = useState(false);
@@ -156,10 +160,16 @@ export function MarketingDashboardClient() {
   const loadAds = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setErrorHint(null);
+    setCanReconnectAds(false);
     try {
       const res = await fetch(`/api/admin/marketing/ads/overview?days=${days}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to load ads');
+      if (!res.ok) {
+        setErrorHint(typeof data.hint === 'string' ? data.hint : null);
+        setCanReconnectAds(data.canReconnect === true || data.code === 'GOOGLE_ADS_INVALID_GRANT');
+        throw new Error(data.error ?? 'Failed to load ads');
+      }
       setOverview(data.overview);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load ads');
@@ -190,6 +200,27 @@ export function MarketingDashboardClient() {
   }, [loadConfig, loadRecommendations]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get('tab');
+    if (
+      requestedTab === 'diagnostics' ||
+      requestedTab === 'ads' ||
+      requestedTab === 'funnel' ||
+      requestedTab === 'recommendations' ||
+      requestedTab === 'campaign-builder'
+    ) {
+      setTab(requestedTab);
+    }
+    if (params.get('google_ads') === 'connected') {
+      setNotice('Google Ads reconnected. Loading campaigns…');
+    } else if (params.get('google_ads') === 'error') {
+      const reason = params.get('reason') ?? 'unknown';
+      setError(`Google Ads reconnect failed (${reason}). Try again after checking the OAuth redirect URI.`);
+      setCanReconnectAds(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (tab === 'diagnostics' && config?.ga4) loadDiagnostics();
     if (tab === 'ads' && config?.googleAds) loadAds();
     if (tab === 'funnel' && config?.ga4) loadFunnel();
@@ -198,6 +229,8 @@ export function MarketingDashboardClient() {
   async function generateRecommendations() {
     setLoading(true);
     setError(null);
+    setErrorHint(null);
+    setCanReconnectAds(false);
     try {
       const res = await fetch(`/api/admin/marketing/recommendations/generate?days=${days}`, {
         method: 'POST',
@@ -205,7 +238,11 @@ export function MarketingDashboardClient() {
         body: JSON.stringify({ includeLlm: true }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Generation failed');
+      if (!res.ok) {
+        setErrorHint(typeof data.hint === 'string' ? data.hint : null);
+        setCanReconnectAds(data.canReconnect === true || data.code === 'GOOGLE_ADS_INVALID_GRANT');
+        throw new Error(data.error ?? 'Generation failed');
+      }
       await loadRecommendations();
       setTab('recommendations');
     } catch (e) {
@@ -272,9 +309,25 @@ export function MarketingDashboardClient() {
         ))}
       </div>
 
+      {notice && (
+        <div
+          className="admin-card"
+          style={{ marginBottom: 16, background: '#ecfdf5', borderColor: '#86efac' }}
+        >
+          <p style={{ margin: 0 }}>{notice}</p>
+        </div>
+      )}
+
       {error && (
         <div className="admin-error" style={{ marginBottom: 16 }}>
           <p>{error}</p>
+          {canReconnectAds && (
+            <GoogleAdsReconnectBlock
+              returnTo="marketing"
+              redirectUri={config?.googleAdsOAuth?.redirectUri}
+              hint={errorHint ?? undefined}
+            />
+          )}
         </div>
       )}
 

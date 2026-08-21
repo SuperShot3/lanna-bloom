@@ -62,6 +62,7 @@ export interface SupabaseOrderRow {
   gclid?: string | null;
   gbraid?: string | null;
   wbraid?: string | null;
+  attribution_id?: string | null;
   /** Full order payload; items include addOns (card, wrapping, message). */
   order_json?: Record<string, unknown> | null;
   /** True after admin was notified once at order creation (one email per order). */

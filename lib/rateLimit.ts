@@ -55,6 +55,10 @@ const orderChatPostStore = new Map<string, { count: number; resetAt: number }>()
 const ORDER_CHAT_POST_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const ORDER_CHAT_POST_MAX = 20;
 
+const attributionTouchStore = new Map<string, { count: number; resetAt: number }>();
+const ATTRIBUTION_TOUCH_WINDOW_MS = 60 * 1000; // 1 minute
+const ATTRIBUTION_TOUCH_MAX = 40;
+
 /** Admin login: wrong password attempts per email (in-memory; resets on server restart). */
 const ADMIN_PASSWORD_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const ADMIN_PASSWORD_MAX_FAILURES = 5;
@@ -285,6 +289,23 @@ export function checkGuideCommentVisitorCooldown(visitorTokenHash: string): bool
   }
   guideCommentVisitorCooldownStore.set(key, now);
   return true;
+}
+
+/** First-party attribution touch: per IP. */
+export function checkAttributionTouchRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = ip || 'unknown';
+  const entry = attributionTouchStore.get(key);
+  if (!entry) {
+    attributionTouchStore.set(key, { count: 1, resetAt: now + ATTRIBUTION_TOUCH_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    attributionTouchStore.set(key, { count: 1, resetAt: now + ATTRIBUTION_TOUCH_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= ATTRIBUTION_TOUCH_MAX;
 }
 
 /** Customer order chat POST: per IP + orderId. */

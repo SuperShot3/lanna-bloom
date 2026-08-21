@@ -103,6 +103,18 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
+  visitor_id?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  campaign_id?: string;
+  adgroup_id?: string;
+  keyword?: string;
+  device?: string;
+  network?: string;
+  matchtype?: string;
   /** Order-level gift card messages (max 3). */
   giftCardMessages?: string[];
 }): Record<string, unknown> {
@@ -130,6 +142,18 @@ export function buildStripeCheckoutSessionRequestBody(params: {
     gclid,
     gbraid,
     wbraid,
+    visitor_id,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    utm_term,
+    campaign_id,
+    adgroup_id,
+    keyword,
+    device,
+    network,
+    matchtype,
     giftCardMessages,
   } = params;
 
@@ -236,6 +260,18 @@ export function buildStripeCheckoutSessionRequestBody(params: {
   if (gclid?.trim()) body.gclid = gclid.trim();
   if (gbraid?.trim()) body.gbraid = gbraid.trim();
   if (wbraid?.trim()) body.wbraid = wbraid.trim();
+  if (visitor_id?.trim()) body.visitor_id = visitor_id.trim();
+  if (utm_source?.trim()) body.utm_source = utm_source.trim();
+  if (utm_medium?.trim()) body.utm_medium = utm_medium.trim();
+  if (utm_campaign?.trim()) body.utm_campaign = utm_campaign.trim();
+  if (utm_content?.trim()) body.utm_content = utm_content.trim();
+  if (utm_term?.trim()) body.utm_term = utm_term.trim();
+  if (campaign_id?.trim()) body.campaign_id = campaign_id.trim();
+  if (adgroup_id?.trim()) body.adgroup_id = adgroup_id.trim();
+  if (keyword?.trim()) body.keyword = keyword.trim();
+  if (device?.trim()) body.device = device.trim();
+  if (network?.trim()) body.network = network.trim();
+  if (matchtype?.trim()) body.matchtype = matchtype.trim();
 
   const persistedCards = pairGiftCardMessagesWithItemTitles(
     giftCardMessages ?? [],

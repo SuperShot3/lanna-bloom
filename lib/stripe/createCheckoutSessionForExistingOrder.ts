@@ -28,7 +28,14 @@ import { applyExpansionItemMarkupThb, EXPANSION_MARKUP_DESTINATIONS } from '@/li
 import { getDiscountAllocationForCode } from '@/lib/referral';
 import { isValidLocale } from '@/lib/i18n';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { isSupabaseMissingColumnError } from '@/lib/supabase/columnErrors';
 import type { CheckoutAnalyticsContext } from '@/lib/analytics/captureAnalyticsContext';
+import {
+  resolveAndPersistAttribution,
+  resolvedClickIds,
+  type AttributionHints,
+} from '@/lib/attribution/resolve';
+import type { CookieReader } from '@/lib/attribution/types';
 
 export type CreateCheckoutSessionForOrderResult =
   | { ok: true; url: string; orderId: string }
@@ -46,7 +53,7 @@ function tokensEqual(a: string, b: string): boolean {
 
 async function persistOrderAnalyticsContext(
   orderId: string,
-  fields: CheckoutAnalyticsContext,
+  fields: CheckoutAnalyticsContext & { attribution_id?: string },
 ): Promise<void> {
   const updates: Record<string, string> = {};
   if (fields.ga_client_id) updates.ga_client_id = fields.ga_client_id;
@@ -54,15 +61,25 @@ async function persistOrderAnalyticsContext(
   if (fields.gclid) updates.gclid = fields.gclid;
   if (fields.gbraid) updates.gbraid = fields.gbraid;
   if (fields.wbraid) updates.wbraid = fields.wbraid;
+  if (fields.attribution_id) updates.attribution_id = fields.attribution_id;
   if (Object.keys(updates).length === 0) return;
 
   const supabase = getSupabaseAdmin();
   if (!supabase) return;
 
-  await supabase
+  const { error } = await supabase
     .from('orders')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('order_id', orderId);
+
+  if (error && isSupabaseMissingColumnError(error, 'attribution_id') && updates.attribution_id) {
+    const { attribution_id: _drop, ...rest } = updates;
+    if (Object.keys(rest).length === 0) return;
+    await supabase
+      .from('orders')
+      .update({ ...rest, updated_at: new Date().toISOString() })
+      .eq('order_id', orderId);
+  }
 }
 
 export async function createCheckoutSessionForExistingOrder(params: {
@@ -70,6 +87,7 @@ export async function createCheckoutSessionForExistingOrder(params: {
   publicToken: string;
   lang?: string;
   analytics?: CheckoutAnalyticsContext;
+  cookies?: CookieReader;
 }): Promise<CreateCheckoutSessionForOrderResult> {
   const stripeConfig = getStripeServerConfig();
   if (!stripeConfig) {
@@ -96,8 +114,34 @@ export async function createCheckoutSessionForExistingOrder(params: {
     return { ok: false, status: 404, error: 'Order not found' };
   }
 
-  if (params.analytics) {
-    await persistOrderAnalyticsContext(orderId, params.analytics);
+  if (params.cookies || params.analytics) {
+    const hints: AttributionHints = {
+      visitor_id: params.analytics?.visitor_id,
+      gclid: params.analytics?.gclid,
+      gbraid: params.analytics?.gbraid,
+      wbraid: params.analytics?.wbraid,
+      utm_source: params.analytics?.utm_source,
+      utm_medium: params.analytics?.utm_medium,
+      utm_campaign: params.analytics?.utm_campaign,
+      utm_content: params.analytics?.utm_content,
+      utm_term: params.analytics?.utm_term,
+      campaign_id: params.analytics?.campaign_id,
+      adgroup_id: params.analytics?.adgroup_id,
+      keyword: params.analytics?.keyword,
+      device: params.analytics?.device,
+      network: params.analytics?.network,
+      matchtype: params.analytics?.matchtype,
+    };
+    const emptyCookies: CookieReader = { get: () => undefined };
+    const resolved = await resolveAndPersistAttribution({
+      cookies: params.cookies ?? emptyCookies,
+      hints,
+    });
+    const attr = resolvedClickIds(resolved);
+    await persistOrderAnalyticsContext(orderId, {
+      ...(params.analytics ?? {}),
+      ...attr,
+    });
   }
 
   const supabasePayment = await getSupabasePaymentStatusByOrderId(orderId);

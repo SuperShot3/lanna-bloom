@@ -432,6 +432,9 @@ export async function supabaseCreateOrder(
     ...((order as { wbraid?: string }).wbraid && {
       wbraid: (order as { wbraid: string }).wbraid,
     }),
+    ...((order as { attribution_id?: string }).attribution_id && {
+      attribution_id: (order as { attribution_id: string }).attribution_id,
+    }),
     ...(submissionToken ? { submission_token: submissionToken } : {}),
     marketing_email_consent: order.marketingEmailConsent === true,
   };

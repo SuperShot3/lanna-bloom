@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from 'next/cache';
+import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getOrderByIdWithPublicToken, getPayLinkUrl } from '@/lib/orders';
@@ -275,6 +276,7 @@ async function payLinkLegacyOrderPage({
     orderId: order.orderId,
     publicToken: token,
     lang: 'en',
+    cookies: cookies(),
   });
 
   if (result.ok) {

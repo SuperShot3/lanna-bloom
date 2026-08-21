@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDaysParam, requireMarketingView } from '@/lib/marketing/adminApi';
 import { isGoogleAdsConfigured } from '@/lib/marketing/config';
+import { formatGoogleAdsApiError, isGoogleAdsInvalidGrant } from '@/lib/marketing/googleAdsErrors';
 import { fetchFunnelReport } from '@/lib/marketing/ga4Client';
 import { fetchAdsOverview } from '@/lib/marketing/googleAdsClient';
 import { fetchDiagnosticsReport } from '@/lib/marketing/diagnostics';
@@ -79,6 +80,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ recommendations, count: recommendations.length });
   } catch (error) {
+    if (isGoogleAdsInvalidGrant(error)) {
+      const mapped = formatGoogleAdsApiError(error);
+      return NextResponse.json(
+        {
+          error: mapped.message,
+          code: mapped.code,
+          hint: mapped.hint,
+          canReconnect: true,
+        },
+        { status: mapped.status },
+      );
+    }
     const message = error instanceof Error ? error.message : 'Failed to generate recommendations';
     return NextResponse.json({ error: message }, { status: 500 });
   }

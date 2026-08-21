@@ -97,7 +97,7 @@ export function Footer({ lang }: { lang: Locale }) {
   };
 
   return (
-    <footer id="site-footer" className="bg-stone-50 pt-20 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] border-t border-stone-200">
+    <footer id="site-footer" className="bg-[var(--muted)] pt-20 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] border-t border-[var(--border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div>
@@ -109,7 +109,7 @@ export function Footer({ lang }: { lang: Locale }) {
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"
               />
-              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[#1A3C34]">
+              <span className="font-[family-name:var(--font-family-display)] text-2xl font-semibold tracking-tight text-[var(--text)]">
                 Lanna Bloom
               </span>
             </Link>
@@ -163,7 +163,7 @@ export function Footer({ lang }: { lang: Locale }) {
                 </Link>
               </li>
             </ul>
-            <div className="pt-4 mt-4 border-t border-stone-200">
+            <div className="pt-4 mt-4 border-t border-[var(--border)]">
               <p className="font-semibold text-stone-700 text-sm mb-3">{t.deliveryAreas}</p>
               <ul className="space-y-2 text-sm text-stone-500">
                 <li>
@@ -250,12 +250,12 @@ export function Footer({ lang }: { lang: Locale }) {
                   required
                   aria-invalid={message === 'error' || message === 'invalid'}
                   aria-describedby={message ? 'newsletter-message' : undefined}
-                  className="flex-1 px-4 py-2 text-sm rounded-lg border border-stone-200 bg-white focus:ring-[#C5A059] focus:border-[#C5A059] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:ring-[#C5A059] focus:border-[#C5A059] disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-[#1A3C34] text-white text-sm rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                  className="px-4 py-2 bg-[var(--primary)] text-[var(--primary-foreground)] text-sm rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
                 >
                   {loading ? t.newsletterSubscribing : t.join}
                 </button>
@@ -267,7 +267,7 @@ export function Footer({ lang }: { lang: Locale }) {
                   aria-live="polite"
                   className={`text-sm ${
                     message === 'success' || message === 'already'
-                      ? 'text-[#1A3C34]'
+                      ? 'text-[var(--text)]'
                       : 'text-red-600'
                   }`}
                 >
@@ -280,7 +280,7 @@ export function Footer({ lang }: { lang: Locale }) {
             </form>
           </div>
         </div>
-        <div className="flex flex-col gap-4 pt-8 border-t border-stone-200 text-xs text-stone-400">
+        <div className="flex flex-col gap-4 pt-8 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <p>{t.copyright}</p>
           <div className="flex flex-nowrap justify-center items-center gap-4">

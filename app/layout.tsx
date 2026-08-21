@@ -87,7 +87,21 @@ export default function RootLayout({
             __html: `
               (function() {
                 if (typeof document === 'undefined') return;
-                document.documentElement.classList.add('light');
+                var root = document.documentElement;
+                var path = '';
+                try { path = window.location.pathname || ''; } catch (e) {}
+                var theme = 'light';
+                if (path.indexOf('/admin') !== 0) {
+                  try {
+                    var saved = window.localStorage.getItem('lanna-theme');
+                    if (saved === 'dark' || saved === 'light') theme = saved;
+                  } catch (e) {}
+                }
+                root.classList.remove('light', 'dark');
+                root.classList.add(theme);
+                root.style.colorScheme = theme;
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', theme === 'dark' ? '#0D1F1A' : '#FDFCF8');
               })();
             `,
           }}

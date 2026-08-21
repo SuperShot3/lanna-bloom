@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Lanna Bloom design tokens for Tailwind v4 */
 @theme {
   /* New design palette */
@@ -49,10 +51,13 @@
   width: auto !important;
   line-height: inherit !important;
 }
-/* Light theme only */
 html {
   color-scheme: light;
   scrollbar-gutter: stable;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 /* Cyrillic stack applied on /ru lang shell (see notoSansCyrillic.variable on .lang-layout) */
@@ -136,6 +141,72 @@ html[lang='zh-Hant'] .lang-layout {
   --ui-overlay-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ui-overlay-expand-duration: 0.48s;
   --ui-popover-duration: 0.22s;
+}
+
+html.dark {
+  --bg: #0d1f1a;
+  --surface: #142820;
+  --text: #f6f1e8;
+  --text-muted: #c4b8a8;
+  --accent-soft: #2a3a2e;
+  --pastel-pink: #2a2428;
+  --pastel-mint: #1a2f28;
+  --pastel-cream: #1a2f28;
+  --checkout-option-selected-bg: var(--accent-soft);
+  --border: #2a4c44;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --color-cream: #1a2f28;
+  --color-sage-light: #1e332c;
+  --color-border-portal: #2a4c44;
+  --primary: #f6f1e8;
+  --background: #0d1f1a;
+  --foreground: #f6f1e8;
+  --primary-foreground: #0d1f1a;
+  --secondary: #1a2f28;
+  --secondary-foreground: #f6f1e8;
+  --muted: #1a2f28;
+  --muted-foreground: #c4b8a8;
+  --accent-foreground: #1a3c34;
+  --input: #2a4c44;
+  --popover: #142820;
+  --popover-foreground: #f6f1e8;
+  --color-background: #0d1f1a;
+  --color-background-light: #0d1f1a;
+  --color-foreground: #f6f1e8;
+  --color-primary: #f6f1e8;
+  --color-primary-foreground: #0d1f1a;
+  --color-secondary: #1a2f28;
+  --color-secondary-foreground: #f6f1e8;
+  --color-muted: #1a2f28;
+  --color-muted-foreground: #c4b8a8;
+  --color-border: #2a4c44;
+  --color-input: #2a4c44;
+  --color-popover: #142820;
+  --color-popover-foreground: #f6f1e8;
+}
+
+/* Storefront-only remaps for hardcoded cream/forest utilities. Admin is not .lang-layout. */
+html.dark .lang-layout :is([class*='text-[#1A3C34]'], [class*='text-[#1a3c34]']) {
+  color: var(--text);
+}
+html.dark .lang-layout :is([class*='bg-[#FDFCF8]'], [class*='bg-[#fdfcf8]']) {
+  background-color: var(--bg);
+}
+html.dark .lang-layout :is([class*='bg-[#F9F5F0]'], [class*='bg-[#f9f5f0]']) {
+  background-color: var(--pastel-cream);
+}
+html.dark .lang-layout [class*='bg-white'] {
+  background-color: var(--surface);
+}
+html.dark .lang-layout [class*='bg-stone-50'] {
+  background-color: var(--muted);
+}
+html.dark .lang-layout [class*='border-stone-200'] {
+  border-color: var(--border);
+}
+html.dark .lang-layout :is([class*='text-stone-400'], [class*='text-stone-500'], [class*='text-stone-600'], [class*='text-stone-700']) {
+  color: var(--text-muted);
 }
 
 /* —— UI overlay animations (default for shadcn popovers + inline reveals) —— */
@@ -331,9 +402,30 @@ html[lang='zh-Hant'] .lang-layout {
   box-shadow: none;
 }
 
+.site-header--glass {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom-color: var(--border);
+}
+
+.site-header--glass-mobile {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.site-header--glass-scrolled {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .site-header--liquid-glass {
     background: transparent;
+  }
+
+  .site-header--glass {
+    background: var(--bg);
   }
 }
 
@@ -341,6 +433,10 @@ html[lang='zh-Hant'] .lang-layout {
   .site-header--liquid-glass {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+
+  .site-header--glass {
+    transition: none;
   }
 }
 

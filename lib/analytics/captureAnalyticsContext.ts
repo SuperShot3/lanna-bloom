@@ -1,13 +1,22 @@
 /**
- * Read GA4 / Google Ads identifiers from the browser for server-side purchase fallback.
- * Safe to call only on the client before checkout.
+ * Read GA4 / Google Ads identifiers from the browser for checkout and first-party attribution.
+ * Safe to call only on the client.
  */
 
-const AD_CLICK_STORAGE_KEY = 'lanna_ad_click_ids';
-const AD_CLICK_COOKIE_GCLID = 'lanna_ad_gclid';
-const AD_CLICK_COOKIE_GBRAID = 'lanna_ad_gbraid';
-const AD_CLICK_COOKIE_WBRAID = 'lanna_ad_wbraid';
-const AD_CLICK_COOKIE_MAX_AGE_DAYS = 90;
+import {
+  AD_CLICK_COOKIE_GBRAID,
+  AD_CLICK_COOKIE_GCLID,
+  AD_CLICK_COOKIE_WBRAID,
+  AD_CLICK_STORAGE_KEY,
+  ATTR_PARAMS_STORAGE_KEY,
+  ATTRIBUTION_COOKIE_MAX_AGE_SEC,
+} from '@/lib/attribution/constants';
+import {
+  parseAttributionSearchParams,
+  urlHasAttributionQuery,
+} from '@/lib/attribution/params';
+import { mergeAttributionSnapshot } from '@/lib/attribution/rules';
+import type { AttributionSnapshot } from '@/lib/attribution/types';
 
 export interface CheckoutAnalyticsContext {
   ga_client_id?: string;
@@ -15,6 +24,18 @@ export interface CheckoutAnalyticsContext {
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
+  visitor_id?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  campaign_id?: string;
+  adgroup_id?: string;
+  keyword?: string;
+  device?: string;
+  network?: string;
+  matchtype?: string;
 }
 
 function readCookie(name: string): string | undefined {
@@ -30,8 +51,7 @@ function readCookie(name: string): string | undefined {
 
 function writeCookie(name: string, value: string): void {
   if (typeof document === 'undefined') return;
-  const maxAgeSec = AD_CLICK_COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
-  document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${ATTRIBUTION_COOKIE_MAX_AGE_SEC}; Path=/; SameSite=Lax`;
 }
 
 /** Parse `_ga` cookie → GA4 client_id (`XXXXXXXXXX.YYYYYYYYYY`). */
@@ -63,7 +83,6 @@ export function readGaSessionIdFromCookie(): string | undefined {
       // use raw
     }
     const parts = decoded.split('.');
-    // GS1.1.<session_id>... or GS2.1.s<session_id>...
     if (parts.length >= 3 && (parts[0] === 'GS1' || parts[0] === 'GS2')) {
       const sessionPart = parts[2];
       if (sessionPart) {
@@ -75,67 +94,142 @@ export function readGaSessionIdFromCookie(): string | undefined {
   return undefined;
 }
 
-/** Persist ad click ids from URL into cookies (~90 days) and sessionStorage. */
-export function captureAdClickIdsFromUrl(): void {
+function readStoredSnapshot(): AttributionSnapshot {
+  const gclid = readCookie(AD_CLICK_COOKIE_GCLID)?.trim();
+  const gbraid = readCookie(AD_CLICK_COOKIE_GBRAID)?.trim();
+  const wbraid = readCookie(AD_CLICK_COOKIE_WBRAID)?.trim();
+  let fromStorage: AttributionSnapshot = {};
+  if (typeof window !== 'undefined') {
+    try {
+      const clickRaw = window.sessionStorage.getItem(AD_CLICK_STORAGE_KEY);
+      if (clickRaw) {
+        const parsed = JSON.parse(clickRaw) as Record<string, string | undefined>;
+        fromStorage = {
+          ...(parsed.gclid?.trim() ? { gclid: parsed.gclid.trim() } : {}),
+          ...(parsed.gbraid?.trim() ? { gbraid: parsed.gbraid.trim() } : {}),
+          ...(parsed.wbraid?.trim() ? { wbraid: parsed.wbraid.trim() } : {}),
+        };
+      }
+      const attrRaw = window.sessionStorage.getItem(ATTR_PARAMS_STORAGE_KEY);
+      if (attrRaw) {
+        fromStorage = mergeAttributionSnapshot(
+          fromStorage,
+          JSON.parse(attrRaw) as AttributionSnapshot,
+          Date.now(),
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return mergeAttributionSnapshot(
+    fromStorage,
+    {
+      ...(gclid ? { gclid } : {}),
+      ...(gbraid ? { gbraid } : {}),
+      ...(wbraid ? { wbraid } : {}),
+    },
+    Date.now(),
+  );
+}
+
+function persistClientSnapshot(snap: AttributionSnapshot): void {
+  if (snap.gclid) writeCookie(AD_CLICK_COOKIE_GCLID, snap.gclid);
+  if (snap.gbraid) writeCookie(AD_CLICK_COOKIE_GBRAID, snap.gbraid);
+  if (snap.wbraid) writeCookie(AD_CLICK_COOKIE_WBRAID, snap.wbraid);
   if (typeof window === 'undefined') return;
   try {
-    const params = new URLSearchParams(window.location.search);
-    const gclid = params.get('gclid')?.trim();
-    const gbraid = params.get('gbraid')?.trim();
-    const wbraid = params.get('wbraid')?.trim();
-    if (!gclid && !gbraid && !wbraid) return;
-
-    if (gclid) writeCookie(AD_CLICK_COOKIE_GCLID, gclid);
-    if (gbraid) writeCookie(AD_CLICK_COOKIE_GBRAID, gbraid);
-    if (wbraid) writeCookie(AD_CLICK_COOKIE_WBRAID, wbraid);
-
     window.sessionStorage.setItem(
       AD_CLICK_STORAGE_KEY,
-      JSON.stringify({ gclid: gclid || undefined, gbraid: gbraid || undefined, wbraid: wbraid || undefined }),
+      JSON.stringify({
+        gclid: snap.gclid,
+        gbraid: snap.gbraid,
+        wbraid: snap.wbraid,
+      }),
     );
+    window.sessionStorage.setItem(ATTR_PARAMS_STORAGE_KEY, JSON.stringify(snap));
   } catch {
     // ignore
   }
 }
 
-function readAdClickIdFromCookieOrStorage(
-  cookieName: string,
-  key: 'gclid' | 'gbraid' | 'wbraid',
-): string | undefined {
-  const fromCookie = readCookie(cookieName)?.trim();
-  if (fromCookie) return fromCookie;
-
-  if (typeof window === 'undefined') return undefined;
+/** Persist ad click ids + UTMs from URL. Does not wipe existing Google click ids on a later direct visit. */
+export function captureAdClickIdsFromUrl(): void {
+  if (typeof window === 'undefined') return;
   try {
-    const raw = window.sessionStorage.getItem(AD_CLICK_STORAGE_KEY);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw) as Record<string, string | undefined>;
-    const fromStorage = parsed[key]?.trim();
-    return fromStorage || undefined;
+    const params = new URLSearchParams(window.location.search);
+    const incoming = parseAttributionSearchParams(params);
+    incoming.landingPage = `${window.location.pathname}${window.location.search}`;
+    if (document.referrer) incoming.referrer = document.referrer;
+    const existing = readStoredSnapshot();
+    if (!urlHasAttributionQuery(params) && !incoming.gclid && !incoming.utmSource) {
+      return;
+    }
+    const merged = mergeAttributionSnapshot(existing, incoming, Date.now());
+    persistClientSnapshot(merged);
   } catch {
-    return undefined;
+    // ignore
   }
 }
 
-function readStoredAdClickIds(): Pick<CheckoutAnalyticsContext, 'gclid' | 'gbraid' | 'wbraid'> {
-  const gclid = readAdClickIdFromCookieOrStorage(AD_CLICK_COOKIE_GCLID, 'gclid');
-  const gbraid = readAdClickIdFromCookieOrStorage(AD_CLICK_COOKIE_GBRAID, 'gbraid');
-  const wbraid = readAdClickIdFromCookieOrStorage(AD_CLICK_COOKIE_WBRAID, 'wbraid');
-  return {
-    ...(gclid ? { gclid } : {}),
-    ...(gbraid ? { gbraid } : {}),
-    ...(wbraid ? { wbraid } : {}),
-  };
-}
-
-/** Full analytics context to attach to checkout session request. */
 export function readCheckoutAnalyticsContext(): CheckoutAnalyticsContext {
   const ga_client_id = readGaClientIdFromCookie();
   const ga_session_id = readGaSessionIdFromCookie();
-  const adIds = readStoredAdClickIds();
+  const snap = readStoredSnapshot();
   return {
     ...(ga_client_id ? { ga_client_id } : {}),
     ...(ga_session_id ? { ga_session_id } : {}),
-    ...adIds,
+    ...(snap.gclid ? { gclid: snap.gclid } : {}),
+    ...(snap.gbraid ? { gbraid: snap.gbraid } : {}),
+    ...(snap.wbraid ? { wbraid: snap.wbraid } : {}),
+    ...(snap.utmSource ? { utm_source: snap.utmSource } : {}),
+    ...(snap.utmMedium ? { utm_medium: snap.utmMedium } : {}),
+    ...(snap.utmCampaign ? { utm_campaign: snap.utmCampaign } : {}),
+    ...(snap.utmContent ? { utm_content: snap.utmContent } : {}),
+    ...(snap.utmTerm ? { utm_term: snap.utmTerm } : {}),
+    ...(snap.campaignId ? { campaign_id: snap.campaignId } : {}),
+    ...(snap.adgroupId ? { adgroup_id: snap.adgroupId } : {}),
+    ...(snap.keyword ? { keyword: snap.keyword } : {}),
+    ...(snap.device ? { device: snap.device } : {}),
+    ...(snap.network ? { network: snap.network } : {}),
+    ...(snap.matchtype ? { matchtype: snap.matchtype } : {}),
   };
+}
+
+/** Fire-and-forget upsert of the first-party attribution session. Cookies still survive if this fails. */
+export function touchAttributionSession(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    captureAdClickIdsFromUrl();
+    const ctx = readCheckoutAnalyticsContext();
+    const body: Record<string, string> = {};
+    if (ctx.gclid) body.gclid = ctx.gclid;
+    if (ctx.gbraid) body.gbraid = ctx.gbraid;
+    if (ctx.wbraid) body.wbraid = ctx.wbraid;
+    if (ctx.utm_source) body.utm_source = ctx.utm_source;
+    if (ctx.utm_medium) body.utm_medium = ctx.utm_medium;
+    if (ctx.utm_campaign) body.utm_campaign = ctx.utm_campaign;
+    if (ctx.utm_content) body.utm_content = ctx.utm_content;
+    if (ctx.utm_term) body.utm_term = ctx.utm_term;
+    if (ctx.campaign_id) body.campaign_id = ctx.campaign_id;
+    if (ctx.adgroup_id) body.adgroup_id = ctx.adgroup_id;
+    if (ctx.keyword) body.keyword = ctx.keyword;
+    if (ctx.device) body.device = ctx.device;
+    if (ctx.network) body.network = ctx.network;
+    if (ctx.matchtype) body.matchtype = ctx.matchtype;
+    body.landing_page = `${window.location.pathname}${window.location.search}`.slice(0, 300);
+    if (document.referrer) body.referrer = document.referrer.slice(0, 300);
+
+    void fetch('/api/attribution/touch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(body),
+      keepalive: true,
+    }).catch(() => {
+      // ignore
+    });
+  } catch {
+    // ignore
+  }
 }

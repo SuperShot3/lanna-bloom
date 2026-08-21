@@ -50,7 +50,7 @@ Recommendation: GTM **Custom Event** `purchase` → **GA4** + optional **Google 
 
 ## Server upload fallback (parked)
 
-Code for Google Ads Conversion Upload API still exists under `lib/analytics/`, but the cron is **not** scheduled. Live Ads purchase conversions rely on the browser `dataLayer` → GTM path above.
+Code for Google Ads Conversion Upload API still exists under `lib/analytics/`, but the cron is **not** scheduled. Live Ads purchase conversions rely on the browser `dataLayer` → GTM path above. First-party Data Manager ingest is a separate path — see [FIRST_PARTY_ATTRIBUTION.md](./FIRST_PARTY_ATTRIBUTION.md).
 
 **Dedupe columns on `orders` (legacy / parked):**
 

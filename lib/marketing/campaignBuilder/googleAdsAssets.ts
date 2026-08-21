@@ -1,31 +1,10 @@
 import 'server-only';
 
-import { GoogleAdsApi } from 'google-ads-api';
-import { getGoogleAdsConfig } from '../config';
+import { createGoogleAdsCustomer } from '../googleAdsCustomer';
 import type { GoogleAdsAssetSummary } from './types';
 
-function getCustomer() {
-  const config = getGoogleAdsConfig();
-  if (!config) throw new Error('Google Ads is not configured');
-
-  const client = new GoogleAdsApi({
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    developer_token: config.developerToken,
-  });
-
-  return {
-    customer: client.Customer({
-      customer_id: config.customerId,
-      refresh_token: config.refreshToken,
-      login_customer_id: config.loginCustomerId,
-    }),
-    customerId: config.customerId,
-  };
-}
-
 export async function listGoogleAdsImageAssets(): Promise<GoogleAdsAssetSummary[]> {
-  const { customer } = getCustomer();
+  const { customer } = await createGoogleAdsCustomer();
 
   const query = `
     SELECT

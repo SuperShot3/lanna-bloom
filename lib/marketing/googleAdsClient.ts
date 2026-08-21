@@ -1,8 +1,8 @@
 import 'server-only';
 
-import { GoogleAdsApi } from 'google-ads-api';
 import { cacheKey, getCached, setCached } from './cache';
-import { getGoogleAdsConfig, MARKETING_SAFETY } from './config';
+import { MARKETING_SAFETY } from './config';
+import { createGoogleAdsCustomer } from './googleAdsCustomer';
 import { aggregateMetrics, buildMetricRow, microsToThb, resolveDateRange } from './metrics';
 import type { AdsMetricRow, AdsOverview } from './types';
 import { buildPerformanceFlags } from './performanceFlags';
@@ -103,23 +103,7 @@ function mapLandingPageRow(row: GaqlRow): AdsMetricRow {
 }
 
 async function runGaql(query: string): Promise<GaqlRow[]> {
-  const config = getGoogleAdsConfig();
-  if (!config) {
-    throw new Error('Google Ads is not configured');
-  }
-
-  const client = new GoogleAdsApi({
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    developer_token: config.developerToken,
-  });
-
-  const customer = client.Customer({
-    customer_id: config.customerId,
-    refresh_token: config.refreshToken,
-    login_customer_id: config.loginCustomerId,
-  });
-
+  const { customer } = await createGoogleAdsCustomer();
   const rows = await customer.query(query);
   return rows as GaqlRow[];
 }

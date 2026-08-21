@@ -38,7 +38,8 @@ export function DiagnosticsPanel({
   diagnostics: DiagnosticsReport;
   onNavigate: (tab: 'funnel' | 'ads') => void;
 }) {
-  const { metrics, verdict, checks } = diagnostics;
+  const { metrics, verdict, checks, firstParty } = diagnostics;
+  const googlePaid = firstParty?.googleAdsPaid;
 
   return (
     <>
@@ -60,6 +61,16 @@ export function DiagnosticsPanel({
           </p>
           <p className={styles.realitySub}>
             {metrics.adsConversions == null ? 'Ads not configured' : 'From Ads API'}
+          </p>
+        </div>
+        <div className={styles.realityCard}>
+          <p className={styles.realityLabel}>Paid orders from Google Ads</p>
+          <p className={styles.realityValue}>{googlePaid?.count ?? 0}</p>
+          <p className={styles.realitySub}>
+            {fmtThb(googlePaid?.revenue ?? 0)}
+            {googlePaid && googlePaid.count > 0
+              ? ` · AOV ${fmtThb(googlePaid.aov)}`
+              : ' · first-party click ids'}
           </p>
         </div>
         <div className={styles.realityCard}>
@@ -111,6 +122,86 @@ export function DiagnosticsPanel({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="admin-card">
+        <h3 className="admin-section-title">Paid orders (first-party attribution)</h3>
+        <p className="admin-hint">
+          Stripe-paid orders in this period. Google Ads = a captured gclid, gbraid, or wbraid in Lanna
+          Bloom’s database — not Google’s own conversion count.
+        </p>
+        {firstParty?.recentPaidOrders.length ? (
+          <div className={styles.tableWrap}>
+            <table className={styles.orderTable}>
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Paid</th>
+                  <th>Revenue</th>
+                  <th>Destination</th>
+                  <th>Phone CC</th>
+                  <th>Google Ads</th>
+                  <th>Click id</th>
+                  <th>Campaign</th>
+                  <th>Import</th>
+                </tr>
+              </thead>
+              <tbody>
+                {firstParty.recentPaidOrders.map((row) => (
+                  <tr key={row.orderId}>
+                    <td>
+                      <code>{row.orderId}</code>
+                    </td>
+                    <td>{row.paidAt ? new Date(row.paidAt).toLocaleString('en-GB') : '—'}</td>
+                    <td>
+                      {new Intl.NumberFormat('th-TH', {
+                        style: 'currency',
+                        currency: row.currency || 'THB',
+                        maximumFractionDigits: 0,
+                      }).format(row.revenue)}
+                    </td>
+                    <td>{row.deliveryDestination || '—'}</td>
+                    <td>{row.phoneCountryCode || '—'}</td>
+                    <td>{row.googleAds ? 'Yes' : 'No'}</td>
+                    <td>{row.hasClickId ? 'Yes' : 'No'}</td>
+                    <td>{row.campaign || row.utmSource || row.source || '—'}</td>
+                    <td>{row.offlineConversionStatus || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="admin-hint">No paid orders in this period.</p>
+        )}
+        {firstParty && (firstParty.byDestination.length > 0 || firstParty.byCampaign.length > 0) && (
+          <div className={styles.breakdownGrid}>
+            {firstParty.byDestination.length > 0 && (
+              <div>
+                <h4 className={styles.breakdownTitle}>Google-ad orders by destination</h4>
+                <ul className={styles.breakdownList}>
+                  {firstParty.byDestination.map((row) => (
+                    <li key={row.key}>
+                      <strong>{row.key}</strong> · {row.count} · {fmtThb(row.revenue)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {firstParty.byCampaign.length > 0 && (
+              <div>
+                <h4 className={styles.breakdownTitle}>Google-ad orders by campaign</h4>
+                <ul className={styles.breakdownList}>
+                  {firstParty.byCampaign.map((row) => (
+                    <li key={row.key}>
+                      <strong>{row.key}</strong> · {row.count} · {fmtThb(row.revenue)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </>
   );

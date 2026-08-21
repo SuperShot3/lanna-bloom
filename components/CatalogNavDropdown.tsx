@@ -80,7 +80,7 @@ export function CatalogNavDropdown({
         <button
           type="button"
           className={cn(
-            'inline-flex items-center gap-1 uppercase tracking-wide text-[#1A3C34] hover:text-[#C5A059] transition-colors outline-none',
+            'inline-flex items-center gap-1 uppercase tracking-wide text-[var(--text)] hover:text-[#C5A059] transition-colors outline-none',
             active && 'text-[#C5A059]',
           )}
           aria-label={label}
@@ -91,7 +91,7 @@ export function CatalogNavDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="z-[120] min-w-[12rem] border-stone-200 bg-[#FDFCF8] text-[#1A3C34] shadow-lg shadow-[#1A3C34]/8"
+        className="z-[120] min-w-[12rem] border-[var(--border)] bg-[var(--bg)] text-[var(--text)] shadow-lg shadow-[#1A3C34]/8"
       >
         {CATALOG_NAV_ITEMS.map((item) => {
           const isActive = pathActive && activeId === item.id;
@@ -167,7 +167,7 @@ export function CatalogMobileNav({
                 key={item.id}
                 href={catalogNavHref(catalogHref, lang, item.id)}
                 className={cn(
-                  'rounded-lg px-3 py-2.5 text-sm font-medium text-[#1A3C34] transition-colors hover:bg-[#C5A059]/10 hover:text-[#C5A059]',
+                  'rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text)] transition-colors hover:bg-[#C5A059]/10 hover:text-[#C5A059]',
                   isActive && 'bg-[#C5A059]/12 text-[#C5A059]',
                 )}
                 onClick={onNavigate}

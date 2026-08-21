@@ -1,10 +1,12 @@
 import 'server-only';
 
-import type { MarketingConfigStatus } from './types';
+import { getBaseUrl } from '@/lib/siteUrl';
+import type { MarketingConfigStatus, MarketingGoogleAdsOAuthStatus } from './types';
 import { CAMPAIGN_BUILDER_LIMITS } from './campaignBuilder/limits';
+import { sanitizeEnvSecret } from './sanitizeEnvSecret';
 
 function normalizeCustomerId(raw: string | undefined): string | undefined {
-  const v = raw?.trim().replace(/-/g, '');
+  const v = sanitizeEnvSecret(raw)?.replace(/-/g, '');
   return v && /^\d+$/.test(v) ? v : undefined;
 }
 
@@ -29,23 +31,44 @@ export function isGoogleAdsConfigured(): boolean {
   return getGoogleAdsConfig() != null;
 }
 
+export function getGoogleAdsOAuthClient(): { clientId: string; clientSecret: string } | null {
+  const clientId = sanitizeEnvSecret(process.env.GOOGLE_ADS_CLIENT_ID);
+  const clientSecret = sanitizeEnvSecret(process.env.GOOGLE_ADS_CLIENT_SECRET);
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+export function getGoogleAdsOAuthRedirectUri(): string {
+  return `${getBaseUrl()}/api/admin/marketing/google-ads/oauth/callback`;
+}
+
 export function getGoogleAdsConfig(): GoogleAdsConfig | null {
-  const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
-  const clientId = process.env.GOOGLE_ADS_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET?.trim();
-  const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN?.trim();
+  const developerToken = sanitizeEnvSecret(process.env.GOOGLE_ADS_DEVELOPER_TOKEN);
+  const oauth = getGoogleAdsOAuthClient();
+  const refreshToken = sanitizeEnvSecret(process.env.GOOGLE_ADS_REFRESH_TOKEN);
   const customerId = normalizeCustomerId(process.env.GOOGLE_ADS_CUSTOMER_ID);
-  if (!developerToken || !clientId || !clientSecret || !refreshToken || !customerId) {
+  if (!developerToken || !oauth || !refreshToken || !customerId) {
     return null;
   }
   const loginCustomerId = normalizeCustomerId(process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID);
   return {
     developerToken,
-    clientId,
-    clientSecret,
+    clientId: oauth.clientId,
+    clientSecret: oauth.clientSecret,
     refreshToken,
     customerId,
     loginCustomerId,
+  };
+}
+
+export function getGoogleAdsOAuthStatus(
+  stored?: { connectedAt: string | null; connectedByEmail: string | null },
+): MarketingGoogleAdsOAuthStatus {
+  return {
+    ready: getGoogleAdsOAuthClient() != null,
+    redirectUri: getGoogleAdsOAuthRedirectUri(),
+    connectedAt: stored?.connectedAt ?? null,
+    connectedByEmail: stored?.connectedByEmail ?? null,
   };
 }
 
@@ -90,7 +113,9 @@ export function isLlmConfigured(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
-export function getMarketingConfigStatus(): MarketingConfigStatus {
+export function getMarketingConfigStatus(
+  oauthStored?: { connectedAt: string | null; connectedByEmail: string | null },
+): MarketingConfigStatus {
   return {
     googleAds: isGoogleAdsConfigured(),
     ga4: isGa4Configured(),
@@ -98,6 +123,7 @@ export function getMarketingConfigStatus(): MarketingConfigStatus {
     supabase: Boolean(
       process.env.SUPABASE_URL?.trim() && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
     ),
+    googleAdsOAuth: getGoogleAdsOAuthStatus(oauthStored),
   };
 }
 

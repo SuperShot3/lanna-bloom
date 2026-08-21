@@ -1,28 +1,9 @@
 import 'server-only';
 
-import { GoogleAdsApi, enums } from 'google-ads-api';
+import { enums } from 'google-ads-api';
 import { getGoogleAdsConfig } from '../config';
+import { createGoogleAdsCustomer } from '../googleAdsCustomer';
 import type { SearchCampaignDraft } from './types';
-
-function getCustomer() {
-  const config = getGoogleAdsConfig();
-  if (!config) throw new Error('Google Ads is not configured');
-
-  const client = new GoogleAdsApi({
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    developer_token: config.developerToken,
-  });
-
-  return {
-    customer: client.Customer({
-      customer_id: config.customerId,
-      refresh_token: config.refreshToken,
-      login_customer_id: config.loginCustomerId,
-    }),
-    customerId: config.customerId,
-  };
-}
 
 function thbToMicros(thb: number): number {
   return Math.round(thb * 1_000_000);
@@ -62,7 +43,8 @@ export async function createPausedSearchCampaign(
     return { resourceNames: names, dryRun: true };
   }
 
-  const { customer, customerId } = getCustomer();
+  const { customer, config } = await createGoogleAdsCustomer();
+  const customerId = config.customerId;
   const resourceNames: string[] = [];
   const timestamp = Date.now();
 

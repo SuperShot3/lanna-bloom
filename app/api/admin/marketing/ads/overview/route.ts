@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDaysParam, requireMarketingView } from '@/lib/marketing/adminApi';
 import { isGoogleAdsConfigured } from '@/lib/marketing/config';
+import { formatGoogleAdsApiError } from '@/lib/marketing/googleAdsErrors';
 import { fetchAdsOverview } from '@/lib/marketing/googleAdsClient';
 
 export async function GET(request: NextRequest) {
@@ -23,7 +24,15 @@ export async function GET(request: NextRequest) {
     const overview = await fetchAdsOverview(days);
     return NextResponse.json({ overview });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch Google Ads data';
-    return NextResponse.json({ error: message }, { status: 502 });
+    const mapped = formatGoogleAdsApiError(error);
+    return NextResponse.json(
+      {
+        error: mapped.message,
+        code: mapped.code,
+        hint: mapped.hint,
+        canReconnect: mapped.canReconnect,
+      },
+      { status: mapped.status },
+    );
   }
 }

@@ -44,6 +44,8 @@ Client-side analytics architecture. **Do not add direct `gtag` calls** — the a
 
 Server Measurement Protocol fallback, claim-purchase, and confirm-purchase APIs remain in the repo but are **not** scheduled or required for browser purchase. Re-enable only after browser GTM purchase is proven stable in production.
 
+**Independent first-party path:** click-id capture → `attribution_sessions` → Stripe-paid `google_ads_offline_conversions` → Data Manager `events:ingest`. This does not replace GTM and does not send Measurement Protocol. See [docs/FIRST_PARTY_ATTRIBUTION.md](../docs/FIRST_PARTY_ATTRIBUTION.md).
+
 ## Funnel events (secondary)
 
 Pushed via `lib/analytics.ts`:
@@ -65,6 +67,7 @@ Configure matching **Custom Event** triggers in GTM.
 
 - Purchase conversion should listen to the same browser `purchase` dataLayer event (GTM tag).
 - Server Conversion Upload API / MP cron are **not** on the active path (browser-only hotfix).
+- First-party click-id import (Data Manager) is documented in [docs/FIRST_PARTY_ATTRIBUTION.md](../docs/FIRST_PARTY_ATTRIBUTION.md). Do not revive parked `UploadClickConversions`.
 - See [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md) for GTM variable mapping (`ecommerce.*`).
 
 ## Consent
@@ -97,3 +100,4 @@ Configure matching **Custom Event** triggers in GTM.
 
 - [docs/ANALYTICS_GA4.md](../docs/ANALYTICS_GA4.md)
 - [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md)
+- [docs/FIRST_PARTY_ATTRIBUTION.md](../docs/FIRST_PARTY_ATTRIBUTION.md)

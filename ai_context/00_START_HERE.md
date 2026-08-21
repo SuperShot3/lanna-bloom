@@ -96,5 +96,6 @@ Product catalog (bouquets, add-ons, partners, homepage hero) lives entirely in *
 - [docs/ORDERS_SUPABASE.md](../docs/ORDERS_SUPABASE.md)
 - [docs/ANALYTICS_GA4.md](../docs/ANALYTICS_GA4.md)
 - [docs/GOOGLE_ADS_PURCHASE_CONVERSION.md](../docs/GOOGLE_ADS_PURCHASE_CONVERSION.md)
+- [docs/FIRST_PARTY_ATTRIBUTION.md](../docs/FIRST_PARTY_ATTRIBUTION.md)
 - [docs/ACCOUNTING_AND_EXPENSES.md](../docs/ACCOUNTING_AND_EXPENSES.md)
 - [docs/ADMIN_V2_COSTS.md](../docs/ADMIN_V2_COSTS.md)

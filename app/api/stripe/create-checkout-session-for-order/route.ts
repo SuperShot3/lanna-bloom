@@ -19,6 +19,18 @@ function parseCheckoutAnalyticsFields(b: Record<string, unknown>):
   const gclid = optionalTrimmedString(b.gclid, 256);
   const gbraid = optionalTrimmedString(b.gbraid, 256);
   const wbraid = optionalTrimmedString(b.wbraid, 256);
+  const visitor_id = optionalTrimmedString(b.visitor_id, 64);
+  const utm_source = optionalTrimmedString(b.utm_source, 200);
+  const utm_medium = optionalTrimmedString(b.utm_medium, 200);
+  const utm_campaign = optionalTrimmedString(b.utm_campaign, 200);
+  const utm_content = optionalTrimmedString(b.utm_content, 200);
+  const utm_term = optionalTrimmedString(b.utm_term, 200);
+  const campaign_id = optionalTrimmedString(b.campaign_id, 200);
+  const adgroup_id = optionalTrimmedString(b.adgroup_id, 200);
+  const keyword = optionalTrimmedString(b.keyword, 200);
+  const device = optionalTrimmedString(b.device, 64);
+  const network = optionalTrimmedString(b.network, 64);
+  const matchtype = optionalTrimmedString(b.matchtype, 64);
   if (ga_client_id && !/^\d+\.\d+$/.test(ga_client_id)) {
     return { ok: false, message: 'ga_client_id has invalid format' };
   }
@@ -30,6 +42,18 @@ function parseCheckoutAnalyticsFields(b: Record<string, unknown>):
       ...(gclid ? { gclid } : {}),
       ...(gbraid ? { gbraid } : {}),
       ...(wbraid ? { wbraid } : {}),
+      ...(visitor_id ? { visitor_id } : {}),
+      ...(utm_source ? { utm_source } : {}),
+      ...(utm_medium ? { utm_medium } : {}),
+      ...(utm_campaign ? { utm_campaign } : {}),
+      ...(utm_content ? { utm_content } : {}),
+      ...(utm_term ? { utm_term } : {}),
+      ...(campaign_id ? { campaign_id } : {}),
+      ...(adgroup_id ? { adgroup_id } : {}),
+      ...(keyword ? { keyword } : {}),
+      ...(device ? { device } : {}),
+      ...(network ? { network } : {}),
+      ...(matchtype ? { matchtype } : {}),
     },
   };
 }
@@ -77,6 +101,7 @@ export async function POST(request: NextRequest) {
     publicToken,
     lang,
     analytics: analyticsParsed.fields,
+    cookies: request.cookies,
   });
 
   if (!result.ok) {

@@ -47,6 +47,7 @@ import { useMobileCartHeaderCollapse } from '@/hooks/useMobileCartHeaderCollapse
 import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
 import { isCatalogProductDetailPath } from '@/lib/catalogProductPath';
 import { CurrencySelector } from '@/components/CurrencyDisplay';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const SCROLL_THRESHOLD = 10;
 const MOBILE_BREAKPOINT = 768;
@@ -260,10 +261,10 @@ export function Header({
   const glassNavClass = isMobile
     ? isScrolled
       ? 'site-header--liquid-glass'
-      : 'bg-[rgba(253,252,248,0.72)] backdrop-blur-xl border-stone-200/50'
+      : 'site-header--glass site-header--glass-mobile'
     : isScrolled
-      ? 'bg-[rgba(253,252,248,0.82)] backdrop-blur-xl border-stone-200/80'
-      : 'bg-[rgba(253,252,248,0.8)] backdrop-blur-xl border-stone-200';
+      ? 'site-header--glass site-header--glass-scrolled'
+      : 'site-header--glass';
 
   return (
     <>
@@ -295,7 +296,7 @@ export function Header({
                 height={40}
                 className="w-10 h-10 shrink-0 object-contain rounded-full bg-transparent"
               />
-              <span className="site-header__brand-text font-[family-name:var(--font-family-display)] text-[clamp(1rem,4vw,1.5rem)] font-semibold tracking-tight text-[#1A3C34] leading-none truncate max-w-[45vw] sm:max-w-none">
+              <span className="site-header__brand-text font-[family-name:var(--font-family-display)] text-[clamp(1rem,4vw,1.5rem)] font-semibold tracking-tight text-[var(--text)] leading-none truncate max-w-[45vw] sm:max-w-none">
                 Lanna Bloom
               </span>
             </Link>
@@ -306,7 +307,7 @@ export function Header({
               >
                 <Suspense
                   fallback={
-                    <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[#1A3C34]">
+                    <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[var(--text)]">
                       {t.catalog}
                     </span>
                   }
@@ -324,7 +325,7 @@ export function Header({
                 </Suspense>
                 <Suspense
                   fallback={
-                    <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[#1A3C34]">
+                    <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[var(--text)]">
                       {t.occasions}
                     </span>
                   }
@@ -346,14 +347,14 @@ export function Header({
                   label={t.deliveryAreas}
                   active={basePath === '/delivery-areas-thailand'}
                   variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  className="!bg-transparent !border-0 text-[var(--text)] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
                 <NavItem
                   href={aboutHref}
                   label={t.aboutUs}
                   active={basePath === '/about'}
                   variant="pill"
-                  className="!bg-transparent !border-0 text-[#1A3C34] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
+                  className="!bg-transparent !border-0 text-[var(--text)] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
               </nav>
             )}
@@ -374,7 +375,7 @@ export function Header({
             </div>
             <Link
               href={cartHref}
-              className="relative order-1 flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34] md:order-3"
+              className="relative order-1 flex h-11 w-11 shrink-0 items-center justify-center text-[var(--text)] md:order-3"
               aria-label={t.cart}
               title={t.cart}
             >
@@ -392,6 +393,9 @@ export function Header({
                 />
               )}
             </Link>
+            <div className="order-2 flex items-center">
+              <ThemeToggle lang={lang} />
+            </div>
             <div className="order-2 md:order-2">
               <LanguageSwitcher
                 currentLang={lang}
@@ -401,7 +405,7 @@ export function Header({
             </div>
             <button
               type="button"
-              className="order-3 flex h-11 w-11 shrink-0 items-center justify-center text-[#1A3C34] md:hidden"
+              className="order-3 flex h-11 w-11 shrink-0 items-center justify-center text-[var(--text)] md:hidden"
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
@@ -431,7 +435,7 @@ export function Header({
             aria-label="Close menu"
           />
           <div
-            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[#FDFCF8] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] pb-14 pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+2.25rem))] px-6 flex flex-col gap-6 transform transition-transform duration-250"
+            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[var(--bg)] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] pb-14 pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+2.25rem))] px-6 flex flex-col gap-6 transform transition-transform duration-250"
             style={{
               transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             }}
@@ -452,7 +456,7 @@ export function Header({
           >
             <button
               type="button"
-              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-2xl text-stone-500 hover:text-[#1A3C34] hover:bg-[#F9F5F0] rounded-lg transition-colors"
+              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-2xl text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--pastel-cream)] rounded-lg transition-colors"
               onClick={() => setMenuOpen(false)}
               aria-label={translations[lang].catalog.close}
             >
@@ -571,8 +575,8 @@ function DeliveryProvincePicker({
       }
       className={
         variant === 'desktop'
-          ? 'min-w-0 max-w-[132px] cursor-pointer bg-transparent pr-0 text-xs font-semibold text-[#1A3C34] outline-none'
-          : 'mt-2 h-11 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm font-semibold text-[#1A3C34] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
+          ? 'min-w-0 max-w-[132px] cursor-pointer bg-transparent pr-0 text-xs font-semibold text-[var(--text)] outline-none'
+          : 'mt-2 h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--text)] outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/20'
       }
     >
       <option value={DEFAULT_DELIVERY_DESTINATION_ID}>
@@ -597,7 +601,7 @@ function DeliveryProvincePicker({
             setIsDesktopExpanded(false);
           }
         }}
-        className={`hidden h-10 shrink-0 cursor-pointer items-center gap-1.5 overflow-hidden rounded-full border border-stone-200 bg-white/70 px-2.5 text-[#1A3C34] transition-[max-width,background-color] duration-300 hover:bg-stone-50 lg:flex whitespace-nowrap ${
+        className={`hidden h-10 shrink-0 cursor-pointer items-center gap-1.5 overflow-hidden rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_70%,transparent)] px-2.5 text-[var(--text)] transition-[max-width,background-color] duration-300 hover:bg-[var(--muted)] lg:flex whitespace-nowrap ${
           isDesktopExpanded ? 'max-w-[240px]' : 'max-w-[180px]'
         }`}
       >
@@ -615,13 +619,13 @@ function DeliveryProvincePicker({
   }
 
   return (
-    <section className="rounded-2xl border border-stone-200 bg-[#F9F5F0] p-4">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--pastel-cream)] p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#C5A059] shadow-sm">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[#C5A059] shadow-sm">
           <MapIcon size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
             {copy.current}
           </p>
           {select}

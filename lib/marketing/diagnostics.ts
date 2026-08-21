@@ -7,6 +7,7 @@ import { fetchAdsOverview } from './googleAdsClient';
 import { resolveDateRange } from './metrics';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import type { DiagnosticsMetrics, DiagnosticsReport } from './types';
+import { fetchFirstPartyAttributionReport } from '@/lib/attribution/reporting';
 
 export { buildDiagnosticsVerdict } from './diagnosticsVerdict';
 
@@ -32,12 +33,13 @@ export async function fetchDiagnosticsReport(
     throw new Error('GA4 is not configured');
   }
 
-  const [funnel, orderStats, adsResult] = await Promise.all([
+  const [funnel, orderStats, adsResult, firstParty] = await Promise.all([
     fetchFunnelReport(days),
     getPaidOrderStats(dateFrom, dateTo),
     googleAds
       ? fetchAdsOverview(days).catch(() => null)
       : Promise.resolve(null),
+    fetchFirstPartyAttributionReport(dateFrom, dateTo),
   ]);
 
   let adsConversions: number | null = null;
@@ -82,5 +84,6 @@ export async function fetchDiagnosticsReport(
     verdict,
     checks,
     configured: { ga4, googleAds, supabase },
+    firstParty,
   };
 }

@@ -50,6 +50,12 @@ export async function runStripePostPaymentSuccessHooks(params: {
         ? 'system:sync_checkout'
         : 'system:order_status';
 
+  void import('@/lib/attribution/enqueue').then(({ enqueueGoogleAdsOfflineConversion }) =>
+    enqueueGoogleAdsOfflineConversion(orderId).catch((e) =>
+      console.error('[stripe/postPayment] enqueueGoogleAdsOfflineConversion error:', e),
+    ),
+  );
+
   void import('@/lib/accounting/upsertOrderIncome').then(({ upsertOrderIncome }) =>
     upsertOrderIncome({
       orderId,

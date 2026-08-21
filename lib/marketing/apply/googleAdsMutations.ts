@@ -1,25 +1,8 @@
 import 'server-only';
 
-import { GoogleAdsApi, enums } from 'google-ads-api';
-import { getGoogleAdsConfig } from '../config';
+import { enums } from 'google-ads-api';
+import { createGoogleAdsCustomer } from '../googleAdsCustomer';
 import type { MarketingRecommendation } from '../types';
-
-function getCustomer() {
-  const config = getGoogleAdsConfig();
-  if (!config) throw new Error('Google Ads is not configured');
-
-  const client = new GoogleAdsApi({
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    developer_token: config.developerToken,
-  });
-
-  return client.Customer({
-    customer_id: config.customerId,
-    refresh_token: config.refreshToken,
-    login_customer_id: config.loginCustomerId,
-  });
-}
 
 function matchTypeEnum(matchType: string | undefined): number {
   const upper = (matchType ?? 'PHRASE').toUpperCase();
@@ -36,7 +19,7 @@ export async function applyRecommendationToGoogleAds(
     return { resourceNames: [`dry-run:${rec.actionType}`], dryRun: true };
   }
 
-  const customer = getCustomer();
+  const { customer, config } = await createGoogleAdsCustomer();
   const resourceNames: string[] = [];
 
   switch (rec.actionType) {
@@ -46,7 +29,7 @@ export async function applyRecommendationToGoogleAds(
       if (!keywordText) throw new Error('Missing keyword text for negative keyword');
       if (!campaignId) throw new Error('Missing campaign ID for negative keyword');
 
-      const campaignResource = `customers/${getGoogleAdsConfig()!.customerId}/campaigns/${campaignId}`;
+      const campaignResource = `customers/${config.customerId}/campaigns/${campaignId}`;
       const result = await customer.campaignCriteria.create([
         {
           campaign: campaignResource,
@@ -68,7 +51,7 @@ export async function applyRecommendationToGoogleAds(
       if (!adGroupId || !criterionId) {
         throw new Error('Missing ad group or criterion ID — pause keyword requires manual setup in Google Ads.');
       }
-      const resourceName = `customers/${getGoogleAdsConfig()!.customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
+      const resourceName = `customers/${config.customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
       await customer.adGroupCriteria.update([
         {
           resource_name: resourceName,

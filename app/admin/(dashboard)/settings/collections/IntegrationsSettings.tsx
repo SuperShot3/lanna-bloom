@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import type { MarketingConfigStatus } from '@/lib/marketing/types';
+import { GoogleAdsReconnectBlock } from '@/app/admin/components/GoogleAdsReconnectBlock';
 import { IntegrationStatusBadge } from './IntegrationStatusBadge';
 
 const INTEGRATIONS: {
-  key: keyof MarketingConfigStatus;
+  key: Exclude<keyof MarketingConfigStatus, 'googleAdsOAuth'>;
   name: string;
   powers: string;
   envVars: string;
@@ -43,6 +44,8 @@ const INTEGRATIONS: {
 export function IntegrationsSettings() {
   const [config, setConfig] = useState<MarketingConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [reconnectError, setReconnectError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/marketing/status')
@@ -51,6 +54,17 @@ export function IntegrationsSettings() {
         if (data?.config) setConfig(data.config);
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google_ads') === 'connected') {
+      setNotice('Google Ads reconnected. Open Marketing Insights → Google Ads to load campaigns.');
+    } else if (params.get('google_ads') === 'error') {
+      setReconnectError(
+        `Google Ads reconnect failed (${params.get('reason') ?? 'unknown'}). Check the redirect URI in Google Cloud, then try again.`,
+      );
+    }
   }, []);
 
   return (
@@ -105,6 +119,34 @@ export function IntegrationsSettings() {
           Cloud and link Ads conversion tracking to GA4.
         </li>
       </ul>
+
+      {notice && (
+        <p style={{ marginTop: 16, color: '#166534' }}>{notice}</p>
+      )}
+      {reconnectError && (
+        <p className="admin-error" style={{ marginTop: 16 }}>
+          {reconnectError}
+        </p>
+      )}
+
+      {config?.googleAdsOAuth?.ready && (
+        <div style={{ marginTop: 20 }}>
+          <h3 className="admin-accounting-info-heading" style={{ fontSize: '0.98rem' }}>
+            Google Ads reconnect
+          </h3>
+          <p className="admin-hint" style={{ marginTop: 0 }}>
+            Use this when the Google Ads tab shows <code>invalid_grant</code>. That means the OAuth refresh
+            token expired or was revoked.
+            {config.googleAdsOAuth.connectedAt
+              ? ` Last reconnect: ${new Date(config.googleAdsOAuth.connectedAt).toLocaleString()}.`
+              : ''}
+          </p>
+          <GoogleAdsReconnectBlock
+            returnTo="settings"
+            redirectUri={config.googleAdsOAuth.redirectUri}
+          />
+        </div>
+      )}
     </section>
   );
 }

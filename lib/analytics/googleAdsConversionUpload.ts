@@ -1,13 +1,14 @@
 import 'server-only';
 
 import { createHash } from 'crypto';
-import { GoogleAdsApi, services } from 'google-ads-api';
+import { services } from 'google-ads-api';
 import { getOrderById } from '@/lib/orders';
 import {
   type OrderLikeForPurchase,
   purchaseValueAndCurrencyFromOrder,
 } from '@/lib/analytics/buildPurchaseItemsFromOrder';
-import { getGoogleAdsConfig, isGoogleAdsConfigured } from '@/lib/marketing/config';
+import { isGoogleAdsConfigured } from '@/lib/marketing/config';
+import { createGoogleAdsCustomer } from '@/lib/marketing/googleAdsCustomer';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { isSupabaseMissingColumnError } from '@/lib/supabase/columnErrors';
 
@@ -278,22 +279,14 @@ async function sendClickConversionUpload(input: {
   clickId: ReturnType<typeof resolveSingleClickId>;
   userIdentifiers: ReturnType<typeof buildUserIdentifiers>;
 }): Promise<{ ok: true } | { ok: false; error: string; retryable: boolean }> {
-  const config = getGoogleAdsConfig();
-  if (!config) {
-    return { ok: false, error: 'Google Ads is not configured', retryable: false };
+  let customer;
+  let config;
+  try {
+    ({ customer, config } = await createGoogleAdsCustomer());
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: message, retryable: false };
   }
-
-  const client = new GoogleAdsApi({
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    developer_token: config.developerToken,
-  });
-
-  const customer = client.Customer({
-    customer_id: config.customerId,
-    refresh_token: config.refreshToken,
-    login_customer_id: config.loginCustomerId,
-  });
 
   const conversion: services.IClickConversion = {
     conversion_action: input.conversionAction,

@@ -70,10 +70,10 @@ export function CookieConsentBanner({ lang }: { lang: Locale }) {
           width: fit-content;
           max-width: calc(100% - 1.5rem);
           padding: 0.4375rem 0.5rem 0.4375rem 0.5625rem;
-          background: rgba(253, 252, 248, 0.97);
+          background: color-mix(in srgb, var(--bg) 97%, transparent);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
-          border: 1px solid rgba(87, 83, 78, 0.15);
+          border: 1px solid var(--border);
           border-radius: 0.5rem;
           box-shadow: 0 4px 20px rgba(26, 60, 52, 0.1);
         }
@@ -95,7 +95,7 @@ export function CookieConsentBanner({ lang }: { lang: Locale }) {
           margin: 0;
           font-size: 0.6875rem;
           line-height: 1.35;
-          color: #57534e;
+          color: var(--text-muted);
         }
 
         .cookie-consent-banner__links {
@@ -120,13 +120,13 @@ export function CookieConsentBanner({ lang }: { lang: Locale }) {
         }
 
         .cookie-consent-banner__btn--accept {
-          background: #1a3c34;
-          color: #fff;
-          border-color: #1a3c34;
+          background: var(--primary);
+          color: var(--primary-foreground);
+          border-color: var(--primary);
         }
 
         .cookie-consent-banner__btn--accept:hover {
-          background: #0f2e28;
+          filter: brightness(0.92);
         }
 
         @media (min-width: 768px) {
