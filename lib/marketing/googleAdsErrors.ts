@@ -8,49 +8,59 @@ export interface GoogleAdsApiErrorView {
   canReconnect: boolean;
 }
 
+const LIBRARY_PARSER_BUG =
+  /cannot read propert(?:y|ies) of undefined \(reading ['"](?:get|details)['"]\)/i;
+
+function pushUnique(parts: string[], value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || parts.includes(trimmed)) return;
+  parts.push(trimmed);
+}
+
+function collectFromUnknown(value: unknown, parts: string[], depth: number) {
+  if (value == null || depth > 4) return;
+  if (typeof value === 'string') {
+    pushUnique(parts, value);
+    return;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') return;
+  if (value instanceof Error) {
+    pushUnique(parts, value.message);
+    collectFromUnknown((value as Error & { cause?: unknown }).cause, parts, depth + 1);
+    collectFromUnknown((value as Error & { response?: unknown }).response, parts, depth + 1);
+    collectFromUnknown((value as Error & { error?: unknown }).error, parts, depth + 1);
+    return;
+  }
+  if (typeof value === 'object') {
+    const rec = value as Record<string, unknown>;
+    for (const key of ['error', 'error_description', 'message', 'status', 'data', 'details']) {
+      if (key in rec) collectFromUnknown(rec[key], parts, depth + 1);
+    }
+    if ('response' in rec) collectFromUnknown(rec.response, parts, depth + 1);
+  }
+}
+
 function collectErrorText(error: unknown): string {
-  if (error == null) return '';
-  if (typeof error === 'string') return error;
-  if (error instanceof Error) {
-    const extra = error as Error & {
-      response?: { data?: unknown };
-      error?: unknown;
-      errors?: unknown;
-    };
-    const parts = [error.message];
-    if (extra.response?.data != null) {
-      parts.push(
-        typeof extra.response.data === 'string'
-          ? extra.response.data
-          : JSON.stringify(extra.response.data),
-      );
-    }
-    if (extra.error != null) {
-      parts.push(typeof extra.error === 'string' ? extra.error : JSON.stringify(extra.error));
-    }
-    return parts.join(' ');
-  }
-  if (typeof error === 'object') {
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return String(error);
-    }
-  }
-  return String(error);
+  const parts: string[] = [];
+  collectFromUnknown(error, parts, 0);
+  return parts.join(' ');
 }
 
 export function isGoogleAdsInvalidGrant(error: unknown): boolean {
   return /invalid_grant/i.test(collectErrorText(error));
 }
 
+export function isGoogleAdsLibraryParserBug(error: unknown): boolean {
+  return LIBRARY_PARSER_BUG.test(collectErrorText(error));
+}
+
 export function formatGoogleAdsApiError(error: unknown): GoogleAdsApiErrorView {
-  if (isGoogleAdsInvalidGrant(error)) {
+  if (isGoogleAdsInvalidGrant(error) || isGoogleAdsLibraryParserBug(error)) {
     return {
       message:
         'Google Ads access expired (invalid_grant). Reconnect Google Ads to create a new refresh token.',
       code: GOOGLE_ADS_INVALID_GRANT_CODE,
-      hint: 'OAuth refresh tokens expire after 7 days while the Google Cloud OAuth app is in Testing. Reconnect, then set the consent screen to In production so it does not expire again.',
+      hint: 'The Google Ads library hid the real OAuth error as “Cannot read properties of undefined (reading get)”. That almost always means the refresh token is expired or revoked. Reconnect, then set the OAuth consent screen to In production so it does not expire again in 7 days.',
       status: 502,
       canReconnect: true,
     };

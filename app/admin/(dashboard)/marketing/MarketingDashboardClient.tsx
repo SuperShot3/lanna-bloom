@@ -167,7 +167,11 @@ export function MarketingDashboardClient() {
       const data = await res.json();
       if (!res.ok) {
         setErrorHint(typeof data.hint === 'string' ? data.hint : null);
-        setCanReconnectAds(data.canReconnect === true || data.code === 'GOOGLE_ADS_INVALID_GRANT');
+        setCanReconnectAds(
+          data.canReconnect === true ||
+            data.code === 'GOOGLE_ADS_INVALID_GRANT' ||
+            /invalid_grant|reading ['"]get['"]/i.test(String(data.error ?? '')),
+        );
         throw new Error(data.error ?? 'Failed to load ads');
       }
       setOverview(data.overview);
@@ -240,7 +244,11 @@ export function MarketingDashboardClient() {
       const data = await res.json();
       if (!res.ok) {
         setErrorHint(typeof data.hint === 'string' ? data.hint : null);
-        setCanReconnectAds(data.canReconnect === true || data.code === 'GOOGLE_ADS_INVALID_GRANT');
+        setCanReconnectAds(
+          data.canReconnect === true ||
+            data.code === 'GOOGLE_ADS_INVALID_GRANT' ||
+            /invalid_grant|reading ['"]get['"]/i.test(String(data.error ?? '')),
+        );
         throw new Error(data.error ?? 'Generation failed');
       }
       await loadRecommendations();

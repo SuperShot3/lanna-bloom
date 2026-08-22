@@ -31,6 +31,14 @@ assert(sanitizeEnvSecret(undefined) === undefined, 'undefined stays undefined');
 }
 
 {
+  const mapped = formatGoogleAdsApiError(
+    new TypeError("Cannot read properties of undefined (reading 'get')"),
+  );
+  assert(mapped.code === GOOGLE_ADS_INVALID_GRANT_CODE, 'maps library parser crash to reconnect');
+  assert(mapped.canReconnect === true, 'parser crash can reconnect');
+}
+
+{
   const mapped = formatGoogleAdsApiError(new Error('CUSTOMER_NOT_FOUND'));
   assert(mapped.canReconnect === false, 'other errors are not reconnectable');
   assert(mapped.message.includes('CUSTOMER_NOT_FOUND'), 'keeps original message');
