@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDaysParam, requireMarketingView } from '@/lib/marketing/adminApi';
 import { isGoogleAdsConfigured } from '@/lib/marketing/config';
-import { formatGoogleAdsApiError } from '@/lib/marketing/googleAdsErrors';
+import { formatGoogleAdsApiError, debugGoogleAdsError } from '@/lib/marketing/googleAdsErrors';
 import { fetchAdsOverview } from '@/lib/marketing/googleAdsClient';
 
 export async function GET(request: NextRequest) {
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         code: mapped.code,
         hint: mapped.hint,
         canReconnect: mapped.canReconnect,
+        debug: debugGoogleAdsError(error),
       },
       { status: mapped.status },
     );

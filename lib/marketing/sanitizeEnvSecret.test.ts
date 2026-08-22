@@ -40,8 +40,27 @@ assert(sanitizeEnvSecret(undefined) === undefined, 'undefined stays undefined');
 
 {
   const mapped = formatGoogleAdsApiError(new Error('CUSTOMER_NOT_FOUND'));
+  assert(mapped.canReconnect === true, 'customer not found can reconnect');
+  assert(mapped.code === 'GOOGLE_ADS_PERMISSION', 'maps permission code');
+}
+
+{
+  const mapped = formatGoogleAdsApiError({
+    errors: [
+      {
+        error_code: { authorization_error: 'USER_PERMISSION_DENIED' },
+        message: "User doesn't have permission to access customer.",
+      },
+    ],
+  });
+  assert(mapped.message.includes('USER_PERMISSION_DENIED'), 'reads GoogleAdsFailure errors[]');
+  assert(mapped.canReconnect === true, 'permission error can reconnect');
+}
+
+{
+  const mapped = formatGoogleAdsApiError(new Error('some unrelated ads query failed'));
   assert(mapped.canReconnect === false, 'other errors are not reconnectable');
-  assert(mapped.message.includes('CUSTOMER_NOT_FOUND'), 'keeps original message');
+  assert(mapped.message.includes('some unrelated ads query failed'), 'keeps original message');
 }
 
 console.log('sanitizeEnvSecret + googleAdsErrors tests passed');
