@@ -5,12 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import type { CartItem } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
+import type { RecoveredCartForm } from '@/lib/checkout/recoveredCartForm';
 import { translations, type Locale } from '@/lib/i18n';
 
-/** Load cart items from `?share=` token once after cart hydration. */
-export function useSharedCartImport(lang: Locale) {
+/** Load cart items + optional form from `?share=` token once after cart hydration. */
+export function useSharedCartImport(
+  lang: Locale,
+  applyForm: (form: RecoveredCartForm) => void
+) {
   const router = useRouter();
-  const { items, hydrated, replaceItems } = useCart();
+  const { items, hydrated, replaceItems, setOrderGiftCardMessages } = useCart();
   const { showToast } = useToast();
   const t = translations[lang].cart;
   const importedRef = useRef(false);
@@ -34,8 +38,18 @@ export function useSharedCartImport(lang: Locale) {
           return;
         }
 
-        const data = (await res.json()) as { items?: CartItem[] };
+        const data = (await res.json()) as {
+          items?: CartItem[];
+          form?: RecoveredCartForm | null;
+          giftCardMessages?: string[] | null;
+        };
         const newItems = Array.isArray(data.items) ? data.items : [];
+
+        if (newItems.length === 0) {
+          showToast(t.sharedCartInvalid);
+          router.replace(`/${lang}/cart`);
+          return;
+        }
 
         if (items.length > 0) {
           const ok = window.confirm(t.sharedCartReplaceConfirm);
@@ -46,6 +60,12 @@ export function useSharedCartImport(lang: Locale) {
         }
 
         replaceItems(newItems);
+        if (Array.isArray(data.giftCardMessages)) {
+          setOrderGiftCardMessages(data.giftCardMessages);
+        }
+        if (data.form && typeof data.form === 'object' && data.form.delivery) {
+          applyForm(data.form);
+        }
         showToast(t.sharedCartLoaded);
         router.replace(`/${lang}/cart`);
       } catch {
@@ -53,5 +73,15 @@ export function useSharedCartImport(lang: Locale) {
         router.replace(`/${lang}/cart`);
       }
     })();
-  }, [hydrated, items.length, lang, replaceItems, router, showToast, t]);
+  }, [
+    applyForm,
+    hydrated,
+    items.length,
+    lang,
+    replaceItems,
+    setOrderGiftCardMessages,
+    router,
+    showToast,
+    t,
+  ]);
 }

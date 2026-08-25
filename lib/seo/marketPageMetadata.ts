@@ -3,6 +3,7 @@ import type { Locale } from '@/lib/i18n';
 import type { MarketRegistryEntry } from '@/lib/delivery/markets';
 import { marketIsIndexable } from '@/lib/delivery/markets';
 import { buildAlternates } from '@/lib/seo/alternates';
+import { marketShareImages } from '@/lib/seo/marketShareImages';
 import {
   defaultShareImages,
   openGraphLocale,
@@ -144,7 +145,21 @@ export function buildMarketPageMetadata(params: {
     typeof alternates.canonical === 'string' ? alternates.canonical : undefined;
 
   const indexable = marketIsIndexable(params.market);
+  const cityShare =
+    !params.ogImage &&
+    (params.kind === 'landing' || params.kind === 'catalog')
+      ? marketShareImages(params.market, params.lang)
+      : undefined;
   const ogImage = params.ogImage;
+  const shareImages = ogImage
+    ? [
+        {
+          url: ogImage.url,
+          secureUrl: ogImage.url,
+          ...(ogImage.alt ? { alt: ogImage.alt } : {}),
+        },
+      ]
+    : cityShare ?? defaultShareImages();
 
   return {
     title,
@@ -158,20 +173,12 @@ export function buildMarketPageMetadata(params: {
       description,
       url: canonical ?? String(alternates.canonical ?? ''),
       locale: openGraphLocale(params.lang),
-      images: ogImage
-        ? [
-            {
-              url: ogImage.url,
-              secureUrl: ogImage.url,
-              ...(ogImage.alt ? { alt: ogImage.alt } : {}),
-            },
-          ]
-        : defaultShareImages(),
+      images: shareImages,
     }),
     twitter: websiteTwitter({
       title,
       description,
-      imageUrl: ogImage?.url,
+      imageUrl: ogImage?.url ?? cityShare?.[0]?.url,
     }),
   };
 }

@@ -33,8 +33,8 @@ import type { AnalyticsItem } from '@/lib/analytics';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
-import { getNavMarkets, parseDeliveryDestinationId, type DeliveryDestinationId } from '@/lib/delivery/markets';
-import { clearMarketSession, writeMarketSession } from '@/lib/delivery/marketSession';
+import { parseDeliveryDestinationId, type DeliveryDestinationId } from '@/lib/delivery/markets';
+import { applyDestinationToMarketSession } from '@/lib/delivery/marketSession';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
@@ -852,19 +852,13 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   useEffect(() => {
     const next = checkoutDeliveryProfile.destinationId;
     const prev = prevCheckoutDestinationRef.current;
-    if (prev === null) {
-      prevCheckoutDestinationRef.current = next;
-      setDelivery((d) => {
-        if (d.deliveryDestination === next) return d;
-        return { ...d, deliveryDestination: next, deliveryZoneId: '' };
-      });
-      return;
-    }
-    if (prev !== next) {
-      prevCheckoutDestinationRef.current = next;
-      setDelivery((d) => ({ ...d, deliveryDestination: next, deliveryZoneId: '' }));
-      if (items.length > 0) setDestinationChangeNotice(true);
-    }
+    if (prev === next) return;
+    prevCheckoutDestinationRef.current = next;
+    setDelivery((d) => {
+      if (d.deliveryDestination === next) return d;
+      return { ...d, deliveryDestination: next, deliveryZoneId: '' };
+    });
+    if (prev !== null && items.length > 0) setDestinationChangeNotice(true);
   }, [checkoutDeliveryProfile.destinationId, items.length]);
 
   useEffect(() => {
@@ -955,19 +949,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   );
 
   const handleDeliveryDestinationChange = useCallback((nextDestination: DeliveryDestinationId) => {
-    if (nextDestination === 'CHIANG_MAI') {
-      clearMarketSession();
-      return;
-    }
-    const market = getNavMarkets().find((m) => m.destinationId === nextDestination);
-    if (!market) {
-      clearMarketSession();
-      return;
-    }
-    writeMarketSession({
-      destinationId: market.destinationId,
-      pathSlug: market.pathSlug,
-    });
+    applyDestinationToMarketSession(nextDestination);
   }, []);
 
   const [placing, setPlacing] = useState(false);
@@ -996,7 +978,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   );
 
   const applyRecoveredForm = useCallback((form: RecoveredCartForm) => {
-    setDelivery(sanitizeDeliveryFormValues(form.delivery));
+    const dest =
+      parseDeliveryDestinationId(form.delivery.deliveryDestination) ?? 'CHIANG_MAI';
+    const nextDelivery = sanitizeDeliveryFormValues({
+      ...form.delivery,
+      deliveryDestination: dest,
+    });
+    prevCheckoutDestinationRef.current = dest;
+    setDelivery(nextDelivery);
+    applyDestinationToMarketSession(dest);
     setCustomerName(clipCheckoutField(form.customerName ?? '', 'customerName'));
     setCustomerEmail(clipCheckoutField(form.customerEmail ?? '', 'customerEmail'));
     setCountryCode(form.countryCode || '66');
@@ -1018,7 +1008,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     setMarketingEmailConsent(form.marketingEmailConsent === true);
     setCheckoutRecoveryEmailConsent(form.checkoutRecoveryEmailConsent === true);
     saveCartFormToStorage({
-      delivery: sanitizeDeliveryFormValues(form.delivery),
+      delivery: nextDelivery,
       customerName: clipCheckoutField(form.customerName ?? '', 'customerName'),
       customerEmail: clipCheckoutField(form.customerEmail ?? '', 'customerEmail'),
       countryCode: form.countryCode || '66',
@@ -1042,7 +1032,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, []);
 
   useCheckoutRecoveryImport(lang, applyRecoveredForm);
-  useSharedCartImport(lang);
+  useSharedCartImport(lang, applyRecoveredForm);
 
   const [noCardMessage, setNoCardMessage] = useState(false);
   const [highlightSection, setHighlightSection] = useState<CheckoutSectionId | null>(null);
@@ -2032,7 +2022,27 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             <ArrowLeftIcon width={18} height={18} aria-hidden />
             <span>{t.backToShop}</span>
           </Link>
-          <CartShareButton items={items} lang={lang} />
+          <CartShareButton
+            items={items}
+            lang={lang}
+            form={{
+              delivery,
+              customerName,
+              customerEmail,
+              countryCode,
+              phoneNational,
+              recipientName,
+              recipientCountryCode,
+              recipientPhoneNational,
+              contactPreference,
+              lineId,
+              isOrderingForSomeoneElse,
+              surpriseDelivery,
+              marketingEmailConsent,
+              checkoutRecoveryEmailConsent,
+            }}
+            giftCardMessages={giftCardMessages}
+          />
         </div>
         {destinationChangeNotice && (
           <p className="cart-destination-notice" role="status">

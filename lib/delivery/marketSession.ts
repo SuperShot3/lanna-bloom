@@ -3,8 +3,12 @@
  * after navigating away from market layouts.
  */
 
-import type { DeliveryDestinationId } from '@/lib/delivery/markets';
-import type { MarketPathSlug } from '@/lib/delivery/markets';
+import {
+  getMarketByDestinationId,
+  marketIsNavSelectable,
+  type DeliveryDestinationId,
+  type MarketPathSlug,
+} from '@/lib/delivery/markets';
 
 export const MARKET_SESSION_STORAGE_KEY = 'lanna-bloom-delivery-market';
 
@@ -65,4 +69,21 @@ export function clearMarketSession(): void {
   } catch {
     // ignore
   }
+}
+
+/** Apply a shared/recovered destination so cart dropdowns match the snapshot city. */
+export function applyDestinationToMarketSession(destinationId: DeliveryDestinationId): void {
+  if (destinationId === 'CHIANG_MAI') {
+    clearMarketSession();
+    return;
+  }
+  const market = getMarketByDestinationId(destinationId);
+  if (!market || !marketIsNavSelectable(market)) {
+    clearMarketSession();
+    return;
+  }
+  writeMarketSession({
+    destinationId: market.destinationId,
+    pathSlug: market.pathSlug,
+  });
 }

@@ -3,6 +3,9 @@
  * Wired via npm run test:seo
  */
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import type { Metadata } from 'next';
 import {
   ARTICLE_SEO_LOCALES,
   articlePageRobots,
@@ -18,14 +21,17 @@ import {
 import { locales } from '@/lib/i18n';
 import {
   getActiveMarkets,
+  getMarketByPathSlug,
   MARKETS,
   marketIsIndexable,
   marketIsRouteAvailable,
   marketIsSitemapEnabled,
   type MarketRegistryEntry,
 } from '@/lib/delivery/markets';
+import { articleShareImages, MARKET_SHARE_ARTICLE_SLUG } from './marketShareImages';
 import { buildMarketPageMetadata } from './marketPageMetadata';
 import { resolveProductOgImage } from './productJsonLd';
+import { DEFAULT_SHARE_IMAGE_PATH } from './shareMetadata';
 import { articles } from '@/app/[lang]/info/_data/articles';
 import { getCollectionLandingPages } from '@/lib/landingPages/collectionLandingPages';
 
@@ -204,6 +210,107 @@ function assertMarketMetadataCity(market: MarketRegistryEntry) {
 
 for (const market of getActiveMarkets()) {
   assertMarketMetadataCity(market);
+}
+
+function firstOgImageUrl(meta: Metadata): string {
+  const images = meta.openGraph?.images;
+  if (!images) return '';
+  const first = Array.isArray(images) ? images[0] : images;
+  if (typeof first === 'string') return first;
+  if (first && typeof first === 'object' && 'url' in first) {
+    return String(first.url);
+  }
+  return '';
+}
+
+function firstOgImageAlt(meta: Metadata): string {
+  const images = meta.openGraph?.images;
+  if (!images) return '';
+  const first = Array.isArray(images) ? images[0] : images;
+  if (first && typeof first === 'object' && 'alt' in first) {
+    return String(first.alt ?? '');
+  }
+  return '';
+}
+
+// --- City share images: landing + catalog use article-cover JPEGs ---
+{
+  for (const [pathSlug, articleSlug] of Object.entries(MARKET_SHARE_ARTICLE_SLUG)) {
+    const jpeg = path.join(process.cwd(), 'public', 'og', `${pathSlug}.jpg`);
+    assert.ok(existsSync(jpeg), `Missing city OG JPEG: ${jpeg}`);
+    const article = articles.find((a) => a.slug === articleSlug);
+    assert.ok(article, `Missing share article ${articleSlug} for ${pathSlug}`);
+    assert.equal(article!.cover.type, 'image');
+  }
+
+  const bangkok = getMarketByPathSlug('bangkok');
+  const pattaya = getMarketByPathSlug('pattaya');
+  const krabi = getMarketByPathSlug('krabi');
+  if (!bangkok || !pattaya || !krabi) fail('Expected bangkok, pattaya, and krabi markets');
+
+  for (const kind of ['landing', 'catalog'] as const) {
+    const bangkokMeta = buildMarketPageMetadata({
+      lang: 'en',
+      market: bangkok,
+      kind,
+    });
+    const bangkokUrl = firstOgImageUrl(bangkokMeta);
+    assert.ok(
+      bangkokUrl.includes('/og/bangkok.jpg'),
+      `${kind} Bangkok OG must use city JPEG: ${bangkokUrl}`
+    );
+    assert.ok(
+      !bangkokUrl.includes('lanna-bloom.jpg'),
+      `${kind} Bangkok OG must not use Chiang Mai default: ${bangkokUrl}`
+    );
+    const bangkokAlt = firstOgImageAlt(bangkokMeta);
+    assert.ok(/Bangkok/i.test(bangkokAlt), `${kind} Bangkok OG alt: ${bangkokAlt}`);
+    assert.ok(
+      !/Chiang Mai|เชียงใหม่/i.test(bangkokAlt),
+      `${kind} Bangkok OG alt must not say Chiang Mai: ${bangkokAlt}`
+    );
+
+    const pattayaMeta = buildMarketPageMetadata({
+      lang: 'en',
+      market: pattaya,
+      kind,
+    });
+    const pattayaUrl = firstOgImageUrl(pattayaMeta);
+    assert.ok(
+      pattayaUrl.includes('/og/pattaya.jpg'),
+      `${kind} Pattaya OG must use city JPEG: ${pattayaUrl}`
+    );
+
+    const krabiMeta = buildMarketPageMetadata({
+      lang: 'en',
+      market: krabi,
+      kind,
+    });
+    const krabiUrl = firstOgImageUrl(krabiMeta);
+    assert.ok(
+      krabiUrl.includes(DEFAULT_SHARE_IMAGE_PATH),
+      `${kind} Krabi OG stays on default until a cover exists: ${krabiUrl}`
+    );
+  }
+
+  const productMeta = buildMarketPageMetadata({
+    lang: 'en',
+    market: bangkok,
+    kind: 'product',
+    productName: 'Roses',
+    productSlug: 'red-roses',
+    ogImage: { url: 'https://cdn.example.com/roses.webp', alt: 'Roses' },
+  });
+  const productUrl = firstOgImageUrl(productMeta);
+  assert.ok(
+    productUrl.includes('cdn.example.com/roses.webp'),
+    `Product OG must keep bouquet photo: ${productUrl}`
+  );
+  assert.ok(!productUrl.includes('/og/bangkok.jpg'));
+
+  const articleOg = articleShareImages('flower-delivery-bangkok', 'en');
+  assert.ok(articleOg?.[0]?.url.includes('/og/bangkok.jpg'));
+  assert.equal(articleShareImages('same-day-flower-delivery-chiang-mai', 'en'), undefined);
 }
 
 // --- Sitemap eligibility invariants ---

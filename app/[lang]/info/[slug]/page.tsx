@@ -8,6 +8,7 @@ import { getBaseUrl } from '@/lib/orders';
 import { getLineContactUrl } from '@/lib/messenger';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 import { articlePageRobots, buildArticleAlternates } from '@/lib/seo/alternates';
+import { articleShareImages } from '@/lib/seo/marketShareImages';
 import { defaultShareImages, websiteTwitter } from '@/lib/seo/shareMetadata';
 import { getArticleBySlug, getArticleTitle, getArticleExcerpt, getArticleCoverAlt, getArticleCtaLinks } from '../_data/articles';
 import { isCommercialIntentSlug } from '@/lib/landingPages/intentLandingPages';
@@ -77,12 +78,16 @@ export async function generateMetadata({
       : `${base}/${lang}${pathSuffix}`;
   const title = getArticleTitle(article, lang);
   const description = getArticleExcerpt(article, lang);
+  const cityShare = articleShareImages(slug, lang);
   const coverImage =
-    article.cover?.type === 'image' ? `${base}${article.cover.src}` : undefined;
-  const coverAlt = getArticleCoverAlt(article, lang);
-  const ogImages = coverImage
-    ? [{ url: coverImage, ...(coverAlt ? { alt: coverAlt } : {}) }]
-    : defaultShareImages();
+    cityShare?.[0]?.url ??
+    (article.cover?.type === 'image' ? `${base}${article.cover.src}` : undefined);
+  const coverAlt = cityShare?.[0]?.alt ?? getArticleCoverAlt(article, lang);
+  const ogImages = cityShare
+    ? cityShare
+    : coverImage
+      ? [{ url: coverImage, ...(coverAlt ? { alt: coverAlt } : {}) }]
+      : defaultShareImages();
   const robots = articlePageRobots(lang, article.noindex);
   return {
     title: `${title} | Lanna Bloom`,

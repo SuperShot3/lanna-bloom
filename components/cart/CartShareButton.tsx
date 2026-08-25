@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { CartItem } from '@/contexts/CartContext';
+import type { RecoveredCartForm } from '@/lib/checkout/recoveredCartForm';
 import { useToast } from '@/contexts/ToastContext';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -9,14 +10,21 @@ import { translations } from '@/lib/i18n';
 export function CartShareButton({
   items,
   lang,
+  form,
+  giftCardMessages,
 }: {
   items: CartItem[];
   lang: Locale;
+  form: RecoveredCartForm;
+  giftCardMessages: string[];
 }) {
   const { showToast } = useToast();
   const t = translations[lang].cart;
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const lastSnapshotKeyRef = useRef<string | null>(null);
+
+  const snapshotKey = JSON.stringify({ items, form, giftCardMessages, locale: lang });
 
   const shareOrCopy = useCallback(
     async (url: string) => {
@@ -46,7 +54,7 @@ export function CartShareButton({
   const handleClick = async () => {
     if (loading) return;
 
-    if (shareUrl) {
+    if (shareUrl && lastSnapshotKeyRef.current === snapshotKey) {
       await shareOrCopy(shareUrl);
       return;
     }
@@ -56,7 +64,12 @@ export function CartShareButton({
       const res = await fetch('/api/cart/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, locale: lang }),
+        body: JSON.stringify({
+          items,
+          locale: lang,
+          form,
+          giftCardMessages,
+        }),
       });
       if (!res.ok) {
         showToast(t.shareCartFailed);
@@ -68,6 +81,7 @@ export function CartShareButton({
         showToast(t.shareCartFailed);
         return;
       }
+      lastSnapshotKeyRef.current = snapshotKey;
       setShareUrl(url);
       await shareOrCopy(url);
     } catch {

@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
     const result = await createSharedCart({
       items: b.items,
       locale: shareLocale,
+      form: b.form,
+      giftCardMessages: b.giftCardMessages,
     });
     return NextResponse.json(
       { url: result.url, expiresAt: result.expiresAt },
@@ -89,7 +91,12 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(
-    { items: payload.items, locale: payload.locale },
+    {
+      items: payload.items,
+      locale: payload.locale,
+      form: payload.form,
+      giftCardMessages: payload.giftCardMessages,
+    },
     { status: 200, headers: NO_STORE }
   );
 }

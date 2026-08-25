@@ -37,8 +37,9 @@ export function defaultShareImageUrl(): string {
   return absoluteSiteUrl(DEFAULT_SHARE_IMAGE_PATH);
 }
 
-export function defaultShareImages(alt?: string): ShareOgImage[] {
-  const url = defaultShareImageUrl();
+/** Landscape JPEG share card at the site-wide OG size (WhatsApp / LINE / iMessage). */
+export function shareImagesFromPath(path: string, alt?: string): ShareOgImage[] {
+  const url = absoluteSiteUrl(path);
   return [
     {
       url,
@@ -49,6 +50,10 @@ export function defaultShareImages(alt?: string): ShareOgImage[] {
       alt: alt?.trim() || DEFAULT_SHARE_IMAGE_ALT,
     },
   ];
+}
+
+export function defaultShareImages(alt?: string): ShareOgImage[] {
+  return shareImagesFromPath(DEFAULT_SHARE_IMAGE_PATH, alt);
 }
 
 export function websiteOpenGraph(opts: {
