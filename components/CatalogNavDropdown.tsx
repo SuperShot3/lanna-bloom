@@ -64,18 +64,20 @@ export function CatalogNavDropdown({
   catalogHref,
   label,
   pathActive = false,
+  onOpenChange,
 }: {
   lang: Locale;
   catalogHref: string;
   label: string;
   /** True when the current path is under /catalog (ignoring query). */
   pathActive?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const activeId = useActiveCatalogNavId();
   const active = pathActive && activeId != null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

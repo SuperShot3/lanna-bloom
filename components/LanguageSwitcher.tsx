@@ -50,11 +50,13 @@ export function LanguageSwitcher({
   pathBase,
   variant = 'cycle',
   onNavigate,
+  onOpenChange,
 }: {
   currentLang: Locale;
   pathBase: string;
   variant?: 'cycle' | 'flags' | 'dropdown';
   onNavigate?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const path = pathBase === '/' ? '' : pathBase;
   const nextLang = NEXT_LANG[currentLang];
@@ -70,6 +72,10 @@ export function LanguageSwitcher({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   const updateMenuPosition = useCallback(() => {
     const anchor = anchorRef.current;
@@ -144,6 +150,7 @@ export function LanguageSwitcher({
               <ul
                 role="listbox"
                 aria-label="Language"
+                data-header-overlay="true"
                 className="fixed z-[120] min-w-[170px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--surface)] shadow-[0_8px_32px_rgba(0,0,0,0.1)] max-h-[min(70vh,420px)] overflow-y-auto touch-pan-y"
                 style={{ top: menuPosition.top, right: menuPosition.right }}
               >

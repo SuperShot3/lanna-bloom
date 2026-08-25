@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense, type FocusEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -43,14 +43,12 @@ import {
   writeMarketSession,
 } from '@/lib/delivery/marketSession';
 import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
-import { useMobileCartHeaderCollapse } from '@/hooks/useMobileCartHeaderCollapse';
+import { useSmartStickyHeader } from '@/hooks/useSmartStickyHeader';
 import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
-import { isCatalogProductDetailPath } from '@/lib/catalogProductPath';
 import { CurrencySelector } from '@/components/CurrencyDisplay';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { lockBodyScroll, unlockBodyScroll } from '@/lib/header/lockBodyScroll';
 
-const SCROLL_THRESHOLD = 10;
-const MOBILE_BREAKPOINT = 768;
 const localePathPrefixPattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
 const DEFAULT_DELIVERY_DESTINATION_ID: DeliveryDestinationId = 'CHIANG_MAI';
 
@@ -119,7 +117,6 @@ export function Header({
   const deliveryPickerCopy = getDeliveryPickerCopy(lang);
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
-  const isProductDetailPage = isCatalogProductDetailPath(basePath);
   const isHomePage =
     pathname === homeHref ||
     pathname === `${homeHref}/` ||
@@ -128,13 +125,13 @@ export function Header({
         (pathname === marketFlowerDeliveryHref || pathname === `${marketFlowerDeliveryHref}/`)
     );
 
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const { payload: checkoutStickyPayload, setCollapseMode } = useCheckoutStickyHeader();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   // Pulsation stays on the main (home) page until the user opens the cart.
   const [cartPulseAddId, setCartPulseAddId] = useState(0);
@@ -153,21 +150,19 @@ export function Header({
     };
   }, []);
 
-  useEffect(() => {
-    const checkScroll = () => setIsScrolled(window.scrollY > SCROLL_THRESHOLD);
-    checkScroll();
-    window.addEventListener('scroll', checkScroll, { passive: true });
-    return () => window.removeEventListener('scroll', checkScroll);
-  }, []);
-
-  const mobileCartCheckoutHeader = isMobile && isCartPage && checkoutStickyPayload != null;
-  const mobilePdpScrollHeader = isMobile && isProductDetailPage;
-  const mobileScrollHeaderCollapse = mobileCartCheckoutHeader || mobilePdpScrollHeader;
-  const headerCollapseMode = useMobileCartHeaderCollapse({
-    enabled: mobileScrollHeaderCollapse,
+  const cartHasCheckoutPayload = isCartPage && checkoutStickyPayload != null;
+  const {
+    hidden: headerHidden,
+    isScrolled,
+    collapseMode: headerCollapseMode,
+    isMobile,
+  } = useSmartStickyHeader({
+    variant: cartHasCheckoutPayload ? 'cart-compact' : 'hide',
     menuOpen,
-    onModeChange: mobileCartCheckoutHeader ? setCollapseMode : undefined,
+    overlayOpen,
+    onCollapseModeChange: cartHasCheckoutPayload ? setCollapseMode : undefined,
   });
+  const mobileCartCheckoutHeader = isMobile && cartHasCheckoutPayload;
 
   useEffect(() => {
     const hideBottomSticky = mobileCartCheckoutHeader && headerCollapseMode === 'compact';
@@ -176,34 +171,34 @@ export function Header({
   }, [mobileCartCheckoutHeader, headerCollapseMode]);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    if (!isScrolled) setMenuOpen(false);
-  }, [isScrolled]);
-
-  useEffect(() => {
     if (!menuOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
     };
     document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
+      unlockBodyScroll();
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!menuOpen) {
       setTouchStartX(null);
       setSwipeOffset(0);
     }
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const el = menuRef.current;
+    if (!el) return;
+    if (menuOpen) el.removeAttribute('inert');
+    else el.setAttribute('inert', '');
   }, [menuOpen]);
 
   useEffect(() => {
@@ -256,28 +251,69 @@ export function Header({
     [isCartPage, lang, router]
   );
 
-  // Mobile: solid-ish at top; fully invisible chrome once scrolled (controls stay).
-  // Desktop keeps a denser glass so the full nav stays readable.
-  const glassNavClass = isMobile
-    ? isScrolled
-      ? 'site-header--liquid-glass'
-      : 'site-header--glass site-header--glass-mobile'
-    : isScrolled
-      ? 'site-header--glass site-header--glass-scrolled'
+  const handleOverlayOpenChange = useCallback((open: boolean) => {
+    if (open) {
+      setOverlayOpen(true);
+      return;
+    }
+    const active = document.activeElement;
+    if (headerRef.current?.contains(active)) return;
+    if (
+      active instanceof Element &&
+      (active.closest('[data-radix-popper-content-wrapper]') ||
+        active.closest('[data-header-overlay]'))
+    ) {
+      return;
+    }
+    setOverlayOpen(false);
+  }, []);
+
+  const handleHeaderBlurCapture = useCallback((event: FocusEvent<HTMLElement>) => {
+    const next = event.relatedTarget;
+    if (next instanceof Node && event.currentTarget.contains(next)) return;
+    if (
+      next instanceof Element &&
+      (next.closest('[data-radix-popper-content-wrapper]') ||
+        next.closest('[data-header-overlay]'))
+    ) {
+      return;
+    }
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      if (headerRef.current?.contains(active)) return;
+      if (
+        active instanceof Element &&
+        (active.closest('[data-radix-popper-content-wrapper]') ||
+          active.closest('[data-header-overlay]'))
+      ) {
+        return;
+      }
+      setOverlayOpen(false);
+    }, 0);
+  }, []);
+
+  const glassNavClass = isScrolled
+    ? 'site-header--glass site-header--glass-scrolled'
+    : isMobile
+      ? 'site-header--glass site-header--glass-mobile'
       : 'site-header--glass';
 
   return (
     <>
       <header
-        className={`fixed w-full z-50 border-b overflow-x-clip transition-[top,background-color,border-color,backdrop-filter,box-shadow] duration-300 ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${mobilePdpScrollHeader ? 'site-header--pdp-scroll' : ''} ${hasTopPromoBanner ? 'top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
-        data-scrolled={isScrolled}
-        data-header-mode={mobileScrollHeaderCollapse ? headerCollapseMode : undefined}
+        ref={headerRef}
+        className={`site-header fixed w-full border-b ${menuOpen ? 'z-[111]' : 'z-50'} ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${hasTopPromoBanner ? 'site-header--below-promo top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
+        data-scrolled={isScrolled ? 'true' : 'false'}
+        data-header-hidden={headerHidden && !mobileCartCheckoutHeader ? 'true' : 'false'}
+        data-header-mode={mobileCartCheckoutHeader ? headerCollapseMode : undefined}
+        onFocusCapture={() => setOverlayOpen(true)}
+        onBlurCapture={handleHeaderBlurCapture}
       >
         {mobileCartCheckoutHeader && checkoutStickyPayload ? (
           <CheckoutCompactHeaderBar payload={checkoutStickyPayload} lang={lang} />
         ) : null}
         <div
-          className="site-header__full max-w-7xl mx-auto h-14 md:h-[76px] flex items-center justify-between gap-2 sm:gap-4 md:grid-none"
+          className="site-header__full max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 md:grid-none"
           style={{
             paddingLeft: 'max(1rem, env(safe-area-inset-left))',
             paddingRight: 'max(1rem, env(safe-area-inset-right))',
@@ -300,11 +336,10 @@ export function Header({
                 Lanna Bloom
               </span>
             </Link>
-            {!isMobile && (
-              <nav
-                className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 font-medium text-sm tracking-wide uppercase"
-                aria-label="Main"
-              >
+            <nav
+              className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 font-medium text-sm tracking-wide uppercase"
+              aria-label="Main"
+            >
                 <Suspense
                   fallback={
                     <span className="inline-flex items-center gap-1 uppercase tracking-wide text-[var(--text)]">
@@ -321,6 +356,7 @@ export function Header({
                       basePath.startsWith('/catalog/') ||
                       basePath.startsWith('/collections/')
                     }
+                    onOpenChange={handleOverlayOpenChange}
                   />
                 </Suspense>
                 <Suspense
@@ -334,6 +370,7 @@ export function Header({
                     lang={lang}
                     catalogHref={catalogHref}
                     label={t.occasions}
+                    onOpenChange={handleOverlayOpenChange}
                   />
                 </Suspense>
                 <GuidesNavDropdown
@@ -341,6 +378,7 @@ export function Header({
                   infoHref={infoHref}
                   label={t.information}
                   pathActive={basePath === '/info' || basePath.startsWith('/info/')}
+                  onOpenChange={handleOverlayOpenChange}
                 />
                 <NavItem
                   href={deliveryAreasHref}
@@ -356,8 +394,7 @@ export function Header({
                   variant="pill"
                   className="!bg-transparent !border-0 text-[var(--text)] hover:text-[#C5A059] transition-colors !p-0 !min-h-0"
                 />
-              </nav>
-            )}
+            </nav>
           </div>
           <div className="relative z-[2] flex h-11 items-center gap-0.5 sm:gap-2 md:gap-3 shrink-0">
             <div className="hidden md:block">
@@ -368,6 +405,7 @@ export function Header({
                 copy={deliveryPickerCopy}
                 variant="desktop"
                 onChange={handleDeliveryDestinationChange}
+                onOpenChange={handleOverlayOpenChange}
               />
             </div>
             <div className="hidden sm:block">
@@ -401,6 +439,7 @@ export function Header({
                 currentLang={lang}
                 pathBase={basePath || '/'}
                 variant="dropdown"
+                onOpenChange={handleOverlayOpenChange}
               />
             </div>
             <button
@@ -421,7 +460,7 @@ export function Header({
         id="mobile-menu"
         ref={menuRef}
         className={`fixed inset-0 z-[110] transition-[visibility] duration-250 md:hidden ${
-          menuOpen ? 'visible pointer-events-auto' : 'hidden pointer-events-none'
+          menuOpen ? 'visible pointer-events-auto' : 'invisible pointer-events-none'
         }`}
         aria-hidden={!menuOpen}
       >
@@ -431,11 +470,11 @@ export function Header({
             onClick={() => setMenuOpen(false)}
             onKeyDown={(e) => e.key === 'Enter' && setMenuOpen(false)}
             role="button"
-            tabIndex={0}
+            tabIndex={menuOpen ? 0 : -1}
             aria-label="Close menu"
           />
           <div
-            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[var(--bg)] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] pb-14 pt-[max(3.5rem,calc(env(safe-area-inset-top,0px)+2.25rem))] px-6 flex flex-col gap-6 transform transition-transform duration-250"
+            className="absolute top-0 right-0 bottom-0 w-[min(280px,85vw)] bg-[var(--bg)] shadow-[-4px_0_24px_rgba(26,60,52,0.12)] pb-14 pt-[calc(3.5rem+env(safe-area-inset-top,0px)+0.75rem)] px-6 flex flex-col gap-6 transform transition-transform duration-250"
             style={{
               transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             }}
@@ -554,6 +593,7 @@ function DeliveryProvincePicker({
   copy,
   variant,
   onChange,
+  onOpenChange,
 }: {
   lang: Locale;
   value: DeliveryDestinationId;
@@ -561,12 +601,15 @@ function DeliveryProvincePicker({
   copy: DeliveryPickerCopy;
   variant: 'desktop' | 'mobile';
   onChange: (destination: DeliveryDestinationId) => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const select = (
     <select
       value={value}
       onChange={(event) => onChange(event.target.value as DeliveryDestinationId)}
+      onFocus={() => onOpenChange?.(true)}
+      onBlur={() => onOpenChange?.(false)}
       aria-label={copy.selectLabel}
       style={
         variant === 'desktop'

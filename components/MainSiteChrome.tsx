@@ -37,7 +37,7 @@ export function MainSiteChrome({
       (!advancePeakPromoBanner && !peakNoticeBanner && mayPromoBanner));
 
   useEffect(() => {
-    const syncViewport = () => setIsMobileViewport(window.innerWidth <= 768);
+    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
     syncViewport();
     window.addEventListener('resize', syncViewport);
     return () => window.removeEventListener('resize', syncViewport);
@@ -69,7 +69,7 @@ export function MainSiteChrome({
       ) : null}
       <Header lang={lang} hasTopPromoBanner={hasTopPromoBanner} />
       <div
-        className={`main-content-wrap ${hasTopPromoBanner ? `has-top-promo pt-[calc(3.5rem+2.25rem+env(safe-area-inset-top,0px))] md:pt-[calc(76px+2.25rem+env(safe-area-inset-top,0px))]` : 'pt-[calc(3.5rem+1px+0.5rem)] md:pt-[calc(76px+1px+0.5rem)]'}`}
+        className={`main-content-wrap ${hasTopPromoBanner ? `has-top-promo pt-[calc(3.5rem+2.25rem+env(safe-area-inset-top,0px))] md:pt-[calc(76px+2.25rem+env(safe-area-inset-top,0px))]` : 'pt-[calc(3.5rem+1px+0.5rem+env(safe-area-inset-top,0px))] md:pt-[calc(76px+1px+0.5rem+env(safe-area-inset-top,0px))]'}`}
         style={{ viewTransitionName: 'main-content' } as React.CSSProperties}
       >
         <main>{children}</main>

@@ -55,19 +55,21 @@ export function GuidesNavDropdown({
   infoHref,
   label,
   pathActive = false,
+  onOpenChange,
 }: {
   lang: Locale;
   infoHref: string;
   label: string;
   /** True when the current path is under /info. */
   pathActive?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const t = translations[lang].nav;
   const activeSlug = useActiveGuideSlug(lang);
   const active = pathActive;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

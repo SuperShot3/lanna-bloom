@@ -32,17 +32,19 @@ export function OccasionsNavDropdown({
   lang,
   catalogHref,
   label,
+  onOpenChange,
 }: {
   lang: Locale;
   catalogHref: string;
   label: string;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const tCatalog = translations[lang].catalog;
   const activeOccasion = useActiveOccasion();
   const active = Boolean(activeOccasion);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

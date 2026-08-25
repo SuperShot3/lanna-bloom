@@ -9,7 +9,7 @@ import { STEM_BUCKET_RANGES } from '@/lib/bouquetOptions';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { CATALOG_OCCASION_CHIPS, STOREFRONT_FLOWER_TYPES } from '@/lib/catalogCategories';
 
-const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'green', 'mixed'] as const;
+const COLOR_KEYS = ['red', 'pink', 'white', 'yellow', 'purple', 'orange', 'green', 'blue', 'mixed'] as const;
 const DELIVERY_OPTS = ['same_day', 'next_day'] as const;
 const FORMAT_OPTS = ['bouquet', 'box', 'vase', 'basket', 'arrangement', 'potted'] as const;
 const SORT_OPTS: Array<{
@@ -39,6 +39,7 @@ const COLOR_HEX: Record<string, string> = {
   purple: '#7B68A6',
   orange: '#E8944A',
   green: '#5C9E6E',
+  blue: '#4A8BC7',
   mixed: 'linear-gradient(135deg,#C41E3A,#F4A6C1,#F5D547)',
 };
 
