@@ -144,12 +144,24 @@ const WIRED: ProvinceSeedRow[] = [
     customer_message_th:
       'จัดส่งดอกไม้วันถัดไปทั่วจังหวัดลำพูน (ค่าส่งเริ่มต้น ฿250 ไม่มีบริการวันเดียวกัน)',
   },
+  {
+    province_code: 'bangkok',
+    province_name_en: 'Bangkok',
+    province_name_th: 'กรุงเทพมหานคร',
+    topojson_property_value: 'Bangkok Metropolis',
+    destination_id: 'BANGKOK',
+    status: 'same_day',
+    catalog_enabled: true,
+    customer_message_en:
+      'Same-day flower delivery across Bangkok (subject to cutoff and zone fees; delivery from ฿250).',
+    customer_message_th:
+      'จัดส่งดอกไม้วันเดียวกันทั่วกรุงเทพฯ (ขึ้นกับเวลาตัดออเดอร์และค่าโซน ค่าส่งเริ่มต้น ฿250)',
+  },
 ];
 
 const COMING_SOON: ProvinceSeedRow[] = [
   comingSoon('Amnat Charoen', 'อำนาจเจริญ'),
   comingSoon('Ang Thong', 'อ่างทอง'),
-  comingSoon('Bangkok', 'กรุงเทพมหานคร', 'Bangkok Metropolis'),
   comingSoon('Buri Ram', 'บุรีรัมย์'),
   comingSoon('Chachoengsao', 'ฉะเชิงเทรา'),
   comingSoon('Chai Nat', 'ชัยนาท'),

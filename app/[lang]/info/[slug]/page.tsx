@@ -134,6 +134,7 @@ export function generateStaticParams() {
     'delivery-policy',
     'flower-delivery-address-chiang-mai',
     'flower-delivery-lamphun-province',
+    'flower-delivery-bangkok',
     'flower-delivery-pattaya',
     'flower-delivery-phuket',
     'flower-delivery-hua-hin',

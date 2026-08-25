@@ -6,6 +6,7 @@ import type { Locale } from '@/lib/i18n';
 
 export const DELIVERY_DESTINATIONS = [
   'CHIANG_MAI',
+  'BANGKOK',
   'PATTAYA',
   'PHUKET',
   'KRABI',
@@ -17,6 +18,7 @@ export const DELIVERY_DESTINATIONS = [
 export type DeliveryDestinationId = (typeof DELIVERY_DESTINATIONS)[number];
 
 export const EXPANSION_DESTINATION_IDS: DeliveryDestinationId[] = [
+  'BANGKOK',
   'PATTAYA',
   'PHUKET',
   'KRABI',
@@ -26,6 +28,7 @@ export const EXPANSION_DESTINATION_IDS: DeliveryDestinationId[] = [
 ];
 
 export const MARKET_PATH_SLUGS = [
+  'bangkok',
   'pattaya',
   'phuket',
   'krabi',
@@ -59,6 +62,13 @@ export interface MarketRegistryEntry {
 }
 
 export const MARKETS: MarketRegistryEntry[] = [
+  {
+    pathSlug: 'bangkok',
+    destinationId: 'BANGKOK',
+    customerFacingNameEn: 'Bangkok',
+    customerFacingNameTh: 'กรุงเทพฯ',
+    status: 'active',
+  },
   {
     pathSlug: 'pattaya',
     destinationId: 'PATTAYA',

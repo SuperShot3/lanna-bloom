@@ -96,6 +96,15 @@ export const TERRITORY_PROFILES: TerritoryProfile[] = [
     true,
   ),
   profile(
+    'BANGKOK',
+    'Bangkok',
+    'bangkok',
+    'expat',
+    '/en/bangkok/flower-delivery',
+    'Residents, expats, hotel guests, offices, and English-speaking senders from abroad.',
+    true,
+  ),
+  profile(
     'PHUKET',
     'Phuket',
     'phuket',

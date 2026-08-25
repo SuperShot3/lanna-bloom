@@ -3,6 +3,7 @@ import type { OrderDeliveryDestinationId } from '@/lib/orders';
 export const EXPANSION_MARKUP_DESTINATIONS = new Set<OrderDeliveryDestinationId>([
   'PHUKET',
   'SAMUI',
+  'KRABI',
 ]);
 
 export const EXPANSION_MARKUP_MULTIPLIER = 1.3;

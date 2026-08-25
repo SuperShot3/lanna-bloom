@@ -13,6 +13,7 @@ import {
 } from '@/components/home/homeLandingContent';
 import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
 import {
+  getBangkokDeliveryDistricts,
   getHuaHinDeliveryDistricts,
   getKrabiDeliveryDistricts,
   getLamphunDeliveryDistricts,
@@ -29,6 +30,7 @@ export function fillCityPlaceholders(text: string, city: string, areas = ''): st
 export function getMarketLandingDistricts(
   destinationId: DeliveryDestinationId
 ): LocalizedLabel[] {
+  if (destinationId === 'BANGKOK') return getBangkokDeliveryDistricts();
   if (destinationId === 'LAMPHUN') return getLamphunDeliveryDistricts();
   if (destinationId === 'PATTAYA') return getPattayaDeliveryDistricts();
   if (destinationId === 'PHUKET') return getPhuketDeliveryDistricts();

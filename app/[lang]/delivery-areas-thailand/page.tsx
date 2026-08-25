@@ -8,6 +8,7 @@ import { buildAlternates } from '@/lib/seo/alternates';
 import { listPublicProvinces } from '@/lib/provinces/queries';
 import { listShoppableCoverageAreas } from '@/lib/delivery/coverageDisplay';
 import {
+  getBangkokDeliveryDistricts,
   getChiangMaiDeliveryDistricts,
   getChiangMaiDeliveryNeighborhoods,
   getFlowerDeliveryThailandCopy,
@@ -82,6 +83,7 @@ export default async function DeliveryAreasThailandPage({
   const copy = getFlowerDeliveryThailandCopy(lang);
   const districts = getChiangMaiDeliveryDistricts();
   const neighborhoods = getChiangMaiDeliveryNeighborhoods();
+  const bangkokDistricts = getBangkokDeliveryDistricts();
   const lamphunDistricts = getLamphunDeliveryDistricts();
   const pattayaDistricts = getPattayaDeliveryDistricts();
   const phuketDistricts = getPhuketDeliveryDistricts();
@@ -157,6 +159,37 @@ export default async function DeliveryAreasThailandPage({
             </div>
 
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.chiangMaiNote}</p>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3
+                id="bangkok-delivery-title"
+                className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl text-[#1A3C34] mb-3 leading-tight"
+              >
+                {copy.bangkokTitle}
+              </h3>
+              <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                {copy.bangkokIntro}
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Link
+                  href={`/${lang}/bangkok/flower-delivery`}
+                  className="btn-premium"
+                >
+                  {copy.ctaBangkok}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
+                {copy.districtsSubtitle}
+              </h4>
+              <AreaPills areas={bangkokDistricts} lang={lang} />
+            </div>
+
+            <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.bangkokNote}</p>
           </div>
 
           <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">

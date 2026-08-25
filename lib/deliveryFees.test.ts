@@ -14,6 +14,7 @@ import { PHUKET_AMPHOE_MAP_DISTRICTS } from './delivery/phuketAmphoeMapData';
 import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from './delivery/prachuapKhiriKhanAmphoeMapData';
 import { KRABI_AMPHOE_MAP_DISTRICTS } from './delivery/krabiAmphoeMapData';
 import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from './delivery/suratThaniAmphoeMapData';
+import { BANGKOK_AMPHOE_MAP_DISTRICTS } from './delivery/bangkokAmphoeMapData';
 import { destinationIdForAmphoeProvince } from './delivery/amphoeProvinces';
 import { getDeliveryDistanceTiers } from './delivery/distanceTiers';
 import {
@@ -98,6 +99,10 @@ assert(destinationIdForAmphoeProvince('phuket') === 'PHUKET', 'phuket amphoe des
 assert(destinationIdForAmphoeProvince('prachuap-khiri-khan') === 'HUA_HIN', 'prachuap amphoe destination is HUA_HIN');
 assert(destinationIdForAmphoeProvince('krabi') === 'KRABI', 'krabi amphoe destination is KRABI');
 assert(destinationIdForAmphoeProvince('surat-thani') === 'SAMUI', 'surat-thani amphoe destination is SAMUI');
+assert(destinationIdForAmphoeProvince('bangkok') === 'BANGKOK', 'bangkok amphoe destination is BANGKOK');
+assert(getZonesForDestination('BANGKOK').length === 10, 'Bangkok has 10 checkout zones');
+assert(getZoneFee('BANGKOK', 'bkk-old-city') === 250, 'Bangkok Old City fee = 250');
+assert(getZoneFee('BANGKOK', 'bkk-thonburi-west') === 400, 'Bangkok Thonburi west fee = 400');
 assert(getZonesForDestination('PHUKET').length === 11, 'Phuket has 11 checkout zones');
 assert(getZoneFee('PHUKET', 'hkt-phuket-town') === 250, 'Phuket Town fee = 250');
 assert(getZoneFee('PHUKET', 'hkt-mai-khao-airport-sakhu') === 550, 'Phuket Mai Khao fee = 550');
@@ -336,6 +341,44 @@ const samuiMapZoneIds = SURAT_THANI_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZo
 assert(
   samuiCheckoutIds.join(',') === samuiMapZoneIds.join(','),
   'every Samui checkout zone is a clickable map district'
+);
+
+assert(BANGKOK_AMPHOE_MAP_DISTRICTS.length === 10, 'Bangkok map has 10 checkout areas');
+const bangkokAmpCodes = new Set(BANGKOK_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
+assert(bangkokAmpCodes.size === 10, 'each Bangkok area has a unique amp_code');
+for (const d of BANGKOK_AMPHOE_MAP_DISTRICTS) {
+  assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
+  const display = resolveAmphoeFeeDisplay(d, 'BANGKOK');
+  assert(display.displayKind === 'checkout', `${d.id} should be checkout-backed`);
+  assert(
+    display.feeFrom === getZoneFee('BANGKOK', d.checkoutZoneId!),
+    `${d.id} fee matches Bangkok zone`
+  );
+}
+const bangkokOldCityDisplay = resolveAmphoeFeeDisplay(
+  BANGKOK_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'old-city')!,
+  'BANGKOK'
+);
+const bangkokWestDisplay = resolveAmphoeFeeDisplay(
+  BANGKOK_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'thonburi-west')!,
+  'BANGKOK'
+);
+assert(bangkokOldCityDisplay.feeFrom === 250, 'Bangkok Old City feeFrom = 250');
+assert(bangkokWestDisplay.feeFrom === 400, 'Thonburi west feeFrom = 400');
+
+const bangkokDrill = getAmphoeDrillItems('bangkok', 'en');
+assert(bangkokDrill.length === 10, 'Bangkok drill has 10 areas');
+assert(
+  bangkokDrill.every((d) => d.subAreas.length === 0),
+  'Bangkok areas are first-class map districts, not nested rows'
+);
+const bangkokCheckoutIds = getZonesForDestination('BANGKOK')
+  .map((z) => z.id)
+  .sort();
+const bangkokMapZoneIds = BANGKOK_AMPHOE_MAP_DISTRICTS.map((d) => d.checkoutZoneId!).sort();
+assert(
+  bangkokCheckoutIds.join(',') === bangkokMapZoneIds.join(','),
+  'every Bangkok checkout zone is a clickable map district'
 );
 
 const ladder = getChiangMaiZoneFeeLadder();

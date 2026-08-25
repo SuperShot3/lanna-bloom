@@ -63,6 +63,18 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
     { id: 'cm-mae-ai', labelEn: 'Mae Ai', labelTh: 'แม่เอ๋ย', feeThb: 950, manualQuote: true },
     { id: 'cm-unknown', labelEn: 'Other / unknown area', labelTh: 'อื่นๆ / ไม่ทราบพื้นที่', feeThb: 550 },
   ],
+  BANGKOK: [
+    { id: 'bkk-old-city', labelEn: 'Old City / Rattanakosin', labelTh: 'เมืองเก่า / รัตนโกสินทร์', feeThb: 250 },
+    { id: 'bkk-siam-silom-sathon', labelEn: 'Siam / Silom / Sathon', labelTh: 'สยาม / สีลม / สาทร', feeThb: 250 },
+    { id: 'bkk-sukhumvit', labelEn: 'Sukhumvit', labelTh: 'สุขุมวิท', feeThb: 250 },
+    { id: 'bkk-dusit-victory', labelEn: 'Dusit / Victory Monument', labelTh: 'ดุสิต / อนุสาวรีย์ชัยสมรภูมิ', feeThb: 250 },
+    { id: 'bkk-chatuchak-inner-north', labelEn: 'Chatuchak / inner north', labelTh: 'จตุจักร / กรุงเทพฯเหนือชั้นใน', feeThb: 300 },
+    { id: 'bkk-east-inner', labelEn: 'East inner Bangkok', labelTh: 'กรุงเทพฯตะวันออกชั้นใน', feeThb: 300 },
+    { id: 'bkk-thonburi-inner', labelEn: 'Thonburi inner', labelTh: 'ธนบุรีชั้นใน', feeThb: 300 },
+    { id: 'bkk-north-don-mueang', labelEn: 'North / Don Mueang', labelTh: 'กรุงเทพฯเหนือ / ดอนเมือง', feeThb: 400 },
+    { id: 'bkk-east-outer', labelEn: 'East outer Bangkok', labelTh: 'กรุงเทพฯตะวันออกชั้นนอก', feeThb: 400 },
+    { id: 'bkk-thonburi-west', labelEn: 'Thonburi west', labelTh: 'ธนบุรีตะวันตก', feeThb: 400 },
+  ],
   PATTAYA: [
     { id: 'pat-central-pattaya', labelEn: 'Central Pattaya', labelTh: 'พัทยากลาง', feeThb: 250 },
     { id: 'pat-north-naklua-wongamat', labelEn: 'North Pattaya / Naklua / Wongamat', labelTh: 'พัทยาเหนือ / นาจอมเทียน / วงศ์อมาตย์', feeThb: 250 },

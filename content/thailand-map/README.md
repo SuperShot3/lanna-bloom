@@ -10,11 +10,12 @@
 | `prachuap-khiri-khan-amphoes.topojson` | Hua Hin checkout areas (Leaflet) — not all of Prachuap Khiri Khan |
 | `krabi-amphoes.topojson` | Ao Nang / Krabi listed checkout areas (Leaflet) — not all of Krabi |
 | `surat-thani-amphoes.topojson` | Koh Samui listed checkout areas (Leaflet) — not all of Surat Thani |
+| `bangkok-amphoes.topojson` | Bangkok listed checkout areas (Leaflet) — 50 khet dissolved onto 10 zones |
 
 ## Amphoe TopoJSON (`*-amphoes.topojson`)
 
 - Source: [OpenGISData-Thailand](https://github.com/chingchai/OpenGISData-Thailand) `districts.geojson` / `subdistricts.geojson`
-- Filter by province `pro_code` (`50` Chiang Mai, `51` Lamphun, `20` Chon Buri, `83` Phuket, `77` Prachuap Khiri Khan, `81` Krabi, `84` Surat Thani)
+- Filter by province `pro_code` (`50` Chiang Mai, `51` Lamphun, `20` Chon Buri, `83` Phuket, `77` Prachuap Khiri Khan, `81` Krabi, `84` Surat Thani, `10` Bangkok)
 - Chon Buri is **Pattaya areas only** (not Si Racha, Mueang Chon Buri, or the rest of Sattahip):
   - OpenGIS tambons: Na Kluea `200408`, Nong Prue `200402`, Na Chom Thian `200902`
   - Pattaya special-admin tambon `200409` is sliced by latitude into Central `200491`, South / Walking Street `200492`, Pratumnak `200493`, Jomtien `200494` so each checkout zone is a clickable map polygon
@@ -27,6 +28,7 @@
   - OpenGIS tambon Pak Nam `810101` is Krabi Town (OpenGIS has no Krabi Yai `810102`)
   - Mainland tambon Ao Nang `810116` is sliced by latitude into Center `810191` and Noppharat Thara `810192`
   - Tambon Nong Thale `810117` is sliced by latitude into Klong Muang `810193` and Tubkaek `810194`
+- Bangkok is **listed checkout areas** covering all 50 khet (not Nonthaburi, Samut Prakan, or Pathum Thani). OpenGIS subdistricts (`pro_code` 10) are dissolved onto the 10 `ZONES_BY_DESTINATION.BANGKOK` zones. Join keys are representative khet codes (e.g. Old City `1001`, Sukhumvit `1033`).
 - Surat Thani is **Koh Samui listed areas only** (not Ko Pha-ngan, Don Sak, Mueang, tambon Na Mueang, Ang Thong National Park islands, or Koh Tan):
   - OpenGIS tambons: Ang Thong `840401` (mainland Na Thon only), Mae Nam `840407`
   - Lipa Noi `840402` + mainland Taling Ngam `840403` dissolve to Lipa Noi / Taling Ngam `840491`

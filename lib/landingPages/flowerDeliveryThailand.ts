@@ -7,6 +7,7 @@ import { PHUKET_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/phuketAmphoeMapData'
 import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/prachuapKhiriKhanAmphoeMapData';
 import { KRABI_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/krabiAmphoeMapData';
 import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/suratThaniAmphoeMapData';
+import { BANGKOK_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/bangkokAmphoeMapData';
 
 export type LocalizedLabel = { nameEn: string; nameTh: string };
 
@@ -64,6 +65,14 @@ export function getKrabiDeliveryDistricts(): LocalizedLabel[] {
 /** Koh Samui checkout areas (city market — not the rest of Surat Thani). */
 export function getSamuiDeliveryDistricts(): LocalizedLabel[] {
   return SURAT_THANI_AMPHOE_MAP_DISTRICTS.map((d) => ({
+    nameEn: d.labelEn,
+    nameTh: d.labelTh,
+  }));
+}
+
+/** Bangkok listed checkout areas (khet groups covering the whole province). */
+export function getBangkokDeliveryDistricts(): LocalizedLabel[] {
+  return BANGKOK_AMPHOE_MAP_DISTRICTS.map((d) => ({
     nameEn: d.labelEn,
     nameTh: d.labelTh,
   }));
@@ -130,6 +139,9 @@ export type FlowerDeliveryThailandCopy = {
   districtsSubtitle: string;
   neighborhoodsSubtitle: string;
   chiangMaiNote: string;
+  bangkokTitle: string;
+  bangkokIntro: string;
+  bangkokNote: string;
   lamphunTitle: string;
   lamphunIntro: string;
   lamphunNote: string;
@@ -153,6 +165,7 @@ export type FlowerDeliveryThailandCopy = {
   ctaChiangMai: string;
   ctaDeliveryPolicy: string;
   ctaAbroad: string;
+  ctaBangkok: string;
   ctaLamphun: string;
   ctaPattaya: string;
   ctaPhuket: string;
@@ -179,6 +192,11 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     neighborhoodsSubtitle: 'Popular areas & neighborhoods',
     chiangMaiNote:
       'Don’t see your exact street? Add your address at checkout — we deliver to hotels, condos, offices, and homes throughout the areas below.',
+    bangkokTitle: 'Bangkok',
+    bangkokIntro:
+      'Same-day flower delivery across Bangkok from ฿250 — subject to cutoff and zone. Shop below or tap Bangkok on the coverage map, then choose your area at checkout. Nearby provinces such as Nonthaburi and Samut Prakan are not on this map.',
+    bangkokNote:
+      'Choose Bangkok as your delivery destination at checkout, then select the area. Fees start at ฿250 in the Old City, Siam / Silom / Sathon, Sukhumvit, and Dusit; inner-ring and Thonburi areas are ฿300; outer north, east, and west Thonburi are ฿400.',
     lamphunTitle: 'Lamphun',
     lamphunIntro:
       'Next-day flower delivery across Lamphun province. Delivery from ฿250 — same-day is not available. Shop by amphoe below or on the coverage map.',
@@ -215,6 +233,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaChiangMai: 'Chiang Mai flower delivery',
     ctaDeliveryPolicy: 'Delivery policy',
     ctaAbroad: 'Send flowers from abroad',
+    ctaBangkok: 'Bangkok flower delivery',
     ctaLamphun: 'Lamphun flower delivery',
     ctaPattaya: 'Pattaya flower delivery',
     ctaPhuket: 'Phuket flower delivery',
@@ -239,6 +258,11 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     neighborhoodsSubtitle: 'ย่านและพื้นที่ยอดนิยม',
     chiangMaiNote:
       'ไม่เห็นถนนของคุณในรายการ? กรอกที่อยู่ตอนชำระเงินได้เลย — เราจัดส่งไปโรงแรม คอนโด ออฟฟิศ และบ้านในพื้นที่ด้านล่าง',
+    bangkokTitle: 'กรุงเทพฯ',
+    bangkokIntro:
+      'จัดส่งดอกไม้วันเดียวกันทั่วกรุงเทพฯ เริ่มต้น ฿250 — ขึ้นกับเวลาตัดออเดอร์และโซน เลือกด้านล่างหรือแตะกรุงเทพบนแผนที่พื้นที่บริการ แล้วเลือกย่านตอนชำระเงิน จังหวัดใกล้เคียง เช่น นนทบุรีและสมุทรปราการไม่อยู่บนแผนที่นี้',
+    bangkokNote:
+      'เลือกปลายทางกรุงเทพฯ ตอนชำระเงิน แล้วเลือกย่าน ค่าส่งเริ่มต้น ฿250 ในเมืองเก่า สยาม/สีลม/สาทร สุขุมวิท และดุสิต วงแหวนชั้นในและธนบุรีชั้นใน ฿300 กรุงเทพฯเหนือ ตะวันออกชั้นนอก และธนบุรีตะวันตก ฿400',
     lamphunTitle: 'ลำพูน',
     lamphunIntro:
       'จัดส่งดอกไม้วันถัดไปทั่วจังหวัดลำพูน ค่าส่งเริ่มต้น ฿250 — ไม่มีบริการวันเดียวกัน เลือกอำเภอด้านล่างหรือบนแผนที่พื้นที่บริการ',
@@ -275,6 +299,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaChiangMai: 'ส่งดอกไม้เชียงใหม่',
     ctaDeliveryPolicy: 'นโยบายการจัดส่ง',
     ctaAbroad: 'ส่งดอกไม้จากต่างประเทศ',
+    ctaBangkok: 'ส่งดอกไม้กรุงเทพฯ',
     ctaLamphun: 'ส่งดอกไม้ลำพูน',
     ctaPattaya: 'ส่งดอกไม้พัทยา',
     ctaPhuket: 'ส่งดอกไม้ภูเก็ต',

@@ -29,7 +29,7 @@ const tomorrow = addDaysToYmd(today, 1);
 
 assert(isExpansionProvinceCode('chiang-mai') === false, 'CM not expansion');
 assert(isExpansionProvinceCode('chon-buri') === true, 'Pattaya market is expansion');
-assert(isExpansionProvinceCode('bangkok') === true, 'unmapped treated as non-CM');
+assert(isExpansionProvinceCode('bangkok') === true, 'Bangkok market is expansion');
 
 // Categories: empty → flowers-only on expansion, full on CM
 assert(
@@ -229,21 +229,26 @@ assert(
   const lp = areas.find((a) => a.destinationId === 'LAMPHUN');
   const cm = areas.find((a) => a.destinationId === 'CHIANG_MAI');
   const hh = areas.find((a) => a.destinationId === 'HUA_HIN');
+  const bkk = areas.find((a) => a.destinationId === 'BANGKOK');
   assert(Boolean(pat), 'list includes Pattaya');
   assert(Boolean(lp), 'list includes Lamphun');
   assert(Boolean(cm), 'list includes Chiang Mai');
   assert(Boolean(hh), 'list includes Hua Hin');
+  assert(Boolean(bkk), 'list includes Bangkok');
   assert(!pat!.summary.includes('Bouquet delivery only'), 'no hardcoded bouquet blurb');
   assert(pat!.summary.includes('Same-Day'), 'Pattaya status from seed');
   assert(lp!.summary.includes('Next-Day'), 'Lamphun status from seed');
   assert(lp!.summary.includes('from ฿250'), 'Lamphun min fee in summary');
   assert(cm!.summary.includes('Flowers & gifts'), 'CM categories');
+  assert(bkk!.summary.includes('Same-Day'), 'Bangkok status from seed');
+  assert(bkk!.summary.includes('from ฿250'), 'Bangkok min fee in summary');
 }
 
 {
   assert(minCheckoutFeeThb('CHIANG_MAI') === 250, 'Chiang Mai min fee 250');
   assert(minCheckoutFeeThb('PATTAYA') === 250, 'Pattaya min fee 250');
   assert(minCheckoutFeeThb('HUA_HIN') === 250, 'Hua Hin min fee 250');
+  assert(minCheckoutFeeThb('BANGKOK') === 250, 'Bangkok min fee 250');
   const cmAmount = formatMinCheckoutFeeLabel('CHIANG_MAI', 'en');
   assert(Boolean(cmAmount && cmAmount.includes('250')), 'formatted CM min includes 250');
   assert(Boolean(cmAmount && cmAmount.includes('฿')), 'formatted CM min uses baht sign');

@@ -12,6 +12,7 @@ import type { OrderPayload, ContactPreferenceOption, OrderDeliveryDestinationId 
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { isWelcomeCode, lookupDbWelcomeCode } from '@/lib/promo/welcomeCode';
 import { resolveOrderDiscountServer } from '@/lib/promo/resolveOrderDiscountServer';
+import { parseDeliveryDestinationId } from '@/lib/delivery/markets';
 import { inferPostalCodeFromDelivery } from '@/lib/delivery/postalInference';
 import { resolveDeliveryZoneFromPlace } from '@/lib/delivery/resolveDeliveryZoneFromPlace';
 import { buildDriverMapsSearchUrl } from '@/lib/google/buildDriverMapsUrl';
@@ -416,20 +417,9 @@ function validateStripePayload(
     return { ok: false, message: 'recipientPhoneCountryCode requires delivery.recipientPhone' };
   }
 
-  const allowedDest: OrderDeliveryDestinationId[] = [
-    'CHIANG_MAI',
-    'PATTAYA',
-    'PHUKET',
-    'KRABI',
-    'SAMUI',
-    'HUA_HIN',
-    'LAMPHUN',
-  ];
-  const destRaw = d.deliveryDestination;
-  const deliveryDestination =
-    typeof destRaw === 'string' && (allowedDest as string[]).includes(destRaw)
-      ? (destRaw as OrderDeliveryDestinationId)
-      : null;
+  const deliveryDestination = parseDeliveryDestinationId(
+    typeof d.deliveryDestination === 'string' ? d.deliveryDestination : undefined
+  );
   if (!deliveryDestination) {
     return { ok: false, message: 'delivery.deliveryDestination is required' };
   }

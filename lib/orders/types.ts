@@ -3,6 +3,7 @@
  */
 
 import type { Locale } from '@/lib/i18n';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
 /** Add-on card type for API (free | premium maps to beautiful). */
 export type OrderCardType = 'free' | 'premium' | null;
@@ -43,14 +44,7 @@ export type DeliveryDistrictKey =
   | 'SAN_PA_TONG' | 'MAE_WANG' | 'CHIANG_DAO' | 'FANG' | 'MAE_AI' | 'UNKNOWN';
 
 /** Canonical delivery market (Chiang Mai + regional expansion). */
-export type OrderDeliveryDestinationId =
-  | 'CHIANG_MAI'
-  | 'PATTAYA'
-  | 'PHUKET'
-  | 'KRABI'
-  | 'SAMUI'
-  | 'HUA_HIN'
-  | 'LAMPHUN';
+export type OrderDeliveryDestinationId = DeliveryDestinationId;
 
 export interface OrderDelivery {
   address: string;

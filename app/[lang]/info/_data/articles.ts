@@ -747,6 +747,39 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: 'flower-delivery-bangkok',
+    title: 'Flower Delivery in Bangkok: Areas, Hotels and Fees',
+    excerpt:
+      'You can order flower delivery in Bangkok online. See areas and fees from 250 THB, hotel and condo tips, and how same-day works. Shop the Bangkok catalog.',
+    publishedAt: '2026-08-25T00:00:00.000Z',
+    featured: true,
+    cover: {
+      type: 'image',
+      src: '/blog_images/bangkok/bangkok.png',
+      alt: 'White and cream rose and lily bouquet on a Bangkok riverside terrace, with the city skyline and a temple spire at golden hour, for flower delivery in Bangkok',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Bangkok flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งกรุงเทพฯ',
+        href: '/bangkok/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
     slug: 'flower-delivery-pattaya',
     title: 'Flower Delivery in Pattaya: Areas, Hotels and Fees',
     excerpt:

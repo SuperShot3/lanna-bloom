@@ -33,7 +33,7 @@ import type { AnalyticsItem } from '@/lib/analytics';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import { chiangMaiZoneIdFromLegacyDistrict } from '@/lib/delivery/zones';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
-import { getNavMarkets, type DeliveryDestinationId } from '@/lib/delivery/markets';
+import { getNavMarkets, parseDeliveryDestinationId, type DeliveryDestinationId } from '@/lib/delivery/markets';
 import { clearMarketSession, writeMarketSession } from '@/lib/delivery/marketSession';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
@@ -790,19 +790,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       d.deliveryDistrict === 'MUEANG' && !!d.isMueangCentral
     );
     const storedDest = (d as { deliveryDestination?: string }).deliveryDestination;
-    const allowed: OrderDeliveryDestinationId[] = [
-      'CHIANG_MAI',
-      'PATTAYA',
-      'PHUKET',
-      'KRABI',
-      'SAMUI',
-      'HUA_HIN',
-      'LAMPHUN',
-    ];
     const deliveryDestination =
-      typeof storedDest === 'string' && (allowed as string[]).includes(storedDest)
-        ? (storedDest as OrderDeliveryDestinationId)
-        : 'CHIANG_MAI';
+      parseDeliveryDestinationId(storedDest) ?? 'CHIANG_MAI';
     const storedZone = (d as { deliveryZoneId?: string }).deliveryZoneId;
     const deliveryZoneId =
       typeof storedZone === 'string' && storedZone.trim()

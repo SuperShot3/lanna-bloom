@@ -61,6 +61,13 @@ assert.ok(
   'Samui district list includes Chaweng'
 );
 
+const bangkokDistricts = getMarketLandingDistricts('BANGKOK');
+assert.equal(bangkokDistricts.length, 10, 'Bangkok has 10 named checkout areas');
+assert.ok(
+  formatDistrictList(bangkokDistricts, 'en').includes('Sukhumvit'),
+  'Bangkok district list includes Sukhumvit'
+);
+
 const lamphunFaq = getMarketHomeFaqItems({
   lang: 'en',
   city: 'Lamphun',

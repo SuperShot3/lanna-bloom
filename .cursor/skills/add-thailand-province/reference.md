@@ -43,7 +43,7 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 | Asset notes | `content/thailand-map/README.md` |
 | API route | `app/api/maps/{province}-amphoes/route.ts` (serves local TopoJSON, not OpenGIS) |
 | Metadata + `ampCode` | `lib/delivery/amphoeMapData.ts` or `{province}AmphoeMapData.ts` |
-| Province registry | `lib/delivery/amphoeProvinces.ts` (examples: `chiang-mai`, `lamphun`, `chon-buri`, `phuket`, `prachuap-khiri-khan`, `krabi`, `surat-thani`) |
+| Province registry | `lib/delivery/amphoeProvinces.ts` (examples: `chiang-mai`, `bangkok`, `lamphun`, `chon-buri`, `phuket`, `prachuap-khiri-khan`, `krabi`, `surat-thani`) |
 | Fee display | `lib/delivery/amphoeDisplayFees.ts` ← `zones.ts` + destination id |
 | Drill-down list helpers | `lib/delivery/amphoeMapDrilldown.ts` |
 | National map gates | `components/delivery/ThailandProvinceMap.tsx` |
@@ -68,6 +68,7 @@ npm run validate:province -- phuket --amphoe
 npm run validate:province -- prachuap-khiri-khan --amphoe
 npm run validate:province -- krabi --amphoe
 npm run validate:province -- surat-thani --amphoe
+npm run validate:province -- bangkok --amphoe
 ```
 
 ## Smoke tests after launch

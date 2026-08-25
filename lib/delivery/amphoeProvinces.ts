@@ -46,10 +46,17 @@ import {
   SURAT_THANI_AMPHOE_MAP_DISTRICTS,
   type SuratThaniAmphoeMapDistrict,
 } from '@/lib/delivery/suratThaniAmphoeMapData';
+import {
+  BANGKOK_AMPHOE_MAP_DISTRICTS,
+  getBangkokAmphoeByAmpCode,
+  getBangkokAmphoeById,
+  type BangkokAmphoeMapDistrict,
+} from '@/lib/delivery/bangkokAmphoeMapData';
 import type { AmphoeFeeSource } from '@/lib/delivery/amphoeDisplayFees';
 
 export type AmphoeCapableProvinceCode =
   | 'chiang-mai'
+  | 'bangkok'
   | 'lamphun'
   | 'chon-buri'
   | 'phuket'
@@ -65,6 +72,7 @@ export type ProvinceAmphoeDistrict = (
   | PrachuapKhiriKhanAmphoeMapDistrict
   | KrabiAmphoeMapDistrict
   | SuratThaniAmphoeMapDistrict
+  | BangkokAmphoeMapDistrict
 ) &
   AmphoeFeeSource & {
     id: string;
@@ -75,6 +83,7 @@ export type ProvinceAmphoeDistrict = (
 
 const AMPHOE_CAPABLE = new Set<string>([
   'chiang-mai',
+  'bangkok',
   'lamphun',
   'chon-buri',
   'phuket',
@@ -88,6 +97,7 @@ const DESTINATION_BY_AMPHOE_PROVINCE: Record<
   DeliveryDestinationId
 > = {
   'chiang-mai': 'CHIANG_MAI',
+  bangkok: 'BANGKOK',
   lamphun: 'LAMPHUN',
   'chon-buri': 'PATTAYA',
   phuket: 'PHUKET',
@@ -114,6 +124,8 @@ export function getAmphoeDistrictsForProvince(
   provinceCode: AmphoeCapableProvinceCode
 ): ProvinceAmphoeDistrict[] {
   switch (provinceCode) {
+    case 'bangkok':
+      return BANGKOK_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'lamphun':
       return LAMPHUN_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'chon-buri':
@@ -136,6 +148,8 @@ export function getAmphoeByAmpCodeForProvince(
   ampCode: string
 ): ProvinceAmphoeDistrict | undefined {
   switch (provinceCode) {
+    case 'bangkok':
+      return getBangkokAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'lamphun':
       return getLamphunAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'chon-buri':
@@ -160,6 +174,8 @@ export function getAmphoeByIdForProvince(
   id: string
 ): ProvinceAmphoeDistrict | undefined {
   switch (provinceCode) {
+    case 'bangkok':
+      return getBangkokAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'lamphun':
       return getLamphunAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'chon-buri':

@@ -5,7 +5,7 @@ import type { CustomOrderDetails, DeliveryDistrictKey, OrderPayload, OrderItem }
 import { sendAdminNewOrderNotificationOnce } from '@/lib/orderNotification';
 import { calcDeliveryFeeTHB } from '@/lib/deliveryFees';
 import { detectDistrictFromAddress } from '@/lib/deliveryFees';
-import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { parseDeliveryDestinationId } from '@/lib/delivery/markets';
 import { getZoneFee, isSupportedZone, legacyDistrictFromChiangMaiZone, zoneLabel } from '@/lib/delivery/zones';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import {
@@ -16,15 +16,6 @@ import {
 import { stripDuplicateThaiLeading66, thaiFullPhoneHasDuplicateCountryCode } from '@/lib/phoneFieldHints';
 
 const CUSTOM_ORDER_ITEM_ID = 'custom-order-request';
-const DELIVERY_DESTINATIONS: DeliveryDestinationId[] = [
-  'CHIANG_MAI',
-  'PATTAYA',
-  'PHUKET',
-  'KRABI',
-  'SAMUI',
-  'HUA_HIN',
-  'LAMPHUN',
-];
 
 function normalizeDigits(s: string): string {
   return s.replace(/\D/g, '');
@@ -145,10 +136,8 @@ export async function POST(request: NextRequest) {
     const langRaw = getString(form, 'lang');
     const locale: Locale = isValidLocale(langRaw) ? langRaw : 'en';
 
-    const destinationRaw = getString(form, 'deliveryDestination').toUpperCase();
-    const deliveryDestination = DELIVERY_DESTINATIONS.includes(destinationRaw as DeliveryDestinationId)
-      ? (destinationRaw as DeliveryDestinationId)
-      : 'CHIANG_MAI';
+    const deliveryDestination =
+      parseDeliveryDestinationId(getString(form, 'deliveryDestination')) ?? 'CHIANG_MAI';
     const deliveryZoneId = getString(form, 'deliveryZoneId');
     if (!deliveryZoneId || !isSupportedZone(deliveryDestination, deliveryZoneId)) {
       return NextResponse.json({ error: 'Valid delivery zone is required' }, { status: 400 });

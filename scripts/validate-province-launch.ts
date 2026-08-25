@@ -23,6 +23,7 @@ import { PHUKET_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/phuketAmphoeMapData
 import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/prachuapKhiriKhanAmphoeMapData';
 import { KRABI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/krabiAmphoeMapData';
 import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/suratThaniAmphoeMapData';
+import { BANGKOK_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/bangkokAmphoeMapData';
 import { isAmphoeCapableProvince } from '../lib/delivery/amphoeProvinces';
 
 type Check = { ok: boolean; label: string; detail?: string };
@@ -307,6 +308,19 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
         fail(
           'amphoe metadata',
           `Expected 8 unique ampCodes in suratThaniAmphoeMapData; got ${SURAT_THANI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'bangkok') {
+    const codes = BANGKOK_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (BANGKOK_AMPHOE_MAP_DISTRICTS.length === 10 && unique.size === 10) {
+      out.push(pass('amphoe metadata', '10 Bangkok areas, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 10 unique ampCodes in bangkokAmphoeMapData; got ${BANGKOK_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

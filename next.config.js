@@ -255,7 +255,7 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const marketSlugs = ['pattaya', 'phuket', 'krabi', 'samui', 'hua-hin'];
+    const marketSlugs = ['bangkok', 'pattaya', 'phuket', 'krabi', 'samui', 'hua-hin', 'lamphun'];
     // Keep public URLs as /[lang]/catalog/[market] while rendering the dynamic
     // market catalog page (avoids static→dynamic 500 on the SSG product segment).
     const marketCatalogRewrites = ['en', 'th'].flatMap((lang) =>

@@ -39,7 +39,7 @@ const bouquet: Bouquet = {
 function expectedPrice(
   base: number,
   discount?: number,
-  destination: 'CHIANG_MAI' | 'PHUKET' = 'CHIANG_MAI'
+  destination: 'CHIANG_MAI' | 'PHUKET' | 'KRABI' = 'CHIANG_MAI'
 ) {
   return effectiveCatalogUnitPriceWithExpansion(base, discount, destination);
 }
@@ -176,6 +176,19 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
   assert.equal(
     (jsonLd.offers as Record<string, unknown>).price,
     expectedPrice(890, 10, 'PHUKET')
+  );
+}
+
+{
+  const marketPage = 'https://lannabloom.shop/en/catalog/krabi/pink-lilies-bouquet';
+  const jsonLd = buildBouquetProductJsonLd(bouquet, 'en', marketPage, {
+    destinationId: 'KRABI',
+  });
+  assert.ok(jsonLd);
+  assertOneProductOneOffer(jsonLd);
+  assert.equal(
+    (jsonLd.offers as Record<string, unknown>).price,
+    expectedPrice(890, 10, 'KRABI')
   );
 }
 
