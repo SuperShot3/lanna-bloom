@@ -190,6 +190,12 @@ export function CatalogFilterBar({
           background: var(--bg);
           border-bottom: 1px solid var(--border);
           padding: 6px 0;
+          transition: top 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .catalog-filter-bar {
+            transition: none;
+          }
         }
         .catalog-filter-scroll {
           display: flex;

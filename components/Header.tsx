@@ -171,6 +171,12 @@ export function Header({
   }, [mobileCartCheckoutHeader, headerCollapseMode]);
 
   useEffect(() => {
+    const collapsed = headerHidden && !mobileCartCheckoutHeader;
+    document.documentElement.classList.toggle('site-header-collapsed', collapsed);
+    return () => document.documentElement.classList.remove('site-header-collapsed');
+  }, [headerHidden, mobileCartCheckoutHeader]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);

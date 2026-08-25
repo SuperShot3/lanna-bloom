@@ -631,6 +631,14 @@ body {
   }
 }
 
+html.site-header-collapsed .main-content-wrap {
+  --site-header-stack: env(safe-area-inset-top, 0px);
+}
+
+html.site-header-collapsed .main-content-wrap.has-top-promo {
+  --site-header-stack: calc(2.25rem + env(safe-area-inset-top, 0px));
+}
+
 main {
   width: 100%;
   max-width: 100%;
