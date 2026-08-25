@@ -11,6 +11,7 @@ import {
   loadHomePageChrome,
 } from '@/components/home/loadHomePageChrome';
 import type { Locale } from '@/lib/i18n';
+import { destinationDisplayName } from '@/lib/delivery/markets';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 
@@ -32,7 +33,11 @@ export async function HomepageV1({ lang }: { lang: Locale }) {
       <Suspense fallback={<PopularSectionSkeleton />}>
         <PopularSection lang={lang} />
       </Suspense>
-      <ExperienceSection lang={lang} />
+      <ExperienceSection
+        lang={lang}
+        locationName={destinationDisplayName('CHIANG_MAI', lang)}
+        timing="same_day"
+      />
       <DeliverySection lang={lang} />
       <ReviewsSection lang={lang} />
       <LocalLandingSection lang={lang} />

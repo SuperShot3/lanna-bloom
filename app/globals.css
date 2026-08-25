@@ -1738,6 +1738,14 @@ img {
   display: block;
 }
 
+/* Head first-paint cap (layout.tsx) uses this same selector at 8rem.
+   Once globals load, drop the size lock so content images can use their own CSS.
+   Do not set object-fit here — local card/figure rules own cropping. */
+img:not([width]):not([style*="position:absolute"]):not([style*="position: absolute"]) {
+  max-width: 100%;
+  max-height: none;
+}
+
 button {
   font-family: inherit;
   cursor: pointer;

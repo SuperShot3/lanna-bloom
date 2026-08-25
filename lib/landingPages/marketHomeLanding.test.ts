@@ -10,6 +10,7 @@ import {
   getMarketLandingDistricts,
   timingFromProvinceStatus,
   buildMarketDeliveryCopy,
+  buildExperienceCopy,
 } from './marketHomeLanding';
 
 assert.equal(
@@ -152,5 +153,47 @@ const pattayaDelivery = buildMarketDeliveryCopy({
 });
 assert.equal(pattayaDelivery.showCutoffWindow, true);
 assert.match(pattayaDelivery.timingTitle, /same-day/i);
+
+const chiangMaiExperience = buildExperienceCopy({
+  lang: 'en',
+  city: 'Chiang Mai',
+  timing: 'same_day',
+});
+assert.match(chiangMaiExperience.subtitle, /Chiang Mai/);
+assert.match(chiangMaiExperience.step1Desc, /Chiang Mai/);
+assert.match(chiangMaiExperience.step3Desc, /same-day/i);
+assert.ok(chiangMaiExperience.step3Desc.includes('20:00'), 'Chiang Mai same-day mentions 20:00 cutoff');
+assert.ok(!chiangMaiExperience.step3Desc.includes('{cutoff}'));
+assert.ok(!chiangMaiExperience.subtitle.includes('{city}'));
+
+const lamphunExperience = buildExperienceCopy({
+  lang: 'en',
+  city: 'Lamphun',
+  timing: 'same_day',
+});
+assert.match(lamphunExperience.subtitle, /Lamphun/);
+assert.match(lamphunExperience.step1Desc, /Lamphun/);
+assert.match(lamphunExperience.step3Desc, /same-day/i);
+assert.ok(lamphunExperience.step3Desc.includes('20:00'), 'Lamphun same-day mentions 20:00 cutoff');
+assert.ok(!lamphunExperience.step3Desc.includes('Chiang Mai'));
+
+const pattayaExperience = buildExperienceCopy({
+  lang: 'en',
+  city: 'Pattaya',
+  timing: 'same_day',
+});
+assert.match(pattayaExperience.subtitle, /Pattaya/);
+assert.match(pattayaExperience.step1Desc, /Pattaya/);
+assert.ok(!pattayaExperience.subtitle.includes('Chiang Mai'));
+assert.ok(!pattayaExperience.step1Desc.includes('Chiang Mai'));
+assert.ok(!pattayaExperience.step3Desc.includes('Chiang Mai'));
+
+const preorderExperience = buildExperienceCopy({
+  lang: 'en',
+  city: 'Chiang Rai',
+  timing: 'preorder_only',
+});
+assert.match(preorderExperience.step3Desc, /Advance order for Chiang Rai/);
+assert.ok(!/same-day/i.test(preorderExperience.step3Desc));
 
 console.log('marketHomeLanding.test.ts: ok');

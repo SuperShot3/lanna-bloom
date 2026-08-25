@@ -1,7 +1,7 @@
 /** Unique photo playlist for catalog-card desktop hover cycling. */
 
-/** Same duration as the home hero progress fill (`HeroFeatureCarousel`). */
-export const CATALOG_CARD_HOVER_GALLERY_MS = 3000;
+/** Dwell + progress-fill duration before advancing to the next catalog-card photo. */
+export const CATALOG_CARD_HOVER_GALLERY_MS = 2000;
 
 function uniqueTrimmedUrls(urls: Array<string | null | undefined>): string[] {
   const seen = new Set<string>();

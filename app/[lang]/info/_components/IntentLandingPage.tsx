@@ -199,6 +199,8 @@ export async function IntentLandingPage({
         {...props}
         alt={props.alt ?? ''}
         loading="lazy"
+        width={props.width ?? 1200}
+        height={props.height ?? 800}
         style={{
           maxWidth: '100%',
           height: 'auto',

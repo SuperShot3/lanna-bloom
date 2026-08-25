@@ -17,6 +17,7 @@ export function PopularPicksRow({
   lang,
   showMoreLabel,
   ctaEvent,
+  showMorePremium,
 }: {
   title: string;
   href: string;
@@ -24,6 +25,7 @@ export function PopularPicksRow({
   lang: Locale;
   showMoreLabel: string;
   ctaEvent?: string;
+  showMorePremium?: boolean;
 }) {
   if (bouquets.length === 0) return null;
 
@@ -41,7 +43,12 @@ export function PopularPicksRow({
           ))}
         </div>
       </div>
-      <ShowMoreLink href={href} label={showMoreLabel} ctaEvent={ctaEvent} />
+      <ShowMoreLink
+        href={href}
+        label={showMoreLabel}
+        ctaEvent={ctaEvent}
+        premium={showMorePremium}
+      />
     </div>
   );
 }

@@ -57,6 +57,8 @@ export function InfoCard({
               src={article.cover.src}
               alt={getArticleCoverAlt(article, lang) ?? ''}
               className="info-card-cover-img"
+              width={800}
+              height={450}
             />
           )}
         </div>
@@ -113,6 +115,7 @@ export function InfoCard({
           align-items: center;
           justify-content: center;
           position: relative;
+          overflow: hidden;
           border-radius: var(--radius) var(--radius) 0 0;
           background: var(--pastel-cream, #faf7f2);
         }
@@ -121,9 +124,13 @@ export function InfoCard({
           line-height: 1;
         }
         .info-card-cover-img {
+          position: absolute;
+          inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          max-width: none;
+          max-height: none;
+          object-fit: cover;
           object-position: center;
         }
         .info-card-body {

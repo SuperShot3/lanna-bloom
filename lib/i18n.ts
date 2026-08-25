@@ -189,13 +189,23 @@ const baseTranslations = {
       title: 'How It Works',
       subtitle: 'Simple online flower and gift delivery in Chiang Mai — browse, checkout, and we deliver locally with care.',
       subtitleV2: 'Browse, pay online, and we deliver locally with care.',
+      subtitleCity:
+        'Simple online flower and gift delivery in {city} — browse, checkout, and we deliver locally with care.',
       step1Title: '1. Select Bouquet',
       step1Desc: 'Browse fresh bouquets and gifts for Chiang Mai delivery, then pay online with secure checkout.',
+      step1DescCity:
+        'Browse fresh bouquets and gifts for {city} delivery, then pay online with secure checkout.',
       step2Title: '2. Expert Crafting',
       step2Desc: 'Your bouquet is prepared fresh and delivered locally with care.',
       step3Title: '3. Local Delivery',
       step3Desc:
         'Same-day delivery is available during working hours, subject to flower and courier availability.',
+      step3DescSameDay:
+        'Same-day delivery in {city} when you order before {cutoff} Thailand time, subject to flower and courier availability.',
+      step3DescNextDay:
+        'Next-day delivery in {city} during working hours {start}–{end} Thailand time. Same-day is not available here.',
+      step3DescPreorder:
+        'Advance order for {city}. Choose an available delivery date at checkout.',
     },
     partners: {
       title: 'Trusted local studios',
@@ -1969,13 +1979,21 @@ const baseTranslations = {
       title: 'วิธีการสั่งซื้อ',
       subtitle: 'สั่งดอกไม้และของขวัญออนไลน์ในเชียงใหม่ง่ายๆ — เลือกช่อ ชำระเงิน และเราจัดส่งให้ในพื้นที่อย่างใส่ใจ',
       subtitleV2: 'เลือก ชำระเงินออนไลน์ แล้วเราจัดส่งให้ในพื้นที่อย่างใส่ใจ',
+      subtitleCity:
+        'สั่งดอกไม้และของขวัญออนไลน์ใน{city}ง่ายๆ — เลือกช่อ ชำระเงิน และเราจัดส่งให้ในพื้นที่อย่างใส่ใจ',
       step1Title: '1. เลือกช่อดอกไม้',
       step1Desc: 'เลือกช่อดอกไม้และของขวัญสดสำหรับจัดส่งในเชียงใหม่ แล้วชำระเงินออนไลน์อย่างปลอดภัย',
+      step1DescCity: 'เลือกช่อดอกไม้และของขวัญสดสำหรับจัดส่งใน{city} แล้วชำระเงินออนไลน์อย่างปลอดภัย',
       step2Title: '2. งานฝีมือผู้เชี่ยวชาญ',
       step2Desc: 'ช่อของคุณจัดทำสดและจัดส่งในพื้นที่อย่างใส่ใจ',
       step3Title: '3. จัดส่งท้องถิ่น',
       step3Desc:
         'จัดส่งภายในวันได้ในช่วงเวลาทำการ โดยขึ้นอยู่กับความพร้อมของดอกไม้และคิวจัดส่ง',
+      step3DescSameDay:
+        'จัดส่งวันเดียวใน{city}ได้เมื่อสั่งก่อน {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และคิวจัดส่ง',
+      step3DescNextDay:
+        'จัดส่งวันถัดไปใน{city}ในช่วงเวลาทำการ {start}–{end} น. ตามเวลาไทย ไม่มีบริการจัดส่งวันเดียวกันที่นี่',
+      step3DescPreorder: 'สั่งล่วงหน้าสำหรับ{city} เลือกวันจัดส่งที่มีที่หน้าชำระเงิน',
     },
     partners: {
       title: 'สตูดิโอท้องถิ่นที่ไว้ใจได้',
@@ -5277,12 +5295,19 @@ const chineseHongKongTranslations = {
     ...baseTranslations.en.experience,
     title: '訂購流程',
     subtitle: '清邁鮮花及禮品網上配送——瀏覽、結帳，我們用心本地送達。',
+    subtitleCity: '{city}鮮花及禮品網上配送——瀏覽、結帳，我們用心本地送達。',
     step1Title: '1. 選擇花束',
     step1Desc: '瀏覽為清邁配送而設的新鮮花束及禮品，然後以安全結帳付款。',
+    step1DescCity: '瀏覽為{city}配送而設的新鮮花束及禮品，然後以安全結帳付款。',
     step2Title: '2. 專業製作',
     step2Desc: '花束新鮮製作，並由本地用心送達。',
     step3Title: '3. 本地配送',
     step3Desc: '營業時間內可即日配送，視鮮花及配送運力而定。',
+    step3DescSameDay:
+      '於泰國時間 {cutoff} 前下單，即可在{city}即日配送，視鮮花及配送運力而定。',
+    step3DescNextDay:
+      '{city}於營業時間 {start}–{end}（泰國時間）提供翌日配送。此處不提供即日配送。',
+    step3DescPreorder: '{city}僅接受預先訂購。請在結帳時選擇可配送日期。',
   },
   partners: {
     ...baseTranslations.en.partners,

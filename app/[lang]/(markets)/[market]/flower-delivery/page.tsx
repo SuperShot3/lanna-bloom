@@ -139,7 +139,11 @@ export default async function MarketFlowerDeliveryPage({
           province={province}
         />
       </Suspense>
-      <ExperienceSection lang={lang} />
+      <ExperienceSection
+        lang={lang}
+        locationName={city}
+        timing="same_day"
+      />
       <DeliverySection lang={lang} catalogHref={catalogHref} copy={deliveryCopy} destinationId={entry.destinationId} />
       <ReviewsSection
         lang={lang}

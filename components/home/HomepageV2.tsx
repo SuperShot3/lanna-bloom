@@ -25,6 +25,7 @@ import {
 import { firstStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { translations, type Locale } from '@/lib/i18n';
+import { destinationDisplayName } from '@/lib/delivery/markets';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 
@@ -100,6 +101,7 @@ async function HomeBrowseV2({ lang }: { lang: Locale }) {
           lang={lang}
           showMoreLabel={tHome.viewAllBouquets}
           ctaEvent="cta_home_view_all_bouquets"
+          showMorePremium
         />
         <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
         <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} catalogHref={catalogBase} />
@@ -127,7 +129,11 @@ export async function HomepageV2({ lang }: { lang: Locale }) {
       <Suspense fallback={<PopularSectionSkeleton />}>
         <HomeBrowseV2 lang={lang} />
       </Suspense>
-      <ExperienceSection lang={lang} subtitleOverride={t.experience.subtitleV2} />
+      <ExperienceSection
+        lang={lang}
+        locationName={destinationDisplayName('CHIANG_MAI', lang)}
+        timing="same_day"
+      />
       <GiftCategoryCards heading={t.home.giftsSectionTitle} cards={giftCards} />
       <DeliverySection lang={lang} />
       <ReviewsSection lang={lang} />

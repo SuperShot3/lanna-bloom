@@ -1,7 +1,7 @@
 /**
- * City-parameterized homepage copy for expansion market landings.
- * Chiang Mai homepage keeps its own strings; this module is for
- * `/{lang}/{city}/flower-delivery` only.
+ * City-parameterized landing copy for expansion market pages and the shared
+ * How It Works (ExperienceSection) on Homepage V1, V2, and
+ * `/{lang}/{city}/flower-delivery`.
  */
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -61,6 +61,33 @@ export function timingFromProvinceStatus(
   if (status === 'next_day') return 'next_day';
   if (status === 'preorder_only') return 'preorder_only';
   return 'other';
+}
+
+export type ExperienceCopy = {
+  subtitle: string;
+  step1Desc: string;
+  step3Desc: string;
+};
+
+export function buildExperienceCopy(params: {
+  lang: Locale;
+  city: string;
+  timing: MarketLandingTiming;
+}): ExperienceCopy {
+  const { lang, city, timing } = params;
+  const t = translations[lang].experience;
+  const step3Template =
+    timing === 'same_day'
+      ? t.step3DescSameDay
+      : timing === 'preorder_only'
+        ? t.step3DescPreorder
+        : t.step3DescNextDay;
+
+  return {
+    subtitle: fillCityPlaceholders(t.subtitleCity, city),
+    step1Desc: fillCityPlaceholders(t.step1DescCity, city),
+    step3Desc: fillDeliveryTimePlaceholders(fillCityPlaceholders(step3Template, city)),
+  };
 }
 
 export type MarketDeliveryCopy = {

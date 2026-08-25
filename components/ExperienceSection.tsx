@@ -1,20 +1,29 @@
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { StorefrontIcon, type StorefrontIconName } from '@/components/icons';
+import {
+  buildExperienceCopy,
+  type MarketLandingTiming,
+} from '@/lib/landingPages/marketHomeLanding';
 
 export function ExperienceSection({
   lang,
+  locationName,
+  timing = 'same_day',
   subtitleOverride,
 }: {
   lang: Locale;
+  locationName: string;
+  timing?: MarketLandingTiming;
   subtitleOverride?: string;
 }) {
   const t = translations[lang].experience;
+  const copy = buildExperienceCopy({ lang, city: locationName, timing });
 
   const steps: { icon: StorefrontIconName; title: string; desc: string }[] = [
-    { icon: 'grid-view', title: t.step1Title, desc: t.step1Desc },
+    { icon: 'grid-view', title: t.step1Title, desc: copy.step1Desc },
     { icon: 'handyman', title: t.step2Title, desc: t.step2Desc },
-    { icon: 'local-shipping', title: t.step3Title, desc: t.step3Desc },
+    { icon: 'local-shipping', title: t.step3Title, desc: copy.step3Desc },
   ];
 
   return (
@@ -33,7 +42,7 @@ export function ExperienceSection({
             {t.title}
           </h2>
           <p className="text-stone-500 max-w-2xl mx-auto text-center">
-            {subtitleOverride ?? t.subtitle}
+            {subtitleOverride ?? copy.subtitle}
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 home-reveal-stagger">

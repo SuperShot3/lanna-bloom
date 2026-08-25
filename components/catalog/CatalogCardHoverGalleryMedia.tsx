@@ -21,7 +21,7 @@ function CatalogCardHoverProgressDots({
 }) {
   return (
     <div
-      className="pointer-events-none absolute left-1/2 top-1/2 z-[3] flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5"
+      className="pointer-events-none absolute bottom-2 left-1/2 z-[3] flex -translate-x-1/2 items-center gap-1.5"
       aria-hidden
     >
       {Array.from({ length: count }, (_, index) => {

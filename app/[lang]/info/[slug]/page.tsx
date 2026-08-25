@@ -272,6 +272,16 @@ export default async function InfoArticlePage({
     strong: (props: React.HTMLAttributes<HTMLElement>) => (
       <strong className="info-article-strong" {...props} />
     ),
+    img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        loading="lazy"
+        {...props}
+        alt={props.alt ?? ''}
+        width={props.width ?? 1200}
+        height={props.height ?? 800}
+      />
+    ),
     ArticleListen: () => (
       <ArticleListenPlayer src={ORDER_FROM_ABROAD_AUDIO} lang={lang} />
     ),
@@ -317,7 +327,14 @@ export default async function InfoArticlePage({
       return (
         <figure className={figureClass}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt={alt} className={styles.articleFigureImg} loading="lazy" />
+          <img
+            src={src}
+            alt={alt}
+            className={styles.articleFigureImg}
+            loading="lazy"
+            width={size === 'sm' ? 680 : 1200}
+            height={size === 'sm' ? 510 : 800}
+          />
           {caption ? (
             <figcaption className={styles.articleFigureCaption}>{caption}</figcaption>
           ) : null}
