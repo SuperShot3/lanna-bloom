@@ -113,7 +113,12 @@ export function Footer({ lang }: { lang: Locale }) {
                 Lanna Bloom
               </span>
             </Link>
-            <p className="text-stone-500 text-sm leading-relaxed mb-6">{t.tagline}</p>
+            <p className="text-stone-500 text-sm leading-relaxed mb-6">
+              {t.tagline.replace(
+                '{city}',
+                destinationDisplayName(checkoutProfile.destinationId, lang)
+              )}
+            </p>
             <div className="flex gap-4 items-center flex-wrap">
               <SocialLinks />
               <MessengerLinks pageLocation="footer" />

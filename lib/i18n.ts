@@ -203,8 +203,8 @@ const baseTranslations = {
     },
     footer: {
       tagline:
-        'Premium flower and gift delivery in Chiang Mai. Order online with reliable local delivery.',
-      flowerDeliveryThailand: 'Chiang Mai areas & fees',
+        'Premium flower and gift delivery in {city}. Order online with reliable local delivery.',
+      flowerDeliveryThailand: 'Areas & fees',
       shop: 'Shop',
       popularBouquets: 'Popular Bouquets',
       roseBouquets: 'Rose Bouquets',
@@ -1981,8 +1981,8 @@ const baseTranslations = {
       subtitle: 'ช่อดอกไม้สวยจากช่างดอกไม้ที่คัดสรรในเชียงใหม่',
     },
     footer: {
-      tagline: 'บริการส่งดอกไม้และของขวัญพรีเมียมในเชียงใหม่ สั่งออนไลน์ จัดส่งในพื้นที่อย่างน่าเชื่อถือ',
-      flowerDeliveryThailand: 'พื้นที่และค่าส่งเชียงใหม่',
+      tagline: 'บริการส่งดอกไม้และของขวัญพรีเมียมใน{city} สั่งออนไลน์ จัดส่งในพื้นที่อย่างน่าเชื่อถือ',
+      flowerDeliveryThailand: 'พื้นที่และค่าส่ง',
       shop: 'ร้านค้า',
       popularBouquets: 'ช่อยอดนิยม',
       roseBouquets: 'ช่อกุหลาบในเชียงใหม่',
@@ -3672,7 +3672,7 @@ const russianTranslations = {
   footer: {
     ...baseTranslations.en.footer,
     tagline:
-      'Премиальная доставка цветов в Чиангмае. Отобранные, собранные вручную и доставленные с заботой.',
+      'Премиальная доставка цветов в {city}. Отобранные, собранные вручную и доставленные с заботой.',
     shop: 'Магазин',
     popularBouquets: 'Популярные букеты',
     occasions: 'Поводы',
@@ -4571,8 +4571,8 @@ const chineseSingaporeTranslations = {
   },
   footer: {
     ...baseTranslations.en.footer,
-    tagline: '清迈优质鲜花和礼品配送。在线订购，可靠本地送达。',
-    flowerDeliveryThailand: '清迈配送区域与费用',
+    tagline: '{city}优质鲜花和礼品配送。在线订购，可靠本地送达。',
+    flowerDeliveryThailand: '配送区域与费用',
     shop: '商店',
     popularBouquets: '热门花束',
     occasions: '场合',
@@ -5522,8 +5522,8 @@ const chineseHongKongTranslations = {
   },
   footer: {
     ...baseTranslations.en.footer,
-    tagline: '清邁優質鮮花及禮品配送。線上訂購，可靠本地送達。',
-    flowerDeliveryThailand: '清邁配送區域與費用',
+    tagline: '{city}優質鮮花及禮品配送。線上訂購，可靠本地送達。',
+    flowerDeliveryThailand: '配送區域與費用',
     shop: '商店',
     popularBouquets: '熱門花束',
     occasions: '場合',
