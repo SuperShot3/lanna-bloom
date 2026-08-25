@@ -144,6 +144,9 @@ export function CatalogFilterBar({
                     className={`catalog-chip-icon ${isJiggling ? 'catalog-chip-icon--jiggle' : ''}`}
                     src={iconSrc}
                     alt=""
+                    width={25}
+                    height={25}
+                    style={{ width: 25, height: 25, maxWidth: 25, maxHeight: 25 }}
                     aria-hidden="true"
                   />
                 )}

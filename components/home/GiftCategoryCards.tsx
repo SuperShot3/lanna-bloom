@@ -49,7 +49,10 @@ export function GiftCategoryCards({
               }
               className="home-reveal-item group relative overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:ring-[#C5A059]/60 hover:shadow-lg"
             >
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100">
+              <div
+                className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100"
+                style={{ aspectRatio: '4 / 3' }}
+              >
                 <Image
                   src={card.imageUrl}
                   alt={card.title}

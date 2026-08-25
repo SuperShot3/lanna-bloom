@@ -293,6 +293,9 @@ export function Footer({ lang }: { lang: Locale }) {
               src="/payments/stripe-cc-payments1.png"
               alt="Pay with Stripe"
               className="!h-6 w-auto !max-w-[148px] object-contain shrink-0"
+              width={148}
+              height={24}
+              style={{ height: 24, width: 'auto', maxWidth: 148, maxHeight: 24 }}
               loading="lazy"
               decoding="async"
             />
@@ -300,6 +303,9 @@ export function Footer({ lang }: { lang: Locale }) {
               src="/payments/Thai_QR_Logo.svg"
               alt="Thai QR Payment"
               className="h-10 w-10 object-contain"
+              width={40}
+              height={40}
+              style={{ width: 40, height: 40 }}
               loading="lazy"
               decoding="async"
             />
@@ -307,6 +313,9 @@ export function Footer({ lang }: { lang: Locale }) {
               src="https://dbdregistered.dbd.go.th/api/public/banner?param=867714DAF3E4ED6944FA5672C4E6D1C4A2114631CF57F4DB847153673BC31A6B"
               alt="DBD Verified (Thailand Department of Business Development)"
               className="h-10 w-10 object-contain"
+              width={40}
+              height={40}
+              style={{ width: 40, height: 40 }}
               loading="lazy"
               decoding="async"
             />

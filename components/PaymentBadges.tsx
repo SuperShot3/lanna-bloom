@@ -10,6 +10,13 @@ export function PaymentBadges({ lang, compact }: { lang: Locale; compact?: boole
           src="/payments/stripe-cc-payments1.png"
           alt="Visa, Mastercard, American Express, and other cards"
           className="payment-badges-icon payment-badges-single"
+          width={148}
+          height={28}
+          style={
+            compact
+              ? { width: 40, height: 40, maxWidth: 40, maxHeight: 40 }
+              : { height: 28, width: 'auto', maxWidth: '100%', maxHeight: 28 }
+          }
           loading="lazy"
           decoding="async"
         />

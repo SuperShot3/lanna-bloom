@@ -42,6 +42,13 @@ function FlowerTypeTileLink({
     >
       <div
         className={`relative ${item.imageAspectClass ?? 'aspect-square'} w-full overflow-hidden rounded-2xl bg-stone-100 ring-1 ring-stone-200/80 transition-all duration-300 group-hover:ring-[#C5A059]/60`}
+        style={{
+          aspectRatio: item.imageAspectClass?.includes('3/4')
+            ? '3 / 4'
+            : item.imageAspectClass?.includes('4/3')
+              ? '4 / 3'
+              : '1',
+        }}
       >
         <Image
           src={item.imageUrl}

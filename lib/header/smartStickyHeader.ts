@@ -69,7 +69,7 @@ export function tickSmartSticky(state: SmartStickyState, tick: SmartStickyTick):
   const y = Math.max(0, tick.y);
   const isScrolled = y > SMART_STICKY.scrolledPx;
 
-  if (!tick.isMobile || tick.reducedMotion || tick.menuOpen || tick.overlayOpen) {
+  if (tick.reducedMotion || tick.menuOpen || tick.overlayOpen) {
     return revealed(state, y, 0);
   }
 
@@ -106,12 +106,14 @@ export function tickSmartSticky(state: SmartStickyState, tick: SmartStickyTick):
     tick.variant === 'cart-compact' ? SMART_STICKY.cartMinYToCompactPx : SMART_STICKY.minYToHidePx;
   const cooled = tick.now - state.lastHideAt >= SMART_STICKY.hideCooldownMs;
   const alreadyAway =
-    tick.variant === 'cart-compact' ? state.collapseMode === 'compact' : state.hidden;
+    tick.variant === 'cart-compact' && tick.isMobile
+      ? state.collapseMode === 'compact'
+      : state.hidden;
 
   if (!alreadyAway && cooled && y >= minY && next.downAccum >= hideAfter) {
     next.downAccum = 0;
     next.lastHideAt = tick.now;
-    if (tick.variant === 'cart-compact') {
+    if (tick.variant === 'cart-compact' && tick.isMobile) {
       next.collapseMode = 'compact';
       next.hidden = false;
     } else {

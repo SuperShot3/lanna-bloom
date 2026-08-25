@@ -932,14 +932,22 @@ export function FlowerFilterSidebar(props: FlowerFilterPanelProps) {
           width: 248px;
           flex-shrink: 0;
           align-self: flex-start;
-          /* Sit below sticky CatalogFilterBar (header stack + category + flower-type rows) */
+          /* Sit below sticky CatalogFilterBar (header stack + chip rows + 1rem gap) */
           position: sticky;
-          top: calc(var(--site-header-stack, 76px) + 92px);
-          max-height: calc(100vh - var(--site-header-stack, 76px) - 92px);
+          top: calc(var(--site-header-stack, 76px) + 92px + 1rem);
+          max-height: calc(100dvh - var(--site-header-stack, 76px) - 92px - 1rem);
           overflow-y: auto;
+          transition:
+            top 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            max-height 220ms cubic-bezier(0.22, 1, 0.36, 1);
           scrollbar-width: thin;
           scrollbar-color: var(--border) transparent;
           border-radius: 20px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .flower-filter-sidebar-aside {
+            transition: none;
+          }
         }
         .flower-filter-sidebar-aside::-webkit-scrollbar {
           width: 4px;

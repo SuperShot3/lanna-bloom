@@ -43,6 +43,12 @@ import {
 import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
 import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
 import {
+  altForCatalogCardHoverImage,
+  buildCatalogCardHoverPlaylist,
+} from '@/lib/catalog/catalogCardHoverGallery';
+import { useCatalogCardHoverGallery } from '@/lib/catalog/useCatalogCardHoverGallery';
+import { CatalogCardHoverGalleryMedia } from '@/components/catalog/CatalogCardHoverGalleryMedia';
+import {
   catalogCardImageForSize,
   galleryIndexForSize,
   sizeIndexForGalleryIndex,
@@ -71,6 +77,7 @@ export function BouquetCard({
   showPartnerBadge = true,
   persistPreferredSizeOnClick = false,
   rememberCatalogReturn = false,
+  desktopHoverGallery = false,
 }: {
   bouquet: Bouquet;
   lang: Locale;
@@ -92,6 +99,8 @@ export function BouquetCard({
   persistPreferredSizeOnClick?: boolean;
   /** Preserve browser back behavior when this card is rendered in the catalog. */
   rememberCatalogReturn?: boolean;
+  /** Catalog grid only: desktop hover cycles extra photos with the hero progress fill. */
+  desktopHoverGallery?: boolean;
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
@@ -140,8 +149,24 @@ export function BouquetCard({
     sizeImageUrls: selectedSize?.imageUrls,
   });
   const imgSrc = selectedSize?.imageUrls?.[0] || images[imageIndex] || mappedCardImage.url || '';
+  const hoverPlaylist = useMemo(
+    () => buildCatalogCardHoverPlaylist({ gallery: images, currentSrc: imgSrc }),
+    [images, imgSrc]
+  );
+  const hoverGallery = useCatalogCardHoverGallery({
+    enabled: desktopHoverGallery,
+    playlist: hoverPlaylist,
+    restSrc: imgSrc,
+  });
+  const displaySrc = hoverGallery.displaySrc || imgSrc;
   const imgAlt = bouquet.imageAlts?.[imageIndex]?.trim() || bouquet.imageAlts?.[0]?.trim() || name;
-  const currentImageIsAi = isImageUrlAiGenerated(imgSrc, [
+  const displayAlt = altForCatalogCardHoverImage(
+    images,
+    bouquet.imageAlts,
+    displaySrc,
+    name
+  );
+  const currentImageIsAi = isImageUrlAiGenerated(displaySrc, [
     { images: selectedSize?.imageUrls, imageAiGenerated: selectedSize?.imageAiGenerated },
     { images, imageAiGenerated: bouquet.imageAiGenerated },
   ]);
@@ -470,9 +495,11 @@ export function BouquetCard({
       data-expanded={expandablePanel && hovered ? 'true' : 'false'}
       onMouseEnter={() => {
         if (expandablePanel && !actionsPinned) setHovered(true);
+        hoverGallery.onEnter();
       }}
       onMouseLeave={() => {
         if (expandablePanel && !actionsPinned) setHovered(false);
+        hoverGallery.onLeave();
       }}
     >
       <PrefetchLink
@@ -486,14 +513,15 @@ export function BouquetCard({
       >
         <div
           className={`card-image-wrap ${isPopular ? 'card-image-wrap-popular' : ''} ${isCompact ? 'card-image-wrap-compact' : ''}`}
-          style={
-            canSwipe
-              ? { touchAction: 'pan-y' as const }
-              : undefined
-          }
+          style={{
+            aspectRatio: isPopular && !isCompact ? '3 / 4' : '1',
+            position: 'relative',
+            overflow: 'hidden',
+            ...(canSwipe ? { touchAction: 'pan-y' as const } : {}),
+          }}
           onTouchStart={canSwipe ? handleTouchStart : undefined}
           onTouchEnd={canSwipe ? handleTouchEnd : undefined}
-          onMouseDown={canSwipe ? handleMouseDown : undefined}
+          onMouseDown={canSwipe && !hoverGallery.disableMouseDrag ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
           {contactBeforeOrder ? (
@@ -518,22 +546,35 @@ export function BouquetCard({
               <StorefrontIcon name="favorite" filled={favoriteActive} size={23} />
             </button>
           )}
-          {imgSrc ? (
+          {displaySrc ? (
             <div
               className="card-image-shared"
               style={{ viewTransitionName } as React.CSSProperties}
             >
-              <Image
-                src={imgSrc}
-                alt={imgAlt}
-                width={400}
-                height={400}
-                className="card-image"
-                sizes={CATALOG_CARD_IMAGE_SIZES}
-                unoptimized={catalogImageUnoptimized(imgSrc)}
-                draggable={false}
-                style={{ pointerEvents: 'none' }}
-              />
+              {desktopHoverGallery ? (
+                <CatalogCardHoverGalleryMedia
+                  src={displaySrc}
+                  alt={displayAlt}
+                  sizes={CATALOG_CARD_IMAGE_SIZES}
+                  showDesktopDots={hoverGallery.canShowDesktopDots}
+                  cycling={hoverGallery.cycling}
+                  displayIndex={hoverGallery.displayIndex}
+                  count={hoverPlaylist.length}
+                  progressMs={hoverGallery.progressMs}
+                />
+              ) : (
+                <Image
+                  src={imgSrc}
+                  alt={imgAlt}
+                  width={400}
+                  height={400}
+                  className="card-image"
+                  sizes={CATALOG_CARD_IMAGE_SIZES}
+                  unoptimized={catalogImageUnoptimized(imgSrc)}
+                  draggable={false}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
               <CatalogAiImageBadge
                 visible={currentImageIsAi}
                 ariaLabel={t.aiImageAria ?? 'AI-generated image'}
@@ -543,7 +584,7 @@ export function BouquetCard({
           ) : (
             <div className="card-image card-image-placeholder" aria-hidden />
           )}
-          {canSwipe && (
+          {canSwipe && !hoverGallery.canShowDesktopDots && (
             <div className="card-dots" aria-hidden>
               {images.map((_, i) => (
                 <span

@@ -60,7 +60,9 @@ assert.equal(state.hidden, true, 'accumulated downward travel then hides');
 
 state = createSmartStickyState(120);
 state = tick(state, 120 + SMART_STICKY.hideAfterDownPx, { now: 4_000, isMobile: false });
-assert.equal(state.hidden, false, 'desktop must never hide');
+assert.equal(state.hidden, true, 'desktop hides completely on scroll down');
+state = tick(state, state.lastY - SMART_STICKY.showAfterUpPx, { now: 4_010, isMobile: false });
+assert.equal(state.hidden, false, 'desktop shows again on scroll up');
 
 state = createSmartStickyState(120);
 state = tick(state, 120 + SMART_STICKY.hideAfterDownPx, { now: 5_000, reducedMotion: true });

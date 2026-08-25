@@ -35,6 +35,12 @@ import {
 import { rememberCatalogProductNavigation } from '@/lib/catalogReturnNavigation';
 import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
 import {
+  altForCatalogCardHoverImage,
+  buildCatalogCardHoverPlaylist,
+} from '@/lib/catalog/catalogCardHoverGallery';
+import { useCatalogCardHoverGallery } from '@/lib/catalog/useCatalogCardHoverGallery';
+import { CatalogCardHoverGalleryMedia } from '@/components/catalog/CatalogCardHoverGalleryMedia';
+import {
   catalogCardImageForSize,
   galleryIndexForSize,
   sizeIndexForGalleryIndex,
@@ -48,6 +54,7 @@ export function ProductCard({
   alwaysShowActions = false,
   simpleActions = false,
   rememberCatalogReturn = false,
+  desktopHoverGallery = false,
 }: {
   product: CatalogProduct;
   lang: Locale;
@@ -56,6 +63,8 @@ export function ProductCard({
   simpleActions?: boolean;
   /** Preserve browser back behavior when this card is rendered in the catalog. */
   rememberCatalogReturn?: boolean;
+  /** Catalog grid only: desktop hover cycles extra photos with the hero progress fill. */
+  desktopHoverGallery?: boolean;
 }) {
   const t = translations[lang].catalog;
   const tCart = translations[lang].cart;
@@ -114,9 +123,25 @@ export function ProductCard({
     mappedCardImage.url ||
     product.images?.[0] ||
     '';
+  const hoverPlaylist = useMemo(
+    () => buildCatalogCardHoverPlaylist({ gallery: images, currentSrc: imgSrc }),
+    [images, imgSrc]
+  );
+  const hoverGallery = useCatalogCardHoverGallery({
+    enabled: desktopHoverGallery,
+    playlist: hoverPlaylist,
+    restSrc: imgSrc,
+  });
+  const displaySrc = hoverGallery.displaySrc || imgSrc;
   const imgAlt =
     product.imageAlts?.[imageIndex]?.trim() || product.imageAlts?.[0]?.trim() || name;
-  const currentImageIsAi = isImageUrlAiGenerated(imgSrc, [
+  const displayAlt = altForCatalogCardHoverImage(
+    images,
+    product.imageAlts,
+    displaySrc,
+    name
+  );
+  const currentImageIsAi = isImageUrlAiGenerated(displaySrc, [
     { images: selectedSize?.imageUrls, imageAiGenerated: selectedSize?.imageAiGenerated },
     { images, imageAiGenerated: product.imageAiGenerated },
   ]);
@@ -382,9 +407,11 @@ export function ProductCard({
       data-expanded={expandablePanel && hovered ? 'true' : 'false'}
       onMouseEnter={() => {
         if (expandablePanel && !actionsPinned) setHovered(true);
+        hoverGallery.onEnter();
       }}
       onMouseLeave={() => {
         if (expandablePanel && !actionsPinned) setHovered(false);
+        hoverGallery.onLeave();
       }}
     >
       <Link
@@ -398,10 +425,19 @@ export function ProductCard({
       >
         <div
           className="pcard-image-wrap"
-          style={canSwipeStandaloneImages ? { touchAction: 'pan-y' as const } : undefined}
+          style={{
+            aspectRatio: '1',
+            position: 'relative',
+            overflow: 'hidden',
+            ...(canSwipeStandaloneImages ? { touchAction: 'pan-y' as const } : {}),
+          }}
           onTouchStart={canSwipeStandaloneImages ? handleTouchStart : undefined}
           onTouchEnd={canSwipeStandaloneImages ? handleTouchEnd : undefined}
-          onMouseDown={canSwipeStandaloneImages ? handleMouseDown : undefined}
+          onMouseDown={
+            canSwipeStandaloneImages && !hoverGallery.disableMouseDrag
+              ? handleMouseDown
+              : undefined
+          }
           aria-label={canSwipeStandaloneImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
         >
           {contactBeforeOrder ? (
@@ -425,19 +461,32 @@ export function ProductCard({
               />
             </span>
           ) : null}
-          {imgSrc ? (
+          {displaySrc ? (
             <div className="pcard-image-shared">
-              <Image
-                src={imgSrc}
-                alt={imgAlt}
-                width={400}
-                height={400}
-                className="pcard-image"
-                sizes={CATALOG_CARD_IMAGE_SIZES}
-                unoptimized={catalogImageUnoptimized(imgSrc)}
-                draggable={false}
-                style={{ pointerEvents: 'none' }}
-              />
+              {desktopHoverGallery ? (
+                <CatalogCardHoverGalleryMedia
+                  src={displaySrc}
+                  alt={displayAlt}
+                  sizes={CATALOG_CARD_IMAGE_SIZES}
+                  showDesktopDots={hoverGallery.canShowDesktopDots}
+                  cycling={hoverGallery.cycling}
+                  displayIndex={hoverGallery.displayIndex}
+                  count={hoverPlaylist.length}
+                  progressMs={hoverGallery.progressMs}
+                />
+              ) : (
+                <Image
+                  src={imgSrc}
+                  alt={imgAlt}
+                  width={400}
+                  height={400}
+                  className="pcard-image"
+                  sizes={CATALOG_CARD_IMAGE_SIZES}
+                  unoptimized={catalogImageUnoptimized(imgSrc)}
+                  draggable={false}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
               <CatalogAiImageBadge
                 visible={currentImageIsAi}
                 ariaLabel={t.aiImageAria ?? 'AI-generated image'}
@@ -448,7 +497,7 @@ export function ProductCard({
           ) : (
             <div className="pcard-image pcard-image-placeholder" aria-hidden />
           )}
-          {canSwipeStandaloneImages ? (
+          {canSwipeStandaloneImages && !hoverGallery.canShowDesktopDots ? (
             <div className="pcard-dots" aria-hidden>
               {images.map((_, i) => (
                 <span key={i} className={`pcard-dot ${i === imageIndex ? 'active' : ''}`} />

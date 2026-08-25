@@ -366,6 +366,7 @@ export function CatalogWithFilters({
                         bouquet={bouquet}
                         lang={lang}
                         rememberCatalogReturn
+                        desktopHoverGallery
                       />
                     ))
                   : visibleProducts.map((product) => (
@@ -374,6 +375,7 @@ export function CatalogWithFilters({
                         product={product}
                         lang={lang}
                         rememberCatalogReturn
+                        desktopHoverGallery
                       />
                     ))}
               </div>
