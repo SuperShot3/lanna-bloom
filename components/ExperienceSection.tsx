@@ -2,7 +2,13 @@ import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { StorefrontIcon, type StorefrontIconName } from '@/components/icons';
 
-export function ExperienceSection({ lang }: { lang: Locale }) {
+export function ExperienceSection({
+  lang,
+  subtitleOverride,
+}: {
+  lang: Locale;
+  subtitleOverride?: string;
+}) {
   const t = translations[lang].experience;
 
   const steps: { icon: StorefrontIconName; title: string; desc: string }[] = [
@@ -27,7 +33,7 @@ export function ExperienceSection({ lang }: { lang: Locale }) {
             {t.title}
           </h2>
           <p className="text-stone-500 max-w-2xl mx-auto text-center">
-            {t.subtitle}
+            {subtitleOverride ?? t.subtitle}
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 home-reveal-stagger">

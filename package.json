@@ -16,6 +16,7 @@
     "test:partner-apply": "tsx lib/partnerApplyValidate.test.ts",
     "test:paid-sales": "tsx lib/catalog/paidSalesCountsLogic.test.ts",
     "test:attribution": "tsx lib/attribution/attribution.test.ts",
+    "test:homepage-experiment": "tsx lib/homepageExperiment/assignment.test.ts && tsx lib/catalog/flowerTypeTitle.test.ts",
     "test:catalog-ids": "tsx lib/catalog/ids.test.ts",
     "test:contact-before-order": "tsx lib/catalog/contactBeforeOrder.test.ts && tsx lib/catalogAdminFieldOptions.deliveryMode.test.ts",
     "seed-admin": "tsx scripts/seed-admin.ts",

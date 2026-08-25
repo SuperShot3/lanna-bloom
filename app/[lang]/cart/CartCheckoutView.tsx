@@ -359,6 +359,7 @@ export function CartCheckoutView({
         otherItemsSubtotal={otherItemsSubtotal}
         deliveryFee={deliveryFee}
         deliveryFeeGross={deliveryFeeGross}
+        deliveryFeeKnown={hasDeliveryZone}
         discount={discount}
         discountLabel={discountLabel}
         grandTotal={grandTotal}

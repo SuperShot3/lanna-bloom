@@ -30,6 +30,7 @@ export function formatCurrency(amount: number, currency: DisplayCurrency, lang: 
   return new Intl.NumberFormat(lang === 'th' ? 'th-TH' : 'en-US', {
     style: 'currency',
     currency,
+    currencyDisplay: currency === 'THB' ? 'narrowSymbol' : 'symbol',
     minimumFractionDigits: currency === 'THB' ? 0 : 2,
     maximumFractionDigits: currency === 'THB' ? 2 : 2,
   }).format(amount);

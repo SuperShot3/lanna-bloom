@@ -10,6 +10,7 @@ import { translations } from '@/lib/i18n';
 import { CatalogWithFilters } from '@/components/CatalogWithFilters';
 import { CATEGORY_I18N_KEYS, PRODUCT_CATEGORIES } from '@/lib/catalogCategories';
 import { parseCatalogSearchParams } from '@/lib/catalogFilterParams';
+import { flowerTypeCatalogTitle } from '@/lib/catalog/flowerTypeTitle';
 import type { Bouquet } from '@/lib/bouquets';
 import { getBaseUrl } from '@/lib/orders';
 import { buildAlternates } from '@/lib/seo/alternates';
@@ -163,11 +164,19 @@ export default async function CatalogPage({
   };
 
   const occasionKeys = filterParams.occasion ? occasionSlugToKey[filterParams.occasion] : null;
+  const singleFlowerType =
+    !occasionKeys &&
+    topCategory === 'flowers' &&
+    filterParams.types?.length === 1
+      ? filterParams.types[0]
+      : null;
   const title = occasionKeys
     ? (t[occasionKeys.title] as string)
-    : topCategory !== 'flowers' && CATEGORY_I18N_KEYS[topCategory as keyof typeof CATEGORY_I18N_KEYS]
-      ? (t[CATEGORY_I18N_KEYS[topCategory as keyof typeof CATEGORY_I18N_KEYS] as keyof typeof t] as string)
-      : t.title;
+    : singleFlowerType
+      ? flowerTypeCatalogTitle(singleFlowerType, lang as Locale)
+      : topCategory !== 'flowers' && CATEGORY_I18N_KEYS[topCategory as keyof typeof CATEGORY_I18N_KEYS]
+        ? (t[CATEGORY_I18N_KEYS[topCategory as keyof typeof CATEGORY_I18N_KEYS] as keyof typeof t] as string)
+        : t.title;
   const description = occasionKeys ? (t[occasionKeys.desc] as string) : undefined;
 
   return (

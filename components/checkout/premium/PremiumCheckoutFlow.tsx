@@ -62,6 +62,23 @@ function primaryBouquetIndex(items: CartItem[]): number {
   return items.findIndex((i) => (i.itemType ?? 'bouquet') === 'bouquet');
 }
 
+function PriceRow({
+  label,
+  children,
+  variant = 'line',
+}: {
+  label: string;
+  children: ReactNode;
+  variant?: 'line' | 'total' | 'discount';
+}) {
+  return (
+    <div className={`co-price-row co-price-row--${variant}`}>
+      <span className="co-price-label">{label}</span>
+      <span className="co-price-amount">{children}</span>
+    </div>
+  );
+}
+
 export type PremiumCheckoutFlowProps = {
   lang: Locale;
   items: CartItem[];
@@ -100,6 +117,8 @@ export type PremiumCheckoutFlowProps = {
   otherItemsSubtotal: number;
   deliveryFee: number;
   deliveryFeeGross?: number;
+  /** False when district/zone is not selected yet — do not show delivery as free. */
+  deliveryFeeKnown?: boolean;
   discount: number;
   discountLabel: string;
   grandTotal: number;
@@ -155,6 +174,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
     addOnsTotal,
     deliveryFee,
     deliveryFeeGross,
+    deliveryFeeKnown = true,
     discount,
     discountLabel,
     grandTotal,
@@ -548,7 +568,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         data-checkout-section="recipient"
         className={sectionClass('recipient')}
       >
-        <div className="co-opt-in-chip-row">
+        <div className="co-opt-in-chip-row gap-5">
           <RecipientOptInToggle
             showReveal={false}
             selected={orderingForSomeoneElse}
@@ -725,6 +745,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
       </section>
 
       <section className="co-section co-price-section">
+        <h2 className="co-section-title">{tCart.orderSummary}</h2>
         <div className="co-card co-card--pad">
           {showPeakActiveNotice && spikeRule ? (
             <p className="co-peak-active-notice" role="status">
@@ -734,63 +755,65 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               </Link>
             </p>
           ) : null}
-          {bouquetSubtotal > 0 && (
-            <div className="co-price-row">
-              <span>{t.bouquetSubtotal}</span>
-              <CurrencyAmount thb={bouquetSubtotal} lang={lang} />
-            </div>
-          )}
-          {addOnsTotal > 0 && (
-            <div className="co-price-row">
-              <span>{t.addonsSubtotal}</span>
-              <CurrencyAmount thb={addOnsTotal} lang={lang} />
-            </div>
-          )}
-          {items.map((item, index) => {
-            if (!isNonBouquetCartLine(item)) return null;
-            const name = lang === 'th' ? item.nameTh : item.nameEn;
-            const qty = item.quantity ?? 1;
-            const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
-            const lineTotal =
-              effectiveCatalogUnitPriceWithExpansion(
-                item.size.price,
-                undefined,
-                delivery.deliveryDestination,
-                { deliveryDateYmd: delivery.date || undefined, extraThb: addOnsUnit }
-              ) * qty;
-            if (lineTotal <= 0) return null;
-            return (
-              <div key={`other-item-${index}`} className="co-price-row">
-                <span>
-                  {name}
-                  {qty > 1 ? ` × ${qty}` : ''}
+          <div className="co-price-list">
+            {bouquetSubtotal > 0 && (
+              <PriceRow label={t.bouquetSubtotal}>
+                <CurrencyAmount thb={bouquetSubtotal} lang={lang} />
+              </PriceRow>
+            )}
+            {addOnsTotal > 0 && (
+              <PriceRow label={t.addonsSubtotal}>
+                <CurrencyAmount thb={addOnsTotal} lang={lang} />
+              </PriceRow>
+            )}
+            {items.map((item, index) => {
+              if (!isNonBouquetCartLine(item)) return null;
+              const name = lang === 'th' ? item.nameTh : item.nameEn;
+              const qty = item.quantity ?? 1;
+              const addOnsUnit = getAddOnsTotal(item.addOns?.productAddOns ?? {});
+              const lineTotal =
+                effectiveCatalogUnitPriceWithExpansion(
+                  item.size.price,
+                  undefined,
+                  delivery.deliveryDestination,
+                  { deliveryDateYmd: delivery.date || undefined, extraThb: addOnsUnit }
+                ) * qty;
+              if (lineTotal <= 0) return null;
+              return (
+                <PriceRow
+                  key={`other-item-${index}`}
+                  label={qty > 1 ? `${name} × ${qty}` : name}
+                >
+                  <CurrencyAmount thb={lineTotal} lang={lang} />
+                </PriceRow>
+              );
+            })}
+            <PriceRow label={t.deliveryLine}>
+              {!deliveryFeeKnown ? (
+                <span className="co-price-pending">
+                  {tCart.stickyDeliverySelectArea ?? 'Select area'}
                 </span>
-                <CurrencyAmount thb={lineTotal} lang={lang} />
-              </div>
-            );
-          })}
-          <div className="co-price-row">
-            <span>{t.deliveryLine}</span>
-            <span>
-              {deliveryFeeGross != null && deliveryFeeGross > deliveryFee ? (
+              ) : deliveryFeeGross != null && deliveryFeeGross > deliveryFee ? (
                 <>
-                  <s className="co-price-was"><CurrencyAmount thb={deliveryFeeGross} lang={lang} showEstimateLabel={false} /></s>{' '}
-                  {t.freeDelivery}
+                  <s className="co-price-was">
+                    <CurrencyAmount thb={deliveryFeeGross} lang={lang} showEstimateLabel={false} />
+                  </s>
+                  <span className="co-price-free">{t.freeDelivery}</span>
                 </>
+              ) : deliveryFee === 0 ? (
+                <span className="co-price-free">{t.freeDelivery}</span>
               ) : (
                 <CurrencyAmount thb={deliveryFee} lang={lang} />
               )}
-            </span>
-          </div>
-          {discount > 0 && (
-            <div className="co-price-row co-price-row--discount">
-              <span>{discountLabel}</span>
-              <span>-<CurrencyAmount thb={discount} lang={lang} /></span>
-            </div>
-          )}
-          <div className="co-price-row co-price-row--total">
-            <span>{t.totalLine}</span>
-            <CurrencyAmount thb={grandTotal} lang={lang} />
+            </PriceRow>
+            {discount > 0 && (
+              <PriceRow label={discountLabel} variant="discount">
+                -<CurrencyAmount thb={discount} lang={lang} />
+              </PriceRow>
+            )}
+            <PriceRow label={t.totalLine} variant="total">
+              <CurrencyAmount thb={grandTotal} lang={lang} />
+            </PriceRow>
           </div>
           {mayCampaignProgressRemaining > 0 && !appliedReferralCode && (
             <p className="co-hint" role="status">
@@ -1018,6 +1041,81 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         }
         .premium-checkout .co-card.co-sender {
           padding: 16px;
+        }
+        .premium-checkout .co-opt-in-chip-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 4px;
+        }
+        /* Price rows live in PriceRow() — must be global or styled-jsx will not apply. */
+        .premium-checkout .co-price-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .premium-checkout .co-price-list > .co-price-row:first-child {
+          padding-top: 0;
+        }
+        .premium-checkout .co-price-list > .co-price-row:last-child {
+          padding-bottom: 0;
+        }
+        .premium-checkout .co-price-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: baseline;
+          column-gap: 16px;
+          font-size: 14px;
+          line-height: 1.4;
+          padding: 8px 0;
+        }
+        .premium-checkout .co-price-label {
+          color: var(--text-muted);
+          font-weight: 500;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .premium-checkout .co-price-amount {
+          font-variant-numeric: tabular-nums;
+          font-weight: 600;
+          color: var(--text);
+          text-align: right;
+          white-space: nowrap;
+        }
+        .premium-checkout .co-price-row--total {
+          margin-top: 4px;
+          padding-top: 12px;
+          border-top: 1px solid var(--border);
+        }
+        .premium-checkout .co-price-row--total .co-price-label {
+          color: var(--text);
+          font-size: 15px;
+          font-weight: 700;
+        }
+        .premium-checkout .co-price-row--total .co-price-amount {
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+        }
+        .premium-checkout .co-price-row--discount .co-price-label,
+        .premium-checkout .co-price-row--discount .co-price-amount {
+          color: var(--primary);
+        }
+        .premium-checkout .co-price-was {
+          opacity: 0.55;
+          font-weight: 500;
+          margin-right: 8px;
+        }
+        .premium-checkout .co-price-free {
+          color: var(--primary);
+          font-weight: 700;
+        }
+        .premium-checkout .co-price-pending {
+          color: var(--text-muted);
+          font-weight: 500;
         }
       `}</style>
       <style jsx>{`
@@ -1520,7 +1618,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           display: flex;
           flex-wrap: wrap;
           align-items: flex-start;
-          gap: 10px;
+          gap: 20px;
           margin-bottom: 4px;
         }
         .co-chips {
@@ -1528,13 +1626,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           flex-wrap: wrap;
           gap: 8px;
           margin-top: 10px;
-        }
-        .co-price-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          font-size: 15px;
-          padding: 6px 0;
         }
         .co-peak-active-notice {
           margin: 0 0 4px;
@@ -1551,28 +1642,6 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           color: color-mix(in srgb, #5c4a1f 85%, var(--primary));
           text-decoration: underline;
           text-underline-offset: 2px;
-        }
-        .co-price-row > span:first-child {
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .co-price-row > span:last-child {
-          flex-shrink: 0;
-        }
-        .co-price-row--total {
-          font-size: 18px;
-          font-weight: 700;
-          padding-top: 12px;
-          margin-top: 4px;
-          border-top: 1px solid var(--border);
-        }
-        .co-price-row--discount {
-          color: var(--primary);
-        }
-        .co-price-was {
-          opacity: 0.55;
-          margin-right: 4px;
         }
         .co-zone-control {
           display: flex;

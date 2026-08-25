@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { applyAttributionCookies } from '@/lib/attribution/middlewareCapture';
+import { applyHomepageExperiment } from '@/lib/homepageExperiment/middleware';
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -21,13 +22,17 @@ export default auth((req) => {
     return;
   }
 
-  return applyAttributionCookies(req);
+  const attrRes = applyAttributionCookies(req);
+  return applyHomepageExperiment(req, attrRes) ?? attrRes;
 });
 
 export const config = {
   matcher: [
     '/admin',
     '/admin/:path*',
+    '/en',
+    '/en/',
+    '/en/homepage-v2',
     {
       source: '/((?!api|_next/static|_next/image|favicon.ico|.*\\.).*)',
       has: [{ type: 'query', key: 'gclid' }],

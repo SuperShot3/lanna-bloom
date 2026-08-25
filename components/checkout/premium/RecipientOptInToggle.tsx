@@ -40,7 +40,7 @@ export function RecipientOptInToggle({
       {showChip && (
         <button
           type="button"
-          className={`${rootClass}__chip${chipOn ? ` ${rootClass}__chip--on` : ''}${chipComplete ? ` ${rootClass}__chip--complete` : ''}`}
+          className={`${rootClass}__chip${chipOn ? ` ${rootClass}__chip--on` : ''}${chipComplete ? ` ${rootClass}__chip--complete` : ''} px-5 py-3`}
           onClick={() => onSelectedChange(!selected)}
           aria-pressed={chipOn}
           aria-expanded={selected}
@@ -69,7 +69,7 @@ export function RecipientOptInToggle({
           <div className={`${rootClass}__reveal-inner`}>{children}</div>
         </div>
       )}
-      <style jsx>{`
+      <style jsx global>{`
         .co-recipient-opt-in,
         .cart-recipient-opt-in {
           display: flex;
@@ -93,8 +93,9 @@ export function RecipientOptInToggle({
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 5px;
-          padding: 10px 18px;
+          gap: 8px;
+          padding: 12px 20px;
+          min-height: 44px;
           border-radius: 999px;
           border: 1.5px solid var(--border);
           background: var(--surface);
@@ -105,6 +106,7 @@ export function RecipientOptInToggle({
           cursor: pointer;
           text-align: left;
           line-height: 1.3;
+          box-sizing: border-box;
           transition:
             border-color 0.2s ease-out,
             background 0.2s ease-out,
@@ -127,7 +129,8 @@ export function RecipientOptInToggle({
 
         .co-recipient-opt-in__chip--complete,
         .cart-recipient-opt-in__chip--complete {
-          padding: 8px 14px;
+          padding: 10px 16px;
+          min-height: 40px;
           font-size: 14px;
           font-weight: 600;
           border-color: #b8dcc4;
@@ -137,7 +140,7 @@ export function RecipientOptInToggle({
 
         .co-recipient-opt-in__chip--complete.co-recipient-opt-in__chip--on,
         .cart-recipient-opt-in__chip--complete.cart-recipient-opt-in__chip--on {
-          padding: 7px 13px;
+          padding: 9px 15px;
           border-color: #2e7d52;
           background: #e4f4ea;
           box-shadow: 0 0 0 2px color-mix(in srgb, #2e7d52 18%, transparent);
@@ -159,7 +162,7 @@ export function RecipientOptInToggle({
         .cart-recipient-opt-in__chip--on {
           border-color: var(--checkout-option-selected-border);
           border-width: 2px;
-          padding: 9px 17px;
+          padding: 11px 19px;
           background: var(--checkout-option-selected-bg);
           box-shadow: var(--checkout-option-selected-ring);
           color: var(--primary);

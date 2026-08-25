@@ -4,10 +4,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { HomeFlowerTypeTile } from '@/lib/catalog/homeFlowerTypeTiles';
-import {
-  catalogImageUnoptimized,
-  HOME_FLOWER_TYPE_TILE_IMAGE_SIZES,
-} from '@/lib/catalog/catalogImage';
+import { catalogImageUnoptimized, HOME_FLOWER_TYPE_TILE_IMAGE_SIZES } from '@/lib/catalog/catalogImage';
+import { trackCtaClick } from '@/lib/analytics';
 
 const LOOP_MS = 40_000;
 const DRAG_THRESHOLD_PX = 8;
@@ -18,6 +16,9 @@ export type FlowerTypeMarqueeItem = HomeFlowerTypeTile & {
   href: string;
   /** Defaults to square. Occasion posters are 3:4. */
   imageAspectClass?: string;
+  /** Serializable CTA event for GTM (no server→client functions). */
+  ctaEvent?: string;
+  ctaParams?: Record<string, string>;
 };
 
 function FlowerTypeTileLink({
@@ -32,6 +33,11 @@ function FlowerTypeTileLink({
       href={item.href}
       tabIndex={duplicate ? -1 : undefined}
       draggable={false}
+      onClick={
+        item.ctaEvent
+          ? () => trackCtaClick(item.ctaEvent!, item.ctaParams)
+          : undefined
+      }
       className="flower-type-marquee__tile group flex flex-col items-center text-center gap-2 rounded-2xl outline-none transition-transform duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#C5A059] focus-visible:ring-offset-2"
     >
       <div

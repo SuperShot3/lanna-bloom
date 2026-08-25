@@ -207,6 +207,7 @@ export function Hero({
   browseCollectionHref,
   locationName,
   timing = 'same_day',
+  sublineOverride,
 }: {
   lang: Locale;
   heroImageUrl?: string;
@@ -219,11 +220,13 @@ export function Hero({
   locationName?: string;
   /** Delivery timing shown on the floating badge; default same-day for Chiang Mai. */
   timing?: HeroDeliveryTiming;
+  /** Optional shorter subline (HomepageV2). V1 omits this. */
+  sublineOverride?: string;
 }) {
   const t = translations[lang].hero;
   const city = locationName ?? defaultCityName(lang);
   const trustLine = t.trustLine.replace('{city}', city);
-  const sublineNew = t.sublineNew.replace('{city}', city);
+  const sublineNew = (sublineOverride ?? t.sublineNew).replace('{city}', city);
   const headlineNew = t.headlineNew.replace('{city}', city);
   const pathname = usePathname();
   const pathParts = pathname?.split('/').filter(Boolean) ?? [];
@@ -254,6 +257,9 @@ export function Hero({
     !titleOverride &&
     (pathname === '/' ||
       (pathParts.length === 1 && locales.includes(pathParts[0] as Locale)) ||
+      (pathParts.length === 2 &&
+        locales.includes(pathParts[0] as Locale) &&
+        pathParts[1] === 'homepage-v2') ||
       isMarketLanding);
   const introClass = isHomeLanding ? 'home-hero-intro' : '';
   const introItemClass = isHomeLanding ? 'home-hero-intro__item' : '';

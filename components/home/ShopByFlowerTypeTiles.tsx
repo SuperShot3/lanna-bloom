@@ -30,6 +30,8 @@ export function ShopByFlowerTypeTiles({
     ...tile,
     label: flowerTypeTileLabel(tile.type, home, tCatalog),
     href: `${catalogBase}${buildCatalogSearchString({ types: [tile.type] })}`,
+    ctaEvent: 'cta_home_flower_type',
+    ctaParams: { flower_type: tile.type },
   }));
 
   return (

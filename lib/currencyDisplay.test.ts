@@ -15,3 +15,4 @@ assert.equal(convertFromThb(Number.NaN, 'USD', rates), null);
 assert.equal(isDisplayCurrency('SGD'), true);
 assert.equal(isDisplayCurrency('EUR'), false);
 assert.match(formatCurrency(27.5, 'USD', 'en'), /27\.50/);
+assert.match(formatCurrency(2380, 'THB', 'en'), /฿\s?2,380/);

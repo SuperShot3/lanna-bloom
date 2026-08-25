@@ -1,6 +1,4 @@
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { StorefrontIcon } from '@/components/icons';
 import {
   getCatalogHomeFlowerTypeSections,
   getCatalogHomeFlowerTypeTiles,
@@ -10,6 +8,8 @@ import {
 } from '@/lib/catalogReads';
 import { ShopByFlowerTypeTiles } from '@/components/home/ShopByFlowerTypeTiles';
 import { ShopByOccasionTiles } from '@/components/home/ShopByOccasionTiles';
+import { PopularPicksRow, HOME_POPULAR_ROW_LIMIT } from '@/components/home/PopularPicksRow';
+import { ShowMoreLink } from '@/components/home/ShowMoreLink';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import type { Locale } from '@/lib/i18n';
@@ -46,7 +46,6 @@ function flowerTypeSectionTitle(
 }
 
 const HOME_PRODUCT_SECTION_LIMIT = 6;
-const HOME_POPULAR_ROW_LIMIT = 8;
 
 type ProductSectionConfig = {
   categoryKey: string;
@@ -57,24 +56,6 @@ const HOME_PRODUCT_SECTIONS: ProductSectionConfig[] = [
   { categoryKey: 'plushy_toys', titleKey: 'productSectionPlushyToys' },
   { categoryKey: 'balloons', titleKey: 'productSectionBalloons' },
 ];
-
-function ShowMoreLink({ href, label }: { href: string; label: string }) {
-  return (
-    <div className="mt-8 sm:mt-10 flex justify-center">
-      <Link
-        href={href}
-        className="popular-show-more group"
-      >
-        <span>{label}</span>
-        <StorefrontIcon
-          name="arrow-forward"
-          size={18}
-          className="popular-show-more__icon"
-        />
-      </Link>
-    </div>
-  );
-}
 
 function ProductFeedRow({
   title,
@@ -167,23 +148,13 @@ export async function PopularSection({
       data-home-reveal
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 home-reveal-stagger">
-        {popularBouquets.length > 0 && (
-          <div className="home-reveal-item mb-12 sm:mb-14 last:mb-0">
-            <h2 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-6 sm:mb-8">
-              {tHome.popularTitle}
-            </h2>
-            <div className="popular-scroll-wrap">
-              <div className="popular-scroll">
-                {popularBouquets.map((bouquet) => (
-                  <div key={bouquet.id} className="popular-card-slot">
-                    <BouquetCard bouquet={bouquet} lang={lang} variant="popular-compact" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <ShowMoreLink href={catalogBase} label={tHome.showMore} />
-          </div>
-        )}
+        <PopularPicksRow
+          title={tHome.popularTitle}
+          href={catalogBase}
+          bouquets={popularBouquets}
+          lang={lang}
+          showMoreLabel={tHome.showMore}
+        />
         <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
         {sections.map((section) => {
           const sectionCatalogHref = `${catalogBase}${buildCatalogSearchString({ types: [section.type] })}`;
