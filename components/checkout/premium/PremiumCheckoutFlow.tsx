@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import Image from 'next/image';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
@@ -9,6 +9,8 @@ import { useCart } from '@/contexts/CartContext';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
 import { DeliveryTimeSelector } from '@/components/checkout/DeliveryTimeSelector';
 import { DeliveryAddressFields } from '@/components/checkout/DeliveryAddressFields';
+import { SearchableSelect } from '@/components/checkout/SearchableSelect';
+import { NotchedField } from '@/components/checkout/NotchedField';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
 import type { CountryCodeEntry } from '@/lib/checkout/phoneCountryDial';
 import { DeliveryDateSelector } from '@/components/checkout/DeliveryDateSelector';
@@ -214,7 +216,29 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
   const locationRequestTriggerRef = useRef<HTMLButtonElement>(null);
   const giftMessageFocusedRef = useRef(false);
   const giftMessageTouchStartY = useRef<number | null>(null);
-  const zones = getCheckoutZonesForDestination(delivery.deliveryDestination);
+  const destinationOptions = useMemo(
+    () => [
+      {
+        value: 'CHIANG_MAI',
+        label: destinationDisplayName('CHIANG_MAI', lang),
+      },
+      ...getNavMarkets().map((market) => ({
+        value: market.destinationId,
+        label: lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn,
+      })),
+    ],
+    [lang]
+  );
+  const zoneOptions = useMemo(
+    () =>
+      getCheckoutZonesForDestination(delivery.deliveryDestination).map((z) => ({
+        value: z.id,
+        label: `${lang === 'th' ? z.labelTh : z.labelEn} — \u0E3F${(
+          getZoneFee(delivery.deliveryDestination, z.id) ?? z.feeThb
+        ).toLocaleString()}`,
+      })),
+    [lang, delivery.deliveryDestination]
+  );
   const destLabel = formatDestinationLabel(deliveryProfile, lang);
   const hasGiftMessage =
     !noCardMessage && giftCardMessages.some((m) => m.trim().length > 0);
@@ -411,48 +435,35 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         <h2 className="co-section-title">{t.whereDeliverTitle}</h2>
         <div className="co-card co-card--pad">
           <div className="co-field">
-            <label className="co-label" htmlFor="checkout-delivery-province">
-              {lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery area'}{' '}
-              <span className="co-req">*</span>
-            </label>
-            <select
+            <SearchableSelect
               id="checkout-delivery-province"
-              className="co-input"
+              label={lang === 'th' ? 'พื้นที่จัดส่ง' : 'Delivery area'}
+              required
               value={deliveryProfile.destinationId}
-              onChange={(e) =>
-                onDeliveryDestinationChange(e.target.value as DeliveryDestinationId)
+              onChange={(next) =>
+                onDeliveryDestinationChange(next as DeliveryDestinationId)
               }
-              aria-label={lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery area'}
-            >
-              <option value="CHIANG_MAI">{destinationDisplayName('CHIANG_MAI', lang)}</option>
-              {getNavMarkets().map((market) => (
-                <option key={market.destinationId} value={market.destinationId}>
-                  {lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn}
-                </option>
-              ))}
-            </select>
+              options={destinationOptions}
+              ariaLabel={lang === 'th' ? 'เลือกพื้นที่จัดส่ง' : 'Choose delivery area'}
+              noResultsLabel={lang === 'th' ? 'ไม่พบรายการ' : 'No matches'}
+            />
           </div>
           <div className="co-field">
-            <label className="co-label" htmlFor="checkout-zone">
-              {tBuyNow.districtLabel} <span className="co-req">*</span>
-            </label>
             <div className="co-zone-control">
-              <select
+              <SearchableSelect
                 id="checkout-zone"
-                className="co-input"
+                label={tBuyNow.districtLabel}
+                required
                 value={delivery.deliveryZoneId}
-                onChange={(e) =>
-                  onDeliveryChange({ ...delivery, deliveryZoneId: e.target.value })
+                onChange={(next) =>
+                  onDeliveryChange({ ...delivery, deliveryZoneId: next })
                 }
-              >
-                <option value="">{tBuyNow.selectDistrict}</option>
-                {zones.map((z) => (
-                  <option key={z.id} value={z.id}>
-                    {lang === 'th' ? z.labelTh : z.labelEn} — {'\u0E3F'}
-                    {(getZoneFee(delivery.deliveryDestination, z.id) ?? z.feeThb).toLocaleString()}
-                  </option>
-                ))}
-              </select>
+                options={zoneOptions}
+                placeholder={tBuyNow.selectDistrict}
+                disabled={!deliveryProfile.destinationId}
+                ariaLabel={tBuyNow.districtLabel}
+                noResultsLabel={lang === 'th' ? 'ไม่พบรายการ' : 'No matches'}
+              />
               <button
                 type="button"
                 ref={locationRequestTriggerRef}
@@ -477,6 +488,9 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               deliveryNoteLabel: t.deliveryNoteForDriverLabel,
               deliveryNotePlaceholder: t.deliveryNoteForDriverPlaceholder,
               deliveryNoteHint: t.deliveryNoteForDriverHint,
+              googleMapsLinkLabel:
+                (tBuyNow as { googleMapsLinkLabel?: string }).googleMapsLinkLabel ??
+                'Google Maps link',
               googleMapsLinkPlaceholder: tBuyNow.googleMapsLinkPlaceholder,
               googleMapsLinkHint: tBuyNow.googleMapsLinkHint,
               openGoogleMapsAriaLabel: tBuyNow.openGoogleMapsButton,
@@ -600,10 +614,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         >
           <div className="co-card co-card--pad co-recipient-fields">
             <h3 className="co-subsection-title">{t.recipientDetailsSectionTitle}</h3>
-            <div className="co-field">
-              <label className="co-label" htmlFor="co-recipient-name">
-                {tCart.recipientName} <span className="co-req">*</span>
-              </label>
+            <NotchedField id="co-recipient-name" label={tCart.recipientName} required>
               <input
                 id="co-recipient-name"
                 className="co-input"
@@ -616,7 +627,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                 autoComplete="name"
                 maxLength={CHECKOUT_FIELD_LIMITS.recipientName}
               />
-            </div>
+            </NotchedField>
             <div className="co-field">
               <label className="co-label" htmlFor="co-recipient-phone">
                 {tCart.recipientPhone} <span className="co-req">*</span>
@@ -897,7 +908,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           min-width: 0;
           width: auto;
           border: none !important;
-          border-radius: 0 !important;
+          border-radius: 0 12px 12px 0 !important;
           box-shadow: none;
         }
         .premium-checkout .co-sender-fields {
@@ -1536,56 +1547,17 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           gap: 0;
           border: 1px solid var(--border);
           border-radius: 12px;
-          overflow: hidden;
+          overflow: visible;
         }
         .co-phone-cc {
+          padding: 0;
           border: none;
-          padding: 12px 8px;
-          font-size: 14px;
-          background: var(--pastel-cream);
-          max-width: 38%;
-        }
-        :global(.co-phone-cc--flag-only) {
-          width: 76px;
-          min-width: 76px;
-          max-width: 76px;
-          padding: 12px 8px;
-          font-size: 22px;
-          line-height: 1;
-          text-align: center;
-          flex-shrink: 0;
-          height: auto;
-          border-radius: 0;
-          gap: 2px;
-        }
-        :global(.co-phone-cc--trigger-full) {
-          width: auto;
-          min-width: 5.75rem;
-          max-width: 9rem;
-          font-size: 0.95rem;
-          font-weight: 600;
-          justify-content: space-between;
-        }
-        :global(.co-phone-cc--trigger-full .co-phone-cc__trigger-text) {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        :global(.co-phone-cc__chevron) {
-          flex-shrink: 0;
-          opacity: 0.55;
-        }
-        :global(.co-phone-cc--trigger-flag .co-phone-cc__chevron) {
-          width: 12px;
-          height: 12px;
-        }
-        :global(.co-phone-cc-menu__item--selected) {
-          font-weight: 600;
-          background: color-mix(in srgb, var(--accent) 12%, transparent);
+          background: transparent;
+          max-width: none;
         }
         .co-phone-num {
           border: none !important;
-          border-radius: 0 !important;
+          border-radius: 0 12px 12px 0 !important;
         }
         .co-surprise {
           display: flex;
@@ -1647,6 +1619,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           display: flex;
           flex-direction: column;
           gap: 2px;
+          overflow: visible;
         }
         .co-location-request-link {
           align-self: flex-start;

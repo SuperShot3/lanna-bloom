@@ -55,6 +55,7 @@ import {
 import { ReferralCodeBox } from '@/components/ReferralCodeBox';
 import { CartCheckoutView } from '@/app/[lang]/cart/CartCheckoutView';
 import { PhoneCountrySelect } from '@/components/checkout/PhoneCountrySelect';
+import { NotchedField } from '@/components/checkout/NotchedField';
 import { LineIdFieldReveal } from '@/components/checkout/LineIdFieldReveal';
 import { RecipientOptInToggle } from '@/components/checkout/premium/RecipientOptInToggle';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
@@ -1724,10 +1725,11 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
     return (
     <div className={rootClass}>
-      <div className={fieldClass}>
-        <label className={labelClass} htmlFor={`${idPrefix}cart-customer-name`}>
-          {t.senderName} <span className={reqClass} aria-hidden>*</span>
-        </label>
+      <NotchedField
+        id={`${idPrefix}cart-customer-name`}
+        label={t.senderName}
+        required
+      >
         <input
           id={`${idPrefix}cart-customer-name`}
           type="text"
@@ -1741,7 +1743,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           autoComplete="name"
           maxLength={CHECKOUT_FIELD_LIMITS.customerName}
         />
-      </div>
+      </NotchedField>
       <div className={phoneWrapClass}>
         <div className={`${fieldClass}${premium ? '' : ' cart-phone-field-group'}`}>
           <label className={labelClass} htmlFor={`${idPrefix}cart-phone`}>
@@ -1860,10 +1862,16 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           )}
         </div>
       </LineIdFieldReveal>
-      <div className={fieldClass}>
-        <label className={labelClass} htmlFor={`${idPrefix}cart-email`}>
-          {t.emailLabel ?? 'Email'}
-        </label>
+      <NotchedField
+        id={`${idPrefix}cart-email`}
+        label={t.emailLabel ?? 'Email'}
+        hint={
+          <p id={`${idPrefix}cart-email-hint`} className="cart-field-hint">
+            {(t as { emailHint?: string }).emailHint ??
+              'Optional — for order confirmation. Check the box below if you want a one-time reminder to finish checkout.'}
+          </p>
+        }
+      >
         <input
           id={`${idPrefix}cart-email`}
           type="email"
@@ -1877,11 +1885,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           maxLength={CHECKOUT_FIELD_LIMITS.customerEmail}
           aria-describedby={`${idPrefix}cart-email-hint`}
         />
-        <p id={`${idPrefix}cart-email-hint`} className="cart-field-hint">
-          {(t as { emailHint?: string }).emailHint ??
-            'Optional — for order confirmation. Check the box below if you want a one-time reminder to finish checkout.'}
-        </p>
-      </div>
+      </NotchedField>
       <OverlayReveal
         open={showRecoveryEmailConsent}
         className="cart-recovery-email-consent-reveal"
@@ -2804,37 +2808,17 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           border: 1px solid var(--border);
           border-radius: var(--radius-sm);
           background: var(--surface);
+          overflow: visible;
         }
         .cart-phone-row:focus-within {
           border-color: var(--accent);
         }
         .cart-phone-country-select {
-          padding: 10px 12px;
-          font-size: 0.95rem;
+          /* PhoneCountrySelect root — fixed compact width owned by component */
+          padding: 0;
           border: none;
-          border-right: 1px solid var(--border);
-          border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-          background: var(--pastel-cream);
-          color: var(--text);
-          font-family: inherit;
-          font-weight: 600;
-          cursor: pointer;
-          flex-shrink: 0;
-          width: auto;
-          min-width: 5.75rem;
-          max-width: 9rem;
-          height: auto;
-          justify-content: space-between;
-          gap: 6px;
-        }
-        .cart-phone-country-select:focus-visible {
-          outline: none;
-        }
-        .cart-phone-country-select .co-phone-cc__trigger-text {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          text-align: left;
+          background: transparent;
+          flex: 0 0 auto;
         }
         .cart-phone-input {
           flex: 1;
@@ -3170,20 +3154,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             border-color: var(--accent);
           }
           .cart-accordion-body-contact .cart-phone-country-select {
-            padding: 10px 8px;
-            font-size: 0.875rem;
+            padding: 0;
             border: none;
-            border-right: 1px solid var(--border);
-            border-radius: 8px 0 0 8px;
-            background: var(--pastel-cream);
-            color: var(--text);
-            font-family: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            flex: 0 1 7rem;
-            min-width: 0;
-            max-width: 8.75rem;
-            box-sizing: border-box;
+            background: transparent;
+            flex: 0 0 auto;
           }
           .cart-accordion-body-contact .cart-phone-input {
             flex: 1;
@@ -3443,20 +3417,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             border-color: var(--accent);
           }
           .cart-delivery .cart-phone-country-select {
-            padding: 8px 10px;
-            font-size: 0.85rem;
+            padding: 0;
             border: none;
-            border-right: 1px solid var(--border);
-            border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-            background: var(--pastel-cream);
-            color: var(--text);
-            font-family: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            flex-shrink: 0;
-            width: auto;
-            min-width: 6rem;
-            max-width: 10rem;
+            background: transparent;
+            flex: 0 0 auto;
           }
           .cart-delivery .cart-phone-input {
             flex: 1;
@@ -3621,7 +3585,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         }
         @media (max-width: 1200px) {
           .cart-mobile-contact-fields input.cart-contact-input,
-          .cart-mobile-contact-fields .cart-phone-row input {
+          .cart-mobile-contact-fields .cart-phone-row input:not(.phone-cc-select__search) {
             width: 100% !important;
             padding: 12px 14px !important;
             font-size: 1rem !important;
@@ -3641,18 +3605,23 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             min-height: 48px !important;
           }
           .cart-mobile-contact-fields .cart-phone-country-select {
-            padding: 10px 8px !important;
-            font-size: 0.875rem !important;
+            padding: 0 !important;
             border: none !important;
-            border-right: 1px solid var(--border) !important;
+            background: transparent !important;
+            flex: 0 0 auto !important;
+            width: 5.75rem !important;
+            min-width: 5.75rem !important;
+            max-width: 5.75rem !important;
+          }
+          .cart-mobile-contact-fields .cart-phone-country-select .phone-cc-select__trigger {
             border-radius: 8px 0 0 8px !important;
-            background: var(--pastel-cream) !important;
-            color: var(--text) !important;
-            min-height: 48px !important;
-            flex: 0 1 7rem !important;
-            min-width: 0 !important;
-            max-width: 8.75rem !important;
-            box-sizing: border-box !important;
+            font-size: 0.875rem !important;
+          }
+          .cart-mobile-contact-fields .cart-phone-row > .cart-phone-input,
+          .cart-mobile-contact-fields .cart-phone-row > input.cart-phone-input {
+            border: none !important;
+            border-radius: 0 8px 8px 0 !important;
+            background: transparent !important;
           }
           .cart-mobile-contact-fields .cart-phone-input {
             flex: 1 !important;

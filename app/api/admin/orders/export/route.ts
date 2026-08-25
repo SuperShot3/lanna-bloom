@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
       searchParams.get('deliveryDateFrom') || searchParams.get('dateFrom') || undefined,
     deliveryDateTo:
       searchParams.get('deliveryDateTo') || searchParams.get('dateTo') || undefined,
+    openPipeline: searchParams.get('pipeline') === 'open',
   };
 
   const orders = await getOrdersForExport(filters);

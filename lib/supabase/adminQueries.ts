@@ -1,5 +1,13 @@
 import 'server-only';
 import { getSupabaseAdmin } from './server';
+import {
+  bucketOpenDeliveryRows,
+  emptyOpenDeliverySummary,
+  type OpenDeliveryListItem,
+  type OpenDeliverySummary,
+} from '@/lib/admin/openDeliverySummary';
+
+export type { OpenDeliveryListItem, OpenDeliverySummary };
 
 export type PaymentMethod = 'STRIPE' | 'PROMPTPAY' | 'BANK_TRANSFER';
 
@@ -196,6 +204,42 @@ export interface OrdersFilters {
   deliveryDestination?: string;
   deliveryDateFrom?: string;
   deliveryDateTo?: string;
+  /** Paid orders still in the delivery pipeline (not DELIVERED / CANCELLED). */
+  openPipeline?: boolean;
+}
+
+const OPEN_DELIVERY_SUMMARY_CAP = 500;
+
+/**
+ * Paid orders that are not delivered or cancelled, across all delivery dates.
+ * Used by the Delivery Board alert and date-strip badges.
+ */
+export async function getOpenDeliverySummary(todayYmd: string): Promise<OpenDeliverySummary> {
+  const empty = emptyOpenDeliverySummary();
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return empty;
+
+  try {
+    const { data, count, error } = await supabase
+      .from('orders')
+      .select('order_id, delivery_date, order_status', { count: 'exact' })
+      .eq('payment_status', 'PAID')
+      .eq('admin_needs_delivery_sort', 1)
+      .order('delivery_date', { ascending: true, nullsFirst: true })
+      .limit(OPEN_DELIVERY_SUMMARY_CAP);
+
+    if (error) {
+      console.error('[admin] getOpenDeliverySummary error:', error);
+      return empty;
+    }
+
+    const rows = (data ?? []) as OpenDeliveryListItem[];
+    return bucketOpenDeliveryRows(rows, todayYmd, count ?? rows.length);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[admin] getOpenDeliverySummary exception:', msg);
+    return empty;
+  }
 }
 
 export interface OrdersPagination {
@@ -247,7 +291,9 @@ export async function getOrders(
     if (filters.orderStatus && filters.orderStatus !== 'all') {
       query = query.eq('order_status', filters.orderStatus);
     }
-    if (filters.paymentStatus === 'paid') {
+    if (filters.openPipeline) {
+      query = query.eq('payment_status', 'PAID').eq('admin_needs_delivery_sort', 1);
+    } else if (filters.paymentStatus === 'paid') {
       query = query.eq('payment_status', 'PAID');
     } else if (filters.paymentStatus === 'unpaid') {
       query = query.neq('payment_status', 'PAID');
@@ -258,11 +304,15 @@ export async function getOrders(
     if (filters.deliveryDestination && filters.deliveryDestination !== 'all') {
       query = query.eq('delivery_destination', filters.deliveryDestination);
     }
-    if (filters.deliveryDateFrom) {
-      query = query.gte('delivery_date', filters.deliveryDateFrom);
-    }
-    if (filters.deliveryDateTo) {
-      query = query.lte('delivery_date', filters.deliveryDateTo);
+    // Text search and the open-pipeline view look across all dates.
+    const skipDates = Boolean(qTrim) || Boolean(filters.openPipeline);
+    if (!skipDates) {
+      if (filters.deliveryDateFrom) {
+        query = query.gte('delivery_date', filters.deliveryDateFrom);
+      }
+      if (filters.deliveryDateTo) {
+        query = query.lte('delivery_date', filters.deliveryDateTo);
+      }
     }
 
     // Dispatch board: active deliveries first, then by delivery date and window.
@@ -431,7 +481,9 @@ export async function getOrdersForExport(
     if (filters.orderStatus && filters.orderStatus !== 'all') {
       query = query.eq('order_status', filters.orderStatus);
     }
-    if (filters.paymentStatus === 'paid') {
+    if (filters.openPipeline) {
+      query = query.eq('payment_status', 'PAID').eq('admin_needs_delivery_sort', 1);
+    } else if (filters.paymentStatus === 'paid') {
       query = query.eq('payment_status', 'PAID');
     } else if (filters.paymentStatus === 'unpaid') {
       query = query.neq('payment_status', 'PAID');
@@ -442,11 +494,14 @@ export async function getOrdersForExport(
     if (filters.deliveryDestination && filters.deliveryDestination !== 'all') {
       query = query.eq('delivery_destination', filters.deliveryDestination);
     }
-    if (filters.deliveryDateFrom) {
-      query = query.gte('delivery_date', filters.deliveryDateFrom);
-    }
-    if (filters.deliveryDateTo) {
-      query = query.lte('delivery_date', filters.deliveryDateTo);
+    const skipDatesEx = Boolean(qTrimEx) || Boolean(filters.openPipeline);
+    if (!skipDatesEx) {
+      if (filters.deliveryDateFrom) {
+        query = query.gte('delivery_date', filters.deliveryDateFrom);
+      }
+      if (filters.deliveryDateTo) {
+        query = query.lte('delivery_date', filters.deliveryDateTo);
+      }
     }
 
     const { data, error } = await query

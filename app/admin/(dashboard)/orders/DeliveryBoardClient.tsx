@@ -11,6 +11,7 @@ import {
 } from '@/app/admin/components/DeliveryRouteMapModal';
 import type {
   DeliveryBoardSupplierRequestSummary,
+  OpenDeliverySummary,
   SupabaseOrderRow,
 } from '@/lib/supabase/adminQueries';
 import {
@@ -88,7 +89,14 @@ interface DeliveryBoardClientProps {
     deliveryDestination?: string;
     deliveryDateFrom?: string;
     deliveryDateTo?: string;
+    openPipeline?: boolean;
   };
+  /** URL / default dates for the toolbar (kept even when search ignores dates). */
+  boardDateFrom: string;
+  boardDateTo: string;
+  searchAllDates?: boolean;
+  pipelineOpen?: boolean;
+  openDeliverySummary: OpenDeliverySummary;
   initialPage: number;
   pageSize: number;
   districts: string[];
@@ -830,6 +838,11 @@ export function DeliveryBoardClient({
   initialTotal,
   initialError,
   initialFilters,
+  boardDateFrom,
+  boardDateTo,
+  searchAllDates = false,
+  pipelineOpen = false,
+  openDeliverySummary,
   initialPage,
   pageSize,
   districts,
@@ -847,15 +860,16 @@ export function DeliveryBoardClient({
   const returnTo = `${pathname}${sp.toString() ? `?${sp.toString()}` : ''}`;
 
   const today = shopTodayYmd();
-  const dateFrom = initialFilters.deliveryDateFrom ?? today;
-  const dateTo = initialFilters.deliveryDateTo ?? dateFrom;
+  const dateFrom = boardDateFrom || today;
+  const dateTo = boardDateTo || dateFrom;
   const rangeSingleDay = dateFrom === dateTo;
+  const dateNavLocked = searchAllDates || pipelineOpen;
 
   const [searchDraft, setSearchDraft] = useState(initialFilters.q ?? '');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [hideDelivered, setHideDelivered] = useState(false);
+  const [hideDelivered, setHideDelivered] = useState(true);
   const [statusOverrides, setStatusOverrides] = useState<Record<string, OrderStatus>>({});
   const [savingStatus, setSavingStatus] = useState<Record<string, boolean>>({});
   const [statusMessages, setStatusMessages] = useState<
@@ -872,6 +886,10 @@ export function DeliveryBoardClient({
     preview: DeliveredPreviewPayload;
   } | null>(null);
   const [chatUnreadByOrder, setChatUnreadByOrder] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    setSearchDraft(initialFilters.q ?? '');
+  }, [initialFilters.q]);
 
   useEffect(() => {
     if (!orderChatEnabled) return;
@@ -930,6 +948,29 @@ export function DeliveryBoardClient({
     return Array.from({ length: 7 }, (_, i) => shopAddDays(center, i - 3));
   }, [rangeSingleDay, dateFrom, today]);
 
+  const tomorrowYmd = shopAddDays(today, 1);
+  const weekEndYmd = shopAddDays(today, 6);
+  const countsByDate = openDeliverySummary.countsByDate;
+  const countForDay = (ymd: string) => countsByDate[ymd] ?? 0;
+  const countInRange = (from: string, to: string) => {
+    let n = 0;
+    for (const [ymd, c] of Object.entries(countsByDate)) {
+      if (ymd >= from && ymd <= to) n += c;
+    }
+    return n;
+  };
+  const tomorrowOpenCount = countForDay(tomorrowYmd);
+  const weekOpenCount = countInRange(today, weekEndYmd);
+  const hasUpcomingOpen = openDeliverySummary.upcomingCount > 0;
+  const overduePreview = openDeliverySummary.overdue.slice(0, 5);
+  const ordersStatLabel = searchAllDates
+    ? 'Matches'
+    : pipelineOpen
+      ? 'Open deliveries'
+      : dateFrom === today && dateTo === today
+        ? 'Today orders'
+        : 'Orders';
+
   const totalPages = Math.ceil(initialTotal / pageSize) || 1;
 
   const pushParams = (next: URLSearchParams) => {
@@ -940,6 +981,7 @@ export function DeliveryBoardClient({
     const next = new URLSearchParams(sp.toString());
     next.delete('page');
     next.delete('q');
+    next.delete('pipeline');
     Object.entries(updates).forEach(([k, v]) => {
       if (v && v !== 'all') next.set(k, v);
       else next.delete(k);
@@ -950,8 +992,11 @@ export function DeliveryBoardClient({
   const setDateRange = (from: string, to: string) => {
     const next = new URLSearchParams(sp.toString());
     next.delete('page');
+    next.delete('q');
+    next.delete('pipeline');
     next.set('dateFrom', from);
     next.set('dateTo', to);
+    setSearchDraft('');
     pushParams(next);
   };
 
@@ -967,6 +1012,7 @@ export function DeliveryBoardClient({
   };
 
   const presetActive = (): 'today' | 'tomorrow' | 'week' | null => {
+    if (dateNavLocked) return null;
     const t = shopTodayYmd();
     if (dateFrom === t && dateTo === t) return 'today';
     if (dateFrom === shopAddDays(t, 1) && dateTo === shopAddDays(t, 1)) return 'tomorrow';
@@ -980,10 +1026,41 @@ export function DeliveryBoardClient({
     next.delete('page');
     next.delete('orderId');
     next.delete('recipientPhone');
+    next.delete('pipeline');
     const q = searchDraft.trim();
     if (q) next.set('q', q);
     else next.delete('q');
     pushParams(next);
+  };
+
+  const clearSearch = () => {
+    setSearchDraft('');
+    const next = new URLSearchParams(sp.toString());
+    next.delete('page');
+    next.delete('q');
+    next.delete('orderId');
+    next.delete('recipientPhone');
+    if (!next.get('dateFrom') && !next.get('dateTo')) {
+      next.set('dateFrom', dateFrom);
+      next.set('dateTo', dateTo);
+    }
+    pushParams(next);
+  };
+
+  const viewAllOpen = () => {
+    const next = new URLSearchParams();
+    next.set('pipeline', 'open');
+    setSearchDraft('');
+    pushParams(next);
+  };
+
+  const viewOrderOnBoard = (deliveryDate: string | null | undefined) => {
+    const ymd = deliveryDate?.trim();
+    if (ymd && /^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+      setDateRange(ymd, ymd);
+      return;
+    }
+    viewAllOpen();
   };
 
   const handleDeliveryStatusChange = async (order: SupabaseOrderRow, nextStatus: string) => {
@@ -1151,15 +1228,84 @@ export function DeliveryBoardClient({
         </div>
       </header>
 
+      {openDeliverySummary.overdueCount > 0 ? (
+        <div className="admin-open-delivery-alert admin-open-delivery-alert--overdue" role="status">
+          <span className="material-symbols-outlined admin-open-delivery-alert-icon" aria-hidden>
+            error
+          </span>
+          <div className="admin-open-delivery-alert-body">
+            <p className="admin-open-delivery-alert-title">
+              {openDeliverySummary.overdueCount} overdue{' '}
+              {openDeliverySummary.overdueCount === 1 ? 'delivery' : 'deliveries'} still open
+            </p>
+            {overduePreview.length > 0 ? (
+              <ul className="admin-open-delivery-alert-list">
+                {overduePreview.map((o) => (
+                  <li key={o.order_id}>
+                    <Link
+                      href={detailHref(o.order_id)}
+                      className="admin-link"
+                    >
+                      {o.order_id}
+                    </Link>
+                    <span className="admin-open-delivery-alert-date">
+                      {formatDeliveryDateCard(o.delivery_date)}
+                    </span>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-outline admin-btn-sm"
+                      onClick={() => viewOrderOnBoard(o.delivery_date)}
+                    >
+                      View on board
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {openDeliverySummary.upcomingCount > 0 ? (
+              <p className="admin-open-delivery-alert-extra">
+                Also {openDeliverySummary.upcomingCount} upcoming open{' '}
+                {openDeliverySummary.upcomingCount === 1 ? 'delivery' : 'deliveries'}.
+              </p>
+            ) : null}
+            {pipelineOpen ? null : (
+              <button type="button" className="admin-link admin-open-delivery-alert-all" onClick={viewAllOpen}>
+                View all open →
+              </button>
+            )}
+          </div>
+        </div>
+      ) : openDeliverySummary.upcomingCount > 0 ? (
+        <div className="admin-open-delivery-alert admin-open-delivery-alert--upcoming" role="status">
+          <span className="material-symbols-outlined admin-open-delivery-alert-icon" aria-hidden>
+            event_upcoming
+          </span>
+          <div className="admin-open-delivery-alert-body">
+            <p className="admin-open-delivery-alert-title">
+              {openDeliverySummary.upcomingCount} upcoming open{' '}
+              {openDeliverySummary.upcomingCount === 1 ? 'delivery' : 'deliveries'}
+            </p>
+            <p className="admin-open-delivery-alert-extra">
+              Count badges on dates show which days still need delivery.
+            </p>
+            {pipelineOpen ? null : (
+              <button type="button" className="admin-link admin-open-delivery-alert-all" onClick={viewAllOpen}>
+                View all open →
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       <div className="admin-delivery-board-toolbar">
         <div className="admin-delivery-board-segments" role="tablist" aria-label="Date range presets">
           {(
             [
-              ['today', 'Today'],
-              ['tomorrow', 'Tomorrow'],
-              ['week', 'This week'],
+              ['today', 'Today', 0],
+              ['tomorrow', 'Tomorrow', tomorrowOpenCount],
+              ['week', 'This week', weekOpenCount],
             ] as const
-          ).map(([key, label]) => (
+          ).map(([key, label, badge]) => (
             <button
               key={key}
               type="button"
@@ -1169,16 +1315,24 @@ export function DeliveryBoardClient({
               onClick={() => applyPreset(key)}
             >
               {label}
+              {key !== 'today' && badge > 0 ? (
+                <span className="admin-delivery-board-segment-badge" aria-label={`${badge} open deliveries`}>
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
         <div className="admin-delivery-board-date-actions">
-          <label className="admin-delivery-board-calendar-btn">
+          <label
+            className={`admin-delivery-board-calendar-btn${hasUpcomingOpen ? ' has-upcoming' : ''}`}
+            title={hasUpcomingOpen ? 'Upcoming open deliveries' : 'Pick a single day'}
+          >
             <span className="material-symbols-outlined">calendar_month</span>
             <input
               type="date"
               className="admin-delivery-board-date-input"
-              value={rangeSingleDay ? dateFrom : ''}
+              value={rangeSingleDay && !dateNavLocked ? dateFrom : ''}
               onChange={(e) => {
                 const v = e.target.value;
                 if (v) setDateRange(v, v);
@@ -1206,7 +1360,7 @@ export function DeliveryBoardClient({
           <span className="material-symbols-outlined admin-delivery-stat-icon">shopping_bag</span>
           <div>
             <span className="admin-delivery-stat-value">{initialTotal}</span>
-            <span className="admin-delivery-stat-label">Today orders</span>
+            <span className="admin-delivery-stat-label">{ordersStatLabel}</span>
           </div>
         </div>
         <div className="admin-delivery-stat admin-delivery-stat--progress">
@@ -1242,8 +1396,10 @@ export function DeliveryBoardClient({
       <div className="admin-delivery-board-strip-wrap">
         <div className="admin-delivery-board-strip">
           {stripDays.map((ymd) => {
-            const isSelected = ymd === dateFrom && ymd === dateTo;
+            const isSelected = !dateNavLocked && ymd === dateFrom && ymd === dateTo;
             const isTodayCell = ymd === today;
+            const openCount = countForDay(ymd);
+            const isOverdueDay = ymd < today && openCount > 0;
             const label =
               isTodayCell
                 ? 'Today'
@@ -1259,20 +1415,47 @@ export function DeliveryBoardClient({
                 type="button"
                 className={`admin-delivery-strip-day${isSelected ? ' selected' : ''}${
                   isTodayCell ? ' is-today' : ''
-                }`}
+                }${openCount > 0 ? ' has-open' : ''}${isOverdueDay ? ' is-overdue' : ''}`}
                 data-is-today={isTodayCell ? 'true' : undefined}
                 aria-current={isSelected ? 'date' : undefined}
+                aria-label={
+                  openCount > 0
+                    ? `${label}, ${openCount} open ${openCount === 1 ? 'delivery' : 'deliveries'}`
+                    : label
+                }
                 onClick={() => setDateRange(ymd, ymd)}
               >
                 <span className="admin-delivery-strip-label">{label}</span>
-                {isSelected ? <span className="admin-delivery-strip-dot" aria-hidden /> : null}
+                {openCount > 0 ? (
+                  <span
+                    className={`admin-delivery-strip-count${
+                      isOverdueDay ? ' admin-delivery-strip-count--overdue' : ' admin-delivery-strip-count--upcoming'
+                    }`}
+                    aria-hidden
+                  >
+                    {openCount > 99 ? '99+' : openCount}
+                  </span>
+                ) : null}
               </button>
             );
           })}
         </div>
       </div>
 
-      {dateFrom !== dateTo ? (
+      {searchAllDates ? (
+        <p className="admin-hint admin-delivery-board-range-hint">
+          Searching all orders — <strong>{initialTotal}</strong>{' '}
+          {initialTotal === 1 ? 'match' : 'matches'}. Date range ignored.
+        </p>
+      ) : pipelineOpen ? (
+        <p className="admin-hint admin-delivery-board-range-hint">
+          Showing all paid deliveries that are not delivered or cancelled
+          {openDeliverySummary.total > initialTotal
+            ? ` (${initialTotal} of ${openDeliverySummary.total} on this page)`
+            : null}
+          .
+        </p>
+      ) : dateFrom !== dateTo ? (
         <p className="admin-hint admin-delivery-board-range-hint">
           Showing deliveries from <strong>{dateFrom}</strong> to <strong>{dateTo}</strong> (grouped by time of day per order).
         </p>
@@ -1291,6 +1474,11 @@ export function DeliveryBoardClient({
         <button type="submit" className="admin-btn admin-btn-sm">
           Search
         </button>
+        {searchAllDates || searchDraft.trim() ? (
+          <button type="button" className="admin-btn admin-btn-outline admin-btn-sm" onClick={clearSearch}>
+            Clear search
+          </button>
+        ) : null}
         <button
           type="button"
           className={`admin-btn admin-btn-sm admin-delivery-filter-toggle ${filtersOpen ? 'admin-btn-primary' : ''}`}
@@ -1322,7 +1510,11 @@ export function DeliveryBoardClient({
       {filtersOpen ? (
         <div className="admin-delivery-filters-panel">
           <FiltersBar
-            filters={initialFilters}
+            filters={{
+              ...initialFilters,
+              deliveryDateFrom: dateFrom,
+              deliveryDateTo: dateTo,
+            }}
             districts={districts}
             deliveryDestinations={deliveryDestinations}
             onFilterChange={handleFilterChange}
@@ -1348,7 +1540,13 @@ export function DeliveryBoardClient({
                   or adjust filters.
                 </>
               ) : (
-                <>No orders in this range. Try another day or clear filters.</>
+                <>
+                  {searchAllDates
+                    ? 'No orders match this search. Try a different order ID, recipient, or phone.'
+                    : pipelineOpen
+                      ? 'No open paid deliveries.'
+                      : 'No orders in this range. Try another day or clear filters.'}
+                </>
               )}
             </p>
           ) : (

@@ -3,6 +3,7 @@ import {
   getDeliveryDestinations,
   getDistricts,
   getLatestSupplierRequestSummariesForOrders,
+  getOpenDeliverySummary,
   getOrders,
 } from '@/lib/supabase/adminQueries';
 import { DELIVERY_DESTINATIONS } from '@/lib/delivery/markets';
@@ -25,6 +26,7 @@ interface PageProps {
     dateFrom?: string;
     dateTo?: string;
     page?: string;
+    pipeline?: string;
   }>;
 }
 
@@ -35,26 +37,31 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const page = Math.max(1, parseInt(params.page ?? '1', 10));
   const pageSize = 80;
   const today = shopTodayYmd();
+  const qTrim = params.q?.trim() ?? '';
+  const pipelineOpen = params.pipeline === 'open';
   const hasRange = Boolean(params.dateFrom?.trim() || params.dateTo?.trim());
   const dateFrom = hasRange ? params.dateFrom?.trim() || params.dateTo?.trim() || today : today;
   const dateTo = hasRange ? params.dateTo?.trim() || params.dateFrom?.trim() || today : today;
+  const ignoreDates = Boolean(qTrim) || pipelineOpen;
 
   const filters = {
     orderId: params.orderId,
     recipientPhone: params.recipientPhone,
     q: params.q,
-    orderStatus: params.status,
-    paymentStatus: params.payment as 'paid' | 'unpaid' | undefined,
+    orderStatus: pipelineOpen ? undefined : params.status,
+    paymentStatus: pipelineOpen ? ('paid' as const) : (params.payment as 'paid' | 'unpaid' | undefined),
     district: params.district,
     deliveryDestination: params.destination,
-    deliveryDateFrom: dateFrom,
-    deliveryDateTo: dateTo,
+    deliveryDateFrom: ignoreDates ? undefined : dateFrom,
+    deliveryDateTo: ignoreDates ? undefined : dateTo,
+    openPipeline: pipelineOpen,
   };
 
-  const [result, districts, destRows] = await Promise.all([
+  const [result, districts, destRows, openDeliverySummary] = await Promise.all([
     getOrders(filters, { page, pageSize }),
     getDistricts(),
     getDeliveryDestinations(),
+    getOpenDeliverySummary(today),
   ]);
 
   const [supplierSummariesByOrderId, ordersWithCorrectThumbs] = await Promise.all([
@@ -72,6 +79,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       initialTotal={result.total}
       initialError={result.error}
       initialFilters={filters}
+      boardDateFrom={dateFrom}
+      boardDateTo={dateTo}
+      searchAllDates={Boolean(qTrim)}
+      pipelineOpen={pipelineOpen}
+      openDeliverySummary={openDeliverySummary}
       initialPage={page}
       pageSize={pageSize}
       districts={districts}

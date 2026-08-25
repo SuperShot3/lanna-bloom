@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
+import { NotchedField } from '@/components/checkout/NotchedField';
 import { CHECKOUT_FIELD_LIMITS, clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import type { Locale } from '@/lib/i18n';
 
@@ -28,6 +29,7 @@ export function DeliveryAddressFields({
     deliveryNoteLabel: string;
     deliveryNotePlaceholder: string;
     deliveryNoteHint: string;
+    googleMapsLinkLabel: string;
     googleMapsLinkPlaceholder: string;
     googleMapsLinkHint: string;
     openGoogleMapsAriaLabel: string;
@@ -94,14 +96,15 @@ export function DeliveryAddressFields({
     if (clipped.trim()) setShowNoteHint(false);
   };
 
+  const addressId = `${inputId}-manual`;
+  const mapsId = `${inputId}-maps-link`;
+  const noteId = `${inputId}-note`;
+
   return (
     <div className={`co-address${highlight ? ' co-address--highlight' : ''}`}>
-      <div className="co-field co-field--tight">
-        <label className="co-label" htmlFor={`${inputId}-manual`}>
-          {labels.addressLabel}
-        </label>
+      <NotchedField id={addressId} label={labels.addressLabel}>
         <textarea
-          id={`${inputId}-manual`}
+          id={addressId}
           className="co-input co-textarea"
           value={addressDraft}
           onChange={(e) => onAddressChange(e.target.value)}
@@ -115,14 +118,22 @@ export function DeliveryAddressFields({
           rows={3}
           maxLength={CHECKOUT_FIELD_LIMITS.deliveryAddress}
         />
-      </div>
+      </NotchedField>
 
-      <div className="co-field co-field--tight">
+      <NotchedField
+        id={mapsId}
+        label={labels.googleMapsLinkLabel}
+        hint={
+          <p id={`${mapsId}-hint`} className="co-maps-link-hint">
+            {labels.googleMapsLinkHint}
+          </p>
+        }
+      >
         <div
           className={`co-maps-link-row${highlightMapsLink ? ' co-maps-link-row--highlight' : ''}`}
         >
           <input
-            id={`${inputId}-maps-link`}
+            id={mapsId}
             type="url"
             inputMode="url"
             className="co-input co-maps-link-input"
@@ -148,7 +159,7 @@ export function DeliveryAddressFields({
             autoCorrect="off"
             spellCheck={false}
             maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
-            aria-describedby={`${inputId}-maps-link-hint`}
+            aria-describedby={`${mapsId}-hint`}
           />
           <a
             href={GOOGLE_MAPS_OPEN_URL}
@@ -168,17 +179,19 @@ export function DeliveryAddressFields({
             />
           </a>
         </div>
-        <p id={`${inputId}-maps-link-hint`} className="co-maps-link-hint">
-          {labels.googleMapsLinkHint}
-        </p>
-      </div>
+      </NotchedField>
 
-      <div className="co-field co-field--tight">
-        <label className="co-label" htmlFor={`${inputId}-note`}>
-          {labels.deliveryNoteLabel}
-        </label>
+      <NotchedField
+        id={noteId}
+        label={labels.deliveryNoteLabel}
+        hint={
+          showNoteHint && !value.deliveryNote?.trim() ? (
+            <p className="co-address-note-hint">{labels.deliveryNoteHint}</p>
+          ) : null
+        }
+      >
         <input
-          id={`${inputId}-note`}
+          id={noteId}
           type="text"
           className="co-input"
           value={noteDraft}
@@ -191,28 +204,19 @@ export function DeliveryAddressFields({
             if (!noteDraft.trim()) setShowNoteHint(true);
           }}
           placeholder={labels.deliveryNotePlaceholder}
-            maxLength={CHECKOUT_FIELD_LIMITS.deliveryNote}
+          maxLength={CHECKOUT_FIELD_LIMITS.deliveryNote}
           autoComplete="off"
         />
-        {showNoteHint && !value.deliveryNote?.trim() && (
-          <p className="co-address-note-hint">{labels.deliveryNoteHint}</p>
-        )}
-      </div>
+      </NotchedField>
 
       <style jsx>{`
         .co-address {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 14px;
           overflow: visible;
         }
-        .co-field--tight {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          overflow: visible;
-        }
-        .co-address--highlight .co-textarea {
+        .co-address--highlight :global(.co-textarea) {
           border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
           box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 65%, transparent);
         }
@@ -292,7 +296,7 @@ export function DeliveryAddressFields({
           height: 26px;
           object-fit: contain;
         }
-        .co-maps-link-hint {
+        :global(.co-maps-link-hint) {
           margin: 0;
           font-size: 12px;
           line-height: 1.4;
@@ -304,7 +308,7 @@ export function DeliveryAddressFields({
           font-size: 16px;
           line-height: 1.45;
         }
-        .co-address-note-hint {
+        :global(.co-address-note-hint) {
           margin: 0;
           font-size: 13px;
           line-height: 1.45;

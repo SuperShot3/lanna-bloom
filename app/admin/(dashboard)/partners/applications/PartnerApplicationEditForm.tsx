@@ -183,41 +183,37 @@ export function PartnerApplicationEditForm({
 
       <fieldset className="admin-partner-edit-section">
         <legend>Contact</legend>
-        <label className="admin-partner-edit-field">
-          Shop name <span aria-hidden="true">*</span>
+        <label className="admin-partner-edit-field admin-partner-edit-field--full">
+          <span className="admin-partner-edit-label">
+            Shop name <span aria-hidden="true">*</span>
+          </span>
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.shop_name}
             onChange={(e) => updateField('shop_name', e.target.value)}
             required
           />
         </label>
         <label className="admin-partner-edit-field">
-          Contact name <span aria-hidden="true">*</span>
+          <span className="admin-partner-edit-label">
+            Contact name <span aria-hidden="true">*</span>
+          </span>
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.contact_name}
             onChange={(e) => updateField('contact_name', e.target.value)}
             required
           />
         </label>
         <label className="admin-partner-edit-field">
-          Email
-          <input
-            type="email"
-            className="admin-partner-reject-input"
-            value={fields.email}
-            onChange={(e) => updateField('email', e.target.value)}
-            placeholder="Optional"
-          />
-        </label>
-        <label className="admin-partner-edit-field">
-          Phone <span aria-hidden="true">*</span>
+          <span className="admin-partner-edit-label">
+            Phone <span aria-hidden="true">*</span>
+          </span>
           <input
             type="tel"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.phone}
             onChange={(e) => updateField('phone', e.target.value)}
             required
@@ -225,10 +221,20 @@ export function PartnerApplicationEditForm({
           <span className="admin-partner-edit-hint">Used as the partner login</span>
         </label>
         <label className="admin-partner-edit-field">
+          Email
+          <input
+            type="email"
+            className="admin-partner-edit-input"
+            value={fields.email}
+            onChange={(e) => updateField('email', e.target.value)}
+            placeholder="Optional"
+          />
+        </label>
+        <label className="admin-partner-edit-field">
           LINE ID
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.line_id}
             onChange={(e) => updateField('line_id', e.target.value)}
           />
@@ -237,7 +243,7 @@ export function PartnerApplicationEditForm({
           Instagram
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.instagram}
             onChange={(e) => updateField('instagram', e.target.value)}
             placeholder="@handle or full URL"
@@ -247,7 +253,7 @@ export function PartnerApplicationEditForm({
           Facebook
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.facebook}
             onChange={(e) => updateField('facebook', e.target.value)}
             placeholder="Page URL or name"
@@ -258,9 +264,11 @@ export function PartnerApplicationEditForm({
       <fieldset className="admin-partner-edit-section">
         <legend>Location</legend>
         <label className="admin-partner-edit-field">
-          Province {isCreate && <span aria-hidden="true">*</span>}
+          <span className="admin-partner-edit-label">
+            Province {isCreate && <span aria-hidden="true">*</span>}
+          </span>
           <select
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.province_code}
             onChange={(e) => updateField('province_code', e.target.value)}
             required={isCreate}
@@ -277,7 +285,7 @@ export function PartnerApplicationEditForm({
           District / sub-location
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.district}
             onChange={(e) => updateField('district', e.target.value)}
             placeholder="e.g. Nimman"
@@ -286,7 +294,7 @@ export function PartnerApplicationEditForm({
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Address
           <textarea
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             rows={2}
             value={fields.address}
             onChange={(e) => updateField('address', e.target.value)}
@@ -297,7 +305,7 @@ export function PartnerApplicationEditForm({
           Google Maps link
           <input
             type="url"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.google_maps_url}
             onChange={(e) => updateField('google_maps_url', e.target.value)}
             placeholder="https://maps.app.goo.gl/..."
@@ -308,7 +316,7 @@ export function PartnerApplicationEditForm({
           Latitude
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.lat}
             onChange={(e) => updateField('lat', e.target.value)}
             placeholder="Optional"
@@ -318,7 +326,7 @@ export function PartnerApplicationEditForm({
           Longitude
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.lng}
             onChange={(e) => updateField('lng', e.target.value)}
             placeholder="Optional"
@@ -339,7 +347,7 @@ export function PartnerApplicationEditForm({
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Delivery zones
           <textarea
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             rows={2}
             value={fields.delivery_zones}
             onChange={(e) => updateField('delivery_zones', e.target.value)}
@@ -348,7 +356,7 @@ export function PartnerApplicationEditForm({
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Delivery fee / policy note
           <textarea
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             rows={2}
             value={fields.delivery_fee_note}
             onChange={(e) => updateField('delivery_fee_note', e.target.value)}
@@ -362,48 +370,50 @@ export function PartnerApplicationEditForm({
           Categories
           <input
             type="text"
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             value={fields.categories}
             onChange={(e) => updateField('categories', e.target.value)}
             placeholder={CATEGORY_OPTIONS.map((c) => c.value).join(', ')}
           />
           <span className="admin-partner-edit-hint">Comma-separated values (e.g. flowers, gifts)</span>
         </label>
-        <label className="admin-partner-edit-field">
-          Prep time
-          <select
-            className="admin-partner-reject-input"
-            value={fields.prep_time}
-            onChange={(e) => updateField('prep_time', e.target.value)}
-          >
-            <option value="">—</option>
-            {PREP_TIME_OPTIONS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.labelEn}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="admin-partner-edit-field">
-          Order cutoff time
-          <input
-            type="text"
-            className="admin-partner-reject-input"
-            value={fields.cutoff_time}
-            onChange={(e) => updateField('cutoff_time', e.target.value)}
-            placeholder="e.g. 14:00"
-          />
-        </label>
-        <label className="admin-partner-edit-field">
-          Max orders / day
-          <input
-            type="number"
-            min={0}
-            className="admin-partner-reject-input"
-            value={fields.max_orders_per_day}
-            onChange={(e) => updateField('max_orders_per_day', e.target.value)}
-          />
-        </label>
+        <div className="admin-partner-edit-row-3">
+          <label className="admin-partner-edit-field">
+            Prep time
+            <select
+              className="admin-partner-edit-input"
+              value={fields.prep_time}
+              onChange={(e) => updateField('prep_time', e.target.value)}
+            >
+              <option value="">—</option>
+              {PREP_TIME_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.labelEn}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-partner-edit-field">
+            Order cutoff time
+            <input
+              type="text"
+              className="admin-partner-edit-input"
+              value={fields.cutoff_time}
+              onChange={(e) => updateField('cutoff_time', e.target.value)}
+              placeholder="e.g. 14:00"
+            />
+          </label>
+          <label className="admin-partner-edit-field">
+            Max orders / day
+            <input
+              type="number"
+              min={0}
+              className="admin-partner-edit-input"
+              value={fields.max_orders_per_day}
+              onChange={(e) => updateField('max_orders_per_day', e.target.value)}
+            />
+          </label>
+        </div>
       </fieldset>
 
       <fieldset className="admin-partner-edit-section">
@@ -411,7 +421,7 @@ export function PartnerApplicationEditForm({
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Experience note
           <textarea
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             rows={3}
             value={fields.experience_note}
             onChange={(e) => updateField('experience_note', e.target.value)}
@@ -420,7 +430,7 @@ export function PartnerApplicationEditForm({
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Admin note
           <textarea
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             rows={2}
             value={fields.admin_note}
             onChange={(e) => updateField('admin_note', e.target.value)}
@@ -429,7 +439,7 @@ export function PartnerApplicationEditForm({
         <label className="admin-partner-edit-field admin-partner-edit-field--full">
           Sample photo URLs
           <textarea
-            className="admin-partner-reject-input"
+            className="admin-partner-edit-input"
             rows={4}
             value={fields.sample_photo_urls}
             onChange={(e) => updateField('sample_photo_urls', e.target.value)}

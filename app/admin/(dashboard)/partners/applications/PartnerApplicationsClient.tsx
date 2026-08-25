@@ -263,10 +263,8 @@ export function PartnerApplicationsClient({
               <tr>
                 <th>Shop</th>
                 <th>Province</th>
-                <th>Contact</th>
-                <th>Phone</th>
+                <th>District</th>
                 <th>LINE</th>
-                <th>Facebook</th>
                 <th>Map</th>
                 <th>Status</th>
                 <th>Date</th>
@@ -280,14 +278,7 @@ export function PartnerApplicationsClient({
                   <tr key={app.id}>
                     <td>{app.shop_name ?? '—'}</td>
                     <td>{provinceLabel(app.province_code)}</td>
-                    <td>{app.contact_name ?? '—'}</td>
-                    <td>
-                      {app.phone ? (
-                        <a href={`tel:${app.phone}`} className="admin-partner-link-cell">
-                          {app.phone}
-                        </a>
-                      ) : '—'}
-                    </td>
+                    <td>{app.district ?? '—'}</td>
                     <td className="admin-partner-link-col">
                       {app.line_id ? (
                         <a
@@ -298,19 +289,6 @@ export function PartnerApplicationsClient({
                           title={app.line_id}
                         >
                           LINE
-                        </a>
-                      ) : '—'}
-                    </td>
-                    <td className="admin-partner-link-col">
-                      {app.facebook ? (
-                        <a
-                          href={facebookHref(app.facebook)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="admin-partner-link-cell"
-                          title={app.facebook}
-                        >
-                          FB
                         </a>
                       ) : '—'}
                     </td>
@@ -352,7 +330,10 @@ export function PartnerApplicationsClient({
 
       {(selected || drawerMode === 'create') && (
         <div className="admin-partner-drawer-overlay" onClick={closeDrawer}>
-          <div className="admin-partner-drawer" onClick={(e) => e.stopPropagation()}>
+          <div
+            className={`admin-partner-drawer${drawerMode === 'create' || drawerMode === 'edit' ? ' admin-partner-drawer--form' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="admin-partner-drawer-header">
               <h2>
                 {drawerMode === 'create'
