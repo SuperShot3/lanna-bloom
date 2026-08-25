@@ -26,36 +26,35 @@ export function CartShareButton({
 
   const snapshotKey = JSON.stringify({ items, form, giftCardMessages, locale: lang });
 
-  const shareOrCopy = useCallback(
+  const copyLink = useCallback(
     async (url: string) => {
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        try {
-          await navigator.share({
-            title: t.shareCart,
-            text: t.shareCart,
-            url,
-          });
-          return;
-        } catch (err) {
-          if ((err as Error).name === 'AbortError') return;
-        }
-      }
-
       try {
-        await navigator.clipboard.writeText(url);
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(url);
+        } else {
+          const input = document.createElement('textarea');
+          input.value = url;
+          input.setAttribute('readonly', '');
+          input.style.position = 'fixed';
+          input.style.left = '-9999px';
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand('copy');
+          document.body.removeChild(input);
+        }
         showToast(t.shareCartLinkCopied);
       } catch {
         showToast(t.shareCartFailed);
       }
     },
-    [showToast, t.shareCart, t.shareCartFailed, t.shareCartLinkCopied]
+    [showToast, t.shareCartFailed, t.shareCartLinkCopied]
   );
 
   const handleClick = async () => {
     if (loading) return;
 
     if (shareUrl && lastSnapshotKeyRef.current === snapshotKey) {
-      await shareOrCopy(shareUrl);
+      await copyLink(shareUrl);
       return;
     }
 
@@ -83,7 +82,7 @@ export function CartShareButton({
       }
       lastSnapshotKeyRef.current = snapshotKey;
       setShareUrl(url);
-      await shareOrCopy(url);
+      await copyLink(url);
     } catch {
       showToast(t.shareCartFailed);
     } finally {
