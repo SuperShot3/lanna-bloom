@@ -46,9 +46,9 @@ const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
     distanceLabelEn: 'More than 8–12 km',
     distanceLabelTh: 'มากกว่า 8–12 กม.',
     typicalAreasEn:
-      'Mae Hia, Nong Chom near city, Don Kaeo near city, northern Saraphi, southern San Sai, outer Suthep',
+      'Nong Chom near city, Don Kaeo near city, northern Saraphi, southern San Sai, outer Suthep',
     typicalAreasTh:
-      'แม่เหียะ หนองจอมใกล้เมือง ดอนแก้วใกล้เมือง สารภีเหนือ สันทรายใต้ สุเทพชานเมือง',
+      'หนองจอมใกล้เมือง ดอนแก้วใกล้เมือง สารภีเหนือ สันทรายใต้ สุเทพชานเมือง',
   },
   {
     id: 'tier-12-16',
@@ -64,27 +64,25 @@ const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
     distanceLabelEn: 'More than 16–20 km',
     distanceLabelTh: 'มากกว่า 16–20 กม.',
     typicalAreasEn:
-      'Mae Rim town, Hang Dong town, San Kamphaeng town, parts of San Sai and Saraphi, Doi Saket near town',
+      'San Kamphaeng town, Mae Hia, Doi Saket near town, parts of San Sai and Saraphi, San Pa Tong',
     typicalAreasTh:
-      'ตัวเมืองแม่ริม หางดง สันกำแพง บางส่วนสันทรายและสารภี ดอยสะเก็ดใกล้ตัวเมือง',
+      'ตัวเมืองสันกำแพง แม่เหียะ ดอยสะเก็ดใกล้ตัวเมือง บางส่วนสันทรายและสารภี สันป่าตอง',
   },
   {
     id: 'tier-20-25',
     distanceLabelEn: 'More than 20–25 km',
     distanceLabelTh: 'มากกว่า 20–25 กม.',
-    typicalAreasEn:
-      'Outer Hang Dong, outer San Sai, Doi Saket town and nearby areas, outer San Kamphaeng',
-    typicalAreasTh:
-      'หางดงชานนอก สันทรายชานนอก ตัวเมืองดอยสะเก็ด สันกำแพงชานนอก',
+    typicalAreasEn: 'Hang Dong town and Hang Dong destinations in the Hang Dong checkout zone',
+    typicalAreasTh: 'ตัวเมืองหางดงและปลายทางในโซนเช็กเอาต์หางดง',
   },
   {
     id: 'tier-25-35',
     distanceLabelEn: 'More than 25–35 km',
     distanceLabelTh: 'มากกว่า 25–35 กม.',
     typicalAreasEn:
-      'Outer Doi Saket, some Mae On approaches, distant parts of Hang Dong and San Kamphaeng, San Kamphaeng Hot Springs area, some lower Mae Rim mountain areas',
+      'Outer Doi Saket, some Mae On approaches, San Kamphaeng Hot Springs area',
     typicalAreasTh:
-      'ดอยสะเก็ดชานนอก แนวเข้าแม่ออน หางดงและสันกำแพงห่างไกล บ่อน้ำร้อนสันกำแพง แม่ริมเขาต่ำ',
+      'ดอยสะเก็ดชานนอก แนวเข้าแม่ออน บ่อน้ำร้อนสันกำแพง',
   },
   {
     id: 'tier-35-40',
@@ -96,13 +94,20 @@ const DISTANCE_TIER_BASE: DeliveryDistanceTierBase[] = [
       'ตัวเมืองแม่แตง ม่อนแจ่มตามเส้นทาง แม่ออนชานนอก ดอยสะเก็ดห่างไกล',
   },
   {
+    id: 'tier-mae-rim',
+    distanceLabelEn: 'Mae Rim',
+    distanceLabelTh: 'แม่ริม',
+    typicalAreasEn: 'Mae Rim town and Mae Rim destinations in the Mae Rim checkout zone',
+    typicalAreasTh: 'ตัวเมืองแม่ริมและปลายทางในโซนเช็กเอาต์แม่ริม',
+  },
+  {
     id: 'tier-40-45',
     distanceLabelEn: 'More than 40–45 km',
     distanceLabelTh: 'มากกว่า 40–45 กม.',
     typicalAreasEn:
-      'Samoeng town, some remote Mae Rim, Mae On and Mae Taeng destinations',
+      'Samoeng town, some remote Mae On and Mae Taeng destinations',
     typicalAreasTh:
-      'ตัวเมืองสะเมิง แม่ริมห่างไกล แม่ออนและแม่แตงปลายทาง',
+      'ตัวเมืองสะเมิง แม่ออนและแม่แตงห่างไกล',
   },
   {
     id: 'tier-45-plus',
@@ -145,6 +150,7 @@ export function feeTierFillColor(feeThb: number | null): string {
   if (feeThb <= 650) return '#e0aa8e';
   if (feeThb <= 750) return '#d49896';
   if (feeThb <= 850) return '#c090a4';
+  if (feeThb <= 900) return '#b090aa';
   return '#a890b0';
 }
 

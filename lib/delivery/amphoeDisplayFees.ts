@@ -60,7 +60,7 @@ export function resolveAmphoeFeeDisplay(
       fees.length > 0
         ? Math.min(...fees)
         : destinationId === 'CHIANG_MAI'
-          ? getZoneFee('CHIANG_MAI', OTHER_ESTIMATE_ZONE_ID) ?? 550
+          ? getZoneFee('CHIANG_MAI', OTHER_ESTIMATE_ZONE_ID) ?? 1000
           : 250;
     return {
       displayKind: 'driver_confirm',
@@ -82,7 +82,7 @@ export function resolveAmphoeFeeDisplay(
 
 /** “My location is not listed” — estimate from cm-unknown, always driver-confirm. */
 export function resolveOtherAmphoeFeeDisplay(): AmphoeFeeDisplay {
-  const estimate = getZoneFee('CHIANG_MAI', OTHER_ESTIMATE_ZONE_ID) ?? 550;
+  const estimate = getZoneFee('CHIANG_MAI', OTHER_ESTIMATE_ZONE_ID) ?? 1000;
   return {
     displayKind: 'driver_confirm',
     feeFrom: estimate,

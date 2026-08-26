@@ -38,23 +38,21 @@ assert(calcDeliveryFeeTHB({ district: 'MUEANG', isMueangCentral: false }) === 35
 assert(calcDeliveryFeeTHB({ district: 'SARAPHI', isMueangCentral: false }) === 400, 'Saraphi = 400');
 assert(calcDeliveryFeeTHB({ district: 'SAN_SAI', isMueangCentral: false }) === 400, 'San Sai = 400');
 
-// 450 THB districts
-assert(calcDeliveryFeeTHB({ district: 'HANG_DONG', isMueangCentral: false }) === 450, 'Hang Dong = 450');
-assert(calcDeliveryFeeTHB({ district: 'SAN_KAMPHAENG', isMueangCentral: false }) === 450, 'San Kamphaeng = 450');
-assert(calcDeliveryFeeTHB({ district: 'MAE_RIM', isMueangCentral: false }) === 450, 'Mae Rim = 450');
-
 // 550 THB districts
 assert(calcDeliveryFeeTHB({ district: 'DOI_SAKET', isMueangCentral: false }) === 550, 'Doi Saket = 550');
 assert(calcDeliveryFeeTHB({ district: 'SAN_PA_TONG', isMueangCentral: false }) === 550, 'San Pa Tong = 550');
+assert(calcDeliveryFeeTHB({ district: 'SAN_KAMPHAENG', isMueangCentral: false }) === 550, 'San Kamphaeng = 550');
+assert(calcDeliveryFeeTHB({ district: 'HANG_DONG', isMueangCentral: false }) === 600, 'Hang Dong = 600');
 
 // Retired CM Lamphun satellite → unknown fee; Lamphun is its own destination
-assert(calcDeliveryFeeTHB({ district: 'LAMPHUN', isMueangCentral: false }) === 550, 'Legacy Lamphun district = 550');
+assert(calcDeliveryFeeTHB({ district: 'LAMPHUN', isMueangCentral: false }) === 1000, 'Legacy Lamphun district = 1000');
 assert(calcDeliveryFeeTHB({ district: 'MAE_ON', isMueangCentral: false }) === 750, 'Mae On = 750');
 assert(calcDeliveryFeeTHB({ district: 'MAE_WANG', isMueangCentral: false }) === 750, 'Mae Wang = 750');
 assert(calcDeliveryFeeTHB({ district: 'MAE_TAENG', isMueangCentral: false }) === 850, 'Mae Taeng = 850');
+assert(calcDeliveryFeeTHB({ district: 'MAE_RIM', isMueangCentral: false }) === 900, 'Mae Rim = 900');
 assert(calcDeliveryFeeTHB({ district: 'SAMOENG', isMueangCentral: false }) === 950, 'Samoeng = 950');
 assert(calcDeliveryFeeTHB({ district: 'CHIANG_DAO', isMueangCentral: false }) === 950, 'Chiang Dao = 950');
-assert(calcDeliveryFeeTHB({ district: 'UNKNOWN', isMueangCentral: false }) === 550, 'Unknown = 550');
+assert(calcDeliveryFeeTHB({ district: 'UNKNOWN', isMueangCentral: false }) === 1000, 'Unknown = 1000');
 
 // Auto-detect
 assert(detectDistrictFromAddress('123 Nimman Road') === 'MUEANG', 'Nimman -> Mueang');
@@ -73,8 +71,12 @@ assert(detectChiangMaiZoneFromAddress('Mae Hia, Hang Dong') === 'cm-mae-hia', 'M
 assert(detectChiangMaiZoneFromAddress('Don Kaeo, Chiang Mai') === 'cm-don-kaeo', 'Don Kaeo zone');
 assert(getZoneFee('CHIANG_MAI', 'cm-suthep') === 300, 'Suthep fee = 300');
 assert(getZoneFee('CHIANG_MAI', 'cm-nong-chom') === 350, 'Nong Chom fee = 350');
-assert(getZoneFee('CHIANG_MAI', 'cm-mae-hia') === 350, 'Mae Hia fee = 350');
+assert(getZoneFee('CHIANG_MAI', 'cm-mae-hia') === 550, 'Mae Hia fee = 550');
 assert(getZoneFee('CHIANG_MAI', 'cm-don-kaeo') === 400, 'Don Kaeo fee = 400');
+assert(getZoneFee('CHIANG_MAI', 'cm-san-kamphaeng') === 550, 'San Kamphaeng fee = 550');
+assert(getZoneFee('CHIANG_MAI', 'cm-hang-dong') === 600, 'Hang Dong fee = 600');
+assert(getZoneFee('CHIANG_MAI', 'cm-mae-rim') === 900, 'Mae Rim fee = 900');
+assert(getZoneFee('CHIANG_MAI', 'cm-unknown') === 1000, 'Unknown area fee = 1000');
 assert(getZoneFee('CHIANG_MAI', 'cm-samoeng') === 950, 'Samoeng fee = 950');
 assert(getZoneFee('CHIANG_MAI', 'cm-lamphun') === null, 'CM Lamphun zone removed');
 assert(getZoneFee('LAMPHUN', 'lp-mueang-lamphun') === 250, 'Lamphun Mueang fee = 250');

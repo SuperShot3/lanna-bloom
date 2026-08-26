@@ -82,13 +82,14 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
     case 'SARAPHI':
     case 'SAN_SAI':
       return 400;
-    case 'HANG_DONG':
-    case 'SAN_KAMPHAENG':
-    case 'MAE_RIM':
-      return 450;
     case 'DOI_SAKET':
     case 'SAN_PA_TONG':
+    case 'SAN_KAMPHAENG':
       return 550;
+    case 'HANG_DONG':
+      return 600;
+    case 'MAE_RIM':
+      return 900;
     case 'MAE_ON':
     case 'MAE_WANG':
       return 750;
@@ -97,19 +98,20 @@ export function calcDeliveryFeeTHB(input: CalcDeliveryFeeInput): number {
     case 'SAMOENG':
     case 'CHIANG_DAO':
       return 950;
-    case 'LAMPHUN':
-    // Retired CM satellite — Lamphun is its own destination; treat stale carts as unknown.
     case 'FANG':
     case 'MAE_AI':
+      return 950;
+    case 'LAMPHUN':
+    // Retired CM satellite — Lamphun is its own destination; treat stale carts as unknown.
     case 'UNKNOWN':
     default:
-      return 550;
+      return 1000;
   }
 }
 
 /**
  * Get delivery fee in THB from DeliveryInput (district + central toggle).
- * Falls back to 550 THB (unknown) when district not provided.
+ * Falls back to 1000 THB (unknown) when district not provided.
  */
 export function getDeliveryFeeTHB(input?: DeliveryInput): number {
   const district = (input?.deliveryDistrict as DistrictKey) ?? 'UNKNOWN';
