@@ -103,6 +103,7 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
     { id: 'kbn-krabi-town', labelEn: 'Krabi Town', labelTh: 'เมืองกระบี่', feeThb: 300 },
     { id: 'kbn-klong-muang', labelEn: 'Klong Muang', labelTh: 'คลองม่วง', feeThb: 350 },
     { id: 'kbn-tubkaek', labelEn: 'Tubkaek', labelTh: 'ถ้ำแขก', feeThb: 450 },
+    { id: 'kbn-khao-thong', labelEn: 'Khao Thong', labelTh: 'เขาทอง', feeThb: 550 },
   ],
   SAMUI: [
     { id: 'sui-chaweng', labelEn: 'Chaweng', labelTh: 'เฉวง', feeThb: 250 },

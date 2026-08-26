@@ -42,7 +42,7 @@ assert.ok(
 );
 
 const krabiDistricts = getMarketLandingDistricts('KRABI');
-assert.equal(krabiDistricts.length, 5, 'Krabi has 5 named checkout areas');
+assert.equal(krabiDistricts.length, 6, 'Krabi has 6 named checkout areas');
 assert.ok(
   formatDistrictList(krabiDistricts, 'en').includes('Ao Nang'),
   'Krabi district list includes Ao Nang'

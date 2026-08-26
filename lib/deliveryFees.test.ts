@@ -106,9 +106,10 @@ assert(getZoneFee('BANGKOK', 'bkk-thonburi-west') === 400, 'Bangkok Thonburi wes
 assert(getZonesForDestination('PHUKET').length === 11, 'Phuket has 11 checkout zones');
 assert(getZoneFee('PHUKET', 'hkt-phuket-town') === 250, 'Phuket Town fee = 250');
 assert(getZoneFee('PHUKET', 'hkt-mai-khao-airport-sakhu') === 550, 'Phuket Mai Khao fee = 550');
-assert(getZonesForDestination('KRABI').length === 5, 'Krabi has 5 checkout zones');
+assert(getZonesForDestination('KRABI').length === 6, 'Krabi has 6 checkout zones');
 assert(getZoneFee('KRABI', 'kbn-ao-nang-center') === 250, 'Ao Nang Center fee = 250');
 assert(getZoneFee('KRABI', 'kbn-tubkaek') === 450, 'Tubkaek fee = 450');
+assert(getZoneFee('KRABI', 'kbn-khao-thong') === 550, 'Khao Thong fee = 550');
 
 // Districts array
 assert(DISTRICTS.length >= 10, 'DISTRICTS has options');
@@ -263,9 +264,9 @@ assert(
   'every Hua Hin checkout zone is a clickable map district'
 );
 
-assert(KRABI_AMPHOE_MAP_DISTRICTS.length === 5, 'Krabi map has 5 checkout areas');
+assert(KRABI_AMPHOE_MAP_DISTRICTS.length === 6, 'Krabi map has 6 checkout areas');
 const krabiAmpCodes = new Set(KRABI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
-assert(krabiAmpCodes.size === 5, 'each Krabi area has a unique amp_code');
+assert(krabiAmpCodes.size === 6, 'each Krabi area has a unique amp_code');
 for (const d of KRABI_AMPHOE_MAP_DISTRICTS) {
   assert(d.checkoutZoneId != null, `${d.id} needs checkoutZoneId`);
   const display = resolveAmphoeFeeDisplay(d, 'KRABI');
@@ -286,8 +287,14 @@ const tubkaekDisplay = resolveAmphoeFeeDisplay(
 assert(aoNangDisplay.feeFrom === 250, 'Ao Nang Center feeFrom = 250');
 assert(tubkaekDisplay.feeFrom === 450, 'Tubkaek feeFrom = 450');
 
+const khaoThongDisplay = resolveAmphoeFeeDisplay(
+  KRABI_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'khao-thong')!,
+  'KRABI'
+);
+assert(khaoThongDisplay.feeFrom === 550, 'Khao Thong feeFrom = 550');
+
 const krabiDrill = getAmphoeDrillItems('krabi', 'en');
-assert(krabiDrill.length === 5, 'Krabi drill has 5 areas');
+assert(krabiDrill.length === 6, 'Krabi drill has 6 areas');
 assert(
   krabiDrill.every((d) => d.subAreas.length === 0),
   'Krabi areas are first-class map districts, not nested rows'

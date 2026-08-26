@@ -4,6 +4,7 @@
  *
  * Join key is properties.amp_code:
  *   810101 Krabi Town (OpenGIS tambon Pak Nam; Krabi Yai 810102 is missing)
+ *   810106 Khao Thong (OpenGIS tambon)
  *   810191–810192 latitude slices of mainland tambon Ao Nang (810116)
  *   810193–810194 latitude slices of tambon Nong Thale (810117)
  *
@@ -19,7 +20,8 @@ export type KrabiAmphoeMapId =
   | 'noppharat-thara'
   | 'krabi-town'
   | 'klong-muang'
-  | 'tubkaek';
+  | 'tubkaek'
+  | 'khao-thong';
 
 export interface KrabiAmphoeMapDistrict extends AmphoeFeeSource {
   id: KrabiAmphoeMapId;
@@ -76,6 +78,15 @@ export const KRABI_AMPHOE_MAP_DISTRICTS: KrabiAmphoeMapDistrict[] = [
     typicalAreasEn: 'Tubkaek Beach',
     typicalAreasTh: 'หาดถ้ำแขก',
     checkoutZoneId: 'kbn-tubkaek',
+  },
+  {
+    id: 'khao-thong',
+    ampCode: '810106',
+    labelEn: 'Khao Thong',
+    labelTh: 'เขาทอง',
+    typicalAreasEn: 'Khao Thong',
+    typicalAreasTh: 'เขาทอง',
+    checkoutZoneId: 'kbn-khao-thong',
   },
 ];
 

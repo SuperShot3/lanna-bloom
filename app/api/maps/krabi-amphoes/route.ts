@@ -7,7 +7,7 @@ export const revalidate = 86400;
 
 /**
  * Serves Krabi / Ao Nang checkout-area TopoJSON (pro_code 81).
- * Five clickable listed areas — not the rest of Krabi.
+ * Six clickable listed areas — not the rest of Krabi.
  * Derived from https://github.com/chingchai/OpenGISData-Thailand — not the full national file.
  */
 export async function GET() {

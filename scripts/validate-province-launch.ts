@@ -288,13 +288,13 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
   } else if (provinceCode === 'krabi') {
     const codes = KRABI_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
     const unique = new Set(codes);
-    if (KRABI_AMPHOE_MAP_DISTRICTS.length === 5 && unique.size === 5) {
-      out.push(pass('amphoe metadata', '5 Krabi / Ao Nang areas, unique ampCode'));
+    if (KRABI_AMPHOE_MAP_DISTRICTS.length === 6 && unique.size === 6) {
+      out.push(pass('amphoe metadata', '6 Krabi / Ao Nang areas, unique ampCode'));
     } else {
       out.push(
         fail(
           'amphoe metadata',
-          `Expected 5 unique ampCodes in krabiAmphoeMapData; got ${KRABI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+          `Expected 6 unique ampCodes in krabiAmphoeMapData; got ${KRABI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

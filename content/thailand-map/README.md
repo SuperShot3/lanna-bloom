@@ -26,6 +26,7 @@
   - Tambon Nong Kae `770702` is sliced by latitude into Khao Takiab / Nong Kae `770793` and Hua Don `770794`
 - Krabi is **Ao Nang listed areas only** (not Koh Lanta, Ao Luek, Khao Phanom, Nuea Khlong, or island fragments of tambon Ao Nang):
   - OpenGIS tambon Pak Nam `810101` is Krabi Town (OpenGIS has no Krabi Yai `810102`)
+  - OpenGIS tambon Khao Thong `810106` is Khao Thong
   - Mainland tambon Ao Nang `810116` is sliced by latitude into Center `810191` and Noppharat Thara `810192`
   - Tambon Nong Thale `810117` is sliced by latitude into Klong Muang `810193` and Tubkaek `810194`
 - Bangkok is **listed checkout areas** covering all 50 khet (not Nonthaburi, Samut Prakan, or Pathum Thani). OpenGIS subdistricts (`pro_code` 10) are dissolved onto the 10 `ZONES_BY_DESTINATION.BANGKOK` zones. Join keys are representative khet codes (e.g. Old City `1001`, Sukhumvit `1033`).

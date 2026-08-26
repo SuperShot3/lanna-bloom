@@ -221,7 +221,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     krabiIntro:
       'Flower delivery for listed Ao Nang and nearby Krabi areas — not province-wide Krabi. Delivery from ฿250. Shop below or tap Krabi on the coverage map, then choose your area at checkout.',
     krabiNote:
-      'Choose Krabi / Ao Nang as your delivery destination at checkout, then select the area. Fees start at ฿250 in Ao Nang Center and Noppharat Thara; Klong Muang and Tubkaek are higher. Koh Lanta, Ao Luek, and other Krabi districts are not on this map.',
+      'Choose Krabi / Ao Nang as your delivery destination at checkout, then select the area. Fees start at ฿250 in Ao Nang Center and Noppharat Thara; Klong Muang, Tubkaek, and Khao Thong are higher. Koh Lanta, Ao Luek, and other Krabi districts are not on this map.',
     samuiTitle: 'Koh Samui',
     samuiIntro:
       'Flower delivery for listed Koh Samui areas — not province-wide Surat Thani. Delivery from ฿250. Shop below or tap Surat Thani on the coverage map, then choose your Samui area at checkout.',
@@ -287,7 +287,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     krabiIntro:
       'จัดส่งดอกไม้ในย่านอ่าวนางและกระบี่ใกล้เคียงที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดกระบี่ ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะกระบี่บนแผนที่พื้นที่บริการ แล้วเลือกย่านตอนชำระเงิน',
     krabiNote:
-      'เลือกปลายทางกระบี่ / อ่าวนางตอนชำระเงิน แล้วเลือกย่าน ค่าส่งเริ่มต้น ฿250 ในอ่าวนางกลางและนพรัตน์ธารา คลองม่วงและถ้ำแขกสูงกว่า เกาะลันตา อ่าวลึก และอำเภออื่นในกระบี่ไม่อยู่บนแผนที่นี้',
+      'เลือกปลายทางกระบี่ / อ่าวนางตอนชำระเงิน แล้วเลือกย่าน ค่าส่งเริ่มต้น ฿250 ในอ่าวนางกลางและนพรัตน์ธารา คลองม่วง ถ้ำแขก และเขาทองสูงกว่า เกาะลันตา อ่าวลึก และอำเภออื่นในกระบี่ไม่อยู่บนแผนที่นี้',
     samuiTitle: 'เกาะสมุย',
     samuiIntro:
       'จัดส่งดอกไม้ในย่านเกาะสมุยที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดสุราษฎร์ธานี ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะสุราษฎร์ธานีบนแผนที่พื้นที่บริการ แล้วเลือกย่านสมุยตอนชำระเงิน',
