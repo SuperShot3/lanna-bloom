@@ -3,7 +3,6 @@ import { ViewTransitions } from 'next-view-transitions';
 import { DocumentLangSync } from '@/components/DocumentLangSync';
 import { AhrefsAnalytics } from '@/components/AhrefsAnalytics';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
-import { GooglePreferredSourceScript } from '@/components/GooglePreferredSourceScript';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
@@ -144,7 +143,6 @@ export default function RootLayout({
             <DocumentLangSync />
             <InternalTrafficBootstrap />
             <GoogleAnalytics />
-            <GooglePreferredSourceScript />
             <WebVitalsReporter />
             <SpeedInsights />
             <AhrefsAnalytics />

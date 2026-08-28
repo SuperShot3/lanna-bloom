@@ -1,12 +1,8 @@
 'use client';
 
-import type { MouseEvent } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
-import {
-  GOOGLE_PREFERRED_SOURCE_DEEPLINK,
-  tryAddPreferredSource,
-} from '@/lib/googlePreferredSource';
+import { getGooglePreferredSourceDeeplink } from '@/lib/googlePreferredSource';
 import { GoogleGIcon } from '@/components/icons/GoogleGIcon';
 import styles from './google-preferred-source.module.css';
 
@@ -26,20 +22,12 @@ export function GooglePreferredSourceLink({ lang, variant, className = '' }: Pro
   const mainLine = restLines.join(' ');
   const iconSize = isHero ? 36 : 18;
 
-  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
-      return;
-    }
-    if (tryAddPreferredSource()) {
-      event.preventDefault();
-    }
-  };
-
   return (
     <a
-      href={GOOGLE_PREFERRED_SOURCE_DEEPLINK}
+      href={getGooglePreferredSourceDeeplink()}
+      target="_blank"
+      rel="noopener noreferrer"
       title={t.preferredSourceTitle}
-      onClick={handleClick}
       className={`${styles.link} ${styles[variant]} ${className}`.trim()}
     >
       <span className={styles.icon}>
