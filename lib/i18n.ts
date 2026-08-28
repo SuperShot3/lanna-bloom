@@ -74,6 +74,19 @@ const baseTranslations = {
       bannerMessageShort: 'New Year 30–31 Dec · order early · 10% off · NY10',
       bannerAlt: 'Order early for New Year — 10% off with NY10',
     },
+    conversionDiscount: {
+      popupTitle: 'Still deciding? Here’s 10% off',
+      popupBody: 'Complete your order in the next 5 minutes and save 10% on your flowers.',
+      popupFinePrint: 'Discount applies to products only. Delivery fee excluded.',
+      popupCta: 'Use My 10% Discount',
+      popupClose: 'Close',
+      popupTitleAbandoned: 'Your flowers are still waiting',
+      popupBodyAbandoned: 'Complete your order today and your 10% offer is still available.',
+      pillLabel: '10% OFF',
+      pillDismiss: 'Hide discount timer',
+      pillAria: 'Limited-time 10% off, {time} remaining',
+      detailsAria: 'Limited-time 10% discount',
+    },
     peakCelebration: {
       events: {
         valentines: "Valentine's Day",
@@ -128,7 +141,8 @@ const baseTranslations = {
       bigHeadlineLine1: 'Lanna Bloom Flower Shop online',
       bigHeadlineLine2: 'Same-day delivery in Chiang Mai Thailand',
       headline: 'Fresh flowers, delivered with love',
-      subline: 'Hand-crafted bouquets for every moment',
+      subline:
+        'Secure card payment with international cards. Order from anywhere in the world. Fast replies. Reliable same-day & weekend delivery to homes, hotels and villas. Need something special? Just ask — we\'ll take care of the details.',
       cta: 'Choose a bouquet',
       trustLine: 'Same-Day Flower Delivery in {city}',
       badge: 'Flower delivery in Chiang Mai, Thailand',
@@ -719,6 +733,8 @@ const baseTranslations = {
       cartFivePercentApplied: '5% discount applied',
       cartFivePercentSocialTitle: 'Discount applied! Follow us for new bouquets and offers.',
       cartFivePercentSocialLater: 'Maybe later',
+      cartIntentTenDiscountLabel: 'Limited-time discount -10%',
+      cartIntentTenApplied: '10% limited-time discount applied',
       referralInvalid: 'Invalid code. Use 3-20 letters, numbers, or hyphens.',
       referralNotEligible: 'This code is not valid for the current cart or delivery area.',
       referralCannotStack: "Referral code can't be combined with other discounts.",
@@ -1878,6 +1894,19 @@ const baseTranslations = {
       bannerMessageShort: 'ปีใหม่ 30–31 ธ.ค. · สั่งล่วงหน้า · ลด 10% · NY10',
       bannerAlt: 'สั่งล่วงหน้าปีใหม่ — ลด 10% ด้วยโค้ด NY10',
     },
+    conversionDiscount: {
+      popupTitle: 'ยังตัดสินใจอยู่ใช่ไหม? รับส่วนลด 10%',
+      popupBody: 'สั่งซื้อให้เสร็จใน 5 นาทีนี้ แล้วรับส่วนลด 10% สำหรับดอกไม้ของคุณ',
+      popupFinePrint: 'ส่วนลดใช้กับสินค้าเท่านั้น ไม่รวมค่าจัดส่ง',
+      popupCta: 'ใช้ส่วนลด 10%',
+      popupClose: 'ปิด',
+      popupTitleAbandoned: 'ดอกไม้ของคุณยังรออยู่',
+      popupBodyAbandoned: 'สั่งซื้อให้เสร็จวันนี้ ส่วนลด 10% ยังใช้ได้อยู่',
+      pillLabel: 'ลด 10%',
+      pillDismiss: 'ซ่อนตัวจับเวลาส่วนลด',
+      pillAria: 'ส่วนลด 10% เวลาจำกัด เหลือ {time}',
+      detailsAria: 'ส่วนลด 10% เวลาจำกัด',
+    },
     peakCelebration: {
       events: {
         valentines: 'วันวาเลนไทน์',
@@ -1932,7 +1961,8 @@ const baseTranslations = {
       bigHeadlineLine1: 'Lanna Bloom ร้านดอกไม้ออนไลน์',
       bigHeadlineLine2: 'จัดส่งวันเดียว เชียงใหม่ ประเทศไทย',
       headline: 'ดอกไม้สด ส่งถึงมือด้วยความรัก',
-      subline: 'ช่อดอกไม้ทำมือสำหรับทุกช่วงเวลา',
+      subline:
+        'ชำระด้วยบัตรต่างประเทศได้อย่างปลอดภัย สั่งได้จากทุกที่ในโลก ตอบเร็ว จัดส่งวันเดียวกันและวันหยุดสุดสัปดาห์ถึงบ้าน โรงแรม และวิลล่าอย่างน่าเชื่อถือ ต้องการอะไรพิเศษไหม? บอกเราได้เลย — เราดูแลรายละเอียดให้เอง',
       cta: 'เลือกช่อดอกไม้',
       trustLine: 'จัดส่งดอกไม้วันเดียวใน{city}',
       badge: 'ส่งดอกไม้ในเชียงใหม่ ประเทศไทย',
@@ -2517,6 +2547,8 @@ const baseTranslations = {
       cartFivePercentApplied: 'ใช้ส่วนลด 5% แล้ว',
       cartFivePercentSocialTitle: 'ใช้ส่วนลดแล้ว! ติดตามเราเพื่อดูช่อดอกไม้และโปรโมชันใหม่',
       cartFivePercentSocialLater: 'ไว้ทีหลัง',
+      cartIntentTenDiscountLabel: 'ส่วนลดเวลาจำกัด -10%',
+      cartIntentTenApplied: 'ใช้ส่วนลด 10% เวลาจำกัดแล้ว',
       referralInvalid: 'รหัสไม่ถูกต้อง ใช้ตัวอักษร ตัวเลข หรือขีด 3-20 ตัว',
       referralNotEligible: 'รหัสนี้ใช้ไม่ได้กับตะกร้าหรือพื้นที่จัดส่งที่เลือก',
       referralCannotStack: 'รหัสแนะนำใช้ร่วมกับส่วนลดอื่นไม่ได้',
@@ -3652,7 +3684,8 @@ const russianTranslations = {
     bigHeadlineLine1: 'Интернет-магазин цветов Lanna Bloom',
     bigHeadlineLine2: 'Доставка сегодня в Чиангмае, Таиланд',
     headline: 'Свежие цветы с доставкой и любовью',
-    subline: 'Букеты ручной работы для каждого момента',
+    subline:
+      'Безопасная оплата международными картами. Заказывайте из любой точки мира. Быстрые ответы. Надёжная доставка в тот же день и по выходным на дом, в отели и виллы. Нужно что-то особенное? Просто напишите — мы позаботимся о деталях.',
     cta: 'Выбрать букет',
     trustLine: 'Доставка сегодня по Чиангмаю',
     badge: 'Отобранные флористы Таиланда',
@@ -4575,7 +4608,8 @@ const chineseSingaporeTranslations = {
     bigHeadlineLine1: 'Lanna Bloom 在线花店',
     bigHeadlineLine2: '泰国清迈当日配送',
     headline: '新鲜花束，用心送达',
-    subline: '为每个重要时刻手工制作花束',
+    subline:
+      '支持国际银行卡安全支付。可从世界任何地方下单。回复迅速。可靠的当日及周末配送，送到住宅、酒店和别墅。需要特别安排？尽管告诉我们 — 细节交给我们。',
     cta: '选择花束',
     trustLine: '清迈当日配送',
     badge: '清迈鲜花配送 · 泰国',
@@ -5256,6 +5290,20 @@ const chineseSingaporeTranslations = {
 
 const chineseHongKongTranslations = {
   ...baseTranslations.en,
+  conversionDiscount: {
+    ...baseTranslations.en.conversionDiscount,
+    popupTitle: '還在考慮？送你九折優惠',
+    popupBody: '在 5 分鐘內完成訂單，花束即享 10% 折扣。',
+    popupFinePrint: '折扣只適用於商品，不包含運費。',
+    popupCta: '使用我的 10% 折扣',
+    popupClose: '關閉',
+    popupTitleAbandoned: '你的花束還在等你',
+    popupBodyAbandoned: '今天完成訂單，10% 優惠仍然有效。',
+    pillLabel: '九折',
+    pillDismiss: '隱藏折扣計時',
+    pillAria: '限時九折，尚餘 {time}',
+    detailsAria: '限時九折優惠',
+  },
   nav: {
     ...baseTranslations.en.nav,
     home: '首頁',
@@ -5292,7 +5340,8 @@ const chineseHongKongTranslations = {
     bigHeadlineLine1: 'Lanna Bloom 網上花店',
     bigHeadlineLine2: '泰國清邁即日配送',
     headline: '新鮮花束，用心送達',
-    subline: '為每個重要時刻手工製作花束',
+    subline:
+      '支援國際銀行卡安全付款。可從世界任何地方下單。回覆迅速。可靠的即日及週末配送，送到住宅、酒店和別墅。需要特別安排？儘管告訴我們 — 細節交給我們。',
     cta: '選擇花束',
     trustLine: '清邁即日配送',
     badge: '清邁鮮花配送 · 泰國',

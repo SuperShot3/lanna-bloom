@@ -8,6 +8,7 @@
  */
 
 import { pushToDataLayer } from './analytics/gtag';
+import { recordIntentProductView } from './conversionDiscount/storage';
 
 export type { PurchaseUserData } from './analytics/gtag';
 
@@ -95,6 +96,7 @@ export function trackViewItem(params: {
   };
   if (value != null) eventParams.value = value;
   sendEvent('view_item', eventParams);
+  if (items[0]?.item_id) recordIntentProductView(items[0].item_id);
 }
 
 /**
@@ -334,6 +336,48 @@ export function trackDeliveryLocationRequestValidationError(reason: string): voi
     page_path: window.location.pathname,
     reason,
   });
+}
+
+export type DiscountExperimentEventName =
+  | 'discount_eligible'
+  | 'discount_popup_shown'
+  | 'discount_popup_closed'
+  | 'discount_offer_activated'
+  | 'discount_timer_expired'
+  | 'discount_added_to_cart'
+  | 'discount_checkout_started'
+  | 'discount_purchase_completed';
+
+export type DiscountExperimentEventParams = {
+  visitor_type?: 'new' | 'returning';
+  visit_count?: number;
+  product_view_count?: number;
+  cart_value?: number;
+  discount_value?: number;
+  time_before_offer?: number;
+  device_type?: 'mobile' | 'desktop';
+};
+
+/**
+ * Conversion-discount experiment events. GTM Custom Event triggers must be added in GTM UI.
+ * Deduped by callers (once per offer window).
+ */
+export function trackDiscountEvent(
+  eventName: DiscountExperimentEventName,
+  params: DiscountExperimentEventParams = {}
+): void {
+  if (typeof window === 'undefined') return;
+  const eventParams: Record<string, unknown> = {
+    page_path: window.location.pathname,
+  };
+  if (params.visitor_type) eventParams.visitor_type = params.visitor_type;
+  if (params.visit_count != null) eventParams.visit_count = params.visit_count;
+  if (params.product_view_count != null) eventParams.product_view_count = params.product_view_count;
+  if (params.cart_value != null) eventParams.cart_value = params.cart_value;
+  if (params.discount_value != null) eventParams.discount_value = params.discount_value;
+  if (params.time_before_offer != null) eventParams.time_before_offer = params.time_before_offer;
+  if (params.device_type) eventParams.device_type = params.device_type;
+  sendEvent(eventName, eventParams);
 }
 
 // --- Legacy / alias for existing callers ---

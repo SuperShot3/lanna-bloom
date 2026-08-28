@@ -68,6 +68,11 @@ export default function CookiePolicyPage({ params }: { params: { lang: string } 
                 ? 'การจัดเก็บตะกร้าใน localStorage (จำเป็นต่อการใช้งาน)'
                 : 'Cart storage in localStorage (essential for functionality).'}
             </li>
+            <li>
+              {isTh
+                ? 'การจัดเก็บสถานะการเข้าชมและข้อเสนอส่วนลดแบบไม่ระบุตัวตนใน localStorage (จำเป็นต่อการแสดงข้อเสนอเวลาจำกัด — ไม่เก็บชื่อ อีเมล หรือข้อมูลส่วนตัวอื่น)'
+                : 'Anonymous visit and limited-time offer state in localStorage (essential for the conversion offer — no name, email, or other personal data).'}
+            </li>
           </ul>
         </section>
 

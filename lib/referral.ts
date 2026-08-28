@@ -18,6 +18,16 @@ import { WOMENS_DAY_2027_PROMO_CODE } from '@/lib/promo/womensDay2027Promo';
 import { NEW_YEAR_2026_PROMO_CODE } from '@/lib/promo/newYear2026Promo';
 
 const REFERRAL_STORAGE_KEY = 'lb_referral_code';
+export const REFERRAL_CHANGED_EVENT = 'lanna-bloom-referral-changed';
+
+function notifyReferralChanged(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new Event(REFERRAL_CHANGED_EVENT));
+  } catch {
+    // ignore
+  }
+}
 
 type DiscountCodeDefinition =
   | {
@@ -55,6 +65,13 @@ export const CART_FIVE_PERCENT_CODE = 'CART5';
 
 export function isCartFivePercentCode(code: string | null | undefined): boolean {
   return code?.trim().toUpperCase() === CART_FIVE_PERCENT_CODE;
+}
+
+/** High-intent conversion experiment — 10% off items for 5 minutes (client window). */
+export const INTENT10_CODE = 'INTENT10';
+
+export function isIntentTenPercentCode(code: string | null | undefined): boolean {
+  return code?.trim().toUpperCase() === INTENT10_CODE;
 }
 
 /** Promo code allowlist (MVP). Newsletter welcome codes are DB-backed and unique (WELCOME10-XXXXXX). */
@@ -98,6 +115,11 @@ const DISCOUNT_CODES: Record<string, DiscountCodeDefinition> = {
   [CART_FIVE_PERCENT_CODE]: {
     type: 'percent',
     value: 5,
+    discountBase: 'items',
+  },
+  [INTENT10_CODE]: {
+    type: 'percent',
+    value: 10,
     discountBase: 'items',
   },
 };
@@ -154,7 +176,9 @@ export function getStoredReferral(): StoredReferral | null {
 export function clearReferral(): void {
   if (typeof window === 'undefined') return;
   try {
+    if (localStorage.getItem(REFERRAL_STORAGE_KEY) == null) return;
     localStorage.removeItem(REFERRAL_STORAGE_KEY);
+    notifyReferralChanged();
   } catch {
     // ignore
   }
@@ -166,7 +190,9 @@ export function storeReferral(code: string): void {
   const result = validateReferralCode(code);
   if (!result.valid) return;
   try {
+    if (localStorage.getItem(REFERRAL_STORAGE_KEY) === result.code) return;
     localStorage.setItem(REFERRAL_STORAGE_KEY, result.code);
+    notifyReferralChanged();
   } catch {
     // ignore
   }

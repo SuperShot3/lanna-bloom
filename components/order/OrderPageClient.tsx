@@ -26,7 +26,8 @@ import {
   readCheckoutTokenFromUrl,
   stripCheckoutTokenFromUrl,
 } from '@/lib/checkout/submissionToken';
-import { trackCheckoutPurchase } from '@/lib/analytics';
+import { trackCheckoutPurchase, trackDiscountEvent } from '@/lib/analytics';
+import { completeIntentDiscountOnPurchase } from '@/lib/conversionDiscount/storage';
 import {
   buildPurchaseAnalyticsItemsFromOrder,
   purchaseValueAndCurrencyFromOrder,
@@ -136,6 +137,12 @@ export function OrderPageClient({
       try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
         localStorage.removeItem(CART_FORM_STORAGE_KEY);
+        const usedIntent10 = completeIntentDiscountOnPurchase();
+        if (usedIntent10) {
+          trackDiscountEvent('discount_purchase_completed', {
+            device_type: window.innerWidth < 768 ? 'mobile' : 'desktop',
+          });
+        }
       } catch {
         // ignore
       }

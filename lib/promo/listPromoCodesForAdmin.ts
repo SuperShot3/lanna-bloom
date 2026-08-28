@@ -7,6 +7,7 @@ import {
   getDiscountCodeDefinition,
   listAllowlistedDiscountCodes,
   CART_FIVE_PERCENT_CODE,
+  INTENT10_CODE,
 } from '@/lib/referral';
 import {
   MAY_FREE_DELIVERY_CODE,
@@ -167,10 +168,12 @@ export function listPromoCodesForAdmin(now: Date = new Date()): AdminPromoCodeRo
         expiresLabel: 'No expiry',
         notes:
           code === CART_FIVE_PERCENT_CODE
-            ? 'One-tap cart offer'
-            : def.affiliate
-              ? `Affiliate: ${def.affiliate.name} (${def.affiliate.commissionPercent}%)`
-              : undefined,
+            ? 'One-tap cart offer (grandfathered; replaced by INTENT10 experiment)'
+            : code === INTENT10_CODE
+              ? 'High-intent experiment, 5 min client window'
+              : def.affiliate
+                ? `Affiliate: ${def.affiliate.name} (${def.affiliate.commissionPercent}%)`
+                : undefined,
       });
       continue;
     }

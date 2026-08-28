@@ -55,7 +55,7 @@ function manualDiscountForCode(
   });
 }
 
-function isHeldManualPromoCode(code: string): boolean {
+export function isHeldManualPromoCode(code: string): boolean {
   if (isLannaBloomCouponCode(code)) return true;
   if (getDiscountCodeDefinition(code)) return true;
   if (code.startsWith('WELCOME10-') && code.length > 'WELCOME10-'.length) return true;

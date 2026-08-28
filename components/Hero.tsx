@@ -191,7 +191,7 @@ export function Hero({
   locationName?: string;
   /** Delivery timing shown on the floating badge; default same-day for Chiang Mai. */
   timing?: HeroDeliveryTiming;
-  /** Optional shorter subline (HomepageV2). V1 omits this. */
+  /** Optional hero subline (HomepageV2). V1 uses `sublineNew`. */
   sublineOverride?: string;
 }) {
   const t = translations[lang].hero;

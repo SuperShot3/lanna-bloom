@@ -143,6 +143,20 @@ If Search Console already shows Good CWV on mobile, a ranking drop is more likel
 | `messenger_click` | Legacy messenger event | Kept for backward-compatible reporting |
 | `language_change` | Language switcher | Includes `language` and `page_path` |
 | `web_vitals` | Production storefront (not `/admin`) | `WebVitalsReporter` → INP/LCP/CLS/FCP/TTFB field metrics; GTM → GA4 |
+| `discount_eligible` | High-intent 10% experiment | Once per offer window when 60s + 2 PDP views |
+| `discount_popup_shown` | Intent offer popup | Once per offer window |
+| `discount_popup_closed` | Intent offer popup dismissed | Once per offer window |
+| `discount_offer_activated` | Visitor taps “Use My 10% Discount” | Once per offer window |
+| `discount_timer_expired` | 5-minute window ended unused | Once per offer window |
+| `discount_added_to_cart` | Add-to-cart while INTENT10 is live | Once per offer window |
+| `discount_checkout_started` | Cart pay CTA with INTENT10 applied | Alongside `add_payment_info` |
+| `discount_purchase_completed` | Paid order used INTENT10 | Thank-you (primary) / order page fallback |
+
+**GTM:** add a Custom Event trigger per `discount_*` name (GA4 Event tags). Do not treat these as revenue; `purchase` remains the paid conversion.
+
+Params (when present): `visitor_type`, `visit_count`, `product_view_count`, `cart_value`, `discount_value`, `time_before_offer`, `device_type`.
+
+Kill switch: `NEXT_PUBLIC_INTENT_DISCOUNT_ENABLED=false`.
 
 Removed legacy messenger events:
 

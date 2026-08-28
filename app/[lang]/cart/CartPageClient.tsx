@@ -28,6 +28,7 @@ import {
   trackRemoveFromCart,
   trackAddShippingInfo,
   trackAddPaymentInfo,
+  trackDiscountEvent,
 } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
@@ -36,7 +37,16 @@ import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import { parseDeliveryDestinationId, type DeliveryDestinationId } from '@/lib/delivery/markets';
 import { applyDestinationToMarketSession } from '@/lib/delivery/marketSession';
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
-import { getStoredReferral, clearReferral, storeReferral, CART_FIVE_PERCENT_CODE, isCartFivePercentCode } from '@/lib/referral';
+import { markIntentAnalyticsFired, markIntentCheckoutStarted } from '@/lib/conversionDiscount/storage';
+import {
+  getStoredReferral,
+  clearReferral,
+  storeReferral,
+  CART_FIVE_PERCENT_CODE,
+  isCartFivePercentCode,
+  isIntentTenPercentCode,
+  REFERRAL_CHANGED_EVENT,
+} from '@/lib/referral';
 import { resolveOrderDiscount } from '@/lib/promo/resolveOrderDiscount';
 import {
   evaluateLannaBloomCoupon,
@@ -684,6 +694,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       value,
       items: analyticsItems,
     });
+    markIntentCheckoutStarted();
   }, [checkoutDeliveryProfile.destinationId, items, lang]);
 
   // Backfill missing cart thumbnails after Sanity → Supabase cutover (or older persisted carts).
@@ -954,6 +965,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
 
   const [placing, setPlacing] = useState(false);
   const [referralCleared, setReferralCleared] = useState(0);
+
+  useEffect(() => {
+    const bump = () => setReferralCleared((c) => c + 1);
+    window.addEventListener(REFERRAL_CHANGED_EVENT, bump);
+    return () => window.removeEventListener(REFERRAL_CHANGED_EVENT, bump);
+  }, []);
   const [customerName, setCustomerName] = useState(() => loadCartFormFromStorage()?.customerName ?? '');
   const [customerEmail, setCustomerEmail] = useState(() => loadCartFormFromStorage()?.customerEmail ?? '');
   const [marketingEmailConsent, setMarketingEmailConsent] = useState(
@@ -1169,7 +1186,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     ? (getZoneFee(delivery.deliveryDestination, delivery.deliveryZoneId) ?? 0)
     : 0;
   const subtotalWithDelivery = itemsTotalVal + deliveryFeeVal;
-  const referralVal = getStoredReferral();
+  const referralVal = useMemo(() => getStoredReferral(), [referralCleared]);
   const hasCatalogProductDiscount = items.some((item) =>
     hasCatalogDiscount(item.catalogDiscountPercent)
   );
@@ -1219,7 +1236,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     deliveryFeeVal > 0 && (isCampaignDiscount || isManualFreeDelivery);
   const stickyDeliveryFeeNet = waivesDeliveryFee ? 0 : deliveryFeeVal;
   const stickyDeliveryFeeGross = waivesDeliveryFee ? deliveryFeeVal : undefined;
-  const showCartFivePercentOffer = orderDiscountVal === 0 && itemsTotalVal > 0;
+  const showCartFivePercentOffer = false;
   const [cartSocialNudgeDismissed, setCartSocialNudgeDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -1412,6 +1429,14 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         value: grandTotalVal,
         items: analyticsItems,
       });
+      if (isIntentTenPercentCode(resolvedDiscount?.code)) {
+        markIntentAnalyticsFired('discount_checkout_started');
+        trackDiscountEvent('discount_checkout_started', {
+          cart_value: itemsTotalVal,
+          discount_value: orderDiscountVal,
+          device_type: typeof window !== 'undefined' && window.innerWidth < 768 ? 'mobile' : 'desktop',
+        });
+      }
 
       const body = buildStripeCheckoutSessionRequestBody({
         lang,
@@ -2122,7 +2147,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           discountLabel={
             isCampaignDiscount
               ? (t.mayFreeDeliveryDiscountLabel ?? 'May free delivery')
-              : isCartFivePercentCode(resolvedDiscount?.code)
+              : isIntentTenPercentCode(resolvedDiscount?.code)
+                ? (t.cartIntentTenDiscountLabel ?? 'Limited-time discount -10%')
+                : isCartFivePercentCode(resolvedDiscount?.code)
                 ? (t.cartFivePercentDiscountLabel ?? '5% discount')
                 : isLannaBloomCouponCode(resolvedDiscount?.code)
                   ? (t.lannaBloomDiscountLabel ?? 'Coupon {code} — ฿{amount} off')

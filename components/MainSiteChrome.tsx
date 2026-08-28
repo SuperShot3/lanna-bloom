@@ -12,6 +12,7 @@ import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
 import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner';
 import { CouponQueryCapture } from '@/components/CouponQueryCapture';
+import { ConversionDiscountRoot } from '@/components/conversionDiscount/ConversionDiscountRoot';
 import { getActiveTopPromoBannerKind } from '@/lib/promo/topPromoBanner';
 
 export function MainSiteChrome({
@@ -83,6 +84,7 @@ export function MainSiteChrome({
       </div>
       <Footer lang={lang} />
       <LineFloatingButton lang={lang} showContactButtons={!isCartRoute} />
+      <ConversionDiscountRoot lang={lang} />
       <CookieConsentBanner lang={lang} />
     </>
   );

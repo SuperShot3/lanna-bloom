@@ -8,6 +8,7 @@ import {
   getDiscountForCode,
   getDiscountAllocationForCode,
   isCartFivePercentCode,
+  isIntentTenPercentCode,
 } from '@/lib/referral';
 import {
   evaluateLannaBloomCoupon,
@@ -245,7 +246,9 @@ export function ReferralCodeBox({
 
   if (appliedCode) {
     const isLanna = isLannaBloomCouponCode(appliedCode);
-    const appliedLabel = isCartFivePercentCode(appliedCode)
+    const appliedLabel = isIntentTenPercentCode(appliedCode)
+      ? (t.cartIntentTenApplied ?? '10% limited-time discount applied')
+      : isCartFivePercentCode(appliedCode)
       ? (t.cartFivePercentApplied ?? '5% discount applied')
       : isLanna
         ? (t.lannaBloomApplied ?? 'Applied: {code}').replace('{code}', appliedCode)

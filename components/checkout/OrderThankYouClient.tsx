@@ -7,7 +7,8 @@ import {
   markCheckoutSubmissionCompleted,
 } from '@/lib/checkout/submissionToken';
 import type { Locale } from '@/lib/i18n';
-import { trackCheckoutPurchase } from '@/lib/analytics';
+import { trackCheckoutPurchase, trackDiscountEvent } from '@/lib/analytics';
+import { completeIntentDiscountOnPurchase } from '@/lib/conversionDiscount/storage';
 import type { PurchaseItem, PurchaseUserData } from '@/lib/analytics/gtag';
 
 type OrderStatusPurchase = {
@@ -108,6 +109,12 @@ export function OrderThankYouClient({ lang }: { lang: Locale }) {
             localStorage.removeItem(CART_FORM_STORAGE_KEY);
             localStorage.setItem('lanna-bloom-last-order-id', oid);
             if (publicToken) localStorage.setItem('lanna-bloom-last-order-token', publicToken);
+            const usedIntent10 = completeIntentDiscountOnPurchase();
+            if (usedIntent10) {
+              trackDiscountEvent('discount_purchase_completed', {
+                device_type: window.innerWidth < 768 ? 'mobile' : 'desktop',
+              });
+            }
           } catch {
             // ignore
           }
