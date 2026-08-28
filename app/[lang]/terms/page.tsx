@@ -96,6 +96,47 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
           </p>
         </section>
 
+        <section className="policy-section" id="destination-item-pricing">
+          <h2 className="policy-heading">{isTh ? 'ราคาสินค้าตามปลายทางจัดส่ง' : 'Destination item pricing'}</h2>
+          <p className="policy-text">
+            {isTh
+              ? 'ราคาช่อและสินค้าในบางปลายทางอาจสูงกว่าราคาแคตตาล็อกเชียงใหม่ ยอดที่แสดงในแคตตาล็อก ตะกร้า และหน้าเช็กเอาต์สำหรับปลายทางนั้นรวมส่วนปรับนี้แล้ว ค่าจัดส่งคิดแยกและไม่อยู่ในส่วนปรับนี้'
+              : 'Bouquet and item prices can be higher in some delivery destinations than the Chiang Mai catalog. The amount shown on the catalog, cart, and checkout for that destination already includes this adjustment. Delivery fees are charged separately and are not part of this markup.'}
+          </p>
+          <ul className="policy-list">
+            <li>
+              {isTh
+                ? 'ภูเก็ต เกาะสมุย และกระบี่ / อ่าวนาง: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 30% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
+                : 'Phuket, Koh Samui, and Krabi / Ao Nang: item prices are 30% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
+            </li>
+            <li>
+              {isTh
+                ? 'กรุงเทพฯ: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 20% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
+                : 'Bangkok: item prices are 20% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
+            </li>
+          </ul>
+          <p className="policy-text">
+            {isTh ? (
+              <>
+                ราคาช่วงเทศกาลสำคัญอาจใช้ซ้อนกับราคาตามปลายทาง เมื่อทั้งวันสั่งและวันจัดส่งอยู่ในช่วงพีก ดูวันที่และอัตราใน{' '}
+                <Link href={`/${locale}/info/delivery-policy#peak-celebration-pricing`} className="policy-link-inline">
+                  นโยบายจัดส่ง
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Peak celebration pricing may apply on top of destination item prices when both the order date and
+                delivery date fall in a peak window. See the{' '}
+                <Link href={`/${locale}/info/delivery-policy#peak-celebration-pricing`} className="policy-link-inline">
+                  Delivery Policy
+                </Link>{' '}
+                for peak dates and rates.
+              </>
+            )}
+          </p>
+        </section>
+
         <section className="policy-section">
           <h2 className="policy-heading">{isTh ? 'การคืนเงิน/เปลี่ยนสินค้า' : 'Refunds / replacements'}</h2>
           <p className="policy-text">

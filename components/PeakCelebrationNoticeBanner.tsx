@@ -30,8 +30,10 @@ export function PeakCelebrationNoticeBanner({
   lang: Locale;
   onActiveChange?: (active: boolean) => void;
 }) {
-  const [active, setActive] = useState(false);
-  const [banner, setBanner] = useState<ReturnType<typeof resolveBanner>>(null);
+  const [banner, setBanner] = useState<ReturnType<typeof resolveBanner>>(
+    () => resolveBanner(new Date())
+  );
+  const [active, setActive] = useState(() => resolveBanner(new Date()) != null);
 
   const sync = useCallback(() => {
     const nextBanner = resolveBanner(new Date());

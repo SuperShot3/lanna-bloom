@@ -12,6 +12,7 @@ import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingConte
 import type { MarketDeliveryCopy } from '@/lib/landingPages/marketHomeLanding';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
+import { HOME_DELIVERY_IMAGE_SIZES } from '@/lib/catalog/catalogImage';
 
 function RedCarChip() {
   return (
@@ -80,7 +81,7 @@ export function DeliverySection({
   return (
     <section
       id="home-delivery"
-      className="relative overflow-hidden scroll-mt-24 py-12 sm:py-16 lg:py-20"
+      className="home-cv-auto relative overflow-hidden scroll-mt-24 py-12 sm:py-16 lg:py-20"
       aria-labelledby="home-delivery-title"
       data-home-reveal
     >
@@ -88,7 +89,10 @@ export function DeliverySection({
         src="/HeroImage/deliveytime_hero_image.webp"
         alt=""
         fill
-        sizes="100vw"
+        sizes={HOME_DELIVERY_IMAGE_SIZES}
+        quality={65}
+        loading="lazy"
+        fetchPriority="low"
         className="object-cover object-center"
         aria-hidden
       />

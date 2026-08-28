@@ -14,7 +14,7 @@ export function MayFreeDeliveryPromoBanner({
   lang: Locale;
   onActiveChange?: (active: boolean) => void;
 }) {
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState(() => isMay2026FreeDeliveryActive(new Date()));
 
   const sync = useCallback(() => {
     const next = isMay2026FreeDeliveryActive(new Date());

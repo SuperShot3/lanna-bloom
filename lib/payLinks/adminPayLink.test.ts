@@ -11,6 +11,7 @@ import {
   isAdminPayLinkOrder,
   isPayLinkTimeExpired,
   payLinkUnusableReason,
+  stripeCheckoutCustomerEmail,
   validateAdminPayLinkInput,
 } from './adminPayLink';
 import { deliveryDateFromPreferredTimeSlot } from '../orders/deliveryFields';
@@ -84,5 +85,16 @@ assert.equal(
   payLinkUnusableReason({ payLinkDisabledAt: '2026-08-15T10:01:00.000Z' }, created, t0 + 1000),
   'disabled'
 );
+
+assert.equal(
+  stripeCheckoutCustomerEmail({ customer_details: { email: '  mina@example.com  ' } }),
+  'mina@example.com'
+);
+assert.equal(
+  stripeCheckoutCustomerEmail({ customer_details: null, customer_email: 'fallback@example.com' }),
+  'fallback@example.com'
+);
+assert.equal(stripeCheckoutCustomerEmail({ customer_details: { email: 'not-an-email' } }), undefined);
+assert.equal(stripeCheckoutCustomerEmail({}), undefined);
 
 console.log('adminPayLink.test.ts: ok');

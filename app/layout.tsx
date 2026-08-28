@@ -3,6 +3,7 @@ import { ViewTransitions } from 'next-view-transitions';
 import { DocumentLangSync } from '@/components/DocumentLangSync';
 import { AhrefsAnalytics } from '@/components/AhrefsAnalytics';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
+import { GooglePreferredSourceScript } from '@/components/GooglePreferredSourceScript';
 import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap';
 import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
@@ -70,7 +71,7 @@ export default function RootLayout({
         {/* First-paint image/icon boxes so HTML cannot paint at file size before globals.css */}
         <style
           dangerouslySetInnerHTML={{
-            __html: `html{background:#FDFCF8}html.dark{background:#0D1F1A}img{max-width:100%;height:auto}.storefront-icon{display:inline-block;flex-shrink:0;width:1.25em;height:1.25em;vertical-align:middle;background-color:currentColor;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}img:not([width]):not([style*="position:absolute"]):not([style*="position: absolute"]){max-width:min(100%,8rem);max-height:8rem;object-fit:contain}.hero-carousel-stage{min-height:22.5rem}.hero-slide-frame{width:17rem;height:22.5rem}@media(min-width:640px){.hero-carousel-stage{min-height:24rem}.hero-slide-frame{width:18rem;height:24rem}}@media(min-width:768px){.hero-slide-frame{width:21rem;height:420px}}@media(min-width:1024px){.hero-carousel-stage{min-height:0;aspect-ratio:4/5}.hero-slide-frame{width:24rem;height:100%}}`,
+            __html: `html{background:#FDFCF8}html.dark{background:#0D1F1A}img{max-width:100%;height:auto}.storefront-icon{display:inline-block;flex-shrink:0;width:1.25em;height:1.25em;vertical-align:middle;background-color:currentColor;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}.hero-carousel-stage{min-height:22.5rem}.hero-slide-frame{width:17rem;height:22.5rem}@media(min-width:640px){.hero-carousel-stage{min-height:24rem}.hero-slide-frame{width:18rem;height:24rem}}@media(min-width:768px){.hero-slide-frame{width:21rem;height:420px}}@media(min-width:1024px){.hero-carousel-stage{min-height:0;aspect-ratio:4/5}.hero-slide-frame{width:24rem;height:100%}}`,
           }}
         />
         {/* Non-blocking: language switcher flags; media swap after load so it does not block LCP */}
@@ -143,6 +144,7 @@ export default function RootLayout({
             <DocumentLangSync />
             <InternalTrafficBootstrap />
             <GoogleAnalytics />
+            <GooglePreferredSourceScript />
             <WebVitalsReporter />
             <SpeedInsights />
             <AhrefsAnalytics />

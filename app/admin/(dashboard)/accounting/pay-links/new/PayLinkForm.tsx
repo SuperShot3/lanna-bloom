@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { PAY_LINK_TTL_MINUTES } from '@/lib/payLinks/adminPayLink';
+import { ADMIN_PAY_LINK_DESCRIPTION_MAX, PAY_LINK_TTL_MINUTES } from '@/lib/payLinks/adminPayLink';
 
 export function PayLinkForm() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +40,6 @@ export function PayLinkForm() {
           amount: n,
           description: description.trim(),
           customerName: customerName.trim() || undefined,
-          customerEmail: customerEmail.trim() || undefined,
           phone: phone.trim() || undefined,
         }),
       });
@@ -166,7 +164,6 @@ export function PayLinkForm() {
                 setAmount('');
                 setDescription('');
                 setCustomerName('');
-                setCustomerEmail('');
                 setPhone('');
                 setCopied(false);
                 setCopyError(null);
@@ -184,36 +181,35 @@ export function PayLinkForm() {
             </div>
           )}
 
-          <div className="admin-expenses-form-row">
-            <div className="admin-form-group">
-              <label htmlFor="pl-amount">Amount (THB) *</label>
-              <input
-                id="pl-amount"
-                type="number"
-                className="admin-input"
-                placeholder="0.00"
-                min="0.01"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                inputMode="decimal"
-                required
-                autoFocus
-              />
-            </div>
-            <div className="admin-form-group">
-              <label htmlFor="pl-desc">Description *</label>
-              <input
-                id="pl-desc"
-                type="text"
-                className="admin-input"
-                placeholder="e.g. Extra balloons, rush fee, custom arrangement"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={200}
-                required
-              />
-            </div>
+          <div className="admin-form-group">
+            <label htmlFor="pl-amount">Amount (THB) *</label>
+            <input
+              id="pl-amount"
+              type="number"
+              className="admin-input"
+              placeholder="0.00"
+              min="0.01"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              inputMode="decimal"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="admin-form-group">
+            <label htmlFor="pl-desc">Description *</label>
+            <textarea
+              id="pl-desc"
+              className="admin-input admin-expenses-textarea"
+              placeholder="e.g. Extra balloons, rush fee, custom arrangement"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={ADMIN_PAY_LINK_DESCRIPTION_MAX}
+              rows={4}
+              required
+            />
           </div>
 
           <div className="admin-expenses-form-row">
@@ -231,30 +227,17 @@ export function PayLinkForm() {
               />
             </div>
             <div className="admin-form-group">
-              <label htmlFor="pl-email">
-                Email <span className="admin-hint">(optional, Stripe receipt)</span>
+              <label htmlFor="pl-phone">
+                Phone <span className="admin-hint">(optional)</span>
               </label>
               <input
-                id="pl-email"
-                type="email"
+                id="pl-phone"
+                type="tel"
                 className="admin-input"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="admin-form-group">
-            <label htmlFor="pl-phone">
-              Phone <span className="admin-hint">(optional)</span>
-            </label>
-            <input
-              id="pl-phone"
-              type="tel"
-              className="admin-input"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
           </div>
 
           <div className="admin-expenses-form-actions">

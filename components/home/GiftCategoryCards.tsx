@@ -2,10 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  catalogImageUnoptimized,
-  CATALOG_CARD_IMAGE_SIZES,
-} from '@/lib/catalog/catalogImage';
+import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
 import { trackCtaClick } from '@/lib/analytics';
 import { StorefrontIcon } from '@/components/icons';
 
@@ -28,7 +25,7 @@ export function GiftCategoryCards({
 
   return (
     <section
-      className="pt-4 pb-12 sm:pt-5 sm:pb-14 lg:pt-6 lg:pb-16 bg-stone-50"
+      className="home-cv-auto pt-4 pb-12 sm:pt-5 sm:pb-14 lg:pt-6 lg:pb-16 bg-stone-50"
       aria-labelledby="home-gifts-title"
       data-home-reveal
     >
@@ -57,7 +54,9 @@ export function GiftCategoryCards({
                   src={card.imageUrl}
                   alt={card.title}
                   fill
-                  sizes={CATALOG_CARD_IMAGE_SIZES}
+                  sizes="(max-width: 640px) 92vw, 50vw"
+                  loading="lazy"
+                  fetchPriority="low"
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   unoptimized={catalogImageUnoptimized(card.imageUrl)}
                 />

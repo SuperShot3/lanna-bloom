@@ -1,12 +1,16 @@
 import type { OrderDeliveryDestinationId } from '@/lib/orders';
 
-export const EXPANSION_MARKUP_DESTINATIONS = new Set<OrderDeliveryDestinationId>([
-  'PHUKET',
-  'SAMUI',
-  'KRABI',
-]);
+/** Per-destination item multipliers (1.3 = +30%). Delivery fees are not marked up. */
+export const EXPANSION_ITEM_MARKUP: Partial<Record<OrderDeliveryDestinationId, number>> = {
+  PHUKET: 1.3,
+  SAMUI: 1.3,
+  KRABI: 1.3,
+  BANGKOK: 1.2,
+};
 
-export const EXPANSION_MARKUP_MULTIPLIER = 1.3;
+export const EXPANSION_MARKUP_DESTINATIONS = new Set<OrderDeliveryDestinationId>(
+  Object.keys(EXPANSION_ITEM_MARKUP) as OrderDeliveryDestinationId[]
+);
 
 export function roundToNearest10Thb(amountThb: number): number {
   if (!Number.isFinite(amountThb)) return 0;
@@ -18,7 +22,7 @@ export function applyExpansionItemMarkupThb(
   destination: OrderDeliveryDestinationId
 ): number {
   if (!Number.isFinite(amountThb)) return 0;
-  if (!EXPANSION_MARKUP_DESTINATIONS.has(destination)) return Math.round(amountThb);
-  return roundToNearest10Thb(amountThb * EXPANSION_MARKUP_MULTIPLIER);
+  const multiplier = EXPANSION_ITEM_MARKUP[destination];
+  if (multiplier == null) return Math.round(amountThb);
+  return roundToNearest10Thb(amountThb * multiplier);
 }
-

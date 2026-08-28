@@ -6,6 +6,7 @@ export { CalendarIcon } from './CalendarIcon';
 export { BoltIcon } from './BoltIcon';
 export { HomeIcon } from './HomeIcon';
 export { FacebookIcon } from './FacebookIcon';
+export { GoogleGIcon } from './GoogleGIcon';
 export { InstagramIcon } from './InstagramIcon';
 export { TikTokIcon } from './TikTokIcon';
 export { YouTubeIcon } from './YouTubeIcon';

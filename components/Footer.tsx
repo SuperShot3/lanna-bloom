@@ -18,6 +18,7 @@ import {
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { MessengerLinks } from './MessengerLinks';
 import { SocialLinks } from './SocialLinks';
+import { GooglePreferredSourceLink } from './GooglePreferredSourceLink';
 
 const FOOTER_DELIVERY_ORDER_LINKS: {
   destinationId: DeliveryDestinationId;
@@ -123,6 +124,7 @@ export function Footer({ lang }: { lang: Locale }) {
               <SocialLinks />
               <MessengerLinks pageLocation="footer" />
             </div>
+            <GooglePreferredSourceLink lang={lang} variant="footer" className="mt-4" />
           </div>
           <div>
             <h4 className="font-bold mb-6">{t.shop}</h4>

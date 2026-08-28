@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import {
   catalogImageUnoptimized,
   HERO_CAROUSEL_IMAGE_SIZES,
+  HERO_LCP_IMAGE_QUALITY,
 } from '@/lib/catalog/catalogImage';
 
 export type HeroCarouselImage = { src: string; alt: string };
@@ -141,7 +142,8 @@ export function HeroFeatureCarousel({
     touchStartRef.current = null;
   }, []);
 
-  const autoplayActive = canNavigate && !prefersReducedMotion && !isPaused;
+  const autoplayActive =
+    canNavigate && neighborsReady && !prefersReducedMotion && !isPaused;
 
   // `currentIndex` in deps restarts the timer after manual navigation,
   // so the user always gets the full interval before the next auto-advance.
@@ -232,15 +234,12 @@ export function HeroFeatureCarousel({
                         !prefersReducedMotion &&
                         'hero-carousel-kenburns'
                     )}
-                    // Eager + high priority without next/image's automatic preload
-                    // (page.tsx already emits a single w=512 preload for LCP).
-                    loading={
-                      isCenter && currentIndex === 0 && index === 0 ? 'eager' : undefined
-                    }
-                    fetchPriority={
-                      isCenter && currentIndex === 0 && index === 0 ? 'high' : 'auto'
-                    }
-                    quality={70}
+                    // Slide 0 is the LCP image — always eager/high, even after autoplay.
+                    // Do not set `priority` (that injects a second preload).
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'low'}
+                    decoding={index === 0 ? 'sync' : 'async'}
+                    quality={HERO_LCP_IMAGE_QUALITY}
                     sizes={HERO_CAROUSEL_IMAGE_SIZES}
                     unoptimized={catalogImageUnoptimized(image.src)}
                   />

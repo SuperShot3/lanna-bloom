@@ -7,15 +7,24 @@ export const CATALOG_CARD_IMAGE_SIZES =
 export const HOME_FLOWER_TYPE_TILE_IMAGE_SIZES =
   '(max-width: 640px) 76px, (max-width: 768px) 96px, 112px';
 
+/** Loop-copy marquee tiles share one cached width instead of a second srcset. */
+export const HOME_FLOWER_TYPE_TILE_DUP_WIDTH = 128;
+
 /** Homepage hero carousel cards: 272 / 288 / 336 / 384 CSS px (not full viewport). */
 export const HERO_CAROUSEL_IMAGE_SIZES =
   '(max-width: 640px) 272px, (max-width: 768px) 288px, (max-width: 1024px) 336px, 384px';
 
+export const HERO_LCP_IMAGE_QUALITY = 70;
+
 /**
- * Preload width for the LCP hero slide. Matches ~272 CSS px × 1.75–2 DPR without
- * overshooting to deviceSizes[0] (640). Must exist in next.config imageSizes.
+ * Fallback preload width when `imagesrcset` is unavailable. Lighthouse mobile
+ * (~272 CSS px × 1.75 DPR) selects 480 from next.config imageSizes.
  */
-export const HERO_LCP_PRELOAD_WIDTH = 512;
+export const HERO_LCP_PRELOAD_WIDTH = 480;
+
+/** Below-fold delivery section photo: full-bleed on small screens, cap on desktop. */
+export const HOME_DELIVERY_IMAGE_SIZES =
+  '(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1280px';
 
 export const CATALOG_PDP_HERO_SIZES = '(max-width: 600px) 100vw, 50vw';
 

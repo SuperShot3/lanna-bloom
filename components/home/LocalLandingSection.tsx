@@ -42,7 +42,7 @@ export function LocalLandingSection({
 
   return (
     <section
-      className="py-14 sm:py-16 lg:py-20"
+      className="home-cv-auto py-14 sm:py-16 lg:py-20"
       aria-labelledby="home-local-landing-title"
       data-home-reveal
     >

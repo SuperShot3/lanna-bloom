@@ -2,7 +2,11 @@
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { createCatalogPartner, syncCatalogPartnerFromApplication } from '@/lib/catalogWrite';
+import {
+  createCatalogPartner,
+  disableCatalogPartner,
+  syncCatalogPartnerFromApplication,
+} from '@/lib/catalogWrite';
 import { getProvinceByCode } from '@/lib/provinces/queries';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import {
@@ -185,9 +189,12 @@ export async function deletePartnerApplicationAction(
   if (!app) return { error: 'Application not found' };
 
   const userId = app.status === 'approved' ? app.user_id : null;
+  const catalogPartnerId = app.sanity_partner_id?.trim() || null;
 
   const ok = await deletePartnerApplication(applicationId);
   if (!ok) return { error: 'Failed to delete application' };
+
+  const leftover: string[] = [];
 
   if (userId) {
     const supabase = getSupabaseAdmin();
@@ -195,12 +202,26 @@ export async function deletePartnerApplicationAction(
       const { error: deleteUserError } = await supabase.auth.admin.deleteUser(userId);
       if (deleteUserError) {
         console.error('[Partner] deleteUser failed (application already deleted):', deleteUserError);
-        return { error: `Partner removed, but could not revoke login: ${deleteUserError.message}` };
+        leftover.push(`could not revoke login: ${deleteUserError.message}`);
       }
     }
   }
 
+  if (catalogPartnerId) {
+    try {
+      await disableCatalogPartner(catalogPartnerId);
+    } catch (err) {
+      console.error('[Partner] disableCatalogPartner failed:', err);
+      leftover.push(
+        `could not disable catalog shop: ${err instanceof Error ? err.message : 'unknown error'}`
+      );
+    }
+  }
+
   revalidatePath('/admin/partners/applications');
+  if (leftover.length > 0) {
+    return { error: `Partner removed, but ${leftover.join('; ')}` };
+  }
   return {};
 }
 

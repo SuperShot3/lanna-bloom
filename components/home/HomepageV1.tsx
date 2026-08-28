@@ -22,12 +22,12 @@ const HomeFaq = dynamic(
 
 /** Current production homepage. Do not substantially change this composer. */
 export async function HomepageV1({ lang }: { lang: Locale }) {
-  const { heroImageUrl, carouselImages, faqItems, jsonLd, lcpPreloadHref } =
+  const { heroImageUrl, carouselImages, faqItems, jsonLd, lcpImageSrc } =
     await loadHomePageChrome(lang);
 
   return (
     <>
-      <HomeDocumentHead lcpPreloadHref={lcpPreloadHref} jsonLd={jsonLd} />
+      <HomeDocumentHead lcpImageSrc={lcpImageSrc} jsonLd={jsonLd} />
       <Hero lang={lang} heroImageUrl={heroImageUrl} carouselImages={carouselImages} />
       <HomeRevealInit />
       <Suspense fallback={<PopularSectionSkeleton />}>

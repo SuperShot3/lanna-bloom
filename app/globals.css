@@ -305,9 +305,7 @@ html.dark .lang-layout :is([class*='text-stone-400'], [class*='text-stone-500'],
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src:
-    url('/fonts/arima-madurai-400.woff2') format('woff2'),
-    url('/fonts/arima-madurai-400.ttf') format('truetype');
+  src: url('/fonts/arima-madurai-400.woff2') format('woff2');
 }
 
 @font-face {
@@ -315,9 +313,7 @@ html.dark .lang-layout :is([class*='text-stone-400'], [class*='text-stone-500'],
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src:
-    url('/fonts/arima-madurai-700.woff2') format('woff2'),
-    url('/fonts/arima-madurai-700.ttf') format('truetype');
+  src: url('/fonts/arima-madurai-700.woff2') format('woff2');
 }
 
 /* Material Symbols — admin only (font loaded via /vendor/material-symbols-admin.css) */
@@ -1073,6 +1069,10 @@ main {
   }
 }
 
+.flower-type-marquee__dup img {
+  content-visibility: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .flower-type-marquee {
     -webkit-mask-image: none;
@@ -1082,6 +1082,12 @@ main {
   .flower-type-marquee__dup {
     display: none;
   }
+}
+
+/* Below-fold homepage sections: skip paint until near the viewport. */
+.home-cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40rem;
 }
 
 /* Hero feature carousel (HeroFeatureCarousel) */
@@ -1736,14 +1742,6 @@ img {
   max-width: 100%;
   height: auto;
   display: block;
-}
-
-/* Head first-paint cap (layout.tsx) uses this same selector at 8rem.
-   Once globals load, drop the size lock so content images can use their own CSS.
-   Do not set object-fit here — local card/figure rules own cropping. */
-img:not([width]):not([style*="position:absolute"]):not([style*="position: absolute"]) {
-  max-width: 100%;
-  max-height: none;
 }
 
 button {

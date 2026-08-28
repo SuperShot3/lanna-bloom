@@ -871,7 +871,7 @@ export async function POST(request: NextRequest) {
     if (welcomeCodeId) {
       stripeMetadata.welcome_code_id = welcomeCodeId;
     }
-    stripeMetadata.pricing_rules_version = 'expansion_markup_v1';
+    stripeMetadata.pricing_rules_version = 'expansion_markup_v2';
 
     console.log('[stripe/create-checkout-session] checkout draft saved (order created after payment)', {
       checkoutDraftId,

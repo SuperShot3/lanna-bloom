@@ -13,6 +13,7 @@ import {
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
+import { GooglePreferredSourceLink } from '@/components/GooglePreferredSourceLink';
 import { PremiumCtaLink } from '@/components/home/PremiumCtaLink';
 import { StorefrontIcon } from '@/components/icons';
 
@@ -161,7 +162,10 @@ function HeroCtaSection({
           {t.ctaHowItWorks}
         </button>
       </div>
-      <GoogleReviewsBadge lang={lang} className={introItemClass} />
+      <div className={`${introItemClass} flex flex-nowrap items-stretch gap-2 sm:gap-3`.trim()}>
+        <GoogleReviewsBadge lang={lang} className="shrink-0" />
+        <GooglePreferredSourceLink lang={lang} variant="hero" />
+      </div>
     </>
   );
 }

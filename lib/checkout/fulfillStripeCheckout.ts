@@ -17,6 +17,7 @@ import { deleteCheckoutDraftById, getCheckoutDraftById } from '@/lib/checkout/ch
 import { cancelCheckoutAbandonment } from '@/lib/checkout/abandonedCheckout';
 import { nudgeGa4PurchaseFallback } from '@/lib/analytics/ga4PurchaseFallback';
 import { upsertOrderIncome } from '@/lib/accounting/upsertOrderIncome';
+import { isAdminPayLinkOrder, stripeCheckoutCustomerEmail } from '@/lib/payLinks/adminPayLink';
 
 export type FulfillStripeCheckoutResult =
   | { kind: 'order_ready'; orderId: string; order: Order; didCreate: boolean }
@@ -384,6 +385,11 @@ export async function fulfillPaidStripeCheckoutSession(params: {
         didCreate: false,
       };
     }
+  }
+
+  const stripeEmail = stripeCheckoutCustomerEmail(session);
+  if (isAdminPayLinkOrder(payload) && !payload.customerEmail?.trim() && stripeEmail) {
+    payload = { ...payload, customerEmail: stripeEmail };
   }
 
   const { order, created } = await createOrder(payload);

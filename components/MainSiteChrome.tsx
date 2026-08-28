@@ -12,6 +12,7 @@ import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
 import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner';
 import { CouponQueryCapture } from '@/components/CouponQueryCapture';
+import { getActiveTopPromoBannerKind } from '@/lib/promo/topPromoBanner';
 
 export function MainSiteChrome({
   lang,
@@ -21,9 +22,15 @@ export function MainSiteChrome({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [advancePeakPromoBanner, setAdvancePeakPromoBanner] = useState(false);
-  const [peakNoticeBanner, setPeakNoticeBanner] = useState(false);
-  const [mayPromoBanner, setMayPromoBanner] = useState(false);
+  const [advancePeakPromoBanner, setAdvancePeakPromoBanner] = useState(
+    () => getActiveTopPromoBannerKind() === 'advance'
+  );
+  const [peakNoticeBanner, setPeakNoticeBanner] = useState(
+    () => getActiveTopPromoBannerKind() === 'peak'
+  );
+  const [mayPromoBanner, setMayPromoBanner] = useState(
+    () => getActiveTopPromoBannerKind() === 'may'
+  );
   const isPartnerRoute = pathname?.includes('/partner');
   const isConfirmationPending = pathname?.includes('/checkout/confirmation-pending');
   const isCheckoutComplete = pathname?.includes('/checkout/complete');

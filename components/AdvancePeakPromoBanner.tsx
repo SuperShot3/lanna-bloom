@@ -47,7 +47,9 @@ export function AdvancePeakPromoBanner({
   lang: Locale;
   onActiveChange?: (active: boolean) => void;
 }) {
-  const [activeKey, setActiveKey] = useState<AdvancePeakPromoI18nKey | null>(null);
+  const [activeKey, setActiveKey] = useState<AdvancePeakPromoI18nKey | null>(
+    () => getActiveAdvancePeakPromo(new Date())?.i18nKey ?? null
+  );
 
   const sync = useCallback(() => {
     const next = getActiveAdvancePeakPromo(new Date());

@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/adminRbac';
 import { logAudit } from '@/lib/auditLog';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getOrderByOrderId } from '@/lib/supabase/adminQueries';
-import { findCatalogPartnerShop } from '@/lib/admin/catalogPartnerShops';
+import { findSelectableCatalogPartnerShop } from '@/lib/admin/catalogPartnerShops';
 import {
   buildSupplierRequestUrl,
   buildSupplierSnapshots,
@@ -57,9 +57,9 @@ export async function POST(
     body && typeof body === 'object' && 'shop_id' in body
       ? String((body as { shop_id?: unknown }).shop_id ?? '').trim()
       : '';
-  const shop = await findCatalogPartnerShop(shopId);
+  const shop = await findSelectableCatalogPartnerShop(shopId);
   if (!shop) {
-    return jsonNoStore({ error: 'Invalid shop_id: must be a catalog partner' }, { status: 400 });
+    return jsonNoStore({ error: 'Invalid shop_id: must be an approved partner' }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();

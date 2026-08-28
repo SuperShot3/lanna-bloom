@@ -1,3 +1,4 @@
+import { getImageProps } from 'next/image';
 import { getHomeFaqItems, type HomeFaqItem } from '@/components/home/homeLandingContent';
 import {
   buildFaqPageJsonLd,
@@ -6,7 +7,10 @@ import {
 } from '@/lib/seo/siteJsonLd';
 import { getCatalogHeroImage, getCatalogHeroCarouselImages } from '@/lib/catalogReads';
 import {
+  catalogImageUnoptimized,
   catalogOptimizedImageUrl,
+  HERO_CAROUSEL_IMAGE_SIZES,
+  HERO_LCP_IMAGE_QUALITY,
   HERO_LCP_PRELOAD_WIDTH,
   isStorefrontRenderableImageUrl,
 } from '@/lib/catalog/catalogImage';
@@ -19,7 +23,7 @@ export type HomePageChrome = {
   carouselImages: { src: string; alt: string }[];
   faqItems: HomeFaqItem[];
   jsonLd: unknown[];
-  lcpPreloadHref: string | null;
+  lcpImageSrc: string | null;
 };
 
 export async function loadHomePageChrome(lang: Locale): Promise<HomePageChrome> {
@@ -33,28 +37,50 @@ export async function loadHomePageChrome(lang: Locale): Promise<HomePageChrome> 
     buildWebSiteJsonLd(),
     buildFaqPageJsonLd(faqItems),
   ];
-  const lcpSrc =
+  const lcpImageSrc =
     carouselImages?.[0]?.src ||
     heroImageUrl ||
     (isStorefrontRenderableImageUrl(OG_IMAGE_PATH) ? OG_IMAGE_PATH : null);
-  const lcpPreloadHref = lcpSrc
-    ? catalogOptimizedImageUrl(lcpSrc, HERO_LCP_PRELOAD_WIDTH, 70)
-    : null;
-  return { heroImageUrl, carouselImages, faqItems, jsonLd, lcpPreloadHref };
+  return { heroImageUrl, carouselImages, faqItems, jsonLd, lcpImageSrc };
+}
+
+function HeroLcpPreload({ src }: { src: string }) {
+  if (catalogImageUnoptimized(src)) {
+    return <link rel="preload" as="image" href={src} fetchPriority="high" />;
+  }
+
+  const {
+    props: { src: href, srcSet, sizes },
+  } = getImageProps({
+    src,
+    alt: '',
+    fill: true,
+    sizes: HERO_CAROUSEL_IMAGE_SIZES,
+    quality: HERO_LCP_IMAGE_QUALITY,
+  });
+
+  return (
+    <link
+      rel="preload"
+      as="image"
+      href={href || catalogOptimizedImageUrl(src, HERO_LCP_PRELOAD_WIDTH, HERO_LCP_IMAGE_QUALITY)}
+      imageSrcSet={srcSet}
+      imageSizes={sizes ?? HERO_CAROUSEL_IMAGE_SIZES}
+      fetchPriority="high"
+    />
+  );
 }
 
 export function HomeDocumentHead({
-  lcpPreloadHref,
+  lcpImageSrc,
   jsonLd,
 }: {
-  lcpPreloadHref: string | null;
+  lcpImageSrc: string | null;
   jsonLd: unknown[];
 }) {
   return (
     <>
-      {lcpPreloadHref ? (
-        <link rel="preload" as="image" href={lcpPreloadHref} fetchPriority="high" />
-      ) : null}
+      {lcpImageSrc ? <HeroLcpPreload src={lcpImageSrc} /> : null}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -1,12 +1,10 @@
-import dynamic from 'next/dynamic';
+import {
+  DeferredHomeBouquetCard,
+  HOME_EAGER_CARD_COUNT,
+} from '@/components/home/DeferredHomeCatalogCard';
 import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { ShowMoreLink } from '@/components/home/ShowMoreLink';
-
-const BouquetCard = dynamic(
-  () => import('@/components/BouquetCard').then((m) => m.BouquetCard),
-  { ssr: true }
-);
 
 export const HOME_POPULAR_ROW_LIMIT = 8;
 
@@ -36,9 +34,13 @@ export function PopularPicksRow({
       </h2>
       <div className="popular-scroll-wrap">
         <div className="popular-scroll">
-          {bouquets.map((bouquet) => (
+          {bouquets.map((bouquet, index) => (
             <div key={bouquet.id} className="popular-card-slot">
-              <BouquetCard bouquet={bouquet} lang={lang} variant="popular-compact" />
+              <DeferredHomeBouquetCard
+                bouquet={bouquet}
+                lang={lang}
+                eager={index < HOME_EAGER_CARD_COUNT}
+              />
             </div>
           ))}
         </div>

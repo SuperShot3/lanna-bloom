@@ -150,3 +150,13 @@ export function isAdminPayLinkOrder(order: {
   const fromJson = order.order_json?.orderSource;
   return fromJson === ADMIN_PAY_LINK_SOURCE;
 }
+
+/** Email the customer typed on Stripe Checkout (not a prefilled admin value). */
+export function stripeCheckoutCustomerEmail(session: {
+  customer_details?: { email?: string | null } | null;
+  customer_email?: string | null;
+}): string | undefined {
+  const raw = session.customer_details?.email?.trim() || session.customer_email?.trim() || '';
+  if (!raw || !EMAIL_RE.test(raw)) return undefined;
+  return raw.slice(0, 254);
+}

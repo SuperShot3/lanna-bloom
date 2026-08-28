@@ -215,6 +215,33 @@ export async function syncCatalogPartnerFromApplication(
   if (error) throw new Error(error.message);
 }
 
+/** Retire a catalog partner without deleting product rows that still reference it. */
+export async function disableCatalogPartner(catalogPartnerId: string): Promise<void> {
+  const id = catalogPartnerId.trim();
+  if (!id) return;
+  const supabase = requireSupabase();
+
+  const { data: existing, error: loadError } = await supabase
+    .from('catalog_partners')
+    .select('id, legacy_sanity_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (loadError) throw new Error(loadError.message);
+  if (!existing) return;
+  if (existing.legacy_sanity_id === CATALOG_SYSTEM_PARTNER_LEGACY_ID) return;
+
+  const { error } = await supabase
+    .from('catalog_partners')
+    .update({
+      status: 'disabled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function updateCatalogPartnerProfile(
   partnerId: string,
   input: UpdateCatalogPartnerProfileInput

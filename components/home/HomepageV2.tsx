@@ -1,4 +1,5 @@
 import { Hero } from '@/components/Hero';
+import { HomePromoBanner } from '@/components/home/HomePromoBanner';
 import { HomeRevealInit } from '@/components/home/HomeRevealInit';
 import { PopularSectionSkeleton } from '@/components/PopularSectionSkeleton';
 import { PopularPicksRow, HOME_POPULAR_ROW_LIMIT } from '@/components/home/PopularPicksRow';
@@ -113,18 +114,19 @@ async function HomeBrowseV2({ lang }: { lang: Locale }) {
 /** Guided homepage: fewer product grids, category navigation earlier. */
 export async function HomepageV2({ lang }: { lang: Locale }) {
   const t = translations[lang];
-  const [{ heroImageUrl, carouselImages, faqItems, jsonLd, lcpPreloadHref }, giftCards] =
+  const [{ heroImageUrl, carouselImages, faqItems, jsonLd, lcpImageSrc }, giftCards] =
     await Promise.all([loadHomePageChrome(lang), loadGiftCategoryCards(lang)]);
 
   return (
     <>
-      <HomeDocumentHead lcpPreloadHref={lcpPreloadHref} jsonLd={jsonLd} />
+      <HomeDocumentHead lcpImageSrc={lcpImageSrc} jsonLd={jsonLd} />
       <Hero
         lang={lang}
         heroImageUrl={heroImageUrl}
         carouselImages={carouselImages}
         sublineOverride={t.hero.subline}
       />
+      <HomePromoBanner lang={lang} />
       <HomeRevealInit />
       <Suspense fallback={<PopularSectionSkeleton />}>
         <HomeBrowseV2 lang={lang} />

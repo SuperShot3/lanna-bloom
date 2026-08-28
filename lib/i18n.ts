@@ -149,6 +149,8 @@ const baseTranslations = {
       googleReviewsBasedOn: 'Based on {count} reviews',
       googleReviewsTitle: 'Read our reviews on Google',
       googleReviewsStars: '{rating} out of 5 stars',
+      preferredSourceLabel: 'Make Lanna Bloom\nPreferred on Google',
+      preferredSourceTitle: 'Make Lanna Bloom Preferred on Google',
       expressDelivery: 'Express Delivery',
       expressArea: 'Inner City',
       availableNow: 'Available Now',
@@ -184,6 +186,18 @@ const baseTranslations = {
       giftTeddyCta: 'View Teddy Bears',
       giftBalloonsTitle: 'Balloons',
       giftBalloonsCta: 'View Balloons',
+      promoHydrangeaRegion: 'Hydrangea promotion',
+      promoHydrangeaHeading: 'In Season Now',
+      promoHydrangeaSubheading: 'Hydrangea bouquets, while the season lasts',
+      promoHydrangeaSlideBlue:
+        'Blue hydrangea bouquet, 30 percent off. Shop hydrangeas at Lanna Bloom.',
+      promoHydrangeaSlideWhite:
+        'White hydrangea bouquet, 30 percent off. Shop hydrangeas at Lanna Bloom.',
+      promoHydrangeaSlideLightMix:
+        'Mixed hydrangea bouquet, 30 percent off. Shop hydrangeas at Lanna Bloom.',
+      promoHydrangeaSlideMixedDark:
+        'Seasonal hydrangea bouquet, 30 percent off. Shop hydrangeas at Lanna Bloom.',
+      promoHydrangeaGoToSlide: 'Show hydrangea offer {n}',
     },
     experience: {
       title: 'How It Works',
@@ -1939,6 +1953,8 @@ const baseTranslations = {
       googleReviewsBasedOn: 'จาก {count} รีวิว',
       googleReviewsTitle: 'อ่านรีวิวของเราบน Google',
       googleReviewsStars: '{rating} จาก 5 ดาว',
+      preferredSourceLabel: 'ทำให้ Lanna Bloom\nเป็นแหล่งที่ต้องการบน Google',
+      preferredSourceTitle: 'ทำให้ Lanna Bloom เป็นแหล่งที่ต้องการบน Google',
       expressDelivery: 'จัดส่งด่วน',
       expressArea: 'ในเขตเมือง',
       availableNow: 'พร้อมบริการ',
@@ -1974,6 +1990,18 @@ const baseTranslations = {
       giftTeddyCta: 'ดูตุ๊กตาหมี',
       giftBalloonsTitle: 'บอลลูน',
       giftBalloonsCta: 'ดูบอลลูน',
+      promoHydrangeaRegion: 'โปรโมชันไฮเดรนเยีย',
+      promoHydrangeaHeading: 'ดอกไม้ตามฤดูกาล',
+      promoHydrangeaSubheading: 'ช่อไฮเดรนเยียคัดสรร เฉพาะช่วงฤดูกาลนี้',
+      promoHydrangeaSlideBlue:
+        'ช่อไฮเดรนเยียสีฟ้า ลด 30 เปอร์เซ็นต์ เลือกช่อไฮเดรนเยียที่ Lanna Bloom',
+      promoHydrangeaSlideWhite:
+        'ช่อไฮเดรนเยียสีขาว ลด 30 เปอร์เซ็นต์ เลือกช่อไฮเดรนเยียที่ Lanna Bloom',
+      promoHydrangeaSlideLightMix:
+        'ช่อไฮเดรนเยียคละสี ลด 30 เปอร์เซ็นต์ เลือกช่อไฮเดรนเยียที่ Lanna Bloom',
+      promoHydrangeaSlideMixedDark:
+        'ช่อไฮเดรนเยียตามฤดูกาล ลด 30 เปอร์เซ็นต์ เลือกช่อไฮเดรนเยียที่ Lanna Bloom',
+      promoHydrangeaGoToSlide: 'ดูโปรโมชันไฮเดรนเยีย {n}',
     },
     experience: {
       title: 'วิธีการสั่งซื้อ',
@@ -3635,6 +3663,8 @@ const russianTranslations = {
     ctaHowItWorks: 'Как это работает',
     howToOrderClose: 'Закрыть',
     howToOrderInfographicAlt: 'Как заказать цветы в Lanna Bloom — пошаговая инструкция',
+    preferredSourceLabel: 'Сделать Lanna Bloom\nпредпочтительным источником в Google',
+    preferredSourceTitle: 'Сделать Lanna Bloom предпочтительным источником в Google',
     shopByOccasion: 'Выбрать по поводу',
     occasionBirthday: 'День рождения',
     occasionAnniversary: 'Годовщина',
@@ -3670,6 +3700,18 @@ const russianTranslations = {
     giftTeddyCta: 'Смотреть мишек',
     giftBalloonsTitle: 'Шары',
     giftBalloonsCta: 'Смотреть шары',
+    promoHydrangeaRegion: 'Акция на гортензии',
+    promoHydrangeaHeading: 'Сейчас в сезоне',
+    promoHydrangeaSubheading: 'Букеты гортензий — пока длится сезон',
+    promoHydrangeaSlideBlue:
+      'Букет голубых гортензий, скидка 30 процентов. Гортензии в Lanna Bloom.',
+    promoHydrangeaSlideWhite:
+      'Букет белых гортензий, скидка 30 процентов. Гортензии в Lanna Bloom.',
+    promoHydrangeaSlideLightMix:
+      'Смешанный букет гортензий, скидка 30 процентов. Гортензии в Lanna Bloom.',
+    promoHydrangeaSlideMixedDark:
+      'Сезонный букет гортензий, скидка 30 процентов. Гортензии в Lanna Bloom.',
+    promoHydrangeaGoToSlide: 'Показать предложение гортензий {n}',
   },
   experience: {
     ...baseTranslations.en.experience,
@@ -4543,6 +4585,8 @@ const chineseSingaporeTranslations = {
     ctaHowItWorks: '运作方式',
     howToOrderClose: '关闭',
     howToOrderInfographicAlt: '如何在 Lanna Bloom 订购鲜花 — 步骤指南',
+    preferredSourceLabel: '将 Lanna Bloom 设为\nGoogle 优选来源',
+    preferredSourceTitle: '将 Lanna Bloom 设为 Google 优选来源',
     shopByOccasion: '按场合选购',
     occasionBirthday: '生日',
     occasionAnniversary: '纪念日',
@@ -4573,6 +4617,14 @@ const chineseSingaporeTranslations = {
     productSectionPlushyToys: '毛绒玩具',
     productSectionBalloons: '气球',
     productSectionSweets: '甜品',
+    promoHydrangeaRegion: '绣球花优惠',
+    promoHydrangeaHeading: '当季推荐',
+    promoHydrangeaSubheading: '绣球花束，当季限定',
+    promoHydrangeaSlideBlue: '蓝色绣球花束，优惠 30%。在 Lanna Bloom 选购绣球花。',
+    promoHydrangeaSlideWhite: '白色绣球花束，优惠 30%。在 Lanna Bloom 选购绣球花。',
+    promoHydrangeaSlideLightMix: '混合绣球花束，优惠 30%。在 Lanna Bloom 选购绣球花。',
+    promoHydrangeaSlideMixedDark: '当季绣球花束，优惠 30%。在 Lanna Bloom 选购绣球花。',
+    promoHydrangeaGoToSlide: '查看绣球花优惠 {n}',
   },
   experience: {
     ...baseTranslations.en.experience,
@@ -5250,6 +5302,8 @@ const chineseHongKongTranslations = {
     ctaHowItWorks: '運作方式',
     howToOrderClose: '關閉',
     howToOrderInfographicAlt: '如何在 Lanna Bloom 訂購鮮花 — 步驟指南',
+    preferredSourceLabel: '將 Lanna Bloom 設為\nGoogle 首選來源',
+    preferredSourceTitle: '將 Lanna Bloom 設為 Google 首選來源',
     shopByOccasion: '按場合選購',
     occasionBirthday: '生日',
     occasionAnniversary: '紀念日',
@@ -5280,6 +5334,14 @@ const chineseHongKongTranslations = {
     productSectionPlushyToys: '毛絨玩具',
     productSectionBalloons: '氣球',
     productSectionSweets: '甜品',
+    promoHydrangeaRegion: '繡球花優惠',
+    promoHydrangeaHeading: '當季推薦',
+    promoHydrangeaSubheading: '繡球花束，當季限定',
+    promoHydrangeaSlideBlue: '藍色繡球花束，優惠 30%。在 Lanna Bloom 選購繡球花。',
+    promoHydrangeaSlideWhite: '白色繡球花束，優惠 30%。在 Lanna Bloom 選購繡球花。',
+    promoHydrangeaSlideLightMix: '混合繡球花束，優惠 30%。在 Lanna Bloom 選購繡球花。',
+    promoHydrangeaSlideMixedDark: '當季繡球花束，優惠 30%。在 Lanna Bloom 選購繡球花。',
+    promoHydrangeaGoToSlide: '查看繡球花優惠 {n}',
   },
   cookieBanner: {
     ...baseTranslations.en.cookieBanner,

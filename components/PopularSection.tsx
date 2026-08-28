@@ -1,4 +1,7 @@
-import dynamic from 'next/dynamic';
+import {
+  DeferredHomeBouquetCard,
+  DeferredHomeProductCard,
+} from '@/components/home/DeferredHomeCatalogCard';
 import {
   getCatalogHomeFlowerTypeSections,
   getCatalogHomeFlowerTypeTiles,
@@ -22,15 +25,6 @@ import {
   categoryAllowed,
   type ShopAccessProvince,
 } from '@/lib/provinces/shopAccess';
-
-const BouquetCard = dynamic(
-  () => import('@/components/BouquetCard').then((m) => m.BouquetCard),
-  { ssr: true }
-);
-const ProductCard = dynamic(
-  () => import('@/components/ProductCard').then((m) => m.ProductCard),
-  { ssr: true }
-);
 
 function flowerTypeLabel(type: string, catalog: Record<string, string>): string {
   const key = `type${type.charAt(0).toUpperCase() + type.slice(1)}`;
@@ -79,7 +73,7 @@ function ProductFeedRow({
         <div className="popular-scroll">
           {products.map((product) => (
             <div key={product.id} className="popular-card-slot">
-              <ProductCard product={product} lang={lang} />
+              <DeferredHomeProductCard product={product} lang={lang} />
             </div>
           ))}
         </div>
@@ -176,11 +170,7 @@ export async function PopularSection({
                 <div className="popular-scroll">
                   {section.bouquets.map((bouquet) => (
                     <div key={bouquet.id} className="popular-card-slot">
-                      <BouquetCard
-                        bouquet={bouquet}
-                        lang={lang}
-                        variant="popular-compact"
-                      />
+                      <DeferredHomeBouquetCard bouquet={bouquet} lang={lang} />
                     </div>
                   ))}
                 </div>

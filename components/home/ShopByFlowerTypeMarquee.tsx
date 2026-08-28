@@ -4,7 +4,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { HomeFlowerTypeTile } from '@/lib/catalog/homeFlowerTypeTiles';
-import { catalogImageUnoptimized, HOME_FLOWER_TYPE_TILE_IMAGE_SIZES } from '@/lib/catalog/catalogImage';
+import {
+  catalogImageUnoptimized,
+  catalogOptimizedImageUrl,
+  HOME_FLOWER_TYPE_TILE_DUP_WIDTH,
+  HOME_FLOWER_TYPE_TILE_IMAGE_SIZES,
+} from '@/lib/catalog/catalogImage';
 import { trackCtaClick } from '@/lib/analytics';
 
 const LOOP_MS = 40_000;
@@ -50,15 +55,36 @@ function FlowerTypeTileLink({
               : '1',
         }}
       >
-        <Image
-          src={item.imageUrl}
-          alt={duplicate ? '' : item.label}
-          fill
-          sizes={HOME_FLOWER_TYPE_TILE_IMAGE_SIZES}
-          draggable={false}
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          unoptimized={catalogImageUnoptimized(item.imageUrl)}
-        />
+        {duplicate ? (
+          // Same cached /_next/image URL as the primary tiles — no second srcset.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={
+              catalogImageUnoptimized(item.imageUrl)
+                ? item.imageUrl
+                : catalogOptimizedImageUrl(item.imageUrl, HOME_FLOWER_TYPE_TILE_DUP_WIDTH)
+            }
+            alt=""
+            width={112}
+            height={112}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Image
+            src={item.imageUrl}
+            alt={item.label}
+            fill
+            sizes={HOME_FLOWER_TYPE_TILE_IMAGE_SIZES}
+            loading="lazy"
+            fetchPriority="low"
+            draggable={false}
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            unoptimized={catalogImageUnoptimized(item.imageUrl)}
+          />
+        )}
       </div>
       <span className="min-w-0 w-full truncate text-xs sm:text-sm font-medium text-[#1A3C34] transition-colors duration-300 group-hover:text-[#C5A059]">
         {item.label}

@@ -32,7 +32,7 @@ export function HomeFaq({
 
   return (
     <section
-      className="py-16 sm:py-20 lg:py-24"
+      className="home-cv-auto py-16 sm:py-20 lg:py-24"
       aria-labelledby="home-faq-title"
       data-home-reveal
     >

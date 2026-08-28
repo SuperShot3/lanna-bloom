@@ -41,7 +41,7 @@ export function ReviewsSection({
 
   return (
     <section
-      className="py-16 sm:py-20 lg:py-24 bg-white"
+      className="home-cv-auto py-16 sm:py-20 lg:py-24 bg-white"
       aria-labelledby="reviews-section-title"
       data-home-reveal
     >
