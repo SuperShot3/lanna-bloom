@@ -164,6 +164,7 @@ export function HeroFeatureCarousel({
 
   const spreadPercent = isMdUp ? 46 : 27;
   const total = images.length;
+  const lcpStillCenter = currentIndex === 0 && !allowKenBurns;
 
   return (
     <div className={cn('relative w-full', className)}>
@@ -184,7 +185,12 @@ export function HeroFeatureCarousel({
         onMouseLeave={() => setIsPaused(false)}
         aria-roledescription="carousel"
       >
-        <div className="relative w-full h-full flex items-center justify-center [perspective:1200px]">
+        <div
+          className={cn(
+            'relative w-full h-full flex items-center justify-center',
+            neighborsReady && '[perspective:1200px]'
+          )}
+        >
           {images.map((image, index) => {
             const pos = carouselPos(index, currentIndex, total);
             if (Math.abs(pos) > 1) return null;
@@ -192,35 +198,42 @@ export function HeroFeatureCarousel({
 
             const isCenter = pos === 0;
             const isAdjacent = Math.abs(pos) === 1;
+            const isInitialLcpSlide = index === 0 && lcpStillCenter;
 
             return (
               <div
                 key={`${image.src}-${index}`}
                 className={cn(
                   'hero-slide-frame absolute w-[17rem] h-[16.245rem] sm:w-72 sm:h-[17.328rem] md:w-[21rem] md:h-[303px] lg:w-96 lg:h-full',
-                  'transition-all duration-[650ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
-                  'flex items-center justify-center'
+                  'flex items-center justify-center',
+                  !isInitialLcpSlide &&
+                    'transition-all duration-[650ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]'
                 )}
-                style={{
-                  transform: `
+                style={
+                  isInitialLcpSlide
+                    ? { zIndex: 10, opacity: 1 }
+                    : {
+                        transform: `
                         translateX(${pos * spreadPercent}%)
                         translateY(${isCenter ? 0 : 2.5}%)
                         scale(${isCenter ? 1 : isAdjacent ? 0.86 : 0.72})
                         rotateY(${pos * -12}deg)
                       `,
-                  zIndex: isCenter ? 10 : isAdjacent ? 5 : 1,
-                  opacity: isCenter ? 1 : isAdjacent ? 0.55 : 0,
-                  filter: isCenter
-                    ? 'blur(0px) saturate(1)'
-                    : 'blur(2px) saturate(0.85)',
-                }}
+                        zIndex: isCenter ? 10 : isAdjacent ? 5 : 1,
+                        opacity: isCenter ? 1 : isAdjacent ? 0.55 : 0,
+                        filter: isCenter
+                          ? undefined
+                          : 'blur(2px) saturate(0.85)',
+                      }
+                }
               >
                 <div
                   className={cn(
-                    'relative h-full w-full overflow-hidden rounded-3xl transition-shadow duration-[650ms]',
+                    'relative h-full w-full overflow-hidden rounded-3xl',
                     isCenter
                       ? 'shadow-[0_24px_48px_-12px_rgba(26,60,52,0.32),0_10px_20px_-10px_rgba(26,60,52,0.22)]'
-                      : 'shadow-[0_12px_28px_-12px_rgba(26,60,52,0.2)]'
+                      : 'shadow-[0_12px_28px_-12px_rgba(26,60,52,0.2)]',
+                    !isInitialLcpSlide && 'transition-shadow duration-[650ms]'
                   )}
                 >
                   <Image
@@ -236,16 +249,17 @@ export function HeroFeatureCarousel({
                     )}
                     // Slide 0 is the LCP image — always eager/high, even after autoplay.
                     // Do not set `priority` (that injects a second preload).
+                    // decoding="async" lets the browser paint without waiting on the main thread.
                     loading={index === 0 ? 'eager' : 'lazy'}
                     fetchPriority={index === 0 ? 'high' : 'low'}
-                    decoding={index === 0 ? 'sync' : 'async'}
+                    decoding="async"
                     quality={HERO_LCP_IMAGE_QUALITY}
                     sizes={HERO_CAROUSEL_IMAGE_SIZES}
                     unoptimized={catalogImageUnoptimized(image.src)}
                   />
                   {/* Soft green vignette at the base of the featured photo */}
                   <div
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#1A3C34]/25 to-transparent transition-opacity duration-[650ms]"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#1A3C34]/25 to-transparent"
                     style={{ opacity: isCenter ? 1 : 0 }}
                     aria-hidden
                   />

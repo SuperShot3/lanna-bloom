@@ -7,6 +7,7 @@ import {
 } from '@/lib/messenger';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
+import '../policy.css';
 
 const AMERICAN_EXPRESS_URL = 'https://www.americanexpress.com/en-us/help/refunds.html';
 const STRIPE_SUPPORT_URL = 'https://support.stripe.com/questions/refund-processing-fees';

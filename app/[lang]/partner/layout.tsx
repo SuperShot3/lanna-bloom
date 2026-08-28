@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 import { buildPartnerPortalMetadata } from '@/lib/partnerSeo';
+import './partner.css';
 
 export async function generateMetadata({
   params,

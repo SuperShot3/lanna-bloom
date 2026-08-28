@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isValidLocale, type Locale } from '@/lib/i18n';
+import '../policy.css';
 
 export async function generateMetadata({ params }: { params: { lang: string } }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return { title: 'Cookie Policy' };

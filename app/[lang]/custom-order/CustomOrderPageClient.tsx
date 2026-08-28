@@ -774,7 +774,7 @@ export function CustomOrderPageClient({ lang }: { lang: Locale }) {
           font-family: var(--font-sans);
         }
         .co-title {
-          font-family: var(--font-serif);
+          font-family: var(--font-family-sans);
           font-size: clamp(1.5rem, 4vw, 1.85rem);
           font-weight: 600;
           color: var(--primary);

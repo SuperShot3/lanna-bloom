@@ -119,7 +119,7 @@ export default function FavoritesPage({ params }: { params: { lang: string } }) 
           padding: 14px 0 10px;
         }
         .favorites-title {
-          font-family: var(--font-serif);
+          font-family: var(--font-family-sans);
           font-style: italic;
           font-weight: 300;
           font-size: clamp(1.6rem, 4vw, 2.1rem);

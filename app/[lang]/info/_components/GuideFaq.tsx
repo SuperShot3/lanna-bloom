@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import '../guide.css';
 
 export type FaqItem = { q: string; a: string };
 

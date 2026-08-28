@@ -130,7 +130,7 @@ export function ContactPageClient({ lang }: { lang: Locale }) {
           padding: 32px 0 48px;
         }
         .contact-title {
-          font-family: var(--font-serif);
+          font-family: var(--font-family-sans);
           font-size: 1.75rem;
           font-weight: 600;
           color: var(--text);

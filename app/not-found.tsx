@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { defaultLocale } from '@/lib/i18n';
+import './not-found.css';
 
 export default function NotFound() {
   return (

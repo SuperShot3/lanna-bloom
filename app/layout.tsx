@@ -7,7 +7,7 @@ import { InternalTrafficBootstrap } from '@/components/InternalTrafficBootstrap'
 import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { mulish } from '@/lib/fonts';
+import { arimaMadurai, mulish } from '@/lib/fonts';
 import { getBaseUrl } from '@/lib/orders';
 import {
   BRAND_APPLE_TOUCH,
@@ -137,7 +137,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${mulish.variable} ${mulish.className}`}>
+      <body className={`${mulish.variable} ${arimaMadurai.variable} ${mulish.className}`}>
         <ThemeProvider>
           <CookieConsentProvider>
             <DocumentLangSync />

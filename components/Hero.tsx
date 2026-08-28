@@ -264,7 +264,7 @@ export function Hero({
             {trustLine}
           </div>
           <h1
-            className={`${introItemClass} font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words`.trim()}
+            className={`${introItemClass} text-4xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-7xl leading-[1.1] text-[#1A3C34] mb-3 sm:mb-4 md:mb-6 break-words`.trim()}
           >
             {titleOverride ?? (
               <>
@@ -292,7 +292,7 @@ export function Hero({
           images={heroCarouselImages}
           lang={lang}
           timing={timing}
-          className={`order-2 lg:order-none lg:col-start-2 ${introItemClass} home-hero-intro__delay-4`.trim()}
+          className="order-2 lg:order-none lg:col-start-2"
         />
       </div>
       {howToOpen ? (

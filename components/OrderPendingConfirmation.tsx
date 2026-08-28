@@ -238,7 +238,7 @@ export function OrderPendingConfirmation({
 
         /* ---------- Typography ---------- */
         .pending-title {
-          font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+          font-family: var(--font-family-sans);
           font-size: 1.75rem;
           font-weight: 700;
           color: #1e1e1e;

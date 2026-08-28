@@ -1,0 +1,12 @@
+/* Public order status page */
+/* Order details page (public /order/[orderId]) */
+.order-page {
+  padding: var(--space-6) 0 var(--space-12);
+}
+.order-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 var(--space-6);
+}
+

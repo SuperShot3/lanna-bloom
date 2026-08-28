@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { Locale } from '@/lib/i18n';
+import '@/app/[lang]/info/guide.css';
 import type { PublicProvince } from '@/lib/provinces/types';
 import {
   getProvinceStatusFillColor,

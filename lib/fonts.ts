@@ -1,3 +1,4 @@
+import localFont from 'next/font/local';
 import { Mulish, Noto_Sans, Noto_Sans_TC } from 'next/font/google';
 
 export const mulish = Mulish({
@@ -5,6 +6,18 @@ export const mulish = Mulish({
   display: 'swap',
   adjustFontFallback: true,
   variable: '--font-sans',
+});
+
+/** Display headings — HTML-preloaded so it does not wait on globals.css. */
+export const arimaMadurai = localFont({
+  src: [
+    { path: '../public/fonts/arima-madurai-400.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/arima-madurai-700.woff2', weight: '700', style: 'normal' },
+  ],
+  display: 'swap',
+  adjustFontFallback: 'Times New Roman',
+  fallback: ['ui-serif', 'Georgia', 'serif'],
+  variable: '--font-display',
 });
 
 /** Supplemental Cyrillic metrics for /ru routes (Mulish lacks Cyrillic subset). */

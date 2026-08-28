@@ -12,6 +12,7 @@ import {
   websiteTwitter,
 } from '@/lib/seo/shareMetadata';
 import styles from '@/components/reviews/reviews.module.css';
+import '../simple-pages.css';
 
 export async function generateMetadata({
   params,

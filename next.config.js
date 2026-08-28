@@ -265,6 +265,10 @@ const nextConfig = {
       }))
     );
     return [
+      {
+        source: '/vendor/ahrefs-analytics.js',
+        destination: '/api/vendor/ahrefs-analytics',
+      },
       { source: '/feeds/google.txt', destination: '/feeds/google-merchant-feed' },
       { source: '/feeds/google-merchant-feed.tsv', destination: '/feeds/google-merchant-feed' },
       { source: '/openai-product-feed.csv', destination: '/feeds/openai-product-feed' },

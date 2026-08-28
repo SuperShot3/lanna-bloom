@@ -8,6 +8,7 @@ import {
   SUPPORT_EMAIL,
   getPrivacyCopy,
 } from './privacyPolicyContent';
+import '../policy.css';
 
 export async function generateMetadata({ params }: { params: { lang: string } }): Promise<Metadata> {
   if (!isValidLocale(params.lang)) return { title: 'Privacy Policy' };

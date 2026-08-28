@@ -1578,7 +1578,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         <div className="container" style={{ maxWidth: 480 }}>
           <h1
             style={{
-              fontFamily: 'var(--font-serif)',
+              fontFamily: 'var(--font-family-sans)',
               fontSize: '1.75rem',
               fontWeight: 600,
               marginBottom: 12,
@@ -1655,7 +1655,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             margin-bottom: 28px;
           }
           .cart-page-title {
-            font-family: var(--font-serif);
+            font-family: var(--font-family-sans);
             font-size: 2.25rem;
             font-weight: 300;
             line-height: 1;

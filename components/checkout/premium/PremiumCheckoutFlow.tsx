@@ -1144,7 +1144,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           }
         }
         .co-hero__title {
-          font-family: var(--font-serif);
+          font-family: var(--font-family-sans);
           font-size: clamp(1.5rem, 5vw, 1.85rem);
           font-weight: 500;
           line-height: 1.2;

@@ -138,7 +138,7 @@ export default function AboutPage({ params }: { params: { lang: string } }) {
             className="mb-7 h-28 w-28 object-contain sm:h-32 sm:w-32"
           />
 
-          <h1 className="text-balance font-[family-name:var(--font-family-display)] text-4xl font-semibold leading-tight tracking-tight text-[#1A3C34] sm:text-5xl">
+          <h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight text-[#1A3C34] sm:text-5xl">
             {copy.h1}
           </h1>
           <p className="mt-5 text-pretty text-xl leading-relaxed text-stone-600 sm:text-2xl">

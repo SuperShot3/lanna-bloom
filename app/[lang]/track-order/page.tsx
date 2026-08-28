@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { isValidLocale, translations, type Locale } from '@/lib/i18n';
 import { OrderLookupSection } from '@/components/OrderLookupSection';
+import '../simple-pages.css';
 
 export async function generateMetadata({
   params,

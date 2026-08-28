@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { isValidLocale, translations, type Locale } from '@/lib/i18n';
+import '../cart/cart-checkout.css';
 
 export async function generateMetadata({
   params,
