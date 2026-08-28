@@ -30,13 +30,13 @@ export async function listCatalogPartnerShops(): Promise<CatalogPartnerShop[]> {
       typeof row.sanity_partner_id === 'string' ? row.sanity_partner_id : null,
   }));
 
-  const partnerIds = [
-    ...new Set(
+  const partnerIds = Array.from(
+    new Set(
       links
         .map((link) => link.catalogPartnerId?.trim() ?? '')
         .filter(Boolean)
-    ),
-  ];
+    )
+  );
   if (partnerIds.length === 0) return [];
 
   const { data: partners, error: partnersError } = await supabase

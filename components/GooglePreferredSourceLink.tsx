@@ -21,8 +21,10 @@ type Props = {
 export function GooglePreferredSourceLink({ lang, variant, className = '' }: Props) {
   const t = translations[lang].hero;
   const rawLabel = t.preferredSourceLabel;
-  const label = variant === 'footer' ? rawLabel.replace(/\n/g, ' ') : rawLabel;
-  const iconSize = variant === 'hero' ? 36 : 18;
+  const isHero = variant === 'hero';
+  const [leadLine, ...restLines] = rawLabel.split('\n');
+  const mainLine = restLines.join(' ');
+  const iconSize = isHero ? 36 : 18;
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
@@ -43,7 +45,27 @@ export function GooglePreferredSourceLink({ lang, variant, className = '' }: Pro
       <span className={styles.icon}>
         <GoogleGIcon size={iconSize} />
       </span>
-      <span className={styles.label}>{label}</span>
+      {isHero ? (
+        <>
+          <span className={styles.label}>
+            <span className={styles.labelLead}>{leadLine}</span>
+            {mainLine ? <span className={styles.labelMain}>{mainLine}</span> : null}
+          </span>
+          <span className={styles.chevron} aria-hidden>
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M6 3.5 10.5 8 6 12.5"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </>
+      ) : (
+        <span className={styles.label}>{rawLabel.replace(/\n/g, ' ')}</span>
+      )}
     </a>
   );
 }

@@ -42,5 +42,5 @@ export function selectablePartnerShops(
     byId.set(id, { id, name });
   }
 
-  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'en'));
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name, 'en'));
 }

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import ProductPage from '@/app/[lang]/catalog/[slug]/page';
+import { renderCatalogProductPage } from '../renderCatalogProductPage';
 import {
   getMarketByPathSlug,
   marketIsRouteAvailable,
@@ -53,7 +53,7 @@ export default function MarketCatalogProductPage({
   const market = getMarketByPathSlug(params.slug);
   if (!market || !marketIsRouteAvailable(market)) notFound();
 
-  return ProductPage({
+  return renderCatalogProductPage({
     params: {
       lang: params.lang,
       slug: params.productSlug,

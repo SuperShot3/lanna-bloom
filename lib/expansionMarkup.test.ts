@@ -18,7 +18,7 @@ const UNCHANGED: OrderDeliveryDestinationId[] = [
 ];
 
 assert.deepEqual(
-  [...EXPANSION_MARKUP_DESTINATIONS].sort(),
+  Array.from(EXPANSION_MARKUP_DESTINATIONS).sort(),
   [...ISLAND, 'BANGKOK'].sort(),
   'markup destinations are Phuket, Samui, Krabi, and Bangkok'
 );
