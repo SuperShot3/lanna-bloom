@@ -176,7 +176,7 @@ export function HeroFeatureCarousel({
       </div>
 
       <div
-        className="hero-carousel-stage relative z-10 w-full touch-pan-y px-0 py-1 sm:px-1 sm:py-3 md:py-4 lg:py-4 min-h-[22.5rem] sm:min-h-[24rem] lg:aspect-[4/5] lg:min-h-0 lg:h-auto flex items-center justify-center overflow-x-hidden overflow-y-visible"
+        className="hero-carousel-stage relative z-10 w-full touch-pan-y px-0 py-1 sm:px-1 sm:py-3 md:py-4 lg:py-4 min-h-[16.245rem] sm:min-h-[17.328rem] lg:aspect-[400/361] lg:min-h-0 lg:h-auto flex items-center justify-center overflow-x-hidden overflow-y-visible"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchCancel}
@@ -197,7 +197,7 @@ export function HeroFeatureCarousel({
               <div
                 key={`${image.src}-${index}`}
                 className={cn(
-                  'hero-slide-frame absolute w-[17rem] h-[22.5rem] sm:w-72 sm:h-96 md:w-[21rem] md:h-[420px] lg:w-96 lg:h-full',
+                  'hero-slide-frame absolute w-[17rem] h-[16.245rem] sm:w-72 sm:h-[17.328rem] md:w-[21rem] md:h-[303px] lg:w-96 lg:h-full',
                   'transition-all duration-[650ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
                   'flex items-center justify-center'
                 )}
