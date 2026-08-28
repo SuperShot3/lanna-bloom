@@ -15,6 +15,21 @@ export type HeroCarouselImage = { src: string; alt: string };
 
 const AUTOPLAY_MS = 3000;
 const SWIPE_THRESHOLD_PX = 48;
+const DOT_WINDOW = 5;
+
+/** Sliding window of about 5 dots around the current slide, clamped at the ends. */
+function visibleDotIndices(
+  currentIndex: number,
+  total: number,
+  windowSize = DOT_WINDOW
+): number[] {
+  if (total <= windowSize) {
+    return Array.from({ length: total }, (_, i) => i);
+  }
+  const half = Math.floor(windowSize / 2);
+  const start = Math.max(0, Math.min(currentIndex - half, total - windowSize));
+  return Array.from({ length: windowSize }, (_, i) => start + i);
+}
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
@@ -94,14 +109,6 @@ export function HeroFeatureCarousel({
     goTo((prev) => (prev - 1 + images.length) % images.length);
   }, [canNavigate, goTo, images.length]);
 
-  const handleGoTo = React.useCallback(
-    (index: number) => {
-      if (!canNavigate) return;
-      goTo(index);
-    },
-    [canNavigate, goTo]
-  );
-
   const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
 
   const onTouchStart = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
@@ -144,13 +151,26 @@ export function HeroFeatureCarousel({
 
   const autoplayActive =
     canNavigate && neighborsReady && !prefersReducedMotion && !isPaused;
+  const remainingMsRef = React.useRef(AUTOPLAY_MS);
 
-  // `currentIndex` in deps restarts the timer after manual navigation,
-  // so the user always gets the full interval before the next auto-advance.
+  React.useEffect(() => {
+    remainingMsRef.current = AUTOPLAY_MS;
+  }, [currentIndex]);
+
+  // Remaining-time timeout so hover-pause freezes both the slide timer and the
+  // progress fill, then resumes from the same point instead of restarting.
   React.useEffect(() => {
     if (!autoplayActive) return;
-    const timer = window.setInterval(handleNext, AUTOPLAY_MS);
-    return () => window.clearInterval(timer);
+    const startedAt = performance.now();
+    const delay = remainingMsRef.current;
+    const timer = window.setTimeout(() => {
+      remainingMsRef.current = AUTOPLAY_MS;
+      handleNext();
+    }, delay);
+    return () => {
+      remainingMsRef.current = Math.max(0, delay - (performance.now() - startedAt));
+      window.clearTimeout(timer);
+    };
   }, [autoplayActive, handleNext, currentIndex]);
 
   React.useEffect(() => {
@@ -298,46 +318,44 @@ export function HeroFeatureCarousel({
             </Button>
 
             <div
-              className="absolute bottom-1 sm:bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5"
-              role="tablist"
-              aria-label="Carousel photos"
+              className="pointer-events-none absolute bottom-1 sm:bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5"
+              aria-hidden
             >
-              {images.map((image, index) => {
+              {visibleDotIndices(currentIndex, total).map((index) => {
                 const isActive = index === currentIndex;
                 return (
-                  <button
-                    key={`dot-${image.src}-${index}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-label={`Go to photo ${index + 1}`}
-                    onClick={() => handleGoTo(index)}
+                  <span
+                    key={`dot-${index}`}
                     className={cn(
                       'relative h-1.5 overflow-hidden rounded-full transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
-                      isActive
-                        ? 'w-7 bg-[#1A3C34]/15'
-                        : 'w-1.5 bg-[#1A3C34]/15 hover:bg-[#C5A059]/50'
+                      isActive ? 'w-7 bg-[#1A3C34]/15' : 'w-1.5 bg-[#1A3C34]/15'
                     )}
                   >
                     {isActive ? (
-                      autoplayActive ? (
-                        <span
-                          key={currentIndex}
-                          className="hero-carousel-progress absolute inset-0 origin-left rounded-full bg-[#C5A059]"
-                          style={{ animationDuration: `${AUTOPLAY_MS}ms` }}
-                          aria-hidden
-                        />
-                      ) : (
+                      prefersReducedMotion ? (
                         <span
                           className="absolute inset-0 rounded-full bg-[#C5A059]"
                           aria-hidden
                         />
-                      )
+                      ) : neighborsReady ? (
+                        <span
+                          key={currentIndex}
+                          className="hero-carousel-progress absolute inset-0 origin-left rounded-full bg-[#C5A059]"
+                          style={{
+                            animationDuration: `${AUTOPLAY_MS}ms`,
+                            animationPlayState: isPaused ? 'paused' : 'running',
+                          }}
+                          aria-hidden
+                        />
+                      ) : null
                     ) : null}
-                  </button>
+                  </span>
                 );
               })}
             </div>
+            <p className="sr-only" aria-live="polite" aria-atomic="true">
+              Photo {currentIndex + 1} of {total}
+            </p>
           </>
         ) : null}
       </div>

@@ -453,8 +453,8 @@
 
 .deliveryTimingNoticeBlocked {
   color: var(--text);
-  background: #fff5f0;
-  border-color: #e8c4b8;
+  background: color-mix(in srgb, #c45c3a 14%, var(--surface));
+  border-color: color-mix(in srgb, #c45c3a 32%, var(--border));
 }
 
 .deliveryTimingPrimary {
@@ -471,8 +471,8 @@
   margin: 0 0 16px;
   padding: 16px 16px 18px;
   color: var(--text);
-  background: #fff5f0;
-  border: 2px solid #e8c4b8;
+  background: color-mix(in srgb, #c45c3a 14%, var(--surface));
+  border: 2px solid color-mix(in srgb, #c45c3a 32%, var(--border));
   border-radius: var(--radius-sm);
 }
 
