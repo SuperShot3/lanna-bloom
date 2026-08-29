@@ -12,10 +12,14 @@ import {
 } from '@/lib/orders';
 import {
   isAdminPayLinkOrder,
-  PAY_LINK_STRIPE_EXPIRES_MINUTES,
   payLinkUnusableReason,
   STRIPE_PAY_LINK_SOURCE,
 } from '@/lib/payLinks/adminPayLink';
+import {
+  buildStablePayLinkCheckoutSessionParams,
+  lookupStoredPayLinkCheckoutSession,
+  payLinkCheckoutIdempotencyKey,
+} from '@/lib/payLinks/payLinkCheckoutSession';
 import { buildStripeOrderMetadata } from '@/lib/stripe/metadata';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
@@ -156,6 +160,17 @@ export async function createCheckoutSessionForExistingOrder(params: {
   if (payLink && payLinkUnusableReason(order, order.createdAt)) {
     return { ok: false, status: 410, error: 'This payment link is no longer active' };
   }
+
+  const storedPayLinkSession = payLink
+    ? await lookupStoredPayLinkCheckoutSession(
+        (id) => stripe.checkout.sessions.retrieve(id),
+        order.payLinkStripeSessionId
+      )
+    : { kind: 'none' as const };
+  if (storedPayLinkSession.kind === 'open') {
+    return { ok: true, url: storedPayLinkSession.url, orderId: order.orderId };
+  }
+
   const metadata = buildStripeOrderMetadata({
     orderId: order.orderId,
     source: payLink ? STRIPE_PAY_LINK_SOURCE : 'lanna_bloom_order_page',
@@ -202,23 +217,31 @@ export async function createCheckoutSessionForExistingOrder(params: {
     ? getPayLinkUrl(orderId, { token: expectedPublicToken, cancelled: true })
     : getOrderDetailsUrl(orderId, { token: expectedPublicToken });
 
-  const sessionParams: Stripe.Checkout.SessionCreateParams = {
-    mode: 'payment',
-    line_items: lineItems,
-    client_reference_id: order.orderId,
-    customer_email: order.customerEmail,
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata,
-    payment_intent_data: { metadata },
-    ...(payLink
-      ? { expires_at: Math.floor(Date.now() / 1000) + PAY_LINK_STRIPE_EXPIRES_MINUTES * 60 }
-      : {}),
-  };
+  const sessionParams: Stripe.Checkout.SessionCreateParams = payLink
+    ? buildStablePayLinkCheckoutSessionParams({
+        lineItems,
+        clientReferenceId: order.orderId,
+        customerEmail: order.customerEmail,
+        successUrl,
+        cancelUrl,
+        metadata,
+      })
+    : {
+        mode: 'payment',
+        line_items: lineItems,
+        client_reference_id: order.orderId,
+        customer_email: order.customerEmail,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata,
+        payment_intent_data: { metadata },
+      };
 
   const fingerprint = stripeIdempotencyFingerprint(sessionParams);
+  const deadPayLinkSessionId =
+    storedPayLinkSession.kind === 'dead' ? storedPayLinkSession.sessionId : null;
   const idempotencyKey = payLink
-    ? `pay-link-${orderId}`
+    ? payLinkCheckoutIdempotencyKey('order', orderId, deadPayLinkSessionId)
     : `order-page-${orderId}-${fingerprint}`;
 
   let session: Stripe.Checkout.Session;

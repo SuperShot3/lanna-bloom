@@ -20,6 +20,10 @@ const stripeOrderStatusStore = new Map<string, { count: number; resetAt: number 
 const STRIPE_ORDER_STATUS_WINDOW_MS = 60 * 1000; // 1 minute
 const STRIPE_ORDER_STATUS_MAX = 30;
 
+const payLinkCheckoutStore = new Map<string, { count: number; resetAt: number }>();
+const PAY_LINK_CHECKOUT_WINDOW_MS = 60 * 1000; // 1 minute
+const PAY_LINK_CHECKOUT_MAX = 20;
+
 const sharedCartCreateStore = new Map<string, { count: number; resetAt: number }>();
 const SHARED_CART_CREATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const SHARED_CART_CREATE_MAX = 10;
@@ -229,6 +233,23 @@ export function checkStripeOrderStatusRateLimit(ip: string, sessionId: string): 
   }
   entry.count++;
   return entry.count <= STRIPE_ORDER_STATUS_MAX;
+}
+
+/** Public pay-link Pay now: per IP + draft/order id. */
+export function checkPayLinkCheckoutRateLimit(ip: string, linkId: string): boolean {
+  const now = Date.now();
+  const key = `${ip}:${linkId.trim()}`;
+  const entry = payLinkCheckoutStore.get(key);
+  if (!entry) {
+    payLinkCheckoutStore.set(key, { count: 1, resetAt: now + PAY_LINK_CHECKOUT_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    payLinkCheckoutStore.set(key, { count: 1, resetAt: now + PAY_LINK_CHECKOUT_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= PAY_LINK_CHECKOUT_MAX;
 }
 
 export function checkGuideCommentSubmitRateLimit(ip: string): boolean {

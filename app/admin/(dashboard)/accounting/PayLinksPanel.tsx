@@ -159,8 +159,9 @@ export function PayLinksPanel({
       </div>
 
       <p className="admin-pay-link-legend">
-        Links are valid for {PAY_LINK_TTL_MINUTES} minutes. After payment the same URL shows thank you and cannot be
-        charged again. Disable an unpaid link if you need to cancel it sooner.
+        Links are valid for {PAY_LINK_TTL_MINUTES} minutes. The customer opens a Lanna Bloom pay page, then Stripe.
+        After payment the same URL shows thank you and cannot be charged again. Disable an unpaid link if you need to
+        cancel it sooner.
       </p>
 
       {disableError ? (

@@ -1,26 +1,25 @@
 import { unstable_noStore as noStore } from 'next/cache';
-import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getOrderByIdWithPublicToken, getPayLinkUrl } from '@/lib/orders';
+import { getOrderByIdWithPublicToken } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import {
   isAdminPayLinkOrder,
   PAY_LINK_TTL_MINUTES,
   payLinkDescriptionFromItems,
   payLinkUnusableReason,
+  type PayLinkReceipt,
 } from '@/lib/payLinks/adminPayLink';
+import { isPayLinkDraftId } from '@/lib/payLinks/payLinkCheckoutSession';
 import { payLinkTokensEqual } from '@/lib/payLinks/payLinkCrypto';
 import { expirePayLinkStripeSessionIfAny } from '@/lib/payLinks/expirePayLinkDrafts';
 import {
   completePayLinkFromStripeSession,
   paidPayLinkReceiptForToken,
 } from '@/lib/payLinks/completePayLinkReturn';
-import type { PayLinkReceipt } from '@/lib/payLinks/adminPayLink';
-import { createCheckoutSessionForExistingOrder } from '@/lib/stripe/createCheckoutSessionForExistingOrder';
-import { createCheckoutSessionForPayLinkDraft } from '@/lib/stripe/createCheckoutSessionForPayLinkDraft';
 import { getCheckoutDraftRecordById } from '@/lib/checkout/checkoutDrafts';
 import { PayLinkReturnClient, PayLinkThankYouCard } from '@/components/pay/PayLinkReturnClient';
+import { PayLinkPayNowCard } from '@/components/pay/PayLinkPayNowCard';
 import styles from './pay-link.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -30,9 +29,6 @@ export const metadata: Metadata = {
   title: 'Pay | Lanna Bloom',
   robots: { index: false, follow: false },
 };
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function tokenFromSearch(raw: string | string[] | undefined): string {
   if (typeof raw === 'string') return raw.trim();
@@ -96,6 +92,7 @@ export default async function PayLinkPage({
     token?: string | string[];
     cancelled?: string | string[];
     session_id?: string | string[];
+    pay_error?: string | string[];
   }>;
 }) {
   noStore();
@@ -105,13 +102,26 @@ export default async function PayLinkPage({
   const token = tokenFromSearch(sp.token);
   const cancelled = tokenFromSearch(sp.cancelled) === '1';
   const sessionId = tokenFromSearch(sp.session_id);
+  const payError = tokenFromSearch(sp.pay_error) === '1';
   if (!normalized || !token) notFound();
 
-  if (UUID_RE.test(normalized)) {
-    return payLinkDraftPage({ draftId: normalized, token, cancelled, sessionId });
+  if (isPayLinkDraftId(normalized)) {
+    return payLinkDraftPage({
+      draftId: normalized,
+      token,
+      cancelled,
+      sessionId,
+      payError,
+    });
   }
 
-  return payLinkLegacyOrderPage({ orderId: normalized, token, cancelled, sessionId });
+  return payLinkLegacyOrderPage({
+    orderId: normalized,
+    token,
+    cancelled,
+    sessionId,
+    payError,
+  });
 }
 
 async function payLinkDraftPage({
@@ -119,11 +129,13 @@ async function payLinkDraftPage({
   token,
   cancelled,
   sessionId,
+  payError,
 }: {
   draftId: string;
   token: string;
   cancelled: boolean;
   sessionId: string;
+  payError: boolean;
 }) {
   if (sessionId) {
     const completed = await completePayLinkFromStripeSession({
@@ -166,49 +178,21 @@ async function payLinkDraftPage({
     return disabledPage();
   }
 
-  const payHref = getPayLinkUrl(draftId, { token });
-
-  if (cancelled) {
-    return (
-      <PayLinkFallback
-        title="Payment cancelled"
-        hint={`You can continue to Stripe. This link expires ${PAY_LINK_TTL_MINUTES} minutes after it was created.`}
-        href={payHref}
-        actionLabel="Continue to Stripe"
-      />
-    );
-  }
-
-  const result = await createCheckoutSessionForPayLinkDraft({
-    draftId,
-    publicToken: token,
-    lang: 'en',
-  });
-
-  if (result.ok) {
-    redirect(result.url);
-  }
-
-  if (result.alreadyPaid) {
-    const again = await paidPayLinkReceiptForToken(token);
-    if (again) return thankYou(again);
-  }
-
-  if (result.status === 410) {
-    return disabledPage();
-  }
-
-  if (result.status === 403 || result.status === 404) {
-    notFound();
-  }
+  const amount = record.payload.pricing?.grandTotal ?? record.payload.items?.[0]?.price ?? 0;
+  const description = payLinkDescriptionFromItems(record.payload.items);
 
   return (
-    <PayLinkFallback
-      title="Could not start payment"
-      error={result.error}
-      hint="Try again in a moment. If this keeps happening, ask Lanna Bloom to send a new link."
-      href={payHref}
-      actionLabel="Try again"
+    <PayLinkPayNowCard
+      linkId={draftId}
+      token={token}
+      amount={amount}
+      description={description}
+      cancelled={cancelled}
+      error={
+        payError
+          ? 'Could not start payment. Try again in a moment. If this keeps happening, ask Lanna Bloom to send a new link.'
+          : undefined
+      }
     />
   );
 }
@@ -218,11 +202,13 @@ async function payLinkLegacyOrderPage({
   token,
   cancelled,
   sessionId,
+  payError,
 }: {
   orderId: string;
   token: string;
   cancelled: boolean;
   sessionId: string;
+  payError: boolean;
 }) {
   if (sessionId) {
     const completed = await completePayLinkFromStripeSession({
@@ -259,53 +245,18 @@ async function payLinkLegacyOrderPage({
     return disabledPage();
   }
 
-  const payHref = getPayLinkUrl(order.orderId, { token });
-
-  if (cancelled) {
-    return (
-      <PayLinkFallback
-        title="Payment cancelled"
-        hint={`You can continue to Stripe. This link expires ${PAY_LINK_TTL_MINUTES} minutes after it was created.`}
-        href={payHref}
-        actionLabel="Continue to Stripe"
-      />
-    );
-  }
-
-  const result = await createCheckoutSessionForExistingOrder({
-    orderId: order.orderId,
-    publicToken: token,
-    lang: 'en',
-    cookies: cookies(),
-  });
-
-  if (result.ok) {
-    redirect(result.url);
-  }
-
-  if (result.status === 400 && result.error === 'Order is already paid') {
-    return thankYou({
-      amount: order.pricing?.grandTotal ?? 0,
-      description: payLinkDescriptionFromItems(order.items),
-      orderId: order.orderId,
-    });
-  }
-
-  if (result.status === 410) {
-    return disabledPage();
-  }
-
-  if (result.status === 403 || result.status === 404) {
-    notFound();
-  }
-
   return (
-    <PayLinkFallback
-      title="Could not start payment"
-      error={result.error}
-      hint="Try again in a moment. If this keeps happening, ask Lanna Bloom to send a new link."
-      href={payHref}
-      actionLabel="Try again"
+    <PayLinkPayNowCard
+      linkId={order.orderId}
+      token={token}
+      amount={order.pricing?.grandTotal ?? 0}
+      description={payLinkDescriptionFromItems(order.items)}
+      cancelled={cancelled}
+      error={
+        payError
+          ? 'Could not start payment. Try again in a moment. If this keeps happening, ask Lanna Bloom to send a new link.'
+          : undefined
+      }
     />
   );
 }

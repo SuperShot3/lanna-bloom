@@ -94,7 +94,7 @@ export function PayLinkForm() {
           </Link>
           <h1 className="admin-title">New pay link</h1>
           <p className="admin-hint">
-            Extra item or service not in the store. The customer opens the URL and goes straight to Stripe.
+            Extra item or service not in the store. The customer opens the URL, confirms the amount, then pays on Stripe.
             They have {PAY_LINK_TTL_MINUTES} minutes to pay. After that the link is disabled. An order is created only after they pay.
           </p>
         </div>
@@ -103,8 +103,9 @@ export function PayLinkForm() {
       <div className="admin-accounting-notice">
         <span className="material-symbols-outlined">info</span>
         <span>
-          This is not a flower delivery order. Send this shop URL. The customer must pay within{' '}
-          {PAY_LINK_TTL_MINUTES} minutes. After they pay, the link shows a thank-you page and cannot be used again.
+          This is not a flower delivery order. Send this shop URL. The customer confirms the amount on a Lanna Bloom
+          page, then pays on Stripe, within {PAY_LINK_TTL_MINUTES} minutes. After they pay, the link shows a thank-you
+          page and cannot be used again.
         </span>
       </div>
 

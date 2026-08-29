@@ -4,10 +4,14 @@ import Stripe from 'stripe';
 import { getOrderBySubmissionToken, getPayLinkUrl, getPayLinkStripeSuccessUrl } from '@/lib/orders';
 import {
   isAdminPayLinkOrder,
-  PAY_LINK_STRIPE_EXPIRES_MINUTES,
   payLinkUnusableReason,
   STRIPE_PAY_LINK_SOURCE,
 } from '@/lib/payLinks/adminPayLink';
+import {
+  buildStablePayLinkCheckoutSessionParams,
+  lookupStoredPayLinkCheckoutSession,
+  payLinkCheckoutIdempotencyKey,
+} from '@/lib/payLinks/payLinkCheckoutSession';
 import { payLinkTokensEqual } from '@/lib/payLinks/payLinkCrypto';
 import { expirePayLinkStripeSessionIfAny } from '@/lib/payLinks/expirePayLinkDrafts';
 import { getCheckoutDraftRecordById, mergeCheckoutDraftPayload } from '@/lib/checkout/checkoutDrafts';
@@ -73,6 +77,16 @@ export async function createCheckoutSessionForPayLinkDraft(params: {
     return { ok: false, status: 400, error: 'Invalid amount' };
   }
 
+  const stripe = createStripeServerClient(stripeConfig.secretKey);
+  const previousSessionId = payload.payLinkStripeSessionId?.trim();
+  const stored = await lookupStoredPayLinkCheckoutSession(
+    (id) => stripe.checkout.sessions.retrieve(id),
+    previousSessionId
+  );
+  if (stored.kind === 'open') {
+    return { ok: true, url: stored.url };
+  }
+
   const lineItems = buildStripeCheckoutLineItems({
     computedItems: payload.items ?? [],
     deliveryFee: payload.pricing?.deliveryFee ?? 0,
@@ -80,7 +94,6 @@ export async function createCheckoutSessionForPayLinkDraft(params: {
     referralDiscount: 0,
   });
 
-  const stripe = createStripeServerClient(stripeConfig.secretKey);
   const metadata = buildStripeCheckoutDraftMetadata({
     checkoutDraftId: draftId,
     submissionToken: submissionToken || draftId,
@@ -90,21 +103,17 @@ export async function createCheckoutSessionForPayLinkDraft(params: {
   });
   metadata.pay_link_token = publicToken;
 
-  const expiresAt = Math.floor(Date.now() / 1000) + PAY_LINK_STRIPE_EXPIRES_MINUTES * 60;
-
-  const sessionParams: Stripe.Checkout.SessionCreateParams = {
-    mode: 'payment',
-    line_items: lineItems,
-    client_reference_id: draftId,
-    customer_email: payload.customerEmail,
-    success_url: getPayLinkStripeSuccessUrl(draftId, publicToken),
-    cancel_url: getPayLinkUrl(draftId, { token: publicToken, cancelled: true }),
-    expires_at: expiresAt,
+  const sessionParams = buildStablePayLinkCheckoutSessionParams({
+    lineItems,
+    clientReferenceId: draftId,
+    customerEmail: payload.customerEmail,
+    successUrl: getPayLinkStripeSuccessUrl(draftId, publicToken),
+    cancelUrl: getPayLinkUrl(draftId, { token: publicToken, cancelled: true }),
     metadata,
-    payment_intent_data: { metadata },
-  };
+  });
 
-  const idempotencyKey = `pay-link-draft-${draftId}`;
+  const deadSessionId = stored.kind === 'dead' ? stored.sessionId : null;
+  const idempotencyKey = payLinkCheckoutIdempotencyKey('draft', draftId, deadSessionId);
 
   let session: Stripe.Checkout.Session;
   try {
@@ -119,7 +128,6 @@ export async function createCheckoutSessionForPayLinkDraft(params: {
     return { ok: false, status: 410, error: 'This payment link is no longer active' };
   }
 
-  const previousSessionId = payload.payLinkStripeSessionId?.trim();
   if (previousSessionId && previousSessionId !== session.id) {
     await expirePayLinkStripeSessionIfAny(previousSessionId);
   }

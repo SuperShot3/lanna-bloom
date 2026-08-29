@@ -55,6 +55,11 @@
   color: #6b6258;
 }
 
+.form {
+  margin: 0;
+  width: 100%;
+}
+
 .error {
   margin: 0 0 12px;
   color: #b42318;

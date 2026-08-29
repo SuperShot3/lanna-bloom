@@ -7,8 +7,9 @@ export const ADMIN_PAY_LINK_DESCRIPTION_MAX = 200;
 export const PAY_LINK_TTL_MINUTES = 15;
 export const PAY_LINK_TTL_MS = PAY_LINK_TTL_MINUTES * 60 * 1000;
 /**
- * Stripe Checkout `expires_at` cannot be shorter than 30 minutes.
- * We still disable the shop URL at 15 minutes and expire the Stripe session via API.
+ * Stripe Checkout `expires_at` cannot be shorter than 30 minutes, so pay links
+ * do not send `expires_at`. The shop URL still dies at 15 minutes; leftover
+ * Stripe sessions are expired via API (expire-pay-links cron).
  */
 export const PAY_LINK_STRIPE_EXPIRES_MINUTES = 30;
 export const STRIPE_PAY_LINK_SOURCE = 'lanna_bloom_pay_link' as const;
