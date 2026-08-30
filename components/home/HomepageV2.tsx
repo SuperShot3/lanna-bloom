@@ -21,9 +21,7 @@ import {
   getCatalogHomeFlowerTypeTiles,
   getCatalogHomeOccasionTiles,
   getCatalogPopularBouquets,
-  getCatalogProductsFiltered,
 } from '@/lib/catalogReads';
-import { firstStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
 import { translations, type Locale } from '@/lib/i18n';
 import { destinationDisplayName } from '@/lib/delivery/markets';
@@ -35,36 +33,27 @@ const HomeFaq = dynamic(
   { ssr: true }
 );
 
-const GIFT_FALLBACK_IMAGES: Record<'plushy_toys' | 'balloons', string> = {
-  plushy_toys: '/icons/category_icons/teadybear_category_icon.webp?v=2',
-  balloons: '/icons/category_icons/Ballons_category_icon.webp?v=2',
+const GIFT_CATEGORY_IMAGES: Record<'plushy_toys' | 'balloons', string> = {
+  plushy_toys: '/icons/category_icons/Teddy_bears_category_image.webp',
+  balloons: '/icons/category_icons/balloons_category_image.webp',
 };
 
-async function loadGiftCategoryCards(lang: Locale): Promise<GiftCategoryCardData[]> {
+function loadGiftCategoryCards(lang: Locale): GiftCategoryCardData[] {
   const catalogBase = `/${lang}/catalog`;
   const tHome = translations[lang].home;
-  const [toys, balloons] = await Promise.all([
-    getCatalogProductsFiltered({ categoryKey: 'plushy_toys', sort: 'newest' }),
-    getCatalogProductsFiltered({ categoryKey: 'balloons', sort: 'newest' }),
-  ]);
-
-  const toyImage =
-    firstStorefrontRenderableImageUrl(toys[0]?.images) ?? GIFT_FALLBACK_IMAGES.plushy_toys;
-  const balloonImage =
-    firstStorefrontRenderableImageUrl(balloons[0]?.images) ?? GIFT_FALLBACK_IMAGES.balloons;
 
   return [
     {
       categoryKey: 'plushy_toys',
       href: `${catalogBase}${buildCatalogSearchString({ topCategory: 'plushy_toys' })}`,
-      imageUrl: toyImage,
+      imageUrl: GIFT_CATEGORY_IMAGES.plushy_toys,
       title: tHome.giftTeddyTitle,
       cta: tHome.giftTeddyCta,
     },
     {
       categoryKey: 'balloons',
       href: `${catalogBase}${buildCatalogSearchString({ topCategory: 'balloons' })}`,
-      imageUrl: balloonImage,
+      imageUrl: GIFT_CATEGORY_IMAGES.balloons,
       title: tHome.giftBalloonsTitle,
       cta: tHome.giftBalloonsCta,
     },
@@ -114,8 +103,9 @@ async function HomeBrowseV2({ lang }: { lang: Locale }) {
 /** Guided homepage: fewer product grids, category navigation earlier. */
 export async function HomepageV2({ lang }: { lang: Locale }) {
   const t = translations[lang];
-  const [{ heroImageUrl, carouselImages, faqItems, jsonLd, lcpImageSrc }, giftCards] =
-    await Promise.all([loadHomePageChrome(lang), loadGiftCategoryCards(lang)]);
+  const { heroImageUrl, carouselImages, faqItems, jsonLd, lcpImageSrc } =
+    await loadHomePageChrome(lang);
+  const giftCards = loadGiftCategoryCards(lang);
 
   return (
     <>
