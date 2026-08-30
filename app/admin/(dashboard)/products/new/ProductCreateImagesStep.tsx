@@ -128,7 +128,7 @@ export function ProductCreateImagesStep({
           </p>
         ) : (
           <p className="admin-hint">
-            Need another image? Open the custom GPT, then add the downloaded file here.
+            Need another image? Open PhotoStudio, then add the downloaded file here.
           </p>
         )}
       </div>
