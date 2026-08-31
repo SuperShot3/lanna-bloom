@@ -18,11 +18,36 @@
 }
 
 .brand {
-  margin: 0 0 8px;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #8a7a6a;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand:focus-visible {
+  outline: 2px solid #967a4d;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.brandLogo {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.brandName {
+  font-family: var(--font-family-display), ui-serif, Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1f1b16;
+  line-height: 1;
 }
 
 .title {
@@ -70,6 +95,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   width: 100%;
   box-sizing: border-box;
   border: 0;
@@ -84,9 +110,21 @@
   color: #fff;
 }
 
-.pay:disabled {
-  opacity: 0.65;
+.pay:disabled,
+.pay[aria-busy='true'] {
+  opacity: 0.85;
   cursor: wait;
+  pointer-events: none;
+}
+
+.paySpinner {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  border-top-color: #e8d5a3;
+  animation: pay-link-spin 0.9s linear infinite;
 }
 
 .ref {
@@ -117,6 +155,11 @@
   .spinner {
     animation: none;
     border-top-color: #967a4d;
+  }
+
+  .paySpinner {
+    animation: none;
+    border-top-color: #e8d5a3;
   }
 }
 

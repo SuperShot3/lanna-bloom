@@ -43,7 +43,18 @@ export type PayLinkReceipt = {
   amount: number;
   description: string;
   orderId?: string;
+  /** Order-page `public_token` — not the pay-link URL token. */
+  publicToken?: string;
 };
+
+export function payLinkOrderStatusPath(
+  receipt: Pick<PayLinkReceipt, 'orderId' | 'publicToken'>
+): string | null {
+  const orderId = receipt.orderId?.trim();
+  const publicToken = receipt.publicToken?.trim();
+  if (!orderId || !publicToken) return null;
+  return `/order/${encodeURIComponent(orderId)}?token=${encodeURIComponent(publicToken)}`;
+}
 
 export function payLinkDescriptionFromItems(items: Array<{ bouquetTitle?: string }> | undefined): string {
   const title = items?.[0]?.bouquetTitle;

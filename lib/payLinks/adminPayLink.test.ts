@@ -10,6 +10,7 @@ import {
   buildAdminPayLinkOrderPayload,
   isAdminPayLinkOrder,
   isPayLinkTimeExpired,
+  payLinkOrderStatusPath,
   payLinkUnusableReason,
   stripeCheckoutCustomerEmail,
   validateAdminPayLinkInput,
@@ -96,5 +97,13 @@ assert.equal(
 );
 assert.equal(stripeCheckoutCustomerEmail({ customer_details: { email: 'not-an-email' } }), undefined);
 assert.equal(stripeCheckoutCustomerEmail({}), undefined);
+
+assert.equal(
+  payLinkOrderStatusPath({ orderId: 'LB-2026-JG6JRZPW', publicToken: 'tok_abc' }),
+  '/order/LB-2026-JG6JRZPW?token=tok_abc'
+);
+assert.equal(payLinkOrderStatusPath({ orderId: 'LB-1', publicToken: '  ' }), null);
+assert.equal(payLinkOrderStatusPath({ orderId: '', publicToken: 'tok' }), null);
+assert.equal(payLinkOrderStatusPath({}), null);
 
 console.log('adminPayLink.test.ts: ok');

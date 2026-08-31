@@ -42,5 +42,6 @@ export async function POST(request: NextRequest) {
     amount: result.receipt.amount,
     description: result.receipt.description,
     orderId: result.receipt.orderId ?? null,
+    publicToken: result.receipt.publicToken ?? null,
   });
 }

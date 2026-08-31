@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getOrderByIdWithPublicToken } from '@/lib/orders';
+import { getOrderByIdWithPublicToken, getOrderPublicToken } from '@/lib/orders';
 import { getSupabasePaymentStatusByOrderId } from '@/lib/supabase/adminQueries';
 import {
   isAdminPayLinkOrder,
@@ -18,17 +18,14 @@ import {
   paidPayLinkReceiptForToken,
 } from '@/lib/payLinks/completePayLinkReturn';
 import { getCheckoutDraftRecordById } from '@/lib/checkout/checkoutDrafts';
+import { buildPayLinkShareMetadata } from '@/lib/payLinks/payLinkShareMetadata';
+import { resolveActivePayLinkShareDetails } from '@/lib/payLinks/resolvePayLinkShareDetails';
 import { PayLinkReturnClient, PayLinkThankYouCard } from '@/components/pay/PayLinkReturnClient';
 import { PayLinkPayNowCard } from '@/components/pay/PayLinkPayNowCard';
-import styles from './pay-link.module.css';
+import { PayLinkFallback } from '@/components/pay/PayLinkFallback';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-export const metadata: Metadata = {
-  title: 'Pay | Lanna Bloom',
-  robots: { index: false, follow: false },
-};
 
 function tokenFromSearch(raw: string | string[] | undefined): string {
   if (typeof raw === 'string') return raw.trim();
@@ -36,38 +33,19 @@ function tokenFromSearch(raw: string | string[] | undefined): string {
   return '';
 }
 
-function PayLinkFallback({
-  title,
-  hint,
-  href,
-  actionLabel,
-  error,
+export async function generateMetadata({
+  params,
+  searchParams,
 }: {
-  title: string;
-  hint?: string;
-  href?: string;
-  actionLabel?: string;
-  error?: string;
-}) {
-  return (
-    <div className={styles.page}>
-      <main className={styles.card}>
-        <p className={styles.brand}>Lanna Bloom</p>
-        <h1 className={styles.title}>{title}</h1>
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-        {hint ? <p className={styles.hint}>{hint}</p> : null}
-        {href && actionLabel ? (
-          <a className={styles.pay} href={href}>
-            {actionLabel}
-          </a>
-        ) : null}
-      </main>
-    </div>
-  );
+  params: Promise<{ orderId: string }>;
+  searchParams?: Promise<{ token?: string | string[] }>;
+}): Promise<Metadata> {
+  noStore();
+  const { orderId } = await params;
+  const token = tokenFromSearch((await searchParams)?.token);
+  const linkId = orderId?.trim() ?? '';
+  const details = await resolveActivePayLinkShareDetails(linkId, token);
+  return buildPayLinkShareMetadata({ linkId, token, details });
 }
 
 function disabledPage() {
@@ -234,10 +212,12 @@ async function payLinkLegacyOrderPage({
     Boolean(supabasePayment?.paid_at ?? order.paidAt);
 
   if (paid) {
+    const publicToken = await getOrderPublicToken(order.orderId);
     return thankYou({
       amount: order.pricing?.grandTotal ?? 0,
       description: payLinkDescriptionFromItems(order.items),
       orderId: order.orderId,
+      ...(publicToken ? { publicToken } : {}),
     });
   }
 

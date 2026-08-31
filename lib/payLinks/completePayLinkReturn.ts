@@ -15,6 +15,7 @@ import {
   getOrderById,
   getOrderByIdWithPublicToken,
   getOrderByStripeSessionId,
+  getOrderPublicToken,
 } from '@/lib/orders';
 import { createStripeServerClient, getStripeServerConfig } from '@/lib/stripe/server';
 
@@ -26,19 +27,25 @@ export type CompletePayLinkResult =
   | { kind: 'not_found' }
   | { kind: 'error'; error: string };
 
-function receiptFromOrder(order: {
-  orderId: string;
-  pricing?: { grandTotal?: number };
-  items?: Array<{ bouquetTitle?: string; price?: number }>;
-}): PayLinkReceipt {
+async function receiptFromOrder(
+  order: {
+    orderId: string;
+    pricing?: { grandTotal?: number };
+    items?: Array<{ bouquetTitle?: string; price?: number }>;
+  },
+  knownPublicToken?: string | null
+): Promise<PayLinkReceipt> {
   const amount =
     order.pricing?.grandTotal ??
     order.items?.[0]?.price ??
     0;
+  const fromKnown = knownPublicToken?.trim();
+  const publicToken = fromKnown || (await getOrderPublicToken(order.orderId)) || undefined;
   return {
     amount,
     description: payLinkDescriptionFromItems(order.items),
     orderId: order.orderId,
+    ...(publicToken ? { publicToken } : {}),
   };
 }
 
@@ -120,19 +127,21 @@ export async function completePayLinkFromStripeSession(params: {
     if (!paid || paid.orderId !== order.orderId) return { kind: 'not_found' };
   }
 
-  return { kind: 'paid', receipt: receiptFromOrder(order) };
+  return { kind: 'paid', receipt: await receiptFromOrder(order) };
 }
 
 export async function paidPayLinkReceiptForToken(token: string): Promise<PayLinkReceipt | null> {
   const paid = await findPaidPayLinkOrderByPublicToken(token);
   if (!paid) return null;
   const order = await getOrderById(paid.orderId);
+  const knownToken = paid.publicToken?.trim() || undefined;
   if (!order) {
     return {
       amount: paid.amount,
       description: paid.description,
       orderId: paid.orderId,
+      ...(knownToken ? { publicToken: knownToken } : {}),
     };
   }
-  return receiptFromOrder(order);
+  return receiptFromOrder(order, knownToken);
 }
