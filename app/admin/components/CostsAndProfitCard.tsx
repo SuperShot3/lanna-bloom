@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { computeProfit, formatThb } from '@/lib/costsUtils';
+import { computeProfit, formatThb, isPartnerWholesaleCost } from '@/lib/costsUtils';
 import type { SupabaseOrderRow, SupabaseOrderItemRow } from '@/lib/supabase/adminQueries';
 import type { Expense, ExpenseReceiptImage } from '@/types/expenses';
 import { confirmDeleteAction } from '@/app/admin/components/confirmDelete';
@@ -39,7 +39,13 @@ interface CostsAndProfitCardProps {
 
 function sumPartnerItemsCost(items: SupabaseOrderItemRow[]): number {
   return items
-    .filter((i) => i.item_type === 'product')
+    .filter((i) =>
+      isPartnerWholesaleCost({
+        itemType: i.item_type,
+        cost: i.cost,
+        commissionAmount: i.commission_amount,
+      })
+    )
     .reduce((s, i) => s + (i.cost ?? 0), 0);
 }
 
@@ -133,13 +139,20 @@ export function CostsAndProfitCard({
 
   const itemCostStateInit = useMemo(() => {
     const map: Record<string, string> = {};
+    const cogsPersisted = order.cogs_amount != null && Number(order.cogs_amount) > 0;
     for (const it of items) {
       const id = it.id;
       if (id == null) continue;
-      map[String(id)] = toInputValue(it.cost ?? null);
+      const prefillWholesale = isPartnerWholesaleCost({
+        itemType: it.item_type,
+        cost: it.cost,
+        commissionAmount: it.commission_amount,
+      });
+      map[String(id)] =
+        cogsPersisted || prefillWholesale ? toInputValue(it.cost ?? null) : '';
     }
     return map;
-  }, [items]);
+  }, [items, order.cogs_amount]);
   const [itemCosts, setItemCosts] = useState<Record<string, string>>(itemCostStateInit);
 
   const itemShopStateInit = useMemo(() => {

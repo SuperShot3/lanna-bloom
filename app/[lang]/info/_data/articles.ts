@@ -893,11 +893,11 @@ export const articles: ArticleMeta[] = [
     slug: 'flower-delivery-samui',
     title: 'Flower Delivery in Koh Samui: Areas, Hotels and Fees',
     excerpt:
-      'Flower delivery in Koh Samui: listed areas from Chaweng to Lamai and Na Thon. Fees from 250 THB, hotel tips, and how to order from Thailand or abroad.',
+      'Flower delivery in Koh Samui: listed areas from Chaweng to Lamai and Na Thon. Fees from 250 THB; hillside and 4x4 mountain pins cost more. Hotel tips and how to order from Thailand or abroad.',
     titleTh: 'ส่งดอกไม้ในเกาะสมุย: พื้นที่ โรงแรม และค่าส่ง',
     excerptTh:
-      'ส่งดอกไม้เกาะสมุย: ย่านที่รองรับจากเฉวงถึงละไมและหน้าทอน ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรม และวิธีสั่งออนไลน์จากในไทยหรือต่างประเทศ เลือกช่อได้เลย',
-    publishedAt: '2026-08-15T00:00:00.000Z',
+      'ส่งดอกไม้เกาะสมุย: ย่านที่รองรับจากเฉวงถึงละไมและหน้าทอน ค่าส่งเริ่ม 250 บาท ที่พักบนเขาอาจต้องใช้รถโฟร์วีล เคล็ดลับส่งโรงแรม และวิธีสั่งจากในไทยหรือต่างประเทศ',
+    publishedAt: '2026-08-31T00:00:00.000Z',
     featured: false,
     cover: {
       type: 'image',

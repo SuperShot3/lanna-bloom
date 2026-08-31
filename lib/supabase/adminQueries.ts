@@ -103,7 +103,7 @@ export interface SupabaseOrderItemRow {
   image_url_snapshot: string | null;
   /** 'bouquet' | 'product' — for profit tracking (added in migration) */
   item_type?: string | null;
-  /** Partner cost (for products) — for COGS auto-fill */
+  /** Partner wholesale cost (partner products only) — for COGS auto-fill */
   cost?: number | null;
   /** Platform commission (for products) */
   commission_amount?: number | null;

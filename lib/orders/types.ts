@@ -31,7 +31,7 @@ export interface OrderItem {
   bouquetSlug?: string;
   /** 'bouquet' | 'product' | 'plushyToy' | 'balloon' — for profit/cost tracking */
   itemType?: 'bouquet' | 'product' | 'plushyToy' | 'balloon';
-  /** Partner cost (for products); used for COGS auto-fill */
+  /** Partner wholesale cost (partner products only); used for COGS auto-fill */
   cost?: number;
   /** Platform commission amount (for products) */
   commissionAmount?: number;

@@ -761,7 +761,7 @@ export async function createAdminReviewProductInCatalog(
       price,
       pricing_type: resolvedType,
       pricing,
-      cost: price,
+      cost: null,
       commission_percent: 0,
       moderation_status: 'submitted',
       contact_before_order: input.contactBeforeOrder === true,

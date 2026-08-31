@@ -15,6 +15,7 @@ import type { OrderCardType, OrderWrappingOption, OrderDeliveryDestinationId } f
 import { isExpansionDestination } from '@/lib/delivery/markets';
 import { getZoneFee, isSupportedZone } from '@/lib/delivery/zones';
 import type { Locale } from '@/lib/i18n';
+import { isPartnerWholesaleCost } from '@/lib/costsUtils';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getAddOnsTotal, type ProductAddOnsSelected } from '@/lib/addonsConfig';
 import { normalizeBalloonText } from '@/lib/balloonCustomization';
@@ -253,6 +254,11 @@ export async function computeOrderTotals(
       if (hasCatalogDiscount(product.discountPercent)) hasCatalogProductDiscount = true;
       const finalPrice = applyCatalogDiscountThb(listedPrice, product.discountPercent);
       const commissionAmount = finalPrice - partnerCost;
+      const snapshotWholesale = isPartnerWholesaleCost({
+        itemType: 'product',
+        cost: product.cost,
+        commissionPercent: product.commissionPercent,
+      });
       let itemPrice = applyPeak(finalPrice);
       if (item.addOns?.cardType === 'premium') {
         itemPrice += CARD_BEAUTIFUL_PRICE_THB;
@@ -274,7 +280,7 @@ export async function computeOrderTotals(
         imageUrl: resolveProductLikeLineItemImageUrl(product.imageUrl, item.imageUrl),
         bouquetSlug: item.bouquetSlug,
         itemType: 'product',
-        cost: partnerCost,
+        cost: snapshotWholesale ? product.cost : undefined,
         commissionAmount,
       });
       itemsTotal += itemPrice;
