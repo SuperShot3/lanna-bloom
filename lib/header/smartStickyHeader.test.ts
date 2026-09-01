@@ -74,6 +74,20 @@ assert.equal(state.hidden, false);
 state = tick(state, 280, { now: 6_100, overlayOpen: true });
 assert.equal(state.hidden, false);
 
+state = createSmartStickyState(120);
+state = tick(state, 120 + SMART_STICKY.hideAfterDownPx, {
+  now: 6_200,
+  isMobile: false,
+  overlayOpen: true,
+});
+assert.equal(state.hidden, false, 'open overlay must block desktop hide');
+state = tick(state, state.lastY + SMART_STICKY.hideAfterDownPx, {
+  now: 6_400,
+  isMobile: false,
+  overlayOpen: false,
+});
+assert.equal(state.hidden, true, 'desktop hides once overlay is closed');
+
 state = createSmartStickyState(0);
 state = tick(state, 80, { variant: 'cart-compact' });
 state = tick(state, 80 + SMART_STICKY.cartHideAfterDownPx, {

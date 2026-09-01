@@ -51,7 +51,7 @@ function publishIfChanged(
 
 /**
  * rAF-batched hide-on-scroll-down / show-on-scroll-up header state.
- * Desktop never hides. Cart compact swaps chrome instead of translating away.
+ * Hide applies on all viewports. Cart compact swaps chrome instead of translating away (mobile only).
  */
 export function useSmartStickyHeader({
   variant,

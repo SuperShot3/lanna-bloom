@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Suspense, type FocusEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -132,7 +132,6 @@ export function Header({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLElement>(null);
 
   // Pulsation stays on the main (home) page until the user opens the cart.
   const [cartPulseAddId, setCartPulseAddId] = useState(0);
@@ -178,6 +177,14 @@ export function Header({
   }, [headerHidden, mobileCartCheckoutHeader]);
 
   useEffect(() => {
+    if (!headerHidden || mobileCartCheckoutHeader) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.closest('header.site-header')) {
+      active.blur();
+    }
+  }, [headerHidden, mobileCartCheckoutHeader]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
@@ -192,6 +199,7 @@ export function Header({
 
   useEffect(() => {
     setMenuOpen(false);
+    setOverlayOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -239,44 +247,7 @@ export function Header({
   );
 
   const handleOverlayOpenChange = useCallback((open: boolean) => {
-    if (open) {
-      setOverlayOpen(true);
-      return;
-    }
-    const active = document.activeElement;
-    if (headerRef.current?.contains(active)) return;
-    if (
-      active instanceof Element &&
-      (active.closest('[data-radix-popper-content-wrapper]') ||
-        active.closest('[data-header-overlay]'))
-    ) {
-      return;
-    }
-    setOverlayOpen(false);
-  }, []);
-
-  const handleHeaderBlurCapture = useCallback((event: FocusEvent<HTMLElement>) => {
-    const next = event.relatedTarget;
-    if (next instanceof Node && event.currentTarget.contains(next)) return;
-    if (
-      next instanceof Element &&
-      (next.closest('[data-radix-popper-content-wrapper]') ||
-        next.closest('[data-header-overlay]'))
-    ) {
-      return;
-    }
-    window.setTimeout(() => {
-      const active = document.activeElement;
-      if (headerRef.current?.contains(active)) return;
-      if (
-        active instanceof Element &&
-        (active.closest('[data-radix-popper-content-wrapper]') ||
-          active.closest('[data-header-overlay]'))
-      ) {
-        return;
-      }
-      setOverlayOpen(false);
-    }, 0);
+    setOverlayOpen(open);
   }, []);
 
   const glassNavClass = isScrolled
@@ -288,13 +259,10 @@ export function Header({
   return (
     <>
       <header
-        ref={headerRef}
         className={`site-header fixed w-full border-b ${menuOpen ? 'z-[111]' : 'z-50'} ${mobileCartCheckoutHeader ? 'site-header--cart-checkout' : ''} ${hasTopPromoBanner ? 'site-header--below-promo top-[calc(2.25rem+env(safe-area-inset-top,0px))]' : 'top-0'} ${glassNavClass}`}
         data-scrolled={isScrolled ? 'true' : 'false'}
         data-header-hidden={headerHidden && !mobileCartCheckoutHeader ? 'true' : 'false'}
         data-header-mode={mobileCartCheckoutHeader ? headerCollapseMode : undefined}
-        onFocusCapture={() => setOverlayOpen(true)}
-        onBlurCapture={handleHeaderBlurCapture}
       >
         {mobileCartCheckoutHeader && checkoutStickyPayload ? (
           <CheckoutCompactHeaderBar payload={checkoutStickyPayload} lang={lang} />
