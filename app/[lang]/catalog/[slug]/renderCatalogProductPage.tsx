@@ -86,7 +86,7 @@ export async function renderCatalogProductPage({
   const emitJsonLd = shouldEmitProductJsonLd(lang, marketPathSlug);
   const schemaLang = lang === 'th' ? 'th' : 'en';
 
-  const bouquet = await getCatalogBouquetBySlug(params.slug);
+  const bouquet = await getCatalogBouquetBySlug(params.slug, lang);
   if (bouquet) {
     const gifts = await getCatalogProductsFiltered({ categoryKey: 'gifts' });
     const similarBouquets = await getCatalogSimilarBouquets(bouquet, 3);
@@ -130,7 +130,7 @@ export async function renderCatalogProductPage({
     );
   }
 
-  const plushyToy = await getCatalogPlushyToyBySlug(params.slug);
+  const plushyToy = await getCatalogPlushyToyBySlug(params.slug, lang);
   if (plushyToy) {
     const name = lang === 'th' && plushyToy.nameTh ? plushyToy.nameTh : plushyToy.nameEn;
     const description = (lang === 'th' ? plushyToy.descriptionTh : plushyToy.descriptionEn) || '';
@@ -170,7 +170,7 @@ export async function renderCatalogProductPage({
     );
   }
 
-  const balloon = await getCatalogBalloonBySlug(params.slug);
+  const balloon = await getCatalogBalloonBySlug(params.slug, lang);
   if (balloon) {
     const name = lang === 'th' && balloon.nameTh ? balloon.nameTh : balloon.nameEn;
     const description = (lang === 'th' ? balloon.descriptionTh : balloon.descriptionEn) || '';
@@ -215,7 +215,7 @@ export async function renderCatalogProductPage({
     );
   }
 
-  const product = await getCatalogProductBySlug(params.slug);
+  const product = await getCatalogProductBySlug(params.slug, lang);
   if (product) {
     const gifts = await getCatalogProductsFiltered({ categoryKey: 'gifts' });
     const name = lang === 'th' && product.nameTh ? product.nameTh : product.nameEn;

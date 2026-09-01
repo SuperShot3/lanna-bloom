@@ -157,6 +157,19 @@ const WIRED: ProvinceSeedRow[] = [
     customer_message_th:
       'จัดส่งดอกไม้วันเดียวกันทั่วกรุงเทพฯ (ขึ้นกับเวลาตัดออเดอร์และค่าโซน ค่าส่งเริ่มต้น ฿250)',
   },
+  {
+    province_code: 'mae-hong-son',
+    province_name_en: 'Mae Hong Son',
+    province_name_th: 'แม่ฮ่องสอน',
+    topojson_property_value: 'Mae Hong Son',
+    destination_id: 'PAI',
+    status: 'same_day',
+    catalog_enabled: true,
+    customer_message_en:
+      'Flower delivery for Pai, Mae Hong Son (subject to cutoff and coverage). Not Mae Hong Son town or other districts.',
+    customer_message_th:
+      'จัดส่งดอกไม้ปาย จังหวัดแม่ฮ่องสอน (ขึ้นกับเวลาตัดออเดอร์และความครอบคลุม) ไม่ครอบคลุมตัวเมืองแม่ฮ่องสอนหรืออำเภออื่น',
+  },
 ];
 
 const COMING_SOON: ProvinceSeedRow[] = [
@@ -176,7 +189,6 @@ const COMING_SOON: ProvinceSeedRow[] = [
   comingSoon('Lampang', 'ลำปาง'),
   comingSoon('Loei', 'เลย'),
   comingSoon('Lop Buri', 'ลพบุรี'),
-  comingSoon('Mae Hong Son', 'แม่ฮ่องสอน'),
   comingSoon('Maha Sarakham', 'มหาสารคาม'),
   comingSoon('Mukdahan', 'มุกดาหาร'),
   comingSoon('Nakhon Nayok', 'นครนายก'),

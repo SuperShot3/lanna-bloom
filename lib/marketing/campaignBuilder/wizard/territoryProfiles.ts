@@ -33,6 +33,7 @@ const ALL_CROSS_CITIES = [
   'hua hin',
   'lamphun',
   'ao nang',
+  'pai',
 ];
 
 function crossCitiesExcept(territoryName: string): string[] {

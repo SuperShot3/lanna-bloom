@@ -12,7 +12,12 @@ import { catalogPublicUrl, type CatalogSupabaseClient } from '@/lib/catalog/stor
 import { stemVariantKey, type PricingType } from '@/lib/catalog/pricing';
 import type { CatalogProductImageRow } from '@/lib/catalog/types';
 
-export type VariantImageSet = { urls: string[]; alts: string[]; aiGenerated: boolean[] };
+export type VariantImageSet = {
+  urls: string[];
+  alts: string[];
+  altsTh?: string[];
+  aiGenerated: boolean[];
+};
 
 function rowsToUrls(
   supabase: CatalogSupabaseClient,
@@ -23,6 +28,7 @@ function rowsToUrls(
   );
   const urls: string[] = [];
   const alts: string[] = [];
+  const altsTh: string[] = [];
   const aiGenerated: boolean[] = [];
   for (const row of sorted) {
     if (!row.storage_path || !isStorefrontCatalogImage({ storage_path: row.storage_path, metadata: row.metadata })) {
@@ -35,10 +41,11 @@ function rowsToUrls(
         : catalogPublicUrl(supabase, row.storage_path);
     if (!isStorefrontRenderableImageUrl(resolved)) continue;
     urls.push(resolved);
-    alts.push(row.alt_en?.trim() || row.alt_th?.trim() || '');
+    alts.push(row.alt_en?.trim() || '');
+    altsTh.push(row.alt_th?.trim() || '');
     aiGenerated.push(isCatalogImageAiGenerated(row.source_type));
   }
-  return { urls, alts, aiGenerated };
+  return { urls, alts, altsTh, aiGenerated };
 }
 
 /** Load main + per-variant image sets for a bouquet PDP. */
@@ -104,6 +111,7 @@ export function attachVariantImagesToSellableOptions(
       ...opt,
       imageUrls: set.urls,
       imageAlts: set.alts,
+      imageAltsTh: set.altsTh,
       imageAiGenerated: set.aiGenerated,
     };
   });

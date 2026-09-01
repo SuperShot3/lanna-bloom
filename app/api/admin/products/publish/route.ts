@@ -15,6 +15,7 @@ import { PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/catalogCategorie
 import { parseExcludedDeliveryDestinations } from '@/lib/bouquetDestinationAvailability';
 import type { PricingType } from '@/lib/catalog/pricing';
 import { exclusiveDeliveryMode } from '@/lib/catalogAdminFieldOptions';
+import { buildProductImageAlt } from '@/lib/catalog/productImageAlt';
 
 export const runtime = 'nodejs';
 
@@ -43,6 +44,7 @@ function parseImages(value: unknown): CatalogWriteImageInput[] {
     const candidate: CatalogWriteImageInput = {
       assetId,
       alt: typeof row.alt === 'string' ? row.alt.trim() : undefined,
+      altTh: typeof row.altTh === 'string' ? row.altTh.trim() : undefined,
       format,
       isPrimary: row.isPrimary === true,
       sourceType: row.sourceType === 'ai_generated' ? 'ai_generated' : 'uploaded',
@@ -97,7 +99,29 @@ export async function POST(request: NextRequest) {
   const itemCategory = parseItemCategory(b);
   const priceRaw = b.price;
   const price = typeof priceRaw === 'number' ? priceRaw : Number(String(priceRaw ?? ''));
-  const images = parseImages(b.images);
+  const copyAlts = buildProductImageAlt({
+    nameEn,
+    nameTh: stringField(b, 'nameTh'),
+    compositionEn: stringField(b, 'compositionEn'),
+    compositionTh: stringField(b, 'compositionTh'),
+    altEn: stringField(b, 'altEn'),
+    altTh: stringField(b, 'altTh'),
+  });
+  const images = parseImages(b.images).map((image) => {
+    const resolved = buildProductImageAlt({
+      altEn: image.alt,
+      altTh: image.altTh,
+      nameEn,
+      nameTh: stringField(b, 'nameTh'),
+      compositionEn: stringField(b, 'compositionEn'),
+      compositionTh: stringField(b, 'compositionTh'),
+    });
+    return {
+      ...image,
+      alt: resolved.altEn || copyAlts.altEn || undefined,
+      altTh: resolved.altTh || copyAlts.altTh || undefined,
+    };
+  });
   const excludedDeliveryDestinations = parseExcludedDeliveryDestinations(b.excludedDeliveryDestinations);
 
   if (!nameEn) {

@@ -235,6 +235,10 @@ assert(
   assert(Boolean(cm), 'list includes Chiang Mai');
   assert(Boolean(hh), 'list includes Hua Hin');
   assert(Boolean(bkk), 'list includes Bangkok');
+  const pai = areas.find((a) => a.destinationId === 'PAI');
+  assert(Boolean(pai), 'list includes Pai');
+  assert(pai!.summary.includes('Same-Day'), 'Pai status from seed');
+  assert(pai!.summary.includes('from ฿250'), 'Pai min fee in summary');
   assert(!pat!.summary.includes('Bouquet delivery only'), 'no hardcoded bouquet blurb');
   assert(pat!.summary.includes('Same-Day'), 'Pattaya status from seed');
   assert(lp!.summary.includes('Next-Day'), 'Lamphun status from seed');
@@ -249,6 +253,7 @@ assert(
   assert(minCheckoutFeeThb('PATTAYA') === 250, 'Pattaya min fee 250');
   assert(minCheckoutFeeThb('HUA_HIN') === 250, 'Hua Hin min fee 250');
   assert(minCheckoutFeeThb('BANGKOK') === 250, 'Bangkok min fee 250');
+  assert(minCheckoutFeeThb('PAI') === 250, 'Pai min fee 250');
   const cmAmount = formatMinCheckoutFeeLabel('CHIANG_MAI', 'en');
   assert(Boolean(cmAmount && cmAmount.includes('250')), 'formatted CM min includes 250');
   assert(Boolean(cmAmount && cmAmount.includes('฿')), 'formatted CM min uses baht sign');

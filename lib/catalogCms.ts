@@ -55,6 +55,7 @@ function imageRowToStoredImage(
     storage_path: row.storage_path,
     public_url: row.public_url?.trim() || catalogPublicUrl(supabase, row.storage_path),
     alt: row.alt_en ?? undefined,
+    alt_th: row.alt_th ?? undefined,
     format: format === 'webp' || format === 'png_master' || format === 'source' ? format : undefined,
     is_primary: row.is_primary,
     sort_order: row.sort_order,
@@ -481,7 +482,7 @@ export async function ensureCatalogProductImagesFromInline(
     public_url: image.public_url ?? catalogPublicUrl(supabase, image.storage_path.trim()),
     source_type: parseCatalogImageSourceType(image.source_type) ?? 'migrated_from_sanity',
     alt_en: cleanText(image.alt),
-    alt_th: null,
+    alt_th: cleanText(image.alt_th),
     is_primary: index === primaryIndex,
     sort_order: image.sort_order ?? index,
     metadata: {

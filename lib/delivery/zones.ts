@@ -123,6 +123,15 @@ export const ZONES_BY_DESTINATION: Record<DeliveryDestinationId, DeliveryZoneDef
     { id: 'hhi-hin-lek-fai', labelEn: 'Hin Lek Fai', labelTh: 'หินเหล็กไฟ', feeThb: 300 },
     { id: 'hhi-thap-tai', labelEn: 'Thap Tai', labelTh: 'ทับใต้', feeThb: 350 },
   ],
+  PAI: [
+    { id: 'pai-wiang-tai', labelEn: 'Wiang Tai / Pai town', labelTh: 'เวียงใต้ / ตัวเมืองปาย', feeThb: 250 },
+    { id: 'pai-wiang-nuea', labelEn: 'Wiang Nuea', labelTh: 'เวียงเหนือ', feeThb: 250 },
+    { id: 'pai-mae-hi', labelEn: 'Mae Hi', labelTh: 'แม่ฮี้', feeThb: 300 },
+    { id: 'pai-mae-na-toeng', labelEn: 'Mae Na Toeng', labelTh: 'แม่นาเติง', feeThb: 350 },
+    { id: 'pai-thung-yao', labelEn: 'Thung Yao', labelTh: 'ทุ่งยาว', feeThb: 350 },
+    { id: 'pai-mueang-paeng', labelEn: 'Mueang Paeng', labelTh: 'เมืองแปง', feeThb: 400 },
+    { id: 'pai-pong-sa', labelEn: 'Pong Sa', labelTh: 'โป่งสา', feeThb: 450 },
+  ],
   LAMPHUN: [
     { id: 'lp-mueang-lamphun', labelEn: 'Mueang Lamphun', labelTh: 'เมืองลำพูน', feeThb: 250 },
     { id: 'lp-pa-sang', labelEn: 'Pa Sang', labelTh: 'ป่าซาง', feeThb: 300 },

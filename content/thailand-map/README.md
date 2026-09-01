@@ -10,12 +10,13 @@
 | `prachuap-khiri-khan-amphoes.topojson` | Hua Hin checkout areas (Leaflet) — not all of Prachuap Khiri Khan |
 | `krabi-amphoes.topojson` | Ao Nang / Krabi listed checkout areas (Leaflet) — not all of Krabi |
 | `surat-thani-amphoes.topojson` | Koh Samui listed checkout areas (Leaflet) — not all of Surat Thani |
+| `mae-hong-son-amphoes.topojson` | Pai listed checkout tambons (Leaflet) — not all of Mae Hong Son |
 | `bangkok-amphoes.topojson` | Bangkok listed checkout areas (Leaflet) — 50 khet dissolved onto 10 zones |
 
 ## Amphoe TopoJSON (`*-amphoes.topojson`)
 
 - Source: [OpenGISData-Thailand](https://github.com/chingchai/OpenGISData-Thailand) `districts.geojson` / `subdistricts.geojson`
-- Filter by province `pro_code` (`50` Chiang Mai, `51` Lamphun, `20` Chon Buri, `83` Phuket, `77` Prachuap Khiri Khan, `81` Krabi, `84` Surat Thani, `10` Bangkok)
+- Filter by province `pro_code` (`50` Chiang Mai, `51` Lamphun, `20` Chon Buri, `83` Phuket, `77` Prachuap Khiri Khan, `81` Krabi, `84` Surat Thani, `58` Mae Hong Son, `10` Bangkok)
 - Chon Buri is **Pattaya areas only** (not Si Racha, Mueang Chon Buri, or the rest of Sattahip):
   - OpenGIS tambons: Na Kluea `200408`, Nong Prue `200402`, Na Chom Thian `200902`
   - Pattaya special-admin tambon `200409` is sliced by latitude into Central `200491`, South / Walking Street `200492`, Pratumnak `200493`, Jomtien `200494` so each checkout zone is a clickable map polygon
@@ -35,6 +36,8 @@
   - Lipa Noi `840402` + mainland Taling Ngam `840403` dissolve to Lipa Noi / Taling Ngam `840491`
   - Tambon Maret `840405` is sliced by latitude into Lamai `840492` and Hua Thanon `840493`
   - Tambon Bo Phut `840406` is sliced by longitude/latitude into Bo Phut / Fisherman `840494`, Bangrak / Choeng Mon `840495`, and Chaweng `840496`
+- Mae Hong Son is **Pai listed tambons only** (not Mueang Mae Hong Son, Khun Yuam, Mae Sariang, Mae La Noi, Sop Moei, or Pang Mapha):
+  - OpenGIS tambons: Wiang Tai `580301`, Wiang Nuea `580302`, Mae Na Toeng `580303`, Mae Hi `580304`, Thung Yao `580305`, Mueang Paeng `580306`, Pong Sa `580307`
 - Properties used: `amp_code`, `amp_en`, `amp_th`, `pro_code`
 - Topology object name must be `districts` (Leaflet client expects this)
 - Simplified with Mapshaper (Douglas–Peucker) for storefront payload size

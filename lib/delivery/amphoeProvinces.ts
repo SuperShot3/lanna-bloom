@@ -47,6 +47,12 @@ import {
   type SuratThaniAmphoeMapDistrict,
 } from '@/lib/delivery/suratThaniAmphoeMapData';
 import {
+  getMaeHongSonAmphoeByAmpCode,
+  getMaeHongSonAmphoeById,
+  MAE_HONG_SON_AMPHOE_MAP_DISTRICTS,
+  type MaeHongSonAmphoeMapDistrict,
+} from '@/lib/delivery/maeHongSonAmphoeMapData';
+import {
   BANGKOK_AMPHOE_MAP_DISTRICTS,
   getBangkokAmphoeByAmpCode,
   getBangkokAmphoeById,
@@ -62,7 +68,8 @@ export type AmphoeCapableProvinceCode =
   | 'phuket'
   | 'prachuap-khiri-khan'
   | 'krabi'
-  | 'surat-thani';
+  | 'surat-thani'
+  | 'mae-hong-son';
 
 export type ProvinceAmphoeDistrict = (
   | AmphoeMapDistrict
@@ -72,6 +79,7 @@ export type ProvinceAmphoeDistrict = (
   | PrachuapKhiriKhanAmphoeMapDistrict
   | KrabiAmphoeMapDistrict
   | SuratThaniAmphoeMapDistrict
+  | MaeHongSonAmphoeMapDistrict
   | BangkokAmphoeMapDistrict
 ) &
   AmphoeFeeSource & {
@@ -90,6 +98,7 @@ const AMPHOE_CAPABLE = new Set<string>([
   'prachuap-khiri-khan',
   'krabi',
   'surat-thani',
+  'mae-hong-son',
 ]);
 
 const DESTINATION_BY_AMPHOE_PROVINCE: Record<
@@ -104,6 +113,7 @@ const DESTINATION_BY_AMPHOE_PROVINCE: Record<
   'prachuap-khiri-khan': 'HUA_HIN',
   krabi: 'KRABI',
   'surat-thani': 'SAMUI',
+  'mae-hong-son': 'PAI',
 };
 
 export function isAmphoeCapableProvince(code: string | null | undefined): boolean {
@@ -138,6 +148,8 @@ export function getAmphoeDistrictsForProvince(
       return KRABI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'surat-thani':
       return SURAT_THANI_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
+    case 'mae-hong-son':
+      return MAE_HONG_SON_AMPHOE_MAP_DISTRICTS as ProvinceAmphoeDistrict[];
     case 'chiang-mai':
       return AMPHOE_MAP_DISTRICTS.filter((d) => d.id !== 'other') as ProvinceAmphoeDistrict[];
   }
@@ -164,6 +176,8 @@ export function getAmphoeByAmpCodeForProvince(
       return getKrabiAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'surat-thani':
       return getSuratThaniAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
+    case 'mae-hong-son':
+      return getMaeHongSonAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
     case 'chiang-mai':
       return getAmphoeByAmpCode(ampCode) as ProvinceAmphoeDistrict | undefined;
   }
@@ -188,6 +202,8 @@ export function getAmphoeByIdForProvince(
       return getKrabiAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'surat-thani':
       return getSuratThaniAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
+    case 'mae-hong-son':
+      return getMaeHongSonAmphoeById(id) as ProvinceAmphoeDistrict | undefined;
     case 'chiang-mai':
       return getAmphoeById(id as never) as ProvinceAmphoeDistrict | undefined;
   }

@@ -9,6 +9,7 @@ type Props = {
   altTh?: string;
   onAltEnChange: (value: string) => void;
   onAltThChange?: (value: string) => void;
+  onFillFromProductCopy?: () => void;
   onSave: () => void;
   onClose: () => void;
   saving?: boolean;
@@ -23,6 +24,7 @@ export function AdminImageAltModal({
   altTh,
   onAltEnChange,
   onAltThChange,
+  onFillFromProductCopy,
   onSave,
   onClose,
   saving,
@@ -38,6 +40,15 @@ export function AdminImageAltModal({
       onClose={onClose}
       footer={
         <div className="admin-cms-modal-actions">
+          {onFillFromProductCopy ? (
+            <button
+              type="button"
+              className="admin-cms-btn admin-cms-btn-outline admin-cms-modal-action-start"
+              onClick={onFillFromProductCopy}
+            >
+              Fill from product copy
+            </button>
+          ) : null}
           <button type="button" className="admin-cms-btn admin-cms-btn-outline" onClick={onClose}>
             Cancel
           </button>

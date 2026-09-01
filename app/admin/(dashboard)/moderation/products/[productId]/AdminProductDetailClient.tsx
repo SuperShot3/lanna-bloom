@@ -23,6 +23,10 @@ import {
 import { useCatalogShelfDirty } from '@/app/admin/(dashboard)/products/CatalogShelfDirtyContext';
 import { useCatalogUnsavedLeaveGuard } from '@/app/admin/(dashboard)/products/useCatalogUnsavedLeaveGuard';
 import type { AdminCatalogProductImage, AdminProductDetail } from '@/lib/catalog/types';
+import {
+  buildProductImageAlt,
+  compositionFromCustomAttributes,
+} from '@/lib/catalog/productImageAlt';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import {
   ADMIN_MARKET_OPTIONS,
@@ -376,6 +380,16 @@ export function AdminProductDetailClient({ product }: Props) {
     [editableImages, product.id, router]
   );
 
+  const suggestedImageAlt = useMemo(() => {
+    const composition = compositionFromCustomAttributes(product.customAttributes);
+    return buildProductImageAlt({
+      nameEn,
+      nameTh,
+      compositionEn: composition.compositionEn,
+      compositionTh: composition.compositionTh,
+    });
+  }, [nameEn, nameTh, product.customAttributes]);
+
   const imageHandlers = {
     loadingKey: loading,
     onReorder: handleImageReorder,
@@ -384,8 +398,8 @@ export function AdminProductDetailClient({ product }: Props) {
       const formData = new FormData();
       formData.set('productId', product.id);
       formData.set('file', file);
-      formData.set('altEn', nameEn);
-      formData.set('altTh', nameTh);
+      formData.set('altEn', suggestedImageAlt.altEn);
+      formData.set('altTh', suggestedImageAlt.altTh);
       if (variantKey) formData.set('variantKey', variantKey);
       if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const result = await uploadProductImageAction(formData);
@@ -412,8 +426,8 @@ export function AdminProductDetailClient({ product }: Props) {
       const formData = new FormData();
       formData.set('productId', product.id);
       formData.set('file', file);
-      formData.set('altEn', image.altEn || nameEn);
-      formData.set('altTh', image.altTh || nameTh);
+      formData.set('altEn', image.altEn || suggestedImageAlt.altEn);
+      formData.set('altTh', image.altTh || suggestedImageAlt.altTh);
       if (image.variantKey) formData.set('variantKey', image.variantKey);
       if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const upload = await uploadProductImageAction(formData);
@@ -664,6 +678,8 @@ export function AdminProductDetailClient({ product }: Props) {
           stemOptions={pricingType === 'stem_count' ? stemOptions : []}
           disabled={!!loading || savingImageOrder}
           loadingKey={loading}
+          suggestedAltEn={suggestedImageAlt.altEn}
+          suggestedAltTh={suggestedImageAlt.altTh}
           onReorder={imageHandlers.onReorder}
           onUpload={imageHandlers.onUpload}
           onAssignVariant={handleAssignVariant}

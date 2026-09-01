@@ -23,6 +23,7 @@ export const MARKET_SHARE_ARTICLE_SLUG: Partial<Record<MarketPathSlug, string>> 
     phuket: 'flower-delivery-phuket',
     'hua-hin': 'flower-delivery-hua-hin',
     samui: 'flower-delivery-samui',
+    pai: 'flower-delivery-pai',
     lamphun: 'flower-delivery-lamphun-province',
   };
 

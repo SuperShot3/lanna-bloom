@@ -928,6 +928,44 @@ export const articles: ArticleMeta[] = [
     ],
   },
   {
+    slug: 'flower-delivery-pai',
+    title: 'Flower Delivery in Pai: Areas, Hotels and Fees',
+    excerpt:
+      'Flower delivery in Pai: listed tambons from Pai town to mountain resorts. Fees from 250 THB, hotel and Maps-pin tips, same-day by checkout, and how to order from Thailand or abroad.',
+    titleTh: 'ส่งดอกไม้ในปาย: พื้นที่ โรงแรม และค่าส่ง',
+    excerptTh:
+      'ส่งดอกไม้ปาย: ตำบลที่รองรับจากตัวเมืองปายถึงรีสอร์ตบนเขา ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรมและหมุดแผนที่ จัดส่งวันเดียวตามเช็กเอาต์ และวิธีสั่งจากในไทยหรือต่างประเทศ',
+    publishedAt: '2026-08-31T00:00:00.000Z',
+    featured: false,
+    cover: {
+      type: 'image',
+      src: '/blog_images/pai/pai.png',
+      alt: 'Pink lily and cream rose bouquet on a wooden guesthouse balcony overlooking misty Pai mountains at golden hour, for flower delivery in Pai, Thailand',
+      altTh:
+        'ช่อลิลลี่ชมพูและกุหลาบครีมบนระเบียงไม้เกสต์เฮาส์ ฉากหลังหุบเขาปายยามแสงทอง สำหรับบริการส่งดอกไม้ในปาย ประเทศไทย',
+    },
+    ctaLinks: [
+      {
+        label: 'Shop Pai flower delivery',
+        labelTh: 'เลือกดอกไม้ส่งปาย',
+        href: '/pai/flower-delivery',
+      },
+      { label: 'Browse catalog', labelTh: 'ดูแคตตาล็อก', href: '/catalog' },
+      {
+        label: 'Thailand delivery areas & fees',
+        labelTh: 'พื้นที่และค่าส่งทั่วไทย',
+        href: '/delivery-areas-thailand',
+      },
+      { label: 'Delivery policy', labelTh: 'นโยบายจัดส่ง', href: '/info/delivery-policy' },
+      {
+        label: 'Send flowers from abroad',
+        labelTh: 'ส่งดอกไม้จากต่างประเทศ',
+        href: '/info/buy-flowers-online-chiang-mai-thailand',
+      },
+      { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
+    ],
+  },
+  {
     slug: 'flower-delivery-to-hospitals-phuket',
     title: 'Flower Delivery to Hospitals in Phuket',
     excerpt:

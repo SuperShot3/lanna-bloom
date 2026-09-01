@@ -15,6 +15,7 @@ const UNCHANGED: OrderDeliveryDestinationId[] = [
   'PATTAYA',
   'HUA_HIN',
   'LAMPHUN',
+  'PAI',
 ];
 
 assert.deepEqual(

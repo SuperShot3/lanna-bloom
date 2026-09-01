@@ -36,6 +36,8 @@ type Props = {
   onConvertToWebp?: (imageId: string) => void | Promise<void>;
   onToggleAiGenerated?: (imageId: string, aiGenerated: boolean) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
+  suggestedAltEn?: string;
+  suggestedAltTh?: string;
 };
 
 function stemAssignTargets(stemOptions: CatalogStemPricingRow[]): StemAssignTarget[] {
@@ -64,6 +66,8 @@ export function ProductGalleryEditor({
   onConvertToWebp,
   onToggleAiGenerated,
   onRemove,
+  suggestedAltEn,
+  suggestedAltTh,
 }: Props) {
   const targets = useMemo(() => stemAssignTargets(stemOptions), [stemOptions]);
   const stemAssignEnabled = targets.length > 0;
@@ -152,6 +156,8 @@ export function ProductGalleryEditor({
         onConvertToWebp={onConvertToWebp}
         onToggleAiGenerated={onToggleAiGenerated}
         onRemove={onRemove}
+        suggestedAltEn={suggestedAltEn}
+        suggestedAltTh={suggestedAltTh}
       />
 
       {stemAssignEnabled
@@ -177,6 +183,8 @@ export function ProductGalleryEditor({
                   onToggleAiGenerated={onToggleAiGenerated}
                   onRemove={onRemove}
                   onUnassign={(imageId) => onAssignVariant([imageId], null)}
+                  suggestedAltEn={suggestedAltEn}
+                  suggestedAltTh={suggestedAltTh}
                 />
               </div>
             );
@@ -210,6 +218,8 @@ export function ProductGalleryEditor({
                   onToggleAiGenerated={onToggleAiGenerated}
                   onRemove={onRemove}
                   onUnassign={(imageId) => onAssignVariant([imageId], null)}
+                  suggestedAltEn={suggestedAltEn}
+                  suggestedAltTh={suggestedAltTh}
                 />
               </div>
             );

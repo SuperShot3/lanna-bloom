@@ -22,7 +22,7 @@ export async function generateMetadata({
   const market = getMarketByPathSlug(params.slug);
   if (!market || !marketIsRouteAvailable(market)) return {};
 
-  const bouquet = await getCatalogBouquetBySlug(params.productSlug);
+  const bouquet = await getCatalogBouquetBySlug(params.productSlug, params.lang);
   const isTh = params.lang === 'th';
   const productName = bouquet
     ? isTh

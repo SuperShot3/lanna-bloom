@@ -11,6 +11,7 @@ import {
   revalidateCatalogCacheAfterSupabaseWrite,
 } from '@/lib/catalogRouting';
 import { buildCatalogImageRecord, uploadBufferToCatalog } from '@/lib/catalog/storage';
+import { buildProductImageAlt } from '@/lib/catalog/productImageAlt';
 import { appendCatalogBouquetImage } from '@/lib/catalogWrite';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
@@ -60,7 +61,14 @@ export async function POST(
   }
 
   const requestedAlt = typeof formData.get('alt') === 'string' ? String(formData.get('alt')).trim() : '';
-  const alt = requestedAlt || bouquet.nameEn || 'Bouquet product image';
+  const resolvedAlts = buildProductImageAlt({
+    altEn: requestedAlt,
+    nameEn: bouquet.nameEn,
+    nameTh: bouquet.nameTh,
+    compositionEn: bouquet.compositionEn,
+    compositionTh: bouquet.compositionTh,
+  });
+  const alt = resolvedAlts.altEn;
 
   try {
     await validateProductImage(file);
@@ -77,12 +85,14 @@ export async function POST(
       format: 'webp',
       is_primary: false,
       alt,
+      alt_th: resolvedAlts.altTh || undefined,
       sort_order: 999,
     });
 
     await appendCatalogBouquetImage(resolvedCatalogId, {
       assetId: record.storage_path,
       alt,
+      altTh: resolvedAlts.altTh || undefined,
       format: 'webp',
       isPrimary: false,
     });

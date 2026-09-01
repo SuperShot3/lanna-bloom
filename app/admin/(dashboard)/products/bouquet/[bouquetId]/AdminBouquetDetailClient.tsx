@@ -22,6 +22,7 @@ import {
   type PricingType,
 } from '@/lib/catalog/pricing';
 import type { AdminBouquetDetail, AdminCatalogProductImage } from '@/lib/catalog/types';
+import { buildProductImageAlt } from '@/lib/catalog/productImageAlt';
 import type { BouquetStatus } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import {
@@ -380,6 +381,17 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     router.refresh();
   }
 
+  const suggestedImageAlt = useMemo(
+    () =>
+      buildProductImageAlt({
+        nameEn,
+        nameTh,
+        compositionEn,
+        compositionTh,
+      }),
+    [nameEn, nameTh, compositionEn, compositionTh]
+  );
+
   const imageHandlers = {
     loadingKey: loading,
     onReorder: handleImageReorder,
@@ -388,8 +400,8 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       const formData = new FormData();
       formData.set('bouquetId', bouquet.id);
       formData.set('file', file);
-      formData.set('altEn', nameEn);
-      formData.set('altTh', nameTh);
+      formData.set('altEn', suggestedImageAlt.altEn);
+      formData.set('altTh', suggestedImageAlt.altTh);
       if (variantKey) formData.set('variantKey', variantKey);
       if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const result = await uploadBouquetImageAction(formData);
@@ -416,8 +428,8 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       const formData = new FormData();
       formData.set('bouquetId', bouquet.id);
       formData.set('file', file);
-      formData.set('altEn', image.altEn || nameEn);
-      formData.set('altTh', image.altTh || nameTh);
+      formData.set('altEn', image.altEn || suggestedImageAlt.altEn);
+      formData.set('altTh', image.altTh || suggestedImageAlt.altTh);
       if (image.variantKey) formData.set('variantKey', image.variantKey);
       if (options?.convertToWebp) formData.set('convertToWebp', '1');
       const upload = await uploadBouquetImageAction(formData);
@@ -743,6 +755,8 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
           stemOptions={pricingType === 'stem_count' ? stemOptions : []}
           disabled={!!loading || savingImageOrder}
           loadingKey={loading}
+          suggestedAltEn={suggestedImageAlt.altEn}
+          suggestedAltTh={suggestedImageAlt.altTh}
           onReorder={imageHandlers.onReorder}
           onUpload={imageHandlers.onUpload}
           onAssignVariant={handleAssignVariant}

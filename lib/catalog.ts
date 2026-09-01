@@ -169,7 +169,9 @@ async function mapBouquetRowWithImages(
 
   partner: CatalogPartnerRow | null,
 
-  localeSlug?: string
+  localeSlug?: string,
+
+  locale: 'en' | 'th' = 'en'
 
 ): Promise<Bouquet> {
 
@@ -183,13 +185,15 @@ async function mapBouquetRowWithImages(
 
       variantImages: byVariantKey,
 
+      locale,
+
     });
 
   } catch (err) {
 
     console.error('[catalog] variant images load failed:', err);
 
-    return mapBouquetRowToBouquet(supabase, row, partner, localeSlug);
+    return mapBouquetRowToBouquet(supabase, row, partner, localeSlug, { locale });
 
   }
 
@@ -545,7 +549,7 @@ export async function getBouquetBySlugFromCatalog(
 
   }
 
-  return mapBouquetRowWithImages(supabase, row, partner, slug);
+  return mapBouquetRowWithImages(supabase, row, partner, slug, locale);
 
 }
 
@@ -1008,7 +1012,7 @@ export async function getProductBySlugFromCatalog(
 
   const row = await fetchLiveProductRowBySlug(slug, locale);
 
-  if (row) return mapProductRowToCatalogProduct(supabase, row, slug);
+  if (row) return mapProductRowToCatalogProduct(supabase, row, slug, locale);
 
 
 
@@ -1056,29 +1060,35 @@ export async function getBalloonsFilteredFromCatalog(params: {
 
 
 
-export async function getPlushyToyBySlugFromCatalog(slug: string): Promise<CatalogProduct | null> {
+export async function getPlushyToyBySlugFromCatalog(
+  slug: string,
+  locale: 'en' | 'th' = 'en'
+): Promise<CatalogProduct | null> {
 
   const supabase = requireSupabase();
 
-  const row = await fetchLiveProductRowBySlug(slug, 'en', 'plushy_toys');
+  const row = await fetchLiveProductRowBySlug(slug, locale, 'plushy_toys');
 
   if (!row) return null;
 
-  return mapProductRowToCatalogProduct(supabase, row, slug);
+  return mapProductRowToCatalogProduct(supabase, row, slug, locale);
 
 }
 
 
 
-export async function getBalloonBySlugFromCatalog(slug: string): Promise<CatalogProduct | null> {
+export async function getBalloonBySlugFromCatalog(
+  slug: string,
+  locale: 'en' | 'th' = 'en'
+): Promise<CatalogProduct | null> {
 
   const supabase = requireSupabase();
 
-  const row = await fetchLiveProductRowBySlug(slug, 'en', 'balloons');
+  const row = await fetchLiveProductRowBySlug(slug, locale, 'balloons');
 
   if (!row) return null;
 
-  return mapProductRowToCatalogProduct(supabase, row, slug);
+  return mapProductRowToCatalogProduct(supabase, row, slug, locale);
 
 }
 

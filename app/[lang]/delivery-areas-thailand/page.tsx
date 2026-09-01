@@ -18,6 +18,7 @@ import {
   getPattayaDeliveryDistricts,
   getPhuketDeliveryDistricts,
   getSamuiDeliveryDistricts,
+  getPaiDeliveryDistricts,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
 export const revalidate = 3600;
@@ -90,6 +91,7 @@ export default async function DeliveryAreasThailandPage({
   const huaHinDistricts = getHuaHinDeliveryDistricts();
   const krabiDistricts = getKrabiDeliveryDistricts();
   const samuiDistricts = getSamuiDeliveryDistricts();
+  const paiDistricts = getPaiDeliveryDistricts();
   const isTh = lang === 'th';
   const provincesResult = await listPublicProvinces();
   const provinces = provincesResult.ok ? provincesResult.provinces : [];
@@ -376,6 +378,37 @@ export default async function DeliveryAreasThailandPage({
             </div>
 
             <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.samuiNote}</p>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-stone-200/80 bg-white p-6 sm:p-9 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3
+                id="pai-delivery-title"
+                className="font-[family-name:var(--font-family-display)] text-4xl sm:text-5xl text-[#1A3C34] mb-3 leading-tight"
+              >
+                {copy.paiTitle}
+              </h3>
+              <p className="text-stone-500 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+                {copy.paiIntro}
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Link
+                  href={`/${lang}/pai/flower-delivery`}
+                  className="btn-premium"
+                >
+                  {copy.ctaPai}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-xs font-semibold tracking-[0.18em] uppercase text-[#C5A059] mb-3">
+                {copy.districtsSubtitle}
+              </h4>
+              <AreaPills areas={paiDistricts} lang={lang} />
+            </div>
+
+            <p className="text-stone-400 text-xs sm:text-sm text-center">{copy.paiNote}</p>
           </div>
 
           {shoppableAreas.length > 0 ? (

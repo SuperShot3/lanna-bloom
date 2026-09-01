@@ -13,6 +13,7 @@ import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestination
 import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner';
 import { CouponQueryCapture } from '@/components/CouponQueryCapture';
 import { ConversionDiscountRoot } from '@/components/conversionDiscount/ConversionDiscountRoot';
+import { DeliveryDestinationPrompt } from '@/components/DeliveryDestinationPrompt';
 import { getActiveTopPromoBannerKind } from '@/lib/promo/topPromoBanner';
 
 export function MainSiteChrome({
@@ -86,6 +87,7 @@ export function MainSiteChrome({
       <LineFloatingButton lang={lang} showContactButtons={!isCartRoute} />
       <ConversionDiscountRoot lang={lang} />
       <CookieConsentBanner lang={lang} />
+      <DeliveryDestinationPrompt lang={lang} hasTopPromoBanner={hasTopPromoBanner} />
     </>
   );
 }

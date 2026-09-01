@@ -62,6 +62,13 @@ assert.ok(
   'Samui district list includes Chaweng'
 );
 
+const paiDistricts = getMarketLandingDistricts('PAI');
+assert.equal(paiDistricts.length, 7, 'Pai has 7 named checkout areas');
+assert.ok(
+  formatDistrictList(paiDistricts, 'en').includes('Wiang Tai'),
+  'Pai district list includes Wiang Tai'
+);
+
 const bangkokDistricts = getMarketLandingDistricts('BANGKOK');
 assert.equal(bangkokDistricts.length, 10, 'Bangkok has 10 named checkout areas');
 assert.ok(

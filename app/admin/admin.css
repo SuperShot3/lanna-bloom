@@ -8947,6 +8947,10 @@ select.admin-partner-edit-input {
   gap: 8px;
 }
 
+.admin-cms-modal-action-start {
+  margin-right: auto;
+}
+
 .admin-cms-modal-panel {
   padding: 12px 14px;
   border: 1px solid var(--cms-border);

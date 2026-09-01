@@ -25,7 +25,7 @@ assert(cm!.status === 'same_day', 'chiang-mai same_day');
 assert(cm!.catalog_enabled === true, 'chiang-mai catalog on');
 
 const wired = PROVINCE_SEED_ROSTER.filter((r) => r.destination_id);
-assert(wired.length === 8, `expected 8 wired destinations, got ${wired.length}`);
+assert(wired.length === 9, `expected 9 wired destinations, got ${wired.length}`);
 
 const bkk = PROVINCE_SEED_ROSTER.find((r) => r.province_code === 'bangkok');
 assert(!!bkk, 'bangkok present');

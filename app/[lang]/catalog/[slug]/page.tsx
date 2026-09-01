@@ -84,10 +84,10 @@ export async function generateMetadata({
 
   const isTh = params.lang === 'th';
   const [bouquet, plushyToy, balloon, product] = await Promise.all([
-    getCatalogBouquetBySlug(params.slug),
-    getCatalogPlushyToyBySlug(params.slug),
-    getCatalogBalloonBySlug(params.slug),
-    getCatalogProductBySlug(params.slug),
+    getCatalogBouquetBySlug(params.slug, params.lang),
+    getCatalogPlushyToyBySlug(params.slug, params.lang),
+    getCatalogBalloonBySlug(params.slug, params.lang),
+    getCatalogProductBySlug(params.slug, params.lang),
   ]);
 
   if (bouquet) {

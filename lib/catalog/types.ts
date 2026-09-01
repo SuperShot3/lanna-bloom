@@ -160,6 +160,7 @@ export type CatalogStoredImage = {
   storage_path: string;
   public_url?: string;
   alt?: string;
+  alt_th?: string;
   format?: 'webp' | 'png_master' | 'source';
   is_primary?: boolean;
   sort_order?: number;

@@ -7,6 +7,7 @@ import { PHUKET_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/phuketAmphoeMapData'
 import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/prachuapKhiriKhanAmphoeMapData';
 import { KRABI_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/krabiAmphoeMapData';
 import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/suratThaniAmphoeMapData';
+import { MAE_HONG_SON_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/maeHongSonAmphoeMapData';
 import { BANGKOK_AMPHOE_MAP_DISTRICTS } from '@/lib/delivery/bangkokAmphoeMapData';
 
 export type LocalizedLabel = { nameEn: string; nameTh: string };
@@ -65,6 +66,14 @@ export function getKrabiDeliveryDistricts(): LocalizedLabel[] {
 /** Koh Samui checkout areas (city market — not the rest of Surat Thani). */
 export function getSamuiDeliveryDistricts(): LocalizedLabel[] {
   return SURAT_THANI_AMPHOE_MAP_DISTRICTS.map((d) => ({
+    nameEn: d.labelEn,
+    nameTh: d.labelTh,
+  }));
+}
+
+/** Pai checkout areas (city market — not the rest of Mae Hong Son). */
+export function getPaiDeliveryDistricts(): LocalizedLabel[] {
+  return MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.map((d) => ({
     nameEn: d.labelEn,
     nameTh: d.labelTh,
   }));
@@ -160,6 +169,9 @@ export type FlowerDeliveryThailandCopy = {
   samuiTitle: string;
   samuiIntro: string;
   samuiNote: string;
+  paiTitle: string;
+  paiIntro: string;
+  paiNote: string;
   otherDestinationsTitle: string;
   expandingNote: string;
   ctaChiangMai: string;
@@ -172,6 +184,7 @@ export type FlowerDeliveryThailandCopy = {
   ctaHuaHin: string;
   ctaKrabi: string;
   ctaSamui: string;
+  ctaPai: string;
 };
 
 const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
@@ -227,6 +240,11 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'Flower delivery for listed Koh Samui areas — not province-wide Surat Thani. Delivery from ฿250. Shop below or tap Surat Thani on the coverage map, then choose your Samui area at checkout.',
     samuiNote:
       'Choose Koh Samui as your delivery destination at checkout, then select the area. Fees start at ฿250 in Chaweng and Bo Phut; Lipa Noi, Taling Ngam, Na Thon, and Hua Thanon are higher. Koh Phangan, mainland Surat Thani, and other islands are not on this map.',
+    paiTitle: 'Pai',
+    paiIntro:
+      'Flower delivery for listed Pai tambons — not province-wide Mae Hong Son. Delivery from ฿250. Shop below or tap Mae Hong Son on the coverage map, then choose your Pai area at checkout.',
+    paiNote:
+      'Choose Pai as your delivery destination at checkout, then select the tambon. Fees start at ฿250 in Wiang Tai / Pai town and Wiang Nuea; Mae Na Toeng, Thung Yao, Mueang Paeng, and Pong Sa are higher. Mae Hong Son town, Mae Sariang, Khun Yuam, and Pang Mapha are not on this map.',
     otherDestinationsTitle: 'Currently shoppable provinces',
     expandingNote:
       'Only provinces where ordering is open right now. Status and categories come from live settings — we do not promise nationwide same-day delivery.',
@@ -240,6 +258,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaHuaHin: 'Hua Hin flower delivery',
     ctaKrabi: 'Krabi / Ao Nang flower delivery',
     ctaSamui: 'Koh Samui flower delivery',
+    ctaPai: 'Pai flower delivery',
   },
   th: {
     metaTitle: 'พื้นที่จัดส่งดอกไม้ทั่วไทย และค่าส่งเชียงใหม่ | Lanna Bloom',
@@ -293,6 +312,11 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'จัดส่งดอกไม้ในย่านเกาะสมุยที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดสุราษฎร์ธานี ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะสุราษฎร์ธานีบนแผนที่พื้นที่บริการ แล้วเลือกย่านสมุยตอนชำระเงิน',
     samuiNote:
       'เลือกปลายทางเกาะสมุยตอนชำระเงิน แล้วเลือกย่าน ค่าส่งเริ่มต้น ฿250 ในเฉวงและบ่อผุด ลิปะน้อย ตลิ่งงาม หน้าทอน และหัวถนนสูงกว่า เกาะพะงัน แผ่นดินสุราษฎร์ธานี และเกาะอื่นไม่อยู่บนแผนที่นี้',
+    paiTitle: 'ปาย',
+    paiIntro:
+      'จัดส่งดอกไม้ในตำบลปายที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดแม่ฮ่องสอน ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะแม่ฮ่องสอนบนแผนที่พื้นที่บริการ แล้วเลือกพื้นที่ปายตอนชำระเงิน',
+    paiNote:
+      'เลือกปลายทางปายตอนชำระเงิน แล้วเลือกตำบล ค่าส่งเริ่มต้น ฿250 ในเวียงใต้ / ตัวเมืองปาย และเวียงเหนือ แม่นาเติง ทุ่งยาว เมืองแปง และโป่งสาสูงกว่า ตัวเมืองแม่ฮ่องสอน แม่สะเรียง ขุนยวม และปางมะผ้าไม่อยู่บนแผนที่นี้',
     otherDestinationsTitle: 'จังหวัดที่สั่งได้ตอนนี้',
     expandingNote:
       'แสดงเฉพาะจังหวัดที่เปิดรับออเดอร์ สถานะและหมวดสินค้ามาจากการตั้งค่าจริง — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',
@@ -306,6 +330,7 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
     ctaHuaHin: 'ส่งดอกไม้หัวหิน',
     ctaKrabi: 'ส่งดอกไม้กระบี่ / อ่าวนาง',
     ctaSamui: 'ส่งดอกไม้เกาะสมุย',
+    ctaPai: 'ส่งดอกไม้ปาย',
   },
 };
 

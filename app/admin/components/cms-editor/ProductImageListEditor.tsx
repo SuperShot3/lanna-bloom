@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { AdminCatalogProductImage } from '@/lib/catalog/types';
 import { catalogImageFormat } from '@/lib/catalog/storefrontImages';
 import { catalogImageFormatLabel, imageLabelFromPath } from '@/lib/catalogAdminFieldOptions';
+import { isWeakProductImageAlt } from '@/lib/catalog/productImageAlt';
 import { AdminRowMenu, type AdminRowMenuItem } from './AdminRowMenu';
 import { AdminSortableList } from './AdminSortableList';
 import { AdminSortableRow } from './AdminSortableRow';
@@ -41,6 +42,8 @@ type Props = {
   onToggleAiGenerated?: (imageId: string, aiGenerated: boolean) => void | Promise<void>;
   onUnassign?: (imageId: string) => void | Promise<void>;
   onRemove: (imageId: string) => void | Promise<void>;
+  suggestedAltEn?: string;
+  suggestedAltTh?: string;
 };
 
 type PendingCrop =
@@ -85,6 +88,8 @@ export function ProductImageListEditor({
   onToggleAiGenerated,
   onUnassign,
   onRemove,
+  suggestedAltEn,
+  suggestedAltTh,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -120,8 +125,12 @@ export function ProductImageListEditor({
 
   function openEdit(image: AdminCatalogProductImage) {
     setEditingId(image.id);
-    setEditAltEn(image.altEn);
-    setEditAltTh(image.altTh);
+    setEditAltEn(
+      isWeakProductImageAlt(image.altEn) && suggestedAltEn ? suggestedAltEn : image.altEn
+    );
+    setEditAltTh(
+      isWeakProductImageAlt(image.altTh) && suggestedAltTh ? suggestedAltTh : image.altTh
+    );
   }
 
   function openPreview(image: AdminCatalogProductImage) {
@@ -399,6 +408,14 @@ export function ProductImageListEditor({
         altTh={editAltTh}
         onAltEnChange={setEditAltEn}
         onAltThChange={setEditAltTh}
+        onFillFromProductCopy={
+          suggestedAltEn || suggestedAltTh
+            ? () => {
+                setEditAltEn(suggestedAltEn ?? '');
+                setEditAltTh(suggestedAltTh ?? '');
+              }
+            : undefined
+        }
         onSave={() => {
           const image = scoped.find((i) => i.id === editingId);
           if (!image) return;

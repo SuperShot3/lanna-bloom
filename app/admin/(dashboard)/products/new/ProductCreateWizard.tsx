@@ -19,6 +19,7 @@ import {
   exclusiveDeliverySpeedOnChange,
 } from '@/lib/catalogAdminFieldOptions';
 import type { PricingType } from '@/lib/catalog/pricing';
+import { buildProductImageAlt } from '@/lib/catalog/productImageAlt';
 import { useToast } from '@/contexts/ToastContext';
 import { ProductCreateImagesStep } from './ProductCreateImagesStep';
 import {
@@ -478,7 +479,7 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     const localPreview = URL.createObjectURL(file);
 
     try {
-      const alt = draft.altEn || draft.nameEn || file.name;
+      const alt = buildProductImageAlt(draft).altEn || file.name;
       const result = await prepareCandidateFile(file, alt);
       if ('error' in result) {
         try {
@@ -632,9 +633,11 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
 
       const nextAnalysis = payload.analysis as ProductImageAnalysis;
       const nextDraft = payload.draft as ProductDraftCopy;
+      const filledAlts = buildProductImageAlt(nextDraft);
+      const draftWithAlts = { ...nextDraft, altEn: filledAlts.altEn, altTh: filledAlts.altTh };
       setAnalysis(nextAnalysis);
-      setDraft(nextDraft);
-      recordTextGeneration(nextDraft);
+      setDraft(draftWithAlts);
+      recordTextGeneration(draftWithAlts);
       if (isFlowerProduct) {
         const format = presentationFormatFromAnalysis(nextAnalysis);
         setPresentationCsv(format);
@@ -668,10 +671,11 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
     }
 
     const primaryId = primaryDraft?.id ?? readyDrafts[0]?.id ?? null;
-    const altFallback = draft.altEn || draft.nameEn;
+    const imageAlts = buildProductImageAlt(draft);
     const imagesPayload: Array<{
       assetId: string;
       alt?: string;
+      altTh?: string;
       format?: string;
       isPrimary: boolean;
       sourceType?: 'uploaded' | 'ai_generated';
@@ -682,7 +686,8 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
         if (variant.format !== 'webp') return;
         imagesPayload.push({
           assetId: variant.assetId,
-          alt: variant.alt || altFallback,
+          alt: imageAlts.altEn,
+          altTh: imageAlts.altTh,
           format: 'webp',
           isPrimary: d.id === primaryId,
           sourceType: d.aiGenerated ? 'ai_generated' : 'uploaded',
@@ -1203,14 +1208,24 @@ function CopySaveStep({
               />
             </label>
           </div>
-          <label className="admin-form-group">
-            <span>Image alt text (EN)</span>
-            <input
-              className="admin-input"
-              value={draft.altEn}
-              onChange={(event) => onChangeDraft('altEn', event.target.value)}
-            />
-          </label>
+          <div className="admin-product-create-two">
+            <label className="admin-form-group">
+              <span>Image alt text (EN)</span>
+              <input
+                className="admin-input"
+                value={draft.altEn}
+                onChange={(event) => onChangeDraft('altEn', event.target.value)}
+              />
+            </label>
+            <label className="admin-form-group">
+              <span>Image alt text (TH)</span>
+              <input
+                className="admin-input"
+                value={draft.altTh}
+                onChange={(event) => onChangeDraft('altTh', event.target.value)}
+              />
+            </label>
+          </div>
         </div>
       </section>
 

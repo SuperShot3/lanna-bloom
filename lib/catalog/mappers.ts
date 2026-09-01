@@ -13,6 +13,11 @@ import { isStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { isCatalogImageAiGenerated } from '@/lib/catalog/imageAiGenerated';
 import { filterStorefrontCatalogStoredImages } from '@/lib/catalog/storefrontImages';
 import { storedImagePublicUrl } from '@/lib/catalog/storage';
+import {
+  buildProductImageAlt,
+  compositionFromCustomAttributes,
+  pickStoredImageAlt,
+} from '@/lib/catalog/productImageAlt';
 import type {
   CatalogBouquetPricing,
   CatalogBouquetRow,
@@ -29,12 +34,13 @@ const PRODUCT_PLACEHOLDER = BOUQUET_PLACEHOLDER;
 function imageUrlsFromStored(
   supabase: CatalogSupabaseClient,
   images: CatalogStoredImage[] | null | undefined
-): { urls: string[]; alts: string[]; aiGenerated: boolean[] } {
+): { urls: string[]; alts: string[]; altsTh: string[]; aiGenerated: boolean[] } {
   const sorted = filterStorefrontCatalogStoredImages(images).sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || Number(b.is_primary) - Number(a.is_primary)
   );
   const urls: string[] = [];
   const alts: string[] = [];
+  const altsTh: string[] = [];
   const aiGenerated: boolean[] = [];
   for (const img of sorted) {
     if (!img.storage_path) continue;
@@ -42,20 +48,29 @@ function imageUrlsFromStored(
     if (!isStorefrontRenderableImageUrl(url)) continue;
     urls.push(url);
     alts.push(img.alt?.trim() ?? '');
+    altsTh.push(img.alt_th?.trim() ?? '');
     aiGenerated.push(isCatalogImageAiGenerated(img.source_type));
   }
-  return { urls, alts, aiGenerated };
+  return { urls, alts, altsTh, aiGenerated };
 }
 
-function withFallbackImageAlts(imageUrls: string[], imageAlts: string[], fallbackText: string): string[] {
-  const fallback = fallbackText.trim();
-  return imageUrls.map((_, i) => imageAlts[i]?.trim() || fallback || '');
+function withFallbackImageAlts(
+  imageUrls: string[],
+  imageAlts: string[],
+  imageAltsTh: string[] | undefined,
+  locale: 'en' | 'th',
+  fallback: { altEn: string; altTh: string }
+): string[] {
+  return imageUrls.map((_, i) =>
+    pickStoredImageAlt({ alt: imageAlts[i], alt_th: imageAltsTh?.[i] }, locale, fallback)
+  );
 }
 
 export type MapBouquetImageContext = {
   /** When set, overrides inline row.images for the main gallery */
   mainImages?: VariantImageSet;
   variantImages?: Map<string, VariantImageSet>;
+  locale?: 'en' | 'th';
 };
 
 export function mapPartnerRowToPartner(
@@ -88,14 +103,36 @@ export function mapBouquetRowToBouquet(
   imageContext?: MapBouquetImageContext
 ): Bouquet {
   const slug = localeSlug ?? row.slug_en;
+  const locale = imageContext?.locale ?? 'en';
   const pricingType = resolvePricingType(row);
   let sizes: BouquetSellableOption[] = buildSellableOptions(
     { pricing_type: row.pricing_type, pricing: row.pricing },
     'en'
   );
 
+  const altFallback = buildProductImageAlt({
+    nameEn: row.name_en,
+    nameTh: row.name_th,
+    compositionEn: row.composition_en,
+    compositionTh: row.composition_th,
+  });
+
   if (imageContext?.variantImages?.size) {
     sizes = attachVariantImagesToSellableOptions(sizes, pricingType, imageContext.variantImages);
+    sizes = sizes.map((opt) => {
+      if (!opt.imageUrls?.length) return opt;
+      const { imageAltsTh, ...rest } = opt;
+      return {
+        ...rest,
+        imageAlts: withFallbackImageAlts(
+          opt.imageUrls,
+          opt.imageAlts ?? [],
+          imageAltsTh,
+          locale,
+          altFallback
+        ),
+      };
+    });
   }
 
   const inline = imageUrlsFromStored(supabase, row.images);
@@ -104,8 +141,13 @@ export function mapBouquetRowToBouquet(
       ? imageContext.mainImages
       : inline;
 
-  const fallbackText = row.description_en || row.description_th || row.name_en || row.name_th;
-  const fallbackImageAlts = withFallbackImageAlts(main.urls, main.alts, fallbackText);
+  const fallbackImageAlts = withFallbackImageAlts(
+    main.urls,
+    main.alts,
+    main.altsTh,
+    locale,
+    altFallback
+  );
   const imageAiGenerated = main.urls.length
     ? main.aiGenerated ?? main.urls.map(() => false)
     : [false];
@@ -158,7 +200,8 @@ function catalogKindFromCategory(category: string): CatalogProduct['catalogKind'
 export function mapProductRowToCatalogProduct(
   supabase: CatalogSupabaseClient,
   row: CatalogProductRow,
-  localeSlug?: string
+  localeSlug?: string,
+  locale: 'en' | 'th' = 'en'
 ): CatalogProduct {
   const slug = localeSlug ?? row.slug_en;
   const overrides = row.admin_overrides;
@@ -166,11 +209,19 @@ export function mapProductRowToCatalogProduct(
   const nameTh = overrides?.nameTh?.trim() || row.name_th || undefined;
   const descriptionEn = overrides?.descriptionEn?.trim() || row.description_en || undefined;
   const descriptionTh = overrides?.descriptionTh?.trim() || row.description_th || undefined;
-  const { urls, alts, aiGenerated } = imageUrlsFromStored(supabase, row.images);
+  const composition = compositionFromCustomAttributes(row.custom_attributes);
+  const { urls, alts, altsTh, aiGenerated } = imageUrlsFromStored(supabase, row.images);
   const fallbackImageAlts = withFallbackImageAlts(
     urls,
     alts,
-    descriptionEn ?? descriptionTh ?? nameEn ?? nameTh ?? ''
+    altsTh,
+    locale,
+    buildProductImageAlt({
+      nameEn,
+      nameTh,
+      compositionEn: composition.compositionEn,
+      compositionTh: composition.compositionTh,
+    })
   );
 
   const pricing = row.pricing ?? { price: row.price };

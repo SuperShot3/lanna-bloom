@@ -43,7 +43,7 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 | Asset notes | `content/thailand-map/README.md` |
 | API route | `app/api/maps/{province}-amphoes/route.ts` (serves local TopoJSON, not OpenGIS) |
 | Metadata + `ampCode` | `lib/delivery/amphoeMapData.ts` or `{province}AmphoeMapData.ts` |
-| Province registry | `lib/delivery/amphoeProvinces.ts` (examples: `chiang-mai`, `bangkok`, `lamphun`, `chon-buri`, `phuket`, `prachuap-khiri-khan`, `krabi`, `surat-thani`) |
+| Province registry | `lib/delivery/amphoeProvinces.ts` (examples: `chiang-mai`, `bangkok`, `lamphun`, `chon-buri`, `phuket`, `prachuap-khiri-khan`, `krabi`, `surat-thani`, `mae-hong-son`) |
 | Fee display | `lib/delivery/amphoeDisplayFees.ts` ← `zones.ts` + destination id |
 | Drill-down list helpers | `lib/delivery/amphoeMapDrilldown.ts` |
 | National map gates | `components/delivery/ThailandProvinceMap.tsx` |
@@ -54,7 +54,7 @@ Use with the `add-thailand-province` skill. Paths are repo-root relative.
 | `relatedCheckoutZoneIds` | Chiang Mai Mueang only — not a substitute for missing polygons |
 | Tests | `lib/deliveryFees.test.ts` (amphoe codes), province tests |
 
-**City-market example:** Pattaya is destination `PATTAYA` on province `chon-buri`. Hua Hin is destination `HUA_HIN` on province `prachuap-khiri-khan`. Ao Nang is destination `KRABI` on province `krabi`. Koh Samui is destination `SAMUI` on province `surat-thani`. Map only the checkout areas. Do not add the rest of the province.
+**City-market example:** Pattaya is destination `PATTAYA` on province `chon-buri`. Hua Hin is destination `HUA_HIN` on province `prachuap-khiri-khan`. Ao Nang is destination `KRABI` on province `krabi`. Koh Samui is destination `SAMUI` on province `surat-thani`. Pai is destination `PAI` on province `mae-hong-son`. Map only the checkout areas. Do not add the rest of the province.
 
 ## Validate command
 
@@ -68,6 +68,7 @@ npm run validate:province -- phuket --amphoe
 npm run validate:province -- prachuap-khiri-khan --amphoe
 npm run validate:province -- krabi --amphoe
 npm run validate:province -- surat-thani --amphoe
+npm run validate:province -- mae-hong-son --amphoe
 npm run validate:province -- bangkok --amphoe
 ```
 
@@ -78,4 +79,4 @@ npm run validate:province -- bangkok --amphoe
 3. `/en/delivery-areas-thailand` — **Currently shoppable provinces** includes the new market; amphoe/locality names visible when required; **shop CTA is inside the province section** (`btn-premium`), not the hero.
 4. Header destination / market links (Tier B).
 5. Chiang Mai amphoe hover + click + list sync (always regression).
-6. Other amphoe-capable provinces (Lamphun, Chon Buri / Pattaya, Phuket, Hua Hin, Krabi / Ao Nang, Koh Samui) still drill down correctly — each checkout area clickable, no nested non-clickable rows.
+6. Other amphoe-capable provinces (Lamphun, Chon Buri / Pattaya, Phuket, Hua Hin, Krabi / Ao Nang, Koh Samui, Pai) still drill down correctly — each checkout area clickable, no nested non-clickable rows.

@@ -20,6 +20,7 @@ import {
   getPattayaDeliveryDistricts,
   getPhuketDeliveryDistricts,
   getSamuiDeliveryDistricts,
+  getPaiDeliveryDistricts,
   type LocalizedLabel,
 } from '@/lib/landingPages/flowerDeliveryThailand';
 
@@ -37,6 +38,7 @@ export function getMarketLandingDistricts(
   if (destinationId === 'HUA_HIN') return getHuaHinDeliveryDistricts();
   if (destinationId === 'KRABI') return getKrabiDeliveryDistricts();
   if (destinationId === 'SAMUI') return getSamuiDeliveryDistricts();
+  if (destinationId === 'PAI') return getPaiDeliveryDistricts();
   return [];
 }
 

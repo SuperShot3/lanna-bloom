@@ -24,6 +24,7 @@ import { PRACHUAP_KHIRI_KHAN_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/prachu
 import { KRABI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/krabiAmphoeMapData';
 import { SURAT_THANI_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/suratThaniAmphoeMapData';
 import { BANGKOK_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/bangkokAmphoeMapData';
+import { MAE_HONG_SON_AMPHOE_MAP_DISTRICTS } from '../lib/delivery/maeHongSonAmphoeMapData';
 import { isAmphoeCapableProvince } from '../lib/delivery/amphoeProvinces';
 
 type Check = { ok: boolean; label: string; detail?: string };
@@ -308,6 +309,19 @@ function validateAmphoe(provinceCode: string, required: boolean): Check[] {
         fail(
           'amphoe metadata',
           `Expected 8 unique ampCodes in suratThaniAmphoeMapData; got ${SURAT_THANI_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
+        )
+      );
+    }
+  } else if (provinceCode === 'mae-hong-son') {
+    const codes = MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode);
+    const unique = new Set(codes);
+    if (MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.length === 7 && unique.size === 7) {
+      out.push(pass('amphoe metadata', '7 Pai tambons, unique ampCode'));
+    } else {
+      out.push(
+        fail(
+          'amphoe metadata',
+          `Expected 7 unique ampCodes in maeHongSonAmphoeMapData; got ${MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.length} / unique ${unique.size}`
         )
       );
     }

@@ -40,6 +40,7 @@ import type { BouquetSitemapEntry, CatalogProductSitemapEntry } from '@/lib/cata
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { attachSoldCount, attachSoldCounts, getPaidSalesCountMap } from '@/lib/catalog/paidSalesCounts';
 import { attachPublicSoldCount } from '@/lib/catalog/paidSalesCountsLogic';
+import { catalogImageAltLocale } from '@/lib/catalog/productImageAlt';
 
 function catalogReadNotConfigured(): never {
   throw new Error(
@@ -81,9 +82,12 @@ export async function getCatalogBouquetsPaginated(
   );
 }
 
-export async function getCatalogBouquetBySlug(slug: string): Promise<Bouquet | null> {
+export async function getCatalogBouquetBySlug(
+  slug: string,
+  locale?: string | null
+): Promise<Bouquet | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return attachSoldCount(await getBouquetBySlugFromCatalog(slug));
+  return attachSoldCount(await getBouquetBySlugFromCatalog(slug, catalogImageAltLocale(locale)));
 }
 
 export async function getCatalogBouquetById(bouquetId: string): Promise<Bouquet | null> {
@@ -188,9 +192,12 @@ export async function getCatalogProductsFiltered(params: {
   return attachSoldCounts(await getProductsFilteredFromCatalog(params));
 }
 
-export async function getCatalogProductBySlug(slug: string): Promise<CatalogProduct | null> {
+export async function getCatalogProductBySlug(
+  slug: string,
+  locale?: string | null
+): Promise<CatalogProduct | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return attachSoldCount(await getProductBySlugFromCatalog(slug));
+  return attachSoldCount(await getProductBySlugFromCatalog(slug, catalogImageAltLocale(locale)));
 }
 
 export async function getCatalogPlushyToysFiltered(params: {
@@ -200,9 +207,12 @@ export async function getCatalogPlushyToysFiltered(params: {
   return attachSoldCounts(await getPlushyToysFilteredFromCatalog(params));
 }
 
-export async function getCatalogPlushyToyBySlug(slug: string): Promise<CatalogProduct | null> {
+export async function getCatalogPlushyToyBySlug(
+  slug: string,
+  locale?: string | null
+): Promise<CatalogProduct | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return attachSoldCount(await getPlushyToyBySlugFromCatalog(slug));
+  return attachSoldCount(await getPlushyToyBySlugFromCatalog(slug, catalogImageAltLocale(locale)));
 }
 
 export async function getCatalogPlushyToyById(id: string) {
@@ -217,9 +227,12 @@ export async function getCatalogBalloonsFiltered(params: {
   return attachSoldCounts(await getBalloonsFilteredFromCatalog(params));
 }
 
-export async function getCatalogBalloonBySlug(slug: string): Promise<CatalogProduct | null> {
+export async function getCatalogBalloonBySlug(
+  slug: string,
+  locale?: string | null
+): Promise<CatalogProduct | null> {
   if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
-  return attachSoldCount(await getBalloonBySlugFromCatalog(slug));
+  return attachSoldCount(await getBalloonBySlugFromCatalog(slug, catalogImageAltLocale(locale)));
 }
 
 export async function getCatalogBalloonById(id: string) {

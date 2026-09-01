@@ -511,6 +511,7 @@ export type CatalogWriteImageInput = {
   /** Supabase storage path (stored in `assetId` from admin UI for API compatibility). */
   assetId: string;
   alt?: string;
+  altTh?: string;
   format?: 'webp' | 'png_master' | 'source';
   isPrimary?: boolean;
   sourceType?: CatalogImageSourceType;
@@ -627,6 +628,7 @@ function writeImagesToStored(
       format: image.format === 'webp' || image.format === 'png_master' ? image.format : undefined,
       is_primary: image.isPrimary === true,
       alt: image.alt?.trim() || undefined,
+      alt_th: image.altTh?.trim() || undefined,
       sort_order: index,
       source_type: image.sourceType === 'ai_generated' ? 'ai_generated' : 'uploaded',
     })

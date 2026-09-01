@@ -37,6 +37,7 @@ import {
   updateCatalogProductImageText,
 } from '@/lib/catalogCms';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { buildProductImageAlt } from '@/lib/catalog/productImageAlt';
 import {
   pricingPayloadForSave,
   type CatalogSizePricingRow,
@@ -394,11 +395,21 @@ export async function uploadBouquetImageAction(formData: FormData): Promise<{ er
     await validateProductImage(file);
     const prefix = `bouquets/${writeId}/cms-${Date.now()}`;
     const convertNow = shouldConvertOnUpload(formData);
+    const resolvedAlts = buildProductImageAlt({
+      altEn,
+      altTh,
+      nameEn: bouquet.nameEn,
+      nameTh: bouquet.nameTh,
+      compositionEn: bouquet.compositionEn,
+      compositionTh: bouquet.compositionTh,
+    });
+    const resolvedAltEn = resolvedAlts.altEn;
+    const resolvedAltTh = resolvedAlts.altTh;
 
     if (convertNow) {
       const { webp, pngMaster } = await prepareCatalogImageUpload({
         file,
-        alt: altEn || undefined,
+        alt: resolvedAltEn || undefined,
         prefix,
       });
 
@@ -409,8 +420,8 @@ export async function uploadBouquetImageAction(formData: FormData): Promise<{ er
         storagePath: webp.storage_path,
         publicUrl: webp.public_url,
         sourceType: 'uploaded',
-        altEn: altEn || 'Bouquet image',
-        altTh,
+        altEn: resolvedAltEn,
+        altTh: resolvedAltTh,
         isPrimary: !variantKey && existingImages.length === 0,
         sortOrder: existingImages.length,
         metadata: {
@@ -423,7 +434,7 @@ export async function uploadBouquetImageAction(formData: FormData): Promise<{ er
     } else {
       const { source } = await prepareCatalogSourceUpload({
         file,
-        alt: altEn || undefined,
+        alt: resolvedAltEn || undefined,
         prefix,
       });
 
@@ -434,8 +445,8 @@ export async function uploadBouquetImageAction(formData: FormData): Promise<{ er
         storagePath: source.storage_path,
         publicUrl: source.public_url,
         sourceType: 'uploaded',
-        altEn: altEn || 'Bouquet image',
-        altTh,
+        altEn: resolvedAltEn,
+        altTh: resolvedAltTh,
         isPrimary: !variantKey && existingImages.length === 0,
         sortOrder: existingImages.length,
         metadata: {

@@ -144,6 +144,7 @@ export function generateStaticParams() {
     'flower-delivery-phuket',
     'flower-delivery-hua-hin',
     'flower-delivery-samui',
+    'flower-delivery-pai',
     'flower-delivery-to-hospitals-phuket',
   ];
   const params: { lang: string; slug: string }[] = [];

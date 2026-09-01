@@ -39,6 +39,10 @@ import {
 } from '@/lib/catalogCms';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import {
+  buildProductImageAlt,
+  compositionFromCustomAttributes,
+} from '@/lib/catalog/productImageAlt';
+import {
   pricingPayloadForSave,
   primaryCatalogPriceFromPricing,
   type CatalogSizePricingRow,
@@ -453,11 +457,22 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
     await validateProductImage(file);
     const prefix = `products/${writeId}/cms-${Date.now()}`;
     const convertNow = shouldConvertOnUpload(formData);
+    const composition = compositionFromCustomAttributes(product.customAttributes);
+    const resolvedAlts = buildProductImageAlt({
+      altEn,
+      altTh,
+      nameEn: product.nameEn,
+      nameTh: product.nameTh,
+      compositionEn: composition.compositionEn,
+      compositionTh: composition.compositionTh,
+    });
+    const resolvedAltEn = resolvedAlts.altEn;
+    const resolvedAltTh = resolvedAlts.altTh;
 
     if (convertNow) {
       const { webp, pngMaster } = await prepareCatalogImageUpload({
         file,
-        alt: altEn || undefined,
+        alt: resolvedAltEn || undefined,
         prefix,
       });
 
@@ -468,8 +483,8 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
         storagePath: webp.storage_path,
         publicUrl: webp.public_url,
         sourceType: 'uploaded',
-        altEn: altEn || 'Product image',
-        altTh,
+        altEn: resolvedAltEn,
+        altTh: resolvedAltTh,
         isPrimary: !variantKey && existingImages.length === 0,
         sortOrder: existingImages.length,
         metadata: {
@@ -482,7 +497,7 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
     } else {
       const { source } = await prepareCatalogSourceUpload({
         file,
-        alt: altEn || undefined,
+        alt: resolvedAltEn || undefined,
         prefix,
       });
 
@@ -493,8 +508,8 @@ export async function uploadProductImageAction(formData: FormData): Promise<{ er
         storagePath: source.storage_path,
         publicUrl: source.public_url,
         sourceType: 'uploaded',
-        altEn: altEn || 'Product image',
-        altTh,
+        altEn: resolvedAltEn,
+        altTh: resolvedAltTh,
         isPrimary: !variantKey && existingImages.length === 0,
         sortOrder: existingImages.length,
         metadata: {

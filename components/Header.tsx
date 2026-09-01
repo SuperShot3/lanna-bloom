@@ -37,11 +37,13 @@ import {
   type DeliveryDestinationId,
 } from '@/lib/delivery/markets';
 import {
-  clearMarketSession,
   MARKET_SESSION_CHANGE_EVENT,
   readMarketSession,
-  writeMarketSession,
 } from '@/lib/delivery/marketSession';
+import {
+  commitDeliveryDestination,
+  DEFAULT_DELIVERY_DESTINATION_ID,
+} from '@/lib/delivery/commitDeliveryDestination';
 import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
 import { useSmartStickyHeader } from '@/hooks/useSmartStickyHeader';
 import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
@@ -50,7 +52,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { lockBodyScroll, unlockBodyScroll } from '@/lib/header/lockBodyScroll';
 
 const localePathPrefixPattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
-const DEFAULT_DELIVERY_DESTINATION_ID: DeliveryDestinationId = 'CHIANG_MAI';
 
 type DeliveryPickerCopy = {
   eyebrow: string;
@@ -226,33 +227,13 @@ export function Header({
 
   const handleDeliveryDestinationChange = useCallback(
     (nextDestination: DeliveryDestinationId) => {
-      if (nextDestination === DEFAULT_DELIVERY_DESTINATION_ID) {
-        clearMarketSession();
-        setSessionMarketSlug(null);
-        setMenuOpen(false);
-        // Stay on cart so checkout can re-sync destination/zone in place.
-        if (!isCartPage) router.push(`/${lang}/catalog`);
-        return;
-      }
-
-      const market = getNavMarkets().find((m) => m.destinationId === nextDestination);
-      if (!market) {
-        clearMarketSession();
-        setSessionMarketSlug(null);
-        setMenuOpen(false);
-        if (!isCartPage) router.push(`/${lang}/catalog`);
-        return;
-      }
-
-      writeMarketSession({
-        destinationId: market.destinationId,
-        pathSlug: market.pathSlug,
+      const { pathSlug } = commitDeliveryDestination(nextDestination, {
+        lang,
+        navigate: !isCartPage,
+        router,
       });
-      setSessionMarketSlug(market.pathSlug);
+      setSessionMarketSlug(pathSlug);
       setMenuOpen(false);
-      // Land on market catalog (gated by province catalog_enabled when closed).
-      // On cart, session notify refreshes checkout profile without leaving.
-      if (!isCartPage) router.push(`/${lang}/catalog/${market.pathSlug}/catalog`);
     },
     [isCartPage, lang, router]
   );
