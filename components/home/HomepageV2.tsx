@@ -13,6 +13,7 @@ import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { DeliverySection } from '@/components/home/DeliverySection';
 import { LocalLandingSection } from '@/components/home/LocalLandingSection';
 import { ExperienceSection } from '@/components/ExperienceSection';
+import { HomeBottomCta } from '@/components/HomeBottomCta';
 import {
   HomeDocumentHead,
   loadHomePageChrome,
@@ -20,6 +21,7 @@ import {
 import {
   getCatalogHomeFlowerTypeTiles,
   getCatalogHomeOccasionTiles,
+  getCatalogNewArrivalBouquets,
   getCatalogPopularBouquets,
 } from '@/lib/catalogReads';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
@@ -63,15 +65,17 @@ function loadGiftCategoryCards(lang: Locale): GiftCategoryCardData[] {
 async function HomeBrowseV2({ lang }: { lang: Locale }) {
   const catalogBase = `/${lang}/catalog`;
   const tHome = translations[lang].home;
-  const [popularBouquets, occasionTiles, flowerTypeTiles] = await Promise.all([
+  const [popularBouquets, occasionTiles, newArrivalBouquets, flowerTypeTiles] = await Promise.all([
     getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT),
     getCatalogHomeOccasionTiles(),
+    getCatalogNewArrivalBouquets(HOME_POPULAR_ROW_LIMIT),
     getCatalogHomeFlowerTypeTiles(),
   ]);
 
   if (
     popularBouquets.length === 0 &&
     occasionTiles.length === 0 &&
+    newArrivalBouquets.length === 0 &&
     flowerTypeTiles.length === 0
   ) {
     return null;
@@ -94,6 +98,13 @@ async function HomeBrowseV2({ lang }: { lang: Locale }) {
           showMorePremium
         />
         <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
+        <PopularPicksRow
+          title={tHome.newArrivalsTitle}
+          href={`${catalogBase}${buildCatalogSearchString({ sort: 'newest' })}`}
+          bouquets={newArrivalBouquets}
+          lang={lang}
+          showMoreLabel={tHome.showMore}
+        />
         <ShopByFlowerTypeTiles lang={lang} tiles={flowerTypeTiles} catalogHref={catalogBase} />
       </div>
     </section>
@@ -131,6 +142,7 @@ export async function HomepageV2({ lang }: { lang: Locale }) {
       <ReviewsSection lang={lang} />
       <LocalLandingSection lang={lang} />
       <HomeFaq lang={lang} faq={faqItems} />
+      <HomeBottomCta lang={lang} />
     </>
   );
 }

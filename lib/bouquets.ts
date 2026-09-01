@@ -41,6 +41,10 @@ export interface Bouquet {
   status?: BouquetStatus;
   /** CMS: pin to top of homepage Popular feed + show badge (catalog sort unchanged). */
   featuredPopular?: boolean;
+  /** Start of current New Arrival window (ISO). Active when within 45 days. */
+  newArrivalStartedAt?: string | null;
+  /** Derived: currently within the New Arrival window. */
+  isNewArrival?: boolean;
   /** CMS: customers must contact before ordering; add-to-cart and checkout are blocked. */
   contactBeforeOrder?: boolean;
   /** CMS sale discount (1–90%). Applied at checkout; shows badge when set. */

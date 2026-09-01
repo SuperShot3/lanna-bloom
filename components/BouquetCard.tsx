@@ -530,6 +530,10 @@ export function BouquetCard({
             <span className="card-popular-pick" aria-label={t.popularPickAria}>
               <StorefrontIcon name="local-fire-department" filled size={22} className="card-popular-pick__icon" />
             </span>
+          ) : bouquet.isNewArrival ? (
+            <span className="card-new-arrival" aria-label={t.newArrivalAria ?? 'New arrival'}>
+              {t.newArrivalBadge ?? 'New'}
+            </span>
           ) : null}
           <CatalogDiscountBadge
             discountPercent={bouquet.discountPercent}
@@ -872,6 +876,22 @@ export function BouquetCard({
         }
         .card-popular-pick__icon {
           line-height: 1;
+        }
+        .card-new-arrival {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 2;
+          display: inline-block;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          background: #ecfdf5;
+          color: #1a3c34;
+          border: 1px solid #a7f3d0;
+          pointer-events: none;
         }
         .card-favorite {
           position: absolute;

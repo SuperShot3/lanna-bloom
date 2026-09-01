@@ -99,7 +99,7 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
   assert.deepEqual(offer.seller, {
     '@type': 'Organization',
     '@id': 'https://lannabloom.shop/#organization',
-    name: 'Lanna Bloom',
+    name: 'Lanna Bloom Flower Delivery',
   });
 }
 

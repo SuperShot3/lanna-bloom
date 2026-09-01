@@ -44,6 +44,7 @@ export type CatalogBouquetPendingEdit = {
   stemOptions: CatalogStemPricingRow[];
   discountPercent: string;
   featuredPopular: boolean;
+  newArrivalEnabled: boolean;
   contactBeforeOrder: boolean;
   deliveryOptions: string[];
   availableMarkets: DeliveryDestinationId[];

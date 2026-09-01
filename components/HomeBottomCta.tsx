@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { Locale } from '@/lib/i18n';
-import { translations } from '@/lib/i18n';
+import { PremiumCtaLink } from '@/components/home/PremiumCtaLink';
+import { translations, type Locale } from '@/lib/i18n';
 import { trackCtaClick } from '@/lib/analytics';
 
 export function HomeBottomCta({ lang }: { lang: Locale }) {
@@ -10,37 +9,16 @@ export function HomeBottomCta({ lang }: { lang: Locale }) {
   const catalogHref = `/${lang}/catalog`;
 
   return (
-    <section className="home-bottom-cta" aria-label="Continue browsing">
-      <div className="container home-bottom-cta-inner">
-        <Link
+    <section className="pb-16 sm:pb-20 lg:pb-24" aria-label="Continue browsing">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+        <PremiumCtaLink
           href={catalogHref}
-          className="home-bottom-cta-primary hero-cta"
           onClick={() => trackCtaClick('cta_home_bottom_view_all')}
+          className="w-full max-w-xs sm:w-auto sm:max-w-none"
         >
           {t.viewAllBouquets}
-        </Link>
+        </PremiumCtaLink>
       </div>
-      <style jsx>{`
-        .home-bottom-cta {
-          padding: 32px 0 48px;
-          text-align: center;
-        }
-        .home-bottom-cta-inner {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .home-bottom-cta-primary {
-          width: 100%;
-          max-width: 320px;
-        }
-        @media (min-width: 480px) {
-          .home-bottom-cta-primary {
-            width: auto;
-            max-width: none;
-          }
-        }
-      `}</style>
     </section>
   );
 }

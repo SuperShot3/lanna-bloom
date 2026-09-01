@@ -1,4 +1,10 @@
-import { addDaysToYmd, DELIVERY_SHOP_TIMEZONE, getBangkokYmd } from '@/lib/deliveryHours';
+import {
+  addDaysToYmd,
+  DELIVERY_SHOP_TIMEZONE,
+  DELIVERY_WINDOW_END_MIN,
+  DELIVERY_WINDOW_START_MIN,
+  getBangkokYmd,
+} from '@/lib/deliveryHours';
 import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 
 /** Four delivery windows from 09:00 to 20:00 (Bangkok). */
@@ -14,9 +20,9 @@ export type DeliveryTimeSlot = (typeof DELIVERY_TIME_SLOTS)[number];
 /** Minimum lead time before a specific delivery time (minutes). */
 export const DELIVERY_MIN_LEAD_MINUTES = 60;
 
-const SHOP_OPEN_MIN = 9 * 60;
-/** Half-open: includes 09:00, excludes 20:00. */
-const SHOP_CLOSE_MIN = 20 * 60;
+const SHOP_OPEN_MIN = DELIVERY_WINDOW_START_MIN;
+/** Half-open: includes shop open, excludes 20:00. */
+const SHOP_CLOSE_MIN = DELIVERY_WINDOW_END_MIN;
 
 const SPECIFIC_TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

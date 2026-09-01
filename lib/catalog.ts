@@ -29,6 +29,8 @@ import {
 
   filterBouquetsCatalogData,
 
+  filterNewArrivalBouquets,
+
   interleavePopularCatalogItems,
 
   mulberry32,
@@ -728,6 +730,22 @@ export async function getPopularBouquetsFromCatalogPaginated(
   const safeStart = Math.max(0, start);
 
   return ordered.slice(safeStart, safeStart + limit);
+
+}
+
+
+
+export async function getNewArrivalBouquetsFromCatalog(
+
+  limit: number,
+
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+
+): Promise<Bouquet[]> {
+
+  const ordered = filterNewArrivalBouquets(await getApprovedBouquets(), catalogDestination);
+
+  return ordered.slice(0, Math.max(0, limit));
 
 }
 

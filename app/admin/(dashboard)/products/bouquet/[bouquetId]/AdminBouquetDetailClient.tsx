@@ -23,6 +23,7 @@ import {
 } from '@/lib/catalog/pricing';
 import type { AdminBouquetDetail, AdminCatalogProductImage } from '@/lib/catalog/types';
 import { buildProductImageAlt } from '@/lib/catalog/productImageAlt';
+import { isCatalogNewArrival, newArrivalExpiresAt } from '@/lib/catalog/newArrival';
 import type { BouquetStatus } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import {
@@ -117,6 +118,13 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
   const [featuredPopular, setFeaturedPopular] = useState(
     () => pending?.featuredPopular ?? bouquet.featuredPopular
   );
+  const [newArrivalEnabled, setNewArrivalEnabled] = useState(
+    () =>
+      pending?.newArrivalEnabled ??
+      (typeof bouquet.newArrivalEnabled === 'boolean'
+        ? bouquet.newArrivalEnabled
+        : isCatalogNewArrival(bouquet.newArrivalStartedAt))
+  );
   const [contactBeforeOrder, setContactBeforeOrder] = useState(
     () => pending?.contactBeforeOrder ?? bouquet.contactBeforeOrder === true
   );
@@ -165,6 +173,11 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     setStemOptions(next.stemOptions);
     setDiscountPercent(bouquet.discountPercent != null ? String(bouquet.discountPercent) : '');
     setFeaturedPopular(bouquet.featuredPopular);
+    setNewArrivalEnabled(
+      typeof bouquet.newArrivalEnabled === 'boolean'
+        ? bouquet.newArrivalEnabled
+        : isCatalogNewArrival(bouquet.newArrivalStartedAt)
+    );
     setContactBeforeOrder(bouquet.contactBeforeOrder === true);
     setDeliveryOptions(bouquet.deliveryOptions ?? []);
     setAvailableMarkets(availableMarketsFromExcluded(bouquet.excludedDeliveryDestinations));
@@ -194,6 +207,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         stemOptions,
         discountPercent,
         featuredPopular,
+        newArrivalEnabled,
         contactBeforeOrder,
         deliveryOptions,
         availableMarkets,
@@ -215,6 +229,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       stemOptions,
       discountPercent,
       featuredPopular,
+      newArrivalEnabled,
       contactBeforeOrder,
       deliveryOptions,
       availableMarkets,
@@ -240,6 +255,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         stemOptions: serverPricing.stemOptions,
         discountPercent: bouquet.discountPercent != null ? String(bouquet.discountPercent) : '',
         featuredPopular: bouquet.featuredPopular,
+        newArrivalEnabled:
+          typeof bouquet.newArrivalEnabled === 'boolean'
+            ? bouquet.newArrivalEnabled
+            : isCatalogNewArrival(bouquet.newArrivalStartedAt),
         contactBeforeOrder: bouquet.contactBeforeOrder === true,
         deliveryOptions: bouquet.deliveryOptions ?? [],
         availableMarkets: availableMarketsFromExcluded(bouquet.excludedDeliveryDestinations),
@@ -296,6 +315,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     formData.set('stemOptions', JSON.stringify(stemOptions));
     formData.set('discountPercent', discountPercent);
     formData.set('featuredPopular', featuredPopular ? 'true' : 'false');
+    formData.set('newArrivalEnabled', newArrivalEnabled ? 'true' : 'false');
     formData.set('contactBeforeOrder', contactBeforeOrder ? 'true' : 'false');
     formData.set(
       'excludedDeliveryDestinations',
@@ -552,6 +572,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       stemOptions,
       discountPercent,
       featuredPopular,
+      newArrivalEnabled,
       contactBeforeOrder,
       deliveryOptions,
       availableMarkets,
@@ -576,6 +597,7 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     stemOptions,
     discountPercent,
     featuredPopular,
+    newArrivalEnabled,
     contactBeforeOrder,
     deliveryOptions,
     availableMarkets,
@@ -738,6 +760,29 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         onDiscountPercentChange={setDiscountPercent}
         featuredPopular={featuredPopular}
         onFeaturedPopularChange={setFeaturedPopular}
+        showNewArrival
+        newArrivalEnabled={newArrivalEnabled}
+        onNewArrivalEnabledChange={setNewArrivalEnabled}
+        newArrivalHint={
+          newArrivalEnabled
+            ? (() => {
+                const expires = newArrivalExpiresAt(
+                  isCatalogNewArrival(bouquet.newArrivalStartedAt)
+                    ? bouquet.newArrivalStartedAt
+                    : new Date().toISOString()
+                );
+                return expires
+                  ? `Active until ${new Date(expires).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}. Uncheck to end early; check again later to restart 45 days.`
+                  : 'Uncheck to end early; check again later to restart 45 days.';
+              })()
+            : bouquet.newArrivalStartedAt
+              ? 'Window ended or expired. Check to restart a fresh 45-day New Arrival period.'
+              : 'New products get this automatically on first approval. Check to start manually.'
+        }
       />
 
       <AdminCmsCollapsibleSection

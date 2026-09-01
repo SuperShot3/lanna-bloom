@@ -11,9 +11,12 @@ import type { Locale } from '@/lib/i18n';
 import { isValidLineUserId, normalizeLineUserId } from '@/lib/lineUserId';
 
 /** E.164 format, no + (used for WhatsApp). */
-const CONTACT_PHONE = '66803313431';
+export const CONTACT_PHONE_DIGITS = '66803313431';
+const CONTACT_PHONE = CONTACT_PHONE_DIGITS;
 
 const WHATSAPP_PHONE = CONTACT_PHONE;
+/** Public LINE OA display handle (not a URL). */
+export const LINE_OA_DISPLAY_HANDLE = '@lannabloom';
 /** LINE contact link (contact-only). */
 const LINE_ADD_FRIEND_LINK = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LINE_OA_ADD_FRIEND_LINK) || 'https://line.me/ti/p/4sZ7z5fYAB';
 const FACEBOOK_PAGE = 'konstantin.polovnikov.3';
@@ -59,6 +62,11 @@ export function getWhatsAppContactUrl(): string {
 
 export function getContactPhoneTelUrl(): string {
   return `tel:+${CONTACT_PHONE}`;
+}
+
+/** Compact E.164 with leading +, e.g. +66803313431. */
+export function getContactPhoneE164(): string {
+  return `+${CONTACT_PHONE}`;
 }
 
 export function getContactPhoneDisplay(): string {

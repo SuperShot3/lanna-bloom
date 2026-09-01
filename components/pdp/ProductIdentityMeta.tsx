@@ -6,16 +6,19 @@ import styles from './product-pdp.module.css';
 type ProductIdentityMetaProps = {
   lang: Locale;
   featuredPopular?: boolean;
+  isNewArrival?: boolean;
   soldCount?: number;
 };
 
 export function ProductIdentityMeta({
   lang,
   featuredPopular,
+  isNewArrival,
   soldCount,
 }: ProductIdentityMetaProps) {
   const tCatalog = translations[lang].catalog;
   const showPopular = featuredPopular === true;
+  const showNew = !showPopular && isNewArrival === true;
 
   return (
     <div className={styles.identityMeta}>
@@ -30,6 +33,16 @@ export function ProductIdentityMeta({
               <StorefrontIcon name="local-fire-department" filled className={styles.popularBadgeIcon} size={16} />
             </span>
             <span className={styles.popularBadgeLabel}>{tCatalog.popularPickBadge}</span>
+          </span>
+        </>
+      ) : null}
+      {showNew ? (
+        <>
+          <span className={styles.identityMetaSep} aria-hidden>
+            |
+          </span>
+          <span className={styles.newArrivalBadge} aria-label={tCatalog.newArrivalAria}>
+            {tCatalog.newArrivalBadge}
           </span>
         </>
       ) : null}

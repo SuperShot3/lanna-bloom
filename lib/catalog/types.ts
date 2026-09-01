@@ -79,6 +79,10 @@ export interface AdminBouquetDetail {
   compositionTh: string;
   status: BouquetStatus;
   featuredPopular: boolean;
+  /** ISO start of current New Arrival window; null = ordinary. */
+  newArrivalStartedAt?: string | null;
+  /** Draft overlay: admin intent for New Arrival toggle. */
+  newArrivalEnabled?: boolean;
   contactBeforeOrder: boolean;
   discountPercent?: number;
   pricingType: PricingType;
@@ -380,6 +384,7 @@ export type CatalogBouquetRow = {
   pricing: CatalogBouquetPricing;
   status: BouquetStatus;
   featured_popular: boolean;
+  new_arrival_started_at: string | null;
   contact_before_order: boolean;
   discount_percent: number | null;
   delivery_options: string[];

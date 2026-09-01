@@ -174,6 +174,7 @@ export function ProductPageClient({
           <ProductIdentityMeta
             lang={lang}
             featuredPopular={bouquet.featuredPopular}
+            isNewArrival={bouquet.isNewArrival}
             soldCount={bouquet.soldCount}
           />
         </div>

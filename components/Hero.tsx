@@ -13,7 +13,6 @@ import {
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
 import { readMarketSession } from '@/lib/delivery/marketSession';
 import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
-import { GooglePreferredSourceLink } from '@/components/GooglePreferredSourceLink';
 import { PremiumCtaLink } from '@/components/home/PremiumCtaLink';
 import { StorefrontIcon } from '@/components/icons';
 
@@ -162,9 +161,8 @@ function HeroCtaSection({
           {t.ctaHowItWorks}
         </button>
       </div>
-      <div className={`${introItemClass} flex flex-nowrap items-stretch gap-2 sm:gap-3`.trim()}>
-        <GoogleReviewsBadge lang={lang} className="shrink-0" />
-        <GooglePreferredSourceLink lang={lang} variant="hero" />
+      <div className={introItemClass}>
+        <GoogleReviewsBadge lang={lang} />
       </div>
     </>
   );
@@ -228,9 +226,6 @@ export function Hero({
     !titleOverride &&
     (pathname === '/' ||
       (pathParts.length === 1 && locales.includes(pathParts[0] as Locale)) ||
-      (pathParts.length === 2 &&
-        locales.includes(pathParts[0] as Locale) &&
-        pathParts[1] === 'homepage-v2') ||
       isMarketLanding);
   const introClass = isHomeLanding ? 'home-hero-intro' : '';
   const introItemClass = isHomeLanding ? 'home-hero-intro__item' : '';

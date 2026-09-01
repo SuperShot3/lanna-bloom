@@ -1115,6 +1115,15 @@
   line-height: 1;
 }
 
+.newArrivalBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #1a3c34;
+  line-height: 1;
+}
+
 /* Sticky purchase bar */
 .stickyBar {
   display: none;

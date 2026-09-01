@@ -30,6 +30,7 @@ import {
   getProductByIdFromCatalog,
   getProductBySlugFromCatalog,
   getProductsFilteredFromCatalog,
+  getNewArrivalBouquetsFromCatalog,
   isCatalogReadFromSupabase,
 } from '@/lib/catalog';
 import type { CatalogProduct } from '@/lib/catalog/types';
@@ -121,6 +122,14 @@ export async function getCatalogPopularBouquets(
   catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
 ): Promise<Bouquet[]> {
   return getCatalogPopularBouquetsPaginated(0, limit, catalogDestination);
+}
+
+export async function getCatalogNewArrivalBouquets(
+  limit: number,
+  catalogDestination: DeliveryDestinationId = 'CHIANG_MAI'
+): Promise<Bouquet[]> {
+  if (!isCatalogReadFromSupabase()) catalogReadNotConfigured();
+  return attachSoldCounts(await getNewArrivalBouquetsFromCatalog(limit, catalogDestination));
 }
 
 export async function getCatalogPopularItemsPaginated(

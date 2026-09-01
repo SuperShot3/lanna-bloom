@@ -1,5 +1,4 @@
 import { isAnalyticsAllowed } from '@/lib/analytics/isAnalyticsAllowed';
-import { getHomepageExperimentAnalyticsParams } from '@/lib/homepageExperiment/analyticsParams';
 
 /**
  * Analytics helpers — GTM dataLayer pushes only.
@@ -34,7 +33,7 @@ export function pushToDataLayer(eventName: string, params: Record<string, unknow
   if (typeof window === 'undefined') return;
   if (!isAnalyticsAllowed()) return;
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({ event: eventName, ...getHomepageExperimentAnalyticsParams(), ...params });
+  window.dataLayer.push({ event: eventName, ...params });
   if (isDev) console.debug('[pushToDataLayer]', eventName, params);
 }
 
@@ -320,7 +319,6 @@ export function trackCheckoutPurchase(params: {
           value,
           currency,
           items,
-          ...getHomepageExperimentAnalyticsParams(),
           ...(hasUserData ? { user_data: userData } : {}),
           eventCallback: () => {
             if (isDev) {

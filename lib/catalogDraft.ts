@@ -51,6 +51,8 @@ export type CatalogBouquetDraftPayload = {
   compositionEn?: string;
   compositionTh?: string;
   featuredPopular?: boolean;
+  /** Admin intent: show as New Arrival (resolved to timestamp on publish). */
+  newArrivalEnabled?: boolean;
   contactBeforeOrder?: boolean;
   colors?: string[];
   flowerTypes?: string[];
@@ -379,6 +381,9 @@ function parseBouquetDraftPayload(payload: Record<string, unknown>): UpdateCatal
   if (typeof payload.compositionEn === 'string') input.compositionEn = payload.compositionEn;
   if (typeof payload.compositionTh === 'string') input.compositionTh = payload.compositionTh;
   if (typeof payload.featuredPopular === 'boolean') input.featuredPopular = payload.featuredPopular;
+  if (typeof payload.newArrivalEnabled === 'boolean') {
+    input.newArrivalEnabled = payload.newArrivalEnabled;
+  }
   if (typeof payload.contactBeforeOrder === 'boolean') {
     input.contactBeforeOrder = payload.contactBeforeOrder;
   }
@@ -527,6 +532,7 @@ export function applyBouquetDraftToDetail<T extends Record<string, unknown>>(
     ...(typeof p.compositionEn === 'string' && { compositionEn: p.compositionEn }),
     ...(typeof p.compositionTh === 'string' && { compositionTh: p.compositionTh }),
     ...(typeof p.featuredPopular === 'boolean' && { featuredPopular: p.featuredPopular }),
+    ...(typeof p.newArrivalEnabled === 'boolean' && { newArrivalEnabled: p.newArrivalEnabled }),
     ...(typeof p.contactBeforeOrder === 'boolean' && { contactBeforeOrder: p.contactBeforeOrder }),
     ...(Array.isArray(p.colors) && { colors: p.colors }),
     ...(Array.isArray(p.flowerTypes) && { flowerTypes: p.flowerTypes }),

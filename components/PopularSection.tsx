@@ -6,6 +6,7 @@ import {
   getCatalogHomeFlowerTypeSections,
   getCatalogHomeFlowerTypeTiles,
   getCatalogHomeOccasionTiles,
+  getCatalogNewArrivalBouquets,
   getCatalogPopularBouquets,
   getCatalogProductsFiltered,
 } from '@/lib/catalogReads';
@@ -103,9 +104,10 @@ export async function PopularSection({
     })
   );
 
-  const [popularBouquets, occasionTiles, flowerTypeTiles, sections, productSectionResults] = await Promise.all([
+  const [popularBouquets, occasionTiles, newArrivalBouquets, flowerTypeTiles, sections, productSectionResults] = await Promise.all([
     getCatalogPopularBouquets(HOME_POPULAR_ROW_LIMIT, destinationId),
     getCatalogHomeOccasionTiles(destinationId),
+    getCatalogNewArrivalBouquets(HOME_POPULAR_ROW_LIMIT, destinationId),
     getCatalogHomeFlowerTypeTiles(destinationId),
     getCatalogHomeFlowerTypeSections(destinationId),
     Promise.all(
@@ -128,6 +130,7 @@ export async function PopularSection({
   if (
     popularBouquets.length === 0 &&
     occasionTiles.length === 0 &&
+    newArrivalBouquets.length === 0 &&
     flowerTypeTiles.length === 0 &&
     sections.length === 0 &&
     productSections.length === 0
@@ -150,6 +153,13 @@ export async function PopularSection({
           showMoreLabel={tHome.showMore}
         />
         <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
+        <PopularPicksRow
+          title={tHome.newArrivalsTitle}
+          href={`${catalogBase}${buildCatalogSearchString({ sort: 'newest' })}`}
+          bouquets={newArrivalBouquets}
+          lang={lang}
+          showMoreLabel={tHome.showMore}
+        />
         {sections.map((section) => {
           const sectionCatalogHref = `${catalogBase}${buildCatalogSearchString({ types: [section.type] })}`;
           const titleTemplate = section.pottedOnly

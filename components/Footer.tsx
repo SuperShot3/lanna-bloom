@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { Fragment, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { translations } from '@/lib/i18n';
@@ -16,9 +16,16 @@ import {
   buildMarketHomeHref,
 } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import {
+  getContactPhoneE164,
+  getContactPhoneTelUrl,
+  getLineContactUrl,
+  getWhatsAppContactUrl,
+  LINE_OA_DISPLAY_HANDLE,
+} from '@/lib/messenger';
+import { GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 import { MessengerLinks } from './MessengerLinks';
 import { SocialLinks } from './SocialLinks';
-import { GooglePreferredSourceLink } from './GooglePreferredSourceLink';
 
 const FOOTER_DELIVERY_ORDER_LINKS: {
   destinationId: DeliveryDestinationId;
@@ -30,6 +37,31 @@ const FOOTER_DELIVERY_ORDER_LINKS: {
     href: (l: Locale) => `/${l}/${m.pathSlug}/flower-delivery`,
   })),
 ];
+
+const FOOTER_NAP_AREA_ORDER: DeliveryDestinationId[] = [
+  'CHIANG_MAI',
+  'BANGKOK',
+  'PHUKET',
+  'SAMUI',
+  'HUA_HIN',
+  'PATTAYA',
+  'KRABI',
+  'LAMPHUN',
+  'PAI',
+];
+
+const FOOTER_LINK_CLASS = 'hover:text-[#C5A059] transition-colors';
+
+function napAreaLabel(id: DeliveryDestinationId, lang: Locale): string {
+  if (id === 'KRABI') {
+    if (lang === 'th') return 'อ่าวนาง';
+    if (lang === 'ru') return 'Ао Нанг';
+    if (lang === 'zh-hk') return '奧南海灘';
+    if (lang === 'zh-sg') return '奥南海滩';
+    return 'Ao Nang';
+  }
+  return destinationDisplayName(id, lang);
+}
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -100,7 +132,7 @@ export function Footer({ lang }: { lang: Locale }) {
   return (
     <footer id="site-footer" className="bg-[var(--muted)] pt-20 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] border-t border-[var(--border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-10">
           <div>
             <Link href={homeHref} className="flex items-center gap-2.5 mb-6">
               <Image
@@ -124,7 +156,6 @@ export function Footer({ lang }: { lang: Locale }) {
               <SocialLinks />
               <MessengerLinks pageLocation="footer" />
             </div>
-            <GooglePreferredSourceLink lang={lang} variant="footer" className="mt-4" />
           </div>
           <div>
             <h4 className="font-bold mb-6">{t.shop}</h4>
@@ -287,6 +318,69 @@ export function Footer({ lang }: { lang: Locale }) {
             </form>
           </div>
         </div>
+        <section
+          className="mb-10 max-w-3xl"
+          aria-labelledby="footer-business-information"
+        >
+          <h4 id="footer-business-information" className="font-bold mb-3">
+            {t.businessInformation}
+          </h4>
+          <p className="font-semibold text-stone-700 text-sm mb-2">{t.legalName}</p>
+          <p className="text-sm text-stone-500 leading-relaxed mb-3">{t.businessBlurb}</p>
+          <p className="text-sm text-stone-500 mb-1">{t.openDaily}</p>
+          <p className="text-sm text-stone-500 mb-1">{t.deliveryOnly}</p>
+          <p className="text-sm text-stone-500 mb-1">
+            {t.contactChannelsLabel}{' '}
+            <a href={getContactPhoneTelUrl()} className={FOOTER_LINK_CLASS}>
+              {getContactPhoneE164()}
+            </a>
+            {' / '}
+            <a
+              href={getWhatsAppContactUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={FOOTER_LINK_CLASS}
+            >
+              {t.whatsappLinkText}
+            </a>
+            {' / '}
+            <a
+              href={getLineContactUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={FOOTER_LINK_CLASS}
+            >
+              {LINE_OA_DISPLAY_HANDLE}
+            </a>
+          </p>
+          <p className="text-sm text-stone-500 leading-relaxed mb-3">
+            {t.deliveryAreasPrefix}{' '}
+            {FOOTER_NAP_AREA_ORDER.map((destinationId, index) => {
+              const entry = FOOTER_DELIVERY_ORDER_LINKS.find(
+                (link) => link.destinationId === destinationId
+              );
+              if (!entry) return null;
+              const separator =
+                index === 0
+                  ? ''
+                  : index === FOOTER_NAP_AREA_ORDER.length - 1
+                    ? ` ${t.andWord} `
+                    : ', ';
+              return (
+                <Fragment key={destinationId}>{separator}<Link href={entry.href(lang)} className={FOOTER_LINK_CLASS}>{napAreaLabel(destinationId, lang)}</Link></Fragment>
+              );
+            })}
+            {'.'}
+          </p>
+          <a
+            href={GOOGLE_PLACE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-sm font-medium text-stone-600 ${FOOTER_LINK_CLASS}`}
+          >
+            {t.viewOnGoogleMaps}
+          </a>
+        </section>
         <div className="flex flex-col gap-4 pt-8 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <p>{t.copyright}</p>

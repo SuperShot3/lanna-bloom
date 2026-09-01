@@ -8,6 +8,7 @@ import {
   type VariantImageSet,
 } from '@/lib/catalog/bouquetImages';
 import { buildSellableOptions, primaryCatalogPriceFromPricing, resolvePricingType } from '@/lib/catalog/pricing';
+import { isCatalogNewArrival } from '@/lib/catalog/newArrival';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { isStorefrontRenderableImageUrl } from '@/lib/catalog/catalogImage';
 import { isCatalogImageAiGenerated } from '@/lib/catalog/imageAiGenerated';
@@ -182,6 +183,8 @@ export function mapBouquetRowToBouquet(
       : undefined,
     status: row.status,
     featuredPopular: row.featured_popular,
+    newArrivalStartedAt: row.new_arrival_started_at ?? null,
+    isNewArrival: isCatalogNewArrival(row.new_arrival_started_at),
     contactBeforeOrder: row.contact_before_order === true,
     discountPercent: normalizeCatalogDiscountPercent(row.discount_percent ?? undefined),
     seoTitleEn: row.seo_title_en,

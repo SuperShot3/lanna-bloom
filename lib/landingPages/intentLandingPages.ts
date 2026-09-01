@@ -190,7 +190,7 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       'ได้ — รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทยทั่วเชียงใหม่ โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด'
     ),
     benefits: [
-      L('Same-day delivery during 09:00–20:00', 'จัดส่งวันเดียวช่วง 09:00–20:00'),
+      L('Same-day delivery during 08:00–20:00', 'จัดส่งวันเดียวช่วง 08:00–20:00'),
       L('Order early for best bouquet availability', 'สั่งเช้า ๆ เพื่อมีตัวเลือกช่อดีที่สุด'),
       L('Message card included with your bouquet', 'มีข้อความการ์ดคู่ช่อ'),
       L('Thai & English support', 'รองรับภาษาไทยและอังกฤษ'),
@@ -202,8 +202,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
     showPaymentBadges: false,
     showSameDayBadge: true,
     serviceHoursNote: L(
-      'Service hours today: 09:00–20:00 · Same-day orders accepted until 20:00 Thailand time (delivery may finish after 20:00)',
-      'เวลาให้บริการวันนี้: 09:00–20:00 · รับออเดอร์วันเดียวถึง 20:00 น. ตามเวลาไทย (อาจจัดส่งหลัง 20:00 น.)'
+      'Service hours today: 08:00–20:00 · Same-day orders accepted until 20:00 Thailand time (delivery may finish after 20:00)',
+      'เวลาให้บริการวันนี้: 08:00–20:00 · รับออเดอร์วันเดียวถึง 20:00 น. ตามเวลาไทย (อาจจัดส่งหลัง 20:00 น.)'
     ),
     faqTitle: L('Frequently asked questions', 'คำถามที่พบบ่อย'),
     faq: [
@@ -217,8 +217,8 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       {
         q: L('Is there a cut-off time for same-day delivery?', 'มีเวลาตัดรอบสำหรับจัดส่งวันเดียวไหม?'),
         a: L(
-          'Same-day orders are accepted until 20:00 Thailand time, subject to flower and delivery availability. Delivery may take place after 20:00. Working delivery hours are 09:00–20:00; if same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.',
-          'รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และการจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ เวลาทำการจัดส่งคือ 09:00–20:00 หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป'
+          'Same-day orders are accepted until 20:00 Thailand time, subject to flower and delivery availability. Delivery may take place after 20:00. Working delivery hours are 08:00–20:00; if same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.',
+          'รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และการจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ เวลาทำการจัดส่งคือ 08:00–20:00 หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป'
         ),
       },
       {

@@ -19,7 +19,7 @@ import {
   type DeliveryConstraint,
 } from '@/lib/delivery/deliveryConstraints';
 import { formatYmdLocalizedForPdp } from '@/lib/delivery/pdpDeliveryTiming';
-import { getBangkokYmd, getShopTodayYmd } from '@/lib/deliveryHours';
+import { getBangkokYmd, getShopTodayYmd, formatMinutesAsClockTime, DELIVERY_WINDOW_START_MIN } from '@/lib/deliveryHours';
 
 const CLOCK_TICK_MS = 30_000;
 const SHAKE_MS = 420;
@@ -124,7 +124,7 @@ function messageForInvalidReason(
 ): string {
   switch (reason) {
     case 'before_open':
-      return copy.specificTimeBeforeOpen ?? 'This time is before delivery hours. Earliest is 09:00.';
+      return copy.specificTimeBeforeOpen ?? `This time is before delivery hours. Earliest is ${formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN)}.`;
     case 'after_hours':
       return copy.specificTimeAfterHours ?? 'This time is outside delivery hours. Latest is 19:59.';
     case 'date_blocked':
@@ -171,7 +171,7 @@ export function DeliveryTimeSelector({
 
   const liveNow = now ?? new Date();
   const specificInputValue = isSpecificDeliveryTime(timeSlot) ? timeSlot : '';
-  const minSpecificTime = date ? getMinSpecificDeliveryTimeForDate(date, liveNow) : '09:00';
+  const minSpecificTime = date ? getMinSpecificDeliveryTimeForDate(date, liveNow) : formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN);
   const invalidReason =
     customOpen && date && specificInputValue
       ? getSpecificDeliveryTimeInvalidReason(date, specificInputValue, liveNow, constraint)

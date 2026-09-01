@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { HomepageV1 } from '@/components/home/HomepageV1';
+import { HomepageV2 } from '@/components/home/HomepageV2';
 import { generateHomePageMetadata } from '@/lib/seo/homePageMetadata';
 import { isValidLocale, locales, type Locale } from '@/lib/i18n';
 
@@ -24,5 +24,5 @@ export default async function HomePage({
   params: { lang: string };
 }) {
   const lang: Locale = isValidLocale(params.lang) ? params.lang : 'en';
-  return <HomepageV1 lang={lang} />;
+  return <HomepageV2 lang={lang} />;
 }

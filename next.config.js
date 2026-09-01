@@ -75,6 +75,11 @@ const nextConfig = {
       // Singular alias used by some AI crawlers / llm.txt compatibility specs.
       { source: '/llm.txt', destination: '/llms.txt', permanent: true },
       {
+        source: '/:lang(en|th|ru|zh-sg|zh-hk)/homepage-v2',
+        destination: '/:lang',
+        permanent: true,
+      },
+      {
         source: '/:lang(en|th|ru|zh-sg|zh-hk)/flower-delivery-thailand',
         destination: '/:lang/delivery-areas-thailand',
         permanent: true,

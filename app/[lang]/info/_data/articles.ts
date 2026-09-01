@@ -339,9 +339,9 @@ export const articles: ArticleMeta[] = [
     slug: 'same-day-flower-delivery-chiang-mai',
     title: 'Same-day flower delivery in Chiang Mai',
     excerpt:
-      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai online. Pay by card at checkout; we deliver during working hours (09:00–20:00) when you order in time.',
+      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai online. Pay by card at checkout; we deliver during working hours (08:00–20:00) when you order in time.',
       titleTh: 'บริการส่งดอกไม้ในวันเดียวกันในเชียงใหม่',
-      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ออนไลน์ จ่ายบัตรตอนเช็กเอาต์ เราจัดส่งในช่วงเวลาทำการ (09:00–20:00) เมื่อสั่งทันเวลา',
+      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ออนไลน์ จ่ายบัตรตอนเช็กเอาต์ เราจัดส่งในช่วงเวลาทำการ (08:00–20:00) เมื่อสั่งทันเวลา',
     publishedAt: '2026-02-19T00:00:00.000Z',
     featured: true,
     cover: {
@@ -359,10 +359,10 @@ export const articles: ArticleMeta[] = [
     slug: 'delivery-policy',
     title: 'Delivery Policy',
     excerpt:
-      'How we deliver in every zone we serve: service hours 09:00–20:00, same-day guidance for orders placed before 20:00 Chiang Mai time, zones and fees at checkout, destination item pricing in some cities, peak celebration pricing on major holidays, contact via LINE/WhatsApp or temporary order-page chat, and what we need for a smooth delivery. If same-day delivery is not possible, we will contact you with the next available option. Custom requests or extra questions? Message us on LINE or WhatsApp.',
+      'How we deliver in every zone we serve: service hours 08:00–20:00, same-day guidance for orders placed before 20:00 Chiang Mai time, zones and fees at checkout, destination item pricing in some cities, peak celebration pricing on major holidays, contact via LINE/WhatsApp or temporary order-page chat, and what we need for a smooth delivery. If same-day delivery is not possible, we will contact you with the next available option. Custom requests or extra questions? Message us on LINE or WhatsApp.',
     titleTh: 'นโยบายการจัดส่ง',
     excerptTh:
-      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 09:00–20:00 แนวทางจัดส่งภายในวันสำหรับออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาตามปลายทางในบางเมือง ราคาช่วงเทศกาลสำคัญ การติดต่อผ่าน LINE/WhatsApp หรือแชทชั่วคราวในหน้าออเดอร์ และข้อมูลที่อยู่ที่ควรเตรียม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อแจ้งทางเลือกที่เร็วที่สุด ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
+      'สรุปการจัดส่งทุกโซนที่เราเปิดให้บริการ: เวลาให้บริการ 08:00–20:00 แนวทางจัดส่งภายในวันสำหรับออเดอร์ที่สั่งก่อน 20:00 น. ตามเวลาเชียงใหม่ โซนและค่าจัดส่งตอนเช็กเอาต์ ราคาตามปลายทางในบางเมือง ราคาช่วงเทศกาลสำคัญ การติดต่อผ่าน LINE/WhatsApp หรือแชทชั่วคราวในหน้าออเดอร์ และข้อมูลที่อยู่ที่ควรเตรียม หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อแจ้งทางเลือกที่เร็วที่สุด ต้องการงานพิเศษหรือสอบถามเพิ่มเติม ทัก LINE หรือ WhatsApp ได้เลย',
     publishedAt: '2026-08-04T00:00:00.000Z',
     featured: false,
     cover: {

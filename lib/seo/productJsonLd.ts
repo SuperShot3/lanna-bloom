@@ -30,7 +30,7 @@ function seller(pageUrl: string, fallbackBase: string): Record<string, unknown> 
   return {
     '@type': 'Organization',
     '@id': `${originFromPageUrl(pageUrl, fallbackBase)}/#organization`,
-    name: 'Lanna Bloom',
+    name: 'Lanna Bloom Flower Delivery',
   };
 }
 

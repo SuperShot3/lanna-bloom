@@ -9,7 +9,10 @@ import {
   getSameDayDeliveryPhaseBangkok,
   getTomorrowBangkokDisplayDate,
   formatBangkokTime,
+  formatMinutesAsClockTime,
   intlLocaleForLang,
+  DELIVERY_WINDOW_START_MIN,
+  DELIVERY_WINDOW_END_MIN,
 } from '@/lib/deliveryHours';
 import {
   getNavMarkets,
@@ -34,8 +37,8 @@ export interface CatalogDeliveryBarProps {
 }
 
 const CLOCK_TICK_MS = 30_000;
-const DELIVERY_START_TIME = '09:00';
-const DELIVERY_END_TIME = '20:00';
+const DELIVERY_START_TIME = formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN);
+const DELIVERY_END_TIME = formatMinutesAsClockTime(DELIVERY_WINDOW_END_MIN);
 
 function formatDeliveryDate(ymd: string, lang: Locale): string {
   const date = new Date(`${ymd}T12:00:00+07:00`);
@@ -173,11 +176,11 @@ export function CatalogDeliveryBar({
 
   const sameDayBadgeLine =
     phase === 'before'
-      ? t.deliverySameDayOpens ?? 'Same-day from 09:00 today'
+      ? t.deliverySameDayOpens ?? `Same-day from ${DELIVERY_START_TIME} today`
       : t.deliverySameDayNext?.replace(
           '{date}',
           tomorrowDate,
-        ) ?? 'Next same-day from 09:00';
+        ) ?? `Next same-day from ${DELIVERY_START_TIME}`;
 
   const todayStatus =
     phase === null

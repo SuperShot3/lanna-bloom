@@ -6,6 +6,8 @@ import { translations } from '@/lib/i18n';
 import {
   getSameDayOrderCutoffPhaseBangkok,
   getTomorrowBangkokDisplayDate,
+  formatMinutesAsClockTime,
+  DELIVERY_WINDOW_START_MIN,
   type SameDayOrderCutoffPhase,
 } from '@/lib/deliveryHours';
 
@@ -22,8 +24,8 @@ function bannerMessage(
   switch (phase) {
     case 'before-open':
       return (
-        tCatalog.deliverySameDayOpens?.replace('{time}', '09:00') ??
-        'Same-day delivery from 09:00 today'
+        tCatalog.deliverySameDayOpens?.replace('{time}', formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN)) ??
+        `Same-day delivery from ${formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN)} today`
       );
     case 'before-cutoff':
       return tBuyNow.sameDayHint;
@@ -36,7 +38,7 @@ function bannerMessage(
       return (
         tCatalog.deliverySameDayNext?.replace('{date}', tomorrowDate) ??
         tCatalog.closedForSameDay ??
-        'Closed for same-day — next delivery from 09:00'
+        `Closed for same-day — next delivery from ${formatMinutesAsClockTime(DELIVERY_WINDOW_START_MIN)}`
       );
   }
 }

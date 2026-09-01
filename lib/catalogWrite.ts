@@ -7,6 +7,10 @@ import { randomUUID } from 'crypto';
 import type { BouquetStatus } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
+import {
+  resolveNewArrivalStartedAtFromAdminToggle,
+  resolveNewArrivalStartedAtOnApprove,
+} from '@/lib/catalog/newArrival';
 import type {
   CatalogBouquetPricing,
   CatalogImageSourceType,
@@ -348,6 +352,10 @@ export type UpdateCatalogBouquetByAdminInput = {
   compositionEn?: string;
   compositionTh?: string;
   featuredPopular?: boolean;
+  /** Admin merchandising: enable/disable New Arrival window (resolved to timestamp). */
+  newArrivalEnabled?: boolean;
+  /** Direct timestamp write (prefer newArrivalEnabled from admin forms). */
+  newArrivalStartedAt?: string | null;
   contactBeforeOrder?: boolean;
   discountPercent?: number | null;
   pricingType?: import('@/lib/catalog/pricing').PricingType;
@@ -368,7 +376,7 @@ export async function updateCatalogBouquetByAdmin(
   const supabase = requireSupabase();
   const { data: existing, error: loadError } = await supabase
     .from('catalog_bouquets')
-    .select('pricing, pricing_type')
+    .select('pricing, pricing_type, new_arrival_started_at')
     .eq('id', bouquetId)
     .maybeSingle();
 
@@ -399,6 +407,16 @@ export async function updateCatalogBouquetByAdmin(
     patch.excluded_delivery_destinations = input.excludedDeliveryDestinations;
   }
 
+  if (input.newArrivalEnabled != null) {
+    patch.new_arrival_started_at = resolveNewArrivalStartedAtFromAdminToggle({
+      enabled: input.newArrivalEnabled,
+      previousStartedAt: (existing as { new_arrival_started_at?: string | null })
+        .new_arrival_started_at,
+    });
+  } else if (input.newArrivalStartedAt !== undefined) {
+    patch.new_arrival_started_at = input.newArrivalStartedAt;
+  }
+
   if (input.discountPercent !== undefined) {
     const normalized =
       input.discountPercent == null
@@ -417,6 +435,29 @@ export async function updateCatalogBouquetStatus(
   metadata?: { approvedBy?: string; approvedAt?: string }
 ): Promise<void> {
   const supabase = requireSupabase();
+
+  let newArrivalPatch: Record<string, unknown> = {};
+  if (status === 'approved') {
+    const { data: existing, error: loadError } = await supabase
+      .from('catalog_bouquets')
+      .select('approved_at, new_arrival_started_at')
+      .eq('id', bouquetId)
+      .maybeSingle();
+    if (loadError) throw new Error(loadError.message);
+    const row = existing as {
+      approved_at?: string | null;
+      new_arrival_started_at?: string | null;
+    } | null;
+    const nextStarted = resolveNewArrivalStartedAtOnApprove({
+      previousStartedAt: row?.new_arrival_started_at,
+      previouslyApprovedAt: row?.approved_at,
+    });
+    // Only write when changing from null → started (first publish). Keep existing otherwise.
+    if (nextStarted && !row?.new_arrival_started_at) {
+      newArrivalPatch = { new_arrival_started_at: nextStarted };
+    }
+  }
+
   const { error } = await supabase
     .from('catalog_bouquets')
     .update({
@@ -425,6 +466,7 @@ export async function updateCatalogBouquetStatus(
         approved_by: metadata?.approvedBy?.trim() || null,
         approved_at: metadata?.approvedAt || new Date().toISOString(),
       }),
+      ...newArrivalPatch,
       updated_at: new Date().toISOString(),
     })
     .eq('id', bouquetId);

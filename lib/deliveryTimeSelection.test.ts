@@ -70,18 +70,18 @@ assert(
 
 // Custom mode keeps invalid HH:mm so the UI can explain (before open / too soon)
 const customBeforeOpen = resolveDeliverySchedule(
-  { date: '2026-07-10', timeSlot: '08:00', deliveryTimeMode: 'custom' },
+  { date: '2026-07-10', timeSlot: '07:00', deliveryTimeMode: 'custom' },
   getShopTodayYmd(bangkokPastMidnight),
   bangkokPastMidnight
 );
 assert(
   customBeforeOpen.date === '2026-07-10' &&
-    customBeforeOpen.timeSlot === '08:00' &&
+    customBeforeOpen.timeSlot === '07:00' &&
     customBeforeOpen.deliveryTimeMode === 'custom',
   'custom mode preserves before-open specific time for UI feedback'
 );
 assert(
-  !isDeliveryTimeSlotSelectableForDate('2026-07-10', '08:00', bangkokPastMidnight),
+  !isDeliveryTimeSlotSelectableForDate('2026-07-10', '07:00', bangkokPastMidnight),
   'before-open time remains non-selectable for checkout'
 );
 

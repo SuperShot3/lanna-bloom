@@ -210,6 +210,7 @@ export async function getCatalogBouquetDetailForAdmin(
     compositionTh: mapped.compositionTh,
     status: mapped.status ?? 'pending_review',
     featuredPopular: mapped.featuredPopular === true,
+    newArrivalStartedAt: mapped.newArrivalStartedAt ?? null,
     contactBeforeOrder: mapped.contactBeforeOrder === true,
     discountPercent: mapped.discountPercent,
     pricingType: mapped.pricingType ?? row.pricing_type,

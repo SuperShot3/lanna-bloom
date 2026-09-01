@@ -57,6 +57,10 @@ type Props = {
   featuredPopular: boolean;
   onFeaturedPopularChange: (value: boolean) => void;
   showFeaturedPopular?: boolean;
+  newArrivalEnabled?: boolean;
+  onNewArrivalEnabledChange?: (value: boolean) => void;
+  showNewArrival?: boolean;
+  newArrivalHint?: string | null;
 };
 
 const PRICING_TYPE_OPTIONS: { value: PricingType; label: string }[] = [
@@ -433,6 +437,10 @@ export function PricingSectionEditor({
   featuredPopular,
   onFeaturedPopularChange,
   showFeaturedPopular = true,
+  newArrivalEnabled = false,
+  onNewArrivalEnabledChange,
+  showNewArrival = false,
+  newArrivalHint = null,
 }: Props) {
   const [editingSizeKey, setEditingSizeKey] = useState<SizeKey | 'new' | null>(null);
   const [editingStemIndex, setEditingStemIndex] = useState<number | 'new' | null>(null);
@@ -694,6 +702,23 @@ export function PricingSectionEditor({
           />
           <span>Popular pick (homepage badge)</span>
         </label>
+      ) : null}
+      {showNewArrival && onNewArrivalEnabledChange ? (
+        <div className="admin-cms-field">
+          <label className="admin-cms-checkbox">
+            <input
+              type="checkbox"
+              checked={newArrivalEnabled}
+              onChange={(e) => onNewArrivalEnabledChange(e.target.checked)}
+            />
+            <span>New arrival (homepage + badge, 45 days)</span>
+          </label>
+          {newArrivalHint ? (
+            <p className="admin-cms-empty-hint" style={{ marginTop: 6 }}>
+              {newArrivalHint}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <BouquetSizeEditModal

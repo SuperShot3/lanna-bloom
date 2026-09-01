@@ -8,6 +8,10 @@ import {
   type StemBucketKey,
 } from '@/lib/bouquetOptions';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
+import {
+  compareBouquetsByNewest,
+  isCatalogNewArrival,
+} from '@/lib/catalog/newArrival';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 import type { CatalogProduct } from '@/lib/catalog/types';
 
@@ -153,10 +157,12 @@ export function filterBouquetsCatalogData(
 
   const sort = params.sort || 'newest';
   if (sort === 'newest') {
-    const interleaved = buildInterleavedPopularBouquets(filtered);
-    const rng = mulberry32(getPopularShuffleSeed());
+    filtered = [...filtered].sort((a, b) =>
+      compareBouquetsByNewest(a.newArrivalStartedAt, b.newArrivalStartedAt) ||
+      (a.nameEn || '').localeCompare(b.nameEn || '', undefined, { sensitivity: 'base' })
+    );
     return {
-      bouquets: shuffleArraySeeded([...interleaved], rng),
+      bouquets: dedupeBouquetsById(filtered),
       allBouquets: unfilteredForFacets,
     };
   }
@@ -166,6 +172,25 @@ export function filterBouquetsCatalogData(
     filtered = [...filtered].sort((a, b) => minPriceFromOptions(b.sizes) - minPriceFromOptions(a.sizes));
   }
   return { bouquets: dedupeBouquetsById(filtered), allBouquets: unfilteredForFacets };
+}
+
+/** Active New Arrivals for a destination, newest first. */
+export function filterNewArrivalBouquets(
+  bouquets: Bouquet[],
+  catalogDestination: DeliveryDestinationId,
+  now: Date = new Date()
+): Bouquet[] {
+  return bouquets
+    .filter(
+      (b) =>
+        isCatalogNewArrival(b.newArrivalStartedAt, now) &&
+        bouquetIsAvailableForDestination(b, catalogDestination)
+    )
+    .sort(
+      (a, b) =>
+        compareBouquetsByNewest(a.newArrivalStartedAt, b.newArrivalStartedAt) ||
+        (a.nameEn || '').localeCompare(b.nameEn || '', undefined, { sensitivity: 'base' })
+    );
 }
 
 export function getPopularCatalogCategory(item: PopularCatalogItem): string {

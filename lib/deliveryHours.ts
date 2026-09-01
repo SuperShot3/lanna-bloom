@@ -1,6 +1,6 @@
 /**
  * Same-day delivery window in Chiang Mai (Asia/Bangkok).
- * Matches site copy: 09:00–20:00; orders placed before 20:00 are often eligible
+ * Matches site copy: 08:00–20:00; orders placed before 20:00 are often eligible
  * for same-day delivery, subject to availability and routing.
  */
 import type { Locale } from '@/lib/i18n';
@@ -15,8 +15,8 @@ export function intlLocaleForLang(lang: Locale): string {
   return 'en-GB';
 }
 
-const START_MIN = 9 * 60;
-/** Half-open: includes 09:00, excludes 20:00 (closed from 20:00). */
+const START_MIN = 8 * 60;
+/** Half-open: includes 08:00, excludes 20:00 (closed from 20:00). */
 const END_MIN = 20 * 60;
 
 /** Same-day order guidance threshold in Bangkok (20:00). */
@@ -112,7 +112,7 @@ export function getSameDayOrderCutoffPhaseBangkok(now: Date): SameDayOrderCutoff
   return 'after-cutoff';
 }
 
-/** Human-readable tomorrow date in Bangkok (for "next from 09:00" line). */
+/** Human-readable tomorrow date in Bangkok (for "next from 08:00" line). */
 export function getTomorrowBangkokDisplayDate(now: Date, lang: Locale): string {
   const tomorrowYmd = addDaysToYmd(getBangkokYmd(now), 1);
   return formatYmdForLocale(tomorrowYmd, lang);

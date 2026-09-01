@@ -20,7 +20,7 @@ const HomeFaq = dynamic(
   { ssr: true }
 );
 
-/** Current production homepage. Do not substantially change this composer. */
+/** Previous homepage composer. Kept unreferenced for a one-line rollback. */
 export async function HomepageV1({ lang }: { lang: Locale }) {
   const { heroImageUrl, carouselImages, faqItems, jsonLd, lcpImageSrc } =
     await loadHomePageChrome(lang);
