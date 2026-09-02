@@ -114,6 +114,7 @@ export default async function MarketFlowerDeliveryPage({
     lang,
     city,
     destinationId: entry.destinationId,
+    catalogHref,
   });
 
   return (
@@ -142,13 +143,14 @@ export default async function MarketFlowerDeliveryPage({
       <ExperienceSection
         lang={lang}
         locationName={city}
-        timing="same_day"
+        timing={timingFromProvinceStatus(province?.status)}
       />
       <DeliverySection lang={lang} catalogHref={catalogHref} copy={deliveryCopy} destinationId={entry.destinationId} />
       <ReviewsSection
         lang={lang}
         chiangMaiSpecific={false}
         locationName={city}
+        destinationId={entry.destinationId}
       />
       <LocalLandingSection lang={lang} catalogHref={catalogHref} copy={localCopy} />
       <HomeFaq

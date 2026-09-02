@@ -11,6 +11,7 @@ import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
+import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 
 /** Visible name length on gift tiles (full name in title + aria-label; price is not clipped). */
 const GIFT_TILE_NAME_MAX = 7;
@@ -31,6 +32,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
     duration: 35,
   });
   const { addItem, removeItem, items } = useCart();
+  const checkoutProfile = useCheckoutDeliveryProfile(lang);
   if (!gifts.length) return null;
 
   const defaultAddOns = getDefaultAddOns();
@@ -90,6 +92,7 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
           size: syntheticSize,
           addOns: defaultAddOns,
           excludedDeliveryDestinations: product.excludedDeliveryDestinations,
+          deliveryDestination: checkoutProfile.destinationId,
           ...(product.discountPercent != null && {
             catalogDiscountPercent: product.discountPercent,
           }),

@@ -37,9 +37,10 @@ import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
 import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
 import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
+import { ProductPriceDestinationLabel } from '@/components/pdp/ProductPriceDestinationLabel';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
-import Link from 'next/link';
+import { requestOpenDeliveryRegionPicker } from '@/lib/delivery/deliveryRegionCookie';
 
 export function ProductOrderBlock({
   bouquet,
@@ -137,6 +138,7 @@ export function ProductOrderBlock({
         size: { ...selectedSize, price: discountedSizePrice },
         addOns: { ...addOns, cardMessage: '', paperColor: null },
         excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
+        deliveryDestination: checkoutProfile.destinationId,
         ...(bouquet.deliveryOptions?.length
           ? { deliveryOptions: bouquet.deliveryOptions }
           : {}),
@@ -191,6 +193,7 @@ export function ProductOrderBlock({
           className={pdpStyles.pdpUnitPrice}
           amountClassName={pdpStyles.pdpUnitPriceAmount}
         />
+        <ProductPriceDestinationLabel lang={lang} destinationLabel={destinationLabel} />
         {!hideDeliveryFromFee ? (
           <DeliveryFromFeeHint
             lang={lang}
@@ -233,12 +236,13 @@ export function ProductOrderBlock({
         <div className="order-destination-block-notice" role="alert">
           <p>{tProduct.unavailableInDeliveryArea}</p>
           <p>
-            <Link
-              href={`/${lang}/delivery-areas-thailand`}
+            <button
+              type="button"
               className="order-destination-change-link"
+              onClick={() => requestOpenDeliveryRegionPicker()}
             >
-              {changeAreaLabel}
-            </Link>
+              {tProduct.changeRegion ?? changeAreaLabel}
+            </button>
           </p>
         </div>
       ) : (
@@ -360,11 +364,17 @@ export function ProductOrderBlock({
         .order-destination-block-notice p + p {
           margin-top: 8px;
         }
-        .order-destination-block-notice :global(.order-destination-change-link) {
+        .order-destination-block-notice :global(.order-destination-change-link),
+        .order-destination-block-notice button.order-destination-change-link {
           color: var(--primary, #1a3c34);
           font-weight: 600;
           text-decoration: underline;
           text-underline-offset: 2px;
+          background: none;
+          border: 0;
+          padding: 0;
+          font: inherit;
+          cursor: pointer;
         }
         .order-destination-available {
           margin: 0 0 12px;

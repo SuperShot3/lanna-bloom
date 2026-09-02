@@ -20,9 +20,10 @@ import {
   isMarketPathSlug,
   type MarketPathSlug,
 } from '@/lib/delivery/markets';
+import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import {
-  clearMarketSession,
-  readMarketSession,
+  applyDestinationToMarketSession,
+  readPersistedMarketSession,
   writeMarketSession,
 } from '@/lib/delivery/marketSession';
 import type { PublicProvince } from '@/lib/provinces/types';
@@ -136,7 +137,7 @@ export function CatalogDeliveryBar({
       }
     }
 
-    const session = readMarketSession();
+    const session = readPersistedMarketSession();
     setLocationValue(session?.destinationId ?? 'CHIANG_MAI');
   }, [pathname]);
 
@@ -151,14 +152,14 @@ export function CatalogDeliveryBar({
     setLocationValue(nextDestination);
 
     if (nextDestination === 'CHIANG_MAI') {
-      clearMarketSession();
-      window.location.assign(`/${lang}/catalog`);
+      applyDestinationToMarketSession('CHIANG_MAI');
+      window.location.assign(buildMarketCatalogHref(lang, null));
       return;
     }
 
     const market = getNavMarkets().find((m) => m.destinationId === nextDestination);
     if (!market) {
-      window.location.assign(`/${lang}/catalog`);
+      window.location.assign(buildMarketCatalogHref(lang, null));
       return;
     }
 
@@ -167,7 +168,7 @@ export function CatalogDeliveryBar({
       pathSlug: market.pathSlug as MarketPathSlug,
     });
     // Land on market catalog (gated by province catalog_enabled when closed).
-    window.location.assign(`/${lang}/catalog/${market.pathSlug}/catalog`);
+    window.location.assign(buildMarketCatalogHref(lang, market.pathSlug));
   };
 
   const isToday = Boolean(minDate) && date === minDate;

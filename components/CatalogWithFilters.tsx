@@ -28,6 +28,7 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getBouquetDisplayCategory, getProductDisplayCategory } from '@/lib/catalogCategories';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 import { getCatalogOccasionGuide } from '@/lib/catalogOccasionGuides';
+import { publicStorefrontPathname } from '@/lib/delivery/regionalProductRedirect';
 
 export interface CatalogWithFiltersProps {
   lang: Locale;
@@ -76,7 +77,7 @@ export function CatalogWithFilters({
   nameSearchQuery = '',
 }: CatalogWithFiltersProps) {
   const router = useRouter();
-  const pathname = usePathname() ?? '/';
+  const pathname = publicStorefrontPathname(usePathname() ?? '/');
   const [isPending, startTransition] = useTransition();
   const { isOpen: mobileFilterOpen, setOpen: setMobileFilterOpen } = useFlowerFilterSheetOpen();
   const t = translations[lang].catalog;

@@ -203,6 +203,9 @@ export function sanitizeCartItemsForShare(items: unknown): CartItem[] {
       size: raw.size,
       quantity: qty,
       excludedDeliveryDestinations: sanitizeExcludedDestinations(raw.excludedDeliveryDestinations),
+      deliveryDestination: parseDeliveryDestinationId(
+        typeof raw.deliveryDestination === 'string' ? raw.deliveryDestination : null
+      ),
       deliveryOptions: Array.isArray(raw.deliveryOptions)
         ? raw.deliveryOptions.filter((v): v is string => typeof v === 'string').slice(0, 12)
         : undefined,

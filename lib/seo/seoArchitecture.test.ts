@@ -3,7 +3,7 @@
  * Wired via npm run test:seo
  */
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Metadata } from 'next';
 import {
@@ -52,6 +52,55 @@ function fail(msg: string): never {
 {
   const upgraded = cleanCanonicalUrl('http://www.lannabloom.shop/en/catalog');
   assert.equal(upgraded, 'https://www.lannabloom.shop/en/catalog');
+}
+
+// --- Apex (non-www) → www 301, without moving /api ---
+{
+  type HostRedirect = {
+    source: string;
+    destination: string;
+    statusCode?: number;
+    has?: { type: string; value: string }[];
+  };
+
+  function assertApexWww301(rules: HostRedirect[], label: string) {
+    const apexRules = rules.filter(
+      (rule) =>
+        rule.has?.some((h) => h.type === 'host' && h.value === 'lannabloom.shop') &&
+        rule.destination.startsWith('https://www.lannabloom.shop')
+    );
+    assert.ok(apexRules.length >= 2, `${label}: expected apex → www rules`);
+    for (const rule of apexRules) {
+      assert.equal(rule.statusCode, 301, `${label}: ${rule.source} must be 301`);
+    }
+    assert.ok(
+      apexRules.some((rule) => rule.source === '/'),
+      `${label}: missing / → www`
+    );
+    const pathRule = apexRules.find((rule) => rule.source.includes(':path'));
+    assert.ok(pathRule, `${label}: missing /:path* → www`);
+    assert.match(
+      pathRule!.source,
+      /\(\?!api\//,
+      `${label}: path rule must skip /api`
+    );
+  }
+
+  const vercel = JSON.parse(readFileSync(path.join(process.cwd(), 'vercel.json'), 'utf8')) as {
+    redirects: HostRedirect[];
+  };
+  assertApexWww301(vercel.redirects, 'vercel.json');
+  assert.equal(
+    vercel.redirects[0]?.has?.[0]?.value,
+    'lannabloom.shop',
+    'vercel.json: apex → www must run before / → /en'
+  );
+
+  const nextConfigSrc = readFileSync(path.join(process.cwd(), 'next.config.js'), 'utf8');
+  assert.match(nextConfigSrc, /value: 'lannabloom.shop'/);
+  assert.match(nextConfigSrc, /destination: 'https:\/\/www\.lannabloom\.shop\/:path'/);
+  assert.match(nextConfigSrc, /statusCode: 301/);
+  assert.match(nextConfigSrc, /source: '\/:path\(\(\?!api\/\)\.\*\)'/);
 }
 
 {
@@ -307,6 +356,34 @@ function firstOgImageAlt(meta: Metadata): string {
     `Product OG must keep bouquet photo: ${productUrl}`
   );
   assert.ok(!productUrl.includes('/og/bangkok.jpg'));
+  const productCanonical = String(productMeta.alternates?.canonical ?? '');
+  assert.ok(
+    productCanonical.endsWith('/en/catalog/red-roses'),
+    `Product canonical must be the clean URL: ${productCanonical}`
+  );
+  assert.ok(
+    !productCanonical.includes('/bangkok/red-roses'),
+    `Product canonical must not include the market slug: ${productCanonical}`
+  );
+  const productLangs = productMeta.alternates?.languages as Record<string, string> | undefined;
+  assert.ok(productLangs?.en?.endsWith('/en/catalog/red-roses'));
+  assert.ok(productLangs?.th?.endsWith('/th/catalog/red-roses'));
+  assert.ok(productLangs?.['zh-HK']?.endsWith('/zh-hk/catalog/red-roses'));
+
+  const catalogMeta = buildMarketPageMetadata({
+    lang: 'en',
+    market: bangkok,
+    kind: 'catalog',
+  });
+  const catalogCanonical = String(catalogMeta.alternates?.canonical ?? '');
+  assert.ok(
+    catalogCanonical.endsWith('/en/catalog/bangkok'),
+    `Catalog canonical must be the pretty listing URL: ${catalogCanonical}`
+  );
+  assert.ok(
+    !catalogCanonical.endsWith('/catalog/bangkok/catalog'),
+    `Catalog canonical must not double /catalog: ${catalogCanonical}`
+  );
 
   const articleOg = articleShareImages('flower-delivery-bangkok', 'en');
   assert.ok(articleOg?.[0]?.url.includes('/og/bangkok.jpg'));
@@ -331,6 +408,18 @@ function firstOgImageAlt(meta: Metadata): string {
     !sitemapArticles.some((a) => a.noindex),
     'Sitemap article set must exclude noindex'
   );
+}
+
+{
+  const breakfast = articles.find((a) => a.slug === 'thai-breakfast-chiang-mai');
+  assert.ok(breakfast, 'thai-breakfast-chiang-mai must stay in the registry');
+  assert.equal(breakfast.noindex, true);
+  assert.equal(breakfast.excludeFromSitemap, true);
+  assert.equal(breakfast.excludeFromHub, true);
+  assert.deepEqual(articlePageRobots('en', breakfast.noindex), {
+    index: false,
+    follow: false,
+  });
 }
 
 {
@@ -388,6 +477,45 @@ function firstOgImageAlt(meta: Metadata): string {
     'https://cdn.example.com/bouquet.webp'
   );
   assert.equal(resolveProductOgImage(['data:image/svg+xml,x']), undefined);
+}
+
+// --- Product URLs stay region-free (canonical / hreflang / sitemap / middleware) ---
+{
+  const productAlt = buildAlternates({
+    lang: 'en',
+    pathSuffix: '/catalog/red-roses',
+  });
+  assert.ok(String(productAlt.canonical).endsWith('/en/catalog/red-roses'));
+  const langs = productAlt.languages as Record<string, string>;
+  assert.ok(langs.en.endsWith('/en/catalog/red-roses'));
+  assert.ok(langs.th.endsWith('/th/catalog/red-roses'));
+  assert.ok(langs['zh-HK'].endsWith('/zh-hk/catalog/red-roses'));
+  assert.ok(!langs.en.includes('/catalog/krabi/'));
+
+  const landingAlt = buildAlternates({
+    lang: 'en',
+    pathSuffix: '/krabi/flower-delivery',
+  });
+  assert.ok(String(landingAlt.canonical).endsWith('/en/krabi/flower-delivery'));
+
+  const sitemapSrc = readFileSync(path.join(process.cwd(), 'app/sitemap.ts'), 'utf8');
+  assert.ok(
+    sitemapSrc.includes('/catalog/${bouquet.slug}'),
+    'sitemap must emit /{lang}/catalog/{slug}'
+  );
+  assert.ok(
+    !sitemapSrc.includes('/catalog/${market.pathSlug}/'),
+    'sitemap must not emit regional product URLs'
+  );
+  assert.ok(
+    sitemapSrc.includes('/${lang}/${market.pathSlug}/flower-delivery'),
+    'sitemap must keep market landings'
+  );
+
+  const middlewareSrc = readFileSync(path.join(process.cwd(), 'middleware.ts'), 'utf8');
+  assert.match(middlewareSrc, /matchRegionalProductRedirect/);
+  assert.match(middlewareSrc, /NextResponse\.redirect\(dest, 308\)/);
+  assert.match(middlewareSrc, /applyDeliveryRegionCookie/);
 }
 
 console.log('seoArchitecture.test.ts: all assertions passed');

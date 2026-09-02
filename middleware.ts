@@ -1,5 +1,11 @@
 import { auth } from '@/auth';
 import { applyAttributionCookies } from '@/lib/attribution/middlewareCapture';
+import { applyDeliveryRegionCookie } from '@/lib/delivery/deliveryRegionCookie';
+import {
+  matchPrettyMarketCatalogRewrite,
+  matchRegionalProductRedirect,
+  matchUglyMarketCatalogRedirect,
+} from '@/lib/delivery/regionalProductRedirect';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const STOREFRONT_LANGS = new Set(['en', 'th', 'ru', 'zh-sg', 'zh-hk']);
@@ -55,6 +61,52 @@ function applyRetiredHomepageExperimentCleanup(
   return res;
 }
 
+/**
+ * 308 /[lang]/catalog/[region]/[slug] (and legacy /[lang]/[region]/catalog/[slug])
+ * onto the canonical product URL, preserving the region in the delivery cookie.
+ */
+function applyRegionalProductRedirect(
+  req: NextRequest,
+  incoming?: NextResponse
+): NextResponse | undefined {
+  const match = matchRegionalProductRedirect(req.nextUrl.pathname);
+  if (!match) return incoming;
+
+  const dest = req.nextUrl.clone();
+  dest.pathname = match.targetPath;
+  const redirect = NextResponse.redirect(dest, 308);
+  if (incoming) copyCookies(incoming, redirect);
+  applyDeliveryRegionCookie(redirect, match.destinationId);
+  return redirect;
+}
+
+/**
+ * Public city catalogs are /[lang]/catalog/[market]. The nested /catalog page
+ * is only the dynamic renderer (product ISR cannot share that segment).
+ */
+function applyMarketCatalogListing(
+  req: NextRequest,
+  incoming?: NextResponse
+): NextResponse | undefined {
+  const ugly = matchUglyMarketCatalogRedirect(req.nextUrl.pathname);
+  if (ugly) {
+    const dest = req.nextUrl.clone();
+    dest.pathname = ugly.targetPath;
+    const redirect = NextResponse.redirect(dest, 308);
+    if (incoming) copyCookies(incoming, redirect);
+    return redirect;
+  }
+
+  const pretty = matchPrettyMarketCatalogRewrite(req.nextUrl.pathname);
+  if (!pretty) return incoming;
+
+  const dest = req.nextUrl.clone();
+  dest.pathname = pretty.targetPath;
+  const rewrite = NextResponse.rewrite(dest);
+  if (incoming) copyCookies(incoming, rewrite);
+  return rewrite;
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
@@ -76,7 +128,16 @@ export default auth((req) => {
   }
 
   const attrRes = applyAttributionCookies(req);
-  return applyRetiredHomepageExperimentCleanup(req, attrRes) ?? attrRes;
+  const regional = applyRegionalProductRedirect(req, attrRes);
+  if (regional && regional !== attrRes) return regional;
+  const listing = applyMarketCatalogListing(req, regional ?? attrRes);
+  if (listing && listing !== attrRes && listing !== regional) return listing;
+  return (
+    applyRetiredHomepageExperimentCleanup(req, listing ?? regional ?? attrRes) ??
+    listing ??
+    regional ??
+    attrRes
+  );
 });
 
 export const config = {
@@ -86,6 +147,8 @@ export const config = {
     '/:lang(en|th|ru|zh-sg|zh-hk)',
     '/:lang(en|th|ru|zh-sg|zh-hk)/',
     '/:lang(en|th|ru|zh-sg|zh-hk)/homepage-v2',
+    '/:lang(en|th|ru|zh-sg|zh-hk)/catalog/:path*',
+    '/:lang(en|th|ru|zh-sg|zh-hk)/:market/catalog/:slug',
     {
       source: '/((?!api|_next/static|_next/image|favicon.ico|.*\\.).*)',
       has: [{ type: 'query', key: 'gclid' }],

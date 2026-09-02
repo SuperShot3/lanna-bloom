@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Clock, MapPin, Phone, Truck } from 'lucide-react';
 import { translations } from '@/lib/i18n';
 import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import type { Locale } from '@/lib/i18n';
@@ -17,7 +18,7 @@ import {
 } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import {
-  getContactPhoneE164,
+  getContactPhoneDisplay,
   getContactPhoneTelUrl,
 } from '@/lib/messenger';
 import { GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
@@ -120,29 +121,46 @@ export function Footer({ lang }: { lang: Locale }) {
                 Lanna Bloom
               </span>
             </Link>
-            <p className="font-semibold text-stone-700 text-sm mb-2">{t.legalName}</p>
-            <p className="text-stone-500 text-sm leading-relaxed mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500 mb-3">
+              {t.legalName}
+            </p>
+            <p className="text-stone-500 text-sm leading-relaxed">
               {t.tagline.replace(
                 '{city}',
                 destinationDisplayName(checkoutProfile.destinationId, lang)
               )}
             </p>
-            <p className="text-sm text-stone-500 mb-1">{t.openDaily}</p>
-            <p className="text-sm text-stone-500 mb-1">{t.deliveryOnly}</p>
-            <p className="text-sm text-stone-500 mb-1">
-              <a href={getContactPhoneTelUrl()} className={FOOTER_LINK_CLASS}>
-                {getContactPhoneE164()}
-              </a>
-            </p>
-            <a
-              href={GOOGLE_PLACE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`inline-block text-sm font-medium text-stone-600 mb-4 ${FOOTER_LINK_CLASS}`}
-            >
-              {t.viewOnGoogleMaps}
-            </a>
-            <div className="flex gap-4 items-center flex-wrap">
+            <ul className="mt-5 pt-5 border-t border-[var(--border)] space-y-2.5 text-sm text-stone-500">
+              <li className="flex items-start gap-2.5">
+                <Clock size={15} strokeWidth={1.5} className="mt-[3px] shrink-0 text-[#C5A059]" />
+                <span>{t.openDaily}</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Truck size={15} strokeWidth={1.5} className="mt-[3px] shrink-0 text-[#C5A059]" />
+                <span>{t.deliveryOnly}</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Phone size={15} strokeWidth={1.5} className="mt-[3px] shrink-0 text-[#C5A059]" />
+                <a
+                  href={getContactPhoneTelUrl()}
+                  className={`font-medium text-stone-700 ${FOOTER_LINK_CLASS}`}
+                >
+                  {getContactPhoneDisplay()}
+                </a>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <MapPin size={15} strokeWidth={1.5} className="mt-[3px] shrink-0 text-[#C5A059]" />
+                <a
+                  href={GOOGLE_PLACE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`underline decoration-[var(--border)] underline-offset-4 hover:decoration-[#C5A059] ${FOOTER_LINK_CLASS}`}
+                >
+                  {t.viewOnGoogleMaps}
+                </a>
+              </li>
+            </ul>
+            <div className="flex gap-4 items-center flex-wrap mt-6">
               <SocialLinks />
               <MessengerLinks pageLocation="footer" />
             </div>

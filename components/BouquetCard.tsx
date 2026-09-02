@@ -253,6 +253,7 @@ export function BouquetCard({
           size: discountedSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: bouquet.excludedDeliveryDestinations,
+          deliveryDestination: checkoutProfile.destinationId,
           ...(bouquet.deliveryOptions?.length
             ? { deliveryOptions: bouquet.deliveryOptions }
             : {}),

@@ -63,6 +63,19 @@ export function resolveNewArrivalStartedAtFromAdminToggle(input: {
   return now.toISOString();
 }
 
+/**
+ * Whether an admin form should persist New Arrival intent.
+ * Unchanged checkbox must not be written (avoids clearing auto-start on Save).
+ */
+export function shouldPersistNewArrivalAdminIntent(input: {
+  formEnabled: boolean;
+  liveStartedAt: string | null | undefined;
+  now?: Date;
+}): boolean {
+  const liveEnabled = isCatalogNewArrival(input.liveStartedAt, input.now);
+  return input.formEnabled !== liveEnabled;
+}
+
 export function compareBouquetsByNewest(
   aStartedAt: string | null | undefined,
   bStartedAt: string | null | undefined

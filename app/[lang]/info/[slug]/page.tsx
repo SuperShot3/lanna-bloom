@@ -205,37 +205,39 @@ export default async function InfoArticlePage({
   const coverImage =
     article.cover.type === 'image' ? `${base}${article.cover.src}` : undefined;
   const coverAlt = getArticleCoverAlt(article, lang);
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: articleTitle,
-    description: articleExcerpt,
-    datePublished: article.publishedAt,
-    dateModified: article.publishedAt,
-    url: articleUrl,
-    inLanguage: lang === 'th' ? 'th-TH' : 'en',
-    ...(coverImage
-      ? {
-          image: {
-            '@type': 'ImageObject',
-            url: coverImage,
-            ...(coverAlt ? { description: coverAlt, name: coverAlt } : {}),
-          },
-        }
-      : {}),
-    author: {
-      '@type': 'Organization',
-      name: 'Lanna Bloom',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Lanna Bloom',
-    },
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': articleUrl,
-    },
-  };
+  const jsonLd = article.noindex
+    ? null
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: articleTitle,
+        description: articleExcerpt,
+        datePublished: article.publishedAt,
+        dateModified: article.publishedAt,
+        url: articleUrl,
+        inLanguage: lang === 'th' ? 'th-TH' : 'en',
+        ...(coverImage
+          ? {
+              image: {
+                '@type': 'ImageObject',
+                url: coverImage,
+                ...(coverAlt ? { description: coverAlt, name: coverAlt } : {}),
+              },
+            }
+          : {}),
+        author: {
+          '@type': 'Organization',
+          name: 'Lanna Bloom',
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Lanna Bloom',
+        },
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': articleUrl,
+        },
+      };
 
   const catalogCardVariant =
     slug === '51-roses-chiang-mai' || slug === 'flower-delivery-to-hotels-chiang-mai'
@@ -429,10 +431,12 @@ export default async function InfoArticlePage({
     <div
       className={`${styles.infoArticlePage}${showPayCta ? ` ${styles.infoArticlePageWithStickyPay}` : ''}`}
     >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {jsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      ) : null}
       <article className={styles.infoArticle}>
         <header
           className={styles.infoArticleHeader}

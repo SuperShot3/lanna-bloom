@@ -9,6 +9,10 @@ import {
   type DeliveryDestinationId,
   type MarketPathSlug,
 } from '@/lib/delivery/markets';
+import {
+  readDeliveryRegionCookieClient,
+  writeDeliveryRegionCookieClient,
+} from '@/lib/delivery/deliveryRegionCookie';
 
 export const MARKET_SESSION_STORAGE_KEY = 'lanna-bloom-delivery-market';
 
@@ -55,12 +59,14 @@ export function writeMarketSession(payload: MarketSessionPayload): void {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(MARKET_SESSION_STORAGE_KEY, JSON.stringify(payload));
+    writeDeliveryRegionCookieClient(payload.destinationId);
     notifyMarketSessionChange();
   } catch {
     // ignore
   }
 }
 
+/** Clears sessionStorage only. Does not touch the persistent delivery-region cookie. */
 export function clearMarketSession(): void {
   if (typeof window === 'undefined') return;
   try {
@@ -74,11 +80,13 @@ export function clearMarketSession(): void {
 /** Apply a shared/recovered destination so cart dropdowns match the snapshot city. */
 export function applyDestinationToMarketSession(destinationId: DeliveryDestinationId): void {
   if (destinationId === 'CHIANG_MAI') {
+    writeDeliveryRegionCookieClient('CHIANG_MAI');
     clearMarketSession();
     return;
   }
   const market = getMarketByDestinationId(destinationId);
   if (!market || !marketIsNavSelectable(market)) {
+    writeDeliveryRegionCookieClient('CHIANG_MAI');
     clearMarketSession();
     return;
   }
@@ -86,4 +94,21 @@ export function applyDestinationToMarketSession(destinationId: DeliveryDestinati
     destinationId: market.destinationId,
     pathSlug: market.pathSlug,
   });
+}
+
+/**
+ * Session first, then persistent cookie. Chiang Mai is represented as null
+ * (no expansion market slug).
+ */
+export function readPersistedMarketSession(): MarketSessionPayload | null {
+  const sess = readMarketSession();
+  if (sess) return sess;
+  const cookieDest = readDeliveryRegionCookieClient();
+  if (!cookieDest || cookieDest === 'CHIANG_MAI') return null;
+  const market = getMarketByDestinationId(cookieDest);
+  if (!market || !marketIsNavSelectable(market)) return null;
+  return {
+    destinationId: market.destinationId,
+    pathSlug: market.pathSlug,
+  };
 }

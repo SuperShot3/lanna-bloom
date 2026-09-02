@@ -29,6 +29,18 @@
   "redirects": [
     {
       "source": "/",
+      "has": [{ "type": "host", "value": "lannabloom.shop" }],
+      "destination": "https://www.lannabloom.shop/",
+      "statusCode": 301
+    },
+    {
+      "source": "/:path((?!api/).*)",
+      "has": [{ "type": "host", "value": "lannabloom.shop" }],
+      "destination": "https://www.lannabloom.shop/:path",
+      "statusCode": 301
+    },
+    {
+      "source": "/",
       "destination": "/en",
       "permanent": true
     }

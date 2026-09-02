@@ -49,6 +49,11 @@ export interface CartItem {
    */
   deliveryOptions?: string[];
   /**
+   * Delivery region at add time (same IDs as checkout destination).
+   * Display/checkout still reprice from the current cart destination.
+   */
+  deliveryDestination?: DeliveryDestinationId;
+  /**
    * Catalog discount_percent at add time (client eligibility for exclusive coupons).
    * Server recomputes from catalog — never trust this for money.
    */
@@ -199,6 +204,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             : {}),
           ...(item.excludedDeliveryDestinations != null
             ? { excludedDeliveryDestinations: item.excludedDeliveryDestinations }
+            : {}),
+          ...(item.deliveryDestination != null
+            ? { deliveryDestination: item.deliveryDestination }
             : {}),
           ...(item.catalogDiscountPercent != null
             ? { catalogDiscountPercent: item.catalogDiscountPercent }

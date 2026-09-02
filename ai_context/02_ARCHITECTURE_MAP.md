@@ -21,7 +21,7 @@ Localized routes are URL-based (`/en/*`, `/th/*`). The language switcher should 
 |------|------|
 | Home | `(main)/` or locale root |
 | Catalog | `catalog/`, `(markets)/[market]/catalog/` |
-| Product | `catalog/[slug]/` |
+| Product | `catalog/[slug]/` — one indexable URL per language. Region is cookie + session, never `/catalog/[region]/[slug]`. |
 | Cart | `cart/` |
 | Checkout | `checkout/complete`, `checkout/success`, `checkout/confirmation-pending` |
 | Info / SEO | `info/[slug]/` (MDX; two legacy TSX comparison pages) |
@@ -69,7 +69,7 @@ Shared UI: `app/admin/components/`.
 | `lib/supabase/` | Server client, admin/partner queries, order adapter |
 | `lib/bouquets.ts`, `lib/catalog.ts`, `lib/catalogReads.ts` | Catalog reads (Supabase) |
 | `lib/catalogWrite.ts`, `lib/catalogAdmin.ts` | Catalog writes + admin moderation |
-| `lib/delivery/` | Zones, markets, fees, hours. **Fee amounts:** only `zones.ts` (`ZONES_BY_DESTINATION` / `getZoneFee`). Landing map / distance table derive display fees via `amphoeDisplayFees.ts` + `distanceTiers.ts` — never duplicate THB amounts in amphoe map data. |
+| `lib/delivery/` | Zones, markets, fees, hours. **Fee amounts:** only `zones.ts` (`ZONES_BY_DESTINATION` / `getZoneFee`). Landing map / distance table derive display fees via `amphoeDisplayFees.ts` + `distanceTiers.ts` — never duplicate THB amounts in amphoe map data. Product region: cookie `lanna-bloom-delivery-region` + session; do not reintroduce `/[lang]/catalog/[region]/[slug]`. |
 | `lib/adminRbac.ts` | Admin permissions |
 | `lib/i18n.ts` | Locale types/helpers |
 
@@ -78,7 +78,7 @@ Shared UI: `app/admin/components/`.
 | File | Role |
 |------|------|
 | `auth.ts` | NextAuth config (admin) |
-| `middleware.ts` | Protects `/admin` |
+| `middleware.ts` | Protects `/admin`; 308 regional product URLs onto `/[lang]/catalog/[slug]` and sets the delivery-region cookie |
 
 ## Data stores
 

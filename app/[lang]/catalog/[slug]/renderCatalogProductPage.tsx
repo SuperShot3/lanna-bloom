@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getBaseUrl } from '@/lib/orders';
 import {
@@ -21,12 +21,6 @@ import {
 } from '@/lib/catalogReads';
 import { isValidLocale, type Locale, translations } from '@/lib/i18n';
 import {
-  getMarketByPathSlug,
-  marketIsIndexable,
-  type DeliveryDestinationId,
-  type MarketPathSlug,
-} from '@/lib/delivery/markets';
-import {
   buildMarketCatalogHref,
   buildMarketHomeHref,
 } from '@/lib/delivery/marketRoute';
@@ -42,48 +36,22 @@ function JsonLdScript({ data }: { data: Record<string, unknown> | null }) {
   );
 }
 
-function shouldEmitProductJsonLd(
-  lang: string,
-  marketPathSlug?: MarketPathSlug | null
-): boolean {
-  if (!isSeoLocale(lang)) return false;
-  if (!marketPathSlug) return true;
-  const market = getMarketByPathSlug(marketPathSlug);
-  return Boolean(market && marketIsIndexable(market));
-}
-
-function destinationForMarket(
-  marketPathSlug?: MarketPathSlug | null
-): DeliveryDestinationId {
-  if (!marketPathSlug) return 'CHIANG_MAI';
-  return getMarketByPathSlug(marketPathSlug)?.destinationId ?? 'CHIANG_MAI';
+function shouldEmitProductJsonLd(lang: string): boolean {
+  return isSeoLocale(lang);
 }
 
 export type CatalogProductPageArgs = {
   params: { lang: string; slug: string };
-  /** When set (market PDP wrapper), home/catalog links stay in that expansion market. */
-  marketPathSlug?: MarketPathSlug | null;
 };
 
-export async function renderCatalogProductPage({
-  params,
-  marketPathSlug = null,
-}: CatalogProductPageArgs) {
+export async function renderCatalogProductPage({ params }: CatalogProductPageArgs) {
   const lang = params.lang;
   if (!isValidLocale(lang)) notFound();
-  // Market catalogs are dynamic (searchParams filters) and live at
-  // /[lang]/catalog/[market]/catalog. Prefer next.config rewrite; redirect is fallback.
-  if (getMarketByPathSlug(params.slug)) {
-    redirect(`/${lang}/catalog/${params.slug}/catalog`);
-  }
 
-  const homeHref = buildMarketHomeHref(lang, marketPathSlug);
-  const catalogHref = buildMarketCatalogHref(lang, marketPathSlug);
-  const pageUrl = marketPathSlug
-    ? `${getBaseUrl()}/${lang}/catalog/${marketPathSlug}/${params.slug}`
-    : `${getBaseUrl()}/${lang}/catalog/${params.slug}`;
-  const destinationId = destinationForMarket(marketPathSlug);
-  const emitJsonLd = shouldEmitProductJsonLd(lang, marketPathSlug);
+  const homeHref = buildMarketHomeHref(lang, null);
+  const catalogHref = buildMarketCatalogHref(lang, null);
+  const pageUrl = `${getBaseUrl()}/${lang}/catalog/${params.slug}`;
+  const emitJsonLd = shouldEmitProductJsonLd(lang);
   const schemaLang = lang === 'th' ? 'th' : 'en';
 
   const bouquet = await getCatalogBouquetBySlug(params.slug, lang);
@@ -96,7 +64,7 @@ export async function renderCatalogProductPage({
     const t = translations[lang as Locale].product;
     const nav = translations[lang as Locale].nav;
     const productJsonLd = emitJsonLd
-      ? buildBouquetProductJsonLd(bouquet, schemaLang, pageUrl, { destinationId })
+      ? buildBouquetProductJsonLd(bouquet, schemaLang, pageUrl)
       : null;
 
     return (
@@ -137,7 +105,7 @@ export async function renderCatalogProductPage({
     const nav = translations[lang as Locale].nav;
     const suggestedBouquets = await getCatalogPopularBouquets(8);
     const productJsonLd = emitJsonLd
-      ? buildCatalogProductJsonLd(plushyToy, schemaLang, pageUrl, { destinationId })
+      ? buildCatalogProductJsonLd(plushyToy, schemaLang, pageUrl)
       : null;
 
     return (
@@ -177,12 +145,12 @@ export async function renderCatalogProductPage({
     const nav = translations[lang as Locale].nav;
     const balloonCatalogHref = buildMarketCatalogHref(
       lang,
-      marketPathSlug,
+      null,
       'topCategory=balloons'
     );
     const suggestedBouquets = await getCatalogPopularBouquets(8);
     const productJsonLd = emitJsonLd
-      ? buildCatalogProductJsonLd(balloon, schemaLang, pageUrl, { destinationId })
+      ? buildCatalogProductJsonLd(balloon, schemaLang, pageUrl)
       : null;
 
     return (
@@ -222,7 +190,7 @@ export async function renderCatalogProductPage({
     const description = (lang === 'th' ? product.descriptionTh : product.descriptionEn) || '';
     const nav = translations[lang as Locale].nav;
     const productJsonLd = emitJsonLd
-      ? buildCatalogProductJsonLd(product, schemaLang, pageUrl, { destinationId })
+      ? buildCatalogProductJsonLd(product, schemaLang, pageUrl)
       : null;
 
     return (

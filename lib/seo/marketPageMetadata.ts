@@ -27,9 +27,9 @@ function pathSuffixForKind(params: {
     return `/${market.pathSlug}/flower-delivery`;
   }
   if (kind === 'catalog') {
-    return `/catalog/${market.pathSlug}/catalog`;
+    return `/catalog/${market.pathSlug}`;
   }
-  return `/catalog/${market.pathSlug}/${productSlug ?? ''}`;
+  return `/catalog/${productSlug ?? ''}`;
 }
 
 function copyForKind(params: {

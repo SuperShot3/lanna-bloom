@@ -1,0 +1,30 @@
+---
+description: Product URLs are never region-prefixed; delivery region lives in cookie and session.
+globs: app/[lang]/catalog/**/*.tsx,lib/delivery/**/*.ts,lib/seo/**/*.ts,components/BouquetCard.tsx,components/ProductCard.tsx,middleware.ts
+alwaysApply: false
+---
+
+# Product URLs vs delivery region
+
+Each product has one indexable URL per language:
+
+- `/en/catalog/[slug]`
+- `/th/catalog/[slug]`
+- `/zh-hk/catalog/[slug]`
+
+The selected delivery region is **not** part of the product path. Store it in:
+
+- cookie `lanna-bloom-delivery-region` (`DeliveryDestinationId`)
+- existing market session (`lanna-bloom-delivery-market`)
+
+Product pages, cards, and feeds must link to the clean catalog slug. Middleware 308s `/[lang]/catalog/[region]/[slug]` onto the clean URL and sets the cookie.
+
+Do **not**:
+
+- Reintroduce `/[lang]/catalog/[region]/[slug]` in internal links, sitemap, canonicals, or hreflang
+- Put regional product URLs in JSON-LD `url`
+- Clear the region cookie when loading a clean product page
+
+Leave indexable city landings (`/[lang]/[market]/flower-delivery`) and market catalog listings (`/[lang]/catalog/[market]`) unchanged.
+
+Checkout must recompute price and availability from catalog + destination. Never trust a client-submitted price.

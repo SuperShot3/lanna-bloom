@@ -24,12 +24,13 @@ Primary intent → one owner URL. Support pages link to the owner; they must not
 - **Delivery areas & fees** (`delivery-areas-thailand`) — Thailand coverage map with Chiang Mai amphoe zoom and estimated fees; coverage list; other destinations; links to the abroad how-to for international customers. Old URLs `/flower-delivery-thailand` and `/delivery-areas-chiang-mai` 301 here.
 - **Birthday from abroad** — birthday occasion only; link to the abroad how-to for general checkout questions.
 - **Thai Mother’s Day from abroad** — 12 August occasion, jasmine vs delivery bouquets, MOM10 timing; link to the abroad how-to for payment/Maps/checkout.
+- **Same-day flower delivery Chiang Mai** (`/info/same-day-flower-delivery-chiang-mai`) — Chiang Mai same-day flowers only. Homepage and other pages must not reuse this H1 or the exact question “Do you offer same-day flower delivery?”. Other cities keep their own market pages.
 
 ## URL rules (current architecture)
 
 - Chiang Mai commercial hub = locale homepage (`/en`, `/th`). **No** `/en/chiang-mai`.
 - Expansion cities = `/{lang}/{city}/flower-delivery`.
-- Products = `/{lang}/catalog/{slug}` (city selection at checkout / market session; no mass city-product duplicates in sitemap).
+- Products = `/{lang}/catalog/{slug}` (city selection via delivery-region cookie + market session; no mass city-product duplicates in sitemap).
 - Collections = `/{lang}/collections/{slug}` (Chiang Mai hubs first).
 - Keep slug `buy-flowers-online-chiang-mai-thailand` (do not rename); title/H1 may say Thailand-from-abroad.
 

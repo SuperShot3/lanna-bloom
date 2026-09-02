@@ -10,8 +10,17 @@ import {
   getMarketLandingDistricts,
   timingFromProvinceStatus,
   buildMarketDeliveryCopy,
+  buildMarketLocalCopy,
+  buildMarketLocalLinks,
   buildExperienceCopy,
 } from './marketHomeLanding';
+import { buildHeroTrustLine } from './heroTrustLine';
+import { getActiveMarkets } from '@/lib/delivery/markets';
+import type { PublicProvince } from '@/lib/provinces/types';
+import {
+  getCityNeutralFeaturedQuote,
+  reviewMentionsForeignCity,
+} from '@/lib/reviews';
 
 assert.equal(
   fillCityPlaceholders('Flower delivery in {city}', 'Pattaya'),
@@ -202,5 +211,178 @@ const preorderExperience = buildExperienceCopy({
 });
 assert.match(preorderExperience.step3Desc, /Advance order for Chiang Rai/);
 assert.ok(!/same-day/i.test(preorderExperience.step3Desc));
+
+const lamphunNextDayExperience = buildExperienceCopy({
+  lang: 'en',
+  city: 'Lamphun',
+  timing: 'next_day',
+});
+assert.match(lamphunNextDayExperience.step3Desc, /Next-day delivery in Lamphun/);
+assert.match(lamphunNextDayExperience.step3Desc, /Same-day is not available/i);
+assert.ok(!lamphunNextDayExperience.step3Desc.includes('Chiang Mai'));
+
+const phuketZhTrust = buildHeroTrustLine({
+  lang: 'zh-hk',
+  city: 'Phuket',
+  timing: 'same_day',
+});
+assert.equal(phuketZhTrust, 'Phuket即日配送');
+assert.ok(!phuketZhTrust.includes('清邁'));
+
+const lamphunZhTrust = buildHeroTrustLine({
+  lang: 'zh-hk',
+  city: 'Lamphun',
+  timing: 'next_day',
+});
+assert.equal(lamphunZhTrust, 'Lamphun翌日配送');
+assert.ok(!lamphunZhTrust.includes('清邁'));
+assert.ok(!lamphunZhTrust.includes('即日'));
+
+const chiangMaiZhTrust = buildHeroTrustLine({
+  lang: 'zh-hk',
+  city: '清邁',
+  timing: 'same_day',
+});
+assert.equal(chiangMaiZhTrust, '清邁即日配送');
+
+const phuketLinks = buildMarketLocalLinks({
+  lang: 'en',
+  city: 'Phuket',
+  destinationId: 'PHUKET',
+  catalogHref: '/en/catalog/phuket',
+});
+assert.ok(
+  phuketLinks.some((l) => l.href.includes('/info/flower-delivery-phuket')),
+  'Phuket landing links its own guide'
+);
+assert.ok(
+  !phuketLinks.some((l) => l.href.includes('chiang-mai')),
+  'Phuket landing does not link a Chiang Mai article'
+);
+
+const krabiLinks = buildMarketLocalLinks({
+  lang: 'en',
+  city: 'Krabi / Ao Nang',
+  destinationId: 'KRABI',
+  catalogHref: '/en/catalog/krabi',
+});
+assert.ok(
+  !krabiLinks.some((l) => l.href.includes('/info/')),
+  'Krabi has no city info article yet'
+);
+assert.ok(!krabiLinks.some((l) => l.href.includes('chiang-mai')));
+assert.equal(krabiLinks.length, 2);
+
+const FOREIGN_CITY_NEEDLES = [
+  'Chiang Mai',
+  'เชียงใหม่',
+  '清邁',
+  'Bangkok',
+  'กรุงเทพ',
+  'Pattaya',
+  'พัทยา',
+  'Phuket',
+  'ภูเก็ต',
+  'Krabi',
+  'กระบี่',
+  'Ao Nang',
+  'อ่าวนาง',
+  'Koh Samui',
+  'เกาะสมุย',
+  'Hua Hin',
+  'หัวหิน',
+  'Lamphun',
+  'ลำพูน',
+  'Pai',
+  'ปาย',
+];
+
+function blobHasNeedle(blob: string, needle: string): boolean {
+  if (needle.length <= 3) {
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`(?:^|[^\\p{L}])${escaped}(?:$|[^\\p{L}])`, 'iu');
+    return pattern.test(blob);
+  }
+  return blob.toLowerCase().includes(needle.toLowerCase());
+}
+
+function needleBelongsToCity(needle: string, cityEn: string, cityTh: string): boolean {
+  const n = needle.toLowerCase();
+  const en = cityEn.toLowerCase();
+  const th = cityTh.toLowerCase();
+  return en.includes(n) || th.includes(n) || n.includes(en) || n.includes(th);
+}
+
+function mockProvince(status: PublicProvince['status']): PublicProvince {
+  return {
+    province_code: 'mock',
+    province_name_en: 'Mock',
+    province_name_th: 'ม็อก',
+    topojson_property_value: 'Mock',
+    status,
+    catalog_enabled: true,
+    min_advance_notice_hours: null,
+    same_day_cutoff_local: null,
+    customer_message_en: null,
+    customer_message_th: null,
+    delivery_limitations_en: null,
+    delivery_limitations_th: null,
+    available_categories: ['flowers'],
+  };
+}
+
+for (const market of getActiveMarkets()) {
+  const timing = market.destinationId === 'LAMPHUN' ? 'next_day' : 'same_day';
+  const province = mockProvince(timing);
+  for (const lang of ['en', 'th', 'zh-hk'] as const) {
+    const city = lang === 'th' ? market.customerFacingNameTh : market.customerFacingNameEn;
+    const delivery = buildMarketDeliveryCopy({
+      lang,
+      city,
+      destinationId: market.destinationId,
+      province,
+    });
+    const local = buildMarketLocalCopy({
+      lang,
+      city,
+      destinationId: market.destinationId,
+      catalogHref: `/${lang}/catalog/${market.pathSlug}`,
+    });
+    const faq = getMarketHomeFaqItems({
+      lang,
+      city,
+      destinationId: market.destinationId,
+      province,
+    });
+    const experience = buildExperienceCopy({ lang, city, timing });
+    const trust = buildHeroTrustLine({ lang, city, timing });
+    const blob = JSON.stringify({ delivery, local, faq, experience, trust });
+    assert.ok(!blob.includes('{city}'), `${market.pathSlug} ${lang} has unfilled {city}`);
+    for (const needle of FOREIGN_CITY_NEEDLES) {
+      if (needleBelongsToCity(needle, market.customerFacingNameEn, market.customerFacingNameTh)) {
+        continue;
+      }
+      assert.ok(
+        !blobHasNeedle(blob, needle),
+        `${market.pathSlug} ${lang} copy must not mention ${needle}`
+      );
+    }
+  }
+}
+
+assert.ok(
+  reviewMentionsForeignCity(
+    { text: 'Best flower delivery experience in Chiang Mai.', location: 'Nimman' },
+    'PHUKET'
+  )
+);
+assert.ok(
+  !reviewMentionsForeignCity(
+    { text: 'Arrived fresh at the hotel.', location: 'Patong, Phuket' },
+    'PHUKET'
+  )
+);
+const phuketQuote = getCityNeutralFeaturedQuote('PHUKET');
+assert.ok(!/chiang mai|เชียงใหม่|清邁/i.test(phuketQuote));
 
 console.log('marketHomeLanding.test.ts: ok');

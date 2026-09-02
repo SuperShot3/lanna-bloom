@@ -10,6 +10,7 @@ import {
   newArrivalExpiresAt,
   resolveNewArrivalStartedAtFromAdminToggle,
   resolveNewArrivalStartedAtOnApprove,
+  shouldPersistNewArrivalAdminIntent,
 } from './newArrival';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -117,6 +118,56 @@ assert.equal(
     now: NOW,
   }),
   NOW.toISOString()
+);
+
+// Unchanged unchecked vs inactive live → do not persist (omit / no-op)
+assert.equal(
+  shouldPersistNewArrivalAdminIntent({
+    formEnabled: false,
+    liveStartedAt: null,
+    now: NOW,
+  }),
+  false
+);
+
+// Unchanged checked vs active live → do not persist
+assert.equal(
+  shouldPersistNewArrivalAdminIntent({
+    formEnabled: true,
+    liveStartedAt: started,
+    now: NOW,
+  }),
+  false
+);
+
+// Explicit end while live is active → persist clear
+assert.equal(
+  shouldPersistNewArrivalAdminIntent({
+    formEnabled: false,
+    liveStartedAt: started,
+    now: NOW,
+  }),
+  true
+);
+
+// Explicit start while live is inactive → persist start
+assert.equal(
+  shouldPersistNewArrivalAdminIntent({
+    formEnabled: true,
+    liveStartedAt: null,
+    now: NOW,
+  }),
+  true
+);
+
+// Restart after expiry → persist
+assert.equal(
+  shouldPersistNewArrivalAdminIntent({
+    formEnabled: true,
+    liveStartedAt: expired,
+    now: NOW,
+  }),
+  true
 );
 
 assert.ok(compareBouquetsByNewest('2026-08-01T00:00:00.000Z', '2026-07-01T00:00:00.000Z') < 0);

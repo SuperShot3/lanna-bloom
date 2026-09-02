@@ -315,7 +315,12 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     formData.set('stemOptions', JSON.stringify(stemOptions));
     formData.set('discountPercent', discountPercent);
     formData.set('featuredPopular', featuredPopular ? 'true' : 'false');
-    formData.set('newArrivalEnabled', newArrivalEnabled ? 'true' : 'false');
+    // Compare against the live timestamp only (ignore draft overlay) so we omit
+    // unchanged intent and never clear an auto-started window by accident.
+    const liveNewArrivalEnabled = isCatalogNewArrival(bouquet.newArrivalStartedAt);
+    if (newArrivalEnabled !== liveNewArrivalEnabled) {
+      formData.set('newArrivalEnabled', newArrivalEnabled ? 'true' : 'false');
+    }
     formData.set('contactBeforeOrder', contactBeforeOrder ? 'true' : 'false');
     formData.set(
       'excludedDeliveryDestinations',
@@ -365,6 +370,9 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       return;
     }
     setStatus('approved');
+    // First approve auto-starts New Arrival server-side; keep the checkbox in sync so
+    // a following Save/Publish cannot clear it with a stale unchecked value.
+    setNewArrivalEnabled(true);
     setSuccess('Approved and live in catalog');
     router.refresh();
   }

@@ -184,74 +184,103 @@ export const INTENT_LANDINGS: Record<string, IntentLandingConfig> = {
       // Bias toward bouquet; baked English headline sits on the left of the artwork
       objectPosition: '78% center',
     },
-    eyebrow: L('Same-day in Chiang Mai', 'จัดส่งวันเดียวในเชียงใหม่'),
+    eyebrow: L('Same-day flower delivery Chiang Mai', 'ส่งดอกไม้วันเดียวในเชียงใหม่'),
     directAnswer: L(
-      'Yes — same-day orders are accepted until 20:00 Thailand time across Chiang Mai, subject to bouquet availability and delivery capacity. Delivery may take place after 20:00. If same-day delivery is not possible, we will contact you to confirm the next available option.',
-      'ได้ — รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทยทั่วเชียงใหม่ โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด'
+      'Yes — same-day flower delivery in Chiang Mai is accepted until 20:00 Thailand time, subject to bouquet availability and delivery capacity. Delivery may finish after 20:00. Same-day is not promised nationwide; other Thai cities have their own delivery pages.',
+      'ได้ — ส่งดอกไม้วันเดียวในเชียงใหม่รับออเดอร์ถึง 20:00 น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของช่อและคิวจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ ไม่สัญญาจัดส่งวันเดียวทั่วประเทศ เมืองอื่นในไทยมีหน้าจัดส่งของตัวเอง'
     ),
     benefits: [
-      L('Same-day delivery during 08:00–20:00', 'จัดส่งวันเดียวช่วง 08:00–20:00'),
-      L('Order early for best bouquet availability', 'สั่งเช้า ๆ เพื่อมีตัวเลือกช่อดีที่สุด'),
-      L('Message card included with your bouquet', 'มีข้อความการ์ดคู่ช่อ'),
+      L('Same-day flower delivery in Chiang Mai, 08:00–20:00', 'ส่งดอกไม้วันเดียวในเชียงใหม่ ช่วง 08:00–20:00'),
+      L('Order early for the best Chiang Mai bouquet choice', 'สั่งเช้า ๆ เพื่อเลือกช่อเชียงใหม่ได้ดีที่สุด'),
+      L('Check Chiang Mai districts on the map below', 'ดูอำเภอเชียงใหม่บนแผนที่ด้านล่าง'),
       L('Thai & English support', 'รองรับภาษาไทยและอังกฤษ'),
     ],
-    primaryCta: L('Order for today', 'สั่งส่งวันนี้'),
+    primaryCta: L('Order Chiang Mai flowers for today', 'สั่งดอกไม้เชียงใหม่ส่งวันนี้'),
     primaryCtaHref: '/catalog',
-    catalogTitle: L('Bouquets for same-day delivery', 'ช่อสำหรับจัดส่งวันเดียว'),
+    catalogTitle: L('Bouquets for same-day flower delivery in Chiang Mai', 'ช่อสำหรับส่งดอกไม้วันเดียวในเชียงใหม่'),
     catalogLimit: 12,
     showPaymentBadges: false,
     showSameDayBadge: true,
     serviceHoursNote: L(
-      'Service hours today: 08:00–20:00 · Same-day orders accepted until 20:00 Thailand time (delivery may finish after 20:00)',
-      'เวลาให้บริการวันนี้: 08:00–20:00 · รับออเดอร์วันเดียวถึง 20:00 น. ตามเวลาไทย (อาจจัดส่งหลัง 20:00 น.)'
+      'Chiang Mai service hours: 08:00–20:00 · Same-day flower orders until 20:00 Thailand time (delivery may finish after 20:00)',
+      'เวลาให้บริการเชียงใหม่: 08:00–20:00 · รับออเดอร์ส่งดอกไม้วันเดียวถึง 20:00 น. ตามเวลาไทย (อาจจัดส่งหลัง 20:00 น.)'
     ),
     faqTitle: L('Frequently asked questions', 'คำถามที่พบบ่อย'),
     faq: [
       {
-        q: L('How do I get same-day delivery?', 'ขอจัดส่งวันเดียวได้อย่างไร?'),
+        q: L(
+          'How do I order same-day flower delivery in Chiang Mai?',
+          'สั่งส่งดอกไม้วันเดียวในเชียงใหม่อย่างไร?'
+        ),
         a: L(
-          'Browse the catalog, choose a bouquet, add it to your cart, and select today’s delivery date at checkout. Pay online, and we will confirm if same-day is available for your area and timing.',
-          'เลือกช่อในแคตตาล็อก ใส่ตะกร้า แล้วเลือกวันจัดส่งเป็นวันนี้ตอนเช็กเอาต์ จ่ายออนไลน์ แล้วเราจะยืนยันว่าจัดส่งวันเดียวได้ตามพื้นที่และเวลาของคุณ'
+          'Open the catalog, choose a bouquet, add it to your cart, and select today as the delivery date at checkout. Pay online. We confirm same-day flower delivery in Chiang Mai for your district and timing.',
+          'เปิดแคตตาล็อก เลือกช่อ ใส่ตะกร้า แล้วเลือกวันจัดส่งเป็นวันนี้ตอนเช็กเอาต์ จ่ายออนไลน์ เราจะยืนยันการส่งดอกไม้วันเดียวในเชียงใหม่ตามอำเภอและเวลาของคุณ'
         ),
       },
       {
-        q: L('Is there a cut-off time for same-day delivery?', 'มีเวลาตัดรอบสำหรับจัดส่งวันเดียวไหม?'),
+        q: L(
+          'What is the cutoff for same-day flower delivery in Chiang Mai?',
+          'ตัดรอบส่งดอกไม้วันเดียวในเชียงใหม่กี่โมง?'
+        ),
         a: L(
-          'Same-day orders are accepted until 20:00 Thailand time, subject to flower and delivery availability. Delivery may take place after 20:00. Working delivery hours are 08:00–20:00; if same-day delivery is not possible, we will contact you to confirm the next available option, which may be the following day.',
-          'รับออเดอร์จัดส่งวันเดียวถึง 20:00 น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และการจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ เวลาทำการจัดส่งคือ 08:00–20:00 หากไม่สามารถจัดส่งภายในวันได้ เราจะติดต่อคุณเพื่อยืนยันทางเลือกที่เร็วที่สุด ซึ่งอาจเป็นวันถัดไป'
+          'Same-day flower delivery in Chiang Mai is accepted until 20:00 Thailand time, subject to flower and courier availability. Delivery may finish after 20:00. Working hours are 08:00–20:00. If same-day is not possible, we will contact you with the next option.',
+          'รับส่งดอกไม้วันเดียวในเชียงใหม่ถึง 20:00 น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และคิวจัดส่ง อาจจัดส่งหลัง 20:00 น. ได้ เวลาทำการคือ 08:00–20:00 หากส่งภายในวันไม่ได้ เราจะติดต่อเพื่อยืนยันทางเลือกถัดไป'
         ),
       },
       {
-        q: L('What payment methods do you accept?', 'รับชำระแบบไหนบ้าง?'),
+        q: L(
+          'Which Chiang Mai districts get same-day flower delivery?',
+          'อำเภอไหนในเชียงใหม่ได้ส่งดอกไม้วันเดียว?'
+        ),
         a: L(
-          'Pay securely online by card through Stripe checkout (Visa, Mastercard, American Express, and other widely used cards). Apple Pay and Google Pay are available where supported. Message us on LINE or WhatsApp only if you need help.',
-          'จ่ายออนไลน์ปลอดภัยด้วยบัตรผ่าน Stripe (Visa, Mastercard, American Express และบัตรที่ใช้ทั่วไป) รองรับ Apple Pay และ Google Pay ตามที่ระบบรองรับ ทัก LINE / WhatsApp ได้หากต้องการความช่วยเหลือ'
+          'Same-day flower delivery in Chiang Mai covers Old City, Nimman, Santitham, Hang Dong, Mae Hia, San Sai, Mae Rim, and nearby service zones. Use the map on this page for estimated fees; checkout confirms your exact area.',
+          'ส่งดอกไม้วันเดียวในเชียงใหม่ครอบคลุมเมืองเก่า นิมมาน สันติธรรม หางดง แม่เหียะ สันทราย แม่ริม และโซนใกล้เคียง ใช้แผนที่ในหน้านี้ดูค่าส่งโดยประมาณ ค่าส่งจริงยืนยันตอนเช็กเอาต์'
         ),
       },
       {
-        q: L('Can I include a message card?', 'ใส่ข้อความการ์ดได้ไหม?'),
+        q: L(
+          'Can you deliver same-day flowers to a hotel or hospital in Chiang Mai?',
+          'ส่งดอกไม้วันเดียวไปโรงแรมหรือโรงพยาบาลในเชียงใหม่ได้ไหม?'
+        ),
         a: L(
-          'Yes. Add a free or premium message card when you order — enter your text in the cart or checkout notes.',
-          'ได้ เพิ่มการ์ดข้อความฟรีหรือพรีเมียมตอนสั่ง — พิมพ์ข้อความในตะกร้าหรือโน้ตตอนเช็กเอาต์'
+          'Yes, when you order in time. Include the guest or patient name, venue name, and a reachable phone number. The hotel and hospital guides linked below explain what Chiang Mai reception desks usually need.',
+          'ได้ เมื่อสั่งทันเวลา ใส่ชื่อผู้เข้าพักหรือผู้ป่วย ชื่อสถานที่ และเบอร์ที่ติดต่อได้ คู่มือโรงแรมและโรงพยาบาลด้านล่างอธิบายข้อมูลที่เคาน์เตอร์เชียงใหม่มักต้องการ'
         ),
       },
       {
-        q: L('Where do you deliver same-day?', 'จัดส่งวันเดียวถึงไหนบ้าง?'),
+        q: L(
+          'I am ordering from another time zone — can I still get same-day flower delivery in Chiang Mai?',
+          'สั่งจากเขตเวลาอื่น ยังส่งดอกไม้วันเดียวในเชียงใหม่ได้ไหม?'
+        ),
         a: L(
-          'Across Chiang Mai — including Old City, Nimman, Santitham, Hang Dong, Mae Hia, San Sai, Mae Rim, and nearby areas within our service zones.',
-          'ทั่วเชียงใหม่ — รวมเมืองเก่า นิมมาน สันติธรรม หางดง แม่เหียะ สันทราย แม่ริม และพื้นที่ใกล้เคียงในโซนให้บริการ'
+          'Same-day flower delivery in Chiang Mai follows Thailand time (ICT, UTC+7), not your home timezone. If you are several hours behind, order the day before. The abroad ordering guide below covers checkout from another country.',
+          'ส่งดอกไม้วันเดียวในเชียงใหม่อิงเวลาประเทศไทย (ICT, UTC+7) ไม่ใช่เขตเวลาบ้านคุณ ถ้าช้ากว่าไทยหลายชั่วโมง ให้สั่งล่วงหน้าหนึ่งวัน คู่มือสั่งจากต่างประเทศด้านล่างอธิบายการเช็กเอาต์'
+        ),
+      },
+      {
+        q: L(
+          'What happens if I miss the 20:00 cutoff for Chiang Mai same-day flowers?',
+          'ถ้าพลาดตัดรอบ 20:00 น. สำหรับดอกไม้วันเดียวในเชียงใหม่จะเป็นอย่างไร?'
+        ),
+        a: L(
+          'After 20:00 Thailand time, same-day flower delivery in Chiang Mai is closed. We will contact you to confirm the next available option, which may be the following day during 08:00–20:00 working hours.',
+          'หลัง 20:00 น. ตามเวลาไทย การส่งดอกไม้วันเดียวในเชียงใหม่ปิดแล้ว เราจะติดต่อเพื่อยืนยันทางเลือกถัดไป ซึ่งอาจเป็นวันถัดไปในช่วง 08:00–20:00'
         ),
       },
     ],
     relatedIntents: [
       'buy-flowers-online-chiang-mai-thailand',
       'flower-delivery-to-hotels-chiang-mai',
-      'birthday-flowers-chiang-mai-from-abroad',
+      'flower-delivery-to-hospitals-chiang-mai',
+      'flower-delivery-address-chiang-mai',
       'delivery-policy',
     ],
-    seoMoreLabel: L('Delivery areas & how to order today', 'พื้นที่จัดส่งและวิธีสั่งวันนี้'),
-    stickyCta: L('Order for today', 'สั่งส่งวันนี้'),
-    seoBodyCollapsible: true,
+    seoMoreLabel: L(
+      'How same-day flower delivery works in Chiang Mai',
+      'วิธีส่งดอกไม้วันเดียวในเชียงใหม่'
+    ),
+    stickyCta: L('Order Chiang Mai flowers for today', 'สั่งดอกไม้เชียงใหม่ส่งวันนี้'),
+    seoBodyCollapsible: false,
     showDeliveryMap: true,
   },
 };

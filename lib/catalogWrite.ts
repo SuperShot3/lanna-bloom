@@ -10,6 +10,7 @@ import { normalizeCatalogDiscountPercent } from '@/lib/catalogDiscount';
 import {
   resolveNewArrivalStartedAtFromAdminToggle,
   resolveNewArrivalStartedAtOnApprove,
+  shouldPersistNewArrivalAdminIntent,
 } from '@/lib/catalog/newArrival';
 import type {
   CatalogBouquetPricing,
@@ -408,11 +409,21 @@ export async function updateCatalogBouquetByAdmin(
   }
 
   if (input.newArrivalEnabled != null) {
-    patch.new_arrival_started_at = resolveNewArrivalStartedAtFromAdminToggle({
-      enabled: input.newArrivalEnabled,
-      previousStartedAt: (existing as { new_arrival_started_at?: string | null })
-        .new_arrival_started_at,
-    });
+    const previousStartedAt = (existing as { new_arrival_started_at?: string | null })
+      .new_arrival_started_at;
+    // Skip no-op / unchanged intent so routine saves cannot wipe an auto-started window
+    // unless the admin checkbox actually differs from the live active state.
+    if (
+      shouldPersistNewArrivalAdminIntent({
+        formEnabled: input.newArrivalEnabled,
+        liveStartedAt: previousStartedAt,
+      })
+    ) {
+      patch.new_arrival_started_at = resolveNewArrivalStartedAtFromAdminToggle({
+        enabled: input.newArrivalEnabled,
+        previousStartedAt,
+      });
+    }
   } else if (input.newArrivalStartedAt !== undefined) {
     patch.new_arrival_started_at = input.newArrivalStartedAt;
   }

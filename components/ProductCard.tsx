@@ -350,6 +350,7 @@ export function ProductCard({
           size: cartSize,
           addOns: getDefaultAddOns(),
           excludedDeliveryDestinations: product.excludedDeliveryDestinations,
+          deliveryDestination: checkoutProfile.destinationId,
           ...(product.discountPercent != null && {
             catalogDiscountPercent: product.discountPercent,
           }),

@@ -1,8 +1,9 @@
-import { getFeaturedReviews, getReviewStats } from '@/lib/reviews';
+import { getFeaturedReviews, getReviewStats, getCityNeutralFeaturedQuote, CITY_NEUTRAL_REVIEW_FALLBACK } from '@/lib/reviews';
 import { GOOGLE_REVIEW_URL, GOOGLE_PLACE_URL } from '@/lib/reviewsConfig';
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { StorefrontIcon } from '@/components/icons';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
 interface ReviewsSectionProps {
   lang: Locale;
@@ -11,6 +12,8 @@ interface ReviewsSectionProps {
   /** When false, skip the Chiang Mai-specific quote and inner-city line. */
   chiangMaiSpecific?: boolean;
   locationName?: string;
+  /** Used with chiangMaiSpecific=false to drop quotes that name another city. */
+  destinationId?: DeliveryDestinationId;
 }
 
 /**
@@ -22,6 +25,7 @@ export function ReviewsSection({
   title,
   chiangMaiSpecific = true,
   locationName,
+  destinationId,
 }: ReviewsSectionProps) {
   const reviews = getFeaturedReviews(3);
   const stats = getReviewStats();
@@ -29,8 +33,9 @@ export function ReviewsSection({
 
   const displayTitle = title ?? t.title;
   const featuredQuote =
-    reviews[0]?.text ||
-    "I ordered a bouquet for my mother's birthday and it was delivered within 45 minutes. The flowers were fresher than anything I've seen in the markets. Truly premium service.";
+    !chiangMaiSpecific && destinationId
+      ? getCityNeutralFeaturedQuote(destinationId)
+      : reviews[0]?.text || CITY_NEUTRAL_REVIEW_FALLBACK;
   const quoteTitle =
     chiangMaiSpecific && stats.count > 0
       ? `"Best flower service in Chiang Mai"`

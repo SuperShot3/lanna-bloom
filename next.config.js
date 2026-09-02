@@ -72,6 +72,20 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Apex → www (301). Skip /api so Stripe webhooks and Vercel Cron keep
+      // working if they hit the shorter apex host (lannabloom.shop).
+      {
+        source: '/',
+        has: [{ type: 'host', value: 'lannabloom.shop' }],
+        destination: 'https://www.lannabloom.shop/',
+        statusCode: 301,
+      },
+      {
+        source: '/:path((?!api/).*)',
+        has: [{ type: 'host', value: 'lannabloom.shop' }],
+        destination: 'https://www.lannabloom.shop/:path',
+        statusCode: 301,
+      },
       // Singular alias used by some AI crawlers / llm.txt compatibility specs.
       { source: '/llm.txt', destination: '/llms.txt', permanent: true },
       {
@@ -260,15 +274,6 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const marketSlugs = ['bangkok', 'pattaya', 'phuket', 'krabi', 'samui', 'hua-hin', 'lamphun'];
-    // Keep public URLs as /[lang]/catalog/[market] while rendering the dynamic
-    // market catalog page (avoids static→dynamic 500 on the SSG product segment).
-    const marketCatalogRewrites = ['en', 'th'].flatMap((lang) =>
-      marketSlugs.map((slug) => ({
-        source: `/${lang}/catalog/${slug}`,
-        destination: `/${lang}/catalog/${slug}/catalog`,
-      }))
-    );
     return [
       {
         source: '/vendor/ahrefs-analytics.js',
@@ -278,7 +283,6 @@ const nextConfig = {
       { source: '/feeds/google-merchant-feed.tsv', destination: '/feeds/google-merchant-feed' },
       { source: '/openai-product-feed.csv', destination: '/feeds/openai-product-feed' },
       { source: '/feeds/openai-product-feed.csv', destination: '/feeds/openai-product-feed' },
-      ...marketCatalogRewrites,
     ];
   },
   experimental: {

@@ -167,12 +167,17 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
 }
 
 {
-  const marketPage = 'https://lannabloom.shop/en/catalog/phuket/pink-lilies-bouquet';
+  const marketPage = 'https://lannabloom.shop/en/catalog/pink-lilies-bouquet';
   const jsonLd = buildBouquetProductJsonLd(bouquet, 'en', marketPage, {
     destinationId: 'PHUKET',
   });
   assert.ok(jsonLd);
   assertOneProductOneOffer(jsonLd);
+  assert.equal(jsonLd.url, PAGE);
+  assert.equal(
+    (jsonLd.offers as Record<string, unknown>).url,
+    PAGE
+  );
   assert.equal(
     (jsonLd.offers as Record<string, unknown>).price,
     expectedPrice(890, 10, 'PHUKET')
@@ -180,12 +185,12 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
 }
 
 {
-  const marketPage = 'https://lannabloom.shop/en/catalog/krabi/pink-lilies-bouquet';
-  const jsonLd = buildBouquetProductJsonLd(bouquet, 'en', marketPage, {
+  const jsonLd = buildBouquetProductJsonLd(bouquet, 'en', PAGE, {
     destinationId: 'KRABI',
   });
   assert.ok(jsonLd);
   assertOneProductOneOffer(jsonLd);
+  assert.equal(jsonLd.url, PAGE);
   assert.equal(
     (jsonLd.offers as Record<string, unknown>).price,
     expectedPrice(890, 10, 'KRABI')
@@ -193,12 +198,12 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
 }
 
 {
-  const marketPage = 'https://lannabloom.shop/en/catalog/bangkok/pink-lilies-bouquet';
-  const jsonLd = buildBouquetProductJsonLd(bouquet, 'en', marketPage, {
+  const jsonLd = buildBouquetProductJsonLd(bouquet, 'en', PAGE, {
     destinationId: 'BANGKOK',
   });
   assert.ok(jsonLd);
   assertOneProductOneOffer(jsonLd);
+  assert.equal(jsonLd.url, PAGE);
   assert.equal(
     (jsonLd.offers as Record<string, unknown>).price,
     expectedPrice(890, 10, 'BANGKOK')

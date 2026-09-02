@@ -11,7 +11,8 @@ import {
   type HeroCarouselImage,
 } from '@/components/ui/feature-carousel';
 import { getMarketByPathSlug, isMarketPathSlug } from '@/lib/delivery/markets';
-import { readMarketSession } from '@/lib/delivery/marketSession';
+import { buildHeroTrustLine } from '@/lib/landingPages/heroTrustLine';
+import { readPersistedMarketSession, MARKET_SESSION_CHANGE_EVENT } from '@/lib/delivery/marketSession';
 import { GoogleReviewsBadge } from '@/components/GoogleReviewsBadge';
 import { PremiumCtaLink } from '@/components/home/PremiumCtaLink';
 import { StorefrontIcon } from '@/components/icons';
@@ -194,7 +195,7 @@ export function Hero({
 }) {
   const t = translations[lang].hero;
   const city = locationName ?? defaultCityName(lang);
-  const trustLine = t.trustLine.replace('{city}', city);
+  const trustLine = buildHeroTrustLine({ lang, city, timing });
   const sublineNew = (sublineOverride ?? t.sublineNew).replace('{city}', city);
   const headlineNew = t.headlineNew.replace('{city}', city);
   const pathname = usePathname();
@@ -236,12 +237,16 @@ export function Hero({
 
   useEffect(() => {
     const load = () => {
-      const s = readMarketSession();
+      const s = readPersistedMarketSession();
       setSessionMarketSlug(s?.pathSlug ?? null);
     };
     load();
     window.addEventListener('focus', load);
-    return () => window.removeEventListener('focus', load);
+    window.addEventListener(MARKET_SESSION_CHANGE_EVENT, load);
+    return () => {
+      window.removeEventListener('focus', load);
+      window.removeEventListener(MARKET_SESSION_CHANGE_EVENT, load);
+    };
   }, []);
 
   const sectionPad = isHomeLanding

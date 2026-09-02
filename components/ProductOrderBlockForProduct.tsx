@@ -26,6 +26,7 @@ import { applyCatalogDiscountThb, effectiveCatalogUnitPriceWithExpansion } from 
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
 import { ProductContactBeforeOrderNotice } from '@/components/pdp/ProductContactBeforeOrderNotice';
+import { ProductPriceDestinationLabel } from '@/components/pdp/ProductPriceDestinationLabel';
 
 export function ProductOrderBlockForProduct({
   product,
@@ -49,6 +50,7 @@ export function ProductOrderBlockForProduct({
   const { addItem } = useCart();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
+  const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const tBalloon = tBuyNow as typeof tBuyNow & {
@@ -125,6 +127,7 @@ export function ProductOrderBlockForProduct({
           price: selectedBase,
         },
         addOns: { ...addOns, balloonText },
+        deliveryDestination: checkoutProfile.destinationId,
         ...(product.discountPercent != null && {
           catalogDiscountPercent: product.discountPercent,
         }),
@@ -164,6 +167,7 @@ export function ProductOrderBlockForProduct({
           discountPercent={product.discountPercent}
         />
       ) : null}
+      <ProductPriceDestinationLabel lang={lang} destinationLabel={destinationLabel} />
       {justAdded ? (
         <div className="order-added-confirm" role="status">
           <p className="order-added-text">{t.addedToCart}</p>

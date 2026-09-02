@@ -339,9 +339,10 @@ export const articles: ArticleMeta[] = [
     slug: 'same-day-flower-delivery-chiang-mai',
     title: 'Same-day flower delivery in Chiang Mai',
     excerpt:
-      'Need flowers delivered today? Order same-day flower delivery across Chiang Mai online. Pay by card at checkout; we deliver during working hours (08:00–20:00) when you order in time.',
-      titleTh: 'บริการส่งดอกไม้ในวันเดียวกันในเชียงใหม่',
-      excerptTh: 'ต้องการส่งดอกไม้วันนี้ไหม? สั่งดอกไม้ส่งด่วนในวันเดียวกันทั่วเชียงใหม่ออนไลน์ จ่ายบัตรตอนเช็กเอาต์ เราจัดส่งในช่วงเวลาทำการ (08:00–20:00) เมื่อสั่งทันเวลา',
+      'Need flowers today? Order same-day flower delivery in Chiang Mai online. Checkout by 20:00 Thailand time; we deliver 08:00–20:00 when available.',
+    titleTh: 'ส่งดอกไม้วันเดียวในเชียงใหม่',
+    excerptTh:
+      'ต้องการดอกไม้วันนี้? สั่งส่งดอกไม้วันเดียวในเชียงใหม่ออนไลน์ ตัดรอบ 20:00 น. ตามเวลาไทย จัดส่ง 08:00–20:00 เมื่อสั่งทัน',
     publishedAt: '2026-02-19T00:00:00.000Z',
     featured: true,
     cover: {
@@ -350,7 +351,7 @@ export const articles: ArticleMeta[] = [
       alt: 'Same-day flower delivery in Chiang Mai — fresh bouquet for local delivery',
     },
     ctaLinks: [
-      { label: 'Order same-day delivery', labelTh: 'สั่งจัดส่งวันเดียว', href: '/catalog' },
+      { label: 'Order Chiang Mai flowers for today', labelTh: 'สั่งดอกไม้เชียงใหม่ส่งวันนี้', href: '/catalog' },
       { label: 'Refund & replacement', labelTh: 'คืนเงินและเปลี่ยนสินค้า', href: '/refund-replacement' },
       { label: 'Contact us', labelTh: 'ติดต่อเรา', href: '/contact' },
     ],

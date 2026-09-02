@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useDeliveryMarketOptional } from '@/contexts/DeliveryMarketContext';
 import {
+  getMarketByDestinationId,
   getMarketByPathSlug,
   isMarketPathSlug,
   isExpansionDestination,
@@ -16,6 +17,7 @@ import {
   MARKET_SESSION_STORAGE_KEY,
   readMarketSession,
 } from '@/lib/delivery/marketSession';
+import { readDeliveryRegionCookieClient } from '@/lib/delivery/deliveryRegionCookie';
 import type { Locale } from '@/lib/i18n';
 
 export type CheckoutDeliveryProfile = {
@@ -27,7 +29,7 @@ export type CheckoutDeliveryProfile = {
 };
 
 /**
- * Resolves checkout destination: nested market layout → URL slug → sessionStorage → Chiang Mai.
+ * Resolves checkout destination: nested market layout → URL slug → cookie → sessionStorage → Chiang Mai.
  */
 export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfile {
   const pathname = usePathname() ?? '';
@@ -72,10 +74,15 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
       }
     }
 
-    // Pattern B1: /{lang}/catalog/{market}/...
+    // Pattern B1: /{lang}/catalog/{market}/... (market listing, not a product slug)
     const maybeCatalog = parts[1];
     const slugUnderCatalog = parts[2];
-    if (maybeCatalog === 'catalog' && slugUnderCatalog && isMarketPathSlug(slugUnderCatalog)) {
+    if (
+      maybeCatalog === 'catalog' &&
+      slugUnderCatalog &&
+      isMarketPathSlug(slugUnderCatalog) &&
+      (!parts[3] || parts[3] === 'catalog')
+    ) {
       const m = getMarketByPathSlug(slugUnderCatalog);
       if (m) {
         return {
@@ -88,6 +95,22 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
     }
 
     if (typeof window !== 'undefined') {
+      const cookieDest = readDeliveryRegionCookieClient();
+      if (cookieDest === 'CHIANG_MAI') {
+        return chiangMaiProfile();
+      }
+      if (cookieDest && isExpansionDestination(cookieDest)) {
+        const m = getMarketByDestinationId(cookieDest);
+        if (m) {
+          return {
+            destinationId: m.destinationId,
+            variant: 'expansion' as const,
+            pathSlug: m.pathSlug,
+            labels: { en: m.customerFacingNameEn, th: m.customerFacingNameTh },
+          };
+        }
+      }
+
       const sess = readMarketSession();
       if (sess && isExpansionDestination(sess.destinationId)) {
         const m = getMarketByPathSlug(sess.pathSlug);
@@ -102,14 +125,18 @@ export function useCheckoutDeliveryProfile(_lang: Locale): CheckoutDeliveryProfi
       }
     }
 
-    return {
-      destinationId: 'CHIANG_MAI' as const,
-      variant: 'chiang-mai' as const,
-      pathSlug: null,
-      labels: {
-        en: destinationDisplayName('CHIANG_MAI', 'en'),
-        th: destinationDisplayName('CHIANG_MAI', 'th'),
-      },
-    };
+    return chiangMaiProfile();
   }, [marketCtx, pathname, sessionVersion]);
+}
+
+function chiangMaiProfile(): CheckoutDeliveryProfile {
+  return {
+    destinationId: 'CHIANG_MAI',
+    variant: 'chiang-mai',
+    pathSlug: null,
+    labels: {
+      en: destinationDisplayName('CHIANG_MAI', 'en'),
+      th: destinationDisplayName('CHIANG_MAI', 'th'),
+    },
+  };
 }

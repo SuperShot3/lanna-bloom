@@ -256,6 +256,11 @@
   max-width: 720px;
 }
 
+.seoMoreBodyExpanded {
+  padding: var(--space-6) 0 var(--space-8);
+  max-width: 720px;
+}
+
 .seoMoreBody :global(.info-article-h2) {
   font-family: var(--font-serif);
   font-size: 1.25rem;

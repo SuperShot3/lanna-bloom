@@ -168,7 +168,6 @@ export async function updateBouquetByAdminAction(formData: FormData): Promise<{ 
     compositionEn: String(formData.get('compositionEn') ?? ''),
     compositionTh: String(formData.get('compositionTh') ?? ''),
     featuredPopular: formData.get('featuredPopular') === 'true',
-    newArrivalEnabled: formData.get('newArrivalEnabled') === 'true',
     contactBeforeOrder: formData.get('contactBeforeOrder') === 'true',
     colors: parseCommaList(String(formData.get('colors') ?? '')),
     flowerTypes: parseCommaList(String(formData.get('flowerTypes') ?? '')),
@@ -176,6 +175,11 @@ export async function updateBouquetByAdminAction(formData: FormData): Promise<{ 
     presentationFormats: parseCommaList(String(formData.get('presentationFormats') ?? '')),
     deliveryOptions: parseCommaList(String(formData.get('deliveryOptions') ?? '')),
   };
+
+  // Absent key = leave live New Arrival timestamp alone (do not treat as false).
+  if (formData.has('newArrivalEnabled')) {
+    input.newArrivalEnabled = formData.get('newArrivalEnabled') === 'true';
+  }
 
   const deliveryMode = exclusiveDeliveryMode({
     deliveryOptions: input.deliveryOptions,
@@ -252,7 +256,9 @@ export async function updateBouquetByAdminAction(formData: FormData): Promise<{ 
           compositionEn: input.compositionEn,
           compositionTh: input.compositionTh,
           featuredPopular: input.featuredPopular,
-          newArrivalEnabled: input.newArrivalEnabled,
+          ...(input.newArrivalEnabled !== undefined && {
+            newArrivalEnabled: input.newArrivalEnabled,
+          }),
           contactBeforeOrder: input.contactBeforeOrder,
           colors: input.colors,
           flowerTypes: input.flowerTypes,

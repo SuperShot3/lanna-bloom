@@ -28,6 +28,17 @@ export function fillCityPlaceholders(text: string, city: string, areas = ''): st
   return text.replaceAll('{city}', city).replaceAll('{areas}', areas);
 }
 
+/** City info articles used on expansion landings (Krabi has none yet). */
+export const MARKET_INFO_ARTICLE_SLUG: Partial<Record<DeliveryDestinationId, string>> = {
+  BANGKOK: 'flower-delivery-bangkok',
+  PATTAYA: 'flower-delivery-pattaya',
+  PHUKET: 'flower-delivery-phuket',
+  HUA_HIN: 'flower-delivery-hua-hin',
+  SAMUI: 'flower-delivery-samui',
+  PAI: 'flower-delivery-pai',
+  LAMPHUN: 'flower-delivery-lamphun-province',
+};
+
 export function getMarketLandingDistricts(
   destinationId: DeliveryDestinationId
 ): LocalizedLabel[] {
@@ -103,13 +114,51 @@ export type MarketDeliveryCopy = {
   areasIntro: string;
 };
 
+export type MarketLocalLink = {
+  href: string;
+  label: string;
+  icon: 'location-on' | 'verified' | 'local-florist';
+};
+
 export type MarketLocalCopy = {
   eyebrow: string;
   title: string;
   intro: string;
   areasTitle: string;
   areasP1: string;
+  links?: MarketLocalLink[];
 };
+
+export function buildMarketLocalLinks(params: {
+  lang: Locale;
+  city: string;
+  destinationId: DeliveryDestinationId;
+  catalogHref: string;
+}): MarketLocalLink[] {
+  const { lang, city, destinationId, catalogHref } = params;
+  const t = translations[lang].homeLanding.local;
+  const articleSlug = MARKET_INFO_ARTICLE_SLUG[destinationId];
+  const links: MarketLocalLink[] = [
+    {
+      href: `/${lang}/delivery-areas-thailand`,
+      label: t.deliveryAreasLink,
+      icon: 'location-on',
+    },
+  ];
+  if (articleSlug) {
+    links.push({
+      href: `/${lang}/info/${articleSlug}`,
+      label: fillCityPlaceholders(t.cityGuideLink, city),
+      icon: 'verified',
+    });
+  }
+  links.push({
+    href: catalogHref,
+    label: t.browseCatalogLink,
+    icon: 'local-florist',
+  });
+  return links;
+}
 
 function customerMessage(
   province: PublicProvince | null | undefined,
@@ -175,8 +224,9 @@ export function buildMarketLocalCopy(params: {
   lang: Locale;
   city: string;
   destinationId: DeliveryDestinationId;
+  catalogHref?: string;
 }): MarketLocalCopy {
-  const { lang, city, destinationId } = params;
+  const { lang, city, destinationId, catalogHref } = params;
   const t = translations[lang].homeLanding.local;
   const districts = getMarketLandingDistricts(destinationId);
   const areas = formatDistrictList(districts, lang);
@@ -188,6 +238,9 @@ export function buildMarketLocalCopy(params: {
     areasP1: areas
       ? fillCityPlaceholders(t.areasP1Named, city, areas)
       : fillCityPlaceholders(t.areasP1Generic, city),
+    links: catalogHref
+      ? buildMarketLocalLinks({ lang, city, destinationId, catalogHref })
+      : undefined,
   };
 }
 

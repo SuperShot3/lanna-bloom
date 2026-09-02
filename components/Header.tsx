@@ -38,12 +38,17 @@ import {
 } from '@/lib/delivery/markets';
 import {
   MARKET_SESSION_CHANGE_EVENT,
-  readMarketSession,
+  readPersistedMarketSession,
 } from '@/lib/delivery/marketSession';
 import {
   commitDeliveryDestination,
   DEFAULT_DELIVERY_DESTINATION_ID,
 } from '@/lib/delivery/commitDeliveryDestination';
+import { OPEN_DELIVERY_REGION_PICKER_EVENT } from '@/lib/delivery/deliveryRegionCookie';
+import {
+  isStorefrontCatalogProductPath,
+  isStorefrontCheckoutPath,
+} from '@/lib/delivery/regionalProductRedirect';
 import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext';
 import { useSmartStickyHeader } from '@/hooks/useSmartStickyHeader';
 import { CheckoutCompactHeaderBar } from '@/components/checkout/CheckoutCompactHeaderBar';
@@ -118,6 +123,9 @@ export function Header({
   const deliveryPickerCopy = getDeliveryPickerCopy(lang);
 
   const isCartPage = pathname === cartHref || pathname === `${cartHref}/`;
+  const stayOnPageForRegion =
+    isStorefrontCheckoutPath(pathname ?? '', lang) ||
+    isStorefrontCatalogProductPath(pathname ?? '', lang);
   const isHomePage =
     pathname === homeHref ||
     pathname === `${homeHref}/` ||
@@ -128,6 +136,7 @@ export function Header({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [pickerOpenRequestId, setPickerOpenRequestId] = useState(0);
   const { payload: checkoutStickyPayload, setCollapseMode } = useCheckoutStickyHeader();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -138,7 +147,7 @@ export function Header({
 
   useEffect(() => {
     const load = () => {
-      const s = readMarketSession();
+      const s = readPersistedMarketSession();
       setSessionMarketSlug(s?.pathSlug ?? null);
     };
     load();
@@ -203,6 +212,15 @@ export function Header({
   }, [pathname]);
 
   useEffect(() => {
+    const openPicker = () => {
+      setPickerOpenRequestId((n) => n + 1);
+      setMenuOpen(true);
+    };
+    window.addEventListener(OPEN_DELIVERY_REGION_PICKER_EVENT, openPicker);
+    return () => window.removeEventListener(OPEN_DELIVERY_REGION_PICKER_EVENT, openPicker);
+  }, []);
+
+  useEffect(() => {
     if (!menuOpen) {
       setTouchStartX(null);
       setSwipeOffset(0);
@@ -237,13 +255,13 @@ export function Header({
     (nextDestination: DeliveryDestinationId) => {
       const { pathSlug } = commitDeliveryDestination(nextDestination, {
         lang,
-        navigate: !isCartPage,
+        navigate: !stayOnPageForRegion,
         router,
       });
       setSessionMarketSlug(pathSlug);
       setMenuOpen(false);
     },
-    [isCartPage, lang, router]
+    [stayOnPageForRegion, lang, router]
   );
 
   const handleOverlayOpenChange = useCallback((open: boolean) => {
@@ -359,6 +377,7 @@ export function Header({
                 valueLabel={selectedDeliveryName}
                 copy={deliveryPickerCopy}
                 variant="desktop"
+                openRequestId={pickerOpenRequestId}
                 onChange={handleDeliveryDestinationChange}
                 onOpenChange={handleOverlayOpenChange}
               />
@@ -462,6 +481,7 @@ export function Header({
               valueLabel={selectedDeliveryName}
               copy={deliveryPickerCopy}
               variant="mobile"
+              openRequestId={pickerOpenRequestId}
               onChange={handleDeliveryDestinationChange}
             />
             <CurrencySelector lang={lang} className="block w-full" variant="mobile" />
@@ -547,6 +567,7 @@ function DeliveryProvincePicker({
   valueLabel,
   copy,
   variant,
+  openRequestId = 0,
   onChange,
   onOpenChange,
 }: {
@@ -555,12 +576,24 @@ function DeliveryProvincePicker({
   valueLabel: string;
   copy: DeliveryPickerCopy;
   variant: 'desktop' | 'mobile';
+  openRequestId?: number;
   onChange: (destination: DeliveryDestinationId) => void;
   onOpenChange?: (open: boolean) => void;
 }) {
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    if (!openRequestId) return;
+    setIsDesktopExpanded(true);
+    onOpenChange?.(true);
+    const id = window.setTimeout(() => selectRef.current?.focus(), 50);
+    return () => window.clearTimeout(id);
+  }, [openRequestId, onOpenChange]);
+
   const select = (
     <select
+      ref={selectRef}
       value={value}
       onChange={(event) => onChange(event.target.value as DeliveryDestinationId)}
       onFocus={() => onOpenChange?.(true)}

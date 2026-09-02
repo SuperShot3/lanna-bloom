@@ -4,6 +4,7 @@
  */
 
 import reviewsData from '@/data/reviews.json';
+import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
 export interface Review {
   id: string;
@@ -14,6 +15,65 @@ export interface Review {
   date: string;
   location: string;
   featured: boolean;
+}
+
+const DESTINATION_CITY_NAMES: Record<DeliveryDestinationId, string[]> = {
+  CHIANG_MAI: ['Chiang Mai', 'เชียงใหม่', '清邁', '清迈', 'Чиангмае'],
+  BANGKOK: ['Bangkok', 'กรุงเทพ', '曼谷'],
+  PATTAYA: ['Pattaya', 'พัทยา'],
+  PHUKET: ['Phuket', 'ภูเก็ต', '普吉'],
+  KRABI: ['Krabi', 'กระบี่', 'Ao Nang', 'อ่าวนาง'],
+  SAMUI: ['Koh Samui', 'Samui', 'เกาะสมุย', 'สมุย', '蘇梅', '苏梅'],
+  HUA_HIN: ['Hua Hin', 'หัวหิน'],
+  LAMPHUN: ['Lamphun', 'ลำพูน'],
+  PAI: ['Pai', 'ปาย'],
+};
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function textMentionsName(haystack: string, name: string): boolean {
+  const pattern =
+    name.length <= 3
+      ? new RegExp(`(?:^|[^\\p{L}])${escapeRegExp(name)}(?:$|[^\\p{L}])`, 'iu')
+      : new RegExp(escapeRegExp(name), 'iu');
+  return pattern.test(haystack);
+}
+
+/** True when review text or location names a city other than the current market. */
+export function reviewMentionsForeignCity(
+  review: Pick<Review, 'text' | 'location'>,
+  allowedDestinationId: DeliveryDestinationId
+): boolean {
+  const haystack = `${review.text} ${review.location}`;
+  const allowed = new Set(
+    DESTINATION_CITY_NAMES[allowedDestinationId].map((n) => n.toLowerCase())
+  );
+  for (const [dest, names] of Object.entries(DESTINATION_CITY_NAMES) as [
+    DeliveryDestinationId,
+    string[],
+  ][]) {
+    if (dest === allowedDestinationId) continue;
+    for (const name of names) {
+      if (allowed.has(name.toLowerCase())) continue;
+      if (textMentionsName(haystack, name)) return true;
+    }
+  }
+  return false;
+}
+
+export const CITY_NEUTRAL_REVIEW_FALLBACK =
+  "I ordered a bouquet for my mother's birthday and it was delivered within 45 minutes. The flowers were fresher than anything I've seen in the markets. Truly premium service.";
+
+export function getCityNeutralFeaturedQuote(
+  allowedDestinationId: DeliveryDestinationId,
+  fallback = CITY_NEUTRAL_REVIEW_FALLBACK
+): string {
+  const match = getFeaturedReviews(12).find(
+    (review) => !reviewMentionsForeignCity(review, allowedDestinationId)
+  );
+  return match?.text || fallback;
 }
 
 function isValidReview(raw: unknown): raw is Review {

@@ -22,7 +22,7 @@ export function LocalLandingSection({
   const intro = copy?.intro ?? t.intro;
   const areasTitle = copy?.areasTitle ?? t.areasTitle;
   const areasP1 = copy?.areasP1 ?? t.areasP1;
-  const links = [
+  const links = copy?.links ?? [
     {
       href: `/${lang}/delivery-areas-thailand`,
       label: t.deliveryAreasLink,

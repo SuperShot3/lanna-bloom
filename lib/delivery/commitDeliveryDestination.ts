@@ -9,6 +9,7 @@ import {
   type MarketPathSlug,
 } from '@/lib/delivery/markets';
 import { applyDestinationToMarketSession } from '@/lib/delivery/marketSession';
+import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 
 export const DEFAULT_DELIVERY_DESTINATION_ID: DeliveryDestinationId = 'CHIANG_MAI';
 
@@ -21,7 +22,7 @@ export function catalogHrefForDestination(
   }
   const market = getNavMarkets().find((m) => m.destinationId === destinationId);
   if (!market) return `/${lang}/catalog`;
-  return `/${lang}/catalog/${market.pathSlug}/catalog`;
+  return buildMarketCatalogHref(lang, market.pathSlug);
 }
 
 export function commitDeliveryDestination(

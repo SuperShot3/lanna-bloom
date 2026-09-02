@@ -10,7 +10,7 @@
     "test:seo": "tsx lib/siteUrl.test.ts && tsx lib/seo/seoArchitecture.test.ts && tsx lib/seo/productJsonLd.test.ts && tsx lib/seo/siteJsonLd.test.ts",
     "test:feeds": "tsx lib/feeds/openAiProductFeed.test.ts",
     "test:delivery-fees": "tsx lib/deliveryFees.test.ts",
-    "test:delivery-constraints": "tsx lib/delivery/deliveryConstraints.test.ts && tsx lib/deliveryTimeSelection.test.ts && tsx lib/delivery/pdpDeliveryTiming.test.ts && tsx lib/delivery/mergeCartLineDeliveryOptions.test.ts && tsx lib/delivery/deliveryDateTileGate.test.ts && tsx lib/delivery/deliveryDestinationPrompt.test.ts",
+    "test:delivery-constraints": "tsx lib/delivery/deliveryConstraints.test.ts && tsx lib/deliveryTimeSelection.test.ts && tsx lib/delivery/pdpDeliveryTiming.test.ts && tsx lib/delivery/mergeCartLineDeliveryOptions.test.ts && tsx lib/delivery/deliveryDateTileGate.test.ts && tsx lib/delivery/deliveryDestinationPrompt.test.ts && tsx lib/delivery/regionalProductRedirect.test.ts && tsx lib/cart/destinationCartConflicts.test.ts",
     "test:provinces": "tsx lib/provinces/validate.test.ts && tsx lib/provinces/shopAccess.test.ts",
     "validate:province": "tsx scripts/validate-province-launch.ts",
     "test:partner-apply": "tsx lib/partnerApplyValidate.test.ts",

@@ -19,7 +19,11 @@ assert(
 );
 assert(
   shouldSkipDeliveryDestinationPromptPath('/en/catalog/phuket/catalog', 'en') === true,
-  'market catalog path skips prompt'
+  'legacy doubled market catalog path skips prompt'
+);
+assert(
+  shouldSkipDeliveryDestinationPromptPath('/en/catalog/phuket', 'en') === true,
+  'pretty market catalog path skips prompt'
 );
 assert(
   shouldSkipDeliveryDestinationPromptPath('/en/catalog/pai', 'en') === true,
@@ -96,11 +100,11 @@ assert(
   'CM catalog href'
 );
 assert(
-  catalogHrefForDestination('en', 'PHUKET') === '/en/catalog/phuket/catalog',
+  catalogHrefForDestination('en', 'PHUKET') === '/en/catalog/phuket',
   'Phuket catalog href'
 );
 assert(
-  catalogHrefForDestination('th', 'BANGKOK') === '/th/catalog/bangkok/catalog',
+  catalogHrefForDestination('th', 'BANGKOK') === '/th/catalog/bangkok',
   'Bangkok catalog href uses lang'
 );
 

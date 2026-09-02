@@ -372,7 +372,7 @@ export async function IntentLandingPage({
             </div>
           </details>
         ) : (
-          <div className={styles.seoMoreBody}>
+          <div className={`${styles.seoMoreBody} ${styles.seoMoreBodyExpanded}`}>
             <MDXRemote
               source={mdxSource}
               components={mdxComponents}
