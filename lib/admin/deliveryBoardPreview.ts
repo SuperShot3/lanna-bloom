@@ -307,7 +307,7 @@ export function groupOrdersByDeliveryDate(list: SupabaseOrderRow[]): DeliveryDat
     if (bucket) bucket.push(o);
     else byDate.set(d, [o]);
   }
-  const groups = [...byDate.keys()]
+  const groups = Array.from(byDate.keys())
     .sort()
     .map((date) => ({ date, orders: byDate.get(date)! }));
   if (unknown.length) groups.push({ date: '', orders: unknown });
