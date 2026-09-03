@@ -287,3 +287,29 @@ export function groupOrdersByDayPart(
   }
   return empty;
 }
+
+export type DeliveryDateGroup = {
+  date: string;
+  orders: SupabaseOrderRow[];
+};
+
+/** Group by delivery_date (YYYY-MM-DD), oldest first. Missing dates last. */
+export function groupOrdersByDeliveryDate(list: SupabaseOrderRow[]): DeliveryDateGroup[] {
+  const byDate = new Map<string, SupabaseOrderRow[]>();
+  const unknown: SupabaseOrderRow[] = [];
+  for (const o of list) {
+    const d = o.delivery_date?.trim() ?? '';
+    if (!d) {
+      unknown.push(o);
+      continue;
+    }
+    const bucket = byDate.get(d);
+    if (bucket) bucket.push(o);
+    else byDate.set(d, [o]);
+  }
+  const groups = [...byDate.keys()]
+    .sort()
+    .map((date) => ({ date, orders: byDate.get(date)! }));
+  if (unknown.length) groups.push({ date: '', orders: unknown });
+  return groups;
+}

@@ -38,6 +38,7 @@ import {
   formatDeliveryDateCard,
   formatDeliveryWindowLabel,
   groupOrdersByDayPart,
+  groupOrdersByDeliveryDate,
   itemTypeDisplayLabel,
   orderHasCustomerCardMessage,
   orderProductThumbPreviews,
@@ -91,9 +92,12 @@ interface DeliveryBoardClientProps {
     deliveryDateTo?: string;
     openPipeline?: boolean;
   };
-  /** URL / default dates for the toolbar (kept even when search ignores dates). */
+  /** URL / default dates for the toolbar (board chips; not used as search filters). */
   boardDateFrom: string;
   boardDateTo: string;
+  /** Optional search From/To. Empty means all dates. */
+  searchDateFrom?: string;
+  searchDateTo?: string;
   searchAllDates?: boolean;
   pipelineOpen?: boolean;
   openDeliverySummary: OpenDeliverySummary;
@@ -840,6 +844,8 @@ export function DeliveryBoardClient({
   initialFilters,
   boardDateFrom,
   boardDateTo,
+  searchDateFrom,
+  searchDateTo,
   searchAllDates = false,
   pipelineOpen = false,
   openDeliverySummary,
@@ -936,6 +942,8 @@ export function DeliveryBoardClient({
     [effectiveOrders]
   );
   const grouped = useMemo(() => groupOrdersByDayPart(visibleOrders), [visibleOrders]);
+  const groupedByDate = useMemo(() => groupOrdersByDeliveryDate(visibleOrders), [visibleOrders]);
+  const groupByDate = searchAllDates || pipelineOpen || dateFrom !== dateTo;
   const mapMarkers = useMemo(() => buildMapMarkers(visibleOrders), [visibleOrders]);
 
   const statInProgress = visibleOrders.filter((o) => isOpenPipelineStatus(o.order_status)).length;
@@ -944,9 +952,18 @@ export function DeliveryBoardClient({
   const statAfternoon = grouped.midday.length + grouped.afternoon.length + grouped.evening.length;
 
   const stripDays = useMemo(() => {
-    const center = rangeSingleDay ? dateFrom : today;
+    if (!dateNavLocked && dateFrom !== dateTo) {
+      const days: string[] = [];
+      let d = dateFrom;
+      for (let i = 0; i < 14 && d <= dateTo; i += 1) {
+        days.push(d);
+        d = shopAddDays(d, 1);
+      }
+      return days;
+    }
+    const center = rangeSingleDay && !dateNavLocked ? dateFrom : today;
     return Array.from({ length: 7 }, (_, i) => shopAddDays(center, i - 3));
-  }, [rangeSingleDay, dateFrom, today]);
+  }, [dateNavLocked, rangeSingleDay, dateFrom, dateTo, today]);
 
   const tomorrowYmd = shopAddDays(today, 1);
   const weekEndYmd = shopAddDays(today, 6);
@@ -973,20 +990,19 @@ export function DeliveryBoardClient({
 
   const totalPages = Math.ceil(initialTotal / pageSize) || 1;
 
-  const pushParams = (next: URLSearchParams) => {
-    router.push(`/admin/orders?${next.toString()}`);
+  const replaceParams = (next: URLSearchParams) => {
+    router.replace(`/admin/orders?${next.toString()}`, { scroll: false });
   };
 
   const handleFilterChange = (updates: Record<string, string | undefined>) => {
     const next = new URLSearchParams(sp.toString());
     next.delete('page');
-    next.delete('q');
     next.delete('pipeline');
     Object.entries(updates).forEach(([k, v]) => {
       if (v && v !== 'all') next.set(k, v);
       else next.delete(k);
     });
-    pushParams(next);
+    replaceParams(next);
   };
 
   const setDateRange = (from: string, to: string) => {
@@ -997,7 +1013,21 @@ export function DeliveryBoardClient({
     next.set('dateFrom', from);
     next.set('dateTo', to);
     setSearchDraft('');
-    pushParams(next);
+    replaceParams(next);
+  };
+
+  const setSearchDates = (from: string | undefined, to: string | undefined) => {
+    const next = new URLSearchParams(sp.toString());
+    next.delete('page');
+    if (from) next.set('dateFrom', from);
+    else next.delete('dateFrom');
+    if (to) next.set('dateTo', to);
+    else next.delete('dateTo');
+    replaceParams(next);
+  };
+
+  const clearSearchDates = () => {
+    setSearchDates(undefined, undefined);
   };
 
   const applyPreset = (preset: 'today' | 'tomorrow' | 'week') => {
@@ -1028,9 +1058,18 @@ export function DeliveryBoardClient({
     next.delete('recipientPhone');
     next.delete('pipeline');
     const q = searchDraft.trim();
-    if (q) next.set('q', q);
-    else next.delete('q');
-    pushParams(next);
+    if (q) {
+      next.set('q', q);
+      if (!searchAllDates) {
+        next.delete('dateFrom');
+        next.delete('dateTo');
+      }
+    } else {
+      next.delete('q');
+      next.set('dateFrom', today);
+      next.set('dateTo', today);
+    }
+    replaceParams(next);
   };
 
   const clearSearch = () => {
@@ -1040,18 +1079,16 @@ export function DeliveryBoardClient({
     next.delete('q');
     next.delete('orderId');
     next.delete('recipientPhone');
-    if (!next.get('dateFrom') && !next.get('dateTo')) {
-      next.set('dateFrom', dateFrom);
-      next.set('dateTo', dateTo);
-    }
-    pushParams(next);
+    next.set('dateFrom', today);
+    next.set('dateTo', today);
+    replaceParams(next);
   };
 
   const viewAllOpen = () => {
     const next = new URLSearchParams();
     next.set('pipeline', 'open');
     setSearchDraft('');
-    pushParams(next);
+    replaceParams(next);
   };
 
   const viewOrderOnBoard = (deliveryDate: string | null | undefined) => {
@@ -1188,7 +1225,7 @@ export function DeliveryBoardClient({
     setCollapsed((c) => ({ ...c, [id]: !c[id] }));
   };
 
-  const sections: { id: string; title: string; count: number; orders: SupabaseOrderRow[]; icon: string }[] = [
+  const dayPartSections: { id: string; title: string; count: number; orders: SupabaseOrderRow[]; icon: string }[] = [
     { id: 'morning', title: 'Morning', count: grouped.morning.length, orders: grouped.morning, icon: 'wb_sunny' },
     {
       id: 'midday',
@@ -1219,6 +1256,16 @@ export function DeliveryBoardClient({
       icon: 'schedule',
     },
   ].filter((s) => s.count > 0);
+
+  const sections = groupByDate
+    ? groupedByDate.map((g) => ({
+        id: g.date ? `date-${g.date}` : 'date-unknown',
+        title: g.date ? formatDeliveryDateCard(g.date) : 'Date not set',
+        count: g.orders.length,
+        orders: g.orders,
+        icon: 'calendar_today',
+      }))
+    : dayPartSections;
 
   return (
     <div className="admin-delivery-board">
@@ -1396,7 +1443,10 @@ export function DeliveryBoardClient({
       <div className="admin-delivery-board-strip-wrap">
         <div className="admin-delivery-board-strip">
           {stripDays.map((ymd) => {
-            const isSelected = !dateNavLocked && ymd === dateFrom && ymd === dateTo;
+            const isExactDay = !dateNavLocked && ymd === dateFrom && ymd === dateTo;
+            const isInRange =
+              !dateNavLocked && dateFrom !== dateTo && ymd >= dateFrom && ymd <= dateTo;
+            const isSelected = isExactDay || isInRange;
             const isTodayCell = ymd === today;
             const openCount = countForDay(ymd);
             const isOverdueDay = ymd < today && openCount > 0;
@@ -1444,8 +1494,17 @@ export function DeliveryBoardClient({
 
       {searchAllDates ? (
         <p className="admin-hint admin-delivery-board-range-hint">
-          Searching all orders — <strong>{initialTotal}</strong>{' '}
-          {initialTotal === 1 ? 'match' : 'matches'}. Date range ignored.
+          Searching by name, order ID, or phone
+          {searchDateFrom || searchDateTo ? (
+            <>
+              {' '}
+              from <strong>{searchDateFrom || 'any date'}</strong> to{' '}
+              <strong>{searchDateTo || 'any date'}</strong>
+            </>
+          ) : (
+            <> — all dates</>
+          )}
+          . <strong>{initialTotal}</strong> {initialTotal === 1 ? 'match' : 'matches'}.
         </p>
       ) : pipelineOpen ? (
         <p className="admin-hint admin-delivery-board-range-hint">
@@ -1457,20 +1516,23 @@ export function DeliveryBoardClient({
         </p>
       ) : dateFrom !== dateTo ? (
         <p className="admin-hint admin-delivery-board-range-hint">
-          Showing deliveries from <strong>{dateFrom}</strong> to <strong>{dateTo}</strong> (grouped by time of day per order).
+          Showing deliveries from <strong>{dateFrom}</strong> to <strong>{dateTo}</strong>, grouped by
+          day.
         </p>
       ) : null}
 
       <form className="admin-delivery-board-search-row" onSubmit={submitSearch}>
-        <span className="material-symbols-outlined admin-delivery-search-icon">search</span>
-        <input
-          type="search"
-          className="admin-input admin-delivery-board-search"
-          placeholder="Search by order ID, recipient, or phone"
-          value={searchDraft}
-          onChange={(e) => setSearchDraft(e.target.value)}
-          aria-label="Search orders"
-        />
+        <div className="admin-delivery-board-search-field">
+          <span className="material-symbols-outlined admin-delivery-search-icon">search</span>
+          <input
+            type="search"
+            className="admin-input admin-delivery-board-search"
+            placeholder="Search by name, order ID, or phone"
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            aria-label="Search orders by recipient, sender, order ID, or phone"
+          />
+        </div>
         <button type="submit" className="admin-btn admin-btn-sm">
           Search
         </button>
@@ -1500,6 +1562,46 @@ export function DeliveryBoardClient({
           <span>Hide delivered</span>
         </label>
       </form>
+
+      {searchAllDates ? (
+        <div className="admin-delivery-search-dates">
+          <span className="admin-delivery-search-dates-label">Time frame</span>
+          <label className="admin-delivery-search-date-field">
+            <span>From</span>
+            <input
+              type="date"
+              className="admin-input admin-input-date"
+              value={searchDateFrom ?? ''}
+              onChange={(e) => setSearchDates(e.target.value || undefined, searchDateTo)}
+              aria-label="Search from delivery date"
+            />
+          </label>
+          <span className="admin-delivery-search-dates-sep" aria-hidden>
+            –
+          </span>
+          <label className="admin-delivery-search-date-field">
+            <span>To</span>
+            <input
+              type="date"
+              className="admin-input admin-input-date"
+              value={searchDateTo ?? ''}
+              onChange={(e) => setSearchDates(searchDateFrom, e.target.value || undefined)}
+              aria-label="Search to delivery date"
+            />
+          </label>
+          {searchDateFrom || searchDateTo ? (
+            <button
+              type="button"
+              className="admin-btn admin-btn-outline admin-btn-sm"
+              onClick={clearSearchDates}
+            >
+              All time
+            </button>
+          ) : (
+            <span className="admin-hint">All time</span>
+          )}
+        </div>
+      ) : null}
 
       {hideDelivered && deliveredHiddenCount > 0 ? (
         <p className="admin-hint admin-delivery-hide-delivered-hint">
@@ -1542,7 +1644,7 @@ export function DeliveryBoardClient({
               ) : (
                 <>
                   {searchAllDates
-                    ? 'No orders match this search. Try a different order ID, recipient, or phone.'
+                    ? 'No orders match this search. Try a different name, order ID, or phone.'
                     : pipelineOpen
                       ? 'No open paid deliveries.'
                       : 'No orders in this range. Try another day or clear filters.'}
@@ -1816,7 +1918,7 @@ export function DeliveryBoardClient({
                   onClick={() => {
                     const next = new URLSearchParams(sp.toString());
                     next.set('page', String(initialPage - 1));
-                    pushParams(next);
+                    replaceParams(next);
                   }}
                   className="admin-btn admin-btn-sm"
                 >
@@ -1831,7 +1933,7 @@ export function DeliveryBoardClient({
                   onClick={() => {
                     const next = new URLSearchParams(sp.toString());
                     next.set('page', String(initialPage + 1));
-                    pushParams(next);
+                    replaceParams(next);
                   }}
                   className="admin-btn admin-btn-sm"
                 >

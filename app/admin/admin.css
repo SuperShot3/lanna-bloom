@@ -568,13 +568,15 @@ button.admin-open-delivery-alert-all {
 }
 .admin-delivery-board-search-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-bottom: var(--space-3);
+}
+.admin-delivery-board-search-field {
   position: relative;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  flex: 1 1 180px;
+  min-width: 160px;
 }
 .admin-delivery-search-icon {
   position: absolute;
@@ -586,8 +588,8 @@ button.admin-open-delivery-alert-all {
   font-size: 18px !important;
 }
 .admin-delivery-board-search {
-  flex: 0 0 96px;
-  min-width: 96px;
+  width: 100%;
+  min-width: 0;
   padding: 4px 7px 4px 28px !important;
   font-size: 0.78rem;
 }
@@ -595,6 +597,32 @@ button.admin-open-delivery-alert-all {
   flex: 0 0 auto;
   padding: 5px 8px;
   font-size: 0.78rem;
+}
+.admin-delivery-search-dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 var(--space-3);
+}
+.admin-delivery-search-dates-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2d473e;
+  white-space: nowrap;
+}
+.admin-delivery-search-date-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--admin-text-muted, #64748b);
+}
+.admin-delivery-search-date-field .admin-input-date {
+  font-size: 0.78rem;
+}
+.admin-delivery-search-dates-sep {
+  color: var(--admin-text-muted, #64748b);
 }
 .admin-delivery-filter-toggle {
   display: inline-flex;
@@ -613,6 +641,9 @@ button.admin-open-delivery-alert-all {
 }
 .admin-delivery-filters-panel {
   margin-bottom: var(--space-4);
+}
+.admin-delivery-filters-panel .admin-filters-grid {
+  margin-top: 0;
 }
 .admin-delivery-sections {
   display: flex;

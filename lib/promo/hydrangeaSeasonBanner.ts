@@ -18,11 +18,13 @@ export const HYDRANGEA_SEASON_BANNER_LANDSCAPE_MIN_PX = 1024;
 export const HYDRANGEA_SEASON_BANNER_PORTRAIT_MAX_PX = 512;
 
 /**
- * Landscape fills `max-w-7xl` minus `lg:px-8` gutters; portrait is viewport
- * width until it hits the cap above.
+ * Must match HomePromoBanner layout: `max-w-7xl` + `lg:px-8` on landscape,
+ * `max-w-lg` + `px-4` on portrait. Do not use `100vw` on mobile — that
+ * overstates the painted slot (~380px on a 412px phone) and PageSpeed
+ * then downloads Next's 750w step for a 4:5 image.
  */
 export const HYDRANGEA_SEASON_BANNER_IMAGE_SIZES =
-  '(min-width: 1024px) 1216px, (min-width: 640px) 512px, 100vw';
+  '(min-width: 1024px) min(1216px, calc(100vw - 64px)), (min-width: 640px) 512px, min(512px, calc(100vw - 32px))';
 
 export const HYDRANGEA_SEASON_HORIZONTAL = { width: 2172, height: 724 } as const;
 export const HYDRANGEA_SEASON_VERTICAL = { width: 1122, height: 1402 } as const;

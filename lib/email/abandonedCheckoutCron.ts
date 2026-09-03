@@ -10,10 +10,18 @@ import {
   buildCheckoutRecoveryUrl,
   buildCheckoutRecoveryUnsubscribeUrl,
   cancelCheckoutAbandonment,
+  cancelOtherPendingAbandonmentsForEmail,
   claimCheckoutAbandonmentEmailSend,
+  acquireAbandonedCheckoutEmailRateLimit,
+  hasRecentAbandonedCheckoutSend,
+  releaseAbandonedCheckoutEmailRateLimit,
   releaseCheckoutAbandonmentEmailClaim,
   type CheckoutAbandonmentRow,
 } from '@/lib/checkout/abandonedCheckout';
+import {
+  normalizeCheckoutRecoveryEmail,
+  selectLatestAbandonmentPerEmail,
+} from '@/lib/checkout/abandonedCheckoutCooldown';
 import { getBaseUrl } from '@/lib/orders';
 import {
   getDefaultSocialLinks,
@@ -111,11 +119,12 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
   const { data: rows, error } = await supabase
     .from('checkout_abandonments')
     .select(
-      'id, stripe_session_id, submission_token, recovery_token, recovery_unsubscribe_token, recovery_email_consent, customer_email, customer_name, lang, payload_json, recovery_email_scheduled_for, recovery_email_sent_at, cancelled_at, expires_at'
+      'id, stripe_session_id, submission_token, recovery_token, recovery_unsubscribe_token, recovery_email_consent, customer_email, customer_name, lang, payload_json, session_created_at, recovery_email_scheduled_for, recovery_email_sent_at, cancelled_at, expires_at'
     )
     .is('recovery_email_sent_at', null)
     .is('cancelled_at', null)
     .lte('recovery_email_scheduled_for', now)
+    .order('session_created_at', { ascending: false })
     .limit(50);
 
   if (error || !rows) {
@@ -128,16 +137,29 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
   }
 
   let sent = 0;
-  let skipped = 0;
+  const dueRows = selectLatestAbandonmentPerEmail(rows as CheckoutAbandonmentRow[]);
+  let skipped = (rows as CheckoutAbandonmentRow[]).length - dueRows.length;
+  const handledEmails = new Set<string>();
 
-  for (const raw of rows as CheckoutAbandonmentRow[]) {
+  for (const raw of dueRows) {
+    const email = normalizeCheckoutRecoveryEmail(raw.customer_email);
+    if (!email) {
+      await cancelCheckoutAbandonment({ stripeSessionId: raw.stripe_session_id });
+      skipped += 1;
+      continue;
+    }
+    if (handledEmails.has(email)) {
+      skipped += 1;
+      continue;
+    }
+
     if (raw.recovery_email_consent !== true) {
       await cancelCheckoutAbandonment({ stripeSessionId: raw.stripe_session_id });
       skipped += 1;
       continue;
     }
 
-    if (await isCheckoutRecoveryOptedOut(raw.customer_email)) {
+    if (await isCheckoutRecoveryOptedOut(email)) {
       await cancelCheckoutAbandonment({ stripeSessionId: raw.stripe_session_id });
       skipped += 1;
       continue;
@@ -167,11 +189,29 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
       continue;
     }
 
-    const claimed = await claimCheckoutAbandonmentEmailSend(raw.id);
-    if (!claimed) {
+    if (await hasRecentAbandonedCheckoutSend(email)) {
+      handledEmails.add(email);
+      console.info('[abandonedCheckoutCron] skipped 24h cap', { id: raw.id });
       skipped += 1;
       continue;
     }
+
+    const locked = await acquireAbandonedCheckoutEmailRateLimit(email, raw.id);
+    if (!locked) {
+      handledEmails.add(email);
+      console.info('[abandonedCheckoutCron] skipped 24h cap', { id: raw.id });
+      skipped += 1;
+      continue;
+    }
+
+    const claimed = await claimCheckoutAbandonmentEmailSend(raw.id);
+    if (!claimed) {
+      await releaseAbandonedCheckoutEmailRateLimit(email, raw.id);
+      skipped += 1;
+      continue;
+    }
+
+    handledEmails.add(email);
 
     const vars = buildTemplateVariables(raw);
     const lang = raw.lang === 'th' ? 'th' : 'en';
@@ -190,7 +230,7 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
       .from('email_outbox')
       .insert({
         order_id: null,
-        customer_email: raw.customer_email.trim(),
+        customer_email: email,
         customer_name: raw.customer_name?.trim() || null,
         email_type: 'abandoned_checkout',
         subject: rendered.subject,
@@ -204,6 +244,7 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
 
     if (insE || !outbox) {
       await releaseCheckoutAbandonmentEmailClaim(raw.id);
+      await releaseAbandonedCheckoutEmailRateLimit(email, raw.id);
       errors.push(`Outbox ${raw.id}: ${insE?.message ?? 'insert failed'}`);
       continue;
     }
@@ -212,9 +253,11 @@ export async function runAbandonedCheckoutEmailCron(): Promise<{
     const send = await sendOutboxViaResend(outId, 'cron');
 
     if (send.ok) {
+      await cancelOtherPendingAbandonmentsForEmail(email, raw.id);
       sent += 1;
     } else {
       await releaseCheckoutAbandonmentEmailClaim(raw.id);
+      await releaseAbandonedCheckoutEmailRateLimit(email, raw.id);
       errors.push(`Send ${outId}: ${'error' in send ? send.error : 'failed'}`);
     }
   }

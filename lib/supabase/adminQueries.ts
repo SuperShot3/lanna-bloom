@@ -196,7 +196,7 @@ export interface SupplierOrderRequestEventRow {
 export interface OrdersFilters {
   orderId?: string;
   recipientPhone?: string;
-  /** OR-search across order_id, recipient_name, recipient_phone (ilike). */
+  /** OR-search across order_id, recipient/sender names and phones (ilike). */
   q?: string;
   orderStatus?: string;
   paymentStatus?: 'paid' | 'unpaid';
@@ -209,6 +209,28 @@ export interface OrdersFilters {
 }
 
 const OPEN_DELIVERY_SUMMARY_CAP = 500;
+
+function sanitizeAdminOrderSearchQuery(q: string | undefined): string {
+  return (
+    q
+      ?.trim()
+      .replace(/[,()"']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim() ?? ''
+  );
+}
+
+function adminOrderSearchOrClause(qTrim: string): string {
+  const esc = qTrim.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  const pat = `%${esc}%`;
+  return [
+    `order_id.ilike.${pat}`,
+    `recipient_name.ilike.${pat}`,
+    `customer_name.ilike.${pat}`,
+    `recipient_phone.ilike.${pat}`,
+    `phone.ilike.${pat}`,
+  ].join(',');
+}
 
 /**
  * Paid orders that are not delivered or cancelled, across all delivery dates.
@@ -269,17 +291,9 @@ export async function getOrders(
       .from('orders')
       .select(listColumns, { count: 'exact' });
 
-    const qTrim = filters.q
-      ?.trim()
-      .replace(/[,()"']/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const qTrim = sanitizeAdminOrderSearchQuery(filters.q);
     if (qTrim) {
-      const esc = qTrim.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-      const pat = `%${esc}%`;
-      query = query.or(
-        `order_id.ilike.${pat},recipient_name.ilike.${pat},recipient_phone.ilike.${pat}`
-      );
+      query = query.or(adminOrderSearchOrClause(qTrim));
     } else {
       if (filters.orderId?.trim()) {
         query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
@@ -304,9 +318,8 @@ export async function getOrders(
     if (filters.deliveryDestination && filters.deliveryDestination !== 'all') {
       query = query.eq('delivery_destination', filters.deliveryDestination);
     }
-    // Text search and the open-pipeline view look across all dates.
-    const skipDates = Boolean(qTrim) || Boolean(filters.openPipeline);
-    if (!skipDates) {
+    // Open-pipeline looks across all dates. Text search is all-time unless From/To is set.
+    if (!filters.openPipeline) {
       if (filters.deliveryDateFrom) {
         query = query.gte('delivery_date', filters.deliveryDateFrom);
       }
@@ -459,17 +472,9 @@ export async function getOrdersForExport(
   try {
     let query = supabase.from('orders').select('*');
 
-    const qTrimEx = filters.q
-      ?.trim()
-      .replace(/[,()"']/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const qTrimEx = sanitizeAdminOrderSearchQuery(filters.q);
     if (qTrimEx) {
-      const esc = qTrimEx.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-      const pat = `%${esc}%`;
-      query = query.or(
-        `order_id.ilike.${pat},recipient_name.ilike.${pat},recipient_phone.ilike.${pat}`
-      );
+      query = query.or(adminOrderSearchOrClause(qTrimEx));
     } else {
       if (filters.orderId?.trim()) {
         query = query.ilike('order_id', `%${filters.orderId.trim()}%`);
@@ -494,8 +499,7 @@ export async function getOrdersForExport(
     if (filters.deliveryDestination && filters.deliveryDestination !== 'all') {
       query = query.eq('delivery_destination', filters.deliveryDestination);
     }
-    const skipDatesEx = Boolean(qTrimEx) || Boolean(filters.openPipeline);
-    if (!skipDatesEx) {
+    if (!filters.openPipeline) {
       if (filters.deliveryDateFrom) {
         query = query.gte('delivery_date', filters.deliveryDateFrom);
       }

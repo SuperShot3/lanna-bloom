@@ -26,6 +26,9 @@ import { cn } from '@/lib/utils';
 const SWIPE_THRESHOLD_PX = 48;
 const CTA_EVENT = 'cta_home_hydrangea_promo';
 const HEADING_ID = 'home-promo-hydrangea-title';
+/** Delay before fetching the next slide so first paint is one image. */
+const PREFETCH_NEXT_MS = 2500;
+const SLIDE_FADE_MS = 500;
 
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -89,10 +92,12 @@ function PromoSlidePicture({
 export function HomePromoBanner({ lang }: { lang: Locale }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [neighborsReady, setNeighborsReady] = useState(false);
+  const [prefetchNext, setPrefetchNext] = useState(false);
+  const [outgoingIndex, setOutgoingIndex] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const ignoreClickRef = useRef(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const displayedIndexRef = useRef(0);
 
   const tHome = translations[lang].home;
   const slides = HYDRANGEA_SEASON_SLIDES;
@@ -100,13 +105,13 @@ export function HomePromoBanner({ lang }: { lang: Locale }) {
   const canNavigate = slides.length > 1;
 
   useEffect(() => {
-    const ready = window.setTimeout(() => setNeighborsReady(true), 400);
+    if (!canNavigate) return;
+    const ready = window.setTimeout(() => setPrefetchNext(true), PREFETCH_NEXT_MS);
     return () => window.clearTimeout(ready);
-  }, []);
+  }, [canNavigate]);
 
   const goTo = useCallback(
     (next: number | ((prev: number) => number)) => {
-      setNeighborsReady(true);
       setCurrentIndex((prev) => {
         const resolved = typeof next === 'function' ? next(prev) : next;
         const total = slides.length;
@@ -115,6 +120,21 @@ export function HomePromoBanner({ lang }: { lang: Locale }) {
     },
     [slides.length]
   );
+
+  useEffect(() => {
+    const from = displayedIndexRef.current;
+    if (from === currentIndex) return;
+    displayedIndexRef.current = currentIndex;
+    if (prefersReducedMotion) {
+      setOutgoingIndex(null);
+      return;
+    }
+    setOutgoingIndex(from);
+    const timer = window.setTimeout(() => {
+      setOutgoingIndex((outgoing) => (outgoing === from ? null : outgoing));
+    }, SLIDE_FADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [currentIndex, prefersReducedMotion]);
 
   const handleNext = useCallback(() => {
     if (!canNavigate) return;
@@ -126,7 +146,7 @@ export function HomePromoBanner({ lang }: { lang: Locale }) {
     goTo((prev) => prev - 1);
   }, [canNavigate, goTo]);
 
-  const autoplayActive = canNavigate && neighborsReady && !prefersReducedMotion && !isPaused;
+  const autoplayActive = canNavigate && !prefersReducedMotion && !isPaused;
 
   useEffect(() => {
     if (!autoplayActive) return;
@@ -180,9 +200,16 @@ export function HomePromoBanner({ lang }: { lang: Locale }) {
 
   if (!HYDRANGEA_SEASON_BANNER_ENABLED || slides.length === 0) return null;
 
-  const visibleIndexes = neighborsReady
-    ? slides.map((_, index) => index)
-    : [0];
+  const nextIndex = canNavigate ? (currentIndex + 1) % slides.length : currentIndex;
+  const visibleIndexes = Array.from(
+    new Set(
+      [
+        currentIndex,
+        prefetchNext && nextIndex !== currentIndex ? nextIndex : null,
+        outgoingIndex,
+      ].filter((index): index is number => index != null)
+    )
+  );
 
   return (
     <section
@@ -239,7 +266,11 @@ export function HomePromoBanner({ lang }: { lang: Locale }) {
                       isActive ? 'z-[1] opacity-100' : 'pointer-events-none z-0 opacity-0'
                     )}
                   >
-                    <PromoSlidePicture slide={slide} alt={alt} eager={index === 0} />
+                    <PromoSlidePicture
+                      slide={slide}
+                      alt={alt}
+                      eager={isActive && index === 0}
+                    />
                   </Link>
                 );
               })}

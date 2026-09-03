@@ -292,7 +292,9 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 2592000,
-    deviceSizes: [640, 750, 828, 1080, 1200],
+    // 720 sits between 640 and 750 so homepage promo (~380 CSS px × 1.75 DPR ≈ 665)
+    // does not jump to 750 (PageSpeed "properly size images" on mobile).
+    deviceSizes: [640, 720, 750, 828, 1080, 1200],
     // Include 480/512 so hero cards (~272–384 CSS px at 1.75–2x DPR) do not jump to 640.
     imageSizes: [48, 64, 80, 96, 128, 256, 384, 480, 512],
     remotePatterns: [

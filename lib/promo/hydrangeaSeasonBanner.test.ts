@@ -27,6 +27,14 @@ assert.ok(
   HYDRANGEA_SEASON_BANNER_IMAGE_SIZES.includes(`${HYDRANGEA_SEASON_BANNER_PORTRAIT_MAX_PX}px`),
   'sizes must cap the portrait slot'
 );
+assert.ok(
+  HYDRANGEA_SEASON_BANNER_IMAGE_SIZES.includes('min(512px, calc(100vw - 32px))'),
+  'mobile sizes must match px-4 gutters, not 100vw'
+);
+assert.ok(
+  !HYDRANGEA_SEASON_BANNER_IMAGE_SIZES.trim().endsWith('100vw'),
+  'mobile sizes must not fall back to 100vw'
+);
 
 // A 4:5 portrait at full tablet width would be taller than the viewport.
 const portraitHeightAtCap =

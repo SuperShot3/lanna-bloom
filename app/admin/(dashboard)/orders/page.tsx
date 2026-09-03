@@ -38,11 +38,26 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const pageSize = 80;
   const today = shopTodayYmd();
   const qTrim = params.q?.trim() ?? '';
+  const searching = Boolean(qTrim);
   const pipelineOpen = params.pipeline === 'open';
-  const hasRange = Boolean(params.dateFrom?.trim() || params.dateTo?.trim());
-  const dateFrom = hasRange ? params.dateFrom?.trim() || params.dateTo?.trim() || today : today;
-  const dateTo = hasRange ? params.dateTo?.trim() || params.dateFrom?.trim() || today : today;
-  const ignoreDates = Boolean(qTrim) || pipelineOpen;
+  const paramDateFrom = params.dateFrom?.trim() || undefined;
+  const paramDateTo = params.dateTo?.trim() || undefined;
+  const hasBoardRange = !searching && !pipelineOpen && Boolean(paramDateFrom || paramDateTo);
+  const boardDateFrom = hasBoardRange ? paramDateFrom || paramDateTo || today : today;
+  const boardDateTo = hasBoardRange ? paramDateTo || paramDateFrom || today : today;
+
+  let deliveryDateFrom: string | undefined;
+  let deliveryDateTo: string | undefined;
+  if (pipelineOpen) {
+    deliveryDateFrom = undefined;
+    deliveryDateTo = undefined;
+  } else if (searching) {
+    deliveryDateFrom = paramDateFrom;
+    deliveryDateTo = paramDateTo;
+  } else {
+    deliveryDateFrom = boardDateFrom;
+    deliveryDateTo = boardDateTo;
+  }
 
   const filters = {
     orderId: params.orderId,
@@ -52,8 +67,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     paymentStatus: pipelineOpen ? ('paid' as const) : (params.payment as 'paid' | 'unpaid' | undefined),
     district: params.district,
     deliveryDestination: params.destination,
-    deliveryDateFrom: ignoreDates ? undefined : dateFrom,
-    deliveryDateTo: ignoreDates ? undefined : dateTo,
+    deliveryDateFrom,
+    deliveryDateTo,
     openPipeline: pipelineOpen,
   };
 
@@ -79,9 +94,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
       initialTotal={result.total}
       initialError={result.error}
       initialFilters={filters}
-      boardDateFrom={dateFrom}
-      boardDateTo={dateTo}
-      searchAllDates={Boolean(qTrim)}
+      boardDateFrom={boardDateFrom}
+      boardDateTo={boardDateTo}
+      searchDateFrom={searching ? paramDateFrom : undefined}
+      searchDateTo={searching ? paramDateTo : undefined}
+      searchAllDates={searching}
       pipelineOpen={pipelineOpen}
       openDeliverySummary={openDeliverySummary}
       initialPage={page}
