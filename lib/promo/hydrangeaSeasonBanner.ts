@@ -51,24 +51,24 @@ export const HYDRANGEA_SEASON_SLIDES: readonly HydrangeaSeasonSlide[] = [
     id: 'blue',
     altKey: 'promoHydrangeaSlideBlue',
     horizontalSrc: `${ASSET}/blue_hydrangea_horizontal_promo_lannabloom.png`,
-    verticalSrc: `${ASSET}/blue_hydrangea_vertical_promo_lannabloom.png`,
+    verticalSrc: `${ASSET}/blue_hydrangea_vertical_promo_lannabloom.webp`,
   },
   {
     id: 'white',
     altKey: 'promoHydrangeaSlideWhite',
     horizontalSrc: `${ASSET}/white_hydrangea_horizontal_promo_lannabloom.png`,
-    verticalSrc: `${ASSET}/white_hydrangea_vertical_promo_lannabloom.png`,
+    verticalSrc: `${ASSET}/white_hydrangea_vertical_promo_lannabloom.webp`,
   },
   {
     id: 'light-mix',
     altKey: 'promoHydrangeaSlideLightMix',
     horizontalSrc: `${ASSET}/mix_hydrangea_horizontal_promo_lannabloom.png`,
-    verticalSrc: `${ASSET}/light_mix_hydrangea_vertical_promo_lannabloom.png`,
+    verticalSrc: `${ASSET}/light_mix_hydrangea_vertical_promo_lannabloom.webp`,
   },
   {
     id: 'mixed-dark',
     altKey: 'promoHydrangeaSlideMixedDark',
     horizontalSrc: `${ASSET}/mix_dark_hydrangea_horizontal_promo_lannabloom.png`,
-    verticalSrc: `${ASSET}/mixed_hydrangea_vertical_promo_lannabloom.png`,
+    verticalSrc: `${ASSET}/mixed_hydrangea_vertical_promo_lannabloom.webp`,
   },
 ];
