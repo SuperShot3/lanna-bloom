@@ -49,6 +49,8 @@ type ProductDraftCopy = {
   descriptionTh: string;
   compositionEn: string;
   compositionTh: string;
+  titleIntroEn: string;
+  titleIntroTh: string;
   altEn: string;
   altTh: string;
   seoTitle: string;
@@ -98,6 +100,8 @@ const emptyDraft: ProductDraftCopy = {
   descriptionTh: '',
   compositionEn: '',
   compositionTh: '',
+  titleIntroEn: '',
+  titleIntroTh: '',
   altEn: '',
   altTh: '',
   seoTitle: '',
@@ -634,7 +638,14 @@ export function ProductCreateWizard({ adminEmail }: { adminEmail: string }) {
       const nextAnalysis = payload.analysis as ProductImageAnalysis;
       const nextDraft = payload.draft as ProductDraftCopy;
       const filledAlts = buildProductImageAlt(nextDraft);
-      const draftWithAlts = { ...nextDraft, altEn: filledAlts.altEn, altTh: filledAlts.altTh };
+      const draftWithAlts: ProductDraftCopy = {
+        ...emptyDraft,
+        ...nextDraft,
+        altEn: filledAlts.altEn,
+        altTh: filledAlts.altTh,
+        titleIntroEn: nextDraft.titleIntroEn ?? draft.titleIntroEn,
+        titleIntroTh: nextDraft.titleIntroTh ?? draft.titleIntroTh,
+      };
       setAnalysis(nextAnalysis);
       setDraft(draftWithAlts);
       recordTextGeneration(draftWithAlts);
@@ -1174,6 +1185,30 @@ function CopySaveStep({
               />
             </label>
           </div>
+          {isFlowerProduct ? (
+            <>
+              <label className="admin-form-group">
+                <span>Title intro EN — 3–5 lines under the name. Leave empty until written.</span>
+                <textarea
+                  className="admin-input admin-product-create-textarea"
+                  rows={5}
+                  value={draft.titleIntroEn}
+                  onChange={(event) => onChangeDraft('titleIntroEn', event.target.value)}
+                  placeholder="Shown in full under the bouquet name. Unique from description and composition."
+                />
+              </label>
+              <label className="admin-form-group">
+                <span>Title intro TH — 3–5 lines under the name. Leave empty until written.</span>
+                <textarea
+                  className="admin-input admin-product-create-textarea"
+                  rows={5}
+                  value={draft.titleIntroTh}
+                  onChange={(event) => onChangeDraft('titleIntroTh', event.target.value)}
+                  placeholder="ข้อความสั้นใต้ชื่อช่อ แสดงเต็ม ไม่ตัดด้วยจุด"
+                />
+              </label>
+            </>
+          ) : null}
           <label className="admin-form-group">
             <span>Description EN</span>
             <textarea

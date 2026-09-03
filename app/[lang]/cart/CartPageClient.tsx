@@ -1504,9 +1504,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     scrollToCheckoutSection('delivery');
     window.setTimeout(() => setHighlightMapsLink(false), 1600);
     requestAnimationFrame(() => {
-      const input = document.getElementById('checkout-delivery-address-maps-link');
-      if (input instanceof HTMLElement) {
-        input.focus();
+      const mapEl = document.getElementById('checkout-delivery-address-map');
+      if (mapEl instanceof HTMLElement) {
+        mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     });
   };

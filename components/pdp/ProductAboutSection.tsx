@@ -1,96 +1,121 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { CareGuideSection } from '@/components/CareGuideSection';
+import { ProductReviewsSection } from '@/components/pdp/ProductReviewsSection';
 import { translations, type Locale } from '@/lib/i18n';
 import { CompositionLines } from '@/components/pdp/CompositionLines';
+import { OverlayReveal } from '@/components/ui/overlay-reveal';
+import type { ProductReview, ProductReviewStats } from '@/lib/productReviews';
 import styles from './product-pdp.module.css';
+
+function AccordionRow({
+  heading,
+  children,
+  defaultOpen = false,
+}: {
+  heading: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const panelId = useId();
+
+  return (
+    <div className={styles.compositionRow}>
+      <button
+        type="button"
+        className={styles.compositionRowToggle}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
+      >
+        <h3 className={styles.compositionRowHeading}>{heading}</h3>
+        <span
+          className={`${styles.compositionRowChevron} ${open ? styles.compositionRowChevronOpen : ''}`}
+          aria-hidden
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </button>
+      <OverlayReveal open={open} className={styles.pdpAccordionReveal}>
+        <div id={panelId} className={styles.compositionRowPanelInner}>
+          {children}
+        </div>
+      </OverlayReveal>
+    </div>
+  );
+}
 
 export function ProductAboutSection({
   lang,
   description,
-  compositionHeading,
+  floristNote,
   compositionText,
+  bouquetId,
+  reviews,
+  reviewStats,
 }: {
   lang: Locale;
   description: string;
-  compositionHeading: string;
+  floristNote?: string;
   compositionText: string;
+  bouquetId: string;
+  reviews: ProductReview[];
+  reviewStats: ProductReviewStats;
 }) {
-  const [descExpanded, setDescExpanded] = useState(false);
-  const [compositionOpen, setCompositionOpen] = useState(false);
-  const compositionPanelId = useId();
   const t = translations[lang].product;
-  const needsClamp = description.length > 180;
+  const note = floristNote?.trim() ?? '';
 
   return (
     <section className={styles.aboutSection} id="product-about">
       <h2 className={styles.aboutHeading}>
-        {(t as { aboutHeading?: string; descriptionHeading?: string }).aboutHeading ??
-          (t as { descriptionHeading?: string }).descriptionHeading ??
-          'About this bouquet'}
+        {t.productIntroduction ?? t.aboutHeading ?? 'Product introduction'}
       </h2>
-      <p
-        className={`${styles.aboutDesc} ${!descExpanded && needsClamp ? styles.aboutDescClamped : ''}`}
-      >
-        {description}
-      </p>
-      {needsClamp ? (
-        <button
-          type="button"
-          className={styles.aboutReadMore}
-          onClick={() => setDescExpanded((v) => !v)}
-          aria-expanded={descExpanded}
-        >
-          {descExpanded ? (t.readLess ?? 'Read less') : (t.readMore ?? 'Read more')}
-        </button>
+      {description ? (
+        <p className={styles.aboutDesc}>{description}</p>
+      ) : null}
+
+      {note ? (
+        <aside className={styles.teamNote} aria-label={t.teamNoteHeading ?? 'A note from our team'}>
+          <h3 className={styles.teamNoteHeading}>{t.teamNoteHeading ?? 'A note from our team'}</h3>
+          <p className={styles.teamNoteText}>{note}</p>
+        </aside>
       ) : null}
 
       {compositionText ? (
-        <div className={styles.compositionRow} id="product-composition">
-          <button
-            type="button"
-            className={styles.compositionRowToggle}
-            onClick={() => setCompositionOpen((v) => !v)}
-            aria-expanded={compositionOpen}
-            aria-controls={compositionPanelId}
-          >
-            <h3 className={styles.compositionRowHeading}>{compositionHeading}</h3>
-            <span
-              className={`${styles.compositionRowChevron} ${compositionOpen ? styles.compositionRowChevronOpen : ''}`}
-              aria-hidden
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M6 9l6 6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          </button>
-          <div
-            id={compositionPanelId}
-            className={`${styles.compositionRowPanel} ${compositionOpen ? styles.compositionRowPanelOpen : ''}`}
-            aria-hidden={!compositionOpen}
-          >
-            <div className={styles.compositionRowPanelInner}>
-              <CompositionLines
-                text={compositionText}
-                className={styles.compositionRowText}
-                lineClassName={styles.compositionRowTextLine}
-              />
-            </div>
-          </div>
-        </div>
+        <AccordionRow heading={t.arrangementDetails ?? t.composition ?? 'Arrangement details'}>
+          <CompositionLines
+            text={compositionText}
+            className={styles.compositionRowText}
+            lineClassName={styles.compositionRowTextLine}
+          />
+        </AccordionRow>
       ) : null}
 
-      <p className="product-seasonal-disclaimer" style={{ marginTop: 16, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-        {t.seasonalDisclaimer}
-      </p>
       <CareGuideSection lang={lang} />
+
+      <ProductReviewsSection
+        lang={lang}
+        bouquetId={bouquetId}
+        reviews={reviews}
+        stats={reviewStats}
+      />
+
+      <p className={styles.policyNote}>{t.seasonalDisclaimer}</p>
+      <p className={styles.policyLinks}>
+        <a href={`/${lang}/info/delivery-policy`}>
+          {translations[lang].trustBadges.deliveryPolicyShort ?? 'Delivery policy'}
+        </a>
+      </p>
     </section>
   );
 }

@@ -16,6 +16,12 @@ export interface Bouquet {
   descriptionTh: string;
   compositionEn: string;
   compositionTh: string;
+  /** Optional 3–5 line intro under the bouquet name. Hidden on the PDP when empty. */
+  titleIntroEn?: string;
+  titleIntroTh?: string;
+  /** Optional human-written team note. Hidden on the PDP when empty. */
+  floristNoteEn?: string;
+  floristNoteTh?: string;
   /** single_price | size_based | stem_count */
   pricingType?: PricingType;
   colors?: string[];

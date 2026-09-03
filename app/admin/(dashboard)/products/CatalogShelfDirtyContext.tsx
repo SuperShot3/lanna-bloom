@@ -38,6 +38,10 @@ export type CatalogBouquetPendingEdit = {
   descriptionTh: string;
   compositionEn: string;
   compositionTh: string;
+  titleIntroEn: string;
+  titleIntroTh: string;
+  floristNoteEn: string;
+  floristNoteTh: string;
   pricingType: PricingType;
   singlePrice: string;
   sizeRows: CatalogSizePricingRow[];

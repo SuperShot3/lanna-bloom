@@ -195,13 +195,28 @@ function validateStripePayload(
   const address = typeof d.address === 'string' ? d.address.trim() : '';
   const deliveryPlaceId =
     typeof d.deliveryPlaceId === 'string' ? d.deliveryPlaceId.trim() : '';
-  const deliveryLat = typeof d.deliveryLat === 'number' ? d.deliveryLat : undefined;
-  const deliveryLng = typeof d.deliveryLng === 'number' ? d.deliveryLng : undefined;
-  const hasGooglePlace =
-    Boolean(deliveryPlaceId) &&
-    typeof deliveryLat === 'number' &&
-    typeof deliveryLng === 'number';
-  if (deliveryPlaceId && !hasGooglePlace) {
+  const deliveryLatRaw = d.deliveryLat;
+  const deliveryLngRaw = d.deliveryLng;
+  const hasLat = typeof deliveryLatRaw === 'number' && Number.isFinite(deliveryLatRaw);
+  const hasLng = typeof deliveryLngRaw === 'number' && Number.isFinite(deliveryLngRaw);
+  if (hasLat !== hasLng) {
+    return { ok: false, message: 'delivery coordinates must include both latitude and longitude' };
+  }
+  if (
+    hasLat &&
+    hasLng &&
+    (deliveryLatRaw < -90 ||
+      deliveryLatRaw > 90 ||
+      deliveryLngRaw < -180 ||
+      deliveryLngRaw > 180)
+  ) {
+    return { ok: false, message: 'delivery coordinates are invalid' };
+  }
+  const deliveryLat = hasLat ? deliveryLatRaw : undefined;
+  const deliveryLng = hasLng ? deliveryLngRaw : undefined;
+  const hasCoords =
+    typeof deliveryLat === 'number' && typeof deliveryLng === 'number';
+  if (deliveryPlaceId && !hasCoords) {
     return {
       ok: false,
       message: 'delivery coordinates are required when deliveryPlaceId is set',
@@ -209,8 +224,8 @@ function validateStripePayload(
   }
   let deliveryGoogleMapsUrlRaw =
     typeof d.deliveryGoogleMapsUrl === 'string' ? d.deliveryGoogleMapsUrl.trim() : '';
-  if (hasGooglePlace && !deliveryGoogleMapsUrlRaw) {
-    deliveryGoogleMapsUrlRaw = buildDriverMapsSearchUrl(deliveryLat!, deliveryLng!);
+  if (hasCoords && !deliveryGoogleMapsUrlRaw) {
+    deliveryGoogleMapsUrlRaw = buildDriverMapsSearchUrl(deliveryLat, deliveryLng);
   }
   if (deliveryGoogleMapsUrlRaw) {
     if (deliveryGoogleMapsUrlRaw.length > CHECKOUT_FIELD_LIMITS.googleMapsUrl) {

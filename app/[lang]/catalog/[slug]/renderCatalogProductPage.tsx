@@ -25,6 +25,10 @@ import {
   buildMarketHomeHref,
 } from '@/lib/delivery/marketRoute';
 import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButton';
+import {
+  computeProductReviewStats,
+  getApprovedProductReviews,
+} from '@/lib/productReviews';
 
 function JsonLdScript({ data }: { data: Record<string, unknown> | null }) {
   if (!data) return null;
@@ -60,11 +64,20 @@ export async function renderCatalogProductPage({ params }: CatalogProductPageArg
     const similarBouquets = await getCatalogSimilarBouquets(bouquet, 3);
     const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const description = lang === 'th' ? bouquet.descriptionTh : bouquet.descriptionEn;
+    const titleIntro = lang === 'th' ? bouquet.titleIntroTh : bouquet.titleIntroEn;
     const composition = lang === 'th' ? bouquet.compositionTh : bouquet.compositionEn;
+    const floristNote = lang === 'th' ? bouquet.floristNoteTh : bouquet.floristNoteEn;
+    const approvedReviews = await getApprovedProductReviews(bouquet.id);
+    const reviewStats = computeProductReviewStats(approvedReviews.map((r) => r.rating));
     const t = translations[lang as Locale].product;
     const nav = translations[lang as Locale].nav;
     const productJsonLd = emitJsonLd
-      ? buildBouquetProductJsonLd(bouquet, schemaLang, pageUrl)
+      ? buildBouquetProductJsonLd(bouquet, schemaLang, pageUrl, {
+          aggregateRating:
+            reviewStats.count >= 1
+              ? { ratingValue: reviewStats.average, reviewCount: reviewStats.count }
+              : undefined,
+        })
       : null;
 
     return (
@@ -84,9 +97,12 @@ export async function renderCatalogProductPage({ params }: CatalogProductPageArg
               bouquet={bouquet}
               lang={lang as Locale}
               name={name}
+              titleIntro={titleIntro}
               description={description}
-              compositionHeading={t.composition}
               compositionText={composition}
+              floristNote={floristNote}
+              reviews={approvedReviews}
+              reviewStats={reviewStats}
               gifts={gifts}
             />
           </div>

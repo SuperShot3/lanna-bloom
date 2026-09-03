@@ -352,6 +352,10 @@ export type UpdateCatalogBouquetByAdminInput = {
   descriptionTh?: string;
   compositionEn?: string;
   compositionTh?: string;
+  titleIntroEn?: string;
+  titleIntroTh?: string;
+  floristNoteEn?: string;
+  floristNoteTh?: string;
   featuredPopular?: boolean;
   /** Admin merchandising: enable/disable New Arrival window (resolved to timestamp). */
   newArrivalEnabled?: boolean;
@@ -397,6 +401,10 @@ export async function updateCatalogBouquetByAdmin(
   if (input.descriptionTh != null) patch.description_th = input.descriptionTh.trim();
   if (input.compositionEn != null) patch.composition_en = input.compositionEn.trim();
   if (input.compositionTh != null) patch.composition_th = input.compositionTh.trim();
+  if (input.titleIntroEn != null) patch.title_intro_en = input.titleIntroEn.trim() || null;
+  if (input.titleIntroTh != null) patch.title_intro_th = input.titleIntroTh.trim() || null;
+  if (input.floristNoteEn != null) patch.florist_note_en = input.floristNoteEn.trim() || null;
+  if (input.floristNoteTh != null) patch.florist_note_th = input.floristNoteTh.trim() || null;
   if (input.featuredPopular != null) patch.featured_popular = input.featuredPopular;
   if (input.contactBeforeOrder != null) patch.contact_before_order = input.contactBeforeOrder;
   if (input.colors != null) patch.colors = input.colors;
@@ -578,6 +586,8 @@ export type CreateAdminCatalogBouquetInput = {
   descriptionTh?: string;
   compositionEn?: string;
   compositionTh?: string;
+  titleIntroEn?: string;
+  titleIntroTh?: string;
   price: number;
   images: CatalogWriteImageInput[];
   colors?: string[];
@@ -761,6 +771,8 @@ export async function createAdminReviewBouquetInCatalog(
       description_th: (input.descriptionTh || '').trim(),
       composition_en: (input.compositionEn || '').trim(),
       composition_th: (input.compositionTh || '').trim(),
+      title_intro_en: (input.titleIntroEn || '').trim() || null,
+      title_intro_th: (input.titleIntroTh || '').trim() || null,
       pricing_type: resolvedType,
       pricing,
       status: 'pending_review',

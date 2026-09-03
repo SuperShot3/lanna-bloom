@@ -490,10 +490,19 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               deliveryNoteHint: t.deliveryNoteForDriverHint,
               googleMapsLinkLabel:
                 (tBuyNow as { googleMapsLinkLabel?: string }).googleMapsLinkLabel ??
-                'Google Maps link',
-              googleMapsLinkPlaceholder: tBuyNow.googleMapsLinkPlaceholder,
-              googleMapsLinkHint: tBuyNow.googleMapsLinkHint,
-              openGoogleMapsAriaLabel: tBuyNow.openGoogleMapsButton,
+                'Delivery pin (optional)',
+              dropPinPrompt:
+                (tBuyNow as { dropPinPrompt?: string }).dropPinPrompt ??
+                'Optional. Click the map to drop a pin at the delivery spot.',
+              selectedLocationLabel:
+                (tBuyNow as { selectedLocation?: string }).selectedLocation ??
+                'Your delivery spot:',
+              openGoogleMapsAriaLabel:
+                (tBuyNow as { openInGoogleMaps?: string }).openInGoogleMaps ??
+                tBuyNow.openGoogleMapsButton,
+              mapUnavailableLabel:
+                (tBuyNow as { mapUnavailableLabel?: string }).mapUnavailableLabel ??
+                'The map could not load. You can still continue with your address.',
             }}
           />
         </div>

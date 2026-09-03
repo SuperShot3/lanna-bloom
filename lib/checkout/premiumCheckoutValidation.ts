@@ -55,6 +55,14 @@ export function shouldShowDeliveryNoteHint(delivery: DeliveryFormValues): boolea
 /** True when checkout is ready to pay but customer has not added a valid Google Maps link. */
 export function shouldPromptForGoogleMapsLink(delivery: DeliveryFormValues): boolean {
   if (!hasDeliveryAddressInput(delivery)) return false;
+  if (
+    typeof delivery.deliveryLat === 'number' &&
+    Number.isFinite(delivery.deliveryLat) &&
+    typeof delivery.deliveryLng === 'number' &&
+    Number.isFinite(delivery.deliveryLng)
+  ) {
+    return false;
+  }
   const mapsUrl = delivery.deliveryGoogleMapsUrl?.trim() ?? '';
   if (mapsUrl && !isValidGoogleMapsUrl(mapsUrl)) return false;
   return !isValidGoogleMapsUrl(mapsUrl);

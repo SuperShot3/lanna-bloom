@@ -221,6 +221,12 @@ export function BouquetReviewClient({ bouquet }: BouquetReviewClientProps) {
             <div className="admin-product-detail-price">฿{price.toLocaleString()}</div>
 
             <div className="admin-product-detail-section">
+              <h3>Title intro</h3>
+              <p>{bouquet.titleIntroEn?.trim() || 'Not written yet.'}</p>
+              {bouquet.titleIntroTh?.trim() ? <p>{bouquet.titleIntroTh}</p> : null}
+            </div>
+
+            <div className="admin-product-detail-section">
               <h3>Description</h3>
               <p>{bouquet.descriptionEn || 'No English description.'}</p>
               {bouquet.descriptionTh ? <p>{bouquet.descriptionTh}</p> : null}

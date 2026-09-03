@@ -55,6 +55,10 @@ const GUIDE_COMMENT_READ_MAX = 60;
 const guideCommentVisitorCooldownStore = new Map<string, number>();
 const GUIDE_COMMENT_VISITOR_COOLDOWN_MS = 60 * 1000; // 1 minute
 
+const productReviewSubmitStore = new Map<string, { count: number; resetAt: number }>();
+const PRODUCT_REVIEW_SUBMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const PRODUCT_REVIEW_SUBMIT_MAX = 5;
+
 const orderChatPostStore = new Map<string, { count: number; resetAt: number }>();
 const ORDER_CHAT_POST_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const ORDER_CHAT_POST_MAX = 20;
@@ -310,6 +314,28 @@ export function checkGuideCommentVisitorCooldown(visitorTokenHash: string): bool
   }
   guideCommentVisitorCooldownStore.set(key, now);
   return true;
+}
+
+export function checkProductReviewSubmitRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `prs:${ip}`;
+  const entry = productReviewSubmitStore.get(key);
+  if (!entry) {
+    productReviewSubmitStore.set(key, {
+      count: 1,
+      resetAt: now + PRODUCT_REVIEW_SUBMIT_WINDOW_MS,
+    });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    productReviewSubmitStore.set(key, {
+      count: 1,
+      resetAt: now + PRODUCT_REVIEW_SUBMIT_WINDOW_MS,
+    });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= PRODUCT_REVIEW_SUBMIT_MAX;
 }
 
 /** First-party attribution touch: per IP. */

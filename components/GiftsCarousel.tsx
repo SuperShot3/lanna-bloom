@@ -26,10 +26,10 @@ export function GiftsCarousel({ gifts, lang }: { gifts: CatalogProduct[]; lang: 
   const [emblaRef] = useEmblaCarousel({
     align: 'start',
     containScroll: 'trimSnaps',
-    dragFree: false,
-    loop: gifts.length > 2,
-    skipSnaps: false,
-    duration: 35,
+    dragFree: true,
+    skipSnaps: true,
+    loop: false,
+    duration: 22,
   });
   const { addItem, removeItem, items } = useCart();
   const checkoutProfile = useCheckoutDeliveryProfile(lang);

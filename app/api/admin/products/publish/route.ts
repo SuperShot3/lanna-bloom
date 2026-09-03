@@ -197,6 +197,8 @@ export async function POST(request: NextRequest) {
       descriptionTh: stringField(b, 'descriptionTh'),
       compositionEn: stringField(b, 'compositionEn'),
       compositionTh: stringField(b, 'compositionTh'),
+      titleIntroEn: stringField(b, 'titleIntroEn'),
+      titleIntroTh: stringField(b, 'titleIntroTh'),
       price,
       images,
       colors: stringArrayField(b, 'colors'),

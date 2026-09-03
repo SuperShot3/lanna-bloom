@@ -77,6 +77,10 @@ export interface AdminBouquetDetail {
   descriptionTh: string;
   compositionEn: string;
   compositionTh: string;
+  titleIntroEn?: string;
+  titleIntroTh?: string;
+  floristNoteEn?: string;
+  floristNoteTh?: string;
   status: BouquetStatus;
   featuredPopular: boolean;
   /** ISO start of current New Arrival window; null = ordinary. */
@@ -380,6 +384,10 @@ export type CatalogBouquetRow = {
   description_th: string;
   composition_en: string;
   composition_th: string;
+  title_intro_en: string | null;
+  title_intro_th: string | null;
+  florist_note_en: string | null;
+  florist_note_th: string | null;
   pricing_type: PricingType;
   pricing: CatalogBouquetPricing;
   status: BouquetStatus;

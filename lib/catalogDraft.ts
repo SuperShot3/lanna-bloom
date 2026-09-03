@@ -50,6 +50,10 @@ export type CatalogBouquetDraftPayload = {
   descriptionTh?: string;
   compositionEn?: string;
   compositionTh?: string;
+  titleIntroEn?: string;
+  titleIntroTh?: string;
+  floristNoteEn?: string;
+  floristNoteTh?: string;
   featuredPopular?: boolean;
   /** Admin intent: show as New Arrival (resolved to timestamp on publish). */
   newArrivalEnabled?: boolean;
@@ -380,6 +384,10 @@ function parseBouquetDraftPayload(payload: Record<string, unknown>): UpdateCatal
   if (typeof payload.descriptionTh === 'string') input.descriptionTh = payload.descriptionTh;
   if (typeof payload.compositionEn === 'string') input.compositionEn = payload.compositionEn;
   if (typeof payload.compositionTh === 'string') input.compositionTh = payload.compositionTh;
+  if (typeof payload.titleIntroEn === 'string') input.titleIntroEn = payload.titleIntroEn;
+  if (typeof payload.titleIntroTh === 'string') input.titleIntroTh = payload.titleIntroTh;
+  if (typeof payload.floristNoteEn === 'string') input.floristNoteEn = payload.floristNoteEn;
+  if (typeof payload.floristNoteTh === 'string') input.floristNoteTh = payload.floristNoteTh;
   if (typeof payload.featuredPopular === 'boolean') input.featuredPopular = payload.featuredPopular;
   if (typeof payload.newArrivalEnabled === 'boolean') {
     input.newArrivalEnabled = payload.newArrivalEnabled;
@@ -531,6 +539,10 @@ export function applyBouquetDraftToDetail<T extends Record<string, unknown>>(
     ...(typeof p.descriptionTh === 'string' && { descriptionTh: p.descriptionTh }),
     ...(typeof p.compositionEn === 'string' && { compositionEn: p.compositionEn }),
     ...(typeof p.compositionTh === 'string' && { compositionTh: p.compositionTh }),
+    ...(typeof p.titleIntroEn === 'string' && { titleIntroEn: p.titleIntroEn }),
+    ...(typeof p.titleIntroTh === 'string' && { titleIntroTh: p.titleIntroTh }),
+    ...(typeof p.floristNoteEn === 'string' && { floristNoteEn: p.floristNoteEn }),
+    ...(typeof p.floristNoteTh === 'string' && { floristNoteTh: p.floristNoteTh }),
     ...(typeof p.featuredPopular === 'boolean' && { featuredPopular: p.featuredPopular }),
     ...(typeof p.newArrivalEnabled === 'boolean' && { newArrivalEnabled: p.newArrivalEnabled }),
     ...(typeof p.contactBeforeOrder === 'boolean' && { contactBeforeOrder: p.contactBeforeOrder }),

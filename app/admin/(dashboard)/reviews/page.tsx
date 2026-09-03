@@ -1,12 +1,15 @@
 import { getAllReviewsAsync } from '@/lib/reviews';
+import { listProductReviewsForAdmin } from '@/lib/productReviews';
 import { GOOGLE_REVIEW_URL } from '@/lib/reviewsConfig';
 import { AddReviewForm } from './AddReviewForm';
 import { CustomerReviewInvite } from './CustomerReviewInvite';
 import { ReviewList } from './ReviewList';
+import { ProductReviewModerationList } from './ProductReviewModerationList';
 import { CouponsStatusSection } from './CouponsStatusSection';
 
 export default async function AdminReviewsPage() {
   const reviews = await getAllReviewsAsync();
+  const productReviews = await listProductReviewsForAdmin();
 
   return (
     <div className="admin-detail">
@@ -40,6 +43,15 @@ export default async function AdminReviewsPage() {
       <section className="admin-section">
         <h2 className="admin-section-title">Recent reviews ({reviews.length})</h2>
         <ReviewList reviews={reviews} />
+      </section>
+
+      <section className="admin-section">
+        <h2 className="admin-section-title">Product reviews ({productReviews.length})</h2>
+        <p className="admin-muted" style={{ margin: '6px 0 12px' }}>
+          Customer reviews submitted on bouquet product pages. Only approved reviews appear on the
+          storefront and in product ratings.
+        </p>
+        <ProductReviewModerationList reviews={productReviews} />
       </section>
 
       <CouponsStatusSection />

@@ -100,6 +100,18 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
   const [compositionTh, setCompositionTh] = useState(
     () => pending?.compositionTh ?? bouquet.compositionTh
   );
+  const [titleIntroEn, setTitleIntroEn] = useState(
+    () => pending?.titleIntroEn ?? bouquet.titleIntroEn ?? ''
+  );
+  const [titleIntroTh, setTitleIntroTh] = useState(
+    () => pending?.titleIntroTh ?? bouquet.titleIntroTh ?? ''
+  );
+  const [floristNoteEn, setFloristNoteEn] = useState(
+    () => pending?.floristNoteEn ?? bouquet.floristNoteEn ?? ''
+  );
+  const [floristNoteTh, setFloristNoteTh] = useState(
+    () => pending?.floristNoteTh ?? bouquet.floristNoteTh ?? ''
+  );
   const [pricingType, setPricingType] = useState<PricingType>(
     () => pending?.pricingType ?? serverPricing.pricingType
   );
@@ -166,6 +178,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     setDescriptionTh(bouquet.descriptionTh);
     setCompositionEn(bouquet.compositionEn);
     setCompositionTh(bouquet.compositionTh);
+    setTitleIntroEn(bouquet.titleIntroEn ?? '');
+    setTitleIntroTh(bouquet.titleIntroTh ?? '');
+    setFloristNoteEn(bouquet.floristNoteEn ?? '');
+    setFloristNoteTh(bouquet.floristNoteTh ?? '');
     const next = initialPricingState(bouquet);
     setPricingType(next.pricingType);
     setSinglePrice(next.singlePrice);
@@ -201,6 +217,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         descriptionTh,
         compositionEn,
         compositionTh,
+        titleIntroEn,
+        titleIntroTh,
+        floristNoteEn,
+        floristNoteTh,
         pricingType,
         singlePrice,
         sizeRows,
@@ -223,6 +243,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       descriptionTh,
       compositionEn,
       compositionTh,
+      titleIntroEn,
+      titleIntroTh,
+      floristNoteEn,
+      floristNoteTh,
       pricingType,
       singlePrice,
       sizeRows,
@@ -249,6 +273,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
         descriptionTh: bouquet.descriptionTh,
         compositionEn: bouquet.compositionEn,
         compositionTh: bouquet.compositionTh,
+        titleIntroEn: bouquet.titleIntroEn ?? '',
+        titleIntroTh: bouquet.titleIntroTh ?? '',
+        floristNoteEn: bouquet.floristNoteEn ?? '',
+        floristNoteTh: bouquet.floristNoteTh ?? '',
         pricingType: bouquet.pricingType,
         singlePrice: serverPricing.singlePrice,
         sizeRows: serverPricing.sizeRows,
@@ -309,6 +337,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     formData.set('descriptionTh', descriptionTh);
     formData.set('compositionEn', compositionEn);
     formData.set('compositionTh', compositionTh);
+    formData.set('titleIntroEn', titleIntroEn);
+    formData.set('titleIntroTh', titleIntroTh);
+    formData.set('floristNoteEn', floristNoteEn);
+    formData.set('floristNoteTh', floristNoteTh);
     formData.set('pricingType', pricingType);
     formData.set('singlePrice', singlePrice);
     formData.set('sizeRows', JSON.stringify(sizeRows));
@@ -574,6 +606,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
       descriptionTh,
       compositionEn,
       compositionTh,
+      titleIntroEn,
+      titleIntroTh,
+      floristNoteEn,
+      floristNoteTh,
       pricingType,
       singlePrice,
       sizeRows,
@@ -599,6 +635,10 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
     descriptionTh,
     compositionEn,
     compositionTh,
+    titleIntroEn,
+    titleIntroTh,
+    floristNoteEn,
+    floristNoteTh,
     pricingType,
     singlePrice,
     sizeRows,
@@ -716,6 +756,30 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
           <input className="admin-cms-input" value={nameTh} onChange={(e) => setNameTh(e.target.value)} />
         </label>
         <label className="admin-cms-field">
+          <span className="admin-cms-field-label">
+            Title intro (EN) — 3–5 lines under the name. Leave empty until written.
+          </span>
+          <textarea
+            className="admin-cms-input"
+            rows={5}
+            value={titleIntroEn}
+            onChange={(e) => setTitleIntroEn(e.target.value)}
+            placeholder="Shown in full under the bouquet name. Unique from description and composition."
+          />
+        </label>
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">
+            Title intro (TH) — 3–5 lines under the name. Leave empty until written.
+          </span>
+          <textarea
+            className="admin-cms-input"
+            rows={5}
+            value={titleIntroTh}
+            onChange={(e) => setTitleIntroTh(e.target.value)}
+            placeholder="ข้อความสั้นใต้ชื่อช่อ แสดงเต็ม ไม่ตัดด้วยจุด"
+          />
+        </label>
+        <label className="admin-cms-field">
           <span className="admin-cms-field-label">Description (EN)</span>
           <textarea
             className="admin-cms-input"
@@ -749,6 +813,26 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
             rows={2}
             value={compositionTh}
             onChange={(e) => setCompositionTh(e.target.value)}
+          />
+        </label>
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">Team note (EN) — optional, short, human</span>
+          <textarea
+            className="admin-cms-input"
+            rows={3}
+            value={floristNoteEn}
+            onChange={(e) => setFloristNoteEn(e.target.value)}
+            placeholder="Leave empty to hide this section on the product page."
+          />
+        </label>
+        <label className="admin-cms-field">
+          <span className="admin-cms-field-label">Team note (TH) — optional, short, human</span>
+          <textarea
+            className="admin-cms-input"
+            rows={3}
+            value={floristNoteTh}
+            onChange={(e) => setFloristNoteTh(e.target.value)}
+            placeholder="เว้นว่างถ้าไม่ต้องการแสดงบนหน้ารายละเอียดสินค้า"
           />
         </label>
       </AdminCmsSection>

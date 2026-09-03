@@ -60,8 +60,6 @@ export function GoogleMapsLinkPromptModal({
 
   if (!isOpen) return null;
 
-  const steps = [t.mapsPromptStep1, t.mapsPromptStep2, t.mapsPromptStep3, t.mapsPromptStep4];
-
   return (
     <div
       className="maps-prompt-overlay"
@@ -96,7 +94,7 @@ export function GoogleMapsLinkPromptModal({
           <p className="maps-prompt-text">{t.mapsPromptText}</p>
           <p className="maps-prompt-steps-label">{t.mapsPromptStepsLabel}</p>
           <ol className="maps-prompt-steps">
-            {steps.map((step, i) => (
+            {[t.mapsPromptStep1, t.mapsPromptStep2].map((step, i) => (
               <li key={i}>{step}</li>
             ))}
           </ol>

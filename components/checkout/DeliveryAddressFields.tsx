@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DeliveryFormValues } from '@/components/DeliveryForm';
+import {
+  DeliveryLocationPicker,
+  type DeliveryLocationValue,
+} from '@/components/DeliveryLocationPicker';
 import { NotchedField } from '@/components/checkout/NotchedField';
 import { CHECKOUT_FIELD_LIMITS, clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
+import { buildDriverMapsSearchUrl } from '@/lib/google/buildDriverMapsUrl';
 import type { Locale } from '@/lib/i18n';
-
-const GOOGLE_MAPS_OPEN_URL = 'https://www.google.com/maps';
 
 export function DeliveryAddressFields({
   lang: _lang,
@@ -30,18 +33,17 @@ export function DeliveryAddressFields({
     deliveryNotePlaceholder: string;
     deliveryNoteHint: string;
     googleMapsLinkLabel: string;
-    googleMapsLinkPlaceholder: string;
-    googleMapsLinkHint: string;
+    dropPinPrompt: string;
+    selectedLocationLabel: string;
     openGoogleMapsAriaLabel: string;
+    mapUnavailableLabel: string;
   };
 }) {
   const [addressDraft, setAddressDraft] = useState(
     () => value.deliveryFormattedAddress ?? value.addressLine ?? ''
   );
-  const [mapsLinkDraft, setMapsLinkDraft] = useState(() => value.deliveryGoogleMapsUrl ?? '');
   const [noteDraft, setNoteDraft] = useState(() => value.deliveryNote ?? '');
   const addressFocusedRef = useRef(false);
-  const mapsLinkFocusedRef = useRef(false);
   const noteFocusedRef = useRef(false);
   const [showNoteHint, setShowNoteHint] = useState(false);
 
@@ -50,11 +52,6 @@ export function DeliveryAddressFields({
     const synced = value.deliveryFormattedAddress ?? value.addressLine ?? '';
     setAddressDraft(synced);
   }, [value.deliveryFormattedAddress, value.addressLine]);
-
-  useEffect(() => {
-    if (mapsLinkFocusedRef.current) return;
-    setMapsLinkDraft(value.deliveryGoogleMapsUrl ?? '');
-  }, [value.deliveryGoogleMapsUrl]);
 
   useEffect(() => {
     if (noteFocusedRef.current) return;
@@ -70,8 +67,6 @@ export function DeliveryAddressFields({
       deliveryFormattedAddress: clipped || null,
       deliveryPlaceId: null,
       deliveryPlaceName: null,
-      deliveryLat: null,
-      deliveryLng: null,
       deliveryAddressComponents: null,
       deliveryPostalCode: null,
       deliveryProvince: null,
@@ -80,12 +75,12 @@ export function DeliveryAddressFields({
     });
   };
 
-  const onMapsLinkChange = (url: string) => {
-    const clipped = clipCheckoutField(url, 'googleMapsUrl');
-    setMapsLinkDraft(clipped);
+  const onPinChange = (pin: DeliveryLocationValue | null) => {
     onChange({
       ...value,
-      deliveryGoogleMapsUrl: clipped || null,
+      deliveryLat: pin?.lat ?? null,
+      deliveryLng: pin?.lng ?? null,
+      deliveryGoogleMapsUrl: pin?.googleMapsUrl ?? null,
     });
   };
 
@@ -97,8 +92,18 @@ export function DeliveryAddressFields({
   };
 
   const addressId = `${inputId}-manual`;
-  const mapsId = `${inputId}-maps-link`;
+  const mapId = `${inputId}-map`;
   const noteId = `${inputId}-note`;
+  const pinValue: DeliveryLocationValue | null =
+    typeof value.deliveryLat === 'number' && typeof value.deliveryLng === 'number'
+      ? {
+          lat: value.deliveryLat,
+          lng: value.deliveryLng,
+          googleMapsUrl:
+            value.deliveryGoogleMapsUrl ??
+            buildDriverMapsSearchUrl(value.deliveryLat, value.deliveryLng),
+        }
+      : null;
 
   return (
     <div className={`co-address${highlight ? ' co-address--highlight' : ''}`}>
@@ -120,66 +125,22 @@ export function DeliveryAddressFields({
         />
       </NotchedField>
 
-      <NotchedField
-        id={mapsId}
-        label={labels.googleMapsLinkLabel}
-        hint={
-          <p id={`${mapsId}-hint`} className="co-maps-link-hint">
-            {labels.googleMapsLinkHint}
-          </p>
-        }
-      >
-        <div
-          className={`co-maps-link-row${highlightMapsLink ? ' co-maps-link-row--highlight' : ''}`}
-        >
-          <input
-            id={mapsId}
-            type="url"
-            inputMode="url"
-            className="co-input co-maps-link-input"
-            value={mapsLinkDraft}
-            onChange={(e) => onMapsLinkChange(e.target.value)}
-            onFocus={() => {
-              mapsLinkFocusedRef.current = true;
-            }}
-            onBlur={() => {
-              mapsLinkFocusedRef.current = false;
-              const trimmed = mapsLinkDraft.trim();
-              if (trimmed !== mapsLinkDraft) {
-                setMapsLinkDraft(trimmed);
-                onChange({
-                  ...value,
-                  deliveryGoogleMapsUrl: trimmed || null,
-                });
-              }
-            }}
-            placeholder={labels.googleMapsLinkPlaceholder}
-            autoComplete="off"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
-            aria-describedby={`${mapsId}-hint`}
-          />
-          <a
-            href={GOOGLE_MAPS_OPEN_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="co-maps-link-btn"
-            aria-label={labels.openGoogleMapsAriaLabel}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/icons/google-maps-old-svgrepo-com.svg"
-              alt=""
-              className="co-maps-link-btn-icon"
-              width={26}
-              height={26}
-              decoding="async"
-            />
-          </a>
-        </div>
-      </NotchedField>
+      <div className="co-map-field">
+        <p className="co-map-label" id={`${mapId}-label`}>
+          {labels.googleMapsLinkLabel}
+        </p>
+        <DeliveryLocationPicker
+          value={pinValue}
+          onChange={onPinChange}
+          destinationId={value.deliveryDestination}
+          highlight={highlightMapsLink}
+          mapElementId={mapId}
+          dropPinPrompt={labels.dropPinPrompt}
+          selectedLocationLabel={labels.selectedLocationLabel}
+          openInGoogleMapsLabel={labels.openGoogleMapsAriaLabel}
+          mapUnavailableLabel={labels.mapUnavailableLabel}
+        />
+      </div>
 
       <NotchedField
         id={noteId}
@@ -240,66 +201,10 @@ export function DeliveryAddressFields({
           outline: none;
           border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
         }
-        .co-maps-link-row {
-          display: flex;
-          align-items: stretch;
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          overflow: hidden;
-          background: var(--surface);
-        }
-        .co-maps-link-row:focus-within {
-          border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-        }
-        .co-maps-link-row--highlight {
-          border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 65%, transparent);
-        }
-        .co-maps-link-input {
-          flex: 1;
-          min-width: 0;
-          border: none !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          min-height: 48px;
-          padding: 12px 14px;
-          font-size: 15px;
-        }
-        .co-maps-link-input:focus {
-          outline: none;
-          border: none;
-        }
-        .co-maps-link-btn {
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 52px;
-          min-height: 48px;
-          padding: 0;
-          border: none;
-          border-left: 1px solid var(--border);
-          background: var(--pastel-cream);
-          text-decoration: none;
-          cursor: pointer;
-          touch-action: manipulation;
-          -webkit-tap-highlight-color: transparent;
-          transition: background 0.15s ease;
-        }
-        .co-maps-link-btn:hover {
-          background: var(--pastel-cream);
-        }
-        .co-maps-link-btn-icon {
-          flex-shrink: 0;
-          display: block;
-          width: 26px;
-          height: 26px;
-          object-fit: contain;
-        }
-        :global(.co-maps-link-hint) {
-          margin: 0;
-          font-size: 12px;
-          line-height: 1.4;
+        .co-map-label {
+          margin: 0 0 8px;
+          font-size: 13px;
+          font-weight: 600;
           color: var(--text-muted);
         }
         .co-textarea {

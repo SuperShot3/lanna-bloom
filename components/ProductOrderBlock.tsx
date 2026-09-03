@@ -26,7 +26,6 @@ import {
   qualifiesForMay2026FreeDelivery,
 } from '@/lib/promo/campaigns';
 import { CatalogDiscountPrice } from '@/components/CatalogDiscountPrice';
-import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
@@ -37,7 +36,7 @@ import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
 import { ProductGiftMessageRow } from '@/components/pdp/ProductGiftMessageRow';
 import { ProductAddOnsCarousel } from '@/components/pdp/ProductAddOnsCarousel';
 import { ProductStickyPurchaseBar } from '@/components/pdp/ProductStickyPurchaseBar';
-import { ProductPriceDestinationLabel } from '@/components/pdp/ProductPriceDestinationLabel';
+import { ProductDeliveryLine } from '@/components/pdp/ProductDeliveryLine';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import { requestOpenDeliveryRegionPicker } from '@/lib/delivery/deliveryRegionCookie';
@@ -101,9 +100,6 @@ export function ProductOrderBlock({
   const hideGiftAddOns = checkoutProfile.variant === 'expansion';
   const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
   const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
-  const availableInAreaText = (
-    tProduct.availableInDeliveryArea ?? 'Available for delivery in {destination}'
-  ).replace('{destination}', destinationLabel);
   const changeAreaLabel = tProduct.changeDeliveryArea ?? 'Change delivery area';
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
@@ -193,14 +189,6 @@ export function ProductOrderBlock({
           className={pdpStyles.pdpUnitPrice}
           amountClassName={pdpStyles.pdpUnitPriceAmount}
         />
-        <ProductPriceDestinationLabel lang={lang} destinationLabel={destinationLabel} />
-        {!hideDeliveryFromFee ? (
-          <DeliveryFromFeeHint
-            lang={lang}
-            destinationId={checkoutProfile.destinationId}
-            variant="pdp"
-          />
-        ) : null}
         <ProductDeliveryBenefitBadge
           lang={lang}
           lineTotalThb={lineTotalForPromo}
@@ -246,9 +234,12 @@ export function ProductOrderBlock({
           </p>
         </div>
       ) : (
-        <p className="order-destination-available" role="status">
-          {availableInAreaText}
-        </p>
+        <ProductDeliveryLine
+          lang={lang}
+          destinationLabel={destinationLabel}
+          destinationId={checkoutProfile.destinationId}
+          hideFromAmount={hideDeliveryFromFee}
+        />
       )}
 
       <ProductDeliveryTimingNotice
@@ -275,11 +266,7 @@ export function ProductOrderBlock({
         />
       )}
 
-      <ProductTrustStrip
-        lang={lang}
-        showSameDay={checkoutProfile.variant === 'chiang-mai'}
-        destinationSub={destinationLabel}
-      />
+      <ProductTrustStrip lang={lang} />
 
       <ProductPeakCelebrationNotice lang={lang} />
 

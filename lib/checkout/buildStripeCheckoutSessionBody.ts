@@ -220,6 +220,15 @@ export function buildStripeCheckoutSessionRequestBody(params: {
       ...(surpriseDelivery !== undefined && { surpriseDelivery }),
       deliveryDestination,
       deliveryZoneId,
+      ...(typeof delivery.deliveryLat === 'number' &&
+      Number.isFinite(delivery.deliveryLat) &&
+      typeof delivery.deliveryLng === 'number' &&
+      Number.isFinite(delivery.deliveryLng)
+        ? {
+            deliveryLat: delivery.deliveryLat,
+            deliveryLng: delivery.deliveryLng,
+          }
+        : {}),
       deliveryGoogleMapsUrl: delivery.deliveryGoogleMapsUrl
         ? clipCheckoutField(delivery.deliveryGoogleMapsUrl.trim(), 'googleMapsUrl')
         : undefined,

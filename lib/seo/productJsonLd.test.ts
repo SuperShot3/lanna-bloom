@@ -86,6 +86,28 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
 }
 
 {
+  const withReviews = buildBouquetProductJsonLd(bouquet, 'en', PAGE, {
+    aggregateRating: { ratingValue: 4.8, reviewCount: 12 },
+  });
+  assert.ok(withReviews);
+  assert.deepEqual(withReviews.aggregateRating, {
+    '@type': 'AggregateRating',
+    ratingValue: 4.8,
+    reviewCount: 12,
+    bestRating: 5,
+    worstRating: 1,
+  });
+}
+
+{
+  const emptyReviews = buildBouquetProductJsonLd(bouquet, 'en', PAGE, {
+    aggregateRating: { ratingValue: 0, reviewCount: 0 },
+  });
+  assert.ok(emptyReviews);
+  assert.ok(!('aggregateRating' in emptyReviews));
+}
+
+{
   const single: Bouquet = {
     ...bouquet,
     discountPercent: undefined,

@@ -13,6 +13,8 @@ const BRAND = {
 
 export type ProductJsonLdContext = {
   destinationId?: DeliveryDestinationId;
+  /** Only pass when approved product-specific reviews exist. */
+  aggregateRating?: { ratingValue: number; reviewCount: number };
 };
 
 function originFromPageUrl(pageUrl: string, fallbackBase: string): string {
@@ -124,6 +126,7 @@ function buildProductJsonLd(opts: {
   option: BouquetSellableOption;
   discountPercent: number | undefined;
   destinationId: DeliveryDestinationId;
+  aggregateRating?: { ratingValue: number; reviewCount: number };
 }): Record<string, unknown> | null {
   const price = offerPriceThb(opts.option.price, opts.discountPercent, opts.destinationId);
   if (!(price > 0)) return null;
@@ -131,6 +134,13 @@ function buildProductJsonLd(opts: {
   const base = getBaseUrl();
   const images = productImages(opts.images, base);
   const description = opts.description || opts.name;
+  const rating = opts.aggregateRating;
+  const includeRating =
+    rating != null &&
+    rating.reviewCount >= 1 &&
+    Number.isFinite(rating.ratingValue) &&
+    rating.ratingValue >= 1 &&
+    rating.ratingValue <= 5;
 
   return {
     '@context': 'https://schema.org',
@@ -141,6 +151,17 @@ function buildProductJsonLd(opts: {
     sku: opts.sku,
     ...(images.length ? { image: images } : {}),
     brand: BRAND,
+    ...(includeRating && rating
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: rating.ratingValue,
+            reviewCount: rating.reviewCount,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
     offers: {
       '@type': 'Offer',
       url: opts.pageUrl,
@@ -174,6 +195,7 @@ export function buildBouquetProductJsonLd(
     option,
     discountPercent: bouquet.discountPercent,
     destinationId: context?.destinationId ?? 'CHIANG_MAI',
+    aggregateRating: context?.aggregateRating,
   });
 }
 

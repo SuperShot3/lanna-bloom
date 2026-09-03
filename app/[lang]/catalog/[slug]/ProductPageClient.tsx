@@ -7,13 +7,12 @@ import { ProductAboutSection } from '@/components/pdp/ProductAboutSection';
 import { ProductShareLink } from '@/components/ProductShareLink';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/catalog/types';
+import type { ProductReview, ProductReviewStats } from '@/lib/productReviews';
 import { translations, type Locale } from '@/lib/i18n';
 import { trackViewItem } from '@/lib/analytics';
 import { getBouquetDisplayCategory } from '@/lib/catalogCategories';
 import { CatalogDiscountBadge } from '@/components/CatalogDiscountBadge';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
-import { getCompositionSingleLine } from '@/lib/compositionDisplay';
-import { ProductIdentityMeta } from '@/components/pdp/ProductIdentityMeta';
 import pdpStyles from '@/components/pdp/product-pdp.module.css';
 import { getPreferredBouquetSize } from '@/lib/favorites';
 import { imageIndexForSizeIndex, sizeIndexForImageIndex } from '@/lib/pdpVariantMedia';
@@ -22,17 +21,23 @@ export function ProductPageClient({
   bouquet,
   lang,
   name,
+  titleIntro,
   description,
-  compositionHeading,
   compositionText,
+  floristNote,
+  reviews,
+  reviewStats,
   gifts = [],
 }: {
   bouquet: Bouquet;
   lang: Locale;
   name: string;
+  titleIntro?: string;
   description: string;
-  compositionHeading: string;
   compositionText: string;
+  floristNote?: string;
+  reviews: ProductReview[];
+  reviewStats: ProductReviewStats;
   gifts?: CatalogProduct[];
 }) {
   const resolveInitialSize = (): Bouquet['sizes'][number] => {
@@ -101,8 +106,6 @@ export function ProductPageClient({
       )
     : undefined;
 
-  const compositionLine = getCompositionSingleLine(compositionText);
-
   useEffect(() => {
     const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
     const price = bouquet.sizes?.[0]?.price ?? 0;
@@ -166,17 +169,9 @@ export function ProductPageClient({
               <ProductShareLink lang={lang} productTitle={name} />
             </div>
           </div>
-          {compositionLine ? (
-            <p className={pdpStyles.compositionSubtitle} title={compositionLine}>
-              {compositionLine}
-            </p>
+          {titleIntro?.trim() ? (
+            <p className={pdpStyles.identityIntro}>{titleIntro.trim()}</p>
           ) : null}
-          <ProductIdentityMeta
-            lang={lang}
-            featuredPopular={bouquet.featuredPopular}
-            isNewArrival={bouquet.isNewArrival}
-            soldCount={bouquet.soldCount}
-          />
         </div>
         <ProductOrderBlock
           bouquet={bouquet}
@@ -192,8 +187,11 @@ export function ProductPageClient({
         <ProductAboutSection
           lang={lang}
           description={description}
-          compositionHeading={compositionHeading}
+          floristNote={floristNote}
           compositionText={compositionText}
+          bouquetId={bouquet.id}
+          reviews={reviews}
+          reviewStats={reviewStats}
         />
       </div>
     </>
