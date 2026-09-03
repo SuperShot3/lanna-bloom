@@ -493,7 +493,7 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
                 'Delivery pin (optional)',
               dropPinPrompt:
                 (tBuyNow as { dropPinPrompt?: string }).dropPinPrompt ??
-                'Optional. Click the map to drop a pin at the delivery spot.',
+                'Double-click the map to drop a pin. Use + and − to zoom.',
               selectedLocationLabel:
                 (tBuyNow as { selectedLocation?: string }).selectedLocation ??
                 'Your delivery spot:',
@@ -503,6 +503,16 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               mapUnavailableLabel:
                 (tBuyNow as { mapUnavailableLabel?: string }).mapUnavailableLabel ??
                 'The map could not load. You can still continue with your address.',
+              confirmPinQuestion:
+                (tBuyNow as { confirmPinQuestion?: string }).confirmPinQuestion ?? 'Use this pin?',
+              confirmPinYes: (tBuyNow as { confirmPinYes?: string }).confirmPinYes ?? 'Yes',
+              confirmPinNo: (tBuyNow as { confirmPinNo?: string }).confirmPinNo ?? 'No',
+              pinConfirmedLabel:
+                (tBuyNow as { pinConfirmedLabel?: string }).pinConfirmedLabel ?? 'Pin confirmed',
+              editPinLabel: (tBuyNow as { editPinLabel?: string }).editPinLabel ?? 'Edit',
+              removePinLabel: (tBuyNow as { removePinLabel?: string }).removePinLabel ?? 'Remove',
+              zoomInLabel: (tBuyNow as { zoomInLabel?: string }).zoomInLabel ?? 'Zoom in',
+              zoomOutLabel: (tBuyNow as { zoomOutLabel?: string }).zoomOutLabel ?? 'Zoom out',
             }}
           />
         </div>

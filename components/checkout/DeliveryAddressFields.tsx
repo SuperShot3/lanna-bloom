@@ -37,6 +37,14 @@ export function DeliveryAddressFields({
     selectedLocationLabel: string;
     openGoogleMapsAriaLabel: string;
     mapUnavailableLabel: string;
+    confirmPinQuestion: string;
+    confirmPinYes: string;
+    confirmPinNo: string;
+    pinConfirmedLabel: string;
+    editPinLabel: string;
+    removePinLabel: string;
+    zoomInLabel: string;
+    zoomOutLabel: string;
   };
 }) {
   const [addressDraft, setAddressDraft] = useState(
@@ -139,6 +147,14 @@ export function DeliveryAddressFields({
           selectedLocationLabel={labels.selectedLocationLabel}
           openInGoogleMapsLabel={labels.openGoogleMapsAriaLabel}
           mapUnavailableLabel={labels.mapUnavailableLabel}
+          confirmPinQuestion={labels.confirmPinQuestion}
+          confirmPinYes={labels.confirmPinYes}
+          confirmPinNo={labels.confirmPinNo}
+          pinConfirmedLabel={labels.pinConfirmedLabel}
+          editPinLabel={labels.editPinLabel}
+          removePinLabel={labels.removePinLabel}
+          zoomInLabel={labels.zoomInLabel}
+          zoomOutLabel={labels.zoomOutLabel}
         />
       </div>
 
