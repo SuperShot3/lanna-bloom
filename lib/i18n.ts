@@ -756,6 +756,7 @@ const baseTranslations = {
         'Use your LINE profile ID: letters, numbers, dot, underscore, or hyphen (4–64 characters). Do not type @ or paste links—we open LINE for you.',
       lineIdInvalid:
         'Use plain LINE ID text only (letters, numbers, . _ -). No @ symbol and no links.',
+      lineIdUsePhoneLabel: 'Use phone number as LINE ID',
       contactNameRequired: 'Please enter your name.',
       contactPhoneRequired: 'Please enter your phone number.',
       emailLabel: 'Email',
@@ -2629,6 +2630,7 @@ const baseTranslations = {
         'ใส่ LINE ID จากโปรไฟล์: ตัวอักษร ตัวเลข จุด ขีดล่าง หรือขีดกลาง (4–64 ตัวอักษร) ไม่ต้องใส่ @ และไม่รับลิงก์—ระบบจะสร้างลิงก์ LINE ให้',
       lineIdInvalid:
         'ใส่เฉพาะข้อความ LINE ID (ตัวอักษร ตัวเลข . _ -) ห้าม @ และห้ามวางลิงก์',
+      lineIdUsePhoneLabel: 'ใช้เบอร์โทรเป็น LINE ID',
       contactNameRequired: 'กรุณากรอกชื่อของคุณ',
       contactPhoneRequired: 'กรุณากรอกเบอร์โทรศัพท์',
       emailLabel: 'อีเมล',
@@ -6147,6 +6149,7 @@ const chineseHongKongTranslations = {
     phoneNumber: '電話號碼',
     countryCode: '國家/地區',
     preferredContact: '偏好聯絡方式',
+    lineIdUsePhoneLabel: '使用電話號碼作為 LINE ID',
     emailLabel: '電郵',
     emailHint: '選填 — 訂單確認會寄到此電郵。不需要可留空。',
     trackOrder: '查詢我的訂單',

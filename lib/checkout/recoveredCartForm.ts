@@ -13,6 +13,7 @@ export type RecoveredCartForm = {
   recipientPhoneNational: string;
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
+  useLineIdFromPhone?: boolean;
   isOrderingForSomeoneElse?: boolean;
   surpriseDelivery?: boolean;
   marketingEmailConsent?: boolean;

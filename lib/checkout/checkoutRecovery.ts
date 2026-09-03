@@ -15,6 +15,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getOrderBySubmissionToken } from '@/lib/orders';
 import { isSpecificWrappingPaperColor } from '@/lib/wrappingPaperColors';
 import { getOrderGiftCardMessages } from '@/lib/orders/giftCardMessages';
+import { lineIdMatchesPhone } from '@/lib/lineUserId';
 
 export type CheckoutRecoveryPayload = {
   items: CartItem[];
@@ -165,6 +166,13 @@ export function orderPayloadToCartForm(payload: OrderPayload): RecoveredCartForm
     recipientPhoneNational: recipientPhone.national,
     contactPreference: contactPref.length > 0 ? contactPref : ['phone'],
     lineId: payload.lineId?.trim() || undefined,
+    useLineIdFromPhone:
+      contactPref.includes('line') &&
+      lineIdMatchesPhone(
+        payload.lineId?.trim() ?? '',
+        customerPhone.countryCode,
+        customerPhone.national
+      ),
     isOrderingForSomeoneElse: hasRecipient,
     surpriseDelivery: delivery.surpriseDelivery ?? false,
     marketingEmailConsent: payload.marketingEmailConsent === true,

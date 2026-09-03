@@ -27,3 +27,39 @@ export function isValidLineUserId(normalized: string): boolean {
   if (/[\x00-\x1f<>"]/.test(normalized)) return false;
   return LINE_USER_ID_CHARS.test(normalized);
 }
+
+/**
+ * LINE ID derived from the sender phone already entered at checkout.
+ * Thai (+66) numbers skip the leading 0 in the national field; LINE search
+ * typically uses the local form with 0 (e.g. 812345678 → 0812345678).
+ */
+export function lineIdFromPhone(countryCode: string, phoneNational: string): string {
+  const digits = phoneNational.replace(/\D/g, '');
+  if (!digits) return '';
+  const callingCode = countryCode.replace(/\D/g, '');
+  const withThaiZero =
+    callingCode === '66' && !digits.startsWith('0') ? `0${digits}` : digits;
+  return sanitizeLineUserIdInput(withThaiZero);
+}
+
+export function effectiveCheckoutLineId(params: {
+  useLineIdFromPhone: boolean;
+  lineId: string;
+  countryCode: string;
+  phoneNational: string;
+}): string {
+  if (params.useLineIdFromPhone) {
+    return lineIdFromPhone(params.countryCode, params.phoneNational);
+  }
+  return params.lineId;
+}
+
+export function lineIdMatchesPhone(
+  lineId: string,
+  countryCode: string,
+  phoneNational: string
+): boolean {
+  const derived = lineIdFromPhone(countryCode, phoneNational);
+  if (!derived) return false;
+  return normalizeLineUserId(lineId) === derived;
+}

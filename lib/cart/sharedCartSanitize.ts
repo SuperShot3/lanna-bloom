@@ -307,6 +307,7 @@ export function sanitizeSharedCartForm(raw: unknown): RecoveredCartForm | null {
     recipientPhoneNational: sanitizeDigits(row.recipientPhoneNational, 'recipientPhoneNational'),
     contactPreference: sanitizeContactPreference(row.contactPreference),
     lineId: sanitizeLineUserIdInput(typeof row.lineId === 'string' ? row.lineId : '') || undefined,
+    useLineIdFromPhone: row.useLineIdFromPhone === true,
     isOrderingForSomeoneElse: row.isOrderingForSomeoneElse === true,
     surpriseDelivery: row.surpriseDelivery === true,
     marketingEmailConsent: row.marketingEmailConsent === true,

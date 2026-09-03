@@ -474,15 +474,23 @@ export function DeliveryLocationPicker({
             </div>
             {showConfirm ? (
               <div className="delivery-location-confirm" role="dialog" aria-label={confirmPinQuestion}>
+                <span className="delivery-location-confirm-icon" aria-hidden>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path
+                      d="M8 1.6c-2.5 0-4.5 1.9-4.5 4.3 0 3.2 4.5 8.5 4.5 8.5s4.5-5.3 4.5-8.5C12.5 3.5 10.5 1.6 8 1.6Z"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                    />
+                    <circle cx="8" cy="6" r="1.4" fill="currentColor" />
+                  </svg>
+                </span>
                 <p className="delivery-location-confirm-q">{confirmPinQuestion}</p>
-                <div className="delivery-location-confirm-row">
-                  <button type="button" className="delivery-location-confirm-yes" onClick={handleConfirmYes}>
-                    {confirmPinYes}
-                  </button>
-                  <button type="button" className="delivery-location-confirm-no" onClick={handleConfirmNo}>
-                    {confirmPinNo}
-                  </button>
-                </div>
+                <button type="button" className="delivery-location-confirm-yes" onClick={handleConfirmYes}>
+                  {confirmPinYes}
+                </button>
+                <button type="button" className="delivery-location-confirm-no" onClick={handleConfirmNo}>
+                  {confirmPinNo}
+                </button>
               </div>
             ) : null}
           </div>
@@ -619,48 +627,68 @@ export function DeliveryLocationPicker({
         }
         .delivery-location-confirm {
           position: absolute;
-          left: 10px;
-          right: 10px;
-          bottom: 10px;
+          left: 50%;
+          bottom: 12px;
           z-index: 2;
-          padding: 12px 14px;
-          border-radius: 12px;
-          background: color-mix(in srgb, var(--surface) 94%, transparent);
-          border: 1px solid var(--border);
-          box-shadow: 0 8px 24px rgba(45, 42, 38, 0.16);
-          backdrop-filter: blur(8px);
-        }
-        .delivery-location-confirm-q {
-          margin: 0 0 10px;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: var(--text);
-        }
-        .delivery-location-confirm-row {
           display: flex;
           align-items: center;
-          gap: 6px;
-          flex-wrap: nowrap;
+          gap: 8px;
+          width: max-content;
+          max-width: calc(100% - 24px);
+          transform: translateX(-50%);
+          padding: 5px 6px 5px 10px;
+          border-radius: 999px;
+          background: color-mix(in srgb, var(--surface) 88%, transparent);
+          border: 1px solid color-mix(in srgb, var(--border) 80%, rgba(255, 255, 255, 0.7));
+          box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.55) inset,
+            0 8px 22px rgba(45, 42, 38, 0.16);
+          backdrop-filter: blur(10px);
+        }
+        .delivery-location-confirm-icon {
+          flex-shrink: 0;
+          display: flex;
+          color: var(--accent);
+        }
+        .delivery-location-confirm-q {
+          margin: 0;
+          font-size: 0.78rem;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          color: var(--text);
+          white-space: nowrap;
         }
         .delivery-location-confirm-yes,
         .delivery-location-confirm-no {
-          min-height: 36px;
-          padding: 0 14px;
-          border-radius: 10px;
-          font-size: 0.85rem;
+          min-height: 28px;
+          padding: 0 11px;
+          border-radius: 999px;
+          font-size: 0.75rem;
           font-weight: 600;
           font-family: inherit;
           cursor: pointer;
+          white-space: nowrap;
         }
         .delivery-location-confirm-yes {
           border: none;
-          background: #16a34a;
-          color: #fff;
+          background: var(--primary);
+          color: var(--primary-foreground);
+        }
+        .delivery-location-confirm-yes:hover,
+        .delivery-location-confirm-yes:focus-visible {
+          filter: brightness(1.05);
+          outline: none;
         }
         .delivery-location-confirm-no {
           border: 1px solid var(--border);
-          background: var(--surface);
+          background: transparent;
+          color: var(--text-muted);
+        }
+        .delivery-location-confirm-no:hover,
+        .delivery-location-confirm-no:focus-visible {
+          background: var(--pastel-cream);
           color: var(--text);
+          outline: none;
         }
         .delivery-location-readout {
           font-size: 0.8rem;

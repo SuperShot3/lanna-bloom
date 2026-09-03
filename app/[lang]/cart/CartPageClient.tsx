@@ -126,7 +126,9 @@ import {
 } from '@/lib/phoneFieldHints';
 import { getShopTodayYmd } from '@/lib/deliveryHours';
 import {
+  effectiveCheckoutLineId,
   isValidLineUserId,
+  lineIdMatchesPhone,
   normalizeLineUserId,
   sanitizeLineUserIdInput,
 } from '@/lib/lineUserId';
@@ -258,6 +260,7 @@ type StoredCartForm = {
   recipientPhoneNational: string;
   contactPreference: ContactPreferenceOption[];
   lineId?: string;
+  useLineIdFromPhone?: boolean;
   isOrderingForSomeoneElse?: boolean;
   surpriseDelivery?: boolean;
   marketingEmailConsent?: boolean;
@@ -993,6 +996,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [lineId, setLineId] = useState(() =>
     sanitizeLineUserIdInput(loadCartFormFromStorage()?.lineId ?? '')
   );
+  const [useLineIdFromPhone, setUseLineIdFromPhone] = useState(
+    () => loadCartFormFromStorage()?.useLineIdFromPhone === true
+  );
 
   const applyRecoveredForm = useCallback((form: RecoveredCartForm) => {
     const dest =
@@ -1019,7 +1025,18 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       )
     );
     setContactPreference(normalizeContactPreference(form.contactPreference));
-    setLineId(sanitizeLineUserIdInput(form.lineId ?? ''));
+    const recoveredLineId = sanitizeLineUserIdInput(form.lineId ?? '');
+    const recoveredCountry = form.countryCode || '66';
+    const recoveredPhone = clipCheckoutField(
+      (form.phoneNational ?? '').replace(/\D/g, ''),
+      'phoneNational'
+    );
+    const recoveredUsePhone =
+      form.useLineIdFromPhone === true ||
+      (normalizeContactPreference(form.contactPreference).includes('line') &&
+        lineIdMatchesPhone(recoveredLineId, recoveredCountry, recoveredPhone));
+    setLineId(recoveredLineId);
+    setUseLineIdFromPhone(recoveredUsePhone);
     setIsOrderingForSomeoneElse(form.isOrderingForSomeoneElse === true);
     setSurpriseDelivery(form.surpriseDelivery === true);
     setMarketingEmailConsent(form.marketingEmailConsent === true);
@@ -1040,7 +1057,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         'recipientPhoneNational'
       ),
       contactPreference: normalizeContactPreference(form.contactPreference),
-      lineId: sanitizeLineUserIdInput(form.lineId ?? ''),
+      lineId: recoveredLineId,
+      useLineIdFromPhone: recoveredUsePhone,
       isOrderingForSomeoneElse: form.isOrderingForSomeoneElse === true,
       surpriseDelivery: form.surpriseDelivery === true,
       marketingEmailConsent: form.marketingEmailConsent === true,
@@ -1102,18 +1120,20 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       recipientPhoneNational,
       contactPreference,
       lineId,
+      useLineIdFromPhone,
       isOrderingForSomeoneElse,
       surpriseDelivery,
       marketingEmailConsent,
       checkoutRecoveryEmailConsent,
     });
-  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent, checkoutRecoveryEmailConsent]);
+  }, [items.length, delivery, customerName, customerEmail, countryCode, phoneNational, recipientName, recipientCountryCode, recipientPhoneNational, contactPreference, lineId, useLineIdFromPhone, isOrderingForSomeoneElse, surpriseDelivery, marketingEmailConsent, checkoutRecoveryEmailConsent]);
 
   useEffect(() => {
-    if (!contactPreference.includes('line') && lineId) {
-      setLineId('');
+    if (!contactPreference.includes('line')) {
+      if (lineId) setLineId('');
+      if (useLineIdFromPhone) setUseLineIdFromPhone(false);
     }
-  }, [contactPreference, lineId]);
+  }, [contactPreference, lineId, useLineIdFromPhone]);
 
   useEffect(() => {
     const emailTrim = customerEmail.trim();
@@ -1271,6 +1291,12 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const peakMinOrderBlocked = peakMinOrderShortfall > 0;
 
   const tPremium = translations[lang].premiumCheckout;
+  const effectiveLineId = effectiveCheckoutLineId({
+    useLineIdFromPhone,
+    lineId,
+    countryCode,
+    phoneNational,
+  });
   const isDeliveryValidNow =
     !deliveryConstraintLoading && isPremiumDeliveryValid(delivery, deliveryConstraint);
   const isRecipientValidNow = isPremiumRecipientValid(
@@ -1283,7 +1309,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     countryCode,
     phoneNational,
     contactPreference,
-    lineId,
+    lineId: effectiveLineId,
     customerEmail,
   });
   const isPaymentUnlocked =
@@ -1350,7 +1376,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       return fmt(String(tC.preferredContact ?? 'Contact method'));
     }
     if (contactPreference.includes('line')) {
-      const norm = normalizeLineUserId(lineId);
+      const norm = normalizeLineUserId(effectiveLineId);
       if (!norm) {
         return fmt(String((tC as { lineIdLabel?: string }).lineIdLabel ?? 'LINE ID'));
       }
@@ -1450,7 +1476,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
         ...(checkoutRecoveryEmailConsent ? { checkoutRecoveryEmailConsent: true } : {}),
         personalDataProcessingConsent: true,
         contactPreference,
-        lineId: lineId.trim(),
+        lineId: effectiveLineId.trim(),
         submissionToken: checkoutSubmissionToken,
         recipientName: isOrderingForSomeoneElse ? recipientName.trim() : undefined,
         recipientPhone: isOrderingForSomeoneElse ? recipientPhoneDigits : undefined,
@@ -1538,7 +1564,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       countryCode,
       phoneNational,
       contactPreference,
-      lineId,
+      lineId: effectiveLineId,
       customerEmail,
       recipientName,
       recipientCountryCode,
@@ -1734,8 +1760,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
     const recipientHintText = resolveTranslation(tc, recipientPhoneHint.messageKey);
     const lineNorm = normalizeLineUserId(lineId);
     const linePreferenceSelected = contactPreference.includes('line');
+    const showLineIdInput = linePreferenceSelected && !useLineIdFromPhone;
     const lineIdFormatError =
-      linePreferenceSelected && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
+      showLineIdInput && lineNorm.length > 0 && !isValidLineUserId(lineNorm);
     const showRecoveryEmailConsent = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim());
 
     return (
@@ -1842,39 +1869,63 @@ export function CartPageClient({ lang }: { lang: Locale }) {
       </div>
       <LineIdFieldReveal open={linePreferenceSelected}>
         <div className={fieldClass}>
-          <label className={labelClass} htmlFor={`${idPrefix}cart-line-id`}>
+          <span className={labelClass} id={`${idPrefix}cart-line-id-heading`}>
             {(t as { lineIdLabel?: string }).lineIdLabel ?? 'LINE ID'}{' '}
             <span className={reqClass} aria-hidden>*</span>
+          </span>
+          <label
+            className="cart-marketing-consent"
+            htmlFor={`${idPrefix}cart-line-id-use-phone`}
+          >
+            <input
+              id={`${idPrefix}cart-line-id-use-phone`}
+              type="checkbox"
+              checked={useLineIdFromPhone}
+              onChange={(e) => setUseLineIdFromPhone(e.target.checked)}
+              className="cart-marketing-consent-input"
+              disabled={!linePreferenceSelected}
+              tabIndex={linePreferenceSelected ? undefined : -1}
+            />
+            <span>
+              {(t as { lineIdUsePhoneLabel?: string }).lineIdUsePhoneLabel ??
+                'Use phone number as LINE ID'}
+            </span>
           </label>
-          <input
-            id={`${idPrefix}cart-line-id`}
-            type="text"
-            value={lineId}
-            onChange={(e) => setLineId(sanitizeLineUserIdInput(e.target.value))}
-            placeholder={(t as { lineIdPlaceholder?: string }).lineIdPlaceholder ?? 'e.g. LannaBloom'}
-            className={inputClass}
-            autoComplete="username"
-            maxLength={64}
-            disabled={!linePreferenceSelected}
-            tabIndex={linePreferenceSelected ? undefined : -1}
-            aria-required
-            aria-invalid={linePreferenceSelected && !isValidLineUserId(lineNorm)}
-            aria-describedby={`${idPrefix}cart-line-id-hint${lineIdFormatError ? ` ${idPrefix}cart-line-id-error` : ''}`}
-          />
-          <p id={`${idPrefix}cart-line-id-hint`} className="cart-field-hint">
-            {(t as { lineIdHint?: string }).lineIdHint ??
-              'Use your LINE profile ID: letters, numbers, dot, underscore, or hyphen (4–64 characters). Do not type @ or paste links—we build the LINE link for you.'}
-          </p>
-          {lineIdFormatError && (
-            <p
-              id={`${idPrefix}cart-line-id-error`}
-              className="cart-field-hint cart-line-id-error"
-              role="alert"
-            >
-              {(t as { lineIdInvalid?: string }).lineIdInvalid ??
-                'Enter plain LINE ID text only (no links, no @). Example: LannaBloom.'}
+          <OverlayReveal
+            open={showLineIdInput}
+            className="cart-line-id-input-reveal"
+          >
+            <input
+              id={`${idPrefix}cart-line-id`}
+              type="text"
+              value={lineId}
+              onChange={(e) => setLineId(sanitizeLineUserIdInput(e.target.value))}
+              placeholder={(t as { lineIdPlaceholder?: string }).lineIdPlaceholder ?? 'e.g. LannaBloom'}
+              className={inputClass}
+              autoComplete="username"
+              maxLength={64}
+              disabled={!showLineIdInput}
+              tabIndex={showLineIdInput ? undefined : -1}
+              aria-labelledby={`${idPrefix}cart-line-id-heading`}
+              aria-required={showLineIdInput}
+              aria-invalid={showLineIdInput && !isValidLineUserId(lineNorm)}
+              aria-describedby={`${idPrefix}cart-line-id-hint${lineIdFormatError ? ` ${idPrefix}cart-line-id-error` : ''}`}
+            />
+            <p id={`${idPrefix}cart-line-id-hint`} className="cart-field-hint">
+              {(t as { lineIdHint?: string }).lineIdHint ??
+                'Use your LINE profile ID: letters, numbers, dot, underscore, or hyphen (4–64 characters). Do not type @ or paste links—we build the LINE link for you.'}
             </p>
-          )}
+            {lineIdFormatError && (
+              <p
+                id={`${idPrefix}cart-line-id-error`}
+                className="cart-field-hint cart-line-id-error"
+                role="alert"
+              >
+                {(t as { lineIdInvalid?: string }).lineIdInvalid ??
+                  'Enter plain LINE ID text only (no links, no @). Example: LannaBloom.'}
+              </p>
+            )}
+          </OverlayReveal>
         </div>
       </LineIdFieldReveal>
       <NotchedField
@@ -2061,6 +2112,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
               recipientPhoneNational,
               contactPreference,
               lineId,
+              useLineIdFromPhone,
               isOrderingForSomeoneElse,
               surpriseDelivery,
               marketingEmailConsent,
@@ -3801,6 +3853,9 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           accent-color: var(--accent);
         }
         :global(.cart-recovery-email-consent-reveal.ui-overlay-reveal--open) {
+          margin-top: 6px;
+        }
+        :global(.cart-line-id-input-reveal.ui-overlay-reveal--open) {
           margin-top: 6px;
         }
       `}</style>
