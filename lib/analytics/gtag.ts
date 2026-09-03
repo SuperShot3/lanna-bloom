@@ -175,7 +175,7 @@ function waitForGtmConsentThen(onReady: () => void): void {
 
   const gtmId = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GTM_ID?.trim() : '';
   const deferMs = readNonNegativeIntEnv('NEXT_PUBLIC_ANALYTICS_PURCHASE_DEFER_MS', 120);
-  const pollMaxMs = readNonNegativeIntEnv('NEXT_PUBLIC_ANALYTICS_PURCHASE_GTM_POLL_MAX_MS', 2500);
+  const pollMaxMs = readNonNegativeIntEnv('NEXT_PUBLIC_ANALYTICS_PURCHASE_GTM_POLL_MAX_MS', 4500);
   const pollEveryMs = readNonNegativeIntEnv('NEXT_PUBLIC_ANALYTICS_PURCHASE_GTM_POLL_INTERVAL_MS', 50);
 
   const startedAt = Date.now();

@@ -10,17 +10,13 @@ import { useCart } from '@/contexts/CartContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavItem } from './NavItem';
 import {
-  CatalogMobileNav,
-  CatalogNavDropdown,
-} from './CatalogNavDropdown';
-import {
-  OccasionsMobileNav,
-  OccasionsNavDropdown,
-} from './OccasionsNavDropdown';
-import {
-  GuidesMobileNav,
-  GuidesNavDropdown,
-} from './GuidesNavDropdown';
+  LazyCatalogMobileNav,
+  LazyCatalogNavDropdown,
+  LazyGuidesMobileNav,
+  LazyGuidesNavDropdown,
+  LazyOccasionsMobileNav,
+  LazyOccasionsNavDropdown,
+} from './nav/LazyStorefrontNav';
 import {
   CartIcon,
   HomeIcon,
@@ -320,7 +316,7 @@ export function Header({
                     </span>
                   }
                 >
-                  <CatalogNavDropdown
+                  <LazyCatalogNavDropdown
                     lang={lang}
                     catalogHref={catalogHref}
                     label={t.catalog}
@@ -339,14 +335,14 @@ export function Header({
                     </span>
                   }
                 >
-                  <OccasionsNavDropdown
+                  <LazyOccasionsNavDropdown
                     lang={lang}
                     catalogHref={catalogHref}
                     label={t.occasions}
                     onOpenChange={handleOverlayOpenChange}
                   />
                 </Suspense>
-                <GuidesNavDropdown
+                <LazyGuidesNavDropdown
                   lang={lang}
                   infoHref={infoHref}
                   label={t.information}
@@ -499,7 +495,7 @@ export function Header({
                   <span className="nav-item nav-item--mobile">{t.catalog}</span>
                 }
               >
-                <CatalogMobileNav
+                <LazyCatalogMobileNav
                   lang={lang}
                   catalogHref={catalogHref}
                   label={t.catalog}
@@ -509,6 +505,7 @@ export function Header({
                     basePath.startsWith('/collections/')
                   }
                   onNavigate={() => setMenuOpen(false)}
+                  loadWhen={menuOpen}
                 />
               </Suspense>
               <Suspense
@@ -516,19 +513,21 @@ export function Header({
                   <span className="nav-item nav-item--mobile">{t.occasions}</span>
                 }
               >
-                <OccasionsMobileNav
+                <LazyOccasionsMobileNav
                   lang={lang}
                   catalogHref={catalogHref}
                   label={t.occasions}
                   onNavigate={() => setMenuOpen(false)}
+                  loadWhen={menuOpen}
                 />
               </Suspense>
-              <GuidesMobileNav
+              <LazyGuidesMobileNav
                 lang={lang}
                 infoHref={infoHref}
                 label={t.information}
                 pathActive={basePath === '/info' || basePath.startsWith('/info/')}
                 onNavigate={() => setMenuOpen(false)}
+                loadWhen={menuOpen}
               />
               <NavItem
                 href={deliveryAreasHref}

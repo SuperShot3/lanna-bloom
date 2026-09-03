@@ -1,9 +1,6 @@
-'use client';
-
-import Link from 'next/link';
-import { StorefrontIcon } from '@/components/icons';
 import { PremiumCtaLink } from '@/components/home/PremiumCtaLink';
-import { trackCtaClick } from '@/lib/analytics';
+import { TrackedLink } from '@/components/home/TrackedLink';
+import { StorefrontIcon } from '@/components/icons';
 
 export function ShowMoreLink({
   href,
@@ -13,33 +10,24 @@ export function ShowMoreLink({
 }: {
   href: string;
   label: string;
-  /** Optional homepage CTA event name (V2 View All, etc.). */
   ctaEvent?: string;
-  /** Match the hero premium CTA (Homepage V2 View all bouquets). */
   premium?: boolean;
 }) {
   return (
     <div className="mt-8 sm:mt-10 flex justify-center">
       {premium ? (
-        <PremiumCtaLink
-          href={href}
-          onClick={ctaEvent ? () => trackCtaClick(ctaEvent) : undefined}
-        >
+        <PremiumCtaLink href={href} ctaEvent={ctaEvent}>
           {label}
         </PremiumCtaLink>
       ) : (
-        <Link
-          href={href}
-          className="popular-show-more group"
-          onClick={ctaEvent ? () => trackCtaClick(ctaEvent) : undefined}
-        >
+        <TrackedLink href={href} event={ctaEvent} className="popular-show-more group">
           <span>{label}</span>
           <StorefrontIcon
             name="arrow-forward"
             size={18}
             className="popular-show-more__icon"
           />
-        </Link>
+        </TrackedLink>
       )}
     </div>
   );

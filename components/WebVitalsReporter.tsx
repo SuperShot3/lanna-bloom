@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals/attribution';
 import type { Metric } from 'web-vitals';
 import { pushToDataLayer } from '@/lib/analytics/gtag';
+import { scheduleIdle } from '@/lib/scheduleIdle';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID?.trim();
 const SHOULD_REPORT =
@@ -25,6 +25,7 @@ function readString(attr: Record<string, unknown>, key: string): string | undefi
 /**
  * Field Core Web Vitals (INP, LCP, CLS + FCP/TTFB) → GTM dataLayer.
  * Production only; skips /admin. GTM forwards `web_vitals` to GA4.
+ * web-vitals is loaded after idle so attribution JS does not race hydration.
  */
 export function WebVitalsReporter() {
   const pathname = usePathname();
@@ -33,43 +34,55 @@ export function WebVitalsReporter() {
   useEffect(() => {
     if (!SHOULD_REPORT || isAdmin) return;
 
-    const report = (metric: Metric) => {
-      const roundedValue =
-        metric.name === 'CLS'
-          ? Math.round(metric.value * 1000)
-          : Math.round(metric.value);
+    let cancelled = false;
 
-      const params: Record<string, unknown> = {
-        metric_name: metric.name,
-        value: roundedValue,
-        metric_id: metric.id,
-        metric_value: metric.value,
-        metric_delta: metric.delta,
-        metric_rating: metric.rating,
-        metric_navigation_type: metric.navigationType,
-      };
+    const cancelIdle = scheduleIdle(() => {
+      void import('web-vitals/attribution').then(({ onCLS, onFCP, onINP, onLCP, onTTFB }) => {
+        if (cancelled) return;
 
-      const attr = asAttrRecord(metric);
-      if (attr) {
-        // web-vitals v6: INP → interactionTarget, LCP → target, CLS → largestShiftTarget
-        const debugTarget =
-          readString(attr, 'interactionTarget') ??
-          readString(attr, 'target') ??
-          readString(attr, 'largestShiftTarget');
-        if (debugTarget) params.debug_target = debugTarget;
+        const report = (metric: Metric) => {
+          const roundedValue =
+            metric.name === 'CLS'
+              ? Math.round(metric.value * 1000)
+              : Math.round(metric.value);
 
-        const interactionType = readString(attr, 'interactionType');
-        if (interactionType) params.debug_interaction_type = interactionType;
-      }
+          const params: Record<string, unknown> = {
+            metric_name: metric.name,
+            value: roundedValue,
+            metric_id: metric.id,
+            metric_value: metric.value,
+            metric_delta: metric.delta,
+            metric_rating: metric.rating,
+            metric_navigation_type: metric.navigationType,
+          };
 
-      pushToDataLayer('web_vitals', params);
+          const attr = asAttrRecord(metric);
+          if (attr) {
+            const debugTarget =
+              readString(attr, 'interactionTarget') ??
+              readString(attr, 'target') ??
+              readString(attr, 'largestShiftTarget');
+            if (debugTarget) params.debug_target = debugTarget;
+
+            const interactionType = readString(attr, 'interactionType');
+            if (interactionType) params.debug_interaction_type = interactionType;
+          }
+
+          pushToDataLayer('web_vitals', params);
+        };
+
+        onINP(report);
+        onLCP(report);
+        onCLS(report);
+        onFCP(report);
+        onTTFB(report);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelIdle();
     };
-
-    onINP(report);
-    onLCP(report);
-    onCLS(report);
-    onFCP(report);
-    onTTFB(report);
   }, [isAdmin]);
 
   return null;

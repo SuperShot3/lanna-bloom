@@ -1,6 +1,6 @@
 import {
-  DeferredHomeBouquetCard,
-  DeferredHomeProductCard,
+  HomeBouquetCard,
+  HomeProductCard,
 } from '@/components/home/DeferredHomeCatalogCard';
 import {
   getCatalogHomeFlowerTypeSections,
@@ -74,7 +74,7 @@ function ProductFeedRow({
         <div className="popular-scroll">
           {products.map((product) => (
             <div key={product.id} className="popular-card-slot">
-              <DeferredHomeProductCard product={product} lang={lang} />
+              <HomeProductCard product={product} lang={lang} />
             </div>
           ))}
         </div>
@@ -180,7 +180,7 @@ export async function PopularSection({
                 <div className="popular-scroll">
                   {section.bouquets.map((bouquet) => (
                     <div key={bouquet.id} className="popular-card-slot">
-                      <DeferredHomeBouquetCard bouquet={bouquet} lang={lang} />
+                      <HomeBouquetCard bouquet={bouquet} lang={lang} />
                     </div>
                   ))}
                 </div>

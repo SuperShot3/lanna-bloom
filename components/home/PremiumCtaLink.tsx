@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { StorefrontIcon } from '@/components/icons';
+import { trackCtaClick } from '@/lib/analytics';
 
 const PREMIUM_CTA_CLASS =
   'hero-cta hero-cta--premium group relative isolate overflow-hidden px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-full shadow-[0_12px_28px_-14px_rgba(26,60,52,0.7)] hover:shadow-[0_20px_40px_-18px_rgba(26,60,52,0.72)] hover:-translate-y-1 transition-all duration-300 inline-flex items-center justify-center gap-2 text-sm sm:text-base';
@@ -9,11 +10,15 @@ const PREMIUM_CTA_CLASS =
 export function PremiumCtaLink({
   href,
   onClick,
+  ctaEvent,
+  ctaEventParams,
   children,
   className,
 }: {
   href: string;
   onClick?: () => void;
+  ctaEvent?: string;
+  ctaEventParams?: Record<string, unknown>;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -21,7 +26,10 @@ export function PremiumCtaLink({
     <>
       <Link
         href={href}
-        onClick={onClick}
+        onClick={() => {
+          if (ctaEvent) trackCtaClick(ctaEvent, ctaEventParams);
+          onClick?.();
+        }}
         className={className ? `${PREMIUM_CTA_CLASS} ${className}` : PREMIUM_CTA_CLASS}
       >
         <span

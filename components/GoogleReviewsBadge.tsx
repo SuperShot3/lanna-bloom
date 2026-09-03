@@ -1,6 +1,3 @@
-'use client';
-
-import { useId, useMemo } from 'react';
 import {
   GOOGLE_BUSINESS_RATING,
   GOOGLE_BUSINESS_REVIEW_COUNT,
@@ -32,26 +29,26 @@ function PartialStar({ fill, gradientId }: { fill: number; gradientId: string })
 type Props = {
   lang: Locale;
   className?: string;
-  /** Override maps URL (defaults to `GOOGLE_PLACE_URL` in lib/reviewsConfig.ts). */
   mapsUrl?: string;
+  idPrefix?: string;
 };
 
-export function GoogleReviewsBadge({ lang, className = '', mapsUrl }: Props) {
+export function GoogleReviewsBadge({
+  lang,
+  className = '',
+  mapsUrl,
+  idPrefix = 'google-reviews',
+}: Props) {
   const t = translations[lang].hero;
   const rating = GOOGLE_BUSINESS_RATING;
   const reviewCount = GOOGLE_BUSINESS_REVIEW_COUNT;
   const href = mapsUrl?.trim() || GOOGLE_PLACE_URL;
-  const baseId = useId().replace(/:/g, '');
   const locale = lang === 'th' ? 'th-TH' : 'en-US';
 
-  const stars = useMemo(
-    () =>
-      Array.from({ length: 5 }, (_, i) => ({
-        fill: Math.min(1, Math.max(0, rating - i)),
-        id: `${baseId}-star-${i + 1}`,
-      })),
-    [baseId, rating]
-  );
+  const stars = Array.from({ length: 5 }, (_, i) => ({
+    fill: Math.min(1, Math.max(0, rating - i)),
+    id: `${idPrefix}-star-${i + 1}`,
+  }));
 
   const countLabel = t.googleReviewsBasedOn.replace(
     '{count}',

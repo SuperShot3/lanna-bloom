@@ -1,7 +1,4 @@
-import {
-  DeferredHomeBouquetCard,
-  HOME_EAGER_CARD_COUNT,
-} from '@/components/home/DeferredHomeCatalogCard';
+import { HomeBouquetCard } from '@/components/home/DeferredHomeCatalogCard';
 import type { Bouquet } from '@/lib/bouquets';
 import type { Locale } from '@/lib/i18n';
 import { ShowMoreLink } from '@/components/home/ShowMoreLink';
@@ -34,13 +31,9 @@ export function PopularPicksRow({
       </h2>
       <div className="popular-scroll-wrap">
         <div className="popular-scroll">
-          {bouquets.map((bouquet, index) => (
+          {bouquets.map((bouquet) => (
             <div key={bouquet.id} className="popular-card-slot">
-              <DeferredHomeBouquetCard
-                bouquet={bouquet}
-                lang={lang}
-                eager={index < HOME_EAGER_CARD_COUNT}
-              />
+              <HomeBouquetCard bouquet={bouquet} lang={lang} />
             </div>
           ))}
         </div>

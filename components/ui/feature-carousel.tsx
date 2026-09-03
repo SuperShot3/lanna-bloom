@@ -5,13 +5,14 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { HeroCarouselImage } from '@/components/ui/hero-carousel-types';
 import {
   catalogImageUnoptimized,
   HERO_CAROUSEL_IMAGE_SIZES,
   HERO_LCP_IMAGE_QUALITY,
 } from '@/lib/catalog/catalogImage';
 
-export type HeroCarouselImage = { src: string; alt: string };
+export type { HeroCarouselImage };
 
 const AUTOPLAY_MS = 3000;
 const SWIPE_THRESHOLD_PX = 48;

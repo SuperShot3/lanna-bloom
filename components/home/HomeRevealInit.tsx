@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect } from 'react';
+import { useEffect } from 'react';
 
 const REVEAL_SELECTOR = '[data-home-reveal]';
 const ROOT_MARGIN = '48px 0px -6% 0px';
@@ -25,7 +25,7 @@ function isNearViewport(el: Element): boolean {
  * Adds `home-reveal-ready` on <html> so unrevealed sections can animate from CSS only.
  */
 export function HomeRevealInit() {
-  useLayoutEffect(() => {
+  useEffect(() => {
     const root = document.documentElement;
     root.classList.add('home-reveal-ready');
 

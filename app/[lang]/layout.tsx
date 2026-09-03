@@ -10,7 +10,6 @@ import { isValidLocale, type Locale } from '@/lib/i18n';
 import { notoSansCyrillic, notoSansTc } from '@/lib/fonts';
 import { nonSeoLocaleRobots } from '@/lib/seo/alternates';
 import { MainSiteChrome } from '@/components/MainSiteChrome';
-import { FloatingFavoritesBadge } from '@/components/FloatingFavoritesBadge';
 
 /** Thin locales (ru / zh-sg): noindex, follow. SEO locales omit robots here. */
 export async function generateMetadata({
@@ -50,7 +49,6 @@ export default function LangLayout({
             <FlowerFilterSheetOpenProvider>
               <ViewportSync />
               <div className={langShellClass}>
-                <FloatingFavoritesBadge lang={lang as Locale} />
                 <MainSiteChrome lang={lang as Locale}>{children}</MainSiteChrome>
               </div>
             </FlowerFilterSheetOpenProvider>

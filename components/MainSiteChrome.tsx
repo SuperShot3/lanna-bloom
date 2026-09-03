@@ -4,17 +4,30 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { LineFloatingButton } from '@/components/LineFloatingButton';
-import { MayFreeDeliveryPromoBanner } from '@/components/MayFreeDeliveryPromoBanner';
-import { AdvancePeakPromoBanner } from '@/components/AdvancePeakPromoBanner';
-import { PeakCelebrationNoticeBanner } from '@/components/PeakCelebrationNoticeBanner';
+import { IdleImport } from '@/components/IdleImport';
 import type { Locale } from '@/lib/i18n';
 import { DeliveryDestinationSessionSync } from '@/components/DeliveryDestinationSessionSync';
-import { CookieConsentBanner } from '@/components/legal/CookieConsentBanner';
 import { CouponQueryCapture } from '@/components/CouponQueryCapture';
-import { ConversionDiscountRoot } from '@/components/conversionDiscount/ConversionDiscountRoot';
-import { DeliveryDestinationPrompt } from '@/components/DeliveryDestinationPrompt';
 import { getActiveTopPromoBannerKind } from '@/lib/promo/topPromoBanner';
+
+const loadAdvancePeakPromoBanner = () =>
+  import('@/components/AdvancePeakPromoBanner').then((m) => m.AdvancePeakPromoBanner);
+const loadPeakCelebrationNoticeBanner = () =>
+  import('@/components/PeakCelebrationNoticeBanner').then((m) => m.PeakCelebrationNoticeBanner);
+const loadMayFreeDeliveryPromoBanner = () =>
+  import('@/components/MayFreeDeliveryPromoBanner').then((m) => m.MayFreeDeliveryPromoBanner);
+const loadLineFloatingButton = () =>
+  import('@/components/LineFloatingButton').then((m) => m.LineFloatingButton);
+const loadConversionDiscountRoot = () =>
+  import('@/components/conversionDiscount/ConversionDiscountRoot').then(
+    (m) => m.ConversionDiscountRoot
+  );
+const loadCookieConsentBanner = () =>
+  import('@/components/legal/CookieConsentBanner').then((m) => m.CookieConsentBanner);
+const loadDeliveryDestinationPrompt = () =>
+  import('@/components/DeliveryDestinationPrompt').then((m) => m.DeliveryDestinationPrompt);
+const loadFloatingFavoritesBadge = () =>
+  import('@/components/FloatingFavoritesBadge').then((m) => m.FloatingFavoritesBadge);
 
 export function MainSiteChrome({
   lang,
@@ -67,12 +80,21 @@ export function MainSiteChrome({
       <DeliveryDestinationSessionSync lang={lang} />
       {!hideTopPromoBanner ? (
         <>
-          <AdvancePeakPromoBanner lang={lang} onActiveChange={setAdvancePeakPromoBanner} />
+          <IdleImport
+            load={loadAdvancePeakPromoBanner}
+            componentProps={{ lang, onActiveChange: setAdvancePeakPromoBanner }}
+          />
           {!advancePeakPromoBanner ? (
-            <PeakCelebrationNoticeBanner lang={lang} onActiveChange={setPeakNoticeBanner} />
+            <IdleImport
+              load={loadPeakCelebrationNoticeBanner}
+              componentProps={{ lang, onActiveChange: setPeakNoticeBanner }}
+            />
           ) : null}
           {!advancePeakPromoBanner && !peakNoticeBanner ? (
-            <MayFreeDeliveryPromoBanner lang={lang} onActiveChange={setMayPromoBanner} />
+            <IdleImport
+              load={loadMayFreeDeliveryPromoBanner}
+              componentProps={{ lang, onActiveChange: setMayPromoBanner }}
+            />
           ) : null}
         </>
       ) : null}
@@ -84,10 +106,17 @@ export function MainSiteChrome({
         <main>{children}</main>
       </div>
       <Footer lang={lang} />
-      <LineFloatingButton lang={lang} showContactButtons={!isCartRoute} />
-      <ConversionDiscountRoot lang={lang} />
-      <CookieConsentBanner lang={lang} />
-      <DeliveryDestinationPrompt lang={lang} hasTopPromoBanner={hasTopPromoBanner} />
+      <IdleImport
+        load={loadLineFloatingButton}
+        componentProps={{ lang, showContactButtons: !isCartRoute }}
+      />
+      <IdleImport load={loadConversionDiscountRoot} componentProps={{ lang }} />
+      <IdleImport load={loadCookieConsentBanner} componentProps={{ lang }} />
+      <IdleImport
+        load={loadDeliveryDestinationPrompt}
+        componentProps={{ lang, hasTopPromoBanner }}
+      />
+      <IdleImport load={loadFloatingFavoritesBadge} componentProps={{ lang }} />
     </>
   );
 }

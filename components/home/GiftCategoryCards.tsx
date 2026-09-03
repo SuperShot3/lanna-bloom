@@ -1,10 +1,7 @@
-'use client';
-
 import Image from 'next/image';
-import Link from 'next/link';
 import { catalogImageUnoptimized } from '@/lib/catalog/catalogImage';
-import { trackCtaClick } from '@/lib/analytics';
 import { StorefrontIcon } from '@/components/icons';
+import { TrackedLink } from '@/components/home/TrackedLink';
 
 export type GiftCategoryCardData = {
   categoryKey: 'plushy_toys' | 'balloons';
@@ -38,12 +35,11 @@ export function GiftCategoryCards({
         </h2>
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 home-reveal-stagger">
           {cards.map((card) => (
-            <Link
+            <TrackedLink
               key={card.categoryKey}
               href={card.href}
-              onClick={() =>
-                trackCtaClick('cta_home_gift_category', { category: card.categoryKey })
-              }
+              event="cta_home_gift_category"
+              eventParams={{ category: card.categoryKey }}
               className="home-reveal-item group relative overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:ring-[#C5A059]/60 hover:shadow-lg"
             >
               <div
@@ -70,7 +66,7 @@ export function GiftCategoryCards({
                   <StorefrontIcon name="arrow-forward" size={16} />
                 </span>
               </div>
-            </Link>
+            </TrackedLink>
           ))}
         </div>
       </div>

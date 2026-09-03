@@ -17,7 +17,7 @@ import {
   BRAND_WEB_MANIFEST,
 } from '@/lib/brandLogo';
 import { websiteOpenGraph, websiteTwitter } from '@/lib/seo/shareMetadata';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+import { DeferredSpeedInsights } from '@/components/DeferredSpeedInsights';
 import './globals.css';
 
 const SITE_TITLE = 'Lanna Bloom | Flower & gift delivery Chiang Mai';
@@ -144,7 +144,7 @@ export default function RootLayout({
             <InternalTrafficBootstrap />
             <GoogleAnalytics />
             <WebVitalsReporter />
-            <SpeedInsights />
+            <DeferredSpeedInsights />
             <AhrefsAnalytics />
             <ViewTransitions>
               {children}

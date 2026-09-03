@@ -287,7 +287,7 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: [],
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'date-fns', '@radix-ui/react-icons'],
   },
   images: {
     formats: ['image/avif', 'image/webp'],

@@ -8,7 +8,10 @@ import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { trackDiscountEvent, type DiscountExperimentEventName } from '@/lib/analytics';
 import { cartPriceBreakdown } from '@/lib/cart/cartPriceBreakdown';
 import { hasCatalogDiscount } from '@/lib/catalogDiscount';
-import { INTENT_DISCOUNT_ENABLED } from '@/lib/conversionDiscount/config';
+import {
+  INTENT_DISCOUNT_ENABLED,
+  INTENT_MIN_SESSION_MS,
+} from '@/lib/conversionDiscount/config';
 import { shouldApplyIntent10 } from '@/lib/conversionDiscount/applyOffer';
 import {
   canStartOffer,
@@ -138,9 +141,16 @@ export function ConversionDiscountRoot({ lang }: { lang: Locale }) {
 
   useEffect(() => {
     if (!enabled || !state) return;
+    let timer: number | undefined;
+    let cancelled = false;
+
     const tick = () => {
+      if (cancelled) return;
+      if (timer != null) {
+        window.clearTimeout(timer);
+        timer = undefined;
+      }
       const at = Date.now();
-      setNow(at);
       const visible = document.visibilityState !== 'hidden';
       let next = loadAndTouchVisitorState(at, { documentVisible: visible });
       next = withCartHasItems(next, cartHasItems, at);
@@ -155,19 +165,30 @@ export function ConversionDiscountRoot({ lang }: { lang: Locale }) {
         clearIntentCodeIfExpired(next, at);
       }
       setState(next);
+      setNow(at);
+
+      if (isOfferActive(next, at)) {
+        timer = window.setTimeout(tick, 1000);
+        return;
+      }
+      if (next.purchase_completed || next.discount_offer_used) return;
+      const untilMinSession = INTENT_MIN_SESSION_MS - (at - next.session_started_at);
+      const delay =
+        untilMinSession > 0 ? Math.min(untilMinSession + 50, 30_000) : 15_000;
+      timer = window.setTimeout(tick, Math.max(delay, 1000));
     };
 
     tick();
-    const id = window.setInterval(tick, 1000);
     const onVis = () => {
       if (document.visibilityState === 'visible') tick();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => {
-      window.clearInterval(id);
+      cancelled = true;
+      if (timer != null) window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [enabled, state?.visitor_id, cartHasItems, itemsTotal, clearIntentCodeIfExpired]);
+  }, [enabled, state?.visitor_id, cartHasItems, itemsTotal, clearIntentCodeIfExpired, pathname]);
 
   useEffect(() => {
     if (!enabled || !state || !hydrated) return;

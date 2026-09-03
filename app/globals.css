@@ -1497,6 +1497,65 @@ a.btn-pill:focus-visible {
   width: 100%;
   min-width: 0;
 }
+.home-card-shell {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.home-card-shell__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+.home-card-shell__image {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--pastel-cream);
+  border-radius: var(--radius);
+}
+.home-card-shell__img,
+.home-card-shell__placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.home-card-shell__placeholder {
+  background: var(--pastel-cream);
+}
+.home-card-shell__body {
+  padding: 11px 12px 13px;
+  min-height: 92px;
+  min-width: 0;
+}
+.home-card-shell__name {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.6;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 6px;
+}
+.home-card-shell__price {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
 .popular-scroll > * {
   min-width: 0;
 }
