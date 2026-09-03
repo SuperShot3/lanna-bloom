@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { PaymentMethodsAvailability } from '@/lib/checkout/paymentAvailability';
 import type { Locale } from '@/lib/i18n';
 import {
-  DELIVERY_TIME_SLOTS,
+  CHECKOUT_WINDOW_SLOTS,
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
   isSpecificDeliveryTime,
@@ -105,7 +105,7 @@ export function StickyCheckoutBar({
   const touchStartY = useRef(0);
 
   const minDate = getShopTodayYmd();
-  const timeSlots = DELIVERY_TIME_SLOTS.slice(0, 3);
+  const timeSlots = CHECKOUT_WINDOW_SLOTS;
   const windowEditSlot = isSpecificDeliveryTime(editTimeSlot) ? '' : editTimeSlot;
   const specificEditTime = isSpecificDeliveryTime(editTimeSlot) ? editTimeSlot : '';
 

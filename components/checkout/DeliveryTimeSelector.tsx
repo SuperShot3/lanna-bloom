@@ -6,7 +6,10 @@ import { translations } from '@/lib/i18n';
 import { SelectionTile } from '@/components/checkout/premium/SelectionTile';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import {
-  DELIVERY_TIME_SLOTS,
+  ANYTIME_DELIVERY_SLOT,
+  AFTERNOON_DELIVERY_SLOT,
+  MIDDAY_DELIVERY_SLOT,
+  MORNING_DELIVERY_SLOT,
   getMinSpecificDeliveryTimeForDate,
   getSpecificDeliveryTimeInvalidReason,
   isDeliveryDateSelectable,
@@ -24,9 +27,10 @@ import { getBangkokYmd, getShopTodayYmd, formatMinutesAsClockTime, DELIVERY_WIND
 const CLOCK_TICK_MS = 30_000;
 const SHAKE_MS = 420;
 
-const MORNING_SLOT = DELIVERY_TIME_SLOTS[0];
-const MIDDAY_SLOT = DELIVERY_TIME_SLOTS[1];
-const EVENING_SLOT = DELIVERY_TIME_SLOTS[2];
+const ANYTIME_SLOT = ANYTIME_DELIVERY_SLOT;
+const MORNING_SLOT = MORNING_DELIVERY_SLOT;
+const MIDDAY_SLOT = MIDDAY_DELIVERY_SLOT;
+const EVENING_SLOT = AFTERNOON_DELIVERY_SLOT;
 
 function buildTimeRestrictionHint({
   lang,
@@ -194,6 +198,10 @@ export function DeliveryTimeSelector({
     };
   }, [customTimeInvalid, specificInputValue, invalidReason]);
 
+  const anytimeOk =
+    !orderingBlocked &&
+    Boolean(date) &&
+    isDeliveryTimeSlotSelectableForDate(date, ANYTIME_SLOT, liveNow, constraint);
   const morningOk =
     !orderingBlocked &&
     Boolean(date) &&
@@ -207,7 +215,7 @@ export function DeliveryTimeSelector({
     Boolean(date) &&
     isDeliveryTimeSlotSelectableForDate(date, EVENING_SLOT, liveNow, constraint);
 
-  const anyWindowOk = morningOk || middayOk || eveningOk;
+  const anyWindowOk = anytimeOk || morningOk || middayOk || eveningOk;
   const someWindowBlocked = !morningOk || !middayOk || !eveningOk;
 
   const restrictionHint = buildTimeRestrictionHint({
@@ -248,6 +256,16 @@ export function DeliveryTimeSelector({
       ) : null}
 
       <div className="delivery-time-selector__tiles" role="group" aria-label={t.deliveryTimeTitle}>
+        <div className="delivery-time-selector__anytime">
+          <SelectionTile
+            compact
+            disabled={!anytimeOk}
+            selected={!customOpen && timeSlot === ANYTIME_SLOT && anytimeOk}
+            title={t.anyTimeTile}
+            subtitle={t.anyTimeSub}
+            onClick={() => selectWindow(ANYTIME_SLOT)}
+          />
+        </div>
         <SelectionTile
           compact
           disabled={!morningOk}
@@ -282,7 +300,6 @@ export function DeliveryTimeSelector({
             isDeliveryDateSelectable(date, liveNow, constraint)
           }
           title={t.customTimeTile}
-          subtitle={t.customTimeSub}
           onClick={openCustom}
         />
       </div>
@@ -368,6 +385,12 @@ export function DeliveryTimeSelector({
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
+        }
+        .delivery-time-selector__anytime {
+          grid-column: 1 / -1;
+        }
+        .delivery-time-selector__anytime :global(.co-tile) {
+          width: 100%;
         }
         :global(.delivery-time-selector__custom.ui-overlay-reveal--open) {
           margin-top: 10px;

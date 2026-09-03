@@ -3,9 +3,18 @@
  * Shared by order create/read and admin delivery edits.
  */
 
-import { DELIVERY_TIME_SLOTS, type DeliveryTimeSlot } from '@/lib/deliveryTimeSelection';
+import {
+  AFTERNOON_DELIVERY_SLOT,
+  ANYTIME_DELIVERY_SLOT,
+  DELIVERY_TIME_SLOTS,
+  EVENING_DELIVERY_SLOT,
+  MIDDAY_DELIVERY_SLOT,
+  MORNING_DELIVERY_SLOT,
+  type DeliveryTimeSlot,
+} from '@/lib/deliveryTimeSelection';
 
 export const DELIVERY_WINDOWS = [
+  'ANYTIME_9_20',
   'MORNING_9_12',
   'MIDDAY_12_15',
   'AFTERNOON_15_18',
@@ -15,17 +24,19 @@ export const DELIVERY_WINDOWS = [
 export type DeliveryWindow = (typeof DELIVERY_WINDOWS)[number];
 
 const WINDOW_TO_SLOT: Record<DeliveryWindow, DeliveryTimeSlot> = {
-  MORNING_9_12: '09:00–12:00',
-  MIDDAY_12_15: '12:00–15:00',
-  AFTERNOON_15_18: '15:00–18:00',
-  EVENING_18_20: '18:00–20:00',
+  ANYTIME_9_20: ANYTIME_DELIVERY_SLOT,
+  MORNING_9_12: MORNING_DELIVERY_SLOT,
+  MIDDAY_12_15: MIDDAY_DELIVERY_SLOT,
+  AFTERNOON_15_18: AFTERNOON_DELIVERY_SLOT,
+  EVENING_18_20: EVENING_DELIVERY_SLOT,
 };
 
 const SLOT_TO_WINDOW: Record<string, DeliveryWindow> = {
-  '09:00–12:00': 'MORNING_9_12',
-  '12:00–15:00': 'MIDDAY_12_15',
-  '15:00–18:00': 'AFTERNOON_15_18',
-  '18:00–20:00': 'EVENING_18_20',
+  [ANYTIME_DELIVERY_SLOT]: 'ANYTIME_9_20',
+  [MORNING_DELIVERY_SLOT]: 'MORNING_9_12',
+  [MIDDAY_DELIVERY_SLOT]: 'MIDDAY_12_15',
+  [AFTERNOON_DELIVERY_SLOT]: 'AFTERNOON_15_18',
+  [EVENING_DELIVERY_SLOT]: 'EVENING_18_20',
 };
 
 export const DELIVERY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -84,6 +95,7 @@ export function deliveryWindowFromTimeSlot(slotOrPreferred: string): DeliveryWin
   if (isDeliveryWindow(s)) return s;
   const mapped = SLOT_TO_WINDOW[s];
   if (mapped) return mapped;
+  if (s.includes(ANYTIME_DELIVERY_SLOT)) return 'ANYTIME_9_20';
   if (s.includes('12:00') && s.includes('15:00')) return 'MIDDAY_12_15';
   if (s.includes('15:00') && s.includes('18:00')) return 'AFTERNOON_15_18';
   if (s.includes('18:00') && s.includes('20:00')) return 'EVENING_18_20';
@@ -92,7 +104,7 @@ export function deliveryWindowFromTimeSlot(slotOrPreferred: string): DeliveryWin
 
 export function timeSlotFromDeliveryWindow(window: string | null | undefined): DeliveryTimeSlot {
   if (window && isDeliveryWindow(window)) return WINDOW_TO_SLOT[window];
-  return '09:00–12:00';
+  return MORNING_DELIVERY_SLOT;
 }
 
 export function preferredTimeSlotFromParts(

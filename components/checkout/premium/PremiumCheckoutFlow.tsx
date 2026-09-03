@@ -1534,6 +1534,11 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
           box-sizing: border-box;
           background: var(--surface);
           color: var(--text);
+        }
+        .co-input:focus {
+          outline: none;
+          border-color: var(--accent);
+        }
         .co-textarea {
           min-height: 88px;
           resize: vertical;
@@ -1571,20 +1576,29 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         }
         .co-phone-row {
           display: flex;
+          align-items: stretch;
           gap: 0;
+          width: 100%;
           border: 1px solid var(--border);
           border-radius: 12px;
-          overflow: visible;
+          overflow: hidden;
+          background: var(--surface);
+        }
+        .co-phone-row:focus-within {
+          border-color: var(--accent);
         }
         .co-phone-cc {
           padding: 0;
           border: none;
           background: transparent;
-          max-width: none;
         }
         .co-phone-num {
+          flex: 1;
+          min-width: 0;
+          width: auto !important;
           border: none !important;
           border-radius: 0 12px 12px 0 !important;
+          box-shadow: none;
         }
         .co-surprise {
           display: flex;
@@ -1612,6 +1626,27 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
         }
         .co-recipient-fields {
           margin-top: 0;
+        }
+        .premium-checkout .co-recipient-fields .co-phone-row {
+          display: flex;
+          align-items: stretch;
+          gap: 0;
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          overflow: hidden;
+          background: var(--surface);
+        }
+        .premium-checkout .co-recipient-fields .co-phone-row:focus-within {
+          border-color: var(--accent);
+        }
+        .premium-checkout .co-recipient-fields .co-phone-row .co-input.co-phone-num {
+          flex: 1;
+          min-width: 0;
+          width: auto;
+          border: none !important;
+          border-radius: 0 12px 12px 0 !important;
+          box-shadow: none;
         }
         .co-opt-in-chip-row {
           display: flex;

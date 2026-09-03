@@ -4,11 +4,14 @@
  */
 
 import {
+  ANYTIME_DELIVERY_SLOT,
+  getEarliestSelectableDeliverySchedule,
   isDeliveryDateSelectable,
   isDeliveryTimeSlotSelectableForDate,
   isPreferredTimeSlotValid,
   resolveDeliverySchedule,
 } from './deliveryTimeSelection';
+import { deliveryWindowFromTimeSlot } from './orders/deliveryFields';
 import type { DeliveryConstraint } from './delivery/deliveryConstraints';
 import { getBangkokYmd, getShopTodayYmd } from './deliveryHours';
 
@@ -159,6 +162,54 @@ const blocked: DeliveryConstraint = {
 assert(
   !isPreferredTimeSlotValid('2026-07-10 09:00–12:00', bangkokPastMidnight, blocked),
   'coming_soon blocks all slots'
+);
+
+// Any time (09:00–20:00) is the default window
+const earliest = getEarliestSelectableDeliverySchedule(
+  getShopTodayYmd(bangkokPastMidnight),
+  bangkokPastMidnight
+);
+assert(earliest.timeSlot === ANYTIME_DELIVERY_SLOT, 'earliest schedule defaults to any time 09:00–20:00');
+assert(earliest.deliveryTimeMode === 'window', 'earliest schedule uses window mode');
+assert(bumped.timeSlot === ANYTIME_DELIVERY_SLOT, 'bumped past date defaults to any time');
+
+assert(
+  deliveryWindowFromTimeSlot('09:00–20:00') === 'ANYTIME_9_20',
+  'slot 09:00–20:00 maps to ANYTIME_9_20'
+);
+assert(
+  deliveryWindowFromTimeSlot('2026-07-10 09:00–20:00') === 'ANYTIME_9_20',
+  'preferredTimeSlot with any-time window maps to ANYTIME_9_20'
+);
+assert(
+  deliveryWindowFromTimeSlot('09:00–12:00') === 'MORNING_9_12',
+  'morning slot still maps to MORNING_9_12'
+);
+
+const sixPmBangkok = new Date('2026-07-08T11:00:00.000Z'); // 18:00 +07
+assert(
+  isDeliveryTimeSlotSelectableForDate('2026-07-08', ANYTIME_DELIVERY_SLOT, sixPmBangkok),
+  'any time stays selectable in the evening while 1 h remains before 20:00'
+);
+assert(
+  !isDeliveryTimeSlotSelectableForDate('2026-07-08', '09:00–12:00', sixPmBangkok),
+  'morning window is closed at 18:00'
+);
+
+const sevenPmBangkok = new Date('2026-07-08T12:00:00.000Z'); // 19:00 +07
+assert(
+  !isDeliveryTimeSlotSelectableForDate('2026-07-08', ANYTIME_DELIVERY_SLOT, sevenPmBangkok),
+  'any time closes 1 hour before 20:00'
+);
+
+const keptMorning = resolveDeliverySchedule(
+  { date: '2026-07-10', timeSlot: '09:00–12:00', deliveryTimeMode: 'window' },
+  getShopTodayYmd(bangkokPastMidnight),
+  bangkokPastMidnight
+);
+assert(
+  keptMorning.timeSlot === '09:00–12:00' && keptMorning.deliveryTimeMode === 'window',
+  'existing morning selection is kept when still valid'
 );
 
 console.log('deliveryTimeSelection.test.ts: all assertions passed');

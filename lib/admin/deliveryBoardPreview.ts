@@ -3,13 +3,20 @@ import type { Order } from '@/lib/orders';
 import { getOrderGiftCardDisplayLines } from '@/lib/orders/giftCardMessages';
 
 const WINDOW_ORDER: Record<string, number> = {
-  MORNING_9_12: 0,
-  MIDDAY_12_15: 1,
-  AFTERNOON_15_18: 2,
-  EVENING_18_20: 3,
+  ANYTIME_9_20: 0,
+  MORNING_9_12: 1,
+  MIDDAY_12_15: 2,
+  AFTERNOON_15_18: 3,
+  EVENING_18_20: 4,
 };
 
-export type DeliveryDayPart = 'morning' | 'midday' | 'afternoon' | 'evening' | 'unknown';
+export type DeliveryDayPart =
+  | 'anytime'
+  | 'morning'
+  | 'midday'
+  | 'afternoon'
+  | 'evening'
+  | 'unknown';
 
 export function deliveryWindowRank(window: string | null | undefined): number {
   if (!window?.trim()) return 99;
@@ -18,6 +25,7 @@ export function deliveryWindowRank(window: string | null | undefined): number {
 
 export function dayPartFromWindow(window: string | null | undefined): DeliveryDayPart {
   const w = (window ?? '').trim();
+  if (w === 'ANYTIME_9_20') return 'anytime';
   if (w === 'MORNING_9_12') return 'morning';
   if (w === 'MIDDAY_12_15') return 'midday';
   if (w === 'AFTERNOON_15_18') return 'afternoon';
@@ -26,6 +34,7 @@ export function dayPartFromWindow(window: string | null | undefined): DeliveryDa
 }
 
 const WINDOW_LABEL: Record<string, string> = {
+  ANYTIME_9_20: '09:00–20:00',
   MORNING_9_12: '09:00–12:00',
   MIDDAY_12_15: '12:00–15:00',
   AFTERNOON_15_18: '15:00–18:00',
@@ -276,6 +285,7 @@ export function groupOrdersByDayPart(
   list: SupabaseOrderRow[]
 ): Record<DeliveryDayPart, SupabaseOrderRow[]> {
   const empty: Record<DeliveryDayPart, SupabaseOrderRow[]> = {
+    anytime: [],
     morning: [],
     midday: [],
     afternoon: [],

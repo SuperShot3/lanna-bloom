@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from './server';
 import type { Order } from '@/lib/orders';
 
 export type DeliveryWindow =
+  | 'ANYTIME_9_20'
   | 'MORNING_9_12'
   | 'MIDDAY_12_15'
   | 'AFTERNOON_15_18'
@@ -21,6 +22,7 @@ export type SupabaseOrderStatus =
 export type SupabasePaymentStatus = 'NOT_PAID' | 'PAID' | 'CANCELLED' | 'ERROR';
 
 function mapPreferredTimeSlotToWindow(slot: string): DeliveryWindow {
+  if (slot.includes('09:00–20:00')) return 'ANYTIME_9_20';
   if (slot.includes('12:00–15:00')) return 'MIDDAY_12_15';
   if (slot.includes('15:00–18:00')) return 'AFTERNOON_15_18';
   if (slot.includes('18:00–20:00')) return 'EVENING_18_20';

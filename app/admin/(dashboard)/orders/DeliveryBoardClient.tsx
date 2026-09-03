@@ -1226,6 +1226,13 @@ export function DeliveryBoardClient({
   };
 
   const dayPartSections: { id: string; title: string; count: number; orders: SupabaseOrderRow[]; icon: string }[] = [
+    {
+      id: 'anytime',
+      title: 'Any time',
+      count: grouped.anytime.length,
+      orders: grouped.anytime,
+      icon: 'schedule',
+    },
     { id: 'morning', title: 'Morning', count: grouped.morning.length, orders: grouped.morning, icon: 'wb_sunny' },
     {
       id: 'midday',

@@ -20,12 +20,13 @@ import {
 } from '@/lib/checkout/checkoutFieldLimits';
 import { DELIVERY_ADDRESS_MIN_CHARS } from '@/lib/checkout/premiumCheckoutValidation';
 import {
-  DELIVERY_TIME_SLOTS,
+  CHECKOUT_WINDOW_SLOTS,
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
 } from '@/lib/deliveryTimeSelection';
 
 export {
+  CHECKOUT_WINDOW_SLOTS,
   DELIVERY_TIME_SLOTS,
   getSelectableDeliveryTimeSlotsForDate,
   isDeliveryTimeSlotSelectableForDate,
@@ -349,7 +350,7 @@ export function DeliveryForm({
                   aria-label={t.preferredTime}
                 >
                   <option value="">{t.selectTimeSlot}</option>
-                  {DELIVERY_TIME_SLOTS.map((slot) => (
+                  {CHECKOUT_WINDOW_SLOTS.map((slot) => (
                     <option
                       key={slot}
                       value={slot}

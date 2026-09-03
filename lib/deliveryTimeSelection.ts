@@ -7,15 +7,30 @@ import {
 } from '@/lib/deliveryHours';
 import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
 
-/** Four delivery windows from 09:00 to 20:00 (Bangkok). */
+export const ANYTIME_DELIVERY_SLOT = '09:00–20:00';
+export const MORNING_DELIVERY_SLOT = '09:00–12:00';
+export const MIDDAY_DELIVERY_SLOT = '12:00–15:00';
+export const AFTERNOON_DELIVERY_SLOT = '15:00–18:00';
+export const EVENING_DELIVERY_SLOT = '18:00–20:00';
+
+/** All persisted windows from 09:00 to 20:00 (Bangkok). Any time is first so it is the default. */
 export const DELIVERY_TIME_SLOTS = [
-  '09:00–12:00',
-  '12:00–15:00',
-  '15:00–18:00',
-  '18:00–20:00',
+  ANYTIME_DELIVERY_SLOT,
+  MORNING_DELIVERY_SLOT,
+  MIDDAY_DELIVERY_SLOT,
+  AFTERNOON_DELIVERY_SLOT,
+  EVENING_DELIVERY_SLOT,
 ] as const;
 
 export type DeliveryTimeSlot = (typeof DELIVERY_TIME_SLOTS)[number];
+
+/** Customer-facing checkout chips / dropdowns (excludes unused 18:00–20:00 evening slot). */
+export const CHECKOUT_WINDOW_SLOTS = [
+  ANYTIME_DELIVERY_SLOT,
+  MORNING_DELIVERY_SLOT,
+  MIDDAY_DELIVERY_SLOT,
+  AFTERNOON_DELIVERY_SLOT,
+] as const;
 
 /** Minimum lead time before a specific delivery time (minutes). */
 export const DELIVERY_MIN_LEAD_MINUTES = 60;
