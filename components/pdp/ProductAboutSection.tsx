@@ -77,22 +77,20 @@ export function ProductAboutSection({
 
   return (
     <section className={styles.aboutSection} id="product-about">
-      <h2 className={styles.aboutHeading}>
-        {t.productIntroduction ?? t.aboutHeading ?? 'Product introduction'}
-      </h2>
+      <h2 className={styles.aboutHeading}>{t.productIntroduction}</h2>
       {description ? (
         <p className={styles.aboutDesc}>{description}</p>
       ) : null}
 
       {note ? (
-        <aside className={styles.teamNote} aria-label={t.teamNoteHeading ?? 'A note from our team'}>
-          <h3 className={styles.teamNoteHeading}>{t.teamNoteHeading ?? 'A note from our team'}</h3>
+        <aside className={styles.teamNote} aria-label={t.teamNoteHeading}>
+          <h3 className={styles.teamNoteHeading}>{t.teamNoteHeading}</h3>
           <p className={styles.teamNoteText}>{note}</p>
         </aside>
       ) : null}
 
       {compositionText ? (
-        <AccordionRow heading={t.arrangementDetails ?? t.composition ?? 'Arrangement details'}>
+        <AccordionRow heading={t.arrangementDetails}>
           <CompositionLines
             text={compositionText}
             className={styles.compositionRowText}

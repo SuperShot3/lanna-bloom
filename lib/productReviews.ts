@@ -4,6 +4,7 @@ import type { Locale } from '@/lib/i18n';
 import {
   computeProductReviewStats,
   isProductReviewUuid,
+  type ProductReviewStats,
   type ProductReviewStatus,
 } from '@/lib/productReviewsLogic';
 
