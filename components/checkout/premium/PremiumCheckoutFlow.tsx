@@ -513,6 +513,14 @@ export function PremiumCheckoutFlow(props: PremiumCheckoutFlowProps) {
               removePinLabel: (tBuyNow as { removePinLabel?: string }).removePinLabel ?? 'Remove',
               zoomInLabel: (tBuyNow as { zoomInLabel?: string }).zoomInLabel ?? 'Zoom in',
               zoomOutLabel: (tBuyNow as { zoomOutLabel?: string }).zoomOutLabel ?? 'Zoom out',
+              locationSavedLabel:
+                (tBuyNow as { locationSavedLabel?: string }).locationSavedLabel ?? 'Location saved',
+              pastePlaceholder:
+                (tBuyNow as { pasteMapsOrCoordsPlaceholder?: string }).pasteMapsOrCoordsPlaceholder ??
+                'Paste a Google Maps link or latitude, longitude',
+              pasteInvalidLabel:
+                (tBuyNow as { pasteMapsOrCoordsInvalid?: string }).pasteMapsOrCoordsInvalid ??
+                'Paste a Google Maps link or coordinates (for example 18.7883, 98.9853).',
             }}
           />
         </div>

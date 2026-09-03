@@ -9,6 +9,7 @@ import {
 import { NotchedField } from '@/components/checkout/NotchedField';
 import { CHECKOUT_FIELD_LIMITS, clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import { buildDriverMapsSearchUrl } from '@/lib/google/buildDriverMapsUrl';
+import { isValidGoogleMapsUrl } from '@/lib/googleMapsUrl';
 import type { Locale } from '@/lib/i18n';
 
 export function DeliveryAddressFields({
@@ -45,6 +46,9 @@ export function DeliveryAddressFields({
     removePinLabel: string;
     zoomInLabel: string;
     zoomOutLabel: string;
+    locationSavedLabel: string;
+    pastePlaceholder: string;
+    pasteInvalidLabel: string;
   };
 }) {
   const [addressDraft, setAddressDraft] = useState(
@@ -102,16 +106,27 @@ export function DeliveryAddressFields({
   const addressId = `${inputId}-manual`;
   const mapId = `${inputId}-map`;
   const noteId = `${inputId}-note`;
-  const pinValue: DeliveryLocationValue | null =
-    typeof value.deliveryLat === 'number' && typeof value.deliveryLng === 'number'
-      ? {
-          lat: value.deliveryLat,
-          lng: value.deliveryLng,
-          googleMapsUrl:
-            value.deliveryGoogleMapsUrl ??
-            buildDriverMapsSearchUrl(value.deliveryLat, value.deliveryLng),
-        }
-      : null;
+  const pinValue: DeliveryLocationValue | null = (() => {
+    const lat = value.deliveryLat;
+    const lng = value.deliveryLng;
+    if (
+      typeof lat === 'number' &&
+      Number.isFinite(lat) &&
+      typeof lng === 'number' &&
+      Number.isFinite(lng)
+    ) {
+      return {
+        lat,
+        lng,
+        googleMapsUrl: value.deliveryGoogleMapsUrl ?? buildDriverMapsSearchUrl(lat, lng),
+      };
+    }
+    const mapsUrl = value.deliveryGoogleMapsUrl?.trim() ?? '';
+    if (mapsUrl && isValidGoogleMapsUrl(mapsUrl)) {
+      return { lat: null, lng: null, googleMapsUrl: mapsUrl };
+    }
+    return null;
+  })();
 
   return (
     <div className={`co-address${highlight ? ' co-address--highlight' : ''}`}>
@@ -152,6 +167,9 @@ export function DeliveryAddressFields({
           removePinLabel={labels.removePinLabel}
           zoomInLabel={labels.zoomInLabel}
           zoomOutLabel={labels.zoomOutLabel}
+          locationSavedLabel={labels.locationSavedLabel}
+          pastePlaceholder={labels.pastePlaceholder}
+          pasteInvalidLabel={labels.pasteInvalidLabel}
         />
       </NotchedField>
 

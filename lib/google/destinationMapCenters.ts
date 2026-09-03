@@ -21,3 +21,12 @@ export function mapCenterForDestination(
   }
   return DESTINATION_MAP_CENTERS.CHIANG_MAI;
 }
+
+/** Open Google Maps centered on the destination when the customer has not set a pin yet. */
+export function buildDestinationMapsUrl(
+  destinationId?: string | null,
+  zoom = 13
+): string {
+  const c = mapCenterForDestination(destinationId);
+  return `https://www.google.com/maps/@${c.lat},${c.lng},${zoom}z`;
+}

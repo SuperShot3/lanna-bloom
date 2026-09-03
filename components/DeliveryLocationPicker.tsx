@@ -1,13 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CHECKOUT_FIELD_LIMITS, clipCheckoutField } from '@/lib/checkout/checkoutFieldLimits';
 import { buildDriverMapsSearchUrl } from '@/lib/google/buildDriverMapsUrl';
-import { mapCenterForDestination } from '@/lib/google/destinationMapCenters';
+import {
+  buildDestinationMapsUrl,
+  mapCenterForDestination,
+} from '@/lib/google/destinationMapCenters';
 import { getGoogleMapsApiKey, loadGoogleMapsScript } from '@/lib/google/loadGoogleMapsScript';
+import { parseDeliveryLocationInput } from '@/lib/google/parseDeliveryLocationInput';
 
 export interface DeliveryLocationValue {
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   googleMapsUrl: string;
 }
 
@@ -15,6 +20,18 @@ const ZOOM = 13;
 
 export function buildGoogleMapsUrl(lat: number, lng: number): string {
   return buildDriverMapsSearchUrl(lat, lng);
+}
+
+export function locationHasCoords(
+  v: DeliveryLocationValue | null
+): v is DeliveryLocationValue & { lat: number; lng: number } {
+  return (
+    v != null &&
+    typeof v.lat === 'number' &&
+    Number.isFinite(v.lat) &&
+    typeof v.lng === 'number' &&
+    Number.isFinite(v.lng)
+  );
 }
 
 type GoogleLatLng = { lat: () => number; lng: () => number };
@@ -64,12 +81,18 @@ function getGoogleMapsApi(): GoogleMapsApi | null {
   return maps?.Map && maps?.Marker ? maps : null;
 }
 
-function toPin(lat: number, lng: number): DeliveryLocationValue {
+function toPin(lat: number, lng: number, googleMapsUrl?: string): DeliveryLocationValue {
   return {
     lat,
     lng,
-    googleMapsUrl: buildDriverMapsSearchUrl(lat, lng),
+    googleMapsUrl: googleMapsUrl || buildDriverMapsSearchUrl(lat, lng),
   };
+}
+
+function displayTextForLocation(v: DeliveryLocationValue | null): string {
+  if (!v) return '';
+  if (locationHasCoords(v)) return `${v.lat}, ${v.lng}`;
+  return v.googleMapsUrl;
 }
 
 export function DeliveryLocationPicker({
@@ -86,10 +109,13 @@ export function DeliveryLocationPicker({
   confirmPinYes = 'Yes',
   confirmPinNo = 'No',
   pinConfirmedLabel = 'Pin confirmed',
+  locationSavedLabel = 'Location saved',
   editPinLabel = 'Edit',
   removePinLabel = 'Remove',
   zoomInLabel = 'Zoom in',
   zoomOutLabel = 'Zoom out',
+  pastePlaceholder = 'Paste a Google Maps link or latitude, longitude',
+  pasteInvalidLabel = 'Paste a Google Maps link or coordinates (for example 18.7883, 98.9853).',
 }: {
   value: DeliveryLocationValue | null;
   onChange: (v: DeliveryLocationValue | null) => void;
@@ -104,10 +130,13 @@ export function DeliveryLocationPicker({
   confirmPinYes?: string;
   confirmPinNo?: string;
   pinConfirmedLabel?: string;
+  locationSavedLabel?: string;
   editPinLabel?: string;
   removePinLabel?: string;
   zoomInLabel?: string;
   zoomOutLabel?: string;
+  pastePlaceholder?: string;
+  pasteInvalidLabel?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<GoogleMap | null>(null);
@@ -117,6 +146,7 @@ export function DeliveryLocationPicker({
   const onChangeRef = useRef(onChange);
   const destinationIdRef = useRef(destinationId);
   const draftRef = useRef<DeliveryLocationValue | null>(null);
+  const pasteFocusedRef = useRef(false);
   valueRef.current = value;
   onChangeRef.current = onChange;
   destinationIdRef.current = destinationId;
@@ -125,11 +155,20 @@ export function DeliveryLocationPicker({
   const [unavailable, setUnavailable] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<DeliveryLocationValue | null>(null);
+  const [pasteText, setPasteText] = useState(() => displayTextForLocation(value));
+  const [pasteError, setPasteError] = useState(false);
   draftRef.current = draft;
   const apiKey = getGoogleMapsApiKey();
 
   const confirmed = value != null && !editing;
   const mapOpen = mounted && !unavailable && !confirmed;
+  const showEditor = !confirmed;
+  const shownPin = draft ?? value;
+
+  const openMapsHref =
+    shownPin?.googleMapsUrl ||
+    value?.googleMapsUrl ||
+    buildDestinationMapsUrl(destinationId, ZOOM);
 
   const clearMarker = useCallback(() => {
     if (markerRef.current) {
@@ -163,13 +202,60 @@ export function DeliveryLocationPicker({
   }, []);
 
   const placeDraft = useCallback(
-    (lat: number, lng: number) => {
+    (lat: number, lng: number, googleMapsUrl?: string) => {
       const maps = getGoogleMapsApi();
       const map = mapRef.current;
       if (maps && map) syncMarker(maps, map, lat, lng);
-      setDraft(toPin(lat, lng));
+      setDraft(toPin(lat, lng, googleMapsUrl));
     },
     [syncMarker]
+  );
+
+  const applyPaste = useCallback(
+    (raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        setPasteError(false);
+        return;
+      }
+      const parsed = parseDeliveryLocationInput(trimmed);
+      if (parsed.kind === 'invalid') {
+        setPasteError(true);
+        return;
+      }
+      if (parsed.kind === 'mapsUrl' && parsed.url.length > CHECKOUT_FIELD_LIMITS.googleMapsUrl) {
+        setPasteError(true);
+        return;
+      }
+      setPasteError(false);
+
+      if (parsed.kind === 'coords') {
+        if (unavailable) {
+          onChangeRef.current(toPin(parsed.lat, parsed.lng));
+          setDraft(null);
+          setEditing(false);
+          return;
+        }
+        placeDraft(parsed.lat, parsed.lng);
+        return;
+      }
+
+      if (parsed.lat != null && parsed.lng != null) {
+        if (unavailable) {
+          onChangeRef.current(toPin(parsed.lat, parsed.lng, parsed.url));
+          setDraft(null);
+          setEditing(false);
+          return;
+        }
+        placeDraft(parsed.lat, parsed.lng, parsed.url);
+        return;
+      }
+
+      onChangeRef.current({ lat: null, lng: null, googleMapsUrl: parsed.url });
+      setDraft(null);
+      setEditing(false);
+    },
+    [placeDraft, unavailable]
   );
 
   useEffect(() => {
@@ -179,6 +265,15 @@ export function DeliveryLocationPicker({
   useEffect(() => {
     if (highlight && value) setEditing(true);
   }, [highlight, value]);
+
+  useEffect(() => {
+    if (confirmed) {
+      pasteFocusedRef.current = false;
+      setPasteError(false);
+    }
+    if (pasteFocusedRef.current) return;
+    setPasteText(displayTextForLocation(draft ?? value));
+  }, [draft, value, confirmed]);
 
   useEffect(() => {
     if (!mapOpen) return;
@@ -200,7 +295,7 @@ export function DeliveryLocationPicker({
         }
 
         const current = draftRef.current ?? valueRef.current;
-        const center = current
+        const center = locationHasCoords(current)
           ? { lat: current.lat, lng: current.lng }
           : mapCenterForDestination(destinationIdRef.current);
         const map = new maps.Map(containerRef.current, {
@@ -222,7 +317,7 @@ export function DeliveryLocationPicker({
         });
         listenersRef.current.push(dblClickListener);
 
-        if (current) {
+        if (locationHasCoords(current)) {
           syncMarker(maps, map, current.lat, current.lng);
         }
       } catch {
@@ -252,7 +347,7 @@ export function DeliveryLocationPicker({
     const maps = typeof window !== 'undefined' ? getGoogleMapsApi() : null;
     if (!map || !maps || !mapOpen) return;
     const shown = draft ?? value;
-    if (shown) {
+    if (locationHasCoords(shown)) {
       syncMarker(maps, map, shown.lat, shown.lng);
       map.panTo({ lat: shown.lat, lng: shown.lng });
       return;
@@ -294,10 +389,14 @@ export function DeliveryLocationPicker({
     onChange(null);
     setDraft(null);
     setEditing(false);
+    setPasteText('');
+    setPasteError(false);
     clearMarker();
   };
 
-  const shownPin = draft ?? value;
+  const pasteId = `${mapElementId}-paste`;
+  const pasteErrorId = `${mapElementId}-paste-error`;
+  const showConfirm = mapOpen && locationHasCoords(shownPin);
 
   return (
     <div
@@ -318,7 +417,9 @@ export function DeliveryLocationPicker({
               />
             </svg>
           </span>
-          <p className="delivery-location-confirmed-label">{pinConfirmedLabel}</p>
+          <p className="delivery-location-confirmed-label">
+            {locationHasCoords(value) ? pinConfirmedLabel : locationSavedLabel}
+          </p>
           <a
             href={value.googleMapsUrl}
             target="_blank"
@@ -340,6 +441,19 @@ export function DeliveryLocationPicker({
         </div>
       ) : null}
 
+      {showEditor ? (
+        <div className="delivery-location-toolbar">
+          <a
+            href={openMapsHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="delivery-location-gmaps-btn"
+          >
+            {openInGoogleMapsLabel}
+          </a>
+        </div>
+      ) : null}
+
       {mapOpen ? (
         <>
           <div className="delivery-location-map-frame">
@@ -358,7 +472,7 @@ export function DeliveryLocationPicker({
                 −
               </button>
             </div>
-            {shownPin ? (
+            {showConfirm ? (
               <div className="delivery-location-confirm" role="dialog" aria-label={confirmPinQuestion}>
                 <p className="delivery-location-confirm-q">{confirmPinQuestion}</p>
                 <div className="delivery-location-confirm-row">
@@ -368,14 +482,6 @@ export function DeliveryLocationPicker({
                   <button type="button" className="delivery-location-confirm-no" onClick={handleConfirmNo}>
                     {confirmPinNo}
                   </button>
-                  <a
-                    href={shownPin.googleMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="delivery-location-gmaps-btn delivery-location-gmaps-btn--inline"
-                  >
-                    {openInGoogleMapsLabel}
-                  </a>
                 </div>
               </div>
             ) : null}
@@ -390,6 +496,55 @@ export function DeliveryLocationPicker({
         <p className="delivery-location-readout" aria-live="polite">
           {mapUnavailableLabel}
         </p>
+      ) : null}
+
+      {showEditor ? (
+        <div className="delivery-location-paste">
+          <label htmlFor={pasteId} className="visually-hidden">
+            {pastePlaceholder}
+          </label>
+          <input
+            id={pasteId}
+            type="text"
+            className="delivery-location-paste-input"
+            value={pasteText}
+            placeholder={pastePlaceholder}
+            maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
+            autoComplete="off"
+            aria-invalid={pasteError}
+            aria-describedby={pasteError ? pasteErrorId : undefined}
+            onChange={(e) => {
+              const next = clipCheckoutField(e.target.value, 'googleMapsUrl');
+              setPasteText(next);
+              if (pasteError) setPasteError(false);
+            }}
+            onFocus={() => {
+              pasteFocusedRef.current = true;
+            }}
+            onBlur={() => {
+              pasteFocusedRef.current = false;
+              applyPaste(pasteText);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              applyPaste(pasteText);
+            }}
+            onPaste={(e) => {
+              const text = e.clipboardData.getData('text');
+              if (!text.trim()) return;
+              e.preventDefault();
+              const clipped = clipCheckoutField(text, 'googleMapsUrl');
+              setPasteText(clipped);
+              queueMicrotask(() => applyPaste(clipped));
+            }}
+          />
+          {pasteError ? (
+            <p id={pasteErrorId} className="delivery-location-paste-error" role="alert">
+              {pasteInvalidLabel}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <style jsx>{`
@@ -422,6 +577,13 @@ export function DeliveryLocationPicker({
           .delivery-location-map-wrap {
             height: 360px;
           }
+        }
+        .delivery-location-toolbar {
+          display: flex;
+          justify-content: flex-end;
+          padding: 8px 10px;
+          border-bottom: 1px solid var(--border);
+          background: var(--surface);
         }
         .delivery-location-zoom {
           position: absolute;
@@ -507,6 +669,45 @@ export function DeliveryLocationPicker({
           padding: 8px 12px 10px;
           line-height: 1.4;
         }
+        .delivery-location-paste {
+          padding: 0 10px 10px;
+        }
+        .delivery-location-paste-input {
+          width: 100%;
+          min-height: 44px;
+          padding: 10px 12px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          font-size: 16px;
+          font-family: inherit;
+          color: var(--text);
+          background: var(--surface);
+          box-sizing: border-box;
+        }
+        .delivery-location-paste-input:focus {
+          outline: none;
+          border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+        }
+        .delivery-location-paste-input[aria-invalid='true'] {
+          border-color: #b91c1c;
+        }
+        .delivery-location-paste-error {
+          margin: 6px 2px 0;
+          font-size: 0.78rem;
+          line-height: 1.4;
+          color: #b91c1c;
+        }
+        .visually-hidden {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
         .delivery-location-confirmed {
           display: flex;
           align-items: center;
@@ -562,9 +763,6 @@ export function DeliveryLocationPicker({
           border-radius: 8px;
           text-decoration: none;
           white-space: nowrap;
-        }
-        .delivery-location-gmaps-btn--inline {
-          margin-left: auto;
         }
         .delivery-location-gmaps-btn:hover {
           background: #a88b5c;
