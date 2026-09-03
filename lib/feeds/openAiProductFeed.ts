@@ -7,6 +7,7 @@ import {
   type DisplayCategory,
 } from '@/lib/catalogCategories';
 import type { CatalogProduct } from '@/lib/catalog/types';
+import { feedIdentifierExists, feedMpn } from '@/lib/catalog/productCode';
 import {
   compactFeedId,
   DEFAULT_BASE_URL,
@@ -36,6 +37,7 @@ export const OPENAI_FEED_HEADERS = [
   'price',
   'sale_price',
   'brand',
+  'mpn',
   'identifier_exists',
   'item_group_id',
   'item_group_title',
@@ -205,6 +207,7 @@ function emitVariantRows(args: {
   discountPercent?: number;
   options: BouquetSellableOption[];
   seller: ReturnType<typeof sellerUrls>;
+  productCode?: string;
 }): void {
   const optionCount = args.options.length;
   const grouped = optionCount > 1;
@@ -246,6 +249,7 @@ function emitVariantRows(args: {
       continue;
     }
 
+    const mpn = feedMpn(args.productCode);
     pushRow(args.rows, [
       compactFeedId(sku),
       title,
@@ -258,7 +262,8 @@ function emitVariantRows(args: {
       formatFeedPrice(listThb),
       salePriceField(listThb, args.discountPercent),
       FEED_BRAND,
-      'no',
+      mpn,
+      feedIdentifierExists(mpn),
       itemGroupId,
       itemGroupTitle,
       args.taxonomyId,
@@ -329,6 +334,7 @@ export function buildOpenAiProductFeed(input: OpenAiProductFeedInput): OpenAiPro
       discountPercent: bouquet.discountPercent,
       options,
       seller,
+      productCode: bouquet.productCode,
     });
   }
 
@@ -383,6 +389,7 @@ export function buildOpenAiProductFeed(input: OpenAiProductFeedInput): OpenAiPro
       discountPercent: product.discountPercent,
       options,
       seller,
+      productCode: product.productCode,
     });
   }
 

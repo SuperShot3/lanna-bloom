@@ -306,46 +306,37 @@ export function DeliveryLocationPicker({
     >
       {confirmed && value ? (
         <div className="delivery-location-confirmed" aria-live="polite">
-          <div className="delivery-location-confirmed-top">
-            <span className="delivery-location-check" aria-hidden>
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="10" fill="#16a34a" />
-                <path
-                  d="M6 10.2 8.6 12.8 14.2 7.2"
-                  stroke="#fff"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <div className="delivery-location-confirmed-copy">
-              <p className="delivery-location-confirmed-label">{pinConfirmedLabel}</p>
-              <p className="delivery-location-card-coords">
-                {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-              </p>
-            </div>
-            <a
-              href={value.googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="delivery-location-gmaps-btn"
-            >
-              {openInGoogleMapsLabel}
-            </a>
-          </div>
-          <div className="delivery-location-confirmed-actions">
-            <button type="button" className="delivery-location-mini-btn" onClick={handleEdit}>
-              {editPinLabel}
-            </button>
-            <button
-              type="button"
-              className="delivery-location-mini-btn delivery-location-mini-btn--remove"
-              onClick={handleRemove}
-            >
-              {removePinLabel}
-            </button>
-          </div>
+          <span className="delivery-location-check" aria-hidden>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="10" fill="#16a34a" />
+              <path
+                d="M6 10.2 8.6 12.8 14.2 7.2"
+                stroke="#fff"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <p className="delivery-location-confirmed-label">{pinConfirmedLabel}</p>
+          <a
+            href={value.googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="delivery-location-gmaps-btn"
+          >
+            {openInGoogleMapsLabel}
+          </a>
+          <button type="button" className="delivery-location-mini-btn" onClick={handleEdit}>
+            {editPinLabel}
+          </button>
+          <button
+            type="button"
+            className="delivery-location-mini-btn delivery-location-mini-btn--remove"
+            onClick={handleRemove}
+          >
+            {removePinLabel}
+          </button>
         </div>
       ) : null}
 
@@ -404,6 +395,10 @@ export function DeliveryLocationPicker({
       <style jsx>{`
         .delivery-location-picker {
           margin-top: 0;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          background: var(--surface);
+          overflow: hidden;
         }
         .delivery-location-map-frame {
           position: relative;
@@ -411,15 +406,17 @@ export function DeliveryLocationPicker({
         .delivery-location-map-wrap {
           height: 280px;
           width: 100%;
-          border-radius: 14px;
-          border: 1px solid var(--border);
+          border: none;
           overflow: hidden;
           background: var(--pastel-cream);
         }
         .delivery-location-picker--highlight .delivery-location-map-wrap,
-        .delivery-location-picker--highlight .delivery-location-confirmed {
+        .delivery-location-picker--highlight {
           border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
           box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 65%, transparent);
+        }
+        .delivery-location-picker:has(.delivery-location-confirmed) {
+          border-color: color-mix(in srgb, #16a34a 38%, var(--border));
         }
         @media (min-width: 768px) {
           .delivery-location-map-wrap {
@@ -480,8 +477,8 @@ export function DeliveryLocationPicker({
         .delivery-location-confirm-row {
           display: flex;
           align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
+          gap: 6px;
+          flex-wrap: nowrap;
         }
         .delivery-location-confirm-yes,
         .delivery-location-confirm-no {
@@ -504,58 +501,49 @@ export function DeliveryLocationPicker({
           color: var(--text);
         }
         .delivery-location-readout {
-          font-size: 0.85rem;
-          color: var(--text-muted);
-          margin: 10px 0 0;
-          line-height: 1.45;
-        }
-        .delivery-location-confirmed {
-          padding: 14px 16px;
-          background: color-mix(in srgb, #16a34a 10%, var(--surface));
-          border: 1px solid color-mix(in srgb, #16a34a 38%, var(--border));
-          border-radius: 14px;
-        }
-        .delivery-location-confirmed-top {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-        }
-        .delivery-location-check {
-          flex-shrink: 0;
-          margin-top: 1px;
-        }
-        .delivery-location-confirmed-copy {
-          flex: 1;
-          min-width: 0;
-        }
-        .delivery-location-confirmed-label {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: #166534;
-          margin: 0 0 2px;
-        }
-        .delivery-location-card-coords {
           font-size: 0.8rem;
           color: var(--text-muted);
           margin: 0;
+          padding: 8px 12px 10px;
+          line-height: 1.4;
         }
-        .delivery-location-confirmed-actions {
+        .delivery-location-confirmed {
           display: flex;
-          justify-content: flex-end;
-          gap: 8px;
-          margin-top: 12px;
+          align-items: center;
+          gap: 6px;
+          min-height: 44px;
+          padding: 6px 8px 6px 10px;
+          background: color-mix(in srgb, #16a34a 10%, var(--surface));
+          flex-wrap: nowrap;
+        }
+        .delivery-location-check {
+          flex-shrink: 0;
+          display: flex;
+        }
+        .delivery-location-confirmed-label {
+          flex: 1;
+          min-width: 0;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #166534;
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .delivery-location-mini-btn {
-          min-height: 32px;
-          padding: 0 12px;
+          flex-shrink: 0;
+          min-height: 30px;
+          padding: 0 8px;
           border-radius: 8px;
           border: 1px solid var(--border);
           background: var(--surface);
           color: var(--text);
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-weight: 600;
           font-family: inherit;
           cursor: pointer;
+          white-space: nowrap;
         }
         .delivery-location-mini-btn--remove {
           color: #b91c1c;
@@ -565,12 +553,13 @@ export function DeliveryLocationPicker({
           margin-left: auto;
           display: inline-flex;
           align-items: center;
-          padding: 8px 12px;
-          font-size: 0.78rem;
+          padding: 0 8px;
+          min-height: 30px;
+          font-size: 0.72rem;
           font-weight: 600;
           color: #fff;
           background: var(--accent);
-          border-radius: var(--radius-sm);
+          border-radius: 8px;
           text-decoration: none;
           white-space: nowrap;
         }

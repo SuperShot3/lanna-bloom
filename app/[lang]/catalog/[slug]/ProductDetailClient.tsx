@@ -17,6 +17,7 @@ import { DeliveryFromFeeHint } from '@/components/DeliveryFromFeeHint';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { CatalogProofMeta } from '@/components/catalog/CatalogProofMeta';
+import { ProductCodeLine } from '@/components/pdp/ProductCodeLine';
 import {
   isMay2026FreeDeliveryActive,
   qualifiesForMay2026FreeDelivery,
@@ -91,6 +92,7 @@ export function ProductDetailClient({
           <h1 className="product-title">{name}</h1>
           <ProductShareLink lang={lang} productTitle={name} />
         </div>
+        <ProductCodeLine lang={lang} productCode={product.productCode} />
         <CatalogProofMeta
           lang={lang}
           variant="product"

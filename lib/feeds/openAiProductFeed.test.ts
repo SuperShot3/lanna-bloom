@@ -76,6 +76,7 @@ function fixtureBouquet(overrides: Partial<Bouquet> = {}): Bouquet {
   return {
     id: 'bq_pink_lilies',
     slug: 'pink-lilies-bouquet',
+    productCode: 'LB-001',
     nameEn: 'Pink Lilies Bouquet',
     nameTh: 'ช่อลิลลี่ชมพู',
     descriptionEn: 'Fresh pink lilies arranged with greenery.',
@@ -96,6 +97,7 @@ function fixtureProduct(overrides: Partial<CatalogProduct> = {}): CatalogProduct
   return {
     id: 'prod_bear',
     slug: 'teddy-bear',
+    productCode: 'LB-010',
     nameEn: 'Teddy Bear',
     descriptionEn: 'Soft plush teddy bear.',
     category: 'plushy_toys',
@@ -130,7 +132,8 @@ const CITY_TITLE_PATTERN = /Chiang Mai|Phuket|Pattaya|Bangkok|Krabi|Samui|Hua Hi
   assert.equal(rows[1]!.price, formatFeedPrice(1290));
   assert.equal(rows[2]!.availability, 'out_of_stock');
   assert.equal(rows[0]!.availability, 'in_stock');
-  assert.equal(rows[0]!.identifier_exists, 'no');
+  assert.equal(rows[0]!.mpn, 'LB-001');
+  assert.equal(rows[0]!.identifier_exists, 'yes');
   assert.equal(rows[0]!.is_eligible_search, 'true');
   assert.equal(rows[0]!.is_eligible_checkout, 'false');
   assert.equal(rows[0]!.target_countries, 'TH');
@@ -202,6 +205,8 @@ const CITY_TITLE_PATTERN = /Chiang Mai|Phuket|Pattaya|Bangkok|Krabi|Samui|Hua Hi
   assert.equal(rows[1]!.title, 'Spa Gift Set — Large');
   assert.equal(rows[0]!.price, formatFeedPrice(790));
   assert.equal(rows[1]!.price, formatFeedPrice(1290));
+  assert.equal(rows[0]!.mpn, 'LB-010');
+  assert.equal(rows[0]!.identifier_exists, 'yes');
   assert.equal(rows[0]!.is_eligible_checkout, 'false');
 }
 

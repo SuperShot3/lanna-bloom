@@ -202,6 +202,7 @@ export async function getCatalogBouquetDetailForAdmin(
     {
     id: row.id,
     slug: mapped.slug,
+    productCode: mapped.productCode,
     nameEn: mapped.nameEn,
     nameTh: mapped.nameTh,
     descriptionEn: mapped.descriptionEn,
@@ -445,6 +446,7 @@ export async function getCatalogProductByIdForAdmin(
     {
       id: row.id,
       slug: row.slug_en,
+      productCode: mapped.productCode,
       nameEn: mapped.nameEn,
       nameTh: mapped.nameTh,
       descriptionEn: mapped.descriptionEn,

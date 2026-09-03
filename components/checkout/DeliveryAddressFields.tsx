@@ -133,10 +133,7 @@ export function DeliveryAddressFields({
         />
       </NotchedField>
 
-      <div className="co-map-field">
-        <p className="co-map-label" id={`${mapId}-label`}>
-          {labels.googleMapsLinkLabel}
-        </p>
+      <NotchedField id={mapId} label={labels.googleMapsLinkLabel} className="co-map-field">
         <DeliveryLocationPicker
           value={pinValue}
           onChange={onPinChange}
@@ -156,7 +153,7 @@ export function DeliveryAddressFields({
           zoomInLabel={labels.zoomInLabel}
           zoomOutLabel={labels.zoomOutLabel}
         />
-      </div>
+      </NotchedField>
 
       <NotchedField
         id={noteId}
@@ -217,11 +214,8 @@ export function DeliveryAddressFields({
           outline: none;
           border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
         }
-        .co-map-label {
-          margin: 0 0 8px;
-          font-size: 13px;
-          font-weight: 600;
-          color: var(--text-muted);
+        :global(.co-map-field) {
+          margin-top: 8px;
         }
         .co-textarea {
           resize: vertical;

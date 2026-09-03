@@ -10,6 +10,8 @@ export type { PricingType } from '@/lib/catalog/pricing';
 export interface CatalogProduct {
   id: string;
   slug: string;
+  /** Public product code (LB-001). Assigned at insert; never the catalog UUID. */
+  productCode?: string;
   nameEn: string;
   nameTh?: string;
   descriptionEn?: string;
@@ -71,6 +73,8 @@ export type AdminCatalogIndex = {
 export interface AdminBouquetDetail {
   id: string;
   slug: string;
+  /** Public product code (LB-001). Read-only. */
+  productCode?: string;
   nameEn: string;
   nameTh: string;
   descriptionEn: string;
@@ -111,6 +115,8 @@ export interface AdminBouquetDetail {
 export interface AdminProductDetail {
   id: string;
   slug?: string;
+  /** Public product code (LB-001). Read-only. */
+  productCode?: string;
   nameEn: string;
   nameTh?: string;
   descriptionEn?: string;
@@ -376,6 +382,7 @@ export type CatalogBouquetRow = {
   id: string;
   legacy_sanity_id: string | null;
   partner_id: string | null;
+  product_code: string;
   slug_en: string;
   slug_th: string | null;
   name_en: string;
@@ -417,6 +424,7 @@ export type CatalogProductRow = {
   id: string;
   legacy_sanity_id: string | null;
   partner_id: string;
+  product_code: string;
   slug_en: string;
   slug_th: string | null;
   name_en: string;

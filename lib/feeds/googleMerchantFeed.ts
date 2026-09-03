@@ -8,6 +8,7 @@ import {
   type DisplayCategory,
 } from '@/lib/catalogCategories';
 import type { CatalogProduct } from '@/lib/catalog/types';
+import { feedIdentifierExists, feedMpn } from '@/lib/catalog/productCode';
 
 export const FEED_BRAND = 'Lanna Bloom';
 export const FEED_DESTINATION = 'CHIANG_MAI' as const;
@@ -74,6 +75,7 @@ export const FEED_HEADERS = [
   'availability',
   'price',
   'brand',
+  'mpn',
   'identifier_exists',
   'item_group_id',
   'google_product_category',
@@ -316,6 +318,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
 
       const availability = option.availability !== false ? 'in_stock' : 'out_of_stock';
 
+      const mpn = feedMpn(bouquet.productCode);
       pushRow(rows, [
         merchantId,
         title,
@@ -327,7 +330,8 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
         availability,
         formatFeedPrice(priceThb),
         FEED_BRAND,
-        'no',
+        mpn,
+        feedIdentifierExists(mpn),
         bouquet.slug,
         taxonomyId,
         color,
@@ -389,6 +393,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       category
     );
 
+    const mpn = feedMpn(toy.productCode);
     pushRow(rows, [
       compactFeedId(sku),
       title,
@@ -400,7 +405,8 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       'in_stock',
       formatFeedPrice(priceThb),
       FEED_BRAND,
-      'no',
+      mpn,
+      feedIdentifierExists(mpn),
       '',
       taxonomyId,
       '',
@@ -461,6 +467,7 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       category
     );
 
+    const mpn = feedMpn(balloon.productCode);
     pushRow(rows, [
       compactFeedId(sku),
       title,
@@ -472,7 +479,8 @@ export function buildGoogleMerchantFeed(input: GoogleMerchantFeedInput): GoogleM
       'in_stock',
       formatFeedPrice(priceThb),
       FEED_BRAND,
-      'no',
+      mpn,
+      feedIdentifierExists(mpn),
       '',
       taxonomyId,
       '',

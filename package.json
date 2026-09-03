@@ -18,7 +18,7 @@
     "test:paid-sales": "tsx lib/catalog/paidSalesCountsLogic.test.ts",
     "test:attribution": "tsx lib/attribution/attribution.test.ts",
     "test:home-catalog": "tsx lib/catalog/flowerTypeTitle.test.ts && tsx lib/promo/hydrangeaSeasonBanner.test.ts",
-    "test:catalog-ids": "tsx lib/catalog/ids.test.ts",
+    "test:catalog-ids": "tsx lib/catalog/ids.test.ts && tsx lib/catalog/productCode.test.ts",
     "test:product-image-alt": "tsx lib/catalog/productImageAlt.test.ts && tsx lib/catalog/mappers.imageAlt.test.ts",
     "test:contact-before-order": "tsx lib/catalog/contactBeforeOrder.test.ts && tsx lib/catalogAdminFieldOptions.deliveryMode.test.ts",
     "test:new-arrival": "tsx lib/catalog/newArrival.test.ts && tsx lib/catalog/newArrivalListLogic.test.ts",

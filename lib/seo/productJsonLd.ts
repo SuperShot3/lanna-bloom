@@ -1,5 +1,6 @@
 import type { Bouquet } from '@/lib/bouquets';
 import type { BouquetSellableOption } from '@/lib/bouquetOptions';
+import { catalogProductCodeOrId } from '@/lib/catalog/productCode';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { effectiveCatalogUnitPriceWithExpansion } from '@/lib/catalogDiscount';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
@@ -191,7 +192,7 @@ export function buildBouquetProductJsonLd(
     description,
     images: bouquet.images,
     pageUrl,
-    sku: bouquet.id,
+    sku: catalogProductCodeOrId(bouquet),
     option,
     discountPercent: bouquet.discountPercent,
     destinationId: context?.destinationId ?? 'CHIANG_MAI',
@@ -229,7 +230,7 @@ export function buildCatalogProductJsonLd(
     description,
     images: product.images,
     pageUrl,
-    sku: product.id,
+    sku: catalogProductCodeOrId(product),
     option,
     discountPercent: product.discountPercent,
     destinationId: context?.destinationId ?? 'CHIANG_MAI',

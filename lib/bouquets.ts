@@ -10,6 +10,8 @@ export type BouquetStatus = 'pending_review' | 'approved' | 'rejected';
 export interface Bouquet {
   id: string;
   slug: string;
+  /** Public product code (LB-001). Assigned at insert; never the catalog UUID. */
+  productCode?: string;
   nameEn: string;
   nameTh: string;
   descriptionEn: string;

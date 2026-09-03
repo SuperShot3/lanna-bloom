@@ -665,7 +665,8 @@ export function AdminBouquetDetailClient({ bouquet }: Props) {
             {STATUS_LABELS[status] ?? status}
           </span>
           <span className="admin-cms-slug-hint">
-            {bouquet.slug} · {bouquet.id.slice(0, 8)}…
+            {bouquet.slug}
+            {bouquet.productCode ? ` · ${bouquet.productCode}` : ` · ${bouquet.id.slice(0, 8)}…`}
           </span>
           {savingImageOrder ? (
             <span className="admin-cms-slug-hint">Saving order…</span>

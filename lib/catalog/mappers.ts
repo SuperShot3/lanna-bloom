@@ -156,6 +156,7 @@ export function mapBouquetRowToBouquet(
   return {
     id: row.id,
     slug,
+    productCode: row.product_code?.trim() || undefined,
     nameEn: row.name_en,
     nameTh: row.name_th,
     descriptionEn: row.description_en,
@@ -243,6 +244,7 @@ export function mapProductRowToCatalogProduct(
   return {
     id: row.id,
     slug,
+    productCode: row.product_code?.trim() || undefined,
     nameEn,
     nameTh: nameTh || undefined,
     descriptionEn,

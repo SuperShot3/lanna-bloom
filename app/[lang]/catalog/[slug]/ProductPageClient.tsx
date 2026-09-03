@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductOrderBlock } from '@/components/ProductOrderBlock';
 import { ProductAboutSection } from '@/components/pdp/ProductAboutSection';
+import { ProductCodeLine } from '@/components/pdp/ProductCodeLine';
 import { ProductShareLink } from '@/components/ProductShareLink';
 import type { Bouquet } from '@/lib/bouquets';
 import type { CatalogProduct } from '@/lib/catalog/types';
@@ -169,6 +170,7 @@ export function ProductPageClient({
               <ProductShareLink lang={lang} productTitle={name} />
             </div>
           </div>
+          <ProductCodeLine lang={lang} productCode={bouquet.productCode} />
           {titleIntro?.trim() ? (
             <p className={pdpStyles.identityIntro}>{titleIntro.trim()}</p>
           ) : null}

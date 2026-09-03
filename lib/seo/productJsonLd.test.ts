@@ -21,6 +21,7 @@ const PAGE = 'https://lannabloom.shop/en/catalog/pink-lilies-bouquet';
 const bouquet: Bouquet = {
   id: 'bq_pink_lilies',
   slug: 'pink-lilies-bouquet',
+  productCode: 'LB-001',
   nameEn: 'Pink Lilies Bouquet',
   nameTh: 'ช่อลิลลี่ชมพู',
   descriptionEn: 'Fresh pink lilies arranged with greenery.',
@@ -67,7 +68,7 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
   assertOneProductOneOffer(jsonLd);
   assert.equal(jsonLd.name, 'Pink Lilies Bouquet');
   assert.equal(jsonLd.url, PAGE);
-  assert.equal(jsonLd.sku, 'bq_pink_lilies');
+  assert.equal(jsonLd.sku, 'LB-001');
   assert.deepEqual(jsonLd.brand, { '@type': 'Brand', name: 'Lanna Bloom' });
   assert.deepEqual(jsonLd.image, ['https://cdn.example.com/pink-lilies.jpg']);
 
@@ -142,6 +143,7 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
   const gift: CatalogProduct = {
     id: 'gift_set',
     slug: 'spa-gift-set',
+    productCode: 'LB-002',
     nameEn: 'Spa Gift Set',
     descriptionEn: 'A relaxing spa set.',
     category: 'gifts',
@@ -160,7 +162,7 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
   assert.ok(jsonLd);
   assertOneProductOneOffer(jsonLd);
   assert.equal((jsonLd.offers as Record<string, unknown>).price, expectedPrice(790));
-  assert.equal(jsonLd.sku, 'gift_set');
+  assert.equal(jsonLd.sku, 'LB-002');
 }
 
 {
@@ -186,6 +188,7 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
     (jsonLd.offers as Record<string, unknown>).price,
     expectedPrice(computeFinalPrice(400, 25))
   );
+  assert.equal(jsonLd.sku, 'prod_bear');
 }
 
 {

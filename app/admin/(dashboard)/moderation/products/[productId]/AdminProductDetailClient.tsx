@@ -539,6 +539,7 @@ export function AdminProductDetailClient({ product }: Props) {
           <span className="admin-cms-slug-hint">
             {CATEGORY_LABELS[product.category] ?? product.category}
             {product.slug ? ` · ${product.slug}` : ''}
+            {product.productCode ? ` · ${product.productCode}` : ''}
           </span>
         </div>
         <div className="admin-cms-toolbar-actions">
