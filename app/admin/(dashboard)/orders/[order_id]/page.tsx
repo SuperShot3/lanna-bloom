@@ -10,10 +10,12 @@ import { OrderStatusPaymentCard } from '@/app/admin/components/OrderStatusPaymen
 import { RemoveOrderButton } from '@/app/admin/components/RemoveOrderButton';
 import { RefundOrderButton } from '@/app/admin/components/RefundOrderButton';
 import { CustomOrderDetailsSection } from '@/app/admin/components/CustomOrderDetailsSection';
+import { CardTextEditCard } from '@/app/admin/components/CardTextEditCard';
 import { DeliveryEditCard } from '@/app/admin/components/DeliveryEditCard';
 import { InternalNotesCard } from '@/app/admin/components/InternalNotesCard';
 import { OrderHistoryTimeline } from '@/app/admin/components/OrderHistoryTimeline';
 import type { CustomOrderDetails } from '@/lib/orders';
+import { getOrderGiftCardEntries } from '@/lib/orders/giftCardMessages';
 import { canChangeStatus, canEditCosts, canRefund, canRemoveOrder } from '@/lib/adminRbac';
 import { orderHasIncomeRefund } from '@/lib/accounting/incomeRefunds';
 import { getCogsExpenseByOrderId, getDeliveryExpenseSyncedFromOrderCosts } from '@/lib/expenses/expenseQueries';
@@ -203,6 +205,20 @@ export default async function AdminOrderDetailPage({ params, searchParams }: Pag
         order={order}
         items={itemsWithCatalog}
         customGreetingCard={customOrderDetails?.greetingCard}
+      />
+      <CardTextEditCard
+        orderId={order.order_id}
+        orderStatus={order.order_status}
+        canEdit={canChangeStatus(role)}
+        initialEntries={getOrderGiftCardEntries({
+          giftCardMessages: (order.order_json as {
+            giftCardMessages?: Array<string | { text: string; itemTitle?: string }>;
+          } | null)?.giftCardMessages,
+          items: jsonItems,
+          customOrderDetails,
+        })}
+        itemLabels={itemsWithCatalog.map((item) => item.bouquet_title?.trim() || '')}
+        itemCount={itemsWithCatalog.length}
       />
       {customOrderDetails && <CustomOrderDetailsSection details={customOrderDetails} />}
       {(order.driver_name || order.driver_phone) && (

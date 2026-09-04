@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { isValidLocale, translations, type Locale } from '@/lib/i18n';
 import {
   getMarketByPathSlug,
+  heroLocationName,
   marketIsRouteAvailable,
 } from '@/lib/delivery/markets';
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
@@ -84,6 +85,7 @@ export default async function MarketFlowerDeliveryPage({
   const lang = params.lang as Locale;
   const city =
     lang === 'th' ? entry.customerFacingNameTh : entry.customerFacingNameEn;
+  const heroCity = heroLocationName(entry, lang);
   const catalogHref = buildMarketCatalogHref(lang, entry.pathSlug);
 
   const [heroImageUrl, carouselImages, provinceResult] = await Promise.all([
@@ -127,7 +129,7 @@ export default async function MarketFlowerDeliveryPage({
         lang={lang}
         heroImageUrl={heroImageUrl}
         carouselImages={carouselImages}
-        locationName={city}
+        locationName={heroCity}
         browseCollectionHref={catalogHref}
         timing={timingFromProvinceStatus(province?.status)}
       />

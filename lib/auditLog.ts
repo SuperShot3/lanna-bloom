@@ -8,7 +8,8 @@ export type AuditAction =
   | 'PHOTO_UPLOAD'
   | 'NOTE_UPDATE'
   | 'MANUAL_MARK_PAID'
-  | 'DELIVERY_DETAILS_UPDATE';
+  | 'DELIVERY_DETAILS_UPDATE'
+  | 'CARD_TEXT_UPDATE';
 
 /**
  * Insert an audit log entry. Best-effort; never throws.

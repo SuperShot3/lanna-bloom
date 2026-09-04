@@ -17,6 +17,7 @@ import {
   type DeliveryDetailsSnapshot,
   type DeliveryWindow,
 } from './deliveryFields';
+import { applyAdminCardTextToOrderJson, type OrderGiftCardEntry } from './giftCardMessages';
 import { normalizeOrderStatus, orderStatusToFulfillmentDisplay } from './statusConstants';
 
 function normalizeSubmissionToken(raw: unknown): string | null {
@@ -963,6 +964,105 @@ export async function updateOrderDeliveryDetails(
     from: built.from,
     to: built.to,
     changedFields: built.changedFields,
+  };
+}
+
+export type UpdateOrderCardTextResult =
+  | {
+      ok: true;
+      order: {
+        order_id: string;
+        order_status: string | null;
+        updated_at: string | null;
+      };
+      from: OrderGiftCardEntry[];
+      to: OrderGiftCardEntry[];
+      fromDisplay: string | null;
+      toDisplay: string | null;
+    }
+  | { ok: false; error: string; status: number };
+
+/**
+ * Admin write of greeting-card / gift-message text into order_json.
+ * Does not change pricing. Rejects DELIVERED / CANCELLED orders.
+ */
+export async function updateOrderCardText(
+  orderId: string,
+  incoming: unknown
+): Promise<UpdateOrderCardTextResult> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return { ok: false, error: 'Supabase not configured', status: 503 };
+  }
+
+  const id = orderId.trim();
+  if (!id) {
+    return { ok: false, error: 'order_id required', status: 400 };
+  }
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('orders')
+    .select('order_id, order_status, order_json')
+    .eq('order_id', id)
+    .single();
+
+  if (fetchError || !existing) {
+    return { ok: false, error: 'Order not found', status: 404 };
+  }
+
+  const status = normalizeOrderStatus(existing.order_status);
+  if (status === 'DELIVERED' || status === 'CANCELLED') {
+    return {
+      ok: false,
+      error: `Cannot edit card text when order status is ${status}`,
+      status: 400,
+    };
+  }
+
+  const existingJson =
+    existing.order_json && typeof existing.order_json === 'object'
+      ? (existing.order_json as Record<string, unknown>)
+      : {};
+
+  const applied = applyAdminCardTextToOrderJson(existingJson, incoming);
+  if (!applied.ok) {
+    return { ok: false, error: applied.error, status: 400 };
+  }
+  if (!applied.changed) {
+    return { ok: false, error: 'No changes detected', status: 400 };
+  }
+
+  const updatedAt = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase
+    .from('orders')
+    .update({
+      order_json: applied.nextJson,
+      updated_at: updatedAt,
+    })
+    .eq('order_id', id)
+    .select('order_id, order_status, updated_at')
+    .single();
+
+  if (updateError || !updated) {
+    console.error('[orders/supabase] updateOrderCardText error:', updateError);
+    return {
+      ok: false,
+      error: updateError?.message ?? 'Failed to update card text',
+      status: 500,
+    };
+  }
+
+  return {
+    ok: true,
+    order: {
+      order_id: updated.order_id,
+      order_status: updated.order_status ?? null,
+      updated_at: updated.updated_at ?? updatedAt,
+    },
+    from: applied.from,
+    to: applied.to,
+    fromDisplay: applied.fromDisplay,
+    toDisplay: applied.toDisplay,
   };
 }
 

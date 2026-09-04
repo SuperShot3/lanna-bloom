@@ -23,6 +23,13 @@ type TimelineEntry =
       from: Record<string, string | boolean | null>;
       to: Record<string, string | boolean | null>;
       changedFields: string[];
+    }
+  | {
+      kind: 'cardText';
+      createdAt: string | null;
+      adminEmail: string;
+      fromText: string;
+      toText: string;
     };
 
 interface OrderHistoryTimelineProps {
@@ -43,6 +50,14 @@ function isFieldKey(key: string): key is DeliveryDetailsFieldKey {
   );
 }
 
+function cardTextFromDiff(
+  record: Record<string, string | boolean | null> | undefined
+): string {
+  const raw = record?.card_text;
+  if (typeof raw === 'string' && raw.trim()) return raw;
+  return '—';
+}
+
 export function OrderHistoryTimeline({
   statusHistory,
   deliveryChanges,
@@ -54,14 +69,27 @@ export function OrderHistoryTimeline({
       fromStatus: h.from_status,
       toStatus: h.to_status,
     })),
-    ...deliveryChanges.map((d) => ({
-      kind: 'delivery' as const,
-      createdAt: d.created_at,
-      adminEmail: d.admin_email,
-      from: (d.diff_json?.from ?? {}) as Record<string, string | boolean | null>,
-      to: (d.diff_json?.to ?? {}) as Record<string, string | boolean | null>,
-      changedFields: d.diff_json?.changedFields ?? Object.keys(d.diff_json?.to ?? {}),
-    })),
+    ...deliveryChanges.map((d) => {
+      if (d.action === 'CARD_TEXT_UPDATE') {
+        const from = (d.diff_json?.from ?? {}) as Record<string, string | boolean | null>;
+        const to = (d.diff_json?.to ?? {}) as Record<string, string | boolean | null>;
+        return {
+          kind: 'cardText' as const,
+          createdAt: d.created_at,
+          adminEmail: d.admin_email,
+          fromText: cardTextFromDiff(from),
+          toText: cardTextFromDiff(to),
+        };
+      }
+      return {
+        kind: 'delivery' as const,
+        createdAt: d.created_at,
+        adminEmail: d.admin_email,
+        from: (d.diff_json?.from ?? {}) as Record<string, string | boolean | null>,
+        to: (d.diff_json?.to ?? {}) as Record<string, string | boolean | null>,
+        changedFields: d.diff_json?.changedFields ?? Object.keys(d.diff_json?.to ?? {}),
+      };
+    }),
   ].sort((a, b) => {
     const at = a.createdAt ? Date.parse(a.createdAt) : 0;
     const bt = b.createdAt ? Date.parse(b.createdAt) : 0;
@@ -81,6 +109,30 @@ export function OrderHistoryTimeline({
                 <span className="admin-timeline-status">
                   {entry.fromStatus ?? '—'} → {entry.toStatus ?? '—'}
                 </span>
+                <span className="admin-timeline-date">
+                  {entry.createdAt ? formatShopDateTime(entry.createdAt) : '—'}
+                </span>
+              </li>
+            );
+          }
+
+          if (entry.kind === 'cardText') {
+            return (
+              <li key={`card-text-${i}-${entry.createdAt ?? ''}`}>
+                <div>
+                  <span className="admin-timeline-status">Card text updated</span>
+                  {entry.adminEmail ? (
+                    <span className="admin-muted" style={{ marginLeft: 8 }}>
+                      by {entry.adminEmail}
+                    </span>
+                  ) : null}
+                  <p
+                    className="admin-muted"
+                    style={{ margin: '6px 0 0', whiteSpace: 'pre-wrap' }}
+                  >
+                    {entry.fromText} → {entry.toText}
+                  </p>
+                </div>
                 <span className="admin-timeline-date">
                   {entry.createdAt ? formatShopDateTime(entry.createdAt) : '—'}
                 </span>

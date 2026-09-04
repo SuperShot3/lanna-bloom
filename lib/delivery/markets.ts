@@ -62,6 +62,12 @@ export interface MarketRegistryEntry {
   seoTitleTh?: string;
   metaDescriptionEn?: string;
   metaDescriptionTh?: string;
+  /**
+   * Longer place name for the city landing H1 / hero only.
+   * Leave unset to use customerFacingName. Do not use for nav or checkout.
+   */
+  heroLocationNameEn?: string;
+  heroLocationNameTh?: string;
 }
 
 export const MARKETS: MarketRegistryEntry[] = [
@@ -120,6 +126,10 @@ export const MARKETS: MarketRegistryEntry[] = [
     customerFacingNameEn: 'Pai',
     customerFacingNameTh: 'ปาย',
     status: 'active',
+    heroLocationNameEn: 'Pai, Mae Hong Son',
+    heroLocationNameTh: 'ปาย แม่ฮ่องสอน',
+    seoTitleEn: 'Flower delivery Pai, Mae Hong Son | Lanna Bloom',
+    seoTitleTh: 'ส่งดอกไม้ปาย แม่ฮ่องสอน | Lanna Bloom',
   },
 ];
 
@@ -184,6 +194,17 @@ export function destinationDisplayName(
   const m = MARKETS.find((x) => x.destinationId === id);
   if (!m) return id;
   return lang === 'th' ? m.customerFacingNameTh : m.customerFacingNameEn;
+}
+
+/** Place name for the city landing hero H1. Falls back to the short customer-facing name. */
+export function heroLocationName(
+  market: MarketRegistryEntry,
+  lang: Locale
+): string {
+  if (lang === 'th') {
+    return market.heroLocationNameTh ?? market.customerFacingNameTh;
+  }
+  return market.heroLocationNameEn ?? market.customerFacingNameEn;
 }
 
 export function parseDeliveryDestinationId(

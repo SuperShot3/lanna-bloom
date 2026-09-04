@@ -5,15 +5,20 @@
 export * from './types';
 export {
   GIFT_CARD_MESSAGES_MAX_COUNT,
+  applyAdminCardTextToOrderJson,
   clipGiftCardMessage,
   formatGiftCardEntry,
   getOrderGiftCardDisplayLines,
   getOrderGiftCardEntries,
   getOrderGiftCardMessages,
+  giftCardEntriesAuditDisplay,
+  giftCardEntriesEqual,
   giftCardMessageMaxLength,
   normalizeGiftCardMessagesForPersist,
   normalizeGiftCardMessagesForUi,
   pairGiftCardMessagesWithItemTitles,
+  parseCardTextPatch,
+  type ApplyAdminCardTextResult,
   type OrderGiftCardEntry,
 } from './giftCardMessages';
 export {

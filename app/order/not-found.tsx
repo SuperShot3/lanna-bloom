@@ -1,5 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { defaultLocale } from '@/lib/i18n';
+import { buildOrderShareMetadata } from '@/lib/orders/orderShareMetadata';
+
+export const metadata: Metadata = buildOrderShareMetadata({
+  orderId: '',
+  token: '',
+});
 
 export default function OrderNotFound() {
   return (

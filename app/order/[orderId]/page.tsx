@@ -1,6 +1,8 @@
 import { unstable_noStore } from 'next/cache';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { getOrderByIdWithPublicToken, getOrderDetailsUrl, getBaseUrl } from '@/lib/orders';
+import { buildOrderShareMetadata } from '@/lib/orders/orderShareMetadata';
 import {
   getSupabaseOrderStatusHistoryByOrderId,
   getSupabasePaymentStatusByOrderId,
@@ -22,6 +24,25 @@ import { getChatAvailability } from '@/lib/orderChat/store';
 /** Always fetch fresh data; never cache. Status comes from Supabase (admin updates). */
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+function tokenFromSearch(raw: string | string[] | undefined): string {
+  if (typeof raw === 'string') return raw.trim();
+  if (Array.isArray(raw)) return raw[0]?.trim() ?? '';
+  return '';
+}
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orderId: string }>;
+  searchParams?: Promise<{ token?: string | string[] }>;
+}): Promise<Metadata> {
+  unstable_noStore();
+  const { orderId } = await params;
+  const token = tokenFromSearch((await searchParams)?.token);
+  return buildOrderShareMetadata({ orderId: orderId?.trim() ?? '', token });
+}
 
 /**
  * Determine if payment has been confirmed for this order.
@@ -55,9 +76,7 @@ export default async function OrderDetailsPage({
   const { orderId } = await params;
   const normalized = orderId?.trim() ?? '';
   const sp = (await searchParams) ?? {};
-  const tokenRaw = sp?.token;
-  const token =
-    typeof tokenRaw === 'string' ? tokenRaw.trim() : Array.isArray(tokenRaw) ? tokenRaw[0]?.trim() : '';
+  const token = tokenFromSearch(sp?.token);
   if (!token) notFound();
 
   const order = await getOrderByIdWithPublicToken(normalized, token);

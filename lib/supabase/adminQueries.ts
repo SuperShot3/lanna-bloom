@@ -596,7 +596,7 @@ export async function getSupabaseOrderStatusHistoryByOrderId(
   }
 }
 
-/** Admin delivery-detail edits for an order (from audit_logs). */
+/** Admin delivery-detail and card-text edits for an order (from audit_logs). */
 export async function getOrderDeliveryChangeHistory(
   orderId: string
 ): Promise<OrderDeliveryChangeHistoryRow[]> {
@@ -611,7 +611,7 @@ export async function getOrderDeliveryChangeHistory(
       .from('audit_logs')
       .select('id, admin_email, action, target_order_id, diff_json, created_at')
       .eq('target_order_id', normalized)
-      .eq('action', 'DELIVERY_DETAILS_UPDATE')
+      .in('action', ['DELIVERY_DETAILS_UPDATE', 'CARD_TEXT_UPDATE'])
       .order('created_at', { ascending: true });
 
     if (error || !data) return [];

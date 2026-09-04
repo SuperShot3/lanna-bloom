@@ -162,3 +162,152 @@ export function getOrderGiftCardDisplayLines(order: GiftCardMessagesSource): str
 export function giftCardMessageMaxLength(): number {
   return CHECKOUT_FIELD_LIMITS.giftCardMessage;
 }
+
+export function giftCardEntriesEqual(a: OrderGiftCardEntry[], b: OrderGiftCardEntry[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every(
+    (e, i) => e.text === b[i]?.text && (e.itemTitle ?? '') === (b[i]?.itemTitle ?? '')
+  );
+}
+
+/** Joined customer-facing card body for audit / history (empty → null). */
+export function giftCardEntriesAuditDisplay(entries: OrderGiftCardEntry[]): string | null {
+  const s = entries
+    .map((e) => formatGiftCardEntry(e))
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+  return s || null;
+}
+
+function giftCardSourceFromOrderJson(orderJson: Record<string, unknown>): GiftCardMessagesSource {
+  return {
+    giftCardMessages: Array.isArray(orderJson.giftCardMessages)
+      ? (orderJson.giftCardMessages as Array<string | OrderGiftCardEntry>)
+      : null,
+    items: Array.isArray(orderJson.items)
+      ? (orderJson.items as GiftCardMessagesSource['items'])
+      : null,
+    customOrderDetails:
+      orderJson.customOrderDetails && typeof orderJson.customOrderDetails === 'object'
+        ? (orderJson.customOrderDetails as { greetingCard?: string | null })
+        : null,
+  };
+}
+
+function mergePreservedItemTitles(
+  incoming: OrderGiftCardEntry[],
+  current: OrderGiftCardEntry[]
+): OrderGiftCardEntry[] {
+  return incoming.map((e, i) => {
+    if (e.itemTitle) return e;
+    const prev = current[i]?.itemTitle;
+    return prev ? { text: e.text, itemTitle: prev } : { text: e.text };
+  });
+}
+
+function withClearedItemCardMessages(items: unknown): { items: unknown[]; cleared: boolean } | null {
+  if (!Array.isArray(items)) return null;
+  let cleared = false;
+  const next = items.map((item) => {
+    if (!item || typeof item !== 'object') return item;
+    const rec = item as Record<string, unknown>;
+    const addOns = rec.addOns;
+    if (!addOns || typeof addOns !== 'object') return item;
+    const ao = addOns as Record<string, unknown>;
+    const msg = typeof ao.cardMessage === 'string' ? ao.cardMessage.trim() : '';
+    if (!msg) return item;
+    cleared = true;
+    return { ...rec, addOns: { ...ao, cardMessage: '' } };
+  });
+  return { items: next, cleared };
+}
+
+function withSyncedGreetingCard(
+  custom: unknown,
+  firstText: string
+): { custom: Record<string, unknown>; changed: boolean } | null {
+  if (!custom || typeof custom !== 'object') return null;
+  const rec = custom as Record<string, unknown>;
+  if (!('greetingCard' in rec)) return null;
+  const current = typeof rec.greetingCard === 'string' ? rec.greetingCard : '';
+  if (current === firstText) return { custom: rec, changed: false };
+  return { custom: { ...rec, greetingCard: firstText }, changed: true };
+}
+
+export function parseCardTextPatch(
+  body: unknown
+): { ok: true; giftCardMessages: unknown[] } | { ok: false; error: string } {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { ok: false, error: 'Invalid JSON body' };
+  }
+  if (!('giftCardMessages' in body)) {
+    return { ok: false, error: 'giftCardMessages required' };
+  }
+  const raw = (body as { giftCardMessages?: unknown }).giftCardMessages;
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: 'giftCardMessages must be an array' };
+  }
+  return { ok: true, giftCardMessages: raw };
+}
+
+export type ApplyAdminCardTextResult =
+  | {
+      ok: true;
+      nextJson: Record<string, unknown>;
+      from: OrderGiftCardEntry[];
+      to: OrderGiftCardEntry[];
+      fromDisplay: string | null;
+      toDisplay: string | null;
+      changed: boolean;
+    }
+  | { ok: false; error: string };
+
+/**
+ * Admin write of order-level gift card messages.
+ * Always sets `giftCardMessages`. Clears legacy item `cardMessage` and syncs
+ * `customOrderDetails.greetingCard` when that key already exists so reads cannot
+ * resurrect old text after a wipe.
+ */
+export function applyAdminCardTextToOrderJson(
+  orderJson: Record<string, unknown> | null | undefined,
+  incoming: unknown
+): ApplyAdminCardTextResult {
+  if (!Array.isArray(incoming)) {
+    return { ok: false, error: 'giftCardMessages must be an array' };
+  }
+
+  const existing =
+    orderJson && typeof orderJson === 'object' && !Array.isArray(orderJson) ? { ...orderJson } : {};
+  const from = getOrderGiftCardEntries(giftCardSourceFromOrderJson(existing));
+  const to = mergePreservedItemTitles(normalizeGiftCardMessagesForPersist(incoming), from);
+
+  const itemsPatch = withClearedItemCardMessages(existing.items);
+  const greetingPatch = withSyncedGreetingCard(existing.customOrderDetails, to[0]?.text ?? '');
+
+  const nextJson: Record<string, unknown> = {
+    ...existing,
+    giftCardMessages: to,
+  };
+  if (itemsPatch) {
+    nextJson.items = itemsPatch.items;
+  }
+  if (greetingPatch) {
+    nextJson.customOrderDetails = greetingPatch.custom;
+  }
+
+  const changed =
+    !giftCardEntriesEqual(from, to) ||
+    Boolean(itemsPatch?.cleared) ||
+    Boolean(greetingPatch?.changed);
+
+  return {
+    ok: true,
+    nextJson,
+    from,
+    to,
+    fromDisplay: giftCardEntriesAuditDisplay(from),
+    toDisplay: giftCardEntriesAuditDisplay(to),
+    changed,
+  };
+}

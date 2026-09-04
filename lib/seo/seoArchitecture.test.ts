@@ -20,8 +20,10 @@ import {
 } from './alternates';
 import { locales } from '@/lib/i18n';
 import {
+  destinationDisplayName,
   getActiveMarkets,
   getMarketByPathSlug,
+  heroLocationName,
   MARKETS,
   marketIsIndexable,
   marketIsRouteAvailable,
@@ -259,6 +261,19 @@ function assertMarketMetadataCity(market: MarketRegistryEntry) {
 
 for (const market of getActiveMarkets()) {
   assertMarketMetadataCity(market);
+}
+
+{
+  const pai = getMarketByPathSlug('pai');
+  assert.ok(pai, 'Pai market must exist');
+  assert.equal(destinationDisplayName('PAI', 'en'), 'Pai');
+  assert.equal(destinationDisplayName('PAI', 'th'), 'ปาย');
+  assert.equal(heroLocationName(pai, 'en'), 'Pai, Mae Hong Son');
+  assert.equal(heroLocationName(pai, 'th'), 'ปาย แม่ฮ่องสอน');
+  const paiEn = buildMarketPageMetadata({ lang: 'en', market: pai, kind: 'landing' });
+  const paiTh = buildMarketPageMetadata({ lang: 'th', market: pai, kind: 'landing' });
+  assert.equal(String(paiEn.title), 'Flower delivery Pai, Mae Hong Son | Lanna Bloom');
+  assert.equal(String(paiTh.title), 'ส่งดอกไม้ปาย แม่ฮ่องสอน | Lanna Bloom');
 }
 
 function firstOgImageUrl(meta: Metadata): string {
