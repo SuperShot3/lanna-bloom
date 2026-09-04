@@ -9,8 +9,8 @@ import {
 } from '@/lib/deliveryHours';
 import { StorefrontIcon } from '@/components/icons';
 import { fillDeliveryTimePlaceholders } from '@/components/home/homeLandingContent';
-import type { MarketDeliveryCopy } from '@/lib/landingPages/marketHomeLanding';
-import type { DeliveryDestinationId } from '@/lib/delivery/markets';
+import { fillCityPlaceholders, type MarketDeliveryCopy } from '@/lib/landingPages/marketHomeLanding';
+import { destinationDisplayName, type DeliveryDestinationId } from '@/lib/delivery/markets';
 import { fillDeliveryFeeAmountPlaceholder } from '@/lib/delivery/coverageDisplay';
 import { HOME_DELIVERY_IMAGE_SIZES } from '@/lib/catalog/catalogImage';
 
@@ -70,7 +70,12 @@ export function DeliverySection({
   const shopHref = catalogHref ?? `/${lang}/catalog`;
   const title = copy?.title ?? t.title;
   const timingTitle = copy?.timingTitle ?? t.sameDayTitle;
-  const timingNote = copy?.timingNote ?? fillDeliveryTimePlaceholders(t.sameDayNote);
+  const timingNote =
+    copy?.timingNote ??
+    fillCityPlaceholders(
+      fillDeliveryTimePlaceholders(t.sameDayNote),
+      destinationDisplayName(destinationId, lang)
+    );
   const showCutoffWindow = copy?.showCutoffWindow ?? true;
   const methodText = copy?.methodText ?? t.methodText;
   const showLocalCourierBrands = copy?.showLocalCourierBrands ?? true;

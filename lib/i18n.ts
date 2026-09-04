@@ -151,13 +151,13 @@ const baseTranslations = {
       bigHeadlineLine2: 'Same-day delivery in Chiang Mai Thailand',
       headline: 'Fresh flowers, delivered with love',
       subline:
-        'Secure card payment with international cards. Order from anywhere in the world. Fast replies. Reliable same-day & weekend delivery to homes, hotels and villas. Need something special? Just ask — we\'ll take care of the details.',
+        'Send flowers to Chiang Mai from anywhere in the world. Order online with international cards and get reliable same-day flower delivery to homes, hotels, condos, hospitals and villas.',
       cta: 'Choose a bouquet',
       trustLine: 'Same-Day Flower Delivery in {city}',
       trustLineNextDay: 'Next-Day Flower Delivery in {city}',
       trustLineGeneric: 'Flower Delivery in {city}',
       badge: 'Flower delivery in Chiang Mai, Thailand',
-      headlineNew: 'Buy Flowers Online in {city}',
+      headlineNew: 'Flower Delivery in {city}',
       headlineAccent: '',
       sublineNew:
         'Choose a bouquet with a clear price, select the delivery date, add your personal message, and pay securely by card—even when ordering from abroad. We deliver locally to homes, hotels, condos, hospitals, and villas across {city}.',
@@ -1713,7 +1713,7 @@ const baseTranslations = {
         thailandCta: 'Flower delivery in other Thai cities',
         shopCollectionCta: 'Shop the Collection',
         sameDayNote:
-          'Accepting orders until {cutoff} Thailand time, subject to availability.',
+          'Same-day and next-day flower delivery in {city} is available. Accepting same-day orders until {cutoff} Thailand time, subject to availability.',
         nextDayNote:
           'Same-day delivery is not available here. Next-day delivery is arranged during working hours {start}–{end} Thailand time, subject to flower and courier availability.',
         preorderNote:
@@ -1866,7 +1866,7 @@ const baseTranslations = {
       },
       local: {
         eyebrow: 'Chiang Mai',
-        title: 'Flower Delivery in Chiang Mai',
+        title: 'Chiang Mai Florist & Flower Shop',
         titleMarket: 'Flower Delivery in {city}',
         intro:
           'Order fresh bouquets online for delivery across Chiang Mai. Our local florists serve residents, visitors, and people sending gifts from elsewhere, with secure checkout available in English or Thai.',
@@ -2032,13 +2032,13 @@ const baseTranslations = {
       bigHeadlineLine2: 'จัดส่งวันเดียว เชียงใหม่ ประเทศไทย',
       headline: 'ดอกไม้สด ส่งถึงมือด้วยความรัก',
       subline:
-        'ชำระด้วยบัตรต่างประเทศได้อย่างปลอดภัย สั่งได้จากทุกที่ในโลก ตอบเร็ว จัดส่งวันเดียวกันและวันหยุดสุดสัปดาห์ถึงบ้าน โรงแรม และวิลล่าอย่างน่าเชื่อถือ ต้องการอะไรพิเศษไหม? บอกเราได้เลย — เราดูแลรายละเอียดให้เอง',
+        'ส่งดอกไม้ถึงเชียงใหม่จากทุกประเทศทั่วโลก สั่งซื้อออนไลน์ง่าย ชำระเงินด้วยบัตรต่างประเทศได้ พร้อมบริการจัดส่งดอกไม้ถึงบ้าน โรงแรม คอนโด โรงพยาบาล และวิลล่าในเชียงใหม่',
       cta: 'เลือกช่อดอกไม้',
       trustLine: 'จัดส่งดอกไม้วันเดียวใน{city}',
       trustLineNextDay: 'จัดส่งดอกไม้วันถัดไปใน{city}',
       trustLineGeneric: 'จัดส่งดอกไม้ใน{city}',
       badge: 'ส่งดอกไม้ในเชียงใหม่ ประเทศไทย',
-      headlineNew: 'ซื้อดอกไม้ออนไลน์ใน{city}',
+      headlineNew: 'ร้านดอกไม้{city} พร้อมบริการจัดส่ง',
       headlineAccent: '',
       sublineNew:
         'เลือกช่อดอกไม้พร้อมราคาชัดเจน เลือกวันจัดส่ง เพิ่มข้อความส่วนตัว และชำระด้วยบัตรอย่างปลอดภัย — รวมถึงเมื่อสั่งจากต่างประเทศ เราจัดส่งในพื้นที่ถึงบ้าน โรงแรม คอนโด โรงพยาบาล และวิลล่าทั่ว{city}',
@@ -3570,7 +3570,7 @@ const baseTranslations = {
         thailandCta: 'ส่งดอกไม้ในจังหวัดอื่นทั่วไทย',
         shopCollectionCta: 'เลือกช่อดอกไม้',
         sameDayNote:
-          'รับออเดอร์ถึง {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของบริการ',
+          'มีบริการจัดส่งดอกไม้ใน{city}ทั้งแบบภายในวันเดียวกันและวันถัดไป สามารถเลือกวันจัดส่งล่วงหน้าได้ตามต้องการ รับออเดอร์วันเดียวกันถึง {cutoff} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของบริการ',
         nextDayNote:
           'พื้นที่นี้ไม่มีบริการจัดส่งวันเดียว จัดส่งวันถัดไปในช่วงเวลาทำการ {start}–{end} น. ตามเวลาไทย โดยขึ้นอยู่กับความพร้อมของดอกไม้และพนักงานส่ง',
         preorderNote:
@@ -3723,10 +3723,10 @@ const baseTranslations = {
       },
       local: {
         eyebrow: 'เชียงใหม่',
-        title: 'ส่งดอกไม้เชียงใหม่',
+        title: 'ช่อดอกไม้เชียงใหม่ จากร้านดอกไม้ Lanna Bloom',
         titleMarket: 'ส่งดอกไม้{city}',
         intro:
-          'สั่งช่อดอกไม้สดออนไลน์พร้อมจัดส่งทั่วเชียงใหม่ ร้านดอกไม้ท้องถิ่นของเราดูแลทั้งลูกค้าในพื้นที่ นักท่องเที่ยว และผู้ที่ส่งของขวัญมาจากที่อื่น พร้อมหน้าชำระเงินที่ปลอดภัยทั้งภาษาไทยและอังกฤษ',
+          'สั่งดอกไม้เชียงใหม่ออนไลน์พร้อมจัดส่งทั่วเมือง ร้านขายดอกไม้เชียงใหม่ของเราดูแลทั้งลูกค้าในพื้นที่ นักท่องเที่ยว และผู้ที่ส่งของขวัญมาจากที่อื่น พร้อมหน้าชำระเงินที่ปลอดภัยทั้งภาษาไทยและอังกฤษ',
         introMarket:
           'สั่งช่อดอกไม้สดออนไลน์พร้อมจัดส่งทั่ว{city} ร้านดอกไม้ท้องถิ่นดูแลทั้งลูกค้าในพื้นที่ นักท่องเที่ยว และผู้ที่ส่งของขวัญมาจากที่อื่น พร้อมหน้าชำระเงินที่ปลอดภัยทั้งภาษาไทยและอังกฤษ',
         venuesTitle: 'จัดส่งถึงบ้าน โรงแรม และคอนโด',

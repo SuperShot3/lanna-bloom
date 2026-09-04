@@ -186,7 +186,9 @@ export function buildMarketDeliveryCopy(params: {
   const message = customerMessage(province, lang);
 
   let timingTitle: string = t.sameDayTitle;
-  let timingNote: string = fillDeliveryTimePlaceholders(t.sameDayNote);
+  let timingNote: string = fillDeliveryTimePlaceholders(
+    fillCityPlaceholders(t.sameDayNote, city)
+  );
   let showCutoffWindow = true;
   if (timing === 'next_day') {
     timingTitle = t.nextDayTitle;
