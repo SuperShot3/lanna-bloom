@@ -14,12 +14,29 @@ import {
   recipientNameDisplay,
   recipientPhoneDisplay,
 } from '@/lib/admin/orderSummaryPlainText';
+import { AdminCopyTextButton } from '@/app/admin/components/AdminCopyTextButton';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  GIFT_CARD_MESSAGES_MAX_COUNT,
+  clipCheckoutField,
+} from '@/lib/checkout/checkoutFieldLimits';
+import {
+  formatGiftCardEntry,
+  type OrderGiftCardEntry,
+} from '@/lib/orders/giftCardMessages';
 import { normalizeOrderStatus } from '@/lib/orders/statusConstants';
 
 interface DeliveryEditCardProps {
   order: SupabaseOrderRow;
   canEdit: boolean;
+  initialCardEntries: OrderGiftCardEntry[];
+  itemLabels: string[];
+  itemCount: number;
 }
+
+type CardSlot = { text: string; itemTitle?: string };
+
+const CARD_MAX_LEN = CHECKOUT_FIELD_LIMITS.giftCardMessage;
 
 function surpriseFromOrder(order: SupabaseOrderRow): boolean | null {
   const json = order.order_json as { delivery?: { surpriseDelivery?: boolean } } | null | undefined;
@@ -37,11 +54,30 @@ function windowFromOrder(order: SupabaseOrderRow): DeliveryWindow {
   return 'MORNING_9_12';
 }
 
-export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
+function slotsFromEntries(entries: OrderGiftCardEntry[]): CardSlot[] {
+  if (entries.length === 0) return [{ text: '' }];
+  return entries.map((e) => ({
+    text: e.text,
+    itemTitle: e.itemTitle,
+  }));
+}
+
+function copyTextFromEntries(entries: OrderGiftCardEntry[]): string {
+  return entries.map((e) => formatGiftCardEntry(e)).filter(Boolean).join('\n\n');
+}
+
+export function DeliveryEditCard({
+  order,
+  canEdit,
+  initialCardEntries,
+  itemLabels,
+  itemCount,
+}: DeliveryEditCardProps) {
   const router = useRouter();
   const lockedStatus = normalizeOrderStatus(order.order_status);
   const isLocked = lockedStatus === 'DELIVERED' || lockedStatus === 'CANCELLED';
   const editable = canEdit && !isLocked;
+  const allowAdditionalCards = itemCount > 1 || initialCardEntries.length > 1;
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,6 +99,7 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
   );
   const [notes, setNotes] = useState(deliveryNotesDisplay(order));
   const [surprise, setSurprise] = useState<boolean | null>(surpriseFromOrder(order));
+  const [cardSlots, setCardSlots] = useState<CardSlot[]>(() => slotsFromEntries(initialCardEntries));
 
   useEffect(() => {
     if (editing) return;
@@ -82,11 +119,34 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
     );
     setNotes(deliveryNotesDisplay(order));
     setSurprise(surpriseFromOrder(order));
-  }, [order, editing]);
+    setCardSlots(slotsFromEntries(initialCardEntries));
+  }, [order, initialCardEntries, editing]);
 
   const handleCancel = () => {
     setEditing(false);
+    setCardSlots(slotsFromEntries(initialCardEntries));
     setMessage(null);
+  };
+
+  const handleCardChangeAt = (index: number, value: string) => {
+    setCardSlots((prev) =>
+      prev.map((slot, i) =>
+        i === index ? { ...slot, text: clipCheckoutField(value, 'giftCardMessage') } : slot
+      )
+    );
+  };
+
+  const handleAddCard = () => {
+    setCardSlots((prev) => {
+      if (prev.length >= GIFT_CARD_MESSAGES_MAX_COUNT) return prev;
+      const nextTitle = itemLabels[prev.length]?.trim() || undefined;
+      return [...prev, nextTitle ? { text: '', itemTitle: nextTitle } : { text: '' }];
+    });
+  };
+
+  const handleRemoveCard = (index: number) => {
+    if (index <= 0) return;
+    setCardSlots((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
   };
 
   const handleSave = async () => {
@@ -94,7 +154,7 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
     setSaving(true);
     setMessage(null);
     try {
-      const body: Record<string, unknown> = {
+      const deliveryBody: Record<string, unknown> = {
         delivery_date: deliveryDate.trim(),
         delivery_window: deliveryWindow,
         address: address.trim(),
@@ -104,19 +164,50 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
         notes: notes.trim() || null,
         surprise_delivery: surprise,
       };
-      const res = await fetch(
-        `/api/admin/orders/${encodeURIComponent(order.order_id)}/delivery-details`,
-        {
+      const cardBody = {
+        giftCardMessages: cardSlots.map((slot, i) => ({
+          text: slot.text,
+          itemTitle: slot.itemTitle || itemLabels[i]?.trim() || undefined,
+        })),
+      };
+
+      const [deliveryRes, cardRes] = await Promise.all([
+        fetch(`/api/admin/orders/${encodeURIComponent(order.order_id)}/delivery-details`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error ?? 'Failed to update delivery details' });
+          body: JSON.stringify(deliveryBody),
+        }),
+        fetch(`/api/admin/orders/${encodeURIComponent(order.order_id)}/card-text`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cardBody),
+        }),
+      ]);
+
+      const deliveryData = await deliveryRes.json().catch(() => ({}));
+      const cardData = await cardRes.json().catch(() => ({}));
+      const deliveryNoop =
+        !deliveryRes.ok && deliveryData.error === 'No changes detected';
+      const cardNoop = !cardRes.ok && cardData.error === 'No changes detected';
+      const deliveryFailed = !deliveryRes.ok && !deliveryNoop;
+      const cardFailed = !cardRes.ok && !cardNoop;
+
+      if (deliveryFailed) {
+        setMessage({
+          type: 'error',
+          text: deliveryData.error ?? 'Failed to update delivery details',
+        });
         return;
       }
+      if (cardFailed) {
+        setMessage({ type: 'error', text: cardData.error ?? 'Failed to update card text' });
+        return;
+      }
+      if (deliveryNoop && cardNoop) {
+        setMessage({ type: 'error', text: 'No changes detected' });
+        return;
+      }
+
       setMessage({ type: 'success', text: 'Delivery details updated' });
       setEditing(false);
       setTimeout(() => setMessage(null), 3000);
@@ -127,6 +218,10 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
       setSaving(false);
     }
   };
+
+  const cardCopyText = copyTextFromEntries(initialCardEntries);
+  const canAddCard =
+    allowAdditionalCards && !saving && cardSlots.length < GIFT_CARD_MESSAGES_MAX_COUNT;
 
   return (
     <section className="admin-section">
@@ -179,6 +274,42 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
               {recipientNameDisplay(order) || '—'}
               {recipientPhoneDisplay(order) ? ` · ${recipientPhoneDisplay(order)}` : ''}
             </p>
+          </div>
+          <div>
+            <strong>Card text</strong>
+            <div className="admin-summary-field-row">
+              <div className="admin-summary-field-main">
+                {initialCardEntries.length === 0 ? (
+                  <p>—</p>
+                ) : (
+                  initialCardEntries.map((entry, index) => (
+                    <div key={`card-view-${index}`}>
+                      {entry.itemTitle ? (
+                        <p className="admin-muted" style={{ margin: '0 0 4px' }}>
+                          Card for {entry.itemTitle}
+                        </p>
+                      ) : initialCardEntries.length > 1 ? (
+                        <p className="admin-muted" style={{ margin: '0 0 4px' }}>
+                          Card {index + 1}
+                        </p>
+                      ) : null}
+                      <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                        {formatGiftCardEntry(entry)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+              <AdminCopyTextButton
+                text={cardCopyText}
+                ariaLabel={
+                  cardCopyText ? 'Copy card message text to clipboard' : 'No card text to copy'
+                }
+                className="admin-copy-text-btn--inline"
+              >
+                {cardCopyText ? 'Copy card text' : 'No text'}
+              </AdminCopyTextButton>
+            </div>
           </div>
         </div>
       ) : (
@@ -283,6 +414,64 @@ export function DeliveryEditCard({ order, canEdit }: DeliveryEditCardProps) {
               <option value="no">No</option>
             </select>
           </div>
+          {canAddCard ? (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn-outline"
+                onClick={handleAddCard}
+                disabled={saving}
+              >
+                Add additional card
+              </button>
+            </div>
+          ) : null}
+          {cardSlots.map((slot, index) => {
+            const itemName = slot.itemTitle?.trim() || itemLabels[index]?.trim() || '';
+            const label = itemName
+              ? `Card for ${itemName}`
+              : cardSlots.length > 1
+                ? `Card ${index + 1}`
+                : 'Card text';
+            const fieldId = `card-text-${order.order_id}-${index}`;
+            return (
+              <div className="admin-form-group" key={fieldId} style={{ marginBottom: 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                  }}
+                >
+                  <label htmlFor={fieldId}>{label}</label>
+                  {index > 0 && allowAdditionalCards ? (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-outline"
+                      onClick={() => handleRemoveCard(index)}
+                      disabled={saving}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+                <textarea
+                  id={fieldId}
+                  className="admin-input"
+                  rows={3}
+                  value={slot.text}
+                  onChange={(e) => handleCardChangeAt(index, e.target.value)}
+                  disabled={saving}
+                  maxLength={CARD_MAX_LEN}
+                  placeholder="Message printed on the greeting card"
+                />
+                <p className="admin-hint" style={{ marginTop: 6, marginBottom: 0 }}>
+                  {slot.text.length}/{CARD_MAX_LEN}
+                </p>
+              </div>
+            );
+          })}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
