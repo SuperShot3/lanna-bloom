@@ -23,6 +23,7 @@ import {
 } from '@/lib/favorites';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useProvinceRequiresStockContact } from '@/hooks/useProvinceRequiresStockContact';
 import { bouquetIsAvailableForDestination } from '@/lib/bouquetDestinationAvailability';
 import {
   applyCatalogDiscountThb,
@@ -114,10 +115,15 @@ export function BouquetCard({
     checkoutProfile.destinationId
   );
   const contactBeforeOrder = bouquet.contactBeforeOrder === true;
-  const cartBlocked = contactBeforeOrder || !availableForDestination;
-  const cartBlockedTitle = contactBeforeOrder
-    ? t.contactToOrderBadge ?? 'Contact to order'
-    : tProduct.unavailableInDeliveryArea;
+  const { requiresContact: destinationRequiresStockContact } = useProvinceRequiresStockContact(
+    checkoutProfile.destinationId
+  );
+  const cartBlocked =
+    contactBeforeOrder || destinationRequiresStockContact || !availableForDestination;
+  const cartBlockedTitle =
+    contactBeforeOrder || destinationRequiresStockContact
+      ? t.contactToOrderBadge ?? 'Contact to order'
+      : tProduct.unavailableInDeliveryArea;
   const name = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
   const minBasePrice = bouquet.sizes?.length
     ? Math.min(...bouquet.sizes.map((s) => s.price))
@@ -236,6 +242,7 @@ export function BouquetCard({
     (mode: 'stay' | 'checkout') => {
       if (!selectedSize || selectedSize.availability === false) return;
       if (bouquet.contactBeforeOrder === true) return;
+      if (destinationRequiresStockContact) return;
       if (!bouquetIsAvailableForDestination(bouquet, checkoutProfile.destinationId)) return;
       const itemName = lang === 'th' ? bouquet.nameTh : bouquet.nameEn;
       const discountedSize = {
@@ -293,7 +300,7 @@ export function BouquetCard({
         router.push(`/${lang}/cart`);
       }
     },
-    [addItem, bouquet, checkoutProfile.destinationId, imgSrc, lang, mappedCardImage.url, router, selectedSize]
+    [addItem, bouquet, checkoutProfile.destinationId, destinationRequiresStockContact, imgSrc, lang, mappedCardImage.url, router, selectedSize]
   );
 
   const touchStartX = useRef<number | null>(null);
@@ -525,7 +532,7 @@ export function BouquetCard({
           onMouseDown={canSwipe && !hoverGallery.disableMouseDrag ? handleMouseDown : undefined}
           aria-label={canSwipe ? 'Swipe to see more images' : undefined}
         >
-          {contactBeforeOrder ? (
+          {contactBeforeOrder || destinationRequiresStockContact ? (
             <span className="card-contact-order">{t.contactToOrderBadge ?? 'Contact to order'}</span>
           ) : bouquet.featuredPopular ? (
             <span className="card-popular-pick" aria-label={t.popularPickAria}>

@@ -7,6 +7,7 @@ import { useCheckoutStickyHeader } from '@/contexts/CheckoutStickyHeaderContext'
 import { translations } from '@/lib/i18n';
 import { OverlayReveal } from '@/components/ui/overlay-reveal';
 import { SocialLinks } from '@/components/SocialLinks';
+import { ProductContactBeforeOrderNotice } from '@/components/pdp/ProductContactBeforeOrderNotice';
 import type { CartItem } from '@/contexts/CartContext';
 import {
   isDeliveryTimeSlotSelectableForDate,
@@ -73,6 +74,7 @@ export function CartCheckoutView({
   onDeliveryDestinationChange,
   deliveryConstraint = null,
   deliveryConstraintLoading = false,
+  requiresStockContact = false,
   recipientName,
   onRecipientNameChange,
   recipientCountryCode,
@@ -138,6 +140,7 @@ export function CartCheckoutView({
   onDeliveryDestinationChange: (destination: DeliveryDestinationId) => void;
   deliveryConstraint?: DeliveryConstraint | null;
   deliveryConstraintLoading?: boolean;
+  requiresStockContact?: boolean;
   recipientName: string;
   onRecipientNameChange: (v: string) => void;
   recipientCountryCode: string;
@@ -247,13 +250,17 @@ export function CartCheckoutView({
   };
 
   const showDiscountButton =
+    !requiresStockContact &&
     onApplyCartFivePercent &&
     (discountBtnPhase === 'visible' || discountBtnPhase === 'exiting');
-  const payButtonSolo = discountBtnPhase === 'hidden';
+  const payButtonSolo = discountBtnPhase === 'hidden' || requiresStockContact;
 
-  const payButtonDisabled =
-    placing || !checkoutSubmissionToken || !personalDataConsent;
-  const payButtonMuted = !isPaymentUnlocked || !hasDeliveryZone;
+  const payButtonDisabled = requiresStockContact
+    ? placing
+    : placing || !checkoutSubmissionToken || !personalDataConsent;
+  const payButtonMuted = requiresStockContact
+    ? false
+    : !isPaymentUnlocked || !hasDeliveryZone;
 
   const deliveryScheduleLine = formatCheckoutStickySchedule(
     delivery,
@@ -381,6 +388,20 @@ export function CartCheckoutView({
         customerEmail={customerEmail}
         paymentSection={
           <div className="co-payment-block">
+            {requiresStockContact ? (
+              <ProductContactBeforeOrderNotice
+                lang={lang}
+                productName={lang === 'th' ? items[0]?.nameTh || items[0]?.nameEn || '' : items[0]?.nameEn || ''}
+                sizeLabel={items[0]?.size?.label}
+                variant="preorder"
+                destinationLabel={
+                  lang === 'th'
+                    ? checkoutDeliveryProfile.labels.th
+                    : checkoutDeliveryProfile.labels.en
+                }
+                pageLocation="cart"
+              />
+            ) : null}
             <label
               className="co-personal-data-consent"
               htmlFor="checkout-personal-data-consent"
@@ -419,7 +440,11 @@ export function CartCheckoutView({
                 disabled={payButtonDisabled}
                 aria-busy={placing}
               >
-                {placing ? t.creatingCheckout : tPremium.paySecurely}
+                {placing
+                  ? t.creatingCheckout
+                  : requiresStockContact
+                    ? t.preorderStockContactPay ?? tPremium.contactToCheckStockBtn ?? 'Contact to check stock'
+                    : tPremium.paySecurely}
               </button>
               {showDiscountButton && (
                 <div
@@ -713,15 +738,19 @@ export function CartCheckoutView({
         deliveryFee={deliveryFee}
         deliveryFeeGross={deliveryFeeGross}
         deliveryFeeKnown={hasDeliveryZone}
-        readyToPay={isPaymentUnlocked}
+        readyToPay={requiresStockContact ? true : isPaymentUnlocked}
         loading={placing}
         disabled={
-          !checkoutSubmissionToken || (isPaymentUnlocked && !personalDataConsent)
+          requiresStockContact
+            ? placing
+            : !checkoutSubmissionToken || (isPaymentUnlocked && !personalDataConsent)
         }
         onAction={onBottomAction}
         labels={{
           continue: tPremium.continueBtn,
-          payNow: tPremium.payNowBtn,
+          payNow: requiresStockContact
+            ? tPremium.contactToCheckStockBtn ?? t.preorderStockContactPay ?? 'Contact to check stock'
+            : tPremium.payNowBtn,
           deliveryFeeLabel: t.deliveryFeeLabel,
           deliveryFree: tPremium.freeDelivery,
           deliveryFeePending: t.stickyDeliverySelectArea ?? 'Select area',

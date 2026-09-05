@@ -30,6 +30,12 @@ import { ProductSizeCard } from '@/components/pdp/ProductSizeCard';
 import { ProductDeliveryBenefitBadge } from '@/components/pdp/ProductDeliveryBenefitBadge';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
 import { ProductContactBeforeOrderNotice } from '@/components/pdp/ProductContactBeforeOrderNotice';
+import { PreorderStockContactModal } from '@/components/checkout/PreorderStockContactModal';
+import {
+  deliveryConstraintRequiresStockContact,
+  hasDismissedPreorderStockContact,
+  markPreorderStockContactDismissed,
+} from '@/lib/delivery/preorderStockContact';
 import { ProductPeakCelebrationNotice } from '@/components/pdp/ProductPeakCelebrationNotice';
 import { ProductPurchaseActions } from '@/components/pdp/ProductPurchaseActions';
 import { ProductTrustStrip } from '@/components/pdp/ProductTrustStrip';
@@ -67,6 +73,7 @@ export function ProductOrderBlock({
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const [showPreorderStockContact, setShowPreorderStockContact] = useState(false);
   const { addItem } = useCart();
   const {
     giftCardMessages,
@@ -93,14 +100,26 @@ export function ProductOrderBlock({
   const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
     useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
   const contactBeforeOrder = bouquet.contactBeforeOrder === true;
+  const requiresStockContact =
+    !deliveryConstraintLoading && deliveryConstraintRequiresStockContact(deliveryConstraint);
+  const hidePurchaseCtas = contactBeforeOrder || requiresStockContact;
   const purchaseDisabled =
-    contactBeforeOrder ||
+    hidePurchaseCtas ||
     !availableForDestination ||
     (!deliveryConstraintLoading && !deliveryConstraint.orderingAllowed);
   const hideGiftAddOns = checkoutProfile.variant === 'expansion';
   const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
   const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
   const changeAreaLabel = tProduct.changeDeliveryArea ?? 'Change delivery area';
+
+  useEffect(() => {
+    if (!requiresStockContact) {
+      setShowPreorderStockContact(false);
+      return;
+    }
+    if (hasDismissedPreorderStockContact(checkoutProfile.destinationId)) return;
+    setShowPreorderStockContact(true);
+  }, [requiresStockContact, checkoutProfile.destinationId]);
 
   const addOnsTotal = getAddOnsTotal(addOns.productAddOns ?? {});
   const qty = Math.max(1, Math.floor(quantity));
@@ -178,7 +197,7 @@ export function ProductOrderBlock({
   }, [selectedSize.optionId, quantity]);
 
   return (
-    <div className={`order-block ${!contactBeforeOrder && stickyBarVisible ? 'order-block--sticky-pad' : ''}`}>
+    <div className={`order-block ${!hidePurchaseCtas && stickyBarVisible ? 'order-block--sticky-pad' : ''}`}>
       <div className={pdpStyles.pdpPriceRow}>
         <CatalogDiscountPrice
           basePriceThb={selectedSize.price}
@@ -248,11 +267,13 @@ export function ProductOrderBlock({
         loading={deliveryConstraintLoading}
       />
 
-      {contactBeforeOrder ? (
+      {hidePurchaseCtas ? (
         <ProductContactBeforeOrderNotice
           lang={lang}
           productName={productTitle}
           sizeLabel={selectedSize.label}
+          variant={requiresStockContact ? 'preorder' : 'item'}
+          destinationLabel={destinationLabel}
         />
       ) : (
         <ProductPurchaseActions
@@ -321,7 +342,7 @@ export function ProductOrderBlock({
         </div>
       )}
 
-      {!contactBeforeOrder ? (
+      {!hidePurchaseCtas ? (
         <ProductStickyPurchaseBar
           lang={lang}
           productTitle={productTitle}
@@ -333,6 +354,19 @@ export function ProductOrderBlock({
           onVisibilityChange={setStickyBarVisible}
         />
       ) : null}
+
+      <PreorderStockContactModal
+        lang={lang}
+        isOpen={showPreorderStockContact}
+        onClose={() => {
+          markPreorderStockContactDismissed(checkoutProfile.destinationId);
+          setShowPreorderStockContact(false);
+        }}
+        productName={productTitle}
+        sizeLabel={selectedSize.label}
+        destinationLabel={destinationLabel}
+        pageLocation="product"
+      />
 
       <style jsx>{`
         .order-destination-block-notice {

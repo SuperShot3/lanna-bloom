@@ -166,9 +166,9 @@ const WIRED: ProvinceSeedRow[] = [
     status: 'same_day',
     catalog_enabled: true,
     customer_message_en:
-      'Flower delivery for Pai, Mae Hong Son (subject to cutoff and coverage). Not Mae Hong Son town or other districts.',
+      'Flower delivery for Pai, Mae Hong Son — prepared in Chiang Mai, standard delivery ฿550 (subject to cutoff and coverage). Not Mae Hong Son town or other districts.',
     customer_message_th:
-      'จัดส่งดอกไม้ปาย จังหวัดแม่ฮ่องสอน (ขึ้นกับเวลาตัดออเดอร์และความครอบคลุม) ไม่ครอบคลุมตัวเมืองแม่ฮ่องสอนหรืออำเภออื่น',
+      'จัดส่งดอกไม้ปาย จังหวัดแม่ฮ่องสอน — จัดช่อจากเชียงใหม่ ค่าส่งมาตรฐาน ฿550 (ขึ้นกับเวลาตัดออเดอร์และความครอบคลุม) ไม่ครอบคลุมตัวเมืองแม่ฮ่องสอนหรืออำเภออื่น',
   },
 ];
 

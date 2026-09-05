@@ -16,6 +16,7 @@ import { useCart } from '@/contexts/CartContext';
 import { getDefaultAddOns } from '@/components/AddOnsSection';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
+import { useProvinceRequiresStockContact } from '@/hooks/useProvinceRequiresStockContact';
 import {
   applyCatalogDiscountThb,
   effectiveCatalogUnitPriceWithExpansion,
@@ -80,6 +81,10 @@ export function ProductCard({
   const isBalloon = product.catalogKind === 'balloon' || product.category === 'balloons';
   const isStandaloneProduct = isPlushyToys || isBalloon;
   const contactBeforeOrder = product.contactBeforeOrder === true;
+  const { requiresContact: destinationRequiresStockContact } = useProvinceRequiresStockContact(
+    checkoutProfile.destinationId
+  );
+  const cartBlocked = contactBeforeOrder || destinationRequiresStockContact;
   const cartBlockedTitle = t.contactToOrderBadge ?? 'Contact to order';
   const sizeLabel = (product.sizeLabel || '').trim();
   const availableSizes = useMemo(
@@ -318,6 +323,7 @@ export function ProductCard({
   const pushToCart = useCallback(
     (mode: 'stay' | 'checkout') => {
       if (product.contactBeforeOrder === true) return;
+      if (destinationRequiresStockContact) return;
       const itemType = isBalloon ? 'balloon' : isPlushyToys ? 'plushyToy' : 'product';
       const cartSize = hasMultipleSizes && selectedSize
         ? {
@@ -384,6 +390,7 @@ export function ProductCard({
     [
       addItem,
       checkoutProfile.destinationId,
+      destinationRequiresStockContact,
       discountedBase,
       finalPrice,
       hasMultipleSizes,
@@ -441,7 +448,7 @@ export function ProductCard({
           }
           aria-label={canSwipeStandaloneImages ? (lang === 'th' ? 'เลื่อนเพื่อดูรูปเพิ่ม' : 'Swipe to see more images') : undefined}
         >
-          {contactBeforeOrder ? (
+          {cartBlocked ? (
             <span className="pcard-contact-order">{cartBlockedTitle}</span>
           ) : product.isHit ? (
             <span className="pcard-hit">{t.hitBadge}</span>
@@ -543,8 +550,8 @@ export function ProductCard({
           <button
             type="button"
             className="pcard-simple-buy"
-            disabled={contactBeforeOrder}
-            title={contactBeforeOrder ? cartBlockedTitle : undefined}
+            disabled={cartBlocked}
+            title={cartBlocked ? cartBlockedTitle : undefined}
             onClick={() => pushToCart('checkout')}
           >
             <StorefrontIcon name="bolt" filled size={18} />
@@ -553,8 +560,8 @@ export function ProductCard({
           <button
             type="button"
             className="pcard-simple-cart"
-            disabled={contactBeforeOrder && !justAdded}
-            title={contactBeforeOrder && !justAdded ? cartBlockedTitle : undefined}
+            disabled={cartBlocked && !justAdded}
+            title={cartBlocked && !justAdded ? cartBlockedTitle : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
@@ -572,8 +579,8 @@ export function ProductCard({
           <button
             type="button"
             className="pcard-mobile-buy"
-            disabled={contactBeforeOrder}
-            title={contactBeforeOrder ? cartBlockedTitle : undefined}
+            disabled={cartBlocked}
+            title={cartBlocked ? cartBlockedTitle : undefined}
             onClick={() => pushToCart('checkout')}
           >
             <StorefrontIcon name="bolt" filled size={18} />
@@ -582,8 +589,8 @@ export function ProductCard({
           <button
             type="button"
             className="pcard-mobile-cart"
-            disabled={contactBeforeOrder && !justAdded}
-            title={contactBeforeOrder && !justAdded ? cartBlockedTitle : undefined}
+            disabled={cartBlocked && !justAdded}
+            title={cartBlocked && !justAdded ? cartBlockedTitle : undefined}
             onClick={() => (justAdded ? router.push(`/${lang}/cart`) : pushToCart('stay'))}
           >
             <StorefrontIcon name={justAdded ? 'shopping-bag' : 'shopping-cart'} size={18} />
@@ -657,8 +664,8 @@ export function ProductCard({
               <button
                 type="button"
                 className={`pcard-btn-cart ${isStandaloneProduct ? 'pcard-btn-cart--plushy' : ''}`}
-                disabled={contactBeforeOrder}
-                title={contactBeforeOrder ? cartBlockedTitle : undefined}
+                disabled={cartBlocked}
+                title={cartBlocked ? cartBlockedTitle : undefined}
                 onClick={() => pushToCart('stay')}
               >
                 {tCart.addToCart}
@@ -666,8 +673,8 @@ export function ProductCard({
               <button
                 type="button"
                 className="pcard-buy-1"
-                disabled={contactBeforeOrder}
-                title={contactBeforeOrder ? cartBlockedTitle : undefined}
+                disabled={cartBlocked}
+                title={cartBlocked ? cartBlockedTitle : undefined}
                 onClick={() => pushToCart('checkout')}
               >
                 {t.buyInOneClick}

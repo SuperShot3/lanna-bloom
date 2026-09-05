@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AddOnsSection,
@@ -26,6 +26,12 @@ import { applyCatalogDiscountThb, effectiveCatalogUnitPriceWithExpansion } from 
 import { buildMarketCatalogHref } from '@/lib/delivery/marketRoute';
 import { ProductDeliveryTimingNotice } from '@/components/pdp/ProductDeliveryTimingNotice';
 import { ProductContactBeforeOrderNotice } from '@/components/pdp/ProductContactBeforeOrderNotice';
+import { PreorderStockContactModal } from '@/components/checkout/PreorderStockContactModal';
+import {
+  deliveryConstraintRequiresStockContact,
+  hasDismissedPreorderStockContact,
+  markPreorderStockContactDismissed,
+} from '@/lib/delivery/preorderStockContact';
 import { ProductPriceDestinationLabel } from '@/components/pdp/ProductPriceDestinationLabel';
 
 export function ProductOrderBlockForProduct({
@@ -51,6 +57,7 @@ export function ProductOrderBlockForProduct({
   const checkoutProfile = useCheckoutDeliveryProfile(lang);
   const catalogHref = buildMarketCatalogHref(lang, checkoutProfile.pathSlug);
   const destinationLabel = lang === 'th' ? checkoutProfile.labels.th : checkoutProfile.labels.en;
+  const [showPreorderStockContact, setShowPreorderStockContact] = useState(false);
   const t = translations[lang].cart;
   const tBuyNow = translations[lang].buyNow;
   const tBalloon = tBuyNow as typeof tBuyNow & {
@@ -107,9 +114,21 @@ export function ProductOrderBlockForProduct({
   const { constraint: deliveryConstraint, loading: deliveryConstraintLoading } =
     useProvinceDeliveryConstraint(checkoutProfile.destinationId, deliveryConstraintLines);
   const contactBeforeOrder = product.contactBeforeOrder === true;
+  const requiresStockContact =
+    !deliveryConstraintLoading && deliveryConstraintRequiresStockContact(deliveryConstraint);
+  const hidePurchaseCtas = contactBeforeOrder || requiresStockContact;
   const purchaseDisabled =
-    contactBeforeOrder ||
+    hidePurchaseCtas ||
     (!deliveryConstraintLoading && !deliveryConstraint.orderingAllowed);
+
+  useEffect(() => {
+    if (!requiresStockContact) {
+      setShowPreorderStockContact(false);
+      return;
+    }
+    if (hasDismissedPreorderStockContact(checkoutProfile.destinationId)) return;
+    setShowPreorderStockContact(true);
+  }, [requiresStockContact, checkoutProfile.destinationId]);
 
   const handleAddToCart = () => {
     if (purchaseDisabled) return;
@@ -264,11 +283,13 @@ export function ProductOrderBlockForProduct({
             constraint={deliveryConstraint}
             loading={deliveryConstraintLoading}
           />
-          {contactBeforeOrder ? (
+          {hidePurchaseCtas ? (
             <ProductContactBeforeOrderNotice
               lang={lang}
               productName={name}
               sizeLabel={selectedSize.label}
+              variant={requiresStockContact ? 'preorder' : 'item'}
+              destinationLabel={destinationLabel}
             />
           ) : (
             <button
@@ -282,6 +303,18 @@ export function ProductOrderBlockForProduct({
           )}
         </>
       )}
+      <PreorderStockContactModal
+        lang={lang}
+        isOpen={showPreorderStockContact}
+        onClose={() => {
+          markPreorderStockContactDismissed(checkoutProfile.destinationId);
+          setShowPreorderStockContact(false);
+        }}
+        productName={name}
+        sizeLabel={selectedSize.label}
+        destinationLabel={destinationLabel}
+        pageLocation="product"
+      />
       <style jsx>{`
         .order-block {
           position: relative;

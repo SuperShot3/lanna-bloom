@@ -6,6 +6,7 @@ export const EXPANSION_ITEM_MARKUP: Partial<Record<OrderDeliveryDestinationId, n
   SAMUI: 1.3,
   KRABI: 1.3,
   BANGKOK: 1.2,
+  PAI: 1.2,
 };
 
 export const EXPANSION_MARKUP_DESTINATIONS = new Set<OrderDeliveryDestinationId>(

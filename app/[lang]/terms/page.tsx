@@ -112,8 +112,8 @@ export default function TermsPage({ params }: { params: { lang: string } }) {
             </li>
             <li>
               {isTh
-                ? 'กรุงเทพฯ: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 20% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
-                : 'Bangkok: item prices are 20% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
+                ? 'กรุงเทพฯ และปาย: ราคาสินค้าสูงกว่าราคาแคตตาล็อกเชียงใหม่ 20% ปัดเป็นจำนวนใกล้เคียง 10 บาท'
+                : 'Bangkok and Pai: item prices are 20% higher than the Chiang Mai catalog, rounded to the nearest 10 THB.'}
             </li>
           </ul>
           <p className="policy-text">

@@ -80,6 +80,13 @@ import {
   type CheckoutSectionId,
 } from '@/lib/checkout/premiumCheckoutValidation';
 import { GoogleMapsLinkPromptModal } from '@/components/checkout/GoogleMapsLinkPromptModal';
+import { PreorderStockContactModal } from '@/components/checkout/PreorderStockContactModal';
+import {
+  deliveryConstraintRequiresStockContact,
+  hasDismissedPreorderStockContact,
+  markPreorderStockContactDismissed,
+} from '@/lib/delivery/preorderStockContact';
+import { buildCartOrderMessage } from '@/lib/messenger';
 import { TrustBadges } from '@/components/TrustBadges';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { buildStripeCheckoutSessionRequestBody } from '@/lib/checkout/buildStripeCheckoutSessionBody';
@@ -662,6 +669,8 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   );
   const { constraint: deliveryConstraint, province: checkoutProvince, loading: deliveryConstraintLoading } =
     useProvinceDeliveryConstraint(checkoutDeliveryProfile.destinationId, deliveryConstraintLines);
+  const requiresStockContact =
+    !deliveryConstraintLoading && deliveryConstraintRequiresStockContact(deliveryConstraint);
 
   // Additional cards are cart-only and only when there is more than one unit.
   useEffect(() => {
@@ -876,6 +885,15 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, [checkoutDeliveryProfile.destinationId, items.length]);
 
   useEffect(() => {
+    if (!requiresStockContact || items.length === 0) {
+      setShowPreorderStockContact(false);
+      return;
+    }
+    if (hasDismissedPreorderStockContact(checkoutDeliveryProfile.destinationId)) return;
+    setShowPreorderStockContact(true);
+  }, [requiresStockContact, checkoutDeliveryProfile.destinationId, items.length]);
+
+  useEffect(() => {
     if (items.length === 0) return;
     if (deliveryConstraintLoading) return;
     const todayYmd = getShopTodayYmd();
@@ -1073,6 +1091,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   const [highlightSection, setHighlightSection] = useState<CheckoutSectionId | null>(null);
   const [highlightMapsLink, setHighlightMapsLink] = useState(false);
   const [showMapsPrompt, setShowMapsPrompt] = useState(false);
+  const [showPreorderStockContact, setShowPreorderStockContact] = useState(false);
   const mapsPromptSkippedRef = useRef(false);
   const sectionRefs = {
     product: useRef<HTMLElement>(null),
@@ -1575,6 +1594,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const handleCheckoutBottomAction = async () => {
+    if (requiresStockContact) {
+      setShowPreorderStockContact(true);
+      return;
+    }
     const issue = getPremiumFieldIssue();
     if (issue) {
       showCheckoutError(issue.message);
@@ -1592,6 +1615,10 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   };
 
   const handlePlaceOrder = async () => {
+    if (requiresStockContact) {
+      setShowPreorderStockContact(true);
+      return;
+    }
     const issue = getPremiumFieldIssue();
     if (issue) {
       showCheckoutError(issue.message);
@@ -2170,6 +2197,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           onDeliveryDestinationChange={handleDeliveryDestinationChange}
           deliveryConstraint={deliveryConstraint}
           deliveryConstraintLoading={deliveryConstraintLoading}
+          requiresStockContact={requiresStockContact}
           recipientName={recipientName}
           onRecipientNameChange={setRecipientName}
           recipientCountryCode={recipientCountryCode}
@@ -2298,6 +2326,33 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             setShowMapsPrompt(false);
             void proceedToStripeOrPromptMaps();
           }}
+        />
+        <PreorderStockContactModal
+          lang={lang}
+          isOpen={showPreorderStockContact}
+          onClose={() => {
+            markPreorderStockContactDismissed(checkoutDeliveryProfile.destinationId);
+            setShowPreorderStockContact(false);
+          }}
+          productName={lang === 'th' ? items[0]?.nameTh || items[0]?.nameEn || '' : items[0]?.nameEn || ''}
+          sizeLabel={items[0]?.size?.label}
+          destinationLabel={lang === 'th' ? checkoutDeliveryProfile.labels.th : checkoutDeliveryProfile.labels.en}
+          whatsappMessage={buildCartOrderMessage(
+            items.map((item) => ({
+              nameEn: item.nameEn,
+              nameTh: item.nameTh,
+              size: item.size,
+              addOns: {
+                cardType: item.addOns?.cardType ?? null,
+                cardMessage: item.addOns?.cardMessage ?? '',
+                wrappingPreference: 'none',
+              },
+            })),
+            lang === 'th' ? checkoutDeliveryProfile.labels.th : checkoutDeliveryProfile.labels.en,
+            delivery.date || '',
+            lang
+          )}
+          pageLocation="cart"
         />
       </div>
       <style jsx>{`

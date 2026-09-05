@@ -58,6 +58,10 @@ import {
 } from '@/lib/delivery/deliveryConstraints';
 import { getProvinceByDestinationId } from '@/lib/provinces/queries';
 import {
+  deliveryConstraintRequiresStockContact,
+  PREORDER_STOCK_CONTACT_CHECKOUT_MESSAGE,
+} from '@/lib/delivery/preorderStockContact';
+import {
   getCatalogBouquetById,
   getCatalogBouquetBySlug,
 } from '@/lib/catalogReads';
@@ -633,6 +637,12 @@ export async function POST(request: NextRequest) {
         deliveryConstraintFallbackMessageEn(deliveryConstraint.reasonCode) ||
         'Delivery is not available for this area right now.';
       return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    if (deliveryConstraintRequiresStockContact(deliveryConstraint)) {
+      return NextResponse.json(
+        { error: PREORDER_STOCK_CONTACT_CHECKOUT_MESSAGE },
+        { status: 400 }
+      );
     }
     if (
       !isPreferredTimeSlotValid(data.delivery.preferredTimeSlot, new Date(), deliveryConstraint)

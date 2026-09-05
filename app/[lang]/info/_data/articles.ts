@@ -932,11 +932,11 @@ export const articles: ArticleMeta[] = [
     slug: 'flower-delivery-pai',
     title: 'Flower Delivery in Pai: Areas, Hotels and Fees',
     excerpt:
-      'Flower delivery in Pai: listed tambons from Pai town to mountain resorts. Fees from 250 THB, hotel and Maps-pin tips, same-day by checkout, and how to order from Thailand or abroad.',
+      'Flower delivery in Pai from Chiang Mai: listed tambons, standard 550 THB fee, 20% item markup, hotel and Maps-pin tips, and how to order from Thailand or abroad.',
     titleTh: 'ส่งดอกไม้ในปาย: พื้นที่ โรงแรม และค่าส่ง',
     excerptTh:
-      'ส่งดอกไม้ปาย: ตำบลที่รองรับจากตัวเมืองปายถึงรีสอร์ตบนเขา ค่าส่งเริ่ม 250 บาท เคล็ดลับส่งโรงแรมและหมุดแผนที่ จัดส่งวันเดียวตามเช็กเอาต์ และวิธีสั่งจากในไทยหรือต่างประเทศ',
-    publishedAt: '2026-08-31T00:00:00.000Z',
+      'ส่งดอกไม้ปายจากเชียงใหม่: ตำบลที่รองรับ ค่าส่งมาตรฐาน 550 บาท ราคาสินค้าบวก 20% เคล็ดลับส่งโรงแรมและหมุดแผนที่ และวิธีสั่งจากในไทยหรือต่างประเทศ',
+    publishedAt: '2026-09-05T00:00:00.000Z',
     featured: false,
     cover: {
       type: 'image',

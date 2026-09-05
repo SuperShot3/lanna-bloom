@@ -242,9 +242,9 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'Choose Koh Samui as your delivery destination at checkout, then select the area. Fees start at ฿250 in Chaweng and Bo Phut; Lipa Noi, Taling Ngam, Na Thon, and Hua Thanon are higher. Koh Phangan, mainland Surat Thani, and other islands are not on this map.',
     paiTitle: 'Pai',
     paiIntro:
-      'Flower delivery for listed Pai tambons — not province-wide Mae Hong Son. Delivery from ฿250. Shop below or tap Mae Hong Son on the coverage map, then choose your Pai area at checkout.',
+      'Flower delivery for listed Pai tambons — not province-wide Mae Hong Son. Bouquets are prepared in Chiang Mai and travel on the daily Pai run. Standard delivery is ฿550. Shop below or tap Mae Hong Son on the coverage map, then choose your Pai area at checkout.',
     paiNote:
-      'Choose Pai as your delivery destination at checkout, then select the tambon. Fees start at ฿250 in Wiang Tai / Pai town and Wiang Nuea; Mae Na Toeng, Thung Yao, Mueang Paeng, and Pong Sa are higher. Mae Hong Son town, Mae Sariang, Khun Yuam, and Pang Mapha are not on this map.',
+      'Choose Pai as your delivery destination at checkout, then select the tambon. Delivery is ฿550 for every listed tambon. In some cases we can complete delivery locally in Pai, at the same fee. Mae Hong Son town, Mae Sariang, Khun Yuam, and Pang Mapha are not on this map.',
     otherDestinationsTitle: 'Currently shoppable provinces',
     expandingNote:
       'Only provinces where ordering is open right now. Status and categories come from live settings — we do not promise nationwide same-day delivery.',
@@ -314,9 +314,9 @@ const COPY: Record<'en' | 'th', FlowerDeliveryThailandCopy> = {
       'เลือกปลายทางเกาะสมุยตอนชำระเงิน แล้วเลือกย่าน ค่าส่งเริ่มต้น ฿250 ในเฉวงและบ่อผุด ลิปะน้อย ตลิ่งงาม หน้าทอน และหัวถนนสูงกว่า เกาะพะงัน แผ่นดินสุราษฎร์ธานี และเกาะอื่นไม่อยู่บนแผนที่นี้',
     paiTitle: 'ปาย',
     paiIntro:
-      'จัดส่งดอกไม้ในตำบลปายที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดแม่ฮ่องสอน ค่าส่งเริ่มต้น ฿250 เลือกด้านล่างหรือแตะแม่ฮ่องสอนบนแผนที่พื้นที่บริการ แล้วเลือกพื้นที่ปายตอนชำระเงิน',
+      'จัดส่งดอกไม้ในตำบลปายที่ระบุ — ไม่ครอบคลุมทั้งจังหวัดแม่ฮ่องสอน เราจัดช่อที่เชียงใหม่แล้วส่งไปกับรถที่ไปปายทุกวัน ค่าส่งมาตรฐาน ฿550 เลือกด้านล่างหรือแตะแม่ฮ่องสอนบนแผนที่พื้นที่บริการ แล้วเลือกพื้นที่ปายตอนชำระเงิน',
     paiNote:
-      'เลือกปลายทางปายตอนชำระเงิน แล้วเลือกตำบล ค่าส่งเริ่มต้น ฿250 ในเวียงใต้ / ตัวเมืองปาย และเวียงเหนือ แม่นาเติง ทุ่งยาว เมืองแปง และโป่งสาสูงกว่า ตัวเมืองแม่ฮ่องสอน แม่สะเรียง ขุนยวม และปางมะผ้าไม่อยู่บนแผนที่นี้',
+      'เลือกปลายทางปายตอนชำระเงิน แล้วเลือกตำบล ค่าส่ง ฿550 สำหรับทุกตำบลในรายการ ในบางกรณีเราจัดส่งในตัวปายได้ โดยใช้ค่าส่งเดียวกัน ตัวเมืองแม่ฮ่องสอน แม่สะเรียง ขุนยวม และปางมะผ้าไม่อยู่บนแผนที่นี้',
     otherDestinationsTitle: 'จังหวัดที่สั่งได้ตอนนี้',
     expandingNote:
       'แสดงเฉพาะจังหวัดที่เปิดรับออเดอร์ สถานะและหมวดสินค้ามาจากการตั้งค่าจริง — ไม่รับประกันจัดส่งวันเดียวกันทั่วประเทศ',

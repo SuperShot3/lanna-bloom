@@ -533,6 +533,13 @@ const baseTranslations = {
       contactBeforeOrderBody:
         'This item needs a quick confirmation. Contact us on LINE, WhatsApp, or email and we will help you place the order.',
       contactBeforeOrderEmailSubject: 'Order enquiry: {name}',
+      preorderStockContactTitle: 'Please contact us to check stock',
+      preorderStockContactBody:
+        '{destination} is on pre-order only. Message us on LINE, WhatsApp, or email so we can check stock before you pay.',
+      preorderStockContactDismiss: 'Got it',
+      preorderStockContactMessage:
+        'Hello! I want to order {name}, size {size}, for delivery to {destination}. Please check stock before payment.',
+      preorderStockContactEmailSubject: 'Stock check: {name} for {destination}',
       messageTemplate: 'Hello! I want to order bouquet {name}, size {size}',
       messageTemplateWithDelivery: 'Hello! I want to order bouquet {name}, size {size}. Delivery: {address}. Date: {date}',
       meetFlorist: 'Meet the Florist',
@@ -885,6 +892,7 @@ const baseTranslations = {
         'This area delivers flower bouquets only — remove toys, balloons, or other non-flower items before checkout.',
       flowerOnlyIncomplete:
         'This area delivers flower bouquets only — remove other items from your bag',
+      preorderStockContactPay: 'Contact to check stock',
       mapsUrlInvalid:
         'Please paste a valid Google Maps link (Share → Copy link from the Google Maps app).',
       mapsPromptClose: 'Close',
@@ -1040,6 +1048,7 @@ const baseTranslations = {
       paySecurely: 'Pay securely online',
       continueBtn: 'Continue',
       payNowBtn: 'Pay now',
+      contactToCheckStockBtn: 'Contact to check stock',
       bouquetSubtotal: 'Bouquet',
       addonsSubtotal: 'Add-ons',
       otherItemsSubtotal: 'Other items',
@@ -2408,6 +2417,13 @@ const baseTranslations = {
       contactBeforeOrderBody:
         'สินค้านี้ต้องยืนยันกับร้านก่อน ติดต่อเราทาง LINE, WhatsApp หรืออีเมล แล้วเราจะช่วยคุณสั่งซื้อ',
       contactBeforeOrderEmailSubject: 'สอบถามการสั่งซื้อ: {name}',
+      preorderStockContactTitle: 'กรุณาติดต่อเราเพื่อเช็คสต็อก',
+      preorderStockContactBody:
+        '{destination} รับเฉพาะพรีออเดอร์ ข้อความหาเราทาง LINE, WhatsApp หรืออีเมล เพื่อเช็คสต็อกก่อนชำระเงิน',
+      preorderStockContactDismiss: 'รับทราบ',
+      preorderStockContactMessage:
+        'สวัสดีครับ/ค่ะ ต้องการสั่ง {name} ขนาด {size} จัดส่งที่ {destination} กรุณาช่วยเช็คสต็อกก่อนชำระเงิน',
+      preorderStockContactEmailSubject: 'เช็คสต็อก: {name} สำหรับ {destination}',
       messageTemplate: 'สวัสดีครับ/ค่ะ ต้องการสั่งช่อ {name} ขนาด {size}',
       messageTemplateWithDelivery: 'สวัสดีครับ/ค่ะ ต้องการสั่งช่อ {name} ขนาด {size} จัดส่งที่ {address} วันที่ {date}',
       meetFlorist: 'พบช่างดอกไม้',
@@ -2751,6 +2767,7 @@ const baseTranslations = {
         'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบของเล่น ลูกโป่ง หรือสินค้าอื่นออกจากตะกร้าก่อนชำระเงิน',
       flowerOnlyIncomplete:
         'พื้นที่นี้จัดส่งเฉพาะช่อดอกไม้ — โปรดลบสินค้าอื่นออกจากตะกร้า',
+      preorderStockContactPay: 'ติดต่อเพื่อเช็คสต็อก',
       mapsUrlInvalid:
         'กรุณาวางลิงก์ Google Maps ที่ถูกต้อง (แชร์ → คัดลอกลิงก์จากแอป)',
       mapsPromptClose: 'ปิด',
@@ -2899,6 +2916,7 @@ const baseTranslations = {
       paySecurely: 'ชำระเงินออนไลน์อย่างปลอดภัย',
       continueBtn: 'ดำเนินการต่อ',
       payNowBtn: 'ชำระเงิน',
+      contactToCheckStockBtn: 'ติดต่อเพื่อเช็คสต็อก',
       bouquetSubtotal: 'ช่อดอกไม้',
       addonsSubtotal: 'ของแถม',
       otherItemsSubtotal: 'สินค้าอื่น',
@@ -4138,6 +4156,13 @@ const russianTranslations = {
     contactBeforeOrderBody:
       'Этот товар нужно подтвердить. Напишите нам в LINE, WhatsApp или на email — мы поможем оформить заказ.',
     contactBeforeOrderEmailSubject: 'Запрос на заказ: {name}',
+    preorderStockContactTitle: 'Свяжитесь с нами, чтобы проверить наличие',
+    preorderStockContactBody:
+      '{destination} сейчас только по предзаказу. Напишите в LINE, WhatsApp или на email, чтобы мы проверили наличие до оплаты.',
+    preorderStockContactDismiss: 'Понятно',
+    preorderStockContactMessage:
+      'Здравствуйте! Хочу заказать {name}, размер {size}, доставка в {destination}. Пожалуйста, проверьте наличие перед оплатой.',
+    preorderStockContactEmailSubject: 'Проверка наличия: {name} для {destination}',
     messageTemplate: 'Здравствуйте! Хочу заказать букет {name}, размер {size}',
     messageTemplateWithDelivery:
       'Здравствуйте! Хочу заказать букет {name}, размер {size}. Доставка: {address}. Дата: {date}',
@@ -4385,6 +4410,7 @@ const russianTranslations = {
       'В этот регион доставляются только цветочные букеты — удалите игрушки, шары или другие товары перед оплатой.',
     flowerOnlyIncomplete:
       'В этот регион доставляются только цветочные букеты — удалите другие товары из корзины',
+    preorderStockContactPay: 'Написать, чтобы проверить наличие',
     mapsUrlInvalid:
       'Вставьте корректную ссылку Google Maps (Share → Copy link в приложении Google Maps).',
     mapsPromptClose: 'Закрыть',
@@ -5052,6 +5078,13 @@ const chineseSingaporeTranslations = {
     contactBeforeOrderTitle: '下单前请先联系我们',
     contactBeforeOrderBody: '此商品需要先确认。请通过 LINE、WhatsApp 或电子邮件联系我们，我们会协助您下单。',
     contactBeforeOrderEmailSubject: '订购咨询：{name}',
+    preorderStockContactTitle: '请先联系我们确认库存',
+    preorderStockContactBody:
+      '{destination} 目前仅接受预订单。请通过 LINE、WhatsApp 或电子邮件联系我们，确认库存后再付款。',
+    preorderStockContactDismiss: '知道了',
+    preorderStockContactMessage:
+      '您好！我想订购 {name}，尺寸 {size}，配送至 {destination}。请先确认库存再付款。',
+    preorderStockContactEmailSubject: '库存确认：{name}（{destination}）',
     messageTemplate: '您好！我想订购花束 {name}，尺寸 {size}',
     messageTemplateWithDelivery: '您好！我想订购花束 {name}，尺寸 {size}。配送地址：{address}。日期：{date}',
     meetFlorist: '认识花艺师',
@@ -6061,6 +6094,13 @@ const chineseHongKongTranslations = {
     contactBeforeOrderTitle: '下單前請先聯絡我們',
     contactBeforeOrderBody: '此商品需要先確認。請透過 LINE、WhatsApp 或電郵聯絡我們，我們會協助您下單。',
     contactBeforeOrderEmailSubject: '訂購查詢：{name}',
+    preorderStockContactTitle: '請先聯絡我們確認庫存',
+    preorderStockContactBody:
+      '{destination} 目前僅接受預訂單。請透過 LINE、WhatsApp 或電郵聯絡我們，確認庫存後再付款。',
+    preorderStockContactDismiss: '知道了',
+    preorderStockContactMessage:
+      '您好！我想訂購 {name}，尺寸 {size}，配送至 {destination}。請先確認庫存再付款。',
+    preorderStockContactEmailSubject: '庫存確認：{name}（{destination}）',
     messageTemplate: '您好！我想訂購花束 {name}，尺寸 {size}',
     messageTemplateWithDelivery: '您好！我想訂購花束 {name}，尺寸 {size}。配送地址：{address}。日期：{date}',
     shareLink: '分享或複製商品連結',

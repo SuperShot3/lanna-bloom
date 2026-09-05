@@ -11,6 +11,7 @@ import {
   bouquetIdsForDeliveryOptionsLookup,
   mergeCartLinesWithCatalogOptions,
 } from '@/lib/delivery/mergeCartLineDeliveryOptions';
+import { fetchPublicProvinceByDestinationClient } from '@/lib/delivery/fetchPublicProvinceClient';
 import type { PublicProvince } from '@/lib/provinces/types';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
 
@@ -65,22 +66,9 @@ export function useProvinceDeliveryConstraint(
     }
 
     setProvinceLoading(true);
-    fetch(`/api/provinces/by-destination/${encodeURIComponent(dest)}`)
-      .then(async (res) => {
-        if (cancelled) return;
-        if (res.status === 404) {
-          setProvince(null);
-          return;
-        }
-        if (!res.ok) {
-          setProvince(null);
-          return;
-        }
-        const body = (await res.json()) as { province?: PublicProvince };
-        setProvince(body.province ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setProvince(null);
+    fetchPublicProvinceByDestinationClient(dest)
+      .then((next) => {
+        if (!cancelled) setProvince(next);
       })
       .finally(() => {
         if (!cancelled) setProvinceLoading(false);

@@ -355,8 +355,8 @@ assert(
 );
 
 assert(getZonesForDestination('PAI').length === 7, 'Pai has 7 checkout zones');
-assert(getZoneFee('PAI', 'pai-wiang-tai') === 250, 'Pai Wiang Tai fee = 250');
-assert(getZoneFee('PAI', 'pai-pong-sa') === 450, 'Pai Pong Sa fee = 450');
+assert(getZoneFee('PAI', 'pai-wiang-tai') === 550, 'Pai Wiang Tai fee = 550');
+assert(getZoneFee('PAI', 'pai-pong-sa') === 550, 'Pai Pong Sa fee = 550');
 
 assert(MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.length === 7, 'Pai map has 7 checkout areas');
 const paiAmpCodes = new Set(MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.map((d) => d.ampCode));
@@ -378,8 +378,8 @@ const paiPongSaDisplay = resolveAmphoeFeeDisplay(
   MAE_HONG_SON_AMPHOE_MAP_DISTRICTS.find((d) => d.id === 'pong-sa')!,
   'PAI'
 );
-assert(paiTownDisplay.feeFrom === 250, 'Wiang Tai feeFrom = 250');
-assert(paiPongSaDisplay.feeFrom === 450, 'Pong Sa feeFrom = 450');
+assert(paiTownDisplay.feeFrom === 550, 'Wiang Tai feeFrom = 550');
+assert(paiPongSaDisplay.feeFrom === 550, 'Pong Sa feeFrom = 550');
 
 const paiDrill = getAmphoeDrillItems('mae-hong-son', 'en');
 assert(paiDrill.length === 7, 'Pai drill has 7 areas');

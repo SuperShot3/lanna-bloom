@@ -7,45 +7,74 @@ import { getLineContactUrl, getWhatsAppOrderUrl } from '@/lib/messenger';
 import { SUPPORT_EMAIL } from '@/lib/siteContact';
 import styles from './product-pdp.module.css';
 
-function fillTemplate(template: string, name: string, size: string): string {
-  return template.replace('{name}', name).replace('{size}', size);
+function fillTemplate(
+  template: string,
+  values: { name: string; size: string; destination: string }
+): string {
+  return template
+    .replaceAll('{name}', values.name)
+    .replaceAll('{size}', values.size)
+    .replaceAll('{destination}', values.destination);
 }
 
 export function ProductContactBeforeOrderNotice({
   lang,
   productName,
   sizeLabel,
+  variant = 'item',
+  destinationLabel,
+  whatsappMessage,
+  pageLocation = 'product',
+  hideHeading = false,
 }: {
   lang: Locale;
   productName: string;
   sizeLabel?: string;
+  variant?: 'item' | 'preorder';
+  destinationLabel?: string;
+  whatsappMessage?: string;
+  pageLocation?: 'product' | 'cart';
+  hideHeading?: boolean;
 }) {
   const tProduct = translations[lang].product as Record<string, string | undefined>;
   const tContact = translations[lang].contact as Record<string, string | undefined>;
   const size = sizeLabel?.trim() || '—';
-  const message = fillTemplate(
-    tProduct.messageTemplate ?? 'Hello! I want to order {name}, size {size}',
-    productName,
-    size
-  );
+  const destination = destinationLabel?.trim() || '—';
+  const values = { name: productName, size, destination };
+  const isPreorder = variant === 'preorder';
+  const message =
+    whatsappMessage?.trim() ||
+    fillTemplate(
+      isPreorder
+        ? tProduct.preorderStockContactMessage ??
+          'Hello! I want to order {name}, size {size}, for delivery to {destination}. Please check stock before payment.'
+        : tProduct.messageTemplate ?? 'Hello! I want to order {name}, size {size}',
+      values
+    );
   const lineHref = getLineContactUrl();
   const whatsappHref = getWhatsAppOrderUrl(message);
   const emailSubject = fillTemplate(
-    tProduct.contactBeforeOrderEmailSubject ?? 'Order enquiry: {name}',
-    productName,
-    size
+    isPreorder
+      ? tProduct.preorderStockContactEmailSubject ?? 'Stock check: {name} for {destination}'
+      : tProduct.contactBeforeOrderEmailSubject ?? 'Order enquiry: {name}',
+    values
   );
   const emailHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(message)}`;
+  const title = isPreorder
+    ? tProduct.preorderStockContactTitle ?? 'Please contact us to check stock'
+    : tProduct.contactBeforeOrderTitle ?? 'Please contact us before ordering';
+  const body = isPreorder
+    ? (
+        tProduct.preorderStockContactBody ??
+        '{destination} is on pre-order only. Message us on LINE, WhatsApp, or email so we can check stock before you pay.'
+      ).replaceAll('{destination}', destination)
+    : tProduct.contactBeforeOrderBody ??
+      'This item needs a quick confirmation. Contact us on LINE, WhatsApp, or email and we will help you place the order.';
 
   return (
     <div className={styles.contactBeforeOrder} role="alert">
-      <p className={styles.contactBeforeOrderTitle}>
-        {tProduct.contactBeforeOrderTitle ?? 'Please contact us before ordering'}
-      </p>
-      <p className={styles.contactBeforeOrderBody}>
-        {tProduct.contactBeforeOrderBody ??
-          'This item needs a quick confirmation. Contact us on LINE, WhatsApp, or email and we will help you place the order.'}
-      </p>
+      {hideHeading ? null : <p className={styles.contactBeforeOrderTitle}>{title}</p>}
+      <p className={styles.contactBeforeOrderBody}>{body}</p>
       <div className={styles.contactBeforeOrderGrid}>
         <a
           href={lineHref}
@@ -55,7 +84,7 @@ export function ProductContactBeforeOrderNotice({
           onClick={() =>
             trackMessengerClick({
               channel: 'line',
-              page_location: 'product',
+              page_location: pageLocation,
               link_url: lineHref,
             })
           }
@@ -73,7 +102,7 @@ export function ProductContactBeforeOrderNotice({
           onClick={() =>
             trackMessengerClick({
               channel: 'whatsapp',
-              page_location: 'product',
+              page_location: pageLocation,
               link_url: whatsappHref,
             })
           }
