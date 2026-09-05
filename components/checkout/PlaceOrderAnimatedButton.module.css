@@ -1,0 +1,422 @@
+.btn {
+  --btn-h: 48px;
+  --scene-scale: 0.706; /* 48 / 68 demo height */
+  --road-top: color-mix(in srgb, var(--primary) 62%, var(--color-charcoal, #2c2c2c));
+  --road-bottom: color-mix(in srgb, var(--primary) 82%, #0a1210);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  height: var(--btn-h);
+  min-height: var(--btn-h);
+  border: 0;
+  border-radius: var(--radius-sm, 12px);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  transition:
+    background 0.25s ease,
+    transform 0.15s ease,
+    opacity 0.2s ease;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn.isProcessing,
+.btn.isDeparting {
+  background: var(--road-bottom);
+  cursor: wait;
+  opacity: 1;
+}
+
+.btn.isProcessing:disabled,
+.btn.isDeparting:disabled {
+  cursor: wait;
+}
+
+.placeLabel {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  grid-auto-flow: column;
+  place-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.placeIcon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.placeIcon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.placeText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn.isProcessing .placeLabel,
+.btn.isDeparting .placeLabel {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.road {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.11) 0 2px,
+      transparent 2px calc(100% - 2px),
+      rgba(255, 255, 255, 0.11) calc(100% - 2px)
+    ),
+    linear-gradient(to bottom, var(--road-top), var(--road-bottom));
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+
+.road::after {
+  content: '';
+  position: absolute;
+  left: -100%;
+  top: 52%;
+  width: 300%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 16px,
+    rgba(255, 255, 255, 0.92) 16px 44px,
+    transparent 44px 68px
+  );
+}
+
+.btn.isProcessing .road,
+.btn.isDeparting .road {
+  opacity: 1;
+}
+
+.btn.isProcessing .road::after {
+  animation: roadMove 0.7s linear infinite;
+}
+
+.btn.isDeparting .road::after {
+  animation: roadMove 0.3s linear infinite;
+}
+
+.pickupScene {
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  width: 145px;
+  height: 68px;
+  margin-left: -72.5px;
+  z-index: 8;
+  will-change: transform;
+  transform-origin: center bottom;
+  transform: translateX(-240%) scale(var(--scene-scale));
+  pointer-events: none;
+}
+
+.cargoFlowers {
+  position: absolute;
+  z-index: 2;
+  left: 13px;
+  top: 0;
+  width: 68px;
+  height: 62px;
+  opacity: 0;
+  transform: translateY(-39px) scale(0.94);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.cargoFlowerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.16));
+}
+
+.truckBody {
+  position: absolute;
+  z-index: 6;
+  left: 0;
+  bottom: 0;
+  width: 145px;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.wheel {
+  position: absolute;
+  z-index: 5;
+  bottom: 18px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 55%, #090a0b);
+  border: 2px solid #090a0b;
+  box-shadow:
+    inset 0 0 0 4px color-mix(in srgb, var(--color-sage, #7a8c6e) 45%, #70757a),
+    inset 0 0 0 7px #cdd3ca;
+}
+
+.wheel::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 40%, #555b60);
+}
+
+.wheelRear {
+  left: 36px;
+}
+
+.wheelFront {
+  left: 115px;
+}
+
+.headlightSource {
+  position: absolute;
+  z-index: 9;
+  left: 133px;
+  top: 21px;
+  width: 10px;
+  height: 9px;
+  border-radius: 2px 5px 5px 2px;
+  opacity: 0;
+  background: var(--accent);
+  box-shadow:
+    0 0 5px color-mix(in srgb, var(--accent) 95%, transparent),
+    0 0 11px color-mix(in srgb, var(--accent-secondary) 62%, transparent);
+  transition: opacity 0.18s ease;
+}
+
+.headlightBeam {
+  position: absolute;
+  z-index: 3;
+  left: 142px;
+  top: 13px;
+  width: 88px;
+  height: 30px;
+  opacity: 0;
+  clip-path: polygon(0 34%, 100% 0, 100% 100%, 0 67%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent-secondary) 48%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 25%, transparent) 38%,
+    color-mix(in srgb, var(--accent) 9%, transparent) 70%,
+    transparent 100%
+  );
+  filter: blur(1.8px);
+  transform-origin: left center;
+  transition: opacity 0.22s ease;
+}
+
+.headlightBeam::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 105px;
+  height: 20px;
+  clip-path: polygon(0 35%, 100% 0, 100% 100%, 0 65%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent-secondary) 24%, transparent),
+    color-mix(in srgb, var(--accent) 7%, transparent) 70%,
+    transparent
+  );
+  filter: blur(4px);
+}
+
+.btn.isProcessing .pickupScene {
+  animation:
+    pickupEnter 0.82s cubic-bezier(0.2, 0.8, 0.2, 1) forwards,
+    pickupCruise 0.72s ease-in-out 0.82s infinite alternate;
+}
+
+.btn.isDeparting .pickupScene {
+  animation: pickupExit 1.22s cubic-bezier(0.36, 0.05, 0.72, 0.28) forwards;
+}
+
+.btn.isProcessing .wheel {
+  animation: wheelSpin 0.42s linear infinite;
+}
+
+.btn.isDeparting .wheel {
+  animation: wheelSpin 0.24s linear infinite;
+}
+
+.btn.isProcessing .cargoFlowers {
+  animation: flowersIntoBed 2.15s cubic-bezier(0.22, 0.72, 0.22, 1) 0.38s forwards;
+}
+
+.btn.isDeparting .cargoFlowers {
+  opacity: 1;
+  transform: translateY(-21px) scale(0.78);
+}
+
+.btn.isProcessing .headlightSource,
+.btn.isProcessing .headlightBeam {
+  opacity: 1;
+  transition-delay: 1.15s;
+}
+
+.btn.isDeparting .headlightSource,
+.btn.isDeparting .headlightBeam {
+  opacity: 1;
+  transition: none;
+}
+
+@keyframes roadMove {
+  to {
+    transform: translate(68px, -50%);
+  }
+}
+
+@keyframes pickupEnter {
+  from {
+    transform: translateX(-240%) scale(var(--scene-scale));
+  }
+  to {
+    transform: translateX(0) scale(var(--scene-scale));
+  }
+}
+
+@keyframes pickupCruise {
+  from {
+    transform: translateX(0) scale(var(--scene-scale));
+  }
+  to {
+    transform: translateX(8px) translateY(-1px) scale(var(--scene-scale));
+  }
+}
+
+@keyframes pickupExit {
+  from {
+    transform: translateX(8px) scale(var(--scene-scale));
+  }
+  to {
+    transform: translateX(250%) scale(var(--scene-scale));
+  }
+}
+
+@keyframes wheelSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes flowersIntoBed {
+  0% {
+    opacity: 0;
+    transform: translateY(-39px) scale(0.94);
+  }
+  12% {
+    opacity: 1;
+  }
+  34% {
+    opacity: 1;
+    transform: translateY(-21px) scale(0.78);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-21px) scale(0.78);
+  }
+  62% {
+    opacity: 1;
+    transform: translate(-30px, -31px) rotate(-12deg) scale(0.84);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-30px, -31px) rotate(-12deg) scale(0.84);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-21px) scale(0.78) rotate(0deg);
+  }
+}
+
+@media (max-width: 380px) {
+  .btn {
+    --btn-h: 52px;
+    --scene-scale: 0.765;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .placeLabel,
+  .road,
+  .headlightSource,
+  .headlightBeam {
+    transition: none;
+  }
+
+  .btn.isProcessing .placeLabel,
+  .btn.isDeparting .placeLabel {
+    opacity: 1;
+    transform: none;
+  }
+
+  .btn.isProcessing .road,
+  .btn.isProcessing .pickupScene,
+  .btn.isDeparting .road,
+  .btn.isDeparting .pickupScene {
+    display: none;
+  }
+
+  .btn.isProcessing .road::after,
+  .btn.isProcessing .pickupScene,
+  .btn.isProcessing .wheel,
+  .btn.isProcessing .cargoFlowers,
+  .btn.isDeparting .road::after,
+  .btn.isDeparting .pickupScene,
+  .btn.isDeparting .wheel,
+  .btn.isDeparting .cargoFlowers {
+    animation: none;
+  }
+}

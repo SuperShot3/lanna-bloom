@@ -15,6 +15,7 @@ import {
 } from '@/components/DeliveryForm';
 import { PremiumCheckoutFlow } from '@/components/checkout/premium/PremiumCheckoutFlow';
 import { CheckoutBottomAction } from '@/components/checkout/CheckoutBottomAction';
+import { PlaceOrderAnimatedButton } from '@/components/checkout/PlaceOrderAnimatedButton';
 import type { CheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import type { CheckoutSectionId } from '@/lib/checkout/premiumCheckoutValidation';
 import type { DeliveryConstraint } from '@/lib/delivery/deliveryConstraints';
@@ -118,6 +119,7 @@ export function CartCheckoutView({
   isPaymentUnlocked,
   hasDeliveryZone,
   placing,
+  departing = false,
   checkoutSubmissionToken,
   personalDataConsent,
   onPersonalDataConsentChange,
@@ -184,6 +186,7 @@ export function CartCheckoutView({
   isPaymentUnlocked: boolean;
   hasDeliveryZone: boolean;
   placing: boolean;
+  departing?: boolean;
   checkoutSubmissionToken: string | null;
   personalDataConsent: boolean;
   onPersonalDataConsentChange: (checked: boolean) => void;
@@ -427,8 +430,7 @@ export function CartCheckoutView({
               </span>
             </label>
             <div className="co-payment-row">
-              <button
-                type="button"
+              <PlaceOrderAnimatedButton
                 className={[
                   'co-payment-btn',
                   payButtonMuted ? 'co-payment-btn--muted' : '',
@@ -438,14 +440,16 @@ export function CartCheckoutView({
                   .join(' ')}
                 onClick={onPay}
                 disabled={payButtonDisabled}
-                aria-busy={placing}
-              >
-                {placing
-                  ? t.creatingCheckout
-                  : requiresStockContact
-                    ? t.preorderStockContactPay ?? tPremium.contactToCheckStockBtn ?? 'Contact to check stock'
-                    : tPremium.paySecurely}
-              </button>
+                placing={placing && !requiresStockContact}
+                departing={departing && !requiresStockContact}
+                label={
+                  placing
+                    ? t.creatingCheckout
+                    : requiresStockContact
+                      ? t.preorderStockContactPay ?? tPremium.contactToCheckStockBtn ?? 'Contact to check stock'
+                      : tPremium.paySecurely
+                }
+              />
               {showDiscountButton && (
                 <div
                   className={[
@@ -645,9 +649,13 @@ export function CartCheckoutView({
                 width: 100%;
                 flex: 1 1 100%;
               }
-              .co-payment-btn:disabled {
+              .co-payment-btn:disabled:not([aria-busy='true']) {
                 opacity: 0.55;
                 cursor: not-allowed;
+              }
+              .co-payment-btn[aria-busy='true'] {
+                opacity: 1;
+                cursor: wait;
               }
               .co-payment-btn--muted:not(:disabled) {
                 opacity: 0.72;

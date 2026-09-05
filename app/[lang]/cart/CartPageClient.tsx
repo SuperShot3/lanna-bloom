@@ -81,6 +81,7 @@ import {
 } from '@/lib/checkout/premiumCheckoutValidation';
 import { GoogleMapsLinkPromptModal } from '@/components/checkout/GoogleMapsLinkPromptModal';
 import { PreorderStockContactModal } from '@/components/checkout/PreorderStockContactModal';
+import { waitForPlaceOrderDeparture } from '@/components/checkout/PlaceOrderAnimatedButton';
 import {
   deliveryConstraintRequiresStockContact,
   hasDismissedPreorderStockContact,
@@ -985,6 +986,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
   }, []);
 
   const [placing, setPlacing] = useState(false);
+  const [departing, setDeparting] = useState(false);
   const [referralCleared, setReferralCleared] = useState(0);
 
   useEffect(() => {
@@ -1517,19 +1519,24 @@ export function CartPageClient({ lang }: { lang: Locale }) {
             ? data.error
             : t.couldNotCreateOrder
         );
+        setDeparting(false);
         setPlacing(false);
         orderSubmitInFlightRef.current = false;
         return;
       }
       if (typeof data.url === 'string' && data.url.trim()) {
+        setDeparting(true);
+        await waitForPlaceOrderDeparture();
         window.location.href = data.url.trim();
         return;
       }
       showCheckoutError(t.couldNotCreateOrder);
+      setDeparting(false);
       setPlacing(false);
       orderSubmitInFlightRef.current = false;
     } catch {
       showCheckoutError(t.couldNotCreateOrder);
+      setDeparting(false);
       setPlacing(false);
       orderSubmitInFlightRef.current = false;
     }
@@ -2299,6 +2306,7 @@ export function CartPageClient({ lang }: { lang: Locale }) {
           isPaymentUnlocked={isPaymentUnlocked}
           hasDeliveryZone={hasDeliveryZone}
           placing={placing}
+          departing={departing}
           checkoutSubmissionToken={checkoutSubmissionToken}
           personalDataConsent={personalDataProcessingConsent}
           onPersonalDataConsentChange={setPersonalDataProcessingConsent}
