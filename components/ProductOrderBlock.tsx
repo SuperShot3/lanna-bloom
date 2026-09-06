@@ -4,10 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bouquet, BouquetSize } from '@/lib/bouquets';
 import { SizeSelector } from './SizeSelector';
-import {
-  getDefaultAddOns,
-  type AddOnsValues,
-} from './AddOnsSection';
+import { getDefaultAddOns, type AddOnsValues } from '@/components/addOns';
 import { useCart } from '@/contexts/CartContext';
 import { translations } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';

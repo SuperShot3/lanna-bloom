@@ -48,6 +48,7 @@ export async function orderHasIncomeRefund(orderId: string): Promise<boolean> {
 export async function insertManualIncomeRefund(params: {
   orderId: string;
   amount: number;
+  retainedFeeAmount?: number | null;
   notes?: string | null;
   createdBy: string;
 }): Promise<{ ok: true; refundId: string } | { ok: false; error: string; status: number }> {
@@ -55,6 +56,10 @@ export async function insertManualIncomeRefund(params: {
   if (!supabase) return { ok: false, error: 'Supabase not configured', status: 503 };
 
   const refundedAt = new Date().toISOString().slice(0, 10);
+  const retained =
+    params.retainedFeeAmount != null && Number.isFinite(params.retainedFeeAmount) && params.retainedFeeAmount >= 0
+      ? Math.round(params.retainedFeeAmount * 100) / 100
+      : null;
   const { data, error } = await supabase
     .from(TABLE)
     .insert({
@@ -64,6 +69,7 @@ export async function insertManualIncomeRefund(params: {
       refunded_at: refundedAt,
       source: 'manual',
       stripe_refund_id: null,
+      retained_fee_amount: retained,
       notes: params.notes ?? null,
       created_by: params.createdBy,
     })
@@ -245,4 +251,139 @@ export async function getRefundsTotalInPeriod(filter: { dateFrom?: string; dateT
     sum += parseFloat(String((row as { amount?: unknown }).amount)) || 0;
   }
   return Math.round(sum * 100) / 100;
+}
+
+export type OverviewPeriodRefundRow = {
+  order_id: string | null;
+  amount: number;
+  source: string;
+  retained_fee_amount: number | null;
+};
+
+export async function getRefundsForOverviewPeriod(filter: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<OverviewPeriodRefundRow[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  let q = supabase.from(TABLE).select('order_id, amount, source, retained_fee_amount');
+  if (filter.dateFrom) q = q.gte('refunded_at', filter.dateFrom.slice(0, 10));
+  if (filter.dateTo) q = q.lte('refunded_at', filter.dateTo.slice(0, 10));
+
+  const { data, error } = await q;
+  if (error) {
+    console.error('[incomeRefunds] getRefundsForOverviewPeriod error:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const r = row as {
+      order_id?: unknown;
+      amount?: unknown;
+      source?: unknown;
+      retained_fee_amount?: unknown;
+    };
+    return {
+      order_id: r.order_id != null && String(r.order_id).trim() ? String(r.order_id) : null,
+      amount: parseFloat(String(r.amount)) || 0,
+      source: String(r.source ?? ''),
+      retained_fee_amount:
+        r.retained_fee_amount != null && String(r.retained_fee_amount) !== ''
+          ? parseFloat(String(r.retained_fee_amount)) || 0
+          : null,
+    };
+  });
+}
+
+export type IncomeRefundListRecord = {
+  id: string;
+  order_id: string | null;
+  amount: number;
+  currency: string;
+  refunded_at: string;
+  source: string;
+  stripe_refund_id: string | null;
+  retained_fee_amount: number | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type IncomeRefundListResult = {
+  records: IncomeRefundListRecord[];
+  total: number;
+  totalAmount: number;
+  totalRetainedFee: number;
+  error?: string;
+};
+
+export async function getIncomeRefunds(
+  filter: { dateFrom?: string; dateTo?: string } = {},
+  pagination: { page: number; pageSize: number } = { page: 1, pageSize: 30 }
+): Promise<IncomeRefundListResult> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return { records: [], total: 0, totalAmount: 0, totalRetainedFee: 0, error: 'Supabase not configured' };
+  }
+
+  const { page, pageSize } = pagination;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase.from(TABLE).select('*', { count: 'exact' });
+  if (filter.dateFrom) query = query.gte('refunded_at', filter.dateFrom.slice(0, 10));
+  if (filter.dateTo) query = query.lte('refunded_at', filter.dateTo.slice(0, 10));
+
+  const { data, count, error } = await query
+    .order('refunded_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    console.error('[incomeRefunds] list error:', error.message);
+    return { records: [], total: 0, totalAmount: 0, totalRetainedFee: 0, error: error.message };
+  }
+
+  let sumQuery = supabase.from(TABLE).select('amount, retained_fee_amount');
+  if (filter.dateFrom) sumQuery = sumQuery.gte('refunded_at', filter.dateFrom.slice(0, 10));
+  if (filter.dateTo) sumQuery = sumQuery.lte('refunded_at', filter.dateTo.slice(0, 10));
+  const { data: sumRows } = await sumQuery;
+
+  let totalAmount = 0;
+  let totalRetainedFee = 0;
+  for (const row of sumRows ?? []) {
+    const r = row as { amount?: unknown; retained_fee_amount?: unknown };
+    totalAmount += parseFloat(String(r.amount)) || 0;
+    if (r.retained_fee_amount != null && String(r.retained_fee_amount) !== '') {
+      totalRetainedFee += parseFloat(String(r.retained_fee_amount)) || 0;
+    }
+  }
+
+  const records: IncomeRefundListRecord[] = (data ?? []).map((row) => {
+    const r = row as Record<string, unknown>;
+    return {
+      id: String(r.id),
+      order_id: r.order_id != null && String(r.order_id).trim() ? String(r.order_id) : null,
+      amount: parseFloat(String(r.amount)) || 0,
+      currency: String(r.currency ?? 'THB'),
+      refunded_at: String(r.refunded_at ?? '').slice(0, 10),
+      source: String(r.source ?? ''),
+      stripe_refund_id: r.stripe_refund_id != null ? String(r.stripe_refund_id) : null,
+      retained_fee_amount:
+        r.retained_fee_amount != null && String(r.retained_fee_amount) !== ''
+          ? parseFloat(String(r.retained_fee_amount)) || 0
+          : null,
+      notes: r.notes != null ? String(r.notes) : null,
+      created_by: r.created_by != null ? String(r.created_by) : null,
+      created_at: String(r.created_at ?? ''),
+    };
+  });
+
+  return {
+    records,
+    total: count ?? 0,
+    totalAmount: Math.round(totalAmount * 100) / 100,
+    totalRetainedFee: Math.round(totalRetainedFee * 100) / 100,
+  };
 }

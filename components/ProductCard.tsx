@@ -13,7 +13,7 @@ import { computeFinalPrice } from '@/lib/partnerPricing';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import { optionDisplayLabel } from '@/lib/bouquetOptions';
 import { useCart } from '@/contexts/CartContext';
-import { getDefaultAddOns } from '@/components/AddOnsSection';
+import { getDefaultAddOns } from '@/components/addOns';
 import { buildCatalogItemHref } from '@/lib/delivery/marketRoute';
 import { useCheckoutDeliveryProfile } from '@/hooks/useCheckoutDeliveryProfile';
 import { useProvinceRequiresStockContact } from '@/hooks/useProvinceRequiresStockContact';

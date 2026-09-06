@@ -24,6 +24,12 @@ const SECTIONS = [
     icon: 'payments',
   },
   {
+    id: 'refunds',
+    href: '/admin/accounting/refunds',
+    label: 'Refunds',
+    icon: 'undo',
+  },
+  {
     id: 'pay-links',
     href: '/admin/accounting/pay-links',
     label: 'Pay links',
@@ -48,6 +54,7 @@ export type AccountingSectionId = (typeof SECTIONS)[number]['id'];
 export interface AccountingSectionCounts {
   expenses?: number;
   income?: number;
+  refunds?: number;
   transfers?: number;
   ledger?: number;
 }
@@ -58,6 +65,7 @@ function accountingSectionFromPath(pathname: string): AccountingSectionId {
   if (pathname.startsWith('/admin/accounting/payouts-transfers')) return 'payouts-transfers';
   if (pathname.startsWith('/admin/accounting/ledger')) return 'ledger';
   if (pathname.startsWith('/admin/accounting/pay-links')) return 'pay-links';
+  if (pathname.startsWith('/admin/accounting/refunds')) return 'refunds';
   if (pathname.startsWith('/admin/accounting/income')) return 'income';
   return 'overview';
 }
@@ -107,11 +115,13 @@ export function AccountingSectionSwitcher({ counts, mobilePanelChildren, mode = 
                 ? counts?.expenses
                 : section.id === 'income'
                   ? counts?.income
-                  : section.id === 'payouts-transfers'
-                    ? counts?.transfers
-                    : section.id === 'ledger'
-                      ? counts?.ledger
-                      : undefined;
+                  : section.id === 'refunds'
+                    ? counts?.refunds
+                    : section.id === 'payouts-transfers'
+                      ? counts?.transfers
+                      : section.id === 'ledger'
+                        ? counts?.ledger
+                        : undefined;
             return (
               <Link
                 key={section.id}

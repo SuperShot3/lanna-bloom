@@ -4,8 +4,8 @@
 UPDATE public.provinces
 SET
   customer_message_en =
-    'Flower delivery for Pai (subject to cutoff and coverage).',
+    'All arrangements are subject to flower availability. Please contact before place order.',
   customer_message_th =
-    'จัดส่งดอกไม้ปาย (ขึ้นกับเวลาตัดออเดอร์และความครอบคลุม)',
+    'การจัดดอกไม้ทุกแบบขึ้นอยู่กับความพร้อมของดอกไม้ กรุณาติดต่อก่อนสั่งซื้อ',
   updated_at = now()
 WHERE province_code = 'mae-hong-son';

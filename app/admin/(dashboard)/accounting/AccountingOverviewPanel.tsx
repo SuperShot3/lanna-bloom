@@ -22,7 +22,11 @@ export interface AccountingOverviewSnapshot {
   offStripeConfirmedNet: number;
   offStripeRefundsInPeriod: number;
   offStripeNetAfterRefunds: number;
+  /** Refund amounts not already removed from gross (partial + prior-period). */
+  refundsPnlAmount: number;
   totalRefunds: number;
+  refundsCount: number;
+  retainedStripeFeesOnRefunds: number;
   confirmedIncomeNetAfterRefunds: number;
   cogsSubtotal: number;
   operatingExpensesSubtotal: number;
@@ -35,7 +39,7 @@ export interface AccountingOverviewSnapshot {
   incomeByLocationLedger: MoneyLocationTotal[];
   ledgerBalanceThrough: string;
   incomeCount: number;
-  /** Rows with `income_status === 'confirmed'` in period. */
+  /** Kept confirmed income rows this period (fully refunded sales excluded). */
   confirmedIncomeCount: number;
   expenseCount: number;
   expensesMissingReceiptCount: number;
@@ -65,6 +69,13 @@ function channelHasLedgerActivity(loc: MoneyLocationTotal): boolean {
     (loc.withdrawalsNet ?? 0) !== 0 ||
     loc.netAfterFeesAndExpenses !== 0
   );
+}
+
+function refundsPeriodHref(sp: URLSearchParams): string {
+  const next = new URLSearchParams();
+  copyPeriodQuery(sp, next);
+  const q = next.toString();
+  return q ? `/admin/accounting/refunds?${q}` : '/admin/accounting/refunds';
 }
 
 function withdrawalsPeriodHref(sp: URLSearchParams): string {
@@ -197,7 +208,7 @@ export function AccountingOverviewPanel({ overview }: Props) {
             <p className={kpiLabel}>Net profit</p>
             <p className={`${kpiValue} text-[1.35rem] sm:text-[1.65rem] xl:text-[1.85rem]`}>{fmt(net)}</p>
             <p className={kpiSub}>
-              Stripe + non-Stripe income, after fees &amp; refunds, COGS, and operating expenses — see breakdown
+              Kept income after fees, refunds, retained Stripe fees, COGS, and operating expenses — see breakdown
             </p>
           </div>
         </div>
@@ -209,7 +220,7 @@ export function AccountingOverviewPanel({ overview }: Props) {
           <div className="min-w-0">
             <p className={kpiLabel}>Stripe — gross volume</p>
             <p className={kpiValue}>{fmt(overview.stripeConfirmedGross)}</p>
-            <p className={kpiSub}>Net {fmt(overview.stripeNetVolumeAfterRefunds)} · compare Dashboard</p>
+            <p className={kpiSub}>Kept charges · net {fmt(overview.stripeNetVolumeAfterRefunds)}</p>
           </div>
         </div>
 
@@ -220,7 +231,7 @@ export function AccountingOverviewPanel({ overview }: Props) {
           <div className="min-w-0">
             <p className={kpiLabel}>Non-Stripe income</p>
             <p className={kpiValue}>{fmt(overview.offStripeNetAfterRefunds)}</p>
-            <p className={kpiSub}>Bank, QR, cash, manual (LINE, etc.)</p>
+            <p className={kpiSub}>Bank, QR, cash, LINE — not refunds</p>
           </div>
         </div>
 
@@ -229,20 +240,33 @@ export function AccountingOverviewPanel({ overview }: Props) {
             inventory_2
           </span>
           <div className="min-w-0">
-            <p className={kpiLabel}>Confirmed rows</p>
+            <p className={kpiLabel}>Orders</p>
             <p className={kpiValue}>{overview.confirmedIncomeCount}</p>
-            <p className={kpiSub}>Income records · includes Stripe, bank, manual</p>
+            <p className={kpiSub}>
+              Paid this period, excluding full refunds
+              {overview.confirmedIncomeCount > 0 ? ` · avg ${avgOrder}` : ''}
+            </p>
           </div>
         </div>
 
         <div className={`${kpiShell} xl:col-span-1`}>
-          <span className="material-symbols-outlined shrink-0 text-[1.5rem] text-amber-600 opacity-80" aria-hidden>
-            avg_pace
+          <span className="material-symbols-outlined shrink-0 text-[1.5rem] text-rose-600 opacity-80" aria-hidden>
+            undo
           </span>
           <div className="min-w-0">
-            <p className={kpiLabel}>Avg order value</p>
-            <p className={kpiValue}>{avgOrder}</p>
-            <p className={kpiSub}>Confirmed gross ÷ income rows ({overview.confirmedIncomeCount})</p>
+            <p className={kpiLabel}>Refunds</p>
+            <p className={kpiValue}>{fmt(overview.totalRefunds)}</p>
+            <p className={kpiSub}>
+              {overview.refundsCount} {overview.refundsCount === 1 ? 'refund' : 'refunds'} this period
+              {overview.retainedStripeFeesOnRefunds > 0
+                ? ` · retained fee ${fmt(overview.retainedStripeFeesOnRefunds)}`
+                : ''}
+            </p>
+            <p className="mt-1">
+              <Link href={refundsPeriodHref(sp)} className="admin-link text-[0.78rem] font-medium">
+                View refunds →
+              </Link>
+            </p>
           </div>
         </div>
 
@@ -282,39 +306,52 @@ export function AccountingOverviewPanel({ overview }: Props) {
             hidden={!pnlBreakdownOpen}
           >
               <p className="admin-accounting-pl-foot mb-3.5 mt-2 max-w-none sm:mt-3">
-                Revenue is split: Stripe (card) vs everything else. Total revenue, then COGS, operating expenses, net profit.
+                Kept sales (Stripe vs everything else), then refunds that were not already removed from gross, retained Stripe fees, COGS, operating expenses.
               </p>
               <div
                 className="admin-accounting-pl-table admin-accounting-pl-table--overview max-w-[40rem] shadow-sm"
                 aria-label="Profit and loss detail"
               >
                 <div className="admin-accounting-pl-row">
-                  <div className="admin-accounting-pl-dt">Stripe — gross volume (card / online)</div>
+                  <div className="admin-accounting-pl-dt">Stripe — gross volume (kept charges)</div>
                   <div className="admin-accounting-pl-dd admin-accounting-pl-dd--in">{fmt(overview.stripeConfirmedGross)}</div>
                 </div>
                 <div className="admin-accounting-pl-row">
-                  <div className="admin-accounting-pl-dt">Stripe — net volume (after fees &amp; Stripe refunds)</div>
-                  <div className="admin-accounting-pl-dd admin-accounting-pl-dd--in">{fmt(overview.stripeNetVolumeAfterRefunds)}</div>
+                  <div className="admin-accounting-pl-dt">Stripe — net of kept sales (after processing fees)</div>
+                  <div className="admin-accounting-pl-dd admin-accounting-pl-dd--in">{fmt(overview.stripeConfirmedNetBeforeRefunds)}</div>
                 </div>
-                {(overview.stripeProcessingFees > 0 || overview.stripeRefundsInPeriod > 0) && (
+                {overview.stripeProcessingFees > 0 && (
                   <p className="admin-accounting-pl-foot -mt-1 mb-2 max-w-[40rem] pl-1 text-[0.8rem] text-[var(--admin-text-muted,#6b7280)]">
-                    Fees −{fmt(overview.stripeProcessingFees)}
-                    {overview.stripeRefundsInPeriod > 0 ? ` · Stripe refunds −${fmt(overview.stripeRefundsInPeriod)}` : ''}
+                    Fees on kept sales −{fmt(overview.stripeProcessingFees)}
                   </p>
                 )}
                 <div className="admin-accounting-pl-row">
                   <div className="admin-accounting-pl-dt">
                     Non-Stripe — bank, QR, cash, manual (e.g. LINE without an order)
                   </div>
-                  <div className="admin-accounting-pl-dd admin-accounting-pl-dd--in">{fmt(overview.offStripeNetAfterRefunds)}</div>
+                  <div className="admin-accounting-pl-dd admin-accounting-pl-dd--in">{fmt(overview.offStripeConfirmedNet)}</div>
                 </div>
-                {overview.offStripeRefundsInPeriod > 0 && (
+                {overview.refundsPnlAmount > 0 && (
+                  <div className="admin-accounting-pl-row">
+                    <div className="admin-accounting-pl-dt">Refunds (partial or from a prior period)</div>
+                    <div className="admin-accounting-pl-dd admin-accounting-pl-dd--out">−{fmt(overview.refundsPnlAmount)}</div>
+                  </div>
+                )}
+                {overview.totalRefunds > overview.refundsPnlAmount && (
                   <p className="admin-accounting-pl-foot -mt-1 mb-2 max-w-[40rem] pl-1 text-[0.8rem] text-[var(--admin-text-muted,#6b7280)]">
-                    Non-Stripe refunds in period −{fmt(overview.offStripeRefundsInPeriod)}
+                    Full refunds this period {fmt(overview.totalRefunds - overview.refundsPnlAmount)} already taken out of gross
                   </p>
                 )}
+                {overview.retainedStripeFeesOnRefunds > 0 && (
+                  <div className="admin-accounting-pl-row">
+                    <div className="admin-accounting-pl-dt">Retained Stripe commission (shop loss)</div>
+                    <div className="admin-accounting-pl-dd admin-accounting-pl-dd--out">
+                      −{fmt(overview.retainedStripeFeesOnRefunds)}
+                    </div>
+                  </div>
+                )}
                 <div className="admin-accounting-pl-row admin-accounting-pl-row--subtotal">
-                  <div className="admin-accounting-pl-dt">Total confirmed revenue (all buckets)</div>
+                  <div className="admin-accounting-pl-dt">Total confirmed revenue</div>
                   <div className="admin-accounting-pl-dd admin-accounting-pl-dd--in">{fmt(overview.confirmedIncomeNetAfterRefunds)}</div>
                 </div>
                 <div className="admin-accounting-pl-row">
@@ -344,9 +381,8 @@ export function AccountingOverviewPanel({ overview }: Props) {
               </div>
               <p className="admin-accounting-pl-foot mt-3 max-w-[40rem]">
                 <span className="font-medium text-[var(--admin-text,#111827)]">Cross-check:</span> gross profit ({fmt(overview.grossProfit)}) −
-                operating ({fmt(overview.operatingExpensesSubtotal)}) = net ({fmt(net)}). Stripe net volume should match the Stripe
-                Dashboard when the same date range is selected; small differences can come from fee timing or estimated fees on older
-                rows.
+                operating ({fmt(overview.operatingExpensesSubtotal)}) = net ({fmt(net)}). Full refunds drop out of Orders and gross;
+                Stripe still keeps the processing fee (shop loss). Refunds are listed under Accounting → Refunds, not as income.
               </p>
           </div>
         </section>

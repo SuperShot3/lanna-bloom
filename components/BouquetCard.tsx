@@ -12,7 +12,7 @@ import { translations } from '@/lib/i18n';
 import { trackSelectItem, trackAddToCart } from '@/lib/analytics';
 import type { AnalyticsItem } from '@/lib/analytics';
 import { useCart } from '@/contexts/CartContext';
-import { getDefaultAddOns } from '@/components/AddOnsSection';
+import { getDefaultAddOns } from '@/components/addOns';
 import {
   addFavorite,
   isFavorite,

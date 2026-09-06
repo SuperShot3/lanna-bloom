@@ -6,7 +6,7 @@ import type { CatalogProduct } from '@/lib/catalog/types';
 import type { Locale } from '@/lib/i18n';
 import { computeFinalPrice } from '@/lib/partnerPricing';
 import { useCart } from '@/contexts/CartContext';
-import { getDefaultAddOns } from '@/components/AddOnsSection';
+import { getDefaultAddOns } from '@/components/addOns';
 import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 import { getProductDisplayCategory } from '@/lib/catalogCategories';
 import interest from '@/components/interestCarouselItem.module.css';

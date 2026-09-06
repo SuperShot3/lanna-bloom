@@ -1,4 +1,5 @@
 import { AdminSessionProvider } from './AdminSessionProvider';
+import './admin-utilities.css';
 import './admin.css';
 
 export default function AdminLayout({

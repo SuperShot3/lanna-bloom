@@ -24,6 +24,7 @@ export default async function AccountingOverviewPage({ searchParams }: PageProps
     ? {
         expenses: overview.expenseCount,
         income: overview.incomeCount,
+        refunds: overview.refundsCount,
         transfers: overview.transfersCount,
       }
     : undefined;

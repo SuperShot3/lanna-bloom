@@ -5,7 +5,7 @@ import { formatStripeNextPayoutShort } from '@/lib/accounting/stripePayoutDispla
 /** ISO date (YYYY-MM-DD) — first publication of this help article. Update only if you reset history. */
 const ARTICLE_CREATED = '2026-04-06';
 /** ISO date (YYYY-MM-DD) — bump when you change the text below. */
-const ARTICLE_LAST_UPDATED = '2026-05-04';
+const ARTICLE_LAST_UPDATED = '2026-09-06';
 
 function formatArticleDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
@@ -49,6 +49,10 @@ export default function AccountingInfoPage() {
               Stripe balance, other).
             </li>
             <li>
+              <strong>Refunds</strong> — Money returned to a customer, listed under Accounting → Refunds.
+              Not booked as income. A full Stripe refund still costs the shop the processing fee Stripe keeps.
+            </li>
+            <li>
               <strong>Expenses</strong> — Business spending with date, category, payment method, and
               optional receipt file. Used for the expense total and net profit.
             </li>
@@ -82,14 +86,12 @@ export default function AccountingInfoPage() {
               rate; reconcile with the Stripe Dashboard if needed.
             </li>
             <li>
-              <strong>Refunds</strong> — Stripe refunds are recorded automatically when Stripe sends a{' '}
-              <code>refund.created</code> webhook (after you run the database migration for{' '}
-              <code>income_refunds</code>). Stripe refunds reduce the <strong>Stripe — net volume</strong> line
-              for the refund date. On an order detail page, OWNER can also use <strong>Refund</strong> to record
-              a Lanna Bloom accounting refund (manual fee + cancel order); that does <strong>not</strong> refund
-              the customer in Stripe — issue the customer refund in the Stripe Dashboard separately. If you
-              already recorded the refund in admin, a later matching Stripe webhook links to that row instead of
-              double-counting. You can still cancel or adjust income rows manually for non-Stripe refunds.
+              <strong>Refunds</strong> — Not income. Stripe refunds are recorded when Stripe sends{' '}
+              <code>refund.created</code>; OWNER can also use <strong>Refund</strong> on an order (that does{' '}
+              <strong>not</strong> refund the customer in Stripe — issue the card refund in the Stripe Dashboard
+              separately). A later matching webhook links to the admin row instead of double-counting. Same-period
+              full refunds drop out of <strong>Orders</strong> and gross; profit still includes the{' '}
+              <strong>retained Stripe commission</strong> Stripe keeps. See Accounting → <strong>Refunds</strong>.
             </li>
             <li>
               <strong>Optional manual income deferral</strong> — Set env{' '}
@@ -134,30 +136,35 @@ export default function AccountingInfoPage() {
           <h2 className="admin-accounting-info-heading">How to read the overview</h2>
           <ul className="admin-accounting-info-list">
             <li>
-              <strong>Stripe — gross volume</strong> — Sum of confirmed income rows paid by card through Stripe only
-              (compare to Stripe Dashboard <em>Gross volume</em>). <strong>Stripe — net volume</strong> subtracts stored
-              or estimated Stripe fees and Stripe refunds in the selected period (<em>Net volume</em> on Stripe when date
-              ranges match).
+              <strong>Stripe — gross volume</strong> — Sum of confirmed Stripe sales <em>kept</em> this period
+              (fully refunded sales in the same period are removed). The card subtitle shows Stripe net after
+              remaining refunds and retained fees.
             </li>
             <li>
-              <strong>Non-Stripe income</strong> — Separate bucket: bank transfer, QR, cash, manual entries (e.g. LINE payments
-              you record without an order). Totals exclude Stripe processing fees. Net profit stacks both buckets minus COGS and
-              operating expenses — it is not “Stripe-only”.
+              <strong>Non-Stripe income</strong> — Bank transfer, QR, cash, and manual entries (e.g. LINE). Refunds
+              are never booked here, including as a negative amount.
             </li>
             <li>
-              <strong>Stripe processing fees</strong> — Sum of per-row fees (balance transaction fee when saved, otherwise the
-              estimated rate). Fees are reflected in Stripe net volume, not duplicated as expense rows.
+              <strong>Orders</strong> — Count of kept paid income rows this period (fully refunded sales excluded).
             </li>
             <li>
-              <strong>Total confirmed revenue</strong> — Stripe net volume plus non‑Stripe contributions (after refunds
-              attributed to each), before COGS and operating expenses.
+              <strong>Refunds</strong> — Money returned this period, listed on the Refunds tab. A full card refund
+              typically leaves a shop loss equal to the Stripe fee Stripe keeps.
+            </li>
+            <li>
+              <strong>Stripe processing fees</strong> — Sum of per-row fees on kept Stripe sales (balance transaction
+              fee when saved, otherwise the estimated rate). Fees are not duplicated as expense rows. Retained fees
+              on refunded sales are a separate P&amp;L line.
+            </li>
+            <li>
+              <strong>Total confirmed revenue</strong> — Kept Stripe and non-Stripe nets, minus leftover refunds
+              (partial or prior-period) and retained Stripe commission, before COGS and operating expenses.
             </li>
             <li>
               <strong>Total expenses</strong> — Sum of expense rows in the date range (by expense date).
             </li>
             <li>
-              <strong>Net result</strong> — Total confirmed revenue (all buckets after fees/refunds allocated to Stripe vs
-              non-Stripe) minus total expenses.
+              <strong>Net result</strong> — Total confirmed revenue minus total expenses.
             </li>
             <li>
               <strong>Net by money location (“Where the money is”)</strong> — Each row shows confirmed income{' '}

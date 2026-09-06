@@ -1,0 +1,3 @@
+/* Admin-only Tailwind utilities. Storefront globals.css excludes app/admin. */
+@import 'tailwindcss' source(none);
+@source './';

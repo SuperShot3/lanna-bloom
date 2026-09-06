@@ -101,6 +101,7 @@ export async function adminRefundOrder(input: AdminRefundOrderInput): Promise<Ad
   const insertRes = await insertManualIncomeRefund({
     orderId,
     amount,
+    retainedFeeAmount: commission,
     notes,
     createdBy: input.createdBy,
   });

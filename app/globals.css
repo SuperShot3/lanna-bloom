@@ -3,6 +3,10 @@
 @source not "../.agents";
 @source not "../scripts";
 @source not "../docs";
+@source not "../ai_context";
+@source not "../supabase";
+@source not "./admin";
+@source not "./api";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -1028,7 +1032,7 @@ main {
   animation: sunflower-spin 1.8s linear infinite;
 }
 
-/* Cart helper (premium header toast) */
+/* Cart helper pulse: used on the storefront header (homepage), not cart-only. Toast lives in ToastProvider. */
 @keyframes app-toast-in {
   from {
     opacity: 0;
@@ -1798,4 +1802,161 @@ a.btn-premium.btn-premium--article-lead {
 a.btn-premium.btn-premium--article-lead:hover {
   text-decoration: none !important;
   color: var(--accent-cta-text, #1a3c34);
+}
+
+/* Homepage CSS modules folded here to cut extra render-blocking requests */
+.google-reviews-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid #e7e5e4;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgb(26 60 52 / 0.06);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.google-reviews-badge:hover {
+  background: rgb(255 255 255 / 0.92);
+  border-color: #d6d3d1;
+  box-shadow: 0 4px 14px rgb(26 60 52 / 0.1);
+  transform: translateY(-1px);
+}
+
+.google-reviews-badge:focus-visible {
+  outline: 2px solid #c5a059;
+  outline-offset: 2px;
+}
+
+.google-reviews-badge__logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.google-reviews-badge__logo svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.google-reviews-badge__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.google-reviews-badge__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.google-reviews-badge__row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.google-reviews-badge__score {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1a3c34;
+  font-variant-numeric: tabular-nums;
+}
+
+.google-reviews-badge__stars {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.google-reviews-badge__stars svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.google-reviews-badge__count {
+  font-size: 0.6875rem;
+  color: #78716c;
+}
+
+@media (min-width: 640px) {
+  .google-reviews-badge {
+    gap: 0.625rem;
+    padding: 0.625rem 1rem;
+  }
+}
+
+.delivery-from-fee-hint {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: var(--text-muted, #6b6560);
+}
+
+.delivery-from-fee-hint--pdp {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: normal;
+  color: color-mix(in srgb, var(--text-muted, #6b6560) 88%, var(--text, #2d2a26));
+}
+
+.catalog-proof-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.catalog-proof-meta__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.catalog-proof-meta__icon {
+  display: block;
+  flex-shrink: 0;
+  color: #c5a059;
+  width: 14px;
+  height: 14px;
+}
+
+.catalog-proof-meta__label {
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catalog-proof-meta--card .catalog-proof-meta__label {
+  font-size: 12px;
+}
+
+.catalog-proof-meta--pdp .catalog-proof-meta__label {
+  font-size: 0.65rem;
 }

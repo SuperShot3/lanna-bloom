@@ -6,7 +6,6 @@ import {
 import type { Locale } from '@/lib/i18n';
 import { translations } from '@/lib/i18n';
 import { GoogleGIcon } from '@/components/icons/GoogleGIcon';
-import styles from './google-reviews-badge.module.css';
 
 function PartialStar({ fill, gradientId }: { fill: number; gradientId: string }) {
   const pct = Math.round(Math.min(1, Math.max(0, fill)) * 100);
@@ -61,22 +60,25 @@ export function GoogleReviewsBadge({
       target="_blank"
       rel="noopener noreferrer"
       title={t.googleReviewsTitle}
-      className={`${styles.widget} ${className}`.trim()}
+      className={['google-reviews-badge', className].filter(Boolean).join(' ')}
     >
-      <span className={styles.logo}>
+      <span className="google-reviews-badge__logo">
         <GoogleGIcon size={36} />
       </span>
-      <span className={styles.info}>
-        <span className={styles.label}>{t.googleReviewsLabel}</span>
-        <span className={styles.row}>
-          <span className={styles.score}>{rating.toFixed(1)}</span>
-          <span className={styles.stars} aria-label={t.googleReviewsStars.replace('{rating}', rating.toFixed(1))}>
+      <span className="google-reviews-badge__info">
+        <span className="google-reviews-badge__label">{t.googleReviewsLabel}</span>
+        <span className="google-reviews-badge__row">
+          <span className="google-reviews-badge__score">{rating.toFixed(1)}</span>
+          <span
+            className="google-reviews-badge__stars"
+            aria-label={t.googleReviewsStars.replace('{rating}', rating.toFixed(1))}
+          >
             {stars.map((star) => (
               <PartialStar key={star.id} fill={star.fill} gradientId={star.id} />
             ))}
           </span>
         </span>
-        <span className={styles.count}>{countLabel}</span>
+        <span className="google-reviews-badge__count">{countLabel}</span>
       </span>
     </a>
   );

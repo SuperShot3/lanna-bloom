@@ -10,7 +10,7 @@ import {
 } from 'react';
 import type { BouquetSize } from '@/lib/bouquets';
 import type { DeliveryDestinationId } from '@/lib/delivery/markets';
-import type { AddOnsValues } from '@/components/AddOnsSection';
+import type { AddOnsValues } from '@/components/addOns';
 import {
   GIFT_CARD_MESSAGES_MAX_COUNT,
   clearItemCardMessages,

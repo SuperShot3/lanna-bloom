@@ -20,15 +20,16 @@ import {
   COGS_EXPENSE_CATEGORIES,
 } from '@/types/expenses';
 import {
-  getRefundsTotalInPeriod,
-  getStripeRefundsTotalInPeriod,
+  getRefundsForOverviewPeriod,
   getStripeRefundsTotalThroughDate,
 } from '@/lib/accounting/incomeRefunds';
+import { allocateOverviewRefunds } from '@/lib/accounting/allocateOverviewRefunds';
 
 const TABLE = 'income_records';
 
 type OverviewIncomeAggRow = {
   id?: unknown;
+  order_id?: unknown;
   paid_date?: unknown;
   amount?: unknown;
   income_status?: unknown;
@@ -1184,7 +1185,7 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   // matches expense `date` and "real income this month" is accurate).
   let incomeQuery = supabase
     .from(TABLE)
-    .select('amount, income_status, money_location, payment_method, processing_fee_amount, receipt_attached');
+    .select('order_id, amount, income_status, money_location, payment_method, processing_fee_amount, receipt_attached');
   if (filter.dateFrom) incomeQuery = incomeQuery.gte('paid_date', filter.dateFrom.slice(0, 10));
   if (filter.dateTo)   incomeQuery = incomeQuery.lte('paid_date', filter.dateTo.slice(0, 10));
   incomeQuery = incomeQuery.neq('income_status', 'cancelled');
@@ -1201,12 +1202,11 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   const periodTfFrom = filter.dateFrom?.slice(0, 10) ?? '0001-01-01';
   const periodTfTo = filter.dateTo?.slice(0, 10) ?? '9999-12-31';
 
-  const [{ data: incomeRows }, { data: expenseRows }, totalRefunds, stripeRefundsInPeriod, stripeRefundsLedger] =
+  const [{ data: incomeRows }, { data: expenseRows }, periodRefunds, stripeRefundsLedger] =
     await Promise.all([
       incomeQuery,
       expenseQuery,
-      getRefundsTotalInPeriod(filter),
-      getStripeRefundsTotalInPeriod(filter),
+      getRefundsForOverviewPeriod(filter),
       getStripeRefundsTotalThroughDate(ledgerBalanceThrough),
     ]);
 
@@ -1231,43 +1231,13 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   ]);
 
   let totalIncome = 0;
-  let confirmedIncome = 0;
-  let stripeProcessingFees = 0;
-  let confirmedIncomeNet = 0;
-  /** Confirmed Stripe rows: gross card/online volume (compare to Stripe Dashboard gross). */
-  let stripeConfirmedGross = 0;
-  /** Confirmed Stripe rows: net after per-row processing fees (before refunds). */
-  let stripeConfirmedNetBeforeRefunds = 0;
-  /** Confirmed non-Stripe rows (bank, QR, cash, other / manual LINE, etc.). */
-  let offStripeConfirmedGross = 0;
-  let offStripeConfirmedNet = 0;
   let pendingIncome = 0;
   let incomeMissingProofCount = 0;
-  let confirmedIncomeCount = 0;
 
   for (const row of incomeRows ?? []) {
     const gross = parseFloat(String(row.amount)) || 0;
-    const pm = row.payment_method as IncomePaymentMethod;
-    const feeStored = row.processing_fee_amount;
-    const fee =
-      feeStored != null && String(feeStored) !== ''
-        ? parseFloat(String(feeStored)) || 0
-        : processingFeeForIncome(gross, pm);
     totalIncome += gross;
-    if (row.income_status === 'confirmed') {
-      confirmedIncomeCount += 1;
-      confirmedIncome += gross;
-      stripeProcessingFees += fee;
-      const net = netAfterProcessingFee(gross, fee);
-      confirmedIncomeNet += net;
-      if (pm === 'stripe') {
-        stripeConfirmedGross += gross;
-        stripeConfirmedNetBeforeRefunds += net;
-      } else {
-        offStripeConfirmedGross += gross;
-        offStripeConfirmedNet += net;
-      }
-    } else {
+    if (row.income_status !== 'confirmed') {
       pendingIncome += gross;
     }
     if (
@@ -1280,6 +1250,31 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
       incomeMissingProofCount++;
     }
   }
+
+  const allocated = allocateOverviewRefunds({
+    incomeRows,
+    refunds: periodRefunds,
+  });
+
+  const {
+    confirmedIncome,
+    confirmedIncomeCount,
+    stripeProcessingFees,
+    confirmedIncomeNet,
+    stripeConfirmedGross,
+    stripeConfirmedNetBeforeRefunds,
+    offStripeConfirmedGross,
+    offStripeConfirmedNet,
+    refundsPnlAmount,
+    totalRefunds,
+    refundsCount,
+    retainedStripeFeesOnRefunds,
+    stripeRefundsInPeriod,
+    offStripeRefundsInPeriod,
+    stripeNetVolumeAfterRefunds,
+    offStripeNetAfterRefunds,
+    confirmedIncomeNetAfterRefunds,
+  } = allocated;
 
   let expensesMissingReceiptCount = 0;
   let cogsSubtotal = 0;
@@ -1305,12 +1300,6 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     }
   }
 
-  const confirmedIncomeNetAfterRefunds = Math.round((confirmedIncomeNet - totalRefunds) * 100) / 100;
-  const offStripeRefundsInPeriod =
-    Math.round(Math.max(0, totalRefunds - stripeRefundsInPeriod) * 100) / 100;
-  const stripeNetVolumeAfterRefunds =
-    Math.round((stripeConfirmedNetBeforeRefunds - stripeRefundsInPeriod) * 100) / 100;
-  const offStripeNetAfterRefunds = Math.round((offStripeConfirmedNet - offStripeRefundsInPeriod) * 100) / 100;
   const grossProfit = Math.round((confirmedIncomeNetAfterRefunds - cogsSubtotal) * 100) / 100;
   const netResult = Math.round((confirmedIncomeNetAfterRefunds - totalExpenses) * 100) / 100;
 
@@ -1370,7 +1359,10 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
     offStripeConfirmedNet,
     offStripeRefundsInPeriod,
     offStripeNetAfterRefunds,
+    refundsPnlAmount,
     totalRefunds,
+    refundsCount,
+    retainedStripeFeesOnRefunds,
     confirmedIncomeNetAfterRefunds,
     cogsSubtotal,
     operatingExpensesSubtotal,

@@ -4,7 +4,6 @@ import {
   formatMinCheckoutFeeLabel,
 } from '@/lib/delivery/coverageDisplay';
 import { translations, type Locale } from '@/lib/i18n';
-import styles from './DeliveryFromFeeHint.module.css';
 
 export function DeliveryFromFeeHint({
   lang,
@@ -25,5 +24,13 @@ export function DeliveryFromFeeHint({
       : tCatalog.deliveryFromFee ?? 'Delivery from {amount}';
   const text = fillDeliveryFeeAmountPlaceholder(template, destinationId, lang);
 
-  return <p className={variant === 'pdp' ? styles.pdp : styles.card}>{text}</p>;
+  return (
+    <p
+      className={
+        variant === 'pdp' ? 'delivery-from-fee-hint delivery-from-fee-hint--pdp' : 'delivery-from-fee-hint'
+      }
+    >
+      {text}
+    </p>
+  );
 }

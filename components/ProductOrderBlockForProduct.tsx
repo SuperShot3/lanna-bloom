@@ -2,11 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import {
-  AddOnsSection,
-  getDefaultAddOns,
-  type AddOnsValues,
-} from './AddOnsSection';
+import { AddOnsSection } from './AddOnsSection';
+import { getDefaultAddOns, type AddOnsValues } from '@/components/addOns';
 import { SizeSelector } from './SizeSelector';
 import { getAddOnsTotal } from '@/lib/addonsConfig';
 import { useCart } from '@/contexts/CartContext';
