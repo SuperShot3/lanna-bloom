@@ -208,13 +208,13 @@ export async function getStripeRefundsTotalThroughDate(dateTo: string): Promise<
   }
 
   const rows = data ?? [];
-  const orderIds = [
-    ...new Set(
+  const orderIds = Array.from(
+    new Set(
       rows
         .map((row) => String((row as { order_id?: unknown }).order_id ?? '').trim())
         .filter(Boolean)
-    ),
-  ];
+    )
+  );
   const stripeOrderIds = new Set<string>();
   if (orderIds.length > 0) {
     const { data: incomeRows, error: incomeError } = await supabase
@@ -342,7 +342,7 @@ export async function getIncomeLookupForRefundOrders(
     processing_fee_amount: number | null;
   }[]
 > {
-  const ids = [...new Set(orderIds.map((id) => id.trim()).filter(Boolean))];
+  const ids = Array.from(new Set(orderIds.map((id) => id.trim()).filter(Boolean)));
   if (ids.length === 0) return [];
   const supabase = getSupabaseAdmin();
   if (!supabase) return [];
