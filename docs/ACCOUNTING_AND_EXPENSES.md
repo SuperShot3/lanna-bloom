@@ -13,7 +13,7 @@ Internal reference for how money-in / money-out works in **Lanna Bloom admin** (
 | Concept | Meaning |
 |--------|---------|
 | **Income record** | Money received from a sale or adjustment. Created automatically when a **website order** is paid (Stripe etc.), or entered manually under Accounting → Income. |
-| **Refund** | Money returned to a customer. Recorded from an order **Refund** button or a Stripe `refund.created` webhook. Listed under Accounting → **Refunds**. Refunds are **not** income (including not negative Non-Stripe income). Same-period full refunds drop out of Orders and gross; retained Stripe commission remains as shop loss. |
+| **Refund** | Money returned to a customer. Recorded from an order **Refund** button or a Stripe `refund.created` webhook. Listed under Accounting → **Refunds**. Refunds are **not** income. Same-period full refunds drop out of Orders and gross. Retained Stripe commission is subtracted from profit once (including prior-period admin Stripe refunds). Admin Stripe refunds also reduce the Stripe cash bucket (“Where the money is”). |
 | **Expense** | Money spent: entered on **Accounting → Expenses** or **auto-created** when saving order costs (see below). |
 | **Money location (“Where the money is”)** | Buckets on the accounting overview: **Stripe balance**, **Bank account**, **Cash**, **Other**. Income is placed by payment method / money location; expenses reduce a bucket based on **expense payment method**. |
 

@@ -104,8 +104,31 @@ function refund(partial: {
   assert.equal(r.confirmedIncomeCount, 1);
   assert.equal(r.offStripeNetAfterRefunds, 500, 'prior-period refund must not hit Non-Stripe income');
   assert.equal(r.refundsPnlAmount, 1000);
-  assert.equal(r.stripeNetVolumeAfterRefunds, 0);
-  assert.equal(r.confirmedIncomeNetAfterRefunds, -500);
+  assert.equal(r.retainedStripeFeesOnRefunds, 40);
+  assert.equal(r.stripeNetVolumeAfterRefunds, -1040);
+  assert.equal(r.confirmedIncomeNetAfterRefunds, -540);
+}
+
+{
+  const r = allocateOverviewRefunds({
+    incomeRows: [
+      income({ order_id: 'keep', amount: 500, payment_method: 'cash', processing_fee_amount: 0 }),
+    ],
+    refunds: [refund({ order_id: 'old-stripe', amount: 1000, source: 'manual', retained_fee_amount: null })],
+    incomeLookup: [
+      income({
+        order_id: 'old-stripe',
+        amount: 1000,
+        payment_method: 'stripe',
+        processing_fee_amount: 40,
+      }),
+    ],
+  });
+  assert.equal(r.offStripeNetAfterRefunds, 500);
+  assert.equal(r.refundsPnlAmount, 1000);
+  assert.equal(r.retainedStripeFeesOnRefunds, 40);
+  assert.equal(r.stripeNetVolumeAfterRefunds, -1040);
+  assert.equal(r.confirmedIncomeNetAfterRefunds, -540);
 }
 
 {

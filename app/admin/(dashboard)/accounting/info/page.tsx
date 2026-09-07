@@ -90,8 +90,10 @@ export default function AccountingInfoPage() {
               <code>refund.created</code>; OWNER can also use <strong>Refund</strong> on an order (that does{' '}
               <strong>not</strong> refund the customer in Stripe — issue the card refund in the Stripe Dashboard
               separately). A later matching webhook links to the admin row instead of double-counting. Same-period
-              full refunds drop out of <strong>Orders</strong> and gross; profit still includes the{' '}
-              <strong>retained Stripe commission</strong> Stripe keeps. See Accounting → <strong>Refunds</strong>.
+              full refunds drop out of <strong>Orders</strong> and gross; profit subtracts the{' '}
+              <strong>retained Stripe commission</strong> Stripe keeps (including when the sale was in an earlier
+              month). Admin Stripe refunds also reduce the Stripe row under <strong>Where the money is</strong>.
+              See Accounting → <strong>Refunds</strong>.
             </li>
             <li>
               <strong>Optional manual income deferral</strong> — Set env{' '}

@@ -187,8 +187,10 @@ export async function recordStripeRefundEvent(refund: Stripe.Refund): Promise<{ 
 }
 
 /**
- * Sum of Stripe-originated refunds with `refunded_at` on or before `dateTo` (inclusive).
- * Used for “where the money is”: refunds reduce cash held in Stripe.
+ * Sum of Stripe-channel refunds with `refunded_at` on or before `dateTo` (inclusive).
+ * Used for “where the money is”: webhook Stripe refunds and admin refunds of
+ * Stripe-paid orders reduce cash held in Stripe. Retained fees are not subtracted
+ * here — they are already in the original income net (gross − fee).
  */
 export async function getStripeRefundsTotalThroughDate(dateTo: string): Promise<number> {
   const supabase = getSupabaseAdmin();
@@ -197,17 +199,49 @@ export async function getStripeRefundsTotalThroughDate(dateTo: string): Promise<
   const end = dateTo.slice(0, 10);
   const { data, error } = await supabase
     .from(TABLE)
-    .select('amount')
-    .eq('source', 'stripe')
+    .select('amount, source, order_id')
     .lte('refunded_at', end);
 
   if (error) {
     console.error('[incomeRefunds] getStripeRefundsTotalThroughDate error:', error.message);
     return 0;
   }
+
+  const rows = data ?? [];
+  const orderIds = [
+    ...new Set(
+      rows
+        .map((row) => String((row as { order_id?: unknown }).order_id ?? '').trim())
+        .filter(Boolean)
+    ),
+  ];
+  const stripeOrderIds = new Set<string>();
+  if (orderIds.length > 0) {
+    const { data: incomeRows, error: incomeError } = await supabase
+      .from('income_records')
+      .select('order_id, payment_method')
+      .in('order_id', orderIds)
+      .neq('income_status', 'cancelled');
+    if (incomeError) {
+      console.error('[incomeRefunds] stripe-channel income lookup error:', incomeError.message);
+    } else {
+      for (const row of incomeRows ?? []) {
+        if (String((row as { payment_method?: unknown }).payment_method ?? '').toLowerCase() === 'stripe') {
+          const oid = String((row as { order_id?: unknown }).order_id ?? '').trim();
+          if (oid) stripeOrderIds.add(oid);
+        }
+      }
+    }
+  }
+
   let sum = 0;
-  for (const row of data ?? []) {
-    sum += parseFloat(String((row as { amount?: unknown }).amount)) || 0;
+  for (const row of rows) {
+    const r = row as { amount?: unknown; source?: unknown; order_id?: unknown };
+    const source = String(r.source ?? '').toLowerCase();
+    const oid = String(r.order_id ?? '').trim();
+    if (source === 'stripe' || (oid && stripeOrderIds.has(oid))) {
+      sum += parseFloat(String(r.amount)) || 0;
+    }
   }
   return Math.round(sum * 100) / 100;
 }
@@ -291,6 +325,55 @@ export async function getRefundsForOverviewPeriod(filter: {
       retained_fee_amount:
         r.retained_fee_amount != null && String(r.retained_fee_amount) !== ''
           ? parseFloat(String(r.retained_fee_amount)) || 0
+          : null,
+    };
+  });
+}
+
+/** Income rows for refunded orders (any paid_date) — channel + fee fallback. */
+export async function getIncomeLookupForRefundOrders(
+  orderIds: string[]
+): Promise<
+  {
+    order_id: string | null;
+    amount: number;
+    income_status: string;
+    payment_method: string;
+    processing_fee_amount: number | null;
+  }[]
+> {
+  const ids = [...new Set(orderIds.map((id) => id.trim()).filter(Boolean))];
+  if (ids.length === 0) return [];
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('income_records')
+    .select('order_id, amount, income_status, payment_method, processing_fee_amount')
+    .in('order_id', ids)
+    .neq('income_status', 'cancelled');
+
+  if (error) {
+    console.error('[incomeRefunds] getIncomeLookupForRefundOrders error:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const r = row as {
+      order_id?: unknown;
+      amount?: unknown;
+      income_status?: unknown;
+      payment_method?: unknown;
+      processing_fee_amount?: unknown;
+    };
+    return {
+      order_id: r.order_id != null && String(r.order_id).trim() ? String(r.order_id) : null,
+      amount: parseFloat(String(r.amount)) || 0,
+      income_status: String(r.income_status ?? ''),
+      payment_method: String(r.payment_method ?? ''),
+      processing_fee_amount:
+        r.processing_fee_amount != null && String(r.processing_fee_amount) !== ''
+          ? parseFloat(String(r.processing_fee_amount)) || 0
           : null,
     };
   });

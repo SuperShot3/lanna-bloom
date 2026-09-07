@@ -20,6 +20,7 @@ import {
   COGS_EXPENSE_CATEGORIES,
 } from '@/types/expenses';
 import {
+  getIncomeLookupForRefundOrders,
   getRefundsForOverviewPeriod,
   getStripeRefundsTotalThroughDate,
 } from '@/lib/accounting/incomeRefunds';
@@ -1254,6 +1255,11 @@ export async function getAccountingOverview(filter: OverviewPeriodFilter = {}) {
   const allocated = allocateOverviewRefunds({
     incomeRows,
     refunds: periodRefunds,
+    incomeLookup: await getIncomeLookupForRefundOrders(
+      (periodRefunds ?? [])
+        .map((r) => r.order_id)
+        .filter((id): id is string => Boolean(id))
+    ),
   });
 
   const {

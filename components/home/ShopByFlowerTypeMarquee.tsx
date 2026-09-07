@@ -102,6 +102,7 @@ export function ShopByFlowerTypeMarquee({
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
+  const pendingDragRef = useRef(false);
   const draggingRef = useRef(false);
   const movedRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -196,20 +197,25 @@ export function ShopByFlowerTypeMarquee({
     const el = scrollerRef.current;
     if (!el) return;
     pause();
-    draggingRef.current = true;
+    pendingDragRef.current = true;
+    draggingRef.current = false;
     movedRef.current = false;
     dragStartXRef.current = event.clientX;
     dragStartScrollRef.current = el.scrollLeft;
-    el.classList.add('is-dragging');
-    el.setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return;
+    if (!pendingDragRef.current && !draggingRef.current) return;
     const el = scrollerRef.current;
     if (!el) return;
     const dx = event.clientX - dragStartXRef.current;
-    if (Math.abs(dx) > DRAG_THRESHOLD_PX) movedRef.current = true;
+    if (!draggingRef.current) {
+      if (Math.abs(dx) <= DRAG_THRESHOLD_PX) return;
+      draggingRef.current = true;
+      movedRef.current = true;
+      el.classList.add('is-dragging');
+      el.setPointerCapture(event.pointerId);
+    }
     let next = dragStartScrollRef.current - dx;
     const half = el.scrollWidth / 2;
     if (half > 0) {
@@ -224,6 +230,7 @@ export function ShopByFlowerTypeMarquee({
     if (draggingRef.current && el?.hasPointerCapture(event.pointerId)) {
       el.releasePointerCapture(event.pointerId);
     }
+    pendingDragRef.current = false;
     draggingRef.current = false;
     el?.classList.remove('is-dragging');
     resumeSoon();
@@ -256,7 +263,7 @@ export function ShopByFlowerTypeMarquee({
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={() => {
-        if (!draggingRef.current) resumeSoon();
+        if (!draggingRef.current && !pendingDragRef.current) resumeSoon();
       }}
       onPointerEnter={pause}
       onTouchStart={pause}
