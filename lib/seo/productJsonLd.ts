@@ -16,6 +16,13 @@ export type ProductJsonLdContext = {
   destinationId?: DeliveryDestinationId;
   /** Only pass when approved product-specific reviews exist. */
   aggregateRating?: { ratingValue: number; reviewCount: number };
+  /** Individual reviews also shown on the page. Cap before passing. */
+  reviews?: Array<{
+    authorName: string;
+    rating: number;
+    reviewBody: string;
+    datePublished: string;
+  }>;
 };
 
 function originFromPageUrl(pageUrl: string, fallbackBase: string): string {
@@ -128,6 +135,7 @@ function buildProductJsonLd(opts: {
   discountPercent: number | undefined;
   destinationId: DeliveryDestinationId;
   aggregateRating?: { ratingValue: number; reviewCount: number };
+  reviews?: ProductJsonLdContext['reviews'];
 }): Record<string, unknown> | null {
   const price = offerPriceThb(opts.option.price, opts.discountPercent, opts.destinationId);
   if (!(price > 0)) return null;
@@ -142,6 +150,27 @@ function buildProductJsonLd(opts: {
     Number.isFinite(rating.ratingValue) &&
     rating.ratingValue >= 1 &&
     rating.ratingValue <= 5;
+  const reviewNodes = (opts.reviews ?? [])
+    .filter(
+      (review) =>
+        review.authorName.trim() &&
+        review.reviewBody.trim() &&
+        Number.isInteger(review.rating) &&
+        review.rating >= 1 &&
+        review.rating <= 5
+    )
+    .map((review) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: review.authorName },
+      datePublished: review.datePublished,
+      reviewBody: review.reviewBody,
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: review.rating,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }));
 
   return {
     '@context': 'https://schema.org',
@@ -163,6 +192,7 @@ function buildProductJsonLd(opts: {
           },
         }
       : {}),
+    ...(reviewNodes.length ? { review: reviewNodes } : {}),
     offers: {
       '@type': 'Offer',
       url: opts.pageUrl,
@@ -197,6 +227,7 @@ export function buildBouquetProductJsonLd(
     discountPercent: bouquet.discountPercent,
     destinationId: context?.destinationId ?? 'CHIANG_MAI',
     aggregateRating: context?.aggregateRating,
+    reviews: context?.reviews,
   });
 }
 

@@ -1099,6 +1099,19 @@
   margin-bottom: 6px;
 }
 
+.reviewVerified {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--color-sage-dark, #4a6b52) 80%, var(--text));
+  background: color-mix(in srgb, var(--color-sage-light, #e7efe8) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-sage, #7a9a7e) 22%, transparent);
+  border-radius: 999px;
+}
+
 .reviewItemText {
   margin: 0;
   font-size: 0.9rem;
@@ -1151,6 +1164,13 @@
   color: var(--text);
   font: inherit;
   font-weight: 400;
+}
+
+.reviewFieldHint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .reviewFieldFull {

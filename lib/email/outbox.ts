@@ -115,6 +115,71 @@ export async function sendNewsletterWelcomeViaOutbox(params: {
   return { ok: true, outboxId, missingVariables: rendered.missingVariables };
 }
 
+export async function sendProductReviewVerifyViaOutbox(params: {
+  email: string;
+  customerName: string;
+  bouquetName: string;
+  verifyUrl: string;
+  createdBy: string;
+}): Promise<{ ok: true; outboxId: string } | { ok: false; error: string }> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const email = params.email.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Invalid email' };
+  }
+
+  const tpl = await getTemplate('product_review_verify');
+  if (!tpl || !tpl.is_active) {
+    return { ok: false, error: 'Missing template product_review_verify' };
+  }
+
+  const links = getDefaultSocialLinks();
+  const vars: Record<string, string> = {
+    customer_name: params.customerName.trim() || 'there',
+    customer_email: email,
+    bouquet_name: params.bouquetName.trim() || 'your bouquet',
+    verify_url: params.verifyUrl,
+    website_url: links.websiteUrl,
+    brand_header: getEmailBrandHeaderHtml(links),
+    social_footer: getSocialFooterHtml(links),
+  };
+
+  const rendered = renderTemplate(tpl.subject_template, tpl.html_template, tpl.text_template, vars);
+  if (!rendered.subject || !rendered.html) {
+    return { ok: false, error: 'Template render failed' };
+  }
+
+  const { data: outbox, error: insE } = await supabase
+    .from('email_outbox')
+    .insert({
+      order_id: null,
+      customer_email: email,
+      customer_name: params.customerName.trim() || null,
+      email_type: 'product_review_verify',
+      subject: rendered.subject,
+      html_body: rendered.html,
+      text_body: rendered.text || null,
+      status: 'draft',
+      created_by: params.createdBy,
+    })
+    .select('id')
+    .single();
+
+  if (insE || !outbox) {
+    return { ok: false, error: insE?.message ?? 'Outbox insert failed' };
+  }
+
+  const outboxId = (outbox as { id: string }).id;
+  const send = await sendOutboxViaResend(outboxId, params.createdBy);
+  if (!send.ok) {
+    return { ok: false, error: send.error };
+  }
+
+  return { ok: true, outboxId };
+}
+
 export async function getOrCreateDeliveredOutboxDraft(
   orderId: string,
   createdBy: string

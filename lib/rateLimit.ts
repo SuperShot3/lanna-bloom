@@ -59,6 +59,10 @@ const productReviewSubmitStore = new Map<string, { count: number; resetAt: numbe
 const PRODUCT_REVIEW_SUBMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const PRODUCT_REVIEW_SUBMIT_MAX = 5;
 
+const productReviewConfirmStore = new Map<string, { count: number; resetAt: number }>();
+const PRODUCT_REVIEW_CONFIRM_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const PRODUCT_REVIEW_CONFIRM_MAX = 20;
+
 const orderChatPostStore = new Map<string, { count: number; resetAt: number }>();
 const ORDER_CHAT_POST_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 const ORDER_CHAT_POST_MAX = 20;
@@ -336,6 +340,28 @@ export function checkProductReviewSubmitRateLimit(ip: string): boolean {
   }
   entry.count++;
   return entry.count <= PRODUCT_REVIEW_SUBMIT_MAX;
+}
+
+export function checkProductReviewConfirmRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const key = `prc:${ip}`;
+  const entry = productReviewConfirmStore.get(key);
+  if (!entry) {
+    productReviewConfirmStore.set(key, {
+      count: 1,
+      resetAt: now + PRODUCT_REVIEW_CONFIRM_WINDOW_MS,
+    });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    productReviewConfirmStore.set(key, {
+      count: 1,
+      resetAt: now + PRODUCT_REVIEW_CONFIRM_WINDOW_MS,
+    });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= PRODUCT_REVIEW_CONFIRM_MAX;
 }
 
 /** First-party attribution touch: per IP. */

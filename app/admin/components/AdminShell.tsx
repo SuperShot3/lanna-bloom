@@ -196,7 +196,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       className="admin-shell-nav-badge"
                       aria-label={
                         showPendingBadge
-                          ? `${pendingGuideComments} pending comments`
+                          ? `${pendingGuideComments} pending comments and reviews`
                           : `${orderChatUnread} unread order chats`
                       }
                     >

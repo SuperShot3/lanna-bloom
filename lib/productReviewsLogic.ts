@@ -1,17 +1,31 @@
+import { createHash } from 'crypto';
 import { isValidLocale, type Locale } from '@/lib/i18n';
 
 export const PRODUCT_REVIEW_MAX_NAME = 80;
 export const PRODUCT_REVIEW_MAX_TEXT = 1200;
 export const PRODUCT_REVIEW_MIN_TEXT = 8;
+export const PRODUCT_REVIEW_MAX_EMAIL = 254;
+export const PRODUCT_REVIEW_VERIFY_TTL_MS = 48 * 60 * 60 * 1000;
+export const PRODUCT_JSON_LD_REVIEW_CAP = 50;
+export const PRODUCT_REVIEW_TOKEN_RE = /^[a-f0-9]{64}$/;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type ProductReviewStatus = 'pending' | 'approved' | 'rejected';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export type ProductReviewStatus = 'pending_email' | 'pending' | 'approved' | 'rejected';
 
 export type ProductReviewStats = {
   average: number;
   count: number;
+};
+
+export type ProductJsonLdReview = {
+  authorName: string;
+  rating: number;
+  reviewBody: string;
+  datePublished: string;
 };
 
 export function isProductReviewUuid(id: string): boolean {
@@ -32,9 +46,57 @@ function stripControlChars(value: string): string {
   return value.replace(/\0/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
+export function normalizeProductReviewEmail(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+export function hashProductReviewToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+export function isProductReviewVerifyToken(token: string): boolean {
+  return PRODUCT_REVIEW_TOKEN_RE.test(token.trim());
+}
+
+export function isDeliveredPaidOrderForReview(input: {
+  paymentStatus: string | null;
+  orderStatus: string | null;
+  fulfillmentStatus: string | null;
+  customerEmail: string | null;
+  itemBouquetId: string | null;
+  reviewEmail: string;
+  reviewBouquetId: string;
+}): boolean {
+  if (String(input.paymentStatus ?? '').toUpperCase() !== 'PAID') return false;
+  const email = normalizeProductReviewEmail(input.customerEmail ?? '');
+  if (!email || email !== normalizeProductReviewEmail(input.reviewEmail)) return false;
+  if ((input.itemBouquetId ?? '').trim() !== input.reviewBouquetId.trim()) return false;
+  const orderStatus = String(input.orderStatus ?? '').toUpperCase();
+  const fulfillment = String(input.fulfillmentStatus ?? '').toLowerCase();
+  return orderStatus === 'DELIVERED' || fulfillment === 'delivered';
+}
+
+export function toProductJsonLdReviews(
+  reviews: Array<{
+    displayName: string;
+    rating: number;
+    reviewText: string;
+    createdAt: string;
+  }>,
+  cap = PRODUCT_JSON_LD_REVIEW_CAP
+): ProductJsonLdReview[] {
+  return reviews.slice(0, cap).map((review) => ({
+    authorName: review.displayName,
+    rating: review.rating,
+    reviewBody: review.reviewText,
+    datePublished: review.createdAt,
+  }));
+}
+
 export function validateProductReviewInput(input: {
   bouquetId?: string;
   displayName?: string;
+  authorEmail?: string;
   rating?: unknown;
   reviewText?: string;
   locale?: string;
@@ -44,6 +106,7 @@ export function validateProductReviewInput(input: {
       data: {
         bouquetId: string;
         displayName: string;
+        authorEmail: string;
         rating: number;
         reviewText: string;
         locale: Locale | null;
@@ -61,6 +124,17 @@ export function validateProductReviewInput(input: {
   if (!displayName) return { ok: false, message: 'Name is required' };
   if (displayName.length > PRODUCT_REVIEW_MAX_NAME) {
     return { ok: false, message: `Name must be at most ${PRODUCT_REVIEW_MAX_NAME} characters` };
+  }
+
+  const authorEmail = normalizeProductReviewEmail(
+    typeof input.authorEmail === 'string' ? input.authorEmail : ''
+  );
+  if (!authorEmail) return { ok: false, message: 'Email is required' };
+  if (authorEmail.length > PRODUCT_REVIEW_MAX_EMAIL) {
+    return { ok: false, message: 'Email is too long' };
+  }
+  if (!EMAIL_REGEX.test(authorEmail)) {
+    return { ok: false, message: 'Please enter a valid email address' };
   }
 
   const ratingRaw =
@@ -85,6 +159,6 @@ export function validateProductReviewInput(input: {
 
   return {
     ok: true,
-    data: { bouquetId, displayName, rating: ratingRaw, reviewText, locale },
+    data: { bouquetId, displayName, authorEmail, rating: ratingRaw, reviewText, locale },
   };
 }

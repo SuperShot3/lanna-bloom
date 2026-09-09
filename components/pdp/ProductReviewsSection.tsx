@@ -22,6 +22,7 @@ export function ProductReviewsSection({
   const formId = useId();
   const [formOpen, setFormOpen] = useState(reviews.length === 0);
   const [displayName, setDisplayName] = useState('');
+  const [authorEmail, setAuthorEmail] = useState('');
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [honeypot, setHoneypot] = useState('');
@@ -45,6 +46,7 @@ export function ProductReviewsSection({
         body: JSON.stringify({
           bouquetId,
           displayName,
+          authorEmail,
           rating,
           reviewText,
           locale: lang,
@@ -58,6 +60,7 @@ export function ProductReviewsSection({
       }
       setSubmitted(true);
       setDisplayName('');
+      setAuthorEmail('');
       setReviewText('');
       setRating(0);
     } catch {
@@ -94,6 +97,11 @@ export function ProductReviewsSection({
             <li key={review.id} className={styles.reviewItem}>
               <div className={styles.reviewItemMeta}>
                 <strong>{review.displayName}</strong>
+                {review.verifiedPurchase ? (
+                  <span className={styles.reviewVerified}>
+                    {t.reviewVerifiedPurchase ?? 'Verified purchase'}
+                  </span>
+                ) : null}
                 <ProductReviewStars rating={review.rating} size={13} />
               </div>
               <p className={styles.reviewItemText}>{review.reviewText}</p>
@@ -104,7 +112,8 @@ export function ProductReviewsSection({
 
       {submitted ? (
         <p className={styles.reviewThanks} role="status">
-          {t.reviewThanks ?? 'Thank you. Your review will appear after approval.'}
+          {t.reviewThanks ??
+            'Check your email to confirm this review. If you do not see it, look in spam.'}
         </p>
       ) : (
         <>
@@ -131,7 +140,23 @@ export function ProductReviewsSection({
                   onChange={(e) => setDisplayName(e.target.value)}
                 />
               </label>
-              <div className={styles.reviewField}>
+              <label className={`${styles.reviewField} ${styles.reviewFieldFull}`}>
+                <span>{t.reviewEmailLabel ?? 'Your email'}</span>
+                <input
+                  type="email"
+                  name="authorEmail"
+                  autoComplete="email"
+                  required
+                  maxLength={254}
+                  value={authorEmail}
+                  onChange={(e) => setAuthorEmail(e.target.value)}
+                />
+                <span className={styles.reviewFieldHint}>
+                  {t.reviewEmailHint ??
+                    'We send a confirmation link. Your email is never shown on this page.'}
+                </span>
+              </label>
+              <div className={`${styles.reviewField} ${styles.reviewFieldFull}`}>
                 <span id={`${formId}-rating`}>{t.reviewRatingLabel ?? 'Rating'}</span>
                 <ProductReviewStars
                   rating={rating}

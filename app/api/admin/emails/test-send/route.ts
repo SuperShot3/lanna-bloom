@@ -50,6 +50,8 @@ function buildMock(base: string): Record<string, string> {
   social_footer: '',
   cart_restore_url: `${b}/en/cart?recover=demo-recovery-token`,
   recovery_unsubscribe_url: `${b}/checkout-recovery/unsubscribe?token=demo-recovery-unsub`,
+  bouquet_name: 'Sunrise bouquet',
+  verify_url: `${b}/review/confirm?token=demo-review-verify-token`,
   };
 }
 

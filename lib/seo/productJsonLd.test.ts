@@ -89,6 +89,14 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
 {
   const withReviews = buildBouquetProductJsonLd(bouquet, 'en', PAGE, {
     aggregateRating: { ratingValue: 4.8, reviewCount: 12 },
+    reviews: [
+      {
+        authorName: 'Alex',
+        rating: 5,
+        reviewBody: 'Beautiful bouquet, arrived fresh.',
+        datePublished: '2026-09-01T10:00:00.000Z',
+      },
+    ],
   });
   assert.ok(withReviews);
   assert.deepEqual(withReviews.aggregateRating, {
@@ -98,14 +106,27 @@ function assertOneProductOneOffer(jsonLd: Record<string, unknown>) {
     bestRating: 5,
     worstRating: 1,
   });
+  const reviewList = withReviews.review as Array<Record<string, unknown>>;
+  assert.equal(reviewList.length, 1);
+  assert.equal(reviewList[0]['@type'], 'Review');
+  assert.deepEqual(reviewList[0].author, { '@type': 'Person', name: 'Alex' });
+  assert.equal(reviewList[0].reviewBody, 'Beautiful bouquet, arrived fresh.');
+  assert.deepEqual(reviewList[0].reviewRating, {
+    '@type': 'Rating',
+    ratingValue: 5,
+    bestRating: 5,
+    worstRating: 1,
+  });
 }
 
 {
   const emptyReviews = buildBouquetProductJsonLd(bouquet, 'en', PAGE, {
     aggregateRating: { ratingValue: 0, reviewCount: 0 },
+    reviews: [],
   });
   assert.ok(emptyReviews);
   assert.ok(!('aggregateRating' in emptyReviews));
+  assert.ok(!('review' in emptyReviews));
 }
 
 {

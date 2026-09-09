@@ -28,6 +28,7 @@ import { ProductMobileBackButton } from '@/components/pdp/ProductMobileBackButto
 import {
   computeProductReviewStats,
   getApprovedProductReviews,
+  toProductJsonLdReviews,
 } from '@/lib/productReviews';
 
 function JsonLdScript({ data }: { data: Record<string, unknown> | null }) {
@@ -77,6 +78,7 @@ export async function renderCatalogProductPage({ params }: CatalogProductPageArg
             reviewStats.count >= 1
               ? { ratingValue: reviewStats.average, reviewCount: reviewStats.count }
               : undefined,
+          reviews: toProductJsonLdReviews(approvedReviews),
         })
       : null;
 
