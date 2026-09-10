@@ -12,7 +12,7 @@ export const HOME_SEO = {
   en: {
     title: 'Flower Delivery Chiang Mai | Florist & Flower Shop | Lanna Bloom',
     description:
-      'Buy flowers online in Chiang Mai with secure card payment. Choose a bouquet, add your message, and arrange same-day delivery to homes, hotels, condos, hospitals, or villas.',
+      'Send flowers to Chiang Mai from anywhere in the world. Order online with international cards and enjoy reliable same-day delivery to homes, hotels and condos.',
   },
   th: {
     title: 'ร้านดอกไม้เชียงใหม่ | ส่งดอกไม้เชียงใหม่ | Lanna Bloom',

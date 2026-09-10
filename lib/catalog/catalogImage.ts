@@ -3,12 +3,9 @@
 export const CATALOG_CARD_IMAGE_SIZES =
   '(max-width: 600px) 50vw, (max-width: 900px) 50vw, 33vw';
 
-/** Homepage “Shop by flower type” marquee tiles: 4.75rem / 6rem / 7rem. */
+/** Homepage “Shop by flower type” row tiles: 4.75rem / 6rem / 7rem. */
 export const HOME_FLOWER_TYPE_TILE_IMAGE_SIZES =
   '(max-width: 640px) 76px, (max-width: 768px) 96px, 112px';
-
-/** Loop-copy marquee tiles share one cached width instead of a second srcset. */
-export const HOME_FLOWER_TYPE_TILE_DUP_WIDTH = 128;
 
 /** Homepage hero carousel cards: 272 / 288 / 336 / 384 CSS px (not full viewport). */
 export const HERO_CAROUSEL_IMAGE_SIZES =

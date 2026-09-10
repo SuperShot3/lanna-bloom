@@ -36,15 +36,13 @@ function FlowerTypeTilesSkeleton() {
         aria-hidden
       />
       <div className="flower-type-marquee -mx-4 sm:-mx-6 lg:-mx-8" aria-hidden>
-        <div className="flex w-max">
-          <div className="flower-type-marquee__group">
-            {Array.from({ length: TILE_COUNT }).map((_, i) => (
-              <div key={i} className="flower-type-marquee__tile flex flex-col items-center gap-2">
-                <div className="aspect-square w-full rounded-2xl bg-stone-200 animate-pulse" />
-                <div className="h-4 w-14 rounded bg-stone-200 animate-pulse" />
-              </div>
-            ))}
-          </div>
+        <div className="flower-type-marquee__group">
+          {Array.from({ length: TILE_COUNT }).map((_, i) => (
+            <div key={i} className="flower-type-marquee__tile flex flex-col items-center gap-2">
+              <div className="aspect-square w-full rounded-2xl bg-stone-200 animate-pulse" />
+              <div className="h-4 w-14 rounded bg-stone-200 animate-pulse" />
+            </div>
+          ))}
         </div>
       </div>
     </div>

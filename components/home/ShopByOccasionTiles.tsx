@@ -1,6 +1,7 @@
 import type { HomeOccasionTile } from '@/lib/catalog/homeOccasionTiles';
 import { CATALOG_OCCASION_CHIPS } from '@/lib/catalogCategories';
 import { buildCatalogSearchString } from '@/lib/catalogFilterParams';
+import { destinationDisplayName, type DeliveryDestinationId } from '@/lib/delivery/markets';
 import { translations, type Locale } from '@/lib/i18n';
 import { ShopByFlowerTypeMarquee } from '@/components/home/ShopByFlowerTypeMarquee';
 
@@ -14,17 +15,21 @@ export function ShopByOccasionTiles({
   lang,
   tiles,
   catalogHref,
+  destinationId = 'CHIANG_MAI',
 }: {
   lang: Locale;
   tiles: HomeOccasionTile[];
   /** Catalog listing path, e.g. `/en/catalog` or `/en/catalog/pattaya`. */
   catalogHref?: string;
+  destinationId?: DeliveryDestinationId;
 }) {
   if (tiles.length === 0) return null;
 
   const tHome = translations[lang].home;
   const tCatalog = translations[lang].catalog as Record<string, string>;
   const catalogBase = catalogHref ?? `/${lang}/catalog`;
+  const city = destinationDisplayName(destinationId, lang);
+  const subtitle = tHome.shopByOccasionSubtitle.replaceAll('{city}', city);
 
   const items = tiles.map((tile) => ({
     type: tile.occasion,
@@ -38,9 +43,10 @@ export function ShopByOccasionTiles({
 
   return (
     <div className="home-reveal-item mb-12 sm:mb-14 last:mb-0">
-      <h2 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-6 sm:mb-8">
+      <h2 className="font-[family-name:var(--font-family-display)] text-3xl sm:text-4xl text-[#1A3C34] mb-2 sm:mb-3">
         {tHome.shopByOccasionTitle}
       </h2>
+      <p className="text-stone-500 leading-relaxed mb-6 sm:mb-8">{subtitle}</p>
       <ShopByFlowerTypeMarquee items={items} regionLabel={tHome.shopByOccasionTitle} />
     </div>
   );

@@ -152,7 +152,12 @@ export async function PopularSection({
           lang={lang}
           showMoreLabel={tHome.showMore}
         />
-        <ShopByOccasionTiles lang={lang} tiles={occasionTiles} catalogHref={catalogBase} />
+        <ShopByOccasionTiles
+          lang={lang}
+          tiles={occasionTiles}
+          catalogHref={catalogBase}
+          destinationId={destinationId}
+        />
         <PopularPicksRow
           title={tHome.newArrivalsTitle}
           href={`${catalogBase}${buildCatalogSearchString({ sort: 'newest' })}`}

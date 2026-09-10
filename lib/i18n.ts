@@ -191,6 +191,8 @@ const baseTranslations = {
       browseBouquets: 'Browse bouquets',
       backToTop: 'Back to top',
       shopByOccasionTitle: 'Shop by occasion',
+      shopByOccasionSubtitle:
+        'Find flowers for birthdays, anniversaries, romantic surprises, weddings and other special occasions in {city}.',
       shopByFlowerTypeTitle: 'Shop by flower type',
       flowerTypeTileRose: 'Roses',
       flowerTypeTileOrchid: 'Orchids',
@@ -2089,6 +2091,8 @@ const baseTranslations = {
       browseBouquets: 'เลือกช่อดอกไม้',
       backToTop: 'กลับขึ้นด้านบน',
       shopByOccasionTitle: 'เลือกตามโอกาส',
+      shopByOccasionSubtitle:
+        'เลือกดอกไม้สำหรับวันเกิด วันครบรอบ เซอร์ไพรส์คนพิเศษ งานแต่ง และโอกาสสำคัญอื่น ๆ ใน{city}',
       shopByFlowerTypeTitle: 'เลือกตามชนิดดอกไม้',
       flowerTypeTileRose: 'กุหลาบ',
       flowerTypeTileOrchid: 'กล้วยไม้',
@@ -3881,6 +3885,8 @@ const russianTranslations = {
     browseBouquets: 'Смотреть букеты',
     backToTop: 'Наверх',
     shopByOccasionTitle: 'Выбрать по поводу',
+    shopByOccasionSubtitle:
+      'Найдите цветы на дни рождения, годовщины, романтические сюрпризы, свадьбы и другие особые случаи в {city}.',
     shopByFlowerTypeTitle: 'Выбрать по виду цветов',
     flowerTypeTileRose: 'Розы',
     flowerTypeTileOrchid: 'Орхидеи',
@@ -4844,6 +4850,8 @@ const chineseSingaporeTranslations = {
     browseBouquets: '浏览花束',
     backToTop: '返回顶部',
     shopByOccasionTitle: '按场合选购',
+    shopByOccasionSubtitle:
+      '挑选生日、周年纪念、浪漫惊喜、婚礼及其他特别场合的鲜花，送往{city}。',
     shopByFlowerTypeTitle: '按花材选购',
     flowerTypeTileRose: '玫瑰',
     flowerTypeTileOrchid: '兰花',
@@ -5591,6 +5599,8 @@ const chineseHongKongTranslations = {
     browseBouquets: '瀏覽花束',
     backToTop: '返回頂部',
     shopByOccasionTitle: '按場合選購',
+    shopByOccasionSubtitle:
+      '挑選生日、週年紀念、浪漫驚喜、婚禮及其他特別場合的鮮花，送往{city}。',
     shopByFlowerTypeTitle: '按花材選購',
     flowerTypeTileRose: '玫瑰',
     flowerTypeTileOrchid: '蘭花',
