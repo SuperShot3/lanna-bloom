@@ -54,8 +54,9 @@ export function extractGoogleMapsUrlFromText(raw: string): string | null {
     if (isValidGoogleMapsUrl(cleaned)) return cleaned;
   }
 
-  for (const match of trimmed.matchAll(SCHEMELESS_SHARE_IN_TEXT)) {
-    const cleaned = stripWrappingPunctuation(match[1] ?? '');
+  const schemelessUrls = trimmed.match(SCHEMELESS_SHARE_IN_TEXT) ?? [];
+  for (const candidate of schemelessUrls) {
+    const cleaned = stripWrappingPunctuation(candidate);
     if (cleaned && isValidGoogleMapsUrl(cleaned)) return cleaned;
   }
 
