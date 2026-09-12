@@ -114,8 +114,9 @@ export function DeliveryLocationPicker({
   removePinLabel = 'Remove',
   zoomInLabel = 'Zoom in',
   zoomOutLabel = 'Zoom out',
-  pastePlaceholder = 'Paste a Google Maps link or latitude, longitude',
+  pastePlaceholder = 'Paste maps.app.goo.gl, share.google, or latitude, longitude',
   pasteInvalidLabel = 'Paste a Google Maps link or coordinates (for example 18.7883, 98.9853).',
+  pasteLabel = 'Paste Google Maps link',
 }: {
   value: DeliveryLocationValue | null;
   onChange: (v: DeliveryLocationValue | null) => void;
@@ -137,6 +138,7 @@ export function DeliveryLocationPicker({
   zoomOutLabel?: string;
   pastePlaceholder?: string;
   pasteInvalidLabel?: string;
+  pasteLabel?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<GoogleMap | null>(null);
@@ -228,6 +230,11 @@ export function DeliveryLocationPicker({
         return;
       }
       setPasteError(false);
+      if (parsed.kind === 'mapsUrl') {
+        setPasteText(clipCheckoutField(parsed.url, 'googleMapsUrl'));
+      } else {
+        setPasteText(`${parsed.lat}, ${parsed.lng}`);
+      }
 
       if (parsed.kind === 'coords') {
         if (unavailable) {
@@ -442,15 +449,70 @@ export function DeliveryLocationPicker({
       ) : null}
 
       {showEditor ? (
-        <div className="delivery-location-toolbar">
-          <a
-            href={openMapsHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="delivery-location-gmaps-btn"
-          >
-            {openInGoogleMapsLabel}
-          </a>
+        <div className="delivery-location-paste">
+          <div className="delivery-location-paste-field">
+            <span className="delivery-location-paste-icon" aria-hidden>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 21s7-5.4 7-11.2A7 7 0 0 0 5 9.8C5 15.6 12 21 12 21Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+                <circle cx="12" cy="9.8" r="2.2" fill="currentColor" />
+              </svg>
+            </span>
+            <input
+              id={pasteId}
+              type="text"
+              className="delivery-location-paste-input"
+              value={pasteText}
+              placeholder={pastePlaceholder}
+              maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
+              autoComplete="off"
+              aria-label={pasteLabel}
+              aria-invalid={pasteError}
+              aria-describedby={pasteError ? pasteErrorId : undefined}
+              onChange={(e) => {
+                const next = clipCheckoutField(e.target.value, 'googleMapsUrl');
+                setPasteText(next);
+                if (pasteError) setPasteError(false);
+              }}
+              onFocus={() => {
+                pasteFocusedRef.current = true;
+              }}
+              onBlur={() => {
+                pasteFocusedRef.current = false;
+                applyPaste(pasteText);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                applyPaste(pasteText);
+              }}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData('text');
+                if (!text.trim()) return;
+                e.preventDefault();
+                const clipped = clipCheckoutField(text, 'googleMapsUrl');
+                setPasteText(clipped);
+                queueMicrotask(() => applyPaste(text));
+              }}
+            />
+            <a
+              href={openMapsHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="delivery-location-gmaps-btn delivery-location-gmaps-btn--in-field"
+            >
+              {openInGoogleMapsLabel}
+            </a>
+          </div>
+          {pasteError ? (
+            <p id={pasteErrorId} className="delivery-location-paste-error" role="alert">
+              {pasteInvalidLabel}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -506,55 +568,6 @@ export function DeliveryLocationPicker({
         </p>
       ) : null}
 
-      {showEditor ? (
-        <div className="delivery-location-paste">
-          <label htmlFor={pasteId} className="visually-hidden">
-            {pastePlaceholder}
-          </label>
-          <input
-            id={pasteId}
-            type="text"
-            className="delivery-location-paste-input"
-            value={pasteText}
-            placeholder={pastePlaceholder}
-            maxLength={CHECKOUT_FIELD_LIMITS.googleMapsUrl}
-            autoComplete="off"
-            aria-invalid={pasteError}
-            aria-describedby={pasteError ? pasteErrorId : undefined}
-            onChange={(e) => {
-              const next = clipCheckoutField(e.target.value, 'googleMapsUrl');
-              setPasteText(next);
-              if (pasteError) setPasteError(false);
-            }}
-            onFocus={() => {
-              pasteFocusedRef.current = true;
-            }}
-            onBlur={() => {
-              pasteFocusedRef.current = false;
-              applyPaste(pasteText);
-            }}
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter') return;
-              e.preventDefault();
-              applyPaste(pasteText);
-            }}
-            onPaste={(e) => {
-              const text = e.clipboardData.getData('text');
-              if (!text.trim()) return;
-              e.preventDefault();
-              const clipped = clipCheckoutField(text, 'googleMapsUrl');
-              setPasteText(clipped);
-              queueMicrotask(() => applyPaste(clipped));
-            }}
-          />
-          {pasteError ? (
-            <p id={pasteErrorId} className="delivery-location-paste-error" role="alert">
-              {pasteInvalidLabel}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
       <style jsx>{`
         .delivery-location-picker {
           margin-top: 0;
@@ -578,6 +591,9 @@ export function DeliveryLocationPicker({
           border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
           box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 65%, transparent);
         }
+        .delivery-location-picker--highlight .delivery-location-paste {
+          background: color-mix(in srgb, var(--accent-soft) 88%, var(--surface));
+        }
         .delivery-location-picker:has(.delivery-location-confirmed) {
           border-color: color-mix(in srgb, #16a34a 38%, var(--border));
         }
@@ -585,13 +601,6 @@ export function DeliveryLocationPicker({
           .delivery-location-map-wrap {
             height: 360px;
           }
-        }
-        .delivery-location-toolbar {
-          display: flex;
-          justify-content: flex-end;
-          padding: 8px 10px;
-          border-bottom: 1px solid var(--border);
-          background: var(--surface);
         }
         .delivery-location-zoom {
           position: absolute;
@@ -698,43 +707,64 @@ export function DeliveryLocationPicker({
           line-height: 1.4;
         }
         .delivery-location-paste {
-          padding: 0 10px 10px;
+          padding: 12px 12px 14px;
+          background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface));
+          border-bottom: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+        }
+        .delivery-location-paste-field {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-height: 48px;
+          padding: 4px 4px 4px 0;
+          border: 1.5px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+          border-radius: 12px;
+          background: var(--surface);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-soft) 55%, transparent);
+        }
+        .delivery-location-paste-field:focus-within {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-soft) 80%, transparent);
+        }
+        .delivery-location-paste-field:has(.delivery-location-paste-input[aria-invalid='true']) {
+          border-color: #b91c1c;
+          box-shadow: 0 0 0 3px color-mix(in srgb, #b91c1c 18%, transparent);
+        }
+        .delivery-location-paste-icon {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          color: var(--accent);
+          pointer-events: none;
         }
         .delivery-location-paste-input {
-          width: 100%;
-          min-height: 44px;
-          padding: 10px 12px;
-          border: 1px solid var(--border);
+          flex: 1;
+          min-width: 0;
+          min-height: 40px;
+          padding: 8px 8px 8px 40px;
+          border: none;
           border-radius: 10px;
           font-size: 16px;
           font-family: inherit;
           color: var(--text);
-          background: var(--surface);
+          background: transparent;
           box-sizing: border-box;
         }
         .delivery-location-paste-input:focus {
           outline: none;
-          border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
         }
         .delivery-location-paste-input[aria-invalid='true'] {
-          border-color: #b91c1c;
+          border-color: transparent;
+          box-shadow: none;
         }
         .delivery-location-paste-error {
-          margin: 6px 2px 0;
+          margin: 8px 2px 0;
           font-size: 0.78rem;
           line-height: 1.4;
           color: #b91c1c;
-        }
-        .visually-hidden {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          white-space: nowrap;
-          border: 0;
         }
         .delivery-location-confirmed {
           display: flex;
@@ -782,6 +812,7 @@ export function DeliveryLocationPicker({
           margin-left: auto;
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           padding: 0 8px;
           min-height: 30px;
           font-size: 0.72rem;
@@ -791,6 +822,12 @@ export function DeliveryLocationPicker({
           border-radius: 8px;
           text-decoration: none;
           white-space: nowrap;
+        }
+        .delivery-location-gmaps-btn--in-field {
+          margin-left: 0;
+          min-height: 36px;
+          padding: 0 11px;
+          border-radius: 9px;
         }
         .delivery-location-gmaps-btn:hover {
           background: #a88b5c;

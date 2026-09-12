@@ -170,6 +170,7 @@ export function DeliveryAddressFields({
           locationSavedLabel={labels.locationSavedLabel}
           pastePlaceholder={labels.pastePlaceholder}
           pasteInvalidLabel={labels.pasteInvalidLabel}
+          pasteLabel={labels.googleMapsLinkLabel}
         />
       </NotchedField>
 
@@ -234,6 +235,10 @@ export function DeliveryAddressFields({
         }
         :global(.co-map-field) {
           margin-top: 8px;
+        }
+        :global(.co-map-field .notched-field__label) {
+          font-weight: 700;
+          color: var(--text);
         }
         .co-textarea {
           resize: vertical;

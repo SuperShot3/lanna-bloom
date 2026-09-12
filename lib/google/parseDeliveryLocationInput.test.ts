@@ -69,4 +69,57 @@ if (noScheme.kind === 'mapsUrl') {
   assert.equal(noScheme.lat, null);
 }
 
+const trackedShort = parseDeliveryLocationInput(
+  'https://maps.app.goo.gl/FuWYzkvDdtYhYrVp7?g_st=ic'
+);
+assert.equal(trackedShort.kind, 'mapsUrl');
+if (trackedShort.kind === 'mapsUrl') {
+  assert.equal(trackedShort.url, 'https://maps.app.goo.gl/FuWYzkvDdtYhYrVp7?g_st=ic');
+  assert.equal(trackedShort.lat, null);
+  assert.equal(trackedShort.lng, null);
+}
+
+const shareGoogle = parseDeliveryLocationInput('https://share.google/iCYKFTUNmPaLPw9S5');
+assert.equal(shareGoogle.kind, 'mapsUrl');
+if (shareGoogle.kind === 'mapsUrl') {
+  assert.equal(shareGoogle.url, 'https://share.google/iCYKFTUNmPaLPw9S5');
+  assert.equal(shareGoogle.lat, null);
+}
+
+const mixedPaste = parseDeliveryLocationInput(
+  'Cafe Nimman\nhttps://maps.app.goo.gl/abc?g_st=ic'
+);
+assert.equal(mixedPaste.kind, 'mapsUrl');
+if (mixedPaste.kind === 'mapsUrl') {
+  assert.equal(mixedPaste.url, 'https://maps.app.goo.gl/abc?g_st=ic');
+}
+
+const mixedShare = parseDeliveryLocationInput(
+  'Check out this place: https://share.google/iCYKFTUNmPaLPw9S5'
+);
+assert.equal(mixedShare.kind, 'mapsUrl');
+if (mixedShare.kind === 'mapsUrl') {
+  assert.equal(mixedShare.url, 'https://share.google/iCYKFTUNmPaLPw9S5');
+}
+
+const mixedSchemeless = parseDeliveryLocationInput('Nimman cafe maps.app.goo.gl/abc123');
+assert.equal(mixedSchemeless.kind, 'mapsUrl');
+if (mixedSchemeless.kind === 'mapsUrl') {
+  assert.equal(mixedSchemeless.url, 'https://maps.app.goo.gl/abc123');
+}
+
+const trailingPunctuation = parseDeliveryLocationInput(
+  'See this: https://maps.app.goo.gl/abc123.'
+);
+assert.equal(trailingPunctuation.kind, 'mapsUrl');
+if (trailingPunctuation.kind === 'mapsUrl') {
+  assert.equal(trailingPunctuation.url, 'https://maps.app.goo.gl/abc123');
+}
+
+assert.equal(parseDeliveryLocationInput('https://example.com/maps').kind, 'invalid');
+assert.equal(
+  parseDeliveryLocationInput('Cafe Nimman\nhttps://example.com/place').kind,
+  'invalid'
+);
+
 console.log('parseDeliveryLocationInput.test.ts: all passed');

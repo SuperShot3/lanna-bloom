@@ -8,6 +8,10 @@ export type ParsedDeliveryLocation =
 const COORDS_ONLY =
   /^(-?\d+(?:\.\d+)?)\s*[,;]\s*(-?\d+(?:\.\d+)?)$|^(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/;
 
+const HTTP_URL_IN_TEXT = /https?:\/\/[^\s<>"'\\]+/gi;
+const SCHEMELESS_SHARE_IN_TEXT =
+  /(?:^|[\s<(["'])((?:maps\.app\.goo\.gl|share\.google|www\.share\.google)\/[^\s<>"']+)/gi;
+
 function isFiniteCoordPair(lat: number, lng: number): boolean {
   return (
     Number.isFinite(lat) &&
@@ -32,6 +36,30 @@ function parseCoordPair(text: string): { lat: number; lng: number } | null {
 function normalizeHttpUrl(raw: string): string {
   const s = raw.trim();
   return /^[a-zA-Z][a-zA-Z+\-.]*:\/\//.test(s) ? s : `https://${s}`;
+}
+
+function stripWrappingPunctuation(s: string): string {
+  return s.replace(/^[<(["']+/, '').replace(/[>)\]"'.,;:!?]+$/g, '');
+}
+
+/** First Google Maps / share.google URL in clipboard text, if any. */
+export function extractGoogleMapsUrlFromText(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (isValidGoogleMapsUrl(trimmed)) return trimmed;
+
+  const httpUrls = trimmed.match(HTTP_URL_IN_TEXT) ?? [];
+  for (const candidate of httpUrls) {
+    const cleaned = stripWrappingPunctuation(candidate);
+    if (isValidGoogleMapsUrl(cleaned)) return cleaned;
+  }
+
+  for (const match of trimmed.matchAll(SCHEMELESS_SHARE_IN_TEXT)) {
+    const cleaned = stripWrappingPunctuation(match[1] ?? '');
+    if (cleaned && isValidGoogleMapsUrl(cleaned)) return cleaned;
+  }
+
+  return null;
 }
 
 function extractCoordsFromMapsUrl(url: URL): { lat: number; lng: number } | null {
@@ -69,27 +97,30 @@ function extractCoordsFromMapsUrl(url: URL): { lat: number; lng: number } | null
   return null;
 }
 
+function toMapsUrlResult(rawUrl: string): ParsedDeliveryLocation {
+  const normalized = normalizeHttpUrl(rawUrl);
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(normalized);
+  } catch {
+    return { kind: 'invalid' };
+  }
+  const coords = extractCoordsFromMapsUrl(parsedUrl);
+  return {
+    kind: 'mapsUrl',
+    url: normalized,
+    lat: coords?.lat ?? null,
+    lng: coords?.lng ?? null,
+  };
+}
+
 /** Accept only a lat/lng pair or a Google Maps link. Reject free text. */
 export function parseDeliveryLocationInput(raw: string): ParsedDeliveryLocation {
   const trimmed = raw.trim();
   if (!trimmed) return { kind: 'invalid' };
 
-  if (isValidGoogleMapsUrl(trimmed)) {
-    const normalized = normalizeHttpUrl(trimmed);
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(normalized);
-    } catch {
-      return { kind: 'invalid' };
-    }
-    const coords = extractCoordsFromMapsUrl(parsedUrl);
-    return {
-      kind: 'mapsUrl',
-      url: normalized,
-      lat: coords?.lat ?? null,
-      lng: coords?.lng ?? null,
-    };
-  }
+  const mapsUrl = extractGoogleMapsUrlFromText(trimmed);
+  if (mapsUrl) return toMapsUrlResult(mapsUrl);
 
   const coords = parseCoordPair(trimmed);
   if (coords) return { kind: 'coords', lat: coords.lat, lng: coords.lng };

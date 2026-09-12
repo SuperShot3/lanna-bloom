@@ -1,6 +1,7 @@
 /**
  * Simple validation: URL must look like a Google Maps share or open link.
- * Covers maps.google.com, regional google.com/maps paths, goo.gl/maps, maps.app.goo.gl, etc.
+ * Covers maps.google.com, regional google.com/maps paths, goo.gl/maps,
+ * maps.app.goo.gl, and share.google location-share links.
  */
 export function isValidGoogleMapsUrl(raw: string): boolean {
   const s = raw.trim();
@@ -13,6 +14,9 @@ export function isValidGoogleMapsUrl(raw: string): boolean {
   }
   const h = url.hostname.toLowerCase();
   if (h === 'maps.app.goo.gl' || h.endsWith('.maps.app.goo.gl')) return true;
+  if (h === 'share.google' || h === 'www.share.google') {
+    return hasNonEmptyPath(url);
+  }
   if (h === 'goo.gl' && url.pathname.startsWith('/maps')) return true;
   if (h === 'maps.google.com' || h === 'www.maps.google.com') return true;
   if (
@@ -24,4 +28,8 @@ export function isValidGoogleMapsUrl(raw: string): boolean {
     return url.pathname.startsWith('/maps') || url.pathname.includes('/maps/');
   }
   return false;
+}
+
+function hasNonEmptyPath(url: URL): boolean {
+  return url.pathname.replace(/\/+$/, '').length > 1;
 }
