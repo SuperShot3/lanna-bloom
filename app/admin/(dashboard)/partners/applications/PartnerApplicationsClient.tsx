@@ -329,7 +329,10 @@ export function PartnerApplicationsClient({
       </div>
 
       {(selected || drawerMode === 'create') && (
-        <div className="admin-partner-drawer-overlay" onClick={closeDrawer}>
+        <div
+          className="admin-partner-drawer-overlay"
+          onClick={drawerMode === 'view' ? closeDrawer : undefined}
+        >
           <div
             className={`admin-partner-drawer${drawerMode === 'create' || drawerMode === 'edit' ? ' admin-partner-drawer--form' : ''}`}
             onClick={(e) => e.stopPropagation()}
